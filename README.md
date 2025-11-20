@@ -1,4 +1,4 @@
-# n3lite
+# eyelite
 
 A small Notation3 (N3) parser in Rust with a minimal forward-chaining reasoner.
 

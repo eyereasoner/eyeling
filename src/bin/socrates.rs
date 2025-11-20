@@ -1,6 +1,6 @@
 use std::fs;
 
-use n3lite::{parse_document, PrefixEnv, forward_chain, extract, Atom, GTriple};
+use eyelite::{parse_document, PrefixEnv, forward_chain, extract, Atom, GTriple};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let input = fs::read_to_string("socrates.n3")?;
