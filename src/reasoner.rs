@@ -7,7 +7,7 @@ use crate::resolve::RDF_TYPE;
 pub enum Atom {
     Iri(String),
     Blank(String),
-    Literal(String), // <- was Literal(Literal)
+    Literal(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -210,7 +210,7 @@ fn inst_term(pt: &PT, env: &HashMap<String, Atom>) -> Option<Atom> {
 }
 
 fn canon_lit(l: &Literal) -> String {
-    // Good enough for a toy reasoner; makes literals hashable.
+    // makes literals hashable.
     match l {
         Literal::RdfString { lex, lang, datatype } => {
             let mut s = format!("\"{lex}\"");

@@ -2,9 +2,6 @@
 
 A small Notation3 (N3) parser in Rust with a minimal forward-chaining reasoner.
 
-This project started as a learning/utility parser for N3 (a superset of Turtle)
-and includes enough semantics to run classic examples like “Socrates is mortal”.
-
 ## Features
 
 - Parses a practical subset of N3:
