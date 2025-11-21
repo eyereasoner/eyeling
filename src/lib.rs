@@ -15,5 +15,6 @@ pub use reasoner::{
     Atom,
     GTriple,
     RulePat,
+    PT,
 };
 

@@ -1,0 +1,3 @@
+@prefix : <http://example.org/#>.
+
+5 :isIndeedMoreInterestingThan 3 .

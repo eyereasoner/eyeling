@@ -29,8 +29,8 @@ pub enum PT {
 
 #[derive(Debug, Clone)]
 pub struct RulePat {
-    premise: Vec<(PT, PT, PT)>,
-    conclusion: Vec<(PT, PT, PT)>,
+    pub premise: Vec<(PT, PT, PT)>,
+    pub conclusion: Vec<(PT, PT, PT)>,
 }
 
 /// Extract ground triples + Horn-like rules from a resolved Document.

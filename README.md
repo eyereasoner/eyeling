@@ -2,9 +2,9 @@
 
 A small Notation3 (N3) parser in Rust with a lightweight reasoner.
 
-`eyelite` parses a practical subset of N3 (a superset of Turtle) and supports
-both forward- and backward-chaining over simple Horn-style rules, plus a tiny
-set of N3 built-ins (currently enough for classic tutorial examples).
+`eyelite` parses a practical subset of N3 (a superset of Turtle)
+and supports forward- and backward-chaining over simple Horn-style rules,
+plus a tiny set of N3 built-ins (currently enough for classic tutorial examples).
 
 ## Features
 
@@ -19,19 +19,16 @@ set of N3 built-ins (currently enough for classic tutorial examples).
   - backward rules `{C} <= {P}.`
 - Practical prefixed names + IRIs (simplified PN_* for now)
 
-### Prefix environment + IRI resolution
-- Expands prefixed names to full IRIs
-
 ### Reasoning
 - **Forward chaining** to fixpoint over Horn-like rules
 - **Backward chaining** (goal-directed) with simple SLD-style search
-- Built-in predicate evaluation (toy subset):
-  - `math:greaterThan` (used in backward tutorial examples)
+- Built-in predicate evaluation:
+  - `math:greaterThan` numeric comparison
 
 ## Non-goals / limitations (for now)
 
 - Grammar is intentionally simplified vs. the full W3C N3 EBNF.
-- No proof objects, query variables output formatting, or full built-ins catalog yet.
+- No proof objects, no full builtin catalog yet.
 - No special semantics for paths `!`/`^`, inverse `<-`, etc. in reasoning.
 - Quoted-formula pattern matching in rules is not implemented (premises are treated as normal triples).
 
@@ -44,73 +41,100 @@ This is meant to be small, hackable, and useful for experiments.
 - `src/ast.rs` — AST types
 - `src/resolve.rs` — prefix env + prefixed-name/IRI expansion
 - `src/reasoner.rs` — forward + backward chaining + builtins
-- `src/bin/quick_test.rs` — parse a file and dump the AST
-- `src/bin/socrates.rs` — runs the Socrates forward-chaining example
-- `src/bin/backward_demo.rs` — runs a backward-rule + builtin query demo
+- `src/bin/eyelite.rs` — generic CLI (parse + reason + print forward derivations)
 
 ## Quick start
 
-### Run the Socrates example (forward chaining)
+### Run eyelite on a file
 
 ```bash
-cargo run --release --bin socrates
+cargo run --release --bin eyelite -- path/to/file.n3
+# or after building:
+target/release/eyelite path/to/file.n3
 ```
 
-Expected output includes:
+`eyelite` outputs **only forward-rule derivations** (not the original facts),
+printed as N3/Turtle with a default `:` prefix when available.
+Predicates equal to `rdf:type` are printed using `a`.
 
-```
-Entails Socrates mortal? true
-```
+### Example: Socrates (forward chaining)
 
-### Run the backward-rule + builtin example
-
-Given `rules.n3`:
+Input:
 
 ```n3
-@prefix math: <http://www.w3.org/2000/10/swap/math#>.
-@prefix : <http://example.org/#>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix : <http://example.org/socrates#>.
+
+:Socrates a :Human.
+:Human rdfs:subClassOf :Mortal.
 
 {
-    ?X :moreInterestingThan ?Y.
-} <= {
-    ?X math:greaterThan ?Y.
-}.
-```
-
-and `query.n3`:
-
-```n3
-@prefix : <http://example.org/#>.
-
-{
-    5 :moreInterestingThan 3.
+  ?A rdfs:subClassOf ?B.
+  ?S a ?A.
 } => {
-    5 :moreInterestingThan 3.
+  ?S a ?B.
 }.
 ```
 
 Run:
 
 ```bash
-cargo run --release --bin backward_demo -- rules.n3 query.n3
+target/release/eyelite input/socrates.n3
 ```
 
-Expected output:
+Output:
+
+```n3
+@prefix : <http://example.org/socrates#>.
+
+:Socrates a :Mortal .
+```
+
+### Example: Backward rule + builtin seeding
+
+Input:
+
+```n3
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix : <http://example.org/#>.
+
+# something is more interesting if it is greater
+{
+    ?X :moreInterestingThan ?Y.
+} <= {
+    ?X math:greaterThan ?Y.
+}.
+
+# derivation
+{
+    5 :moreInterestingThan 3.
+} => {
+    5 :isIndeedMoreInterestingThan 3.
+}.
+```
+
+Run:
+
+```bash
+target/release/eyelite input/backward_demo.n3
+```
+
+Output:
 
 ```n3
 @prefix : <http://example.org/#>.
 
-5 :moreInterestingThan 3 .
+5 :isIndeedMoreInterestingThan 3 .
 ```
 
 ## Under the hood
 
 ### Parsing pipeline
 
-1. **Pest grammar (`n3.pest`)** tokenizes and parses N3 into a parse tree.
-2. **AST builder (`parser.rs`)** converts the parse tree into `ast.rs` structures:
+1. **Pest grammar (`n3.pest`)** parses N3 into a parse tree.
+2. **AST builder (`parser.rs`)** converts it into `ast.rs` structures:
 
-   * expands `;` and `,` predicate/object lists into individual triples
+   * expands `;` and `,` lists into individual triples
    * preserves formulas and implications as structured nodes
 
 ### Prefix resolution
@@ -118,7 +142,8 @@ Expected output:
 `resolve.rs` builds a `PrefixEnv` from directives:
 
 * reads explicit `@prefix` / `@base`
-* rewrites all `Term::PrefixedName` into full `Term::Iri` before reasoning
+* rewrites all `Term::PrefixedName` into full `Term::Iri`
+* does **not** invent missing prefix IRIs
 
 ### Rule extraction
 
@@ -129,35 +154,51 @@ Expected output:
   Backward rules `{C} <= {P}` are flipped to forward orientation internally (`P => C`)
   so both engines can use them.
 
+### Backward seeding for forward runs
+
+The CLI (`src/bin/eyelite.rs`) runs a small preparatory step:
+
+* for each **ground premise** of a forward rule, it tries to prove it using backward chaining
+* successful ground premises are added to the fact set
+* then forward chaining runs on forward rules only
+
+This is why backward rules + builtins can enable forward derivations.
+
 ### Forward chaining
 
-A naive fixpoint algorithm:
+Naive fixpoint:
 
-* match rule premises against the current fact set
+* match forward-rule premises against current facts
 * produce bindings
 * instantiate conclusions into new facts
 * repeat until no new facts appear
 
-Great for small examples, simple and predictable.
-
 ### Backward chaining
 
-A tiny goal-directed solver:
+Goal-directed solver:
 
-* queries are encoded as `{Q} => {Q}.`
-* tries to prove each goal by:
+* tries to prove a goal by:
 
-  1. matching existing facts
+  1. matching an existing fact
   2. matching a rule conclusion, then recursively proving that rule’s premise
 * freshens rule variables to avoid collisions
-* includes a recursion depth guard to prevent runaway loops
+* includes a recursion depth guard
 
 ### Builtins
 
-Built-in predicates are recognized by their expanded IRI (e.g., `math:greaterThan`)
-and evaluated during premise/goal checking instead of matched to facts.
+Built-in predicates are recognized by expanded IRI
+and evaluated during premise/goal checking instead of being matched to facts.
 
 Current support:
 
 * `math:greaterThan` numeric comparison
+
+## Extending
+
+Easy next steps:
+
+* tighten PN_* / IRIREF rules to spec
+* add more built-ins from the N3 Builtins report
+* add nicer output formatting with multiple prefixes
+* quoted-formula reasoning (`log:includes`, etc.)
 

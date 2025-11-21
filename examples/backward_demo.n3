@@ -14,3 +14,11 @@
 } <= {
     ?X math:greaterThan ?Y.
 }.
+
+# derivation (forward)
+{
+    5 :moreInterestingThan 3.
+} => {
+    5 :isIndeedMoreInterestingThan 3.
+}.
+
