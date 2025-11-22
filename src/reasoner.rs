@@ -548,18 +548,93 @@ fn pred_to_pt(p: &Predicate) -> Option<PT> {
     }
 }
 
-//
 // ------------------------- Builtins (forward + backward) -------------------------
-//
 
 fn is_builtin_pat(p: &(PT, PT, PT)) -> bool {
+    let pred = match &p.1 {
+        PT::Const(Atom::Iri(i)) => i.as_str(),
+        _ => return false,
+    };
     matches!(
-        &p.1,
-        PT::Const(Atom::Iri(i))
-            if i == "http://www.w3.org/2000/10/swap/math#greaterThan"
+        pred,
+        // tests
+        "http://www.w3.org/2000/10/swap/math#greaterThan"
+            | "http://www.w3.org/2000/10/swap/math#lessThan"
+            // functions
+            | "http://www.w3.org/2000/10/swap/math#difference"
+            | "http://www.w3.org/2000/10/swap/math#sum"
+            | "http://www.w3.org/2000/10/swap/math#product"
+            | "http://www.w3.org/2000/10/swap/math#quotient"
+            | "http://www.w3.org/2000/10/swap/math#exponentiation"
     )
 }
 
+fn num_eq(a: f64, b: f64) -> bool {
+    (a - b).abs() <= 1e-9
+}
+
+fn format_num(n: f64) -> String {
+    if num_eq(n.fract(), 0.0) {
+        format!("{}", n as i64)
+    } else {
+        // default formatting is fine for now
+        n.to_string()
+    }
+}
+
+fn atom_to_num(a: &Atom) -> Option<f64> {
+    match a {
+        Atom::Literal(s) => s.parse::<f64>().ok(),
+        _ => None,
+    }
+}
+
+fn list2_nums(a: &Atom) -> Option<(f64, f64)> {
+    match a {
+        Atom::List(xs) if xs.len() == 2 => {
+            let x0 = atom_to_num(&xs[0])?;
+            let x1 = atom_to_num(&xs[1])?;
+            Some((x0, x1))
+        }
+        _ => None,
+    }
+}
+
+// bind/check output for forward env (Atom bindings)
+fn bind_output_num_forward(obj: &PT, val: f64, env: &mut HashMap<String, Atom>) -> Option<()> {
+    match obj {
+        PT::Const(Atom::Literal(s)) => {
+            let ov = s.parse::<f64>().ok()?;
+            if num_eq(ov, val) { Some(()) } else { None }
+        }
+        PT::Var(v) => {
+            if let Some(bound) = env.get(v) {
+                let bv = atom_to_num(bound)?;
+                if num_eq(bv, val) { Some(()) } else { None }
+            } else {
+                env.insert(v.clone(), Atom::Literal(format_num(val)));
+                Some(())
+            }
+        }
+        _ => None,
+    }
+}
+
+// bind/check output for backward env (PT-term bindings)
+fn bind_output_num_bwd(obj: &PT, val: f64, env: &mut BEnv) -> Option<()> {
+    match obj {
+        PT::Const(Atom::Literal(s)) => {
+            let ov = s.parse::<f64>().ok()?;
+            if num_eq(ov, val) { Some(()) } else { None }
+        }
+        PT::Var(v) => {
+            bind_var_term_bwd(v, PT::Const(Atom::Literal(format_num(val))), env)
+        }
+        _ => None,
+    }
+}
+
+// ---------- forward builtins ----------
 fn eval_builtin_pat(p: &(PT, PT, PT), env: &mut HashMap<String, Atom>) -> Option<()> {
     let pred = match &p.1 {
         PT::Const(Atom::Iri(i)) => i.as_str(),
@@ -567,17 +642,50 @@ fn eval_builtin_pat(p: &(PT, PT, PT), env: &mut HashMap<String, Atom>) -> Option
     };
 
     match pred {
+        // tests
         "http://www.w3.org/2000/10/swap/math#greaterThan" => {
             let a = inst_term(&p.0, env)?;
             let b = inst_term(&p.2, env)?;
-            let av = atom_to_num(&a)?;
-            let bv = atom_to_num(&b)?;
-            if av > bv { Some(()) } else { None }
+            if atom_to_num(&a)? > atom_to_num(&b)? { Some(()) } else { None }
         }
+        "http://www.w3.org/2000/10/swap/math#lessThan" => {
+            let a = inst_term(&p.0, env)?;
+            let b = inst_term(&p.2, env)?;
+            if atom_to_num(&a)? < atom_to_num(&b)? { Some(()) } else { None }
+        }
+
+        // functions over 2-arg list in subject
+        "http://www.w3.org/2000/10/swap/math#difference" => {
+            let sub = inst_term(&p.0, env)?;
+            let (x, y) = list2_nums(&sub)?;
+            bind_output_num_forward(&p.2, x - y, env)
+        }
+        "http://www.w3.org/2000/10/swap/math#sum" => {
+            let sub = inst_term(&p.0, env)?;
+            let (x, y) = list2_nums(&sub)?;
+            bind_output_num_forward(&p.2, x + y, env)
+        }
+        "http://www.w3.org/2000/10/swap/math#product" => {
+            let sub = inst_term(&p.0, env)?;
+            let (x, y) = list2_nums(&sub)?;
+            bind_output_num_forward(&p.2, x * y, env)
+        }
+        "http://www.w3.org/2000/10/swap/math#quotient" => {
+            let sub = inst_term(&p.0, env)?;
+            let (x, y) = list2_nums(&sub)?;
+            bind_output_num_forward(&p.2, x / y, env)
+        }
+        "http://www.w3.org/2000/10/swap/math#exponentiation" => {
+            let sub = inst_term(&p.0, env)?;
+            let (x, y) = list2_nums(&sub)?;
+            bind_output_num_forward(&p.2, x.powf(y), env)
+        }
+
         _ => None,
     }
 }
 
+// ---------- backward builtins ----------
 fn eval_builtin_pat_bwd(p: &(PT, PT, PT), env: &mut BEnv) -> Option<()> {
     let pred = match &p.1 {
         PT::Const(Atom::Iri(i)) => i.as_str(),
@@ -585,20 +693,45 @@ fn eval_builtin_pat_bwd(p: &(PT, PT, PT), env: &mut BEnv) -> Option<()> {
     };
 
     match pred {
+        // tests
         "http://www.w3.org/2000/10/swap/math#greaterThan" => {
             let a = pt_to_atom_bwd(&p.0, env)?;
             let b = pt_to_atom_bwd(&p.2, env)?;
-            let av = atom_to_num(&a)?;
-            let bv = atom_to_num(&b)?;
-            if av > bv { Some(()) } else { None }
+            if atom_to_num(&a)? > atom_to_num(&b)? { Some(()) } else { None }
         }
-        _ => None,
-    }
-}
+        "http://www.w3.org/2000/10/swap/math#lessThan" => {
+            let a = pt_to_atom_bwd(&p.0, env)?;
+            let b = pt_to_atom_bwd(&p.2, env)?;
+            if atom_to_num(&a)? < atom_to_num(&b)? { Some(()) } else { None }
+        }
 
-fn atom_to_num(a: &Atom) -> Option<f64> {
-    match a {
-        Atom::Literal(s) => s.parse::<f64>().ok(),
+        // functions over 2-arg list in subject
+        "http://www.w3.org/2000/10/swap/math#difference" => {
+            let sub = pt_to_atom_bwd(&p.0, env)?;
+            let (x, y) = list2_nums(&sub)?;
+            bind_output_num_bwd(&p.2, x - y, env)
+        }
+        "http://www.w3.org/2000/10/swap/math#sum" => {
+            let sub = pt_to_atom_bwd(&p.0, env)?;
+            let (x, y) = list2_nums(&sub)?;
+            bind_output_num_bwd(&p.2, x + y, env)
+        }
+        "http://www.w3.org/2000/10/swap/math#product" => {
+            let sub = pt_to_atom_bwd(&p.0, env)?;
+            let (x, y) = list2_nums(&sub)?;
+            bind_output_num_bwd(&p.2, x * y, env)
+        }
+        "http://www.w3.org/2000/10/swap/math#quotient" => {
+            let sub = pt_to_atom_bwd(&p.0, env)?;
+            let (x, y) = list2_nums(&sub)?;
+            bind_output_num_bwd(&p.2, x / y, env)
+        }
+        "http://www.w3.org/2000/10/swap/math#exponentiation" => {
+            let sub = pt_to_atom_bwd(&p.0, env)?;
+            let (x, y) = list2_nums(&sub)?;
+            bind_output_num_bwd(&p.2, x.powf(y), env)
+        }
+
         _ => None,
     }
 }
