@@ -7,8 +7,6 @@ A small Notation3 (N3) reasoner in Rust.
 - Uses **backward chaining** rules (`<=`) only to help satisfy forward premises (EYE-style hybrid).
 - Outputs **only newly forward-derived triples**, in N3.
 
-This is a lightweight, hackable interpreter inspired by EYE / Eyelite, not a full N3 implementation.
-
 ## Build and run all examples
 
 ```sh
