@@ -1,0 +1,103 @@
+# ==================================================
+# Running examples/backward_demo.n3
+# --------------------------------------------------
+@prefix : <http://example.org/#> .
+
+5 :isIndeedMoreInterestingThan 3 .
+
+# ==================================================
+# Running examples/complex.n3
+# --------------------------------------------------
+@prefix : <http://example.org/#> .
+@prefix complex: <https://eyereasoner.github.io/eye/complex#> .
+
+:test :is { ((-1 0) (0.5 0)) complex:exponentiation (0.00000000000000006123233995736766 1) . ((2.718281828459045 0) (0 3.141592653589793)) complex:exponentiation (-1 0.00000000000000012246467991473532) . ((0 1) (0 1)) complex:exponentiation (0.20787957635076193 0) . ((2.718281828459045 0) (-1.57079632679 0)) complex:exponentiation (0.20787957635177984 0) . (2 0) complex:asin (1.5707963267948966 1.3169578969248166) . (2 0) complex:acos (0 -1.3169578969248166) . } .
+
+# ==================================================
+# Running examples/french_cities.n3
+# --------------------------------------------------
+@prefix : <http://www.agfa.com/w3c/euler/graph.axiom#> .
+
+:paris :path :orleans .
+:paris :path :chartres .
+:paris :path :amiens .
+:orleans :path :blois .
+:orleans :path :bourges .
+:blois :path :tours .
+:chartres :path :lemans .
+:lemans :path :angers .
+:lemans :path :tours .
+:angers :path :nantes .
+:paris :path :blois .
+:paris :path :bourges .
+:paris :path :lemans .
+:orleans :path :tours .
+:chartres :path :angers .
+:chartres :path :tours .
+:lemans :path :nantes .
+:paris :path :tours .
+:paris :path :angers .
+:chartres :path :nantes .
+:paris :path :nantes .
+
+# ==================================================
+# Running examples/lldm.n3
+# --------------------------------------------------
+@prefix : <http://www.agfa.com/w3c/2002/10/medicad/op/lldmP#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+:meas47 :dx12Cm -35 .
+:meas47 :dy12Cm 2.2 .
+:meas47 :dy13Cm -22 .
+:meas47 :dy24Cm -22.9 .
+:meas47 :cL1 -0.06285714285714286 .
+:meas47 :dL3m -15.909090909090908 .
+:meas47 :cL3 15.909090909090908 .
+:meas47 :pL1x1Cm -0.6348571428571429 .
+:meas47 :pL1x2Cm -2.834857142857143 .
+:meas47 :pL3x3Cm 57.27272727272727 .
+:meas47 :pL3x4Cm 870.2272727272727 .
+:meas47 :dd13Cm -57.90758441558442 .
+:meas47 :ddy13Cm -35.90758441558442 .
+:meas47 :dd24Cm -873.0621298701299 .
+:meas47 :ddy24Cm -850.1621298701299 .
+:meas47 :ddL13 -15.97194805194805 .
+:meas47 :p5xCm 2.248165615039355 .
+:meas47 :p6xCm 53.22845573407923 .
+:meas47 :dx51Cm -7.851834384960645 .
+:meas47 :dx53Cm -1.351834384960645 .
+:meas47 :dx62Cm 8.128455734079232 .
+:meas47 :dx64Cm -1.4715442659207696 .
+:meas47 :pL1dx51Cm 0.4935438756260977 .
+:meas47 :pL1dx62Cm -0.5109315032849803 .
+:meas47 :p5yCm 8.293543875626098 .
+:meas47 :p6yCm 5.0890684967150195 .
+:meas47 :sdx53Cm2 1.8274562043619251 .
+:meas47 :sdx64Cm2 2.1654425265642967 .
+:meas47 :dy53Cm -21.506456124373905 .
+:meas47 :dy64Cm -23.41093150328498 .
+:meas47 :sdy53Cm2 462.52765502961984 .
+:meas47 :sdy64Cm2 548.0717138515012 .
+:meas47 :ssd53Cm2 464.35511123398175 .
+:meas47 :ssd64Cm2 550.2371563780655 .
+:meas47 :d53Cm 21.548900464617255 .
+:meas47 :d64Cm 23.45713444515475 .
+:meas47 :dCm -1.9082339805374957 .
+:meas47 rdf:type :LLDAlarm .
+
+# ==================================================
+# Running examples/peano.n3
+# --------------------------------------------------
+@prefix : <http://example.org/#> .
+
+(:s (:s (:s (:s (:s 0))))) :peanoFactorial (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s (:s 0)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))) .
+
+# ==================================================
+# Running examples/socrates.n3
+# --------------------------------------------------
+@prefix : <http://example.org/socrates#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+:Socrates rdf:type :Mortal .
+
+# All examples finished OK.

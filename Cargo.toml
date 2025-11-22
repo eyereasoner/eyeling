@@ -2,9 +2,7 @@
 name = "eyelite"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
 
 [dependencies]
-pest = "2.7"
-pest_derive = "2.7"
-thiserror = "1.0"
 
