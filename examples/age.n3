@@ -1,0 +1,29 @@
+# -----------
+# Age checker
+# -----------
+#
+# Is the age of a person above some duration?
+
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
+@prefix time: <http://www.w3.org/2000/10/swap/time#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix : <https://example.org/#>.
+
+# person data
+:patH :birthDay "1944-08-21"^^xsd:date.
+
+# is the age of a person above some duration?
+{ ?S :ageAbove ?A } <= {
+    ?S :birthDay ?B.
+    "" time:localTime ?D.
+    (?D ?B) math:difference ?F.
+    ?F math:greaterThan ?A.
+}.
+
+# test
+{
+    ?S :ageAbove "P80Y"^^xsd:duration.
+} => {
+    :test :is true.
+}.

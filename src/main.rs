@@ -1,15 +1,17 @@
 // Minimal N3 forward + backward chainer (practical subset).
 //
 // Behavior:
-//   - Parses a pragmatic N3 subset.
-//   - Uses backward rules (<=) as goal-directed "user builtins"
-//     during matching of forward rule premises.
-//   - Runs forward chaining to fixpoint.
-//   - Prints ONLY newly forward-derived triples, as N3.
+// - Parses a pragmatic N3 subset.
+// - Uses backward rules (<=) as goal-directed "user builtins"
+//   during matching of forward rule premises.
+// - Runs forward chaining to fixpoint.
+// - Prints ONLY newly forward-derived triples, as N3.
 
 use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs;
+
+use chrono::{DateTime, Local, NaiveDate, TimeZone, Utc};
 
 const RDF_NS: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 const RDFS_NS: &str = "http://www.w3.org/2000/01/rdf-schema#";
@@ -18,13 +20,14 @@ const LOG_NS: &str = "http://www.w3.org/2000/10/swap/log#";
 const MATH_NS: &str = "http://www.w3.org/2000/10/swap/math#";
 const STRING_NS: &str = "http://www.w3.org/2000/10/swap/string#";
 const LIST_NS: &str = "http://www.w3.org/2000/10/swap/list#";
+const TIME_NS: &str = "http://www.w3.org/2000/10/swap/time#";
 
 const MAX_BACKWARD_DEPTH: usize = 2000;
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 enum Term {
     Iri(String),
-    Literal(String), // numbers, booleans, or quoted strings (kept raw)
+    Literal(String), // numbers, booleans, or quoted strings (kept raw, may include ^^<dt>)
     Var(String),
     Blank(String),
     List(Vec<Term>),
@@ -66,6 +69,7 @@ enum TokenKind {
     IriRef(String),
     Var(String),
     Literal(String),
+    HatHat,
     EOF,
 }
 
@@ -91,6 +95,7 @@ fn lex(input: &str) -> Vec<Token> {
             chars.next();
             continue;
         }
+
         if c == '#' {
             // comment to end of line
             while let Some(cc) = chars.next() {
@@ -106,17 +111,22 @@ fn lex(input: &str) -> Vec<Token> {
             chars.next();
             if let Some('>') = chars.peek() {
                 chars.next();
-                tokens.push(Token { kind: TokenKind::OpImplies });
+                tokens.push(Token {
+                    kind: TokenKind::OpImplies,
+                });
                 continue;
             } else {
                 panic!("Unexpected '='");
             }
         }
+
         if c == '<' {
             chars.next();
             if let Some('=') = chars.peek() {
                 chars.next();
-                tokens.push(Token { kind: TokenKind::OpImpliedBy });
+                tokens.push(Token {
+                    kind: TokenKind::OpImpliedBy,
+                });
                 continue;
             }
             // IRIREF: <...>
@@ -127,21 +137,91 @@ fn lex(input: &str) -> Vec<Token> {
                 }
                 iri.push(cc);
             }
-            tokens.push(Token { kind: TokenKind::IriRef(iri) });
+            tokens.push(Token {
+                kind: TokenKind::IriRef(iri),
+            });
             continue;
+        }
+
+        // datatype operator ^^
+        if c == '^' {
+            chars.next();
+            if let Some('^') = chars.peek() {
+                chars.next();
+                tokens.push(Token {
+                    kind: TokenKind::HatHat,
+                });
+                continue;
+            } else {
+                panic!("Unexpected '^' (did you mean ^^?)");
+            }
         }
 
         // punctuation
         match c {
-            '{' => { chars.next(); tokens.push(Token { kind: TokenKind::LBrace }); continue; }
-            '}' => { chars.next(); tokens.push(Token { kind: TokenKind::RBrace }); continue; }
-            '(' => { chars.next(); tokens.push(Token { kind: TokenKind::LParen }); continue; }
-            ')' => { chars.next(); tokens.push(Token { kind: TokenKind::RParen }); continue; }
-            '[' => { chars.next(); tokens.push(Token { kind: TokenKind::LBracket }); continue; }
-            ']' => { chars.next(); tokens.push(Token { kind: TokenKind::RBracket }); continue; }
-            ';' => { chars.next(); tokens.push(Token { kind: TokenKind::Semicolon }); continue; }
-            ',' => { chars.next(); tokens.push(Token { kind: TokenKind::Comma }); continue; }
-            '.' => { chars.next(); tokens.push(Token { kind: TokenKind::Dot }); continue; }
+            '{' => {
+                chars.next();
+                tokens.push(Token {
+                    kind: TokenKind::LBrace,
+                });
+                continue;
+            }
+            '}' => {
+                chars.next();
+                tokens.push(Token {
+                    kind: TokenKind::RBrace,
+                });
+                continue;
+            }
+            '(' => {
+                chars.next();
+                tokens.push(Token {
+                    kind: TokenKind::LParen,
+                });
+                continue;
+            }
+            ')' => {
+                chars.next();
+                tokens.push(Token {
+                    kind: TokenKind::RParen,
+                });
+                continue;
+            }
+            '[' => {
+                chars.next();
+                tokens.push(Token {
+                    kind: TokenKind::LBracket,
+                });
+                continue;
+            }
+            ']' => {
+                chars.next();
+                tokens.push(Token {
+                    kind: TokenKind::RBracket,
+                });
+                continue;
+            }
+            ';' => {
+                chars.next();
+                tokens.push(Token {
+                    kind: TokenKind::Semicolon,
+                });
+                continue;
+            }
+            ',' => {
+                chars.next();
+                tokens.push(Token {
+                    kind: TokenKind::Comma,
+                });
+                continue;
+            }
+            '.' => {
+                chars.next();
+                tokens.push(Token {
+                    kind: TokenKind::Dot,
+                });
+                continue;
+            }
             '"' => {
                 // string literal
                 chars.next();
@@ -159,7 +239,9 @@ fn lex(input: &str) -> Vec<Token> {
                     }
                     s.push(cc);
                 }
-                tokens.push(Token { kind: TokenKind::Literal(format!("\"{}\"", s)) });
+                tokens.push(Token {
+                    kind: TokenKind::Literal(format!("\"{}\"", s)),
+                });
                 continue;
             }
             '?' => {
@@ -169,9 +251,13 @@ fn lex(input: &str) -> Vec<Token> {
                     if is_name_char(cc) {
                         name.push(cc);
                         chars.next();
-                    } else { break; }
+                    } else {
+                        break;
+                    }
                 }
-                tokens.push(Token { kind: TokenKind::Var(name) });
+                tokens.push(Token {
+                    kind: TokenKind::Var(name),
+                });
                 continue;
             }
             '@' => {
@@ -181,11 +267,17 @@ fn lex(input: &str) -> Vec<Token> {
                     if cc.is_alphabetic() {
                         word.push(cc);
                         chars.next();
-                    } else { break; }
+                    } else {
+                        break;
+                    }
                 }
                 match word.as_str() {
-                    "prefix" => tokens.push(Token { kind: TokenKind::AtPrefix }),
-                    "base" => tokens.push(Token { kind: TokenKind::AtBase }),
+                    "prefix" => tokens.push(Token {
+                        kind: TokenKind::AtPrefix,
+                    }),
+                    "base" => tokens.push(Token {
+                        kind: TokenKind::AtBase,
+                    }),
                     _ => panic!("Unknown directive @{}", word),
                 }
                 continue;
@@ -203,7 +295,6 @@ fn lex(input: &str) -> Vec<Token> {
         {
             let mut num = String::new();
             num.push(chars.next().unwrap());
-
             while let Some(&cc) = chars.peek() {
                 if cc.is_ascii_digit() {
                     num.push(cc);
@@ -224,33 +315,44 @@ fn lex(input: &str) -> Vec<Token> {
                 }
                 break;
             }
-
-            tokens.push(Token { kind: TokenKind::Literal(num) });
+            tokens.push(Token {
+                kind: TokenKind::Literal(num),
+            });
             continue;
         }
 
-        // ident / number / keyword
+        // ident / keyword
         let mut word = String::new();
         while let Some(&cc) = chars.peek() {
             if is_name_char(cc) {
                 word.push(cc);
                 chars.next();
-            } else { break; }
+            } else {
+                break;
+            }
         }
         if word.is_empty() {
             panic!("Unexpected char: {}", c);
         }
 
         if word == "true" || word == "false" {
-            tokens.push(Token { kind: TokenKind::Literal(word) });
+            tokens.push(Token {
+                kind: TokenKind::Literal(word),
+            });
         } else if word.chars().all(|ch| ch.is_ascii_digit() || ch == '.' || ch == '-') {
-            tokens.push(Token { kind: TokenKind::Literal(word) });
+            tokens.push(Token {
+                kind: TokenKind::Literal(word),
+            });
         } else {
-            tokens.push(Token { kind: TokenKind::Ident(word) });
+            tokens.push(Token {
+                kind: TokenKind::Ident(word),
+            });
         }
     }
 
-    tokens.push(Token { kind: TokenKind::EOF });
+    tokens.push(Token {
+        kind: TokenKind::EOF,
+    });
     tokens
 }
 
@@ -269,6 +371,7 @@ impl PrefixEnv {
         map.insert("math".to_string(), MATH_NS.to_string());
         map.insert("string".to_string(), STRING_NS.to_string());
         map.insert("list".to_string(), LIST_NS.to_string());
+        map.insert("time".to_string(), TIME_NS.to_string());
         map.insert("".to_string(), "".to_string()); // default : prefix
         PrefixEnv { map }
     }
@@ -281,7 +384,11 @@ impl PrefixEnv {
         if let Some(idx) = q.find(':') {
             let (p, local) = q.split_at(idx);
             let local = &local[1..]; // skip ':'
-            let base = self.map.get(p).cloned().unwrap_or_else(|| "".to_string());
+            let base = self
+                .map
+                .get(p)
+                .cloned()
+                .unwrap_or_else(|| "".to_string());
             if !base.is_empty() {
                 return format!("{}{}", base, local);
             }
@@ -292,10 +399,14 @@ impl PrefixEnv {
     fn shrink_iri(&self, iri: &str) -> Option<String> {
         let mut best: Option<(String, String)> = None; // (prefix, local)
         for (p, base) in &self.map {
-            if base.is_empty() { continue; }
+            if base.is_empty() {
+                continue;
+            }
             if iri.starts_with(base) {
                 let local = &iri[base.len()..];
-                if local.is_empty() { continue; }
+                if local.is_empty() {
+                    continue;
+                }
                 let cand = (p.clone(), local.to_string());
                 if best.is_none() || cand.1.len() < best.as_ref().unwrap().1.len() {
                     best = Some(cand);
@@ -303,13 +414,16 @@ impl PrefixEnv {
             }
         }
         best.map(|(p, local)| {
-            if p.is_empty() { format!(":{}", local) } else { format!("{}:{}", p, local) }
+            if p.is_empty() {
+                format!(":{}", local)
+            } else {
+                format!("{}:{}", p, local)
+            }
         })
     }
 
     fn prefixes_used_for_output(&self, triples: &[Triple]) -> Vec<(String, String)> {
         let mut used = HashSet::new();
-
         for t in triples {
             // Collect IRIs from subject + object always.
             // Collect IRIs from predicate only if it won't be printed as `a`.
@@ -322,7 +436,9 @@ impl PrefixEnv {
 
             for iri in iris {
                 for (p, base) in &self.map {
-                    if base.is_empty() { continue; }
+                    if base.is_empty() {
+                        continue;
+                    }
                     if iri.starts_with(base) {
                         used.insert(p.clone());
                     }
@@ -330,7 +446,8 @@ impl PrefixEnv {
             }
         }
 
-        let mut v: Vec<(String, String)> = used.into_iter()
+        let mut v: Vec<(String, String)> = used
+            .into_iter()
             .filter_map(|p| self.map.get(&p).map(|b| (p, b.clone())))
             .collect();
         v.sort_by(|a, b| a.0.cmp(&b.0));
@@ -354,9 +471,7 @@ fn collect_iris_in_term(t: &Term) -> Vec<String> {
                 out.extend(collect_iris_in_term(&tr.o));
             }
         }
-        Term::Literal(_)
-        | Term::Var(_)
-        | Term::Blank(_) => {}
+        Term::Literal(_) | Term::Var(_) | Term::Blank(_) => {}
     }
     out
 }
@@ -370,7 +485,12 @@ struct Parser {
 
 impl Parser {
     fn new(toks: Vec<Token>) -> Self {
-        Parser { toks, pos: 0, prefixes: PrefixEnv::new(), blank_counter: 0 }
+        Parser {
+            toks,
+            pos: 0,
+            prefixes: PrefixEnv::new(),
+            blank_counter: 0,
+        }
     }
 
     fn peek(&self) -> &TokenKind {
@@ -390,7 +510,9 @@ impl Parser {
         }
     }
 
-    fn parse_document(&mut self) -> (PrefixEnv, Vec<Triple>, Vec<Rule>, Vec<Rule>) {
+    fn parse_document(
+        &mut self,
+    ) -> (PrefixEnv, Vec<Triple>, Vec<Rule>, Vec<Rule>) {
         let mut triples = vec![];
         let mut forward_rules = vec![];
         let mut backward_rules = vec![];
@@ -430,10 +552,16 @@ impl Parser {
 
                             // normalize explicit log:implies / log:impliedBy at top-level
                             for tr in more.drain(..) {
-                                if is_log_implies(&tr.p) && matches!(tr.s, Term::Formula(_)) && matches!(tr.o, Term::Formula(_)) {
+                                if is_log_implies(&tr.p)
+                                    && matches!(tr.s, Term::Formula(_))
+                                    && matches!(tr.o, Term::Formula(_))
+                                {
                                     let r = self.make_rule(tr.s.clone(), tr.o.clone(), true);
                                     forward_rules.push(r);
-                                } else if is_log_implied_by(&tr.p) && matches!(tr.s, Term::Formula(_)) && matches!(tr.o, Term::Formula(_)) {
+                                } else if is_log_implied_by(&tr.p)
+                                    && matches!(tr.s, Term::Formula(_))
+                                    && matches!(tr.o, Term::Formula(_))
+                                {
                                     let r = self.make_rule(tr.s.clone(), tr.o.clone(), false);
                                     backward_rules.push(r);
                                 } else {
@@ -450,12 +578,19 @@ impl Parser {
     }
 
     fn parse_prefix_directive(&mut self) {
-        // @prefix p: <iri>.  OR  @prefix p: .
+        // @prefix p: <...> .
+        // OR @prefix p: .
         let pref = match self.next() {
             TokenKind::Ident(s) => s,
             other => panic!("Expected prefix name, got {:?}", other),
         };
-        let pref_name = if pref.ends_with(':') { pref[..pref.len()-1].to_string() } else { pref };
+
+        let pref_name = if pref.ends_with(':') {
+            pref[..pref.len() - 1].to_string()
+        } else {
+            pref
+        };
+
         // allow optional ':' token already included, so tolerate if next is Ident(":") etc
         // Now parse iri or empty before '.'
         match self.peek() {
@@ -478,12 +613,13 @@ impl Parser {
             }
             other => panic!("Expected IRI after @prefix, got {:?}", other),
         };
+
         self.expect_dot();
         self.prefixes.set(&pref_name, &iri);
     }
 
     fn parse_base_directive(&mut self) {
-        // @base <iri>.
+        // @base <...> .
         let iri = match self.next() {
             TokenKind::IriRef(s) => s,
             TokenKind::Ident(s) => s,
@@ -506,7 +642,25 @@ impl Parser {
                     Term::Iri(s)
                 }
             }
-            TokenKind::Literal(s) => Term::Literal(s),
+            TokenKind::Literal(mut s) => {
+                // Typed literal: "..."^^xsd:date
+                if *self.peek() == TokenKind::HatHat {
+                    self.next(); // consume ^^
+                    let dt_iri = match self.next() {
+                        TokenKind::IriRef(i) => i,
+                        TokenKind::Ident(qn) => {
+                            if qn.contains(':') {
+                                self.prefixes.expand_qname(&qn)
+                            } else {
+                                qn
+                            }
+                        }
+                        other => panic!("Expected datatype after ^^, got {:?}", other),
+                    };
+                    s = format!("{}^^<{}>", s, dt_iri);
+                }
+                Term::Literal(s)
+            }
             TokenKind::Var(v) => Term::Var(v),
             TokenKind::LParen => self.parse_list(),
             TokenKind::LBracket => self.parse_blank(),
@@ -532,6 +686,7 @@ impl Parser {
             self.blank_counter += 1;
             return Term::Blank(format!("_:b{}", self.blank_counter));
         }
+
         // property list: read and discard until ']'
         while *self.peek() != TokenKind::RBracket {
             self.next();
@@ -543,17 +698,22 @@ impl Parser {
 
     fn parse_formula(&mut self) -> Term {
         let mut triples = vec![];
+
         while *self.peek() != TokenKind::RBrace {
             let first = self.parse_term();
+
             match self.peek() {
                 TokenKind::OpImplies | TokenKind::OpImpliedBy => {
                     // nested rules ignored in this tiny subset
                     // consume op, rhs, dot
                     self.next();
                     self.parse_term();
+
                     // In N3, the last '.' inside {...} may be omitted.
                     match self.peek() {
-                        TokenKind::Dot => { self.next(); }        // consume '.'
+                        TokenKind::Dot => {
+                            self.next();
+                        }
                         TokenKind::RBrace => { /* ok, implicit end */ }
                         other => panic!("Expected '.' or '}}', got {:?}", other),
                     }
@@ -563,21 +723,24 @@ impl Parser {
 
                     // In N3, the last '.' inside {...} may be omitted.
                     match self.peek() {
-                        TokenKind::Dot => { self.next(); }        // consume '.'
+                        TokenKind::Dot => {
+                            self.next();
+                        }
                         TokenKind::RBrace => { /* ok, implicit end */ }
                         other => panic!("Expected '.' or '}}', got {:?}", other),
                     }
-
                     triples.append(&mut inner);
                 }
             }
         }
+
         self.next(); // RBrace
         Term::Formula(triples)
     }
 
     fn parse_predicate_object_list(&mut self, subject: Term) -> Vec<Triple> {
         let mut out = vec![];
+
         loop {
             let verb = match self.peek() {
                 TokenKind::Ident(s) if s == "a" => {
@@ -586,20 +749,28 @@ impl Parser {
                 }
                 _ => self.parse_term(),
             };
+
             let objects = self.parse_object_list();
             for o in objects {
-                out.push(Triple { s: subject.clone(), p: verb.clone(), o });
+                out.push(Triple {
+                    s: subject.clone(),
+                    p: verb.clone(),
+                    o,
+                });
             }
 
             match self.peek() {
                 TokenKind::Semicolon => {
                     self.next();
-                    if *self.peek() == TokenKind::Dot { break; }
+                    if *self.peek() == TokenKind::Dot {
+                        break;
+                    }
                     continue;
                 }
                 _ => break,
             }
         }
+
         out
     }
 
@@ -613,18 +784,28 @@ impl Parser {
     }
 
     fn make_rule(&self, left: Term, right: Term, is_forward: bool) -> Rule {
-        let (premise_term, concl_term) = if is_forward { (left, right) } else { (right, left) };
+        let (premise_term, concl_term) = if is_forward {
+            (left, right)
+        } else {
+            (right, left)
+        };
 
         let premise = match premise_term {
             Term::Formula(ts) => ts,
             Term::Literal(lit) if lit == "true" => vec![],
             _ => vec![], // treat non-formula as empty in subset
         };
+
         let conclusion = match concl_term {
             Term::Formula(ts) => ts,
             _ => vec![],
         };
-        Rule { premise, conclusion, is_forward }
+
+        Rule {
+            premise,
+            conclusion,
+            is_forward,
+        }
     }
 }
 
@@ -646,7 +827,9 @@ fn contains_var_term(t: &Term, v: &str) -> bool {
         Term::Var(x) => x == v,
         Term::List(xs) => xs.iter().any(|e| contains_var_term(e, v)),
         Term::Formula(ts) => ts.iter().any(|tr| {
-            contains_var_term(&tr.s, v) || contains_var_term(&tr.p, v) || contains_var_term(&tr.o, v)
+            contains_var_term(&tr.s, v)
+                || contains_var_term(&tr.p, v)
+                || contains_var_term(&tr.o, v)
         }),
         _ => false,
     }
@@ -671,7 +854,6 @@ fn apply_subst_term(t: &Term, s: &Subst) -> Term {
             // Chase var -> var -> ... chains
             let mut cur = Term::Var(v.clone());
             let mut seen: HashSet<String> = HashSet::new();
-
             loop {
                 match &cur {
                     Term::Var(name) => {
@@ -688,22 +870,16 @@ fn apply_subst_term(t: &Term, s: &Subst) -> Term {
                 }
                 break;
             }
-
             // After chasing, still substitute inside composite terms
             match cur {
                 Term::Var(name) => Term::Var(name),
                 other => apply_subst_term(&other, s),
             }
         }
-
-        Term::List(xs) => {
-            Term::List(xs.iter().map(|e| apply_subst_term(e, s)).collect())
-        }
-
+        Term::List(xs) => Term::List(xs.iter().map(|e| apply_subst_term(e, s)).collect()),
         Term::Formula(ts) => {
             Term::Formula(ts.iter().map(|tr| apply_subst_triple(tr, s)).collect())
         }
-
         _ => t.clone(),
     }
 }
@@ -728,7 +904,6 @@ fn unify_term(a: &Term, b: &Term, subst: &Subst) -> Option<Subst> {
                     return Some(subst.clone());
                 }
             }
-
             // occurs check (light)
             if contains_var_term(&t, &v) {
                 return None;
@@ -741,12 +916,16 @@ fn unify_term(a: &Term, b: &Term, subst: &Subst) -> Option<Subst> {
         (Term::Literal(x), Term::Literal(y)) if x == y => Some(subst.clone()),
         (Term::Blank(x), Term::Blank(y)) if x == y => Some(subst.clone()),
         (Term::List(xs), Term::List(ys)) => {
-            if xs.len() != ys.len() { return None; }
+            if xs.len() != ys.len() {
+                return None;
+            }
             let mut s2 = subst.clone();
             for (x, y) in xs.iter().zip(ys.iter()) {
                 if let Some(s3) = unify_term(x, y, &s2) {
                     s2 = s3;
-                } else { return None; }
+                } else {
+                    return None;
+                }
             }
             Some(s2)
         }
@@ -781,7 +960,160 @@ fn format_num(n: f64) -> String {
 }
 
 fn is_builtin_pred(p: &Term) -> bool {
-    matches!(p, Term::Iri(i) if i.starts_with(MATH_NS) || i.starts_with(LOG_NS) || i.starts_with(STRING_NS))
+    matches!(p, Term::Iri(i)
+        if i.starts_with(MATH_NS)
+        || i.starts_with(LOG_NS)
+        || i.starts_with(STRING_NS)
+        || i.starts_with(TIME_NS))
+}
+
+// ----- typed literal / date / duration helpers -----
+
+fn literal_parts(lit: &str) -> (String, Option<String>) {
+    if let Some(idx) = lit.find("^^") {
+        let (lex, rest) = lit.split_at(idx);
+        let mut dt = rest.trim_start_matches("^^").trim().to_string();
+        if dt.starts_with('<') && dt.ends_with('>') {
+            dt = dt[1..dt.len() - 1].to_string();
+        }
+        return (lex.to_string(), Some(dt));
+    }
+    (lit.to_string(), None)
+}
+
+fn strip_quotes(lex: &str) -> String {
+    if lex.starts_with('"') && lex.ends_with('"') && lex.len() >= 2 {
+        lex[1..lex.len() - 1].to_string()
+    } else {
+        lex.to_string()
+    }
+}
+
+fn parse_xsd_date_term(t: &Term) -> Option<NaiveDate> {
+    if let Term::Literal(s) = t {
+        let (lex, dt) = literal_parts(s);
+        let val = strip_quotes(&lex);
+        if dt.as_deref() == Some(&format!("{}date", XSD_NS)) || val.len() == 10 {
+            return NaiveDate::parse_from_str(&val, "%Y-%m-%d").ok();
+        }
+    }
+    None
+}
+
+fn parse_xsd_datetime_term(t: &Term) -> Option<DateTime<Utc>> {
+    if let Term::Literal(s) = t {
+        let (lex, dt) = literal_parts(s);
+        let val = strip_quotes(&lex);
+        if dt.as_deref() == Some(&format!("{}dateTime", XSD_NS)) || val.contains('T') {
+            if let Ok(p) = DateTime::parse_from_rfc3339(&val) {
+                return Some(p.with_timezone(&Utc));
+            }
+        }
+    }
+    None
+}
+
+fn parse_datetime_like(t: &Term) -> Option<DateTime<Utc>> {
+    if let Some(d) = parse_xsd_date_term(t) {
+        let ndt = d.and_hms_opt(0, 0, 0)?;
+        return Some(Utc.from_utc_datetime(&ndt));
+    }
+    parse_xsd_datetime_term(t)
+}
+
+fn parse_iso8601_duration_to_seconds(s: &str) -> Option<f64> {
+    let mut it = s.chars().peekable();
+    if it.next()? != 'P' {
+        return None;
+    }
+
+    let mut num = String::new();
+    let mut in_time = false;
+
+    let mut years = 0.0;
+    let mut months = 0.0;
+    let mut weeks = 0.0;
+    let mut days = 0.0;
+    let mut hours = 0.0;
+    let mut minutes = 0.0;
+    let mut seconds = 0.0;
+
+    while let Some(c) = it.next() {
+        if c == 'T' {
+            in_time = true;
+            continue;
+        }
+        if c.is_ascii_digit() || c == '.' {
+            num.push(c);
+            continue;
+        }
+
+        if num.is_empty() {
+            return None;
+        }
+        let val: f64 = num.parse().ok()?;
+        num.clear();
+
+        match (in_time, c) {
+            (false, 'Y') => years += val,
+            (false, 'M') => months += val,
+            (false, 'W') => weeks += val,
+            (false, 'D') => days += val,
+            (true, 'H') => hours += val,
+            (true, 'M') => minutes += val,
+            (true, 'S') => seconds += val,
+            _ => return None,
+        }
+    }
+
+    // Approximate conversions for comparisons.
+    let total_days = years * 365.2425
+        + months * 30.436875
+        + weeks * 7.0
+        + days
+        + hours / 24.0
+        + minutes / (24.0 * 60.0)
+        + seconds / (24.0 * 3600.0);
+
+    Some(total_days * 86400.0)
+}
+
+fn parse_num_or_duration(t: &Term) -> Option<f64> {
+    if let Some(n) = parse_num(t) {
+        return Some(n);
+    }
+
+    if let Term::Literal(s) = t {
+        let (lex, dt) = literal_parts(s);
+        let val = strip_quotes(&lex);
+
+        if dt.as_deref() == Some(&format!("{}duration", XSD_NS))
+            || val.starts_with('P')
+            || val.starts_with("-P")
+        {
+            let v = val.trim_start_matches('-');
+            let secs = parse_iso8601_duration_to_seconds(v)?;
+            return Some(if val.starts_with('-') { -secs } else { secs });
+        }
+
+        if let Some(dtval) = parse_datetime_like(t) {
+            return Some(dtval.timestamp() as f64);
+        }
+    }
+
+    None
+}
+
+fn format_duration_literal_from_seconds(secs: f64) -> Term {
+    let neg = secs.is_sign_negative();
+    let abs_secs = secs.abs();
+    let days = (abs_secs / 86400.0).round() as i64;
+    let lex = if neg {
+        format!("\"-P{}D\"", days)
+    } else {
+        format!("\"P{}D\"", days)
+    };
+    Term::Literal(format!("{}^^<{}duration>", lex, XSD_NS))
 }
 
 // Evaluate builtin triple under current subst, returning possible new substitutions.
@@ -789,20 +1121,45 @@ fn eval_builtin(goal: &Triple, subst: &Subst) -> Vec<Subst> {
     let g = apply_subst_triple(goal, subst);
 
     match &g.p {
+        // time:localTime
+        Term::Iri(p) if p == &format!("{}localTime", TIME_NS) => {
+            let now = Local::now().to_rfc3339();
+
+            match &g.o {
+                Term::Var(v) => {
+                    let mut s2 = subst.clone();
+                    s2.insert(
+                        v.clone(),
+                        Term::Literal(format!("\"{}\"^^<{}dateTime>", now, XSD_NS)),
+                    );
+                    vec![s2]
+                }
+                Term::Literal(o) => {
+                    let (lex_o, _) = literal_parts(o);
+                    if strip_quotes(&lex_o) == now {
+                        vec![subst.clone()]
+                    } else {
+                        vec![]
+                    }
+                }
+                _ => vec![],
+            }
+        }
+
+        // -------- numeric/duration comparisons --------
+
         Term::Iri(p) if p == &format!("{}greaterThan", MATH_NS) => {
             // Binary form: 5 math:greaterThan 3.
-            if let (Some(a), Some(b)) = (parse_num(&g.s), parse_num(&g.o)) {
-                if a > b {
-                    return vec![subst.clone()];
-                } else {
-                    return vec![];
-                }
+            if let (Some(a), Some(b)) = (parse_num_or_duration(&g.s), parse_num_or_duration(&g.o))
+            {
+                return if a > b { vec![subst.clone()] } else { vec![] };
             }
-
             // List form: (5 3) math:greaterThan true.
             if let Term::List(xs) = &g.s {
                 if xs.len() == 2 {
-                    if let (Some(a), Some(b)) = (parse_num(&xs[0]), parse_num(&xs[1])) {
+                    if let (Some(a), Some(b)) =
+                        (parse_num_or_duration(&xs[0]), parse_num_or_duration(&xs[1]))
+                    {
                         if a > b {
                             return vec![subst.clone()];
                         }
@@ -814,18 +1171,16 @@ fn eval_builtin(goal: &Triple, subst: &Subst) -> Vec<Subst> {
 
         Term::Iri(p) if p == &format!("{}lessThan", MATH_NS) => {
             // Binary form: 3 math:lessThan 5.
-            if let (Some(a), Some(b)) = (parse_num(&g.s), parse_num(&g.o)) {
-                if a < b {
-                    return vec![subst.clone()];
-                } else {
-                    return vec![];
-                }
+            if let (Some(a), Some(b)) = (parse_num_or_duration(&g.s), parse_num_or_duration(&g.o))
+            {
+                return if a < b { vec![subst.clone()] } else { vec![] };
             }
-
             // List form: (3 5) math:lessThan true.
             if let Term::List(xs) = &g.s {
                 if xs.len() == 2 {
-                    if let (Some(a), Some(b)) = (parse_num(&xs[0]), parse_num(&xs[1])) {
+                    if let (Some(a), Some(b)) =
+                        (parse_num_or_duration(&xs[0]), parse_num_or_duration(&xs[1]))
+                    {
                         if a < b {
                             return vec![subst.clone()];
                         }
@@ -835,8 +1190,31 @@ fn eval_builtin(goal: &Triple, subst: &Subst) -> Vec<Subst> {
             vec![]
         }
 
+        Term::Iri(p) if p == &format!("{}notLessThan", MATH_NS) => {
+            // Binary: X notLessThan Y meaning X >= Y
+            if let (Some(a), Some(b)) = (parse_num_or_duration(&g.s), parse_num_or_duration(&g.o))
+            {
+                return if a >= b { vec![subst.clone()] } else { vec![] };
+            }
+            // List form: (X Y) notLessThan true
+            if let Term::List(xs) = &g.s {
+                if xs.len() == 2 {
+                    if let (Some(a), Some(b)) =
+                        (parse_num_or_duration(&xs[0]), parse_num_or_duration(&xs[1]))
+                    {
+                        if a >= b {
+                            return vec![subst.clone()];
+                        }
+                    }
+                }
+            }
+            vec![]
+        }
+
+        // -------- numeric math --------
+
         Term::Iri(p) if p == &format!("{}sum", MATH_NS) => {
-            // Variadic list form: (a b c ...) math:sum ?z  meaning z = a + b + c + ...
+            // Variadic list form: (a b c ...) math:sum ?z meaning z = a + b + c + ...
             if let Term::List(xs) = &g.s {
                 if xs.len() >= 2 && xs.iter().all(|t| parse_num(t).is_some()) {
                     let total: f64 = xs.iter().map(|t| parse_num(t).unwrap()).sum();
@@ -847,7 +1225,9 @@ fn eval_builtin(goal: &Triple, subst: &Subst) -> Vec<Subst> {
                             return vec![s2];
                         }
                         Term::Literal(o) => {
-                            if o == &format_num(total) { return vec![subst.clone()]; }
+                            if o == &format_num(total) {
+                                return vec![subst.clone()];
+                            }
                         }
                         _ => {}
                     }
@@ -868,7 +1248,9 @@ fn eval_builtin(goal: &Triple, subst: &Subst) -> Vec<Subst> {
                             return vec![s2];
                         }
                         Term::Literal(o) => {
-                            if o == &format_num(prod) { return vec![subst.clone()]; }
+                            if o == &format_num(prod) {
+                                return vec![subst.clone()];
+                            }
                         }
                         _ => {}
                     }
@@ -878,9 +1260,10 @@ fn eval_builtin(goal: &Triple, subst: &Subst) -> Vec<Subst> {
         }
 
         Term::Iri(p) if p == &format!("{}difference", MATH_NS) => {
-            // List form only: (?A ?B) math:difference ?C  meaning C = A - B
+            // List form only: (?A ?B) math:difference ?C meaning C = A - B
             if let Term::List(xs) = &g.s {
                 if xs.len() == 2 {
+                    // numeric diff
                     if let (Some(a), Some(b)) = (parse_num(&xs[0]), parse_num(&xs[1])) {
                         let c = a - b;
                         match &g.o {
@@ -890,7 +1273,32 @@ fn eval_builtin(goal: &Triple, subst: &Subst) -> Vec<Subst> {
                                 return vec![s2];
                             }
                             Term::Literal(o) => {
-                                if o == &format_num(c) { return vec![subst.clone()]; }
+                                if o == &format_num(c) {
+                                    return vec![subst.clone()];
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+
+                    // date/dateTime diff => xsd:duration
+                    if let (Some(a_dt), Some(b_dt)) =
+                        (parse_datetime_like(&xs[0]), parse_datetime_like(&xs[1]))
+                    {
+                        let diff = a_dt - b_dt;
+                        let secs = diff.num_seconds() as f64;
+                        let dur_term = format_duration_literal_from_seconds(secs);
+
+                        match &g.o {
+                            Term::Var(v) => {
+                                let mut s2 = subst.clone();
+                                s2.insert(v.clone(), dur_term);
+                                return vec![s2];
+                            }
+                            Term::Literal(o) => {
+                                if Term::Literal(o.clone()) == dur_term {
+                                    return vec![subst.clone()];
+                                }
                             }
                             _ => {}
                         }
@@ -905,7 +1313,9 @@ fn eval_builtin(goal: &Triple, subst: &Subst) -> Vec<Subst> {
             if let Term::List(xs) = &g.s {
                 if xs.len() == 2 {
                     if let (Some(a), Some(b)) = (parse_num(&xs[0]), parse_num(&xs[1])) {
-                        if b == 0.0 { return vec![]; }
+                        if b == 0.0 {
+                            return vec![];
+                        }
                         let c = a / b;
                         match &g.o {
                             Term::Var(v) => {
@@ -914,7 +1324,9 @@ fn eval_builtin(goal: &Triple, subst: &Subst) -> Vec<Subst> {
                                 return vec![s2];
                             }
                             Term::Literal(o) => {
-                                if o == &format_num(c) { return vec![subst.clone()]; }
+                                if o == &format_num(c) {
+                                    return vec![subst.clone()];
+                                }
                             }
                             _ => {}
                         }
@@ -938,14 +1350,16 @@ fn eval_builtin(goal: &Triple, subst: &Subst) -> Vec<Subst> {
                                 return vec![s2];
                             }
                             Term::Literal(o) => {
-                                if o == &format_num(c) { return vec![subst.clone()]; }
+                                if o == &format_num(c) {
+                                    return vec![subst.clone()];
+                                }
                             }
                             _ => {}
                         }
                     }
 
                     // Inverse direction (solve exponent):
-                    // (A ?B) exponentiation C  =>  ?B = ln(C)/ln(A)
+                    // (A ?B) exponentiation C => ?B = ln(C)/ln(A)
                     if let (Some(a), Term::Var(bv), Some(c)) =
                         (parse_num(&xs[0]), &xs[1], parse_num(&g.o))
                     {
@@ -956,7 +1370,6 @@ fn eval_builtin(goal: &Triple, subst: &Subst) -> Vec<Subst> {
                             return vec![s2];
                         }
                     }
-
                     // (optional) solve base not implemented
                 }
             }
@@ -964,13 +1377,13 @@ fn eval_builtin(goal: &Triple, subst: &Subst) -> Vec<Subst> {
         }
 
         Term::Iri(p) if p == &format!("{}negation", MATH_NS) => {
-            // Unary: ?X math:negation ?Y  meaning Y = -X
+            // Unary: ?X math:negation ?Y meaning Y = -X
             if let (Some(a), Term::Var(v)) = (parse_num(&g.s), &g.o) {
                 let mut s2 = subst.clone();
                 s2.insert(v.clone(), Term::Literal(format_num(-a)));
                 return vec![s2];
             }
-            // Inverse: ?X math:negation 3  =>  X = -3
+            // Inverse: ?X math:negation 3 => X = -3
             if let (Term::Var(v), Some(b)) = (&g.s, parse_num(&g.o)) {
                 let mut s2 = subst.clone();
                 s2.insert(v.clone(), Term::Literal(format_num(-b)));
@@ -1010,7 +1423,9 @@ fn eval_builtin(goal: &Triple, subst: &Subst) -> Vec<Subst> {
                         return vec![s2];
                     }
                     Term::Literal(o) => {
-                        if o == &format_num(c) { return vec![subst.clone()]; }
+                        if o == &format_num(c) {
+                            return vec![subst.clone()];
+                        }
                     }
                     _ => {}
                 }
@@ -1028,7 +1443,9 @@ fn eval_builtin(goal: &Triple, subst: &Subst) -> Vec<Subst> {
                         return vec![s2];
                     }
                     Term::Literal(o) => {
-                        if o == &format_num(c) { return vec![subst.clone()]; }
+                        if o == &format_num(c) {
+                            return vec![subst.clone()];
+                        }
                     }
                     _ => {}
                 }
@@ -1047,7 +1464,9 @@ fn eval_builtin(goal: &Triple, subst: &Subst) -> Vec<Subst> {
                             return vec![s2];
                         }
                         Term::Literal(o) => {
-                            if o == &format_num(c) { return vec![subst.clone()]; }
+                            if o == &format_num(c) {
+                                return vec![subst.clone()];
+                            }
                         }
                         _ => {}
                     }
@@ -1067,7 +1486,9 @@ fn eval_builtin(goal: &Triple, subst: &Subst) -> Vec<Subst> {
                             return vec![s2];
                         }
                         Term::Literal(o) => {
-                            if o == &format_num(c) { return vec![subst.clone()]; }
+                            if o == &format_num(c) {
+                                return vec![subst.clone()];
+                            }
                         }
                         _ => {}
                     }
@@ -1076,29 +1497,24 @@ fn eval_builtin(goal: &Triple, subst: &Subst) -> Vec<Subst> {
             vec![]
         }
 
-        Term::Iri(p) if p == &format!("{}notLessThan", MATH_NS) => {
-            // Binary: X notLessThan Y  meaning X >= Y
-            if let (Some(a), Some(b)) = (parse_num(&g.s), parse_num(&g.o)) {
-                if a >= b { return vec![subst.clone()]; } else { return vec![]; }
-            }
-            // List form: (X Y) notLessThan true
-            if let Term::List(xs) = &g.s {
-                if xs.len() == 2 {
-                    if let (Some(a), Some(b)) = (parse_num(&xs[0]), parse_num(&xs[1])) {
-                        if a >= b { return vec![subst.clone()]; }
-                    }
-                }
-            }
-            vec![]
-        }
+        // -------- log builtins --------
 
         Term::Iri(p) if p == &format!("{}equalTo", LOG_NS) => {
-            if g.s == g.o { vec![subst.clone()] } else { vec![] }
+            if g.s == g.o {
+                vec![subst.clone()]
+            } else {
+                vec![]
+            }
         }
 
         Term::Iri(p) if p == &format!("{}notEqualTo", LOG_NS) => {
-            if g.s != g.o { vec![subst.clone()] } else { vec![] }
+            if g.s != g.o {
+                vec![subst.clone()]
+            } else {
+                vec![]
+            }
         }
+
         _ => vec![],
     }
 }
@@ -1113,39 +1529,50 @@ fn standardize_rule(rule: &Rule, gen: &mut usize) -> Rule {
     ) -> Term {
         match t {
             Term::Var(v) => {
-                let nv = vmap.entry(v.clone()).or_insert_with(|| {
-                    let name = format!("{}__{}", v, *gen);
-                    *gen += 1;
-                    name
-                }).clone();
+                let nv = vmap
+                    .entry(v.clone())
+                    .or_insert_with(|| {
+                        let name = format!("{}__{}", v, *gen);
+                        *gen += 1;
+                        name
+                    })
+                    .clone();
                 Term::Var(nv)
             }
-            Term::List(xs) => {
-                Term::List(xs.iter().map(|e| rename_term(e, vmap, gen)).collect())
-            }
-            Term::Formula(ts) => {
-                Term::Formula(ts.iter().map(|tr| Triple {
-                    s: rename_term(&tr.s, vmap, gen),
-                    p: rename_term(&tr.p, vmap, gen),
-                    o: rename_term(&tr.o, vmap, gen),
-                }).collect())
-            }
+            Term::List(xs) => Term::List(xs.iter().map(|e| rename_term(e, vmap, gen)).collect()),
+            Term::Formula(ts) => Term::Formula(
+                ts.iter()
+                    .map(|tr| Triple {
+                        s: rename_term(&tr.s, vmap, gen),
+                        p: rename_term(&tr.p, vmap, gen),
+                        o: rename_term(&tr.o, vmap, gen),
+                    })
+                    .collect(),
+            ),
             _ => t.clone(),
         }
     }
 
     let mut vmap2 = HashMap::new();
-    let premise = rule.premise.iter().map(|tr| Triple {
-        s: rename_term(&tr.s, &mut vmap2, gen),
-        p: rename_term(&tr.p, &mut vmap2, gen),
-        o: rename_term(&tr.o, &mut vmap2, gen),
-    }).collect();
+    let premise = rule
+        .premise
+        .iter()
+        .map(|tr| Triple {
+            s: rename_term(&tr.s, &mut vmap2, gen),
+            p: rename_term(&tr.p, &mut vmap2, gen),
+            o: rename_term(&tr.o, &mut vmap2, gen),
+        })
+        .collect();
 
-    let conclusion = rule.conclusion.iter().map(|tr| Triple {
-        s: rename_term(&tr.s, &mut vmap2, gen),
-        p: rename_term(&tr.p, &mut vmap2, gen),
-        o: rename_term(&tr.o, &mut vmap2, gen),
-    }).collect();
+    let conclusion = rule
+        .conclusion
+        .iter()
+        .map(|tr| Triple {
+            s: rename_term(&tr.s, &mut vmap2, gen),
+            p: rename_term(&tr.p, &mut vmap2, gen),
+            o: rename_term(&tr.o, &mut vmap2, gen),
+        })
+        .collect();
 
     Rule {
         premise,
@@ -1179,7 +1606,9 @@ fn prove_goals(
         let subs = eval_builtin(&goal0, subst);
         let mut out = vec![];
         for s2 in subs {
-            out.extend(prove_goals(rest, &s2, facts, back_rules, depth + 1, visited, var_gen));
+            out.extend(prove_goals(
+                rest, &s2, facts, back_rules, depth + 1, visited, var_gen,
+            ));
         }
         return out;
     }
@@ -1194,7 +1623,9 @@ fn prove_goals(
     // Match existing facts
     for f in facts {
         if let Some(s2) = unify_triple(&goal0, f, subst) {
-            results.extend(prove_goals(rest, &s2, facts, back_rules, depth + 1, visited, var_gen));
+            results.extend(prove_goals(
+                rest, &s2, facts, back_rules, depth + 1, visited, var_gen,
+            ));
         }
     }
 
@@ -1203,11 +1634,10 @@ fn prove_goals(
         if r.conclusion.len() != 1 {
             continue;
         }
-
         // fresh variables for this rule application
         let r_std = standardize_rule(r, var_gen);
-
         let head = &r_std.conclusion[0];
+
         if let Some(s2) = unify_triple(head, &goal0, subst) {
             let mut body: Vec<Triple> = vec![];
             for b in &r_std.premise {
@@ -1215,10 +1645,11 @@ fn prove_goals(
             }
             let body_solutions =
                 prove_goals(&body, &s2, facts, back_rules, depth + 1, visited, var_gen);
+
             for sb in body_solutions {
-                results.extend(
-                    prove_goals(rest, &sb, facts, back_rules, depth + 1, visited, var_gen)
-                );
+                results.extend(prove_goals(
+                    rest, &sb, facts, back_rules, depth + 1, visited, var_gen,
+                ));
             }
         }
     }
@@ -1227,14 +1658,9 @@ fn prove_goals(
     results
 }
 
-fn forward_chain(
-    mut facts: Vec<Triple>,
-    forward_rules: &[Rule],
-    back_rules: &[Rule],
-) -> Vec<Triple> {
+fn forward_chain(mut facts: Vec<Triple>, forward_rules: &[Rule], back_rules: &[Rule]) -> Vec<Triple> {
     let mut fact_set: HashSet<Triple> = facts.iter().cloned().collect();
     let mut derived_forward: Vec<Triple> = vec![];
-
     let mut var_gen = 0usize;
 
     loop {
@@ -1244,7 +1670,15 @@ fn forward_chain(
             let empty = Subst::new();
             let mut visited = vec![];
 
-            let sols = prove_goals(&r.premise, &empty, &facts, back_rules, 0, &mut visited, &mut var_gen);
+            let sols = prove_goals(
+                &r.premise,
+                &empty,
+                &facts,
+                back_rules,
+                0,
+                &mut visited,
+                &mut var_gen,
+            );
 
             for s in sols {
                 for cpat in &r.conclusion {
@@ -1262,7 +1696,9 @@ fn forward_chain(
             }
         }
 
-        if !changed { break; }
+        if !changed {
+            break;
+        }
     }
 
     derived_forward
@@ -1291,7 +1727,8 @@ fn term_to_n3(t: &Term, pref: &PrefixEnv) -> String {
         Term::Formula(ts) => {
             let mut s = String::from("{ ");
             for tr in ts {
-                s.push_str(&format!("{} {} {} . ",
+                s.push_str(&format!(
+                    "{} {} {} .\n",
                     term_to_n3(&tr.s, pref),
                     term_to_n3(&tr.p, pref),
                     term_to_n3(&tr.o, pref),
