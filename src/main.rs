@@ -964,7 +964,8 @@ fn is_builtin_pred(p: &Term) -> bool {
         if i.starts_with(MATH_NS)
         || i.starts_with(LOG_NS)
         || i.starts_with(STRING_NS)
-        || i.starts_with(TIME_NS))
+        || i.starts_with(TIME_NS)
+        || i.starts_with(LIST_NS))
 }
 
 // ----- typed literal / date / duration helpers -----
@@ -1121,6 +1122,55 @@ fn eval_builtin(goal: &Triple, subst: &Subst) -> Vec<Subst> {
     let g = apply_subst_triple(goal, subst);
 
     match &g.p {
+        // list:append
+        // Subject must be a list of lists: (L1 L2 ... Ln) list:append L
+        // Object L is the concatenation of all Li.  Requires all Li to be bound lists.
+        Term::Iri(p) if p == &format!("{}append", LIST_NS) => {
+            // Subject must be a list
+            let parts = match &g.s {
+                Term::List(xs) => xs,
+                _ => return vec![],
+            };
+
+            // Each part must itself be a fully bound list
+            let mut out_elems: Vec<Term> = Vec::new();
+            for part in parts {
+                match part {
+                    Term::List(es) => {
+                        // Spec requires all constituent members bound
+                        if !es.iter().all(is_ground_term) {
+                            return vec![];
+                        }
+                        out_elems.extend(es.clone());
+                    }
+                    _ => {
+                        // If any element isn't a list, fail (no guessing)
+                        return vec![];
+                    }
+                }
+            }
+
+            let result = Term::List(out_elems);
+
+            match &g.o {
+                // bind result
+                Term::Var(v) => {
+                    let mut s2 = subst.clone();
+                    s2.insert(v.clone(), result);
+                    vec![s2]
+                }
+                // verify equality
+                Term::List(_) => {
+                    if g.o == result {
+                        vec![subst.clone()]
+                    } else {
+                        vec![]
+                    }
+                }
+                _ => vec![],
+            }
+        }
+
         // time:localTime
         Term::Iri(p) if p == &format!("{}localTime", TIME_NS) => {
             let now = Local::now().to_rfc3339();

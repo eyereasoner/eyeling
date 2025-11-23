@@ -106,9 +106,20 @@ List example:
 - `time:localTime` (legacy CWM/SWAP builtin):  
   `"" time:localTime ?D.` binds `?D` to the current local time as an `xsd:dateTime`.
 
-### `string:` / `list:` namespaces
+### `list:`
 
-The prefixes are recognized, but **no `string:` or `list:` builtins are implemented yet**.
+- `list:append`  
+  Concatenates a list of lists into a single list.
+
+  **Form:**  
+  `(L1 L2 ... Ln) list:append L.`
+
+  where each `Li` is a (ground) list and `L` is their concatenation.
+
+  **Notes:**
+
+  * Inputs must be bound lists; `list:append` does not invent missing list parts.
+  * Matches the SWAP/CWM `list:append` builtin behavior.
 
 ---
 
