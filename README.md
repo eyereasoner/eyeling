@@ -41,6 +41,10 @@ Non-goals / limitations (for now):
 
 ---
 
+## Builtins
+
+Builtins are recognized by expanded IRIs and evaluated during premise/goal checking.
+
 ### `math:`
 
 **Arithmetic (list forms unless noted):**
