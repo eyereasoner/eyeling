@@ -1,8 +1,8 @@
-# eyelite
+# eyering
 
-A small Notation3 (N3) parser and lightweight reasoner in Rust.
+A minimal Notation3 (N3) reasoner in Rust.
 
-`eyelite` aims to be tiny, hackable, and useful for experiments. It parses a practical subset of N3 (a superset of Turtle) and performs forward- and backward-chaining over simple Horn-style rules, with a growing set of N3 built-ins.
+`eyering` aims to be tiny, hackable, and useful for experiments. It parses a practical subset of N3 (a superset of Turtle) and performs forward- and backward-chaining over simple Horn-style rules, with a growing set of N3 built-ins.
 
 ---
 
@@ -151,13 +151,13 @@ List example:
   **Form:**  
   `L list:length N.`
 
-- `list:map` *(pragmatic eyelite subset)*  
+- `list:map` *(pragmatic eyering subset)*  
   Maps a **builtin predicate** over a ground list.
 
   **Form:**  
   `(InputList Predicate) list:map OutputList.`
 
-  For each element `e` in `InputList`, eyelite evaluates the builtin triple:
+  For each element `e` in `InputList`, eyering evaluates the builtin triple:
 
   `e Predicate ?y`
 
@@ -183,15 +183,15 @@ Dependency note:
 
 ## Quick start
 
-### Run eyelite on a file
+### Run eyering on a file
 
 ```bash
 cargo run --release -- path/to/file.n3
 # or after building:
-target/release/eyelite path/to/file.n3
+target/release/eyering path/to/file.n3
 ```
 
-`eyelite` outputs **only forward-rule derivations** (not the input facts), printed as N3/Turtle.
+`eyering` outputs **only forward-rule derivations** (not the input facts), printed as N3/Turtle.
 Predicates equal to `rdf:type` are printed as `a`.
 
 ---
@@ -215,7 +215,7 @@ Input:
 Run:
 
 ```bash
-target/release/eyelite input/socrates.n3
+target/release/eyering input/socrates.n3
 ```
 
 Output:
