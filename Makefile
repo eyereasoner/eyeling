@@ -1,7 +1,7 @@
-# Makefile for eyering
+# Makefile for ocelli
 
 SHELL := /bin/bash
-BIN := target/release/eyering
+BIN := target/release/ocelli
 EXAMPLE_DIR := examples
 EXAMPLES := $(wildcard $(EXAMPLE_DIR)/*.n3)
 

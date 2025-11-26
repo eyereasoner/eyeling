@@ -1,8 +1,8 @@
-# eyering
+# ocelli
 
 A minimal Notation3 (N3) reasoner in Rust.
 
-`eyering` aims to be tiny, hackable, and useful for experiments. It parses a practical subset of N3 (a superset of Turtle) and performs forward- and backward-chaining over simple Horn-style rules, with a growing set of N3 built-ins.
+`ocelli` aims to be tiny, hackable, and useful for experiments. It parses a practical subset of N3 (a superset of Turtle) and performs forward- and backward-chaining over simple Horn-style rules, with a growing set of N3 built-ins.
 
 ---
 
@@ -151,13 +151,13 @@ List example:
   **Form:**  
   `L list:length N.`
 
-- `list:map` *(pragmatic eyering subset)*  
+- `list:map` *(pragmatic ocelli subset)*  
   Maps a **builtin predicate** over a ground list.
 
   **Form:**  
   `(InputList Predicate) list:map OutputList.`
 
-  For each element `e` in `InputList`, eyering evaluates the builtin triple:
+  For each element `e` in `InputList`, ocelli evaluates the builtin triple:
 
   `e Predicate ?y`
 
@@ -183,15 +183,15 @@ Dependency note:
 
 ## Quick start
 
-### Run eyering on a file
+### Run ocelli on a file
 
 ```bash
 cargo run --release -- path/to/file.n3
 # or after building:
-target/release/eyering path/to/file.n3
+target/release/ocelli path/to/file.n3
 ```
 
-`eyering` outputs **only forward-rule derivations** (not the input facts), printed as N3/Turtle.
+`ocelli` outputs **only forward-rule derivations** (not the input facts), printed as N3/Turtle.
 Predicates equal to `rdf:type` are printed as `a`.
 
 ---
@@ -215,7 +215,7 @@ Input:
 Run:
 
 ```bash
-target/release/eyering input/socrates.n3
+target/release/ocelli input/socrates.n3
 ```
 
 Output:
@@ -283,4 +283,17 @@ Expected derivation:
 @prefix : <https://example.org/#> .
 :test :is true .
 ```
+
+---
+
+## Why "Ocelli"?
+
+**Ocelli** (singular: *ocellus*) is Latin for **"little eyes."**
+
+In nature, ocelli are the simple, rudimentary eyes found in invertebrates and even specialized plant cells. Unlike complex compound eyes, ocelli are **minimal, fast, and highly sensitive structures** that detect light and movement.
+
+This mirrors the goals of this project:
+* **Minimal:** A lightweight implementation, not a bloated engine.
+* **Vision:** Retaining the "Eye" (reasoning) theme.
+* **Performance:** Written in Rust for speed and efficiency.
 
