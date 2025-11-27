@@ -906,9 +906,10 @@ impl Parser {
     }
 }
 
-/// Convert every Term::Blank in a rule into a rule-scoped variable.
-/// This approximates N3 behaviour where blank nodes in a rule
-/// are implicitly universally quantified at rule level.
+/// Convert every Term::Blank *in the premise* into a rule-scoped variable.
+///
+/// Blank nodes in the rule body become “pattern variables”.
+/// Blank nodes in the head stay blank and are treated existentially.
 fn lift_blank_rule_vars(
     premise: Vec<Triple>,
     conclusion: Vec<Triple>,
@@ -920,7 +921,7 @@ fn lift_blank_rule_vars(
     ) -> Term {
         match t {
             Term::Blank(label) => {
-                // One variable per distinct blank label in this rule.
+                // One variable per distinct blank label in this rule body.
                 let var_name = mapping
                     .entry(label.clone())
                     .or_insert_with(|| {
@@ -930,18 +931,15 @@ fn lift_blank_rule_vars(
                     .clone();
                 Term::Var(var_name)
             }
-
             Term::List(xs) => {
                 Term::List(xs.iter().map(|e| convert_term(e, mapping, counter)).collect())
             }
-
             Term::OpenList(xs, tail) => {
                 Term::OpenList(
                     xs.iter().map(|e| convert_term(e, mapping, counter)).collect(),
                     tail.clone(),
                 )
             }
-
             Term::Formula(ts) => {
                 let triples = ts
                     .iter()
@@ -953,7 +951,6 @@ fn lift_blank_rule_vars(
                     .collect();
                 Term::Formula(triples)
             }
-
             _ => t.clone(),
         }
     }
@@ -978,12 +975,110 @@ fn lift_blank_rule_vars(
         .map(|tr| convert_triple(tr, &mut mapping, &mut counter))
         .collect();
 
-    let new_conclusion: Vec<Triple> = conclusion
-        .iter()
-        .map(|tr| convert_triple(tr, &mut mapping, &mut counter))
-        .collect();
+    // Head blanks are left untouched → existentials.
+    (new_premise, conclusion)
+}
 
-    (new_premise, new_conclusion)
+/// Skolemize blank nodes in a conclusion term.
+///
+/// mapping: maps original blank labels (e.g. "_:B") to fresh "_:sk_N" for
+/// THIS rule application.
+/// sk_counter: global counter for fresh blank ids across the whole run.
+fn skolemize_term(
+    t: &Term,
+    mapping: &mut HashMap<String, String>,
+    sk_counter: &mut usize,
+) -> Term {
+    match t {
+        Term::Blank(label) => {
+            let new_label = mapping
+                .entry(label.clone())
+                .or_insert_with(|| {
+                    let id = *sk_counter;
+                    *sk_counter += 1;
+                    format!("_:sk_{}", id)
+                })
+                .clone();
+            Term::Blank(new_label)
+        }
+        Term::List(xs) => {
+            Term::List(xs.iter().map(|e| skolemize_term(e, mapping, sk_counter)).collect())
+        }
+        Term::OpenList(xs, tailv) => {
+            Term::OpenList(
+                xs.iter().map(|e| skolemize_term(e, mapping, sk_counter)).collect(),
+                tailv.clone(),
+            )
+        }
+        Term::Formula(ts) => {
+            Term::Formula(
+                ts.iter()
+                    .map(|tr| skolemize_triple(tr, mapping, sk_counter))
+                    .collect(),
+            )
+        }
+        _ => t.clone(),
+    }
+}
+
+fn skolemize_triple(
+    tr: &Triple,
+    mapping: &mut HashMap<String, String>,
+    sk_counter: &mut usize,
+) -> Triple {
+    Triple {
+        s: skolemize_term(&tr.s, mapping, sk_counter),
+        p: skolemize_term(&tr.p, mapping, sk_counter),
+        o: skolemize_term(&tr.o, mapping, sk_counter),
+    }
+}
+
+/// Alpha-equivalence on terms: blanks may differ by name but must map consistently.
+fn alpha_eq_term(
+    a: &Term,
+    b: &Term,
+    bmap: &mut HashMap<String, String>,
+) -> bool {
+    match (a, b) {
+        (Term::Blank(x), Term::Blank(y)) => {
+            if let Some(existing) = bmap.get(x) {
+                existing == y
+            } else {
+                bmap.insert(x.clone(), y.clone());
+                true
+            }
+        }
+        (Term::Iri(x), Term::Iri(y)) => x == y,
+        (Term::Literal(x), Term::Literal(y)) => x == y,
+        (Term::Var(x), Term::Var(y)) => x == y,
+        (Term::List(xs), Term::List(ys)) => {
+            xs.len() == ys.len()
+                && xs.iter()
+                    .zip(ys.iter())
+                    .all(|(u, v)| alpha_eq_term(u, v, bmap))
+        }
+        (Term::OpenList(xs, tx), Term::OpenList(ys, ty)) => {
+            tx == ty
+                && xs.len() == ys.len()
+                && xs.iter()
+                    .zip(ys.iter())
+                    .all(|(u, v)| alpha_eq_term(u, v, bmap))
+        }
+        // For formulas we keep the simple equality used elsewhere.
+        (Term::Formula(xs), Term::Formula(ys)) => xs == ys,
+        _ => false,
+    }
+}
+
+fn alpha_eq_triple(a: &Triple, b: &Triple) -> bool {
+    let mut bmap: HashMap<String, String> = HashMap::new();
+    alpha_eq_term(&a.s, &b.s, &mut bmap)
+        && alpha_eq_term(&a.p, &b.p, &mut bmap)
+        && alpha_eq_term(&a.o, &b.o, &mut bmap)
+}
+
+fn has_alpha_equiv(set: &HashSet<Triple>, tr: &Triple) -> bool {
+    set.iter().any(|t| alpha_eq_triple(t, tr))
 }
 
 // =====================================================================================
@@ -2041,11 +2136,12 @@ fn forward_chain(
     let mut fact_set: HashSet<Triple> = facts.iter().cloned().collect();
     let mut derived_forward: Vec<Triple> = vec![];
     let mut var_gen = 0usize;
+    let mut skolem_counter = 0usize; // global counter for _:sk_N
 
     loop {
         let mut changed = false;
 
-        for r in forward_rules {
+        for r in forward_rules.iter() {
             let empty = Subst::new();
             let mut visited = vec![];
 
@@ -2060,20 +2156,28 @@ fn forward_chain(
             );
 
             for s in sols {
-                for cpat in &r.conclusion {
-                    let inst = apply_subst_triple(cpat, &s);
+                // New head existentials per rule application:
+                let mut blank_map: HashMap<String, String> = HashMap::new();
 
-                    // Only add fully ground derived facts.
+                for cpat in &r.conclusion {
+                    let instantiated = apply_subst_triple(cpat, &s);
+                    // Skolemize any conclusion blanks into _:sk_N
+                    let inst = skolemize_triple(&instantiated, &mut blank_map, &mut skolem_counter);
+
+                    // Only add fully ground facts (no variables/OpenList)
                     if !is_ground_triple(&inst) {
                         continue;
                     }
 
-                    if !fact_set.contains(&inst) {
-                        fact_set.insert(inst.clone());
-                        facts.push(inst.clone());
-                        derived_forward.push(inst);
-                        changed = true;
+                    // Avoid duplicates up to blank renaming.
+                    if fact_set.contains(&inst) || has_alpha_equiv(&fact_set, &inst) {
+                        continue;
                     }
+
+                    fact_set.insert(inst.clone());
+                    facts.push(inst.clone());
+                    derived_forward.push(inst);
+                    changed = true;
                 }
             }
         }

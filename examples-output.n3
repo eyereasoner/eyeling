@@ -27,6 +27,14 @@
 } .
 
 # --------------------------------------------------
+# Running examples/existential-rule.n3
+# --------------------------------------------------
+@prefix : <http://example.org/socrates#> .
+
+:Socrates :is _:sk_0 .
+:Plato :is _:sk_1 .
+
+# --------------------------------------------------
 # Running examples/french-cities.n3
 # --------------------------------------------------
 @prefix : <http://www.agfa.com/w3c/euler/graph.axiom#> .
