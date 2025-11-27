@@ -665,14 +665,19 @@ impl Parser {
         match self.next() {
             TokenKind::IriRef(iri) => Term::Iri(iri),
 
-            TokenKind::Ident(s) => {
-                if s == "a" {
+            TokenKind::Ident(name) => {
+                if name == "a" {
+                    // rdf:type keyword
                     Term::Iri(format!("{}type", RDF_NS))
-                } else if s.contains(':') {
-                    Term::Iri(self.prefixes.expand_qname(&s))
+                } else if name.starts_with("_:") {
+                    // Labeled blank node (Turtle/N3 syntax _:foo)
+                    Term::Blank(name)
+                } else if name.contains(':') {
+                    // QName
+                    Term::Iri(self.prefixes.expand_qname(&name))
                 } else {
-                    // Bareword treated as IRI-ish for simplicity.
-                    Term::Iri(s)
+                    // Bareword treated as an IRI-ish identifier
+                    Term::Iri(name)
                 }
             }
 
@@ -683,8 +688,11 @@ impl Parser {
                     let dt_iri = match self.next() {
                         TokenKind::IriRef(i) => i,
                         TokenKind::Ident(qn) => {
-                            if qn.contains(':') { self.prefixes.expand_qname(&qn) }
-                            else { qn }
+                            if qn.contains(':') {
+                                self.prefixes.expand_qname(&qn)
+                            } else {
+                                qn
+                            }
                         }
                         other => panic!("Expected datatype after ^^, got {:?}", other),
                     };
@@ -694,7 +702,6 @@ impl Parser {
             }
 
             TokenKind::Var(v) => Term::Var(v),
-
             TokenKind::LParen => self.parse_list(),
             TokenKind::LBracket => self.parse_blank(),
             TokenKind::LBrace => self.parse_formula(),
@@ -813,23 +820,109 @@ impl Parser {
 
     /// Convert lhs/rhs terms into Rule struct.
     fn make_rule(&self, left: Term, right: Term, is_forward: bool) -> Rule {
-        // For <= rules, swap to keep premise/body on left in Rule.
-        let (premise_term, concl_term) =
-            if is_forward { (left, right) } else { (right, left) };
+        // For <= rules, swap to keep premise/body on the left.
+        let (premise_term, concl_term) = if is_forward { (left, right) } else { (right, left) };
 
-        let premise = match premise_term {
+        let raw_premise = match premise_term {
             Term::Formula(ts) => ts,
-            Term::Literal(lit) if lit == "true" => vec![],
-            _ => vec![],
+            Term::Literal(lit) if lit == "true" => Vec::new(),
+            _ => Vec::new(),
         };
 
-        let conclusion = match concl_term {
+        let raw_conclusion = match concl_term {
             Term::Formula(ts) => ts,
-            _ => vec![],
+            _ => Vec::new(),
         };
 
-        Rule { premise, conclusion, is_forward }
+        // lift rule-local blank nodes to variables.
+        let (premise, conclusion) = lift_blank_rule_vars(raw_premise, raw_conclusion);
+
+        Rule {
+            premise,
+            conclusion,
+            is_forward,
+        }
     }
+}
+
+/// Convert every Term::Blank in a rule into a rule-scoped variable.
+/// This approximates N3 behaviour where blank nodes in a rule
+/// are implicitly universally quantified at rule level.
+fn lift_blank_rule_vars(
+    premise: Vec<Triple>,
+    conclusion: Vec<Triple>,
+) -> (Vec<Triple>, Vec<Triple>) {
+    fn convert_term(
+        t: &Term,
+        mapping: &mut HashMap<String, String>,
+        counter: &mut usize,
+    ) -> Term {
+        match t {
+            Term::Blank(label) => {
+                // One variable per distinct blank label in this rule.
+                let var_name = mapping
+                    .entry(label.clone())
+                    .or_insert_with(|| {
+                        *counter += 1;
+                        format!("_b{}", *counter)
+                    })
+                    .clone();
+                Term::Var(var_name)
+            }
+
+            Term::List(xs) => {
+                Term::List(xs.iter().map(|e| convert_term(e, mapping, counter)).collect())
+            }
+
+            Term::OpenList(xs, tail) => {
+                Term::OpenList(
+                    xs.iter().map(|e| convert_term(e, mapping, counter)).collect(),
+                    tail.clone(),
+                )
+            }
+
+            Term::Formula(ts) => {
+                let triples = ts
+                    .iter()
+                    .map(|tr| Triple {
+                        s: convert_term(&tr.s, mapping, counter),
+                        p: convert_term(&tr.p, mapping, counter),
+                        o: convert_term(&tr.o, mapping, counter),
+                    })
+                    .collect();
+                Term::Formula(triples)
+            }
+
+            _ => t.clone(),
+        }
+    }
+
+    fn convert_triple(
+        tr: &Triple,
+        mapping: &mut HashMap<String, String>,
+        counter: &mut usize,
+    ) -> Triple {
+        Triple {
+            s: convert_term(&tr.s, mapping, counter),
+            p: convert_term(&tr.p, mapping, counter),
+            o: convert_term(&tr.o, mapping, counter),
+        }
+    }
+
+    let mut mapping: HashMap<String, String> = HashMap::new();
+    let mut counter: usize = 0;
+
+    let new_premise: Vec<Triple> = premise
+        .iter()
+        .map(|tr| convert_triple(tr, &mut mapping, &mut counter))
+        .collect();
+
+    let new_conclusion: Vec<Triple> = conclusion
+        .iter()
+        .map(|tr| convert_triple(tr, &mut mapping, &mut counter))
+        .collect();
+
+    (new_premise, new_conclusion)
 }
 
 // =====================================================================================
