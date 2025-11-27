@@ -80,6 +80,12 @@ In rule premises (the left side of `=>` / right side of `<=`):
 }.
 ```
 
+the locally scoped `_:` nodes are treated like **rule-scoped universal variables**:
+
+* `_:` inside a rule body behaves as if it were written as `?A`.
+* Occurrences of the same `_:` label inside that rule are linked together.
+* This lets patterns like the Socrates example work both with explicit variables *and* with blank nodes.
+
 The same applies to property-list syntax:
 
 ```n3
@@ -89,6 +95,8 @@ The same applies to property-list syntax:
     ?S a ?B .
 }.
 ```
+
+Here the inlined `[ rdfs:subClassOf ?B ]` introduces a body-local “class” that behaves as a universally quantified variable in that rule.
 
 ### 3. Blank nodes in rule conclusions → existentials
 
