@@ -1,5 +1,5 @@
 // =====================================================================================
-// eyelite — a minimal Notation3 (N3) reasoner in Rust
+// eyeling — a minimal Notation3 (N3) reasoner in Rust
 // =====================================================================================
 //
 // This file is intentionally self-contained: we keep everything in main.rs so that
@@ -1953,7 +1953,7 @@ fn eval_builtin(goal: &Triple, subst: &Subst) -> Vec<Subst> {
             }
         }
 
-        // Pragmatic eyelite subset of list:map:
+        // Pragmatic eyeling subset of list:map:
         //   ((inputList) predicateIRI) list:map outputList
         Term::Iri(p) if p == &format!("{}map", LIST_NS) => {
             let args = match &g.s {
@@ -2289,7 +2289,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
 
     if args.len() != 2 {
-        eprintln!("Usage: eyelite <file.n3>");
+        eprintln!("Usage: eyeling <file.n3>");
         std::process::exit(1);
     }
 

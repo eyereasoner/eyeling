@@ -1,8 +1,8 @@
-# eyelite
+# eyeling
 
 A minimal [Notation3 (N3)](https://notation3.org/) reasoner in Rust.
 
-`eyelite` is meant to be **tiny**, **hackable**, and **close in spirit to EYE** on a small but practical fragment of N3.  
+`eyeling` is meant to be **tiny**, **hackable**, and **close in spirit to EYE** on a small but practical fragment of N3.  
 It parses a useful subset of N3 (a superset of Turtle) and does forward + backward chaining over Horn-style rules, with a growing set of N3 built-ins.
 
 ---
@@ -54,7 +54,7 @@ The command-line tool prints **only newly derived forward facts**, not the origi
 
 ## Blank nodes and quantification
 
-`eyelite` tries to mimic the usual N3 / EYE intuition:
+`eyeling` tries to mimic the usual N3 / EYE intuition:
 
 ### 1. Blank nodes in facts
 
@@ -118,7 +118,7 @@ If a blank node appears **only in the rule head**, it is treated as an existenti
 }.
 ```
 
-Each time this rule fires, `eyelite` creates a fresh Skolem blank:
+Each time this rule fires, `eyeling` creates a fresh Skolem blank:
 
 ```n3
 @prefix : <http://example.org/socrates#>.
@@ -136,7 +136,7 @@ Key points:
 
 ## Inference fuse — `{ ... } => false.`
 
-`eyelite` treats rules whose conclusion is `false` as **hard failures**:
+`eyeling` treats rules whose conclusion is `false` as **hard failures**:
 
 ```n3
 # inference fuse
@@ -247,7 +247,7 @@ Dependencies:
 cargo build --release
 ```
 
-This produces `target/release/eyelite`.
+This produces `target/release/eyeling`.
 
 ### Run on a single file
 
@@ -256,7 +256,7 @@ This produces `target/release/eyelite`.
 cargo run --release -- examples/socrates.n3
 
 # or directly
-target/release/eyelite examples/socrates.n3
+target/release/eyeling examples/socrates.n3
 ```
 
 Output:
@@ -329,7 +329,7 @@ Minimal RDFS-style subclass inference:
 Run:
 
 ```bash
-target/release/eyelite examples/socrates.n3
+target/release/eyeling examples/socrates.n3
 ```
 
 Output:

@@ -1,7 +1,7 @@
-# Makefile for eyelite
+# Makefile for eyeling
 
 SHELL := /bin/bash
-BIN := target/release/eyelite
+BIN := target/release/eyeling
 EXAMPLE_DIR := examples
 EXAMPLES := $(wildcard $(EXAMPLE_DIR)/*.n3)
 
