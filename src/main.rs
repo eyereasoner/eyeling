@@ -2409,14 +2409,11 @@ fn term_to_n3(t: &Term, pref: &PrefixEnv) -> String {
         Term::Formula(ts) => {
             let mut s = String::from("{ ");
             for tr in ts {
-                s.push_str(&format!(
-                    "{} {} {} .\n",
-                    term_to_n3(&tr.s, pref),
-                    term_to_n3(&tr.p, pref),
-                    term_to_n3(&tr.o, pref),
-                ));
+                // Reuse triple_to_n3 so we also get `rdf:type` → `a` here.
+                s.push_str(&triple_to_n3(tr, pref));
+                s.push('\n');
             }
-            s.push_str("}");
+            s.push('}');
             s
         }
     }
