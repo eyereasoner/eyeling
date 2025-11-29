@@ -1,0 +1,28 @@
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix :    <https://eyereasoner.github.io/ns#> .
+
+:parentOf :invOf :childOf .
+
+:alice :parentOf :bob .
+
+# Meta-rule:
+# For every inverse pair (?p :invOf ?q),
+# create a backward rule:
+#   { ?x ?q ?y } <= { ?y ?p ?x } .
+{
+    ?p :invOf ?q .
+} => {
+    {
+        ?x ?q ?y .
+    } <= {
+        ?y ?p ?x .
+    } .
+} .
+
+# Ordinary forward rule that uses :childOf in its premise.
+{
+    ?x :childOf ?y .
+} => {
+    ?x :hasParent ?y .
+} .
+
