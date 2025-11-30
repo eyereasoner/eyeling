@@ -1703,6 +1703,22 @@ fn eval_builtin(goal: &Triple, subst: &Subst) -> Vec<Subst> {
             vec![]
         }
 
+        Term::Iri(p) if p == &format!("{}notGreaterThan", MATH_NS) => {
+            if let (Some(a), Some(b)) = (parse_num_or_duration(&g.s), parse_num_or_duration(&g.o)) {
+                return if a <= b { vec![subst.clone()] } else { vec![] };
+            }
+            if let Term::List(xs) = &g.s {
+                if xs.len() == 2 {
+                    if let (Some(a), Some(b)) =
+                        (parse_num_or_duration(&xs[0]), parse_num_or_duration(&xs[1]))
+                    {
+                        if a <= b { return vec![subst.clone()]; }
+                    }
+                }
+            }
+            vec![]
+        }
+
         // ---------------------------------------------------------------------
         // math: arithmetic
         // ---------------------------------------------------------------------

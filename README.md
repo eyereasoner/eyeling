@@ -217,6 +217,7 @@ Comparison:
 * `math:greaterThan`
 * `math:lessThan`
 * `math:notLessThan`
+* `math:notGreaterThan`
 
 Dates & durations:
 
