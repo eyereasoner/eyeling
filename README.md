@@ -132,7 +132,7 @@ Here the inlined `[ rdfs:subClassOf ?B ]` introduces a body-local “class” th
 If a blank node appears **only in the rule head**, it is treated as an existential:
 
 ```n3
-@prefix : .
+@prefix : <http://example.org/socrates#>.
 
 :Socrates a :Human.
 :Plato   a :Human.
@@ -143,7 +143,7 @@ If a blank node appears **only in the rule head**, it is treated as an existenti
 Each time this rule fires, `eyeling` creates a fresh Skolem blank:
 
 ```n3
-@prefix : .
+@prefix : <http://example.org/socrates#>.
 
 :Socrates :is _:sk_0 .
 :Plato    :is _:sk_1 .
@@ -162,7 +162,7 @@ Key points:
 
 ```n3
 # inference fuse
-@prefix : .
+@prefix : <https://eyereasoner.github.io/ns#>.
 
 :stone :color :black .
 :stone :color :white .
