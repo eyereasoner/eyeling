@@ -2441,11 +2441,14 @@ fn term_to_n3(t: &Term, pref: &PrefixEnv) -> String {
             format!("({})", inside.join(" "))
         }
 
+        // pretty-print formulas with indentation
         Term::Formula(ts) => {
-            let mut s = String::from("{ ");
+            let mut s = String::from("{\n");
             for tr in ts {
-                // Reuse triple_to_n3 so we also get `rdf:type` → `a` here.
-                s.push_str(&triple_to_n3(tr, pref));
+                let line = triple_to_n3(tr, pref);
+                // indent each triple inside the graph term
+                s.push_str("    ");
+                s.push_str(line.trim_end());
                 s.push('\n');
             }
             s.push('}');

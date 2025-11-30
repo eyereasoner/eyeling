@@ -18,12 +18,13 @@
 @prefix : <http://example.org/#> .
 @prefix complex: <https://eyereasoner.github.io/eye/complex#> .
 
-:test :is { ((-1 0) (0.5 0)) complex:exponentiation (0.00000000000000006123233995736766 1) .
-((2.718281828459045 0) (0 3.141592653589793)) complex:exponentiation (-1 0.00000000000000012246467991473532) .
-((0 1) (0 1)) complex:exponentiation (0.20787957635076193 0) .
-((2.718281828459045 0) (-1.57079632679 0)) complex:exponentiation (0.20787957635177984 0) .
-(2 0) complex:asin (1.5707963267948966 1.3169578969248166) .
-(2 0) complex:acos (0 -1.3169578969248166) .
+:test :is {
+    ((-1 0) (0.5 0)) complex:exponentiation (0.00000000000000006123233995736766 1) .
+    ((2.718281828459045 0) (0 3.141592653589793)) complex:exponentiation (-1 0.00000000000000012246467991473532) .
+    ((0 1) (0 1)) complex:exponentiation (0.20787957635076193 0) .
+    ((2.718281828459045 0) (-1.57079632679 0)) complex:exponentiation (0.20787957635177984 0) .
+    (2 0) complex:asin (1.5707963267948966 1.3169578969248166) .
+    (2 0) complex:acos (0 -1.3169578969248166) .
 } .
 
 # --------------------------------------------------
@@ -40,8 +41,10 @@
 @prefix : <https://eyereasoner.github.io/ns#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 
-{ ?x :childOf ?y .
-} <= { ?y :parentOf ?x .
+{
+    ?x :childOf ?y .
+} <= {
+    ?y :parentOf ?x .
 } .
 :bob :hasParent :alice .
 
@@ -52,8 +55,10 @@
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 
-{ ?y a :Dog .
-} => { :test :is true .
+{
+    ?y a :Dog .
+} => {
+    :test :is true .
 } .
 :test :is true .
 
@@ -102,7 +107,8 @@
 # --------------------------------------------------
 @prefix : <https://eyereasoner.github.io/ns#> .
 
-:test :is { :joe :is (:good :Cobbler) .
+:test :is {
+    :joe :is (:good :Cobbler) .
 } .
 
 # --------------------------------------------------
@@ -485,10 +491,11 @@
 # --------------------------------------------------
 @prefix : <http://example.org/#> .
 
-:test :is { (1 0 1 0 0 1) :compute (1 0 1 0 1 0 "#") .
-(1 0 1 1 1 1) :compute (1 1 0 0 0 0 "#") .
-(1 1 1 1 1 1) :compute (1 0 0 0 0 0 0 "#") .
-() :compute (1 "#") .
+:test :is {
+    (1 0 1 0 0 1) :compute (1 0 1 0 1 0 "#") .
+    (1 0 1 1 1 1) :compute (1 1 0 0 0 0 "#") .
+    (1 1 1 1 1 1) :compute (1 0 0 0 0 0 0 "#") .
+    () :compute (1 "#") .
 } .
 
 # --------------------------------------------------
