@@ -314,5 +314,5 @@ Dependencies:
 make
 ```
 
-This builds the `eyeling` binary and runs the examples in `examples/` against both EYE and `eyeling` for comparison.
+This builds the `eyeling` binary and runs the examples in `examples/` which should give `examples-output.n3`.
 
