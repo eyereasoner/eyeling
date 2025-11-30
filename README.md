@@ -202,7 +202,7 @@ Arithmetic on numeric literals (mostly list forms):
 
 Unary ops:
 
-* `math:negation` (sign flip)
+* `math:negation`
 * `math:absoluteValue`
 
 Trigonometry:
