@@ -102,10 +102,6 @@ Here the inlined `[ rdfs:subClassOf ?B ]` introduces a body-local “class” th
 If a blank node appears **only in the rule head**, it is treated as an existential:
 
 ```n3
-# ----------------
-# Existential rule
-# ----------------
-
 @prefix : <http://example.org/socrates#>.
 
 :Socrates a :Human.
