@@ -1,0 +1,93 @@
+# --------------
+# Turing Machine
+# --------------
+#
+# Turing completeness test case.
+# See http://en.wikipedia.org/wiki/Prolog#Turing_completeness
+
+@prefix list: <http://www.w3.org/2000/10/swap/list#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix : <http://example.org/#>.
+
+# interpreter for Turing machine
+{() :compute ?OutTape} <= {
+    ?Machine :start ?I.
+    (?I () "#" ()) :find ?OutTape.
+}.
+
+{?List :compute ?OutTape} <= {
+    ?List list:firstRest (?Head ?Tail).
+    ?Machine :start ?I.
+    (?I () ?Head ?Tail) :find ?OutTape.
+}.
+
+{(?State ?Left ?Cell ?Right) :find ?OutTape} <= {
+    (?State ?Cell ?Write ?Move) :tape ?Next.
+    (?Move ?Left ?Write ?Right ?A ?B ?C) :move true.
+    (?Next ?A ?B ?C) :continue ?OutTape.
+}.
+
+{(:halt ?Left ?Cell ?Right) :continue ?OutTape} <= {
+    ?Left :reverse ?R.
+    ?List list:firstRest (?Cell ?Right).
+    (?R ?List) list:append ?OutTape.
+}.
+
+{(?State ?Left ?Cell ?Right) :continue ?OutTape} <= {
+    (?State ?Left ?Cell ?Right) :find ?OutTape.
+}.
+
+{(:left () ?Cell ?Right () "#" ?L) :move true} <= {
+    ?L list:firstRest (?Cell ?Right).
+}.
+
+{(:left ?List ?Cell ?Right ?Tail ?Head ?L) :move true} <= {
+    ?List list:firstRest (?Head ?Tail).
+    ?L list:firstRest (?Cell ?Right).
+}.
+
+{(:stop ?Left ?Cell ?Right ?Left ?Cell ?Right) :move true} <= true.
+
+{(:right ?Left ?Cell () ?L "#" ()) :move true} <= {
+    ?L list:firstRest (?Cell ?Left).
+}.
+
+{(:right ?Left ?Cell ?List ?L ?Head ?Tail) :move true} <= {
+    ?List list:firstRest (?Head ?Tail).
+    ?L list:firstRest (?Cell ?Left).
+}.
+
+{() :reverse ()} <= true.
+
+{?List :reverse ?Reverse} <= {
+    ?List list:firstRest (?Head ?Tail).
+    ?Tail :reverse ?R.
+    (?R (?Head)) list:append ?Reverse.
+}.
+
+# a Turing machine to add 1 to a binary number
+:add1 :start 0.
+
+(0 0 0 :right) :tape 0.
+(0 1 1 :right) :tape 0.
+(0 "#" "#" :left) :tape 1.
+(1 0 1 :stop) :tape :halt.
+(1 1 0 :left) :tape 1.
+(1 "#" 1 :stop) :tape :halt.
+
+@prefix : <http://example.org/#>.
+
+# query
+{
+    (1 0 1 0 0 1) :compute ?A1.
+    (1 0 1 1 1 1) :compute ?A2.
+    (1 1 1 1 1 1) :compute ?A3.
+    () :compute ?A4.
+} => {
+    :test :is {
+        (1 0 1 0 0 1) :compute ?A1.
+        (1 0 1 1 1 1) :compute ?A2.
+        (1 1 1 1 1 1) :compute ?A3.
+        () :compute ?A4.
+    }.
+}.
