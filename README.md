@@ -105,7 +105,7 @@ Top level:
 * A triple of the form
 
   ```n3
-  ( { P } ) log:implies ( { C } ) .
+  { P } log:implies { C } .
   ```
 
   is turned into a forward rule
@@ -117,7 +117,7 @@ Top level:
 * A triple of the form
 
   ```n3
-  ( { H } ) log:impliedBy ( { B } ) .
+  { H } log:impliedBy { B } .
   ```
 
   is turned into a backward rule
@@ -128,8 +128,8 @@ Top level:
 
 Nested in formulas:
 
-* Inside a formula `{ ... }`, `A => B` is normalized as `( A ) log:implies ( B )`.
-* Likewise, `A <= B` becomes `( A ) log:impliedBy ( B )`.
+* Inside a formula `{ ... }`, `A => B` is normalized as `A log:implies B`.
+* Likewise, `A <= B` becomes `A log:impliedBy B`.
 
 During reasoning:
 
@@ -371,9 +371,9 @@ Operations on lists:
   * Works in multiple “directions”, e.g.:
 
     ```n3
-    ( ((1 2) (3 4)) ) list:append ?L.
-    ( (?P (3 4)) )   list:append (1 2 3 4).
-    ( ((1 2) ?S) )   list:append (1 2 3 4).
+    ((1 2) (3 4)) list:append ?L.
+    (?P (3 4)) list:append (1 2 3 4).
+    ((1 2) ?S) list:append (1 2 3 4).
     ```
 
 * `list:firstRest`
