@@ -289,14 +289,6 @@ Dates & durations:
 * `math:difference` can take `xsd:date` / `xsd:dateTime` and returns an `xsd:duration`.
 * Duration and date/dateTime values are internally mapped to seconds to allow comparisons.
 
-Integer arithmetic:
-
-* For lists of plain integer literals, `math:sum` and `math:difference` use Python’s **arbitrary precision integers** instead of floating-point.
-* This supports examples like big Fibonacci numbers without overflow or rounding.
-* Mixed / non-integer cases fall back to `float` as before.
-
-(If you add more `math:` built-ins, they naturally plug into `list:map`.)
-
 ### `log:` namespace
 
 * `log:equalTo`
