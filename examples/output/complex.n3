@@ -1,0 +1,56 @@
+@prefix : <http://example.org/#> .
+@prefix complex: <https://eyereasoner.github.io/eye/complex#> .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :test :is {
+#       ((-1 0) (0.5 0)) complex:exponentiation (6.123233995736766e-17 1) .
+#       ((2.718281828459045 0) (0 3.141592653589793)) complex:exponentiation (-1 1.2246467991473532e-16) .
+#       ((0 1) (0 1)) complex:exponentiation (0.20787957635076193 0) .
+#       ((2.718281828459045 0) (-1.57079632679 0)) complex:exponentiation (0.20787957635177984 0) .
+#       (2 0) complex:asin (1.5707963267948966 1.3169578969248166) .
+#       (2 0) complex:acos (0 -1.3169578969248166) .
+#   } .
+# It holds because the following instantiated premises are all satisfied:
+#   ((-1 0) (0.5 0)) complex:exponentiation (6.123233995736766e-17 1) .
+#   ((2.718281828459045 0) (0 3.141592653589793)) complex:exponentiation (-1 1.2246467991473532e-16) .
+#   ((0 1) (0 1)) complex:exponentiation (0.20787957635076193 0) .
+#   ((2.718281828459045 0) (-1.57079632679 0)) complex:exponentiation (0.20787957635177984 0) .
+#   (2 0) complex:asin (1.5707963267948966 1.3169578969248166) .
+#   (2 0) complex:acos (0 -1.3169578969248166) .
+# via the schematic forward rule:
+#   {{
+#     ((-1 0) (0.5 0)) complex:exponentiation ?C1 .
+#     ((2.718281828459045 0) (0 3.141592653589793)) complex:exponentiation ?C2 .
+#     ((0 1) (0 1)) complex:exponentiation ?C3 .
+#     ((2.718281828459045 0) (-1.57079632679 0)) complex:exponentiation ?C4 .
+#     (2 0) complex:asin ?C5 .
+#     (2 0) complex:acos ?C6 .
+#   }} => {{
+#     :test :is {
+#         ((-1 0) (0.5 0)) complex:exponentiation ?C1 .
+#         ((2.718281828459045 0) (0 3.141592653589793)) complex:exponentiation ?C2 .
+#         ((0 1) (0 1)) complex:exponentiation ?C3 .
+#         ((2.718281828459045 0) (-1.57079632679 0)) complex:exponentiation ?C4 .
+#         (2 0) complex:asin ?C5 .
+#         (2 0) complex:acos ?C6 .
+#     } .
+#   }}
+# with substitution (on rule variables):
+#   ?C1 = (?E__15 ?F__17)
+#   ?C2 = (?E__279 ?F__281)
+#   ?C3 = (?E__543 ?F__545)
+#   ?C4 = (?E__807 ?F__809)
+#   ?C5 = (?C__1089 ?D__1094)
+#   ?C6 = (?C__1198 ?D__1204)
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+:test :is {
+    ((-1 0) (0.5 0)) complex:exponentiation (6.123233995736766e-17 1) .
+    ((2.718281828459045 0) (0 3.141592653589793)) complex:exponentiation (-1 1.2246467991473532e-16) .
+    ((0 1) (0 1)) complex:exponentiation (0.20787957635076193 0) .
+    ((2.718281828459045 0) (-1.57079632679 0)) complex:exponentiation (0.20787957635177984 0) .
+    (2 0) complex:asin (1.5707963267948966 1.3169578969248166) .
+    (2 0) complex:acos (0 -1.3169578969248166) .
+} .
+
