@@ -2,7 +2,93 @@
 
 A minimal [Notation3 (N3)](https://notation3.org/) reasoner in **JavaScript**.
 
-`eyeling` is meant to be **tiny** and **close in spirit to EYE** on a small but practical fragment of N3. It parses a useful subset of N3 (a superset of common Turtle usage) and does forward + backward chaining over Horn-style rules, with a growing set of N3 built-ins. It also prints **small mathematical-English proofs** as N3 comments for each derived triple.
+`eyeling` is:
+
+- a **single self-contained file** (`eyeling.js`, no external deps),
+- intentionally **tiny** and **close in spirit to EYE**,
+- operating on a practical fragment of N3 (a superset of common Turtle usage),
+- and capable of **forward + backward chaining** over Horn-style rules
+  with a pragmatic subset of N3 built-ins.
+
+For every derived triple, it also prints a compact, mathematical-English proof
+as N3 comments.
+
+---
+
+## Quick start
+
+### Requirements
+
+- A reasonably recent Node.js (tested on current Node; anything with
+  `BigInt` support should be fine).
+
+### Running a single file
+
+From the repo root:
+
+```bash
+# Option 1: use the shebang (on Unix-like systems)
+./eyeling.js examples/socrates.n3
+
+# Option 2: explicit node
+node eyeling.js examples/socrates.n3
+```
+
+`eyeling` will:
+
+* parse the input,
+* run forward + backward reasoning to a fixpoint, and
+* print only **newly derived forward facts**, each preceded by a proof block.
+
+The repository includes `examples/*.n3` and their corresponding
+`examples/output/*` so you can see the expected behavior.
+
+To run all examples at once:
+
+```bash
+cd examples
+./test
+```
+
+This runs `eyeling.js` over each example and compares against
+the golden outputs in `examples/output`.
+
+---
+
+## What kind of output do I get?
+
+For each newly derived triple, `eyeling` prints:
+
+1. A block of `#`-comments explaining **why that triple holds**, and then
+2. The triple itself in N3/Turtle syntax.
+
+Shape-wise, the output looks like:
+
+```n3
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+# :s :p :o .
+# It holds because the following instantiated premises are all satisfied:
+# :s :q 42 .
+# 42 math:greaterThan 0 .
+# via the schematic forward rule:
+# {
+# ?S :q ?N .
+# (?N 0) math:greaterThan true .
+# } => {
+# ?S :p :o .
+# } .
+# with substitution (on rule variables):
+# ?N = 42
+# ?S = :s
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:s :p :o .
+```
+
+This is **not** a full EYE-style global proof tree, but a compact per-step
+justification that’s easy to read next to the derived triples.
 
 ---
 
@@ -12,26 +98,31 @@ A minimal [Notation3 (N3)](https://notation3.org/) reasoner in **JavaScript**.
 
 Supported:
 
-- `@prefix` and `@base`
-- Triples with `;` / `,` predicate–object lists
-- Variables `?x`
-- Blank nodes:
-  - Anonymous `[]`
-  - Property lists `[ :p :o; :q :r ]`
-- Collections `( ... )`
-- Quoted formulas `{ ... }`
-- Implications:
-  - Forward rules `{ P } => { C } .`
-  - Backward rules `{ C } <= { P } .`
-- Datatyped literals with `^^` (e.g. `"1944-08-21"^^xsd:date`)
-- `#` line comments
+* `@prefix` and `@base`
+* Triples with `;` / `,` predicate–object lists
+* Variables `?x`
+* Blank nodes:
+
+  * Anonymous `[]`
+  * Property lists `[ :p :o; :q :r ]`
+* Collections `( ... )`
+* Quoted formulas `{ ... }`
+* Implications:
+
+  * Forward rules `{ P } => { C } .`
+  * Backward rules `{ C } <= { P } .`
+* Datatyped literals with `^^` (e.g. `"1944-08-21"^^xsd:date`)
+* `#` line comments
 
 Non-goals / current limits:
 
-- Not a full W3C N3 grammar (edge-case identifiers, path expressions, explicit quantifiers, …)
-- Quoted formulas in rules are matched only as **whole formulas**; there is no pattern-matching inside them yet
-- No *global* proof tree export yet (but **each derived triple** is printed with a local justification as N3 comments)
-- Built-ins are intentionally incomplete: a **small, pragmatic subset** (enough for the included examples and some N3 builtin patterns)
+* Not a full W3C N3 grammar (edge cases for identifiers, path expressions,
+  explicit quantifiers, …)
+* Quoted formulas in rules are matched only as **whole formulas**; there is
+  no pattern-matching *inside* them yet
+* No *global* proof tree export (only per-triple justifications)
+* Built-ins are intentionally incomplete: a **small, pragmatic subset**
+  (enough for the included examples and some common N3 builtin patterns)
 
 ---
 
@@ -39,87 +130,45 @@ Non-goals / current limits:
 
 ### Forward + backward chaining
 
-- **Forward chaining to fixpoint** over forward rules (`=>`).
-- **Backward chaining** (SLD-style) over backward rules (`<=`) and built-ins.
+* **Forward chaining to fixpoint** over forward rules (`=>`).
+* **Backward chaining** (SLD-style) over backward rules (`<=`) and built-ins.
 
 Forward-rule premises are proved using:
 
-- Ground input facts
-- Backward rules
-- Built-ins
+* Ground input facts
+* Backward rules
+* Built-ins
 
-Then the (ground) conclusion triples are added to the fact set.
+When a forward rule fires, its (ground) conclusion triples are added to the
+fact set. The CLI prints **only newly derived forward facts**, *not* the
+original input facts.
 
-The command-line tool prints **only newly derived forward facts**, not the original input facts.
+### Rule-producing rules (meta-rules)
 
-### Per-triple explanations
-
-For every newly derived forward fact, `eyeling` prints:
-
-1. A block of `#`-comments explaining **why that triple holds**, then  
-2. The triple itself in N3/Turtle syntax.
-
-Each explanation block includes:
-
-- The **derived triple**.
-- The **instantiated premises** (rule body after applying the successful substitution).
-- The **schematic forward rule** that fired (with variables).
-- The **substitution** on the variables that actually occur in that rule (internal helper variables are filtered out).
-- A short English sentence stating that the triple is entailed by the rules and facts.
-
-Shape-wise, the output looks like:
-
-```n3
-# ----------------------------------------------------------------------
-# Proof for derived triple:
-#   :s :p :o .
-# It holds because the following instantiated premises are all satisfied:
-#   :s :q 42 .
-#   42 math:greaterThan 0 .
-# via the schematic forward rule:
-#   {
-#     ?S :q ?N .
-#     (?N 0) math:greaterThan true .
-#   } => {
-#     ?S :p :o .
-#   }
-# with substitution (on rule variables):
-#   ?N = 42
-#   ?S = :s
-# Therefore the derived triple above is entailed by the rules and facts.
-# ----------------------------------------------------------------------
-:s :p :o .
-```
-
-This is **not** a full EYE-style global proof tree, but a compact per-step justification that’s easy to read next to the output triples.
-
----
-
-## Rule-producing rules (meta-rules)
-
-`eyeling` understands rules that *produce* other rules, using the `log:implies` / `log:impliedBy` idiom.
+`eyeling` understands rules that *produce* other rules, using the
+`log:implies` / `log:impliedBy` idiom.
 
 Top level:
 
-* A triple of the form
+* A triple
 
   ```n3
   { P } log:implies { C } .
   ```
 
-  is turned into a forward rule
+  becomes a forward rule
 
   ```n3
   { P } => { C } .
   ```
 
-* A triple of the form
+* A triple
 
   ```n3
   { H } log:impliedBy { B } .
   ```
 
-  is turned into a backward rule
+  becomes a backward rule
 
   ```n3
   { H } <= { B } .
@@ -132,29 +181,31 @@ Nested in formulas:
 
 During reasoning:
 
-* Any **derived** triple whose predicate is `log:implies` / `log:impliedBy` and whose subject and object are formulas is also turned into a new live rule (forward or backward).
-* The triple itself is kept as a fact and printed in `{ ... } => { ... } .` / `{ ... } <= { ... } .` syntax.
+* Any **derived** triple whose predicate is `log:implies` / `log:impliedBy`
+  and whose subject and object are formulas is turned into a new live
+  forward/backward rule.
+* The triple itself is kept as a fact and printed in `{ ... } => { ... } .`
+  / `{ ... } <= { ... } .` syntax.
 
-This supports EYE-style meta-programs, such as rules that generate subclass-propagation rules, property rules, etc.
+This supports EYE-style meta-programs, such as rules that generate
+subclass-propagation rules, property rules, etc.
 
----
+### Backward search depth (safety guard)
 
-## Backward search depth (safety guard)
+The backward prover has a configurable depth limit (`MAX_BACKWARD_DEPTH`) to
+protect against infinite or extremely deep recursion. If the limit is hit,
+that proof path is cut off.
 
-The backward prover has a simple depth limit (`MAX_BACKWARD_DEPTH`) to protect against infinite or extremely deep recursion. If the limit is hit, that proof path is cut off.
+The implementation currently relies on:
 
-It currently relies on:
-
-* The depth limit, and
-* A “visited goals” stack
-
-to avoid trivial loops during backward reasoning.
+* This depth limit, and
+* A “visited goals” stack to avoid trivial loops during backward reasoning.
 
 ---
 
 ## Blank nodes and quantification
 
-`eyeling` tries to mimic the usual N3 / EYE intuition:
+`eyeling` tries to mirror the usual N3 / EYE intuition:
 
 ### 1. Blank nodes in facts → normal RDF blanks
 
@@ -165,42 +216,52 @@ Top-level triples like:
 [ :p :o ] :q :r .
 ```
 
-are parsed as normal RDF blank nodes. They have stable IDs like `_:b1`, `_:b2` inside a single run.
+are parsed as normal RDF blank nodes. They get stable IDs such as `_:b1`,
+`_:b2` inside a single run.
 
 ### 2. Blank nodes in rule premises → universals
 
 In rule premises (the left side of `=>` / the right side of `<=`):
 
 ```n3
-{ _:A rdfs:subClassOf ?B .
+{
+  _:A rdfs:subClassOf ?B .
   ?S a _:A .
 } => {
   ?S a ?B .
 }.
 ```
 
-the locally scoped `_:` nodes are treated like **rule-scoped universal variables**:
+the locally scoped `_:` nodes are treated like **rule-scoped universal
+variables**:
 
 * `_:A` inside a rule body behaves as if it were written `?A`.
-* Occurrences of the same `_:` label inside that rule premise are linked together.
+* All occurrences of the same `_:` label inside that rule premise are
+  linked together.
 
 The same applies to property-list syntax:
 
 ```n3
-{ ?S a [ rdfs:subClassOf ?B ] . } => { ?S a ?B . }.
+{
+  ?S a [ rdfs:subClassOf ?B ] .
+} => {
+  ?S a ?B .
+}.
 ```
 
-Here the inlined `[ rdfs:subClassOf ?B ]` introduces a body-local “class” that behaves as a universally quantified variable in that rule.
+Here the inlined `[ rdfs:subClassOf ?B ]` introduces a body-local “class”
+that behaves as a universally quantified variable in that rule.
 
 ### 3. Blank nodes in rule conclusions → existentials
 
-If a blank node appears **only in the rule head**, it is treated as an existential:
+If a blank node appears **only in the rule head**, it is treated as an
+existential:
 
 ```n3
-@prefix : <http://example.org/#> .
+@prefix : <http://example.org/> .
 
 :Socrates a :Human.
-:Plato   a :Human.
+:Plato    a :Human.
 
 { ?S a :Human. } => { ?S :is _:B. }.
 ```
@@ -208,7 +269,7 @@ If a blank node appears **only in the rule head**, it is treated as an existenti
 Each time this rule fires, `eyeling` creates a fresh Skolem blank:
 
 ```n3
-@prefix : <http://example.org/#> .
+@prefix : <http://example.org/> .
 
 :Socrates :is _:sk_0 .
 :Plato    :is _:sk_1 .
@@ -217,7 +278,8 @@ Each time this rule fires, `eyeling` creates a fresh Skolem blank:
 Key points:
 
 * Skolem IDs (`_:sk_0`, `_:sk_1`, …) are unique per rule firing.
-* Equal facts up to renaming of Skolem IDs are treated as duplicates and are not re-added, to avoid trivial infinite loops.
+* Equal facts up to renaming of Skolem IDs are treated as duplicates and are
+  not re-added, to avoid trivial infinite loops.
 
 ---
 
@@ -227,14 +289,13 @@ Key points:
 
 ```n3
 # inference fuse
-@prefix : <http://example.org/#> .
+@prefix : <http://example.org/> .
 
 :stone :color :black .
 :stone :color :white .
 
 { ?X :color :black .
-  ?X :color :white .
-} => false.
+  ?X :color :white . } => false.
 ```
 
 Semantics:
@@ -245,15 +306,19 @@ Semantics:
   * exits with **status code 2**.
 * This mirrors the “fuse” / inconsistency-detection behavior in EYE.
 
-The `Makefile` / example scripts treat the non-zero exit code for the `fuse.n3` example as **expected** and still consider the overall example run successful.
+The `examples/test` script treats this non-zero exit code for the `fuse.n3`
+example as **expected**, and still considers the overall example run
+successful.
 
 ---
 
 ## Built-ins (overview)
 
-Built-ins are recognized by expanded IRIs and evaluated during goal proving (backward phase).
+Built-ins are recognized by expanded IRIs and evaluated during **backward**
+goal proving.
 
-This is a **condensed** overview of what’s currently implemented.
+This is a **condensed** overview of what’s currently implemented. For exact
+behavior and corner cases, see the `evalBuiltin` function in `eyeling.js`.
 
 ### `math:` namespace
 
@@ -285,12 +350,19 @@ Comparison:
 * `math:notGreaterThan`
 
 Other:
+
 * `math:fibonacci`
+
+  `math:fibonacci` is BigInt-aware and uses 0-based indexing:
+  Integer inputs are treated as unbounded BigInts; outputs are exact
+  (also as integer literals).
 
 Dates & durations:
 
-* `math:difference` can take `xsd:date` / `xsd:dateTime` and returns an `xsd:duration`.
-* Duration and date/dateTime values are internally mapped to seconds to allow comparisons.
+* `math:difference` can take `xsd:date` / `xsd:dateTime` and returns an
+  `xsd:duration`.
+* Duration and date/dateTime values are internally mapped to seconds to
+  allow comparisons.
 
 ### `log:` namespace
 
@@ -298,23 +370,29 @@ Dates & durations:
 
   * Relational: succeeds iff the subject and object terms can be **unified**.
   * May bind variables on either side.
+
 * `log:notEqualTo`
 
   * Exact complement of `log:equalTo`.
-  * Succeeds iff there is **no** unifier for subject and object given the current substitution.
+  * Succeeds iff there is **no** unifier for subject and object given the
+    current substitution.
   * Does not introduce new bindings; acts as a constraint.
+
 * `log:collectAllIn` (pragmatic subset)
 
   * Subject shape: `( ?V { WHERE } ?List )`.
-  * Object is a “scope” term (often a blank node or variable) but is currently treated as “this reasoning run”.
+  * Object is a “scope” term (often a blank node or variable) but is
+    currently treated as “this reasoning run”.
   * Informal semantics:
 
-    * Evaluate the `WHERE` graph pattern in the current reasoning scope.
+    * Evaluate the `{ WHERE }` pattern in the current reasoning scope.
     * For each solution, collect the value of `?V` into `?List`.
-  * This is enough to support patterns like:
 
-    * Dijkstra’s algorithm (collect neighbor queue entries).
-    * Counting / aggregating events in a local graph.
+  This is enough to support patterns like:
+
+  * Dijkstra-style neighbor queue collection
+  * Counting / aggregating events in a local graph
+
 * `log:notIncludes` (Scoped Negation As Failure)
 
   * Shape:
@@ -323,10 +401,12 @@ Dates & durations:
     ?Scope log:notIncludes { ...pattern... } .
     ```
 
-  * Current behavior:
+  * Behavior:
 
-    * Evaluate the quoted `{ pattern }` against the current closure (facts + rules + built-ins).
-    * If there is **no** way to prove all triples in `{ pattern }`, the builtin **succeeds** (and introduces no new bindings).
+    * Evaluate the quoted `{ pattern }` against the current closure
+      (facts + rules + built-ins).
+    * If there is **no** way to prove all triples in `{ pattern }`,
+      the builtin **succeeds** (and introduces no new bindings).
     * If there **is** at least one proof of `{ pattern }`, the builtin fails.
 
 ### `time:` namespace
@@ -337,7 +417,7 @@ Dates & durations:
   "" time:localTime ?D.
   ```
 
-  binds `?D` to the current local time as `xsd:dateTime`.
+  Binds `?D` to the current local time as `xsd:dateTime`.
 
 ### `list:` namespace
 
@@ -379,16 +459,18 @@ Operations on lists:
 
     * the predicate is itself a builtin, and
     * the input list is ground.
-  * Example:
 
-    ```n3
-    (( (1 -2 3) math:absoluteValue) list:map (1 2 3)).
-    ```
+  Example:
+
+  ```n3
+  (( (1 -2 3) math:absoluteValue) list:map (1 2 3)).
+  ```
 
 * `list:notMember`
 
   * Succeeds iff the element does **not** occur in the list.
-  * Used for scoped negation patterns like “not visited yet” in graph algorithms.
+  * Used for scoped negation patterns like “not visited yet” in graph
+    algorithms.
 
 * `list:reverse`
 
@@ -399,7 +481,8 @@ Operations on lists:
   * Sorts a list using a pragmatic comparator, good enough for the examples.
   * In the Dijkstra example, it’s used to sort the priority queue by cost.
 
-These list built-ins are designed to match common patterns from the N3 builtin report, not yet every corner case.
+These list built-ins aim to match common patterns from the N3 builtin report,
+not every corner case.
 
 ---
 
@@ -415,40 +498,11 @@ The project is deliberately small and self-contained:
   * backward prover
   * forward engine
   * rule-producing rules
-  * built-ins
+  * built-ins (math, log, list, time, including `math:fibonacci`)
   * explanations / proof comments
   * CLI
 
----
-
-## Running and examples
-
-To run `eyeling` on a single N3 file:
-
-```bash
-eyeling.js examples/socrates.n3
-```
-
-This reads the input file, runs forward + backward reasoning to a fixpoint, and prints:
-
-* Only the newly derived forward facts, and
-* Interleaved proof comments as described above.
-
-The repository includes N3 programs in [`examples`](https://github.com/eyereasoner/eyeling/tree/main/examples). They cover:
-
-* Classic toy reasoning snippets,
-* Meta-rules,
-* Small numeric / list puzzles (including big Fibonacci),
-* A Dijkstra shortest-path program using `list:` and `log:` built-ins,
-* And more mathematically flavored examples (e.g., complex numbers).
-
-You can test all the examples with:
-
-```bash
-cd examples
-./test
-```
-
-and get [`output`](https://github.com/eyereasoner/eyeling/tree/main/examples/output)
-All derived output is annotated with interleaved mathematical-English proof comments.
+The `examples/` directory contains small N3 programs that exercise most of
+this functionality (including big Fibonacci, graphs, and more
+mathematically flavored snippets).
 
