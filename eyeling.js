@@ -16,6 +16,13 @@
  *  5) Print only newly derived forward facts with explanations.
  */
 
+const { version } = require('./package.json');
+
+if (process.argv.includes('--version') || process.argv.includes('-v')) {
+  console.log(`eyeling v${version}`);
+  process.exit(0);
+}
+
 // ============================================================================
 // Namespace constants
 // ============================================================================
