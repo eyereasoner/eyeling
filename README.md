@@ -348,6 +348,8 @@ Comparison:
 * `math:lessThan`
 * `math:notLessThan`
 * `math:notGreaterThan`
+* `math:equalTo`
+* `math:notEqualTo`
 
 Other:
 
