@@ -1,0 +1,17 @@
+#!/bin/bash
+# check the command line
+if [ $# -lt 2 ] ; then
+  echo "Usage: $(basename $0) patch|minor|major \"release message\""
+  exit 1
+fi
+
+# change working directory
+pushd ~/github.com/eyereasoner/eyeling > /dev/null
+
+# git commands
+git commit -a -m "$2"
+npm version $1
+git push
+git push origin main --follow-tags
+
+popd > /dev/null

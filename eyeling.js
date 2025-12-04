@@ -1090,26 +1090,40 @@ function isGroundTriple(tr) {
 }
 
 function applySubstTerm(t, s) {
+  // Common case: variable
   if (t instanceof Var) {
-    let cur = new Var(t.name);
-    const seen = new Set();
+    // Fast path: unbound variable → no change
+    const first = s[t.name];
+    if (first === undefined) {
+      return t;
+    }
+
+    // Follow chains X -> Y -> ... until we hit a non-var or a cycle.
+    let cur = first;
+    const seen = new Set([t.name]);
     while (cur instanceof Var) {
       const name = cur.name;
-      if (seen.has(name)) break;
+      if (seen.has(name)) break; // cycle
       seen.add(name);
       const nxt = s[name];
       if (!nxt) break;
       cur = nxt;
     }
+
     if (cur instanceof Var) {
-      return new Var(cur.name);
-    } else {
-      return applySubstTerm(cur, s);
+      // Still a var: keep it as is (no need to clone)
+      return cur;
     }
+    // Bound to a non-var term: apply substitution recursively in case it
+    // contains variables inside.
+    return applySubstTerm(cur, s);
   }
+
+  // Non-variable terms: unchanged from your original code.
   if (t instanceof ListTerm) {
     return new ListTerm(t.elems.map(e => applySubstTerm(e, s)));
   }
+
   if (t instanceof OpenListTerm) {
     const newPrefix = t.prefix.map(e => applySubstTerm(e, s));
     const tailTerm = s[t.tailVar];
@@ -1129,9 +1143,11 @@ function applySubstTerm(t, s) {
       return new OpenListTerm(newPrefix, t.tailVar);
     }
   }
+
   if (t instanceof FormulaTerm) {
     return new FormulaTerm(t.triples.map(tr => applySubstTriple(tr, s)));
   }
+
   return t;
 }
 
@@ -1223,10 +1239,13 @@ function unifyTerm(a, b, subst) {
 }
 
 function unifyTriple(pat, fact, subst) {
-  const s1 = unifyTerm(pat.s, fact.s, subst);
+  // Predicates are usually the cheapest and most selective
+  const s1 = unifyTerm(pat.p, fact.p, subst);
   if (s1 === null) return null;
-  const s2 = unifyTerm(pat.p, fact.p, s1);
+
+  const s2 = unifyTerm(pat.s, fact.s, s1);
   if (s2 === null) return null;
+
   const s3 = unifyTerm(pat.o, fact.o, s2);
   return s3;
 }
@@ -2294,17 +2313,43 @@ function solveSingleGoal(goal, facts, backRules, depth, visited, varGen) {
 
   const results = [];
 
-  // 1) match known facts
-  for (const f of facts) {
-    const s2 = unifyTriple(goal, f, {});
-    if (s2 !== null) results.push(s2);
+  // -------------------------------------------------------------------
+  // 1) Match known facts, with cheap predicate filtering
+  // -------------------------------------------------------------------
+  if (goal.p instanceof Iri) {
+    const targetPred = goal.p.value;
+    for (const f of facts) {
+      const fp = f.p;
+      // Facts are ground; if predicate IRIs don't match, skip unify.
+      if (fp instanceof Iri && fp.value !== targetPred) continue;
+      const s2 = unifyTriple(goal, f, {});
+      if (s2 !== null) results.push(s2);
+    }
+  } else {
+    // Non-IRI predicate (variable, blank, etc.) → must try all facts.
+    for (const f of facts) {
+      const s2 = unifyTriple(goal, f, {});
+      if (s2 !== null) results.push(s2);
+    }
   }
 
-  // 2) backward rules
+  // -------------------------------------------------------------------
+  // 2) Backward rules, also filtered by head predicate before renaming
+  // -------------------------------------------------------------------
   for (const r of backRules) {
     if (r.conclusion.length !== 1) continue;
+
+    // Use the original rule head (before standardization) for a cheap filter
+    if (goal.p instanceof Iri) {
+      const rawHead = r.conclusion[0];
+      if (rawHead.p instanceof Iri && rawHead.p.value !== goal.p.value) {
+        continue;
+      }
+    }
+
     const rStd = standardizeRule(r, varGen);
     const head = rStd.conclusion[0];
+
     const s2 = unifyTriple(head, goal, {});
     if (s2 === null) continue;
 
