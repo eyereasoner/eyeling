@@ -65,26 +65,29 @@ For each newly derived triple, `eyeling` prints:
 Shape-wise, the output looks like:
 
 ```n3
+@prefix : <http://example.org/socrates#> .
+
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-# :s :p :o .
-# It holds because the following instantiated premises are all satisfied:
-# :s :q 42 .
-# 42 math:greaterThan 0 .
+#   :Socrates a :Mortal .
+# It holds because the following instance of the rule body is provable:
+#   :Socrates a :Human .
+#   :Human rdfs:subClassOf :Mortal .
 # via the schematic forward rule:
-# {
-# ?S :q ?N .
-# (?N 0) math:greaterThan true .
-# } => {
-# ?S :p :o .
-# } .
+#   {
+#     ?S a ?A .
+#     ?A rdfs:subClassOf ?B .
+#   } => {
+#     ?S a ?B .
+#   } .
 # with substitution (on rule variables):
-# ?N = 42
-# ?S = :s
+#   ?A = :Human
+#   ?B = :Mortal
+#   ?S = :Socrates
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:s :p :o .
+:Socrates a :Mortal .
 ```
 
 This is **not** a full EYE-style global proof tree, but a compact per-step

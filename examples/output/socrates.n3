@@ -8,15 +8,15 @@
 #   :Human rdfs:subClassOf :Mortal .
 # via the schematic forward rule:
 #   {
-#     ?S a ?_b1 .
-#     ?_b1 rdfs:subClassOf ?B .
+#     ?S a ?A .
+#     ?A rdfs:subClassOf ?B .
 #   } => {
 #     ?S a ?B .
 #   } .
 # with substitution (on rule variables):
+#   ?A = :Human
 #   ?B = :Mortal
 #   ?S = :Socrates
-#   ?_b1 = :Human
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
