@@ -1,0 +1,20 @@
+@prefix : <https://eyereasoner.github.io/eye/reasoning#> .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   (100 3.1415929035585526) :pi true .
+# It holds because the following instance of the rule body is provable:
+#   (100 3.1415929035585526) :pi true .
+# via the schematic forward rule:
+#   {
+#     (100 ?Pi) :pi true .
+#   } => {
+#     (100 ?Pi) :pi true .
+#   } .
+# with substitution (on rule variables):
+#   ?Pi = 3.1415929035585526
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+(100 3.1415929035585526) :pi true .
+
