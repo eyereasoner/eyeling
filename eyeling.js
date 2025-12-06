@@ -1172,7 +1172,7 @@ function applySubstTerm(t, s) {
     return applySubstTerm(cur, s);
   }
 
-  // Non-variable terms: unchanged from your original code.
+  // Non-variable terms
   if (t instanceof ListTerm) {
     return new ListTerm(t.elems.map(e => applySubstTerm(e, s)));
   }
@@ -1377,7 +1377,6 @@ function parseNumberLiteral(t) {
 }
 
 function formatNum(n) {
-  if (Number.isInteger(n)) return String(n);
   return String(n);
 }
 
@@ -1571,19 +1570,6 @@ function listAppendSplit(parts, resElems, subst) {
 // Backward proof & builtins mutual recursion — declarations first
 // ============================================================================
 
-function proveGoals(
-  goals,
-  subst,
-  facts,
-  backRules,
-  depth,
-  visited,
-  varGen
-) {
-  // defined later
-  return [];
-}
-
 function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
   const g = applySubstTriple(goal, subst);
 
@@ -1599,7 +1585,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
       return [s2];
     }
     if (g.o instanceof Literal) {
-      const [lexO, _] = literalParts(g.o.value);
+      const [lexO] = literalParts(g.o.value);
       if (stripQuotes(lexO) === now) return [{ ...subst }];
     }
     return [];
