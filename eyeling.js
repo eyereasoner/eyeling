@@ -2094,26 +2094,17 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
       visited2,
       varGen
     );
+
+    // Collect one value per *solution*, duplicates allowed
     const collected = [];
     for (const sBody of sols) {
       const v = applySubstTerm(valueTempl, sBody);
-      if (!collected.some(t => termsEqual(t, v))) collected.push(v);
+      collected.push(v);
     }
+
     const collectedList = new ListTerm(collected);
-    const out = [];
-    if (
-      listTerm instanceof Var ||
-      listTerm instanceof ListTerm ||
-      listTerm instanceof OpenListTerm
-    ) {
-      const s2 = unifyTerm(listTerm, collectedList, subst);
-      if (s2 !== null) out.push(s2);
-    } else {
-      if (unifyTerm(listTerm, collectedList, subst) !== null) {
-        out.push({ ...subst });
-      }
-    }
-    return out;
+    const s2 = unifyTerm(listTerm, collectedList, subst);
+    return s2 !== null ? [s2] : [];
   }
 
   // -----------------------------------------------------------------
