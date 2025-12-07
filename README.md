@@ -359,13 +359,13 @@ The `examples/test` script treats this non-zero exit code for the `fuse.n3` exam
 
 #### Quick map (by namespace)
 
-| Namespace | Role / topic                                        | N3 Builtins section | Notes in `eyeling` |
-|-----------|-----------------------------------------------------|---------------------|--------------------|
-| `math:`   | Arithmetic, trig, comparisons, Fibonacci, date diffs | §4.2 math           | Core numeric ops (`sum`, `product`, comparisons, …) plus a few extras (e.g. `math:fibonacci`). |
-| `time:`   | Time and dates                                      | §4.3 time           | Currently only `time:localTime` (SWAP-style). |
-| `list:`   | List/collection utilities                           | §4.4 list           | Includes `list:append`, `first`, `last`, `in`, `member`, `memberAt`, `iterate`, `length`, `remove`, `reverse`, `sort`, `map`, `notMember`. |
-| `log:`    | Logical / meta reasoning, SNAF, rule introspection  | §4.5 log            | Includes `log:equalTo`, `log:notEqualTo`, `log:implies`, `log:impliedBy`, `log:collectAllIn`, `log:notIncludes`, etc. |
-| `string:` | String processing and regex-like operations         | §4.6 string         | Includes concatenation, containment, case-insensitive equality, comparisons, `string:format`, `matches`/`notMatches`, `replace`, `scrape`, etc. |
+| Namespace | Role / topic                                        | N3 Builtins section | Notes in `eyeling` (implemented built-ins) |
+|-----------|-----------------------------------------------------|---------------------|--------------------------------------------|
+| `math:`   | Arithmetic, trig, comparisons, misc.                | §4.2 math           | Implements: `math:greaterThan`, `math:lessThan`, `math:notLessThan`, `math:notGreaterThan`, `math:equalTo`, `math:notEqualTo`, `math:sum`, `math:product`, `math:difference`, `math:quotient`, `math:exponentiation`, `math:negation`, `math:absoluteValue`, `math:cos`, `math:sin`, `math:acos`, `math:asin`, `math:fibonacci`. |
+| `time:`   | Time and dates                                      | §4.3 time           | Implements: `time:localTime`. |
+| `list:`   | List/collection utilities                           | §4.4 list           | Implements: `list:append`, `list:firstRest`, `list:first`, `list:last`, `list:in`, `list:member`, `list:memberAt`, `list:iterate`, `list:length`, `list:remove`, `list:notMember`, `list:reverse`, `list:sort`, `list:map`. |
+| `log:`    | Logical / meta reasoning, SNAF, rule introspection  | §4.5 log            | Implements: `log:equalTo`, `log:notEqualTo`, `log:implies`, `log:impliedBy`, `log:notIncludes`, `log:collectAllIn`. |
+| `string:` | String processing and regex-like operations         | §4.6 string         | Implements: `string:concatenation`, `string:contains`, `string:containsIgnoringCase`, `string:endsWith`, `string:equalIgnoringCase`, `string:format` (subset: `%s`, `%%`), `string:greaterThan`, `string:lessThan`, `string:matches`, `string:notEqualIgnoringCase`, `string:notGreaterThan`, `string:notLessThan`, `string:notMatches`, `string:replace`, `string:scrape`, `string:startsWith`. |
 
 Built-ins are recognized by expanded IRIs and evaluated during **backward** goal proving. This is a **condensed** overview of what’s currently implemented. For exact behavior and corner cases, see the `evalBuiltin` function in `eyeling.js`.
 
