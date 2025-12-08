@@ -1069,24 +1069,48 @@ function isConstraintBuiltin(tr) {
   if (!(tr.p instanceof Iri)) return false;
   const v = tr.p.value;
 
-  // log: tests that are purely constraints
-  if (v === LOG_NS + "notEqualTo") return true;
-  if (v === LOG_NS + "notIncludes") return true;
+  // log: tests that are purely constraints (no new bindings)
+  if (
+    v === LOG_NS + "notEqualTo" ||
+    v === LOG_NS + "notIncludes"
+  ) {
+    return true;
+  }
 
   // math: numeric comparisons (no new bindings, just tests)
   if (
-    v === MATH_NS + "greaterThan" ||
-    v === MATH_NS + "lessThan" ||
-    v === MATH_NS + "notLessThan" ||
-    v === MATH_NS + "notGreaterThan" ||
-    v === MATH_NS + "equalTo" ||
+    v === MATH_NS + "greaterThan"   ||
+    v === MATH_NS + "lessThan"      ||
+    v === MATH_NS + "notLessThan"   ||
+    v === MATH_NS + "notGreaterThan"||
+    v === MATH_NS + "equalTo"       ||
     v === MATH_NS + "notEqualTo"
   ) {
     return true;
   }
 
   // list: membership test with no bindings
-  if (v === LIST_NS + "notMember") return true;
+  if (v === LIST_NS + "notMember") {
+    return true;
+  }
+
+  // string: relational / membership style tests (no bindings)
+  if (
+    v === STRING_NS + "contains"             ||
+    v === STRING_NS + "containsIgnoringCase" ||
+    v === STRING_NS + "endsWith"             ||
+    v === STRING_NS + "equalIgnoringCase"    ||
+    v === STRING_NS + "greaterThan"          ||
+    v === STRING_NS + "lessThan"             ||
+    v === STRING_NS + "matches"              ||
+    v === STRING_NS + "notEqualIgnoringCase" ||
+    v === STRING_NS + "notGreaterThan"       ||
+    v === STRING_NS + "notLessThan"          ||
+    v === STRING_NS + "notMatches"           ||
+    v === STRING_NS + "startsWith"
+  ) {
+    return true;
+  }
 
   return false;
 }

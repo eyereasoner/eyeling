@@ -212,7 +212,23 @@ Some built-ins behave as **pure tests**: they never introduce new variable bindi
   * `math:notGreaterThan`
   * `math:equalTo`
   * `math:notEqualTo`
-* `list:notMember`
+* List membership test in `list:`:
+
+  * `list:notMember`
+* String comparison / membership / regex tests in `string:`:
+
+  * `string:contains`
+  * `string:containsIgnoringCase`
+  * `string:endsWith`
+  * `string:startsWith`
+  * `string:equalIgnoringCase`
+  * `string:notEqualIgnoringCase`
+  * `string:greaterThan`
+  * `string:lessThan`
+  * `string:notGreaterThan`
+  * `string:notLessThan`
+  * `string:matches`
+  * `string:notMatches`
 
 For **forward rules** (`=>`), `eyeling` automatically **delays** such constraint-style built-ins to the **end of the rule premise**:
 
@@ -362,8 +378,8 @@ The `examples/test` script treats this non-zero exit code for the `fuse.n3` exam
 | Namespace | Role / topic                                        | N3 Builtins section | Notes in `eyeling` (implemented built-ins) |
 |-----------|-----------------------------------------------------|---------------------|--------------------------------------------|
 | `crypto:` | Cryptographic hashes                                | §4.1 crypto         | Implements: `crypto:sha` (SHA-1, as in the N3 Builtins report), plus EYE-style `crypto:md5`, `crypto:sha256`, `crypto:sha512`. All operate on the lexical form of the subject literal (as UTF-8) and return the lowercase hex digest as a plain string literal. |
-| `math:`   | Arithmetic, trig, comparisons, misc.                | §4.2 math           | Implements: `math:greaterThan`, `math:lessThan`, `math:notLessThan`, `math:notGreaterThan`, `math:equalTo`, `math:notEqualTo`, `math:sum`, `math:product`, `math:difference`, `math:quotient`, `math:exponentiation`, `math:negation`, `math:absoluteValue`, `math:cos`, `math:sin`, `math:acos`, `math:asin`, `math:fibonacci`. |
-| `time:`   | Time and dates                                      | §4.3 time           | Implements: `time:localTime`. |
+| `math:`   | Arithmetic, trig, comparisons, misc.                | §4.2 math           | Implements: `math:greaterThan`, `math:lessThan`, `math:notLessThan`, `math:notGreaterThan`, `math:equalTo`, `math:notEqualTo`, `math:sum`, `math:product`, `math:difference`, `math:quotient`, `math:exponentiation`, `math:negation`, `math:absoluteValue`, `math:cos`, `math:sin`, `math:acos`, `math:asin`, `math:atan`, `math:cosh`, `math:sinh`, `math:degrees`, `math:remainder`, `math:rounded`, `math:tan`, `math:tanh`, `math:fibonacci`. |
+| `time:`   | Time and dates                                      | §4.3 time           | Implements: `time:day`, `time:month`, `time:year`, `time:minute`, `time:second`, `time:timeZone`, `time:localTime`. |
 | `list:`   | List/collection utilities                           | §4.4 list           | Implements: `list:append`, `list:firstRest`, `list:first`, `list:last`, `list:in`, `list:member`, `list:memberAt`, `list:iterate`, `list:length`, `list:remove`, `list:notMember`, `list:reverse`, `list:sort`, `list:map`. |
 | `log:`    | Logical / meta reasoning, SNAF, rule introspection  | §4.5 log            | Implements: `log:equalTo`, `log:notEqualTo`, `log:implies`, `log:impliedBy`, `log:notIncludes`, `log:collectAllIn`. |
 | `string:` | String processing and regex-like operations         | §4.6 string         | Implements: `string:concatenation`, `string:contains`, `string:containsIgnoringCase`, `string:endsWith`, `string:equalIgnoringCase`, `string:format` (subset: `%s`, `%%`), `string:greaterThan`, `string:lessThan`, `string:matches`, `string:notEqualIgnoringCase`, `string:notGreaterThan`, `string:notLessThan`, `string:notMatches`, `string:replace`, `string:scrape`, `string:startsWith`. |
@@ -411,12 +427,19 @@ Unary ops:
 * `math:negation`
 * `math:absoluteValue`
 
-Trigonometry:
+Trigonometry & angles:
 
-* `math:sin`
-* `math:cos`
-* `math:asin`
-* `math:acos`
+* `math:sin`, `math:cos`  
+  Standard sine/cosine (argument in radians).
+
+* `math:asin`, `math:acos`, `math:atan`  
+  Inverse trig functions (result in radians).
+
+* `math:cosh`, `math:sinh`  
+  Hyperbolic cosine/sine. Implemented via `Math.cosh` / `Math.sinh` when the host JS provides them (otherwise the builtin simply fails).
+
+* `math:tan`, `math:tanh`  
+  Tangent / hyperbolic tangent (again via the native `Math.*` functions where available).
 
 Comparison (pure tests; no new bindings):
 
@@ -429,9 +452,22 @@ Comparison (pure tests; no new bindings):
 
 These comparisons are treated as **constraints** for goal ordering in forward rules (see above): they only succeed/fail given the current bindings.
 
-Other:
+Other numeric helpers:
 
-* `math:fibonacci`
+* `math:degrees`  
+  Convert radians to degrees. Subject is an angle in radians; object is the corresponding angle in degrees.
+
+* `math:remainder`  
+  Remainder of integer division.  
+  Shape: `( $Dividend $Divisor ) math:remainder $Remainder`.  
+  Implemented using JavaScript’s `%` operator; fails if the divisor is zero or any operand is non-numeric.
+
+* `math:rounded`  
+  Round to nearest integer (JavaScript `Math.round` semantics).  
+  Shape: `$In math:rounded $Out`.
+
+* `math:fibonacci`  
+  BigInt-aware Fibonacci sequence.
 
 `math:fibonacci` is BigInt-aware and uses **0-based** indexing:
 
@@ -444,6 +480,31 @@ Dates & durations:
 * Duration and date/dateTime values are internally mapped to seconds to allow comparisons.
 
 ### `time:` namespace
+
+Helpers for working with dates and dateTimes, loosely following section 4.3 of the Notation3 Builtins report. All of these operate on the lexical form of the subject literal and return `xsd:integer` results where applicable.
+
+Extraction built-ins (subject is an `xsd:date` or `xsd:dateTime` literal):
+
+* `time:day`  
+  True iff the object is the (1–31) day-of-month of the date/datetime subject.
+
+* `time:month`  
+  True iff the object is the (1–12) month number of the subject.
+
+* `time:year`  
+  True iff the object is the year of the subject.
+
+* `time:minute`  
+  True iff the object is the minute field (0–59) of the `xsd:dateTime` subject, interpreted in UTC.
+
+* `time:second`  
+  True iff the object is the second field (0–59) of the `xsd:dateTime` subject, interpreted in UTC.
+
+* `time:timeZone`  
+  True iff the object is the time zone offset in **minutes east of UTC** encoded in the `xsd:dateTime` subject.  
+  Example: `"2025-01-01T00:00:00+02:00"^^xsd:dateTime` ⇒ `120`.
+
+Current local time:
 
 * `time:localTime` — SWAP-style:
 
@@ -647,6 +708,15 @@ Formatting and regex-style operations:
 
 * `string:scrape` (4.6.15)
   Regex “extract”: subject is `( data pattern )`; object is the first capturing group of the first match.
+
+All of the comparison / membership / regex-style string built-ins —
+
+`string:contains`, `string:containsIgnoringCase`, `string:endsWith`, `string:startsWith`,  
+`string:equalIgnoringCase`, `string:notEqualIgnoringCase`,  
+`string:greaterThan`, `string:lessThan`, `string:notGreaterThan`, `string:notLessThan`,  
+`string:matches`, `string:notMatches` —
+
+are **pure tests**: they introduce no new bindings and only succeed or fail. In forward rules they are treated as **constraint-style built-ins** and delayed to the end of the rule body (see “Constraint-style built-ins and goal ordering” above).
 
 ---
 
