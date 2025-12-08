@@ -2881,6 +2881,32 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
   }
 
   // -----------------------------------------------------------------
+  // log:uri
+  // -----------------------------------------------------------------
+  if (g.p instanceof Iri && g.p.value === LOG_NS + "uri") {
+    // Direction 1: subject is an IRI -> object is its string representation
+    if (g.s instanceof Iri) {
+      const uriStr = g.s.value;           // raw IRI string, e.g. "https://www.w3.org"
+      const lit = makeStringLiteral(uriStr); // "https://www.w3.org"
+      const s2 = unifyTerm(goal.o, lit, subst);
+      return s2 !== null ? [s2] : [];
+    }
+
+    // Direction 2: object is a string literal -> subject is the corresponding IRI
+    if (g.o instanceof Literal) {
+      const uriStr = termToJsString(g.o); // JS string from the literal
+      if (uriStr === null) return [];
+      const iri = new Iri(uriStr);
+      const s2 = unifyTerm(goal.s, iri, subst);
+      return s2 !== null ? [s2] : [];
+    }
+
+    // If neither side is sufficiently instantiated (both vars, or wrong types),
+    // we don't enumerate URIs; the builtin just fails.
+    return [];
+  }
+
+  // -----------------------------------------------------------------
   // string: builtins (Notation3 Builtin Functions §4.6)
   // -----------------------------------------------------------------
 

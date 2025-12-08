@@ -1,0 +1,17 @@
+# ---------------
+# log:uri example
+# ---------------
+
+@prefix :   <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+{
+  <https://www.w3.org> log:uri ?s .
+  ?r log:uri "https://www.w3.org" .
+}
+=>
+{
+  :uriString :is ?s .
+  :uriResource :is ?r .
+}.
+
