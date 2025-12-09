@@ -795,9 +795,9 @@ The project is deliberately small and self-contained:
   * backward prover
   * forward engine
   * rule-producing rules
-  * built-ins (math, log, list, time, including `math:fibonacci`)
+  * built-ins (math, time, list, log, string)
   * constraint-style builtin detection and goal reordering for forward rules
-  * explanations / proof comments
+  * proof comments
   * CLI
 
 The `examples/` directory contains small N3 programs that exercise most of this functionality (including big Fibonacci, graphs, and more mathematically flavored snippets).
