@@ -19,11 +19,6 @@
 const { version } = require('./package.json');
 const nodeCrypto = require("crypto");
 
-if (process.argv.includes('--version') || process.argv.includes('-v')) {
-  console.log(`eyeling v${version}`);
-  process.exit(0);
-}
-
 // ============================================================================
 // Namespace constants
 // ============================================================================
@@ -45,6 +40,9 @@ const MAX_BACKWARD_DEPTH = 50000;
 // For a single reasoning run, this maps a canonical representation
 // of the subject term in log:skolem to a Skolem IRI.
 const skolemCache = new Map();
+
+// Controls whether human-readable proof comments are printed.
+let proofCommentsEnabled = true;
 
 // Deterministic pseudo-UUID from a string key (for log:skolem).
 // Not cryptographically strong, but stable and platform-independent.
@@ -1738,7 +1736,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
   // -----------------------------------------------------------------
 
   // 4.1.1 crypto:sha
-  // true iff ?o is the SHA-1 hash of the subject string. 
+  // true iff ?o is the SHA-1 hash of the subject string.
   if (g.p instanceof Iri && g.p.value === CRYPTO_NS + "sha") {
     const lit = hashLiteral(g.s, "sha1");
     if (!lit) return [];
@@ -1751,7 +1749,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     return s2 !== null ? [s2] : [];
   }
 
-  // Extra (EYE-style) crypto builtins: md5, sha256, sha512. 
+  // Extra (EYE-style) crypto builtins: md5, sha256, sha512.
   if (g.p instanceof Iri && g.p.value === CRYPTO_NS + "md5") {
     const lit = hashLiteral(g.s, "md5");
     if (!lit) return [];
@@ -3776,12 +3774,37 @@ function localIsoDateTimeString(d) {
 // ============================================================================
 
 function main() {
-  const args = process.argv;
-  if (args.length !== 3) {
-    console.error("Usage: eyeling.js <file.n3>");
+  // Drop "node" and script name; keep only user-provided args
+  const argv = process.argv.slice(2);
+
+  // --------------------------------------------------------------------------
+  // Global options
+  // --------------------------------------------------------------------------
+
+  // --version / -v: print version and exit
+  if (argv.includes("--version") || argv.includes("-v")) {
+    console.log(`eyeling v${version}`);
+    process.exit(0);
+  }
+
+  // --no-proof-comments / -n: disable proof explanations
+  if (argv.includes("--no-proof-comments") || argv.includes("-n")) {
+    proofCommentsEnabled = false;
+  }
+
+  // --------------------------------------------------------------------------
+  // Positional args (the N3 file)
+  // --------------------------------------------------------------------------
+  const positional = argv.filter(a => !a.startsWith("-"));
+
+  if (positional.length !== 1) {
+    console.error(
+      "Usage: eyeling.js [--version|-v] [--no-proof-comments|-n] <file.n3>"
+    );
     process.exit(1);
   }
-  const path = args[2];
+
+  const path = positional[0];
   let text;
   try {
     const fs = require("fs");
@@ -3808,9 +3831,13 @@ function main() {
   if (derived.length && usedPrefixes.length) console.log();
 
   for (const df of derived) {
-    printExplanation(df, prefixes);
-    console.log(tripleToN3(df.fact, prefixes));
-    console.log();
+    if (proofCommentsEnabled) {
+      printExplanation(df, prefixes);
+      console.log(tripleToN3(df.fact, prefixes));
+      console.log();
+    } else {
+      console.log(tripleToN3(df.fact, prefixes));
+    }
   }
 }
 
