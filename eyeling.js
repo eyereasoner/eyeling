@@ -2232,14 +2232,20 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
   }
 
   // 4.2.20 math:rounded
-  // Round to nearest integer (using JS Math.round semantics).
+  // Round to the nearest integer.
+  // For ties (fractional part exactly ±0.5), round *away from zero*,
+  // matching Cwm, EYE and jen3: 3.5 -> 4, -1.5 -> -2.
   // Schema: $s math:rounded $o
   if (g.p instanceof Iri && g.p.value === MATH_NS + "rounded") {
     const a = parseNum(g.s);
     if (a === null) return [];
-    const rVal = Math.round(a);
+    let rVal;
+    if (a >= 0) {
+      rVal = Math.floor(a + 0.5);
+    } else {
+      rVal = Math.ceil(a - 0.5);
+    }
     const lit = new Literal(formatNum(rVal));
-
     if (g.o instanceof Var) {
       const s2 = { ...subst };
       s2[g.o.name] = lit;

@@ -1,14 +1,6 @@
-# time-builtins-tests.n3
-#
-# Tests for the W3C Notation3 time: builtins (§4.3)
-# against the eyeling.js reasoner.
-#
-# Running:
-#   node eyeling.js time-builtins-tests.n3
-#
-# Each rule adds a :TimeBuiltinTest instance with :status :pass
-# iff the builtin behaves as in the 2023-07-03 W3C N3 builtins report
-# for the given input.
+# -------------------
+# time builtins tests
+# -------------------
 
 @prefix :       <http://example.org/time-tests#> .
 @prefix time:   <http://www.w3.org/2000/10/swap/time#> .

@@ -6,11 +6,11 @@
 #   :test-absoluteValue-1 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
 #   -2 math:absoluteValue 2 .
-#   2 log:equalTo 2 .
+#   2 math:equalTo 2 .
 # via the schematic forward rule:
 #   {
 #     -2 math:absoluteValue ?abs .
-#     ?abs log:equalTo 2 .
+#     ?abs math:equalTo 2 .
 #   } => {
 #     :test-absoluteValue-1 a :MathBuiltinTest .
 #     :test-absoluteValue-1 :builtin math:absoluteValue .
@@ -31,11 +31,11 @@
 #   :test-absoluteValue-1 :builtin math:absoluteValue .
 # It holds because the following instance of the rule body is provable:
 #   -2 math:absoluteValue 2 .
-#   2 log:equalTo 2 .
+#   2 math:equalTo 2 .
 # via the schematic forward rule:
 #   {
 #     -2 math:absoluteValue ?abs .
-#     ?abs log:equalTo 2 .
+#     ?abs math:equalTo 2 .
 #   } => {
 #     :test-absoluteValue-1 a :MathBuiltinTest .
 #     :test-absoluteValue-1 :builtin math:absoluteValue .
@@ -56,11 +56,11 @@
 #   :test-absoluteValue-1 :input -2 .
 # It holds because the following instance of the rule body is provable:
 #   -2 math:absoluteValue 2 .
-#   2 log:equalTo 2 .
+#   2 math:equalTo 2 .
 # via the schematic forward rule:
 #   {
 #     -2 math:absoluteValue ?abs .
-#     ?abs log:equalTo 2 .
+#     ?abs math:equalTo 2 .
 #   } => {
 #     :test-absoluteValue-1 a :MathBuiltinTest .
 #     :test-absoluteValue-1 :builtin math:absoluteValue .
@@ -81,11 +81,11 @@
 #   :test-absoluteValue-1 :expected 2 .
 # It holds because the following instance of the rule body is provable:
 #   -2 math:absoluteValue 2 .
-#   2 log:equalTo 2 .
+#   2 math:equalTo 2 .
 # via the schematic forward rule:
 #   {
 #     -2 math:absoluteValue ?abs .
-#     ?abs log:equalTo 2 .
+#     ?abs math:equalTo 2 .
 #   } => {
 #     :test-absoluteValue-1 a :MathBuiltinTest .
 #     :test-absoluteValue-1 :builtin math:absoluteValue .
@@ -106,11 +106,11 @@
 #   :test-absoluteValue-1 :actual 2 .
 # It holds because the following instance of the rule body is provable:
 #   -2 math:absoluteValue 2 .
-#   2 log:equalTo 2 .
+#   2 math:equalTo 2 .
 # via the schematic forward rule:
 #   {
 #     -2 math:absoluteValue ?abs .
-#     ?abs log:equalTo 2 .
+#     ?abs math:equalTo 2 .
 #   } => {
 #     :test-absoluteValue-1 a :MathBuiltinTest .
 #     :test-absoluteValue-1 :builtin math:absoluteValue .
@@ -131,11 +131,11 @@
 #   :test-absoluteValue-1 :status :pass .
 # It holds because the following instance of the rule body is provable:
 #   -2 math:absoluteValue 2 .
-#   2 log:equalTo 2 .
+#   2 math:equalTo 2 .
 # via the schematic forward rule:
 #   {
 #     -2 math:absoluteValue ?abs .
-#     ?abs log:equalTo 2 .
+#     ?abs math:equalTo 2 .
 #   } => {
 #     :test-absoluteValue-1 a :MathBuiltinTest .
 #     :test-absoluteValue-1 :builtin math:absoluteValue .
@@ -156,11 +156,11 @@
 #   :test-absoluteValue-2 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
 #   3 math:absoluteValue 3 .
-#   3 log:equalTo 3 .
+#   3 math:equalTo 3 .
 # via the schematic forward rule:
 #   {
 #     3 math:absoluteValue ?abs .
-#     ?abs log:equalTo 3 .
+#     ?abs math:equalTo 3 .
 #   } => {
 #     :test-absoluteValue-2 a :MathBuiltinTest .
 #     :test-absoluteValue-2 :builtin math:absoluteValue .
@@ -181,11 +181,11 @@
 #   :test-absoluteValue-2 :builtin math:absoluteValue .
 # It holds because the following instance of the rule body is provable:
 #   3 math:absoluteValue 3 .
-#   3 log:equalTo 3 .
+#   3 math:equalTo 3 .
 # via the schematic forward rule:
 #   {
 #     3 math:absoluteValue ?abs .
-#     ?abs log:equalTo 3 .
+#     ?abs math:equalTo 3 .
 #   } => {
 #     :test-absoluteValue-2 a :MathBuiltinTest .
 #     :test-absoluteValue-2 :builtin math:absoluteValue .
@@ -206,11 +206,11 @@
 #   :test-absoluteValue-2 :input 3 .
 # It holds because the following instance of the rule body is provable:
 #   3 math:absoluteValue 3 .
-#   3 log:equalTo 3 .
+#   3 math:equalTo 3 .
 # via the schematic forward rule:
 #   {
 #     3 math:absoluteValue ?abs .
-#     ?abs log:equalTo 3 .
+#     ?abs math:equalTo 3 .
 #   } => {
 #     :test-absoluteValue-2 a :MathBuiltinTest .
 #     :test-absoluteValue-2 :builtin math:absoluteValue .
@@ -231,11 +231,11 @@
 #   :test-absoluteValue-2 :expected 3 .
 # It holds because the following instance of the rule body is provable:
 #   3 math:absoluteValue 3 .
-#   3 log:equalTo 3 .
+#   3 math:equalTo 3 .
 # via the schematic forward rule:
 #   {
 #     3 math:absoluteValue ?abs .
-#     ?abs log:equalTo 3 .
+#     ?abs math:equalTo 3 .
 #   } => {
 #     :test-absoluteValue-2 a :MathBuiltinTest .
 #     :test-absoluteValue-2 :builtin math:absoluteValue .
@@ -256,11 +256,11 @@
 #   :test-absoluteValue-2 :actual 3 .
 # It holds because the following instance of the rule body is provable:
 #   3 math:absoluteValue 3 .
-#   3 log:equalTo 3 .
+#   3 math:equalTo 3 .
 # via the schematic forward rule:
 #   {
 #     3 math:absoluteValue ?abs .
-#     ?abs log:equalTo 3 .
+#     ?abs math:equalTo 3 .
 #   } => {
 #     :test-absoluteValue-2 a :MathBuiltinTest .
 #     :test-absoluteValue-2 :builtin math:absoluteValue .
@@ -281,11 +281,11 @@
 #   :test-absoluteValue-2 :status :pass .
 # It holds because the following instance of the rule body is provable:
 #   3 math:absoluteValue 3 .
-#   3 log:equalTo 3 .
+#   3 math:equalTo 3 .
 # via the schematic forward rule:
 #   {
 #     3 math:absoluteValue ?abs .
-#     ?abs log:equalTo 3 .
+#     ?abs math:equalTo 3 .
 #   } => {
 #     :test-absoluteValue-2 a :MathBuiltinTest .
 #     :test-absoluteValue-2 :builtin math:absoluteValue .
@@ -306,11 +306,11 @@
 #   :test-acos-1 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
 #   1 math:acos 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     1 math:acos ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-acos-1 a :MathBuiltinTest .
 #     :test-acos-1 :builtin math:acos .
@@ -331,11 +331,11 @@
 #   :test-acos-1 :builtin math:acos .
 # It holds because the following instance of the rule body is provable:
 #   1 math:acos 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     1 math:acos ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-acos-1 a :MathBuiltinTest .
 #     :test-acos-1 :builtin math:acos .
@@ -356,11 +356,11 @@
 #   :test-acos-1 :input 1 .
 # It holds because the following instance of the rule body is provable:
 #   1 math:acos 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     1 math:acos ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-acos-1 a :MathBuiltinTest .
 #     :test-acos-1 :builtin math:acos .
@@ -381,11 +381,11 @@
 #   :test-acos-1 :expected 0 .
 # It holds because the following instance of the rule body is provable:
 #   1 math:acos 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     1 math:acos ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-acos-1 a :MathBuiltinTest .
 #     :test-acos-1 :builtin math:acos .
@@ -406,11 +406,11 @@
 #   :test-acos-1 :actual 0 .
 # It holds because the following instance of the rule body is provable:
 #   1 math:acos 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     1 math:acos ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-acos-1 a :MathBuiltinTest .
 #     :test-acos-1 :builtin math:acos .
@@ -431,11 +431,11 @@
 #   :test-acos-1 :status :pass .
 # It holds because the following instance of the rule body is provable:
 #   1 math:acos 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     1 math:acos ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-acos-1 a :MathBuiltinTest .
 #     :test-acos-1 :builtin math:acos .
@@ -456,11 +456,11 @@
 #   :test-asin-1 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
 #   0 math:asin 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:asin ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-asin-1 a :MathBuiltinTest .
 #     :test-asin-1 :builtin math:asin .
@@ -481,11 +481,11 @@
 #   :test-asin-1 :builtin math:asin .
 # It holds because the following instance of the rule body is provable:
 #   0 math:asin 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:asin ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-asin-1 a :MathBuiltinTest .
 #     :test-asin-1 :builtin math:asin .
@@ -506,11 +506,11 @@
 #   :test-asin-1 :input 0 .
 # It holds because the following instance of the rule body is provable:
 #   0 math:asin 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:asin ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-asin-1 a :MathBuiltinTest .
 #     :test-asin-1 :builtin math:asin .
@@ -531,11 +531,11 @@
 #   :test-asin-1 :expected 0 .
 # It holds because the following instance of the rule body is provable:
 #   0 math:asin 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:asin ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-asin-1 a :MathBuiltinTest .
 #     :test-asin-1 :builtin math:asin .
@@ -556,11 +556,11 @@
 #   :test-asin-1 :actual 0 .
 # It holds because the following instance of the rule body is provable:
 #   0 math:asin 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:asin ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-asin-1 a :MathBuiltinTest .
 #     :test-asin-1 :builtin math:asin .
@@ -581,11 +581,11 @@
 #   :test-asin-1 :status :pass .
 # It holds because the following instance of the rule body is provable:
 #   0 math:asin 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:asin ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-asin-1 a :MathBuiltinTest .
 #     :test-asin-1 :builtin math:asin .
@@ -606,11 +606,11 @@
 #   :test-atan-1 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
 #   1 math:atan 0.7853981633974483 .
-#   0.7853981633974483 log:equalTo 0.7853981633974483 .
+#   0.7853981633974483 math:equalTo 0.7853981633974483 .
 # via the schematic forward rule:
 #   {
 #     1 math:atan ?r .
-#     ?r log:equalTo 0.7853981633974483 .
+#     ?r math:equalTo 0.7853981633974483 .
 #   } => {
 #     :test-atan-1 a :MathBuiltinTest .
 #     :test-atan-1 :builtin math:atan .
@@ -631,11 +631,11 @@
 #   :test-atan-1 :builtin math:atan .
 # It holds because the following instance of the rule body is provable:
 #   1 math:atan 0.7853981633974483 .
-#   0.7853981633974483 log:equalTo 0.7853981633974483 .
+#   0.7853981633974483 math:equalTo 0.7853981633974483 .
 # via the schematic forward rule:
 #   {
 #     1 math:atan ?r .
-#     ?r log:equalTo 0.7853981633974483 .
+#     ?r math:equalTo 0.7853981633974483 .
 #   } => {
 #     :test-atan-1 a :MathBuiltinTest .
 #     :test-atan-1 :builtin math:atan .
@@ -656,11 +656,11 @@
 #   :test-atan-1 :input 1 .
 # It holds because the following instance of the rule body is provable:
 #   1 math:atan 0.7853981633974483 .
-#   0.7853981633974483 log:equalTo 0.7853981633974483 .
+#   0.7853981633974483 math:equalTo 0.7853981633974483 .
 # via the schematic forward rule:
 #   {
 #     1 math:atan ?r .
-#     ?r log:equalTo 0.7853981633974483 .
+#     ?r math:equalTo 0.7853981633974483 .
 #   } => {
 #     :test-atan-1 a :MathBuiltinTest .
 #     :test-atan-1 :builtin math:atan .
@@ -681,11 +681,11 @@
 #   :test-atan-1 :expected 0.7853981633974483 .
 # It holds because the following instance of the rule body is provable:
 #   1 math:atan 0.7853981633974483 .
-#   0.7853981633974483 log:equalTo 0.7853981633974483 .
+#   0.7853981633974483 math:equalTo 0.7853981633974483 .
 # via the schematic forward rule:
 #   {
 #     1 math:atan ?r .
-#     ?r log:equalTo 0.7853981633974483 .
+#     ?r math:equalTo 0.7853981633974483 .
 #   } => {
 #     :test-atan-1 a :MathBuiltinTest .
 #     :test-atan-1 :builtin math:atan .
@@ -706,11 +706,11 @@
 #   :test-atan-1 :actual 0.7853981633974483 .
 # It holds because the following instance of the rule body is provable:
 #   1 math:atan 0.7853981633974483 .
-#   0.7853981633974483 log:equalTo 0.7853981633974483 .
+#   0.7853981633974483 math:equalTo 0.7853981633974483 .
 # via the schematic forward rule:
 #   {
 #     1 math:atan ?r .
-#     ?r log:equalTo 0.7853981633974483 .
+#     ?r math:equalTo 0.7853981633974483 .
 #   } => {
 #     :test-atan-1 a :MathBuiltinTest .
 #     :test-atan-1 :builtin math:atan .
@@ -731,11 +731,11 @@
 #   :test-atan-1 :status :pass .
 # It holds because the following instance of the rule body is provable:
 #   1 math:atan 0.7853981633974483 .
-#   0.7853981633974483 log:equalTo 0.7853981633974483 .
+#   0.7853981633974483 math:equalTo 0.7853981633974483 .
 # via the schematic forward rule:
 #   {
 #     1 math:atan ?r .
-#     ?r log:equalTo 0.7853981633974483 .
+#     ?r math:equalTo 0.7853981633974483 .
 #   } => {
 #     :test-atan-1 a :MathBuiltinTest .
 #     :test-atan-1 :builtin math:atan .
@@ -756,11 +756,11 @@
 #   :test-cos-1 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
 #   0 math:cos 1 .
-#   1 log:equalTo 1 .
+#   1 math:equalTo 1 .
 # via the schematic forward rule:
 #   {
 #     0 math:cos ?r .
-#     ?r log:equalTo 1 .
+#     ?r math:equalTo 1 .
 #   } => {
 #     :test-cos-1 a :MathBuiltinTest .
 #     :test-cos-1 :builtin math:cos .
@@ -781,11 +781,11 @@
 #   :test-cos-1 :builtin math:cos .
 # It holds because the following instance of the rule body is provable:
 #   0 math:cos 1 .
-#   1 log:equalTo 1 .
+#   1 math:equalTo 1 .
 # via the schematic forward rule:
 #   {
 #     0 math:cos ?r .
-#     ?r log:equalTo 1 .
+#     ?r math:equalTo 1 .
 #   } => {
 #     :test-cos-1 a :MathBuiltinTest .
 #     :test-cos-1 :builtin math:cos .
@@ -806,11 +806,11 @@
 #   :test-cos-1 :input 0 .
 # It holds because the following instance of the rule body is provable:
 #   0 math:cos 1 .
-#   1 log:equalTo 1 .
+#   1 math:equalTo 1 .
 # via the schematic forward rule:
 #   {
 #     0 math:cos ?r .
-#     ?r log:equalTo 1 .
+#     ?r math:equalTo 1 .
 #   } => {
 #     :test-cos-1 a :MathBuiltinTest .
 #     :test-cos-1 :builtin math:cos .
@@ -831,11 +831,11 @@
 #   :test-cos-1 :expected 1 .
 # It holds because the following instance of the rule body is provable:
 #   0 math:cos 1 .
-#   1 log:equalTo 1 .
+#   1 math:equalTo 1 .
 # via the schematic forward rule:
 #   {
 #     0 math:cos ?r .
-#     ?r log:equalTo 1 .
+#     ?r math:equalTo 1 .
 #   } => {
 #     :test-cos-1 a :MathBuiltinTest .
 #     :test-cos-1 :builtin math:cos .
@@ -856,11 +856,11 @@
 #   :test-cos-1 :actual 1 .
 # It holds because the following instance of the rule body is provable:
 #   0 math:cos 1 .
-#   1 log:equalTo 1 .
+#   1 math:equalTo 1 .
 # via the schematic forward rule:
 #   {
 #     0 math:cos ?r .
-#     ?r log:equalTo 1 .
+#     ?r math:equalTo 1 .
 #   } => {
 #     :test-cos-1 a :MathBuiltinTest .
 #     :test-cos-1 :builtin math:cos .
@@ -881,11 +881,11 @@
 #   :test-cos-1 :status :pass .
 # It holds because the following instance of the rule body is provable:
 #   0 math:cos 1 .
-#   1 log:equalTo 1 .
+#   1 math:equalTo 1 .
 # via the schematic forward rule:
 #   {
 #     0 math:cos ?r .
-#     ?r log:equalTo 1 .
+#     ?r math:equalTo 1 .
 #   } => {
 #     :test-cos-1 a :MathBuiltinTest .
 #     :test-cos-1 :builtin math:cos .
@@ -906,11 +906,11 @@
 #   :test-cosh-1 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
 #   0 math:cosh 1 .
-#   1 log:equalTo 1 .
+#   1 math:equalTo 1 .
 # via the schematic forward rule:
 #   {
 #     0 math:cosh ?r .
-#     ?r log:equalTo 1 .
+#     ?r math:equalTo 1 .
 #   } => {
 #     :test-cosh-1 a :MathBuiltinTest .
 #     :test-cosh-1 :builtin math:cosh .
@@ -931,11 +931,11 @@
 #   :test-cosh-1 :builtin math:cosh .
 # It holds because the following instance of the rule body is provable:
 #   0 math:cosh 1 .
-#   1 log:equalTo 1 .
+#   1 math:equalTo 1 .
 # via the schematic forward rule:
 #   {
 #     0 math:cosh ?r .
-#     ?r log:equalTo 1 .
+#     ?r math:equalTo 1 .
 #   } => {
 #     :test-cosh-1 a :MathBuiltinTest .
 #     :test-cosh-1 :builtin math:cosh .
@@ -956,11 +956,11 @@
 #   :test-cosh-1 :input 0 .
 # It holds because the following instance of the rule body is provable:
 #   0 math:cosh 1 .
-#   1 log:equalTo 1 .
+#   1 math:equalTo 1 .
 # via the schematic forward rule:
 #   {
 #     0 math:cosh ?r .
-#     ?r log:equalTo 1 .
+#     ?r math:equalTo 1 .
 #   } => {
 #     :test-cosh-1 a :MathBuiltinTest .
 #     :test-cosh-1 :builtin math:cosh .
@@ -981,11 +981,11 @@
 #   :test-cosh-1 :expected 1 .
 # It holds because the following instance of the rule body is provable:
 #   0 math:cosh 1 .
-#   1 log:equalTo 1 .
+#   1 math:equalTo 1 .
 # via the schematic forward rule:
 #   {
 #     0 math:cosh ?r .
-#     ?r log:equalTo 1 .
+#     ?r math:equalTo 1 .
 #   } => {
 #     :test-cosh-1 a :MathBuiltinTest .
 #     :test-cosh-1 :builtin math:cosh .
@@ -1006,11 +1006,11 @@
 #   :test-cosh-1 :actual 1 .
 # It holds because the following instance of the rule body is provable:
 #   0 math:cosh 1 .
-#   1 log:equalTo 1 .
+#   1 math:equalTo 1 .
 # via the schematic forward rule:
 #   {
 #     0 math:cosh ?r .
-#     ?r log:equalTo 1 .
+#     ?r math:equalTo 1 .
 #   } => {
 #     :test-cosh-1 a :MathBuiltinTest .
 #     :test-cosh-1 :builtin math:cosh .
@@ -1031,11 +1031,11 @@
 #   :test-cosh-1 :status :pass .
 # It holds because the following instance of the rule body is provable:
 #   0 math:cosh 1 .
-#   1 log:equalTo 1 .
+#   1 math:equalTo 1 .
 # via the schematic forward rule:
 #   {
 #     0 math:cosh ?r .
-#     ?r log:equalTo 1 .
+#     ?r math:equalTo 1 .
 #   } => {
 #     :test-cosh-1 a :MathBuiltinTest .
 #     :test-cosh-1 :builtin math:cosh .
@@ -1056,11 +1056,11 @@
 #   :test-degrees-1 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
 #   3.141592653589793 math:degrees 180 .
-#   180 log:equalTo 180 .
+#   180 math:equalTo 180 .
 # via the schematic forward rule:
 #   {
 #     3.141592653589793 math:degrees ?deg .
-#     ?deg log:equalTo 180 .
+#     ?deg math:equalTo 180 .
 #   } => {
 #     :test-degrees-1 a :MathBuiltinTest .
 #     :test-degrees-1 :builtin math:degrees .
@@ -1081,11 +1081,11 @@
 #   :test-degrees-1 :builtin math:degrees .
 # It holds because the following instance of the rule body is provable:
 #   3.141592653589793 math:degrees 180 .
-#   180 log:equalTo 180 .
+#   180 math:equalTo 180 .
 # via the schematic forward rule:
 #   {
 #     3.141592653589793 math:degrees ?deg .
-#     ?deg log:equalTo 180 .
+#     ?deg math:equalTo 180 .
 #   } => {
 #     :test-degrees-1 a :MathBuiltinTest .
 #     :test-degrees-1 :builtin math:degrees .
@@ -1106,11 +1106,11 @@
 #   :test-degrees-1 :input 3.141592653589793 .
 # It holds because the following instance of the rule body is provable:
 #   3.141592653589793 math:degrees 180 .
-#   180 log:equalTo 180 .
+#   180 math:equalTo 180 .
 # via the schematic forward rule:
 #   {
 #     3.141592653589793 math:degrees ?deg .
-#     ?deg log:equalTo 180 .
+#     ?deg math:equalTo 180 .
 #   } => {
 #     :test-degrees-1 a :MathBuiltinTest .
 #     :test-degrees-1 :builtin math:degrees .
@@ -1131,11 +1131,11 @@
 #   :test-degrees-1 :expected 180 .
 # It holds because the following instance of the rule body is provable:
 #   3.141592653589793 math:degrees 180 .
-#   180 log:equalTo 180 .
+#   180 math:equalTo 180 .
 # via the schematic forward rule:
 #   {
 #     3.141592653589793 math:degrees ?deg .
-#     ?deg log:equalTo 180 .
+#     ?deg math:equalTo 180 .
 #   } => {
 #     :test-degrees-1 a :MathBuiltinTest .
 #     :test-degrees-1 :builtin math:degrees .
@@ -1156,11 +1156,11 @@
 #   :test-degrees-1 :actual 180 .
 # It holds because the following instance of the rule body is provable:
 #   3.141592653589793 math:degrees 180 .
-#   180 log:equalTo 180 .
+#   180 math:equalTo 180 .
 # via the schematic forward rule:
 #   {
 #     3.141592653589793 math:degrees ?deg .
-#     ?deg log:equalTo 180 .
+#     ?deg math:equalTo 180 .
 #   } => {
 #     :test-degrees-1 a :MathBuiltinTest .
 #     :test-degrees-1 :builtin math:degrees .
@@ -1181,11 +1181,11 @@
 #   :test-degrees-1 :status :pass .
 # It holds because the following instance of the rule body is provable:
 #   3.141592653589793 math:degrees 180 .
-#   180 log:equalTo 180 .
+#   180 math:equalTo 180 .
 # via the schematic forward rule:
 #   {
 #     3.141592653589793 math:degrees ?deg .
-#     ?deg log:equalTo 180 .
+#     ?deg math:equalTo 180 .
 #   } => {
 #     :test-degrees-1 a :MathBuiltinTest .
 #     :test-degrees-1 :builtin math:degrees .
@@ -1206,11 +1206,11 @@
 #   :test-difference-1 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
 #   (7 2) math:difference 5 .
-#   5 log:equalTo 5 .
+#   5 math:equalTo 5 .
 # via the schematic forward rule:
 #   {
 #     (7 2) math:difference ?d .
-#     ?d log:equalTo 5 .
+#     ?d math:equalTo 5 .
 #   } => {
 #     :test-difference-1 a :MathBuiltinTest .
 #     :test-difference-1 :builtin math:difference .
@@ -1231,11 +1231,11 @@
 #   :test-difference-1 :builtin math:difference .
 # It holds because the following instance of the rule body is provable:
 #   (7 2) math:difference 5 .
-#   5 log:equalTo 5 .
+#   5 math:equalTo 5 .
 # via the schematic forward rule:
 #   {
 #     (7 2) math:difference ?d .
-#     ?d log:equalTo 5 .
+#     ?d math:equalTo 5 .
 #   } => {
 #     :test-difference-1 a :MathBuiltinTest .
 #     :test-difference-1 :builtin math:difference .
@@ -1256,11 +1256,11 @@
 #   :test-difference-1 :input (7 2) .
 # It holds because the following instance of the rule body is provable:
 #   (7 2) math:difference 5 .
-#   5 log:equalTo 5 .
+#   5 math:equalTo 5 .
 # via the schematic forward rule:
 #   {
 #     (7 2) math:difference ?d .
-#     ?d log:equalTo 5 .
+#     ?d math:equalTo 5 .
 #   } => {
 #     :test-difference-1 a :MathBuiltinTest .
 #     :test-difference-1 :builtin math:difference .
@@ -1281,11 +1281,11 @@
 #   :test-difference-1 :expected 5 .
 # It holds because the following instance of the rule body is provable:
 #   (7 2) math:difference 5 .
-#   5 log:equalTo 5 .
+#   5 math:equalTo 5 .
 # via the schematic forward rule:
 #   {
 #     (7 2) math:difference ?d .
-#     ?d log:equalTo 5 .
+#     ?d math:equalTo 5 .
 #   } => {
 #     :test-difference-1 a :MathBuiltinTest .
 #     :test-difference-1 :builtin math:difference .
@@ -1306,11 +1306,11 @@
 #   :test-difference-1 :actual 5 .
 # It holds because the following instance of the rule body is provable:
 #   (7 2) math:difference 5 .
-#   5 log:equalTo 5 .
+#   5 math:equalTo 5 .
 # via the schematic forward rule:
 #   {
 #     (7 2) math:difference ?d .
-#     ?d log:equalTo 5 .
+#     ?d math:equalTo 5 .
 #   } => {
 #     :test-difference-1 a :MathBuiltinTest .
 #     :test-difference-1 :builtin math:difference .
@@ -1331,11 +1331,11 @@
 #   :test-difference-1 :status :pass .
 # It holds because the following instance of the rule body is provable:
 #   (7 2) math:difference 5 .
-#   5 log:equalTo 5 .
+#   5 math:equalTo 5 .
 # via the schematic forward rule:
 #   {
 #     (7 2) math:difference ?d .
-#     ?d log:equalTo 5 .
+#     ?d math:equalTo 5 .
 #   } => {
 #     :test-difference-1 a :MathBuiltinTest .
 #     :test-difference-1 :builtin math:difference .
@@ -1356,11 +1356,11 @@
 #   :test-difference-2 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
 #   (2 7) math:difference -5 .
-#   -5 log:equalTo -5 .
+#   -5 math:equalTo -5 .
 # via the schematic forward rule:
 #   {
 #     (2 7) math:difference ?d .
-#     ?d log:equalTo -5 .
+#     ?d math:equalTo -5 .
 #   } => {
 #     :test-difference-2 a :MathBuiltinTest .
 #     :test-difference-2 :builtin math:difference .
@@ -1381,11 +1381,11 @@
 #   :test-difference-2 :builtin math:difference .
 # It holds because the following instance of the rule body is provable:
 #   (2 7) math:difference -5 .
-#   -5 log:equalTo -5 .
+#   -5 math:equalTo -5 .
 # via the schematic forward rule:
 #   {
 #     (2 7) math:difference ?d .
-#     ?d log:equalTo -5 .
+#     ?d math:equalTo -5 .
 #   } => {
 #     :test-difference-2 a :MathBuiltinTest .
 #     :test-difference-2 :builtin math:difference .
@@ -1406,11 +1406,11 @@
 #   :test-difference-2 :input (2 7) .
 # It holds because the following instance of the rule body is provable:
 #   (2 7) math:difference -5 .
-#   -5 log:equalTo -5 .
+#   -5 math:equalTo -5 .
 # via the schematic forward rule:
 #   {
 #     (2 7) math:difference ?d .
-#     ?d log:equalTo -5 .
+#     ?d math:equalTo -5 .
 #   } => {
 #     :test-difference-2 a :MathBuiltinTest .
 #     :test-difference-2 :builtin math:difference .
@@ -1431,11 +1431,11 @@
 #   :test-difference-2 :expected -5 .
 # It holds because the following instance of the rule body is provable:
 #   (2 7) math:difference -5 .
-#   -5 log:equalTo -5 .
+#   -5 math:equalTo -5 .
 # via the schematic forward rule:
 #   {
 #     (2 7) math:difference ?d .
-#     ?d log:equalTo -5 .
+#     ?d math:equalTo -5 .
 #   } => {
 #     :test-difference-2 a :MathBuiltinTest .
 #     :test-difference-2 :builtin math:difference .
@@ -1456,11 +1456,11 @@
 #   :test-difference-2 :actual -5 .
 # It holds because the following instance of the rule body is provable:
 #   (2 7) math:difference -5 .
-#   -5 log:equalTo -5 .
+#   -5 math:equalTo -5 .
 # via the schematic forward rule:
 #   {
 #     (2 7) math:difference ?d .
-#     ?d log:equalTo -5 .
+#     ?d math:equalTo -5 .
 #   } => {
 #     :test-difference-2 a :MathBuiltinTest .
 #     :test-difference-2 :builtin math:difference .
@@ -1481,11 +1481,11 @@
 #   :test-difference-2 :status :pass .
 # It holds because the following instance of the rule body is provable:
 #   (2 7) math:difference -5 .
-#   -5 log:equalTo -5 .
+#   -5 math:equalTo -5 .
 # via the schematic forward rule:
 #   {
 #     (2 7) math:difference ?d .
-#     ?d log:equalTo -5 .
+#     ?d math:equalTo -5 .
 #   } => {
 #     :test-difference-2 a :MathBuiltinTest .
 #     :test-difference-2 :builtin math:difference .
@@ -1606,11 +1606,11 @@
 #   :test-exponentiation-1 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
 #   (7 2) math:exponentiation 49 .
-#   49 log:equalTo 49 .
+#   49 math:equalTo 49 .
 # via the schematic forward rule:
 #   {
 #     (7 2) math:exponentiation ?r .
-#     ?r log:equalTo 49 .
+#     ?r math:equalTo 49 .
 #   } => {
 #     :test-exponentiation-1 a :MathBuiltinTest .
 #     :test-exponentiation-1 :builtin math:exponentiation .
@@ -1631,11 +1631,11 @@
 #   :test-exponentiation-1 :builtin math:exponentiation .
 # It holds because the following instance of the rule body is provable:
 #   (7 2) math:exponentiation 49 .
-#   49 log:equalTo 49 .
+#   49 math:equalTo 49 .
 # via the schematic forward rule:
 #   {
 #     (7 2) math:exponentiation ?r .
-#     ?r log:equalTo 49 .
+#     ?r math:equalTo 49 .
 #   } => {
 #     :test-exponentiation-1 a :MathBuiltinTest .
 #     :test-exponentiation-1 :builtin math:exponentiation .
@@ -1656,11 +1656,11 @@
 #   :test-exponentiation-1 :input (7 2) .
 # It holds because the following instance of the rule body is provable:
 #   (7 2) math:exponentiation 49 .
-#   49 log:equalTo 49 .
+#   49 math:equalTo 49 .
 # via the schematic forward rule:
 #   {
 #     (7 2) math:exponentiation ?r .
-#     ?r log:equalTo 49 .
+#     ?r math:equalTo 49 .
 #   } => {
 #     :test-exponentiation-1 a :MathBuiltinTest .
 #     :test-exponentiation-1 :builtin math:exponentiation .
@@ -1681,11 +1681,11 @@
 #   :test-exponentiation-1 :expected 49 .
 # It holds because the following instance of the rule body is provable:
 #   (7 2) math:exponentiation 49 .
-#   49 log:equalTo 49 .
+#   49 math:equalTo 49 .
 # via the schematic forward rule:
 #   {
 #     (7 2) math:exponentiation ?r .
-#     ?r log:equalTo 49 .
+#     ?r math:equalTo 49 .
 #   } => {
 #     :test-exponentiation-1 a :MathBuiltinTest .
 #     :test-exponentiation-1 :builtin math:exponentiation .
@@ -1706,11 +1706,11 @@
 #   :test-exponentiation-1 :actual 49 .
 # It holds because the following instance of the rule body is provable:
 #   (7 2) math:exponentiation 49 .
-#   49 log:equalTo 49 .
+#   49 math:equalTo 49 .
 # via the schematic forward rule:
 #   {
 #     (7 2) math:exponentiation ?r .
-#     ?r log:equalTo 49 .
+#     ?r math:equalTo 49 .
 #   } => {
 #     :test-exponentiation-1 a :MathBuiltinTest .
 #     :test-exponentiation-1 :builtin math:exponentiation .
@@ -1731,11 +1731,11 @@
 #   :test-exponentiation-1 :status :pass .
 # It holds because the following instance of the rule body is provable:
 #   (7 2) math:exponentiation 49 .
-#   49 log:equalTo 49 .
+#   49 math:equalTo 49 .
 # via the schematic forward rule:
 #   {
 #     (7 2) math:exponentiation ?r .
-#     ?r log:equalTo 49 .
+#     ?r math:equalTo 49 .
 #   } => {
 #     :test-exponentiation-1 a :MathBuiltinTest .
 #     :test-exponentiation-1 :builtin math:exponentiation .
@@ -2094,11 +2094,11 @@
 #   :test-negation-1 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
 #   42 math:negation -42 .
-#   -42 log:equalTo -42 .
+#   -42 math:equalTo -42 .
 # via the schematic forward rule:
 #   {
 #     42 math:negation ?neg .
-#     ?neg log:equalTo -42 .
+#     ?neg math:equalTo -42 .
 #   } => {
 #     :test-negation-1 a :MathBuiltinTest .
 #     :test-negation-1 :builtin math:negation .
@@ -2119,11 +2119,11 @@
 #   :test-negation-1 :builtin math:negation .
 # It holds because the following instance of the rule body is provable:
 #   42 math:negation -42 .
-#   -42 log:equalTo -42 .
+#   -42 math:equalTo -42 .
 # via the schematic forward rule:
 #   {
 #     42 math:negation ?neg .
-#     ?neg log:equalTo -42 .
+#     ?neg math:equalTo -42 .
 #   } => {
 #     :test-negation-1 a :MathBuiltinTest .
 #     :test-negation-1 :builtin math:negation .
@@ -2144,11 +2144,11 @@
 #   :test-negation-1 :input 42 .
 # It holds because the following instance of the rule body is provable:
 #   42 math:negation -42 .
-#   -42 log:equalTo -42 .
+#   -42 math:equalTo -42 .
 # via the schematic forward rule:
 #   {
 #     42 math:negation ?neg .
-#     ?neg log:equalTo -42 .
+#     ?neg math:equalTo -42 .
 #   } => {
 #     :test-negation-1 a :MathBuiltinTest .
 #     :test-negation-1 :builtin math:negation .
@@ -2169,11 +2169,11 @@
 #   :test-negation-1 :expected -42 .
 # It holds because the following instance of the rule body is provable:
 #   42 math:negation -42 .
-#   -42 log:equalTo -42 .
+#   -42 math:equalTo -42 .
 # via the schematic forward rule:
 #   {
 #     42 math:negation ?neg .
-#     ?neg log:equalTo -42 .
+#     ?neg math:equalTo -42 .
 #   } => {
 #     :test-negation-1 a :MathBuiltinTest .
 #     :test-negation-1 :builtin math:negation .
@@ -2194,11 +2194,11 @@
 #   :test-negation-1 :actual -42 .
 # It holds because the following instance of the rule body is provable:
 #   42 math:negation -42 .
-#   -42 log:equalTo -42 .
+#   -42 math:equalTo -42 .
 # via the schematic forward rule:
 #   {
 #     42 math:negation ?neg .
-#     ?neg log:equalTo -42 .
+#     ?neg math:equalTo -42 .
 #   } => {
 #     :test-negation-1 a :MathBuiltinTest .
 #     :test-negation-1 :builtin math:negation .
@@ -2219,11 +2219,11 @@
 #   :test-negation-1 :status :pass .
 # It holds because the following instance of the rule body is provable:
 #   42 math:negation -42 .
-#   -42 log:equalTo -42 .
+#   -42 math:equalTo -42 .
 # via the schematic forward rule:
 #   {
 #     42 math:negation ?neg .
-#     ?neg log:equalTo -42 .
+#     ?neg math:equalTo -42 .
 #   } => {
 #     :test-negation-1 a :MathBuiltinTest .
 #     :test-negation-1 :builtin math:negation .
@@ -2682,11 +2682,11 @@
 #   :test-product-1 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
 #   (2 21) math:product 42 .
-#   42 log:equalTo 42 .
+#   42 math:equalTo 42 .
 # via the schematic forward rule:
 #   {
 #     (2 21) math:product ?p .
-#     ?p log:equalTo 42 .
+#     ?p math:equalTo 42 .
 #   } => {
 #     :test-product-1 a :MathBuiltinTest .
 #     :test-product-1 :builtin math:product .
@@ -2707,11 +2707,11 @@
 #   :test-product-1 :builtin math:product .
 # It holds because the following instance of the rule body is provable:
 #   (2 21) math:product 42 .
-#   42 log:equalTo 42 .
+#   42 math:equalTo 42 .
 # via the schematic forward rule:
 #   {
 #     (2 21) math:product ?p .
-#     ?p log:equalTo 42 .
+#     ?p math:equalTo 42 .
 #   } => {
 #     :test-product-1 a :MathBuiltinTest .
 #     :test-product-1 :builtin math:product .
@@ -2732,11 +2732,11 @@
 #   :test-product-1 :input (2 21) .
 # It holds because the following instance of the rule body is provable:
 #   (2 21) math:product 42 .
-#   42 log:equalTo 42 .
+#   42 math:equalTo 42 .
 # via the schematic forward rule:
 #   {
 #     (2 21) math:product ?p .
-#     ?p log:equalTo 42 .
+#     ?p math:equalTo 42 .
 #   } => {
 #     :test-product-1 a :MathBuiltinTest .
 #     :test-product-1 :builtin math:product .
@@ -2757,11 +2757,11 @@
 #   :test-product-1 :expected 42 .
 # It holds because the following instance of the rule body is provable:
 #   (2 21) math:product 42 .
-#   42 log:equalTo 42 .
+#   42 math:equalTo 42 .
 # via the schematic forward rule:
 #   {
 #     (2 21) math:product ?p .
-#     ?p log:equalTo 42 .
+#     ?p math:equalTo 42 .
 #   } => {
 #     :test-product-1 a :MathBuiltinTest .
 #     :test-product-1 :builtin math:product .
@@ -2782,11 +2782,11 @@
 #   :test-product-1 :actual 42 .
 # It holds because the following instance of the rule body is provable:
 #   (2 21) math:product 42 .
-#   42 log:equalTo 42 .
+#   42 math:equalTo 42 .
 # via the schematic forward rule:
 #   {
 #     (2 21) math:product ?p .
-#     ?p log:equalTo 42 .
+#     ?p math:equalTo 42 .
 #   } => {
 #     :test-product-1 a :MathBuiltinTest .
 #     :test-product-1 :builtin math:product .
@@ -2807,11 +2807,11 @@
 #   :test-product-1 :status :pass .
 # It holds because the following instance of the rule body is provable:
 #   (2 21) math:product 42 .
-#   42 log:equalTo 42 .
+#   42 math:equalTo 42 .
 # via the schematic forward rule:
 #   {
 #     (2 21) math:product ?p .
-#     ?p log:equalTo 42 .
+#     ?p math:equalTo 42 .
 #   } => {
 #     :test-product-1 a :MathBuiltinTest .
 #     :test-product-1 :builtin math:product .
@@ -2832,11 +2832,11 @@
 #   :test-product-2 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
 #   (2 4 6 8) math:product 384 .
-#   384 log:equalTo 384 .
+#   384 math:equalTo 384 .
 # via the schematic forward rule:
 #   {
 #     (2 4 6 8) math:product ?p .
-#     ?p log:equalTo 384 .
+#     ?p math:equalTo 384 .
 #   } => {
 #     :test-product-2 a :MathBuiltinTest .
 #     :test-product-2 :builtin math:product .
@@ -2857,11 +2857,11 @@
 #   :test-product-2 :builtin math:product .
 # It holds because the following instance of the rule body is provable:
 #   (2 4 6 8) math:product 384 .
-#   384 log:equalTo 384 .
+#   384 math:equalTo 384 .
 # via the schematic forward rule:
 #   {
 #     (2 4 6 8) math:product ?p .
-#     ?p log:equalTo 384 .
+#     ?p math:equalTo 384 .
 #   } => {
 #     :test-product-2 a :MathBuiltinTest .
 #     :test-product-2 :builtin math:product .
@@ -2882,11 +2882,11 @@
 #   :test-product-2 :input (2 4 6 8) .
 # It holds because the following instance of the rule body is provable:
 #   (2 4 6 8) math:product 384 .
-#   384 log:equalTo 384 .
+#   384 math:equalTo 384 .
 # via the schematic forward rule:
 #   {
 #     (2 4 6 8) math:product ?p .
-#     ?p log:equalTo 384 .
+#     ?p math:equalTo 384 .
 #   } => {
 #     :test-product-2 a :MathBuiltinTest .
 #     :test-product-2 :builtin math:product .
@@ -2907,11 +2907,11 @@
 #   :test-product-2 :expected 384 .
 # It holds because the following instance of the rule body is provable:
 #   (2 4 6 8) math:product 384 .
-#   384 log:equalTo 384 .
+#   384 math:equalTo 384 .
 # via the schematic forward rule:
 #   {
 #     (2 4 6 8) math:product ?p .
-#     ?p log:equalTo 384 .
+#     ?p math:equalTo 384 .
 #   } => {
 #     :test-product-2 a :MathBuiltinTest .
 #     :test-product-2 :builtin math:product .
@@ -2932,11 +2932,11 @@
 #   :test-product-2 :actual 384 .
 # It holds because the following instance of the rule body is provable:
 #   (2 4 6 8) math:product 384 .
-#   384 log:equalTo 384 .
+#   384 math:equalTo 384 .
 # via the schematic forward rule:
 #   {
 #     (2 4 6 8) math:product ?p .
-#     ?p log:equalTo 384 .
+#     ?p math:equalTo 384 .
 #   } => {
 #     :test-product-2 a :MathBuiltinTest .
 #     :test-product-2 :builtin math:product .
@@ -2957,11 +2957,11 @@
 #   :test-product-2 :status :pass .
 # It holds because the following instance of the rule body is provable:
 #   (2 4 6 8) math:product 384 .
-#   384 log:equalTo 384 .
+#   384 math:equalTo 384 .
 # via the schematic forward rule:
 #   {
 #     (2 4 6 8) math:product ?p .
-#     ?p log:equalTo 384 .
+#     ?p math:equalTo 384 .
 #   } => {
 #     :test-product-2 a :MathBuiltinTest .
 #     :test-product-2 :builtin math:product .
@@ -2982,11 +2982,11 @@
 #   :test-quotient-1 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
 #   (42 2) math:quotient 21 .
-#   21 log:equalTo 21 .
+#   21 math:equalTo 21 .
 # via the schematic forward rule:
 #   {
 #     (42 2) math:quotient ?q .
-#     ?q log:equalTo 21 .
+#     ?q math:equalTo 21 .
 #   } => {
 #     :test-quotient-1 a :MathBuiltinTest .
 #     :test-quotient-1 :builtin math:quotient .
@@ -3007,11 +3007,11 @@
 #   :test-quotient-1 :builtin math:quotient .
 # It holds because the following instance of the rule body is provable:
 #   (42 2) math:quotient 21 .
-#   21 log:equalTo 21 .
+#   21 math:equalTo 21 .
 # via the schematic forward rule:
 #   {
 #     (42 2) math:quotient ?q .
-#     ?q log:equalTo 21 .
+#     ?q math:equalTo 21 .
 #   } => {
 #     :test-quotient-1 a :MathBuiltinTest .
 #     :test-quotient-1 :builtin math:quotient .
@@ -3032,11 +3032,11 @@
 #   :test-quotient-1 :input (42 2) .
 # It holds because the following instance of the rule body is provable:
 #   (42 2) math:quotient 21 .
-#   21 log:equalTo 21 .
+#   21 math:equalTo 21 .
 # via the schematic forward rule:
 #   {
 #     (42 2) math:quotient ?q .
-#     ?q log:equalTo 21 .
+#     ?q math:equalTo 21 .
 #   } => {
 #     :test-quotient-1 a :MathBuiltinTest .
 #     :test-quotient-1 :builtin math:quotient .
@@ -3057,11 +3057,11 @@
 #   :test-quotient-1 :expected 21 .
 # It holds because the following instance of the rule body is provable:
 #   (42 2) math:quotient 21 .
-#   21 log:equalTo 21 .
+#   21 math:equalTo 21 .
 # via the schematic forward rule:
 #   {
 #     (42 2) math:quotient ?q .
-#     ?q log:equalTo 21 .
+#     ?q math:equalTo 21 .
 #   } => {
 #     :test-quotient-1 a :MathBuiltinTest .
 #     :test-quotient-1 :builtin math:quotient .
@@ -3082,11 +3082,11 @@
 #   :test-quotient-1 :actual 21 .
 # It holds because the following instance of the rule body is provable:
 #   (42 2) math:quotient 21 .
-#   21 log:equalTo 21 .
+#   21 math:equalTo 21 .
 # via the schematic forward rule:
 #   {
 #     (42 2) math:quotient ?q .
-#     ?q log:equalTo 21 .
+#     ?q math:equalTo 21 .
 #   } => {
 #     :test-quotient-1 a :MathBuiltinTest .
 #     :test-quotient-1 :builtin math:quotient .
@@ -3107,11 +3107,11 @@
 #   :test-quotient-1 :status :pass .
 # It holds because the following instance of the rule body is provable:
 #   (42 2) math:quotient 21 .
-#   21 log:equalTo 21 .
+#   21 math:equalTo 21 .
 # via the schematic forward rule:
 #   {
 #     (42 2) math:quotient ?q .
-#     ?q log:equalTo 21 .
+#     ?q math:equalTo 21 .
 #   } => {
 #     :test-quotient-1 a :MathBuiltinTest .
 #     :test-quotient-1 :builtin math:quotient .
@@ -3132,11 +3132,11 @@
 #   :test-remainder-1 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
 #   (10 3) math:remainder 1 .
-#   1 log:equalTo 1 .
+#   1 math:equalTo 1 .
 # via the schematic forward rule:
 #   {
 #     (10 3) math:remainder ?r .
-#     ?r log:equalTo 1 .
+#     ?r math:equalTo 1 .
 #   } => {
 #     :test-remainder-1 a :MathBuiltinTest .
 #     :test-remainder-1 :builtin math:remainder .
@@ -3157,11 +3157,11 @@
 #   :test-remainder-1 :builtin math:remainder .
 # It holds because the following instance of the rule body is provable:
 #   (10 3) math:remainder 1 .
-#   1 log:equalTo 1 .
+#   1 math:equalTo 1 .
 # via the schematic forward rule:
 #   {
 #     (10 3) math:remainder ?r .
-#     ?r log:equalTo 1 .
+#     ?r math:equalTo 1 .
 #   } => {
 #     :test-remainder-1 a :MathBuiltinTest .
 #     :test-remainder-1 :builtin math:remainder .
@@ -3182,11 +3182,11 @@
 #   :test-remainder-1 :input (10 3) .
 # It holds because the following instance of the rule body is provable:
 #   (10 3) math:remainder 1 .
-#   1 log:equalTo 1 .
+#   1 math:equalTo 1 .
 # via the schematic forward rule:
 #   {
 #     (10 3) math:remainder ?r .
-#     ?r log:equalTo 1 .
+#     ?r math:equalTo 1 .
 #   } => {
 #     :test-remainder-1 a :MathBuiltinTest .
 #     :test-remainder-1 :builtin math:remainder .
@@ -3207,11 +3207,11 @@
 #   :test-remainder-1 :expected 1 .
 # It holds because the following instance of the rule body is provable:
 #   (10 3) math:remainder 1 .
-#   1 log:equalTo 1 .
+#   1 math:equalTo 1 .
 # via the schematic forward rule:
 #   {
 #     (10 3) math:remainder ?r .
-#     ?r log:equalTo 1 .
+#     ?r math:equalTo 1 .
 #   } => {
 #     :test-remainder-1 a :MathBuiltinTest .
 #     :test-remainder-1 :builtin math:remainder .
@@ -3232,11 +3232,11 @@
 #   :test-remainder-1 :actual 1 .
 # It holds because the following instance of the rule body is provable:
 #   (10 3) math:remainder 1 .
-#   1 log:equalTo 1 .
+#   1 math:equalTo 1 .
 # via the schematic forward rule:
 #   {
 #     (10 3) math:remainder ?r .
-#     ?r log:equalTo 1 .
+#     ?r math:equalTo 1 .
 #   } => {
 #     :test-remainder-1 a :MathBuiltinTest .
 #     :test-remainder-1 :builtin math:remainder .
@@ -3257,11 +3257,11 @@
 #   :test-remainder-1 :status :pass .
 # It holds because the following instance of the rule body is provable:
 #   (10 3) math:remainder 1 .
-#   1 log:equalTo 1 .
+#   1 math:equalTo 1 .
 # via the schematic forward rule:
 #   {
 #     (10 3) math:remainder ?r .
-#     ?r log:equalTo 1 .
+#     ?r math:equalTo 1 .
 #   } => {
 #     :test-remainder-1 a :MathBuiltinTest .
 #     :test-remainder-1 :builtin math:remainder .
@@ -3282,11 +3282,11 @@
 #   :test-rounded-1 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
 #   "3.3"^^<http://www.w3.org/2001/XMLSchema#double> math:rounded 3 .
-#   3 log:equalTo 3 .
+#   3 math:equalTo 3 .
 # via the schematic forward rule:
 #   {
 #     "3.3"^^<http://www.w3.org/2001/XMLSchema#double> math:rounded ?r .
-#     ?r log:equalTo 3 .
+#     ?r math:equalTo 3 .
 #   } => {
 #     :test-rounded-1 a :MathBuiltinTest .
 #     :test-rounded-1 :builtin math:rounded .
@@ -3307,11 +3307,11 @@
 #   :test-rounded-1 :builtin math:rounded .
 # It holds because the following instance of the rule body is provable:
 #   "3.3"^^<http://www.w3.org/2001/XMLSchema#double> math:rounded 3 .
-#   3 log:equalTo 3 .
+#   3 math:equalTo 3 .
 # via the schematic forward rule:
 #   {
 #     "3.3"^^<http://www.w3.org/2001/XMLSchema#double> math:rounded ?r .
-#     ?r log:equalTo 3 .
+#     ?r math:equalTo 3 .
 #   } => {
 #     :test-rounded-1 a :MathBuiltinTest .
 #     :test-rounded-1 :builtin math:rounded .
@@ -3332,11 +3332,11 @@
 #   :test-rounded-1 :input "3.3"^^<http://www.w3.org/2001/XMLSchema#double> .
 # It holds because the following instance of the rule body is provable:
 #   "3.3"^^<http://www.w3.org/2001/XMLSchema#double> math:rounded 3 .
-#   3 log:equalTo 3 .
+#   3 math:equalTo 3 .
 # via the schematic forward rule:
 #   {
 #     "3.3"^^<http://www.w3.org/2001/XMLSchema#double> math:rounded ?r .
-#     ?r log:equalTo 3 .
+#     ?r math:equalTo 3 .
 #   } => {
 #     :test-rounded-1 a :MathBuiltinTest .
 #     :test-rounded-1 :builtin math:rounded .
@@ -3357,11 +3357,11 @@
 #   :test-rounded-1 :expected 3 .
 # It holds because the following instance of the rule body is provable:
 #   "3.3"^^<http://www.w3.org/2001/XMLSchema#double> math:rounded 3 .
-#   3 log:equalTo 3 .
+#   3 math:equalTo 3 .
 # via the schematic forward rule:
 #   {
 #     "3.3"^^<http://www.w3.org/2001/XMLSchema#double> math:rounded ?r .
-#     ?r log:equalTo 3 .
+#     ?r math:equalTo 3 .
 #   } => {
 #     :test-rounded-1 a :MathBuiltinTest .
 #     :test-rounded-1 :builtin math:rounded .
@@ -3382,11 +3382,11 @@
 #   :test-rounded-1 :actual 3 .
 # It holds because the following instance of the rule body is provable:
 #   "3.3"^^<http://www.w3.org/2001/XMLSchema#double> math:rounded 3 .
-#   3 log:equalTo 3 .
+#   3 math:equalTo 3 .
 # via the schematic forward rule:
 #   {
 #     "3.3"^^<http://www.w3.org/2001/XMLSchema#double> math:rounded ?r .
-#     ?r log:equalTo 3 .
+#     ?r math:equalTo 3 .
 #   } => {
 #     :test-rounded-1 a :MathBuiltinTest .
 #     :test-rounded-1 :builtin math:rounded .
@@ -3407,11 +3407,11 @@
 #   :test-rounded-1 :status :pass .
 # It holds because the following instance of the rule body is provable:
 #   "3.3"^^<http://www.w3.org/2001/XMLSchema#double> math:rounded 3 .
-#   3 log:equalTo 3 .
+#   3 math:equalTo 3 .
 # via the schematic forward rule:
 #   {
 #     "3.3"^^<http://www.w3.org/2001/XMLSchema#double> math:rounded ?r .
-#     ?r log:equalTo 3 .
+#     ?r math:equalTo 3 .
 #   } => {
 #     :test-rounded-1 a :MathBuiltinTest .
 #     :test-rounded-1 :builtin math:rounded .
@@ -3432,11 +3432,11 @@
 #   :test-rounded-2 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
 #   3.5 math:rounded 4 .
-#   4 log:equalTo 4 .
+#   4 math:equalTo 4 .
 # via the schematic forward rule:
 #   {
 #     3.5 math:rounded ?r .
-#     ?r log:equalTo 4 .
+#     ?r math:equalTo 4 .
 #   } => {
 #     :test-rounded-2 a :MathBuiltinTest .
 #     :test-rounded-2 :builtin math:rounded .
@@ -3457,11 +3457,11 @@
 #   :test-rounded-2 :builtin math:rounded .
 # It holds because the following instance of the rule body is provable:
 #   3.5 math:rounded 4 .
-#   4 log:equalTo 4 .
+#   4 math:equalTo 4 .
 # via the schematic forward rule:
 #   {
 #     3.5 math:rounded ?r .
-#     ?r log:equalTo 4 .
+#     ?r math:equalTo 4 .
 #   } => {
 #     :test-rounded-2 a :MathBuiltinTest .
 #     :test-rounded-2 :builtin math:rounded .
@@ -3482,11 +3482,11 @@
 #   :test-rounded-2 :input 3.5 .
 # It holds because the following instance of the rule body is provable:
 #   3.5 math:rounded 4 .
-#   4 log:equalTo 4 .
+#   4 math:equalTo 4 .
 # via the schematic forward rule:
 #   {
 #     3.5 math:rounded ?r .
-#     ?r log:equalTo 4 .
+#     ?r math:equalTo 4 .
 #   } => {
 #     :test-rounded-2 a :MathBuiltinTest .
 #     :test-rounded-2 :builtin math:rounded .
@@ -3507,11 +3507,11 @@
 #   :test-rounded-2 :expected 4 .
 # It holds because the following instance of the rule body is provable:
 #   3.5 math:rounded 4 .
-#   4 log:equalTo 4 .
+#   4 math:equalTo 4 .
 # via the schematic forward rule:
 #   {
 #     3.5 math:rounded ?r .
-#     ?r log:equalTo 4 .
+#     ?r math:equalTo 4 .
 #   } => {
 #     :test-rounded-2 a :MathBuiltinTest .
 #     :test-rounded-2 :builtin math:rounded .
@@ -3532,11 +3532,11 @@
 #   :test-rounded-2 :actual 4 .
 # It holds because the following instance of the rule body is provable:
 #   3.5 math:rounded 4 .
-#   4 log:equalTo 4 .
+#   4 math:equalTo 4 .
 # via the schematic forward rule:
 #   {
 #     3.5 math:rounded ?r .
-#     ?r log:equalTo 4 .
+#     ?r math:equalTo 4 .
 #   } => {
 #     :test-rounded-2 a :MathBuiltinTest .
 #     :test-rounded-2 :builtin math:rounded .
@@ -3557,11 +3557,11 @@
 #   :test-rounded-2 :status :pass .
 # It holds because the following instance of the rule body is provable:
 #   3.5 math:rounded 4 .
-#   4 log:equalTo 4 .
+#   4 math:equalTo 4 .
 # via the schematic forward rule:
 #   {
 #     3.5 math:rounded ?r .
-#     ?r log:equalTo 4 .
+#     ?r math:equalTo 4 .
 #   } => {
 #     :test-rounded-2 a :MathBuiltinTest .
 #     :test-rounded-2 :builtin math:rounded .
@@ -3581,22 +3581,22 @@
 # Proof for derived triple:
 #   :test-rounded-3 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
-#   -1.5 math:rounded -1 .
-#   -1 log:equalTo -1 .
+#   -1.5 math:rounded -2 .
+#   -2 math:equalTo -2 .
 # via the schematic forward rule:
 #   {
 #     -1.5 math:rounded ?r .
-#     ?r log:equalTo -1 .
+#     ?r math:equalTo -2 .
 #   } => {
 #     :test-rounded-3 a :MathBuiltinTest .
 #     :test-rounded-3 :builtin math:rounded .
 #     :test-rounded-3 :input -1.5 .
-#     :test-rounded-3 :expected -1 .
+#     :test-rounded-3 :expected -2 .
 #     :test-rounded-3 :actual ?r .
 #     :test-rounded-3 :status :pass .
 #   } .
 # with substitution (on rule variables):
-#   ?r = -1
+#   ?r = -2
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -3606,22 +3606,22 @@
 # Proof for derived triple:
 #   :test-rounded-3 :builtin math:rounded .
 # It holds because the following instance of the rule body is provable:
-#   -1.5 math:rounded -1 .
-#   -1 log:equalTo -1 .
+#   -1.5 math:rounded -2 .
+#   -2 math:equalTo -2 .
 # via the schematic forward rule:
 #   {
 #     -1.5 math:rounded ?r .
-#     ?r log:equalTo -1 .
+#     ?r math:equalTo -2 .
 #   } => {
 #     :test-rounded-3 a :MathBuiltinTest .
 #     :test-rounded-3 :builtin math:rounded .
 #     :test-rounded-3 :input -1.5 .
-#     :test-rounded-3 :expected -1 .
+#     :test-rounded-3 :expected -2 .
 #     :test-rounded-3 :actual ?r .
 #     :test-rounded-3 :status :pass .
 #   } .
 # with substitution (on rule variables):
-#   ?r = -1
+#   ?r = -2
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -3631,22 +3631,22 @@
 # Proof for derived triple:
 #   :test-rounded-3 :input -1.5 .
 # It holds because the following instance of the rule body is provable:
-#   -1.5 math:rounded -1 .
-#   -1 log:equalTo -1 .
+#   -1.5 math:rounded -2 .
+#   -2 math:equalTo -2 .
 # via the schematic forward rule:
 #   {
 #     -1.5 math:rounded ?r .
-#     ?r log:equalTo -1 .
+#     ?r math:equalTo -2 .
 #   } => {
 #     :test-rounded-3 a :MathBuiltinTest .
 #     :test-rounded-3 :builtin math:rounded .
 #     :test-rounded-3 :input -1.5 .
-#     :test-rounded-3 :expected -1 .
+#     :test-rounded-3 :expected -2 .
 #     :test-rounded-3 :actual ?r .
 #     :test-rounded-3 :status :pass .
 #   } .
 # with substitution (on rule variables):
-#   ?r = -1
+#   ?r = -2
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -3654,74 +3654,74 @@
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :test-rounded-3 :expected -1 .
+#   :test-rounded-3 :expected -2 .
 # It holds because the following instance of the rule body is provable:
-#   -1.5 math:rounded -1 .
-#   -1 log:equalTo -1 .
+#   -1.5 math:rounded -2 .
+#   -2 math:equalTo -2 .
 # via the schematic forward rule:
 #   {
 #     -1.5 math:rounded ?r .
-#     ?r log:equalTo -1 .
+#     ?r math:equalTo -2 .
 #   } => {
 #     :test-rounded-3 a :MathBuiltinTest .
 #     :test-rounded-3 :builtin math:rounded .
 #     :test-rounded-3 :input -1.5 .
-#     :test-rounded-3 :expected -1 .
+#     :test-rounded-3 :expected -2 .
 #     :test-rounded-3 :actual ?r .
 #     :test-rounded-3 :status :pass .
 #   } .
 # with substitution (on rule variables):
-#   ?r = -1
+#   ?r = -2
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:test-rounded-3 :expected -1 .
+:test-rounded-3 :expected -2 .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :test-rounded-3 :actual -1 .
+#   :test-rounded-3 :actual -2 .
 # It holds because the following instance of the rule body is provable:
-#   -1.5 math:rounded -1 .
-#   -1 log:equalTo -1 .
+#   -1.5 math:rounded -2 .
+#   -2 math:equalTo -2 .
 # via the schematic forward rule:
 #   {
 #     -1.5 math:rounded ?r .
-#     ?r log:equalTo -1 .
+#     ?r math:equalTo -2 .
 #   } => {
 #     :test-rounded-3 a :MathBuiltinTest .
 #     :test-rounded-3 :builtin math:rounded .
 #     :test-rounded-3 :input -1.5 .
-#     :test-rounded-3 :expected -1 .
+#     :test-rounded-3 :expected -2 .
 #     :test-rounded-3 :actual ?r .
 #     :test-rounded-3 :status :pass .
 #   } .
 # with substitution (on rule variables):
-#   ?r = -1
+#   ?r = -2
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:test-rounded-3 :actual -1 .
+:test-rounded-3 :actual -2 .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
 #   :test-rounded-3 :status :pass .
 # It holds because the following instance of the rule body is provable:
-#   -1.5 math:rounded -1 .
-#   -1 log:equalTo -1 .
+#   -1.5 math:rounded -2 .
+#   -2 math:equalTo -2 .
 # via the schematic forward rule:
 #   {
 #     -1.5 math:rounded ?r .
-#     ?r log:equalTo -1 .
+#     ?r math:equalTo -2 .
 #   } => {
 #     :test-rounded-3 a :MathBuiltinTest .
 #     :test-rounded-3 :builtin math:rounded .
 #     :test-rounded-3 :input -1.5 .
-#     :test-rounded-3 :expected -1 .
+#     :test-rounded-3 :expected -2 .
 #     :test-rounded-3 :actual ?r .
 #     :test-rounded-3 :status :pass .
 #   } .
 # with substitution (on rule variables):
-#   ?r = -1
+#   ?r = -2
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -3732,11 +3732,11 @@
 #   :test-sin-1 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
 #   0 math:sin 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:sin ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-sin-1 a :MathBuiltinTest .
 #     :test-sin-1 :builtin math:sin .
@@ -3757,11 +3757,11 @@
 #   :test-sin-1 :builtin math:sin .
 # It holds because the following instance of the rule body is provable:
 #   0 math:sin 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:sin ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-sin-1 a :MathBuiltinTest .
 #     :test-sin-1 :builtin math:sin .
@@ -3782,11 +3782,11 @@
 #   :test-sin-1 :input 0 .
 # It holds because the following instance of the rule body is provable:
 #   0 math:sin 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:sin ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-sin-1 a :MathBuiltinTest .
 #     :test-sin-1 :builtin math:sin .
@@ -3807,11 +3807,11 @@
 #   :test-sin-1 :expected 0 .
 # It holds because the following instance of the rule body is provable:
 #   0 math:sin 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:sin ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-sin-1 a :MathBuiltinTest .
 #     :test-sin-1 :builtin math:sin .
@@ -3832,11 +3832,11 @@
 #   :test-sin-1 :actual 0 .
 # It holds because the following instance of the rule body is provable:
 #   0 math:sin 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:sin ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-sin-1 a :MathBuiltinTest .
 #     :test-sin-1 :builtin math:sin .
@@ -3857,11 +3857,11 @@
 #   :test-sin-1 :status :pass .
 # It holds because the following instance of the rule body is provable:
 #   0 math:sin 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:sin ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-sin-1 a :MathBuiltinTest .
 #     :test-sin-1 :builtin math:sin .
@@ -3882,11 +3882,11 @@
 #   :test-sinh-1 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
 #   0 math:sinh 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:sinh ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-sinh-1 a :MathBuiltinTest .
 #     :test-sinh-1 :builtin math:sinh .
@@ -3907,11 +3907,11 @@
 #   :test-sinh-1 :builtin math:sinh .
 # It holds because the following instance of the rule body is provable:
 #   0 math:sinh 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:sinh ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-sinh-1 a :MathBuiltinTest .
 #     :test-sinh-1 :builtin math:sinh .
@@ -3932,11 +3932,11 @@
 #   :test-sinh-1 :input 0 .
 # It holds because the following instance of the rule body is provable:
 #   0 math:sinh 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:sinh ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-sinh-1 a :MathBuiltinTest .
 #     :test-sinh-1 :builtin math:sinh .
@@ -3957,11 +3957,11 @@
 #   :test-sinh-1 :expected 0 .
 # It holds because the following instance of the rule body is provable:
 #   0 math:sinh 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:sinh ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-sinh-1 a :MathBuiltinTest .
 #     :test-sinh-1 :builtin math:sinh .
@@ -3982,11 +3982,11 @@
 #   :test-sinh-1 :actual 0 .
 # It holds because the following instance of the rule body is provable:
 #   0 math:sinh 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:sinh ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-sinh-1 a :MathBuiltinTest .
 #     :test-sinh-1 :builtin math:sinh .
@@ -4007,11 +4007,11 @@
 #   :test-sinh-1 :status :pass .
 # It holds because the following instance of the rule body is provable:
 #   0 math:sinh 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:sinh ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-sinh-1 a :MathBuiltinTest .
 #     :test-sinh-1 :builtin math:sinh .
@@ -4032,11 +4032,11 @@
 #   :test-sum-1 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
 #   (1 2 3 4 5 6 7 8 9 10) math:sum 55 .
-#   55 log:equalTo 55 .
+#   55 math:equalTo 55 .
 # via the schematic forward rule:
 #   {
 #     (1 2 3 4 5 6 7 8 9 10) math:sum ?s .
-#     ?s log:equalTo 55 .
+#     ?s math:equalTo 55 .
 #   } => {
 #     :test-sum-1 a :MathBuiltinTest .
 #     :test-sum-1 :builtin math:sum .
@@ -4057,11 +4057,11 @@
 #   :test-sum-1 :builtin math:sum .
 # It holds because the following instance of the rule body is provable:
 #   (1 2 3 4 5 6 7 8 9 10) math:sum 55 .
-#   55 log:equalTo 55 .
+#   55 math:equalTo 55 .
 # via the schematic forward rule:
 #   {
 #     (1 2 3 4 5 6 7 8 9 10) math:sum ?s .
-#     ?s log:equalTo 55 .
+#     ?s math:equalTo 55 .
 #   } => {
 #     :test-sum-1 a :MathBuiltinTest .
 #     :test-sum-1 :builtin math:sum .
@@ -4082,11 +4082,11 @@
 #   :test-sum-1 :input (1 2 3 4 5 6 7 8 9 10) .
 # It holds because the following instance of the rule body is provable:
 #   (1 2 3 4 5 6 7 8 9 10) math:sum 55 .
-#   55 log:equalTo 55 .
+#   55 math:equalTo 55 .
 # via the schematic forward rule:
 #   {
 #     (1 2 3 4 5 6 7 8 9 10) math:sum ?s .
-#     ?s log:equalTo 55 .
+#     ?s math:equalTo 55 .
 #   } => {
 #     :test-sum-1 a :MathBuiltinTest .
 #     :test-sum-1 :builtin math:sum .
@@ -4107,11 +4107,11 @@
 #   :test-sum-1 :expected 55 .
 # It holds because the following instance of the rule body is provable:
 #   (1 2 3 4 5 6 7 8 9 10) math:sum 55 .
-#   55 log:equalTo 55 .
+#   55 math:equalTo 55 .
 # via the schematic forward rule:
 #   {
 #     (1 2 3 4 5 6 7 8 9 10) math:sum ?s .
-#     ?s log:equalTo 55 .
+#     ?s math:equalTo 55 .
 #   } => {
 #     :test-sum-1 a :MathBuiltinTest .
 #     :test-sum-1 :builtin math:sum .
@@ -4132,11 +4132,11 @@
 #   :test-sum-1 :actual 55 .
 # It holds because the following instance of the rule body is provable:
 #   (1 2 3 4 5 6 7 8 9 10) math:sum 55 .
-#   55 log:equalTo 55 .
+#   55 math:equalTo 55 .
 # via the schematic forward rule:
 #   {
 #     (1 2 3 4 5 6 7 8 9 10) math:sum ?s .
-#     ?s log:equalTo 55 .
+#     ?s math:equalTo 55 .
 #   } => {
 #     :test-sum-1 a :MathBuiltinTest .
 #     :test-sum-1 :builtin math:sum .
@@ -4157,11 +4157,11 @@
 #   :test-sum-1 :status :pass .
 # It holds because the following instance of the rule body is provable:
 #   (1 2 3 4 5 6 7 8 9 10) math:sum 55 .
-#   55 log:equalTo 55 .
+#   55 math:equalTo 55 .
 # via the schematic forward rule:
 #   {
 #     (1 2 3 4 5 6 7 8 9 10) math:sum ?s .
-#     ?s log:equalTo 55 .
+#     ?s math:equalTo 55 .
 #   } => {
 #     :test-sum-1 a :MathBuiltinTest .
 #     :test-sum-1 :builtin math:sum .
@@ -4182,11 +4182,11 @@
 #   :test-tan-1 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
 #   0 math:tan 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:tan ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-tan-1 a :MathBuiltinTest .
 #     :test-tan-1 :builtin math:tan .
@@ -4207,11 +4207,11 @@
 #   :test-tan-1 :builtin math:tan .
 # It holds because the following instance of the rule body is provable:
 #   0 math:tan 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:tan ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-tan-1 a :MathBuiltinTest .
 #     :test-tan-1 :builtin math:tan .
@@ -4232,11 +4232,11 @@
 #   :test-tan-1 :input 0 .
 # It holds because the following instance of the rule body is provable:
 #   0 math:tan 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:tan ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-tan-1 a :MathBuiltinTest .
 #     :test-tan-1 :builtin math:tan .
@@ -4257,11 +4257,11 @@
 #   :test-tan-1 :expected 0 .
 # It holds because the following instance of the rule body is provable:
 #   0 math:tan 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:tan ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-tan-1 a :MathBuiltinTest .
 #     :test-tan-1 :builtin math:tan .
@@ -4282,11 +4282,11 @@
 #   :test-tan-1 :actual 0 .
 # It holds because the following instance of the rule body is provable:
 #   0 math:tan 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:tan ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-tan-1 a :MathBuiltinTest .
 #     :test-tan-1 :builtin math:tan .
@@ -4307,11 +4307,11 @@
 #   :test-tan-1 :status :pass .
 # It holds because the following instance of the rule body is provable:
 #   0 math:tan 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:tan ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-tan-1 a :MathBuiltinTest .
 #     :test-tan-1 :builtin math:tan .
@@ -4332,11 +4332,11 @@
 #   :test-tanh-1 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
 #   0 math:tanh 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:tanh ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-tanh-1 a :MathBuiltinTest .
 #     :test-tanh-1 :builtin math:tanh .
@@ -4357,11 +4357,11 @@
 #   :test-tanh-1 :builtin math:tanh .
 # It holds because the following instance of the rule body is provable:
 #   0 math:tanh 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:tanh ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-tanh-1 a :MathBuiltinTest .
 #     :test-tanh-1 :builtin math:tanh .
@@ -4382,11 +4382,11 @@
 #   :test-tanh-1 :input 0 .
 # It holds because the following instance of the rule body is provable:
 #   0 math:tanh 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:tanh ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-tanh-1 a :MathBuiltinTest .
 #     :test-tanh-1 :builtin math:tanh .
@@ -4407,11 +4407,11 @@
 #   :test-tanh-1 :expected 0 .
 # It holds because the following instance of the rule body is provable:
 #   0 math:tanh 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:tanh ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-tanh-1 a :MathBuiltinTest .
 #     :test-tanh-1 :builtin math:tanh .
@@ -4432,11 +4432,11 @@
 #   :test-tanh-1 :actual 0 .
 # It holds because the following instance of the rule body is provable:
 #   0 math:tanh 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:tanh ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-tanh-1 a :MathBuiltinTest .
 #     :test-tanh-1 :builtin math:tanh .
@@ -4457,11 +4457,11 @@
 #   :test-tanh-1 :status :pass .
 # It holds because the following instance of the rule body is provable:
 #   0 math:tanh 0 .
-#   0 log:equalTo 0 .
+#   0 math:equalTo 0 .
 # via the schematic forward rule:
 #   {
 #     0 math:tanh ?r .
-#     ?r log:equalTo 0 .
+#     ?r math:equalTo 0 .
 #   } => {
 #     :test-tanh-1 a :MathBuiltinTest .
 #     :test-tanh-1 :builtin math:tanh .

@@ -1,3 +1,7 @@
+# -------------------
+# math builtins tests
+# -------------------
+
 @prefix :      <http://example.org/math-tests#> .
 @prefix math:  <http://www.w3.org/2000/10/swap/math#> .
 @prefix log:   <http://www.w3.org/2000/10/swap/log#> .
@@ -27,7 +31,7 @@
 #
 # So in these tests:
 # - Inputs may be typed or untyped (to exercise casting).
-# - Expected results are written as UNTYPED numerics so that log:equalTo
+# - Expected results are written as UNTYPED numerics so that math:equalTo
 #   can unify directly with the reasoner's untyped numeric results.
 # -----------------------------------------------------------------------------
 
@@ -38,7 +42,7 @@
 
 {
   -2 math:absoluteValue ?abs .
-  ?abs log:equalTo 2 .
+  ?abs math:equalTo 2 .
 }
 =>
 {
@@ -52,7 +56,7 @@
 
 {
   3 math:absoluteValue ?abs .
-  ?abs log:equalTo 3 .
+  ?abs math:equalTo 3 .
 }
 =>
 {
@@ -71,7 +75,7 @@
 
 {
   1 math:acos ?r .
-  ?r log:equalTo 0 .
+  ?r math:equalTo 0 .
 }
 =>
 {
@@ -90,7 +94,7 @@
 
 {
   0 math:asin ?r .
-  ?r log:equalTo 0 .
+  ?r math:equalTo 0 .
 }
 =>
 {
@@ -110,7 +114,7 @@
 # atan(1) = pi/4
 {
   1 math:atan ?r .
-  ?r log:equalTo 0.7853981633974483 .
+  ?r math:equalTo 0.7853981633974483 .
 }
 =>
 {
@@ -130,7 +134,7 @@
 # cos(0) = 1
 {
   0 math:cos ?r .
-  ?r log:equalTo 1 .
+  ?r math:equalTo 1 .
 }
 =>
 {
@@ -150,7 +154,7 @@
 # cosh(0) = 1
 {
   0 math:cosh ?r .
-  ?r log:equalTo 1 .
+  ?r math:equalTo 1 .
 }
 =>
 {
@@ -170,7 +174,7 @@
 # degrees(pi) = 180
 {
   3.141592653589793 math:degrees ?deg .
-  ?deg log:equalTo 180 .
+  ?deg math:equalTo 180 .
 }
 =>
 {
@@ -189,7 +193,7 @@
 
 {
   (7 2) math:difference ?d .
-  ?d log:equalTo 5 .
+  ?d math:equalTo 5 .
 }
 =>
 {
@@ -203,7 +207,7 @@
 
 {
   (2 7) math:difference ?d .
-  ?d log:equalTo -5 .
+  ?d math:equalTo -5 .
 }
 =>
 {
@@ -241,7 +245,7 @@
 # Forward mode: (7 2) -> 49
 {
   (7 2) math:exponentiation ?r .
-  ?r log:equalTo 49 .
+  ?r math:equalTo 49 .
 }
 =>
 {
@@ -309,7 +313,7 @@
 # Forward mode
 {
   42 math:negation ?neg .
-  ?neg log:equalTo -42 .
+  ?neg math:equalTo -42 .
 }
 =>
 {
@@ -393,7 +397,7 @@
 
 {
   (2 21) math:product ?p .
-  ?p log:equalTo 42 .
+  ?p math:equalTo 42 .
 }
 =>
 {
@@ -407,7 +411,7 @@
 
 {
   (2 4 6 8) math:product ?p .
-  ?p log:equalTo 384 .
+  ?p math:equalTo 384 .
 }
 =>
 {
@@ -426,7 +430,7 @@
 
 {
   (42 2) math:quotient ?q .
-  ?q log:equalTo 21 .
+  ?q math:equalTo 21 .
 }
 =>
 {
@@ -445,7 +449,7 @@
 
 {
   (10 3) math:remainder ?r .
-  ?r log:equalTo 1 .
+  ?r math:equalTo 1 .
 }
 =>
 {
@@ -465,7 +469,7 @@
 # Typed input, untyped integer output
 {
   "3.3"^^xsd:double math:rounded ?r .
-  ?r log:equalTo 3 .
+  ?r math:equalTo 3 .
 }
 =>
 {
@@ -480,7 +484,7 @@
 # Tie-breaking towards +infinity: 3.5 -> 4
 {
   3.5 math:rounded ?r .
-  ?r log:equalTo 4 .
+  ?r math:equalTo 4 .
 }
 =>
 {
@@ -492,17 +496,18 @@
     :status   :pass .
 } .
 
-# Negative tie: -1.5 -> -1 (still closest to +infinity among {-2,-1})
+# Negative tie: -1.5 -> -2
+# Rounding semantics: ties go away from zero (3.5 -> 4, -1.5 -> -2)
 {
   -1.5 math:rounded ?r .
-  ?r log:equalTo -1 .
+  ?r math:equalTo -2 .
 }
 =>
 {
   :test-rounded-3 a :MathBuiltinTest;
     :builtin  math:rounded;
     :input    -1.5;
-    :expected -1;
+    :expected -2;
     :actual   ?r;
     :status   :pass .
 } .
@@ -515,7 +520,7 @@
 # sin(0) = 0
 {
   0 math:sin ?r .
-  ?r log:equalTo 0 .
+  ?r math:equalTo 0 .
 }
 =>
 {
@@ -535,7 +540,7 @@
 # sinh(0) = 0
 {
   0 math:sinh ?r .
-  ?r log:equalTo 0 .
+  ?r math:equalTo 0 .
 }
 =>
 {
@@ -554,7 +559,7 @@
 
 {
   (1 2 3 4 5 6 7 8 9 10) math:sum ?s .
-  ?s log:equalTo 55 .
+  ?s math:equalTo 55 .
 }
 =>
 {
@@ -574,7 +579,7 @@
 # tan(0) = 0
 {
   0 math:tan ?r .
-  ?r log:equalTo 0 .
+  ?r math:equalTo 0 .
 }
 =>
 {
@@ -594,7 +599,7 @@
 # tanh(0) = 0
 {
   0 math:tanh ?r .
-  ?r log:equalTo 0 .
+  ?r math:equalTo 0 .
 }
 =>
 {
