@@ -5,46 +5,40 @@
 #   :test :is {
 #       0 :fibonacci 0 .
 #       1 :fibonacci 1 .
-#       6 :fibonacci 8 .
-#       91 :fibonacci 4660046610375530309 .
-#       283 :fibonacci 62232491515607091882574410635924603070626544377175485625797 .
+#       10 :fibonacci 55 .
+#       100 :fibonacci 354224848179261915075 .
 #   } .
 # It holds because the following instance of the rule body is provable:
 #   0 :fibonacci 0 .
 #   1 :fibonacci 1 .
-#   6 :fibonacci 8 .
-#   91 :fibonacci 4660046610375530309 .
-#   283 :fibonacci 62232491515607091882574410635924603070626544377175485625797 .
+#   10 :fibonacci 55 .
+#   100 :fibonacci 354224848179261915075 .
 # via the schematic forward rule:
 #   {
 #     0 :fibonacci ?F0 .
 #     1 :fibonacci ?F1 .
-#     6 :fibonacci ?F6 .
-#     91 :fibonacci ?F91 .
-#     283 :fibonacci ?F283 .
+#     10 :fibonacci ?F10 .
+#     100 :fibonacci ?F100 .
 #   } => {
 #     :test :is {
 #         0 :fibonacci ?F0 .
 #         1 :fibonacci ?F1 .
-#         6 :fibonacci ?F6 .
-#         91 :fibonacci ?F91 .
-#         283 :fibonacci ?F283 .
+#         10 :fibonacci ?F10 .
+#         100 :fibonacci ?F100 .
 #     } .
 #   } .
 # with substitution (on rule variables):
 #   ?F0 = 0
 #   ?F1 = 1
-#   ?F283 = 62232491515607091882574410635924603070626544377175485625797
-#   ?F6 = 8
-#   ?F91 = 4660046610375530309
+#   ?F10 = 55
+#   ?F100 = 354224848179261915075
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
 :test :is {
     0 :fibonacci 0 .
     1 :fibonacci 1 .
-    6 :fibonacci 8 .
-    91 :fibonacci 4660046610375530309 .
-    283 :fibonacci 62232491515607091882574410635924603070626544377175485625797 .
+    10 :fibonacci 55 .
+    100 :fibonacci 354224848179261915075 .
 } .
 
