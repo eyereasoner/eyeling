@@ -2324,29 +2324,6 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     return [];
   }
 
-  // math:fibonacci
-  if (g.p instanceof Iri && g.p.value === MATH_NS + "fibonacci") {
-    const n = parseIntLiteral(g.s);
-    if (n !== null) {
-      if (n === null || n < 0n) return [];
-      let a = 0n, b = 1n;
-      for (let i = 0n; i < n; i++) {
-        const tmp = a + b;
-        a = b;
-        b = tmp;
-      }
-      const lit = new Literal(a.toString());
-      if (g.o instanceof Var) {
-        const s2 = { ...subst };
-        s2[g.o.name] = lit;
-        return [s2];
-      }
-      const s2 = unifyTerm(g.o, lit, subst);
-      return s2 !== null ? [s2] : [];
-    }
-    return [];
-  }
-
   // -----------------------------------------------------------------
   // 4.3 time: builtins
   // -----------------------------------------------------------------

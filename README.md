@@ -457,11 +457,6 @@ Other numeric helpers:
   Round to nearest integer (JavaScript `Math.round` semantics).  
   Shape: `$In math:rounded $Out`.
 
-* `math:fibonacci`  
-  BigInt-aware Fibonacci sequence.
-
-`math:fibonacci` is BigInt-aware and uses **0-based** indexing:
-
 * Integer inputs are treated as unbounded BigInts.
 * Outputs are exact (also as integer literals).
 

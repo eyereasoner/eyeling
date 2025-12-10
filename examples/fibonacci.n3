@@ -7,7 +7,7 @@
 @prefix math: <http://www.w3.org/2000/10/swap/math#>.
 @prefix : <https://eyereasoner.github.io/eye/reasoning#>.
 
-{?X math:fibonacci ?Y} <= {(?X 0 1) :fib ?Y}.
+{?X :fibonacci ?Y} <= {(?X 0 1) :fib ?Y}.
 
 {(0 ?A ?B) :fib ?A} <= true.
 {(1 ?A ?B) :fib ?B} <= true.
@@ -19,20 +19,18 @@
 }.
 
 {
-    0 math:fibonacci ?F0.
-    1 math:fibonacci ?F1.
-    6 math:fibonacci ?F6.
-    91 math:fibonacci ?F91.
-    283 math:fibonacci ?F283.
-    3674 math:fibonacci ?F3674.
+    0 :fibonacci ?F0.
+    1 :fibonacci ?F1.
+    6 :fibonacci ?F6.
+    91 :fibonacci ?F91.
+    283 :fibonacci ?F283.
 } => {
     :test :is {
-        0 math:fibonacci ?F0.
-        1 math:fibonacci ?F1.
-        6 math:fibonacci ?F6.
-        91 math:fibonacci ?F91.
-        283 math:fibonacci ?F283.
-        3674 math:fibonacci ?F3674.
+        0 :fibonacci ?F0.
+        1 :fibonacci ?F1.
+        6 :fibonacci ?F6.
+        91 :fibonacci ?F91.
+        283 :fibonacci ?F283.
     }.
 }.
 
