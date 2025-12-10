@@ -373,7 +373,7 @@ The `examples/test` script treats this non-zero exit code for the `fuse.n3` exam
 
 ## Built-ins (overview)
 
-`eyeling` implements a pragmatic subset of the core N3 builtin vocabularies, roughly following the “Notation3 Builtin Functions” report (sections 4.2–4.6 for math, time, list, log, and string).  
+`eyeling` implements a pragmatic subset of the core N3 builtin vocabularies, roughly following the “Notation3 Builtin Functions” report (sections 4.1–4.6 for crypto, math, time, list, log, and string).
 
 Built-ins are recognized by expanded IRIs and evaluated during **backward** goal proving. This is a **condensed** overview of what’s currently implemented. For exact behavior and corner cases, see the `evalBuiltin` function in `eyeling.js`.
 
