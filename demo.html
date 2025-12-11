@@ -178,8 +178,7 @@
     <header>
       <h1>Eyeling N3 Playground</h1>
       <p>
-        Edit the N3 program below, load it from a URL, or share this page with the program encoded
-        in the <code>n3_program</code> query parameter.
+        Edit the N3 program below, load it from a URL, or share this page with the program encoded in the fragment.
       </p>
     </header>
 
@@ -243,10 +242,25 @@
       const uriInput = document.getElementById("n3-uri");
       const loadUriBtn = document.getElementById("load-uri-btn");
 
-      // --- INITIAL CONTENT FROM QUERY PARAM OR DEFAULT ---
-      const urlParams = new URLSearchParams(window.location.search);
-      const paramProgram = urlParams.get("n3_program");
+      // --- INITIAL CONTENT FROM HASH OR DEFAULT ---
+      function getProgramFromHash() {
+        const hash = window.location.hash || "";
+        if (!hash) return null;
+        // Remove leading '#'
+        const raw = hash.startsWith("#") ? hash.slice(1) : hash;
+        if (!raw) return null;
+        try {
+          return decodeURIComponent(raw);
+        } catch (e) {
+          // If decoding fails, just use the raw string
+          return raw;
+        }
+      }
+
+      const paramProgram = getProgramFromHash();
       const initialN3 = paramProgram !== null ? paramProgram : defaultN3;
+      editor.value = initialN3;
+      autoResize(editor);
 
       editor.value = initialN3;
 
@@ -262,13 +276,13 @@
 
       function updateShareUrl() {
         try {
+          const encoded = encodeURIComponent(editor.value);
+          // Keep path + query as-is, only change hash
           const url = new URL(window.location.href);
-          url.searchParams.set("n3_program", editor.value);
-          // Keep everything else (hash, other params) intact
+          url.hash = encoded;
           window.history.replaceState(null, "", url.toString());
         } catch (e) {
-          // Non-fatal; just don't update URL
-          console && console.warn && console.warn("Failed to update URL:", e);
+          console && console.warn && console.warn("Failed to update URL hash:", e);
         }
       }
 
