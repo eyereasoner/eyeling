@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Eyeling N3 Playground</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f5f7;
+      color: #111827;
+    }
+
+    .page {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 3rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.4rem;
+      font-weight: 600;
+    }
+
+    header p {
+      margin: 0.25rem 0 0;
+      font-size: 0.9rem;
+      color: #6b7280;
+    }
+
+    label {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 0.35rem;
+      display: inline-block;
+    }
+
+    textarea {
+      width: 100%;
+      border-radius: 0.75rem;
+      border: 1px solid #d1d5db;
+      padding: 1rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      resize: none;
+      overflow: hidden; /* no scrollbars inside the editor */
+      background: #ffffff;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.35);
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 0.25rem;
+    }
+
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 0.5rem 1.25rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      background: #2563eb;
+      color: #ffffff;
+      box-shadow: 0 10px 15px rgba(37, 99, 235, 0.25);
+      transition: transform 0.05s ease-out, box-shadow 0.05s ease-out, opacity 0.1s;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 24px rgba(37, 99, 235, 0.32);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: 0 8px 12px rgba(37, 99, 235, 0.2);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: default;
+      box-shadow: none;
+    }
+
+    .status {
+      font-size: 0.8rem;
+      color: #6b7280;
+    }
+
+    pre#output {
+      margin: 0.25rem 0 0;
+      border-radius: 0.75rem;
+      border: 1px solid #d1d5db;
+      padding: 1rem;
+      background: #0b1120;
+      color: #e5e7eb;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.85rem;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow: hidden; /* no scrollbars inside the output box */
+      min-height: 5rem;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 1rem;
+      padding: 1rem 1.25rem 1.25rem;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+    }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 500;
+      margin: 0 0 0.5rem;
+      color: #111827;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>Eyeling N3 Playground</h1>
+      <p>Edit the N3 program below and run the Eyeling reasoner in your browser.</p>
+    </header>
+
+    <section class="card">
+      <h2 class="section-title">Input N3</h2>
+      <label for="n3-editor">Editable N3 program</label>
+      <textarea id="n3-editor" spellcheck="false"></textarea>
+      <div class="controls">
+        <button id="run-btn">Run reasoning</button>
+        <span class="status" id="status">Idle.</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Output</h2>
+      <pre id="output">(no output yet)</pre>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      const defaultN3 = `# ------------------
+# Socrates inference
+# ------------------
+
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix : <http://example.org/socrates#>.
+
+# facts
+:Socrates a :Human.
+:Human rdfs:subClassOf :Mortal.
+
+# subclass rule
+{
+    ?S a ?A.
+    ?A rdfs:subClassOf ?B.
+} => {
+    ?S a ?B.
+}.`;
+
+      const editor = document.getElementById("n3-editor");
+      const outputEl = document.getElementById("output");
+      const runBtn = document.getElementById("run-btn");
+      const statusEl = document.getElementById("status");
+
+      editor.value = defaultN3;
+
+      function autoResize(el) {
+        el.style.height = "auto";
+        el.style.height = el.scrollHeight + "px";
+      }
+
+      autoResize(editor);
+      editor.addEventListener("input", function () {
+        autoResize(editor);
+      });
+
+      let runnerPromise = null;
+
+      async function getEyelingRunner() {
+        if (runnerPromise) return runnerPromise;
+
+        runnerPromise = (async () => {
+          const url =
+            "https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/eyeling.js";
+
+          const resp = await fetch(url);
+          if (!resp.ok) {
+            throw new Error("Failed to load eyeling.js (" + resp.status + ")");
+          }
+
+          const rawSource = await resp.text();
+
+          // Remove Node shebang for browser eval.
+          const cleanedSource = rawSource.replace(/^#![^\n]*\n/, "");
+
+          // Build a function that runs eyeling as a CLI once, given N3 text.
+          function runOnce(n3Input) {
+            const lines = [];
+
+            const consoleShim = {
+              log: (...args) => {
+                lines.push(args.join(" "));
+              },
+              error: (...args) => {
+                lines.push(args.join(" "));
+              },
+            };
+
+            const fsShim = {
+              readFileSync: (path, options) => {
+                // Ignore path and just return the provided N3 program.
+                return n3Input;
+              },
+            };
+
+            const processShim = {
+              // Simulate: node eyeling.js input.n3
+              argv: ["node", "eyeling.js", "input.n3"],
+              exit: (code) => {
+                // Use a special object so we can detect "normal" exits.
+                throw { __eyelingExit: true, code };
+              },
+            };
+
+            const moduleShim = { exports: {} };
+
+            function requireShim(id) {
+              if (id === "./package.json") {
+                return { version: "browser" };
+              }
+              if (id === "fs") {
+                return fsShim;
+              }
+              if (id === "crypto") {
+                // Minimal stub – enough for examples that don't depend on crypto.
+                return {
+                  createHash: () => ({
+                    update: () => {},
+                    digest: () => "",
+                  }),
+                };
+              }
+              return {};
+            }
+
+            // Make eyeling think this is the main module so `main()` runs.
+            requireShim.main = moduleShim;
+
+            try {
+              const fn = new Function(
+                "require",
+                "module",
+                "exports",
+                "process",
+                "console",
+                cleanedSource
+              );
+              fn(requireShim, moduleShim, moduleShim.exports, processShim, consoleShim);
+            } catch (e) {
+              if (!e || !e.__eyelingExit) {
+                lines.push(
+                  "JavaScript error: " + (e && e.message ? e.message : String(e))
+                );
+              }
+              // For __eyelingExit we just stop without adding extra noise;
+              // CLI output is already captured via consoleShim.
+            }
+
+            return lines.join("\n");
+          }
+
+          return runOnce;
+        })();
+
+        return runnerPromise;
+      }
+
+      async function runReasoner() {
+        runBtn.disabled = true;
+        statusEl.textContent = "Running reasoning...";
+        outputEl.textContent = "";
+
+        try {
+          const runner = await getEyelingRunner();
+          const result = runner(editor.value);
+          outputEl.textContent = result || "(no output)";
+          statusEl.textContent = "Done.";
+        } catch (e) {
+          outputEl.textContent =
+            "Failed to run Eyeling: " +
+            (e && e.message ? e.message : String(e));
+          statusEl.textContent = "Error.";
+        } finally {
+          runBtn.disabled = false;
+        }
+      }
+
+      runBtn.addEventListener("click", runReasoner);
+
+      // Optional: uncomment to run once on load.
+      // runReasoner();
+    })();
+  </script>
+</body>
+</html>
+
