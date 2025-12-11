@@ -11,6 +11,10 @@ A minimal [Notation3 (N3)](https://notation3.org/) reasoner in **JavaScript**.
 
 For every derived triple, it also prints a compact, mathematical-English proof as N3 comments.
 
+It’s a deliberate design feature of eyling that we never want to leak raw data.
+That’s why we use pass-only-new and backward rules for functions that work with raw data,
+and of course we also keep all reasoning in the browser.
+
 ---
 
 ## Quick start
