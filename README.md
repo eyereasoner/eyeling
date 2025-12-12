@@ -4,20 +4,28 @@ A minimal [Notation3 (N3)](https://notation3.org/) reasoner in **JavaScript**.
 
 `eyeling` is:
 
-- a **single self-contained file** (`eyeling.js`, no external deps),
-- intentionally **tiny** and close in spirit to **EYE**,
+- a single self-contained file (`eyeling.js`, no external deps),
+- intentionally tiny and close in spirit to EYE,
 - a practical N3/Turtle superset (enough for lots of real rulesets),
-- supports **forward (`=>`) + backward (`<=`) chaining** over Horn-style rules,
-- prints **only newly derived forward facts**, optionally preceded by compact proof comments.
+- supports forward (`=>`) + backward (`<=`) chaining over Horn-style rules,
+- prints only newly derived forward facts, optionally preceded by compact proof comments.
 
 ## Playground (in your browser)
 
 Try it here:
 
 - https://eyereasoner.github.io/eyeling/demo
-- Example (Socrates): https://eyereasoner.github.io/eyeling/demo#%23%20------------------%0A%23%20Socrates%20inference%0A%23%20------------------%0A%0A%40prefix%20rdfs%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2000%2F01%2Frdf-schema%23%3E.%0A%40prefix%20%3A%20%3Chttp%3A%2F%2Fexample.org%2Fsocrates%23%3E.%0A%0A%23%20facts%0A%3ASocrates%20a%20%3AHuman.%0A%3AHuman%20rdfs%3AsubClassOf%20%3AMortal.%0A%0A%23%20subclass%20rule%0A%7B%0A%20%20%20%20%3FS%20a%20%3FA.%0A%20%20%20%20%3FA%20rdfs%3AsubClassOf%20%3FB.%0A%7D%20%3D%3E%20%7B%0A%20%20%20%20%3FS%20a%20%3FB.%0A%7D.
 
-The playground runs `eyeling` client-side so you can experiment quickly and share a ruleset just by sharing the URL.
+The playground runs `eyeling` client-side. You can:
+- edit an N3 program directly,
+- load an N3 program from a URL,
+- share a link with the program encoded in the URL fragment (`#...`).  
+
+### Example (Socrates)
+
+This link preloads a small “Socrates is Mortal” ruleset:
+
+https://eyereasoner.github.io/eyeling/demo#%23%20------------------%0A%23%20Socrates%20inference%0A%23%20------------------%0A%0A%40prefix%20rdfs%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2000%2F01%2Frdf-schema%23%3E.%0A%40prefix%20%3A%20%3Chttp%3A%2F%2Fexample.org%2Fsocrates%23%3E.%0A%0A%23%20facts%0A%3ASocrates%20a%20%3AHuman.%0A%3AHuman%20rdfs%3AsubClassOf%20%3AMortal.%0A%0A%23%20subclass%20rule%0A%7B%0A%20%20%20%20%3FS%20a%20%3FA.%0A%20%20%20%20%3FA%20rdfs%3AsubClassOf%20%3FB.%0A%7D%20%3D%3E%20%7B%0A%20%20%20%20%3FS%20a%20%3FB.%0A%7D%2E%0A
 
 ## Quick start (Node.js)
 
@@ -48,9 +56,7 @@ By default, `eyeling`:
 ```bash
 node eyeling.js --version
 node eyeling.js -v
-```
 
-```bash
 # Disable proof comments (print only derived triples)
 node eyeling.js --no-proof-comments examples/socrates.n3
 node eyeling.js -n examples/socrates.n3
@@ -69,42 +75,10 @@ This runs `eyeling.js` over each example and compares against the golden outputs
 
 For each newly derived triple, `eyeling` prints:
 
-1. a proof-style comment block explaining **why** the triple holds, and then
+1. a proof-style comment block explaining why the triple holds (unless `-n`), and then
 2. the triple itself in N3/Turtle syntax.
 
-Example shape:
-
-```n3
-@prefix : <http://example.org/socrates#> .
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-
-# ----------------------------------------------------------------------
-# Proof for derived triple:
-# :Socrates a :Mortal .
-#
-# It holds because the following instance of the rule body is provable:
-# :Socrates a :Human .
-# :Human rdfs:subClassOf :Mortal .
-# via the schematic forward rule:
-# {
-# ?S a ?A .
-# ?A rdfs:subClassOf ?B .
-# } => {
-# ?S a ?B .
-# } .
-#
-# with substitution (on rule variables):
-# ?A = :Human
-# ?B = :Mortal
-# ?S = :Socrates
-#
-# Therefore the derived triple above is entailed by the rules and facts.
-# ----------------------------------------------------------------------
-
-:Socrates a :Mortal .
-```
-
-This is not a full “global proof tree”; it’s a compact per-step justification that’s easy to read next to the derived triples.
+The proof comments are compact “local justifications” per derived triple (not a single exported global proof tree).
 
 ## Reasoning model
 
@@ -119,19 +93,19 @@ Forward rule premises are proved using:
 * backward rules,
 * built-ins.
 
-The CLI prints **only newly derived forward facts**.
+The CLI prints only newly derived forward facts.
 
 ### Performance notes (current engine)
 
-`eyeling` stays tiny, but it does include a few key performance mechanisms:
+`eyeling` stays tiny, but includes a few key performance mechanisms:
 
-* Facts are indexed for matching:
+* facts are indexed for matching:
 
-  * by predicate, and (when possible) by **(predicate, object)** (important for deep taxonomy / type-heavy workloads).
-* Duplicate detection uses a fast key path when a triple is fully IRI/Literal-shaped.
-* Backward rules are indexed by head predicate.
-* The backward prover is **iterative** (explicit stack), so deep chains won’t blow the JS call stack.
-* For very deep backward chains, `eyeling` compactifies substitutions (semantics-preserving) to avoid quadratic “copy a growing substitution object” behavior.
+  * by predicate, and (when possible) by **(predicate, object)** (important for type-heavy workloads),
+* duplicate detection uses a fast key path when a triple is fully IRI/Literal-shaped,
+* backward rules are indexed by head predicate,
+* the backward prover is **iterative** (explicit stack), so deep chains won’t blow the JS call stack,
+* for very deep backward chains, substitutions may be compactified (semantics-preserving) to avoid quadratic “copy a growing substitution object” behavior.
 
 ## Parsing: practical N3 subset
 
@@ -155,17 +129,17 @@ Supported:
 
 Non-goals / current limits:
 
-* not a full W3C N3 grammar (some edge cases for identifiers, quantifiers, advanced syntax)
-* quoted formulas are matched as **whole formulas** (no pattern matching *inside* formulas yet)
-* proof output is local per derived triple (not a global exported proof tree)
+* not a full W3C N3 grammar (some edge cases for identifiers, quantifiers, advanced syntax),
+* quoted formulas are matched as whole formulas (no pattern matching inside formulas yet),
+* proof output is local per derived triple (not a global exported proof tree).
 
 ## Blank nodes and quantification (pragmatic N3/EYE-style)
 
 `eyeling` follows the usual N3 intuition:
 
-1. **Blank nodes in facts** are normal RDF blanks (`_:b1`, `_:b2`, … within a run).
-2. **Blank nodes in rule premises** behave like rule-scoped universals (similar to variables).
-3. **Blank nodes only in rule conclusions** behave like existentials:
+1. blank nodes in facts are normal RDF blanks (`_:b1`, `_:b2`, … within a run),
+2. blank nodes in rule premises behave like rule-scoped universals (similar to variables),
+3. blank nodes only in rule conclusions behave like existentials:
    each rule firing generates fresh Skolem blanks (`_:sk_0`, `_:sk_1`, …).
 
 Equal facts up to renaming of Skolem IDs are treated as duplicates and are not re-added.
@@ -197,7 +171,7 @@ As soon as the premise is provable, `eyeling` exits with status code `2`.
 
 ## Built-ins (overview)
 
-`eyeling` implements a pragmatic subset of the common N3 builtin families and evaluates them during **backward** goal proving:
+`eyeling` implements a pragmatic subset of common N3 builtin families and evaluates them during backward goal proving:
 
 * `crypto:`
 * `math:`
@@ -210,4 +184,4 @@ For the exact list and corner cases, see `evalBuiltin(...)` in `eyeling.js`.
 
 ## License
 
-MIT (see `LICENSE`).
+MIT (see `LICENSE.md`).
