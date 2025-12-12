@@ -4,9 +4,7 @@
   <meta charset="utf-8" />
   <title>Eyeling N3 Playground</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -36,6 +34,18 @@
       color: #6b7280;
     }
 
+    header a {
+      color: #2563eb;
+      text-decoration: none;
+    }
+    header a:hover { text-decoration: underline; }
+
+    .meta {
+      margin-top: 0.35rem;
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+
     label {
       font-size: 0.9rem;
       font-weight: 500;
@@ -49,7 +59,8 @@
       border-radius: 0.75rem;
       border: 1px solid #d1d5db;
       padding: 1rem;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+        "Courier New", monospace;
       font-size: 0.9rem;
       line-height: 1.4;
       resize: none;
@@ -69,6 +80,25 @@
       align-items: center;
       gap: 0.75rem;
       margin-top: 0.25rem;
+      flex-wrap: wrap;
+    }
+
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #374151;
+      user-select: none;
+      cursor: pointer;
+    }
+
+    .toggle input {
+      width: 1rem;
+      height: 1rem;
+      accent-color: #2563eb;
+      cursor: pointer;
     }
 
     button {
@@ -112,7 +142,8 @@
       padding: 1rem;
       background: #0b1120;
       color: #e5e7eb;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+        "Courier New", monospace;
       font-size: 0.85rem;
       line-height: 1.4;
       white-space: pre-wrap;
@@ -136,9 +167,7 @@
       color: #111827;
     }
 
-    .uri-row {
-      margin-bottom: 0.75rem;
-    }
+    .uri-row { margin-bottom: 0.75rem; }
 
     .uri-input-row {
       display: flex;
@@ -173,12 +202,18 @@
     }
   </style>
 </head>
+
 <body>
   <div class="page">
     <header>
       <h1>Eyeling N3 Playground</h1>
       <p>
         Edit the N3 program below, load it from a URL, or share this page with the program encoded in the fragment.
+      </p>
+      <p class="meta">
+        Powered by
+        <a href="https://eyereasoner.github.io/eyeling/" target="_blank" rel="noopener noreferrer">Eyeling</a>
+        — running version <strong>v<span id="eyeling-version">…</span></strong>.
       </p>
     </header>
 
@@ -202,8 +237,15 @@
 
       <label for="n3-editor">Editable N3 program</label>
       <textarea id="n3-editor" spellcheck="false"></textarea>
+
       <div class="controls">
         <button id="run-btn">Run reasoning</button>
+
+        <label class="toggle" title="Runs Eyeling with -n (no proof comments)">
+          <input id="no-proof-comments" type="checkbox" />
+          Turn proof comments off (-n)
+        </label>
+
         <span class="status" id="status">Idle.</span>
       </div>
     </section>
@@ -241,18 +283,31 @@
       const statusEl = document.getElementById("status");
       const uriInput = document.getElementById("n3-uri");
       const loadUriBtn = document.getElementById("load-uri-btn");
+      const noProofCheckbox = document.getElementById("no-proof-comments");
+      const versionEl = document.getElementById("eyeling-version");
+
+      const EYELING_JS_URL =
+        "https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/eyeling.js";
+      const EYELING_PKG_URL =
+        "https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/package.json";
+
+      let eyelingVersion = "unknown";
+      let versionPromise = null;
+
+      function autoResize(el) {
+        el.style.height = "auto";
+        el.style.height = el.scrollHeight + "px";
+      }
 
       // --- INITIAL CONTENT FROM HASH OR DEFAULT ---
       function getProgramFromHash() {
         const hash = window.location.hash || "";
         if (!hash) return null;
-        // Remove leading '#'
         const raw = hash.startsWith("#") ? hash.slice(1) : hash;
         if (!raw) return null;
         try {
           return decodeURIComponent(raw);
         } catch (e) {
-          // If decoding fails, just use the raw string
           return raw;
         }
       }
@@ -262,22 +317,12 @@
       editor.value = initialN3;
       autoResize(editor);
 
-      editor.value = initialN3;
-
-      function autoResize(el) {
-        el.style.height = "auto";
-        el.style.height = el.scrollHeight + "px";
-      }
-
-      autoResize(editor);
-
       // --- URL SHARING SUPPORT ---
       let shareUrlUpdateTimeout = null;
 
       function updateShareUrl() {
         try {
           const encoded = encodeURIComponent(editor.value);
-          // Keep path + query as-is, only change hash
           const url = new URL(window.location.href);
           url.hash = encoded;
           window.history.replaceState(null, "", url.toString());
@@ -296,6 +341,34 @@
         scheduleUpdateShareUrl();
       });
 
+      // --- EYELING VERSION (UI + runner) ---
+      function ensureEyelingVersion() {
+        if (versionPromise) return versionPromise;
+
+        versionPromise = (async () => {
+          try {
+            const resp = await fetch(EYELING_PKG_URL, { cache: "no-store" });
+            if (!resp.ok) throw new Error("HTTP " + resp.status);
+            const pkg = await resp.json();
+            if (pkg && pkg.version) {
+              eyelingVersion = String(pkg.version);
+              versionEl.textContent = eyelingVersion;
+            } else {
+              eyelingVersion = "unknown";
+              versionEl.textContent = "unknown";
+            }
+          } catch (e) {
+            eyelingVersion = "unknown";
+            versionEl.textContent = "unknown";
+          }
+        })();
+
+        return versionPromise;
+      }
+
+      // start loading version ASAP
+      ensureEyelingVersion();
+
       // --- EYELING RUNNER SETUP ---
       let runnerPromise = null;
 
@@ -303,17 +376,15 @@
         if (runnerPromise) return runnerPromise;
 
         runnerPromise = (async () => {
-          const url =
-            "https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/eyeling.js";
+          // Make sure version is known (so require("./package.json") can match UI)
+          await ensureEyelingVersion();
 
-          const resp = await fetch(url);
+          const resp = await fetch(EYELING_JS_URL);
           if (!resp.ok) {
             throw new Error("Failed to load eyeling.js (" + resp.status + ")");
           }
 
           const rawSource = await resp.text();
-
-          // Remove Node shebang for browser eval.
           const cleanedSource = rawSource.replace(/^#![^\n]*\n/, "");
 
           // Build a function that runs eyeling as a CLI once, given N3 text.
@@ -321,26 +392,23 @@
             const lines = [];
 
             const consoleShim = {
-              log: (...args) => {
-                lines.push(args.join(" "));
-              },
-              error: (...args) => {
-                lines.push(args.join(" "));
-              },
+              log: (...args) => lines.push(args.join(" ")),
+              error: (...args) => lines.push(args.join(" ")),
             };
 
             const fsShim = {
-              readFileSync: (path, options) => {
-                // Ignore path and just return the provided N3 program.
-                return n3Input;
-              },
+              readFileSync: () => n3Input,
             };
 
             const processShim = {
-              // Simulate: node eyeling.js input.n3
-              argv: ["node", "eyeling.js", "input.n3"],
+              // Simulate: node eyeling.js [-n] input.n3
+              argv: [
+                "node",
+                "eyeling.js",
+                ...(noProofCheckbox.checked ? ["-n"] : []),
+                "input.n3",
+              ],
               exit: (code) => {
-                // Use a special object so we can detect "normal" exits.
                 throw { __eyelingExit: true, code };
               },
             };
@@ -349,11 +417,9 @@
 
             function requireShim(id) {
               if (id === "./package.json") {
-                return { version: "browser" };
+                return { version: eyelingVersion || "unknown" };
               }
-              if (id === "fs") {
-                return fsShim;
-              }
+              if (id === "fs") return fsShim;
               if (id === "crypto") {
                 // Minimal stub – enough for examples that don't depend on crypto.
                 return {
@@ -385,8 +451,6 @@
                   "JavaScript error: " + (e && e.message ? e.message : String(e))
                 );
               }
-              // For __eyelingExit we just stop without adding extra noise;
-              // CLI output is already captured via consoleShim.
             }
 
             return lines.join("\n");
@@ -402,7 +466,6 @@
         runBtn.disabled = true;
         statusEl.textContent = "Running reasoning...";
         outputEl.textContent = "";
-        // Ensure URL is in sync with what we're running
         updateShareUrl();
 
         try {
@@ -412,8 +475,7 @@
           statusEl.textContent = "Done.";
         } catch (e) {
           outputEl.textContent =
-            "Failed to run Eyeling: " +
-            (e && e.message ? e.message : String(e));
+            "Failed to run Eyeling: " + (e && e.message ? e.message : String(e));
           statusEl.textContent = "Error.";
         } finally {
           runBtn.disabled = false;
@@ -449,7 +511,7 @@
       runBtn.addEventListener("click", runReasoner);
       loadUriBtn.addEventListener("click", loadFromUri);
 
-      // Make sure URL is initialized with whatever we started with
+      // Initialize URL hash with whatever we started with
       updateShareUrl();
     })();
   </script>
