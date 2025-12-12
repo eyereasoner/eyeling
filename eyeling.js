@@ -2665,14 +2665,16 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
       const r = standardizeRule(r0, varGen);
 
       const premF = new FormulaTerm(r.premise);
-      const concF = new FormulaTerm(r.conclusion);
+      const concTerm = r0.isFuse
+        ? new Literal("false")
+        : new FormulaTerm(r.conclusion);
 
       // unify subject with the premise formula
       let s2 = unifyTerm(goal.s, premF, subst);
       if (s2 === null) continue;
 
       // unify object with the conclusion formula
-      s2 = unifyTerm(goal.o, concF, s2);
+      s2 = unifyTerm(goal.o, concTerm, s2);
       if (s2 === null) continue;
 
       results.push(s2);
