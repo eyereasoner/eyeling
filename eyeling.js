@@ -3285,6 +3285,91 @@ function listHasTriple(list, tr) {
   return list.some(t => triplesEqual(t, tr));
 }
 
+// ============================================================================
+// Substitution compaction (to avoid O(depth^2) in deep backward chains)
+// ============================================================================
+//
+// Why: backward chaining with standardizeRule introduces fresh variables at
+// each step. composeSubst frequently copies a growing substitution object.
+// For deep linear recursions this becomes quadratic.
+//
+// Strategy: when the substitution is "large" or search depth is high,
+// keep only bindings that are still relevant to:
+//   - variables appearing in the remaining goals
+//   - variables from the original goals (answer vars)
+// plus the transitive closure of variables that appear inside kept bindings.
+//
+// This is semantics-preserving for the ongoing proof state.
+
+function _gcCollectVarsInTerm(t, out) {
+  if (t instanceof Var) { out.add(t.name); return; }
+  if (t instanceof ListTerm) { for (const e of t.elems) _gcCollectVarsInTerm(e, out); return; }
+  if (t instanceof OpenListTerm) {
+    for (const e of t.prefix) _gcCollectVarsInTerm(e, out);
+    out.add(t.tailVar);
+    return;
+  }
+  if (t instanceof FormulaTerm) { for (const tr of t.triples) _gcCollectVarsInTriple(tr, out); return; }
+}
+
+function _gcCollectVarsInTriple(tr, out) {
+  _gcCollectVarsInTerm(tr.s, out);
+  _gcCollectVarsInTerm(tr.p, out);
+  _gcCollectVarsInTerm(tr.o, out);
+}
+
+function _gcCollectVarsInGoals(goals, out) {
+  for (const g of goals) _gcCollectVarsInTriple(g, out);
+}
+
+function _substSizeOver(subst, limit) {
+  let c = 0;
+  for (const _k in subst) {
+    if (++c > limit) return true;
+  }
+  return false;
+}
+
+function _gcCompactForGoals(subst, goals, answerVars) {
+  const keep = new Set(answerVars);
+  _gcCollectVarsInGoals(goals, keep);
+
+  const expanded = new Set();
+  const queue = Array.from(keep);
+
+  while (queue.length) {
+    const v = queue.pop();
+    if (expanded.has(v)) continue;
+    expanded.add(v);
+
+    const bound = subst[v];
+    if (bound === undefined) continue;
+
+    const before = keep.size;
+    _gcCollectVarsInTerm(bound, keep);
+    if (keep.size !== before) {
+      for (const nv of keep) {
+        if (!expanded.has(nv)) queue.push(nv);
+      }
+    }
+  }
+
+  const out = {};
+  for (const k of Object.keys(subst)) {
+    if (keep.has(k)) out[k] = subst[k];
+  }
+  return out;
+}
+
+function _maybeCompactSubst(subst, goals, answerVars, depth) {
+  // Keep the fast path fast.
+  // Only compact when the substitution is clearly getting large, or
+  // we are in a deep chain (where the quadratic behavior shows up).
+  if (depth < 128 && !_substSizeOver(subst, 256)) return subst;
+  return _gcCompactForGoals(subst, goals, answerVars);
+}
+
+
 function proveGoals( goals, subst, facts, backRules, depth, visited, varGen ) {
   // Iterative DFS over proof states using an explicit stack.
   // Each state carries its own substitution and remaining goals.
@@ -3294,8 +3379,12 @@ function proveGoals( goals, subst, facts, backRules, depth, visited, varGen ) {
   const initialSubst = subst ? { ...subst } : {};
   const initialVisited = visited ? visited.slice() : [];
 
+
+  // Variables from the original goal list (needed by the caller to instantiate conclusions)
+  const answerVars = new Set();
+  _gcCollectVarsInGoals(initialGoals, answerVars);
   if (!initialGoals.length) {
-    results.push({ ...initialSubst });
+    results.push(_gcCompactForGoals(initialSubst, [], answerVars));
     return results;
   }
 
@@ -3307,7 +3396,7 @@ function proveGoals( goals, subst, facts, backRules, depth, visited, varGen ) {
     const state = stack.pop();
 
     if (!state.goals.length) {
-      results.push({ ...state.subst });
+      results.push(_gcCompactForGoals(state.subst, [], answerVars));
       continue;
     }
 
@@ -3323,11 +3412,12 @@ function proveGoals( goals, subst, facts, backRules, depth, visited, varGen ) {
         if (composed === null) continue;
 
         if (!restGoals.length) {
-          results.push({ ...composed });
+          results.push(_gcCompactForGoals(composed, [], answerVars));
         } else {
+          const nextSubst = _maybeCompactSubst(composed, restGoals, answerVars, state.depth + 1);
           stack.push({
             goals: restGoals,
-            subst: composed,
+            subst: nextSubst,
             depth: state.depth + 1,
             visited: state.visited
           });
@@ -3351,11 +3441,12 @@ function proveGoals( goals, subst, facts, backRules, depth, visited, varGen ) {
         if (composed === null) continue;
 
         if (!restGoals.length) {
-          results.push({ ...composed });
+          results.push(_gcCompactForGoals(composed, [], answerVars));
         } else {
+          const nextSubst = _maybeCompactSubst(composed, restGoals, answerVars, state.depth + 1);
           stack.push({
             goals: restGoals,
-            subst: composed,
+            subst: nextSubst,
             depth: state.depth + 1,
             visited: state.visited
           });
@@ -3371,11 +3462,12 @@ function proveGoals( goals, subst, facts, backRules, depth, visited, varGen ) {
         if (composed === null) continue;
 
         if (!restGoals.length) {
-          results.push({ ...composed });
+          results.push(_gcCompactForGoals(composed, [], answerVars));
         } else {
+          const nextSubst = _maybeCompactSubst(composed, restGoals, answerVars, state.depth + 1);
           stack.push({
             goals: restGoals,
-            subst: composed,
+            subst: nextSubst,
             depth: state.depth + 1,
             visited: state.visited
           });
@@ -3405,9 +3497,10 @@ function proveGoals( goals, subst, facts, backRules, depth, visited, varGen ) {
         if (composed === null) continue;
 
         const newGoals = body.concat(restGoals);
+        const nextSubst = _maybeCompactSubst(composed, newGoals, answerVars, state.depth + 1);
         stack.push({
           goals: newGoals,
-          subst: composed,
+          subst: nextSubst,
           depth: state.depth + 1,
           visited: visitedForRules
         });
