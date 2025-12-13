@@ -34,14 +34,13 @@ This link preloads a small “Socrates is Mortal” ruleset:
 
 - A reasonably recent Node.js (anything modern with `BigInt` support is fine).
 
-```md
-## Install (npm)
+### Install (npm)
 
 ```bash
 npm i eyeling
 ```
 
-## CLI (npm)
+### CLI (npm)
 
 Run on a file:
 
@@ -51,7 +50,7 @@ npx eyeling examples/socrates.n3
 
 (Or install globally: `npm i -g eyeling` and run `eyeling ...`.)
 
-## JavaScript API (Node)
+### JavaScript API (Node)
 
 ```js
 const { reason } = require('eyeling');

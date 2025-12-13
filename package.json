@@ -26,9 +26,6 @@
   "engines": {
     "node": ">=18"
   },
-  "dependencies": {
-    "eyeling": "^1.5.10"
-  },
   "scripts": {
     "test": "node test/api.test.js"
   }
