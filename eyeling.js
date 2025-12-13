@@ -3700,6 +3700,7 @@ function tripleToN3(tr, prefixes) {
     : isOwlSameAsPred(tr.p) ? "="
     : termToN3(tr.p, prefixes);
   const o = termToN3(tr.o, prefixes);
+
   return `${s} ${p} ${o} .`;
 }
 
