@@ -43,6 +43,7 @@ From the repo root:
 
 # Option 2: explicit node
 node eyeling.js examples/socrates.n3
+```
 
 By default, `eyeling`:
 
