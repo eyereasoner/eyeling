@@ -1,0 +1,145 @@
+# ----------
+# ODRL trust
+# ----------
+
+
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix odrl: <http://www.w3.org/ns/odrl/2/>.
+@prefix dct:  <http://purl.org/dc/terms/>.
+@prefix :     <http://example.org/odrl-trust#>.
+
+# ------------------
+# Trust model (0..1)
+# ------------------
+:Gov        :trust 0.95.
+:Partner    :trust 0.70.
+:RandomBlog :trust 0.30.
+
+# --------------------------
+# A request we want to decide
+# --------------------------
+:req1 a :Request;
+  odrl:assignee :Alice;
+  odrl:target   :Doc1;
+  odrl:action   odrl:read.
+
+# --------------------------
+# ODRL Policies
+# --------------------------
+
+# High-trust permission from Gov (trusted enough)
+:PolGov a odrl:Policy;
+  dct:creator :Gov;
+  odrl:permission :PermGov.
+
+:PermGov a odrl:Permission;
+  odrl:assignee :Alice;
+  odrl:target   :Doc1;
+  odrl:action   odrl:read;
+  odrl:constraint :CMinGov.
+
+:CMinGov
+  odrl:leftOperand :issuerTrust;
+  odrl:operator    odrl:gteq;
+  odrl:rightOperand 0.80.
+
+# Medium-trust prohibition from Partner (also applies, but lower trust)
+:PolPartner a odrl:Policy;
+  dct:creator :Partner;
+  odrl:prohibition :ProhPartner.
+
+:ProhPartner a odrl:Prohibition;
+  odrl:assignee :Alice;
+  odrl:target   :Doc1;
+  odrl:action   odrl:read;
+  odrl:constraint :CMinPartner.
+
+:CMinPartner
+  odrl:leftOperand :issuerTrust;
+  odrl:operator    odrl:gteq;
+  odrl:rightOperand 0.60.
+
+# Low-trust prohibition from RandomBlog (does NOT apply due to min trust)
+:PolBlog a odrl:Policy;
+  dct:creator :RandomBlog;
+  odrl:prohibition :ProhBlog.
+
+:ProhBlog a odrl:Prohibition;
+  odrl:assignee :Alice;
+  odrl:target   :Doc1;
+  odrl:action   odrl:read;
+  odrl:constraint :CMinBlog.
+
+:CMinBlog
+  odrl:leftOperand :issuerTrust;
+  odrl:operator    odrl:gteq;
+  odrl:rightOperand 0.50.
+
+# ------------------------------------------------------------
+# Minimal "ODRL + trust" evaluator
+# ------------------------------------------------------------
+
+# Candidate PERMIT for a request, scored by issuer trust, only if trust >= minTrust
+{
+  (?Req odrl:permit ?Score) :cand true.
+}
+<=
+{
+  ?Req odrl:assignee ?A; odrl:target ?T; odrl:action ?Act.
+
+  ?Pol a odrl:Policy; dct:creator ?Iss; odrl:permission ?Perm.
+  ?Perm odrl:assignee ?A; odrl:target ?T; odrl:action ?Act.
+
+  ?Perm odrl:constraint ?C.
+  ?C odrl:leftOperand :issuerTrust;
+     odrl:operator odrl:gteq;
+     odrl:rightOperand ?Min.
+
+  ?Iss :trust ?Score.
+  (?Score ?Min) math:notLessThan true.
+}.
+
+# Candidate PROHIBIT for a request, scored by issuer trust, only if trust >= minTrust
+{
+  (?Req odrl:prohibit ?Score) :cand true.
+}
+<=
+{
+  ?Req odrl:assignee ?A; odrl:target ?T; odrl:action ?Act.
+
+  ?Pol a odrl:Policy; dct:creator ?Iss; odrl:prohibition ?Proh.
+  ?Proh odrl:assignee ?A; odrl:target ?T; odrl:action ?Act.
+
+  ?Proh odrl:constraint ?C.
+  ?C odrl:leftOperand :issuerTrust;
+     odrl:operator odrl:gteq;
+     odrl:rightOperand ?Min.
+
+  ?Iss :trust ?Score.
+  (?Score ?Min) math:notLessThan true.
+}.
+
+# Decide: permit wins if its score is greater than prohibit score
+{
+  (:req1 odrl:permit ?Sp) :cand true.
+  (:req1 odrl:prohibit ?Sd) :cand true.
+  (?Sp ?Sd) math:greaterThan true.
+}
+=>
+{
+  :req1 :decision odrl:permit.
+  :req1 :confidence ?Sp.
+}.
+
+# Decide: otherwise (tie or prohibit higher), prohibit wins
+{
+  (:req1 odrl:permit ?Sp) :cand true.
+  (:req1 odrl:prohibit ?Sd) :cand true.
+  (?Sd ?Sp) math:notLessThan true.
+}
+=>
+{
+  :req1 :decision odrl:prohibit.
+  :req1 :confidence ?Sd.
+}.
+

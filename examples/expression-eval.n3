@@ -1,0 +1,70 @@
+# ---------------------------------
+# A tiny expression evaluator in N3
+# ---------------------------------
+#
+# - numbers are nodes with :n
+# - expressions are nodes with :op, :left, :right
+# - :value is defined as a backward “builtin-like” predicate (<=) with recursion
+# - one forward rule emits the final result
+
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix :     <http://example.org/expression-eval#>.
+
+# -----------------------------
+# Data: (2 * 3) + (10 - 4) = 12
+# -----------------------------
+
+:n2  :n 2.
+:n3  :n 3.
+:n10 :n 10.
+:n4  :n 4.
+
+:eMul a :Expr; :op :mul; :left :n2;  :right :n3.
+:eSub a :Expr; :op :sub; :left :n10; :right :n4.
+:eAdd a :Expr; :op :add; :left :eMul; :right :eSub.
+
+:Root :expr :eAdd.
+
+# ----------------------
+# Backward rules: :value
+# ----------------------
+
+# Base case: numeric node
+{ ?N :value ?V. } <= { ?N :n ?V. }.
+
+# Addition
+{ ?E :value ?V. } <= {
+  ?E :op :add.
+  ?E :left ?L.
+  ?E :right ?R.
+  ?L :value ?LV.
+  ?R :value ?RV.
+  (?LV ?RV) math:sum ?V.
+}.
+
+# Subtraction
+{ ?E :value ?V. } <= {
+  ?E :op :sub.
+  ?E :left ?L.
+  ?E :right ?R.
+  ?L :value ?LV.
+  ?R :value ?RV.
+  (?LV ?RV) math:difference ?V.
+}.
+
+# Multiplication
+{ ?E :value ?V. } <= {
+  ?E :op :mul.
+  ?E :left ?L.
+  ?E :right ?R.
+  ?L :value ?LV.
+  ?R :value ?RV.
+  (?LV ?RV) math:product ?V.
+}.
+
+# ------------------------------
+# Forward rule: emit final value
+# ------------------------------
+
+{ :Root :expr ?E. ?E :value ?V. } => { :Root :result ?V. }.
+

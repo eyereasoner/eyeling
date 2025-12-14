@@ -1,0 +1,63 @@
+# --------------
+# Family cousins
+# --------------
+
+@prefix : <http://example.org/family#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+
+# --------------------------
+# Data (a small family tree)
+# --------------------------
+
+:Adam  :parentOf :Bob, :Carol .
+:Bob   :parentOf :Dave, :Eve .
+:Carol :parentOf :Frank, :Grace .
+:Dave  :parentOf :Heidi .
+:Eve   :parentOf :Ivan .
+:Frank :parentOf :Judy .
+
+# Seed "branch" labels at generation 2 (so gen-1 siblings won't become cousins)
+:Dave  :branch :b .
+:Eve   :branch :b .
+:Frank :branch :c .
+:Grace :branch :c .
+
+# Declare branch difference (so we can avoid any inequality built-in)
+:b :differentFrom :c .
+:c :differentFrom :b .
+
+# -----------------------------------
+# Rules (generation, branch, cousins)
+# -----------------------------------
+
+# Root generation
+{ } => { :Adam :generation 0 } .
+
+# Generation propagation: child.gen = parent.gen + 1
+{
+  ?P :parentOf ?C .
+  ?P :generation ?G .
+  (?G 1) math:sum ?G1 .
+} => {
+  ?C :generation ?G1 .
+} .
+
+# Branch propagation: child.branch = parent.branch
+{
+  ?P :parentOf ?C .
+  ?P :branch ?B .
+} => {
+  ?C :branch ?B .
+} .
+
+# Cousins: same generation, different branch
+{
+  ?X :generation ?G .
+  ?Y :generation ?G .
+  ?X :branch ?BX .
+  ?Y :branch ?BY .
+  ?BX :differentFrom ?BY .
+} => {
+  ?X :cousin ?Y .
+} .
+
