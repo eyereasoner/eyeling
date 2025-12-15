@@ -1,0 +1,366 @@
+@prefix : <http://example.org/spectral-week#> .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Shade :redEnergy 180 .
+# It holds because the following instance of the rule body is provable:
+#   :Shade :redIntensity 60.0 .
+#   :Shade :redHours 3.0 .
+#   (60.0 3.0) math:product 180 .
+# via the schematic forward rule:
+#   {
+#     ?Loc :redIntensity ?RI .
+#     ?Loc :redHours ?RH .
+#     (?RI ?RH) math:product ?Ered .
+#   } => {
+#     ?Loc :redEnergy ?Ered .
+#   } .
+# with substitution (on rule variables):
+#   ?Ered = 180
+#   ?Loc = :Shade
+#   ?RH = 3.0
+#   ?RI = 60.0
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Shade :redEnergy 180 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Greenhouse :redEnergy 960 .
+# It holds because the following instance of the rule body is provable:
+#   :Greenhouse :redIntensity 120.0 .
+#   :Greenhouse :redHours 8.0 .
+#   (120.0 8.0) math:product 960 .
+# via the schematic forward rule:
+#   {
+#     ?Loc :redIntensity ?RI .
+#     ?Loc :redHours ?RH .
+#     (?RI ?RH) math:product ?Ered .
+#   } => {
+#     ?Loc :redEnergy ?Ered .
+#   } .
+# with substitution (on rule variables):
+#   ?Ered = 960
+#   ?Loc = :Greenhouse
+#   ?RH = 8.0
+#   ?RI = 120.0
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Greenhouse :redEnergy 960 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Shade :blueEnergy 80 .
+# It holds because the following instance of the rule body is provable:
+#   :Shade :blueIntensity 80.0 .
+#   :Shade :blueHours 1.0 .
+#   (80.0 1.0) math:product 80 .
+# via the schematic forward rule:
+#   {
+#     ?Loc :blueIntensity ?BI .
+#     ?Loc :blueHours ?BH .
+#     (?BI ?BH) math:product ?Eblue .
+#   } => {
+#     ?Loc :blueEnergy ?Eblue .
+#   } .
+# with substitution (on rule variables):
+#   ?BH = 1.0
+#   ?BI = 80.0
+#   ?Eblue = 80
+#   ?Loc = :Shade
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Shade :blueEnergy 80 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Greenhouse :blueEnergy 400 .
+# It holds because the following instance of the rule body is provable:
+#   :Greenhouse :blueIntensity 200.0 .
+#   :Greenhouse :blueHours 2.0 .
+#   (200.0 2.0) math:product 400 .
+# via the schematic forward rule:
+#   {
+#     ?Loc :blueIntensity ?BI .
+#     ?Loc :blueHours ?BH .
+#     (?BI ?BH) math:product ?Eblue .
+#   } => {
+#     ?Loc :blueEnergy ?Eblue .
+#   } .
+# with substitution (on rule variables):
+#   ?BH = 2.0
+#   ?BI = 200.0
+#   ?Eblue = 400
+#   ?Loc = :Greenhouse
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Greenhouse :blueEnergy 400 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Fern :absorbedRed 72 .
+# It holds because the following instance of the rule body is provable:
+#   :Fern a :Plant .
+#   :Fern :location :Shade .
+#   :Fern :absorbRed 0.40 .
+#   :Shade :redEnergy 180 .
+#   (180 0.40) math:product 72 .
+# via the schematic forward rule:
+#   {
+#     ?P a :Plant .
+#     ?P :location ?Loc .
+#     ?P :absorbRed ?AR .
+#     ?Loc :redEnergy ?Ered .
+#     (?Ered ?AR) math:product ?Ared .
+#   } => {
+#     ?P :absorbedRed ?Ared .
+#   } .
+# with substitution (on rule variables):
+#   ?AR = 0.40
+#   ?Ared = 72
+#   ?Ered = 180
+#   ?Loc = :Shade
+#   ?P = :Fern
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Fern :absorbedRed 72 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Sunflower :absorbedRed 816 .
+# It holds because the following instance of the rule body is provable:
+#   :Sunflower a :Plant .
+#   :Sunflower :location :Greenhouse .
+#   :Sunflower :absorbRed 0.85 .
+#   :Greenhouse :redEnergy 960 .
+#   (960 0.85) math:product 816 .
+# via the schematic forward rule:
+#   {
+#     ?P a :Plant .
+#     ?P :location ?Loc .
+#     ?P :absorbRed ?AR .
+#     ?Loc :redEnergy ?Ered .
+#     (?Ered ?AR) math:product ?Ared .
+#   } => {
+#     ?P :absorbedRed ?Ared .
+#   } .
+# with substitution (on rule variables):
+#   ?AR = 0.85
+#   ?Ared = 816
+#   ?Ered = 960
+#   ?Loc = :Greenhouse
+#   ?P = :Sunflower
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Sunflower :absorbedRed 816 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Fern :absorbedBlue 60 .
+# It holds because the following instance of the rule body is provable:
+#   :Fern a :Plant .
+#   :Fern :location :Shade .
+#   :Fern :absorbBlue 0.75 .
+#   :Shade :blueEnergy 80 .
+#   (80 0.75) math:product 60 .
+# via the schematic forward rule:
+#   {
+#     ?P a :Plant .
+#     ?P :location ?Loc .
+#     ?P :absorbBlue ?AB .
+#     ?Loc :blueEnergy ?Eblue .
+#     (?Eblue ?AB) math:product ?Ablue .
+#   } => {
+#     ?P :absorbedBlue ?Ablue .
+#   } .
+# with substitution (on rule variables):
+#   ?AB = 0.75
+#   ?Ablue = 60
+#   ?Eblue = 80
+#   ?Loc = :Shade
+#   ?P = :Fern
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Fern :absorbedBlue 60 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Sunflower :absorbedBlue 220.00000000000003 .
+# It holds because the following instance of the rule body is provable:
+#   :Sunflower a :Plant .
+#   :Sunflower :location :Greenhouse .
+#   :Sunflower :absorbBlue 0.55 .
+#   :Greenhouse :blueEnergy 400 .
+#   (400 0.55) math:product 220.00000000000003 .
+# via the schematic forward rule:
+#   {
+#     ?P a :Plant .
+#     ?P :location ?Loc .
+#     ?P :absorbBlue ?AB .
+#     ?Loc :blueEnergy ?Eblue .
+#     (?Eblue ?AB) math:product ?Ablue .
+#   } => {
+#     ?P :absorbedBlue ?Ablue .
+#   } .
+# with substitution (on rule variables):
+#   ?AB = 0.55
+#   ?Ablue = 220.00000000000003
+#   ?Eblue = 400
+#   ?Loc = :Greenhouse
+#   ?P = :Sunflower
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Sunflower :absorbedBlue 220.00000000000003 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Sunflower :absorbedEnergy 1036 .
+# It holds because the following instance of the rule body is provable:
+#   :Sunflower :absorbedRed 816 .
+#   :Sunflower :absorbedBlue 220.00000000000003 .
+#   (816 220.00000000000003) math:sum 1036 .
+# via the schematic forward rule:
+#   {
+#     ?P :absorbedRed ?Ared .
+#     ?P :absorbedBlue ?Ablue .
+#     (?Ared ?Ablue) math:sum ?Abs .
+#   } => {
+#     ?P :absorbedEnergy ?Abs .
+#   } .
+# with substitution (on rule variables):
+#   ?Ablue = 220.00000000000003
+#   ?Abs = 1036
+#   ?Ared = 816
+#   ?P = :Sunflower
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Sunflower :absorbedEnergy 1036 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Fern :absorbedEnergy 132 .
+# It holds because the following instance of the rule body is provable:
+#   :Fern :absorbedRed 72 .
+#   :Fern :absorbedBlue 60 .
+#   (72 60) math:sum 132 .
+# via the schematic forward rule:
+#   {
+#     ?P :absorbedRed ?Ared .
+#     ?P :absorbedBlue ?Ablue .
+#     (?Ared ?Ablue) math:sum ?Abs .
+#   } => {
+#     ?P :absorbedEnergy ?Abs .
+#   } .
+# with substitution (on rule variables):
+#   ?Ablue = 60
+#   ?Abs = 132
+#   ?Ared = 72
+#   ?P = :Fern
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Fern :absorbedEnergy 132 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Fern :dailyStored 33 .
+# It holds because the following instance of the rule body is provable:
+#   :Fern :absorbedEnergy 132 .
+#   :Fern :conversion 0.25 .
+#   (132 0.25) math:product 33 .
+# via the schematic forward rule:
+#   {
+#     ?P :absorbedEnergy ?Abs .
+#     ?P :conversion ?C .
+#     (?Abs ?C) math:product ?Stored .
+#   } => {
+#     ?P :dailyStored ?Stored .
+#   } .
+# with substitution (on rule variables):
+#   ?Abs = 132
+#   ?C = 0.25
+#   ?P = :Fern
+#   ?Stored = 33
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Fern :dailyStored 33 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Sunflower :dailyStored 259 .
+# It holds because the following instance of the rule body is provable:
+#   :Sunflower :absorbedEnergy 1036 .
+#   :Sunflower :conversion 0.25 .
+#   (1036 0.25) math:product 259 .
+# via the schematic forward rule:
+#   {
+#     ?P :absorbedEnergy ?Abs .
+#     ?P :conversion ?C .
+#     (?Abs ?C) math:product ?Stored .
+#   } => {
+#     ?P :dailyStored ?Stored .
+#   } .
+# with substitution (on rule variables):
+#   ?Abs = 1036
+#   ?C = 0.25
+#   ?P = :Sunflower
+#   ?Stored = 259
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Sunflower :dailyStored 259 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Sunflower :weeklyStored 1813 .
+# It holds because the following instance of the rule body is provable:
+#   :Sunflower :dailyStored 259 .
+#   (259 7) math:product 1813 .
+# via the schematic forward rule:
+#   {
+#     ?P :dailyStored ?D .
+#     (?D 7) math:product ?W .
+#   } => {
+#     ?P :weeklyStored ?W .
+#   } .
+# with substitution (on rule variables):
+#   ?D = 259
+#   ?P = :Sunflower
+#   ?W = 1813
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Sunflower :weeklyStored 1813 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Fern :weeklyStored 231 .
+# It holds because the following instance of the rule body is provable:
+#   :Fern :dailyStored 33 .
+#   (33 7) math:product 231 .
+# via the schematic forward rule:
+#   {
+#     ?P :dailyStored ?D .
+#     (?D 7) math:product ?W .
+#   } => {
+#     ?P :weeklyStored ?W .
+#   } .
+# with substitution (on rule variables):
+#   ?D = 33
+#   ?P = :Fern
+#   ?W = 231
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Fern :weeklyStored 231 .
+

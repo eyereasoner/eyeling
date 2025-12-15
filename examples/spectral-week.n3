@@ -1,0 +1,104 @@
+# -------------
+# Spectral week
+# -------------
+
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix list: <http://www.w3.org/2000/10/swap/list#>.
+@prefix :     <http://example.org/spectral-week#>.
+
+# ------------------------------------------------------------
+# Spectral light intake (red + blue) and weekly energy storage
+# ------------------------------------------------------------
+
+# Locations: daily hours of red/blue light, and intensity per hour.
+:Greenhouse :redHours 8.0;  :blueHours 2.0;
+            :redIntensity  120.0;
+            :blueIntensity 200.0.
+
+:Shade :redHours 3.0; :blueHours 1.0;
+       :redIntensity  60.0;
+       :blueIntensity 80.0.
+
+# Plants with wavelength-dependent absorption + conversion efficiency.
+# absorption is in [0..1], conversion efficiency in [0..1].
+:Sunflower a :Plant; :location :Greenhouse;
+  :absorbRed 0.85; :absorbBlue 0.55; :conversion 0.25.
+
+:Fern a :Plant; :location :Shade;
+  :absorbRed 0.40; :absorbBlue 0.75; :conversion 0.25.
+
+# ------------------------------------
+# Compute per-location spectral energy
+#   Ered  = redIntensity  * redHours
+#   Eblue = blueIntensity * blueHours
+# ------------------------------------
+
+{
+  ?Loc :redIntensity ?RI; :redHours ?RH.
+  (?RI ?RH) math:product ?Ered.
+}
+=>
+{ ?Loc :redEnergy ?Ered. }.
+
+{
+  ?Loc :blueIntensity ?BI; :blueHours ?BH.
+  (?BI ?BH) math:product ?Eblue.
+}
+=>
+{ ?Loc :blueEnergy ?Eblue. }.
+
+# -------------------------------------------
+# Daily absorbed energy by plant
+#   Ared  = Loc.redEnergy  * Plant.absorbRed
+#   Ablue = Loc.blueEnergy * Plant.absorbBlue
+#   absorbed = Ared + Ablue
+# -------------------------------------------
+
+{
+  ?P a :Plant; :location ?Loc; :absorbRed ?AR.
+  ?Loc :redEnergy ?Ered.
+  (?Ered ?AR) math:product ?Ared.
+}
+=>
+{ ?P :absorbedRed ?Ared. }.
+
+{
+  ?P a :Plant; :location ?Loc; :absorbBlue ?AB.
+  ?Loc :blueEnergy ?Eblue.
+  (?Eblue ?AB) math:product ?Ablue.
+}
+=>
+{ ?P :absorbedBlue ?Ablue. }.
+
+{
+  ?P :absorbedRed ?Ared.
+  ?P :absorbedBlue ?Ablue.
+  (?Ared ?Ablue) math:sum ?Abs.
+}
+=>
+{ ?P :absorbedEnergy ?Abs. }.
+
+# -------------------------------------------------
+# Daily stored energy = absorbedEnergy * conversion
+# -------------------------------------------------
+
+{
+  ?P :absorbedEnergy ?Abs; :conversion ?C.
+  (?Abs ?C) math:product ?Stored.
+}
+=>
+{ ?P :dailyStored ?Stored. }.
+
+# ------------------------------------
+# Weekly stored energy = dailyStored*7
+# ------------------------------------
+
+{
+  ?P :dailyStored ?D.
+  (?D 7) math:product ?W.
+}
+=>
+{
+  ?P :weeklyStored ?W.
+}.
+

@@ -1,0 +1,109 @@
+# ------------
+# Light eaters
+# ------------
+
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix :     <http://example.org/light-eaters#>.
+
+# ------------------------------------------------------------
+# Plants as "light eaters":
+# convert daily light exposure into stored energy (photosynthesis),
+# then decide whether they thrive or go hungry under their conditions.
+# ------------------------------------------------------------
+
+# One day with a fixed amount of usable light (hours)
+:Today :lightHours 10.0.
+
+# Two habitats with different light intensities (arbitrary units/hour)
+:Meadow :lightIntensity 100.0.
+:Forest :lightIntensity 20.0.
+
+# Organisms
+:Sunflower a :Plant;  :location :Meadow; :chlorophyll true;  :efficiency 0.25; :maintenance 150.0.
+:Fern      a :Plant;  :location :Forest; :chlorophyll true;  :efficiency 0.25; :maintenance 150.0.
+:Mushroom  a :Fungus; :location :Forest; :chlorophyll false; :maintenance 150.0.
+
+# ------------------------------------------------------------
+# Rules
+# ------------------------------------------------------------
+
+# (1) Daily light energy available at each place:
+#     E_place = lightIntensity * lightHours
+{
+  :Today :lightHours ?H.
+  ?Place :lightIntensity ?I.
+  (?I ?H) math:product ?E.
+}
+=>
+{
+  ?Place :dailyLightEnergy ?E.
+}.
+
+# (2) Stored energy for each plant:
+#     stored = E_place * efficiency
+{
+  ?Plant a :Plant.
+  ?Plant :location ?Place.
+  ?Place :dailyLightEnergy ?E.
+  ?Plant :efficiency ?Eff.
+  (?E ?Eff) math:product ?Stored.
+}
+=>
+{
+  ?Plant :storedEnergy ?Stored.
+}.
+
+# (3) Net energy after maintenance:
+#     net = stored - maintenance
+{
+  ?Org :storedEnergy ?Stored.
+  ?Org :maintenance ?Maint.
+  (?Stored ?Maint) math:difference ?Net.
+}
+=>
+{
+  ?Org :netEnergy ?Net.
+}.
+
+# (4) "Light eater" (photosynthesizer) classification:
+#     must be a Plant, must have chlorophyll, and must have positive stored energy
+{
+  ?Plant a :Plant.
+  ?Plant :chlorophyll true.
+  ?Plant :storedEnergy ?Stored.
+  (?Stored 0.0) math:greaterThan true.
+}
+=>
+{
+  ?Plant :canPhotosynthesize true.
+  ?Plant :lightEater true.
+}.
+
+# Non-photosynthesizers (example: fungi)
+{
+  ?X a :Fungus.
+}
+=>
+{
+  ?X :lightEater false.
+}.
+
+# (5) Outcome: thriving vs hungry, based on netEnergy
+{
+  ?Org :netEnergy ?Net.
+  (?Net 0.0) math:greaterThan true.
+}
+=>
+{
+  ?Org :thriving true.
+}.
+
+{
+  ?Org :netEnergy ?Net.
+  (?Net 0.0) math:notGreaterThan true.
+}
+=>
+{
+  ?Org :hungry true.
+}.
+
