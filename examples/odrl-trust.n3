@@ -10,7 +10,6 @@
 # ------------------
 # Trust model (0..1)
 # ------------------
-
 :Gov        :trust 0.95.
 :Partner    :trust 0.70.
 :RandomBlog :trust 0.30.
@@ -18,7 +17,6 @@
 # ---------------------------
 # A request we want to decide
 # ---------------------------
-
 :req1 a :Request;
   odrl:assignee :Alice;
   odrl:target   :Doc1;
@@ -27,7 +25,6 @@
 # -------------
 # ODRL Policies
 # -------------
-
 # High-trust permission from Gov (trusted enough)
 :PolGov a odrl:Policy;
   dct:creator :Gov;
@@ -79,7 +76,6 @@
 # --------------------------------
 # Minimal "ODRL + trust" evaluator
 # --------------------------------
-
 # Candidate PERMIT for a request, scored by issuer trust, only if trust >= minTrust
 {
   (?Req odrl:permit ?Score) :cand true.

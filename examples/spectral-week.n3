@@ -9,7 +9,6 @@
 # ------------------------------------------------------------
 # Spectral light intake (red + blue) and weekly energy storage
 # ------------------------------------------------------------
-
 # Locations: daily hours of red/blue light, and intensity per hour.
 :Greenhouse :redHours 8.0;  :blueHours 2.0;
             :redIntensity  120.0;
@@ -32,7 +31,6 @@
 #   Ered  = redIntensity  * redHours
 #   Eblue = blueIntensity * blueHours
 # ------------------------------------
-
 {
   ?Loc :redIntensity ?RI; :redHours ?RH.
   (?RI ?RH) math:product ?Ered.
@@ -53,7 +51,6 @@
 #   Ablue = Loc.blueEnergy * Plant.absorbBlue
 #   absorbed = Ared + Ablue
 # -------------------------------------------
-
 {
   ?P a :Plant; :location ?Loc; :absorbRed ?AR.
   ?Loc :redEnergy ?Ered.
@@ -81,7 +78,6 @@
 # -------------------------------------------------
 # Daily stored energy = absorbedEnergy * conversion
 # -------------------------------------------------
-
 {
   ?P :absorbedEnergy ?Abs; :conversion ?C.
   (?Abs ?C) math:product ?Stored.
@@ -92,7 +88,6 @@
 # ------------------------------------
 # Weekly stored energy = dailyStored*7
 # ------------------------------------
-
 {
   ?P :dailyStored ?D.
   (?D 7) math:product ?W.

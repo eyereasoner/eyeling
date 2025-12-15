@@ -24,7 +24,6 @@
 # -----------------------------
 # Compute all paths by chaining
 # -----------------------------
-
 # Base: a single map description is a path
 {
   (?From ?To (?Act) ?Dur ?Cost ?Belief ?Comfort) :path true.

@@ -8,7 +8,6 @@
 # --------------------------
 # Data (a small family tree)
 # --------------------------
-
 :Adam  :parentOf :Bob, :Carol .
 :Bob   :parentOf :Dave, :Eve .
 :Carol :parentOf :Frank, :Grace .
@@ -29,7 +28,6 @@
 # -----------------------------------
 # Rules (generation, branch, cousins)
 # -----------------------------------
-
 # Root generation
 { } => { :Adam :generation 0 } .
 

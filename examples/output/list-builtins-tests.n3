@@ -146,3 +146,35 @@
 
 :ok_list_remove_1 a :Pass .
 
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :ok_list_rest_1 a :Pass .
+# It holds because the following instance of the rule body is provable:
+#   (1 2 3 4) list:rest (2 3 4) .
+# via the schematic forward rule:
+#   {
+#     (1 2 3 4) list:rest (2 3 4) .
+#   } => {
+#     :ok_list_rest_1 a :Pass .
+#   } .
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:ok_list_rest_1 a :Pass .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :ok_list_firstRest_1 a :Pass .
+# It holds because the following instance of the rule body is provable:
+#   (1 2 3 4) list:firstRest (1 (2 3 4)) .
+# via the schematic forward rule:
+#   {
+#     (1 2 3 4) list:firstRest (1 (2 3 4)) .
+#   } => {
+#     :ok_list_firstRest_1 a :Pass .
+#   } .
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:ok_list_firstRest_1 a :Pass .
+

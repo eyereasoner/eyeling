@@ -2558,6 +2558,36 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     return s2 !== null ? [s2] : [];
   }
 
+  // list:rest
+  // true iff $s is a (non-empty) list and $o is the rest (tail) of that list.
+  // Schema: $s+ list:rest $o-
+  if (g.p instanceof Iri && g.p.value === LIST_NS + "rest") {
+    // Closed list: (a b c) -> (b c)
+    if (g.s instanceof ListTerm) {
+      if (!g.s.elems.length) return [];
+      const rest = new ListTerm(g.s.elems.slice(1));
+      const s2 = unifyTerm(g.o, rest, subst);
+      return s2 !== null ? [s2] : [];
+    }
+
+    // Open list: (a b ... ?T) -> (b ... ?T)
+    if (g.s instanceof OpenListTerm) {
+      if (!g.s.prefix.length) return []; // can't compute rest without a known head
+
+      if (g.s.prefix.length === 1) {
+        // (a ... ?T) rest is exactly ?T
+        const s2 = unifyTerm(g.o, new Var(g.s.tailVar), subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      const rest = new OpenListTerm(g.s.prefix.slice(1), g.s.tailVar);
+      const s2 = unifyTerm(g.o, rest, subst);
+      return s2 !== null ? [s2] : [];
+    }
+
+    return [];
+  }
+
   // list:iterate
   // true iff $s is a list and $o is a list (index value),
   // where index is a valid 0-based index into $s and value is the element at that index.

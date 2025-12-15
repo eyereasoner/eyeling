@@ -10,7 +10,6 @@
 # convert daily light exposure into stored energy (photosynthesis),
 # then decide whether they thrive or go hungry under their conditions.
 # ------------------------------------------------------------
-
 # One day with a fixed amount of usable light (hours)
 :Today :lightHours 10.0.
 
@@ -26,7 +25,6 @@
 # ------------------------------------------------------------
 # Rules
 # ------------------------------------------------------------
-
 # (1) Daily light energy available at each place:
 #     E_place = lightIntensity * lightHours
 {
