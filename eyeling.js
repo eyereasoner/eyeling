@@ -1463,6 +1463,40 @@ function unifyOpenWithList(prefix, tailv, ys, subst) {
   return s2;
 }
 
+function unifyFormulaTriples(xs, ys, subst) {
+  if (xs.length !== ys.length) return null;
+
+  // Fast path: exact same sequence.
+  if (triplesListEqual(xs, ys)) return { ...subst };
+
+  // Backtracking match (order-insensitive), *threading* the substitution through.
+  const used = new Array(ys.length).fill(false);
+
+  function step(i, s) {
+    if (i >= xs.length) return s;
+    const x = xs[i];
+
+    for (let j = 0; j < ys.length; j++) {
+      if (used[j]) continue;
+      const y = ys[j];
+
+      // Cheap pruning when both predicates are IRIs.
+      if (x.p instanceof Iri && y.p instanceof Iri && x.p.value !== y.p.value) continue;
+
+      const s2 = unifyTriple(x, y, s);   // IMPORTANT: use `s`, not {}
+      if (s2 === null) continue;
+
+      used[j] = true;
+      const s3 = step(i + 1, s2);
+      if (s3 !== null) return s3;
+      used[j] = false;
+    }
+    return null;
+  }
+
+  return step(0, { ...subst }); // IMPORTANT: start from the incoming subst
+}
+
 function unifyTerm(a, b, subst) {
   a = applySubstTerm(a, subst);
   b = applySubstTerm(b, subst);
@@ -1521,11 +1555,10 @@ function unifyTerm(a, b, subst) {
     return s2;
   }
 
-  // Formulas are treated as opaque unless exactly equal
+  // Formulas: unify their internal triple sets (order-insensitive)
   if (a instanceof FormulaTerm && b instanceof FormulaTerm) {
-    if (triplesListEqual(a.triples, b.triples)) return { ...subst };
+    return unifyFormulaTriples(a.triples, b.triples, subst);
   }
-
   return null;
 }
 

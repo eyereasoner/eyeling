@@ -7,45 +7,43 @@
 
 @prefix math: <http://www.w3.org/2000/10/swap/math#>.
 @prefix list: <http://www.w3.org/2000/10/swap/list#>.
-@prefix gps: <https://eyereasoner.github.io/eye/reasoning/gps/gps-schema#>.
-@prefix : <https://eyereasoner.github.io/eye/reasoning#>.
-
-# ---------------------
-# Data (a small sample)
-# ---------------------
+@prefix gps:  <https://eyereasoner.github.io/eye/reasoning/gps/gps-schema#>.
+@prefix :     <https://eyereasoner.github.io/eye/reasoning#>.
 
 # current state
 :i1 :location :Gent.
 
-# map of Belgium
-(:Gent :Brugge   :drive_gent_brugge     1500.0 0.006 0.96 0.99) :edge true .
-(:Gent :Kortrijk :drive_gent_kortrijk   1600.0 0.007 0.96 0.99) :edge true .
-(:Kortrijk :Brugge :drive_kortrijk_brugge 1600.0 0.007 0.96 0.99) :edge true .
-(:Brugge :Oostende :drive_brugge_oostende  900.0 0.004 0.98 1.0) :edge true .
+# -------------------------------------------------
+# map of Belgium (as backward rules / descriptions)
+# -------------------------------------------------
+{:map-BE gps:description ({?S :location :Gent}     true {?S :location :Brugge}   :drive_gent_brugge      1500.0 0.006 0.96 0.99)} <= true.
+{:map-BE gps:description ({?S :location :Gent}     true {?S :location :Kortrijk} :drive_gent_kortrijk    1600.0 0.007 0.96 0.99)} <= true.
+{:map-BE gps:description ({?S :location :Kortrijk} true {?S :location :Brugge}   :drive_kortrijk_brugge  1600.0 0.007 0.96 0.99)} <= true.
+{:map-BE gps:description ({?S :location :Brugge}   true {?S :location :Oostende} :drive_brugge_oostende   900.0 0.004 0.98 1.0 )} <= true.
 
-# ----------------
-# Path computation
-# ----------------
+# -----------------------------
+# Compute all paths by chaining
+# -----------------------------
 
-# Base: one edge is a path
+# Base: a single map description is a path
 {
   (?From ?To (?Act) ?Dur ?Cost ?Belief ?Comfort) :path true.
 }
 <=
 {
-  (?From ?To ?Act ?Dur ?Cost ?Belief ?Comfort) :edge true.
+  :map-BE gps:description (?From true ?To ?Act ?Dur ?Cost ?Belief ?Comfort).
 }.
 
-# Recursive: edge + path => path, aggregate weights, concatenate action list
+# Recursive: chain one step + rest path, and aggregate weights
 {
-  (?From ?To ?Acts ?Dur ?Cost ?Belief ?Comfort) :path true.
+  (?From ?To ?Actions ?Dur ?Cost ?Belief ?Comfort) :path true.
 }
 <=
 {
-  (?From ?Mid ?Act ?Dur1 ?Cost1 ?Bel1 ?Comf1) :edge true.
+  :map-BE gps:description (?From true ?Mid ?Act ?Dur1 ?Cost1 ?Bel1 ?Comf1).
   (?Mid ?To ?RestActs ?Dur2 ?Cost2 ?Bel2 ?Comf2) :path true.
 
-  ((?Act) ?RestActs) list:append ?Acts.
+  ((?Act) ?RestActs) list:append ?Actions.
 
   (?Dur1  ?Dur2)  math:sum     ?Dur.
   (?Cost1 ?Cost2) math:sum     ?Cost.
@@ -53,13 +51,12 @@
   (?Comf1 ?Comf2) math:product ?Comfort.
 }.
 
-# -------------------------
-# Query: only paths to goal
-# -------------------------
-
+# ------------------------------------------------------
+# "Query": derive gps:path facts for i1, goal = Oostende
+# ------------------------------------------------------
 {
-  :i1 :location ?Start.
-  (?Start :Oostende ?Acts ?Dur ?Cost ?Bel ?Comf) :path true.
+  :i1 :location :Gent.
+  ({:i1 :location :Gent} {:i1 :location :Oostende} ?Acts ?Dur ?Cost ?Bel ?Comf) :path true.
 }
 =>
 {
