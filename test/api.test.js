@@ -621,6 +621,21 @@ ${U('s')} ${U('p')} ${U('o')}. # another trailing comment
       mustOccurExactly(out, reD, 1, 'diamond subclass should not duplicate x type D');
     },
   },
+
+  {
+    name: '42 literals: language tags are accepted and preserved',
+    opt: { proofComments: false },
+    input: ` { ?s ${U('p')} ?o } => { ?s ${U('q')} ?o }. ${U('s')} ${U('p')} "colour"@en-GB.`,
+    expect: [new RegExp(`${EX}s>\\s+<${EX}q>\\s+"colour"@en-GB\\s*\\.`)],
+  },
+
+  {
+    name: '43 literals: long """...""" strings are accepted (with lang tag)',
+    opt: { proofComments: false },
+    input: ` { ?s ${U('p')} ?o } => { ?s ${U('q')} ?o }. ${U('s')} ${U('p')} """Hello
+world"""@en.`,
+    expect: [new RegExp(`${EX}s>\\s+<${EX}q>\\s+(?:"""Hello[\\s\\S]*?world"""@en|"Hello\\\\nworld"@en)\\s*\\.`)],
+  },
 ];
 
 let passed = 0;

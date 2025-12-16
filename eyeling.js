@@ -280,8 +280,41 @@ function lex(inputText) {
       continue;
     }
 
-    // String literal
+    // String literal: short "..." or long """..."""
     if (c === '"') {
+      // Long string literal """ ... """
+      if (peek(1) === '"' && peek(2) === '"') {
+        i += 3; // consume opening """
+        const sChars = [];
+        let closed = false;
+        while (i < n) {
+          // closing delimiter?
+          if (peek() === '"' && peek(1) === '"' && peek(2) === '"') {
+            i += 3; // consume closing """
+            closed = true;
+            break;
+          }
+          let cc = chars[i];
+          i++;
+          if (cc === "\\") {
+            // Preserve escapes verbatim (same behavior as short strings)
+            if (i < n) {
+              const esc = chars[i];
+              i++;
+              sChars.push("\\");
+              sChars.push(esc);
+            }
+            continue;
+          }
+          sChars.push(cc);
+        }
+        if (!closed) throw new Error('Unterminated long string literal """..."""');
+        const s = '"""' + sChars.join("") + '"""';
+        tokens.push(new Token("Literal", s));
+        continue;
+      }
+
+      // Short string literal " ... "
       i++; // consume opening "
       const sChars = [];
       while (i < n) {
@@ -1680,6 +1713,9 @@ function literalParts(lit) {
 }
 
 function stripQuotes(lex) {
+  if (lex.length >= 6 && lex.startsWith('"""') && lex.endsWith('"""')) {
+    return lex.slice(3, -3);
+  }
   if (lex.length >= 2 && lex[0] === '"' && lex[lex.length - 1] === '"') {
     return lex.slice(1, -1);
   }
