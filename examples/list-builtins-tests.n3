@@ -1,14 +1,10 @@
-# -------------------
+# ===================
 # list builtins tests
-# -------------------
+# ===================
 
 @prefix :      <https://eyereasoner.github.io/ns#> .
 @prefix list:  <http://www.w3.org/2000/10/swap/list#> .
 @prefix log:   <http://www.w3.org/2000/10/swap/log#> .
-
-# ============================================================
-# 4.4 list: builtins
-# ============================================================
 
 # list:append
 # ( (1 2) (3 4) ) list:append (1 2 3 4) .

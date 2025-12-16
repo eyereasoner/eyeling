@@ -1,8 +1,7 @@
-# -----------------
+# =================================================
 # Gray code counter
-# -----------------
-#
 # Taken from the book "Clause and Effect" Chapter 8
+# =================================================
 
 @prefix list: <http://www.w3.org/2000/10/swap/list#>.
 @prefix : <https://eyereasoner.github.io/eye/reasoning#>.

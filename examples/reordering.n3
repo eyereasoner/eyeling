@@ -1,8 +1,7 @@
-# --------------------------
+# =================================
 # Premise reordering example
-# --------------------------
-#
 # Example from Patrick Hochstenbach
+# =================================
 
 @prefix : <https://eyereasoner.github.io/ns#>.
 @prefix math: <http://www.w3.org/2000/10/swap/math#>.

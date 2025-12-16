@@ -1,8 +1,7 @@
-# ----------------------------------------------
+# ===========================================================
 # Dijkstra's algorithm to find the shortest path
-# ----------------------------------------------
-#
 # Original from https://github.com/agx-r/Dijkstra-s-Algorithm
+# ===========================================================
 
 @prefix list: <http://www.w3.org/2000/10/swap/list#>.
 @prefix math: <http://www.w3.org/2000/10/swap/math#>.

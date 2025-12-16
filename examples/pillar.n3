@@ -1,0 +1,23 @@
+# =================================
+# Pillar example
+# Example from Patrick Hochstenbach
+# =================================
+
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix : <http://example.org/socrates#>.
+
+:Post :to :Pillar .
+
+{ :Pillar :to ?What } <= { ?What :to :Pillar }.
+
+{ ?What :to :Pillar } <= { :Pillar :to ?What }.
+
+{ :Pillar :to ?What } => { :result :is ?What }.
+
+{
+   :result :is :Post
+}
+=>
+{
+   :test :is true
+}.

@@ -1,8 +1,7 @@
-# --------------
+# =================================
 # Monkey example
-# --------------
-#
 # Example from Patrick Hochstenbach
+# =================================
 
 @prefix : <https://eyereasoner.github.io/ns#>.
 

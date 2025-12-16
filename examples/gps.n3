@@ -1,9 +1,8 @@
-# ------------------------------
+# =======================================================================
 # Goal driven Parallel Sequences
-# ------------------------------
-#
 # See https://www.sciencedirect.com/science/article/pii/S1532046421000794
 # and https://github.com/hongsun502/wstLogic/tree/master
+# =======================================================================
 
 @prefix math: <http://www.w3.org/2000/10/swap/math#>.
 @prefix list: <http://www.w3.org/2000/10/swap/list#>.

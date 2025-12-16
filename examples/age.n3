@@ -1,8 +1,7 @@
-# -----------
+# ===========================================
 # Age checker
-# -----------
-#
 # Is the age of a person above some duration?
+# ===========================================
 
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
 @prefix time: <http://www.w3.org/2000/10/swap/time#>.

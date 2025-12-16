@@ -1,4 +1,4 @@
-# =============================================================================
+# ========================================================================================
 # Drone Corridor Planner v2 (example N3 program)
 #
 # What this file is
@@ -56,7 +56,7 @@
 # Notes
 # - This is a *toy* corridor-planning model meant to illustrate rule-based
 #   planning patterns. The numeric values and “units” are illustrative.
-# =============================================================================
+# ========================================================================================
 
 @prefix math: <http://www.w3.org/2000/10/swap/math#>.
 @prefix list: <http://www.w3.org/2000/10/swap/list#>.
@@ -73,10 +73,10 @@
 # bounded search horizon (7 steps max)
 :fuel7 :value (:t :t :t :t :t :t :t).
 
-# -------------------------------------------------
+# -----------------------------------------------------------------
 # "map" / action descriptions (as backward rules)
 # State = { ?S :location ... . ?S :battery ... . ?S :permit ... . }
-# -------------------------------------------------
+# -----------------------------------------------------------------
 # two ways to reach Brugge (tradeoff: cost/comfort)
 {:map-DRONE gps:description (
   {?S :location :Gent.   ?S :battery :full. ?S :permit ?P.} true

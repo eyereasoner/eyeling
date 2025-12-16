@@ -1,9 +1,8 @@
-# ------------
+# ========================================================================
 # Good cobbler
-# ------------
-#
 # Example from https://shs.hal.science/halshs-04148373/document
 # Using term logic http://intrologic.stanford.edu/chapters/chapter_11.html
+# ========================================================================
 
 @prefix : <https://eyereasoner.github.io/ns#>.
 

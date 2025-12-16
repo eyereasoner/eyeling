@@ -1,8 +1,7 @@
-# -------------------
+# ===============================================
 # Dog license example
-# -------------------
-#
 # If you have more than 4 dogs you need a license.
+# ===============================================
 
 @prefix log: <http://www.w3.org/2000/10/swap/log#>.
 @prefix math: <http://www.w3.org/2000/10/swap/math#>.

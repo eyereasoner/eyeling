@@ -1,8 +1,7 @@
-# -----------------------
+# ======================================================================================
 # Basic Monadic Benchmark
-# -----------------------
-#
 # tested with input of 10^n triples generated with http://josd.github.io/bmb/graphgen.n3
+# ======================================================================================
 
 @prefix : <http://eulersharp.sourceforge.net/2007/07test/graph#>.
 

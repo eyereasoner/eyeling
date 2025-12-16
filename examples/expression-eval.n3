@@ -1,11 +1,10 @@
-# ---------------------------------
+# ==============================================================================
 # A tiny expression evaluator in N3
-# ---------------------------------
-#
 # - numbers are nodes with :n
 # - expressions are nodes with :op, :left, :right
 # - :value is defined as a backward “builtin-like” predicate (<=) with recursion
 # - one forward rule emits the final result
+# ==============================================================================
 
 @prefix math: <http://www.w3.org/2000/10/swap/math#>.
 @prefix :     <http://example.org/expression-eval#>.
