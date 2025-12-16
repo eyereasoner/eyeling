@@ -186,7 +186,7 @@ ${U('c')} ${U('friend')} ${U('d')}.
 }
 
 function mkChainRewriteCase(i, steps) {
-  const input = ruleChainN3(steps); // already defined earlier
+  const input = ruleChainN3(steps);
   return {
     name: `${String(i).padStart(2, '0')} chain rewrite: ${steps} steps`,
     opt: { proofComments: false },
@@ -196,7 +196,7 @@ function mkChainRewriteCase(i, steps) {
 }
 
 function mkSubclassChainCase(i, steps) {
-  const input = subclassChainN3(steps); // already defined earlier
+  const input = subclassChainN3(steps);
   return {
     name: `${String(i).padStart(2, '0')} subclass chain: ${steps} steps`,
     opt: { proofComments: false },
@@ -206,7 +206,7 @@ function mkSubclassChainCase(i, steps) {
 }
 
 function mkParentChainCase(i, links) {
-  const input = parentChainN3(links); // already defined earlier
+  const input = parentChainN3(links);
   return {
     name: `${String(i).padStart(2, '0')} ancestor chain: ${links} links`,
     opt: { proofComments: false },
@@ -216,8 +216,7 @@ function mkParentChainCase(i, links) {
 }
 
 function mkJoinCase(i, len) {
-  const input = join3HopN3(len); // already defined earlier
-  // Check a couple of hop-3 inferences that always exist for len>=6
+  const input = join3HopN3(len);
   return {
     name: `${String(i).padStart(2, '0')} 3-hop join over chain len ${len}`,
     opt: { proofComments: false },
@@ -230,7 +229,7 @@ function mkJoinCase(i, len) {
 }
 
 function mkBranchReachCase(i, n) {
-  const input = reachabilityGraphN3(n); // already defined earlier
+  const input = reachabilityGraphN3(n);
   return {
     name: `${String(i).padStart(2, '0')} reachability: n=${n}`,
     opt: { proofComments: false },
@@ -370,6 +369,9 @@ ${U('s')} ${U('p')} ${U('o')}.
 `,
     expect: [
       new RegExp(`${EX}s>\\s+<${EX}q>\\s+<${EX}o>\\s*\\.`),
+    ],
+    notExpect: [
+      /^#/m,
     ],
   },
 
@@ -519,6 +521,92 @@ ${transitiveClosureN3('sub')}
     opt: { proofComments: false, maxBuffer: 200 * 1024 * 1024 },
     input: negativeEntailmentBatchN3(200),
     expectErrorCode: 2,
+  },
+
+  {
+    name: '26 sanity: no rules => no newly derived facts',
+    opt: { proofComments: false },
+    input: `
+${U('a')} ${U('p')} ${U('b')}.
+`,
+    expect: [
+      /^\s*$/,
+    ],
+  },
+
+  {
+    name: '27 regression: backward rule (<=) can satisfy a forward rule premise',
+    opt: { proofComments: false },
+    input: `
+${U('a')} ${U('p')} ${U('b')}.
+
+{ ${U('a')} ${U('q')} ${U('b')}. } <= { ${U('a')} ${U('p')} ${U('b')}. }.
+{ ${U('a')} ${U('q')} ${U('b')}. } => { ${U('a')} ${U('r')} ${U('b')}. }.
+`,
+    expect: [
+      new RegExp(`${EX}a>\\s+<${EX}r>\\s+<${EX}b>\\s*\\.`),
+    ],
+  },
+
+  {
+    name: '28 regression: top-level log:implies behaves like a forward rule',
+    opt: { proofComments: false },
+    input: `
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+{ ${U('a')} ${U('p')} ${U('b')}. } log:implies { ${U('a')} ${U('q')} ${U('b')}. }.
+${U('a')} ${U('p')} ${U('b')}.
+`,
+    expect: [
+      new RegExp(`${EX}a>\\s+<${EX}q>\\s+<${EX}b>\\s*\\.`),
+    ],
+  },
+
+  {
+    name: '29 regression: derived log:implies becomes a live rule during reasoning',
+    opt: { proofComments: false },
+    input: `
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+{ ${U('a')} ${U('trigger')} ${U('go')}. }
+  =>
+{ { ${U('a')} ${U('p')} ${U('b')}. } log:implies { ${U('a')} ${U('q2')} ${U('b')}. }. }.
+
+${U('a')} ${U('trigger')} ${U('go')}.
+${U('a')} ${U('p')} ${U('b')}.
+`,
+    expect: [
+      new RegExp(`${EX}a>\\s+<${EX}q2>\\s+<${EX}b>\\s*\\.`),
+    ],
+  },
+
+  {
+    // IMPORTANT: API defaults to proofComments:false (machine-friendly), so we explicitly enable it here.
+    name: '30 sanity: proofComments:true enables proof comments',
+    opt: { proofComments: true },
+    input: `
+{ ${U('s')} ${U('p')} ${U('o')}. } => { ${U('s')} ${U('q')} ${U('o')}. }.
+${U('s')} ${U('p')} ${U('o')}.
+`,
+    expect: [
+      /^#/m,
+      new RegExp(`${EX}s>\\s+<${EX}q>\\s+<${EX}o>\\s*\\.`),
+    ],
+  },
+
+  {
+    name: '31 sanity: -n suppresses proof comments',
+    opt: ['-n'],
+    input: `
+{ ${U('s')} ${U('p')} ${U('o')}. } => { ${U('s')} ${U('q')} ${U('o')}. }.
+${U('s')} ${U('p')} ${U('o')}.
+`,
+    expect: [
+      new RegExp(`${EX}s>\\s+<${EX}q>\\s+<${EX}o>\\s*\\.`),
+    ],
+    notExpect: [
+      /^#/m,
+    ],
   },
 ];
 
