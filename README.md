@@ -98,10 +98,10 @@ npm run test:package
 npm run test:packlist
 ```
 
-* `test:api` runs an independent JS API test suite (does not rely on `examples/`).
-* `test:examples` runs the examples in the `examples` directory and compares against the golden outputs in `examples/output`.
-* `test:package` does a “real consumer” smoke test: `npm pack` → install tarball into a temp project → run API + CLI + examples.
-* `test:packlist` sanity-checks what will be published in the npm tarball (and the CLI shebang/bin wiring).
+- `test:api` runs an independent JS API test suite (does not rely on `examples/`).
+- `test:examples` runs the examples in the `examples` directory and compares against the golden outputs in `examples/output`.
+- `test:package` does a “real consumer” smoke test: `npm pack` → install tarball into a temp project → run API + CLI + examples.
+- `test:packlist` sanity-checks what will be published in the npm tarball (and the CLI shebang/bin wiring).
 
 ### Run a single file
 
@@ -146,14 +146,14 @@ The proof comments are compact “local justifications” per derived triple (no
 
 ### Forward + backward chaining
 
-* **Forward chaining to fixpoint** for forward rules written as `{ P } => { C } .`
-* **Backward chaining (SLD-style)** for backward rules written as `{ H } <= { B } .` and for built-ins.
+- **Forward chaining to fixpoint** for forward rules written as `{ P } => { C } .`
+- **Backward chaining (SLD-style)** for backward rules written as `{ H } <= { B } .` and for built-ins.
 
 Forward rule premises are proved using:
 
-* ground facts (input + derived)
-* backward rules
-* built-ins
+- ground facts (input + derived)
+- backward rules
+- built-ins
 
 The CLI prints only newly derived forward facts.
 
@@ -172,30 +172,28 @@ The CLI prints only newly derived forward facts.
 
 Supported:
 
-* `@prefix` / `@base`
-* triples with `;` and `,`
-* variables `?x`
-* blank nodes:
-
-  * anonymous `[]`
-  * property lists `[ :p :o; :q :r ]`
-* collections `( ... )`
-* quoted formulas `{ ... }`
-* implications:
-
-  * forward rules `{ P } => { C } .`
-  * backward rules `{ H } <= { B } .`
-* datatyped literals with `^^`
-* language-tagged string literals: `"hello"@en`, `"colour"@en-GB`
-* long string literals: `"""..."""` (can contain newlines; can also carry a language tag)
-* inverted predicate sugar: `?x <- :p ?y` (swaps subject/object for that predicate)
-* resource paths (forward `!` and reverse `^`): `:joe!:hasAddress!:hasCity "Metropolis".`
-* `#` line comments
+- `@prefix` / `@base`
+- triples with `;` and `,`
+- variables `?x`
+- blank nodes:
+  - anonymous `[]`
+  - property lists `[ :p :o; :q :r ]`
+- collections `( ... )`
+- quoted formulas `{ ... }`
+- implications:
+  - forward rules `{ P } => { C } .`
+  - backward rules `{ H } <= { B } .`
+- datatyped literals with `^^`
+- language-tagged string literals: `"hello"@en`, `"colour"@en-GB`
+- long string literals: `"""..."""` (can contain newlines; can also carry a language tag)
+- inverted predicate sugar: `?x <- :p ?y` (swaps subject/object for that predicate)
+- resource paths (forward `!` and reverse `^`): `:joe!:hasAddress!:hasCity "Metropolis".`
+- `#` line comments
 
 Non-goals / current limits:
 
-* not a full W3C N3 grammar (some edge cases for identifiers, quantifiers, advanced syntax)
-* proof output is local per derived triple (not a global exported proof tree)
+- not a full W3C N3 grammar (some edge cases for identifiers, quantifiers, advanced syntax)
+- proof output is local per derived triple (not a global exported proof tree)
 
 ## Blank nodes and quantification (pragmatic N3/EYE-style)
 
@@ -213,12 +211,12 @@ Equal facts up to renaming of Skolem IDs are treated as duplicates and are not r
 
 Top level:
 
-* `{ P } log:implies { C } .` becomes a forward rule `{ P } => { C } .`
-* `{ H } log:impliedBy { B } .` becomes a backward rule `{ H } <= { B } .`
+- `{ P } log:implies { C } .` becomes a forward rule `{ P } => { C } .`
+- `{ H } log:impliedBy { B } .` becomes a backward rule `{ H } <= { B } .`
 
 During reasoning:
 
-* any **derived** `log:implies` / `log:impliedBy` triple with formula subject/object is turned into a new live forward/backward rule.
+- any **derived** `log:implies` / `log:impliedBy` triple with formula subject/object is turned into a new live forward/backward rule.
 
 ## Inference fuse — `{ ... } => false.`
 
@@ -237,12 +235,12 @@ As soon as the premise is provable, `eyeling` exits with status code `2`.
 
 `eyeling` implements a pragmatic subset of common N3 builtin families and evaluates them during backward goal proving:
 
-* **crypto**: `crypto:md5` `crypto:sha` `crypto:sha256` `crypto:sha512`
-* **list**: `list:append` `list:first` `list:firstRest` `list:in` `list:iterate` `list:last` `list:length` `list:map` `list:member` `list:memberAt` `list:notMember` `list:remove` `list:rest` `list:reverse` `list:sort`
-* **log**: `log:collectAllIn` `log:equalTo` `log:forAllIn` `log:impliedBy` `log:implies` `log:notEqualTo` `log:notIncludes` `log:skolem` `log:uri`
-* **math**: `math:absoluteValue` `math:acos` `math:asin` `math:atan` `math:cos` `math:cosh` `math:degrees` `math:difference` `math:equalTo` `math:exponentiation` `math:greaterThan` `math:integerQuotient` `math:lessThan` `math:negation` `math:notEqualTo` `math:notGreaterThan` `math:notLessThan` `math:product` `math:quotient` `math:remainder` `math:rounded` `math:sin` `math:sinh` `math:sum` `math:tan` `math:tanh`
-* **string**: `string:concatenation` `string:contains` `string:containsIgnoringCase` `string:endsWith` `string:equalIgnoringCase` `string:format` `string:greaterThan` `string:lessThan` `string:matches` `string:notEqualIgnoringCase` `string:notGreaterThan` `string:notLessThan` `string:notMatches` `string:replace` `string:scrape` `string:startsWith`
-* **time**: `time:localTime`
+- **crypto**: `crypto:md5` `crypto:sha` `crypto:sha256` `crypto:sha512`
+- **list**: `list:append` `list:first` `list:firstRest` `list:in` `list:iterate` `list:last` `list:length` `list:map` `list:member` `list:memberAt` `list:notMember` `list:remove` `list:rest` `list:reverse` `list:sort`
+- **log**: `log:collectAllIn` `log:equalTo` `log:forAllIn` `log:impliedBy` `log:implies` `log:notEqualTo` `log:notIncludes` `log:skolem` `log:uri`
+- **math**: `math:absoluteValue` `math:acos` `math:asin` `math:atan` `math:cos` `math:cosh` `math:degrees` `math:difference` `math:equalTo` `math:exponentiation` `math:greaterThan` `math:integerQuotient` `math:lessThan` `math:negation` `math:notEqualTo` `math:notGreaterThan` `math:notLessThan` `math:product` `math:quotient` `math:remainder` `math:rounded` `math:sin` `math:sinh` `math:sum` `math:tan` `math:tanh`
+- **string**: `string:concatenation` `string:contains` `string:containsIgnoringCase` `string:endsWith` `string:equalIgnoringCase` `string:format` `string:greaterThan` `string:lessThan` `string:matches` `string:notEqualIgnoringCase` `string:notGreaterThan` `string:notLessThan` `string:notMatches` `string:replace` `string:scrape` `string:startsWith`
+- **time**: `time:localTime`
 
 ## License
 

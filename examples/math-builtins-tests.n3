@@ -242,6 +242,17 @@
     :status   :pass .
 } .
 
+# math:integerQuotient
+{ (10 3) math:integerQuotient ?q . ?q math:equalTo 3 . }
+=> {
+  :test-integerQuotient-1 a :MathBuiltinTest;
+    :builtin math:integerQuotient;
+    :input (10 3);
+    :expected 3;
+    :actual ?q;
+    :status :pass .
+} .
+
 # math:lessThan
 {
   41 math:lessThan 42 .

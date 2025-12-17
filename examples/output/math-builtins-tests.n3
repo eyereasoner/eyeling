@@ -1991,6 +1991,156 @@
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
+#   :test-integerQuotient-1 a :MathBuiltinTest .
+# It holds because the following instance of the rule body is provable:
+#   (10 3) math:integerQuotient 3 .
+#   3 math:equalTo 3 .
+# via the schematic forward rule:
+#   {
+#     (10 3) math:integerQuotient ?q .
+#     ?q math:equalTo 3 .
+#   } => {
+#     :test-integerQuotient-1 a :MathBuiltinTest .
+#     :test-integerQuotient-1 :builtin math:integerQuotient .
+#     :test-integerQuotient-1 :input (10 3) .
+#     :test-integerQuotient-1 :expected 3 .
+#     :test-integerQuotient-1 :actual ?q .
+#     :test-integerQuotient-1 :status :pass .
+#   } .
+# with substitution (on rule variables):
+#   ?q = 3
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:test-integerQuotient-1 a :MathBuiltinTest .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :test-integerQuotient-1 :builtin math:integerQuotient .
+# It holds because the following instance of the rule body is provable:
+#   (10 3) math:integerQuotient 3 .
+#   3 math:equalTo 3 .
+# via the schematic forward rule:
+#   {
+#     (10 3) math:integerQuotient ?q .
+#     ?q math:equalTo 3 .
+#   } => {
+#     :test-integerQuotient-1 a :MathBuiltinTest .
+#     :test-integerQuotient-1 :builtin math:integerQuotient .
+#     :test-integerQuotient-1 :input (10 3) .
+#     :test-integerQuotient-1 :expected 3 .
+#     :test-integerQuotient-1 :actual ?q .
+#     :test-integerQuotient-1 :status :pass .
+#   } .
+# with substitution (on rule variables):
+#   ?q = 3
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:test-integerQuotient-1 :builtin math:integerQuotient .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :test-integerQuotient-1 :input (10 3) .
+# It holds because the following instance of the rule body is provable:
+#   (10 3) math:integerQuotient 3 .
+#   3 math:equalTo 3 .
+# via the schematic forward rule:
+#   {
+#     (10 3) math:integerQuotient ?q .
+#     ?q math:equalTo 3 .
+#   } => {
+#     :test-integerQuotient-1 a :MathBuiltinTest .
+#     :test-integerQuotient-1 :builtin math:integerQuotient .
+#     :test-integerQuotient-1 :input (10 3) .
+#     :test-integerQuotient-1 :expected 3 .
+#     :test-integerQuotient-1 :actual ?q .
+#     :test-integerQuotient-1 :status :pass .
+#   } .
+# with substitution (on rule variables):
+#   ?q = 3
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:test-integerQuotient-1 :input (10 3) .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :test-integerQuotient-1 :expected 3 .
+# It holds because the following instance of the rule body is provable:
+#   (10 3) math:integerQuotient 3 .
+#   3 math:equalTo 3 .
+# via the schematic forward rule:
+#   {
+#     (10 3) math:integerQuotient ?q .
+#     ?q math:equalTo 3 .
+#   } => {
+#     :test-integerQuotient-1 a :MathBuiltinTest .
+#     :test-integerQuotient-1 :builtin math:integerQuotient .
+#     :test-integerQuotient-1 :input (10 3) .
+#     :test-integerQuotient-1 :expected 3 .
+#     :test-integerQuotient-1 :actual ?q .
+#     :test-integerQuotient-1 :status :pass .
+#   } .
+# with substitution (on rule variables):
+#   ?q = 3
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:test-integerQuotient-1 :expected 3 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :test-integerQuotient-1 :actual 3 .
+# It holds because the following instance of the rule body is provable:
+#   (10 3) math:integerQuotient 3 .
+#   3 math:equalTo 3 .
+# via the schematic forward rule:
+#   {
+#     (10 3) math:integerQuotient ?q .
+#     ?q math:equalTo 3 .
+#   } => {
+#     :test-integerQuotient-1 a :MathBuiltinTest .
+#     :test-integerQuotient-1 :builtin math:integerQuotient .
+#     :test-integerQuotient-1 :input (10 3) .
+#     :test-integerQuotient-1 :expected 3 .
+#     :test-integerQuotient-1 :actual ?q .
+#     :test-integerQuotient-1 :status :pass .
+#   } .
+# with substitution (on rule variables):
+#   ?q = 3
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:test-integerQuotient-1 :actual 3 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :test-integerQuotient-1 :status :pass .
+# It holds because the following instance of the rule body is provable:
+#   (10 3) math:integerQuotient 3 .
+#   3 math:equalTo 3 .
+# via the schematic forward rule:
+#   {
+#     (10 3) math:integerQuotient ?q .
+#     ?q math:equalTo 3 .
+#   } => {
+#     :test-integerQuotient-1 a :MathBuiltinTest .
+#     :test-integerQuotient-1 :builtin math:integerQuotient .
+#     :test-integerQuotient-1 :input (10 3) .
+#     :test-integerQuotient-1 :expected 3 .
+#     :test-integerQuotient-1 :actual ?q .
+#     :test-integerQuotient-1 :status :pass .
+#   } .
+# with substitution (on rule variables):
+#   ?q = 3
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:test-integerQuotient-1 :status :pass .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
 #   :test-lessThan-1 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
 #   41 math:lessThan 42 .
