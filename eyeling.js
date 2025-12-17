@@ -676,8 +676,23 @@ class Parser {
           this.expectDot();
           backwardRules.push(this.makeRule(first, second, false));
         } else {
-          const more = this.parsePredicateObjectList(first);
-          this.expectDot();
+          let more;
+
+          if (this.peek().typ === "Dot") {
+            // Allow a bare blank-node property list statement, e.g. `[ a :Statement ].`
+            const lastTok = this.toks[this.pos - 1];
+            if (this.pendingTriples.length > 0 && lastTok && lastTok.typ === "RBracket") {
+              more = this.pendingTriples;
+              this.pendingTriples = [];
+              this.next(); // consume '.'
+            } else {
+              throw new Error(`Unexpected '.' after term; missing predicate/object list`);
+            }
+          } else {
+            more = this.parsePredicateObjectList(first);
+            this.expectDot();
+          }
+
           // normalize explicit log:implies / log:impliedBy at top-level
           for (const tr of more) {
             if (isLogImplies(tr.p) && tr.s instanceof FormulaTerm && tr.o instanceof FormulaTerm) {
@@ -692,7 +707,6 @@ class Parser {
       }
     }
 
-    // console.log(JSON.stringify([this.prefixes, triples, forwardRules, backwardRules], null, 2));
     return [this.prefixes, triples, forwardRules, backwardRules];
   }
 
@@ -929,6 +943,17 @@ class Parser {
           throw new Error(`Expected '.' or '}', got ${this.peek().toString()}`);
         }
       } else {
+        // Allow a bare blank-node property list statement inside a formula, e.g. `{ [ a :X ]. }`
+        if (this.peek().typ === "Dot" || this.peek().typ === "RBrace") {
+          const lastTok = this.toks[this.pos - 1];
+          if (this.pendingTriples.length > 0 && lastTok && lastTok.typ === "RBracket") {
+            triples.push(...this.pendingTriples);
+            this.pendingTriples = [];
+            if (this.peek().typ === "Dot") this.next();
+            continue;
+          }
+        }
+
         triples.push(...this.parsePredicateObjectList(left));
         if (this.peek().typ === "Dot") this.next();
         else if (this.peek().typ === "RBrace") {
@@ -4187,6 +4212,7 @@ function main() {
   const toks = lex(text);
   const parser = new Parser(toks);
   const [prefixes, triples, frules, brules] = parser.parseDocument();
+  // console.log(JSON.stringify([prefixes, triples, frules, brules], null, 2));
 
   const facts = triples.filter(tr => isGroundTriple(tr));
   const derived = forwardChain(facts, frules, brules);
