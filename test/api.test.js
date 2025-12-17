@@ -650,6 +650,28 @@ ${U('a')} <-${U('p')} ${U('b')}.`,
 { ${U('o')} ${U('r')} ?x } => { ?x ${U('q')} ${U('k')} }.`,
     expect: [new RegExp(`_:b1\\s+<${EX}q>\\s+<${EX}k>\\s*\\.`)],
   },
+
+  { name: '46 syntax: N3 resource paths (! / ^) expand to blank-node triples (forward chain)',
+    opt: { proofComments: false },
+    input: ` ${U('joe')}!${U('hasAddress')}!${U('hasCity')} ${U('name')} "Metropolis".
+{ ${U('joe')} ${U('hasAddress')} ?a } => { ?a ${U('q')} "addr" }.
+{ ?a ${U('hasCity')} ?c } => { ?c ${U('q')} "city" }.
+`,
+    expect: [
+      new RegExp(`_:b1\\s+<${EX}q>\\s+"addr"\\s*\\.`),
+      new RegExp(`_:b2\\s+<${EX}q>\\s+"city"\\s*\\.`),
+    ],
+  },
+
+  { name: '47 syntax: N3 resource paths support reverse steps (^) in the chain',
+    opt: { proofComments: false },
+    input: ` ${U('joe')}!${U('hasMother')}^${U('hasMother')} ${U('knows')} ${U('someone')}.
+{ ?sib ${U('hasMother')} ?mom. ${U('joe')} ${U('hasMother')} ?mom } => { ?sib ${U('q')} ${U('joe')} }.
+`,
+    expect: [
+      new RegExp(`_:b2\\s+<${EX}q>\\s+<${EX}joe>\\s*\\.`),
+    ],
+  },
 ];
 
 let passed = 0;

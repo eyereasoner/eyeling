@@ -257,15 +257,21 @@ function lex(inputText) {
       continue;
     }
 
-    // 4) Datatype operator ^^
+    // 4) Path + datatype operators: !, ^, ^^
+    if (c === "!") {
+      tokens.push(new Token("OpPathFwd"));
+      i += 1;
+      continue;
+    }
     if (c === "^") {
       if (peek(1) === "^") {
         tokens.push(new Token("HatHat"));
         i += 2;
         continue;
-      } else {
-        throw new Error("Unexpected '^' (did you mean ^^?)");
       }
+      tokens.push(new Token("OpPathRev"));
+      i += 1;
+      continue;
     }
 
     // 5) Single-character punctuation
@@ -734,6 +740,28 @@ class Parser {
   }
 
   parseTerm() {
+    let t = this.parsePathItem();
+
+    while (this.peek().typ === "OpPathFwd" || this.peek().typ === "OpPathRev") {
+      const dir = this.next().typ;      // OpPathFwd | OpPathRev
+      const pred = this.parsePathItem();
+
+      this.blankCounter += 1;
+      const bn = new Blank(`_:b${this.blankCounter}`);
+
+      this.pendingTriples.push(
+        dir === "OpPathFwd"
+          ? new Triple(t, pred, bn)
+          : new Triple(bn, pred, t)
+      );
+
+      t = bn;
+    }
+
+    return t;
+  }
+
+  parsePathItem() {
     const tok = this.next();
     const typ = tok.typ;
     const val = tok.value;
@@ -916,20 +944,37 @@ class Parser {
 
   parsePredicateObjectList(subject) {
     const out = [];
+
+    // If the SUBJECT was a path, emit its helper triples first
+    if (this.pendingTriples.length > 0) {
+      out.push(...this.pendingTriples);
+      this.pendingTriples = [];
+    }
+
     while (true) {
       let verb;
       let invert = false;
+
       if (this.peek().typ === "Ident" && (this.peek().value || "") === "a") {
         this.next();
         verb = new Iri(RDF_NS + "type");
       } else if (this.peek().typ === "OpPredInvert") {
-        this.next(); // consume "<-"
-        verb = this.parseTerm(); // predicate expression
+        this.next(); // "<-"
+        verb = this.parseTerm();
         invert = true;
       } else {
         verb = this.parseTerm();
       }
+
       const objects = this.parseObjectList();
+
+      // If VERB or OBJECTS contained paths, their helper triples must come
+      // before the triples that consume the path results (Easter depends on this).
+      if (this.pendingTriples.length > 0) {
+        out.push(...this.pendingTriples);
+        this.pendingTriples = [];
+      }
+
       for (const o of objects) {
         out.push(new Triple(invert ? o : subject, verb, invert ? subject : o));
       }
@@ -940,11 +985,6 @@ class Parser {
         continue;
       }
       break;
-    }
-
-    if (this.pendingTriples.length > 0) {
-      out.push(...this.pendingTriples);
-      this.pendingTriples = [];
     }
 
     return out;
@@ -2326,6 +2366,47 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
       }
       return [];
     }
+  }
+
+  // math:integerQuotient
+  // Schema: ( $a $b ) math:integerQuotient $q
+  // Cwm: divide first integer by second integer, ignoring remainder. :contentReference[oaicite:1]{index=1}
+  if (g.p instanceof Iri && g.p.value === MATH_NS + "integerQuotient") {
+    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
+    const [a0, b0] = g.s.elems;
+
+    // Prefer exact integer division using BigInt when possible
+    const ai = parseIntLiteral(a0);
+    const bi = parseIntLiteral(b0);
+    if (ai !== null && bi !== null) {
+      if (bi === 0n) return [];
+      const q = ai / bi; // BigInt division truncates toward zero
+      const lit = new Literal(q.toString());
+      if (g.o instanceof Var) {
+        const s2 = { ...subst };
+        s2[g.o.name] = lit;
+        return [s2];
+      }
+      const s2 = unifyTerm(g.o, lit, subst);
+      return s2 !== null ? [s2] : [];
+    }
+
+    // Fallback: allow Number literals that still represent integers
+    const a = parseNum(a0);
+    const b = parseNum(b0);
+    if (a === null || b === null) return [];
+    if (!Number.isFinite(a) || !Number.isFinite(b) || b === 0) return [];
+    if (!Number.isInteger(a) || !Number.isInteger(b)) return [];
+
+    const q = Math.trunc(a / b);
+    const lit = new Literal(String(q));
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = lit;
+      return [s2];
+    }
+    const s2 = unifyTerm(g.o, lit, subst);
+    return s2 !== null ? [s2] : [];
   }
 
   // math:exponentiation
