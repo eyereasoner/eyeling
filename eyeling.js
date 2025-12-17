@@ -39,6 +39,9 @@ const SKOLEM_NS = "https://eyereasoner.github.io/.well-known/genid/";
 // of the subject term in log:skolem to a Skolem IRI.
 const skolemCache = new Map();
 
+// Cache for string:jsonPointer: jsonText -> { parsed: any|null, ptrCache: Map<string, Term|null> }
+const jsonPointerCache = new Map();
+
 // Controls whether human-readable proof comments are printed.
 let proofCommentsEnabled = true;
 
@@ -1819,6 +1822,195 @@ function makeStringLiteral(str) {
   return new Literal(JSON.stringify(str));
 }
 
+function termToJsStringDecoded(t) {
+  // Like termToJsString, but for short literals it *also* interprets escapes
+  // (\" \n \uXXXX …) by attempting JSON.parse on the quoted lexical form.
+  if (!(t instanceof Literal)) return null;
+  const [lex, _dt] = literalParts(t.value);
+
+  // Long strings: """ ... """ are taken verbatim.
+  if (lex.length >= 6 && lex.startsWith('"""') && lex.endsWith('"""')) {
+    return lex.slice(3, -3);
+  }
+
+  // Short strings: try to decode escapes (this makes "{\"a\":1}" usable too).
+  if (lex.length >= 2 && lex[0] === '"' && lex[lex.length - 1] === '"') {
+    try { return JSON.parse(lex); } catch (e) { /* fall through */ }
+    return stripQuotes(lex);
+  }
+
+  return stripQuotes(lex);
+}
+
+function _jsonPointerUnescape(seg) {
+  // RFC6901: ~1 -> '/', ~0 -> '~'
+  // Any other '~' escape is invalid.
+  let out = "";
+  for (let i = 0; i < seg.length; i++) {
+    const c = seg[i];
+    if (c !== "~") { out += c; continue; }
+    if (i + 1 >= seg.length) return null;
+    const n = seg[i + 1];
+    if (n === "0") out += "~";
+    else if (n === "1") out += "/";
+    else return null;
+    i++;
+  }
+  return out;
+}
+
+function _jsonToTerm(v) {
+  if (v === null) return makeStringLiteral("null");
+  if (typeof v === "string") return makeStringLiteral(v);
+  if (typeof v === "number") return new Literal(String(v));
+  if (typeof v === "boolean") return new Literal(v ? "true" : "false");
+  if (Array.isArray(v)) return new ListTerm(v.map(_jsonToTerm));
+  if (typeof v === "object") return makeStringLiteral(JSON.stringify(v));
+  return null;
+}
+
+function _jsonPointerLookup(jsonText, pointer) {
+  // Support URI fragment form "#/a/b" (percent-decoded) as well.
+  let ptr = pointer;
+  if (ptr.startsWith("#")) {
+    try { ptr = decodeURIComponent(ptr.slice(1)); } catch (e) { return null; }
+  }
+
+  // Cache per JSON document
+  let entry = jsonPointerCache.get(jsonText);
+  if (!entry) {
+    let parsed = null;
+    try { parsed = JSON.parse(jsonText); } catch (e) { parsed = null; }
+    entry = { parsed, ptrCache: new Map() };
+    jsonPointerCache.set(jsonText, entry);
+  }
+  if (entry.parsed === null) return null;
+
+  // Cache per pointer within this doc
+  if (entry.ptrCache.has(ptr)) return entry.ptrCache.get(ptr);
+
+  let cur = entry.parsed;
+
+  if (ptr === "") {
+    const t = _jsonToTerm(cur);
+    entry.ptrCache.set(ptr, t);
+    return t;
+  }
+  if (!ptr.startsWith("/")) { entry.ptrCache.set(ptr, null); return null; }
+
+  const parts = ptr.split("/").slice(1);
+  for (const raw of parts) {
+    const seg = _jsonPointerUnescape(raw);
+    if (seg === null) { entry.ptrCache.set(ptr, null); return null; }
+
+    if (Array.isArray(cur)) {
+      // JSON Pointer uses array indices as decimal strings
+      if (!/^(0|[1-9]\d*)$/.test(seg)) { entry.ptrCache.set(ptr, null); return null; }
+      const idx = Number(seg);
+      if (!Number.isFinite(idx) || idx < 0 || idx >= cur.length) { entry.ptrCache.set(ptr, null); return null; }
+      cur = cur[idx];
+      continue;
+    }
+
+    if (cur !== null && typeof cur === "object") {
+      if (!Object.prototype.hasOwnProperty.call(cur, seg)) { entry.ptrCache.set(ptr, null); return null; }
+      cur = cur[seg];
+      continue;
+    }
+
+    entry.ptrCache.set(ptr, null);
+    return null;
+  }
+
+  const out = _jsonToTerm(cur);
+  entry.ptrCache.set(ptr, out);
+  return out;
+}
+
+function jsonPointerUnescape(seg) {
+  // RFC6901: ~1 -> '/', ~0 -> '~'
+  let out = "";
+  for (let i = 0; i < seg.length; i++) {
+    const c = seg[i];
+    if (c !== "~") { out += c; continue; }
+    if (i + 1 >= seg.length) return null;
+    const n = seg[i + 1];
+    if (n === "0") out += "~";
+    else if (n === "1") out += "/";
+    else return null;
+    i++;
+  }
+  return out;
+}
+
+function jsonToTerm(v) {
+  if (v === null) return makeStringLiteral("null");
+  if (typeof v === "string") return makeStringLiteral(v);
+  if (typeof v === "number") return new Literal(String(v));
+  if (typeof v === "boolean") return new Literal(v ? "true" : "false");
+  if (Array.isArray(v)) return new ListTerm(v.map(jsonToTerm));
+
+  if (v && typeof v === "object") {
+    // IMPORTANT: long literal so it can be parsed again via termToJsString()
+    // without needing escape decoding.
+    const raw = JSON.stringify(v);
+    return new Literal('"""' + raw + '"""');
+  }
+  return null;
+}
+
+function jsonPointerLookup(jsonText, pointer) {
+  let ptr = pointer;
+
+  // Support URI fragment form "#/a/b"
+  if (ptr.startsWith("#")) {
+    try { ptr = decodeURIComponent(ptr.slice(1)); } catch { return null; }
+  }
+
+  let entry = jsonPointerCache.get(jsonText);
+  if (!entry) {
+    let parsed = null;
+    try { parsed = JSON.parse(jsonText); } catch { parsed = null; }
+    entry = { parsed, ptrCache: new Map() };
+    jsonPointerCache.set(jsonText, entry);
+  }
+  if (entry.parsed === null) return null;
+
+  if (entry.ptrCache.has(ptr)) return entry.ptrCache.get(ptr);
+
+  let cur = entry.parsed;
+
+  if (ptr === "") {
+    const t = jsonToTerm(cur);
+    entry.ptrCache.set(ptr, t);
+    return t;
+  }
+  if (!ptr.startsWith("/")) { entry.ptrCache.set(ptr, null); return null; }
+
+  const parts = ptr.split("/").slice(1);
+  for (const raw of parts) {
+    const seg = jsonPointerUnescape(raw);
+    if (seg === null) { entry.ptrCache.set(ptr, null); return null; }
+
+    if (Array.isArray(cur)) {
+      if (!/^(0|[1-9]\d*)$/.test(seg)) { entry.ptrCache.set(ptr, null); return null; }
+      const idx = Number(seg);
+      if (idx < 0 || idx >= cur.length) { entry.ptrCache.set(ptr, null); return null; }
+      cur = cur[idx];
+    } else if (cur !== null && typeof cur === "object") {
+      if (!Object.prototype.hasOwnProperty.call(cur, seg)) { entry.ptrCache.set(ptr, null); return null; }
+      cur = cur[seg];
+    } else {
+      entry.ptrCache.set(ptr, null);
+      return null;
+    }
+  }
+
+  const out = jsonToTerm(cur);
+  entry.ptrCache.set(ptr, out);
+  return out;
+}
+
 // Tiny subset of sprintf: supports only %s and %%.
 // Good enough for most N3 string:format use cases that just splice strings.
 function simpleStringFormat(fmt, args) {
@@ -3367,6 +3559,21 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
       return [s2];
     }
     const s2 = unifyTerm(g.o, lit, subst);
+    return s2 !== null ? [s2] : [];
+  }
+
+  // string:jsonPointer
+  // Schema: ( $jsonText $pointer ) string:jsonPointer $value
+  if (g.p instanceof Iri && g.p.value === STRING_NS + "jsonPointer") {
+    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
+    const jsonText = termToJsString(g.s.elems[0]);
+    const ptr = termToJsString(g.s.elems[1]);
+    if (jsonText === null || ptr === null) return [];
+
+    const valTerm = jsonPointerLookup(jsonText, ptr);
+    if (valTerm === null) return [];
+
+    const s2 = unifyTerm(g.o, valTerm, subst);
     return s2 !== null ? [s2] : [];
   }
 
