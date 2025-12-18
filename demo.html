@@ -332,12 +332,28 @@
       let eyelingVersion = "unknown";
       let versionPromise = null;
 
-      function autoResizeCodeMirror(cm, minHeightPx) {
-        // Ensure CodeMirror fits its content (no internal scrollbars).
+      function autoResizeCodeMirror(cm, minHeightPx, maxHeightPx) {
+        // Ensure CodeMirror fits its *rendered* content (no internal scrollbars).
+        // IMPORTANT: don't use the scroller's scrollHeight here — with overflow hidden
+        // it can create a feedback loop where the editor grows a bit on every keystroke.
         cm.refresh();
-        const scroller = cm.getScrollerElement();
-        const height = Math.max(scroller.scrollHeight, minHeightPx);
-        cm.setSize(null, height + "px");
+
+        const wrapper = cm.getWrapperElement();
+        const code = wrapper && wrapper.querySelector(".CodeMirror-code");
+        const sizer = wrapper && wrapper.querySelector(".CodeMirror-sizer");
+        const measureEl = code || sizer;
+
+        const contentHeight = measureEl
+          ? measureEl.getBoundingClientRect().height
+          : cm.getScrollInfo().height;
+
+        // Add a bit of breathing room so the last line isn't flush with the bottom.
+        const padding = cm.defaultTextHeight();
+
+        let target = Math.max(Math.ceil(contentHeight + padding), minHeightPx);
+        if (typeof maxHeightPx === "number") target = Math.min(target, maxHeightPx);
+
+        cm.setSize(null, target + "px");
       }
 
       // --- INITIAL CONTENT FROM HASH OR DEFAULT ---
