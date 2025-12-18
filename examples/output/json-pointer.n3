@@ -10,14 +10,14 @@
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" .
+#   }"""^^rdf:JSON .
 #   ("""{
 #     "users": [
 #       { "id": "u1", "email": "ada@example.org",     "profile/name": "Ada Lovelace" },
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" "/users/0/profile~1name") string:jsonPointer "Ada Lovelace" .
+#   }"""^^rdf:JSON "/users/0/profile~1name") string:jsonPointer "Ada Lovelace" .
 # via the schematic forward rule:
 #   {
 #     ex:doc ex:json ?J .
@@ -32,7 +32,7 @@
 #     { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }"""
+#   }"""^^rdf:JSON
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -48,25 +48,25 @@ ex:checks ex:firstUserNameOk true .
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" .
+#   }"""^^rdf:JSON .
 #   ("""{
 #     "users": [
 #       { "id": "u1", "email": "ada@example.org",     "profile/name": "Ada Lovelace" },
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" "/policy/allowedDomains") string:jsonPointer ("example.org" "example.com") .
+#   }"""^^rdf:JSON "/policy/allowedDomains") string:jsonPointer ("example.org" "example.com") .
 #   ("""{
 #     "users": [
 #       { "id": "u1", "email": "ada@example.org",     "profile/name": "Ada Lovelace" },
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" "/users") string:jsonPointer ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""") .
-#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""") list:iterate (0 """{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""") .
-#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" "/id") string:jsonPointer "u1" .
-#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" "/email") string:jsonPointer "ada@example.org" .
-#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" "/profile~1name") string:jsonPointer "Ada Lovelace" .
+#   }"""^^rdf:JSON "/users") string:jsonPointer ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON) .
+#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON) list:iterate (0 """{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON) .
+#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON "/id") string:jsonPointer "u1" .
+#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON "/email") string:jsonPointer "ada@example.org" .
+#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON "/profile~1name") string:jsonPointer "Ada Lovelace" .
 #   ("ada@example.org" "@([^@]+)$") string:scrape "example.org" .
 #   ("example.org" "example.com") list:member "example.org" .
 #   ("urn:example:user:%s" "u1") string:format "urn:example:user:u1" .
@@ -103,12 +103,12 @@ ex:checks ex:firstUserNameOk true .
 #     { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }"""
+#   }"""^^rdf:JSON
 #   ?Name = "Ada Lovelace"
 #   ?UriStr = "urn:example:user:u1"
 #   ?User = <urn:example:user:u1>
-#   ?UserJson = """{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""
-#   ?Users = ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""")
+#   ?UserJson = """{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON
+#   ?Users = ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON)
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -124,25 +124,25 @@ ex:checks ex:firstUserNameOk true .
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" .
+#   }"""^^rdf:JSON .
 #   ("""{
 #     "users": [
 #       { "id": "u1", "email": "ada@example.org",     "profile/name": "Ada Lovelace" },
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" "/policy/allowedDomains") string:jsonPointer ("example.org" "example.com") .
+#   }"""^^rdf:JSON "/policy/allowedDomains") string:jsonPointer ("example.org" "example.com") .
 #   ("""{
 #     "users": [
 #       { "id": "u1", "email": "ada@example.org",     "profile/name": "Ada Lovelace" },
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" "/users") string:jsonPointer ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""") .
-#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""") list:iterate (0 """{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""") .
-#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" "/id") string:jsonPointer "u1" .
-#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" "/email") string:jsonPointer "ada@example.org" .
-#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" "/profile~1name") string:jsonPointer "Ada Lovelace" .
+#   }"""^^rdf:JSON "/users") string:jsonPointer ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON) .
+#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON) list:iterate (0 """{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON) .
+#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON "/id") string:jsonPointer "u1" .
+#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON "/email") string:jsonPointer "ada@example.org" .
+#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON "/profile~1name") string:jsonPointer "Ada Lovelace" .
 #   ("ada@example.org" "@([^@]+)$") string:scrape "example.org" .
 #   ("example.org" "example.com") list:member "example.org" .
 #   ("urn:example:user:%s" "u1") string:format "urn:example:user:u1" .
@@ -179,12 +179,12 @@ ex:checks ex:firstUserNameOk true .
 #     { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }"""
+#   }"""^^rdf:JSON
 #   ?Name = "Ada Lovelace"
 #   ?UriStr = "urn:example:user:u1"
 #   ?User = <urn:example:user:u1>
-#   ?UserJson = """{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""
-#   ?Users = ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""")
+#   ?UserJson = """{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON
+#   ?Users = ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON)
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -200,25 +200,25 @@ ex:checks ex:firstUserNameOk true .
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" .
+#   }"""^^rdf:JSON .
 #   ("""{
 #     "users": [
 #       { "id": "u1", "email": "ada@example.org",     "profile/name": "Ada Lovelace" },
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" "/policy/allowedDomains") string:jsonPointer ("example.org" "example.com") .
+#   }"""^^rdf:JSON "/policy/allowedDomains") string:jsonPointer ("example.org" "example.com") .
 #   ("""{
 #     "users": [
 #       { "id": "u1", "email": "ada@example.org",     "profile/name": "Ada Lovelace" },
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" "/users") string:jsonPointer ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""") .
-#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""") list:iterate (0 """{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""") .
-#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" "/id") string:jsonPointer "u1" .
-#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" "/email") string:jsonPointer "ada@example.org" .
-#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" "/profile~1name") string:jsonPointer "Ada Lovelace" .
+#   }"""^^rdf:JSON "/users") string:jsonPointer ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON) .
+#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON) list:iterate (0 """{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON) .
+#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON "/id") string:jsonPointer "u1" .
+#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON "/email") string:jsonPointer "ada@example.org" .
+#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON "/profile~1name") string:jsonPointer "Ada Lovelace" .
 #   ("ada@example.org" "@([^@]+)$") string:scrape "example.org" .
 #   ("example.org" "example.com") list:member "example.org" .
 #   ("urn:example:user:%s" "u1") string:format "urn:example:user:u1" .
@@ -255,12 +255,12 @@ ex:checks ex:firstUserNameOk true .
 #     { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }"""
+#   }"""^^rdf:JSON
 #   ?Name = "Ada Lovelace"
 #   ?UriStr = "urn:example:user:u1"
 #   ?User = <urn:example:user:u1>
-#   ?UserJson = """{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""
-#   ?Users = ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""")
+#   ?UserJson = """{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON
+#   ?Users = ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON)
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -276,25 +276,25 @@ ex:checks ex:firstUserNameOk true .
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" .
+#   }"""^^rdf:JSON .
 #   ("""{
 #     "users": [
 #       { "id": "u1", "email": "ada@example.org",     "profile/name": "Ada Lovelace" },
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" "/policy/allowedDomains") string:jsonPointer ("example.org" "example.com") .
+#   }"""^^rdf:JSON "/policy/allowedDomains") string:jsonPointer ("example.org" "example.com") .
 #   ("""{
 #     "users": [
 #       { "id": "u1", "email": "ada@example.org",     "profile/name": "Ada Lovelace" },
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" "/users") string:jsonPointer ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""") .
-#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""") list:iterate (0 """{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""") .
-#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" "/id") string:jsonPointer "u1" .
-#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" "/email") string:jsonPointer "ada@example.org" .
-#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" "/profile~1name") string:jsonPointer "Ada Lovelace" .
+#   }"""^^rdf:JSON "/users") string:jsonPointer ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON) .
+#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON) list:iterate (0 """{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON) .
+#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON "/id") string:jsonPointer "u1" .
+#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON "/email") string:jsonPointer "ada@example.org" .
+#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON "/profile~1name") string:jsonPointer "Ada Lovelace" .
 #   ("ada@example.org" "@([^@]+)$") string:scrape "example.org" .
 #   ("example.org" "example.com") list:member "example.org" .
 #   ("urn:example:user:%s" "u1") string:format "urn:example:user:u1" .
@@ -331,12 +331,12 @@ ex:checks ex:firstUserNameOk true .
 #     { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }"""
+#   }"""^^rdf:JSON
 #   ?Name = "Ada Lovelace"
 #   ?UriStr = "urn:example:user:u1"
 #   ?User = <urn:example:user:u1>
-#   ?UserJson = """{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""
-#   ?Users = ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""")
+#   ?UserJson = """{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON
+#   ?Users = ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON)
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -352,25 +352,25 @@ ex:checks ex:firstUserNameOk true .
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" .
+#   }"""^^rdf:JSON .
 #   ("""{
 #     "users": [
 #       { "id": "u1", "email": "ada@example.org",     "profile/name": "Ada Lovelace" },
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" "/policy/allowedDomains") string:jsonPointer ("example.org" "example.com") .
+#   }"""^^rdf:JSON "/policy/allowedDomains") string:jsonPointer ("example.org" "example.com") .
 #   ("""{
 #     "users": [
 #       { "id": "u1", "email": "ada@example.org",     "profile/name": "Ada Lovelace" },
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" "/users") string:jsonPointer ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""") .
-#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""") list:iterate (0 """{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""") .
-#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" "/id") string:jsonPointer "u1" .
-#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" "/email") string:jsonPointer "ada@example.org" .
-#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" "/profile~1name") string:jsonPointer "Ada Lovelace" .
+#   }"""^^rdf:JSON "/users") string:jsonPointer ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON) .
+#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON) list:iterate (0 """{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON) .
+#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON "/id") string:jsonPointer "u1" .
+#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON "/email") string:jsonPointer "ada@example.org" .
+#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON "/profile~1name") string:jsonPointer "Ada Lovelace" .
 #   ("ada@example.org" "@([^@]+)$") string:scrape "example.org" .
 #   ("example.org" "example.com") list:member "example.org" .
 #   ("urn:example:user:%s" "u1") string:format "urn:example:user:u1" .
@@ -407,12 +407,12 @@ ex:checks ex:firstUserNameOk true .
 #     { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }"""
+#   }"""^^rdf:JSON
 #   ?Name = "Ada Lovelace"
 #   ?UriStr = "urn:example:user:u1"
 #   ?User = <urn:example:user:u1>
-#   ?UserJson = """{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""
-#   ?Users = ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""")
+#   ?UserJson = """{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON
+#   ?Users = ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON)
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -428,25 +428,25 @@ ex:checks ex:firstUserNameOk true .
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" .
+#   }"""^^rdf:JSON .
 #   ("""{
 #     "users": [
 #       { "id": "u1", "email": "ada@example.org",     "profile/name": "Ada Lovelace" },
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" "/policy/allowedDomains") string:jsonPointer ("example.org" "example.com") .
+#   }"""^^rdf:JSON "/policy/allowedDomains") string:jsonPointer ("example.org" "example.com") .
 #   ("""{
 #     "users": [
 #       { "id": "u1", "email": "ada@example.org",     "profile/name": "Ada Lovelace" },
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" "/users") string:jsonPointer ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""") .
-#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""") list:iterate (1 """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""") .
-#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""" "/id") string:jsonPointer "u2" .
-#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""" "/email") string:jsonPointer "bob@evil.invalid" .
-#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""" "/profile~1name") string:jsonPointer "Bob Mallory" .
+#   }"""^^rdf:JSON "/users") string:jsonPointer ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON) .
+#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON) list:iterate (1 """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON) .
+#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON "/id") string:jsonPointer "u2" .
+#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON "/email") string:jsonPointer "bob@evil.invalid" .
+#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON "/profile~1name") string:jsonPointer "Bob Mallory" .
 #   ("bob@evil.invalid" "@([^@]+)$") string:scrape "evil.invalid" .
 #   ("urn:example:user:%s" "u2") string:format "urn:example:user:u2" .
 #   <urn:example:user:u2> log:uri "urn:example:user:u2" .
@@ -483,12 +483,12 @@ ex:checks ex:firstUserNameOk true .
 #     { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }"""
+#   }"""^^rdf:JSON
 #   ?Name = "Bob Mallory"
 #   ?UriStr = "urn:example:user:u2"
 #   ?User = <urn:example:user:u2>
-#   ?UserJson = """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""
-#   ?Users = ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""")
+#   ?UserJson = """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON
+#   ?Users = ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON)
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -504,25 +504,25 @@ ex:checks ex:firstUserNameOk true .
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" .
+#   }"""^^rdf:JSON .
 #   ("""{
 #     "users": [
 #       { "id": "u1", "email": "ada@example.org",     "profile/name": "Ada Lovelace" },
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" "/policy/allowedDomains") string:jsonPointer ("example.org" "example.com") .
+#   }"""^^rdf:JSON "/policy/allowedDomains") string:jsonPointer ("example.org" "example.com") .
 #   ("""{
 #     "users": [
 #       { "id": "u1", "email": "ada@example.org",     "profile/name": "Ada Lovelace" },
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" "/users") string:jsonPointer ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""") .
-#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""") list:iterate (1 """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""") .
-#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""" "/id") string:jsonPointer "u2" .
-#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""" "/email") string:jsonPointer "bob@evil.invalid" .
-#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""" "/profile~1name") string:jsonPointer "Bob Mallory" .
+#   }"""^^rdf:JSON "/users") string:jsonPointer ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON) .
+#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON) list:iterate (1 """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON) .
+#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON "/id") string:jsonPointer "u2" .
+#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON "/email") string:jsonPointer "bob@evil.invalid" .
+#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON "/profile~1name") string:jsonPointer "Bob Mallory" .
 #   ("bob@evil.invalid" "@([^@]+)$") string:scrape "evil.invalid" .
 #   ("urn:example:user:%s" "u2") string:format "urn:example:user:u2" .
 #   <urn:example:user:u2> log:uri "urn:example:user:u2" .
@@ -559,12 +559,12 @@ ex:checks ex:firstUserNameOk true .
 #     { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }"""
+#   }"""^^rdf:JSON
 #   ?Name = "Bob Mallory"
 #   ?UriStr = "urn:example:user:u2"
 #   ?User = <urn:example:user:u2>
-#   ?UserJson = """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""
-#   ?Users = ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""")
+#   ?UserJson = """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON
+#   ?Users = ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON)
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -580,25 +580,25 @@ ex:checks ex:firstUserNameOk true .
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" .
+#   }"""^^rdf:JSON .
 #   ("""{
 #     "users": [
 #       { "id": "u1", "email": "ada@example.org",     "profile/name": "Ada Lovelace" },
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" "/policy/allowedDomains") string:jsonPointer ("example.org" "example.com") .
+#   }"""^^rdf:JSON "/policy/allowedDomains") string:jsonPointer ("example.org" "example.com") .
 #   ("""{
 #     "users": [
 #       { "id": "u1", "email": "ada@example.org",     "profile/name": "Ada Lovelace" },
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" "/users") string:jsonPointer ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""") .
-#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""") list:iterate (1 """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""") .
-#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""" "/id") string:jsonPointer "u2" .
-#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""" "/email") string:jsonPointer "bob@evil.invalid" .
-#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""" "/profile~1name") string:jsonPointer "Bob Mallory" .
+#   }"""^^rdf:JSON "/users") string:jsonPointer ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON) .
+#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON) list:iterate (1 """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON) .
+#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON "/id") string:jsonPointer "u2" .
+#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON "/email") string:jsonPointer "bob@evil.invalid" .
+#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON "/profile~1name") string:jsonPointer "Bob Mallory" .
 #   ("bob@evil.invalid" "@([^@]+)$") string:scrape "evil.invalid" .
 #   ("urn:example:user:%s" "u2") string:format "urn:example:user:u2" .
 #   <urn:example:user:u2> log:uri "urn:example:user:u2" .
@@ -635,12 +635,12 @@ ex:checks ex:firstUserNameOk true .
 #     { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }"""
+#   }"""^^rdf:JSON
 #   ?Name = "Bob Mallory"
 #   ?UriStr = "urn:example:user:u2"
 #   ?User = <urn:example:user:u2>
-#   ?UserJson = """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""
-#   ?Users = ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""")
+#   ?UserJson = """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON
+#   ?Users = ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON)
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -656,25 +656,25 @@ ex:checks ex:firstUserNameOk true .
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" .
+#   }"""^^rdf:JSON .
 #   ("""{
 #     "users": [
 #       { "id": "u1", "email": "ada@example.org",     "profile/name": "Ada Lovelace" },
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" "/policy/allowedDomains") string:jsonPointer ("example.org" "example.com") .
+#   }"""^^rdf:JSON "/policy/allowedDomains") string:jsonPointer ("example.org" "example.com") .
 #   ("""{
 #     "users": [
 #       { "id": "u1", "email": "ada@example.org",     "profile/name": "Ada Lovelace" },
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" "/users") string:jsonPointer ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""") .
-#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""") list:iterate (1 """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""") .
-#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""" "/id") string:jsonPointer "u2" .
-#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""" "/email") string:jsonPointer "bob@evil.invalid" .
-#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""" "/profile~1name") string:jsonPointer "Bob Mallory" .
+#   }"""^^rdf:JSON "/users") string:jsonPointer ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON) .
+#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON) list:iterate (1 """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON) .
+#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON "/id") string:jsonPointer "u2" .
+#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON "/email") string:jsonPointer "bob@evil.invalid" .
+#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON "/profile~1name") string:jsonPointer "Bob Mallory" .
 #   ("bob@evil.invalid" "@([^@]+)$") string:scrape "evil.invalid" .
 #   ("urn:example:user:%s" "u2") string:format "urn:example:user:u2" .
 #   <urn:example:user:u2> log:uri "urn:example:user:u2" .
@@ -711,12 +711,12 @@ ex:checks ex:firstUserNameOk true .
 #     { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }"""
+#   }"""^^rdf:JSON
 #   ?Name = "Bob Mallory"
 #   ?UriStr = "urn:example:user:u2"
 #   ?User = <urn:example:user:u2>
-#   ?UserJson = """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""
-#   ?Users = ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""")
+#   ?UserJson = """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON
+#   ?Users = ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON)
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -732,25 +732,25 @@ ex:checks ex:firstUserNameOk true .
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" .
+#   }"""^^rdf:JSON .
 #   ("""{
 #     "users": [
 #       { "id": "u1", "email": "ada@example.org",     "profile/name": "Ada Lovelace" },
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" "/policy/allowedDomains") string:jsonPointer ("example.org" "example.com") .
+#   }"""^^rdf:JSON "/policy/allowedDomains") string:jsonPointer ("example.org" "example.com") .
 #   ("""{
 #     "users": [
 #       { "id": "u1", "email": "ada@example.org",     "profile/name": "Ada Lovelace" },
 #       { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }""" "/users") string:jsonPointer ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""") .
-#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""") list:iterate (1 """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""") .
-#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""" "/id") string:jsonPointer "u2" .
-#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""" "/email") string:jsonPointer "bob@evil.invalid" .
-#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""" "/profile~1name") string:jsonPointer "Bob Mallory" .
+#   }"""^^rdf:JSON "/users") string:jsonPointer ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON) .
+#   ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON) list:iterate (1 """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON) .
+#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON "/id") string:jsonPointer "u2" .
+#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON "/email") string:jsonPointer "bob@evil.invalid" .
+#   ("""{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON "/profile~1name") string:jsonPointer "Bob Mallory" .
 #   ("bob@evil.invalid" "@([^@]+)$") string:scrape "evil.invalid" .
 #   ("urn:example:user:%s" "u2") string:format "urn:example:user:u2" .
 #   <urn:example:user:u2> log:uri "urn:example:user:u2" .
@@ -787,12 +787,12 @@ ex:checks ex:firstUserNameOk true .
 #     { "id": "u2", "email": "bob@evil.invalid",    "profile/name": "Bob Mallory" }
 #     ],
 #     "policy": { "allowedDomains": ["example.org", "example.com"] }
-#   }"""
+#   }"""^^rdf:JSON
 #   ?Name = "Bob Mallory"
 #   ?UriStr = "urn:example:user:u2"
 #   ?User = <urn:example:user:u2>
-#   ?UserJson = """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""
-#   ?Users = ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}""" """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}""")
+#   ?UserJson = """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON
+#   ?Users = ("""{"id":"u1","email":"ada@example.org","profile/name":"Ada Lovelace"}"""^^rdf:JSON """{"id":"u2","email":"bob@evil.invalid","profile/name":"Bob Mallory"}"""^^rdf:JSON)
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 

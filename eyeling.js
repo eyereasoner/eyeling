@@ -34,6 +34,28 @@ const LIST_NS = "http://www.w3.org/2000/10/swap/list#";
 const LOG_NS = "http://www.w3.org/2000/10/swap/log#";
 const STRING_NS = "http://www.w3.org/2000/10/swap/string#";
 const SKOLEM_NS = "https://eyereasoner.github.io/.well-known/genid/";
+const RDF_JSON_DT = RDF_NS + "JSON";
+
+function isRdfJsonDatatype(dt) {
+  // dt comes from literalParts() and may be expanded or prefixed depending on parsing/printing.
+  return dt === null || dt === RDF_JSON_DT || dt === "rdf:JSON";
+}
+
+function termToJsonText(t) {
+  if (!(t instanceof Literal)) return null;
+  const [lex, dt] = literalParts(t.value);
+  if (!isRdfJsonDatatype(dt)) return null;
+  // decode escapes for short literals; long literals are taken verbatim
+  return termToJsStringDecoded(t);
+}
+
+function makeRdfJsonLiteral(jsonText) {
+  // Prefer a readable long literal when safe; fall back to short if needed.
+  if (!jsonText.includes('"""')) {
+    return new Literal('"""' + jsonText + '"""^^<' + RDF_JSON_DT + '>');
+  }
+  return new Literal(JSON.stringify(jsonText) + '^^<' + RDF_JSON_DT + '>');
+}
 
 // For a single reasoning run, this maps a canonical representation
 // of the subject term in log:skolem to a Skolem IRI.
@@ -552,6 +574,9 @@ function collectIrisInTerm(t) {
   const out = [];
   if (t instanceof Iri) {
     out.push(t.value);
+  } else if (t instanceof Literal) {
+    const [_lex, dt] = literalParts(t.value);
+    if (dt) out.push(dt); // so rdf/xsd prefixes are emitted when only used in ^^...
   } else if (t instanceof ListTerm) {
     for (const x of t.elems) out.push(...collectIrisInTerm(x));
   } else if (t instanceof OpenListTerm) {
@@ -1951,10 +1976,7 @@ function jsonToTerm(v) {
   if (Array.isArray(v)) return new ListTerm(v.map(jsonToTerm));
 
   if (v && typeof v === "object") {
-    // IMPORTANT: long literal so it can be parsed again via termToJsString()
-    // without needing escape decoding.
-    const raw = JSON.stringify(v);
-    return new Literal('"""' + raw + '"""');
+    return makeRdfJsonLiteral(JSON.stringify(v));
   }
   return null;
 }
@@ -3566,8 +3588,9 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
   // Schema: ( $jsonText $pointer ) string:jsonPointer $value
   if (g.p instanceof Iri && g.p.value === STRING_NS + "jsonPointer") {
     if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
-    const jsonText = termToJsString(g.s.elems[0]);
-    const ptr = termToJsString(g.s.elems[1]);
+
+    const jsonText = termToJsonText(g.s.elems[0]);     // <-- changed
+    const ptr      = termToJsStringDecoded(g.s.elems[1]);
     if (jsonText === null || ptr === null) return [];
 
     const valTerm = jsonPointerLookup(jsonText, ptr);
@@ -4174,7 +4197,13 @@ function termToN3(t, pref) {
     if (i.startsWith("_:")) return i;
     return `<${i}>`;
   }
-  if (t instanceof Literal) return t.value;
+ if (t instanceof Literal) {
+   const [lex, dt] = literalParts(t.value);
+   if (!dt) return t.value; // keep numbers, booleans, lang-tagged strings, etc.
+   const qdt = pref.shrinkIri(dt);
+   if (qdt !== null) return `${lex}^^${qdt}`;   // e.g. ^^rdf:JSON
+   return `${lex}^^<${dt}>`;                   // fallback
+ }
   if (t instanceof Var) return `?${t.name}`;
   if (t instanceof Blank) return t.label;
   if (t instanceof ListTerm) {

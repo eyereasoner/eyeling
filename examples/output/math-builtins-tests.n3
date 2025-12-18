@@ -1,5 +1,6 @@
 @prefix : <http://example.org/math-tests#> .
 @prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
@@ -3431,16 +3432,16 @@
 # Proof for derived triple:
 #   :test-rounded-1 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
-#   "3.3"^^<http://www.w3.org/2001/XMLSchema#double> math:rounded 3 .
+#   "3.3"^^xsd:double math:rounded 3 .
 #   3 math:equalTo 3 .
 # via the schematic forward rule:
 #   {
-#     "3.3"^^<http://www.w3.org/2001/XMLSchema#double> math:rounded ?r .
+#     "3.3"^^xsd:double math:rounded ?r .
 #     ?r math:equalTo 3 .
 #   } => {
 #     :test-rounded-1 a :MathBuiltinTest .
 #     :test-rounded-1 :builtin math:rounded .
-#     :test-rounded-1 :input "3.3"^^<http://www.w3.org/2001/XMLSchema#double> .
+#     :test-rounded-1 :input "3.3"^^xsd:double .
 #     :test-rounded-1 :expected 3 .
 #     :test-rounded-1 :actual ?r .
 #     :test-rounded-1 :status :pass .
@@ -3456,16 +3457,16 @@
 # Proof for derived triple:
 #   :test-rounded-1 :builtin math:rounded .
 # It holds because the following instance of the rule body is provable:
-#   "3.3"^^<http://www.w3.org/2001/XMLSchema#double> math:rounded 3 .
+#   "3.3"^^xsd:double math:rounded 3 .
 #   3 math:equalTo 3 .
 # via the schematic forward rule:
 #   {
-#     "3.3"^^<http://www.w3.org/2001/XMLSchema#double> math:rounded ?r .
+#     "3.3"^^xsd:double math:rounded ?r .
 #     ?r math:equalTo 3 .
 #   } => {
 #     :test-rounded-1 a :MathBuiltinTest .
 #     :test-rounded-1 :builtin math:rounded .
-#     :test-rounded-1 :input "3.3"^^<http://www.w3.org/2001/XMLSchema#double> .
+#     :test-rounded-1 :input "3.3"^^xsd:double .
 #     :test-rounded-1 :expected 3 .
 #     :test-rounded-1 :actual ?r .
 #     :test-rounded-1 :status :pass .
@@ -3479,18 +3480,18 @@
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :test-rounded-1 :input "3.3"^^<http://www.w3.org/2001/XMLSchema#double> .
+#   :test-rounded-1 :input "3.3"^^xsd:double .
 # It holds because the following instance of the rule body is provable:
-#   "3.3"^^<http://www.w3.org/2001/XMLSchema#double> math:rounded 3 .
+#   "3.3"^^xsd:double math:rounded 3 .
 #   3 math:equalTo 3 .
 # via the schematic forward rule:
 #   {
-#     "3.3"^^<http://www.w3.org/2001/XMLSchema#double> math:rounded ?r .
+#     "3.3"^^xsd:double math:rounded ?r .
 #     ?r math:equalTo 3 .
 #   } => {
 #     :test-rounded-1 a :MathBuiltinTest .
 #     :test-rounded-1 :builtin math:rounded .
-#     :test-rounded-1 :input "3.3"^^<http://www.w3.org/2001/XMLSchema#double> .
+#     :test-rounded-1 :input "3.3"^^xsd:double .
 #     :test-rounded-1 :expected 3 .
 #     :test-rounded-1 :actual ?r .
 #     :test-rounded-1 :status :pass .
@@ -3500,22 +3501,22 @@
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:test-rounded-1 :input "3.3"^^<http://www.w3.org/2001/XMLSchema#double> .
+:test-rounded-1 :input "3.3"^^xsd:double .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
 #   :test-rounded-1 :expected 3 .
 # It holds because the following instance of the rule body is provable:
-#   "3.3"^^<http://www.w3.org/2001/XMLSchema#double> math:rounded 3 .
+#   "3.3"^^xsd:double math:rounded 3 .
 #   3 math:equalTo 3 .
 # via the schematic forward rule:
 #   {
-#     "3.3"^^<http://www.w3.org/2001/XMLSchema#double> math:rounded ?r .
+#     "3.3"^^xsd:double math:rounded ?r .
 #     ?r math:equalTo 3 .
 #   } => {
 #     :test-rounded-1 a :MathBuiltinTest .
 #     :test-rounded-1 :builtin math:rounded .
-#     :test-rounded-1 :input "3.3"^^<http://www.w3.org/2001/XMLSchema#double> .
+#     :test-rounded-1 :input "3.3"^^xsd:double .
 #     :test-rounded-1 :expected 3 .
 #     :test-rounded-1 :actual ?r .
 #     :test-rounded-1 :status :pass .
@@ -3531,16 +3532,16 @@
 # Proof for derived triple:
 #   :test-rounded-1 :actual 3 .
 # It holds because the following instance of the rule body is provable:
-#   "3.3"^^<http://www.w3.org/2001/XMLSchema#double> math:rounded 3 .
+#   "3.3"^^xsd:double math:rounded 3 .
 #   3 math:equalTo 3 .
 # via the schematic forward rule:
 #   {
-#     "3.3"^^<http://www.w3.org/2001/XMLSchema#double> math:rounded ?r .
+#     "3.3"^^xsd:double math:rounded ?r .
 #     ?r math:equalTo 3 .
 #   } => {
 #     :test-rounded-1 a :MathBuiltinTest .
 #     :test-rounded-1 :builtin math:rounded .
-#     :test-rounded-1 :input "3.3"^^<http://www.w3.org/2001/XMLSchema#double> .
+#     :test-rounded-1 :input "3.3"^^xsd:double .
 #     :test-rounded-1 :expected 3 .
 #     :test-rounded-1 :actual ?r .
 #     :test-rounded-1 :status :pass .
@@ -3556,16 +3557,16 @@
 # Proof for derived triple:
 #   :test-rounded-1 :status :pass .
 # It holds because the following instance of the rule body is provable:
-#   "3.3"^^<http://www.w3.org/2001/XMLSchema#double> math:rounded 3 .
+#   "3.3"^^xsd:double math:rounded 3 .
 #   3 math:equalTo 3 .
 # via the schematic forward rule:
 #   {
-#     "3.3"^^<http://www.w3.org/2001/XMLSchema#double> math:rounded ?r .
+#     "3.3"^^xsd:double math:rounded ?r .
 #     ?r math:equalTo 3 .
 #   } => {
 #     :test-rounded-1 a :MathBuiltinTest .
 #     :test-rounded-1 :builtin math:rounded .
-#     :test-rounded-1 :input "3.3"^^<http://www.w3.org/2001/XMLSchema#double> .
+#     :test-rounded-1 :input "3.3"^^xsd:double .
 #     :test-rounded-1 :expected 3 .
 #     :test-rounded-1 :actual ?r .
 #     :test-rounded-1 :status :pass .

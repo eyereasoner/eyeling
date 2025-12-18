@@ -4,10 +4,10 @@
 # Proof for derived triple:
 #   :test :is true .
 # It holds because the following instance of the rule body is provable:
-#   :patH :ageAbove "P80Y"^^<http://www.w3.org/2001/XMLSchema#duration> .
+#   :patH :ageAbove "P80Y"^^xsd:duration .
 # via the schematic forward rule:
 #   {
-#     ?S :ageAbove "P80Y"^^<http://www.w3.org/2001/XMLSchema#duration> .
+#     ?S :ageAbove "P80Y"^^xsd:duration .
 #   } => {
 #     :test :is true .
 #   } .
