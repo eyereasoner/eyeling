@@ -1867,91 +1867,6 @@ function termToJsStringDecoded(t) {
   return stripQuotes(lex);
 }
 
-function _jsonPointerUnescape(seg) {
-  // RFC6901: ~1 -> '/', ~0 -> '~'
-  // Any other '~' escape is invalid.
-  let out = "";
-  for (let i = 0; i < seg.length; i++) {
-    const c = seg[i];
-    if (c !== "~") { out += c; continue; }
-    if (i + 1 >= seg.length) return null;
-    const n = seg[i + 1];
-    if (n === "0") out += "~";
-    else if (n === "1") out += "/";
-    else return null;
-    i++;
-  }
-  return out;
-}
-
-function _jsonToTerm(v) {
-  if (v === null) return makeStringLiteral("null");
-  if (typeof v === "string") return makeStringLiteral(v);
-  if (typeof v === "number") return new Literal(String(v));
-  if (typeof v === "boolean") return new Literal(v ? "true" : "false");
-  if (Array.isArray(v)) return new ListTerm(v.map(_jsonToTerm));
-  if (typeof v === "object") return makeStringLiteral(JSON.stringify(v));
-  return null;
-}
-
-function _jsonPointerLookup(jsonText, pointer) {
-  // Support URI fragment form "#/a/b" (percent-decoded) as well.
-  let ptr = pointer;
-  if (ptr.startsWith("#")) {
-    try { ptr = decodeURIComponent(ptr.slice(1)); } catch (e) { return null; }
-  }
-
-  // Cache per JSON document
-  let entry = jsonPointerCache.get(jsonText);
-  if (!entry) {
-    let parsed = null;
-    try { parsed = JSON.parse(jsonText); } catch (e) { parsed = null; }
-    entry = { parsed, ptrCache: new Map() };
-    jsonPointerCache.set(jsonText, entry);
-  }
-  if (entry.parsed === null) return null;
-
-  // Cache per pointer within this doc
-  if (entry.ptrCache.has(ptr)) return entry.ptrCache.get(ptr);
-
-  let cur = entry.parsed;
-
-  if (ptr === "") {
-    const t = _jsonToTerm(cur);
-    entry.ptrCache.set(ptr, t);
-    return t;
-  }
-  if (!ptr.startsWith("/")) { entry.ptrCache.set(ptr, null); return null; }
-
-  const parts = ptr.split("/").slice(1);
-  for (const raw of parts) {
-    const seg = _jsonPointerUnescape(raw);
-    if (seg === null) { entry.ptrCache.set(ptr, null); return null; }
-
-    if (Array.isArray(cur)) {
-      // JSON Pointer uses array indices as decimal strings
-      if (!/^(0|[1-9]\d*)$/.test(seg)) { entry.ptrCache.set(ptr, null); return null; }
-      const idx = Number(seg);
-      if (!Number.isFinite(idx) || idx < 0 || idx >= cur.length) { entry.ptrCache.set(ptr, null); return null; }
-      cur = cur[idx];
-      continue;
-    }
-
-    if (cur !== null && typeof cur === "object") {
-      if (!Object.prototype.hasOwnProperty.call(cur, seg)) { entry.ptrCache.set(ptr, null); return null; }
-      cur = cur[seg];
-      continue;
-    }
-
-    entry.ptrCache.set(ptr, null);
-    return null;
-  }
-
-  const out = _jsonToTerm(cur);
-  entry.ptrCache.set(ptr, out);
-  return out;
-}
-
 function jsonPointerUnescape(seg) {
   // RFC6901: ~1 -> '/', ~0 -> '~'
   let out = "";
@@ -3840,28 +3755,28 @@ function listHasTriple(list, tr) {
 //
 // This is semantics-preserving for the ongoing proof state.
 
-function _gcCollectVarsInTerm(t, out) {
+function gcCollectVarsInTerm(t, out) {
   if (t instanceof Var) { out.add(t.name); return; }
-  if (t instanceof ListTerm) { for (const e of t.elems) _gcCollectVarsInTerm(e, out); return; }
+  if (t instanceof ListTerm) { for (const e of t.elems) gcCollectVarsInTerm(e, out); return; }
   if (t instanceof OpenListTerm) {
-    for (const e of t.prefix) _gcCollectVarsInTerm(e, out);
+    for (const e of t.prefix) gcCollectVarsInTerm(e, out);
     out.add(t.tailVar);
     return;
   }
-  if (t instanceof FormulaTerm) { for (const tr of t.triples) _gcCollectVarsInTriple(tr, out); return; }
+  if (t instanceof FormulaTerm) { for (const tr of t.triples) gcCollectVarsInTriple(tr, out); return; }
 }
 
-function _gcCollectVarsInTriple(tr, out) {
-  _gcCollectVarsInTerm(tr.s, out);
-  _gcCollectVarsInTerm(tr.p, out);
-  _gcCollectVarsInTerm(tr.o, out);
+function gcCollectVarsInTriple(tr, out) {
+  gcCollectVarsInTerm(tr.s, out);
+  gcCollectVarsInTerm(tr.p, out);
+  gcCollectVarsInTerm(tr.o, out);
 }
 
-function _gcCollectVarsInGoals(goals, out) {
-  for (const g of goals) _gcCollectVarsInTriple(g, out);
+function gcCollectVarsInGoals(goals, out) {
+  for (const g of goals) gcCollectVarsInTriple(g, out);
 }
 
-function _substSizeOver(subst, limit) {
+function substSizeOver(subst, limit) {
   let c = 0;
   for (const _k in subst) {
     if (++c > limit) return true;
@@ -3869,9 +3784,9 @@ function _substSizeOver(subst, limit) {
   return false;
 }
 
-function _gcCompactForGoals(subst, goals, answerVars) {
+function gcCompactForGoals(subst, goals, answerVars) {
   const keep = new Set(answerVars);
-  _gcCollectVarsInGoals(goals, keep);
+  gcCollectVarsInGoals(goals, keep);
 
   const expanded = new Set();
   const queue = Array.from(keep);
@@ -3885,7 +3800,7 @@ function _gcCompactForGoals(subst, goals, answerVars) {
     if (bound === undefined) continue;
 
     const before = keep.size;
-    _gcCollectVarsInTerm(bound, keep);
+    gcCollectVarsInTerm(bound, keep);
     if (keep.size !== before) {
       for (const nv of keep) {
         if (!expanded.has(nv)) queue.push(nv);
@@ -3900,12 +3815,12 @@ function _gcCompactForGoals(subst, goals, answerVars) {
   return out;
 }
 
-function _maybeCompactSubst(subst, goals, answerVars, depth) {
+function maybeCompactSubst(subst, goals, answerVars, depth) {
   // Keep the fast path fast.
   // Only compact when the substitution is clearly getting large, or
   // we are in a deep chain (where the quadratic behavior shows up).
-  if (depth < 128 && !_substSizeOver(subst, 256)) return subst;
-  return _gcCompactForGoals(subst, goals, answerVars);
+  if (depth < 128 && !substSizeOver(subst, 256)) return subst;
+  return gcCompactForGoals(subst, goals, answerVars);
 }
 
 
@@ -3921,9 +3836,9 @@ function proveGoals( goals, subst, facts, backRules, depth, visited, varGen ) {
 
   // Variables from the original goal list (needed by the caller to instantiate conclusions)
   const answerVars = new Set();
-  _gcCollectVarsInGoals(initialGoals, answerVars);
+  gcCollectVarsInGoals(initialGoals, answerVars);
   if (!initialGoals.length) {
-    results.push(_gcCompactForGoals(initialSubst, [], answerVars));
+    results.push(gcCompactForGoals(initialSubst, [], answerVars));
     return results;
   }
 
@@ -3935,7 +3850,7 @@ function proveGoals( goals, subst, facts, backRules, depth, visited, varGen ) {
     const state = stack.pop();
 
     if (!state.goals.length) {
-      results.push(_gcCompactForGoals(state.subst, [], answerVars));
+      results.push(gcCompactForGoals(state.subst, [], answerVars));
       continue;
     }
 
@@ -3951,9 +3866,9 @@ function proveGoals( goals, subst, facts, backRules, depth, visited, varGen ) {
         if (composed === null) continue;
 
         if (!restGoals.length) {
-          results.push(_gcCompactForGoals(composed, [], answerVars));
+          results.push(gcCompactForGoals(composed, [], answerVars));
         } else {
-          const nextSubst = _maybeCompactSubst(composed, restGoals, answerVars, state.depth + 1);
+          const nextSubst = maybeCompactSubst(composed, restGoals, answerVars, state.depth + 1);
           stack.push({
             goals: restGoals,
             subst: nextSubst,
@@ -3980,9 +3895,9 @@ function proveGoals( goals, subst, facts, backRules, depth, visited, varGen ) {
         if (composed === null) continue;
 
         if (!restGoals.length) {
-          results.push(_gcCompactForGoals(composed, [], answerVars));
+          results.push(gcCompactForGoals(composed, [], answerVars));
         } else {
-          const nextSubst = _maybeCompactSubst(composed, restGoals, answerVars, state.depth + 1);
+          const nextSubst = maybeCompactSubst(composed, restGoals, answerVars, state.depth + 1);
           stack.push({
             goals: restGoals,
             subst: nextSubst,
@@ -4001,9 +3916,9 @@ function proveGoals( goals, subst, facts, backRules, depth, visited, varGen ) {
         if (composed === null) continue;
 
         if (!restGoals.length) {
-          results.push(_gcCompactForGoals(composed, [], answerVars));
+          results.push(gcCompactForGoals(composed, [], answerVars));
         } else {
-          const nextSubst = _maybeCompactSubst(composed, restGoals, answerVars, state.depth + 1);
+          const nextSubst = maybeCompactSubst(composed, restGoals, answerVars, state.depth + 1);
           stack.push({
             goals: restGoals,
             subst: nextSubst,
@@ -4036,7 +3951,7 @@ function proveGoals( goals, subst, facts, backRules, depth, visited, varGen ) {
         if (composed === null) continue;
 
         const newGoals = body.concat(restGoals);
-        const nextSubst = _maybeCompactSubst(composed, newGoals, answerVars, state.depth + 1);
+        const nextSubst = maybeCompactSubst(composed, newGoals, answerVars, state.depth + 1);
         stack.push({
           goals: newGoals,
           subst: nextSubst,
