@@ -1,0 +1,22 @@
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix : <http://example.org/ns#> .
+
+:X :val (1 2).
+
+{ ?X :head ?Y } <= { ?X list:first ?Y }.
+{ ?X :tail ?Y } <= { ?X list:rest ?Y} .
+
+{ 
+  ?X :val ?Y.
+  ?Y :head ?H .
+  ?Y :tail ?T .
+
+  ?H log:equalTo 1.
+  ?T log:equalTo (2).
+}
+=>
+{
+  :result :is true.
+}.

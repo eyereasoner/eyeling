@@ -2951,6 +2951,40 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     return [];
   }
 
+  // rdf:first (alias of list:first)
+  // Schema: $s+ rdf:first $o-
+  if (g.p instanceof Iri && g.p.value === RDF_NS + "first") {
+    if (!(g.s instanceof ListTerm)) return [];
+    if (!g.s.elems.length) return [];
+    const first = g.s.elems[0];
+    const s2 = unifyTerm(g.o, first, subst);
+    return s2 !== null ? [s2] : [];
+  }
+
+  // rdf:rest (alias of list:rest)
+  // Schema: $s+ rdf:rest $o-
+  if (g.p instanceof Iri && g.p.value === RDF_NS + "rest") {
+    // Closed list: (a b c) -> (b c)
+    if (g.s instanceof ListTerm) {
+      if (!g.s.elems.length) return [];
+      const rest = new ListTerm(g.s.elems.slice(1));
+      const s2 = unifyTerm(g.o, rest, subst);
+      return s2 !== null ? [s2] : [];
+    }
+    // Open list: (a b ... ?T) -> (b ... ?T)
+    if (g.s instanceof OpenListTerm) {
+      if (!g.s.prefix.length) return [];
+      if (g.s.prefix.length === 1) {
+        const s2 = unifyTerm(g.o, new Var(g.s.tailVar), subst);
+        return s2 !== null ? [s2] : [];
+      }
+      const rest = new OpenListTerm(g.s.prefix.slice(1), g.s.tailVar);
+      const s2 = unifyTerm(g.o, rest, subst);
+      return s2 !== null ? [s2] : [];
+    }
+    return [];
+  }
+
   // list:iterate
   // true iff $s is a list and $o is a list (index value),
   // where index is a valid 0-based index into $s and value is the element at that index.
@@ -4278,6 +4312,135 @@ function printExplanation(df, prefixes) {
 // Misc helpers
 // ============================================================================
 
+// Turn RDF Collections described with rdf:first/rdf:rest (+ rdf:nil) into ListTerm terms.
+// This mutates triples/rules in-place so list:* builtins work on RDF-serialized lists too.
+function materializeRdfLists(triples, forwardRules, backwardRules) {
+  const RDF_FIRST = RDF_NS + "first";
+  const RDF_REST  = RDF_NS + "rest";
+  const RDF_NIL   = RDF_NS + "nil";
+
+  function nodeKey(t) {
+    if (t instanceof Blank) return "B:" + t.label;
+    if (t instanceof Iri) return "I:" + t.value;
+    return null;
+  }
+
+  // Collect first/rest arcs from *input triples*
+  const firstMap = new Map(); // key(subject) -> Term (object)
+  const restMap  = new Map(); // key(subject) -> Term (object)
+  for (const tr of triples) {
+    if (!(tr.p instanceof Iri)) continue;
+    const k = nodeKey(tr.s);
+    if (!k) continue;
+    if (tr.p.value === RDF_FIRST) firstMap.set(k, tr.o);
+    else if (tr.p.value === RDF_REST) restMap.set(k, tr.o);
+  }
+  if (!firstMap.size && !restMap.size) return;
+
+  const cache = new Map();     // key(node) -> ListTerm
+  const visiting = new Set();  // cycle guard
+
+  function buildListForKey(k) {
+    if (cache.has(k)) return cache.get(k);
+    if (visiting.has(k)) return null; // cycle => not a well-formed list
+    visiting.add(k);
+
+    // rdf:nil => ()
+    if (k === "I:" + RDF_NIL) {
+      const empty = new ListTerm([]);
+      cache.set(k, empty);
+      visiting.delete(k);
+      return empty;
+    }
+
+    const head = firstMap.get(k);
+    const tail = restMap.get(k);
+    if (head === undefined || tail === undefined) {
+      visiting.delete(k);
+      return null; // not a full cons cell
+    }
+
+    const headTerm = rewriteTerm(head);
+
+    let tailListElems = null;
+    if (tail instanceof Iri && tail.value === RDF_NIL) {
+      tailListElems = [];
+    } else {
+      const tk = nodeKey(tail);
+      if (!tk) {
+        visiting.delete(k);
+        return null;
+      }
+      const tailList = buildListForKey(tk);
+      if (!tailList) {
+        visiting.delete(k);
+        return null;
+      }
+      tailListElems = tailList.elems;
+    }
+
+    const out = new ListTerm([headTerm, ...tailListElems]);
+    cache.set(k, out);
+    visiting.delete(k);
+    return out;
+  }
+
+  function rewriteTerm(t) {
+    // Replace list nodes (Blank/Iri) by their constructed ListTerm when possible
+    const k = nodeKey(t);
+    if (k) {
+      const built = buildListForKey(k);
+      if (built) return built;
+      // Also rewrite rdf:nil even if not otherwise referenced
+      if (t instanceof Iri && t.value === RDF_NIL) return new ListTerm([]);
+      return t;
+    }
+    if (t instanceof ListTerm) {
+      let changed = false;
+      const elems = t.elems.map(e => {
+        const r = rewriteTerm(e);
+        if (r !== e) changed = true;
+        return r;
+      });
+      return changed ? new ListTerm(elems) : t;
+    }
+    if (t instanceof OpenListTerm) {
+      let changed = false;
+      const prefix = t.prefix.map(e => {
+        const r = rewriteTerm(e);
+        if (r !== e) changed = true;
+        return r;
+      });
+      return changed ? new OpenListTerm(prefix, t.tailVar) : t;
+    }
+    if (t instanceof FormulaTerm) {
+      for (const tr of t.triples) rewriteTriple(tr);
+      return t;
+    }
+    return t;
+  }
+
+  function rewriteTriple(tr) {
+    tr.s = rewriteTerm(tr.s);
+    tr.p = rewriteTerm(tr.p);
+    tr.o = rewriteTerm(tr.o);
+  }
+
+  // Pre-build all reachable list heads
+  for (const k of firstMap.keys()) buildListForKey(k);
+
+  // Rewrite input triples + rules in-place
+  for (const tr of triples) rewriteTriple(tr);
+  for (const r of forwardRules) {
+    for (const tr of r.premise) rewriteTriple(tr);
+    for (const tr of r.conclusion) rewriteTriple(tr);
+  }
+  for (const r of backwardRules) {
+    for (const tr of r.premise) rewriteTriple(tr);
+    for (const tr of r.conclusion) rewriteTriple(tr);
+  }
+}
+
 function localIsoDateTimeString(d) {
   function pad(n, width = 2) {
     return String(n).padStart(width, "0");
@@ -4364,6 +4527,9 @@ function main() {
   const parser = new Parser(toks);
   const [prefixes, triples, frules, brules] = parser.parseDocument();
   // console.log(JSON.stringify([prefixes, triples, frules, brules], null, 2));
+
+  // Build internal ListTerm values from rdf:first/rdf:rest (+ rdf:nil) input triples
+  materializeRdfLists(triples, frules, brules);
 
   const facts = triples.filter(tr => isGroundTriple(tr));
   const derived = forwardChain(facts, frules, brules);
