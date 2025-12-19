@@ -3692,6 +3692,12 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
 function isBuiltinPred(p) {
   if (!(p instanceof Iri)) return false;
   const v = p.value;
+
+  // Treat RDF Collections as list-term builtins too.
+  if (v === RDF_NS + "first" || v === RDF_NS + "rest") {
+    return true;
+  }
+
   return (
     v.startsWith(CRYPTO_NS) ||
     v.startsWith(MATH_NS)   ||

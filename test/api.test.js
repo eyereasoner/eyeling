@@ -672,6 +672,36 @@ ${U('a')} <-${U('p')} ${U('b')}.`,
       new RegExp(`_:b2\\s+<${EX}q>\\s+<${EX}joe>\\s*\\.`),
     ],
   },
+
+  { name: '48 rdf:first: works on list terms (alias of list:first)',
+    opt: { proofComments: false }, input: ` { ( ${U('a')} ${U('b')} ${U('c')} ) rdf:first ?x. } => { ${U('s')} ${U('first')} ?x. }.
+`,
+    expect: [new RegExp(`${EX}s>\\s+<${EX}first>\\s+<${EX}a>\\s*\\.`)],
+  },
+
+  { name: '49 rdf:rest: works on list terms (alias of list:rest)',
+    opt: { proofComments: false }, input: ` { ( ${U('a')} ${U('b')} ${U('c')} ) rdf:rest ?r. ?r rdf:first ?y. } => { ${U('s')} ${U('second')} ?y. }.
+`,
+    expect: [new RegExp(`${EX}s>\\s+<${EX}second>\\s+<${EX}b>\\s*\\.`)],
+  },
+
+  { name: '50 rdf collection materialization: rdf:first/rdf:rest triples become list terms',
+    opt: { proofComments: false }, input: ` ${U('s')} ${U('p')} _:l1.
+_:l1 rdf:first ${U('a')}.
+_:l1 rdf:rest _:l2.
+_:l2 rdf:first ${U('b')}.
+_:l2 rdf:rest rdf:nil.
+
+{ ${U('s')} ${U('p')} ?lst. ?lst rdf:first ?x. } => { ${U('s')} ${U('q')} ?x. }.
+{ ${U('s')} ${U('p')} ?lst. ?lst rdf:rest ?r. ?r rdf:first ?y. } => { ${U('s')} ${U('q2')} ?y. }.
+{ ${U('s')} ${U('p')} ?lst. ?lst list:rest ?r. ?r list:first ?y. } => { ${U('s')} ${U('q3')} ?y. }.
+`,
+    expect: [
+      new RegExp(`${EX}s>\\s+<${EX}q>\\s+<${EX}a>\\s*\\.`),
+      new RegExp(`${EX}s>\\s+<${EX}q2>\\s+<${EX}b>\\s*\\.`),
+      new RegExp(`${EX}s>\\s+<${EX}q3>\\s+<${EX}b>\\s*\\.`),
+    ],
+  },
 ];
 
 let passed = 0;

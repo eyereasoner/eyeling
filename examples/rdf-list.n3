@@ -1,8 +1,13 @@
+# =================================
+# RDF list
+# Example from Patrick Hochstenbach
+# =================================
+
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix : <http://example.org/ns#> .
 
-:X :val [ rdf:first 1; rdf:rest [ rdf:first 2; rdf:rest rdf:nil ] ] .
+:X :val (1 2).
 
 { ?X :head ?Y } <= { ?X rdf:first ?Y }.
 { ?X :tail ?Y } <= { ?X rdf:rest ?Y} .
