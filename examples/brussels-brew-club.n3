@@ -8,8 +8,6 @@
 # - stable IDs with log:skolem
 # - timestamps with time:localTime
 
-# brussels-brew-club.n3 (deterministic version: no time:localTime)
-
 @prefix :      <http://example.org/brewclub#> .
 @prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
