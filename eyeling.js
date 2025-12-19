@@ -67,6 +67,52 @@ const jsonPointerCache = new Map();
 // Controls whether human-readable proof comments are printed.
 let proofCommentsEnabled = true;
 
+// ----------------------------------------------------------------------------
+// Deterministic time support
+// ----------------------------------------------------------------------------
+// If set, overrides time:localTime across the whole run (and across runs if you
+// pass the same value). Store as xsd:dateTime *lexical* string (no quotes).
+let fixedNowLex = null;
+
+// If not fixed, we still memoize one value per run to avoid re-firing rules.
+let runNowLex = null;
+
+function normalizeDateTimeLex(s) {
+  // Accept: 2025-... , "2025-..." , "2025-..."^^xsd:dateTime , "..."^^<...>
+  if (s == null) return null;
+  let t = String(s).trim();
+  const caret = t.indexOf("^^");
+  if (caret >= 0) t = t.slice(0, caret).trim();
+  if (t.startsWith('"') && t.endsWith('"') && t.length >= 2) t = t.slice(1, -1);
+  return t.trim();
+}
+
+function utcIsoDateTimeStringFromEpochSeconds(sec) {
+  const ms = sec * 1000;
+  const d = new Date(ms);
+  function pad(n, w = 2) { return String(n).padStart(w, "0"); }
+  const year = d.getUTCFullYear();
+  const month = d.getUTCMonth() + 1;
+  const day = d.getUTCDate();
+  const hour = d.getUTCHours();
+  const min = d.getUTCMinutes();
+  const s2 = d.getUTCSeconds();
+  const ms2 = d.getUTCMilliseconds();
+  const msPart = ms2 ? "." + String(ms2).padStart(3, "0") : "";
+  return (
+    pad(year, 4) + "-" + pad(month) + "-" + pad(day) + "T" +
+    pad(hour) + ":" + pad(min) + ":" + pad(s2) + msPart +
+    "+00:00"
+  );
+}
+
+function getNowLex() {
+  if (fixedNowLex) return fixedNowLex;
+  if (runNowLex) return runNowLex;
+  runNowLex = localIsoDateTimeString(new Date());
+  return runNowLex;
+}
+
 // Deterministic pseudo-UUID from a string key (for log:skolem).
 // Not cryptographically strong, but stable and platform-independent.
 function deterministicSkolemIdFromKey(key) {
@@ -2872,7 +2918,8 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
   // time:localTime
   // "" time:localTime ?D.  binds ?D to “now” as xsd:dateTime.
   if (g.p instanceof Iri && g.p.value === TIME_NS + "localTime") {
-    const now = runLocalTimeCache || (runLocalTimeCache = localIsoDateTimeString(new Date()));
+    const now = getNowLex();
+
     if (g.o instanceof Var) {
       const s2 = { ...subst };
       s2[g.o.name] = new Literal(`"${now}"^^<${XSD_NS}dateTime>`);
