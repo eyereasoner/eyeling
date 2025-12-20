@@ -585,24 +585,58 @@
 
       async function runReasoner() {
         runBtn.disabled = true;
+
+        const startMs = performance.now();
         statusEl.textContent = "Running reasoning...";
-        outputEl.setValue("");
-        autoResizeCodeMirror(outputEl, 80);
+
+        // Clear output immediately, then keep it updated with a live timer.
+        const setThinking = () => {
+          const seconds = (performance.now() - startMs) / 1000;
+          outputEl.setValue(`Thinking for ${seconds.toFixed(1)} seconds...`);
+          autoResizeCodeMirror(outputEl, 80);
+        };
+
+        setThinking();
+
         if (hashSyncEnabled) updateShareUrl();
+
+        // Let the browser paint before we do anything potentially expensive.
+        await new Promise(requestAnimationFrame);
+
+        let thinkingInterval = setInterval(setThinking, 100);
 
         try {
           const runner = await getEyelingRunner();
+
+          // One more chance to paint before the (potentially) synchronous run blocks the UI.
+          await new Promise(requestAnimationFrame);
+
           const result = runner(editor.getValue());
+
+          clearInterval(thinkingInterval);
+          thinkingInterval = null;
+
           outputEl.setValue(result || "(no output)");
           autoResizeCodeMirror(outputEl, 80);
-          statusEl.textContent = "Done.";
+
+          const totalSeconds = (performance.now() - startMs) / 1000;
+          statusEl.textContent = `Done. (Thinking for ${totalSeconds.toFixed(2)} seconds)`;
         } catch (e) {
+          if (thinkingInterval) {
+            clearInterval(thinkingInterval);
+            thinkingInterval = null;
+          }
+
           outputEl.setValue(
             "Failed to run Eyeling: " + (e && e.message ? e.message : String(e))
           );
           autoResizeCodeMirror(outputEl, 80);
           statusEl.textContent = "Error.";
         } finally {
+          if (thinkingInterval) {
+            clearInterval(thinkingInterval);
+            thinkingInterval = null;
+          }
           runBtn.disabled = false;
         }
       }
