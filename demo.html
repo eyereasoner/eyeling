@@ -2,8 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <!-- Mobile-friendly viewport + safe-area support -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
   <title>Eyeling N3 Playground</title>
+
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+
   <style>
     * { box-sizing: border-box; }
 
@@ -12,12 +17,22 @@
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: #f5f5f7;
       color: #111827;
+
+      /* Avoid weird auto-scaling on mobile */
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
     }
 
     .page {
       max-width: 960px;
       margin: 0 auto;
-      padding: 1.5rem 1rem 3rem;
+
+      /* Safe areas (iPhone notch/home bar) */
+      padding-top: calc(1.5rem + env(safe-area-inset-top));
+      padding-right: calc(1rem + env(safe-area-inset-right));
+      padding-bottom: calc(3rem + env(safe-area-inset-bottom));
+      padding-left: calc(1rem + env(safe-area-inset-left));
+
       display: flex;
       flex-direction: column;
       gap: 1rem;
@@ -100,6 +115,7 @@
       height: 1rem;
       accent-color: #2563eb;
       cursor: pointer;
+      touch-action: manipulation;
     }
 
     button {
@@ -113,6 +129,11 @@
       color: #ffffff;
       box-shadow: 0 10px 15px rgba(37, 99, 235, 0.25);
       transition: transform 0.05s ease-out, box-shadow 0.05s ease-out, opacity 0.1s;
+
+      /* Better taps on mobile */
+      min-height: 44px;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
     }
 
     button:hover:not(:disabled) {
@@ -222,7 +243,7 @@
     }
 
     .CodeMirror-scroll {
-      overflow: hidden !important; /* no scrollbars; we auto-size instead */
+      overflow: hidden !important; /* desktop: no scrollbars; we auto-size instead */
     }
 
     .CodeMirror-gutters {
@@ -235,7 +256,114 @@
       min-height: 5rem;
     }
 
+    /* ---------------------------
+       MOBILE POLISH (key changes)
+       --------------------------- */
+    @media (max-width: 640px) {
+      .page {
+        gap: 0.85rem;
+        padding-top: calc(1.1rem + env(safe-area-inset-top));
+        padding-right: calc(0.85rem + env(safe-area-inset-right));
+        padding-bottom: calc(2.5rem + env(safe-area-inset-bottom));
+        padding-left: calc(0.85rem + env(safe-area-inset-left));
+      }
+
+      header h1 {
+        font-size: 1.25rem;
+      }
+
+      header p {
+        font-size: 0.95rem;
+      }
+
+      .card {
+        padding: 0.95rem 1rem 1.05rem;
+        border-radius: 1rem;
+      }
+
+      /* Stack URL input + button (no squishing) */
+      .uri-input-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      /* Prevent iOS "zoom on focus" (>=16px) */
+      .uri-input-row input[type="text"] {
+        font-size: 16px;
+        padding: 0.65rem 0.9rem;
+        width: 100%;
+      }
+
+      /* Make the load button full-width */
+      #load-uri-btn {
+        width: 100%;
+        justify-content: center;
+      }
+
+      /* Controls become a sticky action area on mobile */
+      .controls {
+        position: sticky;
+        bottom: calc(env(safe-area-inset-bottom) + 10px);
+        padding: 0.75rem 0;
+        margin-top: 0.75rem;
+        background: rgba(245, 245, 247, 0.88);
+        backdrop-filter: blur(10px);
+        border-top: 1px solid rgba(148, 163, 184, 0.35);
+
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.6rem;
+      }
+
+      /* Full-width run button, bigger type for easy taps */
+      #run-btn {
+        width: 100%;
+        font-size: 16px;
+      }
+
+      /* Make toggles/status readable and line-wrap */
+      .toggle {
+        width: 100%;
+        font-size: 0.95rem;
+      }
+      .status {
+        font-size: 0.9rem;
+      }
+
+      /* On mobile we cap editor height and allow internal scrolling */
+      .CodeMirror {
+        font-size: 0.95rem;
+      }
+      .CodeMirror-scroll {
+        overflow: auto !important;
+        -webkit-overflow-scrolling: touch;
+      }
+    }
+
+    /* Optional: Dark mode (keeps it pleasant on mobile) */
+    @media (prefers-color-scheme: dark) {
+      body { background: #0b0f14; color: #e7eaf0; }
+      header p, .meta, .status { color: #a7b0bf; }
+      label, .toggle { color: #cbd5e1; }
+      .card { background: #0f1620; border-color: rgba(148,163,184,0.18); box-shadow: 0 18px 40px rgba(0,0,0,0.35); }
+      .section-title { color: #e7eaf0; }
+
+      textarea { background: #0f1620; border-color: #1f2a37; color: #e7eaf0; }
+      .CodeMirror { background: #0f1620; border-color: #1f2a37; }
+      .CodeMirror-gutters { background: #0b0f14; border-right-color: #1f2a37; }
+
+      .uri-input-row input[type="text"] { background: #0b0f14; border-color: #1f2a37; color: #e7eaf0; }
+      .uri-input-row input[type="text"]:focus { background: #0f1620; }
+
+      @media (max-width: 640px) {
+        .controls {
+          background: rgba(11, 15, 20, 0.88);
+          border-top-color: rgba(148, 163, 184, 0.18);
+        }
+      }
+    }
   </style>
+
   <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/turtle/turtle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/sparql/sparql.min.js"></script>
@@ -332,8 +460,22 @@
       let eyelingVersion = "unknown";
       let versionPromise = null;
 
+      function isSmallScreen() {
+        return window.matchMedia && window.matchMedia("(max-width: 640px)").matches;
+      }
+
+      function currentMaxHeights() {
+        // On mobile we cap editor/output height and allow internal scrolling
+        if (!isSmallScreen()) return { editor: null, output: null };
+        const h = window.innerHeight || 800;
+        return {
+          editor: Math.max(260, Math.floor(h * 0.55)),
+          output: Math.max(160, Math.floor(h * 0.35)),
+        };
+      }
+
       function autoResizeCodeMirror(cm, minHeightPx, maxHeightPx) {
-        // Ensure CodeMirror fits its *rendered* content (no internal scrollbars).
+        // Ensure CodeMirror fits its *rendered* content (no internal scrollbars unless capped).
         // IMPORTANT: don't use the scroller's scrollHeight here — with overflow hidden
         // it can create a feedback loop where the editor grows a bit on every keystroke.
         cm.refresh();
@@ -354,6 +496,12 @@
         if (typeof maxHeightPx === "number") target = Math.min(target, maxHeightPx);
 
         cm.setSize(null, target + "px");
+      }
+
+      function resizeAll() {
+        const mh = currentMaxHeights();
+        autoResizeCodeMirror(editor, 220, mh.editor);
+        autoResizeCodeMirror(outputEl, 80, mh.output);
       }
 
       // --- INITIAL CONTENT FROM HASH OR DEFAULT ---
@@ -425,8 +573,12 @@
       outputEl.getWrapperElement().classList.add("cm-output");
 
       editor.setValue(initialN3);
-      autoResizeCodeMirror(editor, 220);
-      autoResizeCodeMirror(outputEl, 80);
+      resizeAll();
+
+      // Recompute caps on orientation/resize
+      window.addEventListener("resize", () => {
+        resizeAll();
+      }, { passive: true });
 
       // --- URL SHARING SUPPORT ---
       let shareUrlUpdateTimeout = null;
@@ -448,7 +600,8 @@
       }
 
       editor.on("change", function (_cm, changeObj) {
-        autoResizeCodeMirror(editor, 220);
+        const mh = currentMaxHeights();
+        autoResizeCodeMirror(editor, 220, mh.editor);
 
         if (!hashSyncEnabled) {
           // Only start syncing once the user actually edits (not programmatic setValue).
@@ -591,8 +744,9 @@
 
         // Clear output immediately.
         const setThinking = () => {
+          const mh = currentMaxHeights();
           outputEl.setValue(`Thinking ...`);
-          autoResizeCodeMirror(outputEl, 80);
+          autoResizeCodeMirror(outputEl, 80, mh.output);
         };
 
         setThinking();
@@ -615,8 +769,11 @@
           clearInterval(thinkingInterval);
           thinkingInterval = null;
 
-          outputEl.setValue(result || "(no output)");
-          autoResizeCodeMirror(outputEl, 80);
+          {
+            const mh = currentMaxHeights();
+            outputEl.setValue(result || "(no output)");
+            autoResizeCodeMirror(outputEl, 80, mh.output);
+          }
 
           const totalSeconds = (performance.now() - startMs) / 1000;
           statusEl.textContent = `Done. (Thinking for ${totalSeconds.toFixed(2)} seconds)`;
@@ -626,10 +783,14 @@
             thinkingInterval = null;
           }
 
-          outputEl.setValue(
-            "Failed to run Eyeling: " + (e && e.message ? e.message : String(e))
-          );
-          autoResizeCodeMirror(outputEl, 80);
+          {
+            const mh = currentMaxHeights();
+            outputEl.setValue(
+              "Failed to run Eyeling: " + (e && e.message ? e.message : String(e))
+            );
+            autoResizeCodeMirror(outputEl, 80, mh.output);
+          }
+
           statusEl.textContent = "Error.";
         } finally {
           if (thinkingInterval) {
@@ -653,16 +814,25 @@
           }
           const text = await resp.text();
           editor.setValue(text);
-          autoResizeCodeMirror(editor, 220);
+
+          {
+            const mh = currentMaxHeights();
+            autoResizeCodeMirror(editor, 220, mh.editor);
+          }
+
           statusEl.textContent = "Loaded N3 from URL.";
           if (hashSyncEnabled) updateShareUrl();
         } catch (e) {
           statusEl.textContent = "Failed to load URL.";
-          outputEl.setValue(
-            "Error while loading N3 from URL:\n" +
-            (e && e.message ? e.message : String(e))
-          );
-          autoResizeCodeMirror(outputEl, 80);
+
+          {
+            const mh = currentMaxHeights();
+            outputEl.setValue(
+              "Error while loading N3 from URL:\n" +
+              (e && e.message ? e.message : String(e))
+            );
+            autoResizeCodeMirror(outputEl, 80, mh.output);
+          }
         } finally {
           loadUriBtn.disabled = false;
         }
