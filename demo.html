@@ -589,10 +589,9 @@
         const startMs = performance.now();
         statusEl.textContent = "Running reasoning...";
 
-        // Clear output immediately, then keep it updated with a live timer.
+        // Clear output immediately.
         const setThinking = () => {
-          const seconds = (performance.now() - startMs) / 1000;
-          outputEl.setValue(`Thinking for ${seconds.toFixed(1)} seconds...`);
+          outputEl.setValue(`Thinking ...`);
           autoResizeCodeMirror(outputEl, 80);
         };
 
