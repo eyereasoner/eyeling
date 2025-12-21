@@ -63,9 +63,9 @@
 @prefix gps:  <https://eyereasoner.github.io/eye/reasoning/gps/gps-schema#>.
 @prefix :     <https://eyereasoner.github.io/eye/reasoning#>.
 
-# ----------------
+# -------------
 # current state
-# ----------------
+# -------------
 :d1 :location :Gent.
 :d1 :battery  :full.
 :d1 :permit   :none.
@@ -185,9 +185,9 @@
   1100.0 0.009 0.955 0.92
 )} <= true.
 
-# -------------------------------------------------
+# ----------------------------------
 # planner: compute all bounded paths
-# -------------------------------------------------
+# ----------------------------------
 # Base: one description is a path (consume 1 fuel token)
 {
   (?From ?To (?Act) ?Dur ?Cost ?Bel ?Comf ?FuelIn ?FuelOut) :path true.
@@ -217,9 +217,9 @@
   (?Comf1 ?Comf2) math:product ?Comf.
 }.
 
-# -------------------------------------------------
+# -------------------------------------------------------
 # Query: plans for d1 to Oostende with pruning thresholds
-# -------------------------------------------------
+# -------------------------------------------------------
 {
   :fuel7 :value ?Fuel.
 

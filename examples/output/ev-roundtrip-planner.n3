@@ -1,0 +1,403 @@
+@prefix : <https://eyereasoner.github.io/eye/reasoning#> .
+@prefix gps: <https://eyereasoner.github.io/eye/reasoning/gps/gps-schema#> .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :car1 gps:plan ((:buy_pass_brussels :drive_bru_liege :drive_liege_aachen :fast_charge_aachen_pass :public_road_aachen_cologne) 235 0.054000000000000006 0.94887065827125 0.8494295039999998 :low :yes (:t :t :t)) .
+# It holds because the following instance of the rule body is provable:
+#   :fuel8 :value (:t :t :t :t :t :t :t :t) .
+#   ({
+#       :car1 :at :Brussels .
+#       :car1 :battery :high .
+#       :car1 :pass :none .
+#   } {
+#       :car1 :at :Cologne .
+#       :car1 :battery :low .
+#       :car1 :pass :yes .
+#   } (:buy_pass_brussels :drive_bru_liege :drive_liege_aachen :fast_charge_aachen_pass :public_road_aachen_cologne) 235 0.054000000000000006 0.94887065827125 0.8494295039999998 (:t :t :t :t :t :t :t :t) (:t :t :t)) :path true .
+#   0.94887065827125 math:greaterThan 0.93 .
+#   0.054000000000000006 math:lessThan 0.090 .
+#   235 math:lessThan 260.0 .
+# via the schematic forward rule:
+#   {
+#     :fuel8 :value ?Fuel .
+#     ({
+#         :car1 :at :Brussels .
+#         :car1 :battery :high .
+#         :car1 :pass :none .
+#     } {
+#         :car1 :at :Cologne .
+#         :car1 :battery ?B .
+#         :car1 :pass ?P .
+#     } ?Acts ?Dur ?Cost ?Bel ?Comf ?Fuel ?FuelLeft) :path true .
+#     ?Bel math:greaterThan 0.93 .
+#     ?Cost math:lessThan 0.090 .
+#     ?Dur math:lessThan 260.0 .
+#   } => {
+#     :car1 gps:plan (?Acts ?Dur ?Cost ?Bel ?Comf ?B ?P ?FuelLeft) .
+#   } .
+# with substitution (on rule variables):
+#   ?Acts = (:buy_pass_brussels :drive_bru_liege :drive_liege_aachen :fast_charge_aachen_pass :public_road_aachen_cologne)
+#   ?B = :low
+#   ?Bel = 0.94887065827125
+#   ?Comf = 0.8494295039999998
+#   ?Cost = 0.054000000000000006
+#   ?Dur = 235
+#   ?Fuel = (:t :t :t :t :t :t :t :t)
+#   ?FuelLeft = (:t :t :t)
+#   ?P = :yes
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:car1 gps:plan ((:buy_pass_brussels :drive_bru_liege :drive_liege_aachen :fast_charge_aachen_pass :public_road_aachen_cologne) 235 0.054000000000000006 0.94887065827125 0.8494295039999998 :low :yes (:t :t :t)) .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :car1 gps:plan ((:buy_pass_brussels :drive_bru_liege :drive_liege_aachen :fast_charge_aachen_pass :premium_corridor_aachen_cologne) 220 0.063 0.953736661647 0.880398288 :low :yes (:t :t :t)) .
+# It holds because the following instance of the rule body is provable:
+#   :fuel8 :value (:t :t :t :t :t :t :t :t) .
+#   ({
+#       :car1 :at :Brussels .
+#       :car1 :battery :high .
+#       :car1 :pass :none .
+#   } {
+#       :car1 :at :Cologne .
+#       :car1 :battery :low .
+#       :car1 :pass :yes .
+#   } (:buy_pass_brussels :drive_bru_liege :drive_liege_aachen :fast_charge_aachen_pass :premium_corridor_aachen_cologne) 220 0.063 0.953736661647 0.880398288 (:t :t :t :t :t :t :t :t) (:t :t :t)) :path true .
+#   0.953736661647 math:greaterThan 0.93 .
+#   0.063 math:lessThan 0.090 .
+#   220 math:lessThan 260.0 .
+# via the schematic forward rule:
+#   {
+#     :fuel8 :value ?Fuel .
+#     ({
+#         :car1 :at :Brussels .
+#         :car1 :battery :high .
+#         :car1 :pass :none .
+#     } {
+#         :car1 :at :Cologne .
+#         :car1 :battery ?B .
+#         :car1 :pass ?P .
+#     } ?Acts ?Dur ?Cost ?Bel ?Comf ?Fuel ?FuelLeft) :path true .
+#     ?Bel math:greaterThan 0.93 .
+#     ?Cost math:lessThan 0.090 .
+#     ?Dur math:lessThan 260.0 .
+#   } => {
+#     :car1 gps:plan (?Acts ?Dur ?Cost ?Bel ?Comf ?B ?P ?FuelLeft) .
+#   } .
+# with substitution (on rule variables):
+#   ?Acts = (:buy_pass_brussels :drive_bru_liege :drive_liege_aachen :fast_charge_aachen_pass :premium_corridor_aachen_cologne)
+#   ?B = :low
+#   ?Bel = 0.953736661647
+#   ?Comf = 0.880398288
+#   ?Cost = 0.063
+#   ?Dur = 220
+#   ?Fuel = (:t :t :t :t :t :t :t :t)
+#   ?FuelLeft = (:t :t :t)
+#   ?P = :yes
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:car1 gps:plan ((:buy_pass_brussels :drive_bru_liege :drive_liege_aachen :fast_charge_aachen_pass :premium_corridor_aachen_cologne) 220 0.063 0.953736661647 0.880398288 :low :yes (:t :t :t)) .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :car1 gps:plan ((:buy_pass_brussels :drive_bru_liege :drive_liege_aachen :shuttle_aachen_cologne) 220 0.05800000000000001 0.97320067515 0.8893367999999999 :low :yes (:t :t :t :t)) .
+# It holds because the following instance of the rule body is provable:
+#   :fuel8 :value (:t :t :t :t :t :t :t :t) .
+#   ({
+#       :car1 :at :Brussels .
+#       :car1 :battery :high .
+#       :car1 :pass :none .
+#   } {
+#       :car1 :at :Cologne .
+#       :car1 :battery :low .
+#       :car1 :pass :yes .
+#   } (:buy_pass_brussels :drive_bru_liege :drive_liege_aachen :shuttle_aachen_cologne) 220 0.05800000000000001 0.97320067515 0.8893367999999999 (:t :t :t :t :t :t :t :t) (:t :t :t :t)) :path true .
+#   0.97320067515 math:greaterThan 0.93 .
+#   0.05800000000000001 math:lessThan 0.090 .
+#   220 math:lessThan 260.0 .
+# via the schematic forward rule:
+#   {
+#     :fuel8 :value ?Fuel .
+#     ({
+#         :car1 :at :Brussels .
+#         :car1 :battery :high .
+#         :car1 :pass :none .
+#     } {
+#         :car1 :at :Cologne .
+#         :car1 :battery ?B .
+#         :car1 :pass ?P .
+#     } ?Acts ?Dur ?Cost ?Bel ?Comf ?Fuel ?FuelLeft) :path true .
+#     ?Bel math:greaterThan 0.93 .
+#     ?Cost math:lessThan 0.090 .
+#     ?Dur math:lessThan 260.0 .
+#   } => {
+#     :car1 gps:plan (?Acts ?Dur ?Cost ?Bel ?Comf ?B ?P ?FuelLeft) .
+#   } .
+# with substitution (on rule variables):
+#   ?Acts = (:buy_pass_brussels :drive_bru_liege :drive_liege_aachen :shuttle_aachen_cologne)
+#   ?B = :low
+#   ?Bel = 0.97320067515
+#   ?Comf = 0.8893367999999999
+#   ?Cost = 0.05800000000000001
+#   ?Dur = 220
+#   ?Fuel = (:t :t :t :t :t :t :t :t)
+#   ?FuelLeft = (:t :t :t :t)
+#   ?P = :yes
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:car1 gps:plan ((:buy_pass_brussels :drive_bru_liege :drive_liege_aachen :shuttle_aachen_cologne) 220 0.05800000000000001 0.97320067515 0.8893367999999999 :low :yes (:t :t :t :t)) .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :car1 gps:plan ((:drive_bru_liege :buy_pass_liege :drive_liege_aachen :fast_charge_aachen_pass :public_road_aachen_cologne) 240 0.053000000000000005 0.9450713763562499 0.8408494079999999 :low :yes (:t :t :t)) .
+# It holds because the following instance of the rule body is provable:
+#   :fuel8 :value (:t :t :t :t :t :t :t :t) .
+#   ({
+#       :car1 :at :Brussels .
+#       :car1 :battery :high .
+#       :car1 :pass :none .
+#   } {
+#       :car1 :at :Cologne .
+#       :car1 :battery :low .
+#       :car1 :pass :yes .
+#   } (:drive_bru_liege :buy_pass_liege :drive_liege_aachen :fast_charge_aachen_pass :public_road_aachen_cologne) 240 0.053000000000000005 0.9450713763562499 0.8408494079999999 (:t :t :t :t :t :t :t :t) (:t :t :t)) :path true .
+#   0.9450713763562499 math:greaterThan 0.93 .
+#   0.053000000000000005 math:lessThan 0.090 .
+#   240 math:lessThan 260.0 .
+# via the schematic forward rule:
+#   {
+#     :fuel8 :value ?Fuel .
+#     ({
+#         :car1 :at :Brussels .
+#         :car1 :battery :high .
+#         :car1 :pass :none .
+#     } {
+#         :car1 :at :Cologne .
+#         :car1 :battery ?B .
+#         :car1 :pass ?P .
+#     } ?Acts ?Dur ?Cost ?Bel ?Comf ?Fuel ?FuelLeft) :path true .
+#     ?Bel math:greaterThan 0.93 .
+#     ?Cost math:lessThan 0.090 .
+#     ?Dur math:lessThan 260.0 .
+#   } => {
+#     :car1 gps:plan (?Acts ?Dur ?Cost ?Bel ?Comf ?B ?P ?FuelLeft) .
+#   } .
+# with substitution (on rule variables):
+#   ?Acts = (:drive_bru_liege :buy_pass_liege :drive_liege_aachen :fast_charge_aachen_pass :public_road_aachen_cologne)
+#   ?B = :low
+#   ?Bel = 0.9450713763562499
+#   ?Comf = 0.8408494079999999
+#   ?Cost = 0.053000000000000005
+#   ?Dur = 240
+#   ?Fuel = (:t :t :t :t :t :t :t :t)
+#   ?FuelLeft = (:t :t :t)
+#   ?P = :yes
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:car1 gps:plan ((:drive_bru_liege :buy_pass_liege :drive_liege_aachen :fast_charge_aachen_pass :public_road_aachen_cologne) 240 0.053000000000000005 0.9450713763562499 0.8408494079999999 :low :yes (:t :t :t)) .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :car1 gps:plan ((:drive_bru_liege :buy_pass_liege :drive_liege_aachen :fast_charge_aachen_pass :premium_corridor_aachen_cologne) 225 0.062 0.949917896235 0.8715053759999999 :low :yes (:t :t :t)) .
+# It holds because the following instance of the rule body is provable:
+#   :fuel8 :value (:t :t :t :t :t :t :t :t) .
+#   ({
+#       :car1 :at :Brussels .
+#       :car1 :battery :high .
+#       :car1 :pass :none .
+#   } {
+#       :car1 :at :Cologne .
+#       :car1 :battery :low .
+#       :car1 :pass :yes .
+#   } (:drive_bru_liege :buy_pass_liege :drive_liege_aachen :fast_charge_aachen_pass :premium_corridor_aachen_cologne) 225 0.062 0.949917896235 0.8715053759999999 (:t :t :t :t :t :t :t :t) (:t :t :t)) :path true .
+#   0.949917896235 math:greaterThan 0.93 .
+#   0.062 math:lessThan 0.090 .
+#   225 math:lessThan 260.0 .
+# via the schematic forward rule:
+#   {
+#     :fuel8 :value ?Fuel .
+#     ({
+#         :car1 :at :Brussels .
+#         :car1 :battery :high .
+#         :car1 :pass :none .
+#     } {
+#         :car1 :at :Cologne .
+#         :car1 :battery ?B .
+#         :car1 :pass ?P .
+#     } ?Acts ?Dur ?Cost ?Bel ?Comf ?Fuel ?FuelLeft) :path true .
+#     ?Bel math:greaterThan 0.93 .
+#     ?Cost math:lessThan 0.090 .
+#     ?Dur math:lessThan 260.0 .
+#   } => {
+#     :car1 gps:plan (?Acts ?Dur ?Cost ?Bel ?Comf ?B ?P ?FuelLeft) .
+#   } .
+# with substitution (on rule variables):
+#   ?Acts = (:drive_bru_liege :buy_pass_liege :drive_liege_aachen :fast_charge_aachen_pass :premium_corridor_aachen_cologne)
+#   ?B = :low
+#   ?Bel = 0.949917896235
+#   ?Comf = 0.8715053759999999
+#   ?Cost = 0.062
+#   ?Dur = 225
+#   ?Fuel = (:t :t :t :t :t :t :t :t)
+#   ?FuelLeft = (:t :t :t)
+#   ?P = :yes
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:car1 gps:plan ((:drive_bru_liege :buy_pass_liege :drive_liege_aachen :fast_charge_aachen_pass :premium_corridor_aachen_cologne) 225 0.062 0.949917896235 0.8715053759999999 :low :yes (:t :t :t)) .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :car1 gps:plan ((:drive_bru_liege :buy_pass_liege :drive_liege_aachen :shuttle_aachen_cologne) 225 0.05700000000000001 0.9693039757499999 0.8803536 :low :yes (:t :t :t :t)) .
+# It holds because the following instance of the rule body is provable:
+#   :fuel8 :value (:t :t :t :t :t :t :t :t) .
+#   ({
+#       :car1 :at :Brussels .
+#       :car1 :battery :high .
+#       :car1 :pass :none .
+#   } {
+#       :car1 :at :Cologne .
+#       :car1 :battery :low .
+#       :car1 :pass :yes .
+#   } (:drive_bru_liege :buy_pass_liege :drive_liege_aachen :shuttle_aachen_cologne) 225 0.05700000000000001 0.9693039757499999 0.8803536 (:t :t :t :t :t :t :t :t) (:t :t :t :t)) :path true .
+#   0.9693039757499999 math:greaterThan 0.93 .
+#   0.05700000000000001 math:lessThan 0.090 .
+#   225 math:lessThan 260.0 .
+# via the schematic forward rule:
+#   {
+#     :fuel8 :value ?Fuel .
+#     ({
+#         :car1 :at :Brussels .
+#         :car1 :battery :high .
+#         :car1 :pass :none .
+#     } {
+#         :car1 :at :Cologne .
+#         :car1 :battery ?B .
+#         :car1 :pass ?P .
+#     } ?Acts ?Dur ?Cost ?Bel ?Comf ?Fuel ?FuelLeft) :path true .
+#     ?Bel math:greaterThan 0.93 .
+#     ?Cost math:lessThan 0.090 .
+#     ?Dur math:lessThan 260.0 .
+#   } => {
+#     :car1 gps:plan (?Acts ?Dur ?Cost ?Bel ?Comf ?B ?P ?FuelLeft) .
+#   } .
+# with substitution (on rule variables):
+#   ?Acts = (:drive_bru_liege :buy_pass_liege :drive_liege_aachen :shuttle_aachen_cologne)
+#   ?B = :low
+#   ?Bel = 0.9693039757499999
+#   ?Comf = 0.8803536
+#   ?Cost = 0.05700000000000001
+#   ?Dur = 225
+#   ?Fuel = (:t :t :t :t :t :t :t :t)
+#   ?FuelLeft = (:t :t :t :t)
+#   ?P = :yes
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:car1 gps:plan ((:drive_bru_liege :buy_pass_liege :drive_liege_aachen :shuttle_aachen_cologne) 225 0.05700000000000001 0.9693039757499999 0.8803536 :low :yes (:t :t :t :t)) .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :car1 gps:plan ((:drive_bru_liege :drive_liege_aachen :fast_charge_aachen_payg :public_road_aachen_cologne) 230 0.056999999999999995 0.9412635375 0.8317439999999998 :low :none (:t :t :t :t)) .
+# It holds because the following instance of the rule body is provable:
+#   :fuel8 :value (:t :t :t :t :t :t :t :t) .
+#   ({
+#       :car1 :at :Brussels .
+#       :car1 :battery :high .
+#       :car1 :pass :none .
+#   } {
+#       :car1 :at :Cologne .
+#       :car1 :battery :low .
+#       :car1 :pass :none .
+#   } (:drive_bru_liege :drive_liege_aachen :fast_charge_aachen_payg :public_road_aachen_cologne) 230 0.056999999999999995 0.9412635375 0.8317439999999998 (:t :t :t :t :t :t :t :t) (:t :t :t :t)) :path true .
+#   0.9412635375 math:greaterThan 0.93 .
+#   0.056999999999999995 math:lessThan 0.090 .
+#   230 math:lessThan 260.0 .
+# via the schematic forward rule:
+#   {
+#     :fuel8 :value ?Fuel .
+#     ({
+#         :car1 :at :Brussels .
+#         :car1 :battery :high .
+#         :car1 :pass :none .
+#     } {
+#         :car1 :at :Cologne .
+#         :car1 :battery ?B .
+#         :car1 :pass ?P .
+#     } ?Acts ?Dur ?Cost ?Bel ?Comf ?Fuel ?FuelLeft) :path true .
+#     ?Bel math:greaterThan 0.93 .
+#     ?Cost math:lessThan 0.090 .
+#     ?Dur math:lessThan 260.0 .
+#   } => {
+#     :car1 gps:plan (?Acts ?Dur ?Cost ?Bel ?Comf ?B ?P ?FuelLeft) .
+#   } .
+# with substitution (on rule variables):
+#   ?Acts = (:drive_bru_liege :drive_liege_aachen :fast_charge_aachen_payg :public_road_aachen_cologne)
+#   ?B = :low
+#   ?Bel = 0.9412635375
+#   ?Comf = 0.8317439999999998
+#   ?Cost = 0.056999999999999995
+#   ?Dur = 230
+#   ?Fuel = (:t :t :t :t :t :t :t :t)
+#   ?FuelLeft = (:t :t :t :t)
+#   ?P = :none
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:car1 gps:plan ((:drive_bru_liege :drive_liege_aachen :fast_charge_aachen_payg :public_road_aachen_cologne) 230 0.056999999999999995 0.9412635375 0.8317439999999998 :low :none (:t :t :t :t)) .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :car1 gps:plan ((:drive_bru_liege :drive_liege_aachen :shuttle_aachen_cologne) 210 0.054000000000000006 0.9741748499999999 0.8983199999999999 :low :none (:t :t :t :t :t)) .
+# It holds because the following instance of the rule body is provable:
+#   :fuel8 :value (:t :t :t :t :t :t :t :t) .
+#   ({
+#       :car1 :at :Brussels .
+#       :car1 :battery :high .
+#       :car1 :pass :none .
+#   } {
+#       :car1 :at :Cologne .
+#       :car1 :battery :low .
+#       :car1 :pass :none .
+#   } (:drive_bru_liege :drive_liege_aachen :shuttle_aachen_cologne) 210 0.054000000000000006 0.9741748499999999 0.8983199999999999 (:t :t :t :t :t :t :t :t) (:t :t :t :t :t)) :path true .
+#   0.9741748499999999 math:greaterThan 0.93 .
+#   0.054000000000000006 math:lessThan 0.090 .
+#   210 math:lessThan 260.0 .
+# via the schematic forward rule:
+#   {
+#     :fuel8 :value ?Fuel .
+#     ({
+#         :car1 :at :Brussels .
+#         :car1 :battery :high .
+#         :car1 :pass :none .
+#     } {
+#         :car1 :at :Cologne .
+#         :car1 :battery ?B .
+#         :car1 :pass ?P .
+#     } ?Acts ?Dur ?Cost ?Bel ?Comf ?Fuel ?FuelLeft) :path true .
+#     ?Bel math:greaterThan 0.93 .
+#     ?Cost math:lessThan 0.090 .
+#     ?Dur math:lessThan 260.0 .
+#   } => {
+#     :car1 gps:plan (?Acts ?Dur ?Cost ?Bel ?Comf ?B ?P ?FuelLeft) .
+#   } .
+# with substitution (on rule variables):
+#   ?Acts = (:drive_bru_liege :drive_liege_aachen :shuttle_aachen_cologne)
+#   ?B = :low
+#   ?Bel = 0.9741748499999999
+#   ?Comf = 0.8983199999999999
+#   ?Cost = 0.054000000000000006
+#   ?Dur = 210
+#   ?Fuel = (:t :t :t :t :t :t :t :t)
+#   ?FuelLeft = (:t :t :t :t :t)
+#   ?P = :none
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:car1 gps:plan ((:drive_bru_liege :drive_liege_aachen :shuttle_aachen_cologne) 210 0.054000000000000006 0.9741748499999999 0.8983199999999999 :low :none (:t :t :t :t :t)) .
+

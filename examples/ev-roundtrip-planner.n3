@@ -1,0 +1,189 @@
+# ======================================================================================
+# EV Roadtrip Planner v1 (similar complexity to drone-corridor-planner-v2.n3)
+#
+# World state (toy):
+#   :car1 :at <city>.
+#   :car1 :battery :high|:mid|:low.
+#   :car1 :pass :none|:yes.
+#
+# Actions are gps:description:
+#   ( FROM true TO :actionName duration cost belief comfort )
+#
+# Planner:
+#   (:FromState :ToState :Actions :Dur :Cost :Bel :Comf :FuelIn :FuelOut) :path true.
+#
+# Query emits:
+#   :car1 gps:plan ( ...actions... duration cost belief comfort battery pass fuelLeft ).
+# ======================================================================================
+
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix list: <http://www.w3.org/2000/10/swap/list#>.
+@prefix gps:  <https://eyereasoner.github.io/eye/reasoning/gps/gps-schema#>.
+@prefix :     <https://eyereasoner.github.io/eye/reasoning#>.
+
+# -------------------------------------------------------------------------
+# current state (for readability; query also cites an explicit start state)
+# -------------------------------------------------------------------------
+:car1 :at :Brussels.
+:car1 :battery :high.
+:car1 :pass :none.
+
+# bounded search horizon (8 steps max)
+:fuel8 :value (:t :t :t :t :t :t :t :t).
+
+# ------------------------------------------------------------------
+# "map" / action descriptions (as backward rules)
+# State = { :car1 :at ... . :car1 :battery ... . :car1 :pass ... . }
+# ------------------------------------------------------------------
+# Brussels -> Liège (two alternatives: drive vs train)
+{:map-EV gps:description (
+  {:car1 :at :Brussels. :car1 :battery :high. :car1 :pass ?P.}
+  true
+  {:car1 :at :Liege.    :car1 :battery :mid.  :car1 :pass ?P.}
+  :drive_bru_liege
+  85.0  0.018  0.985  0.960
+)} <= true.
+
+{:map-EV gps:description (
+  {:car1 :at :Brussels. :car1 :battery ?B.    :car1 :pass ?P.}
+  true
+  {:car1 :at :Liege.    :car1 :battery ?B.    :car1 :pass ?P.}
+  :train_bru_liege
+  95.0  0.020  0.999  0.990
+)} <= true.
+
+# Liège -> Aachen (consumes battery)
+{:map-EV gps:description (
+  {:car1 :at :Liege.  :car1 :battery :mid. :car1 :pass ?P.}
+  true
+  {:car1 :at :Aachen. :car1 :battery :low. :car1 :pass ?P.}
+  :drive_liege_aachen
+  55.0  0.012  0.990  0.950
+)} <= true.
+
+# A tiny “cycle edge” back (to test fuel-bounding + pruning)
+{:map-EV gps:description (
+  {:car1 :at :Aachen. :car1 :battery :mid. :car1 :pass ?P.}
+  true
+  {:car1 :at :Liege.  :car1 :battery :low. :car1 :pass ?P.}
+  :drive_aachen_liege
+  60.0  0.013  0.970  0.930
+)} <= true.
+
+# Buy charging pass (Brussels or Liège)
+{:map-EV gps:description (
+  {:car1 :at :Brussels. :car1 :battery ?B. :car1 :pass :none.}
+  true
+  {:car1 :at :Brussels. :car1 :battery ?B. :car1 :pass :yes.}
+  :buy_pass_brussels
+  10.0  0.004  0.999  0.990
+)} <= true.
+
+{:map-EV gps:description (
+  {:car1 :at :Liege. :car1 :battery ?B. :car1 :pass :none.}
+  true
+  {:car1 :at :Liege. :car1 :battery ?B. :car1 :pass :yes.}
+  :buy_pass_liege
+  15.0  0.003  0.995  0.980
+)} <= true.
+
+# Charging options (better if you have a pass)
+{:map-EV gps:description (
+  {:car1 :at :Liege. :car1 :battery :low. :car1 :pass ?P.}
+  true
+  {:car1 :at :Liege. :car1 :battery :mid. :car1 :pass ?P.}
+  :quick_charge_liege
+  35.0  0.010  0.999  0.970
+)} <= true.
+
+{:map-EV gps:description (
+  {:car1 :at :Aachen. :car1 :battery :low. :car1 :pass :yes.}
+  true
+  {:car1 :at :Aachen. :car1 :battery :mid. :car1 :pass :yes.}
+  :fast_charge_aachen_pass
+  25.0  0.009  0.999  0.980
+)} <= true.
+
+{:map-EV gps:description (
+  {:car1 :at :Aachen. :car1 :battery :low. :car1 :pass :none.}
+  true
+  {:car1 :at :Aachen. :car1 :battery :mid. :car1 :pass :none.}
+  :fast_charge_aachen_payg
+  30.0  0.016  0.990  0.950
+)} <= true.
+
+# Aachen -> Cologne (three alternatives: premium corridor vs public road)
+# A) Premium corridor: requires pass=yes and mid battery (best comfort)
+{:map-EV gps:description (
+  {:car1 :at :Aachen.  :car1 :battery :mid. :car1 :pass :yes.}
+  true
+  {:car1 :at :Cologne. :car1 :battery :low. :car1 :pass :yes.}
+  :premium_corridor_aachen_cologne
+  45.0  0.020  0.980  0.995
+)} <= true.
+
+# B) Public road: no pass required (slower)
+{:map-EV gps:description (
+  {:car1 :at :Aachen.  :car1 :battery :mid. :car1 :pass ?P.}
+  true
+  {:car1 :at :Cologne. :car1 :battery :low. :car1 :pass ?P.}
+  :public_road_aachen_cologne
+  60.0  0.011  0.975  0.960
+)} <= true.
+
+# C) “Last-mile” taxi shuttle: keeps battery, higher cost, high belief
+{:map-EV gps:description (
+  {:car1 :at :Aachen.  :car1 :battery :low. :car1 :pass ?P.}
+  true
+  {:car1 :at :Cologne. :car1 :battery :low. :car1 :pass ?P.}
+  :shuttle_aachen_cologne
+  70.0  0.024  0.999  0.985
+)} <= true.
+
+# ----------------------------------
+# planner: compute all bounded paths
+# ----------------------------------
+# Base: one description is a path (consume 1 fuel token)
+{ (?From ?To (?Act) ?Dur ?Cost ?Bel ?Comf ?FuelIn ?FuelOut) :path true. }
+<=
+{
+  :map-EV gps:description (?From true ?To ?Act ?Dur ?Cost ?Bel ?Comf).
+  ?FuelIn list:rest ?FuelOut.
+}.
+
+# Recursive: chain one step + rest path, aggregate weights, consume 1 fuel token
+{ (?From ?To ?Actions ?Dur ?Cost ?Bel ?Comf ?FuelIn ?FuelOut) :path true. }
+<=
+{
+  :map-EV gps:description (?From true ?Mid ?Act ?Dur1 ?Cost1 ?Bel1 ?Comf1).
+  ?FuelIn list:rest ?FuelMid.
+  (?Mid ?To ?RestActs ?Dur2 ?Cost2 ?Bel2 ?Comf2 ?FuelMid ?FuelOut) :path true.
+
+  ((?Act) ?RestActs) list:append ?Actions.
+  (?Dur1 ?Dur2)   math:sum     ?Dur.
+  (?Cost1 ?Cost2) math:sum     ?Cost.
+  (?Bel1 ?Bel2)   math:product ?Bel.
+  (?Comf1 ?Comf2) math:product ?Comf.
+}.
+
+# --------------------------------------------------------
+# Query: plans for car1 to Cologne with pruning thresholds
+# --------------------------------------------------------
+{
+  :fuel8 :value ?Fuel.
+
+  (
+    {:car1 :at :Brussels. :car1 :battery :high. :car1 :pass :none.}
+    {:car1 :at :Cologne.  :car1 :battery ?B.    :car1 :pass ?P.}
+    ?Acts ?Dur ?Cost ?Bel ?Comf ?Fuel ?FuelLeft
+  ) :path true.
+
+  ?Bel  math:greaterThan 0.93.
+  ?Cost math:lessThan    0.090.
+  ?Dur  math:lessThan    260.0.
+}
+=>
+{
+  :car1 gps:plan (?Acts ?Dur ?Cost ?Bel ?Comf ?B ?P ?FuelLeft).
+}.
+
