@@ -1,0 +1,322 @@
+# ================================================================
+# Heavy-Math N3 Demo: "Jade Eigen Loom"
+# ------------------------------------------------
+# A math-stress N3 ruleset for 2D PCA (principal component analysis)
+# using only standard N3 builtins (math:, list:, log:).
+#
+# What it does:
+#  1) Mean-center a cloud of 2D points and compute covariance matrix:
+#        [ covXX  covXY ]
+#        [ covXY  covYY ]
+#  2) Closed-form eigenvalues λ1, λ2 (principal variances)
+#  3) Principal axis angle θ (piecewise, without atan2)
+#  4) Per-point PCA scores (u,v) and Mahalanobis distance squared:
+#        md2 = u^2/λ1 + v^2/λ2
+#     Flags outliers if md2 > 5.991 (≈ 95% ellipse, df=2)
+#  5) Ellipse radii for 1σ and 95% (scaled by sqrt(5.991)), plus area
+#
+# Notes:
+#  - Uses only: math:, list:, log:
+#  - Designed to be strict-datatype friendly: all numbers are numeric literals.
+# ================================================================
+
+@prefix :     <http://example.org/jade-eigen-loom#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix log:  <http://www.w3.org/2000/10/swap/log#> .
+
+############
+# DATA
+############
+
+:PCA1 :points (
+  [ :id 1 ; :x 2.0  ; :y 1.0  ]
+  [ :id 2 ; :x 3.0  ; :y 2.0  ]
+  [ :id 3 ; :x 4.0  ; :y 3.2  ]
+  [ :id 4 ; :x 5.0  ; :y 5.1  ]
+  [ :id 5 ; :x 6.0  ; :y 7.9  ]
+  [ :id 6 ; :x 7.0  ; :y 13.0 ]
+  [ :id 7 ; :x 20.0 ; :y -3.0 ]   # outlier-ish
+) .
+
+############
+# (1) MEANS + COVARIANCE
+# covXX = Σ(dx^2)/n, covYY = Σ(dy^2)/n, covXY = Σ(dx*dy)/n  (population form)
+############
+
+{
+  :PCA1 :points ?pts .
+  ?pts list:length ?n .
+
+  ( ?x { ?pts list:member ?p . ?p :x ?x . } ?xs ) log:collectAllIn _:m1 .
+  ( ?y { ?pts list:member ?p . ?p :y ?y . } ?ys ) log:collectAllIn _:m1 .
+
+  ?xs math:sum ?sumX .
+  ?ys math:sum ?sumY .
+  (?sumX ?n) math:quotient ?meanX .
+  (?sumY ?n) math:quotient ?meanY .
+
+  ( ?dx2 {
+      ?pts list:member ?p . ?p :x ?x .
+      (?x ?meanX) math:difference ?dx .
+      (?dx 2.0) math:exponentiation ?dx2 .
+    } ?dx2s ) log:collectAllIn _:m1 .
+  ?dx2s math:sum ?ssXX .
+  (?ssXX ?n) math:quotient ?covXX .
+
+  ( ?dy2 {
+      ?pts list:member ?p . ?p :y ?y .
+      (?y ?meanY) math:difference ?dy .
+      (?dy 2.0) math:exponentiation ?dy2 .
+    } ?dy2s ) log:collectAllIn _:m1 .
+  ?dy2s math:sum ?ssYY .
+  (?ssYY ?n) math:quotient ?covYY .
+
+  ( ?dxdy {
+      ?pts list:member ?p .
+      ?p :x ?x ; :y ?y .
+      (?x ?meanX) math:difference ?dx .
+      (?y ?meanY) math:difference ?dy .
+      (?dx ?dy) math:product ?dxdy .
+    } ?dxdys ) log:collectAllIn _:m1 .
+  ?dxdys math:sum ?ssXY .
+  (?ssXY ?n) math:quotient ?covXY .
+}
+=>
+{
+  :PCA1 :n ?n ;
+        :meanX ?meanX ;
+        :meanY ?meanY ;
+        :covXX ?covXX ;
+        :covYY ?covYY ;
+        :covXY ?covXY .
+} .
+
+############
+# (2) EIGENVALUES of 2x2 symmetric covariance matrix
+# tr = a + d
+# det = a*d - b^2
+# disc = tr^2 - 4*det
+# λ1 = (tr + sqrt(disc))/2
+# λ2 = (tr - sqrt(disc))/2
+############
+
+{
+  :PCA1 :covXX ?a ; :covYY ?d ; :covXY ?b .
+
+  (?a ?d) math:sum ?tr .
+  (?a ?d) math:product ?ad .
+  (?b 2.0) math:exponentiation ?b2 .
+  (?ad ?b2) math:difference ?det .
+
+  (?tr 2.0) math:exponentiation ?tr2 .
+  (4.0 ?det) math:product ?fourDet .
+  (?tr2 ?fourDet) math:difference ?disc .
+  (?disc 0.5) math:exponentiation ?sqrtDisc .
+
+  (?tr ?sqrtDisc) math:sum ?trPlus .
+  (?tr ?sqrtDisc) math:difference ?trMinus .
+  (?trPlus 2.0) math:quotient ?lambda1 .
+  (?trMinus 2.0) math:quotient ?lambda2 .
+
+  (?lambda1 ?tr) math:quotient ?explained1 .  # λ1 / (λ1+λ2) since tr=λ1+λ2
+}
+=>
+{
+  :PCA1 :lambda1 ?lambda1 ;
+        :lambda2 ?lambda2 ;
+        :explainedVar1 ?explained1 .
+} .
+
+############
+# (3) PRINCIPAL AXIS ANGLE θ
+# θ = 0.5 * atan2(2b, a-d)
+# We emulate atan2 with piecewise rules using atan(ratio) and π adjustments.
+############
+
+# Common helpers (only when diff != 0): phi = atan((2b)/(a-d))
+{
+  :PCA1 :covXX ?a ; :covYY ?d ; :covXY ?b .
+  (?a ?d) math:difference ?diff .
+  ?diff math:notEqualTo 0.0 .
+  (2.0 ?b) math:product ?twoB .
+  (?twoB ?diff) math:quotient ?ratio .
+  ?ratio math:atan ?phi .
+}
+=>
+{
+  :PCA1 :_phi ?phi ;
+        :_diff ?diff ;
+        :_twoB ?twoB ;
+        :_b ?b .
+} .
+
+# Case 1: diff > 0  => theta = 0.5*phi
+{
+  :PCA1 :_phi ?phi ; :_diff ?diff .
+  ?diff math:greaterThan 0.0 .
+  (0.5 ?phi) math:product ?theta .
+  ?theta math:degrees ?thetaDeg .
+}
+=>
+{
+  :PCA1 :thetaRad ?theta ;
+        :thetaDeg ?thetaDeg .
+} .
+
+# Case 2: diff < 0 and b >= 0  => theta = 0.5*(phi + pi)
+{
+  :PCA1 :_phi ?phi ; :_diff ?diff ; :_b ?b .
+  ?diff math:lessThan 0.0 .
+  ?b math:notLessThan 0.0 .
+  (?phi 3.141592653589793) math:sum ?phiP .
+  (0.5 ?phiP) math:product ?theta .
+  ?theta math:degrees ?thetaDeg .
+}
+=>
+{
+  :PCA1 :thetaRad ?theta ;
+        :thetaDeg ?thetaDeg .
+} .
+
+# Case 3: diff < 0 and b < 0  => theta = 0.5*(phi - pi)
+{
+  :PCA1 :_phi ?phi ; :_diff ?diff ; :_b ?b .
+  ?diff math:lessThan 0.0 .
+  ?b math:lessThan 0.0 .
+  (?phi 3.141592653589793) math:difference ?phiM .
+  (0.5 ?phiM) math:product ?theta .
+  ?theta math:degrees ?thetaDeg .
+}
+=>
+{
+  :PCA1 :thetaRad ?theta ;
+        :thetaDeg ?thetaDeg .
+} .
+
+# Case 4: diff == 0 and b > 0 => theta = +pi/4
+{
+  :PCA1 :covXX ?a ; :covYY ?d ; :covXY ?b .
+  (?a ?d) math:difference ?diff .
+  ?diff math:equalTo 0.0 .
+  ?b math:greaterThan 0.0 .
+  0.7853981633974483 math:degrees ?thetaDeg .
+}
+=>
+{
+  :PCA1 :thetaRad 0.7853981633974483 ;
+        :thetaDeg ?thetaDeg .
+} .
+
+# Case 5: diff == 0 and b < 0 => theta = -pi/4
+{
+  :PCA1 :covXX ?a ; :covYY ?d ; :covXY ?b .
+  (?a ?d) math:difference ?diff .
+  ?diff math:equalTo 0.0 .
+  ?b math:lessThan 0.0 .
+  (0.0 0.7853981633974483) math:difference ?theta .
+  ?theta math:degrees ?thetaDeg .
+}
+=>
+{
+  :PCA1 :thetaRad ?theta ;
+        :thetaDeg ?thetaDeg .
+} .
+
+# Case 6: diff == 0 and b == 0 => theta = 0
+{
+  :PCA1 :covXX ?a ; :covYY ?d ; :covXY ?b .
+  (?a ?d) math:difference ?diff .
+  ?diff math:equalTo 0.0 .
+  ?b math:equalTo 0.0 .
+  0.0 math:degrees ?thetaDeg .
+}
+=>
+{
+  :PCA1 :thetaRad 0.0 ;
+        :thetaDeg ?thetaDeg .
+} .
+
+############
+# (4) PER-POINT PCA SCORES + MAHALANOBIS DISTANCE AND OUTLIERS
+# u = dx*cosθ + dy*sinθ
+# v = -dx*sinθ + dy*cosθ
+# md2 = u^2/λ1 + v^2/λ2
+# outlier if md2 > 5.991   (≈ 95% ellipse, df=2)
+############
+
+{
+  :PCA1 :points ?pts ;
+        :meanX ?mx ; :meanY ?my ;
+        :thetaRad ?theta ;
+        :lambda1 ?l1 ; :lambda2 ?l2 .
+
+  ?theta math:cos ?c .
+  ?theta math:sin ?s .
+
+  ?pts list:member ?p .
+  ?p :x ?x ; :y ?y .
+
+  (?x ?mx) math:difference ?dx .
+  (?y ?my) math:difference ?dy .
+
+  (?dx ?c) math:product ?dxC .
+  (?dy ?s) math:product ?dyS .
+  (?dxC ?dyS) math:sum ?u .
+
+  (?dx ?s) math:product ?dxS .
+  (0.0 ?dxS) math:difference ?negDxS .
+  (?dy ?c) math:product ?dyC .
+  (?negDxS ?dyC) math:sum ?v .
+
+  (?u 2.0) math:exponentiation ?u2 .
+  (?v 2.0) math:exponentiation ?v2 .
+  (?u2 ?l1) math:quotient ?u2Over .
+  (?v2 ?l2) math:quotient ?v2Over .
+  (?u2Over ?v2Over) math:sum ?md2 .
+}
+=>
+{
+  :PCA1 :score [ :point ?p ; :u ?u ; :v ?v ; :md2 ?md2 ] .
+} .
+
+{
+  :PCA1 :score [ :point ?p ; :u ?u ; :v ?v ; :md2 ?md2 ] .
+  ?md2 math:greaterThan 5.991 .
+}
+=>
+{
+  :PCA1 :outlier [ :point ?p ; :u ?u ; :v ?v ; :md2 ?md2 ; :threshold 5.991 ] .
+} .
+
+############
+# (5) ELLIPSE RADII (1σ and ~95%) + AREA
+############
+
+{
+  :PCA1 :lambda1 ?l1 ; :lambda2 ?l2 .
+
+  (?l1 0.5) math:exponentiation ?sigma1 .
+  (?l2 0.5) math:exponentiation ?sigma2 .
+
+  (5.991 0.5) math:exponentiation ?k95 .
+  (?k95 ?sigma1) math:product ?a95 .
+  (?k95 ?sigma2) math:product ?b95 .
+
+  (3.141592653589793 ?a95) math:product ?piA .
+  (?piA ?b95) math:product ?area95 .
+}
+=>
+{
+  :PCA1 :sigma1 ?sigma1 ;
+        :sigma2 ?sigma2 ;
+        :ellipse95 [ :k ?k95 ; :a ?a95 ; :b ?b95 ; :area ?area95 ] .
+} .
+
+############
+# STRICTNESS REGRESSION HOOK (should fail in strict math)
+############
+# {
+#   "1"^^<http://example.org/not-a-number> math:sum 2.0 .
+# } => { :bad :datatype :accepted . } .
+
