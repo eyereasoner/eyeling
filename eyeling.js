@@ -3146,23 +3146,18 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
   }
 
   // list:iterate
-  // true iff $s is a list and $o is a list (index value),
-  // where index is a valid 0-based index into $s and value is the element at that index.
-  // Schema: $s+ list:iterate ( $o.1?[*] $o.2?[*] )?[*]
+  // Multi-solution builtin:
+  // For a list subject $s, generate solutions by unifying $o with (index value).
+  // This allows $o to be a variable (e.g., ?Y) or a pattern (e.g., (?i "Dewey")).
   if (g.p instanceof Iri && g.p.value === LIST_NS + "iterate") {
     if (!(g.s instanceof ListTerm)) return [];
-    if (!(g.o instanceof ListTerm) || g.o.elems.length !== 2) return [];
-    const [idxTerm, valTerm] = g.o.elems;
     const xs = g.s.elems;
     const outs = [];
-
     for (let i = 0; i < xs.length; i++) {
-      const idxLit = new Literal(String(i)); // index starts at 0
-      let s1 = unifyTerm(idxTerm, idxLit, subst);
-      if (s1 === null) continue;
-      let s2 = unifyTerm(valTerm, xs[i], s1);
-      if (s2 === null) continue;
-      outs.push(s2);
+      const idxLit = new Literal(String(i)); // 0-based
+      const pair = new ListTerm([idxLit, xs[i]]);
+      const s2 = unifyTerm(g.o, pair, subst);
+      if (s2 !== null) outs.push(s2);
     }
     return outs;
   }

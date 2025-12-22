@@ -1,0 +1,38 @@
+# =================================
+# List iteration
+# Example from Patrick Hochstenbach
+# =================================
+
+@prefix : <urn:example:> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+
+:Let :param ( "Huey" "Dewey" "Louie" ) .
+
+{
+    :Let :param ?X .
+
+    # For each in list X generate a new triple
+    #    ?X a list 
+    #    ?Y variable or any
+    ?X list:iterate ?Y .
+
+    # E.g. this evaluates to true
+    ?X list:iterate ( 1 "Dewey" ) .
+
+    # We even capture the index
+    ?X list:iterate ( ?Z "Dewey" ) .
+}
+=> 
+{   
+    ?X :iterate ?Y .
+    "Dewey" :hasIndex ?Z .
+} .
+
+{
+    ?X :iterate ?Y .
+    "Dewey" :hasIndex 1 .
+}
+=> 
+{
+    :test :is true .
+} .
