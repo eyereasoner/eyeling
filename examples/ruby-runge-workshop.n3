@@ -1,0 +1,256 @@
+# ================================================================
+# Heavy-Math N3 Demo: "Ruby Runge Workshop"
+# ------------------------------------------------
+# A math-stress N3 ruleset for polynomial interpolation (Lagrange form),
+# plus numerical differentiation and a simple root search check.
+#
+# What it does:
+#  1) Given a set of (x_i, y_i) points, computes Lagrange basis weights
+#     at a query x0 and outputs interpolated y(x0):
+#
+#       y(x0) = Σ_i y_i * Π_{j≠i} (x0 - x_j)/(x_i - x_j)
+#
+#     This exercises lots of nested products/quotients and list collection.
+#
+#  2) Estimates derivative at x0 by symmetric difference:
+#       y'(x0) ≈ (y(x0+h) - y(x0-h)) / (2h)
+#
+#  3) Flags if y(x0) crosses zero between two bracketing x-values
+#     (a basic “root bracket” detector).
+#
+# Notes:
+#  - Uses only: math:, list:, log:
+#  - Designed as a strict-datatype regression workload.
+# ================================================================
+
+@prefix :     <http://example.org/ruby-runge#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix log:  <http://www.w3.org/2000/10/swap/log#> .
+
+############
+# DATA
+############
+
+:Interp1
+  :points (
+    [ :id 1 ; :x -2.0 ; :y  7.0  ]
+    [ :id 2 ; :x -1.0 ; :y  1.0  ]
+    [ :id 3 ; :x  0.0 ; :y -1.0  ]
+    [ :id 4 ; :x  1.0 ; :y  1.0  ]
+    [ :id 5 ; :x  2.0 ; :y  7.0  ]
+  ) ;
+  :x0 0.6 ;
+  :h  0.001 ;
+  :bracketA 0.0 ;
+  :bracketB 1.0 .
+
+############
+# Helper: compute product of a collected list
+# (We just use math:productPairwise by folding: collectAll + math:product works
+# in many engines, but to stay portable we explicitly fold with list:member.)
+# We'll implement "sum of products" directly without defining new builtins.
+############
+
+############
+# (1) LAGRANGE INTERPOLATION y(x0)
+############
+
+{
+  :Interp1 :points ?pts ; :x0 ?x0 .
+
+  # Collect each term_i = y_i * basis_i(x0)
+  ( ?term {
+      ?pts list:member ?pi .
+      ?pi :x ?xi ; :y ?yi .
+
+      # Collect factors f_ij = (x0 - xj)/(xi - xj) for all j != i
+      ( ?f {
+          ?pts list:member ?pj .
+          ?pj :x ?xj .
+          ?xj math:notEqualTo ?xi .
+
+          (?x0 ?xj) math:difference ?num .
+          (?xi ?xj) math:difference ?den .
+          (?num ?den) math:quotient ?f .
+        } ?factors
+      ) log:collectAllIn _:lag1 .
+
+      # Multiply all factors in ?factors to get basis_i
+      # basis = Π f
+      # We'll do it by collecting logs, but simplest is:
+      ?factors math:product ?basis .
+
+      (?yi ?basis) math:product ?term .
+    } ?terms
+  ) log:collectAllIn _:lag0 .
+
+  # y0 = Σ term_i
+  ?terms math:sum ?y0 .
+}
+=>
+{
+  :Interp1 :yAtX0 ?y0 .
+} .
+
+############
+# (2) SYMMETRIC DIFFERENCE DERIVATIVE
+# y'(x0) ≈ (y(x0+h) - y(x0-h)) / (2h)
+#
+# We compute yPlus and yMinus using the same Lagrange mechanism.
+############
+
+# y(x0+h)
+{
+  :Interp1 :points ?pts ; :x0 ?x0 ; :h ?h .
+  (?x0 ?h) math:sum ?xPlus .
+
+  ( ?term {
+      ?pts list:member ?pi .
+      ?pi :x ?xi ; :y ?yi .
+
+      ( ?f {
+          ?pts list:member ?pj .
+          ?pj :x ?xj .
+          ?xj math:notEqualTo ?xi .
+          (?xPlus ?xj) math:difference ?num .
+          (?xi ?xj) math:difference ?den .
+          (?num ?den) math:quotient ?f .
+        } ?factors
+      ) log:collectAllIn _:d1 .
+      ?factors math:product ?basis .
+      (?yi ?basis) math:product ?term .
+    } ?terms
+  ) log:collectAllIn _:d0 .
+  ?terms math:sum ?yPlus .
+}
+=>
+{
+  :Interp1 :yAtXPlus ?yPlus ;
+           :xPlus ?xPlus .
+} .
+
+# y(x0-h)
+{
+  :Interp1 :points ?pts ; :x0 ?x0 ; :h ?h .
+  (?x0 ?h) math:difference ?xMinus .
+
+  ( ?term {
+      ?pts list:member ?pi .
+      ?pi :x ?xi ; :y ?yi .
+
+      ( ?f {
+          ?pts list:member ?pj .
+          ?pj :x ?xj .
+          ?xj math:notEqualTo ?xi .
+          (?xMinus ?xj) math:difference ?num .
+          (?xi ?xj) math:difference ?den .
+          (?num ?den) math:quotient ?f .
+        } ?factors
+      ) log:collectAllIn _:e1 .
+      ?factors math:product ?basis .
+      (?yi ?basis) math:product ?term .
+    } ?terms
+  ) log:collectAllIn _:e0 .
+  ?terms math:sum ?yMinus .
+}
+=>
+{
+  :Interp1 :yAtXMinus ?yMinus ;
+           :xMinus ?xMinus .
+} .
+
+# derivative from yPlus, yMinus
+{
+  :Interp1 :yAtXPlus ?yP ; :yAtXMinus ?yM ; :h ?h .
+  (?yP ?yM) math:difference ?dy .
+  (2.0 ?h) math:product ?twoH .
+  (?dy ?twoH) math:quotient ?dydx .
+}
+=>
+{
+  :Interp1 :derivativeAtX0 ?dydx .
+} .
+
+############
+# (3) ROOT BRACKET CHECK between bracketA and bracketB
+# If y(a) and y(b) have opposite signs, mark a bracket.
+#
+# We compute y(a) and y(b) by interpolation too (same points set).
+############
+
+# y at bracketA
+{
+  :Interp1 :points ?pts ; :bracketA ?xa .
+
+  ( ?term {
+      ?pts list:member ?pi .
+      ?pi :x ?xi ; :y ?yi .
+
+      ( ?f {
+          ?pts list:member ?pj .
+          ?pj :x ?xj .
+          ?xj math:notEqualTo ?xi .
+          (?xa ?xj) math:difference ?num .
+          (?xi ?xj) math:difference ?den .
+          (?num ?den) math:quotient ?f .
+        } ?factors
+      ) log:collectAllIn _:ra1 .
+      ?factors math:product ?basis .
+      (?yi ?basis) math:product ?term .
+    } ?terms
+  ) log:collectAllIn _:ra0 .
+  ?terms math:sum ?ya .
+}
+=>
+{
+  :Interp1 :yAtBracketA ?ya .
+} .
+
+# y at bracketB
+{
+  :Interp1 :points ?pts ; :bracketB ?xb .
+
+  ( ?term {
+      ?pts list:member ?pi .
+      ?pi :x ?xi ; :y ?yi .
+
+      ( ?f {
+          ?pts list:member ?pj .
+          ?pj :x ?xj .
+          ?xj math:notEqualTo ?xi .
+          (?xb ?xj) math:difference ?num .
+          (?xi ?xj) math:difference ?den .
+          (?num ?den) math:quotient ?f .
+        } ?factors
+      ) log:collectAllIn _:rb1 .
+      ?factors math:product ?basis .
+      (?yi ?basis) math:product ?term .
+    } ?terms
+  ) log:collectAllIn _:rb0 .
+  ?terms math:sum ?yb .
+}
+=>
+{
+  :Interp1 :yAtBracketB ?yb .
+} .
+
+# bracket detection via sign test: ya*yb < 0
+{
+  :Interp1 :bracketA ?xa ; :bracketB ?xb ;
+           :yAtBracketA ?ya ; :yAtBracketB ?yb .
+  (?ya ?yb) math:product ?prod .
+  ?prod math:lessThan 0.0 .
+}
+=>
+{
+  :Interp1 :rootBracket [ :a ?xa ; :b ?xb ; :ya ?ya ; :yb ?yb ] .
+} .
+
+############
+# STRICTNESS REGRESSION HOOK (should fail in strict math)
+############
+# {
+#   "0.6"^^<http://example.org/not-a-number> math:sum 1.0 .
+# } => { :bad :datatype :accepted . } .
+
