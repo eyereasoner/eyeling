@@ -5,13 +5,17 @@ const cp = require('node:child_process');
 const fs = require('node:fs');
 
 const TTY = process.stdout.isTTY;
-const C = TTY
-  ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', n: '\x1b[0m' }
-  : { g: '', r: '', y: '', n: '' };
+const C = TTY ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', n: '\x1b[0m' } : { g: '', r: '', y: '', n: '' };
 
-function ok(msg) { console.log(`${C.g}OK${C.n} ${msg}`); }
-function info(msg) { console.log(`${C.y}${msg}${C.n}`); }
-function fail(msg) { console.error(`${C.r}FAIL${C.n} ${msg}`); }
+function ok(msg) {
+  console.log(`${C.g}OK${C.n} ${msg}`);
+}
+function info(msg) {
+  console.log(`${C.y}${msg}${C.n}`);
+}
+function fail(msg) {
+  console.error(`${C.r}FAIL${C.n} ${msg}`);
+}
 
 try {
   info('Checking packlist + metadata…');
@@ -37,21 +41,15 @@ try {
   }
 
   const pack = JSON.parse(packJson)[0];
-  const paths = new Set(pack.files.map(f => f.path));
+  const paths = new Set(pack.files.map((f) => f.path));
 
-  const mustHave = [
-    'package.json',
-    'README.md',
-    'LICENSE.md',
-    'eyeling.js',
-    'index.js',
-  ];
+  const mustHave = ['package.json', 'README.md', 'LICENSE.md', 'eyeling.js', 'index.js'];
 
   for (const p of mustHave) assert.ok(paths.has(p), `missing from npm pack: ${p}`);
 
   assert.ok(
-    [...paths].some(p => p.startsWith('examples/output/')),
-    'missing from npm pack: examples/output/*'
+    [...paths].some((p) => p.startsWith('examples/output/')),
+    'missing from npm pack: examples/output/*',
   );
 
   ok('packlist + metadata sanity checks passed');
@@ -59,4 +57,3 @@ try {
   fail(e && e.stack ? e.stack : String(e));
   process.exit(1);
 }
-

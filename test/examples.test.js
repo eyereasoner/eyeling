@@ -7,13 +7,18 @@ const path = require('node:path');
 const cp = require('node:child_process');
 
 const TTY = process.stdout.isTTY;
-const C = TTY
-  ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', dim: '\x1b[2m', n: '\x1b[0m' }
-  : { g: '', r: '', y: '', dim: '', n: '' };
+const C = TTY ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', dim: '\x1b[2m', n: '\x1b[0m' } : { g: '', r: '', y: '', dim: '', n: '' };
+const msTag = (ms) => `${C.dim}(${ms} ms)${C.n}`;
 
-function ok(msg)   { console.log(`${C.g}OK${C.n}  ${msg}`); }
-function fail(msg) { console.error(`${C.r}FAIL${C.n} ${msg}`); }
-function info(msg) { console.log(`${C.y}==${C.n} ${msg}`); }
+function ok(msg) {
+  console.log(`${C.g}OK${C.n}  ${msg}`);
+}
+function fail(msg) {
+  console.error(`${C.r}FAIL${C.n} ${msg}`);
+}
+function info(msg) {
+  console.log(`${C.y}==${C.n} ${msg}`);
+}
 
 function run(cmd, args, opts = {}) {
   return cp.spawnSync(cmd, args, {
@@ -57,7 +62,9 @@ function mkTmpDir() {
 }
 
 function rmrf(p) {
-  try { fs.rmSync(p, { recursive: true, force: true }); } catch {}
+  try {
+    fs.rmSync(p, { recursive: true, force: true });
+  } catch {}
 }
 
 function showDiff({ IN_GIT, examplesDir, expectedPath, generatedPath, relExpectedPosix }) {
@@ -103,13 +110,12 @@ function main() {
 
   const IN_GIT = inGitWorktree(root);
 
-  const files = fs.readdirSync(examplesDir)
-    .filter(f => f.endsWith('.n3'))
+  const files = fs
+    .readdirSync(examplesDir)
+    .filter((f) => f.endsWith('.n3'))
     .sort((a, b) => a.localeCompare(b));
 
-  info(
-    `Running ${files.length} examples tests (${IN_GIT ? 'git worktree mode' : 'npm-installed mode'})`
-  );
+  info(`Running ${files.length} examples tests (${IN_GIT ? 'git worktree mode' : 'npm-installed mode'})`);
   console.log(`${C.dim}${getEyelingVersion(nodePath, eyelingJsPath, root)}; node ${process.version}${C.n}`);
 
   if (files.length === 0) {
@@ -138,7 +144,7 @@ function main() {
       n3Text = fs.readFileSync(filePath, 'utf8');
     } catch (e) {
       const ms = Date.now() - start;
-      fail(`${idx} ${file} (${ms} ms)`);
+      fail(`${idx} ${file} ${msTag(ms)}`);
       fail(`Cannot read input: ${e.message}`);
       failed++;
       continue;
@@ -154,7 +160,7 @@ function main() {
       // npm-installed / no .git: never modify output/ in node_modules
       if (!fs.existsSync(expectedPath)) {
         const ms = Date.now() - start;
-        fail(`${idx} ${file} (${ms} ms)`);
+        fail(`${idx} ${file} ${msTag(ms)}`);
         fail(`Missing expected output/${file}`);
         failed++;
         continue;
@@ -170,12 +176,12 @@ function main() {
       cwd: examplesDir,
       stdio: ['ignore', outFd, 'pipe'], // stdout -> file, stderr captured
       maxBuffer: 200 * 1024 * 1024,
-      encoding: 'utf8'
+      encoding: 'utf8',
     });
 
     fs.closeSync(outFd);
 
-    const rc = (r.status == null) ? 1 : r.status;
+    const rc = r.status == null ? 1 : r.status;
 
     const ms = Date.now() - start;
 
@@ -183,28 +189,28 @@ function main() {
     let diffOk = false;
     if (IN_GIT) {
       const d = run('git', ['diff', '--quiet', '--', relExpectedPosix], { cwd: examplesDir });
-      diffOk = (d.status === 0);
+      diffOk = d.status === 0;
     } else {
       if (hasGit()) {
         const d = run('git', ['diff', '--no-index', '--quiet', expectedPath, generatedPath], { cwd: examplesDir });
-        diffOk = (d.status === 0);
+        diffOk = d.status === 0;
       } else {
         const d = run('diff', ['-u', expectedPath, generatedPath], { cwd: examplesDir });
-        diffOk = (d.status === 0);
+        diffOk = d.status === 0;
       }
     }
 
-    const rcOk = (rc === expectedRc);
+    const rcOk = rc === expectedRc;
 
     if (diffOk && rcOk) {
       if (expectedRc === 0) {
-        ok(`${idx} ${file} (${ms} ms)`);
+        ok(`${idx} ${file} ${msTag(ms)}`);
       } else {
-        ok(`${idx} ${file} (expected exit ${expectedRc}, ${ms} ms)`);
+        ok(`${idx} ${file} (expected exit ${expectedRc}) ${msTag(ms)}`);
       }
       passed++;
     } else {
-      fail(`${idx} ${file} (${ms} ms)`);
+      fail(`${idx} ${file} ${msTag(ms)}`);
       if (!rcOk) {
         fail(`Exit code ${rc}, expected ${expectedRc}`);
       }
@@ -242,4 +248,3 @@ function main() {
 }
 
 main();
-

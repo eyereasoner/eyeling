@@ -4,9 +4,7 @@ const assert = require('node:assert/strict');
 const { reason } = require('..');
 
 const TTY = process.stdout.isTTY;
-const C = TTY
-  ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', dim: '\x1b[2m', n: '\x1b[0m' }
-  : { g: '', r: '', y: '', dim: '', n: '' };
+const C = TTY ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', dim: '\x1b[2m', n: '\x1b[0m' } : { g: '', r: '', y: '', dim: '', n: '' };
 
 function ok(msg) {
   console.log(`${C.g}OK${C.n} ${msg}`);
@@ -352,10 +350,7 @@ ${U('a')} ${U('p')} ${U('b')}.
     name: '17 heavier reachability: branching graph reach closure',
     opt: { proofComments: false, maxBuffer: 200 * 1024 * 1024 },
     input: reachabilityGraphN3(12),
-    expect: [
-      new RegExp(`${EX}g0>\\s+<${EX}reach>\\s+<${EX}g12>\\s*\\.`),
-      new RegExp(`${EX}g2>\\s+<${EX}reach>\\s+<${EX}g10>\\s*\\.`),
-    ],
+    expect: [new RegExp(`${EX}g0>\\s+<${EX}reach>\\s+<${EX}g12>\\s*\\.`), new RegExp(`${EX}g2>\\s+<${EX}reach>\\s+<${EX}g10>\\s*\\.`)],
   },
   {
     name: '18 heavier taxonomy: diamond subclass inference',
@@ -383,10 +378,7 @@ ${U('a')} ${U('p')} ${U('b')}.
     name: '21 heavier equivalence: sameAs propagation (with symmetric sameAs)',
     opt: { proofComments: false },
     input: sameAsN3(),
-    expect: [
-      new RegExp(`${EX}b>\\s+<${EX}p>\\s+<${EX}o>\\s*\\.`),
-      new RegExp(`${EX}b>\\s+<${EX}sameAs>\\s+<${EX}a>\\s*\\.`),
-    ],
+    expect: [new RegExp(`${EX}b>\\s+<${EX}p>\\s+<${EX}o>\\s*\\.`), new RegExp(`${EX}b>\\s+<${EX}sameAs>\\s+<${EX}a>\\s*\\.`)],
   },
   {
     name: '22 heavier closure: transitive property via generic rule',
@@ -398,10 +390,7 @@ ${U('c')} ${U('sub')} ${U('d')}.
 ${U('d')} ${U('sub')} ${U('e')}.
 ${transitiveClosureN3('sub')}
 `,
-    expect: [
-      new RegExp(`${EX}a>\\s+<${EX}sub>\\s+<${EX}e>\\s*\\.`),
-      new RegExp(`${EX}b>\\s+<${EX}sub>\\s+<${EX}d>\\s*\\.`),
-    ],
+    expect: [new RegExp(`${EX}a>\\s+<${EX}sub>\\s+<${EX}e>\\s*\\.`), new RegExp(`${EX}b>\\s+<${EX}sub>\\s+<${EX}d>\\s*\\.`)],
   },
   {
     name: '23 heavier social: symmetric + reachFriend closure',
@@ -416,10 +405,7 @@ ${transitiveClosureN3('sub')}
     name: '24 heavier volume: 400 facts, simple rewrite rule p -> q',
     opt: { proofComments: false, maxBuffer: 200 * 1024 * 1024 },
     input: bigFactsN3(400),
-    expect: [
-      new RegExp(`${EX}x>\\s+<${EX}q>\\s+<${EX}o0>\\s*\\.`),
-      new RegExp(`${EX}x>\\s+<${EX}q>\\s+<${EX}o399>\\s*\\.`),
-    ],
+    expect: [new RegExp(`${EX}x>\\s+<${EX}q>\\s+<${EX}o0>\\s*\\.`), new RegExp(`${EX}x>\\s+<${EX}q>\\s+<${EX}o399>\\s*\\.`)],
   },
   {
     name: '25 heavier negative entailment: batch + forbidden => false (expect exit 2)',
@@ -505,10 +491,7 @@ ${U('c')} ${U('p')} ${U('d')}.
 
 { ?s ${U('p')} ?o. } => { ?s ${U('q')} ?o. }.
 `,
-    expect: [
-      new RegExp(`${EX}a>\\s+<${EX}q>\\s+<${EX}b>\\s*\\.`),
-      new RegExp(`${EX}c>\\s+<${EX}q>\\s+<${EX}d>\\s*\\.`),
-    ],
+    expect: [new RegExp(`${EX}a>\\s+<${EX}q>\\s+<${EX}b>\\s*\\.`), new RegExp(`${EX}c>\\s+<${EX}q>\\s+<${EX}d>\\s*\\.`)],
   },
 
   {
@@ -554,10 +537,7 @@ ${U('s')} ${U('p')} ${U('o')}.
 
 { ${U('s')} ${U('p')} ${U('o')}. } => { ${U('s')} ${U('q')} ${U('o')}. ${U('s')} ${U('r')} ${U('o')}. }.
 `,
-    expect: [
-      new RegExp(`${EX}s>\\s+<${EX}q>\\s+<${EX}o>\\s*\\.`),
-      new RegExp(`${EX}s>\\s+<${EX}r>\\s+<${EX}o>\\s*\\.`),
-    ],
+    expect: [new RegExp(`${EX}s>\\s+<${EX}q>\\s+<${EX}o>\\s*\\.`), new RegExp(`${EX}s>\\s+<${EX}r>\\s+<${EX}o>\\s*\\.`)],
   },
 
   {
@@ -637,56 +617,61 @@ world"""@en.`,
     expect: [new RegExp(`${EX}s>\\s+<${EX}q>\\s+(?:"""Hello[\\s\\S]*?world"""@en|"Hello\\\\nworld"@en)\\s*\\.`)],
   },
 
-  { name: '44 syntax: "<-" in predicate position swaps subject and object',
+  {
+    name: '44 syntax: "<-" in predicate position swaps subject and object',
     opt: { proofComments: false },
     input: ` { ?s ${U('p')} ?o } => { ?s ${U('q')} ?o }.
 ${U('a')} <-${U('p')} ${U('b')}.`,
     expect: [new RegExp(`${EX}b>\\s+<${EX}q>\\s+<${EX}a>\\s*\\.`)],
   },
 
-  { name: '45 syntax: "<-" works inside blank node property lists ([ ... ])',
+  {
+    name: '45 syntax: "<-" works inside blank node property lists ([ ... ])',
     opt: { proofComments: false },
     input: ` ${U('s')} ${U('p')} [ <-${U('r')} ${U('o')} ].
 { ${U('o')} ${U('r')} ?x } => { ?x ${U('q')} ${U('k')} }.`,
     expect: [new RegExp(`_:b1\\s+<${EX}q>\\s+<${EX}k>\\s*\\.`)],
   },
 
-  { name: '46 syntax: N3 resource paths (! / ^) expand to blank-node triples (forward chain)',
+  {
+    name: '46 syntax: N3 resource paths (! / ^) expand to blank-node triples (forward chain)',
     opt: { proofComments: false },
     input: ` ${U('joe')}!${U('hasAddress')}!${U('hasCity')} ${U('name')} "Metropolis".
 { ${U('joe')} ${U('hasAddress')} ?a } => { ?a ${U('q')} "addr" }.
 { ?a ${U('hasCity')} ?c } => { ?c ${U('q')} "city" }.
 `,
-    expect: [
-      new RegExp(`_:b1\\s+<${EX}q>\\s+"addr"\\s*\\.`),
-      new RegExp(`_:b2\\s+<${EX}q>\\s+"city"\\s*\\.`),
-    ],
+    expect: [new RegExp(`_:b1\\s+<${EX}q>\\s+"addr"\\s*\\.`), new RegExp(`_:b2\\s+<${EX}q>\\s+"city"\\s*\\.`)],
   },
 
-  { name: '47 syntax: N3 resource paths support reverse steps (^) in the chain',
+  {
+    name: '47 syntax: N3 resource paths support reverse steps (^) in the chain',
     opt: { proofComments: false },
     input: ` ${U('joe')}!${U('hasMother')}^${U('hasMother')} ${U('knows')} ${U('someone')}.
 { ?sib ${U('hasMother')} ?mom. ${U('joe')} ${U('hasMother')} ?mom } => { ?sib ${U('q')} ${U('joe')} }.
 `,
-    expect: [
-      new RegExp(`_:b2\\s+<${EX}q>\\s+<${EX}joe>\\s*\\.`),
-    ],
+    expect: [new RegExp(`_:b2\\s+<${EX}q>\\s+<${EX}joe>\\s*\\.`)],
   },
 
-  { name: '48 rdf:first: works on list terms (alias of list:first)',
-    opt: { proofComments: false }, input: ` { ( ${U('a')} ${U('b')} ${U('c')} ) rdf:first ?x. } => { ${U('s')} ${U('first')} ?x. }.
+  {
+    name: '48 rdf:first: works on list terms (alias of list:first)',
+    opt: { proofComments: false },
+    input: ` { ( ${U('a')} ${U('b')} ${U('c')} ) rdf:first ?x. } => { ${U('s')} ${U('first')} ?x. }.
 `,
     expect: [new RegExp(`${EX}s>\\s+<${EX}first>\\s+<${EX}a>\\s*\\.`)],
   },
 
-  { name: '49 rdf:rest: works on list terms (alias of list:rest)',
-    opt: { proofComments: false }, input: ` { ( ${U('a')} ${U('b')} ${U('c')} ) rdf:rest ?r. ?r rdf:first ?y. } => { ${U('s')} ${U('second')} ?y. }.
+  {
+    name: '49 rdf:rest: works on list terms (alias of list:rest)',
+    opt: { proofComments: false },
+    input: ` { ( ${U('a')} ${U('b')} ${U('c')} ) rdf:rest ?r. ?r rdf:first ?y. } => { ${U('s')} ${U('second')} ?y. }.
 `,
     expect: [new RegExp(`${EX}s>\\s+<${EX}second>\\s+<${EX}b>\\s*\\.`)],
   },
 
-  { name: '50 rdf collection materialization: rdf:first/rdf:rest triples become list terms',
-    opt: { proofComments: false }, input: ` ${U('s')} ${U('p')} _:l1.
+  {
+    name: '50 rdf collection materialization: rdf:first/rdf:rest triples become list terms',
+    opt: { proofComments: false },
+    input: ` ${U('s')} ${U('p')} _:l1.
 _:l1 rdf:first ${U('a')}.
 _:l1 rdf:rest _:l2.
 _:l2 rdf:first ${U('b')}.
@@ -741,7 +726,7 @@ let failed = 0;
         fail(
           `Expected exit code ${tc.expectErrorCode}, got: ${e && e.code != null ? e.code : 'unknown'}\n${
             e && e.stderr ? e.stderr : e && e.stack ? e.stack : String(e)
-          }`
+          }`,
         );
         failed++;
         continue;
@@ -761,7 +746,8 @@ let failed = 0;
 
   console.log('');
   const suiteMs = Date.now() - suiteStart;
-  console.log(`${C.y}==${C.n} Total elapsed: ${suiteMs} ms`);
+  console.log(`${C.y}==${C.n} Total elapsed: ${suiteMs} ms (${(suiteMs / 1000).toFixed(2)} s)`);
+
   if (failed === 0) {
     ok(`All API tests passed (${passed}/${cases.length})`);
     process.exit(0);
@@ -770,4 +756,3 @@ let failed = 0;
     process.exit(1);
   }
 })();
-

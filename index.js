@@ -19,9 +19,7 @@ function reason(opt = {}, n3_input = '') {
   // default: proof comments OFF for API output (machine-friendly)
   // set { proofComments: true } to keep them
   const proofComments =
-    (typeof opt.proofComments === 'boolean') ? opt.proofComments :
-    (typeof opt.noProofComments === 'boolean') ? !opt.noProofComments :
-    false;
+    typeof opt.proofComments === 'boolean' ? opt.proofComments : typeof opt.noProofComments === 'boolean' ? !opt.noProofComments : false;
 
   if (!proofComments) args.push('--no-proof-comments'); // CLI already supports this :contentReference[oaicite:1]{index=1}
 
@@ -58,4 +56,3 @@ function reason(opt = {}, n3_input = '') {
 module.exports = { reason };
 // small interop nicety for ESM default import
 module.exports.default = module.exports;
-
