@@ -1,0 +1,260 @@
+# ================================================================
+# Heavy-Math N3 Demo: "Topaz Markov Mill (No-Log Edition)"
+# ------------------------------------------------
+# Markov chain workload that stays inside the W3C N3 math builtins.
+#
+# What it does:
+#  1) Validates row-stochasticity (row sums = 1)
+#  2) Propagates π0 -> π1 -> π2 -> π3
+#  3) Computes P^2 row for A (extra matrix workload)
+#  4) For each πt, computes:
+#     - sumSq = Σ p_i^2
+#     - gini  = 1 - sumSq
+#     - effN  = 1 / sumSq     (effective number of states)
+#     - TV    = 0.5 * Σ |p_i - 1/3|
+#     - L2    = sqrt( Σ (p_i - 1/3)^2 )
+#
+# Builtins used: math:, list:
+# ================================================================
+
+@prefix :     <http://example.org/topaz-markov#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+
+############
+# DATA
+############
+
+:MC1
+  :states ( :A :B :C ) ;
+
+  # Transition matrix P, encoded as explicit row nodes
+  :row [ :from :A ; :pA 0.80 ; :pB 0.15 ; :pC 0.05 ] ;
+  :row [ :from :B ; :pA 0.10 ; :pB 0.70 ; :pC 0.20 ] ;
+  :row [ :from :C ; :pA 0.25 ; :pB 0.25 ; :pC 0.50 ] ;
+
+  # Initial distribution π0 over (A,B,C)
+  :pi0 [ :pA 0.60 ; :pB 0.30 ; :pC 0.10 ] .
+
+############
+# (1) ROW-STOCHASTIC CHECK: pA+pB+pC = 1.0
+############
+
+{
+  :MC1 :row ?r .
+  ?r :pA ?a ; :pB ?b ; :pC ?c .
+  (?a ?b) math:sum ?ab .
+  (?ab ?c) math:sum ?sum .
+  ?sum math:equalTo 1.0 .
+}
+=>
+{
+  :MC1 :rowOk ?r .
+} .
+
+############
+# (2) ONE-STEP PROPAGATION (explicit for π0->π1, π1->π2, π2->π3)
+############
+
+# π1 = π0 P
+{
+  :MC1 :pi0 ?pi .
+  :MC1 :row ?rA . ?rA :from :A ; :pA ?AA ; :pB ?AB ; :pC ?AC .
+  :MC1 :row ?rB . ?rB :from :B ; :pA ?BA ; :pB ?BB ; :pC ?BC .
+  :MC1 :row ?rC . ?rC :from :C ; :pA ?CA ; :pB ?CB ; :pC ?CC .
+
+  ?pi :pA ?pA ; :pB ?pB ; :pC ?pC .
+
+  # π1A
+  (?pA ?AA) math:product ?tAA .
+  (?pB ?BA) math:product ?tBA .
+  (?pC ?CA) math:product ?tCA .
+  (?tAA ?tBA) math:sum ?s1 .
+  (?s1  ?tCA) math:sum ?pi1A .
+
+  # π1B
+  (?pA ?AB) math:product ?tAB .
+  (?pB ?BB) math:product ?tBB .
+  (?pC ?CB) math:product ?tCB .
+  (?tAB ?tBB) math:sum ?s2 .
+  (?s2  ?tCB) math:sum ?pi1B .
+
+  # π1C
+  (?pA ?AC) math:product ?tAC .
+  (?pB ?BC) math:product ?tBC .
+  (?pC ?CC) math:product ?tCC .
+  (?tAC ?tBC) math:sum ?s3 .
+  (?s3  ?tCC) math:sum ?pi1C .
+}
+=>
+{
+  :MC1 :pi1 [ :pA ?pi1A ; :pB ?pi1B ; :pC ?pi1C ] .
+} .
+
+# π2 = π1 P
+{
+  :MC1 :pi1 ?pi .
+  :MC1 :row ?rA . ?rA :from :A ; :pA ?AA ; :pB ?AB ; :pC ?AC .
+  :MC1 :row ?rB . ?rB :from :B ; :pA ?BA ; :pB ?BB ; :pC ?BC .
+  :MC1 :row ?rC . ?rC :from :C ; :pA ?CA ; :pB ?CB ; :pC ?CC .
+
+  ?pi :pA ?pA ; :pB ?pB ; :pC ?pC .
+
+  (?pA ?AA) math:product ?tAA .
+  (?pB ?BA) math:product ?tBA .
+  (?pC ?CA) math:product ?tCA .
+  (?tAA ?tBA) math:sum ?s1 .
+  (?s1  ?tCA) math:sum ?pi2A .
+
+  (?pA ?AB) math:product ?tAB .
+  (?pB ?BB) math:product ?tBB .
+  (?pC ?CB) math:product ?tCB .
+  (?tAB ?tBB) math:sum ?s2 .
+  (?s2  ?tCB) math:sum ?pi2B .
+
+  (?pA ?AC) math:product ?tAC .
+  (?pB ?BC) math:product ?tBC .
+  (?pC ?CC) math:product ?tCC .
+  (?tAC ?tBC) math:sum ?s3 .
+  (?s3  ?tCC) math:sum ?pi2C .
+}
+=>
+{
+  :MC1 :pi2 [ :pA ?pi2A ; :pB ?pi2B ; :pC ?pi2C ] .
+} .
+
+# π3 = π2 P
+{
+  :MC1 :pi2 ?pi .
+  :MC1 :row ?rA . ?rA :from :A ; :pA ?AA ; :pB ?AB ; :pC ?AC .
+  :MC1 :row ?rB . ?rB :from :B ; :pA ?BA ; :pB ?BB ; :pC ?BC .
+  :MC1 :row ?rC . ?rC :from :C ; :pA ?CA ; :pB ?CB ; :pC ?CC .
+
+  ?pi :pA ?pA ; :pB ?pB ; :pC ?pC .
+
+  (?pA ?AA) math:product ?tAA .
+  (?pB ?BA) math:product ?tBA .
+  (?pC ?CA) math:product ?tCA .
+  (?tAA ?tBA) math:sum ?s1 .
+  (?s1  ?tCA) math:sum ?pi3A .
+
+  (?pA ?AB) math:product ?tAB .
+  (?pB ?BB) math:product ?tBB .
+  (?pC ?CB) math:product ?tCB .
+  (?tAB ?tBB) math:sum ?s2 .
+  (?s2  ?tCB) math:sum ?pi3B .
+
+  (?pA ?AC) math:product ?tAC .
+  (?pB ?BC) math:product ?tBC .
+  (?pC ?CC) math:product ?tCC .
+  (?tAC ?tBC) math:sum ?s3 .
+  (?s3  ?tCC) math:sum ?pi3C .
+}
+=>
+{
+  :MC1 :pi3 [ :pA ?pi3A ; :pB ?pi3B ; :pC ?pi3C ] .
+} .
+
+############
+# (3) MATRIX POWER WORKLOAD: A-row of P^2
+############
+
+{
+  :MC1 :row ?rA . ?rA :from :A ; :pA ?AA ; :pB ?AB ; :pC ?AC .
+  :MC1 :row ?rB . ?rB :from :B ; :pA ?BA ; :pB ?BB ; :pC ?BC .
+  :MC1 :row ?rC . ?rC :from :C ; :pA ?CA ; :pB ?CB ; :pC ?CC .
+
+  # (A,A)
+  (?AA ?AA) math:product ?AA_AA .
+  (?AB ?BA) math:product ?AB_BA .
+  (?AC ?CA) math:product ?AC_CA .
+  (?AA_AA ?AB_BA) math:sum ?sAA .
+  (?sAA   ?AC_CA) math:sum ?P2AA .
+
+  # (A,B)
+  (?AA ?AB) math:product ?AA_AB .
+  (?AB ?BB) math:product ?AB_BB .
+  (?AC ?CB) math:product ?AC_CB .
+  (?AA_AB ?AB_BB) math:sum ?sAB .
+  (?sAB   ?AC_CB) math:sum ?P2AB .
+
+  # (A,C)
+  (?AA ?AC) math:product ?AA_AC .
+  (?AB ?BC) math:product ?AB_BC .
+  (?AC ?CC) math:product ?AC_CC .
+  (?AA_AC ?AB_BC) math:sum ?sAC .
+  (?sAC   ?AC_CC) math:sum ?P2AC .
+}
+=>
+{
+  :MC1 :P2rowA [ :pA ?P2AA ; :pB ?P2AB ; :pC ?P2AC ] .
+} .
+
+############
+# (4) METRICS NODES (ground, no existentials-in-disguise)
+############
+
+# Create metric “anchors” for each step
+{ :MC1 :pi0 ?pi . } => { :MC1 :metrics [ :t 0 ; :pi ?pi ] . } .
+{ :MC1 :pi1 ?pi . } => { :MC1 :metrics [ :t 1 ; :pi ?pi ] . } .
+{ :MC1 :pi2 ?pi . } => { :MC1 :metrics [ :t 2 ; :pi ?pi ] . } .
+{ :MC1 :pi3 ?pi . } => { :MC1 :metrics [ :t 3 ; :pi ?pi ] . } .
+
+# Compute (gini, effN, TV, L2) for each metrics node
+{
+  :MC1 :metrics ?m .
+  ?m :pi ?pi .
+  ?pi :pA ?a ; :pB ?b ; :pC ?c .
+
+  # uniform u = 1/3
+  (1.0 3.0) math:quotient ?u .
+
+  # sumSq = a^2 + b^2 + c^2
+  (?a 2.0) math:exponentiation ?a2 .
+  (?b 2.0) math:exponentiation ?b2 .
+  (?c 2.0) math:exponentiation ?c2 .
+  (?a2 ?b2) math:sum ?ab2 .
+  (?ab2 ?c2) math:sum ?sumSq .
+
+  # gini = 1 - sumSq
+  (1.0 ?sumSq) math:difference ?gini .
+
+  # effN = 1 / sumSq
+  (1.0 ?sumSq) math:quotient ?effN .
+
+  # TV = 0.5 * (|a-u| + |b-u| + |c-u|)
+  (?a ?u) math:difference ?da .  ?da math:absoluteValue ?ada .
+  (?b ?u) math:difference ?db .  ?db math:absoluteValue ?adb .
+  (?c ?u) math:difference ?dc .  ?dc math:absoluteValue ?adc .
+  (?ada ?adb) math:sum ?s1 .
+  (?s1  ?adc) math:sum ?sAbs .
+  (0.5 ?sAbs) math:product ?tv .
+
+  # L2 = sqrt( (a-u)^2 + (b-u)^2 + (c-u)^2 )
+  (?da 2.0) math:exponentiation ?da2 .
+  (?db 2.0) math:exponentiation ?db2 .
+  (?dc 2.0) math:exponentiation ?dc2 .
+  (?da2 ?db2) math:sum ?s2 .
+  (?s2  ?dc2) math:sum ?s3 .
+  (?s3  0.5)  math:exponentiation ?l2 .
+}
+=>
+{
+  ?m :sumSq ?sumSq ;
+     :gini ?gini ;
+     :effectiveStates ?effN ;
+     :tvToUniform ?tv ;
+     :l2ToUniform ?l2 .
+} .
+
+# Optional: declare convergence when TV < 0.01
+{
+  :MC1 :metrics ?m .
+  ?m :t ?t ; :tvToUniform ?tv .
+  ?tv math:lessThan 0.01 .
+}
+=>
+{
+  :MC1 :convergedBy ?t .
+} .
+
