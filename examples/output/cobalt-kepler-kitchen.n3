@@ -6122,42 +6122,6 @@ _:b1 :stateAtM _:sk_2 .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :OrbitSet :avgPeriod 45023.28154304274 .
-# It holds because the following instance of the rule body is provable:
-#   :OrbitSet :orbits (_:b1 _:b2 _:b3) .
-#   (?T {
-#       (_:b1 _:b2 _:b3) list:member ?orb .
-#       ?orb :period ?T .
-#   } (86163.57055057827 43077.75744086394 5828.516637686015)) log:collectAllIn ?_b1 .
-#   (86163.57055057827 43077.75744086394 5828.516637686015) list:length 3 .
-#   (86163.57055057827 43077.75744086394 5828.516637686015) math:sum 135069.84462912823 .
-#   (135069.84462912823 3) math:quotient 45023.28154304274 .
-# via the schematic forward rule:
-#   {
-#     :OrbitSet :orbits ?os .
-#     (?T {
-#         ?os list:member ?orb .
-#         ?orb :period ?T .
-#     } ?Ts) log:collectAllIn ?_b1 .
-#     ?Ts list:length ?n .
-#     ?Ts math:sum ?sumT .
-#     (?sumT ?n) math:quotient ?avgT .
-#   } => {
-#     :OrbitSet :avgPeriod ?avgT .
-#   } .
-# with substitution (on rule variables):
-#   ?Ts = (86163.57055057827 43077.75744086394 5828.516637686015)
-#   ?avgT = 45023.28154304274
-#   ?n = 3
-#   ?os = (_:b1 _:b2 _:b3)
-#   ?sumT = 135069.84462912823
-# Therefore the derived triple above is entailed by the rules and facts.
-# ----------------------------------------------------------------------
-
-:OrbitSet :avgPeriod 45023.28154304274 .
-
-# ----------------------------------------------------------------------
-# Proof for derived triple:
 #   :Transfer1 :transferSemiMajorAxis 24582 .
 # It holds because the following instance of the rule body is provable:
 #   :Transfer1 :centralBody :Earth .
@@ -7109,4 +7073,40 @@ _:b1 :stateAtM _:sk_2 .
 # ----------------------------------------------------------------------
 
 :Transfer1 :timeOfFlight 19178.15420570903 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :OrbitSet :avgPeriod 45023.28154304274 .
+# It holds because the following instance of the rule body is provable:
+#   :OrbitSet :orbits (_:b1 _:b2 _:b3) .
+#   (?T {
+#       (_:b1 _:b2 _:b3) list:member ?orb .
+#       ?orb :period ?T .
+#   } (86163.57055057827 43077.75744086394 5828.516637686015)) log:collectAllIn ?_b1 .
+#   (86163.57055057827 43077.75744086394 5828.516637686015) list:length 3 .
+#   (86163.57055057827 43077.75744086394 5828.516637686015) math:sum 135069.84462912823 .
+#   (135069.84462912823 3) math:quotient 45023.28154304274 .
+# via the schematic forward rule:
+#   {
+#     :OrbitSet :orbits ?os .
+#     (?T {
+#         ?os list:member ?orb .
+#         ?orb :period ?T .
+#     } ?Ts) log:collectAllIn ?_b1 .
+#     ?Ts list:length ?n .
+#     ?Ts math:sum ?sumT .
+#     (?sumT ?n) math:quotient ?avgT .
+#   } => {
+#     :OrbitSet :avgPeriod ?avgT .
+#   } .
+# with substitution (on rule variables):
+#   ?Ts = (86163.57055057827 43077.75744086394 5828.516637686015)
+#   ?avgT = 45023.28154304274
+#   ?n = 3
+#   ?os = (_:b1 _:b2 _:b3)
+#   ?sumT = 135069.84462912823
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:OrbitSet :avgPeriod 45023.28154304274 .
 

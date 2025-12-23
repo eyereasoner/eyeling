@@ -3541,59 +3541,86 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     return results;
   }
 
-  // log:notIncludes
+  // log:notIncludes (EYE-style: "not provable in scope")
+  // Delay until we have a frozen scope snapshot to avoid early success.
   if (g.p instanceof Iri && g.p.value === LOG_NS + 'notIncludes') {
     if (!(g.o instanceof FormulaTerm)) return [];
-    const body = g.o.triples;
+
+    let scopeFacts = null;
+    let scopeBackRules = backRules;
+
+    // If the subject is a formula, treat it as the concrete scope graph
+    if (g.s instanceof FormulaTerm) {
+      scopeFacts = g.s.triples.slice();
+      ensureFactIndexes(scopeFacts);
+      Object.defineProperty(scopeFacts, '__scopedSnapshot', { value: scopeFacts, enumerable: false, writable: true });
+      scopeBackRules = []; // concrete scope = syntactic containment (no extra rules)
+    } else {
+      scopeFacts = facts.__scopedSnapshot || null;
+      if (!scopeFacts) return []; // DELAY until saturation snapshot exists
+    }
+
     const visited2 = [];
-    const sols = proveGoals(Array.from(body), {}, facts, backRules, depth + 1, visited2, varGen);
-    if (!sols.length) return [{ ...subst }];
-    return [];
+    const sols = proveGoals(Array.from(g.o.triples), {}, scopeFacts, scopeBackRules, depth + 1, visited2, varGen);
+    return sols.length ? [] : [{ ...subst }];
   }
 
-  // log:collectAllIn
+  // log:collectAllIn (scoped)
   if (g.p instanceof Iri && g.p.value === LOG_NS + 'collectAllIn') {
     if (!(g.s instanceof ListTerm) || g.s.elems.length !== 3) return [];
     const [valueTempl, clauseTerm, listTerm] = g.s.elems;
     if (!(clauseTerm instanceof FormulaTerm)) return [];
-    const body = clauseTerm.triples;
-    const visited2 = [];
-    const sols = proveGoals(Array.from(body), {}, facts, backRules, depth + 1, visited2, varGen);
 
-    // Collect one value per *solution*, duplicates allowed
-    const collected = [];
-    for (const sBody of sols) {
-      const v = applySubstTerm(valueTempl, sBody);
-      collected.push(v);
+    let scopeFacts = null;
+    let scopeBackRules = backRules;
+
+    if (g.o instanceof FormulaTerm) {
+      scopeFacts = g.o.triples.slice();
+      ensureFactIndexes(scopeFacts);
+      Object.defineProperty(scopeFacts, '__scopedSnapshot', { value: scopeFacts, enumerable: false, writable: true });
+      scopeBackRules = [];
+    } else {
+      scopeFacts = facts.__scopedSnapshot || null;
+      if (!scopeFacts) return []; // DELAY until snapshot exists
     }
 
+    const visited2 = [];
+    const sols = proveGoals(Array.from(clauseTerm.triples), {}, scopeFacts, scopeBackRules, depth + 1, visited2, varGen);
+
+    const collected = sols.map((sBody) => applySubstTerm(valueTempl, sBody));
     const collectedList = new ListTerm(collected);
-    const s2 = unifyTerm(listTerm, collectedList, subst);
-    return s2 !== null ? [s2] : [];
+
+    const s2 = unifyTerm(listTerm, collectedList, { ...subst });
+    return s2 ? [s2] : [];
   }
 
-  // log:forAllIn
+  // log:forAllIn (scoped)
   if (g.p instanceof Iri && g.p.value === LOG_NS + 'forAllIn') {
-    // Subject: list with two clauses (where-clause, then-clause)
     if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
     const [whereClause, thenClause] = g.s.elems;
-    if (!(whereClause instanceof FormulaTerm)) return [];
-    if (!(thenClause instanceof FormulaTerm)) return [];
+    if (!(whereClause instanceof FormulaTerm) || !(thenClause instanceof FormulaTerm)) return [];
 
-    // 1. Find all substitutions that make the first clause true
-    const visited1 = [];
-    const sols1 = proveGoals(Array.from(whereClause.triples), {}, facts, backRules, depth + 1, visited1, varGen);
+    let scopeFacts = null;
+    let scopeBackRules = backRules;
 
-    // 2. For every such substitution, check that the second clause holds too.
-    //    If there are no matches for the first clause, this is vacuously true.
-    for (const s1 of sols1) {
-      const visited2 = [];
-      const sols2 = proveGoals(Array.from(thenClause.triples), s1, facts, backRules, depth + 1, visited2, varGen);
-      // Found a counterexample: whereClause holds but thenClause does not
-      if (!sols2.length) return [];
+    if (g.o instanceof FormulaTerm) {
+      scopeFacts = g.o.triples.slice();
+      ensureFactIndexes(scopeFacts);
+      Object.defineProperty(scopeFacts, '__scopedSnapshot', { value: scopeFacts, enumerable: false, writable: true });
+      scopeBackRules = [];
+    } else {
+      scopeFacts = facts.__scopedSnapshot || null;
+      if (!scopeFacts) return []; // DELAY until snapshot exists
     }
 
-    // All matches pass (or there were no matches) → builtin succeeds as a pure test.
+    const visited1 = [];
+    const sols1 = proveGoals(Array.from(whereClause.triples), {}, scopeFacts, scopeBackRules, depth + 1, visited1, varGen);
+
+    for (const s1 of sols1) {
+      const visited2 = [];
+      const sols2 = proveGoals(Array.from(thenClause.triples), s1, scopeFacts, scopeBackRules, depth + 1, visited2, varGen);
+      if (!sols2.length) return [];
+    }
     return [{ ...subst }];
   }
 
@@ -4211,127 +4238,170 @@ function forwardChain(facts, forwardRules, backRules) {
   backRules.__allForwardRules = forwardRules;
   backRules.__allBackwardRules = backRules;
 
-  while (true) {
-    let changed = false;
+  function setScopedSnapshot(snap) {
+    if (!Object.prototype.hasOwnProperty.call(facts, '__scopedSnapshot')) {
+      Object.defineProperty(facts, '__scopedSnapshot', { value: snap, enumerable: false, writable: true, configurable: true });
+    } else {
+      facts.__scopedSnapshot = snap;
+    }
+  }
 
-    for (let i = 0; i < forwardRules.length; i++) {
-      const r = forwardRules[i];
-      const empty = {};
-      const visited = [];
+  function makeScopedSnapshot() {
+    const snap = facts.slice();
+    ensureFactIndexes(snap);
+    Object.defineProperty(snap, '__scopedSnapshot', { value: snap, enumerable: false, writable: true, configurable: true });
+    return snap;
+  }
 
-      const sols = proveGoals(r.premise.slice(), empty, facts, backRules, 0, visited, varGen);
+  function runFixpoint() {
+    let anyChange = false;
+    while (true) {
+      let changed = false;
 
-      // Inference fuse
-      if (r.isFuse && sols.length) {
-        console.log('# Inference fuse triggered: a { ... } => false. rule fired.');
-        process.exit(2);
-      }
+      while (true) {
+        let changed = false;
 
-      for (const s of sols) {
-        // IMPORTANT: one skolem map per *rule firing* so head blank nodes
-        // (e.g., from [ :p ... ; :q ... ]) stay connected across all head triples.
-        const skMap = {};
-        const instantiatedPremises = r.premise.map((b) => applySubstTriple(b, s));
-        const fireKey = firingKey(i, instantiatedPremises);
+        for (let i = 0; i < forwardRules.length; i++) {
+          const r = forwardRules[i];
+          const empty = {};
+          const visited = [];
 
-        for (const cpat of r.conclusion) {
-          const instantiated = applySubstTriple(cpat, s);
+          const sols = proveGoals(r.premise.slice(), empty, facts, backRules, 0, visited, varGen);
 
-          const isFwRuleTriple =
-            isLogImplies(instantiated.p) &&
-            ((instantiated.s instanceof FormulaTerm && instantiated.o instanceof FormulaTerm) ||
-              (instantiated.s instanceof Literal && instantiated.s.value === 'true' && instantiated.o instanceof FormulaTerm) ||
-              (instantiated.s instanceof FormulaTerm && instantiated.o instanceof Literal && instantiated.o.value === 'true'));
-
-          const isBwRuleTriple =
-            isLogImpliedBy(instantiated.p) &&
-            ((instantiated.s instanceof FormulaTerm && instantiated.o instanceof FormulaTerm) ||
-              (instantiated.s instanceof FormulaTerm && instantiated.o instanceof Literal && instantiated.o.value === 'true') ||
-              (instantiated.s instanceof Literal && instantiated.s.value === 'true' && instantiated.o instanceof FormulaTerm));
-
-          if (isFwRuleTriple || isBwRuleTriple) {
-            if (!hasFactIndexed(facts, instantiated)) {
-              factList.push(instantiated);
-              pushFactIndexed(facts, instantiated);
-              derivedForward.push(
-                new DerivedFact(instantiated, r, instantiatedPremises.slice(), {
-                  ...s,
-                }),
-              );
-              changed = true;
-            }
-
-            // Promote rule-producing triples to live rules, treating literal true as {}.
-            const left =
-              instantiated.s instanceof FormulaTerm
-                ? instantiated.s.triples
-                : instantiated.s instanceof Literal && instantiated.s.value === 'true'
-                  ? []
-                  : null;
-
-            const right =
-              instantiated.o instanceof FormulaTerm
-                ? instantiated.o.triples
-                : instantiated.o instanceof Literal && instantiated.o.value === 'true'
-                  ? []
-                  : null;
-
-            if (left !== null && right !== null) {
-              if (isFwRuleTriple) {
-                const [premise0, conclusion] = liftBlankRuleVars(left, right);
-                const premise = reorderPremiseForConstraints(premise0);
-
-                const headBlankLabels = collectBlankLabelsInTriples(conclusion);
-                const newRule = new Rule(premise, conclusion, true, false, headBlankLabels);
-
-                const already = forwardRules.some(
-                  (rr) =>
-                    rr.isForward === newRule.isForward &&
-                    rr.isFuse === newRule.isFuse &&
-                    triplesListEqual(rr.premise, newRule.premise) &&
-                    triplesListEqual(rr.conclusion, newRule.conclusion),
-                );
-                if (!already) forwardRules.push(newRule);
-              } else if (isBwRuleTriple) {
-                const [premise, conclusion] = liftBlankRuleVars(right, left);
-
-                const headBlankLabels = collectBlankLabelsInTriples(conclusion);
-                const newRule = new Rule(premise, conclusion, false, false, headBlankLabels);
-
-                const already = backRules.some(
-                  (rr) =>
-                    rr.isForward === newRule.isForward &&
-                    rr.isFuse === newRule.isFuse &&
-                    triplesListEqual(rr.premise, newRule.premise) &&
-                    triplesListEqual(rr.conclusion, newRule.conclusion),
-                );
-                if (!already) {
-                  backRules.push(newRule);
-                  indexBackRule(backRules, newRule);
-                }
-              }
-            }
-
-            continue; // skip normal fact handling
+          // Inference fuse
+          if (r.isFuse && sols.length) {
+            console.log('# Inference fuse triggered: a { ... } => false. rule fired.');
+            process.exit(2);
           }
 
-          // Only skolemize blank nodes that occur explicitly in the rule head
-          const inst = skolemizeTripleForHeadBlanks(instantiated, r.headBlankLabels, skMap, skCounter, fireKey, headSkolemCache);
+          for (const s of sols) {
+            // IMPORTANT: one skolem map per *rule firing* so head blank nodes
+            // (e.g., from [ :p ... ; :q ... ]) stay connected across all head triples.
+            const skMap = {};
+            const instantiatedPremises = r.premise.map((b) => applySubstTriple(b, s));
+            const fireKey = firingKey(i, instantiatedPremises);
 
-          if (!isGroundTriple(inst)) continue;
-          if (hasFactIndexed(facts, inst)) continue;
+            for (const cpat of r.conclusion) {
+              const instantiated = applySubstTriple(cpat, s);
 
-          factList.push(inst);
-          pushFactIndexed(facts, inst);
+              const isFwRuleTriple =
+                isLogImplies(instantiated.p) &&
+                ((instantiated.s instanceof FormulaTerm && instantiated.o instanceof FormulaTerm) ||
+                  (instantiated.s instanceof Literal && instantiated.s.value === 'true' && instantiated.o instanceof FormulaTerm) ||
+                  (instantiated.s instanceof FormulaTerm && instantiated.o instanceof Literal && instantiated.o.value === 'true'));
 
-          derivedForward.push(new DerivedFact(inst, r, instantiatedPremises.slice(), { ...s }));
-          changed = true;
+              const isBwRuleTriple =
+                isLogImpliedBy(instantiated.p) &&
+                ((instantiated.s instanceof FormulaTerm && instantiated.o instanceof FormulaTerm) ||
+                  (instantiated.s instanceof FormulaTerm && instantiated.o instanceof Literal && instantiated.o.value === 'true') ||
+                  (instantiated.s instanceof Literal && instantiated.s.value === 'true' && instantiated.o instanceof FormulaTerm));
+
+              if (isFwRuleTriple || isBwRuleTriple) {
+                if (!hasFactIndexed(facts, instantiated)) {
+                  factList.push(instantiated);
+                  pushFactIndexed(facts, instantiated);
+                  derivedForward.push(
+                    new DerivedFact(instantiated, r, instantiatedPremises.slice(), {
+                      ...s,
+                    }),
+                  );
+                  changed = true;
+                }
+
+                // Promote rule-producing triples to live rules, treating literal true as {}.
+                const left =
+                  instantiated.s instanceof FormulaTerm
+                    ? instantiated.s.triples
+                    : instantiated.s instanceof Literal && instantiated.s.value === 'true'
+                      ? []
+                      : null;
+
+                const right =
+                  instantiated.o instanceof FormulaTerm
+                    ? instantiated.o.triples
+                    : instantiated.o instanceof Literal && instantiated.o.value === 'true'
+                      ? []
+                      : null;
+
+                if (left !== null && right !== null) {
+                  if (isFwRuleTriple) {
+                    const [premise0, conclusion] = liftBlankRuleVars(left, right);
+                    const premise = reorderPremiseForConstraints(premise0);
+
+                    const headBlankLabels = collectBlankLabelsInTriples(conclusion);
+                    const newRule = new Rule(premise, conclusion, true, false, headBlankLabels);
+
+                    const already = forwardRules.some(
+                      (rr) =>
+                        rr.isForward === newRule.isForward &&
+                        rr.isFuse === newRule.isFuse &&
+                        triplesListEqual(rr.premise, newRule.premise) &&
+                        triplesListEqual(rr.conclusion, newRule.conclusion),
+                    );
+                    if (!already) forwardRules.push(newRule);
+                  } else if (isBwRuleTriple) {
+                    const [premise, conclusion] = liftBlankRuleVars(right, left);
+
+                    const headBlankLabels = collectBlankLabelsInTriples(conclusion);
+                    const newRule = new Rule(premise, conclusion, false, false, headBlankLabels);
+
+                    const already = backRules.some(
+                      (rr) =>
+                        rr.isForward === newRule.isForward &&
+                        rr.isFuse === newRule.isFuse &&
+                        triplesListEqual(rr.premise, newRule.premise) &&
+                        triplesListEqual(rr.conclusion, newRule.conclusion),
+                    );
+                    if (!already) {
+                      backRules.push(newRule);
+                      indexBackRule(backRules, newRule);
+                    }
+                  }
+                }
+
+                continue; // skip normal fact handling
+              }
+
+              // Only skolemize blank nodes that occur explicitly in the rule head
+              const inst = skolemizeTripleForHeadBlanks(instantiated, r.headBlankLabels, skMap, skCounter, fireKey, headSkolemCache);
+
+              if (!isGroundTriple(inst)) continue;
+              if (hasFactIndexed(facts, inst)) continue;
+
+              factList.push(inst);
+              pushFactIndexed(facts, inst);
+
+              derivedForward.push(new DerivedFact(inst, r, instantiatedPremises.slice(), { ...s }));
+              changed = true;
+            }
+          }
         }
-      }
-    }
 
-    if (!changed) break;
+        if (!changed) break;
+      }
+
+      if (changed) anyChange = true;
+      if (!changed) break;
+    }
+    return anyChange;
   }
+
+  while (true) {
+    // Phase A: scoped builtins disabled => they “delay” (fail) during saturation
+    setScopedSnapshot(null);
+    const changedA = runFixpoint();
+
+    // Freeze saturated scope
+    const snap = makeScopedSnapshot();
+
+    // Phase B: scoped builtins enabled, but they query only `snap`
+    setScopedSnapshot(snap);
+    const changedB = runFixpoint();
+
+    if (!changedA && !changedB) break;
+  }
+
+  setScopedSnapshot(null);
 
   return derivedForward;
 }

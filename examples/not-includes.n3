@@ -1,0 +1,32 @@
+# =======================
+# log:notIncludes example
+# =======================
+
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+
+{
+  1 math:equalTo 1.
+}
+=>
+{
+  :x :y 1 .
+  
+  {
+    :x :y 1
+  }
+  => 
+  { 
+    :a :b :c
+  }.
+}.
+
+{
+  ?SCOPE log:notIncludes { :a :b :c }.
+}
+=>
+{
+  :test :is false 
+}.

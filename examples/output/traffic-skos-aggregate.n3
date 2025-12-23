@@ -2140,6 +2140,258 @@ anpr:PassengerCar ex:narrowerOrEqualOf ref:Car .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
+#   anpr:PassengerCar skos:broaderTransitive ref:RoadUser .
+# It holds because the following instance of the rule body is provable:
+#   anpr:PassengerCar skos:broaderTransitive ref:Car .
+#   ref:Car skos:broaderTransitive ref:RoadUser .
+# via the schematic forward rule:
+#   {
+#     ?a skos:broaderTransitive ?b .
+#     ?b skos:broaderTransitive ?c .
+#   } => {
+#     ?a skos:broaderTransitive ?c .
+#   } .
+# with substitution (on rule variables):
+#   ?a = anpr:PassengerCar
+#   ?b = ref:Car
+#   ?c = ref:RoadUser
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+anpr:PassengerCar skos:broaderTransitive ref:RoadUser .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   anpr:Van skos:broaderTransitive ref:RoadUser .
+# It holds because the following instance of the rule body is provable:
+#   anpr:Van skos:broaderTransitive ref:Car .
+#   ref:Car skos:broaderTransitive ref:RoadUser .
+# via the schematic forward rule:
+#   {
+#     ?a skos:broaderTransitive ?b .
+#     ?b skos:broaderTransitive ?c .
+#   } => {
+#     ?a skos:broaderTransitive ?c .
+#   } .
+# with substitution (on rule variables):
+#   ?a = anpr:Van
+#   ?b = ref:Car
+#   ?c = ref:RoadUser
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+anpr:Van skos:broaderTransitive ref:RoadUser .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   anpr:Truck skos:broaderTransitive ref:RoadUser .
+# It holds because the following instance of the rule body is provable:
+#   anpr:Truck skos:broaderTransitive ref:Car .
+#   ref:Car skos:broaderTransitive ref:RoadUser .
+# via the schematic forward rule:
+#   {
+#     ?a skos:broaderTransitive ?b .
+#     ?b skos:broaderTransitive ?c .
+#   } => {
+#     ?a skos:broaderTransitive ?c .
+#   } .
+# with substitution (on rule variables):
+#   ?a = anpr:Truck
+#   ?b = ref:Car
+#   ?c = ref:RoadUser
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+anpr:Truck skos:broaderTransitive ref:RoadUser .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   anpr:Bus skos:broaderTransitive ref:RoadUser .
+# It holds because the following instance of the rule body is provable:
+#   anpr:Bus skos:broaderTransitive ref:Car .
+#   ref:Car skos:broaderTransitive ref:RoadUser .
+# via the schematic forward rule:
+#   {
+#     ?a skos:broaderTransitive ?b .
+#     ?b skos:broaderTransitive ?c .
+#   } => {
+#     ?a skos:broaderTransitive ?c .
+#   } .
+# with substitution (on rule variables):
+#   ?a = anpr:Bus
+#   ?b = ref:Car
+#   ?c = ref:RoadUser
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+anpr:Bus skos:broaderTransitive ref:RoadUser .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   ref:RoadUser skos:narrowerTransitive anpr:PassengerCar .
+# It holds because the following instance of the rule body is provable:
+#   ref:RoadUser skos:narrowerTransitive anpr:VehicleWithPlate .
+#   anpr:VehicleWithPlate skos:narrowerTransitive anpr:PassengerCar .
+# via the schematic forward rule:
+#   {
+#     ?a skos:narrowerTransitive ?b .
+#     ?b skos:narrowerTransitive ?c .
+#   } => {
+#     ?a skos:narrowerTransitive ?c .
+#   } .
+# with substitution (on rule variables):
+#   ?a = ref:RoadUser
+#   ?b = anpr:VehicleWithPlate
+#   ?c = anpr:PassengerCar
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+ref:RoadUser skos:narrowerTransitive anpr:PassengerCar .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   ref:RoadUser skos:narrowerTransitive anpr:Van .
+# It holds because the following instance of the rule body is provable:
+#   ref:RoadUser skos:narrowerTransitive anpr:VehicleWithPlate .
+#   anpr:VehicleWithPlate skos:narrowerTransitive anpr:Van .
+# via the schematic forward rule:
+#   {
+#     ?a skos:narrowerTransitive ?b .
+#     ?b skos:narrowerTransitive ?c .
+#   } => {
+#     ?a skos:narrowerTransitive ?c .
+#   } .
+# with substitution (on rule variables):
+#   ?a = ref:RoadUser
+#   ?b = anpr:VehicleWithPlate
+#   ?c = anpr:Van
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+ref:RoadUser skos:narrowerTransitive anpr:Van .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   ref:RoadUser skos:narrowerTransitive anpr:Truck .
+# It holds because the following instance of the rule body is provable:
+#   ref:RoadUser skos:narrowerTransitive anpr:VehicleWithPlate .
+#   anpr:VehicleWithPlate skos:narrowerTransitive anpr:Truck .
+# via the schematic forward rule:
+#   {
+#     ?a skos:narrowerTransitive ?b .
+#     ?b skos:narrowerTransitive ?c .
+#   } => {
+#     ?a skos:narrowerTransitive ?c .
+#   } .
+# with substitution (on rule variables):
+#   ?a = ref:RoadUser
+#   ?b = anpr:VehicleWithPlate
+#   ?c = anpr:Truck
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+ref:RoadUser skos:narrowerTransitive anpr:Truck .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   ref:RoadUser skos:narrowerTransitive anpr:Bus .
+# It holds because the following instance of the rule body is provable:
+#   ref:RoadUser skos:narrowerTransitive anpr:VehicleWithPlate .
+#   anpr:VehicleWithPlate skos:narrowerTransitive anpr:Bus .
+# via the schematic forward rule:
+#   {
+#     ?a skos:narrowerTransitive ?b .
+#     ?b skos:narrowerTransitive ?c .
+#   } => {
+#     ?a skos:narrowerTransitive ?c .
+#   } .
+# with substitution (on rule variables):
+#   ?a = ref:RoadUser
+#   ?b = anpr:VehicleWithPlate
+#   ?c = anpr:Bus
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+ref:RoadUser skos:narrowerTransitive anpr:Bus .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   anpr:PassengerCar ex:narrowerOrEqualOf ref:RoadUser .
+# It holds because the following instance of the rule body is provable:
+#   anpr:PassengerCar skos:broaderTransitive ref:RoadUser .
+# via the schematic forward rule:
+#   {
+#     ?c skos:broaderTransitive ?b .
+#   } => {
+#     ?c ex:narrowerOrEqualOf ?b .
+#   } .
+# with substitution (on rule variables):
+#   ?b = ref:RoadUser
+#   ?c = anpr:PassengerCar
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+anpr:PassengerCar ex:narrowerOrEqualOf ref:RoadUser .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   anpr:Van ex:narrowerOrEqualOf ref:RoadUser .
+# It holds because the following instance of the rule body is provable:
+#   anpr:Van skos:broaderTransitive ref:RoadUser .
+# via the schematic forward rule:
+#   {
+#     ?c skos:broaderTransitive ?b .
+#   } => {
+#     ?c ex:narrowerOrEqualOf ?b .
+#   } .
+# with substitution (on rule variables):
+#   ?b = ref:RoadUser
+#   ?c = anpr:Van
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+anpr:Van ex:narrowerOrEqualOf ref:RoadUser .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   anpr:Truck ex:narrowerOrEqualOf ref:RoadUser .
+# It holds because the following instance of the rule body is provable:
+#   anpr:Truck skos:broaderTransitive ref:RoadUser .
+# via the schematic forward rule:
+#   {
+#     ?c skos:broaderTransitive ?b .
+#   } => {
+#     ?c ex:narrowerOrEqualOf ?b .
+#   } .
+# with substitution (on rule variables):
+#   ?b = ref:RoadUser
+#   ?c = anpr:Truck
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+anpr:Truck ex:narrowerOrEqualOf ref:RoadUser .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   anpr:Bus ex:narrowerOrEqualOf ref:RoadUser .
+# It holds because the following instance of the rule body is provable:
+#   anpr:Bus skos:broaderTransitive ref:RoadUser .
+# via the schematic forward rule:
+#   {
+#     ?c skos:broaderTransitive ?b .
+#   } => {
+#     ?c ex:narrowerOrEqualOf ?b .
+#   } .
+# with substitution (on rule variables):
+#   ?b = ref:RoadUser
+#   ?c = anpr:Bus
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+anpr:Bus ex:narrowerOrEqualOf ref:RoadUser .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
 #   genid:5d9446e0-5075-531c-f72b-7fb8f210a4dc a sosa:Observation .
 # It holds because the following instance of the rule body is provable:
 #   ex:request_cars_at_t1 a ex:CountRequest .
@@ -3043,256 +3295,4 @@ genid:5d9446e0-5075-531c-f72b-7fb8f210a4dc prov:wasDerivedFrom ex:obs_tel_heavy 
 # ----------------------------------------------------------------------
 
 genid:5d9446e0-5075-531c-f72b-7fb8f210a4dc prov:wasDerivedFrom ex:obs_tel_car .
-
-# ----------------------------------------------------------------------
-# Proof for derived triple:
-#   anpr:PassengerCar skos:broaderTransitive ref:RoadUser .
-# It holds because the following instance of the rule body is provable:
-#   anpr:PassengerCar skos:broaderTransitive ref:Car .
-#   ref:Car skos:broaderTransitive ref:RoadUser .
-# via the schematic forward rule:
-#   {
-#     ?a skos:broaderTransitive ?b .
-#     ?b skos:broaderTransitive ?c .
-#   } => {
-#     ?a skos:broaderTransitive ?c .
-#   } .
-# with substitution (on rule variables):
-#   ?a = anpr:PassengerCar
-#   ?b = ref:Car
-#   ?c = ref:RoadUser
-# Therefore the derived triple above is entailed by the rules and facts.
-# ----------------------------------------------------------------------
-
-anpr:PassengerCar skos:broaderTransitive ref:RoadUser .
-
-# ----------------------------------------------------------------------
-# Proof for derived triple:
-#   anpr:Van skos:broaderTransitive ref:RoadUser .
-# It holds because the following instance of the rule body is provable:
-#   anpr:Van skos:broaderTransitive ref:Car .
-#   ref:Car skos:broaderTransitive ref:RoadUser .
-# via the schematic forward rule:
-#   {
-#     ?a skos:broaderTransitive ?b .
-#     ?b skos:broaderTransitive ?c .
-#   } => {
-#     ?a skos:broaderTransitive ?c .
-#   } .
-# with substitution (on rule variables):
-#   ?a = anpr:Van
-#   ?b = ref:Car
-#   ?c = ref:RoadUser
-# Therefore the derived triple above is entailed by the rules and facts.
-# ----------------------------------------------------------------------
-
-anpr:Van skos:broaderTransitive ref:RoadUser .
-
-# ----------------------------------------------------------------------
-# Proof for derived triple:
-#   anpr:Truck skos:broaderTransitive ref:RoadUser .
-# It holds because the following instance of the rule body is provable:
-#   anpr:Truck skos:broaderTransitive ref:Car .
-#   ref:Car skos:broaderTransitive ref:RoadUser .
-# via the schematic forward rule:
-#   {
-#     ?a skos:broaderTransitive ?b .
-#     ?b skos:broaderTransitive ?c .
-#   } => {
-#     ?a skos:broaderTransitive ?c .
-#   } .
-# with substitution (on rule variables):
-#   ?a = anpr:Truck
-#   ?b = ref:Car
-#   ?c = ref:RoadUser
-# Therefore the derived triple above is entailed by the rules and facts.
-# ----------------------------------------------------------------------
-
-anpr:Truck skos:broaderTransitive ref:RoadUser .
-
-# ----------------------------------------------------------------------
-# Proof for derived triple:
-#   anpr:Bus skos:broaderTransitive ref:RoadUser .
-# It holds because the following instance of the rule body is provable:
-#   anpr:Bus skos:broaderTransitive ref:Car .
-#   ref:Car skos:broaderTransitive ref:RoadUser .
-# via the schematic forward rule:
-#   {
-#     ?a skos:broaderTransitive ?b .
-#     ?b skos:broaderTransitive ?c .
-#   } => {
-#     ?a skos:broaderTransitive ?c .
-#   } .
-# with substitution (on rule variables):
-#   ?a = anpr:Bus
-#   ?b = ref:Car
-#   ?c = ref:RoadUser
-# Therefore the derived triple above is entailed by the rules and facts.
-# ----------------------------------------------------------------------
-
-anpr:Bus skos:broaderTransitive ref:RoadUser .
-
-# ----------------------------------------------------------------------
-# Proof for derived triple:
-#   ref:RoadUser skos:narrowerTransitive anpr:PassengerCar .
-# It holds because the following instance of the rule body is provable:
-#   ref:RoadUser skos:narrowerTransitive anpr:VehicleWithPlate .
-#   anpr:VehicleWithPlate skos:narrowerTransitive anpr:PassengerCar .
-# via the schematic forward rule:
-#   {
-#     ?a skos:narrowerTransitive ?b .
-#     ?b skos:narrowerTransitive ?c .
-#   } => {
-#     ?a skos:narrowerTransitive ?c .
-#   } .
-# with substitution (on rule variables):
-#   ?a = ref:RoadUser
-#   ?b = anpr:VehicleWithPlate
-#   ?c = anpr:PassengerCar
-# Therefore the derived triple above is entailed by the rules and facts.
-# ----------------------------------------------------------------------
-
-ref:RoadUser skos:narrowerTransitive anpr:PassengerCar .
-
-# ----------------------------------------------------------------------
-# Proof for derived triple:
-#   ref:RoadUser skos:narrowerTransitive anpr:Van .
-# It holds because the following instance of the rule body is provable:
-#   ref:RoadUser skos:narrowerTransitive anpr:VehicleWithPlate .
-#   anpr:VehicleWithPlate skos:narrowerTransitive anpr:Van .
-# via the schematic forward rule:
-#   {
-#     ?a skos:narrowerTransitive ?b .
-#     ?b skos:narrowerTransitive ?c .
-#   } => {
-#     ?a skos:narrowerTransitive ?c .
-#   } .
-# with substitution (on rule variables):
-#   ?a = ref:RoadUser
-#   ?b = anpr:VehicleWithPlate
-#   ?c = anpr:Van
-# Therefore the derived triple above is entailed by the rules and facts.
-# ----------------------------------------------------------------------
-
-ref:RoadUser skos:narrowerTransitive anpr:Van .
-
-# ----------------------------------------------------------------------
-# Proof for derived triple:
-#   ref:RoadUser skos:narrowerTransitive anpr:Truck .
-# It holds because the following instance of the rule body is provable:
-#   ref:RoadUser skos:narrowerTransitive anpr:VehicleWithPlate .
-#   anpr:VehicleWithPlate skos:narrowerTransitive anpr:Truck .
-# via the schematic forward rule:
-#   {
-#     ?a skos:narrowerTransitive ?b .
-#     ?b skos:narrowerTransitive ?c .
-#   } => {
-#     ?a skos:narrowerTransitive ?c .
-#   } .
-# with substitution (on rule variables):
-#   ?a = ref:RoadUser
-#   ?b = anpr:VehicleWithPlate
-#   ?c = anpr:Truck
-# Therefore the derived triple above is entailed by the rules and facts.
-# ----------------------------------------------------------------------
-
-ref:RoadUser skos:narrowerTransitive anpr:Truck .
-
-# ----------------------------------------------------------------------
-# Proof for derived triple:
-#   ref:RoadUser skos:narrowerTransitive anpr:Bus .
-# It holds because the following instance of the rule body is provable:
-#   ref:RoadUser skos:narrowerTransitive anpr:VehicleWithPlate .
-#   anpr:VehicleWithPlate skos:narrowerTransitive anpr:Bus .
-# via the schematic forward rule:
-#   {
-#     ?a skos:narrowerTransitive ?b .
-#     ?b skos:narrowerTransitive ?c .
-#   } => {
-#     ?a skos:narrowerTransitive ?c .
-#   } .
-# with substitution (on rule variables):
-#   ?a = ref:RoadUser
-#   ?b = anpr:VehicleWithPlate
-#   ?c = anpr:Bus
-# Therefore the derived triple above is entailed by the rules and facts.
-# ----------------------------------------------------------------------
-
-ref:RoadUser skos:narrowerTransitive anpr:Bus .
-
-# ----------------------------------------------------------------------
-# Proof for derived triple:
-#   anpr:PassengerCar ex:narrowerOrEqualOf ref:RoadUser .
-# It holds because the following instance of the rule body is provable:
-#   anpr:PassengerCar skos:broaderTransitive ref:RoadUser .
-# via the schematic forward rule:
-#   {
-#     ?c skos:broaderTransitive ?b .
-#   } => {
-#     ?c ex:narrowerOrEqualOf ?b .
-#   } .
-# with substitution (on rule variables):
-#   ?b = ref:RoadUser
-#   ?c = anpr:PassengerCar
-# Therefore the derived triple above is entailed by the rules and facts.
-# ----------------------------------------------------------------------
-
-anpr:PassengerCar ex:narrowerOrEqualOf ref:RoadUser .
-
-# ----------------------------------------------------------------------
-# Proof for derived triple:
-#   anpr:Van ex:narrowerOrEqualOf ref:RoadUser .
-# It holds because the following instance of the rule body is provable:
-#   anpr:Van skos:broaderTransitive ref:RoadUser .
-# via the schematic forward rule:
-#   {
-#     ?c skos:broaderTransitive ?b .
-#   } => {
-#     ?c ex:narrowerOrEqualOf ?b .
-#   } .
-# with substitution (on rule variables):
-#   ?b = ref:RoadUser
-#   ?c = anpr:Van
-# Therefore the derived triple above is entailed by the rules and facts.
-# ----------------------------------------------------------------------
-
-anpr:Van ex:narrowerOrEqualOf ref:RoadUser .
-
-# ----------------------------------------------------------------------
-# Proof for derived triple:
-#   anpr:Truck ex:narrowerOrEqualOf ref:RoadUser .
-# It holds because the following instance of the rule body is provable:
-#   anpr:Truck skos:broaderTransitive ref:RoadUser .
-# via the schematic forward rule:
-#   {
-#     ?c skos:broaderTransitive ?b .
-#   } => {
-#     ?c ex:narrowerOrEqualOf ?b .
-#   } .
-# with substitution (on rule variables):
-#   ?b = ref:RoadUser
-#   ?c = anpr:Truck
-# Therefore the derived triple above is entailed by the rules and facts.
-# ----------------------------------------------------------------------
-
-anpr:Truck ex:narrowerOrEqualOf ref:RoadUser .
-
-# ----------------------------------------------------------------------
-# Proof for derived triple:
-#   anpr:Bus ex:narrowerOrEqualOf ref:RoadUser .
-# It holds because the following instance of the rule body is provable:
-#   anpr:Bus skos:broaderTransitive ref:RoadUser .
-# via the schematic forward rule:
-#   {
-#     ?c skos:broaderTransitive ?b .
-#   } => {
-#     ?c ex:narrowerOrEqualOf ?b .
-#   } .
-# with substitution (on rule variables):
-#   ?b = ref:RoadUser
-#   ?c = anpr:Bus
-# Therefore the derived triple above is entailed by the rules and facts.
-# ----------------------------------------------------------------------
-
-anpr:Bus ex:narrowerOrEqualOf ref:RoadUser .
 
