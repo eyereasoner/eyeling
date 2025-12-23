@@ -1,0 +1,3936 @@
+@prefix : <http://example.org/ultramarine-simpson#> .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:b5 :y 4.909297426825682 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b5 .
+#   _:b5 :x 2.0 .
+#   _:b5 :coef 1.0 .
+#   2.0 math:sin 0.9092974268256817 .
+#   (2.0 2.0) math:exponentiation 4 .
+#   (0.9092974268256817 4) math:sum 4.909297426825682 .
+#   2.0 math:cos -0.4161468365471424 .
+#   (2.0 2.0) math:product 4 .
+#   (-0.4161468365471424 4) math:sum 3.5838531634528574 .
+#   (3.5838531634528574 2.0) math:exponentiation 12.844003497191053 .
+#   (1.0 12.844003497191053) math:sum 13.844003497191053 .
+#   (13.844003497191053 0.5) math:exponentiation 3.720753081997118 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 1.0
+#   ?cosx = -0.4161468365471424
+#   ?ds = 3.720753081997118
+#   ?dy = 3.5838531634528574
+#   ?dy2 = 12.844003497191053
+#   ?onePlus = 13.844003497191053
+#   ?s = _:b5
+#   ?sinx = 0.9092974268256817
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 4
+#   ?x = 2.0
+#   ?x2 = 4
+#   ?y = 4.909297426825682
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:b5 :y 4.909297426825682 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:b5 :dy 3.5838531634528574 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b5 .
+#   _:b5 :x 2.0 .
+#   _:b5 :coef 1.0 .
+#   2.0 math:sin 0.9092974268256817 .
+#   (2.0 2.0) math:exponentiation 4 .
+#   (0.9092974268256817 4) math:sum 4.909297426825682 .
+#   2.0 math:cos -0.4161468365471424 .
+#   (2.0 2.0) math:product 4 .
+#   (-0.4161468365471424 4) math:sum 3.5838531634528574 .
+#   (3.5838531634528574 2.0) math:exponentiation 12.844003497191053 .
+#   (1.0 12.844003497191053) math:sum 13.844003497191053 .
+#   (13.844003497191053 0.5) math:exponentiation 3.720753081997118 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 1.0
+#   ?cosx = -0.4161468365471424
+#   ?ds = 3.720753081997118
+#   ?dy = 3.5838531634528574
+#   ?dy2 = 12.844003497191053
+#   ?onePlus = 13.844003497191053
+#   ?s = _:b5
+#   ?sinx = 0.9092974268256817
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 4
+#   ?x = 2.0
+#   ?x2 = 4
+#   ?y = 4.909297426825682
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:b5 :dy 3.5838531634528574 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:b5 :ds 3.720753081997118 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b5 .
+#   _:b5 :x 2.0 .
+#   _:b5 :coef 1.0 .
+#   2.0 math:sin 0.9092974268256817 .
+#   (2.0 2.0) math:exponentiation 4 .
+#   (0.9092974268256817 4) math:sum 4.909297426825682 .
+#   2.0 math:cos -0.4161468365471424 .
+#   (2.0 2.0) math:product 4 .
+#   (-0.4161468365471424 4) math:sum 3.5838531634528574 .
+#   (3.5838531634528574 2.0) math:exponentiation 12.844003497191053 .
+#   (1.0 12.844003497191053) math:sum 13.844003497191053 .
+#   (13.844003497191053 0.5) math:exponentiation 3.720753081997118 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 1.0
+#   ?cosx = -0.4161468365471424
+#   ?ds = 3.720753081997118
+#   ?dy = 3.5838531634528574
+#   ?dy2 = 12.844003497191053
+#   ?onePlus = 13.844003497191053
+#   ?s = _:b5
+#   ?sinx = 0.9092974268256817
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 4
+#   ?x = 2.0
+#   ?x2 = 4
+#   ?y = 4.909297426825682
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:b5 :ds 3.720753081997118 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_0 :sample _:b5 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b5 .
+#   _:b5 :x 2.0 .
+#   _:b5 :coef 1.0 .
+#   2.0 math:sin 0.9092974268256817 .
+#   (2.0 2.0) math:exponentiation 4 .
+#   (0.9092974268256817 4) math:sum 4.909297426825682 .
+#   2.0 math:cos -0.4161468365471424 .
+#   (2.0 2.0) math:product 4 .
+#   (-0.4161468365471424 4) math:sum 3.5838531634528574 .
+#   (3.5838531634528574 2.0) math:exponentiation 12.844003497191053 .
+#   (1.0 12.844003497191053) math:sum 13.844003497191053 .
+#   (13.844003497191053 0.5) math:exponentiation 3.720753081997118 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 1.0
+#   ?cosx = -0.4161468365471424
+#   ?ds = 3.720753081997118
+#   ?dy = 3.5838531634528574
+#   ?dy2 = 12.844003497191053
+#   ?onePlus = 13.844003497191053
+#   ?s = _:b5
+#   ?sinx = 0.9092974268256817
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 4
+#   ?x = 2.0
+#   ?x2 = 4
+#   ?y = 4.909297426825682
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_0 :sample _:b5 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_0 :x 2.0 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b5 .
+#   _:b5 :x 2.0 .
+#   _:b5 :coef 1.0 .
+#   2.0 math:sin 0.9092974268256817 .
+#   (2.0 2.0) math:exponentiation 4 .
+#   (0.9092974268256817 4) math:sum 4.909297426825682 .
+#   2.0 math:cos -0.4161468365471424 .
+#   (2.0 2.0) math:product 4 .
+#   (-0.4161468365471424 4) math:sum 3.5838531634528574 .
+#   (3.5838531634528574 2.0) math:exponentiation 12.844003497191053 .
+#   (1.0 12.844003497191053) math:sum 13.844003497191053 .
+#   (13.844003497191053 0.5) math:exponentiation 3.720753081997118 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 1.0
+#   ?cosx = -0.4161468365471424
+#   ?ds = 3.720753081997118
+#   ?dy = 3.5838531634528574
+#   ?dy2 = 12.844003497191053
+#   ?onePlus = 13.844003497191053
+#   ?s = _:b5
+#   ?sinx = 0.9092974268256817
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 4
+#   ?x = 2.0
+#   ?x2 = 4
+#   ?y = 4.909297426825682
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_0 :x 2.0 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_0 :coef 1.0 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b5 .
+#   _:b5 :x 2.0 .
+#   _:b5 :coef 1.0 .
+#   2.0 math:sin 0.9092974268256817 .
+#   (2.0 2.0) math:exponentiation 4 .
+#   (0.9092974268256817 4) math:sum 4.909297426825682 .
+#   2.0 math:cos -0.4161468365471424 .
+#   (2.0 2.0) math:product 4 .
+#   (-0.4161468365471424 4) math:sum 3.5838531634528574 .
+#   (3.5838531634528574 2.0) math:exponentiation 12.844003497191053 .
+#   (1.0 12.844003497191053) math:sum 13.844003497191053 .
+#   (13.844003497191053 0.5) math:exponentiation 3.720753081997118 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 1.0
+#   ?cosx = -0.4161468365471424
+#   ?ds = 3.720753081997118
+#   ?dy = 3.5838531634528574
+#   ?dy2 = 12.844003497191053
+#   ?onePlus = 13.844003497191053
+#   ?s = _:b5
+#   ?sinx = 0.9092974268256817
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 4
+#   ?x = 2.0
+#   ?x2 = 4
+#   ?y = 4.909297426825682
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_0 :coef 1.0 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_0 :y 4.909297426825682 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b5 .
+#   _:b5 :x 2.0 .
+#   _:b5 :coef 1.0 .
+#   2.0 math:sin 0.9092974268256817 .
+#   (2.0 2.0) math:exponentiation 4 .
+#   (0.9092974268256817 4) math:sum 4.909297426825682 .
+#   2.0 math:cos -0.4161468365471424 .
+#   (2.0 2.0) math:product 4 .
+#   (-0.4161468365471424 4) math:sum 3.5838531634528574 .
+#   (3.5838531634528574 2.0) math:exponentiation 12.844003497191053 .
+#   (1.0 12.844003497191053) math:sum 13.844003497191053 .
+#   (13.844003497191053 0.5) math:exponentiation 3.720753081997118 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 1.0
+#   ?cosx = -0.4161468365471424
+#   ?ds = 3.720753081997118
+#   ?dy = 3.5838531634528574
+#   ?dy2 = 12.844003497191053
+#   ?onePlus = 13.844003497191053
+#   ?s = _:b5
+#   ?sinx = 0.9092974268256817
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 4
+#   ?x = 2.0
+#   ?x2 = 4
+#   ?y = 4.909297426825682
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_0 :y 4.909297426825682 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_0 :dy 3.5838531634528574 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b5 .
+#   _:b5 :x 2.0 .
+#   _:b5 :coef 1.0 .
+#   2.0 math:sin 0.9092974268256817 .
+#   (2.0 2.0) math:exponentiation 4 .
+#   (0.9092974268256817 4) math:sum 4.909297426825682 .
+#   2.0 math:cos -0.4161468365471424 .
+#   (2.0 2.0) math:product 4 .
+#   (-0.4161468365471424 4) math:sum 3.5838531634528574 .
+#   (3.5838531634528574 2.0) math:exponentiation 12.844003497191053 .
+#   (1.0 12.844003497191053) math:sum 13.844003497191053 .
+#   (13.844003497191053 0.5) math:exponentiation 3.720753081997118 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 1.0
+#   ?cosx = -0.4161468365471424
+#   ?ds = 3.720753081997118
+#   ?dy = 3.5838531634528574
+#   ?dy2 = 12.844003497191053
+#   ?onePlus = 13.844003497191053
+#   ?s = _:b5
+#   ?sinx = 0.9092974268256817
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 4
+#   ?x = 2.0
+#   ?x2 = 4
+#   ?y = 4.909297426825682
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_0 :dy 3.5838531634528574 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_0 :ds 3.720753081997118 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b5 .
+#   _:b5 :x 2.0 .
+#   _:b5 :coef 1.0 .
+#   2.0 math:sin 0.9092974268256817 .
+#   (2.0 2.0) math:exponentiation 4 .
+#   (0.9092974268256817 4) math:sum 4.909297426825682 .
+#   2.0 math:cos -0.4161468365471424 .
+#   (2.0 2.0) math:product 4 .
+#   (-0.4161468365471424 4) math:sum 3.5838531634528574 .
+#   (3.5838531634528574 2.0) math:exponentiation 12.844003497191053 .
+#   (1.0 12.844003497191053) math:sum 13.844003497191053 .
+#   (13.844003497191053 0.5) math:exponentiation 3.720753081997118 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 1.0
+#   ?cosx = -0.4161468365471424
+#   ?ds = 3.720753081997118
+#   ?dy = 3.5838531634528574
+#   ?dy2 = 12.844003497191053
+#   ?onePlus = 13.844003497191053
+#   ?s = _:b5
+#   ?sinx = 0.9092974268256817
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 4
+#   ?x = 2.0
+#   ?x2 = 4
+#   ?y = 4.909297426825682
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_0 :ds 3.720753081997118 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Simpson1 :sampleResult _:sk_0 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b5 .
+#   _:b5 :x 2.0 .
+#   _:b5 :coef 1.0 .
+#   2.0 math:sin 0.9092974268256817 .
+#   (2.0 2.0) math:exponentiation 4 .
+#   (0.9092974268256817 4) math:sum 4.909297426825682 .
+#   2.0 math:cos -0.4161468365471424 .
+#   (2.0 2.0) math:product 4 .
+#   (-0.4161468365471424 4) math:sum 3.5838531634528574 .
+#   (3.5838531634528574 2.0) math:exponentiation 12.844003497191053 .
+#   (1.0 12.844003497191053) math:sum 13.844003497191053 .
+#   (13.844003497191053 0.5) math:exponentiation 3.720753081997118 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 1.0
+#   ?cosx = -0.4161468365471424
+#   ?ds = 3.720753081997118
+#   ?dy = 3.5838531634528574
+#   ?dy2 = 12.844003497191053
+#   ?onePlus = 13.844003497191053
+#   ?s = _:b5
+#   ?sinx = 0.9092974268256817
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 4
+#   ?x = 2.0
+#   ?x2 = 4
+#   ?y = 4.909297426825682
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Simpson1 :sampleResult _:sk_0 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:b4 :y 3.2474949866040546 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b4 .
+#   _:b4 :x 1.5 .
+#   _:b4 :coef 4.0 .
+#   1.5 math:sin 0.9974949866040544 .
+#   (1.5 2.0) math:exponentiation 2.25 .
+#   (0.9974949866040544 2.25) math:sum 3.2474949866040546 .
+#   1.5 math:cos 0.0707372016677029 .
+#   (2.0 1.5) math:product 3 .
+#   (0.0707372016677029 3) math:sum 3.070737201667703 .
+#   (3.070737201667703 2.0) math:exponentiation 9.429426961705994 .
+#   (1.0 9.429426961705994) math:sum 10.429426961705994 .
+#   (10.429426961705994 0.5) math:exponentiation 3.229462333222977 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 4.0
+#   ?cosx = 0.0707372016677029
+#   ?ds = 3.229462333222977
+#   ?dy = 3.070737201667703
+#   ?dy2 = 9.429426961705994
+#   ?onePlus = 10.429426961705994
+#   ?s = _:b4
+#   ?sinx = 0.9974949866040544
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 3
+#   ?x = 1.5
+#   ?x2 = 2.25
+#   ?y = 3.2474949866040546
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:b4 :y 3.2474949866040546 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:b4 :dy 3.070737201667703 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b4 .
+#   _:b4 :x 1.5 .
+#   _:b4 :coef 4.0 .
+#   1.5 math:sin 0.9974949866040544 .
+#   (1.5 2.0) math:exponentiation 2.25 .
+#   (0.9974949866040544 2.25) math:sum 3.2474949866040546 .
+#   1.5 math:cos 0.0707372016677029 .
+#   (2.0 1.5) math:product 3 .
+#   (0.0707372016677029 3) math:sum 3.070737201667703 .
+#   (3.070737201667703 2.0) math:exponentiation 9.429426961705994 .
+#   (1.0 9.429426961705994) math:sum 10.429426961705994 .
+#   (10.429426961705994 0.5) math:exponentiation 3.229462333222977 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 4.0
+#   ?cosx = 0.0707372016677029
+#   ?ds = 3.229462333222977
+#   ?dy = 3.070737201667703
+#   ?dy2 = 9.429426961705994
+#   ?onePlus = 10.429426961705994
+#   ?s = _:b4
+#   ?sinx = 0.9974949866040544
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 3
+#   ?x = 1.5
+#   ?x2 = 2.25
+#   ?y = 3.2474949866040546
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:b4 :dy 3.070737201667703 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:b4 :ds 3.229462333222977 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b4 .
+#   _:b4 :x 1.5 .
+#   _:b4 :coef 4.0 .
+#   1.5 math:sin 0.9974949866040544 .
+#   (1.5 2.0) math:exponentiation 2.25 .
+#   (0.9974949866040544 2.25) math:sum 3.2474949866040546 .
+#   1.5 math:cos 0.0707372016677029 .
+#   (2.0 1.5) math:product 3 .
+#   (0.0707372016677029 3) math:sum 3.070737201667703 .
+#   (3.070737201667703 2.0) math:exponentiation 9.429426961705994 .
+#   (1.0 9.429426961705994) math:sum 10.429426961705994 .
+#   (10.429426961705994 0.5) math:exponentiation 3.229462333222977 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 4.0
+#   ?cosx = 0.0707372016677029
+#   ?ds = 3.229462333222977
+#   ?dy = 3.070737201667703
+#   ?dy2 = 9.429426961705994
+#   ?onePlus = 10.429426961705994
+#   ?s = _:b4
+#   ?sinx = 0.9974949866040544
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 3
+#   ?x = 1.5
+#   ?x2 = 2.25
+#   ?y = 3.2474949866040546
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:b4 :ds 3.229462333222977 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_1 :sample _:b4 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b4 .
+#   _:b4 :x 1.5 .
+#   _:b4 :coef 4.0 .
+#   1.5 math:sin 0.9974949866040544 .
+#   (1.5 2.0) math:exponentiation 2.25 .
+#   (0.9974949866040544 2.25) math:sum 3.2474949866040546 .
+#   1.5 math:cos 0.0707372016677029 .
+#   (2.0 1.5) math:product 3 .
+#   (0.0707372016677029 3) math:sum 3.070737201667703 .
+#   (3.070737201667703 2.0) math:exponentiation 9.429426961705994 .
+#   (1.0 9.429426961705994) math:sum 10.429426961705994 .
+#   (10.429426961705994 0.5) math:exponentiation 3.229462333222977 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 4.0
+#   ?cosx = 0.0707372016677029
+#   ?ds = 3.229462333222977
+#   ?dy = 3.070737201667703
+#   ?dy2 = 9.429426961705994
+#   ?onePlus = 10.429426961705994
+#   ?s = _:b4
+#   ?sinx = 0.9974949866040544
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 3
+#   ?x = 1.5
+#   ?x2 = 2.25
+#   ?y = 3.2474949866040546
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_1 :sample _:b4 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_1 :x 1.5 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b4 .
+#   _:b4 :x 1.5 .
+#   _:b4 :coef 4.0 .
+#   1.5 math:sin 0.9974949866040544 .
+#   (1.5 2.0) math:exponentiation 2.25 .
+#   (0.9974949866040544 2.25) math:sum 3.2474949866040546 .
+#   1.5 math:cos 0.0707372016677029 .
+#   (2.0 1.5) math:product 3 .
+#   (0.0707372016677029 3) math:sum 3.070737201667703 .
+#   (3.070737201667703 2.0) math:exponentiation 9.429426961705994 .
+#   (1.0 9.429426961705994) math:sum 10.429426961705994 .
+#   (10.429426961705994 0.5) math:exponentiation 3.229462333222977 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 4.0
+#   ?cosx = 0.0707372016677029
+#   ?ds = 3.229462333222977
+#   ?dy = 3.070737201667703
+#   ?dy2 = 9.429426961705994
+#   ?onePlus = 10.429426961705994
+#   ?s = _:b4
+#   ?sinx = 0.9974949866040544
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 3
+#   ?x = 1.5
+#   ?x2 = 2.25
+#   ?y = 3.2474949866040546
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_1 :x 1.5 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_1 :coef 4.0 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b4 .
+#   _:b4 :x 1.5 .
+#   _:b4 :coef 4.0 .
+#   1.5 math:sin 0.9974949866040544 .
+#   (1.5 2.0) math:exponentiation 2.25 .
+#   (0.9974949866040544 2.25) math:sum 3.2474949866040546 .
+#   1.5 math:cos 0.0707372016677029 .
+#   (2.0 1.5) math:product 3 .
+#   (0.0707372016677029 3) math:sum 3.070737201667703 .
+#   (3.070737201667703 2.0) math:exponentiation 9.429426961705994 .
+#   (1.0 9.429426961705994) math:sum 10.429426961705994 .
+#   (10.429426961705994 0.5) math:exponentiation 3.229462333222977 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 4.0
+#   ?cosx = 0.0707372016677029
+#   ?ds = 3.229462333222977
+#   ?dy = 3.070737201667703
+#   ?dy2 = 9.429426961705994
+#   ?onePlus = 10.429426961705994
+#   ?s = _:b4
+#   ?sinx = 0.9974949866040544
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 3
+#   ?x = 1.5
+#   ?x2 = 2.25
+#   ?y = 3.2474949866040546
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_1 :coef 4.0 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_1 :y 3.2474949866040546 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b4 .
+#   _:b4 :x 1.5 .
+#   _:b4 :coef 4.0 .
+#   1.5 math:sin 0.9974949866040544 .
+#   (1.5 2.0) math:exponentiation 2.25 .
+#   (0.9974949866040544 2.25) math:sum 3.2474949866040546 .
+#   1.5 math:cos 0.0707372016677029 .
+#   (2.0 1.5) math:product 3 .
+#   (0.0707372016677029 3) math:sum 3.070737201667703 .
+#   (3.070737201667703 2.0) math:exponentiation 9.429426961705994 .
+#   (1.0 9.429426961705994) math:sum 10.429426961705994 .
+#   (10.429426961705994 0.5) math:exponentiation 3.229462333222977 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 4.0
+#   ?cosx = 0.0707372016677029
+#   ?ds = 3.229462333222977
+#   ?dy = 3.070737201667703
+#   ?dy2 = 9.429426961705994
+#   ?onePlus = 10.429426961705994
+#   ?s = _:b4
+#   ?sinx = 0.9974949866040544
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 3
+#   ?x = 1.5
+#   ?x2 = 2.25
+#   ?y = 3.2474949866040546
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_1 :y 3.2474949866040546 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_1 :dy 3.070737201667703 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b4 .
+#   _:b4 :x 1.5 .
+#   _:b4 :coef 4.0 .
+#   1.5 math:sin 0.9974949866040544 .
+#   (1.5 2.0) math:exponentiation 2.25 .
+#   (0.9974949866040544 2.25) math:sum 3.2474949866040546 .
+#   1.5 math:cos 0.0707372016677029 .
+#   (2.0 1.5) math:product 3 .
+#   (0.0707372016677029 3) math:sum 3.070737201667703 .
+#   (3.070737201667703 2.0) math:exponentiation 9.429426961705994 .
+#   (1.0 9.429426961705994) math:sum 10.429426961705994 .
+#   (10.429426961705994 0.5) math:exponentiation 3.229462333222977 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 4.0
+#   ?cosx = 0.0707372016677029
+#   ?ds = 3.229462333222977
+#   ?dy = 3.070737201667703
+#   ?dy2 = 9.429426961705994
+#   ?onePlus = 10.429426961705994
+#   ?s = _:b4
+#   ?sinx = 0.9974949866040544
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 3
+#   ?x = 1.5
+#   ?x2 = 2.25
+#   ?y = 3.2474949866040546
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_1 :dy 3.070737201667703 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_1 :ds 3.229462333222977 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b4 .
+#   _:b4 :x 1.5 .
+#   _:b4 :coef 4.0 .
+#   1.5 math:sin 0.9974949866040544 .
+#   (1.5 2.0) math:exponentiation 2.25 .
+#   (0.9974949866040544 2.25) math:sum 3.2474949866040546 .
+#   1.5 math:cos 0.0707372016677029 .
+#   (2.0 1.5) math:product 3 .
+#   (0.0707372016677029 3) math:sum 3.070737201667703 .
+#   (3.070737201667703 2.0) math:exponentiation 9.429426961705994 .
+#   (1.0 9.429426961705994) math:sum 10.429426961705994 .
+#   (10.429426961705994 0.5) math:exponentiation 3.229462333222977 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 4.0
+#   ?cosx = 0.0707372016677029
+#   ?ds = 3.229462333222977
+#   ?dy = 3.070737201667703
+#   ?dy2 = 9.429426961705994
+#   ?onePlus = 10.429426961705994
+#   ?s = _:b4
+#   ?sinx = 0.9974949866040544
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 3
+#   ?x = 1.5
+#   ?x2 = 2.25
+#   ?y = 3.2474949866040546
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_1 :ds 3.229462333222977 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Simpson1 :sampleResult _:sk_1 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b4 .
+#   _:b4 :x 1.5 .
+#   _:b4 :coef 4.0 .
+#   1.5 math:sin 0.9974949866040544 .
+#   (1.5 2.0) math:exponentiation 2.25 .
+#   (0.9974949866040544 2.25) math:sum 3.2474949866040546 .
+#   1.5 math:cos 0.0707372016677029 .
+#   (2.0 1.5) math:product 3 .
+#   (0.0707372016677029 3) math:sum 3.070737201667703 .
+#   (3.070737201667703 2.0) math:exponentiation 9.429426961705994 .
+#   (1.0 9.429426961705994) math:sum 10.429426961705994 .
+#   (10.429426961705994 0.5) math:exponentiation 3.229462333222977 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 4.0
+#   ?cosx = 0.0707372016677029
+#   ?ds = 3.229462333222977
+#   ?dy = 3.070737201667703
+#   ?dy2 = 9.429426961705994
+#   ?onePlus = 10.429426961705994
+#   ?s = _:b4
+#   ?sinx = 0.9974949866040544
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 3
+#   ?x = 1.5
+#   ?x2 = 2.25
+#   ?y = 3.2474949866040546
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Simpson1 :sampleResult _:sk_1 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:b3 :y 1.8414709848078965 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b3 .
+#   _:b3 :x 1.0 .
+#   _:b3 :coef 2.0 .
+#   1.0 math:sin 0.8414709848078965 .
+#   (1.0 2.0) math:exponentiation 1 .
+#   (0.8414709848078965 1) math:sum 1.8414709848078965 .
+#   1.0 math:cos 0.5403023058681398 .
+#   (2.0 1.0) math:product 2 .
+#   (0.5403023058681398 2) math:sum 2.5403023058681398 .
+#   (2.5403023058681398 2.0) math:exponentiation 6.453135805198988 .
+#   (1.0 6.453135805198988) math:sum 7.453135805198988 .
+#   (7.453135805198988 0.5) math:exponentiation 2.7300431874237794 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 2.0
+#   ?cosx = 0.5403023058681398
+#   ?ds = 2.7300431874237794
+#   ?dy = 2.5403023058681398
+#   ?dy2 = 6.453135805198988
+#   ?onePlus = 7.453135805198988
+#   ?s = _:b3
+#   ?sinx = 0.8414709848078965
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 2
+#   ?x = 1.0
+#   ?x2 = 1
+#   ?y = 1.8414709848078965
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:b3 :y 1.8414709848078965 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:b3 :dy 2.5403023058681398 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b3 .
+#   _:b3 :x 1.0 .
+#   _:b3 :coef 2.0 .
+#   1.0 math:sin 0.8414709848078965 .
+#   (1.0 2.0) math:exponentiation 1 .
+#   (0.8414709848078965 1) math:sum 1.8414709848078965 .
+#   1.0 math:cos 0.5403023058681398 .
+#   (2.0 1.0) math:product 2 .
+#   (0.5403023058681398 2) math:sum 2.5403023058681398 .
+#   (2.5403023058681398 2.0) math:exponentiation 6.453135805198988 .
+#   (1.0 6.453135805198988) math:sum 7.453135805198988 .
+#   (7.453135805198988 0.5) math:exponentiation 2.7300431874237794 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 2.0
+#   ?cosx = 0.5403023058681398
+#   ?ds = 2.7300431874237794
+#   ?dy = 2.5403023058681398
+#   ?dy2 = 6.453135805198988
+#   ?onePlus = 7.453135805198988
+#   ?s = _:b3
+#   ?sinx = 0.8414709848078965
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 2
+#   ?x = 1.0
+#   ?x2 = 1
+#   ?y = 1.8414709848078965
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:b3 :dy 2.5403023058681398 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:b3 :ds 2.7300431874237794 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b3 .
+#   _:b3 :x 1.0 .
+#   _:b3 :coef 2.0 .
+#   1.0 math:sin 0.8414709848078965 .
+#   (1.0 2.0) math:exponentiation 1 .
+#   (0.8414709848078965 1) math:sum 1.8414709848078965 .
+#   1.0 math:cos 0.5403023058681398 .
+#   (2.0 1.0) math:product 2 .
+#   (0.5403023058681398 2) math:sum 2.5403023058681398 .
+#   (2.5403023058681398 2.0) math:exponentiation 6.453135805198988 .
+#   (1.0 6.453135805198988) math:sum 7.453135805198988 .
+#   (7.453135805198988 0.5) math:exponentiation 2.7300431874237794 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 2.0
+#   ?cosx = 0.5403023058681398
+#   ?ds = 2.7300431874237794
+#   ?dy = 2.5403023058681398
+#   ?dy2 = 6.453135805198988
+#   ?onePlus = 7.453135805198988
+#   ?s = _:b3
+#   ?sinx = 0.8414709848078965
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 2
+#   ?x = 1.0
+#   ?x2 = 1
+#   ?y = 1.8414709848078965
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:b3 :ds 2.7300431874237794 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_2 :sample _:b3 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b3 .
+#   _:b3 :x 1.0 .
+#   _:b3 :coef 2.0 .
+#   1.0 math:sin 0.8414709848078965 .
+#   (1.0 2.0) math:exponentiation 1 .
+#   (0.8414709848078965 1) math:sum 1.8414709848078965 .
+#   1.0 math:cos 0.5403023058681398 .
+#   (2.0 1.0) math:product 2 .
+#   (0.5403023058681398 2) math:sum 2.5403023058681398 .
+#   (2.5403023058681398 2.0) math:exponentiation 6.453135805198988 .
+#   (1.0 6.453135805198988) math:sum 7.453135805198988 .
+#   (7.453135805198988 0.5) math:exponentiation 2.7300431874237794 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 2.0
+#   ?cosx = 0.5403023058681398
+#   ?ds = 2.7300431874237794
+#   ?dy = 2.5403023058681398
+#   ?dy2 = 6.453135805198988
+#   ?onePlus = 7.453135805198988
+#   ?s = _:b3
+#   ?sinx = 0.8414709848078965
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 2
+#   ?x = 1.0
+#   ?x2 = 1
+#   ?y = 1.8414709848078965
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_2 :sample _:b3 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_2 :x 1.0 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b3 .
+#   _:b3 :x 1.0 .
+#   _:b3 :coef 2.0 .
+#   1.0 math:sin 0.8414709848078965 .
+#   (1.0 2.0) math:exponentiation 1 .
+#   (0.8414709848078965 1) math:sum 1.8414709848078965 .
+#   1.0 math:cos 0.5403023058681398 .
+#   (2.0 1.0) math:product 2 .
+#   (0.5403023058681398 2) math:sum 2.5403023058681398 .
+#   (2.5403023058681398 2.0) math:exponentiation 6.453135805198988 .
+#   (1.0 6.453135805198988) math:sum 7.453135805198988 .
+#   (7.453135805198988 0.5) math:exponentiation 2.7300431874237794 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 2.0
+#   ?cosx = 0.5403023058681398
+#   ?ds = 2.7300431874237794
+#   ?dy = 2.5403023058681398
+#   ?dy2 = 6.453135805198988
+#   ?onePlus = 7.453135805198988
+#   ?s = _:b3
+#   ?sinx = 0.8414709848078965
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 2
+#   ?x = 1.0
+#   ?x2 = 1
+#   ?y = 1.8414709848078965
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_2 :x 1.0 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_2 :coef 2.0 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b3 .
+#   _:b3 :x 1.0 .
+#   _:b3 :coef 2.0 .
+#   1.0 math:sin 0.8414709848078965 .
+#   (1.0 2.0) math:exponentiation 1 .
+#   (0.8414709848078965 1) math:sum 1.8414709848078965 .
+#   1.0 math:cos 0.5403023058681398 .
+#   (2.0 1.0) math:product 2 .
+#   (0.5403023058681398 2) math:sum 2.5403023058681398 .
+#   (2.5403023058681398 2.0) math:exponentiation 6.453135805198988 .
+#   (1.0 6.453135805198988) math:sum 7.453135805198988 .
+#   (7.453135805198988 0.5) math:exponentiation 2.7300431874237794 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 2.0
+#   ?cosx = 0.5403023058681398
+#   ?ds = 2.7300431874237794
+#   ?dy = 2.5403023058681398
+#   ?dy2 = 6.453135805198988
+#   ?onePlus = 7.453135805198988
+#   ?s = _:b3
+#   ?sinx = 0.8414709848078965
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 2
+#   ?x = 1.0
+#   ?x2 = 1
+#   ?y = 1.8414709848078965
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_2 :coef 2.0 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_2 :y 1.8414709848078965 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b3 .
+#   _:b3 :x 1.0 .
+#   _:b3 :coef 2.0 .
+#   1.0 math:sin 0.8414709848078965 .
+#   (1.0 2.0) math:exponentiation 1 .
+#   (0.8414709848078965 1) math:sum 1.8414709848078965 .
+#   1.0 math:cos 0.5403023058681398 .
+#   (2.0 1.0) math:product 2 .
+#   (0.5403023058681398 2) math:sum 2.5403023058681398 .
+#   (2.5403023058681398 2.0) math:exponentiation 6.453135805198988 .
+#   (1.0 6.453135805198988) math:sum 7.453135805198988 .
+#   (7.453135805198988 0.5) math:exponentiation 2.7300431874237794 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 2.0
+#   ?cosx = 0.5403023058681398
+#   ?ds = 2.7300431874237794
+#   ?dy = 2.5403023058681398
+#   ?dy2 = 6.453135805198988
+#   ?onePlus = 7.453135805198988
+#   ?s = _:b3
+#   ?sinx = 0.8414709848078965
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 2
+#   ?x = 1.0
+#   ?x2 = 1
+#   ?y = 1.8414709848078965
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_2 :y 1.8414709848078965 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_2 :dy 2.5403023058681398 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b3 .
+#   _:b3 :x 1.0 .
+#   _:b3 :coef 2.0 .
+#   1.0 math:sin 0.8414709848078965 .
+#   (1.0 2.0) math:exponentiation 1 .
+#   (0.8414709848078965 1) math:sum 1.8414709848078965 .
+#   1.0 math:cos 0.5403023058681398 .
+#   (2.0 1.0) math:product 2 .
+#   (0.5403023058681398 2) math:sum 2.5403023058681398 .
+#   (2.5403023058681398 2.0) math:exponentiation 6.453135805198988 .
+#   (1.0 6.453135805198988) math:sum 7.453135805198988 .
+#   (7.453135805198988 0.5) math:exponentiation 2.7300431874237794 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 2.0
+#   ?cosx = 0.5403023058681398
+#   ?ds = 2.7300431874237794
+#   ?dy = 2.5403023058681398
+#   ?dy2 = 6.453135805198988
+#   ?onePlus = 7.453135805198988
+#   ?s = _:b3
+#   ?sinx = 0.8414709848078965
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 2
+#   ?x = 1.0
+#   ?x2 = 1
+#   ?y = 1.8414709848078965
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_2 :dy 2.5403023058681398 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_2 :ds 2.7300431874237794 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b3 .
+#   _:b3 :x 1.0 .
+#   _:b3 :coef 2.0 .
+#   1.0 math:sin 0.8414709848078965 .
+#   (1.0 2.0) math:exponentiation 1 .
+#   (0.8414709848078965 1) math:sum 1.8414709848078965 .
+#   1.0 math:cos 0.5403023058681398 .
+#   (2.0 1.0) math:product 2 .
+#   (0.5403023058681398 2) math:sum 2.5403023058681398 .
+#   (2.5403023058681398 2.0) math:exponentiation 6.453135805198988 .
+#   (1.0 6.453135805198988) math:sum 7.453135805198988 .
+#   (7.453135805198988 0.5) math:exponentiation 2.7300431874237794 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 2.0
+#   ?cosx = 0.5403023058681398
+#   ?ds = 2.7300431874237794
+#   ?dy = 2.5403023058681398
+#   ?dy2 = 6.453135805198988
+#   ?onePlus = 7.453135805198988
+#   ?s = _:b3
+#   ?sinx = 0.8414709848078965
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 2
+#   ?x = 1.0
+#   ?x2 = 1
+#   ?y = 1.8414709848078965
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_2 :ds 2.7300431874237794 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Simpson1 :sampleResult _:sk_2 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b3 .
+#   _:b3 :x 1.0 .
+#   _:b3 :coef 2.0 .
+#   1.0 math:sin 0.8414709848078965 .
+#   (1.0 2.0) math:exponentiation 1 .
+#   (0.8414709848078965 1) math:sum 1.8414709848078965 .
+#   1.0 math:cos 0.5403023058681398 .
+#   (2.0 1.0) math:product 2 .
+#   (0.5403023058681398 2) math:sum 2.5403023058681398 .
+#   (2.5403023058681398 2.0) math:exponentiation 6.453135805198988 .
+#   (1.0 6.453135805198988) math:sum 7.453135805198988 .
+#   (7.453135805198988 0.5) math:exponentiation 2.7300431874237794 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 2.0
+#   ?cosx = 0.5403023058681398
+#   ?ds = 2.7300431874237794
+#   ?dy = 2.5403023058681398
+#   ?dy2 = 6.453135805198988
+#   ?onePlus = 7.453135805198988
+#   ?s = _:b3
+#   ?sinx = 0.8414709848078965
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 2
+#   ?x = 1.0
+#   ?x2 = 1
+#   ?y = 1.8414709848078965
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Simpson1 :sampleResult _:sk_2 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:b2 :y 0.729425538604203 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b2 .
+#   _:b2 :x 0.5 .
+#   _:b2 :coef 4.0 .
+#   0.5 math:sin 0.479425538604203 .
+#   (0.5 2.0) math:exponentiation 0.25 .
+#   (0.479425538604203 0.25) math:sum 0.729425538604203 .
+#   0.5 math:cos 0.8775825618903728 .
+#   (2.0 0.5) math:product 1 .
+#   (0.8775825618903728 1) math:sum 1.8775825618903728 .
+#   (1.8775825618903728 2.0) math:exponentiation 3.5253162767148156 .
+#   (1.0 3.5253162767148156) math:sum 4.525316276714816 .
+#   (4.525316276714816 0.5) math:exponentiation 2.12727907823934 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 4.0
+#   ?cosx = 0.8775825618903728
+#   ?ds = 2.12727907823934
+#   ?dy = 1.8775825618903728
+#   ?dy2 = 3.5253162767148156
+#   ?onePlus = 4.525316276714816
+#   ?s = _:b2
+#   ?sinx = 0.479425538604203
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 1
+#   ?x = 0.5
+#   ?x2 = 0.25
+#   ?y = 0.729425538604203
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:b2 :y 0.729425538604203 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:b2 :dy 1.8775825618903728 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b2 .
+#   _:b2 :x 0.5 .
+#   _:b2 :coef 4.0 .
+#   0.5 math:sin 0.479425538604203 .
+#   (0.5 2.0) math:exponentiation 0.25 .
+#   (0.479425538604203 0.25) math:sum 0.729425538604203 .
+#   0.5 math:cos 0.8775825618903728 .
+#   (2.0 0.5) math:product 1 .
+#   (0.8775825618903728 1) math:sum 1.8775825618903728 .
+#   (1.8775825618903728 2.0) math:exponentiation 3.5253162767148156 .
+#   (1.0 3.5253162767148156) math:sum 4.525316276714816 .
+#   (4.525316276714816 0.5) math:exponentiation 2.12727907823934 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 4.0
+#   ?cosx = 0.8775825618903728
+#   ?ds = 2.12727907823934
+#   ?dy = 1.8775825618903728
+#   ?dy2 = 3.5253162767148156
+#   ?onePlus = 4.525316276714816
+#   ?s = _:b2
+#   ?sinx = 0.479425538604203
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 1
+#   ?x = 0.5
+#   ?x2 = 0.25
+#   ?y = 0.729425538604203
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:b2 :dy 1.8775825618903728 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:b2 :ds 2.12727907823934 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b2 .
+#   _:b2 :x 0.5 .
+#   _:b2 :coef 4.0 .
+#   0.5 math:sin 0.479425538604203 .
+#   (0.5 2.0) math:exponentiation 0.25 .
+#   (0.479425538604203 0.25) math:sum 0.729425538604203 .
+#   0.5 math:cos 0.8775825618903728 .
+#   (2.0 0.5) math:product 1 .
+#   (0.8775825618903728 1) math:sum 1.8775825618903728 .
+#   (1.8775825618903728 2.0) math:exponentiation 3.5253162767148156 .
+#   (1.0 3.5253162767148156) math:sum 4.525316276714816 .
+#   (4.525316276714816 0.5) math:exponentiation 2.12727907823934 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 4.0
+#   ?cosx = 0.8775825618903728
+#   ?ds = 2.12727907823934
+#   ?dy = 1.8775825618903728
+#   ?dy2 = 3.5253162767148156
+#   ?onePlus = 4.525316276714816
+#   ?s = _:b2
+#   ?sinx = 0.479425538604203
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 1
+#   ?x = 0.5
+#   ?x2 = 0.25
+#   ?y = 0.729425538604203
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:b2 :ds 2.12727907823934 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_3 :sample _:b2 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b2 .
+#   _:b2 :x 0.5 .
+#   _:b2 :coef 4.0 .
+#   0.5 math:sin 0.479425538604203 .
+#   (0.5 2.0) math:exponentiation 0.25 .
+#   (0.479425538604203 0.25) math:sum 0.729425538604203 .
+#   0.5 math:cos 0.8775825618903728 .
+#   (2.0 0.5) math:product 1 .
+#   (0.8775825618903728 1) math:sum 1.8775825618903728 .
+#   (1.8775825618903728 2.0) math:exponentiation 3.5253162767148156 .
+#   (1.0 3.5253162767148156) math:sum 4.525316276714816 .
+#   (4.525316276714816 0.5) math:exponentiation 2.12727907823934 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 4.0
+#   ?cosx = 0.8775825618903728
+#   ?ds = 2.12727907823934
+#   ?dy = 1.8775825618903728
+#   ?dy2 = 3.5253162767148156
+#   ?onePlus = 4.525316276714816
+#   ?s = _:b2
+#   ?sinx = 0.479425538604203
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 1
+#   ?x = 0.5
+#   ?x2 = 0.25
+#   ?y = 0.729425538604203
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_3 :sample _:b2 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_3 :x 0.5 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b2 .
+#   _:b2 :x 0.5 .
+#   _:b2 :coef 4.0 .
+#   0.5 math:sin 0.479425538604203 .
+#   (0.5 2.0) math:exponentiation 0.25 .
+#   (0.479425538604203 0.25) math:sum 0.729425538604203 .
+#   0.5 math:cos 0.8775825618903728 .
+#   (2.0 0.5) math:product 1 .
+#   (0.8775825618903728 1) math:sum 1.8775825618903728 .
+#   (1.8775825618903728 2.0) math:exponentiation 3.5253162767148156 .
+#   (1.0 3.5253162767148156) math:sum 4.525316276714816 .
+#   (4.525316276714816 0.5) math:exponentiation 2.12727907823934 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 4.0
+#   ?cosx = 0.8775825618903728
+#   ?ds = 2.12727907823934
+#   ?dy = 1.8775825618903728
+#   ?dy2 = 3.5253162767148156
+#   ?onePlus = 4.525316276714816
+#   ?s = _:b2
+#   ?sinx = 0.479425538604203
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 1
+#   ?x = 0.5
+#   ?x2 = 0.25
+#   ?y = 0.729425538604203
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_3 :x 0.5 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_3 :coef 4.0 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b2 .
+#   _:b2 :x 0.5 .
+#   _:b2 :coef 4.0 .
+#   0.5 math:sin 0.479425538604203 .
+#   (0.5 2.0) math:exponentiation 0.25 .
+#   (0.479425538604203 0.25) math:sum 0.729425538604203 .
+#   0.5 math:cos 0.8775825618903728 .
+#   (2.0 0.5) math:product 1 .
+#   (0.8775825618903728 1) math:sum 1.8775825618903728 .
+#   (1.8775825618903728 2.0) math:exponentiation 3.5253162767148156 .
+#   (1.0 3.5253162767148156) math:sum 4.525316276714816 .
+#   (4.525316276714816 0.5) math:exponentiation 2.12727907823934 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 4.0
+#   ?cosx = 0.8775825618903728
+#   ?ds = 2.12727907823934
+#   ?dy = 1.8775825618903728
+#   ?dy2 = 3.5253162767148156
+#   ?onePlus = 4.525316276714816
+#   ?s = _:b2
+#   ?sinx = 0.479425538604203
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 1
+#   ?x = 0.5
+#   ?x2 = 0.25
+#   ?y = 0.729425538604203
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_3 :coef 4.0 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_3 :y 0.729425538604203 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b2 .
+#   _:b2 :x 0.5 .
+#   _:b2 :coef 4.0 .
+#   0.5 math:sin 0.479425538604203 .
+#   (0.5 2.0) math:exponentiation 0.25 .
+#   (0.479425538604203 0.25) math:sum 0.729425538604203 .
+#   0.5 math:cos 0.8775825618903728 .
+#   (2.0 0.5) math:product 1 .
+#   (0.8775825618903728 1) math:sum 1.8775825618903728 .
+#   (1.8775825618903728 2.0) math:exponentiation 3.5253162767148156 .
+#   (1.0 3.5253162767148156) math:sum 4.525316276714816 .
+#   (4.525316276714816 0.5) math:exponentiation 2.12727907823934 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 4.0
+#   ?cosx = 0.8775825618903728
+#   ?ds = 2.12727907823934
+#   ?dy = 1.8775825618903728
+#   ?dy2 = 3.5253162767148156
+#   ?onePlus = 4.525316276714816
+#   ?s = _:b2
+#   ?sinx = 0.479425538604203
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 1
+#   ?x = 0.5
+#   ?x2 = 0.25
+#   ?y = 0.729425538604203
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_3 :y 0.729425538604203 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_3 :dy 1.8775825618903728 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b2 .
+#   _:b2 :x 0.5 .
+#   _:b2 :coef 4.0 .
+#   0.5 math:sin 0.479425538604203 .
+#   (0.5 2.0) math:exponentiation 0.25 .
+#   (0.479425538604203 0.25) math:sum 0.729425538604203 .
+#   0.5 math:cos 0.8775825618903728 .
+#   (2.0 0.5) math:product 1 .
+#   (0.8775825618903728 1) math:sum 1.8775825618903728 .
+#   (1.8775825618903728 2.0) math:exponentiation 3.5253162767148156 .
+#   (1.0 3.5253162767148156) math:sum 4.525316276714816 .
+#   (4.525316276714816 0.5) math:exponentiation 2.12727907823934 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 4.0
+#   ?cosx = 0.8775825618903728
+#   ?ds = 2.12727907823934
+#   ?dy = 1.8775825618903728
+#   ?dy2 = 3.5253162767148156
+#   ?onePlus = 4.525316276714816
+#   ?s = _:b2
+#   ?sinx = 0.479425538604203
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 1
+#   ?x = 0.5
+#   ?x2 = 0.25
+#   ?y = 0.729425538604203
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_3 :dy 1.8775825618903728 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_3 :ds 2.12727907823934 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b2 .
+#   _:b2 :x 0.5 .
+#   _:b2 :coef 4.0 .
+#   0.5 math:sin 0.479425538604203 .
+#   (0.5 2.0) math:exponentiation 0.25 .
+#   (0.479425538604203 0.25) math:sum 0.729425538604203 .
+#   0.5 math:cos 0.8775825618903728 .
+#   (2.0 0.5) math:product 1 .
+#   (0.8775825618903728 1) math:sum 1.8775825618903728 .
+#   (1.8775825618903728 2.0) math:exponentiation 3.5253162767148156 .
+#   (1.0 3.5253162767148156) math:sum 4.525316276714816 .
+#   (4.525316276714816 0.5) math:exponentiation 2.12727907823934 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 4.0
+#   ?cosx = 0.8775825618903728
+#   ?ds = 2.12727907823934
+#   ?dy = 1.8775825618903728
+#   ?dy2 = 3.5253162767148156
+#   ?onePlus = 4.525316276714816
+#   ?s = _:b2
+#   ?sinx = 0.479425538604203
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 1
+#   ?x = 0.5
+#   ?x2 = 0.25
+#   ?y = 0.729425538604203
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_3 :ds 2.12727907823934 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Simpson1 :sampleResult _:sk_3 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b2 .
+#   _:b2 :x 0.5 .
+#   _:b2 :coef 4.0 .
+#   0.5 math:sin 0.479425538604203 .
+#   (0.5 2.0) math:exponentiation 0.25 .
+#   (0.479425538604203 0.25) math:sum 0.729425538604203 .
+#   0.5 math:cos 0.8775825618903728 .
+#   (2.0 0.5) math:product 1 .
+#   (0.8775825618903728 1) math:sum 1.8775825618903728 .
+#   (1.8775825618903728 2.0) math:exponentiation 3.5253162767148156 .
+#   (1.0 3.5253162767148156) math:sum 4.525316276714816 .
+#   (4.525316276714816 0.5) math:exponentiation 2.12727907823934 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 4.0
+#   ?cosx = 0.8775825618903728
+#   ?ds = 2.12727907823934
+#   ?dy = 1.8775825618903728
+#   ?dy2 = 3.5253162767148156
+#   ?onePlus = 4.525316276714816
+#   ?s = _:b2
+#   ?sinx = 0.479425538604203
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 1
+#   ?x = 0.5
+#   ?x2 = 0.25
+#   ?y = 0.729425538604203
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Simpson1 :sampleResult _:sk_3 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:b1 :y 0 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b1 .
+#   _:b1 :x 0.0 .
+#   _:b1 :coef 1.0 .
+#   0.0 math:sin 0 .
+#   (0.0 2.0) math:exponentiation 0 .
+#   (0 0) math:sum 0 .
+#   0.0 math:cos 1 .
+#   (2.0 0.0) math:product 0 .
+#   (1 0) math:sum 1 .
+#   (1 2.0) math:exponentiation 1 .
+#   (1.0 1) math:sum 2 .
+#   (2 0.5) math:exponentiation 1.4142135623730951 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 1.0
+#   ?cosx = 1
+#   ?ds = 1.4142135623730951
+#   ?dy = 1
+#   ?dy2 = 1
+#   ?onePlus = 2
+#   ?s = _:b1
+#   ?sinx = 0
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 0
+#   ?x = 0.0
+#   ?x2 = 0
+#   ?y = 0
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:b1 :y 0 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:b1 :dy 1 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b1 .
+#   _:b1 :x 0.0 .
+#   _:b1 :coef 1.0 .
+#   0.0 math:sin 0 .
+#   (0.0 2.0) math:exponentiation 0 .
+#   (0 0) math:sum 0 .
+#   0.0 math:cos 1 .
+#   (2.0 0.0) math:product 0 .
+#   (1 0) math:sum 1 .
+#   (1 2.0) math:exponentiation 1 .
+#   (1.0 1) math:sum 2 .
+#   (2 0.5) math:exponentiation 1.4142135623730951 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 1.0
+#   ?cosx = 1
+#   ?ds = 1.4142135623730951
+#   ?dy = 1
+#   ?dy2 = 1
+#   ?onePlus = 2
+#   ?s = _:b1
+#   ?sinx = 0
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 0
+#   ?x = 0.0
+#   ?x2 = 0
+#   ?y = 0
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:b1 :dy 1 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:b1 :ds 1.4142135623730951 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b1 .
+#   _:b1 :x 0.0 .
+#   _:b1 :coef 1.0 .
+#   0.0 math:sin 0 .
+#   (0.0 2.0) math:exponentiation 0 .
+#   (0 0) math:sum 0 .
+#   0.0 math:cos 1 .
+#   (2.0 0.0) math:product 0 .
+#   (1 0) math:sum 1 .
+#   (1 2.0) math:exponentiation 1 .
+#   (1.0 1) math:sum 2 .
+#   (2 0.5) math:exponentiation 1.4142135623730951 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 1.0
+#   ?cosx = 1
+#   ?ds = 1.4142135623730951
+#   ?dy = 1
+#   ?dy2 = 1
+#   ?onePlus = 2
+#   ?s = _:b1
+#   ?sinx = 0
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 0
+#   ?x = 0.0
+#   ?x2 = 0
+#   ?y = 0
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:b1 :ds 1.4142135623730951 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_4 :sample _:b1 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b1 .
+#   _:b1 :x 0.0 .
+#   _:b1 :coef 1.0 .
+#   0.0 math:sin 0 .
+#   (0.0 2.0) math:exponentiation 0 .
+#   (0 0) math:sum 0 .
+#   0.0 math:cos 1 .
+#   (2.0 0.0) math:product 0 .
+#   (1 0) math:sum 1 .
+#   (1 2.0) math:exponentiation 1 .
+#   (1.0 1) math:sum 2 .
+#   (2 0.5) math:exponentiation 1.4142135623730951 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 1.0
+#   ?cosx = 1
+#   ?ds = 1.4142135623730951
+#   ?dy = 1
+#   ?dy2 = 1
+#   ?onePlus = 2
+#   ?s = _:b1
+#   ?sinx = 0
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 0
+#   ?x = 0.0
+#   ?x2 = 0
+#   ?y = 0
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_4 :sample _:b1 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_4 :x 0.0 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b1 .
+#   _:b1 :x 0.0 .
+#   _:b1 :coef 1.0 .
+#   0.0 math:sin 0 .
+#   (0.0 2.0) math:exponentiation 0 .
+#   (0 0) math:sum 0 .
+#   0.0 math:cos 1 .
+#   (2.0 0.0) math:product 0 .
+#   (1 0) math:sum 1 .
+#   (1 2.0) math:exponentiation 1 .
+#   (1.0 1) math:sum 2 .
+#   (2 0.5) math:exponentiation 1.4142135623730951 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 1.0
+#   ?cosx = 1
+#   ?ds = 1.4142135623730951
+#   ?dy = 1
+#   ?dy2 = 1
+#   ?onePlus = 2
+#   ?s = _:b1
+#   ?sinx = 0
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 0
+#   ?x = 0.0
+#   ?x2 = 0
+#   ?y = 0
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_4 :x 0.0 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_4 :coef 1.0 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b1 .
+#   _:b1 :x 0.0 .
+#   _:b1 :coef 1.0 .
+#   0.0 math:sin 0 .
+#   (0.0 2.0) math:exponentiation 0 .
+#   (0 0) math:sum 0 .
+#   0.0 math:cos 1 .
+#   (2.0 0.0) math:product 0 .
+#   (1 0) math:sum 1 .
+#   (1 2.0) math:exponentiation 1 .
+#   (1.0 1) math:sum 2 .
+#   (2 0.5) math:exponentiation 1.4142135623730951 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 1.0
+#   ?cosx = 1
+#   ?ds = 1.4142135623730951
+#   ?dy = 1
+#   ?dy2 = 1
+#   ?onePlus = 2
+#   ?s = _:b1
+#   ?sinx = 0
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 0
+#   ?x = 0.0
+#   ?x2 = 0
+#   ?y = 0
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_4 :coef 1.0 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_4 :y 0 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b1 .
+#   _:b1 :x 0.0 .
+#   _:b1 :coef 1.0 .
+#   0.0 math:sin 0 .
+#   (0.0 2.0) math:exponentiation 0 .
+#   (0 0) math:sum 0 .
+#   0.0 math:cos 1 .
+#   (2.0 0.0) math:product 0 .
+#   (1 0) math:sum 1 .
+#   (1 2.0) math:exponentiation 1 .
+#   (1.0 1) math:sum 2 .
+#   (2 0.5) math:exponentiation 1.4142135623730951 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 1.0
+#   ?cosx = 1
+#   ?ds = 1.4142135623730951
+#   ?dy = 1
+#   ?dy2 = 1
+#   ?onePlus = 2
+#   ?s = _:b1
+#   ?sinx = 0
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 0
+#   ?x = 0.0
+#   ?x2 = 0
+#   ?y = 0
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_4 :y 0 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_4 :dy 1 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b1 .
+#   _:b1 :x 0.0 .
+#   _:b1 :coef 1.0 .
+#   0.0 math:sin 0 .
+#   (0.0 2.0) math:exponentiation 0 .
+#   (0 0) math:sum 0 .
+#   0.0 math:cos 1 .
+#   (2.0 0.0) math:product 0 .
+#   (1 0) math:sum 1 .
+#   (1 2.0) math:exponentiation 1 .
+#   (1.0 1) math:sum 2 .
+#   (2 0.5) math:exponentiation 1.4142135623730951 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 1.0
+#   ?cosx = 1
+#   ?ds = 1.4142135623730951
+#   ?dy = 1
+#   ?dy2 = 1
+#   ?onePlus = 2
+#   ?s = _:b1
+#   ?sinx = 0
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 0
+#   ?x = 0.0
+#   ?x2 = 0
+#   ?y = 0
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_4 :dy 1 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_4 :ds 1.4142135623730951 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b1 .
+#   _:b1 :x 0.0 .
+#   _:b1 :coef 1.0 .
+#   0.0 math:sin 0 .
+#   (0.0 2.0) math:exponentiation 0 .
+#   (0 0) math:sum 0 .
+#   0.0 math:cos 1 .
+#   (2.0 0.0) math:product 0 .
+#   (1 0) math:sum 1 .
+#   (1 2.0) math:exponentiation 1 .
+#   (1.0 1) math:sum 2 .
+#   (2 0.5) math:exponentiation 1.4142135623730951 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 1.0
+#   ?cosx = 1
+#   ?ds = 1.4142135623730951
+#   ?dy = 1
+#   ?dy2 = 1
+#   ?onePlus = 2
+#   ?s = _:b1
+#   ?sinx = 0
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 0
+#   ?x = 0.0
+#   ?x2 = 0
+#   ?y = 0
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_4 :ds 1.4142135623730951 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Simpson1 :sampleResult _:sk_4 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (_:b1 _:b2 _:b3 _:b4 _:b5) list:member _:b1 .
+#   _:b1 :x 0.0 .
+#   _:b1 :coef 1.0 .
+#   0.0 math:sin 0 .
+#   (0.0 2.0) math:exponentiation 0 .
+#   (0 0) math:sum 0 .
+#   0.0 math:cos 1 .
+#   (2.0 0.0) math:product 0 .
+#   (1 0) math:sum 1 .
+#   (1 2.0) math:exponentiation 1 .
+#   (1.0 1) math:sum 2 .
+#   (2 0.5) math:exponentiation 1.4142135623730951 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     ?ss list:member ?s .
+#     ?s :x ?x .
+#     ?s :coef ?c .
+#     ?x math:sin ?sinx .
+#     (?x 2.0) math:exponentiation ?x2 .
+#     (?sinx ?x2) math:sum ?y .
+#     ?x math:cos ?cosx .
+#     (2.0 ?x) math:product ?twox .
+#     (?cosx ?twox) math:sum ?dy .
+#     (?dy 2.0) math:exponentiation ?dy2 .
+#     (1.0 ?dy2) math:sum ?onePlus .
+#     (?onePlus 0.5) math:exponentiation ?ds .
+#   } => {
+#     ?s :y ?y .
+#     ?s :dy ?dy .
+#     ?s :ds ?ds .
+#     _:b6 :sample ?s .
+#     _:b6 :x ?x .
+#     _:b6 :coef ?c .
+#     _:b6 :y ?y .
+#     _:b6 :dy ?dy .
+#     _:b6 :ds ?ds .
+#     :Simpson1 :sampleResult _:b6 .
+#   } .
+# with substitution (on rule variables):
+#   ?c = 1.0
+#   ?cosx = 1
+#   ?ds = 1.4142135623730951
+#   ?dy = 1
+#   ?dy2 = 1
+#   ?onePlus = 2
+#   ?s = _:b1
+#   ?sinx = 0
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?twox = 0
+#   ?x = 0.0
+#   ?x2 = 0
+#   ?y = 0
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Simpson1 :sampleResult _:sk_4 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Simpson1 :sumWY 24.499921497274507 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (?wy {
+#       (_:b1 _:b2 _:b3 _:b4 _:b5) list:member ?s .
+#       ?s :coef ?c .
+#       ?s :y ?y .
+#       (?c ?y) math:product ?wy .
+#   } (4.909297426825682 12.989979946416218 3.682941969615793 2.917702154416812 0)) log:collectAllIn ?_b1 .
+#   (4.909297426825682 12.989979946416218 3.682941969615793 2.917702154416812 0) math:sum 24.499921497274507 .
+#   (?wxy {
+#       (_:b1 _:b2 _:b3 _:b4 _:b5) list:member ?s .
+#       ?s :coef ?c .
+#       ?s :x ?x .
+#       ?s :y ?y .
+#       (?x ?y) math:product ?xy .
+#       (?c ?xy) math:product ?wxy .
+#   } (9.818594853651364 19.484969919624326 3.682941969615793 1.458851077208406 0)) log:collectAllIn ?_b2 .
+#   (9.818594853651364 19.484969919624326 3.682941969615793 1.458851077208406 0) math:sum 34.445357820099886 .
+#   (?wy2 {
+#       (_:b1 _:b2 _:b3 _:b4 _:b5) list:member ?s .
+#       ?s :coef ?c .
+#       ?s :y ?y .
+#       (?y 2.0) math:exponentiation ?y2 .
+#       (?c ?y2) math:product ?wy2 .
+#   } (24.10120122503726 42.18489475207387 6.782030775778728 2.1282464654721265 0)) log:collectAllIn ?_b3 .
+#   (24.10120122503726 42.18489475207387 6.782030775778728 2.1282464654721265 0) math:sum 75.19637321836198 .
+#   (?wds {
+#       (_:b1 _:b2 _:b3 _:b4 _:b5) list:member ?s .
+#       ?s :coef ?c .
+#       ?s :ds ?ds .
+#       (?c ?ds) math:product ?wds .
+#   } (3.720753081997118 12.917849332891908 5.460086374847559 8.50911631295736 1.4142135623730951)) log:collectAllIn ?_b4 .
+#   (3.720753081997118 12.917849332891908 5.460086374847559 8.50911631295736 1.4142135623730951) math:sum 32.02201866506704 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     (?wy {
+#         ?ss list:member ?s .
+#         ?s :coef ?c .
+#         ?s :y ?y .
+#         (?c ?y) math:product ?wy .
+#     } ?wys) log:collectAllIn ?_b1 .
+#     ?wys math:sum ?sumWY .
+#     (?wxy {
+#         ?ss list:member ?s .
+#         ?s :coef ?c .
+#         ?s :x ?x .
+#         ?s :y ?y .
+#         (?x ?y) math:product ?xy .
+#         (?c ?xy) math:product ?wxy .
+#     } ?wxys) log:collectAllIn ?_b2 .
+#     ?wxys math:sum ?sumWXY .
+#     (?wy2 {
+#         ?ss list:member ?s .
+#         ?s :coef ?c .
+#         ?s :y ?y .
+#         (?y 2.0) math:exponentiation ?y2 .
+#         (?c ?y2) math:product ?wy2 .
+#     } ?wy2s) log:collectAllIn ?_b3 .
+#     ?wy2s math:sum ?sumWY2 .
+#     (?wds {
+#         ?ss list:member ?s .
+#         ?s :coef ?c .
+#         ?s :ds ?ds .
+#         (?c ?ds) math:product ?wds .
+#     } ?wdss) log:collectAllIn ?_b4 .
+#     ?wdss math:sum ?sumWDS .
+#   } => {
+#     :Simpson1 :sumWY ?sumWY .
+#     :Simpson1 :sumWXY ?sumWXY .
+#     :Simpson1 :sumWY2 ?sumWY2 .
+#     :Simpson1 :sumWDS ?sumWDS .
+#   } .
+# with substitution (on rule variables):
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?sumWDS = 32.02201866506704
+#   ?sumWXY = 34.445357820099886
+#   ?sumWY = 24.499921497274507
+#   ?sumWY2 = 75.19637321836198
+#   ?wdss = (3.720753081997118 12.917849332891908 5.460086374847559 8.50911631295736 1.4142135623730951)
+#   ?wxys = (9.818594853651364 19.484969919624326 3.682941969615793 1.458851077208406 0)
+#   ?wy2s = (24.10120122503726 42.18489475207387 6.782030775778728 2.1282464654721265 0)
+#   ?wys = (4.909297426825682 12.989979946416218 3.682941969615793 2.917702154416812 0)
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Simpson1 :sumWY 24.499921497274507 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Simpson1 :sumWXY 34.445357820099886 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (?wy {
+#       (_:b1 _:b2 _:b3 _:b4 _:b5) list:member ?s .
+#       ?s :coef ?c .
+#       ?s :y ?y .
+#       (?c ?y) math:product ?wy .
+#   } (4.909297426825682 12.989979946416218 3.682941969615793 2.917702154416812 0)) log:collectAllIn ?_b1 .
+#   (4.909297426825682 12.989979946416218 3.682941969615793 2.917702154416812 0) math:sum 24.499921497274507 .
+#   (?wxy {
+#       (_:b1 _:b2 _:b3 _:b4 _:b5) list:member ?s .
+#       ?s :coef ?c .
+#       ?s :x ?x .
+#       ?s :y ?y .
+#       (?x ?y) math:product ?xy .
+#       (?c ?xy) math:product ?wxy .
+#   } (9.818594853651364 19.484969919624326 3.682941969615793 1.458851077208406 0)) log:collectAllIn ?_b2 .
+#   (9.818594853651364 19.484969919624326 3.682941969615793 1.458851077208406 0) math:sum 34.445357820099886 .
+#   (?wy2 {
+#       (_:b1 _:b2 _:b3 _:b4 _:b5) list:member ?s .
+#       ?s :coef ?c .
+#       ?s :y ?y .
+#       (?y 2.0) math:exponentiation ?y2 .
+#       (?c ?y2) math:product ?wy2 .
+#   } (24.10120122503726 42.18489475207387 6.782030775778728 2.1282464654721265 0)) log:collectAllIn ?_b3 .
+#   (24.10120122503726 42.18489475207387 6.782030775778728 2.1282464654721265 0) math:sum 75.19637321836198 .
+#   (?wds {
+#       (_:b1 _:b2 _:b3 _:b4 _:b5) list:member ?s .
+#       ?s :coef ?c .
+#       ?s :ds ?ds .
+#       (?c ?ds) math:product ?wds .
+#   } (3.720753081997118 12.917849332891908 5.460086374847559 8.50911631295736 1.4142135623730951)) log:collectAllIn ?_b4 .
+#   (3.720753081997118 12.917849332891908 5.460086374847559 8.50911631295736 1.4142135623730951) math:sum 32.02201866506704 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     (?wy {
+#         ?ss list:member ?s .
+#         ?s :coef ?c .
+#         ?s :y ?y .
+#         (?c ?y) math:product ?wy .
+#     } ?wys) log:collectAllIn ?_b1 .
+#     ?wys math:sum ?sumWY .
+#     (?wxy {
+#         ?ss list:member ?s .
+#         ?s :coef ?c .
+#         ?s :x ?x .
+#         ?s :y ?y .
+#         (?x ?y) math:product ?xy .
+#         (?c ?xy) math:product ?wxy .
+#     } ?wxys) log:collectAllIn ?_b2 .
+#     ?wxys math:sum ?sumWXY .
+#     (?wy2 {
+#         ?ss list:member ?s .
+#         ?s :coef ?c .
+#         ?s :y ?y .
+#         (?y 2.0) math:exponentiation ?y2 .
+#         (?c ?y2) math:product ?wy2 .
+#     } ?wy2s) log:collectAllIn ?_b3 .
+#     ?wy2s math:sum ?sumWY2 .
+#     (?wds {
+#         ?ss list:member ?s .
+#         ?s :coef ?c .
+#         ?s :ds ?ds .
+#         (?c ?ds) math:product ?wds .
+#     } ?wdss) log:collectAllIn ?_b4 .
+#     ?wdss math:sum ?sumWDS .
+#   } => {
+#     :Simpson1 :sumWY ?sumWY .
+#     :Simpson1 :sumWXY ?sumWXY .
+#     :Simpson1 :sumWY2 ?sumWY2 .
+#     :Simpson1 :sumWDS ?sumWDS .
+#   } .
+# with substitution (on rule variables):
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?sumWDS = 32.02201866506704
+#   ?sumWXY = 34.445357820099886
+#   ?sumWY = 24.499921497274507
+#   ?sumWY2 = 75.19637321836198
+#   ?wdss = (3.720753081997118 12.917849332891908 5.460086374847559 8.50911631295736 1.4142135623730951)
+#   ?wxys = (9.818594853651364 19.484969919624326 3.682941969615793 1.458851077208406 0)
+#   ?wy2s = (24.10120122503726 42.18489475207387 6.782030775778728 2.1282464654721265 0)
+#   ?wys = (4.909297426825682 12.989979946416218 3.682941969615793 2.917702154416812 0)
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Simpson1 :sumWXY 34.445357820099886 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Simpson1 :sumWY2 75.19637321836198 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (?wy {
+#       (_:b1 _:b2 _:b3 _:b4 _:b5) list:member ?s .
+#       ?s :coef ?c .
+#       ?s :y ?y .
+#       (?c ?y) math:product ?wy .
+#   } (4.909297426825682 12.989979946416218 3.682941969615793 2.917702154416812 0)) log:collectAllIn ?_b1 .
+#   (4.909297426825682 12.989979946416218 3.682941969615793 2.917702154416812 0) math:sum 24.499921497274507 .
+#   (?wxy {
+#       (_:b1 _:b2 _:b3 _:b4 _:b5) list:member ?s .
+#       ?s :coef ?c .
+#       ?s :x ?x .
+#       ?s :y ?y .
+#       (?x ?y) math:product ?xy .
+#       (?c ?xy) math:product ?wxy .
+#   } (9.818594853651364 19.484969919624326 3.682941969615793 1.458851077208406 0)) log:collectAllIn ?_b2 .
+#   (9.818594853651364 19.484969919624326 3.682941969615793 1.458851077208406 0) math:sum 34.445357820099886 .
+#   (?wy2 {
+#       (_:b1 _:b2 _:b3 _:b4 _:b5) list:member ?s .
+#       ?s :coef ?c .
+#       ?s :y ?y .
+#       (?y 2.0) math:exponentiation ?y2 .
+#       (?c ?y2) math:product ?wy2 .
+#   } (24.10120122503726 42.18489475207387 6.782030775778728 2.1282464654721265 0)) log:collectAllIn ?_b3 .
+#   (24.10120122503726 42.18489475207387 6.782030775778728 2.1282464654721265 0) math:sum 75.19637321836198 .
+#   (?wds {
+#       (_:b1 _:b2 _:b3 _:b4 _:b5) list:member ?s .
+#       ?s :coef ?c .
+#       ?s :ds ?ds .
+#       (?c ?ds) math:product ?wds .
+#   } (3.720753081997118 12.917849332891908 5.460086374847559 8.50911631295736 1.4142135623730951)) log:collectAllIn ?_b4 .
+#   (3.720753081997118 12.917849332891908 5.460086374847559 8.50911631295736 1.4142135623730951) math:sum 32.02201866506704 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     (?wy {
+#         ?ss list:member ?s .
+#         ?s :coef ?c .
+#         ?s :y ?y .
+#         (?c ?y) math:product ?wy .
+#     } ?wys) log:collectAllIn ?_b1 .
+#     ?wys math:sum ?sumWY .
+#     (?wxy {
+#         ?ss list:member ?s .
+#         ?s :coef ?c .
+#         ?s :x ?x .
+#         ?s :y ?y .
+#         (?x ?y) math:product ?xy .
+#         (?c ?xy) math:product ?wxy .
+#     } ?wxys) log:collectAllIn ?_b2 .
+#     ?wxys math:sum ?sumWXY .
+#     (?wy2 {
+#         ?ss list:member ?s .
+#         ?s :coef ?c .
+#         ?s :y ?y .
+#         (?y 2.0) math:exponentiation ?y2 .
+#         (?c ?y2) math:product ?wy2 .
+#     } ?wy2s) log:collectAllIn ?_b3 .
+#     ?wy2s math:sum ?sumWY2 .
+#     (?wds {
+#         ?ss list:member ?s .
+#         ?s :coef ?c .
+#         ?s :ds ?ds .
+#         (?c ?ds) math:product ?wds .
+#     } ?wdss) log:collectAllIn ?_b4 .
+#     ?wdss math:sum ?sumWDS .
+#   } => {
+#     :Simpson1 :sumWY ?sumWY .
+#     :Simpson1 :sumWXY ?sumWXY .
+#     :Simpson1 :sumWY2 ?sumWY2 .
+#     :Simpson1 :sumWDS ?sumWDS .
+#   } .
+# with substitution (on rule variables):
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?sumWDS = 32.02201866506704
+#   ?sumWXY = 34.445357820099886
+#   ?sumWY = 24.499921497274507
+#   ?sumWY2 = 75.19637321836198
+#   ?wdss = (3.720753081997118 12.917849332891908 5.460086374847559 8.50911631295736 1.4142135623730951)
+#   ?wxys = (9.818594853651364 19.484969919624326 3.682941969615793 1.458851077208406 0)
+#   ?wy2s = (24.10120122503726 42.18489475207387 6.782030775778728 2.1282464654721265 0)
+#   ?wys = (4.909297426825682 12.989979946416218 3.682941969615793 2.917702154416812 0)
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Simpson1 :sumWY2 75.19637321836198 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Simpson1 :sumWDS 32.02201866506704 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :samples (_:b1 _:b2 _:b3 _:b4 _:b5) .
+#   (?wy {
+#       (_:b1 _:b2 _:b3 _:b4 _:b5) list:member ?s .
+#       ?s :coef ?c .
+#       ?s :y ?y .
+#       (?c ?y) math:product ?wy .
+#   } (4.909297426825682 12.989979946416218 3.682941969615793 2.917702154416812 0)) log:collectAllIn ?_b1 .
+#   (4.909297426825682 12.989979946416218 3.682941969615793 2.917702154416812 0) math:sum 24.499921497274507 .
+#   (?wxy {
+#       (_:b1 _:b2 _:b3 _:b4 _:b5) list:member ?s .
+#       ?s :coef ?c .
+#       ?s :x ?x .
+#       ?s :y ?y .
+#       (?x ?y) math:product ?xy .
+#       (?c ?xy) math:product ?wxy .
+#   } (9.818594853651364 19.484969919624326 3.682941969615793 1.458851077208406 0)) log:collectAllIn ?_b2 .
+#   (9.818594853651364 19.484969919624326 3.682941969615793 1.458851077208406 0) math:sum 34.445357820099886 .
+#   (?wy2 {
+#       (_:b1 _:b2 _:b3 _:b4 _:b5) list:member ?s .
+#       ?s :coef ?c .
+#       ?s :y ?y .
+#       (?y 2.0) math:exponentiation ?y2 .
+#       (?c ?y2) math:product ?wy2 .
+#   } (24.10120122503726 42.18489475207387 6.782030775778728 2.1282464654721265 0)) log:collectAllIn ?_b3 .
+#   (24.10120122503726 42.18489475207387 6.782030775778728 2.1282464654721265 0) math:sum 75.19637321836198 .
+#   (?wds {
+#       (_:b1 _:b2 _:b3 _:b4 _:b5) list:member ?s .
+#       ?s :coef ?c .
+#       ?s :ds ?ds .
+#       (?c ?ds) math:product ?wds .
+#   } (3.720753081997118 12.917849332891908 5.460086374847559 8.50911631295736 1.4142135623730951)) log:collectAllIn ?_b4 .
+#   (3.720753081997118 12.917849332891908 5.460086374847559 8.50911631295736 1.4142135623730951) math:sum 32.02201866506704 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :samples ?ss .
+#     (?wy {
+#         ?ss list:member ?s .
+#         ?s :coef ?c .
+#         ?s :y ?y .
+#         (?c ?y) math:product ?wy .
+#     } ?wys) log:collectAllIn ?_b1 .
+#     ?wys math:sum ?sumWY .
+#     (?wxy {
+#         ?ss list:member ?s .
+#         ?s :coef ?c .
+#         ?s :x ?x .
+#         ?s :y ?y .
+#         (?x ?y) math:product ?xy .
+#         (?c ?xy) math:product ?wxy .
+#     } ?wxys) log:collectAllIn ?_b2 .
+#     ?wxys math:sum ?sumWXY .
+#     (?wy2 {
+#         ?ss list:member ?s .
+#         ?s :coef ?c .
+#         ?s :y ?y .
+#         (?y 2.0) math:exponentiation ?y2 .
+#         (?c ?y2) math:product ?wy2 .
+#     } ?wy2s) log:collectAllIn ?_b3 .
+#     ?wy2s math:sum ?sumWY2 .
+#     (?wds {
+#         ?ss list:member ?s .
+#         ?s :coef ?c .
+#         ?s :ds ?ds .
+#         (?c ?ds) math:product ?wds .
+#     } ?wdss) log:collectAllIn ?_b4 .
+#     ?wdss math:sum ?sumWDS .
+#   } => {
+#     :Simpson1 :sumWY ?sumWY .
+#     :Simpson1 :sumWXY ?sumWXY .
+#     :Simpson1 :sumWY2 ?sumWY2 .
+#     :Simpson1 :sumWDS ?sumWDS .
+#   } .
+# with substitution (on rule variables):
+#   ?ss = (_:b1 _:b2 _:b3 _:b4 _:b5)
+#   ?sumWDS = 32.02201866506704
+#   ?sumWXY = 34.445357820099886
+#   ?sumWY = 24.499921497274507
+#   ?sumWY2 = 75.19637321836198
+#   ?wdss = (3.720753081997118 12.917849332891908 5.460086374847559 8.50911631295736 1.4142135623730951)
+#   ?wxys = (9.818594853651364 19.484969919624326 3.682941969615793 1.458851077208406 0)
+#   ?wy2s = (24.10120122503726 42.18489475207387 6.782030775778728 2.1282464654721265 0)
+#   ?wys = (4.909297426825682 12.989979946416218 3.682941969615793 2.917702154416812 0)
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Simpson1 :sumWDS 32.02201866506704 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Simpson1 :areaUnderCurve 4.083320249545751 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :h 0.5 .
+#   :Simpson1 :sumWY 24.499921497274507 .
+#   :Simpson1 :sumWXY 34.445357820099886 .
+#   :Simpson1 :sumWY2 75.19637321836198 .
+#   :Simpson1 :sumWDS 32.02201866506704 .
+#   (0.5 3.0) math:quotient 0.16666666666666666 .
+#   (0.16666666666666666 24.499921497274507) math:product 4.083320249545751 .
+#   (0.16666666666666666 34.445357820099886) math:product 5.740892970016647 .
+#   (0.16666666666666666 75.19637321836198) math:product 12.532728869726997 .
+#   (0.5 12.532728869726997) math:product 6.266364434863498 .
+#   (0.16666666666666666 32.02201866506704) math:product 5.337003110844506 .
+#   (5.740892970016647 4.083320249545751) math:quotient 1.405937477143825 .
+#   (6.266364434863498 4.083320249545751) math:quotient 1.5346247788330099 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :h ?h .
+#     :Simpson1 :sumWY ?sumWY .
+#     :Simpson1 :sumWXY ?sumWXY .
+#     :Simpson1 :sumWY2 ?sumWY2 .
+#     :Simpson1 :sumWDS ?sumWDS .
+#     (?h 3.0) math:quotient ?fac .
+#     (?fac ?sumWY) math:product ?A .
+#     (?fac ?sumWXY) math:product ?My .
+#     (?fac ?sumWY2) math:product ?Iy2 .
+#     (0.5 ?Iy2) math:product ?Mx .
+#     (?fac ?sumWDS) math:product ?L .
+#     (?My ?A) math:quotient ?xbar .
+#     (?Mx ?A) math:quotient ?ybar .
+#   } => {
+#     :Simpson1 :areaUnderCurve ?A .
+#     :Simpson1 :arcLength ?L .
+#     :Simpson1 :momentAboutY ?My .
+#     :Simpson1 :momentAboutX ?Mx .
+#     _:b7 :xbar ?xbar .
+#     _:b7 :ybar ?ybar .
+#     :Simpson1 :centroid _:b7 .
+#   } .
+# with substitution (on rule variables):
+#   ?A = 4.083320249545751
+#   ?Iy2 = 12.532728869726997
+#   ?L = 5.337003110844506
+#   ?Mx = 6.266364434863498
+#   ?My = 5.740892970016647
+#   ?fac = 0.16666666666666666
+#   ?h = 0.5
+#   ?sumWDS = 32.02201866506704
+#   ?sumWXY = 34.445357820099886
+#   ?sumWY = 24.499921497274507
+#   ?sumWY2 = 75.19637321836198
+#   ?xbar = 1.405937477143825
+#   ?ybar = 1.5346247788330099
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Simpson1 :areaUnderCurve 4.083320249545751 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Simpson1 :arcLength 5.337003110844506 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :h 0.5 .
+#   :Simpson1 :sumWY 24.499921497274507 .
+#   :Simpson1 :sumWXY 34.445357820099886 .
+#   :Simpson1 :sumWY2 75.19637321836198 .
+#   :Simpson1 :sumWDS 32.02201866506704 .
+#   (0.5 3.0) math:quotient 0.16666666666666666 .
+#   (0.16666666666666666 24.499921497274507) math:product 4.083320249545751 .
+#   (0.16666666666666666 34.445357820099886) math:product 5.740892970016647 .
+#   (0.16666666666666666 75.19637321836198) math:product 12.532728869726997 .
+#   (0.5 12.532728869726997) math:product 6.266364434863498 .
+#   (0.16666666666666666 32.02201866506704) math:product 5.337003110844506 .
+#   (5.740892970016647 4.083320249545751) math:quotient 1.405937477143825 .
+#   (6.266364434863498 4.083320249545751) math:quotient 1.5346247788330099 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :h ?h .
+#     :Simpson1 :sumWY ?sumWY .
+#     :Simpson1 :sumWXY ?sumWXY .
+#     :Simpson1 :sumWY2 ?sumWY2 .
+#     :Simpson1 :sumWDS ?sumWDS .
+#     (?h 3.0) math:quotient ?fac .
+#     (?fac ?sumWY) math:product ?A .
+#     (?fac ?sumWXY) math:product ?My .
+#     (?fac ?sumWY2) math:product ?Iy2 .
+#     (0.5 ?Iy2) math:product ?Mx .
+#     (?fac ?sumWDS) math:product ?L .
+#     (?My ?A) math:quotient ?xbar .
+#     (?Mx ?A) math:quotient ?ybar .
+#   } => {
+#     :Simpson1 :areaUnderCurve ?A .
+#     :Simpson1 :arcLength ?L .
+#     :Simpson1 :momentAboutY ?My .
+#     :Simpson1 :momentAboutX ?Mx .
+#     _:b7 :xbar ?xbar .
+#     _:b7 :ybar ?ybar .
+#     :Simpson1 :centroid _:b7 .
+#   } .
+# with substitution (on rule variables):
+#   ?A = 4.083320249545751
+#   ?Iy2 = 12.532728869726997
+#   ?L = 5.337003110844506
+#   ?Mx = 6.266364434863498
+#   ?My = 5.740892970016647
+#   ?fac = 0.16666666666666666
+#   ?h = 0.5
+#   ?sumWDS = 32.02201866506704
+#   ?sumWXY = 34.445357820099886
+#   ?sumWY = 24.499921497274507
+#   ?sumWY2 = 75.19637321836198
+#   ?xbar = 1.405937477143825
+#   ?ybar = 1.5346247788330099
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Simpson1 :arcLength 5.337003110844506 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Simpson1 :momentAboutY 5.740892970016647 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :h 0.5 .
+#   :Simpson1 :sumWY 24.499921497274507 .
+#   :Simpson1 :sumWXY 34.445357820099886 .
+#   :Simpson1 :sumWY2 75.19637321836198 .
+#   :Simpson1 :sumWDS 32.02201866506704 .
+#   (0.5 3.0) math:quotient 0.16666666666666666 .
+#   (0.16666666666666666 24.499921497274507) math:product 4.083320249545751 .
+#   (0.16666666666666666 34.445357820099886) math:product 5.740892970016647 .
+#   (0.16666666666666666 75.19637321836198) math:product 12.532728869726997 .
+#   (0.5 12.532728869726997) math:product 6.266364434863498 .
+#   (0.16666666666666666 32.02201866506704) math:product 5.337003110844506 .
+#   (5.740892970016647 4.083320249545751) math:quotient 1.405937477143825 .
+#   (6.266364434863498 4.083320249545751) math:quotient 1.5346247788330099 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :h ?h .
+#     :Simpson1 :sumWY ?sumWY .
+#     :Simpson1 :sumWXY ?sumWXY .
+#     :Simpson1 :sumWY2 ?sumWY2 .
+#     :Simpson1 :sumWDS ?sumWDS .
+#     (?h 3.0) math:quotient ?fac .
+#     (?fac ?sumWY) math:product ?A .
+#     (?fac ?sumWXY) math:product ?My .
+#     (?fac ?sumWY2) math:product ?Iy2 .
+#     (0.5 ?Iy2) math:product ?Mx .
+#     (?fac ?sumWDS) math:product ?L .
+#     (?My ?A) math:quotient ?xbar .
+#     (?Mx ?A) math:quotient ?ybar .
+#   } => {
+#     :Simpson1 :areaUnderCurve ?A .
+#     :Simpson1 :arcLength ?L .
+#     :Simpson1 :momentAboutY ?My .
+#     :Simpson1 :momentAboutX ?Mx .
+#     _:b7 :xbar ?xbar .
+#     _:b7 :ybar ?ybar .
+#     :Simpson1 :centroid _:b7 .
+#   } .
+# with substitution (on rule variables):
+#   ?A = 4.083320249545751
+#   ?Iy2 = 12.532728869726997
+#   ?L = 5.337003110844506
+#   ?Mx = 6.266364434863498
+#   ?My = 5.740892970016647
+#   ?fac = 0.16666666666666666
+#   ?h = 0.5
+#   ?sumWDS = 32.02201866506704
+#   ?sumWXY = 34.445357820099886
+#   ?sumWY = 24.499921497274507
+#   ?sumWY2 = 75.19637321836198
+#   ?xbar = 1.405937477143825
+#   ?ybar = 1.5346247788330099
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Simpson1 :momentAboutY 5.740892970016647 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Simpson1 :momentAboutX 6.266364434863498 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :h 0.5 .
+#   :Simpson1 :sumWY 24.499921497274507 .
+#   :Simpson1 :sumWXY 34.445357820099886 .
+#   :Simpson1 :sumWY2 75.19637321836198 .
+#   :Simpson1 :sumWDS 32.02201866506704 .
+#   (0.5 3.0) math:quotient 0.16666666666666666 .
+#   (0.16666666666666666 24.499921497274507) math:product 4.083320249545751 .
+#   (0.16666666666666666 34.445357820099886) math:product 5.740892970016647 .
+#   (0.16666666666666666 75.19637321836198) math:product 12.532728869726997 .
+#   (0.5 12.532728869726997) math:product 6.266364434863498 .
+#   (0.16666666666666666 32.02201866506704) math:product 5.337003110844506 .
+#   (5.740892970016647 4.083320249545751) math:quotient 1.405937477143825 .
+#   (6.266364434863498 4.083320249545751) math:quotient 1.5346247788330099 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :h ?h .
+#     :Simpson1 :sumWY ?sumWY .
+#     :Simpson1 :sumWXY ?sumWXY .
+#     :Simpson1 :sumWY2 ?sumWY2 .
+#     :Simpson1 :sumWDS ?sumWDS .
+#     (?h 3.0) math:quotient ?fac .
+#     (?fac ?sumWY) math:product ?A .
+#     (?fac ?sumWXY) math:product ?My .
+#     (?fac ?sumWY2) math:product ?Iy2 .
+#     (0.5 ?Iy2) math:product ?Mx .
+#     (?fac ?sumWDS) math:product ?L .
+#     (?My ?A) math:quotient ?xbar .
+#     (?Mx ?A) math:quotient ?ybar .
+#   } => {
+#     :Simpson1 :areaUnderCurve ?A .
+#     :Simpson1 :arcLength ?L .
+#     :Simpson1 :momentAboutY ?My .
+#     :Simpson1 :momentAboutX ?Mx .
+#     _:b7 :xbar ?xbar .
+#     _:b7 :ybar ?ybar .
+#     :Simpson1 :centroid _:b7 .
+#   } .
+# with substitution (on rule variables):
+#   ?A = 4.083320249545751
+#   ?Iy2 = 12.532728869726997
+#   ?L = 5.337003110844506
+#   ?Mx = 6.266364434863498
+#   ?My = 5.740892970016647
+#   ?fac = 0.16666666666666666
+#   ?h = 0.5
+#   ?sumWDS = 32.02201866506704
+#   ?sumWXY = 34.445357820099886
+#   ?sumWY = 24.499921497274507
+#   ?sumWY2 = 75.19637321836198
+#   ?xbar = 1.405937477143825
+#   ?ybar = 1.5346247788330099
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Simpson1 :momentAboutX 6.266364434863498 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_5 :xbar 1.405937477143825 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :h 0.5 .
+#   :Simpson1 :sumWY 24.499921497274507 .
+#   :Simpson1 :sumWXY 34.445357820099886 .
+#   :Simpson1 :sumWY2 75.19637321836198 .
+#   :Simpson1 :sumWDS 32.02201866506704 .
+#   (0.5 3.0) math:quotient 0.16666666666666666 .
+#   (0.16666666666666666 24.499921497274507) math:product 4.083320249545751 .
+#   (0.16666666666666666 34.445357820099886) math:product 5.740892970016647 .
+#   (0.16666666666666666 75.19637321836198) math:product 12.532728869726997 .
+#   (0.5 12.532728869726997) math:product 6.266364434863498 .
+#   (0.16666666666666666 32.02201866506704) math:product 5.337003110844506 .
+#   (5.740892970016647 4.083320249545751) math:quotient 1.405937477143825 .
+#   (6.266364434863498 4.083320249545751) math:quotient 1.5346247788330099 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :h ?h .
+#     :Simpson1 :sumWY ?sumWY .
+#     :Simpson1 :sumWXY ?sumWXY .
+#     :Simpson1 :sumWY2 ?sumWY2 .
+#     :Simpson1 :sumWDS ?sumWDS .
+#     (?h 3.0) math:quotient ?fac .
+#     (?fac ?sumWY) math:product ?A .
+#     (?fac ?sumWXY) math:product ?My .
+#     (?fac ?sumWY2) math:product ?Iy2 .
+#     (0.5 ?Iy2) math:product ?Mx .
+#     (?fac ?sumWDS) math:product ?L .
+#     (?My ?A) math:quotient ?xbar .
+#     (?Mx ?A) math:quotient ?ybar .
+#   } => {
+#     :Simpson1 :areaUnderCurve ?A .
+#     :Simpson1 :arcLength ?L .
+#     :Simpson1 :momentAboutY ?My .
+#     :Simpson1 :momentAboutX ?Mx .
+#     _:b7 :xbar ?xbar .
+#     _:b7 :ybar ?ybar .
+#     :Simpson1 :centroid _:b7 .
+#   } .
+# with substitution (on rule variables):
+#   ?A = 4.083320249545751
+#   ?Iy2 = 12.532728869726997
+#   ?L = 5.337003110844506
+#   ?Mx = 6.266364434863498
+#   ?My = 5.740892970016647
+#   ?fac = 0.16666666666666666
+#   ?h = 0.5
+#   ?sumWDS = 32.02201866506704
+#   ?sumWXY = 34.445357820099886
+#   ?sumWY = 24.499921497274507
+#   ?sumWY2 = 75.19637321836198
+#   ?xbar = 1.405937477143825
+#   ?ybar = 1.5346247788330099
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_5 :xbar 1.405937477143825 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   _:sk_5 :ybar 1.5346247788330099 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :h 0.5 .
+#   :Simpson1 :sumWY 24.499921497274507 .
+#   :Simpson1 :sumWXY 34.445357820099886 .
+#   :Simpson1 :sumWY2 75.19637321836198 .
+#   :Simpson1 :sumWDS 32.02201866506704 .
+#   (0.5 3.0) math:quotient 0.16666666666666666 .
+#   (0.16666666666666666 24.499921497274507) math:product 4.083320249545751 .
+#   (0.16666666666666666 34.445357820099886) math:product 5.740892970016647 .
+#   (0.16666666666666666 75.19637321836198) math:product 12.532728869726997 .
+#   (0.5 12.532728869726997) math:product 6.266364434863498 .
+#   (0.16666666666666666 32.02201866506704) math:product 5.337003110844506 .
+#   (5.740892970016647 4.083320249545751) math:quotient 1.405937477143825 .
+#   (6.266364434863498 4.083320249545751) math:quotient 1.5346247788330099 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :h ?h .
+#     :Simpson1 :sumWY ?sumWY .
+#     :Simpson1 :sumWXY ?sumWXY .
+#     :Simpson1 :sumWY2 ?sumWY2 .
+#     :Simpson1 :sumWDS ?sumWDS .
+#     (?h 3.0) math:quotient ?fac .
+#     (?fac ?sumWY) math:product ?A .
+#     (?fac ?sumWXY) math:product ?My .
+#     (?fac ?sumWY2) math:product ?Iy2 .
+#     (0.5 ?Iy2) math:product ?Mx .
+#     (?fac ?sumWDS) math:product ?L .
+#     (?My ?A) math:quotient ?xbar .
+#     (?Mx ?A) math:quotient ?ybar .
+#   } => {
+#     :Simpson1 :areaUnderCurve ?A .
+#     :Simpson1 :arcLength ?L .
+#     :Simpson1 :momentAboutY ?My .
+#     :Simpson1 :momentAboutX ?Mx .
+#     _:b7 :xbar ?xbar .
+#     _:b7 :ybar ?ybar .
+#     :Simpson1 :centroid _:b7 .
+#   } .
+# with substitution (on rule variables):
+#   ?A = 4.083320249545751
+#   ?Iy2 = 12.532728869726997
+#   ?L = 5.337003110844506
+#   ?Mx = 6.266364434863498
+#   ?My = 5.740892970016647
+#   ?fac = 0.16666666666666666
+#   ?h = 0.5
+#   ?sumWDS = 32.02201866506704
+#   ?sumWXY = 34.445357820099886
+#   ?sumWY = 24.499921497274507
+#   ?sumWY2 = 75.19637321836198
+#   ?xbar = 1.405937477143825
+#   ?ybar = 1.5346247788330099
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+_:sk_5 :ybar 1.5346247788330099 .
+
+# ----------------------------------------------------------------------
+# Proof for derived triple:
+#   :Simpson1 :centroid _:sk_5 .
+# It holds because the following instance of the rule body is provable:
+#   :Simpson1 :h 0.5 .
+#   :Simpson1 :sumWY 24.499921497274507 .
+#   :Simpson1 :sumWXY 34.445357820099886 .
+#   :Simpson1 :sumWY2 75.19637321836198 .
+#   :Simpson1 :sumWDS 32.02201866506704 .
+#   (0.5 3.0) math:quotient 0.16666666666666666 .
+#   (0.16666666666666666 24.499921497274507) math:product 4.083320249545751 .
+#   (0.16666666666666666 34.445357820099886) math:product 5.740892970016647 .
+#   (0.16666666666666666 75.19637321836198) math:product 12.532728869726997 .
+#   (0.5 12.532728869726997) math:product 6.266364434863498 .
+#   (0.16666666666666666 32.02201866506704) math:product 5.337003110844506 .
+#   (5.740892970016647 4.083320249545751) math:quotient 1.405937477143825 .
+#   (6.266364434863498 4.083320249545751) math:quotient 1.5346247788330099 .
+# via the schematic forward rule:
+#   {
+#     :Simpson1 :h ?h .
+#     :Simpson1 :sumWY ?sumWY .
+#     :Simpson1 :sumWXY ?sumWXY .
+#     :Simpson1 :sumWY2 ?sumWY2 .
+#     :Simpson1 :sumWDS ?sumWDS .
+#     (?h 3.0) math:quotient ?fac .
+#     (?fac ?sumWY) math:product ?A .
+#     (?fac ?sumWXY) math:product ?My .
+#     (?fac ?sumWY2) math:product ?Iy2 .
+#     (0.5 ?Iy2) math:product ?Mx .
+#     (?fac ?sumWDS) math:product ?L .
+#     (?My ?A) math:quotient ?xbar .
+#     (?Mx ?A) math:quotient ?ybar .
+#   } => {
+#     :Simpson1 :areaUnderCurve ?A .
+#     :Simpson1 :arcLength ?L .
+#     :Simpson1 :momentAboutY ?My .
+#     :Simpson1 :momentAboutX ?Mx .
+#     _:b7 :xbar ?xbar .
+#     _:b7 :ybar ?ybar .
+#     :Simpson1 :centroid _:b7 .
+#   } .
+# with substitution (on rule variables):
+#   ?A = 4.083320249545751
+#   ?Iy2 = 12.532728869726997
+#   ?L = 5.337003110844506
+#   ?Mx = 6.266364434863498
+#   ?My = 5.740892970016647
+#   ?fac = 0.16666666666666666
+#   ?h = 0.5
+#   ?sumWDS = 32.02201866506704
+#   ?sumWXY = 34.445357820099886
+#   ?sumWY = 24.499921497274507
+#   ?sumWY2 = 75.19637321836198
+#   ?xbar = 1.405937477143825
+#   ?ybar = 1.5346247788330099
+# Therefore the derived triple above is entailed by the rules and facts.
+# ----------------------------------------------------------------------
+
+:Simpson1 :centroid _:sk_5 .
+

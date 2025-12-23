@@ -1,0 +1,178 @@
+# ================================================================
+# Heavy-Math N3 Demo: "Ultramarine Simpson Forge"
+# ------------------------------------------------
+# A math-stress N3 ruleset for composite Simpson integration on a
+# nonlinear curve, using only standard N3 builtins (math:, list:, log:).
+#
+# Curve:
+#   y(x)  = sin(x) + x^2
+#   y'(x) = cos(x) + 2x
+#
+# Over x ∈ [0, 2] with n=4 subintervals (h=0.5), Simpson weights:
+#   1, 4, 2, 4, 1
+#
+# It computes:
+#   A    = ∫ y dx                (area under curve)
+#   My   = ∫ x*y dx              (moment about y-axis)  => x̄ = My / A
+#   Mx   = ∫ (y^2/2) dx          (moment about x-axis)  => ȳ = Mx / A
+#   L    = ∫ sqrt(1 + (y')^2) dx (arc length)
+#
+# Plus per-sample derived values (y, y', ds).
+# ================================================================
+
+@prefix :     <http://example.org/ultramarine-simpson#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix log:  <http://www.w3.org/2000/10/swap/log#> .
+
+############
+# DATA
+############
+
+:Simpson1
+  :h 0.5 ;
+  :samples (
+    [ :k 0 ; :x 0.0 ; :coef 1.0 ]
+    [ :k 1 ; :x 0.5 ; :coef 4.0 ]
+    [ :k 2 ; :x 1.0 ; :coef 2.0 ]
+    [ :k 3 ; :x 1.5 ; :coef 4.0 ]
+    [ :k 4 ; :x 2.0 ; :coef 1.0 ]
+  ) .
+
+############
+# (1) PER-SAMPLE VALUES: y, y', ds = sqrt(1 + (y')^2)
+############
+
+{
+  :Simpson1 :samples ?ss .
+  ?ss list:member ?s .
+  ?s :x ?x ; :coef ?c .
+
+  # y = sin(x) + x^2
+  ?x math:sin ?sinx .
+  (?x 2.0) math:exponentiation ?x2 .
+  (?sinx ?x2) math:sum ?y .
+
+  # y' = cos(x) + 2x
+  ?x math:cos ?cosx .
+  (2.0 ?x) math:product ?twox .
+  (?cosx ?twox) math:sum ?dy .
+
+  # ds = sqrt(1 + dy^2)
+  (?dy 2.0) math:exponentiation ?dy2 .
+  (1.0 ?dy2) math:sum ?onePlus .
+  (?onePlus 0.5) math:exponentiation ?ds .
+}
+=>
+{
+  # Attach computed values to the sample node itself
+  ?s :y ?y ; :dy ?dy ; :ds ?ds .
+
+  # Also emit a connected result node (nice for output inspection)
+  :Simpson1 :sampleResult [
+    :sample ?s ;
+    :x ?x ;
+    :coef ?c ;
+    :y ?y ;
+    :dy ?dy ;
+    :ds ?ds
+  ] .
+} .
+
+############
+# (2) WEIGHTED SUMS FOR SIMPSON: collect coef*something and sum
+############
+
+{
+  :Simpson1 :samples ?ss .
+
+  ( ?wy {
+      ?ss list:member ?s .
+      ?s :coef ?c ; :y ?y .
+      (?c ?y) math:product ?wy .
+    } ?wys
+  ) log:collectAllIn _:w0 .
+  ?wys math:sum ?sumWY .
+
+  ( ?wxy {
+      ?ss list:member ?s .
+      ?s :coef ?c ; :x ?x ; :y ?y .
+      (?x ?y) math:product ?xy .
+      (?c ?xy) math:product ?wxy .
+    } ?wxys
+  ) log:collectAllIn _:w1 .
+  ?wxys math:sum ?sumWXY .
+
+  ( ?wy2 {
+      ?ss list:member ?s .
+      ?s :coef ?c ; :y ?y .
+      (?y 2.0) math:exponentiation ?y2 .
+      (?c ?y2) math:product ?wy2 .
+    } ?wy2s
+  ) log:collectAllIn _:w2 .
+  ?wy2s math:sum ?sumWY2 .
+
+  ( ?wds {
+      ?ss list:member ?s .
+      ?s :coef ?c ; :ds ?ds .
+      (?c ?ds) math:product ?wds .
+    } ?wdss
+  ) log:collectAllIn _:w3 .
+  ?wdss math:sum ?sumWDS .
+}
+=>
+{
+  :Simpson1 :sumWY ?sumWY ;
+            :sumWXY ?sumWXY ;
+            :sumWY2 ?sumWY2 ;
+            :sumWDS ?sumWDS .
+} .
+
+############
+# (3) FINAL INTEGRALS + CENTROID
+############
+
+{
+  :Simpson1 :h ?h ;
+            :sumWY ?sumWY ;
+            :sumWXY ?sumWXY ;
+            :sumWY2 ?sumWY2 ;
+            :sumWDS ?sumWDS .
+
+  # Simpson factor = h/3
+  (?h 3.0) math:quotient ?fac .
+
+  # A = fac * sumWY
+  (?fac ?sumWY) math:product ?A .
+
+  # My = fac * sumWXY
+  (?fac ?sumWXY) math:product ?My .
+
+  # ∫ y^2 dx = fac * sumWY2
+  (?fac ?sumWY2) math:product ?Iy2 .
+  # Mx = (1/2) * ∫ y^2 dx
+  (0.5 ?Iy2) math:product ?Mx .
+
+  # L = fac * sumWDS
+  (?fac ?sumWDS) math:product ?L .
+
+  # centroid (x̄, ȳ)
+  (?My ?A) math:quotient ?xbar .
+  (?Mx ?A) math:quotient ?ybar .
+}
+=>
+{
+  :Simpson1 :areaUnderCurve ?A ;
+            :arcLength ?L ;
+            :momentAboutY ?My ;
+            :momentAboutX ?Mx ;
+            :centroid [ :xbar ?xbar ; :ybar ?ybar ] .
+} .
+
+############
+# STRICTNESS REGRESSION HOOK (should fail in strict math)
+############
+# {
+#   "0.5"^^<http://example.org/not-a-number> math:sin 0.0 .
+# } => { :bad :datatype :accepted . } .
+
