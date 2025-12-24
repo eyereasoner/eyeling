@@ -1,0 +1,84 @@
+# alignment-demo.n3
+# Minimal alignment example (SKOS mappings + inferred roll-up to a reference concept)
+
+@prefix ex:   <http://example.org/> .
+@prefix ref:  <http://example.org/taxonomy/ref/> .
+@prefix tel:  <http://example.org/taxonomy/telraam/> .
+@prefix anpr: <http://example.org/taxonomy/anpr/> .
+
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix log:  <http://www.w3.org/2000/10/swap/log#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+
+######################################################################
+# 1) Minimal concepts (3 schemes)
+######################################################################
+
+ref:Car a skos:Concept ; skos:prefLabel "Car (reference reporting class)"@en .
+
+tel:Car a skos:Concept ; skos:prefLabel "Telraam car"@en .
+tel:HeavyVehicle a skos:Concept ; skos:prefLabel "Telraam heavy vehicle"@en .
+
+anpr:VehicleWithPlate a skos:Concept ; skos:prefLabel "ANPR: vehicle with plate"@en .
+anpr:PassengerCar a skos:Concept ; skos:prefLabel "ANPR: passenger car"@en ;
+  skos:broader anpr:VehicleWithPlate .
+
+######################################################################
+# 2) Alignments (cross-scheme mappings)
+######################################################################
+
+# Telraam categories mapped to the reference reporting class
+tel:Car skos:broadMatch ref:Car .
+tel:HeavyVehicle skos:broadMatch ref:Car .
+
+# ANPR top concept mapped to reference reporting class
+anpr:VehicleWithPlate skos:broadMatch ref:Car .
+
+######################################################################
+# 3) Generic SKOS-ish rules needed for alignment reasoning
+######################################################################
+
+# Treat skos:broadMatch as a "broader-than" link for roll-up
+{ ?a skos:broadMatch ?b. } => { ?a skos:broader ?b. } .
+
+# Inverse broader/narrower
+{ ?n skos:broader ?b. } => { ?b skos:narrower ?n. } .
+
+# Transitive closure seeds
+{ ?n skos:broader ?b. } => { ?n skos:broaderTransitive ?b. } .
+{ ?n skos:narrower ?c. } => { ?n skos:narrowerTransitive ?c. } .
+
+# Transitivity
+{ ?a skos:broaderTransitive ?b. ?b skos:broaderTransitive ?c. } => { ?a skos:broaderTransitive ?c. } .
+{ ?a skos:narrowerTransitive ?b. ?b skos:narrowerTransitive ?c. } => { ?a skos:narrowerTransitive ?c. } .
+
+# Keep transitive props inverse too (handy for downstream rules)
+{ ?a skos:broaderTransitive ?b. } => { ?b skos:narrowerTransitive ?a. } .
+{ ?a skos:narrowerTransitive ?b. } => { ?b skos:broaderTransitive ?a. } .
+
+######################################################################
+# 4) One derived relation used by aggregation/queries:
+#    "datasetConcept is narrower-or-equal to referenceConcept"
+######################################################################
+
+# Reflexive
+{ ?c a skos:Concept. } => { ?c ex:narrowerOrEqualOf ?c. } .
+
+# Anything whose broaderTransitive reaches a concept contributes to that concept
+{ ?c skos:broaderTransitive ?b. } => { ?c ex:narrowerOrEqualOf ?b. } .
+
+######################################################################
+# 5) Tiny “demo output” rule: flag concepts that roll up to ref:Car
+######################################################################
+
+{ ?x ex:narrowerOrEqualOf ref:Car. } => { ?x ex:rollsUpTo ref:Car. } .
+
+######################################################################
+# Expected inferences (you should see these appear as derived facts):
+#
+# tel:Car ex:rollsUpTo ref:Car .
+# tel:HeavyVehicle ex:rollsUpTo ref:Car .
+# anpr:VehicleWithPlate ex:rollsUpTo ref:Car .
+# anpr:PassengerCar ex:rollsUpTo ref:Car .   # via broader anpr:VehicleWithPlate + mapping
+######################################################################
+
