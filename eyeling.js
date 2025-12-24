@@ -2438,6 +2438,11 @@ function listAppendSplit(parts, resElems, subst) {
   return out;
 }
 
+function numEqualTerm(t, n, eps = 1e-9) {
+  const v = parseNum(t);
+  return v !== null && Math.abs(v - n) < eps;
+}
+
 // ============================================================================
 // Backward proof & builtins mutual recursion — declarations first
 // ============================================================================
@@ -2809,7 +2814,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
           s2[g.o.name] = new Literal(formatNum(cVal));
           return [s2];
         }
-        if (g.o instanceof Literal && g.o.value === formatNum(cVal)) {
+        if (numEqualTerm(g.o, cVal)) {
           return [{ ...subst }];
         }
       }
@@ -2874,7 +2879,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
         s2[g.o.name] = new Literal(formatNum(cVal));
         return [s2];
       }
-      if (g.o instanceof Literal && g.o.value === formatNum(cVal)) {
+      if (numEqualTerm(g.o, cVal)) {
         return [{ ...subst }];
       }
     }
@@ -2891,7 +2896,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
         s2[g.o.name] = new Literal(formatNum(cVal));
         return [s2];
       }
-      if (g.o instanceof Literal && g.o.value === formatNum(cVal)) {
+      if (numEqualTerm(g.o, cVal)) {
         return [{ ...subst }];
       }
     }
@@ -2909,7 +2914,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
           s2[g.o.name] = new Literal(formatNum(cVal));
           return [s2];
         }
-        if (g.o instanceof Literal && g.o.value === formatNum(cVal)) {
+        if (numEqualTerm(g.o, cVal)) {
           return [{ ...subst }];
         }
       }
@@ -2928,7 +2933,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
           s2[g.o.name] = new Literal(formatNum(cVal));
           return [s2];
         }
-        if (g.o instanceof Literal && g.o.value === formatNum(cVal)) {
+        if (numEqualTerm(g.o, cVal)) {
           return [{ ...subst }];
         }
       }
@@ -2947,7 +2952,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
           s2[g.o.name] = new Literal(formatNum(cVal));
           return [s2];
         }
-        if (g.o instanceof Literal && g.o.value === formatNum(cVal)) {
+        if (numEqualTerm(g.o, cVal)) {
           return [{ ...subst }];
         }
       }
@@ -2967,7 +2972,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
           s2[g.o.name] = new Literal(formatNum(cVal));
           return [s2];
         }
-        if (g.o instanceof Literal && g.o.value === formatNum(cVal)) {
+        if (numEqualTerm(g.o, cVal)) {
           return [{ ...subst }];
         }
       }
@@ -2987,7 +2992,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
           s2[g.o.name] = new Literal(formatNum(cVal));
           return [s2];
         }
-        if (g.o instanceof Literal && g.o.value === formatNum(cVal)) {
+        if (numEqualTerm(g.o, cVal)) {
           return [{ ...subst }];
         }
       }
@@ -3046,7 +3051,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
           s2[g.o.name] = new Literal(formatNum(cVal));
           return [s2];
         }
-        if (g.o instanceof Literal && g.o.value === formatNum(cVal)) {
+        if (numEqualTerm(g.o, cVal)) {
           return [{ ...subst }];
         }
       }
@@ -3065,7 +3070,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
           s2[g.o.name] = new Literal(formatNum(cVal));
           return [s2];
         }
-        if (g.o instanceof Literal && g.o.value === formatNum(cVal)) {
+        if (numEqualTerm(g.o, cVal)) {
           return [{ ...subst }];
         }
       }
@@ -3084,7 +3089,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
           s2[g.o.name] = new Literal(formatNum(cVal));
           return [s2];
         }
-        if (g.o instanceof Literal && g.o.value === formatNum(cVal)) {
+        if (numEqualTerm(g.o, cVal)) {
           return [{ ...subst }];
         }
       }
