@@ -1263,24 +1263,50 @@ function termsEqual(a, b) {
   if (a === b) return true;
   if (!a || !b) return false;
   if (a.constructor !== b.constructor) return false;
+
   if (a instanceof Iri) return a.value === b.value;
+
   if (a instanceof Literal) {
     if (a.value === b.value) return true;
+
+    // Plain "abc" == "abc"^^xsd:string (but not language-tagged strings)
     if (literalsEquivalentAsXsdString(a.value, b.value)) return true;
 
-    // Keep in sync with unifyTerm(): numeric-value equality (EYE-style)
-    const av = parseNumberLiteral(a);
-    const bv = parseNumberLiteral(b);
-    if (av !== null && bv !== null) {
-      if (typeof av === 'bigint' && typeof bv === 'bigint') return av === bv;
-      const an = typeof av === 'bigint' ? Number(av) : av;
-      const bn = typeof bv === 'bigint' ? Number(bv) : bv;
-      return !Number.isNaN(an) && !Number.isNaN(bn) && an === bn;
+    // Keep in sync with unifyTerm(): numeric-value equality, datatype-aware.
+    const ai = parseNumericLiteralInfo(a);
+    const bi = parseNumericLiteralInfo(b);
+
+    if (ai && bi) {
+      // Same datatype => compare values
+      if (ai.dt === bi.dt) {
+        if (ai.kind === 'bigint' && bi.kind === 'bigint') return ai.value === bi.value;
+
+        const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
+        const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
+        return !Number.isNaN(an) && !Number.isNaN(bn) && an === bn;
+      }
+
+      // integer <-> decimal: allow exact equality (but NOT with double)
+      const intDt = XSD_NS + 'integer';
+      const decDt = XSD_NS + 'decimal';
+      if ((ai.dt === intDt && bi.dt === decDt) || (ai.dt === decDt && bi.dt === intDt)) {
+        const intInfo = ai.dt === intDt ? ai : bi;
+        const decInfo = ai.dt === decDt ? ai : bi;
+
+        const dec = parseXsdDecimalToBigIntScale(decInfo.lexStr);
+        if (dec) {
+          const scaledInt = intInfo.value * pow10n(dec.scale);
+          return scaledInt === dec.num;
+        }
+      }
     }
+
     return false;
   }
+
   if (a instanceof Var) return a.name === b.name;
   if (a instanceof Blank) return a.label === b.label;
+
   if (a instanceof ListTerm) {
     if (a.elems.length !== b.elems.length) return false;
     for (let i = 0; i < a.elems.length; i++) {
@@ -1288,6 +1314,7 @@ function termsEqual(a, b) {
     }
     return true;
   }
+
   if (a instanceof OpenListTerm) {
     if (a.tailVar !== b.tailVar) return false;
     if (a.prefix.length !== b.prefix.length) return false;
@@ -1296,9 +1323,79 @@ function termsEqual(a, b) {
     }
     return true;
   }
+
   if (a instanceof FormulaTerm) {
     return alphaEqFormulaTriples(a.triples, b.triples);
   }
+
+  return false;
+}
+
+function termsEqualNoIntDecimal(a, b) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (a.constructor !== b.constructor) return false;
+
+  if (a instanceof Iri) return a.value === b.value;
+
+  if (a instanceof Literal) {
+    if (a.value === b.value) return true;
+
+    // Plain "abc" == "abc"^^xsd:string (but not language-tagged)
+    if (literalsEquivalentAsXsdString(a.value, b.value)) return true;
+
+    // Numeric equality ONLY when datatypes agree (no integer<->decimal here)
+    const ai = parseNumericLiteralInfo(a);
+    const bi = parseNumericLiteralInfo(b);
+    if (ai && bi && ai.dt === bi.dt) {
+      // integer: exact bigint
+      if (ai.kind === 'bigint' && bi.kind === 'bigint') return ai.value === bi.value;
+
+      // decimal: compare exactly via num/scale if possible
+      if (ai.dt === XSD_NS + 'decimal') {
+        const da = parseXsdDecimalToBigIntScale(ai.lexStr);
+        const db = parseXsdDecimalToBigIntScale(bi.lexStr);
+        if (da && db) {
+          const scale = Math.max(da.scale, db.scale);
+          const na = da.num * pow10n(scale - da.scale);
+          const nb = db.num * pow10n(scale - db.scale);
+          return na === nb;
+        }
+      }
+
+      // double/float-ish: JS number (same as your normal same-dt path)
+      const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
+      const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
+      return !Number.isNaN(an) && !Number.isNaN(bn) && an === bn;
+    }
+
+    return false;
+  }
+
+  if (a instanceof Var) return a.name === b.name;
+  if (a instanceof Blank) return a.label === b.label;
+
+  if (a instanceof ListTerm) {
+    if (a.elems.length !== b.elems.length) return false;
+    for (let i = 0; i < a.elems.length; i++) {
+      if (!termsEqualNoIntDecimal(a.elems[i], b.elems[i])) return false;
+    }
+    return true;
+  }
+
+  if (a instanceof OpenListTerm) {
+    if (a.tailVar !== b.tailVar) return false;
+    if (a.prefix.length !== b.prefix.length) return false;
+    for (let i = 0; i < a.prefix.length; i++) {
+      if (!termsEqualNoIntDecimal(a.prefix[i], b.prefix[i])) return false;
+    }
+    return true;
+  }
+
+  if (a instanceof FormulaTerm) {
+    return alphaEqFormulaTriples(a.triples, b.triples);
+  }
+
   return false;
 }
 
@@ -1906,13 +2003,30 @@ function unifyTerm(a, b, subst) {
     const ai = parseNumericLiteralInfo(a);
     const bi = parseNumericLiteralInfo(b);
 
-    if (ai && bi && ai.dt === bi.dt) {
-      if (ai.kind === 'bigint' && bi.kind === 'bigint') {
-        if (ai.value === bi.value) return { ...subst };
-      } else {
-        const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
-        const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
-        if (!Number.isNaN(an) && !Number.isNaN(bn) && an === bn) return { ...subst };
+    if (ai && bi) {
+      // same datatype: keep existing behavior
+      if (ai.dt === bi.dt) {
+        if (ai.kind === 'bigint' && bi.kind === 'bigint') {
+          if (ai.value === bi.value) return { ...subst };
+        } else {
+          const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
+          const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
+          if (!Number.isNaN(an) && !Number.isNaN(bn) && an === bn) return { ...subst };
+        }
+      }
+
+      // integer <-> decimal: allow exact equality (but NOT with double)
+      const intDt = XSD_NS + 'integer';
+      const decDt = XSD_NS + 'decimal';
+      if ((ai.dt === intDt && bi.dt === decDt) || (ai.dt === decDt && bi.dt === intDt)) {
+        const intInfo = ai.dt === intDt ? ai : bi;
+        const decInfo = ai.dt === decDt ? ai : bi;
+
+        const dec = parseXsdDecimalToBigIntScale(decInfo.lexStr);
+        if (dec) {
+          const scaledInt = intInfo.value * pow10n(dec.scale);
+          if (scaledInt === dec.num) return { ...subst };
+        }
       }
     }
   }
@@ -2388,6 +2502,44 @@ function formatNum(n) {
   return String(n);
 }
 
+function parseXsdDecimalToBigIntScale(s) {
+  let t = String(s).trim();
+  let sign = 1n;
+
+  if (t.startsWith('+')) t = t.slice(1);
+  else if (t.startsWith('-')) {
+    sign = -1n;
+    t = t.slice(1);
+  }
+
+  // xsd:decimal lexical: (\d+(\.\d*)?|\.\d+)
+  if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(t)) return null;
+
+  let intPart = '0';
+  let fracPart = '';
+
+  if (t.includes('.')) {
+    const parts = t.split('.');
+    intPart = parts[0] === '' ? '0' : parts[0];
+    fracPart = parts[1] || '';
+  } else {
+    intPart = t;
+  }
+
+  // normalize
+  intPart = intPart.replace(/^0+(?=\d)/, '');
+  fracPart = fracPart.replace(/0+$/, ''); // drop trailing zeros
+
+  const scale = fracPart.length;
+  const digits = intPart + fracPart || '0';
+
+  return { num: sign * BigInt(digits), scale };
+}
+
+function pow10n(k) {
+  return 10n ** BigInt(k);
+}
+
 function parseXsdDateTerm(t) {
   if (!(t instanceof Literal)) return null;
   const [lex, dt] = literalParts(t.value);
@@ -2572,28 +2724,23 @@ function parseNumericLiteralInfo(t) {
   let lexStr;
 
   if (dt2 !== null) {
-    // Only handle the numeric datatypes we want to unify by value
-    if (
-      dt2 !== XSD_NS + 'integer' &&
-      dt2 !== XSD_NS + 'decimal' &&
-      dt2 !== XSD_NS + 'double'
-    ) return null;
-
-    // typed numerics are like "1.1"^^<...>
+    if (dt2 !== XSD_NS + 'integer' && dt2 !== XSD_NS + 'decimal' && dt2 !== XSD_NS + 'double') return null;
     lexStr = stripQuotes(lex);
   } else {
-    // Raw numeric token like 42, 1.1, 1.1e0 (NOT quoted strings, NOT lang-tagged)
     if (typeof v !== 'string') return null;
-    if (v.startsWith('"')) return null;
+    if (v.startsWith('"')) return null; // exclude quoted strings
     if (!/^[+-]?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][+-]?\d+)?$/.test(v)) return null;
 
-    dt2 = numericDatatypeFromLex(v);
+    if (/[eE]/.test(v)) dt2 = XSD_NS + 'double';
+    else if (v.includes('.')) dt2 = XSD_NS + 'decimal';
+    else dt2 = XSD_NS + 'integer';
+
     lexStr = v;
   }
 
   if (dt2 === XSD_NS + 'integer') {
     try {
-      return { dt: dt2, kind: 'bigint', value: BigInt(lexStr) };
+      return { dt: dt2, kind: 'bigint', value: BigInt(lexStr), lexStr };
     } catch {
       return null;
     }
@@ -2601,7 +2748,48 @@ function parseNumericLiteralInfo(t) {
 
   const num = Number(lexStr);
   if (Number.isNaN(num)) return null;
-  return { dt: dt2, kind: 'number', value: num };
+  return { dt: dt2, kind: 'number', value: num, lexStr };
+}
+
+function evalUnaryMathRel(g, subst, forwardFn, inverseFn /* may be null */) {
+  const sIsUnbound = g.s instanceof Var || g.s instanceof Blank;
+  const oIsUnbound = g.o instanceof Var || g.o instanceof Blank;
+
+  const a = parseNum(g.s); // subject numeric?
+  const b = parseNum(g.o); // object numeric?
+
+  // Forward: s numeric => compute o
+  if (a !== null) {
+    const outVal = forwardFn(a);
+    if (!Number.isFinite(outVal)) return [];
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = new Literal(formatNum(outVal));
+      return [s2];
+    }
+    if (g.o instanceof Blank) return [{ ...subst }];
+    if (numEqualTerm(g.o, outVal)) return [{ ...subst }];
+    return [];
+  }
+
+  // Reverse (bounded): o numeric => compute s
+  if (b !== null && typeof inverseFn === 'function') {
+    const inVal = inverseFn(b);
+    if (!Number.isFinite(inVal)) return [];
+    if (g.s instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.s.name] = new Literal(formatNum(inVal));
+      return [s2];
+    }
+    if (g.s instanceof Blank) return [{ ...subst }];
+    if (numEqualTerm(g.s, inVal)) return [{ ...subst }];
+    return [];
+  }
+
+  // Fully unbound: treat as satisfiable (avoid infinite enumeration)
+  if (sIsUnbound && oIsUnbound) return [{ ...subst }];
+
+  return [];
 }
 
 // ============================================================================
@@ -2993,28 +3181,6 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     }
   }
 
-  // math:negation
-  if (g.p instanceof Iri && g.p.value === MATH_NS + 'negation') {
-    const a = parseNum(g.s);
-    if (a !== null && g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = new Literal(formatNum(-a));
-      return [s2];
-    }
-    const b = parseNum(g.o);
-    if (g.s instanceof Var && b !== null) {
-      const s2 = { ...subst };
-      s2[g.s.name] = new Literal(formatNum(-b));
-      return [s2];
-    }
-    const a2 = parseNum(g.s);
-    const b2 = parseNum(g.o);
-    if (a2 !== null && b2 !== null) {
-      if (Math.abs(-a2 - b2) < 1e-9) return [{ ...subst }];
-    }
-    return [];
-  }
-
   // math:absoluteValue
   if (g.p instanceof Iri && g.p.value === MATH_NS + 'absoluteValue') {
     const a = parseNum(g.s);
@@ -3030,135 +3196,61 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     return [];
   }
 
-  // math:cos
-  if (g.p instanceof Iri && g.p.value === MATH_NS + 'cos') {
-    const a = parseNum(g.s);
-    if (a !== null) {
-      const cVal = Math.cos(a);
-      if (g.o instanceof Var) {
-        const s2 = { ...subst };
-        s2[g.o.name] = new Literal(formatNum(cVal));
-        return [s2];
-      }
-      if (numEqualTerm(g.o, cVal)) {
-        return [{ ...subst }];
-      }
-    }
-    return [];
-  }
-
-  // math:sin
-  if (g.p instanceof Iri && g.p.value === MATH_NS + 'sin') {
-    const a = parseNum(g.s);
-    if (a !== null) {
-      const cVal = Math.sin(a);
-      if (g.o instanceof Var) {
-        const s2 = { ...subst };
-        s2[g.o.name] = new Literal(formatNum(cVal));
-        return [s2];
-      }
-      if (numEqualTerm(g.o, cVal)) {
-        return [{ ...subst }];
-      }
-    }
-    return [];
-  }
-
   // math:acos
   if (g.p instanceof Iri && g.p.value === MATH_NS + 'acos') {
-    const a = parseNum(g.s);
-    if (a !== null) {
-      const cVal = Math.acos(a);
-      if (Number.isFinite(cVal)) {
-        if (g.o instanceof Var) {
-          const s2 = { ...subst };
-          s2[g.o.name] = new Literal(formatNum(cVal));
-          return [s2];
-        }
-        if (numEqualTerm(g.o, cVal)) {
-          return [{ ...subst }];
-        }
-      }
-    }
-    return [];
+    return evalUnaryMathRel(g, subst, Math.acos, Math.cos);
   }
 
   // math:asin
   if (g.p instanceof Iri && g.p.value === MATH_NS + 'asin') {
-    const a = parseNum(g.s);
-    if (a !== null) {
-      const cVal = Math.asin(a);
-      if (Number.isFinite(cVal)) {
-        if (g.o instanceof Var) {
-          const s2 = { ...subst };
-          s2[g.o.name] = new Literal(formatNum(cVal));
-          return [s2];
-        }
-        if (numEqualTerm(g.o, cVal)) {
-          return [{ ...subst }];
-        }
-      }
-    }
-    return [];
+    return evalUnaryMathRel(g, subst, Math.asin, Math.sin);
   }
 
   // math:atan
   if (g.p instanceof Iri && g.p.value === MATH_NS + 'atan') {
-    const a = parseNum(g.s);
-    if (a !== null) {
-      const cVal = Math.atan(a);
-      if (Number.isFinite(cVal)) {
-        if (g.o instanceof Var) {
-          const s2 = { ...subst };
-          s2[g.o.name] = new Literal(formatNum(cVal));
-          return [s2];
-        }
-        if (numEqualTerm(g.o, cVal)) {
-          return [{ ...subst }];
-        }
-      }
-    }
-    return [];
+    return evalUnaryMathRel(g, subst, Math.atan, Math.tan);
   }
 
-  // math:cosh
-  // Hyperbolic cosine
+  // math:sin  (inverse uses principal asin)
+  if (g.p instanceof Iri && g.p.value === MATH_NS + 'sin') {
+    return evalUnaryMathRel(g, subst, Math.sin, Math.asin);
+  }
+
+  // math:cos  (inverse uses principal acos)
+  if (g.p instanceof Iri && g.p.value === MATH_NS + 'cos') {
+    return evalUnaryMathRel(g, subst, Math.cos, Math.acos);
+  }
+
+  // math:tan  (inverse uses principal atan)
+  if (g.p instanceof Iri && g.p.value === MATH_NS + 'tan') {
+    return evalUnaryMathRel(g, subst, Math.tan, Math.atan);
+  }
+
+  // math:sinh / cosh / tanh (guard for JS availability)
+  if (g.p instanceof Iri && g.p.value === MATH_NS + 'sinh') {
+    if (typeof Math.sinh !== 'function' || typeof Math.asinh !== 'function') return [];
+    return evalUnaryMathRel(g, subst, Math.sinh, Math.asinh);
+  }
   if (g.p instanceof Iri && g.p.value === MATH_NS + 'cosh') {
-    const a = parseNum(g.s);
-    if (a !== null && typeof Math.cosh === 'function') {
-      const cVal = Math.cosh(a);
-      if (Number.isFinite(cVal)) {
-        if (g.o instanceof Var) {
-          const s2 = { ...subst };
-          s2[g.o.name] = new Literal(formatNum(cVal));
-          return [s2];
-        }
-        if (numEqualTerm(g.o, cVal)) {
-          return [{ ...subst }];
-        }
-      }
-    }
-    return [];
+    if (typeof Math.cosh !== 'function' || typeof Math.acosh !== 'function') return [];
+    return evalUnaryMathRel(g, subst, Math.cosh, Math.acosh);
+  }
+  if (g.p instanceof Iri && g.p.value === MATH_NS + 'tanh') {
+    if (typeof Math.tanh !== 'function' || typeof Math.atanh !== 'function') return [];
+    return evalUnaryMathRel(g, subst, Math.tanh, Math.atanh);
   }
 
-  // math:degrees
-  // Convert radians -> degrees
+  // math:degrees (inverse is radians)
   if (g.p instanceof Iri && g.p.value === MATH_NS + 'degrees') {
-    const a = parseNum(g.s);
-    if (a !== null) {
-      const cVal = (a * 180.0) / Math.PI;
-      if (Number.isFinite(cVal)) {
-        if (g.o instanceof Var) {
-          const s2 = { ...subst };
-          s2[g.o.name] = new Literal(formatNum(cVal));
-          return [s2];
-        }
-        if (numEqualTerm(g.o, cVal)) {
-          return [{ ...subst }];
-        }
-      }
-    }
-    return [];
+    const toDeg = (rad) => (rad * 180.0) / Math.PI;
+    const toRad = (deg) => (deg * Math.PI) / 180.0;
+    return evalUnaryMathRel(g, subst, toDeg, toRad);
+  }
+
+  // math:negation (inverse is itself)
+  if (g.p instanceof Iri && g.p.value === MATH_NS + 'negation') {
+    const neg = (x) => -x;
+    return evalUnaryMathRel(g, subst, neg, neg);
   }
 
   // math:remainder
@@ -3199,63 +3291,6 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     }
     const s2 = unifyTerm(g.o, lit, subst);
     return s2 !== null ? [s2] : [];
-  }
-
-  // math:sinh
-  if (g.p instanceof Iri && g.p.value === MATH_NS + 'sinh') {
-    const a = parseNum(g.s);
-    if (a !== null && typeof Math.sinh === 'function') {
-      const cVal = Math.sinh(a);
-      if (Number.isFinite(cVal)) {
-        if (g.o instanceof Var) {
-          const s2 = { ...subst };
-          s2[g.o.name] = new Literal(formatNum(cVal));
-          return [s2];
-        }
-        if (numEqualTerm(g.o, cVal)) {
-          return [{ ...subst }];
-        }
-      }
-    }
-    return [];
-  }
-
-  // math:tan
-  if (g.p instanceof Iri && g.p.value === MATH_NS + 'tan') {
-    const a = parseNum(g.s);
-    if (a !== null) {
-      const cVal = Math.tan(a);
-      if (Number.isFinite(cVal)) {
-        if (g.o instanceof Var) {
-          const s2 = { ...subst };
-          s2[g.o.name] = new Literal(formatNum(cVal));
-          return [s2];
-        }
-        if (numEqualTerm(g.o, cVal)) {
-          return [{ ...subst }];
-        }
-      }
-    }
-    return [];
-  }
-
-  // math:tanh
-  if (g.p instanceof Iri && g.p.value === MATH_NS + 'tanh') {
-    const a = parseNum(g.s);
-    if (a !== null && typeof Math.tanh === 'function') {
-      const cVal = Math.tanh(a);
-      if (Number.isFinite(cVal)) {
-        if (g.o instanceof Var) {
-          const s2 = { ...subst };
-          s2[g.o.name] = new Literal(formatNum(cVal));
-          return [s2];
-        }
-        if (numEqualTerm(g.o, cVal)) {
-          return [{ ...subst }];
-        }
-      }
-    }
-    return [];
   }
 
   // -----------------------------------------------------------------
@@ -3390,12 +3425,37 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     if (!(g.s instanceof ListTerm)) return [];
     const xs = g.s.elems;
     const outs = [];
+
     for (let i = 0; i < xs.length; i++) {
       const idxLit = new Literal(String(i)); // 0-based
-      const pair = new ListTerm([idxLit, xs[i]]);
+      const val = xs[i];
+
+      // Fast path: object is exactly a 2-element list (idx, value)
+      if (g.o instanceof ListTerm && g.o.elems.length === 2) {
+        const [idxPat, valPat] = g.o.elems;
+
+        const s1 = unifyTerm(idxPat, idxLit, subst);
+        if (s1 === null) continue;
+
+        // If value-pattern is ground after subst: require STRICT term equality
+        const valPat2 = applySubstTerm(valPat, s1);
+        if (isGroundTerm(valPat2)) {
+          if (termsEqualNoIntDecimal(valPat2, val)) outs.push({ ...s1 });
+          continue;
+        }
+
+        // Otherwise, allow normal unification/binding
+        const s2 = unifyTerm(valPat, val, s1);
+        if (s2 !== null) outs.push(s2);
+        continue;
+      }
+
+      // Fallback: original behavior
+      const pair = new ListTerm([idxLit, val]);
       const s2 = unifyTerm(g.o, pair, subst);
       if (s2 !== null) outs.push(s2);
     }
+
     return outs;
   }
 
@@ -3418,17 +3478,35 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
     const [listTerm, indexTerm] = g.s.elems;
     if (!(listTerm instanceof ListTerm)) return [];
+
     const xs = listTerm.elems;
     const outs = [];
 
     for (let i = 0; i < xs.length; i++) {
       const idxLit = new Literal(String(i)); // index starts at 0
-      let s1 = unifyTerm(indexTerm, idxLit, subst);
-      if (s1 === null) continue;
-      let s2 = unifyTerm(g.o, xs[i], s1);
-      if (s2 === null) continue;
-      outs.push(s2);
+
+      // --- index side: strict if ground, otherwise unify/bind
+      let s1 = null;
+      const idxPat2 = applySubstTerm(indexTerm, subst);
+      if (isGroundTerm(idxPat2)) {
+        if (!termsEqualNoIntDecimal(idxPat2, idxLit)) continue;
+        s1 = { ...subst };
+      } else {
+        s1 = unifyTerm(indexTerm, idxLit, subst);
+        if (s1 === null) continue;
+      }
+
+      // --- value side: strict if ground, otherwise unify/bind
+      const o2 = applySubstTerm(g.o, s1);
+      if (isGroundTerm(o2)) {
+        if (termsEqualNoIntDecimal(o2, xs[i])) outs.push({ ...s1 });
+        continue;
+      }
+
+      const s2 = unifyTerm(g.o, xs[i], s1);
+      if (s2 !== null) outs.push(s2);
     }
+
     return outs;
   }
 
@@ -3439,11 +3517,18 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
     const [listTerm, itemTerm] = g.s.elems;
     if (!(listTerm instanceof ListTerm)) return [];
+
+    // item must be bound
+    const item2 = applySubstTerm(itemTerm, subst);
+    if (!isGroundTerm(item2)) return [];
+
     const xs = listTerm.elems;
     const filtered = [];
     for (const e of xs) {
-      if (!termsEqual(e, itemTerm)) filtered.push(e);
+      // strict term match (still allows plain "abc" == "abc"^^xsd:string)
+      if (!termsEqualNoIntDecimal(e, item2)) filtered.push(e);
     }
+
     const resList = new ListTerm(filtered);
     const s2 = unifyTerm(g.o, resList, subst);
     return s2 !== null ? [s2] : [];
@@ -3471,10 +3556,16 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     return outs;
   }
 
-  // list:length
+  // list:length  (strict: do not accept integer<->decimal matches for a ground object)
   if (g.p instanceof Iri && g.p.value === LIST_NS + 'length') {
     if (!(g.s instanceof ListTerm)) return [];
     const nTerm = new Literal(String(g.s.elems.length));
+
+    const o2 = applySubstTerm(g.o, subst);
+    if (isGroundTerm(o2)) {
+      return termsEqualNoIntDecimal(o2, nTerm) ? [{ ...subst }] : [];
+    }
+
     const s2 = unifyTerm(g.o, nTerm, subst);
     return s2 !== null ? [s2] : [];
   }
