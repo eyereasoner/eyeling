@@ -1264,7 +1264,21 @@ function termsEqual(a, b) {
   if (!a || !b) return false;
   if (a.constructor !== b.constructor) return false;
   if (a instanceof Iri) return a.value === b.value;
-  if (a instanceof Literal) return a.value === b.value;
+  if (a instanceof Literal) {
+    if (a.value === b.value) return true;
+    if (literalsEquivalentAsXsdString(a.value, b.value)) return true;
+
+    // Keep in sync with unifyTerm(): numeric-value equality (EYE-style)
+    const av = parseNumberLiteral(a);
+    const bv = parseNumberLiteral(b);
+    if (av !== null && bv !== null) {
+      if (typeof av === 'bigint' && typeof bv === 'bigint') return av === bv;
+      const an = typeof av === 'bigint' ? Number(av) : av;
+      const bn = typeof bv === 'bigint' ? Number(bv) : bv;
+      return !Number.isNaN(an) && !Number.isNaN(bn) && an === bn;
+    }
+    return false;
+  }
   if (a instanceof Var) return a.name === b.name;
   if (a instanceof Blank) return a.label === b.label;
   if (a instanceof ListTerm) {
@@ -1447,7 +1461,7 @@ function hasAlphaEquiv(triples, tr) {
 
 function termFastKey(t) {
   if (t instanceof Iri) return 'I:' + t.value;
-  if (t instanceof Literal) return 'L:' + t.value;
+  if (t instanceof Literal) return 'L:' + normalizeLiteralForFastKey(t.value);
   return null;
 }
 
@@ -1882,17 +1896,22 @@ function unifyTerm(a, b, subst) {
   if (a instanceof Literal && b instanceof Literal && a.value === b.value) return { ...subst };
   if (a instanceof Blank && b instanceof Blank && a.label === b.label) return { ...subst };
 
-  // Numeric-value match for literals (EYE-style): allow different lexical forms / typing
-  // e.g. "1.1"^^xsd:double  ≈  1.1e0
+  // String-literal match (RDF 1.1): treat plain strings and xsd:string as equal (but not @lang)
   if (a instanceof Literal && b instanceof Literal) {
-    const av = parseNumberLiteral(a); // BigInt | Number | null
-    const bv = parseNumberLiteral(b);
-    if (av !== null && bv !== null) {
-      if (typeof av === 'bigint' && typeof bv === 'bigint') {
-        if (av === bv) return { ...subst };
+    if (literalsEquivalentAsXsdString(a.value, b.value)) return { ...subst };
+  }
+
+  // Numeric-value match for literals, BUT ONLY when datatypes agree (or infer to agree)
+  if (a instanceof Literal && b instanceof Literal) {
+    const ai = parseNumericLiteralInfo(a);
+    const bi = parseNumericLiteralInfo(b);
+
+    if (ai && bi && ai.dt === bi.dt) {
+      if (ai.kind === 'bigint' && bi.kind === 'bigint') {
+        if (ai.value === bi.value) return { ...subst };
       } else {
-        const an = typeof av === 'bigint' ? Number(av) : av;
-        const bn = typeof bv === 'bigint' ? Number(bv) : bv;
+        const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
+        const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
         if (!Number.isNaN(an) && !Number.isNaN(bn) && an === bn) return { ...subst };
       }
     }
@@ -1998,6 +2017,65 @@ function literalParts(lit) {
   }
 
   return [lex, dt];
+}
+
+function literalHasLangTag(lit) {
+  // True iff the literal is a quoted string literal with a language tag suffix,
+  // e.g. "hello"@en or """hello"""@en.
+  // (The parser rejects language tags combined with datatypes.)
+  if (typeof lit !== 'string') return false;
+  if (lit.indexOf('^^') >= 0) return false;
+  if (!lit.startsWith('"')) return false;
+
+  if (lit.startsWith('"""')) {
+    const end = lit.lastIndexOf('"""');
+    if (end < 0) return false;
+    const after = end + 3;
+    return after < lit.length && lit[after] === '@';
+  }
+
+  const lastQuote = lit.lastIndexOf('"');
+  if (lastQuote < 0) return false;
+  const after = lastQuote + 1;
+  return after < lit.length && lit[after] === '@';
+}
+
+function isPlainStringLiteralValue(lit) {
+  // Plain string literal: quoted, no datatype, no lang.
+  if (typeof lit !== 'string') return false;
+  if (lit.indexOf('^^') >= 0) return false;
+  if (!isQuotedLexical(lit)) return false;
+  return !literalHasLangTag(lit);
+}
+
+function literalsEquivalentAsXsdString(aLit, bLit) {
+  // Treat "abc" and "abc"^^xsd:string as equal, but do NOT conflate language-tagged strings.
+  if (typeof aLit !== 'string' || typeof bLit !== 'string') return false;
+
+  const [alex, adt] = literalParts(aLit);
+  const [blex, bdt] = literalParts(bLit);
+  if (alex !== blex) return false;
+
+  const aPlain = adt === null && isPlainStringLiteralValue(aLit);
+  const bPlain = bdt === null && isPlainStringLiteralValue(bLit);
+  const aXsdStr = adt === XSD_NS + 'string';
+  const bXsdStr = bdt === XSD_NS + 'string';
+
+  return (aPlain && bXsdStr) || (bPlain && aXsdStr);
+}
+
+function normalizeLiteralForFastKey(lit) {
+  // Canonicalize so that "abc" and "abc"^^xsd:string share the same index/dedup key.
+  if (typeof lit !== 'string') return lit;
+  const [lex, dt] = literalParts(lit);
+
+  if (dt === XSD_NS + 'string') {
+    return `${lex}^^<${XSD_NS}string>`;
+  }
+  if (dt === null && isPlainStringLiteralValue(lit)) {
+    return `${lex}^^<${XSD_NS}string>`;
+  }
+  return lit;
 }
 
 function stripQuotes(lex) {
@@ -2476,6 +2554,54 @@ function listAppendSplit(parts, resElems, subst) {
 function numEqualTerm(t, n, eps = 1e-9) {
   const v = parseNum(t);
   return v !== null && Math.abs(v - n) < eps;
+}
+
+function numericDatatypeFromLex(lex) {
+  if (/[eE]/.test(lex)) return XSD_NS + 'double';
+  if (lex.includes('.')) return XSD_NS + 'decimal';
+  return XSD_NS + 'integer';
+}
+
+function parseNumericLiteralInfo(t) {
+  if (!(t instanceof Literal)) return null;
+
+  const v = t.value;
+  const [lex, dt] = literalParts(v);
+
+  let dt2 = dt;
+  let lexStr;
+
+  if (dt2 !== null) {
+    // Only handle the numeric datatypes we want to unify by value
+    if (
+      dt2 !== XSD_NS + 'integer' &&
+      dt2 !== XSD_NS + 'decimal' &&
+      dt2 !== XSD_NS + 'double'
+    ) return null;
+
+    // typed numerics are like "1.1"^^<...>
+    lexStr = stripQuotes(lex);
+  } else {
+    // Raw numeric token like 42, 1.1, 1.1e0 (NOT quoted strings, NOT lang-tagged)
+    if (typeof v !== 'string') return null;
+    if (v.startsWith('"')) return null;
+    if (!/^[+-]?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][+-]?\d+)?$/.test(v)) return null;
+
+    dt2 = numericDatatypeFromLex(v);
+    lexStr = v;
+  }
+
+  if (dt2 === XSD_NS + 'integer') {
+    try {
+      return { dt: dt2, kind: 'bigint', value: BigInt(lexStr) };
+    } catch {
+      return null;
+    }
+  }
+
+  const num = Number(lexStr);
+  if (Number.isNaN(num)) return null;
+  return { dt: dt2, kind: 'number', value: num };
 }
 
 // ============================================================================
