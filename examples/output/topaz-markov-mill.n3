@@ -1,4 +1,5 @@
 @prefix : <http://example.org/topaz-markov#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
@@ -8,9 +9,9 @@
 #   _:b3 :pA 0.25 .
 #   _:b3 :pB 0.25 .
 #   _:b3 :pC 0.50 .
-#   (0.25 0.25) math:sum 0.5 .
-#   (0.5 0.50) math:sum 1 .
-#   1 math:equalTo 1.0 .
+#   (0.25 0.25) math:sum "0.5"^^xsd:decimal .
+#   ("0.5"^^xsd:decimal 0.50) math:sum "1"^^xsd:decimal .
+#   "1"^^xsd:decimal math:equalTo 1.0 .
 # via the schematic forward rule:
 #   {
 #     :MC1 :row ?r .
@@ -25,11 +26,11 @@
 #   } .
 # with substitution (on rule variables):
 #   ?a = 0.25
-#   ?ab = 0.5
+#   ?ab = "0.5"^^xsd:decimal
 #   ?b = 0.25
 #   ?c = 0.50
 #   ?r = _:b3
-#   ?sum = 1
+#   ?sum = "1"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -43,9 +44,9 @@
 #   _:b2 :pA 0.10 .
 #   _:b2 :pB 0.70 .
 #   _:b2 :pC 0.20 .
-#   (0.10 0.70) math:sum 0.7999999999999999 .
-#   (0.7999999999999999 0.20) math:sum 1 .
-#   1 math:equalTo 1.0 .
+#   (0.10 0.70) math:sum "0.7999999999999999"^^xsd:decimal .
+#   ("0.7999999999999999"^^xsd:decimal 0.20) math:sum "1"^^xsd:decimal .
+#   "1"^^xsd:decimal math:equalTo 1.0 .
 # via the schematic forward rule:
 #   {
 #     :MC1 :row ?r .
@@ -60,11 +61,11 @@
 #   } .
 # with substitution (on rule variables):
 #   ?a = 0.10
-#   ?ab = 0.7999999999999999
+#   ?ab = "0.7999999999999999"^^xsd:decimal
 #   ?b = 0.70
 #   ?c = 0.20
 #   ?r = _:b2
-#   ?sum = 1
+#   ?sum = "1"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -78,9 +79,9 @@
 #   _:b1 :pA 0.80 .
 #   _:b1 :pB 0.15 .
 #   _:b1 :pC 0.05 .
-#   (0.80 0.15) math:sum 0.9500000000000001 .
-#   (0.9500000000000001 0.05) math:sum 1 .
-#   1 math:equalTo 1.0 .
+#   (0.80 0.15) math:sum "0.9500000000000001"^^xsd:decimal .
+#   ("0.9500000000000001"^^xsd:decimal 0.05) math:sum "1"^^xsd:decimal .
+#   "1"^^xsd:decimal math:equalTo 1.0 .
 # via the schematic forward rule:
 #   {
 #     :MC1 :row ?r .
@@ -95,11 +96,11 @@
 #   } .
 # with substitution (on rule variables):
 #   ?a = 0.80
-#   ?ab = 0.9500000000000001
+#   ?ab = "0.9500000000000001"^^xsd:decimal
 #   ?b = 0.15
 #   ?c = 0.05
 #   ?r = _:b1
-#   ?sum = 1
+#   ?sum = "1"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -107,7 +108,7 @@
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_0 :pA 0.535 .
+#   _:sk_0 :pA "0.535"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :pi0 _:b4 .
 #   :MC1 :row _:b1 .
@@ -128,21 +129,21 @@
 #   _:b4 :pA 0.60 .
 #   _:b4 :pB 0.30 .
 #   _:b4 :pC 0.10 .
-#   (0.60 0.80) math:product 0.48 .
-#   (0.30 0.10) math:product 0.03 .
-#   (0.10 0.25) math:product 0.025 .
-#   (0.48 0.03) math:sum 0.51 .
-#   (0.51 0.025) math:sum 0.535 .
-#   (0.60 0.15) math:product 0.09 .
-#   (0.30 0.70) math:product 0.21 .
-#   (0.10 0.25) math:product 0.025 .
-#   (0.09 0.21) math:sum 0.3 .
-#   (0.3 0.025) math:sum 0.325 .
-#   (0.60 0.05) math:product 0.03 .
-#   (0.30 0.20) math:product 0.06 .
-#   (0.10 0.50) math:product 0.05 .
-#   (0.03 0.06) math:sum 0.09 .
-#   (0.09 0.05) math:sum 0.14 .
+#   (0.60 0.80) math:product "0.48"^^xsd:decimal .
+#   (0.30 0.10) math:product "0.03"^^xsd:decimal .
+#   (0.10 0.25) math:product "0.025"^^xsd:decimal .
+#   ("0.48"^^xsd:decimal "0.03"^^xsd:decimal) math:sum "0.51"^^xsd:decimal .
+#   ("0.51"^^xsd:decimal "0.025"^^xsd:decimal) math:sum "0.535"^^xsd:decimal .
+#   (0.60 0.15) math:product "0.09"^^xsd:decimal .
+#   (0.30 0.70) math:product "0.21"^^xsd:decimal .
+#   (0.10 0.25) math:product "0.025"^^xsd:decimal .
+#   ("0.09"^^xsd:decimal "0.21"^^xsd:decimal) math:sum "0.3"^^xsd:decimal .
+#   ("0.3"^^xsd:decimal "0.025"^^xsd:decimal) math:sum "0.325"^^xsd:decimal .
+#   (0.60 0.05) math:product "0.03"^^xsd:decimal .
+#   (0.30 0.20) math:product "0.06"^^xsd:decimal .
+#   (0.10 0.50) math:product "0.05"^^xsd:decimal .
+#   ("0.03"^^xsd:decimal "0.06"^^xsd:decimal) math:sum "0.09"^^xsd:decimal .
+#   ("0.09"^^xsd:decimal "0.05"^^xsd:decimal) math:sum "0.14"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :pi0 ?pi .
@@ -199,32 +200,32 @@
 #   ?pB = 0.30
 #   ?pC = 0.10
 #   ?pi = _:b4
-#   ?pi1A = 0.535
-#   ?pi1B = 0.325
-#   ?pi1C = 0.14
+#   ?pi1A = "0.535"^^xsd:decimal
+#   ?pi1B = "0.325"^^xsd:decimal
+#   ?pi1C = "0.14"^^xsd:decimal
 #   ?rA = _:b1
 #   ?rB = _:b2
 #   ?rC = _:b3
-#   ?s1 = 0.51
-#   ?s2 = 0.3
-#   ?s3 = 0.09
-#   ?tAA = 0.48
-#   ?tAB = 0.09
-#   ?tAC = 0.03
-#   ?tBA = 0.03
-#   ?tBB = 0.21
-#   ?tBC = 0.06
-#   ?tCA = 0.025
-#   ?tCB = 0.025
-#   ?tCC = 0.05
+#   ?s1 = "0.51"^^xsd:decimal
+#   ?s2 = "0.3"^^xsd:decimal
+#   ?s3 = "0.09"^^xsd:decimal
+#   ?tAA = "0.48"^^xsd:decimal
+#   ?tAB = "0.09"^^xsd:decimal
+#   ?tAC = "0.03"^^xsd:decimal
+#   ?tBA = "0.03"^^xsd:decimal
+#   ?tBB = "0.21"^^xsd:decimal
+#   ?tBC = "0.06"^^xsd:decimal
+#   ?tCA = "0.025"^^xsd:decimal
+#   ?tCB = "0.025"^^xsd:decimal
+#   ?tCC = "0.05"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_0 :pA 0.535 .
+_:sk_0 :pA "0.535"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_0 :pB 0.325 .
+#   _:sk_0 :pB "0.325"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :pi0 _:b4 .
 #   :MC1 :row _:b1 .
@@ -245,21 +246,21 @@ _:sk_0 :pA 0.535 .
 #   _:b4 :pA 0.60 .
 #   _:b4 :pB 0.30 .
 #   _:b4 :pC 0.10 .
-#   (0.60 0.80) math:product 0.48 .
-#   (0.30 0.10) math:product 0.03 .
-#   (0.10 0.25) math:product 0.025 .
-#   (0.48 0.03) math:sum 0.51 .
-#   (0.51 0.025) math:sum 0.535 .
-#   (0.60 0.15) math:product 0.09 .
-#   (0.30 0.70) math:product 0.21 .
-#   (0.10 0.25) math:product 0.025 .
-#   (0.09 0.21) math:sum 0.3 .
-#   (0.3 0.025) math:sum 0.325 .
-#   (0.60 0.05) math:product 0.03 .
-#   (0.30 0.20) math:product 0.06 .
-#   (0.10 0.50) math:product 0.05 .
-#   (0.03 0.06) math:sum 0.09 .
-#   (0.09 0.05) math:sum 0.14 .
+#   (0.60 0.80) math:product "0.48"^^xsd:decimal .
+#   (0.30 0.10) math:product "0.03"^^xsd:decimal .
+#   (0.10 0.25) math:product "0.025"^^xsd:decimal .
+#   ("0.48"^^xsd:decimal "0.03"^^xsd:decimal) math:sum "0.51"^^xsd:decimal .
+#   ("0.51"^^xsd:decimal "0.025"^^xsd:decimal) math:sum "0.535"^^xsd:decimal .
+#   (0.60 0.15) math:product "0.09"^^xsd:decimal .
+#   (0.30 0.70) math:product "0.21"^^xsd:decimal .
+#   (0.10 0.25) math:product "0.025"^^xsd:decimal .
+#   ("0.09"^^xsd:decimal "0.21"^^xsd:decimal) math:sum "0.3"^^xsd:decimal .
+#   ("0.3"^^xsd:decimal "0.025"^^xsd:decimal) math:sum "0.325"^^xsd:decimal .
+#   (0.60 0.05) math:product "0.03"^^xsd:decimal .
+#   (0.30 0.20) math:product "0.06"^^xsd:decimal .
+#   (0.10 0.50) math:product "0.05"^^xsd:decimal .
+#   ("0.03"^^xsd:decimal "0.06"^^xsd:decimal) math:sum "0.09"^^xsd:decimal .
+#   ("0.09"^^xsd:decimal "0.05"^^xsd:decimal) math:sum "0.14"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :pi0 ?pi .
@@ -316,32 +317,32 @@ _:sk_0 :pA 0.535 .
 #   ?pB = 0.30
 #   ?pC = 0.10
 #   ?pi = _:b4
-#   ?pi1A = 0.535
-#   ?pi1B = 0.325
-#   ?pi1C = 0.14
+#   ?pi1A = "0.535"^^xsd:decimal
+#   ?pi1B = "0.325"^^xsd:decimal
+#   ?pi1C = "0.14"^^xsd:decimal
 #   ?rA = _:b1
 #   ?rB = _:b2
 #   ?rC = _:b3
-#   ?s1 = 0.51
-#   ?s2 = 0.3
-#   ?s3 = 0.09
-#   ?tAA = 0.48
-#   ?tAB = 0.09
-#   ?tAC = 0.03
-#   ?tBA = 0.03
-#   ?tBB = 0.21
-#   ?tBC = 0.06
-#   ?tCA = 0.025
-#   ?tCB = 0.025
-#   ?tCC = 0.05
+#   ?s1 = "0.51"^^xsd:decimal
+#   ?s2 = "0.3"^^xsd:decimal
+#   ?s3 = "0.09"^^xsd:decimal
+#   ?tAA = "0.48"^^xsd:decimal
+#   ?tAB = "0.09"^^xsd:decimal
+#   ?tAC = "0.03"^^xsd:decimal
+#   ?tBA = "0.03"^^xsd:decimal
+#   ?tBB = "0.21"^^xsd:decimal
+#   ?tBC = "0.06"^^xsd:decimal
+#   ?tCA = "0.025"^^xsd:decimal
+#   ?tCB = "0.025"^^xsd:decimal
+#   ?tCC = "0.05"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_0 :pB 0.325 .
+_:sk_0 :pB "0.325"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_0 :pC 0.14 .
+#   _:sk_0 :pC "0.14"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :pi0 _:b4 .
 #   :MC1 :row _:b1 .
@@ -362,21 +363,21 @@ _:sk_0 :pB 0.325 .
 #   _:b4 :pA 0.60 .
 #   _:b4 :pB 0.30 .
 #   _:b4 :pC 0.10 .
-#   (0.60 0.80) math:product 0.48 .
-#   (0.30 0.10) math:product 0.03 .
-#   (0.10 0.25) math:product 0.025 .
-#   (0.48 0.03) math:sum 0.51 .
-#   (0.51 0.025) math:sum 0.535 .
-#   (0.60 0.15) math:product 0.09 .
-#   (0.30 0.70) math:product 0.21 .
-#   (0.10 0.25) math:product 0.025 .
-#   (0.09 0.21) math:sum 0.3 .
-#   (0.3 0.025) math:sum 0.325 .
-#   (0.60 0.05) math:product 0.03 .
-#   (0.30 0.20) math:product 0.06 .
-#   (0.10 0.50) math:product 0.05 .
-#   (0.03 0.06) math:sum 0.09 .
-#   (0.09 0.05) math:sum 0.14 .
+#   (0.60 0.80) math:product "0.48"^^xsd:decimal .
+#   (0.30 0.10) math:product "0.03"^^xsd:decimal .
+#   (0.10 0.25) math:product "0.025"^^xsd:decimal .
+#   ("0.48"^^xsd:decimal "0.03"^^xsd:decimal) math:sum "0.51"^^xsd:decimal .
+#   ("0.51"^^xsd:decimal "0.025"^^xsd:decimal) math:sum "0.535"^^xsd:decimal .
+#   (0.60 0.15) math:product "0.09"^^xsd:decimal .
+#   (0.30 0.70) math:product "0.21"^^xsd:decimal .
+#   (0.10 0.25) math:product "0.025"^^xsd:decimal .
+#   ("0.09"^^xsd:decimal "0.21"^^xsd:decimal) math:sum "0.3"^^xsd:decimal .
+#   ("0.3"^^xsd:decimal "0.025"^^xsd:decimal) math:sum "0.325"^^xsd:decimal .
+#   (0.60 0.05) math:product "0.03"^^xsd:decimal .
+#   (0.30 0.20) math:product "0.06"^^xsd:decimal .
+#   (0.10 0.50) math:product "0.05"^^xsd:decimal .
+#   ("0.03"^^xsd:decimal "0.06"^^xsd:decimal) math:sum "0.09"^^xsd:decimal .
+#   ("0.09"^^xsd:decimal "0.05"^^xsd:decimal) math:sum "0.14"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :pi0 ?pi .
@@ -433,28 +434,28 @@ _:sk_0 :pB 0.325 .
 #   ?pB = 0.30
 #   ?pC = 0.10
 #   ?pi = _:b4
-#   ?pi1A = 0.535
-#   ?pi1B = 0.325
-#   ?pi1C = 0.14
+#   ?pi1A = "0.535"^^xsd:decimal
+#   ?pi1B = "0.325"^^xsd:decimal
+#   ?pi1C = "0.14"^^xsd:decimal
 #   ?rA = _:b1
 #   ?rB = _:b2
 #   ?rC = _:b3
-#   ?s1 = 0.51
-#   ?s2 = 0.3
-#   ?s3 = 0.09
-#   ?tAA = 0.48
-#   ?tAB = 0.09
-#   ?tAC = 0.03
-#   ?tBA = 0.03
-#   ?tBB = 0.21
-#   ?tBC = 0.06
-#   ?tCA = 0.025
-#   ?tCB = 0.025
-#   ?tCC = 0.05
+#   ?s1 = "0.51"^^xsd:decimal
+#   ?s2 = "0.3"^^xsd:decimal
+#   ?s3 = "0.09"^^xsd:decimal
+#   ?tAA = "0.48"^^xsd:decimal
+#   ?tAB = "0.09"^^xsd:decimal
+#   ?tAC = "0.03"^^xsd:decimal
+#   ?tBA = "0.03"^^xsd:decimal
+#   ?tBB = "0.21"^^xsd:decimal
+#   ?tBC = "0.06"^^xsd:decimal
+#   ?tCA = "0.025"^^xsd:decimal
+#   ?tCB = "0.025"^^xsd:decimal
+#   ?tCC = "0.05"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_0 :pC 0.14 .
+_:sk_0 :pC "0.14"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
@@ -479,21 +480,21 @@ _:sk_0 :pC 0.14 .
 #   _:b4 :pA 0.60 .
 #   _:b4 :pB 0.30 .
 #   _:b4 :pC 0.10 .
-#   (0.60 0.80) math:product 0.48 .
-#   (0.30 0.10) math:product 0.03 .
-#   (0.10 0.25) math:product 0.025 .
-#   (0.48 0.03) math:sum 0.51 .
-#   (0.51 0.025) math:sum 0.535 .
-#   (0.60 0.15) math:product 0.09 .
-#   (0.30 0.70) math:product 0.21 .
-#   (0.10 0.25) math:product 0.025 .
-#   (0.09 0.21) math:sum 0.3 .
-#   (0.3 0.025) math:sum 0.325 .
-#   (0.60 0.05) math:product 0.03 .
-#   (0.30 0.20) math:product 0.06 .
-#   (0.10 0.50) math:product 0.05 .
-#   (0.03 0.06) math:sum 0.09 .
-#   (0.09 0.05) math:sum 0.14 .
+#   (0.60 0.80) math:product "0.48"^^xsd:decimal .
+#   (0.30 0.10) math:product "0.03"^^xsd:decimal .
+#   (0.10 0.25) math:product "0.025"^^xsd:decimal .
+#   ("0.48"^^xsd:decimal "0.03"^^xsd:decimal) math:sum "0.51"^^xsd:decimal .
+#   ("0.51"^^xsd:decimal "0.025"^^xsd:decimal) math:sum "0.535"^^xsd:decimal .
+#   (0.60 0.15) math:product "0.09"^^xsd:decimal .
+#   (0.30 0.70) math:product "0.21"^^xsd:decimal .
+#   (0.10 0.25) math:product "0.025"^^xsd:decimal .
+#   ("0.09"^^xsd:decimal "0.21"^^xsd:decimal) math:sum "0.3"^^xsd:decimal .
+#   ("0.3"^^xsd:decimal "0.025"^^xsd:decimal) math:sum "0.325"^^xsd:decimal .
+#   (0.60 0.05) math:product "0.03"^^xsd:decimal .
+#   (0.30 0.20) math:product "0.06"^^xsd:decimal .
+#   (0.10 0.50) math:product "0.05"^^xsd:decimal .
+#   ("0.03"^^xsd:decimal "0.06"^^xsd:decimal) math:sum "0.09"^^xsd:decimal .
+#   ("0.09"^^xsd:decimal "0.05"^^xsd:decimal) math:sum "0.14"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :pi0 ?pi .
@@ -550,24 +551,24 @@ _:sk_0 :pC 0.14 .
 #   ?pB = 0.30
 #   ?pC = 0.10
 #   ?pi = _:b4
-#   ?pi1A = 0.535
-#   ?pi1B = 0.325
-#   ?pi1C = 0.14
+#   ?pi1A = "0.535"^^xsd:decimal
+#   ?pi1B = "0.325"^^xsd:decimal
+#   ?pi1C = "0.14"^^xsd:decimal
 #   ?rA = _:b1
 #   ?rB = _:b2
 #   ?rC = _:b3
-#   ?s1 = 0.51
-#   ?s2 = 0.3
-#   ?s3 = 0.09
-#   ?tAA = 0.48
-#   ?tAB = 0.09
-#   ?tAC = 0.03
-#   ?tBA = 0.03
-#   ?tBB = 0.21
-#   ?tBC = 0.06
-#   ?tCA = 0.025
-#   ?tCB = 0.025
-#   ?tCC = 0.05
+#   ?s1 = "0.51"^^xsd:decimal
+#   ?s2 = "0.3"^^xsd:decimal
+#   ?s3 = "0.09"^^xsd:decimal
+#   ?tAA = "0.48"^^xsd:decimal
+#   ?tAB = "0.09"^^xsd:decimal
+#   ?tAC = "0.03"^^xsd:decimal
+#   ?tBA = "0.03"^^xsd:decimal
+#   ?tBB = "0.21"^^xsd:decimal
+#   ?tBC = "0.06"^^xsd:decimal
+#   ?tCA = "0.025"^^xsd:decimal
+#   ?tCB = "0.025"^^xsd:decimal
+#   ?tCC = "0.05"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -575,7 +576,7 @@ _:sk_0 :pC 0.14 .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_1 :pA 0.49550000000000005 .
+#   _:sk_1 :pA "0.49550000000000005"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :pi1 _:sk_0 .
 #   :MC1 :row _:b1 .
@@ -593,24 +594,24 @@ _:sk_0 :pC 0.14 .
 #   _:b3 :pA 0.25 .
 #   _:b3 :pB 0.25 .
 #   _:b3 :pC 0.50 .
-#   _:sk_0 :pA 0.535 .
-#   _:sk_0 :pB 0.325 .
-#   _:sk_0 :pC 0.14 .
-#   (0.535 0.80) math:product 0.42800000000000005 .
-#   (0.325 0.10) math:product 0.0325 .
-#   (0.14 0.25) math:product 0.035 .
-#   (0.42800000000000005 0.0325) math:sum 0.4605 .
-#   (0.4605 0.035) math:sum 0.49550000000000005 .
-#   (0.535 0.15) math:product 0.08025 .
-#   (0.325 0.70) math:product 0.22749999999999998 .
-#   (0.14 0.25) math:product 0.035 .
-#   (0.08025 0.22749999999999998) math:sum 0.30774999999999997 .
-#   (0.30774999999999997 0.035) math:sum 0.34275 .
-#   (0.535 0.05) math:product 0.026750000000000003 .
-#   (0.325 0.20) math:product 0.065 .
-#   (0.14 0.50) math:product 0.07 .
-#   (0.026750000000000003 0.065) math:sum 0.09175 .
-#   (0.09175 0.07) math:sum 0.16175 .
+#   _:sk_0 :pA "0.535"^^xsd:decimal .
+#   _:sk_0 :pB "0.325"^^xsd:decimal .
+#   _:sk_0 :pC "0.14"^^xsd:decimal .
+#   ("0.535"^^xsd:decimal 0.80) math:product "0.42800000000000005"^^xsd:decimal .
+#   ("0.325"^^xsd:decimal 0.10) math:product "0.0325"^^xsd:decimal .
+#   ("0.14"^^xsd:decimal 0.25) math:product "0.035"^^xsd:decimal .
+#   ("0.42800000000000005"^^xsd:decimal "0.0325"^^xsd:decimal) math:sum "0.4605"^^xsd:decimal .
+#   ("0.4605"^^xsd:decimal "0.035"^^xsd:decimal) math:sum "0.49550000000000005"^^xsd:decimal .
+#   ("0.535"^^xsd:decimal 0.15) math:product "0.08025"^^xsd:decimal .
+#   ("0.325"^^xsd:decimal 0.70) math:product "0.22749999999999998"^^xsd:decimal .
+#   ("0.14"^^xsd:decimal 0.25) math:product "0.035"^^xsd:decimal .
+#   ("0.08025"^^xsd:decimal "0.22749999999999998"^^xsd:decimal) math:sum "0.30774999999999997"^^xsd:decimal .
+#   ("0.30774999999999997"^^xsd:decimal "0.035"^^xsd:decimal) math:sum "0.34275"^^xsd:decimal .
+#   ("0.535"^^xsd:decimal 0.05) math:product "0.026750000000000003"^^xsd:decimal .
+#   ("0.325"^^xsd:decimal 0.20) math:product "0.065"^^xsd:decimal .
+#   ("0.14"^^xsd:decimal 0.50) math:product "0.07"^^xsd:decimal .
+#   ("0.026750000000000003"^^xsd:decimal "0.065"^^xsd:decimal) math:sum "0.09175"^^xsd:decimal .
+#   ("0.09175"^^xsd:decimal "0.07"^^xsd:decimal) math:sum "0.16175"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :pi1 ?pi .
@@ -663,36 +664,36 @@ _:sk_0 :pC 0.14 .
 #   ?CA = 0.25
 #   ?CB = 0.25
 #   ?CC = 0.50
-#   ?pA = 0.535
-#   ?pB = 0.325
-#   ?pC = 0.14
+#   ?pA = "0.535"^^xsd:decimal
+#   ?pB = "0.325"^^xsd:decimal
+#   ?pC = "0.14"^^xsd:decimal
 #   ?pi = _:sk_0
-#   ?pi2A = 0.49550000000000005
-#   ?pi2B = 0.34275
-#   ?pi2C = 0.16175
+#   ?pi2A = "0.49550000000000005"^^xsd:decimal
+#   ?pi2B = "0.34275"^^xsd:decimal
+#   ?pi2C = "0.16175"^^xsd:decimal
 #   ?rA = _:b1
 #   ?rB = _:b2
 #   ?rC = _:b3
-#   ?s1 = 0.4605
-#   ?s2 = 0.30774999999999997
-#   ?s3 = 0.09175
-#   ?tAA = 0.42800000000000005
-#   ?tAB = 0.08025
-#   ?tAC = 0.026750000000000003
-#   ?tBA = 0.0325
-#   ?tBB = 0.22749999999999998
-#   ?tBC = 0.065
-#   ?tCA = 0.035
-#   ?tCB = 0.035
-#   ?tCC = 0.07
+#   ?s1 = "0.4605"^^xsd:decimal
+#   ?s2 = "0.30774999999999997"^^xsd:decimal
+#   ?s3 = "0.09175"^^xsd:decimal
+#   ?tAA = "0.42800000000000005"^^xsd:decimal
+#   ?tAB = "0.08025"^^xsd:decimal
+#   ?tAC = "0.026750000000000003"^^xsd:decimal
+#   ?tBA = "0.0325"^^xsd:decimal
+#   ?tBB = "0.22749999999999998"^^xsd:decimal
+#   ?tBC = "0.065"^^xsd:decimal
+#   ?tCA = "0.035"^^xsd:decimal
+#   ?tCB = "0.035"^^xsd:decimal
+#   ?tCC = "0.07"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_1 :pA 0.49550000000000005 .
+_:sk_1 :pA "0.49550000000000005"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_1 :pB 0.34275 .
+#   _:sk_1 :pB "0.34275"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :pi1 _:sk_0 .
 #   :MC1 :row _:b1 .
@@ -710,24 +711,24 @@ _:sk_1 :pA 0.49550000000000005 .
 #   _:b3 :pA 0.25 .
 #   _:b3 :pB 0.25 .
 #   _:b3 :pC 0.50 .
-#   _:sk_0 :pA 0.535 .
-#   _:sk_0 :pB 0.325 .
-#   _:sk_0 :pC 0.14 .
-#   (0.535 0.80) math:product 0.42800000000000005 .
-#   (0.325 0.10) math:product 0.0325 .
-#   (0.14 0.25) math:product 0.035 .
-#   (0.42800000000000005 0.0325) math:sum 0.4605 .
-#   (0.4605 0.035) math:sum 0.49550000000000005 .
-#   (0.535 0.15) math:product 0.08025 .
-#   (0.325 0.70) math:product 0.22749999999999998 .
-#   (0.14 0.25) math:product 0.035 .
-#   (0.08025 0.22749999999999998) math:sum 0.30774999999999997 .
-#   (0.30774999999999997 0.035) math:sum 0.34275 .
-#   (0.535 0.05) math:product 0.026750000000000003 .
-#   (0.325 0.20) math:product 0.065 .
-#   (0.14 0.50) math:product 0.07 .
-#   (0.026750000000000003 0.065) math:sum 0.09175 .
-#   (0.09175 0.07) math:sum 0.16175 .
+#   _:sk_0 :pA "0.535"^^xsd:decimal .
+#   _:sk_0 :pB "0.325"^^xsd:decimal .
+#   _:sk_0 :pC "0.14"^^xsd:decimal .
+#   ("0.535"^^xsd:decimal 0.80) math:product "0.42800000000000005"^^xsd:decimal .
+#   ("0.325"^^xsd:decimal 0.10) math:product "0.0325"^^xsd:decimal .
+#   ("0.14"^^xsd:decimal 0.25) math:product "0.035"^^xsd:decimal .
+#   ("0.42800000000000005"^^xsd:decimal "0.0325"^^xsd:decimal) math:sum "0.4605"^^xsd:decimal .
+#   ("0.4605"^^xsd:decimal "0.035"^^xsd:decimal) math:sum "0.49550000000000005"^^xsd:decimal .
+#   ("0.535"^^xsd:decimal 0.15) math:product "0.08025"^^xsd:decimal .
+#   ("0.325"^^xsd:decimal 0.70) math:product "0.22749999999999998"^^xsd:decimal .
+#   ("0.14"^^xsd:decimal 0.25) math:product "0.035"^^xsd:decimal .
+#   ("0.08025"^^xsd:decimal "0.22749999999999998"^^xsd:decimal) math:sum "0.30774999999999997"^^xsd:decimal .
+#   ("0.30774999999999997"^^xsd:decimal "0.035"^^xsd:decimal) math:sum "0.34275"^^xsd:decimal .
+#   ("0.535"^^xsd:decimal 0.05) math:product "0.026750000000000003"^^xsd:decimal .
+#   ("0.325"^^xsd:decimal 0.20) math:product "0.065"^^xsd:decimal .
+#   ("0.14"^^xsd:decimal 0.50) math:product "0.07"^^xsd:decimal .
+#   ("0.026750000000000003"^^xsd:decimal "0.065"^^xsd:decimal) math:sum "0.09175"^^xsd:decimal .
+#   ("0.09175"^^xsd:decimal "0.07"^^xsd:decimal) math:sum "0.16175"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :pi1 ?pi .
@@ -780,36 +781,36 @@ _:sk_1 :pA 0.49550000000000005 .
 #   ?CA = 0.25
 #   ?CB = 0.25
 #   ?CC = 0.50
-#   ?pA = 0.535
-#   ?pB = 0.325
-#   ?pC = 0.14
+#   ?pA = "0.535"^^xsd:decimal
+#   ?pB = "0.325"^^xsd:decimal
+#   ?pC = "0.14"^^xsd:decimal
 #   ?pi = _:sk_0
-#   ?pi2A = 0.49550000000000005
-#   ?pi2B = 0.34275
-#   ?pi2C = 0.16175
+#   ?pi2A = "0.49550000000000005"^^xsd:decimal
+#   ?pi2B = "0.34275"^^xsd:decimal
+#   ?pi2C = "0.16175"^^xsd:decimal
 #   ?rA = _:b1
 #   ?rB = _:b2
 #   ?rC = _:b3
-#   ?s1 = 0.4605
-#   ?s2 = 0.30774999999999997
-#   ?s3 = 0.09175
-#   ?tAA = 0.42800000000000005
-#   ?tAB = 0.08025
-#   ?tAC = 0.026750000000000003
-#   ?tBA = 0.0325
-#   ?tBB = 0.22749999999999998
-#   ?tBC = 0.065
-#   ?tCA = 0.035
-#   ?tCB = 0.035
-#   ?tCC = 0.07
+#   ?s1 = "0.4605"^^xsd:decimal
+#   ?s2 = "0.30774999999999997"^^xsd:decimal
+#   ?s3 = "0.09175"^^xsd:decimal
+#   ?tAA = "0.42800000000000005"^^xsd:decimal
+#   ?tAB = "0.08025"^^xsd:decimal
+#   ?tAC = "0.026750000000000003"^^xsd:decimal
+#   ?tBA = "0.0325"^^xsd:decimal
+#   ?tBB = "0.22749999999999998"^^xsd:decimal
+#   ?tBC = "0.065"^^xsd:decimal
+#   ?tCA = "0.035"^^xsd:decimal
+#   ?tCB = "0.035"^^xsd:decimal
+#   ?tCC = "0.07"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_1 :pB 0.34275 .
+_:sk_1 :pB "0.34275"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_1 :pC 0.16175 .
+#   _:sk_1 :pC "0.16175"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :pi1 _:sk_0 .
 #   :MC1 :row _:b1 .
@@ -827,24 +828,24 @@ _:sk_1 :pB 0.34275 .
 #   _:b3 :pA 0.25 .
 #   _:b3 :pB 0.25 .
 #   _:b3 :pC 0.50 .
-#   _:sk_0 :pA 0.535 .
-#   _:sk_0 :pB 0.325 .
-#   _:sk_0 :pC 0.14 .
-#   (0.535 0.80) math:product 0.42800000000000005 .
-#   (0.325 0.10) math:product 0.0325 .
-#   (0.14 0.25) math:product 0.035 .
-#   (0.42800000000000005 0.0325) math:sum 0.4605 .
-#   (0.4605 0.035) math:sum 0.49550000000000005 .
-#   (0.535 0.15) math:product 0.08025 .
-#   (0.325 0.70) math:product 0.22749999999999998 .
-#   (0.14 0.25) math:product 0.035 .
-#   (0.08025 0.22749999999999998) math:sum 0.30774999999999997 .
-#   (0.30774999999999997 0.035) math:sum 0.34275 .
-#   (0.535 0.05) math:product 0.026750000000000003 .
-#   (0.325 0.20) math:product 0.065 .
-#   (0.14 0.50) math:product 0.07 .
-#   (0.026750000000000003 0.065) math:sum 0.09175 .
-#   (0.09175 0.07) math:sum 0.16175 .
+#   _:sk_0 :pA "0.535"^^xsd:decimal .
+#   _:sk_0 :pB "0.325"^^xsd:decimal .
+#   _:sk_0 :pC "0.14"^^xsd:decimal .
+#   ("0.535"^^xsd:decimal 0.80) math:product "0.42800000000000005"^^xsd:decimal .
+#   ("0.325"^^xsd:decimal 0.10) math:product "0.0325"^^xsd:decimal .
+#   ("0.14"^^xsd:decimal 0.25) math:product "0.035"^^xsd:decimal .
+#   ("0.42800000000000005"^^xsd:decimal "0.0325"^^xsd:decimal) math:sum "0.4605"^^xsd:decimal .
+#   ("0.4605"^^xsd:decimal "0.035"^^xsd:decimal) math:sum "0.49550000000000005"^^xsd:decimal .
+#   ("0.535"^^xsd:decimal 0.15) math:product "0.08025"^^xsd:decimal .
+#   ("0.325"^^xsd:decimal 0.70) math:product "0.22749999999999998"^^xsd:decimal .
+#   ("0.14"^^xsd:decimal 0.25) math:product "0.035"^^xsd:decimal .
+#   ("0.08025"^^xsd:decimal "0.22749999999999998"^^xsd:decimal) math:sum "0.30774999999999997"^^xsd:decimal .
+#   ("0.30774999999999997"^^xsd:decimal "0.035"^^xsd:decimal) math:sum "0.34275"^^xsd:decimal .
+#   ("0.535"^^xsd:decimal 0.05) math:product "0.026750000000000003"^^xsd:decimal .
+#   ("0.325"^^xsd:decimal 0.20) math:product "0.065"^^xsd:decimal .
+#   ("0.14"^^xsd:decimal 0.50) math:product "0.07"^^xsd:decimal .
+#   ("0.026750000000000003"^^xsd:decimal "0.065"^^xsd:decimal) math:sum "0.09175"^^xsd:decimal .
+#   ("0.09175"^^xsd:decimal "0.07"^^xsd:decimal) math:sum "0.16175"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :pi1 ?pi .
@@ -897,32 +898,32 @@ _:sk_1 :pB 0.34275 .
 #   ?CA = 0.25
 #   ?CB = 0.25
 #   ?CC = 0.50
-#   ?pA = 0.535
-#   ?pB = 0.325
-#   ?pC = 0.14
+#   ?pA = "0.535"^^xsd:decimal
+#   ?pB = "0.325"^^xsd:decimal
+#   ?pC = "0.14"^^xsd:decimal
 #   ?pi = _:sk_0
-#   ?pi2A = 0.49550000000000005
-#   ?pi2B = 0.34275
-#   ?pi2C = 0.16175
+#   ?pi2A = "0.49550000000000005"^^xsd:decimal
+#   ?pi2B = "0.34275"^^xsd:decimal
+#   ?pi2C = "0.16175"^^xsd:decimal
 #   ?rA = _:b1
 #   ?rB = _:b2
 #   ?rC = _:b3
-#   ?s1 = 0.4605
-#   ?s2 = 0.30774999999999997
-#   ?s3 = 0.09175
-#   ?tAA = 0.42800000000000005
-#   ?tAB = 0.08025
-#   ?tAC = 0.026750000000000003
-#   ?tBA = 0.0325
-#   ?tBB = 0.22749999999999998
-#   ?tBC = 0.065
-#   ?tCA = 0.035
-#   ?tCB = 0.035
-#   ?tCC = 0.07
+#   ?s1 = "0.4605"^^xsd:decimal
+#   ?s2 = "0.30774999999999997"^^xsd:decimal
+#   ?s3 = "0.09175"^^xsd:decimal
+#   ?tAA = "0.42800000000000005"^^xsd:decimal
+#   ?tAB = "0.08025"^^xsd:decimal
+#   ?tAC = "0.026750000000000003"^^xsd:decimal
+#   ?tBA = "0.0325"^^xsd:decimal
+#   ?tBB = "0.22749999999999998"^^xsd:decimal
+#   ?tBC = "0.065"^^xsd:decimal
+#   ?tCA = "0.035"^^xsd:decimal
+#   ?tCB = "0.035"^^xsd:decimal
+#   ?tCC = "0.07"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_1 :pC 0.16175 .
+_:sk_1 :pC "0.16175"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
@@ -944,24 +945,24 @@ _:sk_1 :pC 0.16175 .
 #   _:b3 :pA 0.25 .
 #   _:b3 :pB 0.25 .
 #   _:b3 :pC 0.50 .
-#   _:sk_0 :pA 0.535 .
-#   _:sk_0 :pB 0.325 .
-#   _:sk_0 :pC 0.14 .
-#   (0.535 0.80) math:product 0.42800000000000005 .
-#   (0.325 0.10) math:product 0.0325 .
-#   (0.14 0.25) math:product 0.035 .
-#   (0.42800000000000005 0.0325) math:sum 0.4605 .
-#   (0.4605 0.035) math:sum 0.49550000000000005 .
-#   (0.535 0.15) math:product 0.08025 .
-#   (0.325 0.70) math:product 0.22749999999999998 .
-#   (0.14 0.25) math:product 0.035 .
-#   (0.08025 0.22749999999999998) math:sum 0.30774999999999997 .
-#   (0.30774999999999997 0.035) math:sum 0.34275 .
-#   (0.535 0.05) math:product 0.026750000000000003 .
-#   (0.325 0.20) math:product 0.065 .
-#   (0.14 0.50) math:product 0.07 .
-#   (0.026750000000000003 0.065) math:sum 0.09175 .
-#   (0.09175 0.07) math:sum 0.16175 .
+#   _:sk_0 :pA "0.535"^^xsd:decimal .
+#   _:sk_0 :pB "0.325"^^xsd:decimal .
+#   _:sk_0 :pC "0.14"^^xsd:decimal .
+#   ("0.535"^^xsd:decimal 0.80) math:product "0.42800000000000005"^^xsd:decimal .
+#   ("0.325"^^xsd:decimal 0.10) math:product "0.0325"^^xsd:decimal .
+#   ("0.14"^^xsd:decimal 0.25) math:product "0.035"^^xsd:decimal .
+#   ("0.42800000000000005"^^xsd:decimal "0.0325"^^xsd:decimal) math:sum "0.4605"^^xsd:decimal .
+#   ("0.4605"^^xsd:decimal "0.035"^^xsd:decimal) math:sum "0.49550000000000005"^^xsd:decimal .
+#   ("0.535"^^xsd:decimal 0.15) math:product "0.08025"^^xsd:decimal .
+#   ("0.325"^^xsd:decimal 0.70) math:product "0.22749999999999998"^^xsd:decimal .
+#   ("0.14"^^xsd:decimal 0.25) math:product "0.035"^^xsd:decimal .
+#   ("0.08025"^^xsd:decimal "0.22749999999999998"^^xsd:decimal) math:sum "0.30774999999999997"^^xsd:decimal .
+#   ("0.30774999999999997"^^xsd:decimal "0.035"^^xsd:decimal) math:sum "0.34275"^^xsd:decimal .
+#   ("0.535"^^xsd:decimal 0.05) math:product "0.026750000000000003"^^xsd:decimal .
+#   ("0.325"^^xsd:decimal 0.20) math:product "0.065"^^xsd:decimal .
+#   ("0.14"^^xsd:decimal 0.50) math:product "0.07"^^xsd:decimal .
+#   ("0.026750000000000003"^^xsd:decimal "0.065"^^xsd:decimal) math:sum "0.09175"^^xsd:decimal .
+#   ("0.09175"^^xsd:decimal "0.07"^^xsd:decimal) math:sum "0.16175"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :pi1 ?pi .
@@ -1014,28 +1015,28 @@ _:sk_1 :pC 0.16175 .
 #   ?CA = 0.25
 #   ?CB = 0.25
 #   ?CC = 0.50
-#   ?pA = 0.535
-#   ?pB = 0.325
-#   ?pC = 0.14
+#   ?pA = "0.535"^^xsd:decimal
+#   ?pB = "0.325"^^xsd:decimal
+#   ?pC = "0.14"^^xsd:decimal
 #   ?pi = _:sk_0
-#   ?pi2A = 0.49550000000000005
-#   ?pi2B = 0.34275
-#   ?pi2C = 0.16175
+#   ?pi2A = "0.49550000000000005"^^xsd:decimal
+#   ?pi2B = "0.34275"^^xsd:decimal
+#   ?pi2C = "0.16175"^^xsd:decimal
 #   ?rA = _:b1
 #   ?rB = _:b2
 #   ?rC = _:b3
-#   ?s1 = 0.4605
-#   ?s2 = 0.30774999999999997
-#   ?s3 = 0.09175
-#   ?tAA = 0.42800000000000005
-#   ?tAB = 0.08025
-#   ?tAC = 0.026750000000000003
-#   ?tBA = 0.0325
-#   ?tBB = 0.22749999999999998
-#   ?tBC = 0.065
-#   ?tCA = 0.035
-#   ?tCB = 0.035
-#   ?tCC = 0.07
+#   ?s1 = "0.4605"^^xsd:decimal
+#   ?s2 = "0.30774999999999997"^^xsd:decimal
+#   ?s3 = "0.09175"^^xsd:decimal
+#   ?tAA = "0.42800000000000005"^^xsd:decimal
+#   ?tAB = "0.08025"^^xsd:decimal
+#   ?tAC = "0.026750000000000003"^^xsd:decimal
+#   ?tBA = "0.0325"^^xsd:decimal
+#   ?tBB = "0.22749999999999998"^^xsd:decimal
+#   ?tBC = "0.065"^^xsd:decimal
+#   ?tCA = "0.035"^^xsd:decimal
+#   ?tCB = "0.035"^^xsd:decimal
+#   ?tCC = "0.07"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -1043,7 +1044,7 @@ _:sk_1 :pC 0.16175 .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_2 :pA 0.4711125000000001 .
+#   _:sk_2 :pA "0.4711125000000001"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :pi2 _:sk_1 .
 #   :MC1 :row _:b1 .
@@ -1061,24 +1062,24 @@ _:sk_1 :pC 0.16175 .
 #   _:b3 :pA 0.25 .
 #   _:b3 :pB 0.25 .
 #   _:b3 :pC 0.50 .
-#   _:sk_1 :pA 0.49550000000000005 .
-#   _:sk_1 :pB 0.34275 .
-#   _:sk_1 :pC 0.16175 .
-#   (0.49550000000000005 0.80) math:product 0.3964000000000001 .
-#   (0.34275 0.10) math:product 0.034275 .
-#   (0.16175 0.25) math:product 0.0404375 .
-#   (0.3964000000000001 0.034275) math:sum 0.4306750000000001 .
-#   (0.4306750000000001 0.0404375) math:sum 0.4711125000000001 .
-#   (0.49550000000000005 0.15) math:product 0.074325 .
-#   (0.34275 0.70) math:product 0.23992499999999997 .
-#   (0.16175 0.25) math:product 0.0404375 .
-#   (0.074325 0.23992499999999997) math:sum 0.31425 .
-#   (0.31425 0.0404375) math:sum 0.3546875 .
-#   (0.49550000000000005 0.05) math:product 0.024775000000000005 .
-#   (0.34275 0.20) math:product 0.06855 .
-#   (0.16175 0.50) math:product 0.080875 .
-#   (0.024775000000000005 0.06855) math:sum 0.093325 .
-#   (0.093325 0.080875) math:sum 0.17420000000000002 .
+#   _:sk_1 :pA "0.49550000000000005"^^xsd:decimal .
+#   _:sk_1 :pB "0.34275"^^xsd:decimal .
+#   _:sk_1 :pC "0.16175"^^xsd:decimal .
+#   ("0.49550000000000005"^^xsd:decimal 0.80) math:product "0.3964000000000001"^^xsd:decimal .
+#   ("0.34275"^^xsd:decimal 0.10) math:product "0.034275"^^xsd:decimal .
+#   ("0.16175"^^xsd:decimal 0.25) math:product "0.0404375"^^xsd:decimal .
+#   ("0.3964000000000001"^^xsd:decimal "0.034275"^^xsd:decimal) math:sum "0.4306750000000001"^^xsd:decimal .
+#   ("0.4306750000000001"^^xsd:decimal "0.0404375"^^xsd:decimal) math:sum "0.4711125000000001"^^xsd:decimal .
+#   ("0.49550000000000005"^^xsd:decimal 0.15) math:product "0.074325"^^xsd:decimal .
+#   ("0.34275"^^xsd:decimal 0.70) math:product "0.23992499999999997"^^xsd:decimal .
+#   ("0.16175"^^xsd:decimal 0.25) math:product "0.0404375"^^xsd:decimal .
+#   ("0.074325"^^xsd:decimal "0.23992499999999997"^^xsd:decimal) math:sum "0.31425"^^xsd:decimal .
+#   ("0.31425"^^xsd:decimal "0.0404375"^^xsd:decimal) math:sum "0.3546875"^^xsd:decimal .
+#   ("0.49550000000000005"^^xsd:decimal 0.05) math:product "0.024775000000000005"^^xsd:decimal .
+#   ("0.34275"^^xsd:decimal 0.20) math:product "0.06855"^^xsd:decimal .
+#   ("0.16175"^^xsd:decimal 0.50) math:product "0.080875"^^xsd:decimal .
+#   ("0.024775000000000005"^^xsd:decimal "0.06855"^^xsd:decimal) math:sum "0.093325"^^xsd:decimal .
+#   ("0.093325"^^xsd:decimal "0.080875"^^xsd:decimal) math:sum "0.17420000000000002"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :pi2 ?pi .
@@ -1131,36 +1132,36 @@ _:sk_1 :pC 0.16175 .
 #   ?CA = 0.25
 #   ?CB = 0.25
 #   ?CC = 0.50
-#   ?pA = 0.49550000000000005
-#   ?pB = 0.34275
-#   ?pC = 0.16175
+#   ?pA = "0.49550000000000005"^^xsd:decimal
+#   ?pB = "0.34275"^^xsd:decimal
+#   ?pC = "0.16175"^^xsd:decimal
 #   ?pi = _:sk_1
-#   ?pi3A = 0.4711125000000001
-#   ?pi3B = 0.3546875
-#   ?pi3C = 0.17420000000000002
+#   ?pi3A = "0.4711125000000001"^^xsd:decimal
+#   ?pi3B = "0.3546875"^^xsd:decimal
+#   ?pi3C = "0.17420000000000002"^^xsd:decimal
 #   ?rA = _:b1
 #   ?rB = _:b2
 #   ?rC = _:b3
-#   ?s1 = 0.4306750000000001
-#   ?s2 = 0.31425
-#   ?s3 = 0.093325
-#   ?tAA = 0.3964000000000001
-#   ?tAB = 0.074325
-#   ?tAC = 0.024775000000000005
-#   ?tBA = 0.034275
-#   ?tBB = 0.23992499999999997
-#   ?tBC = 0.06855
-#   ?tCA = 0.0404375
-#   ?tCB = 0.0404375
-#   ?tCC = 0.080875
+#   ?s1 = "0.4306750000000001"^^xsd:decimal
+#   ?s2 = "0.31425"^^xsd:decimal
+#   ?s3 = "0.093325"^^xsd:decimal
+#   ?tAA = "0.3964000000000001"^^xsd:decimal
+#   ?tAB = "0.074325"^^xsd:decimal
+#   ?tAC = "0.024775000000000005"^^xsd:decimal
+#   ?tBA = "0.034275"^^xsd:decimal
+#   ?tBB = "0.23992499999999997"^^xsd:decimal
+#   ?tBC = "0.06855"^^xsd:decimal
+#   ?tCA = "0.0404375"^^xsd:decimal
+#   ?tCB = "0.0404375"^^xsd:decimal
+#   ?tCC = "0.080875"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_2 :pA 0.4711125000000001 .
+_:sk_2 :pA "0.4711125000000001"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_2 :pB 0.3546875 .
+#   _:sk_2 :pB "0.3546875"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :pi2 _:sk_1 .
 #   :MC1 :row _:b1 .
@@ -1178,24 +1179,24 @@ _:sk_2 :pA 0.4711125000000001 .
 #   _:b3 :pA 0.25 .
 #   _:b3 :pB 0.25 .
 #   _:b3 :pC 0.50 .
-#   _:sk_1 :pA 0.49550000000000005 .
-#   _:sk_1 :pB 0.34275 .
-#   _:sk_1 :pC 0.16175 .
-#   (0.49550000000000005 0.80) math:product 0.3964000000000001 .
-#   (0.34275 0.10) math:product 0.034275 .
-#   (0.16175 0.25) math:product 0.0404375 .
-#   (0.3964000000000001 0.034275) math:sum 0.4306750000000001 .
-#   (0.4306750000000001 0.0404375) math:sum 0.4711125000000001 .
-#   (0.49550000000000005 0.15) math:product 0.074325 .
-#   (0.34275 0.70) math:product 0.23992499999999997 .
-#   (0.16175 0.25) math:product 0.0404375 .
-#   (0.074325 0.23992499999999997) math:sum 0.31425 .
-#   (0.31425 0.0404375) math:sum 0.3546875 .
-#   (0.49550000000000005 0.05) math:product 0.024775000000000005 .
-#   (0.34275 0.20) math:product 0.06855 .
-#   (0.16175 0.50) math:product 0.080875 .
-#   (0.024775000000000005 0.06855) math:sum 0.093325 .
-#   (0.093325 0.080875) math:sum 0.17420000000000002 .
+#   _:sk_1 :pA "0.49550000000000005"^^xsd:decimal .
+#   _:sk_1 :pB "0.34275"^^xsd:decimal .
+#   _:sk_1 :pC "0.16175"^^xsd:decimal .
+#   ("0.49550000000000005"^^xsd:decimal 0.80) math:product "0.3964000000000001"^^xsd:decimal .
+#   ("0.34275"^^xsd:decimal 0.10) math:product "0.034275"^^xsd:decimal .
+#   ("0.16175"^^xsd:decimal 0.25) math:product "0.0404375"^^xsd:decimal .
+#   ("0.3964000000000001"^^xsd:decimal "0.034275"^^xsd:decimal) math:sum "0.4306750000000001"^^xsd:decimal .
+#   ("0.4306750000000001"^^xsd:decimal "0.0404375"^^xsd:decimal) math:sum "0.4711125000000001"^^xsd:decimal .
+#   ("0.49550000000000005"^^xsd:decimal 0.15) math:product "0.074325"^^xsd:decimal .
+#   ("0.34275"^^xsd:decimal 0.70) math:product "0.23992499999999997"^^xsd:decimal .
+#   ("0.16175"^^xsd:decimal 0.25) math:product "0.0404375"^^xsd:decimal .
+#   ("0.074325"^^xsd:decimal "0.23992499999999997"^^xsd:decimal) math:sum "0.31425"^^xsd:decimal .
+#   ("0.31425"^^xsd:decimal "0.0404375"^^xsd:decimal) math:sum "0.3546875"^^xsd:decimal .
+#   ("0.49550000000000005"^^xsd:decimal 0.05) math:product "0.024775000000000005"^^xsd:decimal .
+#   ("0.34275"^^xsd:decimal 0.20) math:product "0.06855"^^xsd:decimal .
+#   ("0.16175"^^xsd:decimal 0.50) math:product "0.080875"^^xsd:decimal .
+#   ("0.024775000000000005"^^xsd:decimal "0.06855"^^xsd:decimal) math:sum "0.093325"^^xsd:decimal .
+#   ("0.093325"^^xsd:decimal "0.080875"^^xsd:decimal) math:sum "0.17420000000000002"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :pi2 ?pi .
@@ -1248,36 +1249,36 @@ _:sk_2 :pA 0.4711125000000001 .
 #   ?CA = 0.25
 #   ?CB = 0.25
 #   ?CC = 0.50
-#   ?pA = 0.49550000000000005
-#   ?pB = 0.34275
-#   ?pC = 0.16175
+#   ?pA = "0.49550000000000005"^^xsd:decimal
+#   ?pB = "0.34275"^^xsd:decimal
+#   ?pC = "0.16175"^^xsd:decimal
 #   ?pi = _:sk_1
-#   ?pi3A = 0.4711125000000001
-#   ?pi3B = 0.3546875
-#   ?pi3C = 0.17420000000000002
+#   ?pi3A = "0.4711125000000001"^^xsd:decimal
+#   ?pi3B = "0.3546875"^^xsd:decimal
+#   ?pi3C = "0.17420000000000002"^^xsd:decimal
 #   ?rA = _:b1
 #   ?rB = _:b2
 #   ?rC = _:b3
-#   ?s1 = 0.4306750000000001
-#   ?s2 = 0.31425
-#   ?s3 = 0.093325
-#   ?tAA = 0.3964000000000001
-#   ?tAB = 0.074325
-#   ?tAC = 0.024775000000000005
-#   ?tBA = 0.034275
-#   ?tBB = 0.23992499999999997
-#   ?tBC = 0.06855
-#   ?tCA = 0.0404375
-#   ?tCB = 0.0404375
-#   ?tCC = 0.080875
+#   ?s1 = "0.4306750000000001"^^xsd:decimal
+#   ?s2 = "0.31425"^^xsd:decimal
+#   ?s3 = "0.093325"^^xsd:decimal
+#   ?tAA = "0.3964000000000001"^^xsd:decimal
+#   ?tAB = "0.074325"^^xsd:decimal
+#   ?tAC = "0.024775000000000005"^^xsd:decimal
+#   ?tBA = "0.034275"^^xsd:decimal
+#   ?tBB = "0.23992499999999997"^^xsd:decimal
+#   ?tBC = "0.06855"^^xsd:decimal
+#   ?tCA = "0.0404375"^^xsd:decimal
+#   ?tCB = "0.0404375"^^xsd:decimal
+#   ?tCC = "0.080875"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_2 :pB 0.3546875 .
+_:sk_2 :pB "0.3546875"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_2 :pC 0.17420000000000002 .
+#   _:sk_2 :pC "0.17420000000000002"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :pi2 _:sk_1 .
 #   :MC1 :row _:b1 .
@@ -1295,24 +1296,24 @@ _:sk_2 :pB 0.3546875 .
 #   _:b3 :pA 0.25 .
 #   _:b3 :pB 0.25 .
 #   _:b3 :pC 0.50 .
-#   _:sk_1 :pA 0.49550000000000005 .
-#   _:sk_1 :pB 0.34275 .
-#   _:sk_1 :pC 0.16175 .
-#   (0.49550000000000005 0.80) math:product 0.3964000000000001 .
-#   (0.34275 0.10) math:product 0.034275 .
-#   (0.16175 0.25) math:product 0.0404375 .
-#   (0.3964000000000001 0.034275) math:sum 0.4306750000000001 .
-#   (0.4306750000000001 0.0404375) math:sum 0.4711125000000001 .
-#   (0.49550000000000005 0.15) math:product 0.074325 .
-#   (0.34275 0.70) math:product 0.23992499999999997 .
-#   (0.16175 0.25) math:product 0.0404375 .
-#   (0.074325 0.23992499999999997) math:sum 0.31425 .
-#   (0.31425 0.0404375) math:sum 0.3546875 .
-#   (0.49550000000000005 0.05) math:product 0.024775000000000005 .
-#   (0.34275 0.20) math:product 0.06855 .
-#   (0.16175 0.50) math:product 0.080875 .
-#   (0.024775000000000005 0.06855) math:sum 0.093325 .
-#   (0.093325 0.080875) math:sum 0.17420000000000002 .
+#   _:sk_1 :pA "0.49550000000000005"^^xsd:decimal .
+#   _:sk_1 :pB "0.34275"^^xsd:decimal .
+#   _:sk_1 :pC "0.16175"^^xsd:decimal .
+#   ("0.49550000000000005"^^xsd:decimal 0.80) math:product "0.3964000000000001"^^xsd:decimal .
+#   ("0.34275"^^xsd:decimal 0.10) math:product "0.034275"^^xsd:decimal .
+#   ("0.16175"^^xsd:decimal 0.25) math:product "0.0404375"^^xsd:decimal .
+#   ("0.3964000000000001"^^xsd:decimal "0.034275"^^xsd:decimal) math:sum "0.4306750000000001"^^xsd:decimal .
+#   ("0.4306750000000001"^^xsd:decimal "0.0404375"^^xsd:decimal) math:sum "0.4711125000000001"^^xsd:decimal .
+#   ("0.49550000000000005"^^xsd:decimal 0.15) math:product "0.074325"^^xsd:decimal .
+#   ("0.34275"^^xsd:decimal 0.70) math:product "0.23992499999999997"^^xsd:decimal .
+#   ("0.16175"^^xsd:decimal 0.25) math:product "0.0404375"^^xsd:decimal .
+#   ("0.074325"^^xsd:decimal "0.23992499999999997"^^xsd:decimal) math:sum "0.31425"^^xsd:decimal .
+#   ("0.31425"^^xsd:decimal "0.0404375"^^xsd:decimal) math:sum "0.3546875"^^xsd:decimal .
+#   ("0.49550000000000005"^^xsd:decimal 0.05) math:product "0.024775000000000005"^^xsd:decimal .
+#   ("0.34275"^^xsd:decimal 0.20) math:product "0.06855"^^xsd:decimal .
+#   ("0.16175"^^xsd:decimal 0.50) math:product "0.080875"^^xsd:decimal .
+#   ("0.024775000000000005"^^xsd:decimal "0.06855"^^xsd:decimal) math:sum "0.093325"^^xsd:decimal .
+#   ("0.093325"^^xsd:decimal "0.080875"^^xsd:decimal) math:sum "0.17420000000000002"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :pi2 ?pi .
@@ -1365,32 +1366,32 @@ _:sk_2 :pB 0.3546875 .
 #   ?CA = 0.25
 #   ?CB = 0.25
 #   ?CC = 0.50
-#   ?pA = 0.49550000000000005
-#   ?pB = 0.34275
-#   ?pC = 0.16175
+#   ?pA = "0.49550000000000005"^^xsd:decimal
+#   ?pB = "0.34275"^^xsd:decimal
+#   ?pC = "0.16175"^^xsd:decimal
 #   ?pi = _:sk_1
-#   ?pi3A = 0.4711125000000001
-#   ?pi3B = 0.3546875
-#   ?pi3C = 0.17420000000000002
+#   ?pi3A = "0.4711125000000001"^^xsd:decimal
+#   ?pi3B = "0.3546875"^^xsd:decimal
+#   ?pi3C = "0.17420000000000002"^^xsd:decimal
 #   ?rA = _:b1
 #   ?rB = _:b2
 #   ?rC = _:b3
-#   ?s1 = 0.4306750000000001
-#   ?s2 = 0.31425
-#   ?s3 = 0.093325
-#   ?tAA = 0.3964000000000001
-#   ?tAB = 0.074325
-#   ?tAC = 0.024775000000000005
-#   ?tBA = 0.034275
-#   ?tBB = 0.23992499999999997
-#   ?tBC = 0.06855
-#   ?tCA = 0.0404375
-#   ?tCB = 0.0404375
-#   ?tCC = 0.080875
+#   ?s1 = "0.4306750000000001"^^xsd:decimal
+#   ?s2 = "0.31425"^^xsd:decimal
+#   ?s3 = "0.093325"^^xsd:decimal
+#   ?tAA = "0.3964000000000001"^^xsd:decimal
+#   ?tAB = "0.074325"^^xsd:decimal
+#   ?tAC = "0.024775000000000005"^^xsd:decimal
+#   ?tBA = "0.034275"^^xsd:decimal
+#   ?tBB = "0.23992499999999997"^^xsd:decimal
+#   ?tBC = "0.06855"^^xsd:decimal
+#   ?tCA = "0.0404375"^^xsd:decimal
+#   ?tCB = "0.0404375"^^xsd:decimal
+#   ?tCC = "0.080875"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_2 :pC 0.17420000000000002 .
+_:sk_2 :pC "0.17420000000000002"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
@@ -1412,24 +1413,24 @@ _:sk_2 :pC 0.17420000000000002 .
 #   _:b3 :pA 0.25 .
 #   _:b3 :pB 0.25 .
 #   _:b3 :pC 0.50 .
-#   _:sk_1 :pA 0.49550000000000005 .
-#   _:sk_1 :pB 0.34275 .
-#   _:sk_1 :pC 0.16175 .
-#   (0.49550000000000005 0.80) math:product 0.3964000000000001 .
-#   (0.34275 0.10) math:product 0.034275 .
-#   (0.16175 0.25) math:product 0.0404375 .
-#   (0.3964000000000001 0.034275) math:sum 0.4306750000000001 .
-#   (0.4306750000000001 0.0404375) math:sum 0.4711125000000001 .
-#   (0.49550000000000005 0.15) math:product 0.074325 .
-#   (0.34275 0.70) math:product 0.23992499999999997 .
-#   (0.16175 0.25) math:product 0.0404375 .
-#   (0.074325 0.23992499999999997) math:sum 0.31425 .
-#   (0.31425 0.0404375) math:sum 0.3546875 .
-#   (0.49550000000000005 0.05) math:product 0.024775000000000005 .
-#   (0.34275 0.20) math:product 0.06855 .
-#   (0.16175 0.50) math:product 0.080875 .
-#   (0.024775000000000005 0.06855) math:sum 0.093325 .
-#   (0.093325 0.080875) math:sum 0.17420000000000002 .
+#   _:sk_1 :pA "0.49550000000000005"^^xsd:decimal .
+#   _:sk_1 :pB "0.34275"^^xsd:decimal .
+#   _:sk_1 :pC "0.16175"^^xsd:decimal .
+#   ("0.49550000000000005"^^xsd:decimal 0.80) math:product "0.3964000000000001"^^xsd:decimal .
+#   ("0.34275"^^xsd:decimal 0.10) math:product "0.034275"^^xsd:decimal .
+#   ("0.16175"^^xsd:decimal 0.25) math:product "0.0404375"^^xsd:decimal .
+#   ("0.3964000000000001"^^xsd:decimal "0.034275"^^xsd:decimal) math:sum "0.4306750000000001"^^xsd:decimal .
+#   ("0.4306750000000001"^^xsd:decimal "0.0404375"^^xsd:decimal) math:sum "0.4711125000000001"^^xsd:decimal .
+#   ("0.49550000000000005"^^xsd:decimal 0.15) math:product "0.074325"^^xsd:decimal .
+#   ("0.34275"^^xsd:decimal 0.70) math:product "0.23992499999999997"^^xsd:decimal .
+#   ("0.16175"^^xsd:decimal 0.25) math:product "0.0404375"^^xsd:decimal .
+#   ("0.074325"^^xsd:decimal "0.23992499999999997"^^xsd:decimal) math:sum "0.31425"^^xsd:decimal .
+#   ("0.31425"^^xsd:decimal "0.0404375"^^xsd:decimal) math:sum "0.3546875"^^xsd:decimal .
+#   ("0.49550000000000005"^^xsd:decimal 0.05) math:product "0.024775000000000005"^^xsd:decimal .
+#   ("0.34275"^^xsd:decimal 0.20) math:product "0.06855"^^xsd:decimal .
+#   ("0.16175"^^xsd:decimal 0.50) math:product "0.080875"^^xsd:decimal .
+#   ("0.024775000000000005"^^xsd:decimal "0.06855"^^xsd:decimal) math:sum "0.093325"^^xsd:decimal .
+#   ("0.093325"^^xsd:decimal "0.080875"^^xsd:decimal) math:sum "0.17420000000000002"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :pi2 ?pi .
@@ -1482,28 +1483,28 @@ _:sk_2 :pC 0.17420000000000002 .
 #   ?CA = 0.25
 #   ?CB = 0.25
 #   ?CC = 0.50
-#   ?pA = 0.49550000000000005
-#   ?pB = 0.34275
-#   ?pC = 0.16175
+#   ?pA = "0.49550000000000005"^^xsd:decimal
+#   ?pB = "0.34275"^^xsd:decimal
+#   ?pC = "0.16175"^^xsd:decimal
 #   ?pi = _:sk_1
-#   ?pi3A = 0.4711125000000001
-#   ?pi3B = 0.3546875
-#   ?pi3C = 0.17420000000000002
+#   ?pi3A = "0.4711125000000001"^^xsd:decimal
+#   ?pi3B = "0.3546875"^^xsd:decimal
+#   ?pi3C = "0.17420000000000002"^^xsd:decimal
 #   ?rA = _:b1
 #   ?rB = _:b2
 #   ?rC = _:b3
-#   ?s1 = 0.4306750000000001
-#   ?s2 = 0.31425
-#   ?s3 = 0.093325
-#   ?tAA = 0.3964000000000001
-#   ?tAB = 0.074325
-#   ?tAC = 0.024775000000000005
-#   ?tBA = 0.034275
-#   ?tBB = 0.23992499999999997
-#   ?tBC = 0.06855
-#   ?tCA = 0.0404375
-#   ?tCB = 0.0404375
-#   ?tCC = 0.080875
+#   ?s1 = "0.4306750000000001"^^xsd:decimal
+#   ?s2 = "0.31425"^^xsd:decimal
+#   ?s3 = "0.093325"^^xsd:decimal
+#   ?tAA = "0.3964000000000001"^^xsd:decimal
+#   ?tAB = "0.074325"^^xsd:decimal
+#   ?tAC = "0.024775000000000005"^^xsd:decimal
+#   ?tBA = "0.034275"^^xsd:decimal
+#   ?tBB = "0.23992499999999997"^^xsd:decimal
+#   ?tBC = "0.06855"^^xsd:decimal
+#   ?tCA = "0.0404375"^^xsd:decimal
+#   ?tCB = "0.0404375"^^xsd:decimal
+#   ?tCC = "0.080875"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -1511,7 +1512,7 @@ _:sk_2 :pC 0.17420000000000002 .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_3 :pA 0.6675000000000001 .
+#   _:sk_3 :pA "0.6675000000000001"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :row _:b1 .
 #   _:b1 :from :A .
@@ -1528,21 +1529,21 @@ _:sk_2 :pC 0.17420000000000002 .
 #   _:b3 :pA 0.25 .
 #   _:b3 :pB 0.25 .
 #   _:b3 :pC 0.50 .
-#   (0.80 0.80) math:product 0.6400000000000001 .
-#   (0.15 0.10) math:product 0.015 .
-#   (0.05 0.25) math:product 0.0125 .
-#   (0.6400000000000001 0.015) math:sum 0.6550000000000001 .
-#   (0.6550000000000001 0.0125) math:sum 0.6675000000000001 .
-#   (0.80 0.15) math:product 0.12 .
-#   (0.15 0.70) math:product 0.105 .
-#   (0.05 0.25) math:product 0.0125 .
-#   (0.12 0.105) math:sum 0.22499999999999998 .
-#   (0.22499999999999998 0.0125) math:sum 0.2375 .
-#   (0.80 0.05) math:product 0.04000000000000001 .
-#   (0.15 0.20) math:product 0.03 .
-#   (0.05 0.50) math:product 0.025 .
-#   (0.04000000000000001 0.03) math:sum 0.07 .
-#   (0.07 0.025) math:sum 0.095 .
+#   (0.80 0.80) math:product "0.6400000000000001"^^xsd:decimal .
+#   (0.15 0.10) math:product "0.015"^^xsd:decimal .
+#   (0.05 0.25) math:product "0.0125"^^xsd:decimal .
+#   ("0.6400000000000001"^^xsd:decimal "0.015"^^xsd:decimal) math:sum "0.6550000000000001"^^xsd:decimal .
+#   ("0.6550000000000001"^^xsd:decimal "0.0125"^^xsd:decimal) math:sum "0.6675000000000001"^^xsd:decimal .
+#   (0.80 0.15) math:product "0.12"^^xsd:decimal .
+#   (0.15 0.70) math:product "0.105"^^xsd:decimal .
+#   (0.05 0.25) math:product "0.0125"^^xsd:decimal .
+#   ("0.12"^^xsd:decimal "0.105"^^xsd:decimal) math:sum "0.22499999999999998"^^xsd:decimal .
+#   ("0.22499999999999998"^^xsd:decimal "0.0125"^^xsd:decimal) math:sum "0.2375"^^xsd:decimal .
+#   (0.80 0.05) math:product "0.04000000000000001"^^xsd:decimal .
+#   (0.15 0.20) math:product "0.03"^^xsd:decimal .
+#   (0.05 0.50) math:product "0.025"^^xsd:decimal .
+#   ("0.04000000000000001"^^xsd:decimal "0.03"^^xsd:decimal) math:sum "0.07"^^xsd:decimal .
+#   ("0.07"^^xsd:decimal "0.025"^^xsd:decimal) math:sum "0.095"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :row ?rA .
@@ -1583,40 +1584,40 @@ _:sk_2 :pC 0.17420000000000002 .
 #   } .
 # with substitution (on rule variables):
 #   ?AA = 0.80
-#   ?AA_AA = 0.6400000000000001
-#   ?AA_AB = 0.12
-#   ?AA_AC = 0.04000000000000001
+#   ?AA_AA = "0.6400000000000001"^^xsd:decimal
+#   ?AA_AB = "0.12"^^xsd:decimal
+#   ?AA_AC = "0.04000000000000001"^^xsd:decimal
 #   ?AB = 0.15
-#   ?AB_BA = 0.015
-#   ?AB_BB = 0.105
-#   ?AB_BC = 0.03
+#   ?AB_BA = "0.015"^^xsd:decimal
+#   ?AB_BB = "0.105"^^xsd:decimal
+#   ?AB_BC = "0.03"^^xsd:decimal
 #   ?AC = 0.05
-#   ?AC_CA = 0.0125
-#   ?AC_CB = 0.0125
-#   ?AC_CC = 0.025
+#   ?AC_CA = "0.0125"^^xsd:decimal
+#   ?AC_CB = "0.0125"^^xsd:decimal
+#   ?AC_CC = "0.025"^^xsd:decimal
 #   ?BA = 0.10
 #   ?BB = 0.70
 #   ?BC = 0.20
 #   ?CA = 0.25
 #   ?CB = 0.25
 #   ?CC = 0.50
-#   ?P2AA = 0.6675000000000001
-#   ?P2AB = 0.2375
-#   ?P2AC = 0.095
+#   ?P2AA = "0.6675000000000001"^^xsd:decimal
+#   ?P2AB = "0.2375"^^xsd:decimal
+#   ?P2AC = "0.095"^^xsd:decimal
 #   ?rA = _:b1
 #   ?rB = _:b2
 #   ?rC = _:b3
-#   ?sAA = 0.6550000000000001
-#   ?sAB = 0.22499999999999998
-#   ?sAC = 0.07
+#   ?sAA = "0.6550000000000001"^^xsd:decimal
+#   ?sAB = "0.22499999999999998"^^xsd:decimal
+#   ?sAC = "0.07"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_3 :pA 0.6675000000000001 .
+_:sk_3 :pA "0.6675000000000001"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_3 :pB 0.2375 .
+#   _:sk_3 :pB "0.2375"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :row _:b1 .
 #   _:b1 :from :A .
@@ -1633,21 +1634,21 @@ _:sk_3 :pA 0.6675000000000001 .
 #   _:b3 :pA 0.25 .
 #   _:b3 :pB 0.25 .
 #   _:b3 :pC 0.50 .
-#   (0.80 0.80) math:product 0.6400000000000001 .
-#   (0.15 0.10) math:product 0.015 .
-#   (0.05 0.25) math:product 0.0125 .
-#   (0.6400000000000001 0.015) math:sum 0.6550000000000001 .
-#   (0.6550000000000001 0.0125) math:sum 0.6675000000000001 .
-#   (0.80 0.15) math:product 0.12 .
-#   (0.15 0.70) math:product 0.105 .
-#   (0.05 0.25) math:product 0.0125 .
-#   (0.12 0.105) math:sum 0.22499999999999998 .
-#   (0.22499999999999998 0.0125) math:sum 0.2375 .
-#   (0.80 0.05) math:product 0.04000000000000001 .
-#   (0.15 0.20) math:product 0.03 .
-#   (0.05 0.50) math:product 0.025 .
-#   (0.04000000000000001 0.03) math:sum 0.07 .
-#   (0.07 0.025) math:sum 0.095 .
+#   (0.80 0.80) math:product "0.6400000000000001"^^xsd:decimal .
+#   (0.15 0.10) math:product "0.015"^^xsd:decimal .
+#   (0.05 0.25) math:product "0.0125"^^xsd:decimal .
+#   ("0.6400000000000001"^^xsd:decimal "0.015"^^xsd:decimal) math:sum "0.6550000000000001"^^xsd:decimal .
+#   ("0.6550000000000001"^^xsd:decimal "0.0125"^^xsd:decimal) math:sum "0.6675000000000001"^^xsd:decimal .
+#   (0.80 0.15) math:product "0.12"^^xsd:decimal .
+#   (0.15 0.70) math:product "0.105"^^xsd:decimal .
+#   (0.05 0.25) math:product "0.0125"^^xsd:decimal .
+#   ("0.12"^^xsd:decimal "0.105"^^xsd:decimal) math:sum "0.22499999999999998"^^xsd:decimal .
+#   ("0.22499999999999998"^^xsd:decimal "0.0125"^^xsd:decimal) math:sum "0.2375"^^xsd:decimal .
+#   (0.80 0.05) math:product "0.04000000000000001"^^xsd:decimal .
+#   (0.15 0.20) math:product "0.03"^^xsd:decimal .
+#   (0.05 0.50) math:product "0.025"^^xsd:decimal .
+#   ("0.04000000000000001"^^xsd:decimal "0.03"^^xsd:decimal) math:sum "0.07"^^xsd:decimal .
+#   ("0.07"^^xsd:decimal "0.025"^^xsd:decimal) math:sum "0.095"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :row ?rA .
@@ -1688,40 +1689,40 @@ _:sk_3 :pA 0.6675000000000001 .
 #   } .
 # with substitution (on rule variables):
 #   ?AA = 0.80
-#   ?AA_AA = 0.6400000000000001
-#   ?AA_AB = 0.12
-#   ?AA_AC = 0.04000000000000001
+#   ?AA_AA = "0.6400000000000001"^^xsd:decimal
+#   ?AA_AB = "0.12"^^xsd:decimal
+#   ?AA_AC = "0.04000000000000001"^^xsd:decimal
 #   ?AB = 0.15
-#   ?AB_BA = 0.015
-#   ?AB_BB = 0.105
-#   ?AB_BC = 0.03
+#   ?AB_BA = "0.015"^^xsd:decimal
+#   ?AB_BB = "0.105"^^xsd:decimal
+#   ?AB_BC = "0.03"^^xsd:decimal
 #   ?AC = 0.05
-#   ?AC_CA = 0.0125
-#   ?AC_CB = 0.0125
-#   ?AC_CC = 0.025
+#   ?AC_CA = "0.0125"^^xsd:decimal
+#   ?AC_CB = "0.0125"^^xsd:decimal
+#   ?AC_CC = "0.025"^^xsd:decimal
 #   ?BA = 0.10
 #   ?BB = 0.70
 #   ?BC = 0.20
 #   ?CA = 0.25
 #   ?CB = 0.25
 #   ?CC = 0.50
-#   ?P2AA = 0.6675000000000001
-#   ?P2AB = 0.2375
-#   ?P2AC = 0.095
+#   ?P2AA = "0.6675000000000001"^^xsd:decimal
+#   ?P2AB = "0.2375"^^xsd:decimal
+#   ?P2AC = "0.095"^^xsd:decimal
 #   ?rA = _:b1
 #   ?rB = _:b2
 #   ?rC = _:b3
-#   ?sAA = 0.6550000000000001
-#   ?sAB = 0.22499999999999998
-#   ?sAC = 0.07
+#   ?sAA = "0.6550000000000001"^^xsd:decimal
+#   ?sAB = "0.22499999999999998"^^xsd:decimal
+#   ?sAC = "0.07"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_3 :pB 0.2375 .
+_:sk_3 :pB "0.2375"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_3 :pC 0.095 .
+#   _:sk_3 :pC "0.095"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :row _:b1 .
 #   _:b1 :from :A .
@@ -1738,21 +1739,21 @@ _:sk_3 :pB 0.2375 .
 #   _:b3 :pA 0.25 .
 #   _:b3 :pB 0.25 .
 #   _:b3 :pC 0.50 .
-#   (0.80 0.80) math:product 0.6400000000000001 .
-#   (0.15 0.10) math:product 0.015 .
-#   (0.05 0.25) math:product 0.0125 .
-#   (0.6400000000000001 0.015) math:sum 0.6550000000000001 .
-#   (0.6550000000000001 0.0125) math:sum 0.6675000000000001 .
-#   (0.80 0.15) math:product 0.12 .
-#   (0.15 0.70) math:product 0.105 .
-#   (0.05 0.25) math:product 0.0125 .
-#   (0.12 0.105) math:sum 0.22499999999999998 .
-#   (0.22499999999999998 0.0125) math:sum 0.2375 .
-#   (0.80 0.05) math:product 0.04000000000000001 .
-#   (0.15 0.20) math:product 0.03 .
-#   (0.05 0.50) math:product 0.025 .
-#   (0.04000000000000001 0.03) math:sum 0.07 .
-#   (0.07 0.025) math:sum 0.095 .
+#   (0.80 0.80) math:product "0.6400000000000001"^^xsd:decimal .
+#   (0.15 0.10) math:product "0.015"^^xsd:decimal .
+#   (0.05 0.25) math:product "0.0125"^^xsd:decimal .
+#   ("0.6400000000000001"^^xsd:decimal "0.015"^^xsd:decimal) math:sum "0.6550000000000001"^^xsd:decimal .
+#   ("0.6550000000000001"^^xsd:decimal "0.0125"^^xsd:decimal) math:sum "0.6675000000000001"^^xsd:decimal .
+#   (0.80 0.15) math:product "0.12"^^xsd:decimal .
+#   (0.15 0.70) math:product "0.105"^^xsd:decimal .
+#   (0.05 0.25) math:product "0.0125"^^xsd:decimal .
+#   ("0.12"^^xsd:decimal "0.105"^^xsd:decimal) math:sum "0.22499999999999998"^^xsd:decimal .
+#   ("0.22499999999999998"^^xsd:decimal "0.0125"^^xsd:decimal) math:sum "0.2375"^^xsd:decimal .
+#   (0.80 0.05) math:product "0.04000000000000001"^^xsd:decimal .
+#   (0.15 0.20) math:product "0.03"^^xsd:decimal .
+#   (0.05 0.50) math:product "0.025"^^xsd:decimal .
+#   ("0.04000000000000001"^^xsd:decimal "0.03"^^xsd:decimal) math:sum "0.07"^^xsd:decimal .
+#   ("0.07"^^xsd:decimal "0.025"^^xsd:decimal) math:sum "0.095"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :row ?rA .
@@ -1793,36 +1794,36 @@ _:sk_3 :pB 0.2375 .
 #   } .
 # with substitution (on rule variables):
 #   ?AA = 0.80
-#   ?AA_AA = 0.6400000000000001
-#   ?AA_AB = 0.12
-#   ?AA_AC = 0.04000000000000001
+#   ?AA_AA = "0.6400000000000001"^^xsd:decimal
+#   ?AA_AB = "0.12"^^xsd:decimal
+#   ?AA_AC = "0.04000000000000001"^^xsd:decimal
 #   ?AB = 0.15
-#   ?AB_BA = 0.015
-#   ?AB_BB = 0.105
-#   ?AB_BC = 0.03
+#   ?AB_BA = "0.015"^^xsd:decimal
+#   ?AB_BB = "0.105"^^xsd:decimal
+#   ?AB_BC = "0.03"^^xsd:decimal
 #   ?AC = 0.05
-#   ?AC_CA = 0.0125
-#   ?AC_CB = 0.0125
-#   ?AC_CC = 0.025
+#   ?AC_CA = "0.0125"^^xsd:decimal
+#   ?AC_CB = "0.0125"^^xsd:decimal
+#   ?AC_CC = "0.025"^^xsd:decimal
 #   ?BA = 0.10
 #   ?BB = 0.70
 #   ?BC = 0.20
 #   ?CA = 0.25
 #   ?CB = 0.25
 #   ?CC = 0.50
-#   ?P2AA = 0.6675000000000001
-#   ?P2AB = 0.2375
-#   ?P2AC = 0.095
+#   ?P2AA = "0.6675000000000001"^^xsd:decimal
+#   ?P2AB = "0.2375"^^xsd:decimal
+#   ?P2AC = "0.095"^^xsd:decimal
 #   ?rA = _:b1
 #   ?rB = _:b2
 #   ?rC = _:b3
-#   ?sAA = 0.6550000000000001
-#   ?sAB = 0.22499999999999998
-#   ?sAC = 0.07
+#   ?sAA = "0.6550000000000001"^^xsd:decimal
+#   ?sAB = "0.22499999999999998"^^xsd:decimal
+#   ?sAC = "0.07"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_3 :pC 0.095 .
+_:sk_3 :pC "0.095"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
@@ -1843,21 +1844,21 @@ _:sk_3 :pC 0.095 .
 #   _:b3 :pA 0.25 .
 #   _:b3 :pB 0.25 .
 #   _:b3 :pC 0.50 .
-#   (0.80 0.80) math:product 0.6400000000000001 .
-#   (0.15 0.10) math:product 0.015 .
-#   (0.05 0.25) math:product 0.0125 .
-#   (0.6400000000000001 0.015) math:sum 0.6550000000000001 .
-#   (0.6550000000000001 0.0125) math:sum 0.6675000000000001 .
-#   (0.80 0.15) math:product 0.12 .
-#   (0.15 0.70) math:product 0.105 .
-#   (0.05 0.25) math:product 0.0125 .
-#   (0.12 0.105) math:sum 0.22499999999999998 .
-#   (0.22499999999999998 0.0125) math:sum 0.2375 .
-#   (0.80 0.05) math:product 0.04000000000000001 .
-#   (0.15 0.20) math:product 0.03 .
-#   (0.05 0.50) math:product 0.025 .
-#   (0.04000000000000001 0.03) math:sum 0.07 .
-#   (0.07 0.025) math:sum 0.095 .
+#   (0.80 0.80) math:product "0.6400000000000001"^^xsd:decimal .
+#   (0.15 0.10) math:product "0.015"^^xsd:decimal .
+#   (0.05 0.25) math:product "0.0125"^^xsd:decimal .
+#   ("0.6400000000000001"^^xsd:decimal "0.015"^^xsd:decimal) math:sum "0.6550000000000001"^^xsd:decimal .
+#   ("0.6550000000000001"^^xsd:decimal "0.0125"^^xsd:decimal) math:sum "0.6675000000000001"^^xsd:decimal .
+#   (0.80 0.15) math:product "0.12"^^xsd:decimal .
+#   (0.15 0.70) math:product "0.105"^^xsd:decimal .
+#   (0.05 0.25) math:product "0.0125"^^xsd:decimal .
+#   ("0.12"^^xsd:decimal "0.105"^^xsd:decimal) math:sum "0.22499999999999998"^^xsd:decimal .
+#   ("0.22499999999999998"^^xsd:decimal "0.0125"^^xsd:decimal) math:sum "0.2375"^^xsd:decimal .
+#   (0.80 0.05) math:product "0.04000000000000001"^^xsd:decimal .
+#   (0.15 0.20) math:product "0.03"^^xsd:decimal .
+#   (0.05 0.50) math:product "0.025"^^xsd:decimal .
+#   ("0.04000000000000001"^^xsd:decimal "0.03"^^xsd:decimal) math:sum "0.07"^^xsd:decimal .
+#   ("0.07"^^xsd:decimal "0.025"^^xsd:decimal) math:sum "0.095"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :row ?rA .
@@ -1898,32 +1899,32 @@ _:sk_3 :pC 0.095 .
 #   } .
 # with substitution (on rule variables):
 #   ?AA = 0.80
-#   ?AA_AA = 0.6400000000000001
-#   ?AA_AB = 0.12
-#   ?AA_AC = 0.04000000000000001
+#   ?AA_AA = "0.6400000000000001"^^xsd:decimal
+#   ?AA_AB = "0.12"^^xsd:decimal
+#   ?AA_AC = "0.04000000000000001"^^xsd:decimal
 #   ?AB = 0.15
-#   ?AB_BA = 0.015
-#   ?AB_BB = 0.105
-#   ?AB_BC = 0.03
+#   ?AB_BA = "0.015"^^xsd:decimal
+#   ?AB_BB = "0.105"^^xsd:decimal
+#   ?AB_BC = "0.03"^^xsd:decimal
 #   ?AC = 0.05
-#   ?AC_CA = 0.0125
-#   ?AC_CB = 0.0125
-#   ?AC_CC = 0.025
+#   ?AC_CA = "0.0125"^^xsd:decimal
+#   ?AC_CB = "0.0125"^^xsd:decimal
+#   ?AC_CC = "0.025"^^xsd:decimal
 #   ?BA = 0.10
 #   ?BB = 0.70
 #   ?BC = 0.20
 #   ?CA = 0.25
 #   ?CB = 0.25
 #   ?CC = 0.50
-#   ?P2AA = 0.6675000000000001
-#   ?P2AB = 0.2375
-#   ?P2AC = 0.095
+#   ?P2AA = "0.6675000000000001"^^xsd:decimal
+#   ?P2AB = "0.2375"^^xsd:decimal
+#   ?P2AC = "0.095"^^xsd:decimal
 #   ?rA = _:b1
 #   ?rB = _:b2
 #   ?rC = _:b3
-#   ?sAA = 0.6550000000000001
-#   ?sAB = 0.22499999999999998
-#   ?sAC = 0.07
+#   ?sAA = "0.6550000000000001"^^xsd:decimal
+#   ?sAB = "0.22499999999999998"^^xsd:decimal
+#   ?sAC = "0.07"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -2171,36 +2172,36 @@ _:sk_7 :pi _:sk_2 .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_7 :sumSq 0.3780958503125001 .
+#   _:sk_7 :sumSq "0.3780958503125001"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :metrics _:sk_7 .
 #   _:sk_7 :pi _:sk_2 .
-#   _:sk_2 :pA 0.4711125000000001 .
-#   _:sk_2 :pB 0.3546875 .
-#   _:sk_2 :pC 0.17420000000000002 .
-#   (1.0 3.0) math:quotient 0.3333333333333333 .
-#   (0.4711125000000001 2.0) math:exponentiation 0.2219469876562501 .
-#   (0.3546875 2.0) math:exponentiation 0.12580322265625 .
-#   (0.17420000000000002 2.0) math:exponentiation 0.030345640000000007 .
-#   (0.2219469876562501 0.12580322265625) math:sum 0.3477502103125001 .
-#   (0.3477502103125001 0.030345640000000007) math:sum 0.3780958503125001 .
-#   (1.0 0.3780958503125001) math:difference 0.6219041496875 .
-#   (1.0 0.3780958503125001) math:quotient 2.644831989490204 .
-#   (0.4711125000000001 0.3333333333333333) math:difference 0.13777916666666679 .
-#   0.13777916666666679 math:absoluteValue 0.13777916666666679 .
-#   (0.3546875 0.3333333333333333) math:difference 0.021354166666666674 .
-#   0.021354166666666674 math:absoluteValue 0.021354166666666674 .
-#   (0.17420000000000002 0.3333333333333333) math:difference -0.1591333333333333 .
-#   -0.1591333333333333 math:absoluteValue 0.1591333333333333 .
-#   (0.13777916666666679 0.021354166666666674) math:sum 0.15913333333333346 .
-#   (0.15913333333333346 0.1591333333333333) math:sum 0.31826666666666675 .
-#   (0.5 0.31826666666666675) math:product 0.15913333333333338 .
-#   (0.13777916666666679 2.0) math:exponentiation 0.018983098767361144 .
-#   (0.021354166666666674 2.0) math:exponentiation 0.0004560004340277781 .
-#   (-0.1591333333333333 2.0) math:exponentiation 0.025323417777777767 .
-#   (0.018983098767361144 0.0004560004340277781) math:sum 0.01943909920138892 .
-#   (0.01943909920138892 0.025323417777777767) math:sum 0.04476251697916669 .
-#   (0.04476251697916669 0.5) math:exponentiation 0.2115715410426617 .
+#   _:sk_2 :pA "0.4711125000000001"^^xsd:decimal .
+#   _:sk_2 :pB "0.3546875"^^xsd:decimal .
+#   _:sk_2 :pC "0.17420000000000002"^^xsd:decimal .
+#   (1.0 3.0) math:quotient "0.3333333333333333"^^xsd:decimal .
+#   ("0.4711125000000001"^^xsd:decimal 2.0) math:exponentiation "0.2219469876562501"^^xsd:decimal .
+#   ("0.3546875"^^xsd:decimal 2.0) math:exponentiation "0.12580322265625"^^xsd:decimal .
+#   ("0.17420000000000002"^^xsd:decimal 2.0) math:exponentiation "0.030345640000000007"^^xsd:decimal .
+#   ("0.2219469876562501"^^xsd:decimal "0.12580322265625"^^xsd:decimal) math:sum "0.3477502103125001"^^xsd:decimal .
+#   ("0.3477502103125001"^^xsd:decimal "0.030345640000000007"^^xsd:decimal) math:sum "0.3780958503125001"^^xsd:decimal .
+#   (1.0 "0.3780958503125001"^^xsd:decimal) math:difference "0.6219041496875"^^xsd:decimal .
+#   (1.0 "0.3780958503125001"^^xsd:decimal) math:quotient "2.644831989490204"^^xsd:decimal .
+#   ("0.4711125000000001"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "0.13777916666666679"^^xsd:decimal .
+#   "0.13777916666666679"^^xsd:decimal math:absoluteValue "0.13777916666666679"^^xsd:decimal .
+#   ("0.3546875"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "0.021354166666666674"^^xsd:decimal .
+#   "0.021354166666666674"^^xsd:decimal math:absoluteValue "0.021354166666666674"^^xsd:decimal .
+#   ("0.17420000000000002"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "-0.1591333333333333"^^xsd:decimal .
+#   "-0.1591333333333333"^^xsd:decimal math:absoluteValue "0.1591333333333333"^^xsd:decimal .
+#   ("0.13777916666666679"^^xsd:decimal "0.021354166666666674"^^xsd:decimal) math:sum "0.15913333333333346"^^xsd:decimal .
+#   ("0.15913333333333346"^^xsd:decimal "0.1591333333333333"^^xsd:decimal) math:sum "0.31826666666666675"^^xsd:decimal .
+#   (0.5 "0.31826666666666675"^^xsd:decimal) math:product "0.15913333333333338"^^xsd:decimal .
+#   ("0.13777916666666679"^^xsd:decimal 2.0) math:exponentiation "0.018983098767361144"^^xsd:decimal .
+#   ("0.021354166666666674"^^xsd:decimal 2.0) math:exponentiation "0.0004560004340277781"^^xsd:decimal .
+#   ("-0.1591333333333333"^^xsd:decimal 2.0) math:exponentiation "0.025323417777777767"^^xsd:decimal .
+#   ("0.018983098767361144"^^xsd:decimal "0.0004560004340277781"^^xsd:decimal) math:sum "0.01943909920138892"^^xsd:decimal .
+#   ("0.01943909920138892"^^xsd:decimal "0.025323417777777767"^^xsd:decimal) math:sum "0.04476251697916669"^^xsd:decimal .
+#   ("0.04476251697916669"^^xsd:decimal 0.5) math:exponentiation "0.2115715410426617"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :metrics ?m .
@@ -2239,71 +2240,71 @@ _:sk_7 :pi _:sk_2 .
 #     ?m :l2ToUniform ?l2 .
 #   } .
 # with substitution (on rule variables):
-#   ?a = 0.4711125000000001
-#   ?a2 = 0.2219469876562501
-#   ?ab2 = 0.3477502103125001
-#   ?ada = 0.13777916666666679
-#   ?adb = 0.021354166666666674
-#   ?adc = 0.1591333333333333
-#   ?b = 0.3546875
-#   ?b2 = 0.12580322265625
-#   ?c = 0.17420000000000002
-#   ?c2 = 0.030345640000000007
-#   ?da = 0.13777916666666679
-#   ?da2 = 0.018983098767361144
-#   ?db = 0.021354166666666674
-#   ?db2 = 0.0004560004340277781
-#   ?dc = -0.1591333333333333
-#   ?dc2 = 0.025323417777777767
-#   ?effN = 2.644831989490204
-#   ?gini = 0.6219041496875
-#   ?l2 = 0.2115715410426617
+#   ?a = "0.4711125000000001"^^xsd:decimal
+#   ?a2 = "0.2219469876562501"^^xsd:decimal
+#   ?ab2 = "0.3477502103125001"^^xsd:decimal
+#   ?ada = "0.13777916666666679"^^xsd:decimal
+#   ?adb = "0.021354166666666674"^^xsd:decimal
+#   ?adc = "0.1591333333333333"^^xsd:decimal
+#   ?b = "0.3546875"^^xsd:decimal
+#   ?b2 = "0.12580322265625"^^xsd:decimal
+#   ?c = "0.17420000000000002"^^xsd:decimal
+#   ?c2 = "0.030345640000000007"^^xsd:decimal
+#   ?da = "0.13777916666666679"^^xsd:decimal
+#   ?da2 = "0.018983098767361144"^^xsd:decimal
+#   ?db = "0.021354166666666674"^^xsd:decimal
+#   ?db2 = "0.0004560004340277781"^^xsd:decimal
+#   ?dc = "-0.1591333333333333"^^xsd:decimal
+#   ?dc2 = "0.025323417777777767"^^xsd:decimal
+#   ?effN = "2.644831989490204"^^xsd:decimal
+#   ?gini = "0.6219041496875"^^xsd:decimal
+#   ?l2 = "0.2115715410426617"^^xsd:decimal
 #   ?m = _:sk_7
 #   ?pi = _:sk_2
-#   ?s1 = 0.15913333333333346
-#   ?s2 = 0.01943909920138892
-#   ?s3 = 0.04476251697916669
-#   ?sAbs = 0.31826666666666675
-#   ?sumSq = 0.3780958503125001
-#   ?tv = 0.15913333333333338
-#   ?u = 0.3333333333333333
+#   ?s1 = "0.15913333333333346"^^xsd:decimal
+#   ?s2 = "0.01943909920138892"^^xsd:decimal
+#   ?s3 = "0.04476251697916669"^^xsd:decimal
+#   ?sAbs = "0.31826666666666675"^^xsd:decimal
+#   ?sumSq = "0.3780958503125001"^^xsd:decimal
+#   ?tv = "0.15913333333333338"^^xsd:decimal
+#   ?u = "0.3333333333333333"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_7 :sumSq 0.3780958503125001 .
+_:sk_7 :sumSq "0.3780958503125001"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_7 :gini 0.6219041496875 .
+#   _:sk_7 :gini "0.6219041496875"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :metrics _:sk_7 .
 #   _:sk_7 :pi _:sk_2 .
-#   _:sk_2 :pA 0.4711125000000001 .
-#   _:sk_2 :pB 0.3546875 .
-#   _:sk_2 :pC 0.17420000000000002 .
-#   (1.0 3.0) math:quotient 0.3333333333333333 .
-#   (0.4711125000000001 2.0) math:exponentiation 0.2219469876562501 .
-#   (0.3546875 2.0) math:exponentiation 0.12580322265625 .
-#   (0.17420000000000002 2.0) math:exponentiation 0.030345640000000007 .
-#   (0.2219469876562501 0.12580322265625) math:sum 0.3477502103125001 .
-#   (0.3477502103125001 0.030345640000000007) math:sum 0.3780958503125001 .
-#   (1.0 0.3780958503125001) math:difference 0.6219041496875 .
-#   (1.0 0.3780958503125001) math:quotient 2.644831989490204 .
-#   (0.4711125000000001 0.3333333333333333) math:difference 0.13777916666666679 .
-#   0.13777916666666679 math:absoluteValue 0.13777916666666679 .
-#   (0.3546875 0.3333333333333333) math:difference 0.021354166666666674 .
-#   0.021354166666666674 math:absoluteValue 0.021354166666666674 .
-#   (0.17420000000000002 0.3333333333333333) math:difference -0.1591333333333333 .
-#   -0.1591333333333333 math:absoluteValue 0.1591333333333333 .
-#   (0.13777916666666679 0.021354166666666674) math:sum 0.15913333333333346 .
-#   (0.15913333333333346 0.1591333333333333) math:sum 0.31826666666666675 .
-#   (0.5 0.31826666666666675) math:product 0.15913333333333338 .
-#   (0.13777916666666679 2.0) math:exponentiation 0.018983098767361144 .
-#   (0.021354166666666674 2.0) math:exponentiation 0.0004560004340277781 .
-#   (-0.1591333333333333 2.0) math:exponentiation 0.025323417777777767 .
-#   (0.018983098767361144 0.0004560004340277781) math:sum 0.01943909920138892 .
-#   (0.01943909920138892 0.025323417777777767) math:sum 0.04476251697916669 .
-#   (0.04476251697916669 0.5) math:exponentiation 0.2115715410426617 .
+#   _:sk_2 :pA "0.4711125000000001"^^xsd:decimal .
+#   _:sk_2 :pB "0.3546875"^^xsd:decimal .
+#   _:sk_2 :pC "0.17420000000000002"^^xsd:decimal .
+#   (1.0 3.0) math:quotient "0.3333333333333333"^^xsd:decimal .
+#   ("0.4711125000000001"^^xsd:decimal 2.0) math:exponentiation "0.2219469876562501"^^xsd:decimal .
+#   ("0.3546875"^^xsd:decimal 2.0) math:exponentiation "0.12580322265625"^^xsd:decimal .
+#   ("0.17420000000000002"^^xsd:decimal 2.0) math:exponentiation "0.030345640000000007"^^xsd:decimal .
+#   ("0.2219469876562501"^^xsd:decimal "0.12580322265625"^^xsd:decimal) math:sum "0.3477502103125001"^^xsd:decimal .
+#   ("0.3477502103125001"^^xsd:decimal "0.030345640000000007"^^xsd:decimal) math:sum "0.3780958503125001"^^xsd:decimal .
+#   (1.0 "0.3780958503125001"^^xsd:decimal) math:difference "0.6219041496875"^^xsd:decimal .
+#   (1.0 "0.3780958503125001"^^xsd:decimal) math:quotient "2.644831989490204"^^xsd:decimal .
+#   ("0.4711125000000001"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "0.13777916666666679"^^xsd:decimal .
+#   "0.13777916666666679"^^xsd:decimal math:absoluteValue "0.13777916666666679"^^xsd:decimal .
+#   ("0.3546875"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "0.021354166666666674"^^xsd:decimal .
+#   "0.021354166666666674"^^xsd:decimal math:absoluteValue "0.021354166666666674"^^xsd:decimal .
+#   ("0.17420000000000002"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "-0.1591333333333333"^^xsd:decimal .
+#   "-0.1591333333333333"^^xsd:decimal math:absoluteValue "0.1591333333333333"^^xsd:decimal .
+#   ("0.13777916666666679"^^xsd:decimal "0.021354166666666674"^^xsd:decimal) math:sum "0.15913333333333346"^^xsd:decimal .
+#   ("0.15913333333333346"^^xsd:decimal "0.1591333333333333"^^xsd:decimal) math:sum "0.31826666666666675"^^xsd:decimal .
+#   (0.5 "0.31826666666666675"^^xsd:decimal) math:product "0.15913333333333338"^^xsd:decimal .
+#   ("0.13777916666666679"^^xsd:decimal 2.0) math:exponentiation "0.018983098767361144"^^xsd:decimal .
+#   ("0.021354166666666674"^^xsd:decimal 2.0) math:exponentiation "0.0004560004340277781"^^xsd:decimal .
+#   ("-0.1591333333333333"^^xsd:decimal 2.0) math:exponentiation "0.025323417777777767"^^xsd:decimal .
+#   ("0.018983098767361144"^^xsd:decimal "0.0004560004340277781"^^xsd:decimal) math:sum "0.01943909920138892"^^xsd:decimal .
+#   ("0.01943909920138892"^^xsd:decimal "0.025323417777777767"^^xsd:decimal) math:sum "0.04476251697916669"^^xsd:decimal .
+#   ("0.04476251697916669"^^xsd:decimal 0.5) math:exponentiation "0.2115715410426617"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :metrics ?m .
@@ -2342,71 +2343,71 @@ _:sk_7 :sumSq 0.3780958503125001 .
 #     ?m :l2ToUniform ?l2 .
 #   } .
 # with substitution (on rule variables):
-#   ?a = 0.4711125000000001
-#   ?a2 = 0.2219469876562501
-#   ?ab2 = 0.3477502103125001
-#   ?ada = 0.13777916666666679
-#   ?adb = 0.021354166666666674
-#   ?adc = 0.1591333333333333
-#   ?b = 0.3546875
-#   ?b2 = 0.12580322265625
-#   ?c = 0.17420000000000002
-#   ?c2 = 0.030345640000000007
-#   ?da = 0.13777916666666679
-#   ?da2 = 0.018983098767361144
-#   ?db = 0.021354166666666674
-#   ?db2 = 0.0004560004340277781
-#   ?dc = -0.1591333333333333
-#   ?dc2 = 0.025323417777777767
-#   ?effN = 2.644831989490204
-#   ?gini = 0.6219041496875
-#   ?l2 = 0.2115715410426617
+#   ?a = "0.4711125000000001"^^xsd:decimal
+#   ?a2 = "0.2219469876562501"^^xsd:decimal
+#   ?ab2 = "0.3477502103125001"^^xsd:decimal
+#   ?ada = "0.13777916666666679"^^xsd:decimal
+#   ?adb = "0.021354166666666674"^^xsd:decimal
+#   ?adc = "0.1591333333333333"^^xsd:decimal
+#   ?b = "0.3546875"^^xsd:decimal
+#   ?b2 = "0.12580322265625"^^xsd:decimal
+#   ?c = "0.17420000000000002"^^xsd:decimal
+#   ?c2 = "0.030345640000000007"^^xsd:decimal
+#   ?da = "0.13777916666666679"^^xsd:decimal
+#   ?da2 = "0.018983098767361144"^^xsd:decimal
+#   ?db = "0.021354166666666674"^^xsd:decimal
+#   ?db2 = "0.0004560004340277781"^^xsd:decimal
+#   ?dc = "-0.1591333333333333"^^xsd:decimal
+#   ?dc2 = "0.025323417777777767"^^xsd:decimal
+#   ?effN = "2.644831989490204"^^xsd:decimal
+#   ?gini = "0.6219041496875"^^xsd:decimal
+#   ?l2 = "0.2115715410426617"^^xsd:decimal
 #   ?m = _:sk_7
 #   ?pi = _:sk_2
-#   ?s1 = 0.15913333333333346
-#   ?s2 = 0.01943909920138892
-#   ?s3 = 0.04476251697916669
-#   ?sAbs = 0.31826666666666675
-#   ?sumSq = 0.3780958503125001
-#   ?tv = 0.15913333333333338
-#   ?u = 0.3333333333333333
+#   ?s1 = "0.15913333333333346"^^xsd:decimal
+#   ?s2 = "0.01943909920138892"^^xsd:decimal
+#   ?s3 = "0.04476251697916669"^^xsd:decimal
+#   ?sAbs = "0.31826666666666675"^^xsd:decimal
+#   ?sumSq = "0.3780958503125001"^^xsd:decimal
+#   ?tv = "0.15913333333333338"^^xsd:decimal
+#   ?u = "0.3333333333333333"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_7 :gini 0.6219041496875 .
+_:sk_7 :gini "0.6219041496875"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_7 :effectiveStates 2.644831989490204 .
+#   _:sk_7 :effectiveStates "2.644831989490204"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :metrics _:sk_7 .
 #   _:sk_7 :pi _:sk_2 .
-#   _:sk_2 :pA 0.4711125000000001 .
-#   _:sk_2 :pB 0.3546875 .
-#   _:sk_2 :pC 0.17420000000000002 .
-#   (1.0 3.0) math:quotient 0.3333333333333333 .
-#   (0.4711125000000001 2.0) math:exponentiation 0.2219469876562501 .
-#   (0.3546875 2.0) math:exponentiation 0.12580322265625 .
-#   (0.17420000000000002 2.0) math:exponentiation 0.030345640000000007 .
-#   (0.2219469876562501 0.12580322265625) math:sum 0.3477502103125001 .
-#   (0.3477502103125001 0.030345640000000007) math:sum 0.3780958503125001 .
-#   (1.0 0.3780958503125001) math:difference 0.6219041496875 .
-#   (1.0 0.3780958503125001) math:quotient 2.644831989490204 .
-#   (0.4711125000000001 0.3333333333333333) math:difference 0.13777916666666679 .
-#   0.13777916666666679 math:absoluteValue 0.13777916666666679 .
-#   (0.3546875 0.3333333333333333) math:difference 0.021354166666666674 .
-#   0.021354166666666674 math:absoluteValue 0.021354166666666674 .
-#   (0.17420000000000002 0.3333333333333333) math:difference -0.1591333333333333 .
-#   -0.1591333333333333 math:absoluteValue 0.1591333333333333 .
-#   (0.13777916666666679 0.021354166666666674) math:sum 0.15913333333333346 .
-#   (0.15913333333333346 0.1591333333333333) math:sum 0.31826666666666675 .
-#   (0.5 0.31826666666666675) math:product 0.15913333333333338 .
-#   (0.13777916666666679 2.0) math:exponentiation 0.018983098767361144 .
-#   (0.021354166666666674 2.0) math:exponentiation 0.0004560004340277781 .
-#   (-0.1591333333333333 2.0) math:exponentiation 0.025323417777777767 .
-#   (0.018983098767361144 0.0004560004340277781) math:sum 0.01943909920138892 .
-#   (0.01943909920138892 0.025323417777777767) math:sum 0.04476251697916669 .
-#   (0.04476251697916669 0.5) math:exponentiation 0.2115715410426617 .
+#   _:sk_2 :pA "0.4711125000000001"^^xsd:decimal .
+#   _:sk_2 :pB "0.3546875"^^xsd:decimal .
+#   _:sk_2 :pC "0.17420000000000002"^^xsd:decimal .
+#   (1.0 3.0) math:quotient "0.3333333333333333"^^xsd:decimal .
+#   ("0.4711125000000001"^^xsd:decimal 2.0) math:exponentiation "0.2219469876562501"^^xsd:decimal .
+#   ("0.3546875"^^xsd:decimal 2.0) math:exponentiation "0.12580322265625"^^xsd:decimal .
+#   ("0.17420000000000002"^^xsd:decimal 2.0) math:exponentiation "0.030345640000000007"^^xsd:decimal .
+#   ("0.2219469876562501"^^xsd:decimal "0.12580322265625"^^xsd:decimal) math:sum "0.3477502103125001"^^xsd:decimal .
+#   ("0.3477502103125001"^^xsd:decimal "0.030345640000000007"^^xsd:decimal) math:sum "0.3780958503125001"^^xsd:decimal .
+#   (1.0 "0.3780958503125001"^^xsd:decimal) math:difference "0.6219041496875"^^xsd:decimal .
+#   (1.0 "0.3780958503125001"^^xsd:decimal) math:quotient "2.644831989490204"^^xsd:decimal .
+#   ("0.4711125000000001"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "0.13777916666666679"^^xsd:decimal .
+#   "0.13777916666666679"^^xsd:decimal math:absoluteValue "0.13777916666666679"^^xsd:decimal .
+#   ("0.3546875"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "0.021354166666666674"^^xsd:decimal .
+#   "0.021354166666666674"^^xsd:decimal math:absoluteValue "0.021354166666666674"^^xsd:decimal .
+#   ("0.17420000000000002"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "-0.1591333333333333"^^xsd:decimal .
+#   "-0.1591333333333333"^^xsd:decimal math:absoluteValue "0.1591333333333333"^^xsd:decimal .
+#   ("0.13777916666666679"^^xsd:decimal "0.021354166666666674"^^xsd:decimal) math:sum "0.15913333333333346"^^xsd:decimal .
+#   ("0.15913333333333346"^^xsd:decimal "0.1591333333333333"^^xsd:decimal) math:sum "0.31826666666666675"^^xsd:decimal .
+#   (0.5 "0.31826666666666675"^^xsd:decimal) math:product "0.15913333333333338"^^xsd:decimal .
+#   ("0.13777916666666679"^^xsd:decimal 2.0) math:exponentiation "0.018983098767361144"^^xsd:decimal .
+#   ("0.021354166666666674"^^xsd:decimal 2.0) math:exponentiation "0.0004560004340277781"^^xsd:decimal .
+#   ("-0.1591333333333333"^^xsd:decimal 2.0) math:exponentiation "0.025323417777777767"^^xsd:decimal .
+#   ("0.018983098767361144"^^xsd:decimal "0.0004560004340277781"^^xsd:decimal) math:sum "0.01943909920138892"^^xsd:decimal .
+#   ("0.01943909920138892"^^xsd:decimal "0.025323417777777767"^^xsd:decimal) math:sum "0.04476251697916669"^^xsd:decimal .
+#   ("0.04476251697916669"^^xsd:decimal 0.5) math:exponentiation "0.2115715410426617"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :metrics ?m .
@@ -2445,71 +2446,71 @@ _:sk_7 :gini 0.6219041496875 .
 #     ?m :l2ToUniform ?l2 .
 #   } .
 # with substitution (on rule variables):
-#   ?a = 0.4711125000000001
-#   ?a2 = 0.2219469876562501
-#   ?ab2 = 0.3477502103125001
-#   ?ada = 0.13777916666666679
-#   ?adb = 0.021354166666666674
-#   ?adc = 0.1591333333333333
-#   ?b = 0.3546875
-#   ?b2 = 0.12580322265625
-#   ?c = 0.17420000000000002
-#   ?c2 = 0.030345640000000007
-#   ?da = 0.13777916666666679
-#   ?da2 = 0.018983098767361144
-#   ?db = 0.021354166666666674
-#   ?db2 = 0.0004560004340277781
-#   ?dc = -0.1591333333333333
-#   ?dc2 = 0.025323417777777767
-#   ?effN = 2.644831989490204
-#   ?gini = 0.6219041496875
-#   ?l2 = 0.2115715410426617
+#   ?a = "0.4711125000000001"^^xsd:decimal
+#   ?a2 = "0.2219469876562501"^^xsd:decimal
+#   ?ab2 = "0.3477502103125001"^^xsd:decimal
+#   ?ada = "0.13777916666666679"^^xsd:decimal
+#   ?adb = "0.021354166666666674"^^xsd:decimal
+#   ?adc = "0.1591333333333333"^^xsd:decimal
+#   ?b = "0.3546875"^^xsd:decimal
+#   ?b2 = "0.12580322265625"^^xsd:decimal
+#   ?c = "0.17420000000000002"^^xsd:decimal
+#   ?c2 = "0.030345640000000007"^^xsd:decimal
+#   ?da = "0.13777916666666679"^^xsd:decimal
+#   ?da2 = "0.018983098767361144"^^xsd:decimal
+#   ?db = "0.021354166666666674"^^xsd:decimal
+#   ?db2 = "0.0004560004340277781"^^xsd:decimal
+#   ?dc = "-0.1591333333333333"^^xsd:decimal
+#   ?dc2 = "0.025323417777777767"^^xsd:decimal
+#   ?effN = "2.644831989490204"^^xsd:decimal
+#   ?gini = "0.6219041496875"^^xsd:decimal
+#   ?l2 = "0.2115715410426617"^^xsd:decimal
 #   ?m = _:sk_7
 #   ?pi = _:sk_2
-#   ?s1 = 0.15913333333333346
-#   ?s2 = 0.01943909920138892
-#   ?s3 = 0.04476251697916669
-#   ?sAbs = 0.31826666666666675
-#   ?sumSq = 0.3780958503125001
-#   ?tv = 0.15913333333333338
-#   ?u = 0.3333333333333333
+#   ?s1 = "0.15913333333333346"^^xsd:decimal
+#   ?s2 = "0.01943909920138892"^^xsd:decimal
+#   ?s3 = "0.04476251697916669"^^xsd:decimal
+#   ?sAbs = "0.31826666666666675"^^xsd:decimal
+#   ?sumSq = "0.3780958503125001"^^xsd:decimal
+#   ?tv = "0.15913333333333338"^^xsd:decimal
+#   ?u = "0.3333333333333333"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_7 :effectiveStates 2.644831989490204 .
+_:sk_7 :effectiveStates "2.644831989490204"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_7 :tvToUniform 0.15913333333333338 .
+#   _:sk_7 :tvToUniform "0.15913333333333338"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :metrics _:sk_7 .
 #   _:sk_7 :pi _:sk_2 .
-#   _:sk_2 :pA 0.4711125000000001 .
-#   _:sk_2 :pB 0.3546875 .
-#   _:sk_2 :pC 0.17420000000000002 .
-#   (1.0 3.0) math:quotient 0.3333333333333333 .
-#   (0.4711125000000001 2.0) math:exponentiation 0.2219469876562501 .
-#   (0.3546875 2.0) math:exponentiation 0.12580322265625 .
-#   (0.17420000000000002 2.0) math:exponentiation 0.030345640000000007 .
-#   (0.2219469876562501 0.12580322265625) math:sum 0.3477502103125001 .
-#   (0.3477502103125001 0.030345640000000007) math:sum 0.3780958503125001 .
-#   (1.0 0.3780958503125001) math:difference 0.6219041496875 .
-#   (1.0 0.3780958503125001) math:quotient 2.644831989490204 .
-#   (0.4711125000000001 0.3333333333333333) math:difference 0.13777916666666679 .
-#   0.13777916666666679 math:absoluteValue 0.13777916666666679 .
-#   (0.3546875 0.3333333333333333) math:difference 0.021354166666666674 .
-#   0.021354166666666674 math:absoluteValue 0.021354166666666674 .
-#   (0.17420000000000002 0.3333333333333333) math:difference -0.1591333333333333 .
-#   -0.1591333333333333 math:absoluteValue 0.1591333333333333 .
-#   (0.13777916666666679 0.021354166666666674) math:sum 0.15913333333333346 .
-#   (0.15913333333333346 0.1591333333333333) math:sum 0.31826666666666675 .
-#   (0.5 0.31826666666666675) math:product 0.15913333333333338 .
-#   (0.13777916666666679 2.0) math:exponentiation 0.018983098767361144 .
-#   (0.021354166666666674 2.0) math:exponentiation 0.0004560004340277781 .
-#   (-0.1591333333333333 2.0) math:exponentiation 0.025323417777777767 .
-#   (0.018983098767361144 0.0004560004340277781) math:sum 0.01943909920138892 .
-#   (0.01943909920138892 0.025323417777777767) math:sum 0.04476251697916669 .
-#   (0.04476251697916669 0.5) math:exponentiation 0.2115715410426617 .
+#   _:sk_2 :pA "0.4711125000000001"^^xsd:decimal .
+#   _:sk_2 :pB "0.3546875"^^xsd:decimal .
+#   _:sk_2 :pC "0.17420000000000002"^^xsd:decimal .
+#   (1.0 3.0) math:quotient "0.3333333333333333"^^xsd:decimal .
+#   ("0.4711125000000001"^^xsd:decimal 2.0) math:exponentiation "0.2219469876562501"^^xsd:decimal .
+#   ("0.3546875"^^xsd:decimal 2.0) math:exponentiation "0.12580322265625"^^xsd:decimal .
+#   ("0.17420000000000002"^^xsd:decimal 2.0) math:exponentiation "0.030345640000000007"^^xsd:decimal .
+#   ("0.2219469876562501"^^xsd:decimal "0.12580322265625"^^xsd:decimal) math:sum "0.3477502103125001"^^xsd:decimal .
+#   ("0.3477502103125001"^^xsd:decimal "0.030345640000000007"^^xsd:decimal) math:sum "0.3780958503125001"^^xsd:decimal .
+#   (1.0 "0.3780958503125001"^^xsd:decimal) math:difference "0.6219041496875"^^xsd:decimal .
+#   (1.0 "0.3780958503125001"^^xsd:decimal) math:quotient "2.644831989490204"^^xsd:decimal .
+#   ("0.4711125000000001"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "0.13777916666666679"^^xsd:decimal .
+#   "0.13777916666666679"^^xsd:decimal math:absoluteValue "0.13777916666666679"^^xsd:decimal .
+#   ("0.3546875"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "0.021354166666666674"^^xsd:decimal .
+#   "0.021354166666666674"^^xsd:decimal math:absoluteValue "0.021354166666666674"^^xsd:decimal .
+#   ("0.17420000000000002"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "-0.1591333333333333"^^xsd:decimal .
+#   "-0.1591333333333333"^^xsd:decimal math:absoluteValue "0.1591333333333333"^^xsd:decimal .
+#   ("0.13777916666666679"^^xsd:decimal "0.021354166666666674"^^xsd:decimal) math:sum "0.15913333333333346"^^xsd:decimal .
+#   ("0.15913333333333346"^^xsd:decimal "0.1591333333333333"^^xsd:decimal) math:sum "0.31826666666666675"^^xsd:decimal .
+#   (0.5 "0.31826666666666675"^^xsd:decimal) math:product "0.15913333333333338"^^xsd:decimal .
+#   ("0.13777916666666679"^^xsd:decimal 2.0) math:exponentiation "0.018983098767361144"^^xsd:decimal .
+#   ("0.021354166666666674"^^xsd:decimal 2.0) math:exponentiation "0.0004560004340277781"^^xsd:decimal .
+#   ("-0.1591333333333333"^^xsd:decimal 2.0) math:exponentiation "0.025323417777777767"^^xsd:decimal .
+#   ("0.018983098767361144"^^xsd:decimal "0.0004560004340277781"^^xsd:decimal) math:sum "0.01943909920138892"^^xsd:decimal .
+#   ("0.01943909920138892"^^xsd:decimal "0.025323417777777767"^^xsd:decimal) math:sum "0.04476251697916669"^^xsd:decimal .
+#   ("0.04476251697916669"^^xsd:decimal 0.5) math:exponentiation "0.2115715410426617"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :metrics ?m .
@@ -2548,71 +2549,71 @@ _:sk_7 :effectiveStates 2.644831989490204 .
 #     ?m :l2ToUniform ?l2 .
 #   } .
 # with substitution (on rule variables):
-#   ?a = 0.4711125000000001
-#   ?a2 = 0.2219469876562501
-#   ?ab2 = 0.3477502103125001
-#   ?ada = 0.13777916666666679
-#   ?adb = 0.021354166666666674
-#   ?adc = 0.1591333333333333
-#   ?b = 0.3546875
-#   ?b2 = 0.12580322265625
-#   ?c = 0.17420000000000002
-#   ?c2 = 0.030345640000000007
-#   ?da = 0.13777916666666679
-#   ?da2 = 0.018983098767361144
-#   ?db = 0.021354166666666674
-#   ?db2 = 0.0004560004340277781
-#   ?dc = -0.1591333333333333
-#   ?dc2 = 0.025323417777777767
-#   ?effN = 2.644831989490204
-#   ?gini = 0.6219041496875
-#   ?l2 = 0.2115715410426617
+#   ?a = "0.4711125000000001"^^xsd:decimal
+#   ?a2 = "0.2219469876562501"^^xsd:decimal
+#   ?ab2 = "0.3477502103125001"^^xsd:decimal
+#   ?ada = "0.13777916666666679"^^xsd:decimal
+#   ?adb = "0.021354166666666674"^^xsd:decimal
+#   ?adc = "0.1591333333333333"^^xsd:decimal
+#   ?b = "0.3546875"^^xsd:decimal
+#   ?b2 = "0.12580322265625"^^xsd:decimal
+#   ?c = "0.17420000000000002"^^xsd:decimal
+#   ?c2 = "0.030345640000000007"^^xsd:decimal
+#   ?da = "0.13777916666666679"^^xsd:decimal
+#   ?da2 = "0.018983098767361144"^^xsd:decimal
+#   ?db = "0.021354166666666674"^^xsd:decimal
+#   ?db2 = "0.0004560004340277781"^^xsd:decimal
+#   ?dc = "-0.1591333333333333"^^xsd:decimal
+#   ?dc2 = "0.025323417777777767"^^xsd:decimal
+#   ?effN = "2.644831989490204"^^xsd:decimal
+#   ?gini = "0.6219041496875"^^xsd:decimal
+#   ?l2 = "0.2115715410426617"^^xsd:decimal
 #   ?m = _:sk_7
 #   ?pi = _:sk_2
-#   ?s1 = 0.15913333333333346
-#   ?s2 = 0.01943909920138892
-#   ?s3 = 0.04476251697916669
-#   ?sAbs = 0.31826666666666675
-#   ?sumSq = 0.3780958503125001
-#   ?tv = 0.15913333333333338
-#   ?u = 0.3333333333333333
+#   ?s1 = "0.15913333333333346"^^xsd:decimal
+#   ?s2 = "0.01943909920138892"^^xsd:decimal
+#   ?s3 = "0.04476251697916669"^^xsd:decimal
+#   ?sAbs = "0.31826666666666675"^^xsd:decimal
+#   ?sumSq = "0.3780958503125001"^^xsd:decimal
+#   ?tv = "0.15913333333333338"^^xsd:decimal
+#   ?u = "0.3333333333333333"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_7 :tvToUniform 0.15913333333333338 .
+_:sk_7 :tvToUniform "0.15913333333333338"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_7 :l2ToUniform 0.2115715410426617 .
+#   _:sk_7 :l2ToUniform "0.2115715410426617"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :metrics _:sk_7 .
 #   _:sk_7 :pi _:sk_2 .
-#   _:sk_2 :pA 0.4711125000000001 .
-#   _:sk_2 :pB 0.3546875 .
-#   _:sk_2 :pC 0.17420000000000002 .
-#   (1.0 3.0) math:quotient 0.3333333333333333 .
-#   (0.4711125000000001 2.0) math:exponentiation 0.2219469876562501 .
-#   (0.3546875 2.0) math:exponentiation 0.12580322265625 .
-#   (0.17420000000000002 2.0) math:exponentiation 0.030345640000000007 .
-#   (0.2219469876562501 0.12580322265625) math:sum 0.3477502103125001 .
-#   (0.3477502103125001 0.030345640000000007) math:sum 0.3780958503125001 .
-#   (1.0 0.3780958503125001) math:difference 0.6219041496875 .
-#   (1.0 0.3780958503125001) math:quotient 2.644831989490204 .
-#   (0.4711125000000001 0.3333333333333333) math:difference 0.13777916666666679 .
-#   0.13777916666666679 math:absoluteValue 0.13777916666666679 .
-#   (0.3546875 0.3333333333333333) math:difference 0.021354166666666674 .
-#   0.021354166666666674 math:absoluteValue 0.021354166666666674 .
-#   (0.17420000000000002 0.3333333333333333) math:difference -0.1591333333333333 .
-#   -0.1591333333333333 math:absoluteValue 0.1591333333333333 .
-#   (0.13777916666666679 0.021354166666666674) math:sum 0.15913333333333346 .
-#   (0.15913333333333346 0.1591333333333333) math:sum 0.31826666666666675 .
-#   (0.5 0.31826666666666675) math:product 0.15913333333333338 .
-#   (0.13777916666666679 2.0) math:exponentiation 0.018983098767361144 .
-#   (0.021354166666666674 2.0) math:exponentiation 0.0004560004340277781 .
-#   (-0.1591333333333333 2.0) math:exponentiation 0.025323417777777767 .
-#   (0.018983098767361144 0.0004560004340277781) math:sum 0.01943909920138892 .
-#   (0.01943909920138892 0.025323417777777767) math:sum 0.04476251697916669 .
-#   (0.04476251697916669 0.5) math:exponentiation 0.2115715410426617 .
+#   _:sk_2 :pA "0.4711125000000001"^^xsd:decimal .
+#   _:sk_2 :pB "0.3546875"^^xsd:decimal .
+#   _:sk_2 :pC "0.17420000000000002"^^xsd:decimal .
+#   (1.0 3.0) math:quotient "0.3333333333333333"^^xsd:decimal .
+#   ("0.4711125000000001"^^xsd:decimal 2.0) math:exponentiation "0.2219469876562501"^^xsd:decimal .
+#   ("0.3546875"^^xsd:decimal 2.0) math:exponentiation "0.12580322265625"^^xsd:decimal .
+#   ("0.17420000000000002"^^xsd:decimal 2.0) math:exponentiation "0.030345640000000007"^^xsd:decimal .
+#   ("0.2219469876562501"^^xsd:decimal "0.12580322265625"^^xsd:decimal) math:sum "0.3477502103125001"^^xsd:decimal .
+#   ("0.3477502103125001"^^xsd:decimal "0.030345640000000007"^^xsd:decimal) math:sum "0.3780958503125001"^^xsd:decimal .
+#   (1.0 "0.3780958503125001"^^xsd:decimal) math:difference "0.6219041496875"^^xsd:decimal .
+#   (1.0 "0.3780958503125001"^^xsd:decimal) math:quotient "2.644831989490204"^^xsd:decimal .
+#   ("0.4711125000000001"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "0.13777916666666679"^^xsd:decimal .
+#   "0.13777916666666679"^^xsd:decimal math:absoluteValue "0.13777916666666679"^^xsd:decimal .
+#   ("0.3546875"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "0.021354166666666674"^^xsd:decimal .
+#   "0.021354166666666674"^^xsd:decimal math:absoluteValue "0.021354166666666674"^^xsd:decimal .
+#   ("0.17420000000000002"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "-0.1591333333333333"^^xsd:decimal .
+#   "-0.1591333333333333"^^xsd:decimal math:absoluteValue "0.1591333333333333"^^xsd:decimal .
+#   ("0.13777916666666679"^^xsd:decimal "0.021354166666666674"^^xsd:decimal) math:sum "0.15913333333333346"^^xsd:decimal .
+#   ("0.15913333333333346"^^xsd:decimal "0.1591333333333333"^^xsd:decimal) math:sum "0.31826666666666675"^^xsd:decimal .
+#   (0.5 "0.31826666666666675"^^xsd:decimal) math:product "0.15913333333333338"^^xsd:decimal .
+#   ("0.13777916666666679"^^xsd:decimal 2.0) math:exponentiation "0.018983098767361144"^^xsd:decimal .
+#   ("0.021354166666666674"^^xsd:decimal 2.0) math:exponentiation "0.0004560004340277781"^^xsd:decimal .
+#   ("-0.1591333333333333"^^xsd:decimal 2.0) math:exponentiation "0.025323417777777767"^^xsd:decimal .
+#   ("0.018983098767361144"^^xsd:decimal "0.0004560004340277781"^^xsd:decimal) math:sum "0.01943909920138892"^^xsd:decimal .
+#   ("0.01943909920138892"^^xsd:decimal "0.025323417777777767"^^xsd:decimal) math:sum "0.04476251697916669"^^xsd:decimal .
+#   ("0.04476251697916669"^^xsd:decimal 0.5) math:exponentiation "0.2115715410426617"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :metrics ?m .
@@ -2651,71 +2652,71 @@ _:sk_7 :tvToUniform 0.15913333333333338 .
 #     ?m :l2ToUniform ?l2 .
 #   } .
 # with substitution (on rule variables):
-#   ?a = 0.4711125000000001
-#   ?a2 = 0.2219469876562501
-#   ?ab2 = 0.3477502103125001
-#   ?ada = 0.13777916666666679
-#   ?adb = 0.021354166666666674
-#   ?adc = 0.1591333333333333
-#   ?b = 0.3546875
-#   ?b2 = 0.12580322265625
-#   ?c = 0.17420000000000002
-#   ?c2 = 0.030345640000000007
-#   ?da = 0.13777916666666679
-#   ?da2 = 0.018983098767361144
-#   ?db = 0.021354166666666674
-#   ?db2 = 0.0004560004340277781
-#   ?dc = -0.1591333333333333
-#   ?dc2 = 0.025323417777777767
-#   ?effN = 2.644831989490204
-#   ?gini = 0.6219041496875
-#   ?l2 = 0.2115715410426617
+#   ?a = "0.4711125000000001"^^xsd:decimal
+#   ?a2 = "0.2219469876562501"^^xsd:decimal
+#   ?ab2 = "0.3477502103125001"^^xsd:decimal
+#   ?ada = "0.13777916666666679"^^xsd:decimal
+#   ?adb = "0.021354166666666674"^^xsd:decimal
+#   ?adc = "0.1591333333333333"^^xsd:decimal
+#   ?b = "0.3546875"^^xsd:decimal
+#   ?b2 = "0.12580322265625"^^xsd:decimal
+#   ?c = "0.17420000000000002"^^xsd:decimal
+#   ?c2 = "0.030345640000000007"^^xsd:decimal
+#   ?da = "0.13777916666666679"^^xsd:decimal
+#   ?da2 = "0.018983098767361144"^^xsd:decimal
+#   ?db = "0.021354166666666674"^^xsd:decimal
+#   ?db2 = "0.0004560004340277781"^^xsd:decimal
+#   ?dc = "-0.1591333333333333"^^xsd:decimal
+#   ?dc2 = "0.025323417777777767"^^xsd:decimal
+#   ?effN = "2.644831989490204"^^xsd:decimal
+#   ?gini = "0.6219041496875"^^xsd:decimal
+#   ?l2 = "0.2115715410426617"^^xsd:decimal
 #   ?m = _:sk_7
 #   ?pi = _:sk_2
-#   ?s1 = 0.15913333333333346
-#   ?s2 = 0.01943909920138892
-#   ?s3 = 0.04476251697916669
-#   ?sAbs = 0.31826666666666675
-#   ?sumSq = 0.3780958503125001
-#   ?tv = 0.15913333333333338
-#   ?u = 0.3333333333333333
+#   ?s1 = "0.15913333333333346"^^xsd:decimal
+#   ?s2 = "0.01943909920138892"^^xsd:decimal
+#   ?s3 = "0.04476251697916669"^^xsd:decimal
+#   ?sAbs = "0.31826666666666675"^^xsd:decimal
+#   ?sumSq = "0.3780958503125001"^^xsd:decimal
+#   ?tv = "0.15913333333333338"^^xsd:decimal
+#   ?u = "0.3333333333333333"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_7 :l2ToUniform 0.2115715410426617 .
+_:sk_7 :l2ToUniform "0.2115715410426617"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_6 :sumSq 0.3891608750000001 .
+#   _:sk_6 :sumSq "0.3891608750000001"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :metrics _:sk_6 .
 #   _:sk_6 :pi _:sk_1 .
-#   _:sk_1 :pA 0.49550000000000005 .
-#   _:sk_1 :pB 0.34275 .
-#   _:sk_1 :pC 0.16175 .
-#   (1.0 3.0) math:quotient 0.3333333333333333 .
-#   (0.49550000000000005 2.0) math:exponentiation 0.24552025000000005 .
-#   (0.34275 2.0) math:exponentiation 0.1174775625 .
-#   (0.16175 2.0) math:exponentiation 0.0261630625 .
-#   (0.24552025000000005 0.1174775625) math:sum 0.36299781250000007 .
-#   (0.36299781250000007 0.0261630625) math:sum 0.3891608750000001 .
-#   (1.0 0.3891608750000001) math:difference 0.6108391249999999 .
-#   (1.0 0.3891608750000001) math:quotient 2.569631389589202 .
-#   (0.49550000000000005 0.3333333333333333) math:difference 0.16216666666666674 .
-#   0.16216666666666674 math:absoluteValue 0.16216666666666674 .
-#   (0.34275 0.3333333333333333) math:difference 0.009416666666666684 .
-#   0.009416666666666684 math:absoluteValue 0.009416666666666684 .
-#   (0.16175 0.3333333333333333) math:difference -0.1715833333333333 .
-#   -0.1715833333333333 math:absoluteValue 0.1715833333333333 .
-#   (0.16216666666666674 0.009416666666666684) math:sum 0.17158333333333342 .
-#   (0.17158333333333342 0.1715833333333333) math:sum 0.34316666666666673 .
-#   (0.5 0.34316666666666673) math:product 0.17158333333333337 .
-#   (0.16216666666666674 2.0) math:exponentiation 0.026298027777777802 .
-#   (0.009416666666666684 2.0) math:exponentiation 0.00008867361111111145 .
-#   (-0.1715833333333333 2.0) math:exponentiation 0.02944084027777777 .
-#   (0.026298027777777802 0.00008867361111111145) math:sum 0.026386701388888913 .
-#   (0.026386701388888913 0.02944084027777777) math:sum 0.05582754166666668 .
-#   (0.05582754166666668 0.5) math:exponentiation 0.23627852561472165 .
+#   _:sk_1 :pA "0.49550000000000005"^^xsd:decimal .
+#   _:sk_1 :pB "0.34275"^^xsd:decimal .
+#   _:sk_1 :pC "0.16175"^^xsd:decimal .
+#   (1.0 3.0) math:quotient "0.3333333333333333"^^xsd:decimal .
+#   ("0.49550000000000005"^^xsd:decimal 2.0) math:exponentiation "0.24552025000000005"^^xsd:decimal .
+#   ("0.34275"^^xsd:decimal 2.0) math:exponentiation "0.1174775625"^^xsd:decimal .
+#   ("0.16175"^^xsd:decimal 2.0) math:exponentiation "0.0261630625"^^xsd:decimal .
+#   ("0.24552025000000005"^^xsd:decimal "0.1174775625"^^xsd:decimal) math:sum "0.36299781250000007"^^xsd:decimal .
+#   ("0.36299781250000007"^^xsd:decimal "0.0261630625"^^xsd:decimal) math:sum "0.3891608750000001"^^xsd:decimal .
+#   (1.0 "0.3891608750000001"^^xsd:decimal) math:difference "0.6108391249999999"^^xsd:decimal .
+#   (1.0 "0.3891608750000001"^^xsd:decimal) math:quotient "2.569631389589202"^^xsd:decimal .
+#   ("0.49550000000000005"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "0.16216666666666674"^^xsd:decimal .
+#   "0.16216666666666674"^^xsd:decimal math:absoluteValue "0.16216666666666674"^^xsd:decimal .
+#   ("0.34275"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "0.009416666666666684"^^xsd:decimal .
+#   "0.009416666666666684"^^xsd:decimal math:absoluteValue "0.009416666666666684"^^xsd:decimal .
+#   ("0.16175"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "-0.1715833333333333"^^xsd:decimal .
+#   "-0.1715833333333333"^^xsd:decimal math:absoluteValue "0.1715833333333333"^^xsd:decimal .
+#   ("0.16216666666666674"^^xsd:decimal "0.009416666666666684"^^xsd:decimal) math:sum "0.17158333333333342"^^xsd:decimal .
+#   ("0.17158333333333342"^^xsd:decimal "0.1715833333333333"^^xsd:decimal) math:sum "0.34316666666666673"^^xsd:decimal .
+#   (0.5 "0.34316666666666673"^^xsd:decimal) math:product "0.17158333333333337"^^xsd:decimal .
+#   ("0.16216666666666674"^^xsd:decimal 2.0) math:exponentiation "0.026298027777777802"^^xsd:decimal .
+#   ("0.009416666666666684"^^xsd:decimal 2.0) math:exponentiation "0.00008867361111111145"^^xsd:decimal .
+#   ("-0.1715833333333333"^^xsd:decimal 2.0) math:exponentiation "0.02944084027777777"^^xsd:decimal .
+#   ("0.026298027777777802"^^xsd:decimal "0.00008867361111111145"^^xsd:decimal) math:sum "0.026386701388888913"^^xsd:decimal .
+#   ("0.026386701388888913"^^xsd:decimal "0.02944084027777777"^^xsd:decimal) math:sum "0.05582754166666668"^^xsd:decimal .
+#   ("0.05582754166666668"^^xsd:decimal 0.5) math:exponentiation "0.23627852561472165"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :metrics ?m .
@@ -2754,71 +2755,71 @@ _:sk_7 :l2ToUniform 0.2115715410426617 .
 #     ?m :l2ToUniform ?l2 .
 #   } .
 # with substitution (on rule variables):
-#   ?a = 0.49550000000000005
-#   ?a2 = 0.24552025000000005
-#   ?ab2 = 0.36299781250000007
-#   ?ada = 0.16216666666666674
-#   ?adb = 0.009416666666666684
-#   ?adc = 0.1715833333333333
-#   ?b = 0.34275
-#   ?b2 = 0.1174775625
-#   ?c = 0.16175
-#   ?c2 = 0.0261630625
-#   ?da = 0.16216666666666674
-#   ?da2 = 0.026298027777777802
-#   ?db = 0.009416666666666684
-#   ?db2 = 0.00008867361111111145
-#   ?dc = -0.1715833333333333
-#   ?dc2 = 0.02944084027777777
-#   ?effN = 2.569631389589202
-#   ?gini = 0.6108391249999999
-#   ?l2 = 0.23627852561472165
+#   ?a = "0.49550000000000005"^^xsd:decimal
+#   ?a2 = "0.24552025000000005"^^xsd:decimal
+#   ?ab2 = "0.36299781250000007"^^xsd:decimal
+#   ?ada = "0.16216666666666674"^^xsd:decimal
+#   ?adb = "0.009416666666666684"^^xsd:decimal
+#   ?adc = "0.1715833333333333"^^xsd:decimal
+#   ?b = "0.34275"^^xsd:decimal
+#   ?b2 = "0.1174775625"^^xsd:decimal
+#   ?c = "0.16175"^^xsd:decimal
+#   ?c2 = "0.0261630625"^^xsd:decimal
+#   ?da = "0.16216666666666674"^^xsd:decimal
+#   ?da2 = "0.026298027777777802"^^xsd:decimal
+#   ?db = "0.009416666666666684"^^xsd:decimal
+#   ?db2 = "0.00008867361111111145"^^xsd:decimal
+#   ?dc = "-0.1715833333333333"^^xsd:decimal
+#   ?dc2 = "0.02944084027777777"^^xsd:decimal
+#   ?effN = "2.569631389589202"^^xsd:decimal
+#   ?gini = "0.6108391249999999"^^xsd:decimal
+#   ?l2 = "0.23627852561472165"^^xsd:decimal
 #   ?m = _:sk_6
 #   ?pi = _:sk_1
-#   ?s1 = 0.17158333333333342
-#   ?s2 = 0.026386701388888913
-#   ?s3 = 0.05582754166666668
-#   ?sAbs = 0.34316666666666673
-#   ?sumSq = 0.3891608750000001
-#   ?tv = 0.17158333333333337
-#   ?u = 0.3333333333333333
+#   ?s1 = "0.17158333333333342"^^xsd:decimal
+#   ?s2 = "0.026386701388888913"^^xsd:decimal
+#   ?s3 = "0.05582754166666668"^^xsd:decimal
+#   ?sAbs = "0.34316666666666673"^^xsd:decimal
+#   ?sumSq = "0.3891608750000001"^^xsd:decimal
+#   ?tv = "0.17158333333333337"^^xsd:decimal
+#   ?u = "0.3333333333333333"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_6 :sumSq 0.3891608750000001 .
+_:sk_6 :sumSq "0.3891608750000001"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_6 :gini 0.6108391249999999 .
+#   _:sk_6 :gini "0.6108391249999999"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :metrics _:sk_6 .
 #   _:sk_6 :pi _:sk_1 .
-#   _:sk_1 :pA 0.49550000000000005 .
-#   _:sk_1 :pB 0.34275 .
-#   _:sk_1 :pC 0.16175 .
-#   (1.0 3.0) math:quotient 0.3333333333333333 .
-#   (0.49550000000000005 2.0) math:exponentiation 0.24552025000000005 .
-#   (0.34275 2.0) math:exponentiation 0.1174775625 .
-#   (0.16175 2.0) math:exponentiation 0.0261630625 .
-#   (0.24552025000000005 0.1174775625) math:sum 0.36299781250000007 .
-#   (0.36299781250000007 0.0261630625) math:sum 0.3891608750000001 .
-#   (1.0 0.3891608750000001) math:difference 0.6108391249999999 .
-#   (1.0 0.3891608750000001) math:quotient 2.569631389589202 .
-#   (0.49550000000000005 0.3333333333333333) math:difference 0.16216666666666674 .
-#   0.16216666666666674 math:absoluteValue 0.16216666666666674 .
-#   (0.34275 0.3333333333333333) math:difference 0.009416666666666684 .
-#   0.009416666666666684 math:absoluteValue 0.009416666666666684 .
-#   (0.16175 0.3333333333333333) math:difference -0.1715833333333333 .
-#   -0.1715833333333333 math:absoluteValue 0.1715833333333333 .
-#   (0.16216666666666674 0.009416666666666684) math:sum 0.17158333333333342 .
-#   (0.17158333333333342 0.1715833333333333) math:sum 0.34316666666666673 .
-#   (0.5 0.34316666666666673) math:product 0.17158333333333337 .
-#   (0.16216666666666674 2.0) math:exponentiation 0.026298027777777802 .
-#   (0.009416666666666684 2.0) math:exponentiation 0.00008867361111111145 .
-#   (-0.1715833333333333 2.0) math:exponentiation 0.02944084027777777 .
-#   (0.026298027777777802 0.00008867361111111145) math:sum 0.026386701388888913 .
-#   (0.026386701388888913 0.02944084027777777) math:sum 0.05582754166666668 .
-#   (0.05582754166666668 0.5) math:exponentiation 0.23627852561472165 .
+#   _:sk_1 :pA "0.49550000000000005"^^xsd:decimal .
+#   _:sk_1 :pB "0.34275"^^xsd:decimal .
+#   _:sk_1 :pC "0.16175"^^xsd:decimal .
+#   (1.0 3.0) math:quotient "0.3333333333333333"^^xsd:decimal .
+#   ("0.49550000000000005"^^xsd:decimal 2.0) math:exponentiation "0.24552025000000005"^^xsd:decimal .
+#   ("0.34275"^^xsd:decimal 2.0) math:exponentiation "0.1174775625"^^xsd:decimal .
+#   ("0.16175"^^xsd:decimal 2.0) math:exponentiation "0.0261630625"^^xsd:decimal .
+#   ("0.24552025000000005"^^xsd:decimal "0.1174775625"^^xsd:decimal) math:sum "0.36299781250000007"^^xsd:decimal .
+#   ("0.36299781250000007"^^xsd:decimal "0.0261630625"^^xsd:decimal) math:sum "0.3891608750000001"^^xsd:decimal .
+#   (1.0 "0.3891608750000001"^^xsd:decimal) math:difference "0.6108391249999999"^^xsd:decimal .
+#   (1.0 "0.3891608750000001"^^xsd:decimal) math:quotient "2.569631389589202"^^xsd:decimal .
+#   ("0.49550000000000005"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "0.16216666666666674"^^xsd:decimal .
+#   "0.16216666666666674"^^xsd:decimal math:absoluteValue "0.16216666666666674"^^xsd:decimal .
+#   ("0.34275"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "0.009416666666666684"^^xsd:decimal .
+#   "0.009416666666666684"^^xsd:decimal math:absoluteValue "0.009416666666666684"^^xsd:decimal .
+#   ("0.16175"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "-0.1715833333333333"^^xsd:decimal .
+#   "-0.1715833333333333"^^xsd:decimal math:absoluteValue "0.1715833333333333"^^xsd:decimal .
+#   ("0.16216666666666674"^^xsd:decimal "0.009416666666666684"^^xsd:decimal) math:sum "0.17158333333333342"^^xsd:decimal .
+#   ("0.17158333333333342"^^xsd:decimal "0.1715833333333333"^^xsd:decimal) math:sum "0.34316666666666673"^^xsd:decimal .
+#   (0.5 "0.34316666666666673"^^xsd:decimal) math:product "0.17158333333333337"^^xsd:decimal .
+#   ("0.16216666666666674"^^xsd:decimal 2.0) math:exponentiation "0.026298027777777802"^^xsd:decimal .
+#   ("0.009416666666666684"^^xsd:decimal 2.0) math:exponentiation "0.00008867361111111145"^^xsd:decimal .
+#   ("-0.1715833333333333"^^xsd:decimal 2.0) math:exponentiation "0.02944084027777777"^^xsd:decimal .
+#   ("0.026298027777777802"^^xsd:decimal "0.00008867361111111145"^^xsd:decimal) math:sum "0.026386701388888913"^^xsd:decimal .
+#   ("0.026386701388888913"^^xsd:decimal "0.02944084027777777"^^xsd:decimal) math:sum "0.05582754166666668"^^xsd:decimal .
+#   ("0.05582754166666668"^^xsd:decimal 0.5) math:exponentiation "0.23627852561472165"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :metrics ?m .
@@ -2857,71 +2858,71 @@ _:sk_6 :sumSq 0.3891608750000001 .
 #     ?m :l2ToUniform ?l2 .
 #   } .
 # with substitution (on rule variables):
-#   ?a = 0.49550000000000005
-#   ?a2 = 0.24552025000000005
-#   ?ab2 = 0.36299781250000007
-#   ?ada = 0.16216666666666674
-#   ?adb = 0.009416666666666684
-#   ?adc = 0.1715833333333333
-#   ?b = 0.34275
-#   ?b2 = 0.1174775625
-#   ?c = 0.16175
-#   ?c2 = 0.0261630625
-#   ?da = 0.16216666666666674
-#   ?da2 = 0.026298027777777802
-#   ?db = 0.009416666666666684
-#   ?db2 = 0.00008867361111111145
-#   ?dc = -0.1715833333333333
-#   ?dc2 = 0.02944084027777777
-#   ?effN = 2.569631389589202
-#   ?gini = 0.6108391249999999
-#   ?l2 = 0.23627852561472165
+#   ?a = "0.49550000000000005"^^xsd:decimal
+#   ?a2 = "0.24552025000000005"^^xsd:decimal
+#   ?ab2 = "0.36299781250000007"^^xsd:decimal
+#   ?ada = "0.16216666666666674"^^xsd:decimal
+#   ?adb = "0.009416666666666684"^^xsd:decimal
+#   ?adc = "0.1715833333333333"^^xsd:decimal
+#   ?b = "0.34275"^^xsd:decimal
+#   ?b2 = "0.1174775625"^^xsd:decimal
+#   ?c = "0.16175"^^xsd:decimal
+#   ?c2 = "0.0261630625"^^xsd:decimal
+#   ?da = "0.16216666666666674"^^xsd:decimal
+#   ?da2 = "0.026298027777777802"^^xsd:decimal
+#   ?db = "0.009416666666666684"^^xsd:decimal
+#   ?db2 = "0.00008867361111111145"^^xsd:decimal
+#   ?dc = "-0.1715833333333333"^^xsd:decimal
+#   ?dc2 = "0.02944084027777777"^^xsd:decimal
+#   ?effN = "2.569631389589202"^^xsd:decimal
+#   ?gini = "0.6108391249999999"^^xsd:decimal
+#   ?l2 = "0.23627852561472165"^^xsd:decimal
 #   ?m = _:sk_6
 #   ?pi = _:sk_1
-#   ?s1 = 0.17158333333333342
-#   ?s2 = 0.026386701388888913
-#   ?s3 = 0.05582754166666668
-#   ?sAbs = 0.34316666666666673
-#   ?sumSq = 0.3891608750000001
-#   ?tv = 0.17158333333333337
-#   ?u = 0.3333333333333333
+#   ?s1 = "0.17158333333333342"^^xsd:decimal
+#   ?s2 = "0.026386701388888913"^^xsd:decimal
+#   ?s3 = "0.05582754166666668"^^xsd:decimal
+#   ?sAbs = "0.34316666666666673"^^xsd:decimal
+#   ?sumSq = "0.3891608750000001"^^xsd:decimal
+#   ?tv = "0.17158333333333337"^^xsd:decimal
+#   ?u = "0.3333333333333333"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_6 :gini 0.6108391249999999 .
+_:sk_6 :gini "0.6108391249999999"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_6 :effectiveStates 2.569631389589202 .
+#   _:sk_6 :effectiveStates "2.569631389589202"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :metrics _:sk_6 .
 #   _:sk_6 :pi _:sk_1 .
-#   _:sk_1 :pA 0.49550000000000005 .
-#   _:sk_1 :pB 0.34275 .
-#   _:sk_1 :pC 0.16175 .
-#   (1.0 3.0) math:quotient 0.3333333333333333 .
-#   (0.49550000000000005 2.0) math:exponentiation 0.24552025000000005 .
-#   (0.34275 2.0) math:exponentiation 0.1174775625 .
-#   (0.16175 2.0) math:exponentiation 0.0261630625 .
-#   (0.24552025000000005 0.1174775625) math:sum 0.36299781250000007 .
-#   (0.36299781250000007 0.0261630625) math:sum 0.3891608750000001 .
-#   (1.0 0.3891608750000001) math:difference 0.6108391249999999 .
-#   (1.0 0.3891608750000001) math:quotient 2.569631389589202 .
-#   (0.49550000000000005 0.3333333333333333) math:difference 0.16216666666666674 .
-#   0.16216666666666674 math:absoluteValue 0.16216666666666674 .
-#   (0.34275 0.3333333333333333) math:difference 0.009416666666666684 .
-#   0.009416666666666684 math:absoluteValue 0.009416666666666684 .
-#   (0.16175 0.3333333333333333) math:difference -0.1715833333333333 .
-#   -0.1715833333333333 math:absoluteValue 0.1715833333333333 .
-#   (0.16216666666666674 0.009416666666666684) math:sum 0.17158333333333342 .
-#   (0.17158333333333342 0.1715833333333333) math:sum 0.34316666666666673 .
-#   (0.5 0.34316666666666673) math:product 0.17158333333333337 .
-#   (0.16216666666666674 2.0) math:exponentiation 0.026298027777777802 .
-#   (0.009416666666666684 2.0) math:exponentiation 0.00008867361111111145 .
-#   (-0.1715833333333333 2.0) math:exponentiation 0.02944084027777777 .
-#   (0.026298027777777802 0.00008867361111111145) math:sum 0.026386701388888913 .
-#   (0.026386701388888913 0.02944084027777777) math:sum 0.05582754166666668 .
-#   (0.05582754166666668 0.5) math:exponentiation 0.23627852561472165 .
+#   _:sk_1 :pA "0.49550000000000005"^^xsd:decimal .
+#   _:sk_1 :pB "0.34275"^^xsd:decimal .
+#   _:sk_1 :pC "0.16175"^^xsd:decimal .
+#   (1.0 3.0) math:quotient "0.3333333333333333"^^xsd:decimal .
+#   ("0.49550000000000005"^^xsd:decimal 2.0) math:exponentiation "0.24552025000000005"^^xsd:decimal .
+#   ("0.34275"^^xsd:decimal 2.0) math:exponentiation "0.1174775625"^^xsd:decimal .
+#   ("0.16175"^^xsd:decimal 2.0) math:exponentiation "0.0261630625"^^xsd:decimal .
+#   ("0.24552025000000005"^^xsd:decimal "0.1174775625"^^xsd:decimal) math:sum "0.36299781250000007"^^xsd:decimal .
+#   ("0.36299781250000007"^^xsd:decimal "0.0261630625"^^xsd:decimal) math:sum "0.3891608750000001"^^xsd:decimal .
+#   (1.0 "0.3891608750000001"^^xsd:decimal) math:difference "0.6108391249999999"^^xsd:decimal .
+#   (1.0 "0.3891608750000001"^^xsd:decimal) math:quotient "2.569631389589202"^^xsd:decimal .
+#   ("0.49550000000000005"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "0.16216666666666674"^^xsd:decimal .
+#   "0.16216666666666674"^^xsd:decimal math:absoluteValue "0.16216666666666674"^^xsd:decimal .
+#   ("0.34275"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "0.009416666666666684"^^xsd:decimal .
+#   "0.009416666666666684"^^xsd:decimal math:absoluteValue "0.009416666666666684"^^xsd:decimal .
+#   ("0.16175"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "-0.1715833333333333"^^xsd:decimal .
+#   "-0.1715833333333333"^^xsd:decimal math:absoluteValue "0.1715833333333333"^^xsd:decimal .
+#   ("0.16216666666666674"^^xsd:decimal "0.009416666666666684"^^xsd:decimal) math:sum "0.17158333333333342"^^xsd:decimal .
+#   ("0.17158333333333342"^^xsd:decimal "0.1715833333333333"^^xsd:decimal) math:sum "0.34316666666666673"^^xsd:decimal .
+#   (0.5 "0.34316666666666673"^^xsd:decimal) math:product "0.17158333333333337"^^xsd:decimal .
+#   ("0.16216666666666674"^^xsd:decimal 2.0) math:exponentiation "0.026298027777777802"^^xsd:decimal .
+#   ("0.009416666666666684"^^xsd:decimal 2.0) math:exponentiation "0.00008867361111111145"^^xsd:decimal .
+#   ("-0.1715833333333333"^^xsd:decimal 2.0) math:exponentiation "0.02944084027777777"^^xsd:decimal .
+#   ("0.026298027777777802"^^xsd:decimal "0.00008867361111111145"^^xsd:decimal) math:sum "0.026386701388888913"^^xsd:decimal .
+#   ("0.026386701388888913"^^xsd:decimal "0.02944084027777777"^^xsd:decimal) math:sum "0.05582754166666668"^^xsd:decimal .
+#   ("0.05582754166666668"^^xsd:decimal 0.5) math:exponentiation "0.23627852561472165"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :metrics ?m .
@@ -2960,71 +2961,71 @@ _:sk_6 :gini 0.6108391249999999 .
 #     ?m :l2ToUniform ?l2 .
 #   } .
 # with substitution (on rule variables):
-#   ?a = 0.49550000000000005
-#   ?a2 = 0.24552025000000005
-#   ?ab2 = 0.36299781250000007
-#   ?ada = 0.16216666666666674
-#   ?adb = 0.009416666666666684
-#   ?adc = 0.1715833333333333
-#   ?b = 0.34275
-#   ?b2 = 0.1174775625
-#   ?c = 0.16175
-#   ?c2 = 0.0261630625
-#   ?da = 0.16216666666666674
-#   ?da2 = 0.026298027777777802
-#   ?db = 0.009416666666666684
-#   ?db2 = 0.00008867361111111145
-#   ?dc = -0.1715833333333333
-#   ?dc2 = 0.02944084027777777
-#   ?effN = 2.569631389589202
-#   ?gini = 0.6108391249999999
-#   ?l2 = 0.23627852561472165
+#   ?a = "0.49550000000000005"^^xsd:decimal
+#   ?a2 = "0.24552025000000005"^^xsd:decimal
+#   ?ab2 = "0.36299781250000007"^^xsd:decimal
+#   ?ada = "0.16216666666666674"^^xsd:decimal
+#   ?adb = "0.009416666666666684"^^xsd:decimal
+#   ?adc = "0.1715833333333333"^^xsd:decimal
+#   ?b = "0.34275"^^xsd:decimal
+#   ?b2 = "0.1174775625"^^xsd:decimal
+#   ?c = "0.16175"^^xsd:decimal
+#   ?c2 = "0.0261630625"^^xsd:decimal
+#   ?da = "0.16216666666666674"^^xsd:decimal
+#   ?da2 = "0.026298027777777802"^^xsd:decimal
+#   ?db = "0.009416666666666684"^^xsd:decimal
+#   ?db2 = "0.00008867361111111145"^^xsd:decimal
+#   ?dc = "-0.1715833333333333"^^xsd:decimal
+#   ?dc2 = "0.02944084027777777"^^xsd:decimal
+#   ?effN = "2.569631389589202"^^xsd:decimal
+#   ?gini = "0.6108391249999999"^^xsd:decimal
+#   ?l2 = "0.23627852561472165"^^xsd:decimal
 #   ?m = _:sk_6
 #   ?pi = _:sk_1
-#   ?s1 = 0.17158333333333342
-#   ?s2 = 0.026386701388888913
-#   ?s3 = 0.05582754166666668
-#   ?sAbs = 0.34316666666666673
-#   ?sumSq = 0.3891608750000001
-#   ?tv = 0.17158333333333337
-#   ?u = 0.3333333333333333
+#   ?s1 = "0.17158333333333342"^^xsd:decimal
+#   ?s2 = "0.026386701388888913"^^xsd:decimal
+#   ?s3 = "0.05582754166666668"^^xsd:decimal
+#   ?sAbs = "0.34316666666666673"^^xsd:decimal
+#   ?sumSq = "0.3891608750000001"^^xsd:decimal
+#   ?tv = "0.17158333333333337"^^xsd:decimal
+#   ?u = "0.3333333333333333"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_6 :effectiveStates 2.569631389589202 .
+_:sk_6 :effectiveStates "2.569631389589202"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_6 :tvToUniform 0.17158333333333337 .
+#   _:sk_6 :tvToUniform "0.17158333333333337"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :metrics _:sk_6 .
 #   _:sk_6 :pi _:sk_1 .
-#   _:sk_1 :pA 0.49550000000000005 .
-#   _:sk_1 :pB 0.34275 .
-#   _:sk_1 :pC 0.16175 .
-#   (1.0 3.0) math:quotient 0.3333333333333333 .
-#   (0.49550000000000005 2.0) math:exponentiation 0.24552025000000005 .
-#   (0.34275 2.0) math:exponentiation 0.1174775625 .
-#   (0.16175 2.0) math:exponentiation 0.0261630625 .
-#   (0.24552025000000005 0.1174775625) math:sum 0.36299781250000007 .
-#   (0.36299781250000007 0.0261630625) math:sum 0.3891608750000001 .
-#   (1.0 0.3891608750000001) math:difference 0.6108391249999999 .
-#   (1.0 0.3891608750000001) math:quotient 2.569631389589202 .
-#   (0.49550000000000005 0.3333333333333333) math:difference 0.16216666666666674 .
-#   0.16216666666666674 math:absoluteValue 0.16216666666666674 .
-#   (0.34275 0.3333333333333333) math:difference 0.009416666666666684 .
-#   0.009416666666666684 math:absoluteValue 0.009416666666666684 .
-#   (0.16175 0.3333333333333333) math:difference -0.1715833333333333 .
-#   -0.1715833333333333 math:absoluteValue 0.1715833333333333 .
-#   (0.16216666666666674 0.009416666666666684) math:sum 0.17158333333333342 .
-#   (0.17158333333333342 0.1715833333333333) math:sum 0.34316666666666673 .
-#   (0.5 0.34316666666666673) math:product 0.17158333333333337 .
-#   (0.16216666666666674 2.0) math:exponentiation 0.026298027777777802 .
-#   (0.009416666666666684 2.0) math:exponentiation 0.00008867361111111145 .
-#   (-0.1715833333333333 2.0) math:exponentiation 0.02944084027777777 .
-#   (0.026298027777777802 0.00008867361111111145) math:sum 0.026386701388888913 .
-#   (0.026386701388888913 0.02944084027777777) math:sum 0.05582754166666668 .
-#   (0.05582754166666668 0.5) math:exponentiation 0.23627852561472165 .
+#   _:sk_1 :pA "0.49550000000000005"^^xsd:decimal .
+#   _:sk_1 :pB "0.34275"^^xsd:decimal .
+#   _:sk_1 :pC "0.16175"^^xsd:decimal .
+#   (1.0 3.0) math:quotient "0.3333333333333333"^^xsd:decimal .
+#   ("0.49550000000000005"^^xsd:decimal 2.0) math:exponentiation "0.24552025000000005"^^xsd:decimal .
+#   ("0.34275"^^xsd:decimal 2.0) math:exponentiation "0.1174775625"^^xsd:decimal .
+#   ("0.16175"^^xsd:decimal 2.0) math:exponentiation "0.0261630625"^^xsd:decimal .
+#   ("0.24552025000000005"^^xsd:decimal "0.1174775625"^^xsd:decimal) math:sum "0.36299781250000007"^^xsd:decimal .
+#   ("0.36299781250000007"^^xsd:decimal "0.0261630625"^^xsd:decimal) math:sum "0.3891608750000001"^^xsd:decimal .
+#   (1.0 "0.3891608750000001"^^xsd:decimal) math:difference "0.6108391249999999"^^xsd:decimal .
+#   (1.0 "0.3891608750000001"^^xsd:decimal) math:quotient "2.569631389589202"^^xsd:decimal .
+#   ("0.49550000000000005"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "0.16216666666666674"^^xsd:decimal .
+#   "0.16216666666666674"^^xsd:decimal math:absoluteValue "0.16216666666666674"^^xsd:decimal .
+#   ("0.34275"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "0.009416666666666684"^^xsd:decimal .
+#   "0.009416666666666684"^^xsd:decimal math:absoluteValue "0.009416666666666684"^^xsd:decimal .
+#   ("0.16175"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "-0.1715833333333333"^^xsd:decimal .
+#   "-0.1715833333333333"^^xsd:decimal math:absoluteValue "0.1715833333333333"^^xsd:decimal .
+#   ("0.16216666666666674"^^xsd:decimal "0.009416666666666684"^^xsd:decimal) math:sum "0.17158333333333342"^^xsd:decimal .
+#   ("0.17158333333333342"^^xsd:decimal "0.1715833333333333"^^xsd:decimal) math:sum "0.34316666666666673"^^xsd:decimal .
+#   (0.5 "0.34316666666666673"^^xsd:decimal) math:product "0.17158333333333337"^^xsd:decimal .
+#   ("0.16216666666666674"^^xsd:decimal 2.0) math:exponentiation "0.026298027777777802"^^xsd:decimal .
+#   ("0.009416666666666684"^^xsd:decimal 2.0) math:exponentiation "0.00008867361111111145"^^xsd:decimal .
+#   ("-0.1715833333333333"^^xsd:decimal 2.0) math:exponentiation "0.02944084027777777"^^xsd:decimal .
+#   ("0.026298027777777802"^^xsd:decimal "0.00008867361111111145"^^xsd:decimal) math:sum "0.026386701388888913"^^xsd:decimal .
+#   ("0.026386701388888913"^^xsd:decimal "0.02944084027777777"^^xsd:decimal) math:sum "0.05582754166666668"^^xsd:decimal .
+#   ("0.05582754166666668"^^xsd:decimal 0.5) math:exponentiation "0.23627852561472165"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :metrics ?m .
@@ -3063,71 +3064,71 @@ _:sk_6 :effectiveStates 2.569631389589202 .
 #     ?m :l2ToUniform ?l2 .
 #   } .
 # with substitution (on rule variables):
-#   ?a = 0.49550000000000005
-#   ?a2 = 0.24552025000000005
-#   ?ab2 = 0.36299781250000007
-#   ?ada = 0.16216666666666674
-#   ?adb = 0.009416666666666684
-#   ?adc = 0.1715833333333333
-#   ?b = 0.34275
-#   ?b2 = 0.1174775625
-#   ?c = 0.16175
-#   ?c2 = 0.0261630625
-#   ?da = 0.16216666666666674
-#   ?da2 = 0.026298027777777802
-#   ?db = 0.009416666666666684
-#   ?db2 = 0.00008867361111111145
-#   ?dc = -0.1715833333333333
-#   ?dc2 = 0.02944084027777777
-#   ?effN = 2.569631389589202
-#   ?gini = 0.6108391249999999
-#   ?l2 = 0.23627852561472165
+#   ?a = "0.49550000000000005"^^xsd:decimal
+#   ?a2 = "0.24552025000000005"^^xsd:decimal
+#   ?ab2 = "0.36299781250000007"^^xsd:decimal
+#   ?ada = "0.16216666666666674"^^xsd:decimal
+#   ?adb = "0.009416666666666684"^^xsd:decimal
+#   ?adc = "0.1715833333333333"^^xsd:decimal
+#   ?b = "0.34275"^^xsd:decimal
+#   ?b2 = "0.1174775625"^^xsd:decimal
+#   ?c = "0.16175"^^xsd:decimal
+#   ?c2 = "0.0261630625"^^xsd:decimal
+#   ?da = "0.16216666666666674"^^xsd:decimal
+#   ?da2 = "0.026298027777777802"^^xsd:decimal
+#   ?db = "0.009416666666666684"^^xsd:decimal
+#   ?db2 = "0.00008867361111111145"^^xsd:decimal
+#   ?dc = "-0.1715833333333333"^^xsd:decimal
+#   ?dc2 = "0.02944084027777777"^^xsd:decimal
+#   ?effN = "2.569631389589202"^^xsd:decimal
+#   ?gini = "0.6108391249999999"^^xsd:decimal
+#   ?l2 = "0.23627852561472165"^^xsd:decimal
 #   ?m = _:sk_6
 #   ?pi = _:sk_1
-#   ?s1 = 0.17158333333333342
-#   ?s2 = 0.026386701388888913
-#   ?s3 = 0.05582754166666668
-#   ?sAbs = 0.34316666666666673
-#   ?sumSq = 0.3891608750000001
-#   ?tv = 0.17158333333333337
-#   ?u = 0.3333333333333333
+#   ?s1 = "0.17158333333333342"^^xsd:decimal
+#   ?s2 = "0.026386701388888913"^^xsd:decimal
+#   ?s3 = "0.05582754166666668"^^xsd:decimal
+#   ?sAbs = "0.34316666666666673"^^xsd:decimal
+#   ?sumSq = "0.3891608750000001"^^xsd:decimal
+#   ?tv = "0.17158333333333337"^^xsd:decimal
+#   ?u = "0.3333333333333333"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_6 :tvToUniform 0.17158333333333337 .
+_:sk_6 :tvToUniform "0.17158333333333337"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_6 :l2ToUniform 0.23627852561472165 .
+#   _:sk_6 :l2ToUniform "0.23627852561472165"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :metrics _:sk_6 .
 #   _:sk_6 :pi _:sk_1 .
-#   _:sk_1 :pA 0.49550000000000005 .
-#   _:sk_1 :pB 0.34275 .
-#   _:sk_1 :pC 0.16175 .
-#   (1.0 3.0) math:quotient 0.3333333333333333 .
-#   (0.49550000000000005 2.0) math:exponentiation 0.24552025000000005 .
-#   (0.34275 2.0) math:exponentiation 0.1174775625 .
-#   (0.16175 2.0) math:exponentiation 0.0261630625 .
-#   (0.24552025000000005 0.1174775625) math:sum 0.36299781250000007 .
-#   (0.36299781250000007 0.0261630625) math:sum 0.3891608750000001 .
-#   (1.0 0.3891608750000001) math:difference 0.6108391249999999 .
-#   (1.0 0.3891608750000001) math:quotient 2.569631389589202 .
-#   (0.49550000000000005 0.3333333333333333) math:difference 0.16216666666666674 .
-#   0.16216666666666674 math:absoluteValue 0.16216666666666674 .
-#   (0.34275 0.3333333333333333) math:difference 0.009416666666666684 .
-#   0.009416666666666684 math:absoluteValue 0.009416666666666684 .
-#   (0.16175 0.3333333333333333) math:difference -0.1715833333333333 .
-#   -0.1715833333333333 math:absoluteValue 0.1715833333333333 .
-#   (0.16216666666666674 0.009416666666666684) math:sum 0.17158333333333342 .
-#   (0.17158333333333342 0.1715833333333333) math:sum 0.34316666666666673 .
-#   (0.5 0.34316666666666673) math:product 0.17158333333333337 .
-#   (0.16216666666666674 2.0) math:exponentiation 0.026298027777777802 .
-#   (0.009416666666666684 2.0) math:exponentiation 0.00008867361111111145 .
-#   (-0.1715833333333333 2.0) math:exponentiation 0.02944084027777777 .
-#   (0.026298027777777802 0.00008867361111111145) math:sum 0.026386701388888913 .
-#   (0.026386701388888913 0.02944084027777777) math:sum 0.05582754166666668 .
-#   (0.05582754166666668 0.5) math:exponentiation 0.23627852561472165 .
+#   _:sk_1 :pA "0.49550000000000005"^^xsd:decimal .
+#   _:sk_1 :pB "0.34275"^^xsd:decimal .
+#   _:sk_1 :pC "0.16175"^^xsd:decimal .
+#   (1.0 3.0) math:quotient "0.3333333333333333"^^xsd:decimal .
+#   ("0.49550000000000005"^^xsd:decimal 2.0) math:exponentiation "0.24552025000000005"^^xsd:decimal .
+#   ("0.34275"^^xsd:decimal 2.0) math:exponentiation "0.1174775625"^^xsd:decimal .
+#   ("0.16175"^^xsd:decimal 2.0) math:exponentiation "0.0261630625"^^xsd:decimal .
+#   ("0.24552025000000005"^^xsd:decimal "0.1174775625"^^xsd:decimal) math:sum "0.36299781250000007"^^xsd:decimal .
+#   ("0.36299781250000007"^^xsd:decimal "0.0261630625"^^xsd:decimal) math:sum "0.3891608750000001"^^xsd:decimal .
+#   (1.0 "0.3891608750000001"^^xsd:decimal) math:difference "0.6108391249999999"^^xsd:decimal .
+#   (1.0 "0.3891608750000001"^^xsd:decimal) math:quotient "2.569631389589202"^^xsd:decimal .
+#   ("0.49550000000000005"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "0.16216666666666674"^^xsd:decimal .
+#   "0.16216666666666674"^^xsd:decimal math:absoluteValue "0.16216666666666674"^^xsd:decimal .
+#   ("0.34275"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "0.009416666666666684"^^xsd:decimal .
+#   "0.009416666666666684"^^xsd:decimal math:absoluteValue "0.009416666666666684"^^xsd:decimal .
+#   ("0.16175"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "-0.1715833333333333"^^xsd:decimal .
+#   "-0.1715833333333333"^^xsd:decimal math:absoluteValue "0.1715833333333333"^^xsd:decimal .
+#   ("0.16216666666666674"^^xsd:decimal "0.009416666666666684"^^xsd:decimal) math:sum "0.17158333333333342"^^xsd:decimal .
+#   ("0.17158333333333342"^^xsd:decimal "0.1715833333333333"^^xsd:decimal) math:sum "0.34316666666666673"^^xsd:decimal .
+#   (0.5 "0.34316666666666673"^^xsd:decimal) math:product "0.17158333333333337"^^xsd:decimal .
+#   ("0.16216666666666674"^^xsd:decimal 2.0) math:exponentiation "0.026298027777777802"^^xsd:decimal .
+#   ("0.009416666666666684"^^xsd:decimal 2.0) math:exponentiation "0.00008867361111111145"^^xsd:decimal .
+#   ("-0.1715833333333333"^^xsd:decimal 2.0) math:exponentiation "0.02944084027777777"^^xsd:decimal .
+#   ("0.026298027777777802"^^xsd:decimal "0.00008867361111111145"^^xsd:decimal) math:sum "0.026386701388888913"^^xsd:decimal .
+#   ("0.026386701388888913"^^xsd:decimal "0.02944084027777777"^^xsd:decimal) math:sum "0.05582754166666668"^^xsd:decimal .
+#   ("0.05582754166666668"^^xsd:decimal 0.5) math:exponentiation "0.23627852561472165"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :metrics ?m .
@@ -3166,71 +3167,71 @@ _:sk_6 :tvToUniform 0.17158333333333337 .
 #     ?m :l2ToUniform ?l2 .
 #   } .
 # with substitution (on rule variables):
-#   ?a = 0.49550000000000005
-#   ?a2 = 0.24552025000000005
-#   ?ab2 = 0.36299781250000007
-#   ?ada = 0.16216666666666674
-#   ?adb = 0.009416666666666684
-#   ?adc = 0.1715833333333333
-#   ?b = 0.34275
-#   ?b2 = 0.1174775625
-#   ?c = 0.16175
-#   ?c2 = 0.0261630625
-#   ?da = 0.16216666666666674
-#   ?da2 = 0.026298027777777802
-#   ?db = 0.009416666666666684
-#   ?db2 = 0.00008867361111111145
-#   ?dc = -0.1715833333333333
-#   ?dc2 = 0.02944084027777777
-#   ?effN = 2.569631389589202
-#   ?gini = 0.6108391249999999
-#   ?l2 = 0.23627852561472165
+#   ?a = "0.49550000000000005"^^xsd:decimal
+#   ?a2 = "0.24552025000000005"^^xsd:decimal
+#   ?ab2 = "0.36299781250000007"^^xsd:decimal
+#   ?ada = "0.16216666666666674"^^xsd:decimal
+#   ?adb = "0.009416666666666684"^^xsd:decimal
+#   ?adc = "0.1715833333333333"^^xsd:decimal
+#   ?b = "0.34275"^^xsd:decimal
+#   ?b2 = "0.1174775625"^^xsd:decimal
+#   ?c = "0.16175"^^xsd:decimal
+#   ?c2 = "0.0261630625"^^xsd:decimal
+#   ?da = "0.16216666666666674"^^xsd:decimal
+#   ?da2 = "0.026298027777777802"^^xsd:decimal
+#   ?db = "0.009416666666666684"^^xsd:decimal
+#   ?db2 = "0.00008867361111111145"^^xsd:decimal
+#   ?dc = "-0.1715833333333333"^^xsd:decimal
+#   ?dc2 = "0.02944084027777777"^^xsd:decimal
+#   ?effN = "2.569631389589202"^^xsd:decimal
+#   ?gini = "0.6108391249999999"^^xsd:decimal
+#   ?l2 = "0.23627852561472165"^^xsd:decimal
 #   ?m = _:sk_6
 #   ?pi = _:sk_1
-#   ?s1 = 0.17158333333333342
-#   ?s2 = 0.026386701388888913
-#   ?s3 = 0.05582754166666668
-#   ?sAbs = 0.34316666666666673
-#   ?sumSq = 0.3891608750000001
-#   ?tv = 0.17158333333333337
-#   ?u = 0.3333333333333333
+#   ?s1 = "0.17158333333333342"^^xsd:decimal
+#   ?s2 = "0.026386701388888913"^^xsd:decimal
+#   ?s3 = "0.05582754166666668"^^xsd:decimal
+#   ?sAbs = "0.34316666666666673"^^xsd:decimal
+#   ?sumSq = "0.3891608750000001"^^xsd:decimal
+#   ?tv = "0.17158333333333337"^^xsd:decimal
+#   ?u = "0.3333333333333333"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_6 :l2ToUniform 0.23627852561472165 .
+_:sk_6 :l2ToUniform "0.23627852561472165"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_5 :sumSq 0.41145000000000004 .
+#   _:sk_5 :sumSq "0.41145000000000004"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :metrics _:sk_5 .
 #   _:sk_5 :pi _:sk_0 .
-#   _:sk_0 :pA 0.535 .
-#   _:sk_0 :pB 0.325 .
-#   _:sk_0 :pC 0.14 .
-#   (1.0 3.0) math:quotient 0.3333333333333333 .
-#   (0.535 2.0) math:exponentiation 0.286225 .
-#   (0.325 2.0) math:exponentiation 0.10562500000000001 .
-#   (0.14 2.0) math:exponentiation 0.019600000000000003 .
-#   (0.286225 0.10562500000000001) math:sum 0.39185000000000003 .
-#   (0.39185000000000003 0.019600000000000003) math:sum 0.41145000000000004 .
-#   (1.0 0.41145000000000004) math:difference 0.5885499999999999 .
-#   (1.0 0.41145000000000004) math:quotient 2.4304289707133306 .
-#   (0.535 0.3333333333333333) math:difference 0.20166666666666672 .
-#   0.20166666666666672 math:absoluteValue 0.20166666666666672 .
-#   (0.325 0.3333333333333333) math:difference -0.008333333333333304 .
-#   -0.008333333333333304 math:absoluteValue 0.008333333333333304 .
-#   (0.14 0.3333333333333333) math:difference -0.1933333333333333 .
-#   -0.1933333333333333 math:absoluteValue 0.1933333333333333 .
-#   (0.20166666666666672 0.008333333333333304) math:sum 0.21000000000000002 .
-#   (0.21000000000000002 0.1933333333333333) math:sum 0.4033333333333333 .
-#   (0.5 0.4033333333333333) math:product 0.20166666666666666 .
-#   (0.20166666666666672 2.0) math:exponentiation 0.040669444444444466 .
-#   (-0.008333333333333304 2.0) math:exponentiation 0.00006944444444444396 .
-#   (-0.1933333333333333 2.0) math:exponentiation 0.03737777777777777 .
-#   (0.040669444444444466 0.00006944444444444396) math:sum 0.04073888888888891 .
-#   (0.04073888888888891 0.03737777777777777) math:sum 0.07811666666666667 .
-#   (0.07811666666666667 0.5) math:exponentiation 0.2794935896700793 .
+#   _:sk_0 :pA "0.535"^^xsd:decimal .
+#   _:sk_0 :pB "0.325"^^xsd:decimal .
+#   _:sk_0 :pC "0.14"^^xsd:decimal .
+#   (1.0 3.0) math:quotient "0.3333333333333333"^^xsd:decimal .
+#   ("0.535"^^xsd:decimal 2.0) math:exponentiation "0.286225"^^xsd:decimal .
+#   ("0.325"^^xsd:decimal 2.0) math:exponentiation "0.10562500000000001"^^xsd:decimal .
+#   ("0.14"^^xsd:decimal 2.0) math:exponentiation "0.019600000000000003"^^xsd:decimal .
+#   ("0.286225"^^xsd:decimal "0.10562500000000001"^^xsd:decimal) math:sum "0.39185000000000003"^^xsd:decimal .
+#   ("0.39185000000000003"^^xsd:decimal "0.019600000000000003"^^xsd:decimal) math:sum "0.41145000000000004"^^xsd:decimal .
+#   (1.0 "0.41145000000000004"^^xsd:decimal) math:difference "0.5885499999999999"^^xsd:decimal .
+#   (1.0 "0.41145000000000004"^^xsd:decimal) math:quotient "2.4304289707133306"^^xsd:decimal .
+#   ("0.535"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "0.20166666666666672"^^xsd:decimal .
+#   "0.20166666666666672"^^xsd:decimal math:absoluteValue "0.20166666666666672"^^xsd:decimal .
+#   ("0.325"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "-0.008333333333333304"^^xsd:decimal .
+#   "-0.008333333333333304"^^xsd:decimal math:absoluteValue "0.008333333333333304"^^xsd:decimal .
+#   ("0.14"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "-0.1933333333333333"^^xsd:decimal .
+#   "-0.1933333333333333"^^xsd:decimal math:absoluteValue "0.1933333333333333"^^xsd:decimal .
+#   ("0.20166666666666672"^^xsd:decimal "0.008333333333333304"^^xsd:decimal) math:sum "0.21000000000000002"^^xsd:decimal .
+#   ("0.21000000000000002"^^xsd:decimal "0.1933333333333333"^^xsd:decimal) math:sum "0.4033333333333333"^^xsd:decimal .
+#   (0.5 "0.4033333333333333"^^xsd:decimal) math:product "0.20166666666666666"^^xsd:decimal .
+#   ("0.20166666666666672"^^xsd:decimal 2.0) math:exponentiation "0.040669444444444466"^^xsd:decimal .
+#   ("-0.008333333333333304"^^xsd:decimal 2.0) math:exponentiation "0.00006944444444444396"^^xsd:decimal .
+#   ("-0.1933333333333333"^^xsd:decimal 2.0) math:exponentiation "0.03737777777777777"^^xsd:decimal .
+#   ("0.040669444444444466"^^xsd:decimal "0.00006944444444444396"^^xsd:decimal) math:sum "0.04073888888888891"^^xsd:decimal .
+#   ("0.04073888888888891"^^xsd:decimal "0.03737777777777777"^^xsd:decimal) math:sum "0.07811666666666667"^^xsd:decimal .
+#   ("0.07811666666666667"^^xsd:decimal 0.5) math:exponentiation "0.2794935896700793"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :metrics ?m .
@@ -3269,71 +3270,71 @@ _:sk_6 :l2ToUniform 0.23627852561472165 .
 #     ?m :l2ToUniform ?l2 .
 #   } .
 # with substitution (on rule variables):
-#   ?a = 0.535
-#   ?a2 = 0.286225
-#   ?ab2 = 0.39185000000000003
-#   ?ada = 0.20166666666666672
-#   ?adb = 0.008333333333333304
-#   ?adc = 0.1933333333333333
-#   ?b = 0.325
-#   ?b2 = 0.10562500000000001
-#   ?c = 0.14
-#   ?c2 = 0.019600000000000003
-#   ?da = 0.20166666666666672
-#   ?da2 = 0.040669444444444466
-#   ?db = -0.008333333333333304
-#   ?db2 = 0.00006944444444444396
-#   ?dc = -0.1933333333333333
-#   ?dc2 = 0.03737777777777777
-#   ?effN = 2.4304289707133306
-#   ?gini = 0.5885499999999999
-#   ?l2 = 0.2794935896700793
+#   ?a = "0.535"^^xsd:decimal
+#   ?a2 = "0.286225"^^xsd:decimal
+#   ?ab2 = "0.39185000000000003"^^xsd:decimal
+#   ?ada = "0.20166666666666672"^^xsd:decimal
+#   ?adb = "0.008333333333333304"^^xsd:decimal
+#   ?adc = "0.1933333333333333"^^xsd:decimal
+#   ?b = "0.325"^^xsd:decimal
+#   ?b2 = "0.10562500000000001"^^xsd:decimal
+#   ?c = "0.14"^^xsd:decimal
+#   ?c2 = "0.019600000000000003"^^xsd:decimal
+#   ?da = "0.20166666666666672"^^xsd:decimal
+#   ?da2 = "0.040669444444444466"^^xsd:decimal
+#   ?db = "-0.008333333333333304"^^xsd:decimal
+#   ?db2 = "0.00006944444444444396"^^xsd:decimal
+#   ?dc = "-0.1933333333333333"^^xsd:decimal
+#   ?dc2 = "0.03737777777777777"^^xsd:decimal
+#   ?effN = "2.4304289707133306"^^xsd:decimal
+#   ?gini = "0.5885499999999999"^^xsd:decimal
+#   ?l2 = "0.2794935896700793"^^xsd:decimal
 #   ?m = _:sk_5
 #   ?pi = _:sk_0
-#   ?s1 = 0.21000000000000002
-#   ?s2 = 0.04073888888888891
-#   ?s3 = 0.07811666666666667
-#   ?sAbs = 0.4033333333333333
-#   ?sumSq = 0.41145000000000004
-#   ?tv = 0.20166666666666666
-#   ?u = 0.3333333333333333
+#   ?s1 = "0.21000000000000002"^^xsd:decimal
+#   ?s2 = "0.04073888888888891"^^xsd:decimal
+#   ?s3 = "0.07811666666666667"^^xsd:decimal
+#   ?sAbs = "0.4033333333333333"^^xsd:decimal
+#   ?sumSq = "0.41145000000000004"^^xsd:decimal
+#   ?tv = "0.20166666666666666"^^xsd:decimal
+#   ?u = "0.3333333333333333"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_5 :sumSq 0.41145000000000004 .
+_:sk_5 :sumSq "0.41145000000000004"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_5 :gini 0.5885499999999999 .
+#   _:sk_5 :gini "0.5885499999999999"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :metrics _:sk_5 .
 #   _:sk_5 :pi _:sk_0 .
-#   _:sk_0 :pA 0.535 .
-#   _:sk_0 :pB 0.325 .
-#   _:sk_0 :pC 0.14 .
-#   (1.0 3.0) math:quotient 0.3333333333333333 .
-#   (0.535 2.0) math:exponentiation 0.286225 .
-#   (0.325 2.0) math:exponentiation 0.10562500000000001 .
-#   (0.14 2.0) math:exponentiation 0.019600000000000003 .
-#   (0.286225 0.10562500000000001) math:sum 0.39185000000000003 .
-#   (0.39185000000000003 0.019600000000000003) math:sum 0.41145000000000004 .
-#   (1.0 0.41145000000000004) math:difference 0.5885499999999999 .
-#   (1.0 0.41145000000000004) math:quotient 2.4304289707133306 .
-#   (0.535 0.3333333333333333) math:difference 0.20166666666666672 .
-#   0.20166666666666672 math:absoluteValue 0.20166666666666672 .
-#   (0.325 0.3333333333333333) math:difference -0.008333333333333304 .
-#   -0.008333333333333304 math:absoluteValue 0.008333333333333304 .
-#   (0.14 0.3333333333333333) math:difference -0.1933333333333333 .
-#   -0.1933333333333333 math:absoluteValue 0.1933333333333333 .
-#   (0.20166666666666672 0.008333333333333304) math:sum 0.21000000000000002 .
-#   (0.21000000000000002 0.1933333333333333) math:sum 0.4033333333333333 .
-#   (0.5 0.4033333333333333) math:product 0.20166666666666666 .
-#   (0.20166666666666672 2.0) math:exponentiation 0.040669444444444466 .
-#   (-0.008333333333333304 2.0) math:exponentiation 0.00006944444444444396 .
-#   (-0.1933333333333333 2.0) math:exponentiation 0.03737777777777777 .
-#   (0.040669444444444466 0.00006944444444444396) math:sum 0.04073888888888891 .
-#   (0.04073888888888891 0.03737777777777777) math:sum 0.07811666666666667 .
-#   (0.07811666666666667 0.5) math:exponentiation 0.2794935896700793 .
+#   _:sk_0 :pA "0.535"^^xsd:decimal .
+#   _:sk_0 :pB "0.325"^^xsd:decimal .
+#   _:sk_0 :pC "0.14"^^xsd:decimal .
+#   (1.0 3.0) math:quotient "0.3333333333333333"^^xsd:decimal .
+#   ("0.535"^^xsd:decimal 2.0) math:exponentiation "0.286225"^^xsd:decimal .
+#   ("0.325"^^xsd:decimal 2.0) math:exponentiation "0.10562500000000001"^^xsd:decimal .
+#   ("0.14"^^xsd:decimal 2.0) math:exponentiation "0.019600000000000003"^^xsd:decimal .
+#   ("0.286225"^^xsd:decimal "0.10562500000000001"^^xsd:decimal) math:sum "0.39185000000000003"^^xsd:decimal .
+#   ("0.39185000000000003"^^xsd:decimal "0.019600000000000003"^^xsd:decimal) math:sum "0.41145000000000004"^^xsd:decimal .
+#   (1.0 "0.41145000000000004"^^xsd:decimal) math:difference "0.5885499999999999"^^xsd:decimal .
+#   (1.0 "0.41145000000000004"^^xsd:decimal) math:quotient "2.4304289707133306"^^xsd:decimal .
+#   ("0.535"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "0.20166666666666672"^^xsd:decimal .
+#   "0.20166666666666672"^^xsd:decimal math:absoluteValue "0.20166666666666672"^^xsd:decimal .
+#   ("0.325"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "-0.008333333333333304"^^xsd:decimal .
+#   "-0.008333333333333304"^^xsd:decimal math:absoluteValue "0.008333333333333304"^^xsd:decimal .
+#   ("0.14"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "-0.1933333333333333"^^xsd:decimal .
+#   "-0.1933333333333333"^^xsd:decimal math:absoluteValue "0.1933333333333333"^^xsd:decimal .
+#   ("0.20166666666666672"^^xsd:decimal "0.008333333333333304"^^xsd:decimal) math:sum "0.21000000000000002"^^xsd:decimal .
+#   ("0.21000000000000002"^^xsd:decimal "0.1933333333333333"^^xsd:decimal) math:sum "0.4033333333333333"^^xsd:decimal .
+#   (0.5 "0.4033333333333333"^^xsd:decimal) math:product "0.20166666666666666"^^xsd:decimal .
+#   ("0.20166666666666672"^^xsd:decimal 2.0) math:exponentiation "0.040669444444444466"^^xsd:decimal .
+#   ("-0.008333333333333304"^^xsd:decimal 2.0) math:exponentiation "0.00006944444444444396"^^xsd:decimal .
+#   ("-0.1933333333333333"^^xsd:decimal 2.0) math:exponentiation "0.03737777777777777"^^xsd:decimal .
+#   ("0.040669444444444466"^^xsd:decimal "0.00006944444444444396"^^xsd:decimal) math:sum "0.04073888888888891"^^xsd:decimal .
+#   ("0.04073888888888891"^^xsd:decimal "0.03737777777777777"^^xsd:decimal) math:sum "0.07811666666666667"^^xsd:decimal .
+#   ("0.07811666666666667"^^xsd:decimal 0.5) math:exponentiation "0.2794935896700793"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :metrics ?m .
@@ -3372,71 +3373,71 @@ _:sk_5 :sumSq 0.41145000000000004 .
 #     ?m :l2ToUniform ?l2 .
 #   } .
 # with substitution (on rule variables):
-#   ?a = 0.535
-#   ?a2 = 0.286225
-#   ?ab2 = 0.39185000000000003
-#   ?ada = 0.20166666666666672
-#   ?adb = 0.008333333333333304
-#   ?adc = 0.1933333333333333
-#   ?b = 0.325
-#   ?b2 = 0.10562500000000001
-#   ?c = 0.14
-#   ?c2 = 0.019600000000000003
-#   ?da = 0.20166666666666672
-#   ?da2 = 0.040669444444444466
-#   ?db = -0.008333333333333304
-#   ?db2 = 0.00006944444444444396
-#   ?dc = -0.1933333333333333
-#   ?dc2 = 0.03737777777777777
-#   ?effN = 2.4304289707133306
-#   ?gini = 0.5885499999999999
-#   ?l2 = 0.2794935896700793
+#   ?a = "0.535"^^xsd:decimal
+#   ?a2 = "0.286225"^^xsd:decimal
+#   ?ab2 = "0.39185000000000003"^^xsd:decimal
+#   ?ada = "0.20166666666666672"^^xsd:decimal
+#   ?adb = "0.008333333333333304"^^xsd:decimal
+#   ?adc = "0.1933333333333333"^^xsd:decimal
+#   ?b = "0.325"^^xsd:decimal
+#   ?b2 = "0.10562500000000001"^^xsd:decimal
+#   ?c = "0.14"^^xsd:decimal
+#   ?c2 = "0.019600000000000003"^^xsd:decimal
+#   ?da = "0.20166666666666672"^^xsd:decimal
+#   ?da2 = "0.040669444444444466"^^xsd:decimal
+#   ?db = "-0.008333333333333304"^^xsd:decimal
+#   ?db2 = "0.00006944444444444396"^^xsd:decimal
+#   ?dc = "-0.1933333333333333"^^xsd:decimal
+#   ?dc2 = "0.03737777777777777"^^xsd:decimal
+#   ?effN = "2.4304289707133306"^^xsd:decimal
+#   ?gini = "0.5885499999999999"^^xsd:decimal
+#   ?l2 = "0.2794935896700793"^^xsd:decimal
 #   ?m = _:sk_5
 #   ?pi = _:sk_0
-#   ?s1 = 0.21000000000000002
-#   ?s2 = 0.04073888888888891
-#   ?s3 = 0.07811666666666667
-#   ?sAbs = 0.4033333333333333
-#   ?sumSq = 0.41145000000000004
-#   ?tv = 0.20166666666666666
-#   ?u = 0.3333333333333333
+#   ?s1 = "0.21000000000000002"^^xsd:decimal
+#   ?s2 = "0.04073888888888891"^^xsd:decimal
+#   ?s3 = "0.07811666666666667"^^xsd:decimal
+#   ?sAbs = "0.4033333333333333"^^xsd:decimal
+#   ?sumSq = "0.41145000000000004"^^xsd:decimal
+#   ?tv = "0.20166666666666666"^^xsd:decimal
+#   ?u = "0.3333333333333333"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_5 :gini 0.5885499999999999 .
+_:sk_5 :gini "0.5885499999999999"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_5 :effectiveStates 2.4304289707133306 .
+#   _:sk_5 :effectiveStates "2.4304289707133306"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :metrics _:sk_5 .
 #   _:sk_5 :pi _:sk_0 .
-#   _:sk_0 :pA 0.535 .
-#   _:sk_0 :pB 0.325 .
-#   _:sk_0 :pC 0.14 .
-#   (1.0 3.0) math:quotient 0.3333333333333333 .
-#   (0.535 2.0) math:exponentiation 0.286225 .
-#   (0.325 2.0) math:exponentiation 0.10562500000000001 .
-#   (0.14 2.0) math:exponentiation 0.019600000000000003 .
-#   (0.286225 0.10562500000000001) math:sum 0.39185000000000003 .
-#   (0.39185000000000003 0.019600000000000003) math:sum 0.41145000000000004 .
-#   (1.0 0.41145000000000004) math:difference 0.5885499999999999 .
-#   (1.0 0.41145000000000004) math:quotient 2.4304289707133306 .
-#   (0.535 0.3333333333333333) math:difference 0.20166666666666672 .
-#   0.20166666666666672 math:absoluteValue 0.20166666666666672 .
-#   (0.325 0.3333333333333333) math:difference -0.008333333333333304 .
-#   -0.008333333333333304 math:absoluteValue 0.008333333333333304 .
-#   (0.14 0.3333333333333333) math:difference -0.1933333333333333 .
-#   -0.1933333333333333 math:absoluteValue 0.1933333333333333 .
-#   (0.20166666666666672 0.008333333333333304) math:sum 0.21000000000000002 .
-#   (0.21000000000000002 0.1933333333333333) math:sum 0.4033333333333333 .
-#   (0.5 0.4033333333333333) math:product 0.20166666666666666 .
-#   (0.20166666666666672 2.0) math:exponentiation 0.040669444444444466 .
-#   (-0.008333333333333304 2.0) math:exponentiation 0.00006944444444444396 .
-#   (-0.1933333333333333 2.0) math:exponentiation 0.03737777777777777 .
-#   (0.040669444444444466 0.00006944444444444396) math:sum 0.04073888888888891 .
-#   (0.04073888888888891 0.03737777777777777) math:sum 0.07811666666666667 .
-#   (0.07811666666666667 0.5) math:exponentiation 0.2794935896700793 .
+#   _:sk_0 :pA "0.535"^^xsd:decimal .
+#   _:sk_0 :pB "0.325"^^xsd:decimal .
+#   _:sk_0 :pC "0.14"^^xsd:decimal .
+#   (1.0 3.0) math:quotient "0.3333333333333333"^^xsd:decimal .
+#   ("0.535"^^xsd:decimal 2.0) math:exponentiation "0.286225"^^xsd:decimal .
+#   ("0.325"^^xsd:decimal 2.0) math:exponentiation "0.10562500000000001"^^xsd:decimal .
+#   ("0.14"^^xsd:decimal 2.0) math:exponentiation "0.019600000000000003"^^xsd:decimal .
+#   ("0.286225"^^xsd:decimal "0.10562500000000001"^^xsd:decimal) math:sum "0.39185000000000003"^^xsd:decimal .
+#   ("0.39185000000000003"^^xsd:decimal "0.019600000000000003"^^xsd:decimal) math:sum "0.41145000000000004"^^xsd:decimal .
+#   (1.0 "0.41145000000000004"^^xsd:decimal) math:difference "0.5885499999999999"^^xsd:decimal .
+#   (1.0 "0.41145000000000004"^^xsd:decimal) math:quotient "2.4304289707133306"^^xsd:decimal .
+#   ("0.535"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "0.20166666666666672"^^xsd:decimal .
+#   "0.20166666666666672"^^xsd:decimal math:absoluteValue "0.20166666666666672"^^xsd:decimal .
+#   ("0.325"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "-0.008333333333333304"^^xsd:decimal .
+#   "-0.008333333333333304"^^xsd:decimal math:absoluteValue "0.008333333333333304"^^xsd:decimal .
+#   ("0.14"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "-0.1933333333333333"^^xsd:decimal .
+#   "-0.1933333333333333"^^xsd:decimal math:absoluteValue "0.1933333333333333"^^xsd:decimal .
+#   ("0.20166666666666672"^^xsd:decimal "0.008333333333333304"^^xsd:decimal) math:sum "0.21000000000000002"^^xsd:decimal .
+#   ("0.21000000000000002"^^xsd:decimal "0.1933333333333333"^^xsd:decimal) math:sum "0.4033333333333333"^^xsd:decimal .
+#   (0.5 "0.4033333333333333"^^xsd:decimal) math:product "0.20166666666666666"^^xsd:decimal .
+#   ("0.20166666666666672"^^xsd:decimal 2.0) math:exponentiation "0.040669444444444466"^^xsd:decimal .
+#   ("-0.008333333333333304"^^xsd:decimal 2.0) math:exponentiation "0.00006944444444444396"^^xsd:decimal .
+#   ("-0.1933333333333333"^^xsd:decimal 2.0) math:exponentiation "0.03737777777777777"^^xsd:decimal .
+#   ("0.040669444444444466"^^xsd:decimal "0.00006944444444444396"^^xsd:decimal) math:sum "0.04073888888888891"^^xsd:decimal .
+#   ("0.04073888888888891"^^xsd:decimal "0.03737777777777777"^^xsd:decimal) math:sum "0.07811666666666667"^^xsd:decimal .
+#   ("0.07811666666666667"^^xsd:decimal 0.5) math:exponentiation "0.2794935896700793"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :metrics ?m .
@@ -3475,71 +3476,71 @@ _:sk_5 :gini 0.5885499999999999 .
 #     ?m :l2ToUniform ?l2 .
 #   } .
 # with substitution (on rule variables):
-#   ?a = 0.535
-#   ?a2 = 0.286225
-#   ?ab2 = 0.39185000000000003
-#   ?ada = 0.20166666666666672
-#   ?adb = 0.008333333333333304
-#   ?adc = 0.1933333333333333
-#   ?b = 0.325
-#   ?b2 = 0.10562500000000001
-#   ?c = 0.14
-#   ?c2 = 0.019600000000000003
-#   ?da = 0.20166666666666672
-#   ?da2 = 0.040669444444444466
-#   ?db = -0.008333333333333304
-#   ?db2 = 0.00006944444444444396
-#   ?dc = -0.1933333333333333
-#   ?dc2 = 0.03737777777777777
-#   ?effN = 2.4304289707133306
-#   ?gini = 0.5885499999999999
-#   ?l2 = 0.2794935896700793
+#   ?a = "0.535"^^xsd:decimal
+#   ?a2 = "0.286225"^^xsd:decimal
+#   ?ab2 = "0.39185000000000003"^^xsd:decimal
+#   ?ada = "0.20166666666666672"^^xsd:decimal
+#   ?adb = "0.008333333333333304"^^xsd:decimal
+#   ?adc = "0.1933333333333333"^^xsd:decimal
+#   ?b = "0.325"^^xsd:decimal
+#   ?b2 = "0.10562500000000001"^^xsd:decimal
+#   ?c = "0.14"^^xsd:decimal
+#   ?c2 = "0.019600000000000003"^^xsd:decimal
+#   ?da = "0.20166666666666672"^^xsd:decimal
+#   ?da2 = "0.040669444444444466"^^xsd:decimal
+#   ?db = "-0.008333333333333304"^^xsd:decimal
+#   ?db2 = "0.00006944444444444396"^^xsd:decimal
+#   ?dc = "-0.1933333333333333"^^xsd:decimal
+#   ?dc2 = "0.03737777777777777"^^xsd:decimal
+#   ?effN = "2.4304289707133306"^^xsd:decimal
+#   ?gini = "0.5885499999999999"^^xsd:decimal
+#   ?l2 = "0.2794935896700793"^^xsd:decimal
 #   ?m = _:sk_5
 #   ?pi = _:sk_0
-#   ?s1 = 0.21000000000000002
-#   ?s2 = 0.04073888888888891
-#   ?s3 = 0.07811666666666667
-#   ?sAbs = 0.4033333333333333
-#   ?sumSq = 0.41145000000000004
-#   ?tv = 0.20166666666666666
-#   ?u = 0.3333333333333333
+#   ?s1 = "0.21000000000000002"^^xsd:decimal
+#   ?s2 = "0.04073888888888891"^^xsd:decimal
+#   ?s3 = "0.07811666666666667"^^xsd:decimal
+#   ?sAbs = "0.4033333333333333"^^xsd:decimal
+#   ?sumSq = "0.41145000000000004"^^xsd:decimal
+#   ?tv = "0.20166666666666666"^^xsd:decimal
+#   ?u = "0.3333333333333333"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_5 :effectiveStates 2.4304289707133306 .
+_:sk_5 :effectiveStates "2.4304289707133306"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_5 :tvToUniform 0.20166666666666666 .
+#   _:sk_5 :tvToUniform "0.20166666666666666"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :metrics _:sk_5 .
 #   _:sk_5 :pi _:sk_0 .
-#   _:sk_0 :pA 0.535 .
-#   _:sk_0 :pB 0.325 .
-#   _:sk_0 :pC 0.14 .
-#   (1.0 3.0) math:quotient 0.3333333333333333 .
-#   (0.535 2.0) math:exponentiation 0.286225 .
-#   (0.325 2.0) math:exponentiation 0.10562500000000001 .
-#   (0.14 2.0) math:exponentiation 0.019600000000000003 .
-#   (0.286225 0.10562500000000001) math:sum 0.39185000000000003 .
-#   (0.39185000000000003 0.019600000000000003) math:sum 0.41145000000000004 .
-#   (1.0 0.41145000000000004) math:difference 0.5885499999999999 .
-#   (1.0 0.41145000000000004) math:quotient 2.4304289707133306 .
-#   (0.535 0.3333333333333333) math:difference 0.20166666666666672 .
-#   0.20166666666666672 math:absoluteValue 0.20166666666666672 .
-#   (0.325 0.3333333333333333) math:difference -0.008333333333333304 .
-#   -0.008333333333333304 math:absoluteValue 0.008333333333333304 .
-#   (0.14 0.3333333333333333) math:difference -0.1933333333333333 .
-#   -0.1933333333333333 math:absoluteValue 0.1933333333333333 .
-#   (0.20166666666666672 0.008333333333333304) math:sum 0.21000000000000002 .
-#   (0.21000000000000002 0.1933333333333333) math:sum 0.4033333333333333 .
-#   (0.5 0.4033333333333333) math:product 0.20166666666666666 .
-#   (0.20166666666666672 2.0) math:exponentiation 0.040669444444444466 .
-#   (-0.008333333333333304 2.0) math:exponentiation 0.00006944444444444396 .
-#   (-0.1933333333333333 2.0) math:exponentiation 0.03737777777777777 .
-#   (0.040669444444444466 0.00006944444444444396) math:sum 0.04073888888888891 .
-#   (0.04073888888888891 0.03737777777777777) math:sum 0.07811666666666667 .
-#   (0.07811666666666667 0.5) math:exponentiation 0.2794935896700793 .
+#   _:sk_0 :pA "0.535"^^xsd:decimal .
+#   _:sk_0 :pB "0.325"^^xsd:decimal .
+#   _:sk_0 :pC "0.14"^^xsd:decimal .
+#   (1.0 3.0) math:quotient "0.3333333333333333"^^xsd:decimal .
+#   ("0.535"^^xsd:decimal 2.0) math:exponentiation "0.286225"^^xsd:decimal .
+#   ("0.325"^^xsd:decimal 2.0) math:exponentiation "0.10562500000000001"^^xsd:decimal .
+#   ("0.14"^^xsd:decimal 2.0) math:exponentiation "0.019600000000000003"^^xsd:decimal .
+#   ("0.286225"^^xsd:decimal "0.10562500000000001"^^xsd:decimal) math:sum "0.39185000000000003"^^xsd:decimal .
+#   ("0.39185000000000003"^^xsd:decimal "0.019600000000000003"^^xsd:decimal) math:sum "0.41145000000000004"^^xsd:decimal .
+#   (1.0 "0.41145000000000004"^^xsd:decimal) math:difference "0.5885499999999999"^^xsd:decimal .
+#   (1.0 "0.41145000000000004"^^xsd:decimal) math:quotient "2.4304289707133306"^^xsd:decimal .
+#   ("0.535"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "0.20166666666666672"^^xsd:decimal .
+#   "0.20166666666666672"^^xsd:decimal math:absoluteValue "0.20166666666666672"^^xsd:decimal .
+#   ("0.325"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "-0.008333333333333304"^^xsd:decimal .
+#   "-0.008333333333333304"^^xsd:decimal math:absoluteValue "0.008333333333333304"^^xsd:decimal .
+#   ("0.14"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "-0.1933333333333333"^^xsd:decimal .
+#   "-0.1933333333333333"^^xsd:decimal math:absoluteValue "0.1933333333333333"^^xsd:decimal .
+#   ("0.20166666666666672"^^xsd:decimal "0.008333333333333304"^^xsd:decimal) math:sum "0.21000000000000002"^^xsd:decimal .
+#   ("0.21000000000000002"^^xsd:decimal "0.1933333333333333"^^xsd:decimal) math:sum "0.4033333333333333"^^xsd:decimal .
+#   (0.5 "0.4033333333333333"^^xsd:decimal) math:product "0.20166666666666666"^^xsd:decimal .
+#   ("0.20166666666666672"^^xsd:decimal 2.0) math:exponentiation "0.040669444444444466"^^xsd:decimal .
+#   ("-0.008333333333333304"^^xsd:decimal 2.0) math:exponentiation "0.00006944444444444396"^^xsd:decimal .
+#   ("-0.1933333333333333"^^xsd:decimal 2.0) math:exponentiation "0.03737777777777777"^^xsd:decimal .
+#   ("0.040669444444444466"^^xsd:decimal "0.00006944444444444396"^^xsd:decimal) math:sum "0.04073888888888891"^^xsd:decimal .
+#   ("0.04073888888888891"^^xsd:decimal "0.03737777777777777"^^xsd:decimal) math:sum "0.07811666666666667"^^xsd:decimal .
+#   ("0.07811666666666667"^^xsd:decimal 0.5) math:exponentiation "0.2794935896700793"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :metrics ?m .
@@ -3578,71 +3579,71 @@ _:sk_5 :effectiveStates 2.4304289707133306 .
 #     ?m :l2ToUniform ?l2 .
 #   } .
 # with substitution (on rule variables):
-#   ?a = 0.535
-#   ?a2 = 0.286225
-#   ?ab2 = 0.39185000000000003
-#   ?ada = 0.20166666666666672
-#   ?adb = 0.008333333333333304
-#   ?adc = 0.1933333333333333
-#   ?b = 0.325
-#   ?b2 = 0.10562500000000001
-#   ?c = 0.14
-#   ?c2 = 0.019600000000000003
-#   ?da = 0.20166666666666672
-#   ?da2 = 0.040669444444444466
-#   ?db = -0.008333333333333304
-#   ?db2 = 0.00006944444444444396
-#   ?dc = -0.1933333333333333
-#   ?dc2 = 0.03737777777777777
-#   ?effN = 2.4304289707133306
-#   ?gini = 0.5885499999999999
-#   ?l2 = 0.2794935896700793
+#   ?a = "0.535"^^xsd:decimal
+#   ?a2 = "0.286225"^^xsd:decimal
+#   ?ab2 = "0.39185000000000003"^^xsd:decimal
+#   ?ada = "0.20166666666666672"^^xsd:decimal
+#   ?adb = "0.008333333333333304"^^xsd:decimal
+#   ?adc = "0.1933333333333333"^^xsd:decimal
+#   ?b = "0.325"^^xsd:decimal
+#   ?b2 = "0.10562500000000001"^^xsd:decimal
+#   ?c = "0.14"^^xsd:decimal
+#   ?c2 = "0.019600000000000003"^^xsd:decimal
+#   ?da = "0.20166666666666672"^^xsd:decimal
+#   ?da2 = "0.040669444444444466"^^xsd:decimal
+#   ?db = "-0.008333333333333304"^^xsd:decimal
+#   ?db2 = "0.00006944444444444396"^^xsd:decimal
+#   ?dc = "-0.1933333333333333"^^xsd:decimal
+#   ?dc2 = "0.03737777777777777"^^xsd:decimal
+#   ?effN = "2.4304289707133306"^^xsd:decimal
+#   ?gini = "0.5885499999999999"^^xsd:decimal
+#   ?l2 = "0.2794935896700793"^^xsd:decimal
 #   ?m = _:sk_5
 #   ?pi = _:sk_0
-#   ?s1 = 0.21000000000000002
-#   ?s2 = 0.04073888888888891
-#   ?s3 = 0.07811666666666667
-#   ?sAbs = 0.4033333333333333
-#   ?sumSq = 0.41145000000000004
-#   ?tv = 0.20166666666666666
-#   ?u = 0.3333333333333333
+#   ?s1 = "0.21000000000000002"^^xsd:decimal
+#   ?s2 = "0.04073888888888891"^^xsd:decimal
+#   ?s3 = "0.07811666666666667"^^xsd:decimal
+#   ?sAbs = "0.4033333333333333"^^xsd:decimal
+#   ?sumSq = "0.41145000000000004"^^xsd:decimal
+#   ?tv = "0.20166666666666666"^^xsd:decimal
+#   ?u = "0.3333333333333333"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_5 :tvToUniform 0.20166666666666666 .
+_:sk_5 :tvToUniform "0.20166666666666666"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_5 :l2ToUniform 0.2794935896700793 .
+#   _:sk_5 :l2ToUniform "0.2794935896700793"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :metrics _:sk_5 .
 #   _:sk_5 :pi _:sk_0 .
-#   _:sk_0 :pA 0.535 .
-#   _:sk_0 :pB 0.325 .
-#   _:sk_0 :pC 0.14 .
-#   (1.0 3.0) math:quotient 0.3333333333333333 .
-#   (0.535 2.0) math:exponentiation 0.286225 .
-#   (0.325 2.0) math:exponentiation 0.10562500000000001 .
-#   (0.14 2.0) math:exponentiation 0.019600000000000003 .
-#   (0.286225 0.10562500000000001) math:sum 0.39185000000000003 .
-#   (0.39185000000000003 0.019600000000000003) math:sum 0.41145000000000004 .
-#   (1.0 0.41145000000000004) math:difference 0.5885499999999999 .
-#   (1.0 0.41145000000000004) math:quotient 2.4304289707133306 .
-#   (0.535 0.3333333333333333) math:difference 0.20166666666666672 .
-#   0.20166666666666672 math:absoluteValue 0.20166666666666672 .
-#   (0.325 0.3333333333333333) math:difference -0.008333333333333304 .
-#   -0.008333333333333304 math:absoluteValue 0.008333333333333304 .
-#   (0.14 0.3333333333333333) math:difference -0.1933333333333333 .
-#   -0.1933333333333333 math:absoluteValue 0.1933333333333333 .
-#   (0.20166666666666672 0.008333333333333304) math:sum 0.21000000000000002 .
-#   (0.21000000000000002 0.1933333333333333) math:sum 0.4033333333333333 .
-#   (0.5 0.4033333333333333) math:product 0.20166666666666666 .
-#   (0.20166666666666672 2.0) math:exponentiation 0.040669444444444466 .
-#   (-0.008333333333333304 2.0) math:exponentiation 0.00006944444444444396 .
-#   (-0.1933333333333333 2.0) math:exponentiation 0.03737777777777777 .
-#   (0.040669444444444466 0.00006944444444444396) math:sum 0.04073888888888891 .
-#   (0.04073888888888891 0.03737777777777777) math:sum 0.07811666666666667 .
-#   (0.07811666666666667 0.5) math:exponentiation 0.2794935896700793 .
+#   _:sk_0 :pA "0.535"^^xsd:decimal .
+#   _:sk_0 :pB "0.325"^^xsd:decimal .
+#   _:sk_0 :pC "0.14"^^xsd:decimal .
+#   (1.0 3.0) math:quotient "0.3333333333333333"^^xsd:decimal .
+#   ("0.535"^^xsd:decimal 2.0) math:exponentiation "0.286225"^^xsd:decimal .
+#   ("0.325"^^xsd:decimal 2.0) math:exponentiation "0.10562500000000001"^^xsd:decimal .
+#   ("0.14"^^xsd:decimal 2.0) math:exponentiation "0.019600000000000003"^^xsd:decimal .
+#   ("0.286225"^^xsd:decimal "0.10562500000000001"^^xsd:decimal) math:sum "0.39185000000000003"^^xsd:decimal .
+#   ("0.39185000000000003"^^xsd:decimal "0.019600000000000003"^^xsd:decimal) math:sum "0.41145000000000004"^^xsd:decimal .
+#   (1.0 "0.41145000000000004"^^xsd:decimal) math:difference "0.5885499999999999"^^xsd:decimal .
+#   (1.0 "0.41145000000000004"^^xsd:decimal) math:quotient "2.4304289707133306"^^xsd:decimal .
+#   ("0.535"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "0.20166666666666672"^^xsd:decimal .
+#   "0.20166666666666672"^^xsd:decimal math:absoluteValue "0.20166666666666672"^^xsd:decimal .
+#   ("0.325"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "-0.008333333333333304"^^xsd:decimal .
+#   "-0.008333333333333304"^^xsd:decimal math:absoluteValue "0.008333333333333304"^^xsd:decimal .
+#   ("0.14"^^xsd:decimal "0.3333333333333333"^^xsd:decimal) math:difference "-0.1933333333333333"^^xsd:decimal .
+#   "-0.1933333333333333"^^xsd:decimal math:absoluteValue "0.1933333333333333"^^xsd:decimal .
+#   ("0.20166666666666672"^^xsd:decimal "0.008333333333333304"^^xsd:decimal) math:sum "0.21000000000000002"^^xsd:decimal .
+#   ("0.21000000000000002"^^xsd:decimal "0.1933333333333333"^^xsd:decimal) math:sum "0.4033333333333333"^^xsd:decimal .
+#   (0.5 "0.4033333333333333"^^xsd:decimal) math:product "0.20166666666666666"^^xsd:decimal .
+#   ("0.20166666666666672"^^xsd:decimal 2.0) math:exponentiation "0.040669444444444466"^^xsd:decimal .
+#   ("-0.008333333333333304"^^xsd:decimal 2.0) math:exponentiation "0.00006944444444444396"^^xsd:decimal .
+#   ("-0.1933333333333333"^^xsd:decimal 2.0) math:exponentiation "0.03737777777777777"^^xsd:decimal .
+#   ("0.040669444444444466"^^xsd:decimal "0.00006944444444444396"^^xsd:decimal) math:sum "0.04073888888888891"^^xsd:decimal .
+#   ("0.04073888888888891"^^xsd:decimal "0.03737777777777777"^^xsd:decimal) math:sum "0.07811666666666667"^^xsd:decimal .
+#   ("0.07811666666666667"^^xsd:decimal 0.5) math:exponentiation "0.2794935896700793"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :metrics ?m .
@@ -3681,71 +3682,71 @@ _:sk_5 :tvToUniform 0.20166666666666666 .
 #     ?m :l2ToUniform ?l2 .
 #   } .
 # with substitution (on rule variables):
-#   ?a = 0.535
-#   ?a2 = 0.286225
-#   ?ab2 = 0.39185000000000003
-#   ?ada = 0.20166666666666672
-#   ?adb = 0.008333333333333304
-#   ?adc = 0.1933333333333333
-#   ?b = 0.325
-#   ?b2 = 0.10562500000000001
-#   ?c = 0.14
-#   ?c2 = 0.019600000000000003
-#   ?da = 0.20166666666666672
-#   ?da2 = 0.040669444444444466
-#   ?db = -0.008333333333333304
-#   ?db2 = 0.00006944444444444396
-#   ?dc = -0.1933333333333333
-#   ?dc2 = 0.03737777777777777
-#   ?effN = 2.4304289707133306
-#   ?gini = 0.5885499999999999
-#   ?l2 = 0.2794935896700793
+#   ?a = "0.535"^^xsd:decimal
+#   ?a2 = "0.286225"^^xsd:decimal
+#   ?ab2 = "0.39185000000000003"^^xsd:decimal
+#   ?ada = "0.20166666666666672"^^xsd:decimal
+#   ?adb = "0.008333333333333304"^^xsd:decimal
+#   ?adc = "0.1933333333333333"^^xsd:decimal
+#   ?b = "0.325"^^xsd:decimal
+#   ?b2 = "0.10562500000000001"^^xsd:decimal
+#   ?c = "0.14"^^xsd:decimal
+#   ?c2 = "0.019600000000000003"^^xsd:decimal
+#   ?da = "0.20166666666666672"^^xsd:decimal
+#   ?da2 = "0.040669444444444466"^^xsd:decimal
+#   ?db = "-0.008333333333333304"^^xsd:decimal
+#   ?db2 = "0.00006944444444444396"^^xsd:decimal
+#   ?dc = "-0.1933333333333333"^^xsd:decimal
+#   ?dc2 = "0.03737777777777777"^^xsd:decimal
+#   ?effN = "2.4304289707133306"^^xsd:decimal
+#   ?gini = "0.5885499999999999"^^xsd:decimal
+#   ?l2 = "0.2794935896700793"^^xsd:decimal
 #   ?m = _:sk_5
 #   ?pi = _:sk_0
-#   ?s1 = 0.21000000000000002
-#   ?s2 = 0.04073888888888891
-#   ?s3 = 0.07811666666666667
-#   ?sAbs = 0.4033333333333333
-#   ?sumSq = 0.41145000000000004
-#   ?tv = 0.20166666666666666
-#   ?u = 0.3333333333333333
+#   ?s1 = "0.21000000000000002"^^xsd:decimal
+#   ?s2 = "0.04073888888888891"^^xsd:decimal
+#   ?s3 = "0.07811666666666667"^^xsd:decimal
+#   ?sAbs = "0.4033333333333333"^^xsd:decimal
+#   ?sumSq = "0.41145000000000004"^^xsd:decimal
+#   ?tv = "0.20166666666666666"^^xsd:decimal
+#   ?u = "0.3333333333333333"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_5 :l2ToUniform 0.2794935896700793 .
+_:sk_5 :l2ToUniform "0.2794935896700793"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_4 :sumSq 0.45999999999999996 .
+#   _:sk_4 :sumSq "0.45999999999999996"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :metrics _:sk_4 .
 #   _:sk_4 :pi _:b4 .
 #   _:b4 :pA 0.60 .
 #   _:b4 :pB 0.30 .
 #   _:b4 :pC 0.10 .
-#   (1.0 3.0) math:quotient 0.3333333333333333 .
-#   (0.60 2.0) math:exponentiation 0.36 .
-#   (0.30 2.0) math:exponentiation 0.09 .
-#   (0.10 2.0) math:exponentiation 0.010000000000000002 .
-#   (0.36 0.09) math:sum 0.44999999999999996 .
-#   (0.44999999999999996 0.010000000000000002) math:sum 0.45999999999999996 .
-#   (1.0 0.45999999999999996) math:difference 0.54 .
-#   (1.0 0.45999999999999996) math:quotient 2.173913043478261 .
-#   (0.60 0.3333333333333333) math:difference 0.26666666666666666 .
-#   0.26666666666666666 math:absoluteValue 0.26666666666666666 .
-#   (0.30 0.3333333333333333) math:difference -0.033333333333333326 .
-#   -0.033333333333333326 math:absoluteValue 0.033333333333333326 .
-#   (0.10 0.3333333333333333) math:difference -0.2333333333333333 .
-#   -0.2333333333333333 math:absoluteValue 0.2333333333333333 .
-#   (0.26666666666666666 0.033333333333333326) math:sum 0.3 .
-#   (0.3 0.2333333333333333) math:sum 0.5333333333333333 .
-#   (0.5 0.5333333333333333) math:product 0.26666666666666666 .
-#   (0.26666666666666666 2.0) math:exponentiation 0.07111111111111111 .
-#   (-0.033333333333333326 2.0) math:exponentiation 0.0011111111111111107 .
-#   (-0.2333333333333333 2.0) math:exponentiation 0.054444444444444434 .
-#   (0.07111111111111111 0.0011111111111111107) math:sum 0.07222222222222222 .
-#   (0.07222222222222222 0.054444444444444434) math:sum 0.12666666666666665 .
-#   (0.12666666666666665 0.5) math:exponentiation 0.3559026084010437 .
+#   (1.0 3.0) math:quotient "0.3333333333333333"^^xsd:decimal .
+#   (0.60 2.0) math:exponentiation "0.36"^^xsd:decimal .
+#   (0.30 2.0) math:exponentiation "0.09"^^xsd:decimal .
+#   (0.10 2.0) math:exponentiation "0.010000000000000002"^^xsd:decimal .
+#   ("0.36"^^xsd:decimal "0.09"^^xsd:decimal) math:sum "0.44999999999999996"^^xsd:decimal .
+#   ("0.44999999999999996"^^xsd:decimal "0.010000000000000002"^^xsd:decimal) math:sum "0.45999999999999996"^^xsd:decimal .
+#   (1.0 "0.45999999999999996"^^xsd:decimal) math:difference "0.54"^^xsd:decimal .
+#   (1.0 "0.45999999999999996"^^xsd:decimal) math:quotient "2.173913043478261"^^xsd:decimal .
+#   (0.60 "0.3333333333333333"^^xsd:decimal) math:difference "0.26666666666666666"^^xsd:decimal .
+#   "0.26666666666666666"^^xsd:decimal math:absoluteValue "0.26666666666666666"^^xsd:decimal .
+#   (0.30 "0.3333333333333333"^^xsd:decimal) math:difference "-0.033333333333333326"^^xsd:decimal .
+#   "-0.033333333333333326"^^xsd:decimal math:absoluteValue "0.033333333333333326"^^xsd:decimal .
+#   (0.10 "0.3333333333333333"^^xsd:decimal) math:difference "-0.2333333333333333"^^xsd:decimal .
+#   "-0.2333333333333333"^^xsd:decimal math:absoluteValue "0.2333333333333333"^^xsd:decimal .
+#   ("0.26666666666666666"^^xsd:decimal "0.033333333333333326"^^xsd:decimal) math:sum "0.3"^^xsd:decimal .
+#   ("0.3"^^xsd:decimal "0.2333333333333333"^^xsd:decimal) math:sum "0.5333333333333333"^^xsd:decimal .
+#   (0.5 "0.5333333333333333"^^xsd:decimal) math:product "0.26666666666666666"^^xsd:decimal .
+#   ("0.26666666666666666"^^xsd:decimal 2.0) math:exponentiation "0.07111111111111111"^^xsd:decimal .
+#   ("-0.033333333333333326"^^xsd:decimal 2.0) math:exponentiation "0.0011111111111111107"^^xsd:decimal .
+#   ("-0.2333333333333333"^^xsd:decimal 2.0) math:exponentiation "0.054444444444444434"^^xsd:decimal .
+#   ("0.07111111111111111"^^xsd:decimal "0.0011111111111111107"^^xsd:decimal) math:sum "0.07222222222222222"^^xsd:decimal .
+#   ("0.07222222222222222"^^xsd:decimal "0.054444444444444434"^^xsd:decimal) math:sum "0.12666666666666665"^^xsd:decimal .
+#   ("0.12666666666666665"^^xsd:decimal 0.5) math:exponentiation "0.3559026084010437"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :metrics ?m .
@@ -3785,70 +3786,70 @@ _:sk_5 :l2ToUniform 0.2794935896700793 .
 #   } .
 # with substitution (on rule variables):
 #   ?a = 0.60
-#   ?a2 = 0.36
-#   ?ab2 = 0.44999999999999996
-#   ?ada = 0.26666666666666666
-#   ?adb = 0.033333333333333326
-#   ?adc = 0.2333333333333333
+#   ?a2 = "0.36"^^xsd:decimal
+#   ?ab2 = "0.44999999999999996"^^xsd:decimal
+#   ?ada = "0.26666666666666666"^^xsd:decimal
+#   ?adb = "0.033333333333333326"^^xsd:decimal
+#   ?adc = "0.2333333333333333"^^xsd:decimal
 #   ?b = 0.30
-#   ?b2 = 0.09
+#   ?b2 = "0.09"^^xsd:decimal
 #   ?c = 0.10
-#   ?c2 = 0.010000000000000002
-#   ?da = 0.26666666666666666
-#   ?da2 = 0.07111111111111111
-#   ?db = -0.033333333333333326
-#   ?db2 = 0.0011111111111111107
-#   ?dc = -0.2333333333333333
-#   ?dc2 = 0.054444444444444434
-#   ?effN = 2.173913043478261
-#   ?gini = 0.54
-#   ?l2 = 0.3559026084010437
+#   ?c2 = "0.010000000000000002"^^xsd:decimal
+#   ?da = "0.26666666666666666"^^xsd:decimal
+#   ?da2 = "0.07111111111111111"^^xsd:decimal
+#   ?db = "-0.033333333333333326"^^xsd:decimal
+#   ?db2 = "0.0011111111111111107"^^xsd:decimal
+#   ?dc = "-0.2333333333333333"^^xsd:decimal
+#   ?dc2 = "0.054444444444444434"^^xsd:decimal
+#   ?effN = "2.173913043478261"^^xsd:decimal
+#   ?gini = "0.54"^^xsd:decimal
+#   ?l2 = "0.3559026084010437"^^xsd:decimal
 #   ?m = _:sk_4
 #   ?pi = _:b4
-#   ?s1 = 0.3
-#   ?s2 = 0.07222222222222222
-#   ?s3 = 0.12666666666666665
-#   ?sAbs = 0.5333333333333333
-#   ?sumSq = 0.45999999999999996
-#   ?tv = 0.26666666666666666
-#   ?u = 0.3333333333333333
+#   ?s1 = "0.3"^^xsd:decimal
+#   ?s2 = "0.07222222222222222"^^xsd:decimal
+#   ?s3 = "0.12666666666666665"^^xsd:decimal
+#   ?sAbs = "0.5333333333333333"^^xsd:decimal
+#   ?sumSq = "0.45999999999999996"^^xsd:decimal
+#   ?tv = "0.26666666666666666"^^xsd:decimal
+#   ?u = "0.3333333333333333"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_4 :sumSq 0.45999999999999996 .
+_:sk_4 :sumSq "0.45999999999999996"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_4 :gini 0.54 .
+#   _:sk_4 :gini "0.54"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :metrics _:sk_4 .
 #   _:sk_4 :pi _:b4 .
 #   _:b4 :pA 0.60 .
 #   _:b4 :pB 0.30 .
 #   _:b4 :pC 0.10 .
-#   (1.0 3.0) math:quotient 0.3333333333333333 .
-#   (0.60 2.0) math:exponentiation 0.36 .
-#   (0.30 2.0) math:exponentiation 0.09 .
-#   (0.10 2.0) math:exponentiation 0.010000000000000002 .
-#   (0.36 0.09) math:sum 0.44999999999999996 .
-#   (0.44999999999999996 0.010000000000000002) math:sum 0.45999999999999996 .
-#   (1.0 0.45999999999999996) math:difference 0.54 .
-#   (1.0 0.45999999999999996) math:quotient 2.173913043478261 .
-#   (0.60 0.3333333333333333) math:difference 0.26666666666666666 .
-#   0.26666666666666666 math:absoluteValue 0.26666666666666666 .
-#   (0.30 0.3333333333333333) math:difference -0.033333333333333326 .
-#   -0.033333333333333326 math:absoluteValue 0.033333333333333326 .
-#   (0.10 0.3333333333333333) math:difference -0.2333333333333333 .
-#   -0.2333333333333333 math:absoluteValue 0.2333333333333333 .
-#   (0.26666666666666666 0.033333333333333326) math:sum 0.3 .
-#   (0.3 0.2333333333333333) math:sum 0.5333333333333333 .
-#   (0.5 0.5333333333333333) math:product 0.26666666666666666 .
-#   (0.26666666666666666 2.0) math:exponentiation 0.07111111111111111 .
-#   (-0.033333333333333326 2.0) math:exponentiation 0.0011111111111111107 .
-#   (-0.2333333333333333 2.0) math:exponentiation 0.054444444444444434 .
-#   (0.07111111111111111 0.0011111111111111107) math:sum 0.07222222222222222 .
-#   (0.07222222222222222 0.054444444444444434) math:sum 0.12666666666666665 .
-#   (0.12666666666666665 0.5) math:exponentiation 0.3559026084010437 .
+#   (1.0 3.0) math:quotient "0.3333333333333333"^^xsd:decimal .
+#   (0.60 2.0) math:exponentiation "0.36"^^xsd:decimal .
+#   (0.30 2.0) math:exponentiation "0.09"^^xsd:decimal .
+#   (0.10 2.0) math:exponentiation "0.010000000000000002"^^xsd:decimal .
+#   ("0.36"^^xsd:decimal "0.09"^^xsd:decimal) math:sum "0.44999999999999996"^^xsd:decimal .
+#   ("0.44999999999999996"^^xsd:decimal "0.010000000000000002"^^xsd:decimal) math:sum "0.45999999999999996"^^xsd:decimal .
+#   (1.0 "0.45999999999999996"^^xsd:decimal) math:difference "0.54"^^xsd:decimal .
+#   (1.0 "0.45999999999999996"^^xsd:decimal) math:quotient "2.173913043478261"^^xsd:decimal .
+#   (0.60 "0.3333333333333333"^^xsd:decimal) math:difference "0.26666666666666666"^^xsd:decimal .
+#   "0.26666666666666666"^^xsd:decimal math:absoluteValue "0.26666666666666666"^^xsd:decimal .
+#   (0.30 "0.3333333333333333"^^xsd:decimal) math:difference "-0.033333333333333326"^^xsd:decimal .
+#   "-0.033333333333333326"^^xsd:decimal math:absoluteValue "0.033333333333333326"^^xsd:decimal .
+#   (0.10 "0.3333333333333333"^^xsd:decimal) math:difference "-0.2333333333333333"^^xsd:decimal .
+#   "-0.2333333333333333"^^xsd:decimal math:absoluteValue "0.2333333333333333"^^xsd:decimal .
+#   ("0.26666666666666666"^^xsd:decimal "0.033333333333333326"^^xsd:decimal) math:sum "0.3"^^xsd:decimal .
+#   ("0.3"^^xsd:decimal "0.2333333333333333"^^xsd:decimal) math:sum "0.5333333333333333"^^xsd:decimal .
+#   (0.5 "0.5333333333333333"^^xsd:decimal) math:product "0.26666666666666666"^^xsd:decimal .
+#   ("0.26666666666666666"^^xsd:decimal 2.0) math:exponentiation "0.07111111111111111"^^xsd:decimal .
+#   ("-0.033333333333333326"^^xsd:decimal 2.0) math:exponentiation "0.0011111111111111107"^^xsd:decimal .
+#   ("-0.2333333333333333"^^xsd:decimal 2.0) math:exponentiation "0.054444444444444434"^^xsd:decimal .
+#   ("0.07111111111111111"^^xsd:decimal "0.0011111111111111107"^^xsd:decimal) math:sum "0.07222222222222222"^^xsd:decimal .
+#   ("0.07222222222222222"^^xsd:decimal "0.054444444444444434"^^xsd:decimal) math:sum "0.12666666666666665"^^xsd:decimal .
+#   ("0.12666666666666665"^^xsd:decimal 0.5) math:exponentiation "0.3559026084010437"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :metrics ?m .
@@ -3888,70 +3889,70 @@ _:sk_4 :sumSq 0.45999999999999996 .
 #   } .
 # with substitution (on rule variables):
 #   ?a = 0.60
-#   ?a2 = 0.36
-#   ?ab2 = 0.44999999999999996
-#   ?ada = 0.26666666666666666
-#   ?adb = 0.033333333333333326
-#   ?adc = 0.2333333333333333
+#   ?a2 = "0.36"^^xsd:decimal
+#   ?ab2 = "0.44999999999999996"^^xsd:decimal
+#   ?ada = "0.26666666666666666"^^xsd:decimal
+#   ?adb = "0.033333333333333326"^^xsd:decimal
+#   ?adc = "0.2333333333333333"^^xsd:decimal
 #   ?b = 0.30
-#   ?b2 = 0.09
+#   ?b2 = "0.09"^^xsd:decimal
 #   ?c = 0.10
-#   ?c2 = 0.010000000000000002
-#   ?da = 0.26666666666666666
-#   ?da2 = 0.07111111111111111
-#   ?db = -0.033333333333333326
-#   ?db2 = 0.0011111111111111107
-#   ?dc = -0.2333333333333333
-#   ?dc2 = 0.054444444444444434
-#   ?effN = 2.173913043478261
-#   ?gini = 0.54
-#   ?l2 = 0.3559026084010437
+#   ?c2 = "0.010000000000000002"^^xsd:decimal
+#   ?da = "0.26666666666666666"^^xsd:decimal
+#   ?da2 = "0.07111111111111111"^^xsd:decimal
+#   ?db = "-0.033333333333333326"^^xsd:decimal
+#   ?db2 = "0.0011111111111111107"^^xsd:decimal
+#   ?dc = "-0.2333333333333333"^^xsd:decimal
+#   ?dc2 = "0.054444444444444434"^^xsd:decimal
+#   ?effN = "2.173913043478261"^^xsd:decimal
+#   ?gini = "0.54"^^xsd:decimal
+#   ?l2 = "0.3559026084010437"^^xsd:decimal
 #   ?m = _:sk_4
 #   ?pi = _:b4
-#   ?s1 = 0.3
-#   ?s2 = 0.07222222222222222
-#   ?s3 = 0.12666666666666665
-#   ?sAbs = 0.5333333333333333
-#   ?sumSq = 0.45999999999999996
-#   ?tv = 0.26666666666666666
-#   ?u = 0.3333333333333333
+#   ?s1 = "0.3"^^xsd:decimal
+#   ?s2 = "0.07222222222222222"^^xsd:decimal
+#   ?s3 = "0.12666666666666665"^^xsd:decimal
+#   ?sAbs = "0.5333333333333333"^^xsd:decimal
+#   ?sumSq = "0.45999999999999996"^^xsd:decimal
+#   ?tv = "0.26666666666666666"^^xsd:decimal
+#   ?u = "0.3333333333333333"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_4 :gini 0.54 .
+_:sk_4 :gini "0.54"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_4 :effectiveStates 2.173913043478261 .
+#   _:sk_4 :effectiveStates "2.173913043478261"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :metrics _:sk_4 .
 #   _:sk_4 :pi _:b4 .
 #   _:b4 :pA 0.60 .
 #   _:b4 :pB 0.30 .
 #   _:b4 :pC 0.10 .
-#   (1.0 3.0) math:quotient 0.3333333333333333 .
-#   (0.60 2.0) math:exponentiation 0.36 .
-#   (0.30 2.0) math:exponentiation 0.09 .
-#   (0.10 2.0) math:exponentiation 0.010000000000000002 .
-#   (0.36 0.09) math:sum 0.44999999999999996 .
-#   (0.44999999999999996 0.010000000000000002) math:sum 0.45999999999999996 .
-#   (1.0 0.45999999999999996) math:difference 0.54 .
-#   (1.0 0.45999999999999996) math:quotient 2.173913043478261 .
-#   (0.60 0.3333333333333333) math:difference 0.26666666666666666 .
-#   0.26666666666666666 math:absoluteValue 0.26666666666666666 .
-#   (0.30 0.3333333333333333) math:difference -0.033333333333333326 .
-#   -0.033333333333333326 math:absoluteValue 0.033333333333333326 .
-#   (0.10 0.3333333333333333) math:difference -0.2333333333333333 .
-#   -0.2333333333333333 math:absoluteValue 0.2333333333333333 .
-#   (0.26666666666666666 0.033333333333333326) math:sum 0.3 .
-#   (0.3 0.2333333333333333) math:sum 0.5333333333333333 .
-#   (0.5 0.5333333333333333) math:product 0.26666666666666666 .
-#   (0.26666666666666666 2.0) math:exponentiation 0.07111111111111111 .
-#   (-0.033333333333333326 2.0) math:exponentiation 0.0011111111111111107 .
-#   (-0.2333333333333333 2.0) math:exponentiation 0.054444444444444434 .
-#   (0.07111111111111111 0.0011111111111111107) math:sum 0.07222222222222222 .
-#   (0.07222222222222222 0.054444444444444434) math:sum 0.12666666666666665 .
-#   (0.12666666666666665 0.5) math:exponentiation 0.3559026084010437 .
+#   (1.0 3.0) math:quotient "0.3333333333333333"^^xsd:decimal .
+#   (0.60 2.0) math:exponentiation "0.36"^^xsd:decimal .
+#   (0.30 2.0) math:exponentiation "0.09"^^xsd:decimal .
+#   (0.10 2.0) math:exponentiation "0.010000000000000002"^^xsd:decimal .
+#   ("0.36"^^xsd:decimal "0.09"^^xsd:decimal) math:sum "0.44999999999999996"^^xsd:decimal .
+#   ("0.44999999999999996"^^xsd:decimal "0.010000000000000002"^^xsd:decimal) math:sum "0.45999999999999996"^^xsd:decimal .
+#   (1.0 "0.45999999999999996"^^xsd:decimal) math:difference "0.54"^^xsd:decimal .
+#   (1.0 "0.45999999999999996"^^xsd:decimal) math:quotient "2.173913043478261"^^xsd:decimal .
+#   (0.60 "0.3333333333333333"^^xsd:decimal) math:difference "0.26666666666666666"^^xsd:decimal .
+#   "0.26666666666666666"^^xsd:decimal math:absoluteValue "0.26666666666666666"^^xsd:decimal .
+#   (0.30 "0.3333333333333333"^^xsd:decimal) math:difference "-0.033333333333333326"^^xsd:decimal .
+#   "-0.033333333333333326"^^xsd:decimal math:absoluteValue "0.033333333333333326"^^xsd:decimal .
+#   (0.10 "0.3333333333333333"^^xsd:decimal) math:difference "-0.2333333333333333"^^xsd:decimal .
+#   "-0.2333333333333333"^^xsd:decimal math:absoluteValue "0.2333333333333333"^^xsd:decimal .
+#   ("0.26666666666666666"^^xsd:decimal "0.033333333333333326"^^xsd:decimal) math:sum "0.3"^^xsd:decimal .
+#   ("0.3"^^xsd:decimal "0.2333333333333333"^^xsd:decimal) math:sum "0.5333333333333333"^^xsd:decimal .
+#   (0.5 "0.5333333333333333"^^xsd:decimal) math:product "0.26666666666666666"^^xsd:decimal .
+#   ("0.26666666666666666"^^xsd:decimal 2.0) math:exponentiation "0.07111111111111111"^^xsd:decimal .
+#   ("-0.033333333333333326"^^xsd:decimal 2.0) math:exponentiation "0.0011111111111111107"^^xsd:decimal .
+#   ("-0.2333333333333333"^^xsd:decimal 2.0) math:exponentiation "0.054444444444444434"^^xsd:decimal .
+#   ("0.07111111111111111"^^xsd:decimal "0.0011111111111111107"^^xsd:decimal) math:sum "0.07222222222222222"^^xsd:decimal .
+#   ("0.07222222222222222"^^xsd:decimal "0.054444444444444434"^^xsd:decimal) math:sum "0.12666666666666665"^^xsd:decimal .
+#   ("0.12666666666666665"^^xsd:decimal 0.5) math:exponentiation "0.3559026084010437"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :metrics ?m .
@@ -3991,70 +3992,70 @@ _:sk_4 :gini 0.54 .
 #   } .
 # with substitution (on rule variables):
 #   ?a = 0.60
-#   ?a2 = 0.36
-#   ?ab2 = 0.44999999999999996
-#   ?ada = 0.26666666666666666
-#   ?adb = 0.033333333333333326
-#   ?adc = 0.2333333333333333
+#   ?a2 = "0.36"^^xsd:decimal
+#   ?ab2 = "0.44999999999999996"^^xsd:decimal
+#   ?ada = "0.26666666666666666"^^xsd:decimal
+#   ?adb = "0.033333333333333326"^^xsd:decimal
+#   ?adc = "0.2333333333333333"^^xsd:decimal
 #   ?b = 0.30
-#   ?b2 = 0.09
+#   ?b2 = "0.09"^^xsd:decimal
 #   ?c = 0.10
-#   ?c2 = 0.010000000000000002
-#   ?da = 0.26666666666666666
-#   ?da2 = 0.07111111111111111
-#   ?db = -0.033333333333333326
-#   ?db2 = 0.0011111111111111107
-#   ?dc = -0.2333333333333333
-#   ?dc2 = 0.054444444444444434
-#   ?effN = 2.173913043478261
-#   ?gini = 0.54
-#   ?l2 = 0.3559026084010437
+#   ?c2 = "0.010000000000000002"^^xsd:decimal
+#   ?da = "0.26666666666666666"^^xsd:decimal
+#   ?da2 = "0.07111111111111111"^^xsd:decimal
+#   ?db = "-0.033333333333333326"^^xsd:decimal
+#   ?db2 = "0.0011111111111111107"^^xsd:decimal
+#   ?dc = "-0.2333333333333333"^^xsd:decimal
+#   ?dc2 = "0.054444444444444434"^^xsd:decimal
+#   ?effN = "2.173913043478261"^^xsd:decimal
+#   ?gini = "0.54"^^xsd:decimal
+#   ?l2 = "0.3559026084010437"^^xsd:decimal
 #   ?m = _:sk_4
 #   ?pi = _:b4
-#   ?s1 = 0.3
-#   ?s2 = 0.07222222222222222
-#   ?s3 = 0.12666666666666665
-#   ?sAbs = 0.5333333333333333
-#   ?sumSq = 0.45999999999999996
-#   ?tv = 0.26666666666666666
-#   ?u = 0.3333333333333333
+#   ?s1 = "0.3"^^xsd:decimal
+#   ?s2 = "0.07222222222222222"^^xsd:decimal
+#   ?s3 = "0.12666666666666665"^^xsd:decimal
+#   ?sAbs = "0.5333333333333333"^^xsd:decimal
+#   ?sumSq = "0.45999999999999996"^^xsd:decimal
+#   ?tv = "0.26666666666666666"^^xsd:decimal
+#   ?u = "0.3333333333333333"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_4 :effectiveStates 2.173913043478261 .
+_:sk_4 :effectiveStates "2.173913043478261"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_4 :tvToUniform 0.26666666666666666 .
+#   _:sk_4 :tvToUniform "0.26666666666666666"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :metrics _:sk_4 .
 #   _:sk_4 :pi _:b4 .
 #   _:b4 :pA 0.60 .
 #   _:b4 :pB 0.30 .
 #   _:b4 :pC 0.10 .
-#   (1.0 3.0) math:quotient 0.3333333333333333 .
-#   (0.60 2.0) math:exponentiation 0.36 .
-#   (0.30 2.0) math:exponentiation 0.09 .
-#   (0.10 2.0) math:exponentiation 0.010000000000000002 .
-#   (0.36 0.09) math:sum 0.44999999999999996 .
-#   (0.44999999999999996 0.010000000000000002) math:sum 0.45999999999999996 .
-#   (1.0 0.45999999999999996) math:difference 0.54 .
-#   (1.0 0.45999999999999996) math:quotient 2.173913043478261 .
-#   (0.60 0.3333333333333333) math:difference 0.26666666666666666 .
-#   0.26666666666666666 math:absoluteValue 0.26666666666666666 .
-#   (0.30 0.3333333333333333) math:difference -0.033333333333333326 .
-#   -0.033333333333333326 math:absoluteValue 0.033333333333333326 .
-#   (0.10 0.3333333333333333) math:difference -0.2333333333333333 .
-#   -0.2333333333333333 math:absoluteValue 0.2333333333333333 .
-#   (0.26666666666666666 0.033333333333333326) math:sum 0.3 .
-#   (0.3 0.2333333333333333) math:sum 0.5333333333333333 .
-#   (0.5 0.5333333333333333) math:product 0.26666666666666666 .
-#   (0.26666666666666666 2.0) math:exponentiation 0.07111111111111111 .
-#   (-0.033333333333333326 2.0) math:exponentiation 0.0011111111111111107 .
-#   (-0.2333333333333333 2.0) math:exponentiation 0.054444444444444434 .
-#   (0.07111111111111111 0.0011111111111111107) math:sum 0.07222222222222222 .
-#   (0.07222222222222222 0.054444444444444434) math:sum 0.12666666666666665 .
-#   (0.12666666666666665 0.5) math:exponentiation 0.3559026084010437 .
+#   (1.0 3.0) math:quotient "0.3333333333333333"^^xsd:decimal .
+#   (0.60 2.0) math:exponentiation "0.36"^^xsd:decimal .
+#   (0.30 2.0) math:exponentiation "0.09"^^xsd:decimal .
+#   (0.10 2.0) math:exponentiation "0.010000000000000002"^^xsd:decimal .
+#   ("0.36"^^xsd:decimal "0.09"^^xsd:decimal) math:sum "0.44999999999999996"^^xsd:decimal .
+#   ("0.44999999999999996"^^xsd:decimal "0.010000000000000002"^^xsd:decimal) math:sum "0.45999999999999996"^^xsd:decimal .
+#   (1.0 "0.45999999999999996"^^xsd:decimal) math:difference "0.54"^^xsd:decimal .
+#   (1.0 "0.45999999999999996"^^xsd:decimal) math:quotient "2.173913043478261"^^xsd:decimal .
+#   (0.60 "0.3333333333333333"^^xsd:decimal) math:difference "0.26666666666666666"^^xsd:decimal .
+#   "0.26666666666666666"^^xsd:decimal math:absoluteValue "0.26666666666666666"^^xsd:decimal .
+#   (0.30 "0.3333333333333333"^^xsd:decimal) math:difference "-0.033333333333333326"^^xsd:decimal .
+#   "-0.033333333333333326"^^xsd:decimal math:absoluteValue "0.033333333333333326"^^xsd:decimal .
+#   (0.10 "0.3333333333333333"^^xsd:decimal) math:difference "-0.2333333333333333"^^xsd:decimal .
+#   "-0.2333333333333333"^^xsd:decimal math:absoluteValue "0.2333333333333333"^^xsd:decimal .
+#   ("0.26666666666666666"^^xsd:decimal "0.033333333333333326"^^xsd:decimal) math:sum "0.3"^^xsd:decimal .
+#   ("0.3"^^xsd:decimal "0.2333333333333333"^^xsd:decimal) math:sum "0.5333333333333333"^^xsd:decimal .
+#   (0.5 "0.5333333333333333"^^xsd:decimal) math:product "0.26666666666666666"^^xsd:decimal .
+#   ("0.26666666666666666"^^xsd:decimal 2.0) math:exponentiation "0.07111111111111111"^^xsd:decimal .
+#   ("-0.033333333333333326"^^xsd:decimal 2.0) math:exponentiation "0.0011111111111111107"^^xsd:decimal .
+#   ("-0.2333333333333333"^^xsd:decimal 2.0) math:exponentiation "0.054444444444444434"^^xsd:decimal .
+#   ("0.07111111111111111"^^xsd:decimal "0.0011111111111111107"^^xsd:decimal) math:sum "0.07222222222222222"^^xsd:decimal .
+#   ("0.07222222222222222"^^xsd:decimal "0.054444444444444434"^^xsd:decimal) math:sum "0.12666666666666665"^^xsd:decimal .
+#   ("0.12666666666666665"^^xsd:decimal 0.5) math:exponentiation "0.3559026084010437"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :metrics ?m .
@@ -4094,70 +4095,70 @@ _:sk_4 :effectiveStates 2.173913043478261 .
 #   } .
 # with substitution (on rule variables):
 #   ?a = 0.60
-#   ?a2 = 0.36
-#   ?ab2 = 0.44999999999999996
-#   ?ada = 0.26666666666666666
-#   ?adb = 0.033333333333333326
-#   ?adc = 0.2333333333333333
+#   ?a2 = "0.36"^^xsd:decimal
+#   ?ab2 = "0.44999999999999996"^^xsd:decimal
+#   ?ada = "0.26666666666666666"^^xsd:decimal
+#   ?adb = "0.033333333333333326"^^xsd:decimal
+#   ?adc = "0.2333333333333333"^^xsd:decimal
 #   ?b = 0.30
-#   ?b2 = 0.09
+#   ?b2 = "0.09"^^xsd:decimal
 #   ?c = 0.10
-#   ?c2 = 0.010000000000000002
-#   ?da = 0.26666666666666666
-#   ?da2 = 0.07111111111111111
-#   ?db = -0.033333333333333326
-#   ?db2 = 0.0011111111111111107
-#   ?dc = -0.2333333333333333
-#   ?dc2 = 0.054444444444444434
-#   ?effN = 2.173913043478261
-#   ?gini = 0.54
-#   ?l2 = 0.3559026084010437
+#   ?c2 = "0.010000000000000002"^^xsd:decimal
+#   ?da = "0.26666666666666666"^^xsd:decimal
+#   ?da2 = "0.07111111111111111"^^xsd:decimal
+#   ?db = "-0.033333333333333326"^^xsd:decimal
+#   ?db2 = "0.0011111111111111107"^^xsd:decimal
+#   ?dc = "-0.2333333333333333"^^xsd:decimal
+#   ?dc2 = "0.054444444444444434"^^xsd:decimal
+#   ?effN = "2.173913043478261"^^xsd:decimal
+#   ?gini = "0.54"^^xsd:decimal
+#   ?l2 = "0.3559026084010437"^^xsd:decimal
 #   ?m = _:sk_4
 #   ?pi = _:b4
-#   ?s1 = 0.3
-#   ?s2 = 0.07222222222222222
-#   ?s3 = 0.12666666666666665
-#   ?sAbs = 0.5333333333333333
-#   ?sumSq = 0.45999999999999996
-#   ?tv = 0.26666666666666666
-#   ?u = 0.3333333333333333
+#   ?s1 = "0.3"^^xsd:decimal
+#   ?s2 = "0.07222222222222222"^^xsd:decimal
+#   ?s3 = "0.12666666666666665"^^xsd:decimal
+#   ?sAbs = "0.5333333333333333"^^xsd:decimal
+#   ?sumSq = "0.45999999999999996"^^xsd:decimal
+#   ?tv = "0.26666666666666666"^^xsd:decimal
+#   ?u = "0.3333333333333333"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_4 :tvToUniform 0.26666666666666666 .
+_:sk_4 :tvToUniform "0.26666666666666666"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_4 :l2ToUniform 0.3559026084010437 .
+#   _:sk_4 :l2ToUniform "0.3559026084010437"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :MC1 :metrics _:sk_4 .
 #   _:sk_4 :pi _:b4 .
 #   _:b4 :pA 0.60 .
 #   _:b4 :pB 0.30 .
 #   _:b4 :pC 0.10 .
-#   (1.0 3.0) math:quotient 0.3333333333333333 .
-#   (0.60 2.0) math:exponentiation 0.36 .
-#   (0.30 2.0) math:exponentiation 0.09 .
-#   (0.10 2.0) math:exponentiation 0.010000000000000002 .
-#   (0.36 0.09) math:sum 0.44999999999999996 .
-#   (0.44999999999999996 0.010000000000000002) math:sum 0.45999999999999996 .
-#   (1.0 0.45999999999999996) math:difference 0.54 .
-#   (1.0 0.45999999999999996) math:quotient 2.173913043478261 .
-#   (0.60 0.3333333333333333) math:difference 0.26666666666666666 .
-#   0.26666666666666666 math:absoluteValue 0.26666666666666666 .
-#   (0.30 0.3333333333333333) math:difference -0.033333333333333326 .
-#   -0.033333333333333326 math:absoluteValue 0.033333333333333326 .
-#   (0.10 0.3333333333333333) math:difference -0.2333333333333333 .
-#   -0.2333333333333333 math:absoluteValue 0.2333333333333333 .
-#   (0.26666666666666666 0.033333333333333326) math:sum 0.3 .
-#   (0.3 0.2333333333333333) math:sum 0.5333333333333333 .
-#   (0.5 0.5333333333333333) math:product 0.26666666666666666 .
-#   (0.26666666666666666 2.0) math:exponentiation 0.07111111111111111 .
-#   (-0.033333333333333326 2.0) math:exponentiation 0.0011111111111111107 .
-#   (-0.2333333333333333 2.0) math:exponentiation 0.054444444444444434 .
-#   (0.07111111111111111 0.0011111111111111107) math:sum 0.07222222222222222 .
-#   (0.07222222222222222 0.054444444444444434) math:sum 0.12666666666666665 .
-#   (0.12666666666666665 0.5) math:exponentiation 0.3559026084010437 .
+#   (1.0 3.0) math:quotient "0.3333333333333333"^^xsd:decimal .
+#   (0.60 2.0) math:exponentiation "0.36"^^xsd:decimal .
+#   (0.30 2.0) math:exponentiation "0.09"^^xsd:decimal .
+#   (0.10 2.0) math:exponentiation "0.010000000000000002"^^xsd:decimal .
+#   ("0.36"^^xsd:decimal "0.09"^^xsd:decimal) math:sum "0.44999999999999996"^^xsd:decimal .
+#   ("0.44999999999999996"^^xsd:decimal "0.010000000000000002"^^xsd:decimal) math:sum "0.45999999999999996"^^xsd:decimal .
+#   (1.0 "0.45999999999999996"^^xsd:decimal) math:difference "0.54"^^xsd:decimal .
+#   (1.0 "0.45999999999999996"^^xsd:decimal) math:quotient "2.173913043478261"^^xsd:decimal .
+#   (0.60 "0.3333333333333333"^^xsd:decimal) math:difference "0.26666666666666666"^^xsd:decimal .
+#   "0.26666666666666666"^^xsd:decimal math:absoluteValue "0.26666666666666666"^^xsd:decimal .
+#   (0.30 "0.3333333333333333"^^xsd:decimal) math:difference "-0.033333333333333326"^^xsd:decimal .
+#   "-0.033333333333333326"^^xsd:decimal math:absoluteValue "0.033333333333333326"^^xsd:decimal .
+#   (0.10 "0.3333333333333333"^^xsd:decimal) math:difference "-0.2333333333333333"^^xsd:decimal .
+#   "-0.2333333333333333"^^xsd:decimal math:absoluteValue "0.2333333333333333"^^xsd:decimal .
+#   ("0.26666666666666666"^^xsd:decimal "0.033333333333333326"^^xsd:decimal) math:sum "0.3"^^xsd:decimal .
+#   ("0.3"^^xsd:decimal "0.2333333333333333"^^xsd:decimal) math:sum "0.5333333333333333"^^xsd:decimal .
+#   (0.5 "0.5333333333333333"^^xsd:decimal) math:product "0.26666666666666666"^^xsd:decimal .
+#   ("0.26666666666666666"^^xsd:decimal 2.0) math:exponentiation "0.07111111111111111"^^xsd:decimal .
+#   ("-0.033333333333333326"^^xsd:decimal 2.0) math:exponentiation "0.0011111111111111107"^^xsd:decimal .
+#   ("-0.2333333333333333"^^xsd:decimal 2.0) math:exponentiation "0.054444444444444434"^^xsd:decimal .
+#   ("0.07111111111111111"^^xsd:decimal "0.0011111111111111107"^^xsd:decimal) math:sum "0.07222222222222222"^^xsd:decimal .
+#   ("0.07222222222222222"^^xsd:decimal "0.054444444444444434"^^xsd:decimal) math:sum "0.12666666666666665"^^xsd:decimal .
+#   ("0.12666666666666665"^^xsd:decimal 0.5) math:exponentiation "0.3559026084010437"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :MC1 :metrics ?m .
@@ -4197,35 +4198,35 @@ _:sk_4 :tvToUniform 0.26666666666666666 .
 #   } .
 # with substitution (on rule variables):
 #   ?a = 0.60
-#   ?a2 = 0.36
-#   ?ab2 = 0.44999999999999996
-#   ?ada = 0.26666666666666666
-#   ?adb = 0.033333333333333326
-#   ?adc = 0.2333333333333333
+#   ?a2 = "0.36"^^xsd:decimal
+#   ?ab2 = "0.44999999999999996"^^xsd:decimal
+#   ?ada = "0.26666666666666666"^^xsd:decimal
+#   ?adb = "0.033333333333333326"^^xsd:decimal
+#   ?adc = "0.2333333333333333"^^xsd:decimal
 #   ?b = 0.30
-#   ?b2 = 0.09
+#   ?b2 = "0.09"^^xsd:decimal
 #   ?c = 0.10
-#   ?c2 = 0.010000000000000002
-#   ?da = 0.26666666666666666
-#   ?da2 = 0.07111111111111111
-#   ?db = -0.033333333333333326
-#   ?db2 = 0.0011111111111111107
-#   ?dc = -0.2333333333333333
-#   ?dc2 = 0.054444444444444434
-#   ?effN = 2.173913043478261
-#   ?gini = 0.54
-#   ?l2 = 0.3559026084010437
+#   ?c2 = "0.010000000000000002"^^xsd:decimal
+#   ?da = "0.26666666666666666"^^xsd:decimal
+#   ?da2 = "0.07111111111111111"^^xsd:decimal
+#   ?db = "-0.033333333333333326"^^xsd:decimal
+#   ?db2 = "0.0011111111111111107"^^xsd:decimal
+#   ?dc = "-0.2333333333333333"^^xsd:decimal
+#   ?dc2 = "0.054444444444444434"^^xsd:decimal
+#   ?effN = "2.173913043478261"^^xsd:decimal
+#   ?gini = "0.54"^^xsd:decimal
+#   ?l2 = "0.3559026084010437"^^xsd:decimal
 #   ?m = _:sk_4
 #   ?pi = _:b4
-#   ?s1 = 0.3
-#   ?s2 = 0.07222222222222222
-#   ?s3 = 0.12666666666666665
-#   ?sAbs = 0.5333333333333333
-#   ?sumSq = 0.45999999999999996
-#   ?tv = 0.26666666666666666
-#   ?u = 0.3333333333333333
+#   ?s1 = "0.3"^^xsd:decimal
+#   ?s2 = "0.07222222222222222"^^xsd:decimal
+#   ?s3 = "0.12666666666666665"^^xsd:decimal
+#   ?sAbs = "0.5333333333333333"^^xsd:decimal
+#   ?sumSq = "0.45999999999999996"^^xsd:decimal
+#   ?tv = "0.26666666666666666"^^xsd:decimal
+#   ?u = "0.3333333333333333"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_4 :l2ToUniform 0.3559026084010437 .
+_:sk_4 :l2ToUniform "0.3559026084010437"^^xsd:decimal .
 

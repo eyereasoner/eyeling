@@ -2709,9 +2709,9 @@ function numEqualTerm(t, n, eps = 1e-9) {
 }
 
 function numericDatatypeFromLex(lex) {
-  if (/[eE]/.test(lex)) return XSD_NS + 'double';
-  if (lex.includes('.')) return XSD_NS + 'decimal';
-  return XSD_NS + 'integer';
+  if (/[eE]/.test(lex)) return XSD_DOUBLE_DT;
+  if (lex.includes('.')) return XSD_DECIMAL_DT;
+  return XSD_INTEGER_DT;
 }
 
 function parseNumericLiteralInfo(t) {
@@ -2724,21 +2724,21 @@ function parseNumericLiteralInfo(t) {
   let lexStr;
 
   if (dt2 !== null) {
-    if (dt2 !== XSD_NS + 'integer' && dt2 !== XSD_NS + 'decimal' && dt2 !== XSD_NS + 'double') return null;
+    // Accept all xsd numeric datatypes; normalize integer-derived to xsd:integer.
+    if (!isXsdNumericDatatype(dt2)) return null;
+    if (isXsdIntegerDatatype(dt2)) dt2 = XSD_INTEGER_DT;
     lexStr = stripQuotes(lex);
   } else {
+    // Untyped numeric token (N3/Turtle numeric literal)
     if (typeof v !== 'string') return null;
     if (v.startsWith('"')) return null; // exclude quoted strings
     if (!/^[+-]?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][+-]?\d+)?$/.test(v)) return null;
 
-    if (/[eE]/.test(v)) dt2 = XSD_NS + 'double';
-    else if (v.includes('.')) dt2 = XSD_NS + 'decimal';
-    else dt2 = XSD_NS + 'integer';
-
+    dt2 = numericDatatypeFromLex(v);
     lexStr = v;
   }
 
-  if (dt2 === XSD_NS + 'integer') {
+  if (dt2 === XSD_INTEGER_DT) {
     try {
       return { dt: dt2, kind: 'bigint', value: BigInt(lexStr), lexStr };
     } catch {
@@ -2749,6 +2749,59 @@ function parseNumericLiteralInfo(t) {
   const num = Number(lexStr);
   if (Number.isNaN(num)) return null;
   return { dt: dt2, kind: 'number', value: num, lexStr };
+}
+
+function numericRank(dt) {
+  if (dt === XSD_INTEGER_DT) return 0;
+  if (dt === XSD_DECIMAL_DT) return 1;
+  if (dt === XSD_FLOAT_DT) return 2;
+  if (dt === XSD_DOUBLE_DT) return 3;
+  return -1;
+}
+
+function numericDatatypeOfTerm(t) {
+  if (!(t instanceof Literal)) return null;
+  const [lex, dt] = literalParts(t.value);
+
+  if (dt !== null) {
+    if (!isXsdNumericDatatype(dt)) return null;
+    if (isXsdIntegerDatatype(dt)) return XSD_INTEGER_DT;
+    if (dt === XSD_DECIMAL_DT || dt === XSD_FLOAT_DT || dt === XSD_DOUBLE_DT) return dt;
+    return null;
+  }
+
+  // Untyped numeric token
+  if (!looksLikeUntypedNumericTokenLex(lex)) return null;
+  return numericDatatypeFromLex(lex);
+}
+
+function commonNumericDatatype(terms, outTerm) {
+  let r = 0;
+  const all = Array.isArray(terms) ? terms.slice() : [];
+  if (outTerm) all.push(outTerm);
+
+  for (const t of all) {
+    const dt = numericDatatypeOfTerm(t);
+    if (!dt) continue;
+    const rr = numericRank(dt);
+    if (rr > r) r = rr;
+  }
+
+  if (r === 3) return XSD_DOUBLE_DT;
+  if (r === 2) return XSD_FLOAT_DT;
+  if (r === 1) return XSD_DECIMAL_DT;
+  return XSD_INTEGER_DT;
+}
+
+function makeNumericOutputLiteral(val, dt) {
+  if (dt === XSD_INTEGER_DT) {
+    if (typeof val === 'bigint') return new Literal(val.toString());
+    if (Number.isInteger(val)) return new Literal(String(val));
+    // If a non-integer sneaks in, promote to decimal.
+    return new Literal(`"${formatNum(val)}"^^<${XSD_DECIMAL_DT}>`);
+  }
+  const lex = typeof val === 'bigint' ? val.toString() : formatNum(val);
+  return new Literal(`"${lex}"^^<${dt}>`);
 }
 
 function evalUnaryMathRel(g, subst, forwardFn, inverseFn /* may be null */) {
@@ -2762,9 +2815,13 @@ function evalUnaryMathRel(g, subst, forwardFn, inverseFn /* may be null */) {
   if (a !== null) {
     const outVal = forwardFn(a);
     if (!Number.isFinite(outVal)) return [];
+
+    let outDt = commonNumericDatatype([g.s], g.o);
+    if (outDt === XSD_INTEGER_DT && !Number.isInteger(outVal)) outDt = XSD_DECIMAL_DT;
+
     if (g.o instanceof Var) {
       const s2 = { ...subst };
-      s2[g.o.name] = new Literal(formatNum(outVal));
+      s2[g.o.name] = makeNumericOutputLiteral(outVal, outDt);
       return [s2];
     }
     if (g.o instanceof Blank) return [{ ...subst }];
@@ -2776,9 +2833,13 @@ function evalUnaryMathRel(g, subst, forwardFn, inverseFn /* may be null */) {
   if (b !== null && typeof inverseFn === 'function') {
     const inVal = inverseFn(b);
     if (!Number.isFinite(inVal)) return [];
+
+    let inDt = commonNumericDatatype([g.o], g.s);
+    if (inDt === XSD_INTEGER_DT && !Number.isInteger(inVal)) inDt = XSD_DECIMAL_DT;
+
     if (g.s instanceof Var) {
       const s2 = { ...subst };
-      s2[g.s.name] = new Literal(formatNum(inVal));
+      s2[g.s.name] = makeNumericOutputLiteral(inVal, inDt);
       return [s2];
     }
     if (g.s instanceof Blank) return [{ ...subst }];
@@ -2959,143 +3020,139 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
   }
 
   // math:sum
+  // Schema: ( $s.i+ )+ math:sum $o-
   if (g.p instanceof Iri && g.p.value === MATH_NS + 'sum') {
-    if (g.s instanceof ListTerm && g.s.elems.length >= 2) {
-      const xs = g.s.elems;
-      const values = [];
-      for (const t of xs) {
-        const v = parseNumberLiteral(t);
-        if (v === null) return [];
-        values.push(v);
-      }
+    if (!(g.s instanceof ListTerm) || g.s.elems.length < 2) return [];
+    const xs = g.s.elems;
 
-      let lit;
-      const allBig = values.every((v) => typeof v === 'bigint');
-      if (allBig) {
-        let total = 0n;
-        for (const v of values) total += v;
-        lit = new Literal(total.toString());
-      } else {
-        let total = 0.0;
-        for (const v of values) {
-          total += typeof v === 'bigint' ? Number(v) : v;
-        }
-        lit = new Literal(formatNum(total));
+    const dtOut0 = commonNumericDatatype(xs, g.o);
+
+    // Exact integer mode
+    if (dtOut0 === XSD_INTEGER_DT) {
+      let total = 0n;
+      for (const t of xs) {
+        const v = parseIntLiteral(t);
+        if (v === null) return [];
+        total += v;
       }
 
       if (g.o instanceof Var) {
         const s2 = { ...subst };
-        s2[g.o.name] = lit;
+        s2[g.o.name] = makeNumericOutputLiteral(total, XSD_INTEGER_DT);
         return [s2];
       }
-      const s2 = unifyTerm(g.o, lit, subst);
-      return s2 !== null ? [s2] : [];
+      if (g.o instanceof Blank) return [{ ...subst }];
+
+      const oi = parseIntLiteral(g.o);
+      if (oi !== null && oi === total) return [{ ...subst }];
+
+      // Fallback numeric compare
+      if (numEqualTerm(g.o, Number(total))) return [{ ...subst }];
+      return [];
     }
+
+    // Numeric mode (decimal/float/double)
+    let total = 0.0;
+    for (const t of xs) {
+      const v = parseNum(t);
+      if (v === null) return [];
+      total += v;
+    }
+
+    let dtOut = dtOut0;
+    if (dtOut === XSD_INTEGER_DT && !Number.isInteger(total)) dtOut = XSD_DECIMAL_DT;
+    const lit = makeNumericOutputLiteral(total, dtOut);
+
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = lit;
+      return [s2];
+    }
+    if (g.o instanceof Blank) return [{ ...subst }];
+    if (numEqualTerm(g.o, total)) return [{ ...subst }];
     return [];
   }
 
   // math:product
+  // Schema: ( $s.i+ )+ math:product $o-
   if (g.p instanceof Iri && g.p.value === MATH_NS + 'product') {
-    if (g.s instanceof ListTerm && g.s.elems.length >= 2) {
-      const xs = g.s.elems;
-      const values = [];
-      for (const t of xs) {
-        const v = parseNumberLiteral(t);
-        if (v === null) return [];
-        values.push(v);
-      }
+    if (!(g.s instanceof ListTerm) || g.s.elems.length < 2) return [];
+    const xs = g.s.elems;
 
-      let lit;
-      const allBig = values.every((v) => typeof v === 'bigint');
-      if (allBig) {
-        let prod = 1n;
-        for (const v of values) prod *= v;
-        lit = new Literal(prod.toString());
-      } else {
-        let prod = 1.0;
-        for (const v of values) {
-          prod *= typeof v === 'bigint' ? Number(v) : v;
-        }
-        lit = new Literal(formatNum(prod));
+    const dtOut0 = commonNumericDatatype(xs, g.o);
+
+    // Exact integer mode
+    if (dtOut0 === XSD_INTEGER_DT) {
+      let prod = 1n;
+      for (const t of xs) {
+        const v = parseIntLiteral(t);
+        if (v === null) return [];
+        prod *= v;
       }
 
       if (g.o instanceof Var) {
         const s2 = { ...subst };
-        s2[g.o.name] = lit;
+        s2[g.o.name] = makeNumericOutputLiteral(prod, XSD_INTEGER_DT);
         return [s2];
       }
-      const s2 = unifyTerm(g.o, lit, subst);
-      return s2 !== null ? [s2] : [];
+      if (g.o instanceof Blank) return [{ ...subst }];
+
+      const oi = parseIntLiteral(g.o);
+      if (oi !== null && oi === prod) return [{ ...subst }];
+      if (numEqualTerm(g.o, Number(prod))) return [{ ...subst }];
+      return [];
     }
+
+    // Numeric mode (decimal/float/double)
+    let prod = 1.0;
+    for (const t of xs) {
+      const v = parseNum(t);
+      if (v === null) return [];
+      prod *= v;
+    }
+
+    let dtOut = dtOut0;
+    if (dtOut === XSD_INTEGER_DT && !Number.isInteger(prod)) dtOut = XSD_DECIMAL_DT;
+    const lit = makeNumericOutputLiteral(prod, dtOut);
+
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = lit;
+      return [s2];
+    }
+    if (g.o instanceof Blank) return [{ ...subst }];
+    if (numEqualTerm(g.o, prod)) return [{ ...subst }];
+    return [];
   }
 
   // math:difference
+  // Schema: ( $s.1+ $s.2+ )+ math:difference $o-
   if (g.p instanceof Iri && g.p.value === MATH_NS + 'difference') {
-    if (g.s instanceof ListTerm && g.s.elems.length === 2) {
-      const [a0, b0] = g.s.elems;
+    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
+    const [a0, b0] = g.s.elems;
 
-      // BigInt integer difference
-      const ai = parseIntLiteral(a0);
-      const bi = parseIntLiteral(b0);
-      if (ai !== null && bi !== null) {
-        const ci = ai - bi;
-        const lit = new Literal(ci.toString());
-        if (g.o instanceof Var) {
-          const s2 = { ...subst };
-          s2[g.o.name] = lit;
-          return [s2];
-        } else {
-          const s2 = unifyTerm(g.o, lit, subst);
-          return s2 !== null ? [s2] : [];
-        }
+    // 1) Date/datetime difference -> duration   (needed for examples/age.n3)
+    const aDt = parseDatetimeLike(a0);
+    const bDt = parseDatetimeLike(b0);
+    if (aDt !== null && bDt !== null) {
+      const diffSecs = (aDt.getTime() - bDt.getTime()) / 1000.0;
+      const durTerm = formatDurationLiteralFromSeconds(diffSecs);
+      if (g.o instanceof Var) {
+        const s2 = { ...subst };
+        s2[g.o.name] = durTerm;
+        return [s2];
       }
-
-      // Numeric difference via floats
-      const a = parseNum(a0);
-      const b = parseNum(b0);
-      if (a !== null && b !== null) {
-        const c = a - b;
-        if (g.o instanceof Var) {
-          const s2 = { ...subst };
-          s2[g.o.name] = new Literal(formatNum(c));
-          return [s2];
-        }
-        if (g.o instanceof Literal && g.o.value === formatNum(c)) {
-          return [{ ...subst }];
-        }
-      }
-
-      // Date/datetime difference -> duration
-      const aDt = parseDatetimeLike(a0);
-      const bDt = parseDatetimeLike(b0);
-      if (aDt !== null && bDt !== null) {
-        const diffSecs = (aDt.getTime() - bDt.getTime()) / 1000.0;
-        const durTerm = formatDurationLiteralFromSeconds(diffSecs);
-        if (g.o instanceof Var) {
-          const s2 = { ...subst };
-          s2[g.o.name] = durTerm;
-          return [s2];
-        }
-        const s2 = unifyTerm(g.o, durTerm, subst);
-        return s2 !== null ? [s2] : [];
-      }
-      return [];
+      const s2 = unifyTerm(g.o, durTerm, subst);
+      return s2 !== null ? [s2] : [];
     }
-  }
 
-  // math:quotient
-  if (g.p instanceof Iri && g.p.value === MATH_NS + 'quotient') {
-    if (g.s instanceof ListTerm && g.s.elems.length === 2) {
-      const a = parseNum(g.s.elems[0]);
-      const b = parseNum(g.s.elems[1]);
-      if (a !== null && b !== null && b !== 0.0) {
-        const c = a / b;
-        if (g.o instanceof Var) {
-          const s2 = { ...subst };
-          s2[g.o.name] = new Literal(formatNum(c));
-          return [s2];
-        }
-        const lit = new Literal(formatNum(c));
+    // 2) Date/datetime minus duration/seconds -> dateTime (keeps older functionality)
+    if (aDt !== null) {
+      const secs = parseNumOrDuration(b0);
+      if (secs !== null) {
+        const outSecs = aDt.getTime() / 1000.0 - secs;
+        const lex = utcIsoDateTimeStringFromEpochSeconds(outSecs);
+        const lit = new Literal(`"${lex}"^^<${XSD_NS}dateTime>`);
         if (g.o instanceof Var) {
           const s2 = { ...subst };
           s2[g.o.name] = lit;
@@ -3104,8 +3161,84 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
         const s2 = unifyTerm(g.o, lit, subst);
         return s2 !== null ? [s2] : [];
       }
+    }
+
+    // 3) Exact integer difference (BigInt)
+    const ai = parseIntLiteral(a0);
+    const bi = parseIntLiteral(b0);
+    if (ai !== null && bi !== null) {
+      const ci = ai - bi;
+      const lit = new Literal(ci.toString());
+      if (g.o instanceof Var) {
+        const s2 = { ...subst };
+        s2[g.o.name] = lit;
+        return [s2];
+      }
+      const s2 = unifyTerm(g.o, lit, subst);
+      return s2 !== null ? [s2] : [];
+    }
+
+    // 4) Numeric difference (your “typed output + numeric compare” version)
+    const a = parseNum(a0);
+    const b = parseNum(b0);
+    if (a === null || b === null) return [];
+
+    const c = a - b;
+    if (!Number.isFinite(c)) return [];
+
+    // If you added commonNumericDatatype/makeNumericOutputLiteral, keep using them:
+    if (typeof commonNumericDatatype === 'function' && typeof makeNumericOutputLiteral === 'function') {
+      let dtOut = commonNumericDatatype([a0, b0], g.o);
+      if (dtOut === XSD_INTEGER_DT && !Number.isInteger(c)) dtOut = XSD_DECIMAL_DT;
+      const lit = makeNumericOutputLiteral(c, dtOut);
+
+      if (g.o instanceof Var) {
+        const s2 = { ...subst };
+        s2[g.o.name] = lit;
+        return [s2];
+      }
+      if (g.o instanceof Blank) return [{ ...subst }];
+      if (numEqualTerm(g.o, c)) return [{ ...subst }];
       return [];
     }
+
+    // Fallback (if you *don’t* have those helpers yet):
+    const lit = new Literal(formatNum(c));
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = lit;
+      return [s2];
+    }
+    const s2 = unifyTerm(g.o, lit, subst);
+    return s2 !== null ? [s2] : [];
+  }
+
+  // math:quotient
+  // Schema: ( $s.1+ $s.2+ )+ math:quotient $o-
+  if (g.p instanceof Iri && g.p.value === MATH_NS + 'quotient') {
+    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
+    const [a0, b0] = g.s.elems;
+
+    const a = parseNum(a0);
+    const b = parseNum(b0);
+    if (a === null || b === null) return [];
+    if (!Number.isFinite(a) || !Number.isFinite(b) || b === 0) return [];
+
+    const c = a / b;
+    if (!Number.isFinite(c)) return [];
+
+    let dtOut = commonNumericDatatype([a0, b0], g.o);
+    if (dtOut === XSD_INTEGER_DT && !Number.isInteger(c)) dtOut = XSD_DECIMAL_DT;
+    const lit = makeNumericOutputLiteral(c, dtOut);
+
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = lit;
+      return [s2];
+    }
+    if (g.o instanceof Blank) return [{ ...subst }];
+    if (numEqualTerm(g.o, c)) return [{ ...subst }];
+    return [];
   }
 
   // math:integerQuotient
@@ -3152,30 +3285,43 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
   // math:exponentiation
   if (g.p instanceof Iri && g.p.value === MATH_NS + 'exponentiation') {
     if (g.s instanceof ListTerm && g.s.elems.length === 2) {
-      const a = parseNum(g.s.elems[0]);
-      const b0 = g.s.elems[1];
-      const c = parseNum(g.o);
-      let b = null;
-      if (a !== null && b0 instanceof Literal) b = parseNum(b0);
+      const baseTerm = g.s.elems[0];
+      const expTerm = g.s.elems[1];
 
+      const a = parseNum(baseTerm);
+      let b = null;
+      if (a !== null) b = parseNum(expTerm);
+
+      // Forward mode: base and exponent are numeric
       if (a !== null && b !== null) {
         const cVal = a ** b;
+        if (!Number.isFinite(cVal)) return [];
+
+        let dtOut = commonNumericDatatype([baseTerm, expTerm], g.o);
+        if (dtOut === XSD_INTEGER_DT && !Number.isInteger(cVal)) dtOut = XSD_DECIMAL_DT;
+        const lit = makeNumericOutputLiteral(cVal, dtOut);
+
         if (g.o instanceof Var) {
           const s2 = { ...subst };
-          s2[g.o.name] = new Literal(formatNum(cVal));
+          s2[g.o.name] = lit;
           return [s2];
         }
-        if (numEqualTerm(g.o, cVal)) {
-          return [{ ...subst }];
-        }
+        if (g.o instanceof Blank) return [{ ...subst }];
+        if (numEqualTerm(g.o, cVal)) return [{ ...subst }];
       }
 
-      // inverse mode
-      if (a !== null && b0 instanceof Var && c !== null) {
+      // Inverse mode: solve exponent
+      const c = parseNum(g.o);
+      if (a !== null && expTerm instanceof Var && c !== null) {
         if (a > 0.0 && a !== 1.0 && c > 0.0) {
           const bVal = Math.log(c) / Math.log(a);
+          if (!Number.isFinite(bVal)) return [];
+
+          let dtB = commonNumericDatatype([baseTerm, g.o], expTerm);
+          if (dtB === XSD_INTEGER_DT && !Number.isInteger(bVal)) dtB = XSD_DECIMAL_DT;
+
           const s2 = { ...subst };
-          s2[b0.name] = new Literal(formatNum(bVal));
+          s2[expTerm.name] = makeNumericOutputLiteral(bVal, dtB);
           return [s2];
         }
       }
@@ -3186,15 +3332,21 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
   // math:absoluteValue
   if (g.p instanceof Iri && g.p.value === MATH_NS + 'absoluteValue') {
     const a = parseNum(g.s);
-    if (a !== null && g.o instanceof Var) {
+    if (a === null) return [];
+
+    const outVal = Math.abs(a);
+    if (!Number.isFinite(outVal)) return [];
+
+    let dtOut = commonNumericDatatype([g.s], g.o);
+    if (dtOut === XSD_INTEGER_DT && !Number.isInteger(outVal)) dtOut = XSD_DECIMAL_DT;
+
+    if (g.o instanceof Var) {
       const s2 = { ...subst };
-      s2[g.o.name] = new Literal(formatNum(Math.abs(a)));
+      s2[g.o.name] = makeNumericOutputLiteral(outVal, dtOut);
       return [s2];
     }
-    const b = parseNum(g.o);
-    if (a !== null && b !== null) {
-      if (Math.abs(Math.abs(a) - b) < 1e-9) return [{ ...subst }];
-    }
+    if (g.o instanceof Blank) return [{ ...subst }];
+    if (numEqualTerm(g.o, outVal)) return [{ ...subst }];
     return [];
   }
 
@@ -3260,20 +3412,47 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
   // Schema: ( $a $b ) math:remainder $r
   if (g.p instanceof Iri && g.p.value === MATH_NS + 'remainder') {
     if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
-    const a = parseNum(g.s.elems[0]);
-    const b = parseNum(g.s.elems[1]);
-    if (a === null || b === null || b === 0) return [];
+    const [a0, b0] = g.s.elems;
+
+    // Prefer exact integer arithmetic (BigInt)
+    const ai = parseIntLiteral(a0);
+    const bi = parseIntLiteral(b0);
+    if (ai !== null && bi !== null) {
+      if (bi === 0n) return [];
+      const r = ai % bi;
+      const lit = makeNumericOutputLiteral(r, XSD_INTEGER_DT);
+
+      if (g.o instanceof Var) {
+        const s2 = { ...subst };
+        s2[g.o.name] = lit;
+        return [s2];
+      }
+      if (g.o instanceof Blank) return [{ ...subst }];
+
+      const oi = parseIntLiteral(g.o);
+      if (oi !== null && oi === r) return [{ ...subst }];
+      if (numEqualTerm(g.o, Number(r))) return [{ ...subst }];
+      return [];
+    }
+
+    // Fallback: allow Number literals that still represent integers
+    const a = parseNum(a0);
+    const b = parseNum(b0);
+    if (a === null || b === null) return [];
+    if (!Number.isFinite(a) || !Number.isFinite(b) || b === 0) return [];
+    if (!Number.isInteger(a) || !Number.isInteger(b)) return [];
+
     const rVal = a % b;
-    if (!Number.isFinite(rVal)) return [];
-    const lit = new Literal(formatNum(rVal));
+    const lit = makeNumericOutputLiteral(rVal, XSD_INTEGER_DT);
 
     if (g.o instanceof Var) {
       const s2 = { ...subst };
       s2[g.o.name] = lit;
       return [s2];
     }
-    const s2 = unifyTerm(g.o, lit, subst);
-    return s2 !== null ? [s2] : [];
+    if (g.o instanceof Blank) return [{ ...subst }];
+    if (numEqualTerm(g.o, rVal)) return [{ ...subst }];
+    return [];
   }
 
   // math:rounded

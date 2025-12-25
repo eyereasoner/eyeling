@@ -606,8 +606,8 @@
 # Proof for derived triple:
 #   :test-atan-1 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
-#   1 math:atan 0.7853981633974483 .
-#   0.7853981633974483 math:equalTo 0.7853981633974483 .
+#   1 math:atan "0.7853981633974483"^^xsd:decimal .
+#   "0.7853981633974483"^^xsd:decimal math:equalTo 0.7853981633974483 .
 # via the schematic forward rule:
 #   {
 #     1 math:atan ?r .
@@ -621,7 +621,7 @@
 #     :test-atan-1 :status :pass .
 #   } .
 # with substitution (on rule variables):
-#   ?r = 0.7853981633974483
+#   ?r = "0.7853981633974483"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -631,8 +631,8 @@
 # Proof for derived triple:
 #   :test-atan-1 :builtin math:atan .
 # It holds because the following instance of the rule body is provable:
-#   1 math:atan 0.7853981633974483 .
-#   0.7853981633974483 math:equalTo 0.7853981633974483 .
+#   1 math:atan "0.7853981633974483"^^xsd:decimal .
+#   "0.7853981633974483"^^xsd:decimal math:equalTo 0.7853981633974483 .
 # via the schematic forward rule:
 #   {
 #     1 math:atan ?r .
@@ -646,7 +646,7 @@
 #     :test-atan-1 :status :pass .
 #   } .
 # with substitution (on rule variables):
-#   ?r = 0.7853981633974483
+#   ?r = "0.7853981633974483"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -656,8 +656,8 @@
 # Proof for derived triple:
 #   :test-atan-1 :input 1 .
 # It holds because the following instance of the rule body is provable:
-#   1 math:atan 0.7853981633974483 .
-#   0.7853981633974483 math:equalTo 0.7853981633974483 .
+#   1 math:atan "0.7853981633974483"^^xsd:decimal .
+#   "0.7853981633974483"^^xsd:decimal math:equalTo 0.7853981633974483 .
 # via the schematic forward rule:
 #   {
 #     1 math:atan ?r .
@@ -671,7 +671,7 @@
 #     :test-atan-1 :status :pass .
 #   } .
 # with substitution (on rule variables):
-#   ?r = 0.7853981633974483
+#   ?r = "0.7853981633974483"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -681,8 +681,8 @@
 # Proof for derived triple:
 #   :test-atan-1 :expected 0.7853981633974483 .
 # It holds because the following instance of the rule body is provable:
-#   1 math:atan 0.7853981633974483 .
-#   0.7853981633974483 math:equalTo 0.7853981633974483 .
+#   1 math:atan "0.7853981633974483"^^xsd:decimal .
+#   "0.7853981633974483"^^xsd:decimal math:equalTo 0.7853981633974483 .
 # via the schematic forward rule:
 #   {
 #     1 math:atan ?r .
@@ -696,7 +696,7 @@
 #     :test-atan-1 :status :pass .
 #   } .
 # with substitution (on rule variables):
-#   ?r = 0.7853981633974483
+#   ?r = "0.7853981633974483"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -704,10 +704,10 @@
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :test-atan-1 :actual 0.7853981633974483 .
+#   :test-atan-1 :actual "0.7853981633974483"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
-#   1 math:atan 0.7853981633974483 .
-#   0.7853981633974483 math:equalTo 0.7853981633974483 .
+#   1 math:atan "0.7853981633974483"^^xsd:decimal .
+#   "0.7853981633974483"^^xsd:decimal math:equalTo 0.7853981633974483 .
 # via the schematic forward rule:
 #   {
 #     1 math:atan ?r .
@@ -721,18 +721,18 @@
 #     :test-atan-1 :status :pass .
 #   } .
 # with substitution (on rule variables):
-#   ?r = 0.7853981633974483
+#   ?r = "0.7853981633974483"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:test-atan-1 :actual 0.7853981633974483 .
+:test-atan-1 :actual "0.7853981633974483"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
 #   :test-atan-1 :status :pass .
 # It holds because the following instance of the rule body is provable:
-#   1 math:atan 0.7853981633974483 .
-#   0.7853981633974483 math:equalTo 0.7853981633974483 .
+#   1 math:atan "0.7853981633974483"^^xsd:decimal .
+#   "0.7853981633974483"^^xsd:decimal math:equalTo 0.7853981633974483 .
 # via the schematic forward rule:
 #   {
 #     1 math:atan ?r .
@@ -746,7 +746,7 @@
 #     :test-atan-1 :status :pass .
 #   } .
 # with substitution (on rule variables):
-#   ?r = 0.7853981633974483
+#   ?r = "0.7853981633974483"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -1056,8 +1056,8 @@
 # Proof for derived triple:
 #   :test-degrees-1 a :MathBuiltinTest .
 # It holds because the following instance of the rule body is provable:
-#   3.141592653589793 math:degrees 180 .
-#   180 math:equalTo 180 .
+#   3.141592653589793 math:degrees "180"^^xsd:decimal .
+#   "180"^^xsd:decimal math:equalTo 180 .
 # via the schematic forward rule:
 #   {
 #     3.141592653589793 math:degrees ?deg .
@@ -1071,7 +1071,7 @@
 #     :test-degrees-1 :status :pass .
 #   } .
 # with substitution (on rule variables):
-#   ?deg = 180
+#   ?deg = "180"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -1081,8 +1081,8 @@
 # Proof for derived triple:
 #   :test-degrees-1 :builtin math:degrees .
 # It holds because the following instance of the rule body is provable:
-#   3.141592653589793 math:degrees 180 .
-#   180 math:equalTo 180 .
+#   3.141592653589793 math:degrees "180"^^xsd:decimal .
+#   "180"^^xsd:decimal math:equalTo 180 .
 # via the schematic forward rule:
 #   {
 #     3.141592653589793 math:degrees ?deg .
@@ -1096,7 +1096,7 @@
 #     :test-degrees-1 :status :pass .
 #   } .
 # with substitution (on rule variables):
-#   ?deg = 180
+#   ?deg = "180"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -1106,8 +1106,8 @@
 # Proof for derived triple:
 #   :test-degrees-1 :input 3.141592653589793 .
 # It holds because the following instance of the rule body is provable:
-#   3.141592653589793 math:degrees 180 .
-#   180 math:equalTo 180 .
+#   3.141592653589793 math:degrees "180"^^xsd:decimal .
+#   "180"^^xsd:decimal math:equalTo 180 .
 # via the schematic forward rule:
 #   {
 #     3.141592653589793 math:degrees ?deg .
@@ -1121,7 +1121,7 @@
 #     :test-degrees-1 :status :pass .
 #   } .
 # with substitution (on rule variables):
-#   ?deg = 180
+#   ?deg = "180"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -1131,8 +1131,8 @@
 # Proof for derived triple:
 #   :test-degrees-1 :expected 180 .
 # It holds because the following instance of the rule body is provable:
-#   3.141592653589793 math:degrees 180 .
-#   180 math:equalTo 180 .
+#   3.141592653589793 math:degrees "180"^^xsd:decimal .
+#   "180"^^xsd:decimal math:equalTo 180 .
 # via the schematic forward rule:
 #   {
 #     3.141592653589793 math:degrees ?deg .
@@ -1146,7 +1146,7 @@
 #     :test-degrees-1 :status :pass .
 #   } .
 # with substitution (on rule variables):
-#   ?deg = 180
+#   ?deg = "180"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -1154,10 +1154,10 @@
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :test-degrees-1 :actual 180 .
+#   :test-degrees-1 :actual "180"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
-#   3.141592653589793 math:degrees 180 .
-#   180 math:equalTo 180 .
+#   3.141592653589793 math:degrees "180"^^xsd:decimal .
+#   "180"^^xsd:decimal math:equalTo 180 .
 # via the schematic forward rule:
 #   {
 #     3.141592653589793 math:degrees ?deg .
@@ -1171,18 +1171,18 @@
 #     :test-degrees-1 :status :pass .
 #   } .
 # with substitution (on rule variables):
-#   ?deg = 180
+#   ?deg = "180"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:test-degrees-1 :actual 180 .
+:test-degrees-1 :actual "180"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
 #   :test-degrees-1 :status :pass .
 # It holds because the following instance of the rule body is provable:
-#   3.141592653589793 math:degrees 180 .
-#   180 math:equalTo 180 .
+#   3.141592653589793 math:degrees "180"^^xsd:decimal .
+#   "180"^^xsd:decimal math:equalTo 180 .
 # via the schematic forward rule:
 #   {
 #     3.141592653589793 math:degrees ?deg .
@@ -1196,7 +1196,7 @@
 #     :test-degrees-1 :status :pass .
 #   } .
 # with substitution (on rule variables):
-#   ?deg = 180
+#   ?deg = "180"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 

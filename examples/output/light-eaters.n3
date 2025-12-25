@@ -1,12 +1,13 @@
 @prefix : <http://example.org/light-eaters#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :Forest :dailyLightEnergy 200 .
+#   :Forest :dailyLightEnergy "200"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :Today :lightHours 10.0 .
 #   :Forest :lightIntensity 20.0 .
-#   (20.0 10.0) math:product 200 .
+#   (20.0 10.0) math:product "200"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :Today :lightHours ?H .
@@ -16,22 +17,22 @@
 #     ?Place :dailyLightEnergy ?E .
 #   } .
 # with substitution (on rule variables):
-#   ?E = 200
+#   ?E = "200"^^xsd:decimal
 #   ?H = 10.0
 #   ?I = 20.0
 #   ?Place = :Forest
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:Forest :dailyLightEnergy 200 .
+:Forest :dailyLightEnergy "200"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :Meadow :dailyLightEnergy 1000 .
+#   :Meadow :dailyLightEnergy "1000"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :Today :lightHours 10.0 .
 #   :Meadow :lightIntensity 100.0 .
-#   (100.0 10.0) math:product 1000 .
+#   (100.0 10.0) math:product "1000"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :Today :lightHours ?H .
@@ -41,24 +42,24 @@
 #     ?Place :dailyLightEnergy ?E .
 #   } .
 # with substitution (on rule variables):
-#   ?E = 1000
+#   ?E = "1000"^^xsd:decimal
 #   ?H = 10.0
 #   ?I = 100.0
 #   ?Place = :Meadow
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:Meadow :dailyLightEnergy 1000 .
+:Meadow :dailyLightEnergy "1000"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :Fern :storedEnergy 50 .
+#   :Fern :storedEnergy "50"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :Fern a :Plant .
 #   :Fern :location :Forest .
-#   :Forest :dailyLightEnergy 200 .
+#   :Forest :dailyLightEnergy "200"^^xsd:decimal .
 #   :Fern :efficiency 0.25 .
-#   (200 0.25) math:product 50 .
+#   ("200"^^xsd:decimal 0.25) math:product "50"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     ?Plant a :Plant .
@@ -70,25 +71,25 @@
 #     ?Plant :storedEnergy ?Stored .
 #   } .
 # with substitution (on rule variables):
-#   ?E = 200
+#   ?E = "200"^^xsd:decimal
 #   ?Eff = 0.25
 #   ?Place = :Forest
 #   ?Plant = :Fern
-#   ?Stored = 50
+#   ?Stored = "50"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:Fern :storedEnergy 50 .
+:Fern :storedEnergy "50"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :Sunflower :storedEnergy 250 .
+#   :Sunflower :storedEnergy "250"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :Sunflower a :Plant .
 #   :Sunflower :location :Meadow .
-#   :Meadow :dailyLightEnergy 1000 .
+#   :Meadow :dailyLightEnergy "1000"^^xsd:decimal .
 #   :Sunflower :efficiency 0.25 .
-#   (1000 0.25) math:product 250 .
+#   ("1000"^^xsd:decimal 0.25) math:product "250"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     ?Plant a :Plant .
@@ -100,23 +101,23 @@
 #     ?Plant :storedEnergy ?Stored .
 #   } .
 # with substitution (on rule variables):
-#   ?E = 1000
+#   ?E = "1000"^^xsd:decimal
 #   ?Eff = 0.25
 #   ?Place = :Meadow
 #   ?Plant = :Sunflower
-#   ?Stored = 250
+#   ?Stored = "250"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:Sunflower :storedEnergy 250 .
+:Sunflower :storedEnergy "250"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :Sunflower :netEnergy 100 .
+#   :Sunflower :netEnergy "100"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
-#   :Sunflower :storedEnergy 250 .
+#   :Sunflower :storedEnergy "250"^^xsd:decimal .
 #   :Sunflower :maintenance 150.0 .
-#   (250 150.0) math:difference 100 .
+#   ("250"^^xsd:decimal 150.0) math:difference "100"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     ?Org :storedEnergy ?Stored .
@@ -127,21 +128,21 @@
 #   } .
 # with substitution (on rule variables):
 #   ?Maint = 150.0
-#   ?Net = 100
+#   ?Net = "100"^^xsd:decimal
 #   ?Org = :Sunflower
-#   ?Stored = 250
+#   ?Stored = "250"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:Sunflower :netEnergy 100 .
+:Sunflower :netEnergy "100"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :Fern :netEnergy -100 .
+#   :Fern :netEnergy "-100"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
-#   :Fern :storedEnergy 50 .
+#   :Fern :storedEnergy "50"^^xsd:decimal .
 #   :Fern :maintenance 150.0 .
-#   (50 150.0) math:difference -100 .
+#   ("50"^^xsd:decimal 150.0) math:difference "-100"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     ?Org :storedEnergy ?Stored .
@@ -152,13 +153,13 @@
 #   } .
 # with substitution (on rule variables):
 #   ?Maint = 150.0
-#   ?Net = -100
+#   ?Net = "-100"^^xsd:decimal
 #   ?Org = :Fern
-#   ?Stored = 50
+#   ?Stored = "50"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:Fern :netEnergy -100 .
+:Fern :netEnergy "-100"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
@@ -166,8 +167,8 @@
 # It holds because the following instance of the rule body is provable:
 #   :Fern a :Plant .
 #   :Fern :chlorophyll true .
-#   :Fern :storedEnergy 50 .
-#   (50 0.0) math:greaterThan true .
+#   :Fern :storedEnergy "50"^^xsd:decimal .
+#   ("50"^^xsd:decimal 0.0) math:greaterThan true .
 # via the schematic forward rule:
 #   {
 #     ?Plant a :Plant .
@@ -180,7 +181,7 @@
 #   } .
 # with substitution (on rule variables):
 #   ?Plant = :Fern
-#   ?Stored = 50
+#   ?Stored = "50"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -192,8 +193,8 @@
 # It holds because the following instance of the rule body is provable:
 #   :Fern a :Plant .
 #   :Fern :chlorophyll true .
-#   :Fern :storedEnergy 50 .
-#   (50 0.0) math:greaterThan true .
+#   :Fern :storedEnergy "50"^^xsd:decimal .
+#   ("50"^^xsd:decimal 0.0) math:greaterThan true .
 # via the schematic forward rule:
 #   {
 #     ?Plant a :Plant .
@@ -206,7 +207,7 @@
 #   } .
 # with substitution (on rule variables):
 #   ?Plant = :Fern
-#   ?Stored = 50
+#   ?Stored = "50"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -218,8 +219,8 @@
 # It holds because the following instance of the rule body is provable:
 #   :Sunflower a :Plant .
 #   :Sunflower :chlorophyll true .
-#   :Sunflower :storedEnergy 250 .
-#   (250 0.0) math:greaterThan true .
+#   :Sunflower :storedEnergy "250"^^xsd:decimal .
+#   ("250"^^xsd:decimal 0.0) math:greaterThan true .
 # via the schematic forward rule:
 #   {
 #     ?Plant a :Plant .
@@ -232,7 +233,7 @@
 #   } .
 # with substitution (on rule variables):
 #   ?Plant = :Sunflower
-#   ?Stored = 250
+#   ?Stored = "250"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -244,8 +245,8 @@
 # It holds because the following instance of the rule body is provable:
 #   :Sunflower a :Plant .
 #   :Sunflower :chlorophyll true .
-#   :Sunflower :storedEnergy 250 .
-#   (250 0.0) math:greaterThan true .
+#   :Sunflower :storedEnergy "250"^^xsd:decimal .
+#   ("250"^^xsd:decimal 0.0) math:greaterThan true .
 # via the schematic forward rule:
 #   {
 #     ?Plant a :Plant .
@@ -258,7 +259,7 @@
 #   } .
 # with substitution (on rule variables):
 #   ?Plant = :Sunflower
-#   ?Stored = 250
+#   ?Stored = "250"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -286,8 +287,8 @@
 # Proof for derived triple:
 #   :Sunflower :thriving true .
 # It holds because the following instance of the rule body is provable:
-#   :Sunflower :netEnergy 100 .
-#   (100 0.0) math:greaterThan true .
+#   :Sunflower :netEnergy "100"^^xsd:decimal .
+#   ("100"^^xsd:decimal 0.0) math:greaterThan true .
 # via the schematic forward rule:
 #   {
 #     ?Org :netEnergy ?Net .
@@ -296,7 +297,7 @@
 #     ?Org :thriving true .
 #   } .
 # with substitution (on rule variables):
-#   ?Net = 100
+#   ?Net = "100"^^xsd:decimal
 #   ?Org = :Sunflower
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
@@ -307,8 +308,8 @@
 # Proof for derived triple:
 #   :Fern :hungry true .
 # It holds because the following instance of the rule body is provable:
-#   :Fern :netEnergy -100 .
-#   (-100 0.0) math:notGreaterThan true .
+#   :Fern :netEnergy "-100"^^xsd:decimal .
+#   ("-100"^^xsd:decimal 0.0) math:notGreaterThan true .
 # via the schematic forward rule:
 #   {
 #     ?Org :netEnergy ?Net .
@@ -317,7 +318,7 @@
 #     ?Org :hungry true .
 #   } .
 # with substitution (on rule variables):
-#   ?Net = -100
+#   ?Net = "-100"^^xsd:decimal
 #   ?Org = :Fern
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------

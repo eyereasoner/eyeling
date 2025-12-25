@@ -1,15 +1,16 @@
 @prefix : <https://eyereasoner.github.io/eye/reasoning/cs#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :actuator1 :control1 39.27346198678276 .
+#   :actuator1 :control1 "39.27346198678276"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
-#   :input1 :measurement10 2.23606797749979 .
+#   :input1 :measurement10 "2.23606797749979"^^xsd:decimal .
 #   :input2 :measurement2 true .
 #   :disturbance1 :measurement3 35766 .
-#   (2.23606797749979 19.6) math:product 43.82693235899588 .
-#   (10 4.553470372213121) math:exponentiation 35766 .
-#   (43.82693235899588 4.553470372213121) math:difference 39.27346198678276 .
+#   ("2.23606797749979"^^xsd:decimal 19.6) math:product "43.82693235899588"^^xsd:decimal .
+#   (10 "4.553470372213121"^^xsd:decimal) math:exponentiation 35766 .
+#   ("43.82693235899588"^^xsd:decimal "4.553470372213121"^^xsd:decimal) math:difference "39.27346198678276"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :input1 :measurement10 ?M1 .
@@ -22,19 +23,19 @@
 #     :actuator1 :control1 ?C .
 #   } .
 # with substitution (on rule variables):
-#   ?C = 39.27346198678276
-#   ?C1 = 43.82693235899588
-#   ?C2 = 4.553470372213121
+#   ?C = "39.27346198678276"^^xsd:decimal
+#   ?C1 = "43.82693235899588"^^xsd:decimal
+#   ?C2 = "4.553470372213121"^^xsd:decimal
 #   ?D1 = 35766
-#   ?M1 = 2.23606797749979
+#   ?M1 = "2.23606797749979"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:actuator1 :control1 39.27346198678276 .
+:actuator1 :control1 "39.27346198678276"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :actuator2 :control1 26.08 .
+#   :actuator2 :control1 "26.08"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :input3 :measurement3 56967 .
 #   :state3 :observation3 22 .
@@ -42,10 +43,10 @@
 #   :output2 :target2 29 .
 #   (29 24) math:difference 5 .
 #   (22 24) math:difference -2 .
-#   (5.8 5) math:product 29 .
-#   (7.3 5) math:quotient 1.46 .
-#   (1.46 -2) math:product -2.92 .
-#   (29 -2.92) math:sum 26.08 .
+#   (5.8 5) math:product "29"^^xsd:decimal .
+#   (7.3 5) math:quotient "1.46"^^xsd:decimal .
+#   ("1.46"^^xsd:decimal -2) math:product "-2.92"^^xsd:decimal .
+#   ("29"^^xsd:decimal "-2.92"^^xsd:decimal) math:sum "26.08"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :input3 :measurement3 ?M3 .
@@ -62,18 +63,18 @@
 #     :actuator2 :control1 ?C .
 #   } .
 # with substitution (on rule variables):
-#   ?C = 26.08
-#   ?C1 = 29
-#   ?C2 = -2.92
+#   ?C = "26.08"^^xsd:decimal
+#   ?C1 = "29"^^xsd:decimal
+#   ?C2 = "-2.92"^^xsd:decimal
 #   ?D = -2
 #   ?E = 5
 #   ?M3 = 56967
 #   ?M4 = 24
-#   ?N = 1.46
+#   ?N = "1.46"^^xsd:decimal
 #   ?P3 = 22
 #   ?T2 = 29
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:actuator2 :control1 26.08 .
+:actuator2 :control1 "26.08"^^xsd:decimal .
 

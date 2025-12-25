@@ -1,8 +1,9 @@
 @prefix : <http://example.org/ruby-runge#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :Interp1 :yAtX0 -0.27999999999999986 .
+#   :Interp1 :yAtX0 "-0.27999999999999986"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :Interp1 :points (_:b1 _:b2 _:b3 _:b4 _:b5) .
 #   :Interp1 :x0 0.6 .
@@ -20,8 +21,8 @@
 #   } ?factors) log:collectAllIn ?_b1 .
 #       ?factors math:product ?basis .
 #       (?yi ?basis) math:product ?term .
-#   } (-0.2912 0.5824 -0.5823999999999999 -0.14559999999999998 0.1568)) log:collectAllIn ?_b2 .
-#   (-0.2912 0.5824 -0.5823999999999999 -0.14559999999999998 0.1568) math:sum -0.27999999999999986 .
+#   } ("-0.2912"^^xsd:decimal "0.5824"^^xsd:decimal "-0.5823999999999999"^^xsd:decimal "-0.14559999999999998"^^xsd:decimal "0.1568"^^xsd:decimal)) log:collectAllIn ?_b2 .
+#   ("-0.2912"^^xsd:decimal "0.5824"^^xsd:decimal "-0.5823999999999999"^^xsd:decimal "-0.14559999999999998"^^xsd:decimal "0.1568"^^xsd:decimal) math:sum "-0.27999999999999986"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :Interp1 :points ?pts .
@@ -47,22 +48,22 @@
 #   } .
 # with substitution (on rule variables):
 #   ?pts = (_:b1 _:b2 _:b3 _:b4 _:b5)
-#   ?terms = (-0.2912 0.5824 -0.5823999999999999 -0.14559999999999998 0.1568)
+#   ?terms = ("-0.2912"^^xsd:decimal "0.5824"^^xsd:decimal "-0.5823999999999999"^^xsd:decimal "-0.14559999999999998"^^xsd:decimal "0.1568"^^xsd:decimal)
 #   ?x0 = 0.6
-#   ?y0 = -0.27999999999999986
+#   ?y0 = "-0.27999999999999986"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:Interp1 :yAtX0 -0.27999999999999986 .
+:Interp1 :yAtX0 "-0.27999999999999986"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :Interp1 :yAtXPlus -0.2775980000000001 .
+#   :Interp1 :yAtXPlus "-0.2775980000000001"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :Interp1 :points (_:b1 _:b2 _:b3 _:b4 _:b5) .
 #   :Interp1 :x0 0.6 .
 #   :Interp1 :h 0.001 .
-#   (0.6 0.001) math:sum 0.601 .
+#   (0.6 0.001) math:sum "0.601"^^xsd:decimal .
 #   (?term {
 #       (_:b1 _:b2 _:b3 _:b4 _:b5) list:member ?pi .
 #       ?pi :x ?xi .
@@ -71,14 +72,14 @@
 #       (_:b1 _:b2 _:b3 _:b4 _:b5) list:member ?pj .
 #       ?pj :x ?xj .
 #       ?xj math:notEqualTo ?xi .
-#       (0.601 ?xj) math:difference ?num .
+#       ("0.601"^^xsd:decimal ?xj) math:difference ?num .
 #       (?xi ?xj) math:difference ?den .
 #       (?num ?den) math:quotient ?f .
 #   } ?factors) log:collectAllIn ?_b1 .
 #       ?factors math:product ?basis .
 #       (?yi ?basis) math:product ?term .
-#   } (-0.291249943716375 0.5835426727665 -0.58111529060025 -0.1454300602335 0.15665462178362502)) log:collectAllIn ?_b2 .
-#   (-0.291249943716375 0.5835426727665 -0.58111529060025 -0.1454300602335 0.15665462178362502) math:sum -0.2775980000000001 .
+#   } ("-0.291249943716375"^^xsd:decimal "0.5835426727665"^^xsd:decimal "-0.58111529060025"^^xsd:decimal "-0.1454300602335"^^xsd:decimal "0.15665462178362502"^^xsd:decimal)) log:collectAllIn ?_b2 .
+#   ("-0.291249943716375"^^xsd:decimal "0.5835426727665"^^xsd:decimal "-0.58111529060025"^^xsd:decimal "-0.1454300602335"^^xsd:decimal "0.15665462178362502"^^xsd:decimal) math:sum "-0.2775980000000001"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :Interp1 :points ?pts .
@@ -108,23 +109,23 @@
 # with substitution (on rule variables):
 #   ?h = 0.001
 #   ?pts = (_:b1 _:b2 _:b3 _:b4 _:b5)
-#   ?terms = (-0.291249943716375 0.5835426727665 -0.58111529060025 -0.1454300602335 0.15665462178362502)
+#   ?terms = ("-0.291249943716375"^^xsd:decimal "0.5835426727665"^^xsd:decimal "-0.58111529060025"^^xsd:decimal "-0.1454300602335"^^xsd:decimal "0.15665462178362502"^^xsd:decimal)
 #   ?x0 = 0.6
-#   ?xPlus = 0.601
-#   ?yPlus = -0.2775980000000001
+#   ?xPlus = "0.601"^^xsd:decimal
+#   ?yPlus = "-0.2775980000000001"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:Interp1 :yAtXPlus -0.2775980000000001 .
+:Interp1 :yAtXPlus "-0.2775980000000001"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :Interp1 :xPlus 0.601 .
+#   :Interp1 :xPlus "0.601"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :Interp1 :points (_:b1 _:b2 _:b3 _:b4 _:b5) .
 #   :Interp1 :x0 0.6 .
 #   :Interp1 :h 0.001 .
-#   (0.6 0.001) math:sum 0.601 .
+#   (0.6 0.001) math:sum "0.601"^^xsd:decimal .
 #   (?term {
 #       (_:b1 _:b2 _:b3 _:b4 _:b5) list:member ?pi .
 #       ?pi :x ?xi .
@@ -133,14 +134,14 @@
 #       (_:b1 _:b2 _:b3 _:b4 _:b5) list:member ?pj .
 #       ?pj :x ?xj .
 #       ?xj math:notEqualTo ?xi .
-#       (0.601 ?xj) math:difference ?num .
+#       ("0.601"^^xsd:decimal ?xj) math:difference ?num .
 #       (?xi ?xj) math:difference ?den .
 #       (?num ?den) math:quotient ?f .
 #   } ?factors) log:collectAllIn ?_b1 .
 #       ?factors math:product ?basis .
 #       (?yi ?basis) math:product ?term .
-#   } (-0.291249943716375 0.5835426727665 -0.58111529060025 -0.1454300602335 0.15665462178362502)) log:collectAllIn ?_b2 .
-#   (-0.291249943716375 0.5835426727665 -0.58111529060025 -0.1454300602335 0.15665462178362502) math:sum -0.2775980000000001 .
+#   } ("-0.291249943716375"^^xsd:decimal "0.5835426727665"^^xsd:decimal "-0.58111529060025"^^xsd:decimal "-0.1454300602335"^^xsd:decimal "0.15665462178362502"^^xsd:decimal)) log:collectAllIn ?_b2 .
+#   ("-0.291249943716375"^^xsd:decimal "0.5835426727665"^^xsd:decimal "-0.58111529060025"^^xsd:decimal "-0.1454300602335"^^xsd:decimal "0.15665462178362502"^^xsd:decimal) math:sum "-0.2775980000000001"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :Interp1 :points ?pts .
@@ -170,23 +171,23 @@
 # with substitution (on rule variables):
 #   ?h = 0.001
 #   ?pts = (_:b1 _:b2 _:b3 _:b4 _:b5)
-#   ?terms = (-0.291249943716375 0.5835426727665 -0.58111529060025 -0.1454300602335 0.15665462178362502)
+#   ?terms = ("-0.291249943716375"^^xsd:decimal "0.5835426727665"^^xsd:decimal "-0.58111529060025"^^xsd:decimal "-0.1454300602335"^^xsd:decimal "0.15665462178362502"^^xsd:decimal)
 #   ?x0 = 0.6
-#   ?xPlus = 0.601
-#   ?yPlus = -0.2775980000000001
+#   ?xPlus = "0.601"^^xsd:decimal
+#   ?yPlus = "-0.2775980000000001"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:Interp1 :xPlus 0.601 .
+:Interp1 :xPlus "0.601"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :Interp1 :yAtXMinus -0.28239800000000004 .
+#   :Interp1 :yAtXMinus "-0.28239800000000004"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :Interp1 :points (_:b1 _:b2 _:b3 _:b4 _:b5) .
 #   :Interp1 :x0 0.6 .
 #   :Interp1 :h 0.001 .
-#   (0.6 0.001) math:difference 0.599 .
+#   (0.6 0.001) math:difference "0.599"^^xsd:decimal .
 #   (?term {
 #       (_:b1 _:b2 _:b3 _:b4 _:b5) list:member ?pi .
 #       ?pi :x ?xi .
@@ -195,14 +196,14 @@
 #       (_:b1 _:b2 _:b3 _:b4 _:b5) list:member ?pj .
 #       ?pj :x ?xj .
 #       ?xj math:notEqualTo ?xi .
-#       (0.599 ?xj) math:difference ?num .
+#       ("0.599"^^xsd:decimal ?xj) math:difference ?num .
 #       (?xi ?xj) math:difference ?den .
 #       (?num ?den) math:quotient ?f .
 #   } ?factors) log:collectAllIn ?_b1 .
 #       ?factors math:product ?basis .
 #       (?yi ?basis) math:product ?term .
-#   } (-0.291147279616375 0.5812573405665 -0.58368328940025 -0.1457687264335 0.156943954883625)) log:collectAllIn ?_b2 .
-#   (-0.291147279616375 0.5812573405665 -0.58368328940025 -0.1457687264335 0.156943954883625) math:sum -0.28239800000000004 .
+#   } ("-0.291147279616375"^^xsd:decimal "0.5812573405665"^^xsd:decimal "-0.58368328940025"^^xsd:decimal "-0.1457687264335"^^xsd:decimal "0.156943954883625"^^xsd:decimal)) log:collectAllIn ?_b2 .
+#   ("-0.291147279616375"^^xsd:decimal "0.5812573405665"^^xsd:decimal "-0.58368328940025"^^xsd:decimal "-0.1457687264335"^^xsd:decimal "0.156943954883625"^^xsd:decimal) math:sum "-0.28239800000000004"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :Interp1 :points ?pts .
@@ -232,23 +233,23 @@
 # with substitution (on rule variables):
 #   ?h = 0.001
 #   ?pts = (_:b1 _:b2 _:b3 _:b4 _:b5)
-#   ?terms = (-0.291147279616375 0.5812573405665 -0.58368328940025 -0.1457687264335 0.156943954883625)
+#   ?terms = ("-0.291147279616375"^^xsd:decimal "0.5812573405665"^^xsd:decimal "-0.58368328940025"^^xsd:decimal "-0.1457687264335"^^xsd:decimal "0.156943954883625"^^xsd:decimal)
 #   ?x0 = 0.6
-#   ?xMinus = 0.599
-#   ?yMinus = -0.28239800000000004
+#   ?xMinus = "0.599"^^xsd:decimal
+#   ?yMinus = "-0.28239800000000004"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:Interp1 :yAtXMinus -0.28239800000000004 .
+:Interp1 :yAtXMinus "-0.28239800000000004"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :Interp1 :xMinus 0.599 .
+#   :Interp1 :xMinus "0.599"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :Interp1 :points (_:b1 _:b2 _:b3 _:b4 _:b5) .
 #   :Interp1 :x0 0.6 .
 #   :Interp1 :h 0.001 .
-#   (0.6 0.001) math:difference 0.599 .
+#   (0.6 0.001) math:difference "0.599"^^xsd:decimal .
 #   (?term {
 #       (_:b1 _:b2 _:b3 _:b4 _:b5) list:member ?pi .
 #       ?pi :x ?xi .
@@ -257,14 +258,14 @@
 #       (_:b1 _:b2 _:b3 _:b4 _:b5) list:member ?pj .
 #       ?pj :x ?xj .
 #       ?xj math:notEqualTo ?xi .
-#       (0.599 ?xj) math:difference ?num .
+#       ("0.599"^^xsd:decimal ?xj) math:difference ?num .
 #       (?xi ?xj) math:difference ?den .
 #       (?num ?den) math:quotient ?f .
 #   } ?factors) log:collectAllIn ?_b1 .
 #       ?factors math:product ?basis .
 #       (?yi ?basis) math:product ?term .
-#   } (-0.291147279616375 0.5812573405665 -0.58368328940025 -0.1457687264335 0.156943954883625)) log:collectAllIn ?_b2 .
-#   (-0.291147279616375 0.5812573405665 -0.58368328940025 -0.1457687264335 0.156943954883625) math:sum -0.28239800000000004 .
+#   } ("-0.291147279616375"^^xsd:decimal "0.5812573405665"^^xsd:decimal "-0.58368328940025"^^xsd:decimal "-0.1457687264335"^^xsd:decimal "0.156943954883625"^^xsd:decimal)) log:collectAllIn ?_b2 .
+#   ("-0.291147279616375"^^xsd:decimal "0.5812573405665"^^xsd:decimal "-0.58368328940025"^^xsd:decimal "-0.1457687264335"^^xsd:decimal "0.156943954883625"^^xsd:decimal) math:sum "-0.28239800000000004"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :Interp1 :points ?pts .
@@ -294,25 +295,25 @@
 # with substitution (on rule variables):
 #   ?h = 0.001
 #   ?pts = (_:b1 _:b2 _:b3 _:b4 _:b5)
-#   ?terms = (-0.291147279616375 0.5812573405665 -0.58368328940025 -0.1457687264335 0.156943954883625)
+#   ?terms = ("-0.291147279616375"^^xsd:decimal "0.5812573405665"^^xsd:decimal "-0.58368328940025"^^xsd:decimal "-0.1457687264335"^^xsd:decimal "0.156943954883625"^^xsd:decimal)
 #   ?x0 = 0.6
-#   ?xMinus = 0.599
-#   ?yMinus = -0.28239800000000004
+#   ?xMinus = "0.599"^^xsd:decimal
+#   ?yMinus = "-0.28239800000000004"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:Interp1 :xMinus 0.599 .
+:Interp1 :xMinus "0.599"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :Interp1 :derivativeAtX0 2.3999999999999577 .
+#   :Interp1 :derivativeAtX0 "2.3999999999999577"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
-#   :Interp1 :yAtXPlus -0.2775980000000001 .
-#   :Interp1 :yAtXMinus -0.28239800000000004 .
+#   :Interp1 :yAtXPlus "-0.2775980000000001"^^xsd:decimal .
+#   :Interp1 :yAtXMinus "-0.28239800000000004"^^xsd:decimal .
 #   :Interp1 :h 0.001 .
-#   (-0.2775980000000001 -0.28239800000000004) math:difference 0.0047999999999999154 .
-#   (2.0 0.001) math:product 0.002 .
-#   (0.0047999999999999154 0.002) math:quotient 2.3999999999999577 .
+#   ("-0.2775980000000001"^^xsd:decimal "-0.28239800000000004"^^xsd:decimal) math:difference "0.0047999999999999154"^^xsd:decimal .
+#   (2.0 0.001) math:product "0.002"^^xsd:decimal .
+#   ("0.0047999999999999154"^^xsd:decimal "0.002"^^xsd:decimal) math:quotient "2.3999999999999577"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :Interp1 :yAtXPlus ?yP .
@@ -325,20 +326,20 @@
 #     :Interp1 :derivativeAtX0 ?dydx .
 #   } .
 # with substitution (on rule variables):
-#   ?dy = 0.0047999999999999154
-#   ?dydx = 2.3999999999999577
+#   ?dy = "0.0047999999999999154"^^xsd:decimal
+#   ?dydx = "2.3999999999999577"^^xsd:decimal
 #   ?h = 0.001
-#   ?twoH = 0.002
-#   ?yM = -0.28239800000000004
-#   ?yP = -0.2775980000000001
+#   ?twoH = "0.002"^^xsd:decimal
+#   ?yM = "-0.28239800000000004"^^xsd:decimal
+#   ?yP = "-0.2775980000000001"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:Interp1 :derivativeAtX0 2.3999999999999577 .
+:Interp1 :derivativeAtX0 "2.3999999999999577"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :Interp1 :yAtBracketA -1 .
+#   :Interp1 :yAtBracketA "-1"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :Interp1 :points (_:b1 _:b2 _:b3 _:b4 _:b5) .
 #   :Interp1 :bracketA 0.0 .
@@ -356,8 +357,8 @@
 #   } ?factors) log:collectAllIn ?_b1 .
 #       ?factors math:product ?basis .
 #       (?yi ?basis) math:product ?term .
-#   } (0 0 -1 0 0)) log:collectAllIn ?_b2 .
-#   (0 0 -1 0 0) math:sum -1 .
+#   } ("0"^^xsd:decimal "0"^^xsd:decimal "-1"^^xsd:decimal "0"^^xsd:decimal "0"^^xsd:decimal)) log:collectAllIn ?_b2 .
+#   ("0"^^xsd:decimal "0"^^xsd:decimal "-1"^^xsd:decimal "0"^^xsd:decimal "0"^^xsd:decimal) math:sum "-1"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :Interp1 :points ?pts .
@@ -383,17 +384,17 @@
 #   } .
 # with substitution (on rule variables):
 #   ?pts = (_:b1 _:b2 _:b3 _:b4 _:b5)
-#   ?terms = (0 0 -1 0 0)
+#   ?terms = ("0"^^xsd:decimal "0"^^xsd:decimal "-1"^^xsd:decimal "0"^^xsd:decimal "0"^^xsd:decimal)
 #   ?xa = 0.0
-#   ?ya = -1
+#   ?ya = "-1"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:Interp1 :yAtBracketA -1 .
+:Interp1 :yAtBracketA "-1"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :Interp1 :yAtBracketB 1 .
+#   :Interp1 :yAtBracketB "1"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :Interp1 :points (_:b1 _:b2 _:b3 _:b4 _:b5) .
 #   :Interp1 :bracketB 1.0 .
@@ -411,8 +412,8 @@
 #   } ?factors) log:collectAllIn ?_b1 .
 #       ?factors math:product ?basis .
 #       (?yi ?basis) math:product ?term .
-#   } (0 1 0 0 0)) log:collectAllIn ?_b2 .
-#   (0 1 0 0 0) math:sum 1 .
+#   } ("0"^^xsd:decimal "1"^^xsd:decimal "0"^^xsd:decimal "0"^^xsd:decimal "0"^^xsd:decimal)) log:collectAllIn ?_b2 .
+#   ("0"^^xsd:decimal "1"^^xsd:decimal "0"^^xsd:decimal "0"^^xsd:decimal "0"^^xsd:decimal) math:sum "1"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :Interp1 :points ?pts .
@@ -438,13 +439,13 @@
 #   } .
 # with substitution (on rule variables):
 #   ?pts = (_:b1 _:b2 _:b3 _:b4 _:b5)
-#   ?terms = (0 1 0 0 0)
+#   ?terms = ("0"^^xsd:decimal "1"^^xsd:decimal "0"^^xsd:decimal "0"^^xsd:decimal "0"^^xsd:decimal)
 #   ?xb = 1.0
-#   ?yb = 1
+#   ?yb = "1"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:Interp1 :yAtBracketB 1 .
+:Interp1 :yAtBracketB "1"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
@@ -452,10 +453,10 @@
 # It holds because the following instance of the rule body is provable:
 #   :Interp1 :bracketA 0.0 .
 #   :Interp1 :bracketB 1.0 .
-#   :Interp1 :yAtBracketA -1 .
-#   :Interp1 :yAtBracketB 1 .
-#   (-1 1) math:product -1 .
-#   -1 math:lessThan 0.0 .
+#   :Interp1 :yAtBracketA "-1"^^xsd:decimal .
+#   :Interp1 :yAtBracketB "1"^^xsd:decimal .
+#   ("-1"^^xsd:decimal "1"^^xsd:decimal) math:product "-1"^^xsd:decimal .
+#   "-1"^^xsd:decimal math:lessThan 0.0 .
 # via the schematic forward rule:
 #   {
 #     :Interp1 :bracketA ?xa .
@@ -472,11 +473,11 @@
 #     :Interp1 :rootBracket _:b6 .
 #   } .
 # with substitution (on rule variables):
-#   ?prod = -1
+#   ?prod = "-1"^^xsd:decimal
 #   ?xa = 0.0
 #   ?xb = 1.0
-#   ?ya = -1
-#   ?yb = 1
+#   ?ya = "-1"^^xsd:decimal
+#   ?yb = "1"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -488,10 +489,10 @@ _:sk_0 :a 0.0 .
 # It holds because the following instance of the rule body is provable:
 #   :Interp1 :bracketA 0.0 .
 #   :Interp1 :bracketB 1.0 .
-#   :Interp1 :yAtBracketA -1 .
-#   :Interp1 :yAtBracketB 1 .
-#   (-1 1) math:product -1 .
-#   -1 math:lessThan 0.0 .
+#   :Interp1 :yAtBracketA "-1"^^xsd:decimal .
+#   :Interp1 :yAtBracketB "1"^^xsd:decimal .
+#   ("-1"^^xsd:decimal "1"^^xsd:decimal) math:product "-1"^^xsd:decimal .
+#   "-1"^^xsd:decimal math:lessThan 0.0 .
 # via the schematic forward rule:
 #   {
 #     :Interp1 :bracketA ?xa .
@@ -508,11 +509,11 @@ _:sk_0 :a 0.0 .
 #     :Interp1 :rootBracket _:b6 .
 #   } .
 # with substitution (on rule variables):
-#   ?prod = -1
+#   ?prod = "-1"^^xsd:decimal
 #   ?xa = 0.0
 #   ?xb = 1.0
-#   ?ya = -1
-#   ?yb = 1
+#   ?ya = "-1"^^xsd:decimal
+#   ?yb = "1"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -520,14 +521,14 @@ _:sk_0 :b 1.0 .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_0 :ya -1 .
+#   _:sk_0 :ya "-1"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :Interp1 :bracketA 0.0 .
 #   :Interp1 :bracketB 1.0 .
-#   :Interp1 :yAtBracketA -1 .
-#   :Interp1 :yAtBracketB 1 .
-#   (-1 1) math:product -1 .
-#   -1 math:lessThan 0.0 .
+#   :Interp1 :yAtBracketA "-1"^^xsd:decimal .
+#   :Interp1 :yAtBracketB "1"^^xsd:decimal .
+#   ("-1"^^xsd:decimal "1"^^xsd:decimal) math:product "-1"^^xsd:decimal .
+#   "-1"^^xsd:decimal math:lessThan 0.0 .
 # via the schematic forward rule:
 #   {
 #     :Interp1 :bracketA ?xa .
@@ -544,26 +545,26 @@ _:sk_0 :b 1.0 .
 #     :Interp1 :rootBracket _:b6 .
 #   } .
 # with substitution (on rule variables):
-#   ?prod = -1
+#   ?prod = "-1"^^xsd:decimal
 #   ?xa = 0.0
 #   ?xb = 1.0
-#   ?ya = -1
-#   ?yb = 1
+#   ?ya = "-1"^^xsd:decimal
+#   ?yb = "1"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_0 :ya -1 .
+_:sk_0 :ya "-1"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_0 :yb 1 .
+#   _:sk_0 :yb "1"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :Interp1 :bracketA 0.0 .
 #   :Interp1 :bracketB 1.0 .
-#   :Interp1 :yAtBracketA -1 .
-#   :Interp1 :yAtBracketB 1 .
-#   (-1 1) math:product -1 .
-#   -1 math:lessThan 0.0 .
+#   :Interp1 :yAtBracketA "-1"^^xsd:decimal .
+#   :Interp1 :yAtBracketB "1"^^xsd:decimal .
+#   ("-1"^^xsd:decimal "1"^^xsd:decimal) math:product "-1"^^xsd:decimal .
+#   "-1"^^xsd:decimal math:lessThan 0.0 .
 # via the schematic forward rule:
 #   {
 #     :Interp1 :bracketA ?xa .
@@ -580,15 +581,15 @@ _:sk_0 :ya -1 .
 #     :Interp1 :rootBracket _:b6 .
 #   } .
 # with substitution (on rule variables):
-#   ?prod = -1
+#   ?prod = "-1"^^xsd:decimal
 #   ?xa = 0.0
 #   ?xb = 1.0
-#   ?ya = -1
-#   ?yb = 1
+#   ?ya = "-1"^^xsd:decimal
+#   ?yb = "1"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_0 :yb 1 .
+_:sk_0 :yb "1"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
@@ -596,10 +597,10 @@ _:sk_0 :yb 1 .
 # It holds because the following instance of the rule body is provable:
 #   :Interp1 :bracketA 0.0 .
 #   :Interp1 :bracketB 1.0 .
-#   :Interp1 :yAtBracketA -1 .
-#   :Interp1 :yAtBracketB 1 .
-#   (-1 1) math:product -1 .
-#   -1 math:lessThan 0.0 .
+#   :Interp1 :yAtBracketA "-1"^^xsd:decimal .
+#   :Interp1 :yAtBracketB "1"^^xsd:decimal .
+#   ("-1"^^xsd:decimal "1"^^xsd:decimal) math:product "-1"^^xsd:decimal .
+#   "-1"^^xsd:decimal math:lessThan 0.0 .
 # via the schematic forward rule:
 #   {
 #     :Interp1 :bracketA ?xa .
@@ -616,11 +617,11 @@ _:sk_0 :yb 1 .
 #     :Interp1 :rootBracket _:b6 .
 #   } .
 # with substitution (on rule variables):
-#   ?prod = -1
+#   ?prod = "-1"^^xsd:decimal
 #   ?xa = 0.0
 #   ?xb = 1.0
-#   ?ya = -1
-#   ?yb = 1
+#   ?ya = "-1"^^xsd:decimal
+#   ?yb = "1"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 

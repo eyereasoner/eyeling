@@ -1,28 +1,29 @@
 @prefix : <http://example.org/cranberry-calculus#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :VecA :dotWithVecB 12 .
+#   :VecA :dotWithVecB "12"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :VecA :x 3.0 .
 #   :VecA :y 4.0 .
 #   :VecB :x 4.0 .
 #   :VecB :y 0.0 .
-#   (3.0 4.0) math:product 12 .
-#   (4.0 0.0) math:product 0 .
-#   (12 0) math:sum 12 .
-#   (3.0 2.0) math:exponentiation 9 .
-#   (4.0 2.0) math:exponentiation 16 .
-#   (9 16) math:sum 25 .
-#   (25 0.5) math:exponentiation 5 .
-#   (4.0 2.0) math:exponentiation 16 .
-#   (0.0 2.0) math:exponentiation 0 .
-#   (16 0) math:sum 16 .
-#   (16 0.5) math:exponentiation 4 .
-#   (5 4) math:product 20 .
-#   (12 20) math:quotient 0.6 .
-#   0.6 math:acos 0.9272952180016123 .
-#   0.9272952180016123 math:degrees 53.13010235415598 .
+#   (3.0 4.0) math:product "12"^^xsd:decimal .
+#   (4.0 0.0) math:product "0"^^xsd:decimal .
+#   ("12"^^xsd:decimal "0"^^xsd:decimal) math:sum "12"^^xsd:decimal .
+#   (3.0 2.0) math:exponentiation "9"^^xsd:decimal .
+#   (4.0 2.0) math:exponentiation "16"^^xsd:decimal .
+#   ("9"^^xsd:decimal "16"^^xsd:decimal) math:sum "25"^^xsd:decimal .
+#   ("25"^^xsd:decimal 0.5) math:exponentiation "5"^^xsd:decimal .
+#   (4.0 2.0) math:exponentiation "16"^^xsd:decimal .
+#   (0.0 2.0) math:exponentiation "0"^^xsd:decimal .
+#   ("16"^^xsd:decimal "0"^^xsd:decimal) math:sum "16"^^xsd:decimal .
+#   ("16"^^xsd:decimal 0.5) math:exponentiation "4"^^xsd:decimal .
+#   ("5"^^xsd:decimal "4"^^xsd:decimal) math:product "20"^^xsd:decimal .
+#   ("12"^^xsd:decimal "20"^^xsd:decimal) math:quotient "0.6"^^xsd:decimal .
+#   "0.6"^^xsd:decimal math:acos "0.9272952180016123"^^xsd:decimal .
+#   "0.9272952180016123"^^xsd:decimal math:degrees "53.13010235415598"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :VecA :x ?ax .
@@ -51,53 +52,53 @@
 #     :VecA :angleToVecB _:b2 .
 #   } .
 # with substitution (on rule variables):
-#   ?a2 = 25
-#   ?aNorm = 5
+#   ?a2 = "25"^^xsd:decimal
+#   ?aNorm = "5"^^xsd:decimal
 #   ?ax = 3.0
-#   ?ax2 = 9
-#   ?axbx = 12
+#   ?ax2 = "9"^^xsd:decimal
+#   ?axbx = "12"^^xsd:decimal
 #   ?ay = 4.0
-#   ?ay2 = 16
-#   ?ayby = 0
-#   ?b2 = 16
-#   ?bNorm = 4
+#   ?ay2 = "16"^^xsd:decimal
+#   ?ayby = "0"^^xsd:decimal
+#   ?b2 = "16"^^xsd:decimal
+#   ?bNorm = "4"^^xsd:decimal
 #   ?bx = 4.0
-#   ?bx2 = 16
+#   ?bx2 = "16"^^xsd:decimal
 #   ?by = 0.0
-#   ?by2 = 0
-#   ?cosTheta = 0.6
-#   ?den = 20
-#   ?dot = 12
-#   ?thetaDeg = 53.13010235415598
-#   ?thetaRad = 0.9272952180016123
+#   ?by2 = "0"^^xsd:decimal
+#   ?cosTheta = "0.6"^^xsd:decimal
+#   ?den = "20"^^xsd:decimal
+#   ?dot = "12"^^xsd:decimal
+#   ?thetaDeg = "53.13010235415598"^^xsd:decimal
+#   ?thetaRad = "0.9272952180016123"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:VecA :dotWithVecB 12 .
+:VecA :dotWithVecB "12"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_0 :radians 0.9272952180016123 .
+#   _:sk_0 :radians "0.9272952180016123"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :VecA :x 3.0 .
 #   :VecA :y 4.0 .
 #   :VecB :x 4.0 .
 #   :VecB :y 0.0 .
-#   (3.0 4.0) math:product 12 .
-#   (4.0 0.0) math:product 0 .
-#   (12 0) math:sum 12 .
-#   (3.0 2.0) math:exponentiation 9 .
-#   (4.0 2.0) math:exponentiation 16 .
-#   (9 16) math:sum 25 .
-#   (25 0.5) math:exponentiation 5 .
-#   (4.0 2.0) math:exponentiation 16 .
-#   (0.0 2.0) math:exponentiation 0 .
-#   (16 0) math:sum 16 .
-#   (16 0.5) math:exponentiation 4 .
-#   (5 4) math:product 20 .
-#   (12 20) math:quotient 0.6 .
-#   0.6 math:acos 0.9272952180016123 .
-#   0.9272952180016123 math:degrees 53.13010235415598 .
+#   (3.0 4.0) math:product "12"^^xsd:decimal .
+#   (4.0 0.0) math:product "0"^^xsd:decimal .
+#   ("12"^^xsd:decimal "0"^^xsd:decimal) math:sum "12"^^xsd:decimal .
+#   (3.0 2.0) math:exponentiation "9"^^xsd:decimal .
+#   (4.0 2.0) math:exponentiation "16"^^xsd:decimal .
+#   ("9"^^xsd:decimal "16"^^xsd:decimal) math:sum "25"^^xsd:decimal .
+#   ("25"^^xsd:decimal 0.5) math:exponentiation "5"^^xsd:decimal .
+#   (4.0 2.0) math:exponentiation "16"^^xsd:decimal .
+#   (0.0 2.0) math:exponentiation "0"^^xsd:decimal .
+#   ("16"^^xsd:decimal "0"^^xsd:decimal) math:sum "16"^^xsd:decimal .
+#   ("16"^^xsd:decimal 0.5) math:exponentiation "4"^^xsd:decimal .
+#   ("5"^^xsd:decimal "4"^^xsd:decimal) math:product "20"^^xsd:decimal .
+#   ("12"^^xsd:decimal "20"^^xsd:decimal) math:quotient "0.6"^^xsd:decimal .
+#   "0.6"^^xsd:decimal math:acos "0.9272952180016123"^^xsd:decimal .
+#   "0.9272952180016123"^^xsd:decimal math:degrees "53.13010235415598"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :VecA :x ?ax .
@@ -126,53 +127,53 @@
 #     :VecA :angleToVecB _:b2 .
 #   } .
 # with substitution (on rule variables):
-#   ?a2 = 25
-#   ?aNorm = 5
+#   ?a2 = "25"^^xsd:decimal
+#   ?aNorm = "5"^^xsd:decimal
 #   ?ax = 3.0
-#   ?ax2 = 9
-#   ?axbx = 12
+#   ?ax2 = "9"^^xsd:decimal
+#   ?axbx = "12"^^xsd:decimal
 #   ?ay = 4.0
-#   ?ay2 = 16
-#   ?ayby = 0
-#   ?b2 = 16
-#   ?bNorm = 4
+#   ?ay2 = "16"^^xsd:decimal
+#   ?ayby = "0"^^xsd:decimal
+#   ?b2 = "16"^^xsd:decimal
+#   ?bNorm = "4"^^xsd:decimal
 #   ?bx = 4.0
-#   ?bx2 = 16
+#   ?bx2 = "16"^^xsd:decimal
 #   ?by = 0.0
-#   ?by2 = 0
-#   ?cosTheta = 0.6
-#   ?den = 20
-#   ?dot = 12
-#   ?thetaDeg = 53.13010235415598
-#   ?thetaRad = 0.9272952180016123
+#   ?by2 = "0"^^xsd:decimal
+#   ?cosTheta = "0.6"^^xsd:decimal
+#   ?den = "20"^^xsd:decimal
+#   ?dot = "12"^^xsd:decimal
+#   ?thetaDeg = "53.13010235415598"^^xsd:decimal
+#   ?thetaRad = "0.9272952180016123"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_0 :radians 0.9272952180016123 .
+_:sk_0 :radians "0.9272952180016123"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_0 :degrees 53.13010235415598 .
+#   _:sk_0 :degrees "53.13010235415598"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :VecA :x 3.0 .
 #   :VecA :y 4.0 .
 #   :VecB :x 4.0 .
 #   :VecB :y 0.0 .
-#   (3.0 4.0) math:product 12 .
-#   (4.0 0.0) math:product 0 .
-#   (12 0) math:sum 12 .
-#   (3.0 2.0) math:exponentiation 9 .
-#   (4.0 2.0) math:exponentiation 16 .
-#   (9 16) math:sum 25 .
-#   (25 0.5) math:exponentiation 5 .
-#   (4.0 2.0) math:exponentiation 16 .
-#   (0.0 2.0) math:exponentiation 0 .
-#   (16 0) math:sum 16 .
-#   (16 0.5) math:exponentiation 4 .
-#   (5 4) math:product 20 .
-#   (12 20) math:quotient 0.6 .
-#   0.6 math:acos 0.9272952180016123 .
-#   0.9272952180016123 math:degrees 53.13010235415598 .
+#   (3.0 4.0) math:product "12"^^xsd:decimal .
+#   (4.0 0.0) math:product "0"^^xsd:decimal .
+#   ("12"^^xsd:decimal "0"^^xsd:decimal) math:sum "12"^^xsd:decimal .
+#   (3.0 2.0) math:exponentiation "9"^^xsd:decimal .
+#   (4.0 2.0) math:exponentiation "16"^^xsd:decimal .
+#   ("9"^^xsd:decimal "16"^^xsd:decimal) math:sum "25"^^xsd:decimal .
+#   ("25"^^xsd:decimal 0.5) math:exponentiation "5"^^xsd:decimal .
+#   (4.0 2.0) math:exponentiation "16"^^xsd:decimal .
+#   (0.0 2.0) math:exponentiation "0"^^xsd:decimal .
+#   ("16"^^xsd:decimal "0"^^xsd:decimal) math:sum "16"^^xsd:decimal .
+#   ("16"^^xsd:decimal 0.5) math:exponentiation "4"^^xsd:decimal .
+#   ("5"^^xsd:decimal "4"^^xsd:decimal) math:product "20"^^xsd:decimal .
+#   ("12"^^xsd:decimal "20"^^xsd:decimal) math:quotient "0.6"^^xsd:decimal .
+#   "0.6"^^xsd:decimal math:acos "0.9272952180016123"^^xsd:decimal .
+#   "0.9272952180016123"^^xsd:decimal math:degrees "53.13010235415598"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :VecA :x ?ax .
@@ -201,29 +202,29 @@ _:sk_0 :radians 0.9272952180016123 .
 #     :VecA :angleToVecB _:b2 .
 #   } .
 # with substitution (on rule variables):
-#   ?a2 = 25
-#   ?aNorm = 5
+#   ?a2 = "25"^^xsd:decimal
+#   ?aNorm = "5"^^xsd:decimal
 #   ?ax = 3.0
-#   ?ax2 = 9
-#   ?axbx = 12
+#   ?ax2 = "9"^^xsd:decimal
+#   ?axbx = "12"^^xsd:decimal
 #   ?ay = 4.0
-#   ?ay2 = 16
-#   ?ayby = 0
-#   ?b2 = 16
-#   ?bNorm = 4
+#   ?ay2 = "16"^^xsd:decimal
+#   ?ayby = "0"^^xsd:decimal
+#   ?b2 = "16"^^xsd:decimal
+#   ?bNorm = "4"^^xsd:decimal
 #   ?bx = 4.0
-#   ?bx2 = 16
+#   ?bx2 = "16"^^xsd:decimal
 #   ?by = 0.0
-#   ?by2 = 0
-#   ?cosTheta = 0.6
-#   ?den = 20
-#   ?dot = 12
-#   ?thetaDeg = 53.13010235415598
-#   ?thetaRad = 0.9272952180016123
+#   ?by2 = "0"^^xsd:decimal
+#   ?cosTheta = "0.6"^^xsd:decimal
+#   ?den = "20"^^xsd:decimal
+#   ?dot = "12"^^xsd:decimal
+#   ?thetaDeg = "53.13010235415598"^^xsd:decimal
+#   ?thetaRad = "0.9272952180016123"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_0 :degrees 53.13010235415598 .
+_:sk_0 :degrees "53.13010235415598"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
@@ -233,21 +234,21 @@ _:sk_0 :degrees 53.13010235415598 .
 #   :VecA :y 4.0 .
 #   :VecB :x 4.0 .
 #   :VecB :y 0.0 .
-#   (3.0 4.0) math:product 12 .
-#   (4.0 0.0) math:product 0 .
-#   (12 0) math:sum 12 .
-#   (3.0 2.0) math:exponentiation 9 .
-#   (4.0 2.0) math:exponentiation 16 .
-#   (9 16) math:sum 25 .
-#   (25 0.5) math:exponentiation 5 .
-#   (4.0 2.0) math:exponentiation 16 .
-#   (0.0 2.0) math:exponentiation 0 .
-#   (16 0) math:sum 16 .
-#   (16 0.5) math:exponentiation 4 .
-#   (5 4) math:product 20 .
-#   (12 20) math:quotient 0.6 .
-#   0.6 math:acos 0.9272952180016123 .
-#   0.9272952180016123 math:degrees 53.13010235415598 .
+#   (3.0 4.0) math:product "12"^^xsd:decimal .
+#   (4.0 0.0) math:product "0"^^xsd:decimal .
+#   ("12"^^xsd:decimal "0"^^xsd:decimal) math:sum "12"^^xsd:decimal .
+#   (3.0 2.0) math:exponentiation "9"^^xsd:decimal .
+#   (4.0 2.0) math:exponentiation "16"^^xsd:decimal .
+#   ("9"^^xsd:decimal "16"^^xsd:decimal) math:sum "25"^^xsd:decimal .
+#   ("25"^^xsd:decimal 0.5) math:exponentiation "5"^^xsd:decimal .
+#   (4.0 2.0) math:exponentiation "16"^^xsd:decimal .
+#   (0.0 2.0) math:exponentiation "0"^^xsd:decimal .
+#   ("16"^^xsd:decimal "0"^^xsd:decimal) math:sum "16"^^xsd:decimal .
+#   ("16"^^xsd:decimal 0.5) math:exponentiation "4"^^xsd:decimal .
+#   ("5"^^xsd:decimal "4"^^xsd:decimal) math:product "20"^^xsd:decimal .
+#   ("12"^^xsd:decimal "20"^^xsd:decimal) math:quotient "0.6"^^xsd:decimal .
+#   "0.6"^^xsd:decimal math:acos "0.9272952180016123"^^xsd:decimal .
+#   "0.9272952180016123"^^xsd:decimal math:degrees "53.13010235415598"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :VecA :x ?ax .
@@ -276,25 +277,25 @@ _:sk_0 :degrees 53.13010235415598 .
 #     :VecA :angleToVecB _:b2 .
 #   } .
 # with substitution (on rule variables):
-#   ?a2 = 25
-#   ?aNorm = 5
+#   ?a2 = "25"^^xsd:decimal
+#   ?aNorm = "5"^^xsd:decimal
 #   ?ax = 3.0
-#   ?ax2 = 9
-#   ?axbx = 12
+#   ?ax2 = "9"^^xsd:decimal
+#   ?axbx = "12"^^xsd:decimal
 #   ?ay = 4.0
-#   ?ay2 = 16
-#   ?ayby = 0
-#   ?b2 = 16
-#   ?bNorm = 4
+#   ?ay2 = "16"^^xsd:decimal
+#   ?ayby = "0"^^xsd:decimal
+#   ?b2 = "16"^^xsd:decimal
+#   ?bNorm = "4"^^xsd:decimal
 #   ?bx = 4.0
-#   ?bx2 = 16
+#   ?bx2 = "16"^^xsd:decimal
 #   ?by = 0.0
-#   ?by2 = 0
-#   ?cosTheta = 0.6
-#   ?den = 20
-#   ?dot = 12
-#   ?thetaDeg = 53.13010235415598
-#   ?thetaRad = 0.9272952180016123
+#   ?by2 = "0"^^xsd:decimal
+#   ?cosTheta = "0.6"^^xsd:decimal
+#   ?den = "20"^^xsd:decimal
+#   ?dot = "12"^^xsd:decimal
+#   ?thetaDeg = "53.13010235415598"^^xsd:decimal
+#   ?thetaRad = "0.9272952180016123"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -302,28 +303,28 @@ _:sk_0 :degrees 53.13010235415598 .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :Shot1 :vx 21.213203435596427 .
+#   :Shot1 :vx "21.213203435596427"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :Shot1 :speed 30.0 .
 #   :Shot1 :angleRad 0.7853981633974483 .
 #   :Shot1 :g 9.81 .
 #   :Shot1 :tSample 2.5 .
-#   0.7853981633974483 math:sin 0.7071067811865475 .
-#   0.7853981633974483 math:cos 0.7071067811865476 .
-#   (30.0 0.7071067811865476) math:product 21.213203435596427 .
-#   (30.0 0.7071067811865475) math:product 21.213203435596423 .
-#   (2.0 21.213203435596423) math:product 42.426406871192846 .
-#   (42.426406871192846 9.81) math:quotient 4.324812117348913 .
-#   (21.213203435596427 4.324812117348913) math:product 91.74311926605502 .
-#   (21.213203435596423 2.0) math:exponentiation 449.9999999999999 .
-#   (2.0 9.81) math:product 19.62 .
-#   (449.9999999999999 19.62) math:quotient 22.935779816513755 .
-#   (21.213203435596427 2.5) math:product 53.033008588991066 .
-#   (21.213203435596423 2.5) math:product 53.03300858899106 .
-#   (2.5 2.0) math:exponentiation 6.25 .
-#   (9.81 6.25) math:product 61.3125 .
-#   (0.5 61.3125) math:product 30.65625 .
-#   (53.03300858899106 30.65625) math:difference 22.37675858899106 .
+#   0.7853981633974483 math:sin "0.7071067811865475"^^xsd:decimal .
+#   0.7853981633974483 math:cos "0.7071067811865476"^^xsd:decimal .
+#   (30.0 "0.7071067811865476"^^xsd:decimal) math:product "21.213203435596427"^^xsd:decimal .
+#   (30.0 "0.7071067811865475"^^xsd:decimal) math:product "21.213203435596423"^^xsd:decimal .
+#   (2.0 "21.213203435596423"^^xsd:decimal) math:product "42.426406871192846"^^xsd:decimal .
+#   ("42.426406871192846"^^xsd:decimal 9.81) math:quotient "4.324812117348913"^^xsd:decimal .
+#   ("21.213203435596427"^^xsd:decimal "4.324812117348913"^^xsd:decimal) math:product "91.74311926605502"^^xsd:decimal .
+#   ("21.213203435596423"^^xsd:decimal 2.0) math:exponentiation "449.9999999999999"^^xsd:decimal .
+#   (2.0 9.81) math:product "19.62"^^xsd:decimal .
+#   ("449.9999999999999"^^xsd:decimal "19.62"^^xsd:decimal) math:quotient "22.935779816513755"^^xsd:decimal .
+#   ("21.213203435596427"^^xsd:decimal 2.5) math:product "53.033008588991066"^^xsd:decimal .
+#   ("21.213203435596423"^^xsd:decimal 2.5) math:product "53.03300858899106"^^xsd:decimal .
+#   (2.5 2.0) math:exponentiation "6.25"^^xsd:decimal .
+#   (9.81 "6.25"^^xsd:decimal) math:product "61.3125"^^xsd:decimal .
+#   (0.5 "61.3125"^^xsd:decimal) math:product "30.65625"^^xsd:decimal .
+#   ("53.03300858899106"^^xsd:decimal "30.65625"^^xsd:decimal) math:difference "22.37675858899106"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :Shot1 :speed ?v .
@@ -358,55 +359,55 @@ _:sk_0 :degrees 53.13010235415598 .
 #     :Shot1 :positionAtSample _:b3 .
 #   } .
 # with substitution (on rule variables):
-#   ?cosT = 0.7071067811865476
+#   ?cosT = "0.7071067811865476"^^xsd:decimal
 #   ?g = 9.81
-#   ?g_t2 = 61.3125
-#   ?hMax = 22.935779816513755
-#   ?half_g_t2 = 30.65625
-#   ?range = 91.74311926605502
-#   ?sinT = 0.7071067811865475
+#   ?g_t2 = "61.3125"^^xsd:decimal
+#   ?hMax = "22.935779816513755"^^xsd:decimal
+#   ?half_g_t2 = "30.65625"^^xsd:decimal
+#   ?range = "91.74311926605502"^^xsd:decimal
+#   ?sinT = "0.7071067811865475"^^xsd:decimal
 #   ?t = 2.5
-#   ?t2 = 6.25
-#   ?tFlight = 4.324812117348913
+#   ?t2 = "6.25"^^xsd:decimal
+#   ?tFlight = "4.324812117348913"^^xsd:decimal
 #   ?theta = 0.7853981633974483
-#   ?twoG = 19.62
-#   ?twoVy = 42.426406871192846
+#   ?twoG = "19.62"^^xsd:decimal
+#   ?twoVy = "42.426406871192846"^^xsd:decimal
 #   ?v = 30.0
-#   ?vx = 21.213203435596427
-#   ?vy = 21.213203435596423
-#   ?vy2 = 449.9999999999999
-#   ?vy_t = 53.03300858899106
-#   ?xAtT = 53.033008588991066
-#   ?yAtT = 22.37675858899106
+#   ?vx = "21.213203435596427"^^xsd:decimal
+#   ?vy = "21.213203435596423"^^xsd:decimal
+#   ?vy2 = "449.9999999999999"^^xsd:decimal
+#   ?vy_t = "53.03300858899106"^^xsd:decimal
+#   ?xAtT = "53.033008588991066"^^xsd:decimal
+#   ?yAtT = "22.37675858899106"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:Shot1 :vx 21.213203435596427 .
+:Shot1 :vx "21.213203435596427"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :Shot1 :vy 21.213203435596423 .
+#   :Shot1 :vy "21.213203435596423"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :Shot1 :speed 30.0 .
 #   :Shot1 :angleRad 0.7853981633974483 .
 #   :Shot1 :g 9.81 .
 #   :Shot1 :tSample 2.5 .
-#   0.7853981633974483 math:sin 0.7071067811865475 .
-#   0.7853981633974483 math:cos 0.7071067811865476 .
-#   (30.0 0.7071067811865476) math:product 21.213203435596427 .
-#   (30.0 0.7071067811865475) math:product 21.213203435596423 .
-#   (2.0 21.213203435596423) math:product 42.426406871192846 .
-#   (42.426406871192846 9.81) math:quotient 4.324812117348913 .
-#   (21.213203435596427 4.324812117348913) math:product 91.74311926605502 .
-#   (21.213203435596423 2.0) math:exponentiation 449.9999999999999 .
-#   (2.0 9.81) math:product 19.62 .
-#   (449.9999999999999 19.62) math:quotient 22.935779816513755 .
-#   (21.213203435596427 2.5) math:product 53.033008588991066 .
-#   (21.213203435596423 2.5) math:product 53.03300858899106 .
-#   (2.5 2.0) math:exponentiation 6.25 .
-#   (9.81 6.25) math:product 61.3125 .
-#   (0.5 61.3125) math:product 30.65625 .
-#   (53.03300858899106 30.65625) math:difference 22.37675858899106 .
+#   0.7853981633974483 math:sin "0.7071067811865475"^^xsd:decimal .
+#   0.7853981633974483 math:cos "0.7071067811865476"^^xsd:decimal .
+#   (30.0 "0.7071067811865476"^^xsd:decimal) math:product "21.213203435596427"^^xsd:decimal .
+#   (30.0 "0.7071067811865475"^^xsd:decimal) math:product "21.213203435596423"^^xsd:decimal .
+#   (2.0 "21.213203435596423"^^xsd:decimal) math:product "42.426406871192846"^^xsd:decimal .
+#   ("42.426406871192846"^^xsd:decimal 9.81) math:quotient "4.324812117348913"^^xsd:decimal .
+#   ("21.213203435596427"^^xsd:decimal "4.324812117348913"^^xsd:decimal) math:product "91.74311926605502"^^xsd:decimal .
+#   ("21.213203435596423"^^xsd:decimal 2.0) math:exponentiation "449.9999999999999"^^xsd:decimal .
+#   (2.0 9.81) math:product "19.62"^^xsd:decimal .
+#   ("449.9999999999999"^^xsd:decimal "19.62"^^xsd:decimal) math:quotient "22.935779816513755"^^xsd:decimal .
+#   ("21.213203435596427"^^xsd:decimal 2.5) math:product "53.033008588991066"^^xsd:decimal .
+#   ("21.213203435596423"^^xsd:decimal 2.5) math:product "53.03300858899106"^^xsd:decimal .
+#   (2.5 2.0) math:exponentiation "6.25"^^xsd:decimal .
+#   (9.81 "6.25"^^xsd:decimal) math:product "61.3125"^^xsd:decimal .
+#   (0.5 "61.3125"^^xsd:decimal) math:product "30.65625"^^xsd:decimal .
+#   ("53.03300858899106"^^xsd:decimal "30.65625"^^xsd:decimal) math:difference "22.37675858899106"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :Shot1 :speed ?v .
@@ -441,55 +442,55 @@ _:sk_0 :degrees 53.13010235415598 .
 #     :Shot1 :positionAtSample _:b3 .
 #   } .
 # with substitution (on rule variables):
-#   ?cosT = 0.7071067811865476
+#   ?cosT = "0.7071067811865476"^^xsd:decimal
 #   ?g = 9.81
-#   ?g_t2 = 61.3125
-#   ?hMax = 22.935779816513755
-#   ?half_g_t2 = 30.65625
-#   ?range = 91.74311926605502
-#   ?sinT = 0.7071067811865475
+#   ?g_t2 = "61.3125"^^xsd:decimal
+#   ?hMax = "22.935779816513755"^^xsd:decimal
+#   ?half_g_t2 = "30.65625"^^xsd:decimal
+#   ?range = "91.74311926605502"^^xsd:decimal
+#   ?sinT = "0.7071067811865475"^^xsd:decimal
 #   ?t = 2.5
-#   ?t2 = 6.25
-#   ?tFlight = 4.324812117348913
+#   ?t2 = "6.25"^^xsd:decimal
+#   ?tFlight = "4.324812117348913"^^xsd:decimal
 #   ?theta = 0.7853981633974483
-#   ?twoG = 19.62
-#   ?twoVy = 42.426406871192846
+#   ?twoG = "19.62"^^xsd:decimal
+#   ?twoVy = "42.426406871192846"^^xsd:decimal
 #   ?v = 30.0
-#   ?vx = 21.213203435596427
-#   ?vy = 21.213203435596423
-#   ?vy2 = 449.9999999999999
-#   ?vy_t = 53.03300858899106
-#   ?xAtT = 53.033008588991066
-#   ?yAtT = 22.37675858899106
+#   ?vx = "21.213203435596427"^^xsd:decimal
+#   ?vy = "21.213203435596423"^^xsd:decimal
+#   ?vy2 = "449.9999999999999"^^xsd:decimal
+#   ?vy_t = "53.03300858899106"^^xsd:decimal
+#   ?xAtT = "53.033008588991066"^^xsd:decimal
+#   ?yAtT = "22.37675858899106"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:Shot1 :vy 21.213203435596423 .
+:Shot1 :vy "21.213203435596423"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :Shot1 :timeOfFlight 4.324812117348913 .
+#   :Shot1 :timeOfFlight "4.324812117348913"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :Shot1 :speed 30.0 .
 #   :Shot1 :angleRad 0.7853981633974483 .
 #   :Shot1 :g 9.81 .
 #   :Shot1 :tSample 2.5 .
-#   0.7853981633974483 math:sin 0.7071067811865475 .
-#   0.7853981633974483 math:cos 0.7071067811865476 .
-#   (30.0 0.7071067811865476) math:product 21.213203435596427 .
-#   (30.0 0.7071067811865475) math:product 21.213203435596423 .
-#   (2.0 21.213203435596423) math:product 42.426406871192846 .
-#   (42.426406871192846 9.81) math:quotient 4.324812117348913 .
-#   (21.213203435596427 4.324812117348913) math:product 91.74311926605502 .
-#   (21.213203435596423 2.0) math:exponentiation 449.9999999999999 .
-#   (2.0 9.81) math:product 19.62 .
-#   (449.9999999999999 19.62) math:quotient 22.935779816513755 .
-#   (21.213203435596427 2.5) math:product 53.033008588991066 .
-#   (21.213203435596423 2.5) math:product 53.03300858899106 .
-#   (2.5 2.0) math:exponentiation 6.25 .
-#   (9.81 6.25) math:product 61.3125 .
-#   (0.5 61.3125) math:product 30.65625 .
-#   (53.03300858899106 30.65625) math:difference 22.37675858899106 .
+#   0.7853981633974483 math:sin "0.7071067811865475"^^xsd:decimal .
+#   0.7853981633974483 math:cos "0.7071067811865476"^^xsd:decimal .
+#   (30.0 "0.7071067811865476"^^xsd:decimal) math:product "21.213203435596427"^^xsd:decimal .
+#   (30.0 "0.7071067811865475"^^xsd:decimal) math:product "21.213203435596423"^^xsd:decimal .
+#   (2.0 "21.213203435596423"^^xsd:decimal) math:product "42.426406871192846"^^xsd:decimal .
+#   ("42.426406871192846"^^xsd:decimal 9.81) math:quotient "4.324812117348913"^^xsd:decimal .
+#   ("21.213203435596427"^^xsd:decimal "4.324812117348913"^^xsd:decimal) math:product "91.74311926605502"^^xsd:decimal .
+#   ("21.213203435596423"^^xsd:decimal 2.0) math:exponentiation "449.9999999999999"^^xsd:decimal .
+#   (2.0 9.81) math:product "19.62"^^xsd:decimal .
+#   ("449.9999999999999"^^xsd:decimal "19.62"^^xsd:decimal) math:quotient "22.935779816513755"^^xsd:decimal .
+#   ("21.213203435596427"^^xsd:decimal 2.5) math:product "53.033008588991066"^^xsd:decimal .
+#   ("21.213203435596423"^^xsd:decimal 2.5) math:product "53.03300858899106"^^xsd:decimal .
+#   (2.5 2.0) math:exponentiation "6.25"^^xsd:decimal .
+#   (9.81 "6.25"^^xsd:decimal) math:product "61.3125"^^xsd:decimal .
+#   (0.5 "61.3125"^^xsd:decimal) math:product "30.65625"^^xsd:decimal .
+#   ("53.03300858899106"^^xsd:decimal "30.65625"^^xsd:decimal) math:difference "22.37675858899106"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :Shot1 :speed ?v .
@@ -524,55 +525,55 @@ _:sk_0 :degrees 53.13010235415598 .
 #     :Shot1 :positionAtSample _:b3 .
 #   } .
 # with substitution (on rule variables):
-#   ?cosT = 0.7071067811865476
+#   ?cosT = "0.7071067811865476"^^xsd:decimal
 #   ?g = 9.81
-#   ?g_t2 = 61.3125
-#   ?hMax = 22.935779816513755
-#   ?half_g_t2 = 30.65625
-#   ?range = 91.74311926605502
-#   ?sinT = 0.7071067811865475
+#   ?g_t2 = "61.3125"^^xsd:decimal
+#   ?hMax = "22.935779816513755"^^xsd:decimal
+#   ?half_g_t2 = "30.65625"^^xsd:decimal
+#   ?range = "91.74311926605502"^^xsd:decimal
+#   ?sinT = "0.7071067811865475"^^xsd:decimal
 #   ?t = 2.5
-#   ?t2 = 6.25
-#   ?tFlight = 4.324812117348913
+#   ?t2 = "6.25"^^xsd:decimal
+#   ?tFlight = "4.324812117348913"^^xsd:decimal
 #   ?theta = 0.7853981633974483
-#   ?twoG = 19.62
-#   ?twoVy = 42.426406871192846
+#   ?twoG = "19.62"^^xsd:decimal
+#   ?twoVy = "42.426406871192846"^^xsd:decimal
 #   ?v = 30.0
-#   ?vx = 21.213203435596427
-#   ?vy = 21.213203435596423
-#   ?vy2 = 449.9999999999999
-#   ?vy_t = 53.03300858899106
-#   ?xAtT = 53.033008588991066
-#   ?yAtT = 22.37675858899106
+#   ?vx = "21.213203435596427"^^xsd:decimal
+#   ?vy = "21.213203435596423"^^xsd:decimal
+#   ?vy2 = "449.9999999999999"^^xsd:decimal
+#   ?vy_t = "53.03300858899106"^^xsd:decimal
+#   ?xAtT = "53.033008588991066"^^xsd:decimal
+#   ?yAtT = "22.37675858899106"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:Shot1 :timeOfFlight 4.324812117348913 .
+:Shot1 :timeOfFlight "4.324812117348913"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :Shot1 :range 91.74311926605502 .
+#   :Shot1 :range "91.74311926605502"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :Shot1 :speed 30.0 .
 #   :Shot1 :angleRad 0.7853981633974483 .
 #   :Shot1 :g 9.81 .
 #   :Shot1 :tSample 2.5 .
-#   0.7853981633974483 math:sin 0.7071067811865475 .
-#   0.7853981633974483 math:cos 0.7071067811865476 .
-#   (30.0 0.7071067811865476) math:product 21.213203435596427 .
-#   (30.0 0.7071067811865475) math:product 21.213203435596423 .
-#   (2.0 21.213203435596423) math:product 42.426406871192846 .
-#   (42.426406871192846 9.81) math:quotient 4.324812117348913 .
-#   (21.213203435596427 4.324812117348913) math:product 91.74311926605502 .
-#   (21.213203435596423 2.0) math:exponentiation 449.9999999999999 .
-#   (2.0 9.81) math:product 19.62 .
-#   (449.9999999999999 19.62) math:quotient 22.935779816513755 .
-#   (21.213203435596427 2.5) math:product 53.033008588991066 .
-#   (21.213203435596423 2.5) math:product 53.03300858899106 .
-#   (2.5 2.0) math:exponentiation 6.25 .
-#   (9.81 6.25) math:product 61.3125 .
-#   (0.5 61.3125) math:product 30.65625 .
-#   (53.03300858899106 30.65625) math:difference 22.37675858899106 .
+#   0.7853981633974483 math:sin "0.7071067811865475"^^xsd:decimal .
+#   0.7853981633974483 math:cos "0.7071067811865476"^^xsd:decimal .
+#   (30.0 "0.7071067811865476"^^xsd:decimal) math:product "21.213203435596427"^^xsd:decimal .
+#   (30.0 "0.7071067811865475"^^xsd:decimal) math:product "21.213203435596423"^^xsd:decimal .
+#   (2.0 "21.213203435596423"^^xsd:decimal) math:product "42.426406871192846"^^xsd:decimal .
+#   ("42.426406871192846"^^xsd:decimal 9.81) math:quotient "4.324812117348913"^^xsd:decimal .
+#   ("21.213203435596427"^^xsd:decimal "4.324812117348913"^^xsd:decimal) math:product "91.74311926605502"^^xsd:decimal .
+#   ("21.213203435596423"^^xsd:decimal 2.0) math:exponentiation "449.9999999999999"^^xsd:decimal .
+#   (2.0 9.81) math:product "19.62"^^xsd:decimal .
+#   ("449.9999999999999"^^xsd:decimal "19.62"^^xsd:decimal) math:quotient "22.935779816513755"^^xsd:decimal .
+#   ("21.213203435596427"^^xsd:decimal 2.5) math:product "53.033008588991066"^^xsd:decimal .
+#   ("21.213203435596423"^^xsd:decimal 2.5) math:product "53.03300858899106"^^xsd:decimal .
+#   (2.5 2.0) math:exponentiation "6.25"^^xsd:decimal .
+#   (9.81 "6.25"^^xsd:decimal) math:product "61.3125"^^xsd:decimal .
+#   (0.5 "61.3125"^^xsd:decimal) math:product "30.65625"^^xsd:decimal .
+#   ("53.03300858899106"^^xsd:decimal "30.65625"^^xsd:decimal) math:difference "22.37675858899106"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :Shot1 :speed ?v .
@@ -607,55 +608,55 @@ _:sk_0 :degrees 53.13010235415598 .
 #     :Shot1 :positionAtSample _:b3 .
 #   } .
 # with substitution (on rule variables):
-#   ?cosT = 0.7071067811865476
+#   ?cosT = "0.7071067811865476"^^xsd:decimal
 #   ?g = 9.81
-#   ?g_t2 = 61.3125
-#   ?hMax = 22.935779816513755
-#   ?half_g_t2 = 30.65625
-#   ?range = 91.74311926605502
-#   ?sinT = 0.7071067811865475
+#   ?g_t2 = "61.3125"^^xsd:decimal
+#   ?hMax = "22.935779816513755"^^xsd:decimal
+#   ?half_g_t2 = "30.65625"^^xsd:decimal
+#   ?range = "91.74311926605502"^^xsd:decimal
+#   ?sinT = "0.7071067811865475"^^xsd:decimal
 #   ?t = 2.5
-#   ?t2 = 6.25
-#   ?tFlight = 4.324812117348913
+#   ?t2 = "6.25"^^xsd:decimal
+#   ?tFlight = "4.324812117348913"^^xsd:decimal
 #   ?theta = 0.7853981633974483
-#   ?twoG = 19.62
-#   ?twoVy = 42.426406871192846
+#   ?twoG = "19.62"^^xsd:decimal
+#   ?twoVy = "42.426406871192846"^^xsd:decimal
 #   ?v = 30.0
-#   ?vx = 21.213203435596427
-#   ?vy = 21.213203435596423
-#   ?vy2 = 449.9999999999999
-#   ?vy_t = 53.03300858899106
-#   ?xAtT = 53.033008588991066
-#   ?yAtT = 22.37675858899106
+#   ?vx = "21.213203435596427"^^xsd:decimal
+#   ?vy = "21.213203435596423"^^xsd:decimal
+#   ?vy2 = "449.9999999999999"^^xsd:decimal
+#   ?vy_t = "53.03300858899106"^^xsd:decimal
+#   ?xAtT = "53.033008588991066"^^xsd:decimal
+#   ?yAtT = "22.37675858899106"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:Shot1 :range 91.74311926605502 .
+:Shot1 :range "91.74311926605502"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :Shot1 :maxHeight 22.935779816513755 .
+#   :Shot1 :maxHeight "22.935779816513755"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :Shot1 :speed 30.0 .
 #   :Shot1 :angleRad 0.7853981633974483 .
 #   :Shot1 :g 9.81 .
 #   :Shot1 :tSample 2.5 .
-#   0.7853981633974483 math:sin 0.7071067811865475 .
-#   0.7853981633974483 math:cos 0.7071067811865476 .
-#   (30.0 0.7071067811865476) math:product 21.213203435596427 .
-#   (30.0 0.7071067811865475) math:product 21.213203435596423 .
-#   (2.0 21.213203435596423) math:product 42.426406871192846 .
-#   (42.426406871192846 9.81) math:quotient 4.324812117348913 .
-#   (21.213203435596427 4.324812117348913) math:product 91.74311926605502 .
-#   (21.213203435596423 2.0) math:exponentiation 449.9999999999999 .
-#   (2.0 9.81) math:product 19.62 .
-#   (449.9999999999999 19.62) math:quotient 22.935779816513755 .
-#   (21.213203435596427 2.5) math:product 53.033008588991066 .
-#   (21.213203435596423 2.5) math:product 53.03300858899106 .
-#   (2.5 2.0) math:exponentiation 6.25 .
-#   (9.81 6.25) math:product 61.3125 .
-#   (0.5 61.3125) math:product 30.65625 .
-#   (53.03300858899106 30.65625) math:difference 22.37675858899106 .
+#   0.7853981633974483 math:sin "0.7071067811865475"^^xsd:decimal .
+#   0.7853981633974483 math:cos "0.7071067811865476"^^xsd:decimal .
+#   (30.0 "0.7071067811865476"^^xsd:decimal) math:product "21.213203435596427"^^xsd:decimal .
+#   (30.0 "0.7071067811865475"^^xsd:decimal) math:product "21.213203435596423"^^xsd:decimal .
+#   (2.0 "21.213203435596423"^^xsd:decimal) math:product "42.426406871192846"^^xsd:decimal .
+#   ("42.426406871192846"^^xsd:decimal 9.81) math:quotient "4.324812117348913"^^xsd:decimal .
+#   ("21.213203435596427"^^xsd:decimal "4.324812117348913"^^xsd:decimal) math:product "91.74311926605502"^^xsd:decimal .
+#   ("21.213203435596423"^^xsd:decimal 2.0) math:exponentiation "449.9999999999999"^^xsd:decimal .
+#   (2.0 9.81) math:product "19.62"^^xsd:decimal .
+#   ("449.9999999999999"^^xsd:decimal "19.62"^^xsd:decimal) math:quotient "22.935779816513755"^^xsd:decimal .
+#   ("21.213203435596427"^^xsd:decimal 2.5) math:product "53.033008588991066"^^xsd:decimal .
+#   ("21.213203435596423"^^xsd:decimal 2.5) math:product "53.03300858899106"^^xsd:decimal .
+#   (2.5 2.0) math:exponentiation "6.25"^^xsd:decimal .
+#   (9.81 "6.25"^^xsd:decimal) math:product "61.3125"^^xsd:decimal .
+#   (0.5 "61.3125"^^xsd:decimal) math:product "30.65625"^^xsd:decimal .
+#   ("53.03300858899106"^^xsd:decimal "30.65625"^^xsd:decimal) math:difference "22.37675858899106"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :Shot1 :speed ?v .
@@ -690,30 +691,30 @@ _:sk_0 :degrees 53.13010235415598 .
 #     :Shot1 :positionAtSample _:b3 .
 #   } .
 # with substitution (on rule variables):
-#   ?cosT = 0.7071067811865476
+#   ?cosT = "0.7071067811865476"^^xsd:decimal
 #   ?g = 9.81
-#   ?g_t2 = 61.3125
-#   ?hMax = 22.935779816513755
-#   ?half_g_t2 = 30.65625
-#   ?range = 91.74311926605502
-#   ?sinT = 0.7071067811865475
+#   ?g_t2 = "61.3125"^^xsd:decimal
+#   ?hMax = "22.935779816513755"^^xsd:decimal
+#   ?half_g_t2 = "30.65625"^^xsd:decimal
+#   ?range = "91.74311926605502"^^xsd:decimal
+#   ?sinT = "0.7071067811865475"^^xsd:decimal
 #   ?t = 2.5
-#   ?t2 = 6.25
-#   ?tFlight = 4.324812117348913
+#   ?t2 = "6.25"^^xsd:decimal
+#   ?tFlight = "4.324812117348913"^^xsd:decimal
 #   ?theta = 0.7853981633974483
-#   ?twoG = 19.62
-#   ?twoVy = 42.426406871192846
+#   ?twoG = "19.62"^^xsd:decimal
+#   ?twoVy = "42.426406871192846"^^xsd:decimal
 #   ?v = 30.0
-#   ?vx = 21.213203435596427
-#   ?vy = 21.213203435596423
-#   ?vy2 = 449.9999999999999
-#   ?vy_t = 53.03300858899106
-#   ?xAtT = 53.033008588991066
-#   ?yAtT = 22.37675858899106
+#   ?vx = "21.213203435596427"^^xsd:decimal
+#   ?vy = "21.213203435596423"^^xsd:decimal
+#   ?vy2 = "449.9999999999999"^^xsd:decimal
+#   ?vy_t = "53.03300858899106"^^xsd:decimal
+#   ?xAtT = "53.033008588991066"^^xsd:decimal
+#   ?yAtT = "22.37675858899106"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:Shot1 :maxHeight 22.935779816513755 .
+:Shot1 :maxHeight "22.935779816513755"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
@@ -723,22 +724,22 @@ _:sk_0 :degrees 53.13010235415598 .
 #   :Shot1 :angleRad 0.7853981633974483 .
 #   :Shot1 :g 9.81 .
 #   :Shot1 :tSample 2.5 .
-#   0.7853981633974483 math:sin 0.7071067811865475 .
-#   0.7853981633974483 math:cos 0.7071067811865476 .
-#   (30.0 0.7071067811865476) math:product 21.213203435596427 .
-#   (30.0 0.7071067811865475) math:product 21.213203435596423 .
-#   (2.0 21.213203435596423) math:product 42.426406871192846 .
-#   (42.426406871192846 9.81) math:quotient 4.324812117348913 .
-#   (21.213203435596427 4.324812117348913) math:product 91.74311926605502 .
-#   (21.213203435596423 2.0) math:exponentiation 449.9999999999999 .
-#   (2.0 9.81) math:product 19.62 .
-#   (449.9999999999999 19.62) math:quotient 22.935779816513755 .
-#   (21.213203435596427 2.5) math:product 53.033008588991066 .
-#   (21.213203435596423 2.5) math:product 53.03300858899106 .
-#   (2.5 2.0) math:exponentiation 6.25 .
-#   (9.81 6.25) math:product 61.3125 .
-#   (0.5 61.3125) math:product 30.65625 .
-#   (53.03300858899106 30.65625) math:difference 22.37675858899106 .
+#   0.7853981633974483 math:sin "0.7071067811865475"^^xsd:decimal .
+#   0.7853981633974483 math:cos "0.7071067811865476"^^xsd:decimal .
+#   (30.0 "0.7071067811865476"^^xsd:decimal) math:product "21.213203435596427"^^xsd:decimal .
+#   (30.0 "0.7071067811865475"^^xsd:decimal) math:product "21.213203435596423"^^xsd:decimal .
+#   (2.0 "21.213203435596423"^^xsd:decimal) math:product "42.426406871192846"^^xsd:decimal .
+#   ("42.426406871192846"^^xsd:decimal 9.81) math:quotient "4.324812117348913"^^xsd:decimal .
+#   ("21.213203435596427"^^xsd:decimal "4.324812117348913"^^xsd:decimal) math:product "91.74311926605502"^^xsd:decimal .
+#   ("21.213203435596423"^^xsd:decimal 2.0) math:exponentiation "449.9999999999999"^^xsd:decimal .
+#   (2.0 9.81) math:product "19.62"^^xsd:decimal .
+#   ("449.9999999999999"^^xsd:decimal "19.62"^^xsd:decimal) math:quotient "22.935779816513755"^^xsd:decimal .
+#   ("21.213203435596427"^^xsd:decimal 2.5) math:product "53.033008588991066"^^xsd:decimal .
+#   ("21.213203435596423"^^xsd:decimal 2.5) math:product "53.03300858899106"^^xsd:decimal .
+#   (2.5 2.0) math:exponentiation "6.25"^^xsd:decimal .
+#   (9.81 "6.25"^^xsd:decimal) math:product "61.3125"^^xsd:decimal .
+#   (0.5 "61.3125"^^xsd:decimal) math:product "30.65625"^^xsd:decimal .
+#   ("53.03300858899106"^^xsd:decimal "30.65625"^^xsd:decimal) math:difference "22.37675858899106"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :Shot1 :speed ?v .
@@ -773,26 +774,26 @@ _:sk_0 :degrees 53.13010235415598 .
 #     :Shot1 :positionAtSample _:b3 .
 #   } .
 # with substitution (on rule variables):
-#   ?cosT = 0.7071067811865476
+#   ?cosT = "0.7071067811865476"^^xsd:decimal
 #   ?g = 9.81
-#   ?g_t2 = 61.3125
-#   ?hMax = 22.935779816513755
-#   ?half_g_t2 = 30.65625
-#   ?range = 91.74311926605502
-#   ?sinT = 0.7071067811865475
+#   ?g_t2 = "61.3125"^^xsd:decimal
+#   ?hMax = "22.935779816513755"^^xsd:decimal
+#   ?half_g_t2 = "30.65625"^^xsd:decimal
+#   ?range = "91.74311926605502"^^xsd:decimal
+#   ?sinT = "0.7071067811865475"^^xsd:decimal
 #   ?t = 2.5
-#   ?t2 = 6.25
-#   ?tFlight = 4.324812117348913
+#   ?t2 = "6.25"^^xsd:decimal
+#   ?tFlight = "4.324812117348913"^^xsd:decimal
 #   ?theta = 0.7853981633974483
-#   ?twoG = 19.62
-#   ?twoVy = 42.426406871192846
+#   ?twoG = "19.62"^^xsd:decimal
+#   ?twoVy = "42.426406871192846"^^xsd:decimal
 #   ?v = 30.0
-#   ?vx = 21.213203435596427
-#   ?vy = 21.213203435596423
-#   ?vy2 = 449.9999999999999
-#   ?vy_t = 53.03300858899106
-#   ?xAtT = 53.033008588991066
-#   ?yAtT = 22.37675858899106
+#   ?vx = "21.213203435596427"^^xsd:decimal
+#   ?vy = "21.213203435596423"^^xsd:decimal
+#   ?vy2 = "449.9999999999999"^^xsd:decimal
+#   ?vy_t = "53.03300858899106"^^xsd:decimal
+#   ?xAtT = "53.033008588991066"^^xsd:decimal
+#   ?yAtT = "22.37675858899106"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -800,28 +801,28 @@ _:sk_1 :t 2.5 .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_1 :x 53.033008588991066 .
+#   _:sk_1 :x "53.033008588991066"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :Shot1 :speed 30.0 .
 #   :Shot1 :angleRad 0.7853981633974483 .
 #   :Shot1 :g 9.81 .
 #   :Shot1 :tSample 2.5 .
-#   0.7853981633974483 math:sin 0.7071067811865475 .
-#   0.7853981633974483 math:cos 0.7071067811865476 .
-#   (30.0 0.7071067811865476) math:product 21.213203435596427 .
-#   (30.0 0.7071067811865475) math:product 21.213203435596423 .
-#   (2.0 21.213203435596423) math:product 42.426406871192846 .
-#   (42.426406871192846 9.81) math:quotient 4.324812117348913 .
-#   (21.213203435596427 4.324812117348913) math:product 91.74311926605502 .
-#   (21.213203435596423 2.0) math:exponentiation 449.9999999999999 .
-#   (2.0 9.81) math:product 19.62 .
-#   (449.9999999999999 19.62) math:quotient 22.935779816513755 .
-#   (21.213203435596427 2.5) math:product 53.033008588991066 .
-#   (21.213203435596423 2.5) math:product 53.03300858899106 .
-#   (2.5 2.0) math:exponentiation 6.25 .
-#   (9.81 6.25) math:product 61.3125 .
-#   (0.5 61.3125) math:product 30.65625 .
-#   (53.03300858899106 30.65625) math:difference 22.37675858899106 .
+#   0.7853981633974483 math:sin "0.7071067811865475"^^xsd:decimal .
+#   0.7853981633974483 math:cos "0.7071067811865476"^^xsd:decimal .
+#   (30.0 "0.7071067811865476"^^xsd:decimal) math:product "21.213203435596427"^^xsd:decimal .
+#   (30.0 "0.7071067811865475"^^xsd:decimal) math:product "21.213203435596423"^^xsd:decimal .
+#   (2.0 "21.213203435596423"^^xsd:decimal) math:product "42.426406871192846"^^xsd:decimal .
+#   ("42.426406871192846"^^xsd:decimal 9.81) math:quotient "4.324812117348913"^^xsd:decimal .
+#   ("21.213203435596427"^^xsd:decimal "4.324812117348913"^^xsd:decimal) math:product "91.74311926605502"^^xsd:decimal .
+#   ("21.213203435596423"^^xsd:decimal 2.0) math:exponentiation "449.9999999999999"^^xsd:decimal .
+#   (2.0 9.81) math:product "19.62"^^xsd:decimal .
+#   ("449.9999999999999"^^xsd:decimal "19.62"^^xsd:decimal) math:quotient "22.935779816513755"^^xsd:decimal .
+#   ("21.213203435596427"^^xsd:decimal 2.5) math:product "53.033008588991066"^^xsd:decimal .
+#   ("21.213203435596423"^^xsd:decimal 2.5) math:product "53.03300858899106"^^xsd:decimal .
+#   (2.5 2.0) math:exponentiation "6.25"^^xsd:decimal .
+#   (9.81 "6.25"^^xsd:decimal) math:product "61.3125"^^xsd:decimal .
+#   (0.5 "61.3125"^^xsd:decimal) math:product "30.65625"^^xsd:decimal .
+#   ("53.03300858899106"^^xsd:decimal "30.65625"^^xsd:decimal) math:difference "22.37675858899106"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :Shot1 :speed ?v .
@@ -856,55 +857,55 @@ _:sk_1 :t 2.5 .
 #     :Shot1 :positionAtSample _:b3 .
 #   } .
 # with substitution (on rule variables):
-#   ?cosT = 0.7071067811865476
+#   ?cosT = "0.7071067811865476"^^xsd:decimal
 #   ?g = 9.81
-#   ?g_t2 = 61.3125
-#   ?hMax = 22.935779816513755
-#   ?half_g_t2 = 30.65625
-#   ?range = 91.74311926605502
-#   ?sinT = 0.7071067811865475
+#   ?g_t2 = "61.3125"^^xsd:decimal
+#   ?hMax = "22.935779816513755"^^xsd:decimal
+#   ?half_g_t2 = "30.65625"^^xsd:decimal
+#   ?range = "91.74311926605502"^^xsd:decimal
+#   ?sinT = "0.7071067811865475"^^xsd:decimal
 #   ?t = 2.5
-#   ?t2 = 6.25
-#   ?tFlight = 4.324812117348913
+#   ?t2 = "6.25"^^xsd:decimal
+#   ?tFlight = "4.324812117348913"^^xsd:decimal
 #   ?theta = 0.7853981633974483
-#   ?twoG = 19.62
-#   ?twoVy = 42.426406871192846
+#   ?twoG = "19.62"^^xsd:decimal
+#   ?twoVy = "42.426406871192846"^^xsd:decimal
 #   ?v = 30.0
-#   ?vx = 21.213203435596427
-#   ?vy = 21.213203435596423
-#   ?vy2 = 449.9999999999999
-#   ?vy_t = 53.03300858899106
-#   ?xAtT = 53.033008588991066
-#   ?yAtT = 22.37675858899106
+#   ?vx = "21.213203435596427"^^xsd:decimal
+#   ?vy = "21.213203435596423"^^xsd:decimal
+#   ?vy2 = "449.9999999999999"^^xsd:decimal
+#   ?vy_t = "53.03300858899106"^^xsd:decimal
+#   ?xAtT = "53.033008588991066"^^xsd:decimal
+#   ?yAtT = "22.37675858899106"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_1 :x 53.033008588991066 .
+_:sk_1 :x "53.033008588991066"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_1 :y 22.37675858899106 .
+#   _:sk_1 :y "22.37675858899106"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :Shot1 :speed 30.0 .
 #   :Shot1 :angleRad 0.7853981633974483 .
 #   :Shot1 :g 9.81 .
 #   :Shot1 :tSample 2.5 .
-#   0.7853981633974483 math:sin 0.7071067811865475 .
-#   0.7853981633974483 math:cos 0.7071067811865476 .
-#   (30.0 0.7071067811865476) math:product 21.213203435596427 .
-#   (30.0 0.7071067811865475) math:product 21.213203435596423 .
-#   (2.0 21.213203435596423) math:product 42.426406871192846 .
-#   (42.426406871192846 9.81) math:quotient 4.324812117348913 .
-#   (21.213203435596427 4.324812117348913) math:product 91.74311926605502 .
-#   (21.213203435596423 2.0) math:exponentiation 449.9999999999999 .
-#   (2.0 9.81) math:product 19.62 .
-#   (449.9999999999999 19.62) math:quotient 22.935779816513755 .
-#   (21.213203435596427 2.5) math:product 53.033008588991066 .
-#   (21.213203435596423 2.5) math:product 53.03300858899106 .
-#   (2.5 2.0) math:exponentiation 6.25 .
-#   (9.81 6.25) math:product 61.3125 .
-#   (0.5 61.3125) math:product 30.65625 .
-#   (53.03300858899106 30.65625) math:difference 22.37675858899106 .
+#   0.7853981633974483 math:sin "0.7071067811865475"^^xsd:decimal .
+#   0.7853981633974483 math:cos "0.7071067811865476"^^xsd:decimal .
+#   (30.0 "0.7071067811865476"^^xsd:decimal) math:product "21.213203435596427"^^xsd:decimal .
+#   (30.0 "0.7071067811865475"^^xsd:decimal) math:product "21.213203435596423"^^xsd:decimal .
+#   (2.0 "21.213203435596423"^^xsd:decimal) math:product "42.426406871192846"^^xsd:decimal .
+#   ("42.426406871192846"^^xsd:decimal 9.81) math:quotient "4.324812117348913"^^xsd:decimal .
+#   ("21.213203435596427"^^xsd:decimal "4.324812117348913"^^xsd:decimal) math:product "91.74311926605502"^^xsd:decimal .
+#   ("21.213203435596423"^^xsd:decimal 2.0) math:exponentiation "449.9999999999999"^^xsd:decimal .
+#   (2.0 9.81) math:product "19.62"^^xsd:decimal .
+#   ("449.9999999999999"^^xsd:decimal "19.62"^^xsd:decimal) math:quotient "22.935779816513755"^^xsd:decimal .
+#   ("21.213203435596427"^^xsd:decimal 2.5) math:product "53.033008588991066"^^xsd:decimal .
+#   ("21.213203435596423"^^xsd:decimal 2.5) math:product "53.03300858899106"^^xsd:decimal .
+#   (2.5 2.0) math:exponentiation "6.25"^^xsd:decimal .
+#   (9.81 "6.25"^^xsd:decimal) math:product "61.3125"^^xsd:decimal .
+#   (0.5 "61.3125"^^xsd:decimal) math:product "30.65625"^^xsd:decimal .
+#   ("53.03300858899106"^^xsd:decimal "30.65625"^^xsd:decimal) math:difference "22.37675858899106"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :Shot1 :speed ?v .
@@ -939,30 +940,30 @@ _:sk_1 :x 53.033008588991066 .
 #     :Shot1 :positionAtSample _:b3 .
 #   } .
 # with substitution (on rule variables):
-#   ?cosT = 0.7071067811865476
+#   ?cosT = "0.7071067811865476"^^xsd:decimal
 #   ?g = 9.81
-#   ?g_t2 = 61.3125
-#   ?hMax = 22.935779816513755
-#   ?half_g_t2 = 30.65625
-#   ?range = 91.74311926605502
-#   ?sinT = 0.7071067811865475
+#   ?g_t2 = "61.3125"^^xsd:decimal
+#   ?hMax = "22.935779816513755"^^xsd:decimal
+#   ?half_g_t2 = "30.65625"^^xsd:decimal
+#   ?range = "91.74311926605502"^^xsd:decimal
+#   ?sinT = "0.7071067811865475"^^xsd:decimal
 #   ?t = 2.5
-#   ?t2 = 6.25
-#   ?tFlight = 4.324812117348913
+#   ?t2 = "6.25"^^xsd:decimal
+#   ?tFlight = "4.324812117348913"^^xsd:decimal
 #   ?theta = 0.7853981633974483
-#   ?twoG = 19.62
-#   ?twoVy = 42.426406871192846
+#   ?twoG = "19.62"^^xsd:decimal
+#   ?twoVy = "42.426406871192846"^^xsd:decimal
 #   ?v = 30.0
-#   ?vx = 21.213203435596427
-#   ?vy = 21.213203435596423
-#   ?vy2 = 449.9999999999999
-#   ?vy_t = 53.03300858899106
-#   ?xAtT = 53.033008588991066
-#   ?yAtT = 22.37675858899106
+#   ?vx = "21.213203435596427"^^xsd:decimal
+#   ?vy = "21.213203435596423"^^xsd:decimal
+#   ?vy2 = "449.9999999999999"^^xsd:decimal
+#   ?vy_t = "53.03300858899106"^^xsd:decimal
+#   ?xAtT = "53.033008588991066"^^xsd:decimal
+#   ?yAtT = "22.37675858899106"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_1 :y 22.37675858899106 .
+_:sk_1 :y "22.37675858899106"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
@@ -972,22 +973,22 @@ _:sk_1 :y 22.37675858899106 .
 #   :Shot1 :angleRad 0.7853981633974483 .
 #   :Shot1 :g 9.81 .
 #   :Shot1 :tSample 2.5 .
-#   0.7853981633974483 math:sin 0.7071067811865475 .
-#   0.7853981633974483 math:cos 0.7071067811865476 .
-#   (30.0 0.7071067811865476) math:product 21.213203435596427 .
-#   (30.0 0.7071067811865475) math:product 21.213203435596423 .
-#   (2.0 21.213203435596423) math:product 42.426406871192846 .
-#   (42.426406871192846 9.81) math:quotient 4.324812117348913 .
-#   (21.213203435596427 4.324812117348913) math:product 91.74311926605502 .
-#   (21.213203435596423 2.0) math:exponentiation 449.9999999999999 .
-#   (2.0 9.81) math:product 19.62 .
-#   (449.9999999999999 19.62) math:quotient 22.935779816513755 .
-#   (21.213203435596427 2.5) math:product 53.033008588991066 .
-#   (21.213203435596423 2.5) math:product 53.03300858899106 .
-#   (2.5 2.0) math:exponentiation 6.25 .
-#   (9.81 6.25) math:product 61.3125 .
-#   (0.5 61.3125) math:product 30.65625 .
-#   (53.03300858899106 30.65625) math:difference 22.37675858899106 .
+#   0.7853981633974483 math:sin "0.7071067811865475"^^xsd:decimal .
+#   0.7853981633974483 math:cos "0.7071067811865476"^^xsd:decimal .
+#   (30.0 "0.7071067811865476"^^xsd:decimal) math:product "21.213203435596427"^^xsd:decimal .
+#   (30.0 "0.7071067811865475"^^xsd:decimal) math:product "21.213203435596423"^^xsd:decimal .
+#   (2.0 "21.213203435596423"^^xsd:decimal) math:product "42.426406871192846"^^xsd:decimal .
+#   ("42.426406871192846"^^xsd:decimal 9.81) math:quotient "4.324812117348913"^^xsd:decimal .
+#   ("21.213203435596427"^^xsd:decimal "4.324812117348913"^^xsd:decimal) math:product "91.74311926605502"^^xsd:decimal .
+#   ("21.213203435596423"^^xsd:decimal 2.0) math:exponentiation "449.9999999999999"^^xsd:decimal .
+#   (2.0 9.81) math:product "19.62"^^xsd:decimal .
+#   ("449.9999999999999"^^xsd:decimal "19.62"^^xsd:decimal) math:quotient "22.935779816513755"^^xsd:decimal .
+#   ("21.213203435596427"^^xsd:decimal 2.5) math:product "53.033008588991066"^^xsd:decimal .
+#   ("21.213203435596423"^^xsd:decimal 2.5) math:product "53.03300858899106"^^xsd:decimal .
+#   (2.5 2.0) math:exponentiation "6.25"^^xsd:decimal .
+#   (9.81 "6.25"^^xsd:decimal) math:product "61.3125"^^xsd:decimal .
+#   (0.5 "61.3125"^^xsd:decimal) math:product "30.65625"^^xsd:decimal .
+#   ("53.03300858899106"^^xsd:decimal "30.65625"^^xsd:decimal) math:difference "22.37675858899106"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :Shot1 :speed ?v .
@@ -1022,26 +1023,26 @@ _:sk_1 :y 22.37675858899106 .
 #     :Shot1 :positionAtSample _:b3 .
 #   } .
 # with substitution (on rule variables):
-#   ?cosT = 0.7071067811865476
+#   ?cosT = "0.7071067811865476"^^xsd:decimal
 #   ?g = 9.81
-#   ?g_t2 = 61.3125
-#   ?hMax = 22.935779816513755
-#   ?half_g_t2 = 30.65625
-#   ?range = 91.74311926605502
-#   ?sinT = 0.7071067811865475
+#   ?g_t2 = "61.3125"^^xsd:decimal
+#   ?hMax = "22.935779816513755"^^xsd:decimal
+#   ?half_g_t2 = "30.65625"^^xsd:decimal
+#   ?range = "91.74311926605502"^^xsd:decimal
+#   ?sinT = "0.7071067811865475"^^xsd:decimal
 #   ?t = 2.5
-#   ?t2 = 6.25
-#   ?tFlight = 4.324812117348913
+#   ?t2 = "6.25"^^xsd:decimal
+#   ?tFlight = "4.324812117348913"^^xsd:decimal
 #   ?theta = 0.7853981633974483
-#   ?twoG = 19.62
-#   ?twoVy = 42.426406871192846
+#   ?twoG = "19.62"^^xsd:decimal
+#   ?twoVy = "42.426406871192846"^^xsd:decimal
 #   ?v = 30.0
-#   ?vx = 21.213203435596427
-#   ?vy = 21.213203435596423
-#   ?vy2 = 449.9999999999999
-#   ?vy_t = 53.03300858899106
-#   ?xAtT = 53.033008588991066
-#   ?yAtT = 22.37675858899106
+#   ?vx = "21.213203435596427"^^xsd:decimal
+#   ?vy = "21.213203435596423"^^xsd:decimal
+#   ?vy2 = "449.9999999999999"^^xsd:decimal
+#   ?vy_t = "53.03300858899106"^^xsd:decimal
+#   ?xAtT = "53.033008588991066"^^xsd:decimal
+#   ?yAtT = "22.37675858899106"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -1049,21 +1050,21 @@ _:sk_1 :y 22.37675858899106 .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :DataSet1 :mean 2.642857142857143 .
+#   :DataSet1 :mean "2.642857142857143"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :DataSet1 :values (1.2 1.3 1.4 1.25 1.35 2.0 10.0) .
 #   :DataSet1 :zThreshold 2.0 .
 #   (1.2 1.3 1.4 1.25 1.35 2.0 10.0) list:length 7 .
-#   (1.2 1.3 1.4 1.25 1.35 2.0 10.0) math:sum 18.5 .
-#   (18.5 7) math:quotient 2.642857142857143 .
+#   (1.2 1.3 1.4 1.25 1.35 2.0 10.0) math:sum "18.5"^^xsd:decimal .
+#   ("18.5"^^xsd:decimal 7) math:quotient "2.642857142857143"^^xsd:decimal .
 #   (?sq {
 #       (1.2 1.3 1.4 1.25 1.35 2.0 10.0) list:member ?x .
-#       (?x 2.642857142857143) math:difference ?d .
+#       (?x "2.642857142857143"^^xsd:decimal) math:difference ?d .
 #       (?d 2.0) math:exponentiation ?sq .
-#   } (54.12755102040817 0.4132653061224489 1.6714795918367342 1.9400510204081631 1.5446938775510204 1.8032653061224486 2.0818367346938773)) log:collectAllIn ?_b1 .
-#   (54.12755102040817 0.4132653061224489 1.6714795918367342 1.9400510204081631 1.5446938775510204 1.8032653061224486 2.0818367346938773) math:sum 63.58214285714286 .
-#   (63.58214285714286 7) math:quotient 9.083163265306123 .
-#   (9.083163265306123 0.5) math:exponentiation 3.0138286721886036 .
+#   } ("54.12755102040817"^^xsd:decimal "0.4132653061224489"^^xsd:decimal "1.6714795918367342"^^xsd:decimal "1.9400510204081631"^^xsd:decimal "1.5446938775510204"^^xsd:decimal "1.8032653061224486"^^xsd:decimal "2.0818367346938773"^^xsd:decimal)) log:collectAllIn ?_b1 .
+#   ("54.12755102040817"^^xsd:decimal "0.4132653061224489"^^xsd:decimal "1.6714795918367342"^^xsd:decimal "1.9400510204081631"^^xsd:decimal "1.5446938775510204"^^xsd:decimal "1.8032653061224486"^^xsd:decimal "2.0818367346938773"^^xsd:decimal) math:sum "63.58214285714286"^^xsd:decimal .
+#   ("63.58214285714286"^^xsd:decimal 7) math:quotient "9.083163265306123"^^xsd:decimal .
+#   ("9.083163265306123"^^xsd:decimal 0.5) math:exponentiation "3.0138286721886036"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :DataSet1 :values ?xs .
@@ -1085,37 +1086,37 @@ _:sk_1 :y 22.37675858899106 .
 #     :DataSet1 :stddev ?std .
 #   } .
 # with substitution (on rule variables):
-#   ?mean = 2.642857142857143
+#   ?mean = "2.642857142857143"^^xsd:decimal
 #   ?n = 7
-#   ?sqList = (54.12755102040817 0.4132653061224489 1.6714795918367342 1.9400510204081631 1.5446938775510204 1.8032653061224486 2.0818367346938773)
-#   ?sse = 63.58214285714286
-#   ?std = 3.0138286721886036
-#   ?sum = 18.5
+#   ?sqList = ("54.12755102040817"^^xsd:decimal "0.4132653061224489"^^xsd:decimal "1.6714795918367342"^^xsd:decimal "1.9400510204081631"^^xsd:decimal "1.5446938775510204"^^xsd:decimal "1.8032653061224486"^^xsd:decimal "2.0818367346938773"^^xsd:decimal)
+#   ?sse = "63.58214285714286"^^xsd:decimal
+#   ?std = "3.0138286721886036"^^xsd:decimal
+#   ?sum = "18.5"^^xsd:decimal
 #   ?thr = 2.0
-#   ?var = 9.083163265306123
+#   ?var = "9.083163265306123"^^xsd:decimal
 #   ?xs = (1.2 1.3 1.4 1.25 1.35 2.0 10.0)
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:DataSet1 :mean 2.642857142857143 .
+:DataSet1 :mean "2.642857142857143"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :DataSet1 :variance 9.083163265306123 .
+#   :DataSet1 :variance "9.083163265306123"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :DataSet1 :values (1.2 1.3 1.4 1.25 1.35 2.0 10.0) .
 #   :DataSet1 :zThreshold 2.0 .
 #   (1.2 1.3 1.4 1.25 1.35 2.0 10.0) list:length 7 .
-#   (1.2 1.3 1.4 1.25 1.35 2.0 10.0) math:sum 18.5 .
-#   (18.5 7) math:quotient 2.642857142857143 .
+#   (1.2 1.3 1.4 1.25 1.35 2.0 10.0) math:sum "18.5"^^xsd:decimal .
+#   ("18.5"^^xsd:decimal 7) math:quotient "2.642857142857143"^^xsd:decimal .
 #   (?sq {
 #       (1.2 1.3 1.4 1.25 1.35 2.0 10.0) list:member ?x .
-#       (?x 2.642857142857143) math:difference ?d .
+#       (?x "2.642857142857143"^^xsd:decimal) math:difference ?d .
 #       (?d 2.0) math:exponentiation ?sq .
-#   } (54.12755102040817 0.4132653061224489 1.6714795918367342 1.9400510204081631 1.5446938775510204 1.8032653061224486 2.0818367346938773)) log:collectAllIn ?_b1 .
-#   (54.12755102040817 0.4132653061224489 1.6714795918367342 1.9400510204081631 1.5446938775510204 1.8032653061224486 2.0818367346938773) math:sum 63.58214285714286 .
-#   (63.58214285714286 7) math:quotient 9.083163265306123 .
-#   (9.083163265306123 0.5) math:exponentiation 3.0138286721886036 .
+#   } ("54.12755102040817"^^xsd:decimal "0.4132653061224489"^^xsd:decimal "1.6714795918367342"^^xsd:decimal "1.9400510204081631"^^xsd:decimal "1.5446938775510204"^^xsd:decimal "1.8032653061224486"^^xsd:decimal "2.0818367346938773"^^xsd:decimal)) log:collectAllIn ?_b1 .
+#   ("54.12755102040817"^^xsd:decimal "0.4132653061224489"^^xsd:decimal "1.6714795918367342"^^xsd:decimal "1.9400510204081631"^^xsd:decimal "1.5446938775510204"^^xsd:decimal "1.8032653061224486"^^xsd:decimal "2.0818367346938773"^^xsd:decimal) math:sum "63.58214285714286"^^xsd:decimal .
+#   ("63.58214285714286"^^xsd:decimal 7) math:quotient "9.083163265306123"^^xsd:decimal .
+#   ("9.083163265306123"^^xsd:decimal 0.5) math:exponentiation "3.0138286721886036"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :DataSet1 :values ?xs .
@@ -1137,37 +1138,37 @@ _:sk_1 :y 22.37675858899106 .
 #     :DataSet1 :stddev ?std .
 #   } .
 # with substitution (on rule variables):
-#   ?mean = 2.642857142857143
+#   ?mean = "2.642857142857143"^^xsd:decimal
 #   ?n = 7
-#   ?sqList = (54.12755102040817 0.4132653061224489 1.6714795918367342 1.9400510204081631 1.5446938775510204 1.8032653061224486 2.0818367346938773)
-#   ?sse = 63.58214285714286
-#   ?std = 3.0138286721886036
-#   ?sum = 18.5
+#   ?sqList = ("54.12755102040817"^^xsd:decimal "0.4132653061224489"^^xsd:decimal "1.6714795918367342"^^xsd:decimal "1.9400510204081631"^^xsd:decimal "1.5446938775510204"^^xsd:decimal "1.8032653061224486"^^xsd:decimal "2.0818367346938773"^^xsd:decimal)
+#   ?sse = "63.58214285714286"^^xsd:decimal
+#   ?std = "3.0138286721886036"^^xsd:decimal
+#   ?sum = "18.5"^^xsd:decimal
 #   ?thr = 2.0
-#   ?var = 9.083163265306123
+#   ?var = "9.083163265306123"^^xsd:decimal
 #   ?xs = (1.2 1.3 1.4 1.25 1.35 2.0 10.0)
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:DataSet1 :variance 9.083163265306123 .
+:DataSet1 :variance "9.083163265306123"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   :DataSet1 :stddev 3.0138286721886036 .
+#   :DataSet1 :stddev "3.0138286721886036"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :DataSet1 :values (1.2 1.3 1.4 1.25 1.35 2.0 10.0) .
 #   :DataSet1 :zThreshold 2.0 .
 #   (1.2 1.3 1.4 1.25 1.35 2.0 10.0) list:length 7 .
-#   (1.2 1.3 1.4 1.25 1.35 2.0 10.0) math:sum 18.5 .
-#   (18.5 7) math:quotient 2.642857142857143 .
+#   (1.2 1.3 1.4 1.25 1.35 2.0 10.0) math:sum "18.5"^^xsd:decimal .
+#   ("18.5"^^xsd:decimal 7) math:quotient "2.642857142857143"^^xsd:decimal .
 #   (?sq {
 #       (1.2 1.3 1.4 1.25 1.35 2.0 10.0) list:member ?x .
-#       (?x 2.642857142857143) math:difference ?d .
+#       (?x "2.642857142857143"^^xsd:decimal) math:difference ?d .
 #       (?d 2.0) math:exponentiation ?sq .
-#   } (54.12755102040817 0.4132653061224489 1.6714795918367342 1.9400510204081631 1.5446938775510204 1.8032653061224486 2.0818367346938773)) log:collectAllIn ?_b1 .
-#   (54.12755102040817 0.4132653061224489 1.6714795918367342 1.9400510204081631 1.5446938775510204 1.8032653061224486 2.0818367346938773) math:sum 63.58214285714286 .
-#   (63.58214285714286 7) math:quotient 9.083163265306123 .
-#   (9.083163265306123 0.5) math:exponentiation 3.0138286721886036 .
+#   } ("54.12755102040817"^^xsd:decimal "0.4132653061224489"^^xsd:decimal "1.6714795918367342"^^xsd:decimal "1.9400510204081631"^^xsd:decimal "1.5446938775510204"^^xsd:decimal "1.8032653061224486"^^xsd:decimal "2.0818367346938773"^^xsd:decimal)) log:collectAllIn ?_b1 .
+#   ("54.12755102040817"^^xsd:decimal "0.4132653061224489"^^xsd:decimal "1.6714795918367342"^^xsd:decimal "1.9400510204081631"^^xsd:decimal "1.5446938775510204"^^xsd:decimal "1.8032653061224486"^^xsd:decimal "2.0818367346938773"^^xsd:decimal) math:sum "63.58214285714286"^^xsd:decimal .
+#   ("63.58214285714286"^^xsd:decimal 7) math:quotient "9.083163265306123"^^xsd:decimal .
+#   ("9.083163265306123"^^xsd:decimal 0.5) math:exponentiation "3.0138286721886036"^^xsd:decimal .
 # via the schematic forward rule:
 #   {
 #     :DataSet1 :values ?xs .
@@ -1189,33 +1190,33 @@ _:sk_1 :y 22.37675858899106 .
 #     :DataSet1 :stddev ?std .
 #   } .
 # with substitution (on rule variables):
-#   ?mean = 2.642857142857143
+#   ?mean = "2.642857142857143"^^xsd:decimal
 #   ?n = 7
-#   ?sqList = (54.12755102040817 0.4132653061224489 1.6714795918367342 1.9400510204081631 1.5446938775510204 1.8032653061224486 2.0818367346938773)
-#   ?sse = 63.58214285714286
-#   ?std = 3.0138286721886036
-#   ?sum = 18.5
+#   ?sqList = ("54.12755102040817"^^xsd:decimal "0.4132653061224489"^^xsd:decimal "1.6714795918367342"^^xsd:decimal "1.9400510204081631"^^xsd:decimal "1.5446938775510204"^^xsd:decimal "1.8032653061224486"^^xsd:decimal "2.0818367346938773"^^xsd:decimal)
+#   ?sse = "63.58214285714286"^^xsd:decimal
+#   ?std = "3.0138286721886036"^^xsd:decimal
+#   ?sum = "18.5"^^xsd:decimal
 #   ?thr = 2.0
-#   ?var = 9.083163265306123
+#   ?var = "9.083163265306123"^^xsd:decimal
 #   ?xs = (1.2 1.3 1.4 1.25 1.35 2.0 10.0)
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-:DataSet1 :stddev 3.0138286721886036 .
+:DataSet1 :stddev "3.0138286721886036"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
 #   _:sk_2 :value 10.0 .
 # It holds because the following instance of the rule body is provable:
 #   :DataSet1 :values (1.2 1.3 1.4 1.25 1.35 2.0 10.0) .
-#   :DataSet1 :mean 2.642857142857143 .
-#   :DataSet1 :stddev 3.0138286721886036 .
+#   :DataSet1 :mean "2.642857142857143"^^xsd:decimal .
+#   :DataSet1 :stddev "3.0138286721886036"^^xsd:decimal .
 #   :DataSet1 :zThreshold 2.0 .
 #   (1.2 1.3 1.4 1.25 1.35 2.0 10.0) list:member 10.0 .
-#   (10.0 2.642857142857143) math:difference 7.357142857142858 .
-#   (7.357142857142858 3.0138286721886036) math:quotient 2.44112843076783 .
-#   2.44112843076783 math:absoluteValue 2.44112843076783 .
-#   2.44112843076783 math:greaterThan 2.0 .
+#   (10.0 "2.642857142857143"^^xsd:decimal) math:difference "7.357142857142858"^^xsd:decimal .
+#   ("7.357142857142858"^^xsd:decimal "3.0138286721886036"^^xsd:decimal) math:quotient "2.44112843076783"^^xsd:decimal .
+#   "2.44112843076783"^^xsd:decimal math:absoluteValue "2.44112843076783"^^xsd:decimal .
+#   "2.44112843076783"^^xsd:decimal math:greaterThan 2.0 .
 # via the schematic forward rule:
 #   {
 #     :DataSet1 :values ?xs .
@@ -1233,14 +1234,14 @@ _:sk_1 :y 22.37675858899106 .
 #     :DataSet1 :outlier _:b1 .
 #   } .
 # with substitution (on rule variables):
-#   ?absz = 2.44112843076783
-#   ?d = 7.357142857142858
-#   ?mean = 2.642857142857143
-#   ?std = 3.0138286721886036
+#   ?absz = "2.44112843076783"^^xsd:decimal
+#   ?d = "7.357142857142858"^^xsd:decimal
+#   ?mean = "2.642857142857143"^^xsd:decimal
+#   ?std = "3.0138286721886036"^^xsd:decimal
 #   ?thr = 2.0
 #   ?x = 10.0
 #   ?xs = (1.2 1.3 1.4 1.25 1.35 2.0 10.0)
-#   ?z = 2.44112843076783
+#   ?z = "2.44112843076783"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
@@ -1248,17 +1249,17 @@ _:sk_2 :value 10.0 .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
-#   _:sk_2 :zScore 2.44112843076783 .
+#   _:sk_2 :zScore "2.44112843076783"^^xsd:decimal .
 # It holds because the following instance of the rule body is provable:
 #   :DataSet1 :values (1.2 1.3 1.4 1.25 1.35 2.0 10.0) .
-#   :DataSet1 :mean 2.642857142857143 .
-#   :DataSet1 :stddev 3.0138286721886036 .
+#   :DataSet1 :mean "2.642857142857143"^^xsd:decimal .
+#   :DataSet1 :stddev "3.0138286721886036"^^xsd:decimal .
 #   :DataSet1 :zThreshold 2.0 .
 #   (1.2 1.3 1.4 1.25 1.35 2.0 10.0) list:member 10.0 .
-#   (10.0 2.642857142857143) math:difference 7.357142857142858 .
-#   (7.357142857142858 3.0138286721886036) math:quotient 2.44112843076783 .
-#   2.44112843076783 math:absoluteValue 2.44112843076783 .
-#   2.44112843076783 math:greaterThan 2.0 .
+#   (10.0 "2.642857142857143"^^xsd:decimal) math:difference "7.357142857142858"^^xsd:decimal .
+#   ("7.357142857142858"^^xsd:decimal "3.0138286721886036"^^xsd:decimal) math:quotient "2.44112843076783"^^xsd:decimal .
+#   "2.44112843076783"^^xsd:decimal math:absoluteValue "2.44112843076783"^^xsd:decimal .
+#   "2.44112843076783"^^xsd:decimal math:greaterThan 2.0 .
 # via the schematic forward rule:
 #   {
 #     :DataSet1 :values ?xs .
@@ -1276,32 +1277,32 @@ _:sk_2 :value 10.0 .
 #     :DataSet1 :outlier _:b1 .
 #   } .
 # with substitution (on rule variables):
-#   ?absz = 2.44112843076783
-#   ?d = 7.357142857142858
-#   ?mean = 2.642857142857143
-#   ?std = 3.0138286721886036
+#   ?absz = "2.44112843076783"^^xsd:decimal
+#   ?d = "7.357142857142858"^^xsd:decimal
+#   ?mean = "2.642857142857143"^^xsd:decimal
+#   ?std = "3.0138286721886036"^^xsd:decimal
 #   ?thr = 2.0
 #   ?x = 10.0
 #   ?xs = (1.2 1.3 1.4 1.25 1.35 2.0 10.0)
-#   ?z = 2.44112843076783
+#   ?z = "2.44112843076783"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
-_:sk_2 :zScore 2.44112843076783 .
+_:sk_2 :zScore "2.44112843076783"^^xsd:decimal .
 
 # ----------------------------------------------------------------------
 # Proof for derived triple:
 #   :DataSet1 :outlier _:sk_2 .
 # It holds because the following instance of the rule body is provable:
 #   :DataSet1 :values (1.2 1.3 1.4 1.25 1.35 2.0 10.0) .
-#   :DataSet1 :mean 2.642857142857143 .
-#   :DataSet1 :stddev 3.0138286721886036 .
+#   :DataSet1 :mean "2.642857142857143"^^xsd:decimal .
+#   :DataSet1 :stddev "3.0138286721886036"^^xsd:decimal .
 #   :DataSet1 :zThreshold 2.0 .
 #   (1.2 1.3 1.4 1.25 1.35 2.0 10.0) list:member 10.0 .
-#   (10.0 2.642857142857143) math:difference 7.357142857142858 .
-#   (7.357142857142858 3.0138286721886036) math:quotient 2.44112843076783 .
-#   2.44112843076783 math:absoluteValue 2.44112843076783 .
-#   2.44112843076783 math:greaterThan 2.0 .
+#   (10.0 "2.642857142857143"^^xsd:decimal) math:difference "7.357142857142858"^^xsd:decimal .
+#   ("7.357142857142858"^^xsd:decimal "3.0138286721886036"^^xsd:decimal) math:quotient "2.44112843076783"^^xsd:decimal .
+#   "2.44112843076783"^^xsd:decimal math:absoluteValue "2.44112843076783"^^xsd:decimal .
+#   "2.44112843076783"^^xsd:decimal math:greaterThan 2.0 .
 # via the schematic forward rule:
 #   {
 #     :DataSet1 :values ?xs .
@@ -1319,14 +1320,14 @@ _:sk_2 :zScore 2.44112843076783 .
 #     :DataSet1 :outlier _:b1 .
 #   } .
 # with substitution (on rule variables):
-#   ?absz = 2.44112843076783
-#   ?d = 7.357142857142858
-#   ?mean = 2.642857142857143
-#   ?std = 3.0138286721886036
+#   ?absz = "2.44112843076783"^^xsd:decimal
+#   ?d = "7.357142857142858"^^xsd:decimal
+#   ?mean = "2.642857142857143"^^xsd:decimal
+#   ?std = "3.0138286721886036"^^xsd:decimal
 #   ?thr = 2.0
 #   ?x = 10.0
 #   ?xs = (1.2 1.3 1.4 1.25 1.35 2.0 10.0)
-#   ?z = 2.44112843076783
+#   ?z = "2.44112843076783"^^xsd:decimal
 # Therefore the derived triple above is entailed by the rules and facts.
 # ----------------------------------------------------------------------
 
