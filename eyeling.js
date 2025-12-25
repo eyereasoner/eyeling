@@ -2404,6 +2404,20 @@ const XSD_INTEGER_DERIVED_DTS = new Set([
   XSD_NS + 'positiveInteger',
 ]);
 
+function parseXsdFloatSpecialLex(s) {
+  if (s === 'INF' || s === '+INF') return Infinity;
+  if (s === '-INF') return -Infinity;
+  if (s === 'NaN') return NaN;
+  return null;
+}
+
+function formatXsdFloatSpecialLex(n) {
+  if (n === Infinity) return 'INF';
+  if (n === -Infinity) return '-INF';
+  if (Number.isNaN(n)) return 'NaN';
+  return null;
+}
+
 function isQuotedLexical(lex) {
   // Note: the lexer stores long strings with literal delimiters: """..."""
   return (
@@ -2440,7 +2454,7 @@ function looksLikeUntypedNumericTokenLex(lex) {
 
 function parseNum(t) {
   // Parse as JS Number, but ONLY for xsd numeric datatypes or untyped numeric tokens.
-  // Rejects values such as "1"^^<...non-numeric...> or "1" (a string literal).
+  // For xsd:float/xsd:double, accept INF/-INF/NaN (and +INF).
   if (!(t instanceof Literal)) return null;
 
   const [lex, dt] = literalParts(t.value);
@@ -2449,6 +2463,17 @@ function parseNum(t) {
   if (dt !== null) {
     if (!isXsdNumericDatatype(dt)) return null;
     const val = stripQuotes(lex);
+
+    // float/double: allow INF/-INF/NaN and allow +/-Infinity results
+    if (dt === XSD_FLOAT_DT || dt === XSD_DOUBLE_DT) {
+      const sp = parseXsdFloatSpecialLex(val);
+      if (sp !== null) return sp;
+      const n = Number(val);
+      if (Number.isNaN(n)) return null;
+      return n; // may be finite, +/-Infinity, or NaN (if val was "NaN" handled above)
+    }
+
+    // decimal/integer-derived: keep strict finite parsing
     const n = Number(val);
     if (!Number.isFinite(n)) return null;
     return n;
@@ -2705,7 +2730,15 @@ function listAppendSplit(parts, resElems, subst) {
 
 function numEqualTerm(t, n, eps = 1e-9) {
   const v = parseNum(t);
-  return v !== null && Math.abs(v - n) < eps;
+  if (v === null) return false;
+
+  // NaN is not equal to anything (including itself) for our numeric-equality use.
+  if (Number.isNaN(v) || Number.isNaN(n)) return false;
+
+  // Infinity handling
+  if (!Number.isFinite(v) || !Number.isFinite(n)) return v === n;
+
+  return Math.abs(v - n) < eps;
 }
 
 function numericDatatypeFromLex(lex) {
@@ -2746,8 +2779,18 @@ function parseNumericLiteralInfo(t) {
     }
   }
 
+  // float/double special lexicals
+  if (dt2 === XSD_FLOAT_DT || dt2 === XSD_DOUBLE_DT) {
+    const sp = parseXsdFloatSpecialLex(lexStr);
+    if (sp !== null) return { dt: dt2, kind: 'number', value: sp, lexStr };
+  }
+
   const num = Number(lexStr);
   if (Number.isNaN(num)) return null;
+
+  // allow +/-Infinity for float/double
+  if ((dt2 === XSD_DECIMAL_DT) && !Number.isFinite(num)) return null;
+
   return { dt: dt2, kind: 'number', value: num, lexStr };
 }
 
@@ -2800,6 +2843,14 @@ function makeNumericOutputLiteral(val, dt) {
     // If a non-integer sneaks in, promote to decimal.
     return new Literal(`"${formatNum(val)}"^^<${XSD_DECIMAL_DT}>`);
   }
+
+  if (dt === XSD_FLOAT_DT || dt === XSD_DOUBLE_DT) {
+    const sp = formatXsdFloatSpecialLex(val);
+    const lex = sp !== null ? sp : formatNum(val);
+    return new Literal(`"${lex}"^^<${dt}>`);
+  }
+
+  // decimal
   const lex = typeof val === 'bigint' ? val.toString() : formatNum(val);
   return new Literal(`"${lex}"^^<${dt}>`);
 }
