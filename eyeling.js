@@ -3024,10 +3024,8 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
         s2[g.o.name] = lit;
         return [s2];
       }
-      if (g.o instanceof Literal && g.o.value === lit.value) {
-        return [{ ...subst }];
-      }
-      return [];
+      const s2 = unifyTerm(g.o, lit, subst);
+      return s2 !== null ? [s2] : [];
     }
   }
 
@@ -3078,9 +3076,8 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
           s2[g.o.name] = durTerm;
           return [s2];
         }
-        if (g.o instanceof Literal && g.o.value === durTerm.value) {
-          return [{ ...subst }];
-        }
+        const s2 = unifyTerm(g.o, durTerm, subst);
+        return s2 !== null ? [s2] : [];
       }
       return [];
     }
@@ -3098,9 +3095,14 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
           s2[g.o.name] = new Literal(formatNum(c));
           return [s2];
         }
-        if (g.o instanceof Literal && g.o.value === formatNum(c)) {
-          return [{ ...subst }];
+        const lit = new Literal(formatNum(c));
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = lit;
+          return [s2];
         }
+        const s2 = unifyTerm(g.o, lit, subst);
+        return s2 !== null ? [s2] : [];
       }
       return [];
     }
