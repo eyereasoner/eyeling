@@ -2049,6 +2049,13 @@ function unifyTerm(a, b, subst) {
     if (literalsEquivalentAsXsdString(a.value, b.value)) return { ...subst };
   }
 
+  // Boolean-value match: treat untyped true/false tokens and xsd:boolean as equal.
+  if (a instanceof Literal && b instanceof Literal) {
+    const ai = parseBooleanLiteralInfo(a);
+    const bi = parseBooleanLiteralInfo(b);
+    if (ai && bi && ai.value === bi.value) return { ...subst };
+  }
+
   // Numeric-value match for literals, BUT ONLY when datatypes agree (or infer to agree)
   if (a instanceof Literal && b instanceof Literal) {
     const ai = parseNumericLiteralInfo(a);
@@ -2536,6 +2543,28 @@ const XSD_INTEGER_DERIVED_DTS = new Set([
   XSD_NS + 'unsignedByte',
   XSD_NS + 'positiveInteger',
 ]);
+
+function parseBooleanLiteralInfo(t) {
+  if (!(t instanceof Literal)) return null;
+
+  const boolDt = XSD_NS + 'boolean';
+  const v = t.value;
+  const [lex, dt] = literalParts(v);
+
+  // Typed xsd:boolean: accept "true"/"false"/"1"/"0"
+  if (dt !== null) {
+    if (dt !== boolDt) return null;
+    const s = stripQuotes(lex);
+    if (s === 'true' || s === '1') return { dt: boolDt, value: true };
+    if (s === 'false' || s === '0') return { dt: boolDt, value: false };
+    return null;
+  }
+
+  // Untyped boolean token: true/false
+  if (v === 'true') return { dt: boolDt, value: true };
+  if (v === 'false') return { dt: boolDt, value: false };
+  return null;
+}
 
 function parseXsdFloatSpecialLex(s) {
   if (s === 'INF' || s === '+INF') return Infinity;
