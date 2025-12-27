@@ -62,9 +62,9 @@ function termToJsonText(t) {
 function makeRdfJsonLiteral(jsonText) {
   // Prefer a readable long literal when safe; fall back to short if needed.
   if (!jsonText.includes('"""')) {
-    return new Literal('"""' + jsonText + '"""^^<' + RDF_JSON_DT + '>');
+    return internLiteral('"""' + jsonText + '"""^^<' + RDF_JSON_DT + '>');
   }
-  return new Literal(JSON.stringify(jsonText) + '^^<' + RDF_JSON_DT + '>');
+  return internLiteral(JSON.stringify(jsonText) + '^^<' + RDF_JSON_DT + '>');
 }
 
 // For a single reasoning run, this maps a canonical representation
@@ -210,6 +210,37 @@ class Var extends Term {
     super();
     this.name = name; // without leading '?'
   }
+}
+
+// ===========================================================================
+// Term interning
+// ===========================================================================
+
+// Intern IRIs and literals by their raw lexical string.
+// This reduces allocations when the same terms repeat and can improve performance.
+//
+// NOTE: Terms are treated as immutable. Do NOT mutate .value on interned objects.
+const __iriIntern = new Map();
+const __literalIntern = new Map();
+
+/** @param {string} value */
+function internIri(value) {
+  let t = __iriIntern.get(value);
+  if (!t) {
+    t = new Iri(value);
+    __iriIntern.set(value, t);
+  }
+  return t;
+}
+
+/** @param {string} value */
+function internLiteral(value) {
+  let t = __literalIntern.get(value);
+  if (!t) {
+    t = new Literal(value);
+    __literalIntern.set(value, t);
+  }
+  return t;
 }
 
 class Blank extends Term {
@@ -976,23 +1007,23 @@ class Parser {
     const val = tok.value;
 
     if (typ === 'Equals') {
-      return new Iri(OWL_NS + 'sameAs');
+      return internIri(OWL_NS + 'sameAs');
     }
 
     if (typ === 'IriRef') {
       const base = this.prefixes.map[''] || '';
-      return new Iri(resolveIriRef(val || '', base));
+      return internIri(resolveIriRef(val || '', base));
     }
     if (typ === 'Ident') {
       const name = val || '';
       if (name === 'a') {
-        return new Iri(RDF_NS + 'type');
+        return internIri(RDF_NS + 'type');
       } else if (name.startsWith('_:')) {
         return new Blank(name);
       } else if (name.includes(':')) {
-        return new Iri(this.prefixes.expandQName(name));
+        return internIri(this.prefixes.expandQName(name));
       } else {
-        return new Iri(name);
+        return internIri(name);
       }
     }
 
@@ -1030,7 +1061,7 @@ class Parser {
         }
         s = `${s}^^<${dtIri}>`;
       }
-      return new Literal(s);
+      return internLiteral(s);
     }
 
     if (typ === 'Var') return new Var(val || '');
@@ -1069,7 +1100,7 @@ class Parser {
       let invert = false;
       if (this.peek().typ === 'Ident' && (this.peek().value || '') === 'a') {
         this.next();
-        pred = new Iri(RDF_NS + 'type');
+        pred = internIri(RDF_NS + 'type');
       } else if (this.peek().typ === 'OpPredInvert') {
         this.next(); // consume "<-"
         pred = this.parseTerm();
@@ -1113,7 +1144,7 @@ class Parser {
       if (this.peek().typ === 'OpImplies') {
         this.next();
         const right = this.parseTerm();
-        const pred = new Iri(LOG_NS + 'implies');
+        const pred = internIri(LOG_NS + 'implies');
         triples.push(new Triple(left, pred, right));
         if (this.peek().typ === 'Dot') this.next();
         else if (this.peek().typ === 'RBrace') {
@@ -1124,7 +1155,7 @@ class Parser {
       } else if (this.peek().typ === 'OpImpliedBy') {
         this.next();
         const right = this.parseTerm();
-        const pred = new Iri(LOG_NS + 'impliedBy');
+        const pred = internIri(LOG_NS + 'impliedBy');
         triples.push(new Triple(left, pred, right));
         if (this.peek().typ === 'Dot') this.next();
         else if (this.peek().typ === 'RBrace') {
@@ -1172,7 +1203,7 @@ class Parser {
 
       if (this.peek().typ === 'Ident' && (this.peek().value || '') === 'a') {
         this.next();
-        verb = new Iri(RDF_NS + 'type');
+        verb = internIri(RDF_NS + 'type');
       } else if (this.peek().typ === 'OpPredInvert') {
         this.next(); // "<-"
         verb = this.parseTerm();
@@ -1669,9 +1700,14 @@ function tripleFastKey(tr) {
 }
 
 function ensureFactIndexes(facts) {
-  if (facts.__byPred && facts.__byPO && facts.__keySet) return;
+  if (facts.__byPred && facts.__byPS && facts.__byPO && facts.__keySet) return;
 
   Object.defineProperty(facts, '__byPred', {
+    value: new Map(),
+    enumerable: false,
+    writable: true,
+  });
+  Object.defineProperty(facts, '__byPS', {
     value: new Map(),
     enumerable: false,
     writable: true,
@@ -1701,6 +1737,21 @@ function indexFact(facts, tr) {
     }
     pb.push(tr);
 
+    const sk = termFastKey(tr.s);
+    if (sk !== null) {
+      let ps = facts.__byPS.get(pk);
+      if (!ps) {
+        ps = new Map();
+        facts.__byPS.set(pk, ps);
+      }
+      let psb = ps.get(sk);
+      if (!psb) {
+        psb = [];
+        ps.set(sk, psb);
+      }
+      psb.push(tr);
+    }
+
     const ok = termFastKey(tr.o);
     if (ok !== null) {
       let po = facts.__byPO.get(pk);
@@ -1727,14 +1778,26 @@ function candidateFacts(facts, goal) {
   if (goal.p instanceof Iri) {
     const pk = goal.p.value;
 
+    const sk = termFastKey(goal.s);
     const ok = termFastKey(goal.o);
+
+    /** @type {Triple[] | null} */
+    let byPS = null;
+    if (sk !== null) {
+      const ps = facts.__byPS.get(pk);
+      if (ps) byPS = ps.get(sk) || null;
+    }
+
+    /** @type {Triple[] | null} */
+    let byPO = null;
     if (ok !== null) {
       const po = facts.__byPO.get(pk);
-      if (po) {
-        const pob = po.get(ok);
-        if (pob) return pob;
-      }
+      if (po) byPO = po.get(ok) || null;
     }
+
+    if (byPS && byPO) return byPS.length <= byPO.length ? byPS : byPO;
+    if (byPS) return byPS;
+    if (byPO) return byPO;
 
     return facts.__byPred.get(pk) || [];
   }
@@ -2332,7 +2395,7 @@ function termToJsString(t) {
 function makeStringLiteral(str) {
   // JSON.stringify gives us a valid N3/Turtle-style quoted string
   // (with proper escaping for quotes, backslashes, newlines, …).
-  return new Literal(JSON.stringify(str));
+  return internLiteral(JSON.stringify(str));
 }
 
 function termToJsStringDecoded(t) {
@@ -2381,8 +2444,8 @@ function jsonPointerUnescape(seg) {
 function jsonToTerm(v) {
   if (v === null) return makeStringLiteral('null');
   if (typeof v === 'string') return makeStringLiteral(v);
-  if (typeof v === 'number') return new Literal(String(v));
-  if (typeof v === 'boolean') return new Literal(v ? 'true' : 'false');
+  if (typeof v === 'number') return internLiteral(String(v));
+  if (typeof v === 'boolean') return internLiteral(v ? 'true' : 'false');
   if (Array.isArray(v)) return new ListTerm(v.map(jsonToTerm));
 
   if (v && typeof v === 'object') {
@@ -2855,7 +2918,7 @@ function formatDurationLiteralFromSeconds(secs) {
   const neg = secs < 0;
   const days = Math.round(Math.abs(secs) / 86400.0);
   const literalLex = neg ? `"-P${days}D"` : `"P${days}D"`;
-  return new Literal(`${literalLex}^^<${XSD_NS}duration>`);
+  return internLiteral(`${literalLex}^^<${XSD_NS}duration>`);
 }
 function numEqualTerm(t, n, eps = 1e-9) {
   const v = parseNum(t);
@@ -2967,21 +3030,21 @@ function commonNumericDatatype(terms, outTerm) {
 
 function makeNumericOutputLiteral(val, dt) {
   if (dt === XSD_INTEGER_DT) {
-    if (typeof val === 'bigint') return new Literal(val.toString());
-    if (Number.isInteger(val)) return new Literal(String(val));
+    if (typeof val === 'bigint') return internLiteral(val.toString());
+    if (Number.isInteger(val)) return internLiteral(String(val));
     // If a non-integer sneaks in, promote to decimal.
-    return new Literal(`"${formatNum(val)}"^^<${XSD_DECIMAL_DT}>`);
+    return internLiteral(`"${formatNum(val)}"^^<${XSD_DECIMAL_DT}>`);
   }
 
   if (dt === XSD_FLOAT_DT || dt === XSD_DOUBLE_DT) {
     const sp = formatXsdFloatSpecialLex(val);
     const lex = sp !== null ? sp : formatNum(val);
-    return new Literal(`"${lex}"^^<${dt}>`);
+    return internLiteral(`"${lex}"^^<${dt}>`);
   }
 
   // decimal
   const lex = typeof val === 'bigint' ? val.toString() : formatNum(val);
-  return new Literal(`"${lex}"^^<${dt}>`);
+  return internLiteral(`"${lex}"^^<${dt}>`);
 }
 
 function evalUnaryMathRel(g, subst, forwardFn, inverseFn /* may be null */) {
@@ -3229,7 +3292,7 @@ function hashLiteralTerm(t, algo) {
   const input = stripQuotes(lex);
   try {
     const digest = nodeCrypto.createHash(algo).update(input, 'utf8').digest('hex');
-    return new Literal(JSON.stringify(digest));
+    return internLiteral(JSON.stringify(digest));
   } catch (e) {
     return null;
   }
@@ -3429,7 +3492,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
       if (secs !== null) {
         const outSecs = aDt.getTime() / 1000.0 - secs;
         const lex = utcIsoDateTimeStringFromEpochSeconds(outSecs);
-        const lit = new Literal(`"${lex}"^^<${XSD_NS}dateTime>`);
+        const lit = internLiteral(`"${lex}"^^<${XSD_NS}dateTime>`);
         if (g.o instanceof Var) {
           const s2 = { ...subst };
           s2[g.o.name] = lit;
@@ -3445,7 +3508,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     const bi = parseIntLiteral(b0);
     if (ai !== null && bi !== null) {
       const ci = ai - bi;
-      const lit = new Literal(ci.toString());
+      const lit = internLiteral(ci.toString());
       if (g.o instanceof Var) {
         const s2 = { ...subst };
         s2[g.o.name] = lit;
@@ -3480,7 +3543,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     }
 
     // Fallback (if you *don’t* have those helpers yet):
-    const lit = new Literal(formatNum(c));
+    const lit = internLiteral(formatNum(c));
     if (g.o instanceof Var) {
       const s2 = { ...subst };
       s2[g.o.name] = lit;
@@ -3531,7 +3594,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     if (ai !== null && bi !== null) {
       if (bi === 0n) return [];
       const q = ai / bi; // BigInt division truncates toward zero
-      const lit = new Literal(q.toString());
+      const lit = internLiteral(q.toString());
       if (g.o instanceof Var) {
         const s2 = { ...subst };
         s2[g.o.name] = lit;
@@ -3560,7 +3623,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     if (!Number.isInteger(a) || !Number.isInteger(b)) return [];
 
     const q = Math.trunc(a / b);
-    const lit = new Literal(String(q));
+    const lit = internLiteral(String(q));
     if (g.o instanceof Var) {
       const s2 = { ...subst };
       s2[g.o.name] = lit;
@@ -3758,7 +3821,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     if (Number.isNaN(a)) return [];
 
     const rVal = Math.round(a); // ties go toward +∞ in JS (e.g., -1.5 -> -1)
-    const lit = new Literal(String(rVal)); // integer token
+    const lit = internLiteral(String(rVal)); // integer token
 
     if (g.o instanceof Var) {
       const s2 = { ...subst };
@@ -3786,7 +3849,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
 
     if (g.o instanceof Var) {
       const s2 = { ...subst };
-      s2[g.o.name] = new Literal(`"${now}"^^<${XSD_NS}dateTime>`);
+      s2[g.o.name] = internLiteral(`"${now}"^^<${XSD_NS}dateTime>`);
       return [s2];
     }
     if (g.o instanceof Literal) {
@@ -3848,7 +3911,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     const outs = [];
 
     for (let i = 0; i < xs.length; i++) {
-      const idxLit = new Literal(String(i)); // 0-based
+      const idxLit = internLiteral(String(i)); // 0-based
       const val = xs[i];
 
       // Fast path: object is exactly a 2-element list (idx, value)
@@ -3904,7 +3967,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     const outs = [];
 
     for (let i = 0; i < xs.length; i++) {
-      const idxLit = new Literal(String(i)); // index starts at 0
+      const idxLit = internLiteral(String(i)); // index starts at 0
 
       // --- index side: strict if ground, otherwise unify/bind
       let s1 = null;
@@ -3980,7 +4043,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
   // list:length  (strict: do not accept integer<->decimal matches for a ground object)
   if (pv === LIST_NS + 'length') {
     if (!(g.s instanceof ListTerm)) return [];
-    const nTerm = new Literal(String(g.s.elems.length));
+    const nTerm = internLiteral(String(g.s.elems.length));
 
     const o2 = applySubstTerm(g.o, subst);
     if (isGroundTerm(o2)) {
@@ -4092,7 +4155,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     if (!(inputTerm instanceof ListTerm)) return [];
     const inputList = inputTerm.elems;
     if (!(predTerm instanceof Iri)) return [];
-    const pred = new Iri(predTerm.value);
+    const pred = internIri(predTerm.value);
     if (!isBuiltinPred(pred)) return [];
     if (!inputList.every((e) => isGroundTerm(e))) return [];
 
@@ -4185,8 +4248,8 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
       }
 
       if (oDt !== null) {
-        const strLit = isQuotedLexical(oLex) ? new Literal(oLex) : makeStringLiteral(String(oLex));
-        const subjList = new ListTerm([strLit, new Iri(oDt)]);
+        const strLit = isQuotedLexical(oLex) ? internLiteral(oLex) : makeStringLiteral(String(oLex));
+        const subjList = new ListTerm([strLit, internIri(oDt)]);
         const s2 = unifyTerm(goal.s, subjList, subst);
         if (s2 !== null) results.push(s2);
       }
@@ -4205,7 +4268,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
         if (okString) {
           const dtIri = b.value;
           // For xsd:string, prefer the plain string literal form.
-          const outLit = dtIri === XSD_NS + 'string' ? new Literal(sLex) : new Literal(`${sLex}^^<${dtIri}>`);
+          const outLit = dtIri === XSD_NS + 'string' ? internLiteral(sLex) : internLiteral(`${sLex}^^<${dtIri}>`);
           const s2 = unifyTerm(goal.o, outLit, subst);
           if (s2 !== null) results.push(s2);
         }
@@ -4241,7 +4304,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
       const tag = extractLangTag(g.o.value);
       if (tag !== null) {
         const [oLex] = literalParts(g.o.value); // strips @lang into lexical part
-        const strLit = isQuotedLexical(oLex) ? new Literal(oLex) : makeStringLiteral(String(oLex));
+        const strLit = isQuotedLexical(oLex) ? internLiteral(oLex) : makeStringLiteral(String(oLex));
         const langLit = makeStringLiteral(tag);
         const subjList = new ListTerm([strLit, langLit]);
         const s2 = unifyTerm(goal.s, subjList, subst);
@@ -4261,7 +4324,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
         if (okString && okLang) {
           const tag = stripQuotes(langLex);
           if (LANG_RE.test(tag)) {
-            const outLit = new Literal(`${sLex}@${tag}`);
+            const outLit = internLiteral(`${sLex}@${tag}`);
             const s2 = unifyTerm(goal.o, outLit, subst);
             if (s2 !== null) results.push(s2);
           }
@@ -4283,7 +4346,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
       const r = standardizeRule(r0, varGen);
 
       const premF = new FormulaTerm(r.premise);
-      const concTerm = r0.isFuse ? new Literal('false') : new FormulaTerm(r.conclusion);
+      const concTerm = r0.isFuse ? internLiteral('false') : new FormulaTerm(r.conclusion);
 
       // unify subject with the premise formula
       let s2 = unifyTerm(goal.s, premF, subst);
@@ -4420,7 +4483,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     let iri = skolemCache.get(key);
     if (!iri) {
       const id = deterministicSkolemIdFromKey(key);
-      iri = new Iri(SKOLEM_NS + id);
+      iri = internIri(SKOLEM_NS + id);
       skolemCache.set(key, iri);
     }
 
@@ -4442,7 +4505,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     if (g.o instanceof Literal) {
       const uriStr = termToJsString(g.o); // JS string from the literal
       if (uriStr === null) return [];
-      const iri = new Iri(uriStr);
+      const iri = internIri(uriStr);
       const s2 = unifyTerm(goal.s, iri, subst);
       return s2 !== null ? [s2] : [];
     }
