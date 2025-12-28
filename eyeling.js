@@ -959,6 +959,31 @@ class Parser {
       } else if (this.peek().typ === 'AtBase') {
         this.next();
         this.parseBaseDirective();
+      } else if (
+        // SPARQL-style/Turtle-style directives (case-insensitive, no trailing '.')
+        this.peek().typ === 'Ident' &&
+        typeof this.peek().value === 'string' &&
+        this.peek().value.toLowerCase() === 'prefix' &&
+        this.toks[this.pos + 1] &&
+        this.toks[this.pos + 1].typ === 'Ident' &&
+        typeof this.toks[this.pos + 1].value === 'string' &&
+        // Require PNAME_NS form (e.g., "ex:" or ":") to avoid clashing with a normal triple starting with IRI "prefix".
+        this.toks[this.pos + 1].value.endsWith(':') &&
+        this.toks[this.pos + 2] &&
+        (this.toks[this.pos + 2].typ === 'IriRef' || this.toks[this.pos + 2].typ === 'Ident')
+      ) {
+        this.next(); // consume PREFIX keyword
+        this.parseSparqlPrefixDirective();
+      } else if (
+        this.peek().typ === 'Ident' &&
+        typeof this.peek().value === 'string' &&
+        this.peek().value.toLowerCase() === 'base' &&
+        this.toks[this.pos + 1] &&
+        // SPARQL BASE requires an IRIREF.
+        this.toks[this.pos + 1].typ === 'IriRef'
+      ) {
+        this.next(); // consume BASE keyword
+        this.parseSparqlBaseDirective();
       } else {
         const first = this.parseTerm();
         if (this.peek().typ === 'OpImplies') {
@@ -975,15 +1000,16 @@ class Parser {
           let more;
 
           if (this.peek().typ === 'Dot') {
-            // Allow a bare blank-node property list statement, e.g. `[ a :Statement ].`
-            const lastTok = this.toks[this.pos - 1];
-            if (this.pendingTriples.length > 0 && lastTok && lastTok.typ === 'RBracket') {
+            // N3 grammar allows: triples ::= subject predicateObjectList?
+            // So a bare subject followed by '.' is syntactically valid.
+            // If the subject was a path / property-list that generated helper triples,
+            // we emit those; otherwise this statement contributes no triples.
+            more = [];
+            if (this.pendingTriples.length > 0) {
               more = this.pendingTriples;
               this.pendingTriples = [];
-              this.next(); // consume '.'
-            } else {
-              throw new Error(`Unexpected '.' after term; missing predicate/object list`);
             }
+            this.next(); // consume '.'
           } else {
             more = this.parsePredicateObjectList(first);
             this.expectDot();
@@ -1046,6 +1072,49 @@ class Parser {
       throw new Error(`Expected IRI after @base, got ${tok.toString()}`);
     }
     this.expectDot();
+    this.prefixes.setBase(iri);
+  }
+
+  parseSparqlPrefixDirective() {
+    // SPARQL/Turtle-style PREFIX directive: PREFIX pfx: <iri>  (no trailing '.')
+    const tok = this.next();
+    if (tok.typ !== 'Ident') {
+      throw new Error(`Expected prefix name after PREFIX, got ${tok.toString()}`);
+    }
+    const pref = tok.value || '';
+    const prefName = pref.endsWith(':') ? pref.slice(0, -1) : pref;
+
+    const tok2 = this.next();
+    let iri;
+    if (tok2.typ === 'IriRef') {
+      iri = resolveIriRef(tok2.value || '', this.prefixes.baseIri || '');
+    } else if (tok2.typ === 'Ident') {
+      iri = this.prefixes.expandQName(tok2.value || '');
+    } else {
+      throw new Error(`Expected IRI after PREFIX, got ${tok2.toString()}`);
+    }
+
+    // N3/Turtle: PREFIX directives do not have a trailing '.', but accept it permissively.
+    if (this.peek().typ === 'Dot') this.next();
+
+    this.prefixes.set(prefName, iri);
+  }
+
+  parseSparqlBaseDirective() {
+    // SPARQL/Turtle-style BASE directive: BASE <iri>  (no trailing '.')
+    const tok = this.next();
+    let iri;
+    if (tok.typ === 'IriRef') {
+      iri = resolveIriRef(tok.value || '', this.prefixes.baseIri || '');
+    } else if (tok.typ === 'Ident') {
+      iri = tok.value || '';
+    } else {
+      throw new Error(`Expected IRI after BASE, got ${tok.toString()}`);
+    }
+
+    // N3/Turtle: BASE directives do not have a trailing '.', but accept it permissively.
+    if (this.peek().typ === 'Dot') this.next();
+
     this.prefixes.setBase(iri);
   }
 
@@ -1290,15 +1359,15 @@ class Parser {
           throw new Error(`Expected '.' or '}', got ${this.peek().toString()}`);
         }
       } else {
-        // Allow a bare blank-node property list statement inside a formula, e.g. `{ [ a :X ]. }`
+        // N3 grammar allows: triples ::= subject predicateObjectList?
+        // So a bare subject (optionally producing helper triples) is allowed inside formulas as well.
         if (this.peek().typ === 'Dot' || this.peek().typ === 'RBrace') {
-          const lastTok = this.toks[this.pos - 1];
-          if (this.pendingTriples.length > 0 && lastTok && lastTok.typ === 'RBracket') {
+          if (this.pendingTriples.length > 0) {
             triples.push(...this.pendingTriples);
             this.pendingTriples = [];
-            if (this.peek().typ === 'Dot') this.next();
-            continue;
           }
+          if (this.peek().typ === 'Dot') this.next();
+          continue;
         }
 
         triples.push(...this.parsePredicateObjectList(left));
@@ -1330,6 +1399,19 @@ class Parser {
       if (this.peek().typ === 'Ident' && (this.peek().value || '') === 'a') {
         this.next();
         verb = internIri(RDF_NS + 'type');
+      } else if (this.peek().typ === 'Ident' && (this.peek().value || '') === 'has') {
+        // N3 syntactic sugar: "S has P O." means "S P O."
+        this.next(); // consume "has"
+        verb = this.parseTerm();
+      } else if (this.peek().typ === 'Ident' && (this.peek().value || '') === 'is') {
+        // N3 syntactic sugar: "S is P of O." means "O P S." (inverse; equivalent to "<-")
+        this.next(); // consume "is"
+        verb = this.parseTerm();
+        if (!(this.peek().typ === 'Ident' && (this.peek().value || '') === 'of')) {
+          throw new Error(`Expected 'of' after 'is <expr>', got ${this.peek().toString()}`);
+        }
+        this.next(); // consume "of"
+        invert = true;
       } else if (this.peek().typ === 'OpPredInvert') {
         this.next(); // "<-"
         verb = this.parseTerm();

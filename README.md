@@ -157,33 +157,6 @@ The CLI prints only newly derived forward facts.
 - the backward prover is **iterative** (explicit stack), so deep chains won’t blow the JS call stack
 - for very deep backward chains, substitutions may be compactified (semantics-preserving) to avoid quadratic “copy a growing substitution object” behavior
 
-## Parsing: practical N3 subset
-
-Supported:
-
-- `@prefix` / `@base`
-- triples with `;` and `,`
-- variables `?x`
-- blank nodes:
-  - anonymous `[]`
-  - property lists `[ :p :o; :q :r ]`
-- collections `( ... )`
-- quoted formulas `{ ... }`
-- implications:
-  - forward rules `{ P } => { C } .`
-  - backward rules `{ H } <= { B } .`
-- datatyped literals with `^^`
-- language-tagged string literals: `"hello"@en`, `"colour"@en-GB`
-- long string literals: `"""..."""` (can contain newlines; can also carry a language tag)
-- inverted predicate sugar: `?x <- :p ?y` (swaps subject/object for that predicate)
-- resource paths (forward `!` and reverse `^`): `:joe!:hasAddress!:hasCity "Metropolis".`
-- `#` line comments
-
-Non-goals / current limits:
-
-- not a full W3C N3 grammar (some edge cases for identifiers, quantifiers, advanced syntax)
-- proof output is local per derived triple (not a global exported proof tree)
-
 ## Blank nodes and quantification (pragmatic N3/EYE-style)
 
 `eyeling` follows the usual N3 intuition:
@@ -207,7 +180,7 @@ During reasoning:
 
 - any **derived** `log:implies` / `log:impliedBy` triple with formula subject/object is turned into a new live forward/backward rule.
 
-## Inference fuse — `{ ... } => false.`
+## Inference fuse
 
 Rules whose conclusion is `false` are treated as hard failures:
 
@@ -220,7 +193,27 @@ Rules whose conclusion is `false` are treated as hard failures:
 
 As soon as the premise is provable, `eyeling` exits with status code `2`.
 
-## Built-ins (overview)
+## Syntax + built-ins:
+
+`eyeling`’s parser targets (nearly) the full *Notation3 Language* grammar from the W3C N3 Community Group:
+https://w3c.github.io/N3/spec/
+
+In practice this means: it’s a Turtle superset that also accepts quoted formulas, rules, paths, and the N3 “syntax shorthand”
+operators (`=`, `=>`, `<=`) described in the spec.
+
+Commonly used N3/Turtle features:
+
+- Prefix/base directives (`@prefix` / `@base`, and SPARQL-style `PREFIX` / `BASE`)
+- Triples with `;` and `,`
+- Variables (`?x`)
+- Blank nodes (`[]`, and `[ :p :o; :q :r ]`)
+- Collections `( ... )`
+- Quoted formulas `{ ... }`
+- Implications (`=>`, `<=`)
+- Datatyped literals (`^^`) and language tags (`"..."@en`)
+- Inverse predicate sugar (`<-` and keyword forms like `is ... of`)
+- Resource paths (`!` and `^`)
+- `#` line comments
 
 `eyeling` implements a pragmatic subset of common N3 builtin families and evaluates them during backward goal proving:
 
