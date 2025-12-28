@@ -1,17 +1,17 @@
 @prefix : <http://eulersharp.sourceforge.net/2007/07test/graph#> .
 
 :test :is {
-    :i42 :cycle (:i75 :i72 :i75 :i72 :i75 :i72 :i75 :i72 :i75 :i72 :i75) .
-} .
-:test :is {
-    :i42 :cycle (:i81 :i81 :i81 :i81 :i81 :i81 :i81 :i81 :i81 :i81 :i81) .
-} .
-:test :is {
-    :i42 :cycle (:i87 :i87 :i87 :i87 :i87 :i87 :i87 :i87 :i87 :i87 :i87) .
+    :i42 :cycle (:i9 :i9 :i9 :i9 :i9 :i9 :i9 :i9 :i9 :i9 :i9) .
 } .
 :test :is {
     :i42 :cycle (:i72 :i75 :i72 :i75 :i72 :i75 :i72 :i75 :i72 :i75 :i72) .
 } .
 :test :is {
-    :i42 :cycle (:i9 :i9 :i9 :i9 :i9 :i9 :i9 :i9 :i9 :i9 :i9) .
+    :i42 :cycle (:i87 :i87 :i87 :i87 :i87 :i87 :i87 :i87 :i87 :i87 :i87) .
+} .
+:test :is {
+    :i42 :cycle (:i81 :i81 :i81 :i81 :i81 :i81 :i81 :i81 :i81 :i81 :i81) .
+} .
+:test :is {
+    :i42 :cycle (:i75 :i72 :i75 :i72 :i75 :i72 :i75 :i72 :i75 :i72 :i75) .
 } .

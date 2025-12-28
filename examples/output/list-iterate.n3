@@ -1,7 +1,7 @@
 @prefix : <urn:example:> .
 
-("Huey" "Dewey" "Louie") :iterate (2 "Louie") .
+("Huey" "Dewey" "Louie") :iterate (0 "Huey") .
 "Dewey" :hasIndex 1 .
 ("Huey" "Dewey" "Louie") :iterate (1 "Dewey") .
-("Huey" "Dewey" "Louie") :iterate (0 "Huey") .
+("Huey" "Dewey" "Louie") :iterate (2 "Louie") .
 :test :is true .

@@ -5176,22 +5176,19 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen) {
     // 1) Builtins
     if (isBuiltinPred(goal0.p)) {
       const deltas = evalBuiltin(goal0, {}, facts, backRules, state.depth, varGen);
+      const nextStates = [];
       for (const delta of deltas) {
         const composed = composeSubst(state.subst, delta);
         if (composed === null) continue;
-
         if (!restGoals.length) {
           results.push(gcCompactForGoals(composed, [], answerVars));
         } else {
           const nextSubst = maybeCompactSubst(composed, restGoals, answerVars, state.depth + 1);
-          stack.push({
-            goals: restGoals,
-            subst: nextSubst,
-            depth: state.depth + 1,
-            visited: state.visited,
-          });
+          nextStates.push({ goals: restGoals, subst: nextSubst, depth: state.depth + 1, visited: state.visited });
         }
       }
+      // Push in reverse so the *first* generated alternative is explored first (LIFO stack).
+      for (let i = nextStates.length - 1; i >= 0; i--) stack.push(nextStates[i]);
       continue;
     }
 
@@ -5202,46 +5199,36 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen) {
     // 3) Try to satisfy the goal from known facts (NOW indexed by (p,o) when possible)
     if (goal0.p instanceof Iri) {
       const candidates = candidateFacts(facts, goal0);
+      const nextStates = [];
       for (const f of candidates) {
         const delta = unifyTriple(goal0, f, {});
         if (delta === null) continue;
-
         const composed = composeSubst(state.subst, delta);
         if (composed === null) continue;
-
         if (!restGoals.length) {
           results.push(gcCompactForGoals(composed, [], answerVars));
         } else {
           const nextSubst = maybeCompactSubst(composed, restGoals, answerVars, state.depth + 1);
-          stack.push({
-            goals: restGoals,
-            subst: nextSubst,
-            depth: state.depth + 1,
-            visited: state.visited,
-          });
+          nextStates.push({ goals: restGoals, subst: nextSubst, depth: state.depth + 1, visited: state.visited });
         }
       }
+      for (let i = nextStates.length - 1; i >= 0; i--) stack.push(nextStates[i]);
     } else {
       // Non-IRI predicate → must try all facts.
+      const nextStates = [];
       for (const f of facts) {
         const delta = unifyTriple(goal0, f, {});
         if (delta === null) continue;
-
         const composed = composeSubst(state.subst, delta);
         if (composed === null) continue;
-
         if (!restGoals.length) {
           results.push(gcCompactForGoals(composed, [], answerVars));
         } else {
           const nextSubst = maybeCompactSubst(composed, restGoals, answerVars, state.depth + 1);
-          stack.push({
-            goals: restGoals,
-            subst: nextSubst,
-            depth: state.depth + 1,
-            visited: state.visited,
-          });
+          nextStates.push({ goals: restGoals, subst: nextSubst, depth: state.depth + 1, visited: state.visited });
         }
       }
+      for (let i = nextStates.length - 1; i >= 0; i--) stack.push(nextStates[i]);
     }
 
     // 4) Backward rules (indexed by head predicate)
@@ -5249,30 +5236,23 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen) {
       ensureBackRuleIndexes(backRules);
       const candRules = (backRules.__byHeadPred.get(goal0.p.value) || []).concat(backRules.__wildHeadPred);
 
+      const nextStates = [];
       for (const r of candRules) {
         if (r.conclusion.length !== 1) continue;
-
         const rawHead = r.conclusion[0];
         if (rawHead.p instanceof Iri && rawHead.p.value !== goal0.p.value) continue;
-
         const rStd = standardizeRule(r, varGen);
         const head = rStd.conclusion[0];
         const deltaHead = unifyTriple(head, goal0, {});
         if (deltaHead === null) continue;
-
         const body = rStd.premise.map((b) => applySubstTriple(b, deltaHead));
         const composed = composeSubst(state.subst, deltaHead);
         if (composed === null) continue;
-
         const newGoals = body.concat(restGoals);
         const nextSubst = maybeCompactSubst(composed, newGoals, answerVars, state.depth + 1);
-        stack.push({
-          goals: newGoals,
-          subst: nextSubst,
-          depth: state.depth + 1,
-          visited: visitedForRules,
-        });
+        nextStates.push({ goals: newGoals, subst: nextSubst, depth: state.depth + 1, visited: visitedForRules });
       }
+      for (let i = nextStates.length - 1; i >= 0; i--) stack.push(nextStates[i]);
     }
   }
 

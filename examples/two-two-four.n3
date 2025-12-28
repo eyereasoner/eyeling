@@ -1,0 +1,119 @@
+# =========================================================
+# Cryptarithm in N3:  TWO + TWO = FOUR
+#
+# Letters map to distinct digits:
+#   T,W,O,F,U,R are digits 0..9, all different
+#   T and F are non-zero (leading digits)
+#
+# Column constraints (base 10):
+#   Ones:     O + O       = R + 10*C1
+#   Tens:     W + W + C1  = U + 10*C2
+#   Hundreds: T + T + C2  = O + 10*C3
+#   Thousands:            F = C3
+#
+# Plus numeric verification:
+#   (100*T + 10*W + O) + (100*T + 10*W + O) = (1000*F + 100*O + 10*U + R)
+# =========================================================
+
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix list: <http://www.w3.org/2000/10/swap/list#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix :     <http://example.org/#>.
+
+# -------------------------
+# Global domains (edit once)
+# -------------------------
+
+:Digits   :vals (0 1 2 3 4 5 6 7 8 9).
+:NonZero  :vals (1 2 3 4 5 6 7 8 9).
+:Carry01  :vals (0 1).
+
+# -------------------------
+# Solve TWO + TWO = FOUR
+# -------------------------
+
+{
+  # Choose leading digit F and carry C3: for a 4-digit result, C3 must be 1.
+  # (We hardcode that fact here to prune search; comment these two lines out
+  # and enumerate F/C3 if you want it fully "blind".)
+  1 log:equalTo ?F.
+  1 log:equalTo ?C3.
+
+  # Choose T (non-zero, and distinct from F)
+  :NonZero :vals ?NZ.
+  ?NZ list:member ?T.
+  ?T math:notEqualTo ?F.
+
+  # Choose carry C2 (0 or 1)
+  :Carry01 :vals ?CL2. ?CL2 list:member ?C2.
+
+  # Hundreds column: T+T+C2 = O + 10*C3   with C3=1
+  (2 ?T) math:product ?2T.
+  (?2T ?C2) math:sum ?HundSum.        # = 2*T + C2
+  (10 ?C3) math:product ?TenC3.       # = 10
+  (?HundSum ?TenC3) math:difference ?O.
+
+  :Digits :vals ?D0. ?D0 list:member ?O.
+  ?O math:notEqualTo ?F.
+  ?O math:notEqualTo ?T.
+
+  # Choose W (any digit, all-different)
+  :Digits :vals ?D1. ?D1 list:member ?W.
+  ?W math:notEqualTo ?F.
+  ?W math:notEqualTo ?T.
+  ?W math:notEqualTo ?O.
+
+  # Ones column: O+O = R + 10*C1
+  :Carry01 :vals ?CL1. ?CL1 list:member ?C1.
+  (2 ?O) math:product ?2O.
+  (10 ?C1) math:product ?TenC1.
+  (?2O ?TenC1) math:difference ?R.
+
+  :Digits :vals ?D2. ?D2 list:member ?R.
+  ?R math:notEqualTo ?F.
+  ?R math:notEqualTo ?T.
+  ?R math:notEqualTo ?O.
+  ?R math:notEqualTo ?W.
+
+  # Tens column: W+W+C1 = U + 10*C2
+  (2 ?W) math:product ?2W.
+  (?2W ?C1) math:sum ?TenSum.
+  (10 ?C2) math:product ?TenC2.
+  (?TenSum ?TenC2) math:difference ?U.
+
+  :Digits :vals ?D3.
+  ?D3 list:member ?U.
+  ?U math:notEqualTo ?F.
+  ?U math:notEqualTo ?T.
+  ?U math:notEqualTo ?O.
+  ?U math:notEqualTo ?W.
+  ?U math:notEqualTo ?R.
+
+  # -------------------------
+  # Numeric verification (build TWO and FOUR)
+  # -------------------------
+
+  (100 ?T) math:product ?100T.
+  (10  ?W) math:product ?10W.
+  (?100T ?10W) math:sum ?TmpA.
+  (?TmpA ?O)   math:sum ?TWO.
+
+  (1000 ?F) math:product ?1000F.
+  (100  ?O) math:product ?100O.
+  (10   ?U) math:product ?10U.
+  (?1000F ?100O) math:sum ?TmpB.
+  (?TmpB  ?10U)  math:sum ?TmpC.
+  (?TmpC  ?R)    math:sum ?FOUR.
+
+  (?TWO ?TWO) math:sum ?2TWO.
+  ?2TWO math:equalTo ?FOUR.
+}
+=>
+{
+  :puzzle :solution [
+    :T ?T; :W ?W; :O ?O; :F ?F; :U ?U; :R ?R;
+    :C1 ?C1; :C2 ?C2; :C3 ?C3;
+    :TWO ?TWO; :FOUR ?FOUR
+  ].
+}.
+

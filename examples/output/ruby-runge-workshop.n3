@@ -1,12 +1,12 @@
 @prefix : <http://example.org/ruby-runge#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-:Interp1 :yAtX0 "-0.27999999999999986"^^xsd:decimal .
-:Interp1 :yAtXPlus "-0.2775980000000001"^^xsd:decimal .
+:Interp1 :yAtX0 "-0.28000000000000014"^^xsd:decimal .
+:Interp1 :yAtXPlus "-0.27759800000000023"^^xsd:decimal .
 :Interp1 :xPlus "0.601"^^xsd:decimal .
-:Interp1 :yAtXMinus "-0.28239800000000004"^^xsd:decimal .
+:Interp1 :yAtXMinus "-0.2823980000000002"^^xsd:decimal .
 :Interp1 :xMinus "0.599"^^xsd:decimal .
-:Interp1 :derivativeAtX0 "2.3999999999999577"^^xsd:decimal .
+:Interp1 :derivativeAtX0 "2.3999999999999853"^^xsd:decimal .
 :Interp1 :yAtBracketA "-1"^^xsd:decimal .
 :Interp1 :yAtBracketB "1"^^xsd:decimal .
 _:sk_0 :a 0.0 .
