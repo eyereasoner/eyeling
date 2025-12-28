@@ -157,7 +157,7 @@ The CLI prints only newly derived forward facts.
 - the backward prover is **iterative** (explicit stack), so deep chains won’t blow the JS call stack
 - for very deep backward chains, substitutions may be compactified (semantics-preserving) to avoid quadratic “copy a growing substitution object” behavior
 
-## Blank nodes and quantification (pragmatic N3/EYE-style)
+## Blank nodes and quantification
 
 `eyeling` follows the usual N3 intuition:
 
@@ -195,8 +195,7 @@ As soon as the premise is provable, `eyeling` exits with status code `2`.
 
 ## Syntax + built-ins:
 
-`eyeling`’s parser targets (nearly) the full *Notation3 Language* grammar from the W3C N3 Community Group:
-https://w3c.github.io/N3/spec/
+`eyeling`’s parser targets (nearly) the full *Notation3 Language* grammar from the [W3C N3 Community Group spec](https://w3c.github.io/N3/spec/).
 
 In practice this means: it’s a Turtle superset that also accepts quoted formulas, rules, paths, and the N3 “syntax shorthand”
 operators (`=`, `=>`, `<=`) described in the spec.
