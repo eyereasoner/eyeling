@@ -152,6 +152,7 @@ The CLI prints only newly derived forward facts.
 
 - facts are indexed for matching:
   - by predicate, and (when possible) by **(predicate, object)** (important for type-heavy workloads)
+- IRIs/literals are interned to reduce allocations and speed up comparisons/lookups
 - duplicate detection uses a fast key path when a triple is fully IRI/Literal-shaped
 - backward rules are indexed by head predicate
 - the backward prover is **iterative** (explicit stack), so deep chains won’t blow the JS call stack
