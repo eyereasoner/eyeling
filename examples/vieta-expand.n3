@@ -1,0 +1,130 @@
+# =========================================================
+# Expand a monic quartic from its roots using Vieta
+# Roots and coefficients are complex numbers as (Re Im).
+#
+# For roots r1..r4:
+#   p(x) = (x-r1)(x-r2)(x-r3)(x-r4)
+#        = x^4 - S1 x^3 + S2 x^2 - S3 x + S4
+# where:
+#   S1 = sum ri
+#   S2 = sum_{i<j} ri rj
+#   S3 = sum_{i<j<k} ri rj rk
+#   S4 = r1 r2 r3 r4
+# =========================================================
+
+@prefix math:    <http://www.w3.org/2000/10/swap/math#>.
+@prefix list:    <http://www.w3.org/2000/10/swap/list#>.
+@prefix complex: <https://eyereasoner.github.io/eye/complex#>.
+@prefix :        <http://example.org/#>.
+
+# -------------------------
+# Minimal complex arithmetic
+# -------------------------
+
+# ((a b) (c d)) complex:sum (e f)   where (e,f)=(a+c, b+d)
+{ ((?A ?B) (?C ?D)) complex:sum (?E ?F). } <= {
+  (?A ?C) math:sum ?E.
+  (?B ?D) math:sum ?F.
+}.
+
+# (a b) complex:negation (e f)   where (e,f)=(-a, -b)
+{ (?A ?B) complex:negation (?E ?F). } <= {
+  ?A math:negation ?E.
+  ?B math:negation ?F.
+}.
+
+# ((a b) (c d)) complex:product (e f)
+# (a+bi)(c+di) = (ac-bd) + (ad+bc)i
+{ ((?A ?B) (?C ?D)) complex:product (?E ?F). } <= {
+  (?A ?C) math:product ?AC.
+  (?B ?D) math:product ?BD.
+  (?AC ?BD) math:difference ?E.
+
+  (?A ?D) math:product ?AD.
+  (?B ?C) math:product ?BC.
+  (?AD ?BC) math:sum ?F.
+}.
+
+# -------------------------
+# Example data (two polynomials)
+# -------------------------
+
+:poly1 :roots ((1 0) (2 0) (3 0) (4 0)).
+:poly1 :coeffsGiven (
+  (  1 0)  # x^4
+  (-10 0)  # x^3
+  ( 35 0)  # x^2
+  (-50 0)  # x
+  ( 24 0)  # constant
+).
+
+:poly2 :roots ((0 1) (1 1) (3 2) (5 1)).
+:poly2 :coeffsGiven (
+  (  1  0)   # x^4
+  ( -9 -5)   # x^3
+  ( 14 33)   # x^2
+  ( 24 -44)  # x
+  (-26  0)   # constant
+).
+
+# -------------------------
+# Generic quartic expansion from roots (Vieta)
+# Produces :coeffsComputed (a4 a3 a2 a1 a0)
+# -------------------------
+
+{ ?P :coeffsComputed ((1 0) ?A3 ?A2 ?A1 ?A0). } <= {
+
+  ?P :roots (?R1 ?R2 ?R3 ?R4).
+
+  # s1 = r1+r2+r3+r4
+  (?R1 ?R2) complex:sum ?S12.
+  (?S12 ?R3) complex:sum ?S123.
+  (?S123 ?R4) complex:sum ?S1.
+
+  # a3 = -s1
+  ?S1 complex:negation ?A3.
+
+  # Pairwise products for s2
+  (?R1 ?R2) complex:product ?P12.
+  (?R1 ?R3) complex:product ?P13.
+  (?R1 ?R4) complex:product ?P14.
+  (?R2 ?R3) complex:product ?P23.
+  (?R2 ?R4) complex:product ?P24.
+  (?R3 ?R4) complex:product ?P34.
+
+  # a2 = sum pairwise products
+  (?P12 ?P13) complex:sum ?T1.
+  (?T1  ?P14) complex:sum ?T2.
+  (?T2  ?P23) complex:sum ?T3.
+  (?T3  ?P24) complex:sum ?T4.
+  (?T4  ?P34) complex:sum ?A2.
+
+  # Triple products for s3
+  (?P12 ?R3) complex:product ?T123.  # r1 r2 r3
+  (?P12 ?R4) complex:product ?T124.  # r1 r2 r4
+  (?P13 ?R4) complex:product ?T134.  # r1 r3 r4
+  (?P23 ?R4) complex:product ?T234.  # r2 r3 r4
+
+  # s3 = sum triple products
+  (?T123 ?T124) complex:sum ?U1.
+  (?U1   ?T134) complex:sum ?U2.
+  (?U2   ?T234) complex:sum ?S3.
+
+  # a1 = -s3
+  ?S3 complex:negation ?A1.
+
+  # a0 = r1*r2*r3*r4
+  (?P12 ?P34) complex:product ?A0.
+}.
+
+# -------------------------
+# Verification: computed coeffs match the given coeffs
+# (unification does the equality check)
+# -------------------------
+
+{ ?P :coeffsGiven ?C.
+  ?P :coeffsComputed ?C.
+} => {
+  ?P :verified true.
+}.
+
