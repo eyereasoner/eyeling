@@ -759,8 +759,9 @@ function lex(inputText) {
 // ===========================================================================
 
 class PrefixEnv {
-  constructor(map) {
-    this.map = map || {}; // prefix -> IRI
+  constructor(map, baseIri) {
+    this.map = map || {}; // prefix -> IRI (including "" for @prefix :)
+    this.baseIri = baseIri || ''; // base IRI for resolving <relative>
   }
 
   static newDefault() {
@@ -774,12 +775,16 @@ class PrefixEnv {
     m['list'] = LIST_NS;
     m['time'] = TIME_NS;
     m['genid'] = SKOLEM_NS;
-    m[''] = '';
-    return new PrefixEnv(m);
+    m[''] = ''; // empty prefix default namespace
+    return new PrefixEnv(m, ''); // base IRI starts empty
   }
 
   set(pref, base) {
     this.map[pref] = base;
+  }
+
+  setBase(baseIri) {
+    this.baseIri = baseIri || '';
   }
 
   expandQName(q) {
@@ -1020,7 +1025,7 @@ class Parser {
     const tok2 = this.next();
     let iri;
     if (tok2.typ === 'IriRef') {
-      iri = tok2.value || '';
+      iri = resolveIriRef(tok2.value || '', this.prefixes.baseIri || '');
     } else if (tok2.typ === 'Ident') {
       iri = this.prefixes.expandQName(tok2.value || '');
     } else {
@@ -1034,14 +1039,14 @@ class Parser {
     const tok = this.next();
     let iri;
     if (tok.typ === 'IriRef') {
-      iri = tok.value || '';
+      iri = resolveIriRef(tok.value || '', this.prefixes.baseIri || '');
     } else if (tok.typ === 'Ident') {
       iri = tok.value || '';
     } else {
       throw new Error(`Expected IRI after @base, got ${tok.toString()}`);
     }
     this.expectDot();
-    this.prefixes.set('', iri);
+    this.prefixes.setBase(iri);
   }
 
   parseTerm() {
@@ -1072,7 +1077,7 @@ class Parser {
     }
 
     if (typ === 'IriRef') {
-      const base = this.prefixes.map[''] || '';
+      const base = this.prefixes.baseIri || '';
       return internIri(resolveIriRef(val || '', base));
     }
     if (typ === 'Ident') {
@@ -1148,6 +1153,66 @@ class Parser {
       this.next();
       this.blankCounter += 1;
       return new Blank(`_:b${this.blankCounter}`);
+    }
+
+    // IRI property list: [ id <IRI> predicateObjectList? ]
+    // Lets you embed descriptions of an IRI directly in object position.
+    if (this.peek().typ === 'Ident' && (this.peek().value || '') === 'id') {
+      this.next(); // consume 'id'
+      const iriTerm = this.parseTerm();
+
+      // N3 note: 'id' form is not meant to be used with blank node identifiers.
+      if (iriTerm instanceof Blank && iriTerm.label.startsWith('_:')) {
+        throw new Error("Cannot use 'id' keyword with a blank node identifier inside [...]");
+      }
+
+      // Optional ';' right after the id IRI (tolerated).
+      if (this.peek().typ === 'Semicolon') this.next();
+
+      // Empty IRI property list: [ id :iri ]
+      if (this.peek().typ === 'RBracket') {
+        this.next();
+        return iriTerm;
+      }
+
+      const subj = iriTerm;
+      while (true) {
+        let pred;
+        let invert = false;
+        if (this.peek().typ === 'Ident' && (this.peek().value || '') === 'a') {
+          this.next();
+          pred = internIri(RDF_NS + 'type');
+        } else if (this.peek().typ === 'OpPredInvert') {
+          this.next(); // "<-"
+          pred = this.parseTerm();
+          invert = true;
+        } else {
+          pred = this.parseTerm();
+        }
+
+        const objs = [this.parseTerm()];
+        while (this.peek().typ === 'Comma') {
+          this.next();
+          objs.push(this.parseTerm());
+        }
+
+        for (const o of objs) {
+          this.pendingTriples.push(invert ? new Triple(o, pred, subj) : new Triple(subj, pred, o));
+        }
+
+        if (this.peek().typ === 'Semicolon') {
+          this.next();
+          if (this.peek().typ === 'RBracket') break;
+          continue;
+        }
+        break;
+      }
+
+      if (this.peek().typ !== 'RBracket') {
+        throw new Error(`Expected ']' at end of IRI property list, got ${JSON.stringify(this.peek())}`);
+      }
+      this.next();
+      return iriTerm;
     }
 
     // [ predicateObjectList ]
