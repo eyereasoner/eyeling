@@ -559,6 +559,67 @@ function lex(inputText) {
       continue;
     }
 
+    // String literal: short '...' or long '''...'''
+    if (c === "'") {
+      // Long string literal ''' ... '''
+      if (peek(1) === "'" && peek(2) === "'") {
+        i += 3; // consume opening '''
+        const sChars = [];
+        let closed = false;
+        while (i < n) {
+          // closing delimiter?
+          if (peek() === "'" && peek(1) === "'" && peek(2) === "'") {
+            i += 3; // consume closing '''
+            closed = true;
+            break;
+          }
+          let cc = chars[i];
+          i++;
+          if (cc === '\\') {
+            // Preserve escapes verbatim (same behavior as short strings)
+            if (i < n) {
+              const esc = chars[i];
+              i++;
+              sChars.push('\\');
+              sChars.push(esc);
+            }
+            continue;
+          }
+          sChars.push(cc);
+        }
+        if (!closed) throw new Error("Unterminated long string literal '''...'''");
+        const raw = "'''" + sChars.join('') + "'''";
+        const decoded = decodeN3StringEscapes(stripQuotes(raw));
+        const s = JSON.stringify(decoded); // canonical short quoted form
+        tokens.push(new Token('Literal', s));
+        continue;
+      }
+
+      // Short string literal ' ... '
+      i++; // consume opening '
+      const sChars = [];
+      while (i < n) {
+        let cc = chars[i];
+        i++;
+        if (cc === '\\') {
+          if (i < n) {
+            const esc = chars[i];
+            i++;
+            sChars.push('\\');
+            sChars.push(esc);
+          }
+          continue;
+        }
+        if (cc === "'") break;
+        sChars.push(cc);
+      }
+      const raw = "'" + sChars.join('') + "'";
+      const decoded = decodeN3StringEscapes(stripQuotes(raw));
+      const s = JSON.stringify(decoded); // canonical short quoted form
+      tokens.push(new Token('Literal', s));
+      continue;
+    }
+
     // Variable ?name
     if (c === '?') {
       i++;
@@ -2371,11 +2432,16 @@ function normalizeLiteralForFastKey(lit) {
 }
 
 function stripQuotes(lex) {
-  if (lex.length >= 6 && lex.startsWith('"""') && lex.endsWith('"""')) {
-    return lex.slice(3, -3);
+  if (typeof lex !== 'string') return lex;
+  // Handle both short ('...' / "...") and long ('''...''' / """...""") forms.
+  if (lex.length >= 6) {
+    if (lex.startsWith('"""') && lex.endsWith('"""')) return lex.slice(3, -3);
+    if (lex.startsWith("'''") && lex.endsWith("'''")) return lex.slice(3, -3);
   }
-  if (lex.length >= 2 && lex[0] === '"' && lex[lex.length - 1] === '"') {
-    return lex.slice(1, -1);
+  if (lex.length >= 2) {
+    const a = lex[0];
+    const b = lex[lex.length - 1];
+    if ((a === '"' && b === '"') || (a === "'" && b === "'")) return lex.slice(1, -1);
   }
   return lex;
 }
@@ -2628,10 +2694,18 @@ function formatXsdFloatSpecialLex(n) {
 }
 
 function isQuotedLexical(lex) {
-  // Note: the lexer stores long strings with literal delimiters: """..."""
-  return (
-    (lex.length >= 2 && lex[0] === '"' && lex[lex.length - 1] === '"') || (lex.length >= 6 && lex.startsWith('"""') && lex.endsWith('"""'))
-  );
+  // Accept both Turtle/N3 quoting styles:
+  //   short:  "..."  or  '...'
+  //   long:   """..."""  or  '''...'''
+  if (typeof lex !== 'string') return false;
+  const n = lex.length;
+  if (n >= 6 && ((lex.startsWith('"""') && lex.endsWith('"""')) || (lex.startsWith("'''") && lex.endsWith("'''")))) return true;
+  if (n >= 2) {
+    const a = lex[0];
+    const b = lex[n - 1];
+    return (a === '"' && b === '"') || (a === "'" && b === "'");
+  }
+  return false;
 }
 
 function isXsdNumericDatatype(dt) {
