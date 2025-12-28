@@ -1,0 +1,116 @@
+# =========================================================
+# Generic degree-4 polynomial root finder (bounded search)
+# Works for real + complex coefficients.
+#
+# Complex number representation: (Re Im) meaning Re + Im*i
+#
+# Usage:
+#   - Add polynomials as :polyX :coeffs (a4 a3 a2 a1 a0).
+#   - Adjust :ReDomain / :ImDomain once (global search space).
+# =========================================================
+
+@prefix math:    <http://www.w3.org/2000/10/swap/math#>.
+@prefix list:    <http://www.w3.org/2000/10/swap/list#>.
+@prefix complex: <https://eyereasoner.github.io/eye/complex#>.
+@prefix :        <http://example.org/#>.
+
+# -------------------------
+# Complex arithmetic (minimal)
+# -------------------------
+
+# ((a b) (c d)) complex:sum (e f)   where (e,f)=(a+c, b+d)
+{ ((?A ?B) (?C ?D)) complex:sum (?E ?F). } <= {
+  (?A ?C) math:sum ?E.
+  (?B ?D) math:sum ?F.
+}.
+
+# ((a b) (c d)) complex:product (e f)
+# (a+bi)(c+di) = (ac-bd) + (ad+bc)i
+{ ((?A ?B) (?C ?D)) complex:product (?E ?F). } <= {
+  (?A ?C) math:product ?AC.
+  (?B ?D) math:product ?BD.
+  (?AC ?BD) math:difference ?E.
+
+  (?A ?D) math:product ?AD.
+  (?B ?C) math:product ?BC.
+  (?AD ?BC) math:sum ?F.
+}.
+
+# (a b) complex:isZero :ok  iff a=0 and b=0
+{ (?A ?B) complex:isZero :ok. } <= {
+  ?A math:equalTo 0.
+  ?B math:equalTo 0.
+}.
+
+# -------------------------
+# Polynomial definitions (degree 4)
+# coeff list is (a4 a3 a2 a1 a0), each ai is a complex pair (Re Im)
+# -------------------------
+
+:poly1 :coeffs (
+  ( 1  0)
+  (-10 0)
+  (35  0)
+  (-50 0)
+  (24  0)
+).
+
+:poly2 :coeffs (
+  ( 1   0)
+  (-9  -5)
+  (14  33)
+  (24 -44)
+  (-26  0)
+).
+
+# -------------------------
+# Global search domains (edit ONCE, reuse for all polynomials)
+# -------------------------
+
+:ReDomain :vals (0 1 2 3 4 5).
+:ImDomain :vals (0 1 2 3 4 5).
+
+# -------------------------
+# Generic evaluation for degree-4 polynomials:
+#   p(x)=a4*x^4 + a3*x^3 + a2*x^2 + a1*x + a0
+#
+# Relation: (?Poly ?X) :valueAt ?Y
+# -------------------------
+
+{ (?P ?X) :valueAt ?Y. } <= {
+  ?P :coeffs (?A4 ?A3 ?A2 ?A1 ?A0).
+
+  (?X  ?X)  complex:product ?X2.
+  (?X2 ?X)  complex:product ?X3.
+  (?X2 ?X2) complex:product ?X4.
+
+  (?A4 ?X4) complex:product ?T4.
+  (?A3 ?X3) complex:product ?T3.
+  (?A2 ?X2) complex:product ?T2.
+  (?A1 ?X ) complex:product ?T1.
+
+  (?T4 ?T3) complex:sum ?S1.
+  (?S1 ?T2) complex:sum ?S2.
+  (?S2 ?T1) complex:sum ?S3.
+  (?S3 ?A0) complex:sum ?Y.
+}.
+
+# -------------------------
+# Generic root-finder for ALL polynomials with :coeffs
+# Searches X=(R,I) where R in ReDomain and I in ImDomain
+# -------------------------
+
+{
+  ?P :coeffs ?_.
+
+  :ReDomain :vals ?RL. ?RL list:member ?R.
+  :ImDomain :vals ?IL. ?IL list:member ?I.
+
+  (?P (?R ?I)) :valueAt ?Y.
+  ?Y complex:isZero :ok.
+}
+=>
+{
+  ?P :hasRoot (?R ?I).
+}.
+
