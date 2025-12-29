@@ -506,25 +506,42 @@ function lex(inputText) {
         const sChars = [];
         let closed = false;
         while (i < n) {
-          // closing delimiter?
-          if (peek() === '"' && peek(1) === '"' && peek(2) === '"') {
-            i += 3; // consume closing """
-            closed = true;
-            break;
-          }
-          let cc = chars[i];
-          i++;
+          const cc = chars[i];
+
+          // Preserve escapes verbatim (same behavior as short strings)
           if (cc === '\\') {
-            // Preserve escapes verbatim (same behavior as short strings)
+            i++;
             if (i < n) {
               const esc = chars[i];
               i++;
               sChars.push('\\');
               sChars.push(esc);
+            } else {
+              sChars.push('\\');
             }
             continue;
           }
+
+          // In long strings, a run of >= 3 delimiter quotes terminates the literal.
+          // Any extra quotes beyond the final 3 are part of the content.
+          if (cc === "\"") {
+            let run = 0;
+            while (i + run < n && chars[i + run] === "\"") run++;
+
+            if (run >= 3) {
+              for (let k = 0; k < run - 3; k++) sChars.push("\"");
+              i += run; // consume content quotes (if any) + closing delimiter
+              closed = true;
+              break;
+            }
+
+            for (let k = 0; k < run; k++) sChars.push("\"");
+            i += run;
+            continue;
+          }
+
           sChars.push(cc);
+          i++;
         }
         if (!closed) throw new Error('Unterminated long string literal """..."""');
         const raw = '"""' + sChars.join('') + '"""';
@@ -567,25 +584,42 @@ function lex(inputText) {
         const sChars = [];
         let closed = false;
         while (i < n) {
-          // closing delimiter?
-          if (peek() === "'" && peek(1) === "'" && peek(2) === "'") {
-            i += 3; // consume closing '''
-            closed = true;
-            break;
-          }
-          let cc = chars[i];
-          i++;
+          const cc = chars[i];
+
+          // Preserve escapes verbatim (same behavior as short strings)
           if (cc === '\\') {
-            // Preserve escapes verbatim (same behavior as short strings)
+            i++;
             if (i < n) {
               const esc = chars[i];
               i++;
               sChars.push('\\');
               sChars.push(esc);
+            } else {
+              sChars.push('\\');
             }
             continue;
           }
+
+          // In long strings, a run of >= 3 delimiter quotes terminates the literal.
+          // Any extra quotes beyond the final 3 are part of the content.
+          if (cc === "'") {
+            let run = 0;
+            while (i + run < n && chars[i + run] === "'") run++;
+
+            if (run >= 3) {
+              for (let k = 0; k < run - 3; k++) sChars.push("'");
+              i += run; // consume content quotes (if any) + closing delimiter
+              closed = true;
+              break;
+            }
+
+            for (let k = 0; k < run; k++) sChars.push("'");
+            i += run;
+            continue;
+          }
+
           sChars.push(cc);
+          i++;
         }
         if (!closed) throw new Error("Unterminated long string literal '''...'''");
         const raw = "'''" + sChars.join('') + "'''";
