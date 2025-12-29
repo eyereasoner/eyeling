@@ -12,7 +12,7 @@ A minimal [Notation3 (N3)](https://notation3.org/) reasoner in **JavaScript**.
 - “pass-only-new” style output (we never want to leak raw input data; backward rules can act like “functions” over raw data)
 - works fully client-side (browser) and in Node.js
 
-## Playground (in your browser)
+## Playground
 
 Try it here:
 
@@ -21,28 +21,22 @@ Try it here:
 The playground runs `eyeling` client-side. You can:
 
 - edit an N3 program directly
-- load an N3 program from a URL
+- load an N3 program from a URL (in the "Load N3 from URL" box or as ?url=...)
 - share a link with the program encoded in the URL fragment (`#...`)
 
-### Example (Socrates)
-
-This link preloads a small “Socrates is Mortal” ruleset:
-
-- [Socrates example](https://eyereasoner.github.io/eyeling/demo#%23%20------------------%0A%23%20Socrates%20inference%0A%23%20------------------%0A%0A%40prefix%20rdfs%3A%20%3Chttp%3A%2F%2Fwww.w3.org%2F2000%2F01%2Frdf-schema%23%3E.%0A%40prefix%20%3A%20%3Chttp%3A%2F%2Fexample.org%2Fsocrates%23%3E.%0A%0A%23%20facts%0A%3ASocrates%20a%20%3AHuman.%0A%3AHuman%20rdfs%3AsubClassOf%20%3AMortal.%0A%0A%23%20subclass%20rule%0A%7B%0A%20%20%20%20%3FS%20a%20%3FA.%0A%20%20%20%20%3FA%20rdfs%3AsubClassOf%20%3FB.%0A%7D%20%3D%3E%20%7B%0A%20%20%20%20%3FS%20a%20%3FB.%0A%7D%2E%0A)
-
-## Quick start (Node.js)
+## Quick start
 
 ### Requirements
 
 - Node.js >= 18 (anything modern with `BigInt` support is fine)
 
-### Install (npm)
+### Install
 
 ```bash
 npm i eyeling
 ```
 
-### CLI (npm)
+### CLI
 
 Run on a file:
 
@@ -52,7 +46,7 @@ npx eyeling examples/socrates.n3
 
 (Or install globally: `npm i -g eyeling` and run `eyeling ...`.)
 
-### JavaScript API (Node)
+### JavaScript API
 
 ```js
 const { reason } = require("eyeling");
@@ -146,7 +140,7 @@ Forward rule premises are proved using:
 
 The CLI prints only newly derived forward facts.
 
-### Performance notes (current engine)
+### Performance notes
 
 `eyeling` stays tiny, but includes a few key performance mechanisms:
 
@@ -168,7 +162,7 @@ The CLI prints only newly derived forward facts.
 
 Equal facts up to renaming of Skolem IDs are treated as duplicates and are not re-added.
 
-## Rule-producing rules (meta-rules)
+## Rule-producing rules aka meta-rules
 
 `eyeling` understands the `log:implies` / `log:impliedBy` idiom.
 
@@ -194,7 +188,7 @@ Rules whose conclusion is `false` are treated as hard failures:
 
 As soon as the premise is provable, `eyeling` exits with status code `2`.
 
-## Syntax + built-ins:
+## Syntax + built-ins
 
 `eyeling`’s parser targets (nearly) the full *Notation3 Language* grammar from the [W3C N3 Community Group spec](https://w3c.github.io/N3/spec/).
 
