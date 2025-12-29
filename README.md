@@ -1,6 +1,6 @@
 # eyeling
 
-A minimal [Notation3 (N3)](https://notation3.org/) reasoner in **JavaScript**.
+A [Notation3 (N3)](https://notation3.org/) reasoner in **JavaScript**.
 
 `eyeling` is:
 

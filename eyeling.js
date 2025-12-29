@@ -2636,7 +2636,9 @@ function termToJsString(t) {
   const [lex, dt] = literalParts(t.value);
   if (!isQuotedLexical(lex)) return null;
   if (dt !== null && dt !== XSD_NS + 'string' && dt !== 'xsd:string') return null;
-  return stripQuotes(lex);
+  // Interpret N3/Turtle string escapes (\" \n \uXXXX \UXXXXXXXX …) to obtain
+  // the actual string value used by SWAP/N3 string builtins.
+  return decodeN3StringEscapes(stripQuotes(lex));
 }
 
 function makeStringLiteral(str) {
