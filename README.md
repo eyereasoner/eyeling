@@ -5,7 +5,6 @@ A [Notation3 (N3)](https://notation3.org/) reasoner in **JavaScript**.
 `eyeling` is:
 
 - a single self-contained file (`eyeling.js`, no external deps)
-- intentionally tiny and close in spirit to EYE
 - a practical N3/Turtle superset (enough for lots of real rulesets)
 - supports forward (`=>`) + backward (`<=`) chaining over Horn-style rules
 - prints only newly derived forward facts, optionally preceded by compact proof comments
@@ -142,11 +141,12 @@ The CLI prints only newly derived forward facts.
 
 ### Performance notes
 
-`eyeling` stays tiny, but includes a few key performance mechanisms:
+`eyeling` includes a few key performance mechanisms:
 
 - facts are indexed for matching:
   - by predicate, and (when possible) by **(predicate, object)** (important for type-heavy workloads)
 - IRIs/literals are interned to reduce allocations and speed up comparisons/lookups
+- parsed numeric literals are cached, and rule standardization reuses unchanged subterms to cut repeated parsing/allocation
 - duplicate detection uses a fast key path when a triple is fully IRI/Literal-shaped
 - backward rules are indexed by head predicate
 - the backward prover is **iterative** (explicit stack), so deep chains won’t blow the JS call stack

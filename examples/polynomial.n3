@@ -1,0 +1,469 @@
+# ============================================================
+# polynomial.n3
+#
+# Complex numbers are represented as (Re Im).
+# Polynomial coefficients are lists in descending powers:
+#   (A B C D E) means A*x^4 + B*x^3 + C*x^2 + D*x + E
+#
+# Provides:
+#   ?Coeffs :root ?Z.              # degree 1..4 roots (complex)
+#   ?Roots  :polynome ?Coeffs.     # build monic polynomial from any root list
+#
+# And convenience materialization:
+#   :polyX :coeffs (...)  =>  :polyX :hasRoot (Re Im).
+#   :polyX :roots  (...)  =>  :polyX :coeffsFromRoots (...).
+# ============================================================
+
+@prefix math:    <http://www.w3.org/2000/10/swap/math#>.
+@prefix list:    <http://www.w3.org/2000/10/swap/list#>.
+@prefix log:     <http://www.w3.org/2000/10/swap/log#>.
+@prefix complex: <https://eyereasoner.github.io/eye/complex#>.
+@prefix :        <http://example.org/#>.
+
+# -------------------------
+# Basic complex arithmetic
+# -------------------------
+
+{ ((?A ?B) (?C ?D)) complex:sum (?E ?F). } <= {
+  (?A ?C) math:sum ?E.
+  (?B ?D) math:sum ?F.
+}.
+
+{ ((?A ?B) (?C ?D)) complex:difference (?E ?F). } <= {
+  (?A ?C) math:difference ?E.
+  (?B ?D) math:difference ?F.
+}.
+
+{ (?A ?B) complex:negation (?E ?F). } <= {
+  ?A math:negation ?E.
+  ?B math:negation ?F.
+}.
+
+# (a+bi)(c+di) = (ac-bd) + (ad+bc)i
+{ ((?A ?B) (?C ?D)) complex:product (?E ?F). } <= {
+  (?A ?C) math:product ?AC.
+  (?B ?D) math:product ?BD.
+  (?AC ?BD) math:difference ?E.
+
+  (?A ?D) math:product ?AD.
+  (?B ?C) math:product ?BC.
+  (?AD ?BC) math:sum ?F.
+}.
+
+# 1/(a+bi) = (a/(a^2+b^2)) + (-b/(a^2+b^2)) i
+{ (?A ?B) complex:inverse (?C ?D). } <= {
+  (?A ?A) math:product ?A2.
+  (?B ?B) math:product ?B2.
+  (?A2 ?B2) math:sum ?Den.
+
+  (?A ?Den) math:quotient ?C.
+  ?B math:negation ?Bn.
+  (?Bn ?Den) math:quotient ?D.
+}.
+
+{ ((?X ?Y) (?A ?B)) complex:quotient ?Z. } <= {
+  (?A ?B) complex:inverse ?Inv.
+  ((?X ?Y) ?Inv) complex:product ?Z.
+}.
+
+{ (?X ?Y) complex:square ?Z. } <= { ((?X ?Y) (?X ?Y)) complex:product ?Z. }.
+{ (?X ?Y) complex:cube   ?Z. } <= {
+  (?X ?Y) complex:square ?S.
+  (?S (?X ?Y)) complex:product ?Z.
+}.
+{ (?X ?Y) :pow4 ?Z. } <= {
+  (?X ?Y) complex:square ?S.
+  (?S ?S) complex:product ?Z.
+}.
+
+# zero / nonzero tests (for branching like Prolog nul/nonnul)
+{ (?A ?B) complex:isZero true. } <= { ?A math:equalTo 0. ?B math:equalTo 0. }.
+{ (?A ?B) complex:notZero true. } <= { ?A math:notEqualTo 0. }.
+{ (?A ?B) complex:notZero true. } <= { ?B math:notEqualTo 0. }.
+
+# -------------------------
+# Polar/cartesian (for principal roots)
+# -------------------------
+
+# complex:polar((x y)) = (r t) with t in [0,2pi)
+{ (?X ?Y) complex:polar (?R ?Tp). } <= {
+  (?X 2) math:exponentiation ?X2.
+  (?Y 2) math:exponentiation ?Y2.
+  (?X2 ?Y2) math:sum ?S.
+  (?S 0.5) math:exponentiation ?R.
+
+  ?X math:absoluteValue ?AbsX.
+  (?AbsX ?R) math:quotient ?C.
+  ?C math:acos ?T.
+
+  (?X ?Y ?T) complex:dial ?Tp.
+}.
+
+{ (?X ?Y ?T) complex:dial ?Tp. } <= {
+  ?X math:notLessThan 0.
+  ?Y math:notLessThan 0.
+  (0 ?T) math:sum ?Tp.
+}.
+{ (?X ?Y ?T) complex:dial ?Tp. } <= {
+  ?X math:lessThan 0.
+  ?Y math:notLessThan 0.
+  (3.141592653589793 ?T) math:difference ?Tp.
+}.
+{ (?X ?Y ?T) complex:dial ?Tp. } <= {
+  ?X math:lessThan 0.
+  ?Y math:lessThan 0.
+  (3.141592653589793 ?T) math:sum ?Tp.
+}.
+{ (?X ?Y ?T) complex:dial ?Tp. } <= {
+  ?X math:notLessThan 0.
+  ?Y math:lessThan 0.
+  (3.141592653589793 2) math:product ?TwoPi.
+  (?TwoPi ?T) math:difference ?Tp.
+}.
+
+# (r t) -> (x y)
+{ (?R ?T) :cartesian (?X ?Y). } <= {
+  ?T math:cos ?C.
+  ?T math:sin ?S.
+  (?R ?C) math:product ?X.
+  (?R ?S) math:product ?Y.
+}.
+
+# Principal sqrt / cbrt (like Prolog racine(N,X,...) with the zero shortcut)
+{ (0 0) :sqrtPrincipal (0 0). } <= { }.
+{ (?X ?Y) :sqrtPrincipal (?A ?B). } <= {
+  (?X ?Y) complex:notZero true.
+  (?X ?Y) complex:polar (?R ?T).
+  (?R 0.5) math:exponentiation ?Rp.
+  (?T 2) math:quotient ?Tp.
+  (?Rp ?Tp) :cartesian (?A ?B).
+}.
+
+{ (0 0) :cbrtPrincipal (0 0). } <= { }.
+{ (?X ?Y) :cbrtPrincipal (?A ?B). } <= {
+  (?X ?Y) complex:notZero true.
+  (?X ?Y) complex:polar (?R ?T).
+  (?R 0.3333333333333333) math:exponentiation ?Rp.
+  (?T 3) math:quotient ?Tp.
+  (?Rp ?Tp) :cartesian (?A ?B).
+}.
+
+# Roots of unity
+:SquareUnity :vals ((1 0) (-1 0)).
+:CubeUnity   :vals ((1 0) (-0.5 0.8660254037844386) (-0.5 -0.8660254037844386)).
+
+# ------------------------------------------------------------
+# Cardano: depressed cubic z^3 + P z + Q = 0
+# Returns the 3 solutions as a fixed list (Z0 Z1 Z2)
+# ------------------------------------------------------------
+
+# P = 0 case: z = u * cbrt(-Q)
+{ (?P ?Q) :cardanRoots3 (?Z0 ?Z1 ?Z2). } <= {
+  ?P complex:isZero true.
+
+  (?Q) complex:negation ?mQ.
+  ?mQ :cbrtPrincipal ?C0.
+
+  :CubeUnity :vals (?U0 ?U1 ?U2).
+
+  (?U0 ?C0) complex:product ?Z0.
+  (?U1 ?C0) complex:product ?Z1.
+  (?U2 ?C0) complex:product ?Z2.
+}.
+
+# P != 0 case:
+#   p = P/3, q = Q/2
+#   u = cbrt( sqrt(q^2 + p^3) - q )
+#   z = u - p/u
+{ (?Pp ?Qp) :cardanRoots3 (?Z0 ?Z1 ?Z2). } <= {
+  ?Pp complex:notZero true.
+
+  (?Pp (3 0)) complex:quotient ?P.
+  (?Qp (2 0)) complex:quotient ?Q.
+
+  ?Q complex:square ?Q2.
+  ?P complex:cube ?P3.
+  (?Q2 ?P3) complex:sum ?Rad.
+
+  ?Rad :sqrtPrincipal ?Sqrt.
+  (?Sqrt ?Q) complex:difference ?Inner.
+
+  ?Inner :cbrtPrincipal ?Ubase.
+
+  :CubeUnity :vals (?W0 ?W1 ?W2).
+
+  (?W0 ?Ubase) complex:product ?U0.
+  (?W1 ?Ubase) complex:product ?U1.
+  (?W2 ?Ubase) complex:product ?U2.
+
+  # z = u - p/u
+  (?P ?U0) complex:quotient ?PoverU0. (?U0 ?PoverU0) complex:difference ?Z0.
+  (?P ?U1) complex:quotient ?PoverU1. (?U1 ?PoverU1) complex:difference ?Z1.
+  (?P ?U2) complex:quotient ?PoverU2. (?U2 ?PoverU2) complex:difference ?Z2.
+}.
+
+# ------------------------------------------------------------
+# Polynomial roots :root (degree 1..4)
+# ------------------------------------------------------------
+
+# Degree 1: A x + B = 0  => x = -B/A
+{ (?A ?B) :root ?Z. } <= {
+  (?B ?A) complex:quotient ?BA.
+  ?BA complex:negation ?Z.
+}.
+
+# Degree 2: A x^2 + B x + C = 0
+# P = B/(2A), Q = C/A, x = -P + s*sqrt(P^2 - Q), s in {+1,-1}
+{ (?A ?B ?C) :root ?Z. } <= {
+  ((2 0) ?A) complex:product ?2A.
+  (?B ?2A) complex:quotient ?P.
+  (?C ?A) complex:quotient ?Q.
+
+  ?P complex:square ?P2.
+  (?P2 ?Q) complex:difference ?Disc.
+  ?Disc :sqrtPrincipal ?S0.
+
+  :SquareUnity :vals ?SU.
+  ?SU list:member ?Sgn.
+
+  (?Sgn ?S0) complex:product ?S.
+  ?P complex:negation ?mP.
+  (?mP ?S) complex:sum ?Z.
+}.
+
+# Degree 3: A x^3 + B x^2 + C x + D = 0
+# shift: T = B/(-3A), solve depressed cubic in Z, then x = Z + T
+{ (?A ?B ?C ?D) :roots3 (?X0 ?X1 ?X2). } <= {
+  ((-3 0) ?A) complex:product ?m3A.
+  (?B ?m3A) complex:quotient ?T.
+
+  ?T complex:square ?T2.
+  (?T2 ?T) complex:product ?T3.
+
+  ((3 0) ?A) complex:product ?3A.
+  (?3A ?T2) complex:product ?N1.
+
+  ((2 0) ?B) complex:product ?2B.
+  (?2B ?T) complex:product ?N2.
+
+  (?N1 ?N2) complex:sum ?N12.
+  (?N12 ?C) complex:sum ?NumP.
+  (?NumP ?A) complex:quotient ?P.
+
+  (?A ?T3) complex:product ?M1.
+  (?B ?T2) complex:product ?M2.
+  (?C ?T)  complex:product ?M3.
+  (?M1 ?M2) complex:sum ?S1.
+  (?S1 ?M3) complex:sum ?S2.
+  (?S2 ?D)  complex:sum ?NumQ.
+  (?NumQ ?A) complex:quotient ?Q.
+
+  (?P ?Q) :cardanRoots3 (?Z0 ?Z1 ?Z2).
+
+  (?Z0 ?T) complex:sum ?X0.
+  (?Z1 ?T) complex:sum ?X1.
+  (?Z2 ?T) complex:sum ?X2.
+}.
+
+{ (?A ?B ?C ?D) :root ?X. } <= {
+  (?A ?B ?C ?D) :roots3 ?L.
+  ?L list:member ?X.
+}.
+
+# Degree 4: A x^4 + B x^3 + C x^2 + D x + E = 0
+# shift: T = B/(-4A), solve depressed quartic via Lagrange, then x = Z + T
+{ (?A ?B ?C ?D ?E) :root ?Xp. } <= {
+  ((-4 0) ?A) complex:product ?m4A.
+  (?B ?m4A) complex:quotient ?T.
+
+  ?T complex:square ?T2.
+  (?T2 ?T) complex:product ?T3.
+  ?T :pow4 ?T4.
+
+  # P
+  ((6 0) ?A) complex:product ?6A.
+  (?6A ?T2) complex:product ?P1.
+  ((3 0) ?B) complex:product ?3B.
+  (?3B ?T) complex:product ?P2.
+  (?P1 ?P2) complex:sum ?P12.
+  (?P12 ?C) complex:sum ?NumP.
+  (?NumP ?A) complex:quotient ?P.
+
+  # Q
+  ((4 0) ?A) complex:product ?4A.
+  (?4A ?T3) complex:product ?Q1.
+  ((3 0) ?B) complex:product ?3B2.
+  (?3B2 ?T2) complex:product ?Q2.
+  ((2 0) ?C) complex:product ?2C.
+  (?2C ?T) complex:product ?Q3.
+  (?Q1 ?Q2) complex:sum ?Q12.
+  (?Q12 ?Q3) complex:sum ?Q123.
+  (?Q123 ?D) complex:sum ?NumQ.
+  (?NumQ ?A) complex:quotient ?Q.
+
+  # R
+  (?A ?T4) complex:product ?R1.
+  (?B ?T3) complex:product ?R2.
+  (?C ?T2) complex:product ?R3.
+  (?D ?T)  complex:product ?R4.
+  (?R1 ?R2) complex:sum ?R12.
+  (?R12 ?R3) complex:sum ?R123.
+  (?R123 ?R4) complex:sum ?R1234.
+  (?R1234 ?E) complex:sum ?NumR.
+  (?NumR ?A) complex:quotient ?R.
+
+  (?P ?Q ?R) :lagrangeRoot ?Z.
+  (?Z ?T) complex:sum ?Xp.
+}.
+
+# ------------------------------------------------------------
+# Lagrange for depressed quartic: z^4 + P z^2 + Q z + R = 0
+# ------------------------------------------------------------
+
+# epsilon(E,S,Q): if Q=0 then E=1 else E=S/Q
+{ (?S ?Q) :epsilon (1 0). } <= { ?Q complex:isZero true. }.
+{ (?S ?Q) :epsilon ?E. } <= {
+  ?Q complex:notZero true.
+  (?S ?Q) complex:quotient ?E.
+}.
+
+{ (?P ?Q ?R) :lagrangeRoot ?Z. } <= {
+  # resolvent cubic: y^3 + (2P)y^2 + (P^2 - 4R)y - Q^2 = 0
+  ((2 0) ?P) complex:product ?B.
+  ?P complex:square ?P2.
+  ((4 0) ?R) complex:product ?4R.
+  (?P2 ?4R) complex:difference ?C.
+  ?Q complex:square ?Q2.
+  ?Q2 complex:negation ?D.
+
+  ((1 0) ?B ?C ?D) :roots3 (?Y1 ?Y2 ?Y3).
+
+  ?Y1 :sqrtPrincipal ?Y1p.
+  ?Y2 :sqrtPrincipal ?Y2p.
+  ?Y3 :sqrtPrincipal ?Y3p.
+
+  # U1..U4
+  (?Y2p ?Y3p) complex:sum ?S23.
+  (?Y1p ?S23) complex:sum ?Sum123.
+  (?Sum123 (2 0)) complex:quotient ?U1.
+
+  (?Y2p ?Y3p) complex:sum ?A23.
+  (?Y1p ?A23) complex:difference ?D123.
+  (?D123 (2 0)) complex:quotient ?U2.
+
+  (?Y1p ?Y2p) complex:sum ?A12.
+  (?Y3p ?A12) complex:difference ?D312.
+  (?D312 (2 0)) complex:quotient ?U3.
+
+  (?Y1p ?Y3p) complex:sum ?A13.
+  (?Y2p ?A13) complex:difference ?D213.
+  (?D213 (2 0)) complex:quotient ?U4.
+
+  # V1..V4 products
+  (?U2 ?U3) complex:product ?U23. (?U1 ?U23) complex:product ?V1.
+  (?U2 ?U4) complex:product ?U24. (?U1 ?U24) complex:product ?V2.
+  (?U3 ?U4) complex:product ?U34. (?U1 ?U34) complex:product ?V3.
+  (?U3 ?U4) complex:product ?U34b. (?U2 ?U34b) complex:product ?V4.
+
+  # S = -(V1+V2+V3+V4)
+  (?V3 ?V4) complex:sum ?S34.
+  (?V2 ?S34) complex:sum ?S234.
+  (?V1 ?S234) complex:sum ?S1234.
+  ?S1234 complex:negation ?Sneg.
+
+  (?Sneg ?Q) :epsilon ?Eps.
+
+  # choose U among U1..U4
+  (?U1 ?U2 ?U3 ?U4) list:member ?U.
+
+  (?Eps ?U) complex:product ?Z.
+}.
+
+# ------------------------------------------------------------
+# Polynome from roots (monic), any length
+# ------------------------------------------------------------
+
+# scale a polynomial coefficient list by a complex scalar
+{ (?S ()) :scalePoly (). } <= { }.
+{ (?S ?P) :scalePoly ?Out. } <= {
+  ?P list:first ?C0.
+  ?P list:rest  ?Rest.
+
+  (?S ?C0) complex:product ?D0.
+  (?S ?Rest) :scalePoly ?Drest.
+
+  ((?D0) ?Drest) list:append ?Out.
+}.
+
+# add two coefficient lists (same length)
+{ (() ()) :addPoly (). } <= { }.
+{ (?P1 ?P2) :addPoly ?P3. } <= {
+  ?P1 list:first ?A.  ?P1 list:rest ?R1.
+  ?P2 list:first ?B.  ?P2 list:rest ?R2.
+
+  (?A ?B) complex:sum ?C.
+  (?R1 ?R2) :addPoly ?R3.
+
+  ((?C) ?R3) list:append ?P3.
+}.
+
+# Base: empty roots => polynomial "1"
+{ () :polynome ((1 0)). } <= { }.
+
+# Recursive: P(x) := P0(x) * (x - X)
+{ ?Roots :polynome ?P. } <= {
+  ?Roots list:first ?X.
+  ?Roots list:rest  ?L.
+
+  ?L :polynome ?P0.
+
+  # P1 = append 0: P0*x
+  (?P0 ((0 0))) list:append ?P1.
+
+  # P2 = (-X) * P0
+  ?X complex:negation ?Xp.
+  (?Xp ?P0) :scalePoly ?P2.
+
+  # (0 :: P2)
+  (((0 0)) ?P2) list:append ?P2z.
+
+  # P = P1 + (0::P2)
+  (?P1 ?P2z) :addPoly ?P.
+}.
+
+# ------------------------------------------------------------
+# Convenience materialization (what you typically want printed)
+# ------------------------------------------------------------
+
+{ ?Poly :coeffs ?Coeffs.
+  ?Coeffs :root ?Z.
+} => {
+  ?Poly :hasRoot ?Z.
+}.
+
+{ ?Poly :roots ?Roots.
+  ?Roots :polynome ?Coeffs.
+} => {
+  ?Poly :coeffsFromRoots ?Coeffs.
+}.
+
+# ------------------------------------------------------------
+# sanity-check examples
+# ------------------------------------------------------------
+
+:poly1 :coeffs (
+  (  1 0)
+  (-10 0)
+  ( 35 0)
+  (-50 0)
+  ( 24 0)
+).
+
+:poly2 :coeffs_test (
+  (  1  0)
+  ( -9 -5)
+  ( 14 33)
+  ( 24 -44)
+  (-26  0)
+).
+

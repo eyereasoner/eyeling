@@ -71,6 +71,14 @@ function makeRdfJsonLiteral(jsonText) {
 // of the subject term in log:skolem to a Skolem IRI.
 const skolemCache = new Map();
 
+// -----------------------------------------------------------------------------
+// Hot caches
+// -----------------------------------------------------------------------------
+const __literalPartsCache = new Map(); // lit string -> [lex, dt]
+const __parseNumCache = new Map(); // lit string -> number|null
+const __parseIntCache = new Map(); // lit string -> bigint|null
+const __parseNumericInfoCache = new Map(); // lit string -> info|null
+
 // Cache for string:jsonPointer: jsonText -> { parsed: any|null, ptrCache: Map<string, Term|null> }
 const jsonPointerCache = new Map();
 
@@ -524,18 +532,18 @@ function lex(inputText) {
 
           // In long strings, a run of >= 3 delimiter quotes terminates the literal.
           // Any extra quotes beyond the final 3 are part of the content.
-          if (cc === "\"") {
+          if (cc === '"') {
             let run = 0;
-            while (i + run < n && chars[i + run] === "\"") run++;
+            while (i + run < n && chars[i + run] === '"') run++;
 
             if (run >= 3) {
-              for (let k = 0; k < run - 3; k++) sChars.push("\"");
+              for (let k = 0; k < run - 3; k++) sChars.push('"');
               i += run; // consume content quotes (if any) + closing delimiter
               closed = true;
               break;
             }
 
-            for (let k = 0; k < run; k++) sChars.push("\"");
+            for (let k = 0; k < run; k++) sChars.push('"');
             i += run;
             continue;
           }
@@ -2523,6 +2531,9 @@ function composeSubst(outer, delta) {
 // ===========================================================================
 
 function literalParts(lit) {
+  const cached = __literalPartsCache.get(lit);
+  if (cached) return cached;
+
   // Split a literal into lexical form and datatype IRI (if any).
   // Also strip an optional language tag from the lexical form:
   //   "\"hello\"@en"  -> "\"hello\""
@@ -2550,7 +2561,9 @@ function literalParts(lit) {
     }
   }
 
-  return [lex, dt];
+  const res = [lex, dt];
+  __literalPartsCache.set(lit, res);
+  return res;
 }
 
 function literalHasLangTag(lit) {
@@ -2923,32 +2936,56 @@ function parseNum(t) {
   // For xsd:float/xsd:double, accept INF/-INF/NaN (and +INF).
   if (!(t instanceof Literal)) return null;
 
-  const [lex, dt] = literalParts(t.value);
+  const key = t.value;
+  if (__parseNumCache.has(key)) return __parseNumCache.get(key);
+
+  const [lex, dt] = literalParts(key);
 
   // Typed literals: must be xsd numeric.
   if (dt !== null) {
-    if (!isXsdNumericDatatype(dt)) return null;
+    if (!isXsdNumericDatatype(dt)) {
+      __parseNumCache.set(key, null);
+      return null;
+    }
     const val = stripQuotes(lex);
 
     // float/double: allow INF/-INF/NaN and allow +/-Infinity results
     if (dt === XSD_FLOAT_DT || dt === XSD_DOUBLE_DT) {
       const sp = parseXsdFloatSpecialLex(val);
-      if (sp !== null) return sp;
+      if (sp !== null) {
+        __parseNumCache.set(key, sp);
+        return sp;
+      }
       const n = Number(val);
-      if (Number.isNaN(n)) return null;
-      return n; // may be finite, +/-Infinity, or NaN (if val was "NaN" handled above)
+      if (Number.isNaN(n)) {
+        __parseNumCache.set(key, null);
+        return null;
+      }
+      __parseNumCache.set(key, n);
+      return n; // may be finite, +/-Infinity
     }
 
     // decimal/integer-derived: keep strict finite parsing
     const n = Number(val);
-    if (!Number.isFinite(n)) return null;
+    if (!Number.isFinite(n)) {
+      __parseNumCache.set(key, null);
+      return null;
+    }
+    __parseNumCache.set(key, n);
     return n;
   }
 
   // Untyped literals: accept only unquoted numeric tokens.
-  if (!looksLikeUntypedNumericTokenLex(lex)) return null;
+  if (!looksLikeUntypedNumericTokenLex(lex)) {
+    __parseNumCache.set(key, null);
+    return null;
+  }
   const n = Number(lex);
-  if (!Number.isFinite(n)) return null;
+  if (!Number.isFinite(n)) {
+    __parseNumCache.set(key, null);
+    return null;
+  }
+  __parseNumCache.set(key, n);
   return n;
 }
 
@@ -2957,25 +2994,46 @@ function parseIntLiteral(t) {
   // or an untyped integer token.
   if (!(t instanceof Literal)) return null;
 
-  const [lex, dt] = literalParts(t.value);
+  const key = t.value;
+  if (__parseIntCache.has(key)) return __parseIntCache.get(key);
+
+  const [lex, dt] = literalParts(key);
 
   if (dt !== null) {
-    if (!isXsdIntegerDatatype(dt)) return null;
+    if (!isXsdIntegerDatatype(dt)) {
+      __parseIntCache.set(key, null);
+      return null;
+    }
     const val = stripQuotes(lex);
-    if (!/^[+-]?\d+$/.test(val)) return null;
+    if (!/^[+-]?\d+$/.test(val)) {
+      __parseIntCache.set(key, null);
+      return null;
+    }
     try {
-      return BigInt(val);
+      const out = BigInt(val);
+      __parseIntCache.set(key, out);
+      return out;
     } catch {
+      __parseIntCache.set(key, null);
       return null;
     }
   }
 
   // Untyped: only accept unquoted integer tokens.
-  if (isQuotedLexical(lex)) return null;
-  if (!/^[+-]?\d+$/.test(lex)) return null;
+  if (isQuotedLexical(lex)) {
+    __parseIntCache.set(key, null);
+    return null;
+  }
+  if (!/^[+-]?\d+$/.test(lex)) {
+    __parseIntCache.set(key, null);
+    return null;
+  }
   try {
-    return BigInt(lex);
+    const out = BigInt(lex);
+    __parseIntCache.set(key, out);
+    return out;
   } catch {
+    __parseIntCache.set(key, null);
     return null;
   }
 }
@@ -3199,7 +3257,10 @@ function numericDatatypeFromLex(lex) {
 function parseNumericLiteralInfo(t) {
   if (!(t instanceof Literal)) return null;
 
-  const v = t.value;
+  const key = t.value;
+  if (__parseNumericInfoCache.has(key)) return __parseNumericInfoCache.get(key);
+
+  const v = key;
   const [lex, dt] = literalParts(v);
 
   let dt2 = dt;
@@ -3207,14 +3268,26 @@ function parseNumericLiteralInfo(t) {
 
   if (dt2 !== null) {
     // Accept all xsd numeric datatypes; normalize integer-derived to xsd:integer.
-    if (!isXsdNumericDatatype(dt2)) return null;
+    if (!isXsdNumericDatatype(dt2)) {
+      __parseNumericInfoCache.set(key, null);
+      return null;
+    }
     if (isXsdIntegerDatatype(dt2)) dt2 = XSD_INTEGER_DT;
     lexStr = stripQuotes(lex);
   } else {
     // Untyped numeric token (N3/Turtle numeric literal)
-    if (typeof v !== 'string') return null;
-    if (v.startsWith('"')) return null; // exclude quoted strings
-    if (!/^[+-]?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][+-]?\d+)?$/.test(v)) return null;
+    if (typeof v !== 'string') {
+      __parseNumericInfoCache.set(key, null);
+      return null;
+    }
+    if (v.startsWith('"')) {
+      __parseNumericInfoCache.set(key, null);
+      return null; // exclude quoted strings
+    }
+    if (!/^[+-]?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][+-]?\d+)?$/.test(v)) {
+      __parseNumericInfoCache.set(key, null);
+      return null;
+    }
 
     dt2 = numericDatatypeFromLex(v);
     lexStr = v;
@@ -3222,8 +3295,11 @@ function parseNumericLiteralInfo(t) {
 
   if (dt2 === XSD_INTEGER_DT) {
     try {
-      return { dt: dt2, kind: 'bigint', value: BigInt(lexStr), lexStr };
+      const info = { dt: dt2, kind: 'bigint', value: BigInt(lexStr), lexStr };
+      __parseNumericInfoCache.set(key, info);
+      return info;
     } catch {
+      __parseNumericInfoCache.set(key, null);
       return null;
     }
   }
@@ -3231,16 +3307,28 @@ function parseNumericLiteralInfo(t) {
   // float/double special lexicals
   if (dt2 === XSD_FLOAT_DT || dt2 === XSD_DOUBLE_DT) {
     const sp = parseXsdFloatSpecialLex(lexStr);
-    if (sp !== null) return { dt: dt2, kind: 'number', value: sp, lexStr };
+    if (sp !== null) {
+      const info = { dt: dt2, kind: 'number', value: sp, lexStr };
+      __parseNumericInfoCache.set(key, info);
+      return info;
+    }
   }
 
   const num = Number(lexStr);
-  if (Number.isNaN(num)) return null;
+  if (Number.isNaN(num)) {
+    __parseNumericInfoCache.set(key, null);
+    return null;
+  }
 
   // allow +/-Infinity for float/double
-  if (dt2 === XSD_DECIMAL_DT && !Number.isFinite(num)) return null;
+  if (dt2 === XSD_DECIMAL_DT && !Number.isFinite(num)) {
+    __parseNumericInfoCache.set(key, null);
+    return null;
+  }
 
-  return { dt: dt2, kind: 'number', value: num, lexStr };
+  const info = { dt: dt2, kind: 'number', value: num, lexStr };
+  __parseNumericInfoCache.set(key, info);
+  return info;
 }
 
 function numericRank(dt) {
@@ -5044,33 +5132,57 @@ function standardizeRule(rule, gen) {
       return new Var(vmap[t.name]);
     }
     if (t instanceof ListTerm) {
-      return new ListTerm(t.elems.map((e) => renameTerm(e, vmap, genArr)));
+      let changed = false;
+      const elems2 = t.elems.map((e) => {
+        const e2 = renameTerm(e, vmap, genArr);
+        if (e2 !== e) changed = true;
+        return e2;
+      });
+      return changed ? new ListTerm(elems2) : t;
     }
     if (t instanceof OpenListTerm) {
-      const newXs = t.prefix.map((e) => renameTerm(e, vmap, genArr));
+      let changed = false;
+      const newXs = t.prefix.map((e) => {
+        const e2 = renameTerm(e, vmap, genArr);
+        if (e2 !== e) changed = true;
+        return e2;
+      });
       if (!vmap.hasOwnProperty(t.tailVar)) {
         const name = `${t.tailVar}__${genArr[0]}`;
         genArr[0] += 1;
         vmap[t.tailVar] = name;
       }
       const newTail = vmap[t.tailVar];
-      return new OpenListTerm(newXs, newTail);
+      if (newTail !== t.tailVar) changed = true;
+      return changed ? new OpenListTerm(newXs, newTail) : t;
     }
     if (t instanceof FormulaTerm) {
-      return new FormulaTerm(
-        t.triples.map((tr) => new Triple(renameTerm(tr.s, vmap, genArr), renameTerm(tr.p, vmap, genArr), renameTerm(tr.o, vmap, genArr))),
-      );
+      let changed = false;
+      const triples2 = t.triples.map((tr) => {
+        const s2 = renameTerm(tr.s, vmap, genArr);
+        const p2 = renameTerm(tr.p, vmap, genArr);
+        const o2 = renameTerm(tr.o, vmap, genArr);
+        if (s2 !== tr.s || p2 !== tr.p || o2 !== tr.o) changed = true;
+        return s2 === tr.s && p2 === tr.p && o2 === tr.o ? tr : new Triple(s2, p2, o2);
+      });
+      return changed ? new FormulaTerm(triples2) : t;
     }
     return t;
   }
 
   const vmap2 = {};
-  const premise = rule.premise.map(
-    (tr) => new Triple(renameTerm(tr.s, vmap2, gen), renameTerm(tr.p, vmap2, gen), renameTerm(tr.o, vmap2, gen)),
-  );
-  const conclusion = rule.conclusion.map(
-    (tr) => new Triple(renameTerm(tr.s, vmap2, gen), renameTerm(tr.p, vmap2, gen), renameTerm(tr.o, vmap2, gen)),
-  );
+  const premise = rule.premise.map((tr) => {
+    const s2 = renameTerm(tr.s, vmap2, gen);
+    const p2 = renameTerm(tr.p, vmap2, gen);
+    const o2 = renameTerm(tr.o, vmap2, gen);
+    return s2 === tr.s && p2 === tr.p && o2 === tr.o ? tr : new Triple(s2, p2, o2);
+  });
+  const conclusion = rule.conclusion.map((tr) => {
+    const s2 = renameTerm(tr.s, vmap2, gen);
+    const p2 = renameTerm(tr.p, vmap2, gen);
+    const o2 = renameTerm(tr.o, vmap2, gen);
+    return s2 === tr.s && p2 === tr.p && o2 === tr.o ? tr : new Triple(s2, p2, o2);
+  });
   return new Rule(premise, conclusion, rule.isForward, rule.isFuse, rule.headBlankLabels);
 }
 
