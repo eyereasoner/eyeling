@@ -76,7 +76,7 @@
   (?S ?S) complex:product ?Z.
 }.
 
-# zero / nonzero tests (for branching like Prolog nul/nonnul)
+# zero / nonzero tests
 { (?A ?B) complex:isZero true. } <= { ?A math:equalTo 0. ?B math:equalTo 0. }.
 { (?A ?B) complex:notZero true. } <= { ?A math:notEqualTo 0. }.
 { (?A ?B) complex:notZero true. } <= { ?B math:notEqualTo 0. }.
@@ -129,14 +129,35 @@
   (?R ?S) math:product ?Y.
 }.
 
-# Principal sqrt / cbrt (like Prolog racine(N,X,...) with the zero shortcut)
+# complex principal square root
+# sqrt(a+bi) = u + v i with u,v computed from r = sqrt(a^2+b^2)
+
 { (0 0) :sqrtPrincipal (0 0). } <= { }.
-{ (?X ?Y) :sqrtPrincipal (?A ?B). } <= {
-  (?X ?Y) complex:notZero true.
-  (?X ?Y) complex:polar (?R ?T).
-  (?R 0.5) math:exponentiation ?Rp.
-  (?T 2) math:quotient ?Tp.
-  (?Rp ?Tp) :cartesian (?A ?B).
+
+{ (?A ?B) :sqrtParts (?U ?V0). } <= {
+  (?A ?A) math:product ?A2.
+  (?B ?B) math:product ?B2.
+  (?A2 ?B2) math:sum ?S.
+  (?S 0.5) math:exponentiation ?R.     # r = sqrt(a^2+b^2)
+
+  (?R ?A) math:sum ?RpA.
+  (?RpA 2) math:quotient ?T1.
+  (?T1 0.5) math:exponentiation ?U.    # u = sqrt((r+a)/2)
+
+  (?R ?A) math:difference ?RmA.
+  (?RmA 2) math:quotient ?T2.
+  (?T2 0.5) math:exponentiation ?V0.   # v0 = sqrt((r-a)/2)
+}.
+
+{ (?A ?B) :sqrtPrincipal (?U ?V). } <= {
+  (?A ?B) :sqrtParts (?U ?V0).
+  ?B math:lessThan 0.
+  ?V0 math:negation ?V.
+}.
+
+{ (?A ?B) :sqrtPrincipal (?U ?V0). } <= {
+  (?A ?B) :sqrtParts (?U ?V0).
+  ?B math:notLessThan 0.
 }.
 
 { (0 0) :cbrtPrincipal (0 0). } <= { }.
@@ -459,7 +480,7 @@
   ( 24 0)
 ).
 
-:poly2 :coeffs_test (
+:poly2 :coeffs (
   (  1  0)
   ( -9 -5)
   ( 14 33)

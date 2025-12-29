@@ -5,3 +5,7 @@
 :poly1 :hasRoot ("2.9999999925494194"^^xsd:decimal "0"^^xsd:decimal) .
 :poly1 :hasRoot ("1.9999999925494194"^^xsd:decimal "0"^^xsd:decimal) .
 :poly1 :hasRoot ("1.0000000074505808"^^xsd:decimal "0"^^xsd:decimal) .
+:poly2 :hasRoot ("5"^^xsd:decimal "0.99999999999999"^^xsd:decimal) .
+:poly2 :hasRoot ("3.0000000000000036"^^xsd:decimal "1.9999999999999987"^^xsd:decimal) .
+:poly2 :hasRoot ("-3.1086244689504383e-15"^^xsd:decimal "1.0000000000000064"^^xsd:decimal) .
+:poly2 :hasRoot ("1"^^xsd:decimal "1.0000000000000049"^^xsd:decimal) .
