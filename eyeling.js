@@ -5786,21 +5786,28 @@ function printExplanation(df, prefixes) {
 function main() {
   // Drop "node" and script name; keep only user-provided args
   const argv = process.argv.slice(2);
+  const pathMod = require('path');
+  const prog = pathMod.basename(process.argv[1] || 'eyeling');
+
+  function printHelp(toStderr = false) {
+    const msg =
+      `Usage: ${prog} [options] <file.n3>\n\n` +
+      `Options:\n` +
+      `  -h, --help              Show this help and exit.\n` +
+      `  -v, --version           Print version and exit.\n` +
+      `  -p, --proof-comments    Enable proof explanations.\n` +
+      `  -n, --no-proof-comments Disable proof explanations (default).\n` +
+      `  -a, --ast               Print parsed AST as JSON and exit.\n`;
+    (toStderr ? console.error : console.log)(msg);
+  }
+
 
   // --------------------------------------------------------------------------
   // Global options
   // --------------------------------------------------------------------------
   // --help / -h: print help and exit
-  if (argv.includes('--help') || argv.includes('-h')) {
-    console.log(
-      'Usage: eyeling.js [options] <file.n3>\n' +
-        '\n' +
-        'Options:\n' +
-        '  -h, --help              Show this help and exit.\n' +
-        '  -v, --version           Print version and exit.\n' +
-        '  -p, --proof-comments    Enable proof explanations.\n' +
-        '  -n, --no-proof-comments Disable proof explanations (default).\n',
-    );
+    if (argv.includes('--help') || argv.includes('-h')) {
+    printHelp(false);
     process.exit(0);
   }
 
@@ -5809,6 +5816,9 @@ function main() {
     console.log(`eyeling v${version}`);
     process.exit(0);
   }
+
+  const showAst = argv.includes('--ast') || argv.includes('-a');
+
 
   // --proof-comments / -p: enable proof explanations
   if (argv.includes('--proof-comments') || argv.includes('-p')) {
@@ -5824,17 +5834,15 @@ function main() {
   // --------------------------------------------------------------------------
   // Positional args (the N3 file)
   // --------------------------------------------------------------------------
-  const positional = argv.filter((a) => !a.startsWith('-'));
+    const positional = argv.filter((a) => !a.startsWith('-'));
+  if (positional.length === 0) {
+    // No args: show help like many CLI tools do.
+    printHelp(false);
+    process.exit(0);
+  }
   if (positional.length !== 1) {
-    console.error(
-      'Usage: eyeling.js [options] <file.n3>\n' +
-        '\n' +
-        'Options:\n' +
-        '  -h, --help              Show this help and exit.\n' +
-        '  -v, --version           Print version and exit.\n' +
-        '  -p, --proof-comments    Enable proof explanations.\n' +
-        '  -n, --no-proof-comments Disable proof explanations (default).\n',
-    );
+    console.error('Error: expected exactly one input <file.n3>.');
+    printHelp(true);
     process.exit(1);
   }
 
@@ -5851,6 +5859,19 @@ function main() {
   const toks = lex(text);
   const parser = new Parser(toks);
   const [prefixes, triples, frules, brules] = parser.parseDocument();
+  if (showAst) {
+    function astReplacer(_key, value) {
+      if (value instanceof Set) return Array.from(value);
+      if (value && typeof value === 'object' && value.constructor) {
+        const t = value.constructor.name;
+        if (t && t !== 'Object' && t !== 'Array') return { _type: t, ...value };
+      }
+      return value;
+    }
+    console.log(JSON.stringify([prefixes, triples, frules, brules], astReplacer, 2));
+    process.exit(0);
+  }
+
   // console.log(JSON.stringify([prefixes, triples, frules, brules], null, 2));
 
   // Build internal ListTerm values from rdf:first/rdf:rest (+ rdf:nil)
