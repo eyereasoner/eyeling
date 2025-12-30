@@ -59,6 +59,7 @@ const rt = {
 
 const RDF_NS = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
 const OWL_NS = 'http://www.w3.org/2002/07/owl#';
+const LOG_NS = 'http://www.w3.org/2000/10/swap/log#';
 
 // Avoid literal triple-quote sequences in this source (helps embedding in tools).
 const DQ3 = '"'.repeat(3);
@@ -1218,6 +1219,143 @@ function n3ToTrig(n3Text) {
 // SRL <-> N3 rules (text transforms)
 // ---------------------------------------------------------------------------
 
+function hasPrefixForIri(prefixes, iri) {
+  return Array.isArray(prefixes) && prefixes.some((p) => (p.iri || '').trim() === iri);
+}
+
+function logPrefixLabels(prefixes) {
+  if (!Array.isArray(prefixes)) return [];
+  return prefixes.filter((p) => (p.iri || '').trim() === LOG_NS).map((p) => p.label);
+}
+
+// SRL:   NOT { ... }
+// N3 :   ?SCOPE log:notIncludes { ... } .
+function srlWhereBodyToN3Body(bodyRaw) {
+  const s = bodyRaw || '';
+  let i = 0;
+  let out = '';
+  let usedLog = false;
+
+  while (i < s.length) {
+    const idx = s.indexOf('NOT', i);
+    if (idx < 0) {
+      out += s.slice(i);
+      break;
+    }
+
+    // token boundary check for "NOT"
+    const before = idx === 0 ? ' ' : s[idx - 1];
+    const after = idx + 3 < s.length ? s[idx + 3] : ' ';
+    if (/[A-Za-z0-9_]/.test(before) || /[A-Za-z0-9_]/.test(after)) {
+      i = idx + 3;
+      continue;
+    }
+
+    // Look ahead for "{"
+    let j = idx + 3;
+    while (j < s.length && /\s/.test(s[j])) j++;
+    if (s[j] !== '{') {
+      // Not a negation element; keep the text and continue
+      out += s.slice(i, idx + 3);
+      i = idx + 3;
+      continue;
+    }
+
+    // Capture the NOT {...} block
+    out += s.slice(i, idx);
+    const blk = readBalancedBraces(s, j);
+    const inner = (blk.content || '').trim();
+
+    out += ` ?SCOPE log:notIncludes { ${inner} } . `;
+    usedLog = true;
+    i = blk.endIdx;
+  }
+
+  return { body: normalizeInsideBracesKeepStyle(out), usedLog };
+}
+
+// N3 :   ?SCOPE log:notIncludes { ... } .
+// SRL:   NOT { ... }
+function n3BodyToSrlWhereBody(bodyRaw, logLabels) {
+  const s = bodyRaw || '';
+  const labels = Array.isArray(logLabels) && logLabels.length ? logLabels : ['log:'];
+  const scope = '?SCOPE';
+  let i = 0;
+  let out = '';
+
+  function isBoundary(ch) {
+    return ch == null || /\s/.test(ch) || '{}();,.\n\r\t'.includes(ch);
+  }
+
+  while (i < s.length) {
+    const idx = s.indexOf(scope, i);
+    if (idx < 0) {
+      out += s.slice(i);
+      break;
+    }
+
+    const before = idx === 0 ? null : s[idx - 1];
+    if (!isBoundary(before)) {
+      i = idx + scope.length;
+      continue;
+    }
+
+    let j = idx + scope.length;
+    out += s.slice(i, idx);
+
+    // skip ws
+    while (j < s.length && /\s/.test(s[j])) j++;
+
+    // predicate token
+    let predLen = 0;
+    let matched = false;
+
+    // full IRI form
+    const full = `<${LOG_NS}notIncludes>`;
+    if (s.startsWith(full, j)) {
+      predLen = full.length;
+      matched = true;
+    } else {
+      for (const lab of labels) {
+        const tok = `${lab}notIncludes`;
+        if (s.startsWith(tok, j)) {
+          predLen = tok.length;
+          matched = true;
+          break;
+        }
+      }
+    }
+
+    if (!matched) {
+      // not our pattern; keep literal scope and move on
+      out += scope;
+      i = idx + scope.length;
+      continue;
+    }
+
+    j += predLen;
+    while (j < s.length && /\s/.test(s[j])) j++;
+    if (s[j] !== '{') {
+      // malformed; keep text as-is
+      out += scope;
+      i = idx + scope.length;
+      continue;
+    }
+
+    const blk = readBalancedBraces(s, j);
+    const inner = (blk.content || '').trim();
+    let k = blk.endIdx;
+    while (k < s.length && /\s/.test(s[k])) k++;
+    if (s[k] === '.') k++; // consume optional trailing '.'
+
+    out += `NOT { ${inner} } `;
+    i = k;
+  }
+
+  return normalizeInsideBracesKeepStyle(out);
+}
+
+
 function stripOnlyWholeLineHashComments(src) {
   // IMPORTANT: do NOT treat '#' as an inline comment marker here,
   // because IRIs commonly contain '#', e.g. <http://example.org/#>.
@@ -1424,18 +1562,26 @@ function srlToN3(srlText) {
   const { prefixes, rest } = parseSrlPrefixLines(cleaned);
   const { dataText, rules } = extractSrlRules(rest);
 
+  // Convert rules first so we know whether we need log:
+  const renderedRules = [];
+  let needsLog = false;
+  for (const r of rules) {
+    const conv = srlWhereBodyToN3Body(r.body);
+    const body = conv.body;
+    needsLog = needsLog || conv.usedLog;
+    const head = normalizeInsideBracesKeepStyle(r.head);
+    renderedRules.push(`{ ${body} } => { ${head} } .`);
+  }
+
   const out = [];
 
   for (const { label, iri } of prefixes) out.push(`@prefix ${label} <${iri}> .`);
-  if (prefixes.length) out.push('');
+  if (needsLog && !hasPrefixForIri(prefixes, LOG_NS)) out.push(`@prefix log: <${LOG_NS}> .`);
+  if (prefixes.length || needsLog) out.push('');
 
   if (dataText.trim()) out.push(dataText.trim(), '');
 
-  for (const r of rules) {
-    const body = normalizeInsideBracesKeepStyle(r.body);
-    const head = normalizeInsideBracesKeepStyle(r.head);
-    out.push(`{ ${body} } => { ${head} } .`);
-  }
+  out.push(...renderedRules);
 
   return out.join('\n').trim() + '\n';
 }
@@ -1452,8 +1598,10 @@ function n3ToSrl(n3Text) {
 
   if (dataText.trim()) out.push(dataText.trim(), '');
 
+  const logLabels = logPrefixLabels(prefixes);
+
   for (const r of rules) {
-    const body = normalizeInsideBracesKeepStyle(r.body);
+    const body = n3BodyToSrlWhereBody(r.body, logLabels);
     const head = normalizeInsideBracesKeepStyle(r.head);
     out.push(`RULE { ${head} } WHERE { ${body} }`);
   }
