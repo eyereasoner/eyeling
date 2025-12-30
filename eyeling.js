@@ -2825,6 +2825,42 @@ function simpleStringFormat(fmt, args) {
 }
 
 // -----------------------------------------------------------------------------
+// SWAP/N3 regex compatibility helper
+// -----------------------------------------------------------------------------
+function regexNeedsUnicodeMode(pattern) {
+  // JS requires /u for Unicode property escapes and code point escapes.
+  return /\\[pP]\{/.test(pattern) || /\\u\{/.test(pattern);
+}
+
+function sanitizeForUnicodeMode(pattern) {
+  // In JS Unicode mode, “identity escapes” like \! are a SyntaxError.
+  // In Perl-ish regexes they commonly mean “literal !”. So drop the redundant "\".
+  // Keep escapes that are regex-syntax or are commonly needed in char classes.
+  const KEEP = '^$\\.*+?()[]{}|/-';
+  return pattern.replace(/\\([^A-Za-z0-9])/g, (m, ch) => {
+    return KEEP.includes(ch) ? m : ch;
+  });
+}
+
+function compileSwapRegex(pattern, extraFlags) {
+  const needU = regexNeedsUnicodeMode(pattern);
+  const flags = (extraFlags || '') + (needU ? 'u' : '');
+  try {
+    return new RegExp(pattern, flags);
+  } catch (e) {
+    if (needU) {
+      const p2 = sanitizeForUnicodeMode(pattern);
+      if (p2 !== pattern) {
+        try {
+          return new RegExp(p2, flags);
+        } catch (_e2) {}
+      }
+    }
+    return null;
+  }
+}
+
+// -----------------------------------------------------------------------------
 // Strict numeric literal parsing for math: builtins
 // -----------------------------------------------------------------------------
 const XSD_DECIMAL_DT = XSD_NS + 'decimal';
@@ -4981,13 +5017,8 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     const sStr = termToJsString(g.s);
     const pattern = termToJsString(g.o);
     if (sStr === null || pattern === null) return [];
-    let re;
-    try {
-      // Perl/Python-style in the spec; JS RegExp is close enough for most patterns.
-      re = new RegExp(pattern);
-    } catch (e) {
-      return [];
-    }
+    const re = compileSwapRegex(pattern, '');
+    if (!re) return [];
     return re.test(sStr) ? [{ ...subst }] : [];
   }
 
@@ -5020,12 +5051,8 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     const sStr = termToJsString(g.s);
     const pattern = termToJsString(g.o);
     if (sStr === null || pattern === null) return [];
-    let re;
-    try {
-      re = new RegExp(pattern);
-    } catch (e) {
-      return [];
-    }
+    const re = compileSwapRegex(pattern, '');
+    if (!re) return [];
     return re.test(sStr) ? [] : [{ ...subst }];
   }
 
@@ -5037,13 +5064,8 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     const replStr = termToJsString(g.s.elems[2]);
     if (dataStr === null || searchStr === null || replStr === null) return [];
 
-    let re;
-    try {
-      // Global replacement
-      re = new RegExp(searchStr, 'g');
-    } catch (e) {
-      return [];
-    }
+    const re = compileSwapRegex(searchStr, 'g');
+    if (!re) return [];
 
     const outStr = dataStr.replace(re, replStr);
     const lit = makeStringLiteral(outStr);
@@ -5064,12 +5086,8 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     const pattern = termToJsString(g.s.elems[1]);
     if (dataStr === null || pattern === null) return [];
 
-    let re;
-    try {
-      re = new RegExp(pattern);
-    } catch (e) {
-      return [];
-    }
+    const re = compileSwapRegex(pattern, '');
+    if (!re) return [];
 
     const m = re.exec(dataStr);
     // Spec says “exactly 1 group”; we just use the first capturing group if present.
