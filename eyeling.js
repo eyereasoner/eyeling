@@ -2,7 +2,7 @@
 'use strict';
 
 /*
- * eyeling.js — a minimal Notation3 (N3) reasoner in JavaScript
+ * eyeling.js — A Notation3 (N3) reasoner in JavaScript
  *
  * High-level pipeline:
  *  1) Read an N3 file from disk.
@@ -273,7 +273,7 @@ class OpenListTerm extends Term {
   }
 }
 
-class FormulaTerm extends Term {
+class GraphTerm extends Term {
   constructor(triples) {
     super();
     this.triples = triples; // Triple[]
@@ -891,7 +891,7 @@ function collectIrisInTerm(t) {
     for (const x of t.elems) out.push(...collectIrisInTerm(x));
   } else if (t instanceof OpenListTerm) {
     for (const x of t.prefix) out.push(...collectIrisInTerm(x));
-  } else if (t instanceof FormulaTerm) {
+  } else if (t instanceof GraphTerm) {
     for (const tr of t.triples) {
       out.push(...collectIrisInTerm(tr.s));
       out.push(...collectIrisInTerm(tr.p));
@@ -909,7 +909,7 @@ function collectVarsInTerm(t, acc) {
   } else if (t instanceof OpenListTerm) {
     for (const x of t.prefix) collectVarsInTerm(x, acc);
     acc.add(t.tailVar);
-  } else if (t instanceof FormulaTerm) {
+  } else if (t instanceof GraphTerm) {
     for (const tr of t.triples) {
       collectVarsInTerm(tr.s, acc);
       collectVarsInTerm(tr.p, acc);
@@ -940,7 +940,7 @@ function collectBlankLabelsInTerm(t, acc) {
     for (const x of t.elems) collectBlankLabelsInTerm(x, acc);
   } else if (t instanceof OpenListTerm) {
     for (const x of t.prefix) collectBlankLabelsInTerm(x, acc);
-  } else if (t instanceof FormulaTerm) {
+  } else if (t instanceof GraphTerm) {
     for (const tr of t.triples) {
       collectBlankLabelsInTerm(tr.s, acc);
       collectBlankLabelsInTerm(tr.p, acc);
@@ -1059,9 +1059,9 @@ class Parser {
 
           // normalize explicit log:implies / log:impliedBy at top-level
           for (const tr of more) {
-            if (isLogImplies(tr.p) && tr.s instanceof FormulaTerm && tr.o instanceof FormulaTerm) {
+            if (isLogImplies(tr.p) && tr.s instanceof GraphTerm && tr.o instanceof GraphTerm) {
               forwardRules.push(this.makeRule(tr.s, tr.o, true));
-            } else if (isLogImpliedBy(tr.p) && tr.s instanceof FormulaTerm && tr.o instanceof FormulaTerm) {
+            } else if (isLogImpliedBy(tr.p) && tr.s instanceof GraphTerm && tr.o instanceof GraphTerm) {
               backwardRules.push(this.makeRule(tr.s, tr.o, false));
             } else {
               triples.push(tr);
@@ -1244,7 +1244,7 @@ class Parser {
     if (typ === 'Var') return new Var(val || '');
     if (typ === 'LParen') return this.parseList();
     if (typ === 'LBracket') return this.parseBlank();
-    if (typ === 'LBrace') return this.parseFormula();
+    if (typ === 'LBrace') return this.parseGraph();
 
     throw new Error(`Unexpected term token: ${tok.toString()}`);
   }
@@ -1374,7 +1374,7 @@ class Parser {
     return new Blank(id);
   }
 
-  parseFormula() {
+  parseGraph() {
     const triples = [];
     while (this.peek().typ !== 'RBrace') {
       const left = this.parseTerm();
@@ -1422,7 +1422,7 @@ class Parser {
       }
     }
     this.next(); // consume '}'
-    return new FormulaTerm(triples);
+    return new GraphTerm(triples);
   }
 
   parsePredicateObjectList(subject) {
@@ -1514,7 +1514,7 @@ class Parser {
     }
 
     let rawPremise;
-    if (premiseTerm instanceof FormulaTerm) {
+    if (premiseTerm instanceof GraphTerm) {
       rawPremise = premiseTerm.triples;
     } else if (premiseTerm instanceof Literal && premiseTerm.value === 'true') {
       rawPremise = [];
@@ -1523,7 +1523,7 @@ class Parser {
     }
 
     let rawConclusion;
-    if (conclTerm instanceof FormulaTerm) {
+    if (conclTerm instanceof GraphTerm) {
       rawConclusion = conclTerm.triples;
     } else if (conclTerm instanceof Literal && conclTerm.value === 'false') {
       rawConclusion = [];
@@ -1566,11 +1566,11 @@ function liftBlankRuleVars(premise, conclusion) {
         t.tailVar,
       );
     }
-    if (t instanceof FormulaTerm) {
+    if (t instanceof GraphTerm) {
       const triples = t.triples.map(
         (tr) => new Triple(convertTerm(tr.s, mapping, counter), convertTerm(tr.p, mapping, counter), convertTerm(tr.o, mapping, counter)),
       );
-      return new FormulaTerm(triples);
+      return new GraphTerm(triples);
     }
     return t;
   }
@@ -1635,8 +1635,8 @@ function skolemizeTermForHeadBlanks(t, headBlankLabels, mapping, skCounter, firi
     );
   }
 
-  if (t instanceof FormulaTerm) {
-    return new FormulaTerm(
+  if (t instanceof GraphTerm) {
+    return new GraphTerm(
       t.triples.map((tr) => skolemizeTripleForHeadBlanks(tr, headBlankLabels, mapping, skCounter, firingKey, globalMap)),
     );
   }
@@ -1707,8 +1707,8 @@ function termsEqual(a, b) {
     return true;
   }
 
-  if (a instanceof FormulaTerm) {
-    return alphaEqFormulaTriples(a.triples, b.triples);
+  if (a instanceof GraphTerm) {
+    return alphaEqGraphTriples(a.triples, b.triples);
   }
 
   return false;
@@ -1775,8 +1775,8 @@ function termsEqualNoIntDecimal(a, b) {
     return true;
   }
 
-  if (a instanceof FormulaTerm) {
-    return alphaEqFormulaTriples(a.triples, b.triples);
+  if (a instanceof GraphTerm) {
+    return alphaEqGraphTriples(a.triples, b.triples);
   }
 
   return false;
@@ -1802,7 +1802,7 @@ function alphaEqVarName(x, y, vmap) {
   return true;
 }
 
-function alphaEqTermInFormula(a, b, vmap, bmap) {
+function alphaEqTermInGraph(a, b, vmap, bmap) {
   // Blank nodes: renamable
   if (a instanceof Blank && b instanceof Blank) {
     const x = a.label;
@@ -1823,7 +1823,7 @@ function alphaEqTermInFormula(a, b, vmap, bmap) {
   if (a instanceof ListTerm && b instanceof ListTerm) {
     if (a.elems.length !== b.elems.length) return false;
     for (let i = 0; i < a.elems.length; i++) {
-      if (!alphaEqTermInFormula(a.elems[i], b.elems[i], vmap, bmap)) return false;
+      if (!alphaEqTermInGraph(a.elems[i], b.elems[i], vmap, bmap)) return false;
     }
     return true;
   }
@@ -1831,27 +1831,25 @@ function alphaEqTermInFormula(a, b, vmap, bmap) {
   if (a instanceof OpenListTerm && b instanceof OpenListTerm) {
     if (a.prefix.length !== b.prefix.length) return false;
     for (let i = 0; i < a.prefix.length; i++) {
-      if (!alphaEqTermInFormula(a.prefix[i], b.prefix[i], vmap, bmap)) return false;
+      if (!alphaEqTermInGraph(a.prefix[i], b.prefix[i], vmap, bmap)) return false;
     }
     // tailVar is a var-name string, so treat it as renamable too
     return alphaEqVarName(a.tailVar, b.tailVar, vmap);
   }
 
   // Nested formulas: compare with fresh maps (separate scope)
-  if (a instanceof FormulaTerm && b instanceof FormulaTerm) {
-    return alphaEqFormulaTriples(a.triples, b.triples);
+  if (a instanceof GraphTerm && b instanceof GraphTerm) {
+    return alphaEqGraphTriples(a.triples, b.triples);
   }
 
   return false;
 }
 
-function alphaEqTripleInFormula(a, b, vmap, bmap) {
-  return (
-    alphaEqTermInFormula(a.s, b.s, vmap, bmap) && alphaEqTermInFormula(a.p, b.p, vmap, bmap) && alphaEqTermInFormula(a.o, b.o, vmap, bmap)
-  );
+function alphaEqTripleInGraph(a, b, vmap, bmap) {
+  return alphaEqTermInGraph(a.s, b.s, vmap, bmap) && alphaEqTermInGraph(a.p, b.p, vmap, bmap) && alphaEqTermInGraph(a.o, b.o, vmap, bmap);
 }
 
-function alphaEqFormulaTriples(xs, ys) {
+function alphaEqGraphTriples(xs, ys) {
   if (xs.length !== ys.length) return false;
   // Fast path: exact same sequence.
   if (triplesListEqual(xs, ys)) return true;
@@ -1870,7 +1868,7 @@ function alphaEqFormulaTriples(xs, ys) {
 
       const v2 = { ...vmap };
       const b2 = { ...bmap };
-      if (!alphaEqTripleInFormula(x, y, v2, b2)) continue;
+      if (!alphaEqTripleInGraph(x, y, v2, b2)) continue;
 
       used[j] = true;
       if (step(i + 1, v2, b2)) return true;
@@ -1910,9 +1908,9 @@ function alphaEqTerm(a, b, bmap) {
     }
     return true;
   }
-  if (a instanceof FormulaTerm && b instanceof FormulaTerm) {
+  if (a instanceof GraphTerm && b instanceof GraphTerm) {
     // formulas are alpha-equivalent up to var/blank renaming
-    return alphaEqFormulaTriples(a.triples, b.triples);
+    return alphaEqGraphTriples(a.triples, b.triples);
   }
   return false;
 }
@@ -2220,30 +2218,30 @@ function containsVarTerm(t, v) {
   if (t instanceof Var) return t.name === v;
   if (t instanceof ListTerm) return t.elems.some((e) => containsVarTerm(e, v));
   if (t instanceof OpenListTerm) return t.prefix.some((e) => containsVarTerm(e, v)) || t.tailVar === v;
-  if (t instanceof FormulaTerm)
+  if (t instanceof GraphTerm)
     return t.triples.some((tr) => containsVarTerm(tr.s, v) || containsVarTerm(tr.p, v) || containsVarTerm(tr.o, v));
   return false;
 }
 
-function isGroundTermInFormula(t) {
-  // EYE-style: variables inside formula terms are treated as local placeholders,
+function isGroundTermInGraph(t) {
+  // variables inside graph terms are treated as local placeholders,
   // so they don't make the *surrounding triple* non-ground.
   if (t instanceof OpenListTerm) return false;
-  if (t instanceof ListTerm) return t.elems.every((e) => isGroundTermInFormula(e));
-  if (t instanceof FormulaTerm) return t.triples.every((tr) => isGroundTripleInFormula(tr));
+  if (t instanceof ListTerm) return t.elems.every((e) => isGroundTermInGraph(e));
+  if (t instanceof GraphTerm) return t.triples.every((tr) => isGroundTripleInGraph(tr));
   // Iri/Literal/Blank/Var are all OK inside formulas
   return true;
 }
 
-function isGroundTripleInFormula(tr) {
-  return isGroundTermInFormula(tr.s) && isGroundTermInFormula(tr.p) && isGroundTermInFormula(tr.o);
+function isGroundTripleInGraph(tr) {
+  return isGroundTermInGraph(tr.s) && isGroundTermInGraph(tr.p) && isGroundTermInGraph(tr.o);
 }
 
 function isGroundTerm(t) {
   if (t instanceof Var) return false;
   if (t instanceof ListTerm) return t.elems.every((e) => isGroundTerm(e));
   if (t instanceof OpenListTerm) return false;
-  if (t instanceof FormulaTerm) return t.triples.every((tr) => isGroundTripleInFormula(tr));
+  if (t instanceof GraphTerm) return t.triples.every((tr) => isGroundTripleInGraph(tr));
   return true;
 }
 
@@ -2262,7 +2260,7 @@ function skolemKeyFromTerm(t) {
     if (u instanceof Var) return ['V', u.name];
     if (u instanceof ListTerm) return ['List', u.elems.map(enc)];
     if (u instanceof OpenListTerm) return ['OpenList', u.prefix.map(enc), u.tailVar];
-    if (u instanceof FormulaTerm) return ['Formula', u.triples.map((tr) => [enc(tr.s), enc(tr.p), enc(tr.o)])];
+    if (u instanceof GraphTerm) return ['Graph', u.triples.map((tr) => [enc(tr.s), enc(tr.p), enc(tr.o)])];
     return ['Other', String(u)];
   }
   return JSON.stringify(enc(t));
@@ -2320,8 +2318,8 @@ function applySubstTerm(t, s) {
     }
   }
 
-  if (t instanceof FormulaTerm) {
-    return new FormulaTerm(t.triples.map((tr) => applySubstTriple(tr, s)));
+  if (t instanceof GraphTerm) {
+    return new GraphTerm(t.triples.map((tr) => applySubstTriple(tr, s)));
   }
 
   return t;
@@ -2348,7 +2346,7 @@ function unifyOpenWithList(prefix, tailv, ys, subst) {
   return s2;
 }
 
-function unifyFormulaTriples(xs, ys, subst) {
+function unifyGraphTriples(xs, ys, subst) {
   if (xs.length !== ys.length) return null;
 
   // Fast path: exact same sequence.
@@ -2490,10 +2488,10 @@ function unifyTermWithOptions(a, b, subst, opts) {
     return s2;
   }
 
-  // Formulas
-  if (a instanceof FormulaTerm && b instanceof FormulaTerm) {
-    if (alphaEqFormulaTriples(a.triples, b.triples)) return { ...subst };
-    return unifyFormulaTriples(a.triples, b.triples, subst);
+  // Graphs
+  if (a instanceof GraphTerm && b instanceof GraphTerm) {
+    if (alphaEqGraphTriples(a.triples, b.triples)) return { ...subst };
+    return unifyGraphTriples(a.triples, b.triples, subst);
   }
 
   return null;
@@ -3635,7 +3633,7 @@ function materializeRdfLists(triples, forwardRules, backwardRules) {
       });
       return changed ? new OpenListTerm(prefix, t.tailVar) : t;
     }
-    if (t instanceof FormulaTerm) {
+    if (t instanceof GraphTerm) {
       for (const tr of t.triples) rewriteTriple(tr);
       return t;
     }
@@ -4726,8 +4724,8 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
       // fresh copy of the rule with fresh variable names
       const r = standardizeRule(r0, varGen);
 
-      const premF = new FormulaTerm(r.premise);
-      const concTerm = r0.isFuse ? internLiteral('false') : new FormulaTerm(r.conclusion);
+      const premF = new GraphTerm(r.premise);
+      const concTerm = r0.isFuse ? internLiteral('false') : new GraphTerm(r.conclusion);
 
       // unify subject with the premise formula
       let s2 = unifyTerm(goal.s, premF, subst);
@@ -4755,8 +4753,8 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
       const r = standardizeRule(r0, varGen);
 
       // For backward rules, r.conclusion is the head, r.premise is the body
-      const headF = new FormulaTerm(r.conclusion);
-      const bodyF = new FormulaTerm(r.premise);
+      const headF = new GraphTerm(r.conclusion);
+      const bodyF = new GraphTerm(r.premise);
 
       // unify subject with the head formula
       let s2 = unifyTerm(goal.s, headF, subst);
@@ -4772,16 +4770,16 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     return results;
   }
 
-  // log:notIncludes (EYE-style: "not provable in scope")
+  // log:notIncludes (not provable in scope)
   // Delay until we have a frozen scope snapshot to avoid early success.
   if (pv === LOG_NS + 'notIncludes') {
-    if (!(g.o instanceof FormulaTerm)) return [];
+    if (!(g.o instanceof GraphTerm)) return [];
 
     let scopeFacts = null;
     let scopeBackRules = backRules;
 
     // If the subject is a formula, treat it as the concrete scope graph
-    if (g.s instanceof FormulaTerm) {
+    if (g.s instanceof GraphTerm) {
       scopeFacts = g.s.triples.slice();
       ensureFactIndexes(scopeFacts);
       Object.defineProperty(scopeFacts, '__scopedSnapshot', { value: scopeFacts, enumerable: false, writable: true });
@@ -4800,12 +4798,12 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
   if (pv === LOG_NS + 'collectAllIn') {
     if (!(g.s instanceof ListTerm) || g.s.elems.length !== 3) return [];
     const [valueTempl, clauseTerm, listTerm] = g.s.elems;
-    if (!(clauseTerm instanceof FormulaTerm)) return [];
+    if (!(clauseTerm instanceof GraphTerm)) return [];
 
     let scopeFacts = null;
     let scopeBackRules = backRules;
 
-    if (g.o instanceof FormulaTerm) {
+    if (g.o instanceof GraphTerm) {
       scopeFacts = g.o.triples.slice();
       ensureFactIndexes(scopeFacts);
       Object.defineProperty(scopeFacts, '__scopedSnapshot', { value: scopeFacts, enumerable: false, writable: true });
@@ -4829,12 +4827,12 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
   if (pv === LOG_NS + 'forAllIn') {
     if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
     const [whereClause, thenClause] = g.s.elems;
-    if (!(whereClause instanceof FormulaTerm) || !(thenClause instanceof FormulaTerm)) return [];
+    if (!(whereClause instanceof GraphTerm) || !(thenClause instanceof GraphTerm)) return [];
 
     let scopeFacts = null;
     let scopeBackRules = backRules;
 
-    if (g.o instanceof FormulaTerm) {
+    if (g.o instanceof GraphTerm) {
       scopeFacts = g.o.triples.slice();
       ensureFactIndexes(scopeFacts);
       Object.defineProperty(scopeFacts, '__scopedSnapshot', { value: scopeFacts, enumerable: false, writable: true });
@@ -5174,7 +5172,7 @@ function standardizeRule(rule, gen) {
       if (newTail !== t.tailVar) changed = true;
       return changed ? new OpenListTerm(newXs, newTail) : t;
     }
-    if (t instanceof FormulaTerm) {
+    if (t instanceof GraphTerm) {
       let changed = false;
       const triples2 = t.triples.map((tr) => {
         const s2 = renameTerm(tr.s, vmap, genArr);
@@ -5183,7 +5181,7 @@ function standardizeRule(rule, gen) {
         if (s2 !== tr.s || p2 !== tr.p || o2 !== tr.o) changed = true;
         return s2 === tr.s && p2 === tr.p && o2 === tr.o ? tr : new Triple(s2, p2, o2);
       });
-      return changed ? new FormulaTerm(triples2) : t;
+      return changed ? new GraphTerm(triples2) : t;
     }
     return t;
   }
@@ -5238,7 +5236,7 @@ function gcCollectVarsInTerm(t, out) {
     out.add(t.tailVar);
     return;
   }
-  if (t instanceof FormulaTerm) {
+  if (t instanceof GraphTerm) {
     for (const tr of t.triples) gcCollectVarsInTriple(tr, out);
     return;
   }
@@ -5500,15 +5498,15 @@ function forwardChain(facts, forwardRules, backRules) {
 
             const isFwRuleTriple =
               isLogImplies(instantiated.p) &&
-              ((instantiated.s instanceof FormulaTerm && instantiated.o instanceof FormulaTerm) ||
-                (instantiated.s instanceof Literal && instantiated.s.value === 'true' && instantiated.o instanceof FormulaTerm) ||
-                (instantiated.s instanceof FormulaTerm && instantiated.o instanceof Literal && instantiated.o.value === 'true'));
+              ((instantiated.s instanceof GraphTerm && instantiated.o instanceof GraphTerm) ||
+                (instantiated.s instanceof Literal && instantiated.s.value === 'true' && instantiated.o instanceof GraphTerm) ||
+                (instantiated.s instanceof GraphTerm && instantiated.o instanceof Literal && instantiated.o.value === 'true'));
 
             const isBwRuleTriple =
               isLogImpliedBy(instantiated.p) &&
-              ((instantiated.s instanceof FormulaTerm && instantiated.o instanceof FormulaTerm) ||
-                (instantiated.s instanceof FormulaTerm && instantiated.o instanceof Literal && instantiated.o.value === 'true') ||
-                (instantiated.s instanceof Literal && instantiated.s.value === 'true' && instantiated.o instanceof FormulaTerm));
+              ((instantiated.s instanceof GraphTerm && instantiated.o instanceof GraphTerm) ||
+                (instantiated.s instanceof GraphTerm && instantiated.o instanceof Literal && instantiated.o.value === 'true') ||
+                (instantiated.s instanceof Literal && instantiated.s.value === 'true' && instantiated.o instanceof GraphTerm));
 
             if (isFwRuleTriple || isBwRuleTriple) {
               if (!hasFactIndexed(facts, instantiated)) {
@@ -5520,14 +5518,14 @@ function forwardChain(facts, forwardRules, backRules) {
 
               // Promote rule-producing triples to live rules, treating literal true as {}.
               const left =
-                instantiated.s instanceof FormulaTerm
+                instantiated.s instanceof GraphTerm
                   ? instantiated.s.triples
                   : instantiated.s instanceof Literal && instantiated.s.value === 'true'
                     ? []
                     : null;
 
               const right =
-                instantiated.o instanceof FormulaTerm
+                instantiated.o instanceof GraphTerm
                   ? instantiated.o.triples
                   : instantiated.o instanceof Literal && instantiated.o.value === 'true'
                     ? []
@@ -5651,7 +5649,7 @@ function termToN3(t, pref) {
     inside.push('?' + t.tailVar);
     return '(' + inside.join(' ') + ')';
   }
-  if (t instanceof FormulaTerm) {
+  if (t instanceof GraphTerm) {
     let s = '{\n';
     for (const tr of t.triples) {
       let line = tripleToN3(tr, pref).trimEnd();
@@ -5786,7 +5784,9 @@ function printExplanation(df, prefixes) {
 function main() {
   // Drop "node" and script name; keep only user-provided args
   const argv = process.argv.slice(2);
-  const prog = String(process.argv[1] || 'eyeling').split(/[\/]/).pop();
+  const prog = String(process.argv[1] || 'eyeling')
+    .split(/[\/]/)
+    .pop();
 
   function printHelp(toStderr = false) {
     const msg =
@@ -5800,12 +5800,11 @@ function main() {
     (toStderr ? console.error : console.log)(msg);
   }
 
-
   // --------------------------------------------------------------------------
   // Global options
   // --------------------------------------------------------------------------
   // --help / -h: print help and exit
-    if (argv.includes('--help') || argv.includes('-h')) {
+  if (argv.includes('--help') || argv.includes('-h')) {
     printHelp(false);
     process.exit(0);
   }
@@ -5817,7 +5816,6 @@ function main() {
   }
 
   const showAst = argv.includes('--ast') || argv.includes('-a');
-
 
   // --proof-comments / -p: enable proof explanations
   if (argv.includes('--proof-comments') || argv.includes('-p')) {
@@ -5833,7 +5831,7 @@ function main() {
   // --------------------------------------------------------------------------
   // Positional args (the N3 file)
   // --------------------------------------------------------------------------
-    const positional = argv.filter((a) => !a.startsWith('-'));
+  const positional = argv.filter((a) => !a.startsWith('-'));
   if (positional.length === 0) {
     // No args: show help like many CLI tools do.
     printHelp(false);
