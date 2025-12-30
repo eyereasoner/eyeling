@@ -5786,8 +5786,7 @@ function printExplanation(df, prefixes) {
 function main() {
   // Drop "node" and script name; keep only user-provided args
   const argv = process.argv.slice(2);
-  const pathMod = require('path');
-  const prog = pathMod.basename(process.argv[1] || 'eyeling');
+  const prog = String(process.argv[1] || 'eyeling').split(/[\/]/).pop();
 
   function printHelp(toStderr = false) {
     const msg =
@@ -5801,11 +5800,12 @@ function main() {
     (toStderr ? console.error : console.log)(msg);
   }
 
+
   // --------------------------------------------------------------------------
   // Global options
   // --------------------------------------------------------------------------
   // --help / -h: print help and exit
-  if (argv.includes('--help') || argv.includes('-h')) {
+    if (argv.includes('--help') || argv.includes('-h')) {
     printHelp(false);
     process.exit(0);
   }
@@ -5817,6 +5817,7 @@ function main() {
   }
 
   const showAst = argv.includes('--ast') || argv.includes('-a');
+
 
   // --proof-comments / -p: enable proof explanations
   if (argv.includes('--proof-comments') || argv.includes('-p')) {
@@ -5832,7 +5833,7 @@ function main() {
   // --------------------------------------------------------------------------
   // Positional args (the N3 file)
   // --------------------------------------------------------------------------
-  const positional = argv.filter((a) => !a.startsWith('-'));
+    const positional = argv.filter((a) => !a.startsWith('-'));
   if (positional.length === 0) {
     // No args: show help like many CLI tools do.
     printHelp(false);
@@ -5898,10 +5899,10 @@ function main() {
   }
 }
 
-const __isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
-const __isNode =
-  !__isBrowser && typeof process !== 'undefined' && process.versions && process.versions.node && typeof require === 'function';
-
-if (__isNode && require.main === module) {
-  main();
+try {
+  if (typeof module !== 'undefined' && typeof require === 'function' && require.main === module) {
+    main();
+  }
+} catch (_e) {
+  // ignore
 }
