@@ -5,7 +5,8 @@
  * return.js — Roundtripper RDF+SRL N3.
  *
  * TriG<->N3
- *   <graphName> rt:graph { ...triples... } .
+ *   TriG: <graphName> { ...triples... }
+ *   N3:   <graphName> rt:graph { ...triples... } .
  *
  * SRL<->N3
  *   SRL: RULE { Head } WHERE { Body }
@@ -1623,11 +1624,3 @@ main().catch((e) => {
   process.exitCode = 1;
 });
 
-module.exports = {
-  trigToN3,
-  n3ToTrig,
-  srlToN3,
-  n3ToSrl,
-  parseTriG,
-  parseN3,
-};
