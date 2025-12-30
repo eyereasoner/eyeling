@@ -608,6 +608,25 @@ function lex(inputText) {
       }
       const word = nameChars.join('');
 
+      // If an identifier ends with one or more '.' characters, treat them as statement terminators.
+      // This allows Turtle like ':s :p :o.' (no whitespace before '.').
+      // Keep '...' as a single identifier (used by some N3 syntaxes).
+      if (word !== '...' && word.endsWith('.') && word.length > 1) {
+        let w = word;
+        let dots = 0;
+        while (w.endsWith('.') && w.length > 0 && w !== '...') {
+          w = w.slice(0, -1);
+          dots++;
+        }
+        if (w.length > 0) {
+          // Re-run the literal/ident decision on w, then emit Dot tokens.
+          if (w === 'true' || w === 'false') tokens.push(new Token('Literal', w));
+          else tokens.push(new Token('Ident', w));
+          for (let d = 0; d < dots; d++) tokens.push(new Token('Dot'));
+          continue;
+        }
+      }
+
       // true/false as literals
       if (word === 'true' || word === 'false') tokens.push(new Token('Literal', word));
       else tokens.push(new Token('Ident', word));
