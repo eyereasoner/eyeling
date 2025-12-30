@@ -2,7 +2,7 @@
 'use strict';
 
 /*
- * return.js — Roundtripper RDF+SRL N3.
+ * return.js — Roundtripper between RDF (TriG, SRL, ...) and N3.
  *
  * TriG<->N3
  *   TriG: <graphName> { ...triples... }
