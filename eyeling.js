@@ -84,6 +84,8 @@ const jsonPointerCache = new Map();
 
 // Controls whether human-readable proof comments are printed.
 let proofCommentsEnabled = false;
+// Super restricted mode: disable *all* builtins except => / <= (log:implies / log:impliedBy)
+let superRestrictedMode = false;
 
 // ----------------------------------------------------------------------------
 // Deterministic time support
@@ -3699,6 +3701,13 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
   const pv = iriValue(g.p);
   if (pv === null) return null;
 
+  // Super restricted mode: disable *all* builtins except => / <= (log:implies / log:impliedBy)
+  if (superRestrictedMode) {
+    const allow1 = LOG_NS + 'implies';
+    const allow2 = LOG_NS + 'impliedBy';
+    if (pv !== allow1 && pv !== allow2) return [];
+  }
+
   // -----------------------------------------------------------------
   // 4.1 crypto: builtins
   // -----------------------------------------------------------------
@@ -5118,6 +5127,13 @@ function isBuiltinPred(p) {
   if (!(p instanceof Iri)) return false;
   const v = p.value;
 
+  // Super restricted mode: only treat => / <= as builtins.
+  // Everything else should be handled as ordinary predicates (and thus must be
+  // provided explicitly as facts/rules, without builtin evaluation).
+  if (superRestrictedMode) {
+    return v === LOG_NS + 'implies' || v === LOG_NS + 'impliedBy';
+  }
+
   // Treat RDF Collections as list-term builtins too.
   if (v === RDF_NS + 'first' || v === RDF_NS + 'rest') {
     return true;
@@ -5796,6 +5812,7 @@ function main() {
       `  -v, --version           Print version and exit.\n` +
       `  -p, --proof-comments    Enable proof explanations.\n` +
       `  -n, --no-proof-comments Disable proof explanations (default).\n` +
+      `  -s, --super-restricted  Disable all builtins except => and <=.\n` +
       `  -a, --ast               Print parsed AST as JSON and exit.\n`;
     (toStderr ? console.error : console.log)(msg);
   }
@@ -5826,6 +5843,11 @@ function main() {
   // Keep this after --proof-comments so -n wins if both are present.
   if (argv.includes('--no-proof-comments') || argv.includes('-n')) {
     proofCommentsEnabled = false;
+  }
+
+  // --super-restricted / -s: disable all builtins except => / <=
+  if (argv.includes('--super-restricted') || argv.includes('-s')) {
+    superRestrictedMode = true;
   }
 
   // --------------------------------------------------------------------------
