@@ -61,6 +61,7 @@ const RDF_NS = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
 const OWL_NS = 'http://www.w3.org/2002/07/owl#';
 const LOG_NS = 'http://www.w3.org/2000/10/swap/log#';
 const MATH_NS = 'http://www.w3.org/2000/10/swap/math#';
+const STRING_NS = 'http://www.w3.org/2000/10/swap/string#';
 
 // Avoid literal triple-quote sequences in this source (helps embedding in tools).
 const DQ3 = '"'.repeat(3);
@@ -858,6 +859,11 @@ class TurtleParser {
   parseList() {
     const elems = [];
     while (this.peek().typ !== 'RParen') {
+      // Be permissive: allow commas inside lists (even though Turtle lists are whitespace-separated).
+      if (this.peek().typ === 'Comma') {
+        this.next();
+        continue;
+      }
       elems.push(this.parseTerm());
       if (this.peek().typ === 'EOF') throw new Error("Unterminated list '(' ... ')'");
     }
@@ -1056,6 +1062,7 @@ class TriGParser extends TurtleParser {
 function termToText(t, prefixes) {
   if (t == null) return '[]';
   if (t instanceof Iri) {
+    if (t.value === RDF_NS + 'type') return 'a';
     const qn = prefixes ? prefixes.shrinkIri(t.value) : null;
     return qn || `<${t.value}>`;
   }
@@ -1304,6 +1311,13 @@ function mathPrefixLabels(prefixes) {
   return prefixes.filter((p) => (p.iri || '').trim() === MATH_NS).map((p) => p.label);
 }
 
+function stringPrefixLabels(prefixes) {
+  if (!Array.isArray(prefixes)) return [];
+  return prefixes.filter((p) => (p.iri || '').trim() === STRING_NS).map((p) => p.label);
+}
+
+
+
 function readBalancedParens(s, i) {
   if (s[i] !== '(') throw new Error("Unclosed '(...)'");
   let depth = 0;
@@ -1500,6 +1514,130 @@ function splitTopLevelOr(expr) {
   return parts.length > 1 ? parts : null;
 }
 
+function splitTopLevelCommaArgs(s) {
+  const parts = [];
+  let buf = '';
+  let depthPar = 0;
+  let depthBr = 0;
+  let depthSq = 0;
+  let inString = false;
+  let quote = null;
+  let escaped = false;
+
+  for (let i = 0; i < (s || '').length; i++) {
+    const ch = s[i];
+
+    if (inString) {
+      buf += ch;
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (ch === '\\') {
+        escaped = true;
+        continue;
+      }
+      if (ch === quote) {
+        inString = false;
+        quote = null;
+      }
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      inString = true;
+      quote = ch;
+      buf += ch;
+      continue;
+    }
+
+    if (ch === '(') { depthPar++; buf += ch; continue; }
+    if (ch === ')') { depthPar--; buf += ch; continue; }
+    if (ch === '{') { depthBr++; buf += ch; continue; }
+    if (ch === '}') { depthBr--; buf += ch; continue; }
+    if (ch === '[') { depthSq++; buf += ch; continue; }
+    if (ch === ']') { depthSq--; buf += ch; continue; }
+
+    if (depthPar === 0 && depthBr === 0 && depthSq === 0 && ch === ',') {
+      if (buf.trim()) parts.push(buf.trim());
+      buf = '';
+      continue;
+    }
+
+    buf += ch;
+  }
+
+  if (buf.trim()) parts.push(buf.trim());
+  return parts;
+}
+
+function bindExprToN3Statements(bindInner) {
+  // bindInner is the inside of BIND(...), e.g. 'concat(?a, " ", ?b) AS ?FN'
+  const s = (bindInner || '').trim();
+  const m = s.match(/^(.*)\s+AS\s+(\?[A-Za-z_][A-Za-z0-9_-]*)\s*$/i);
+  if (!m) return null;
+
+  const expr = m[1].trim();
+  const outVar = m[2].trim();
+
+  const m2 = expr.match(/^concat\s*\((.*)\)\s*$/i);
+  if (!m2) return null;
+
+  const argsRaw = m2[1];
+  const args = splitTopLevelCommaArgs(argsRaw).map((x) => x.trim()).filter(Boolean);
+  if (!args.length) return null;
+
+  // N3: (a b c) string:concatenation ?outVar .
+  const list = `(${args.join(' ')})`;
+  return { stmt: `${list} string:concatenation ${outVar} .`, usedString: true };
+}
+
+function extractSrlBinds(bodyRaw) {
+  const s = bodyRaw || '';
+  let i = 0;
+  let out = '';
+  const binds = [];
+  let usedString = false;
+
+  while (i < s.length) {
+    const idx = s.indexOf('BIND', i);
+    if (idx < 0) {
+      out += s.slice(i);
+      break;
+    }
+
+    const before = idx === 0 ? ' ' : s[idx - 1];
+    const after = idx + 4 < s.length ? s[idx + 4] : ' ';
+    if (/[A-Za-z0-9_]/.test(before) || /[A-Za-z0-9_]/.test(after)) {
+      i = idx + 4;
+      continue;
+    }
+
+    let j = idx + 4;
+    while (j < s.length && /\s/.test(s[j])) j++;
+    if (s[j] !== '(') {
+      out += s.slice(i, idx + 4);
+      i = idx + 4;
+      continue;
+    }
+
+    out += s.slice(i, idx);
+    const blk = readBalancedParens(s, j);
+    const inner = (blk.content || '').trim();
+
+    const conv = bindExprToN3Statements(inner);
+    if (!conv) throw new Error(`Unsupported SRL BIND expression for N3 mapping: ${inner}`);
+    binds.push(conv.stmt);
+    usedString = usedString || conv.usedString;
+
+    i = blk.endIdx;
+  }
+
+  return { body: normalizeInsideBracesKeepStyle(out), binds, usedString };
+}
+
+
+
 function parseSimpleComparison(expr) {
   const t0 = stripOuterParensOnce(expr);
   const t = t0.trim();
@@ -1543,6 +1681,113 @@ function filterExprToN3Alternatives(expr) {
   const cmp = parseSimpleComparison(e);
   if (!cmp) return null;
   return [[`${cmp.var} math:${cmp.pred} ${cmp.num} .`]];
+}
+
+
+
+function splitListTermsFromN3List(listInner) {
+  const s = (listInner || '').trim();
+  const terms = [];
+  let buf = '';
+  let inString = false;
+  let quote = null;
+  let escaped = false;
+  let depthPar = 0;
+  let depthBr = 0;
+  let depthSq = 0;
+
+  function flush() {
+    if (buf.trim()) terms.push(buf.trim());
+    buf = '';
+  }
+
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+
+    if (inString) {
+      buf += ch;
+      if (escaped) { escaped = false; continue; }
+      if (ch === '\\') { escaped = true; continue; }
+      if (ch === quote) { inString = false; quote = null; }
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") { inString = true; quote = ch; buf += ch; continue; }
+
+    if (ch === '(') { depthPar++; buf += ch; continue; }
+    if (ch === ')') { depthPar--; buf += ch; continue; }
+    if (ch === '{') { depthBr++; buf += ch; continue; }
+    if (ch === '}') { depthBr--; buf += ch; continue; }
+    if (ch === '[') { depthSq++; buf += ch; continue; }
+    if (ch === ']') { depthSq--; buf += ch; continue; }
+
+    // allow commas as separators too
+    if (depthPar === 0 && depthBr === 0 && depthSq === 0 && (ch === ',' || /\s/.test(ch))) {
+      flush();
+      continue;
+    }
+
+    buf += ch;
+  }
+
+  flush();
+  return terms;
+}
+
+function extractStringBindsFromBody(bodyRaw, stringLabels) {
+  const labels = Array.isArray(stringLabels) && stringLabels.length ? stringLabels : ['string:'];
+  const s = bodyRaw || '';
+  const binds = [];
+  let out = '';
+  let i = 0;
+
+  while (i < s.length) {
+    const idx = s.indexOf('(', i);
+    if (idx < 0) { out += s.slice(i); break; }
+
+    out += s.slice(i, idx);
+
+    let blk;
+    try { blk = readBalancedParens(s, idx); } catch { out += s.slice(idx, idx + 1); i = idx + 1; continue; }
+    const inner = (blk.content || '').trim();
+    let j = blk.endIdx;
+    while (j < s.length && /\s/.test(s[j])) j++;
+
+    // predicate
+    const full = `<${STRING_NS}concatenation>`;
+    let predLen = 0;
+    let matched = false;
+    if (s.startsWith(full, j)) { matched = true; predLen = full.length; }
+    else {
+      for (const lab of labels) {
+        const tok = `${lab}concatenation`;
+        if (s.startsWith(tok, j)) { matched = true; predLen = tok.length; break; }
+      }
+    }
+
+    if (!matched) { out += '(' + inner + ')'; i = blk.endIdx; continue; }
+
+    j += predLen;
+    while (j < s.length && /\s/.test(s[j])) j++;
+
+    const mVar = s.slice(j).match(/^(\?[A-Za-z_][A-Za-z0-9_-]*)/);
+    if (!mVar) { out += '(' + inner + ')'; i = blk.endIdx; continue; }
+
+    const outVar = mVar[1];
+    j += outVar.length;
+
+    // consume optional trailing dot
+    while (j < s.length && /\s/.test(s[j])) j++;
+    if (s[j] === '.') j++;
+
+    const terms = splitListTermsFromN3List(inner);
+    const bind = `BIND(concat(${terms.join(', ')}) AS ${outVar})`;
+    binds.push(bind);
+
+    i = j;
+  }
+
+  return { baseBody: normalizeInsideBracesKeepStyle(out), binds };
 }
 
 function extractMathFiltersFromBody(bodyRaw, mathLabels) {
@@ -1940,6 +2185,7 @@ function srlToN3(srlText) {
   const renderedRules = [];
   let needsLog = false;
   let needsMath = false;
+  let needsString = false;
 
   for (const r of rules) {
     // 1) NOT { ... }  ->  ?SCOPE log:notIncludes { ... } .
@@ -1951,6 +2197,15 @@ function srlToN3(srlText) {
     const convFilter = extractSrlFilters(convNot.body);
     const bodyNoFilter = convFilter.body;
     const filterExprs = convFilter.filters;
+
+    // 3) BIND(concat(... ) AS ?v) -> string:concatenation builtins
+    const convBind = extractSrlBinds(bodyNoFilter);
+    const bodyNoBind = convBind.body;
+    const bindBuiltins = convBind.binds;
+    if (convBind.usedString) {
+      needsString = true;
+      if (!env.map.string) env.setPrefix('string', STRING_NS);
+    }
 
     // Build rule alternatives (disjunction => multiple rules)
     let alts = [{ builtins: [] }];
@@ -1978,7 +2233,8 @@ function srlToN3(srlText) {
 
     for (const a of alts) {
       const extra = a.builtins.length ? ` ${a.builtins.join(' ')} ` : '';
-      const combined = `${bodyNoFilter} ${extra}`.trim();
+      const bindExtra = bindBuiltins.length ? ` ${bindBuiltins.join(' ')} ` : '';
+      const combined = `${bodyNoBind} ${extra} ${bindExtra}`.trim();
       const triples = parseTriplesBlockAllowImplicitDots(combined, env);
       const body = triplesToN3Body(triples, env);
       renderedRules.push(`{ ${body} } => { ${head} } .`);
@@ -1990,7 +2246,8 @@ function srlToN3(srlText) {
   for (const { label, iri } of prefixes) out.push(`@prefix ${label} <${iri}> .`);
   if (needsLog && !hasPrefixForIri(prefixes, LOG_NS)) out.push(`@prefix log: <${LOG_NS}> .`);
   if (needsMath && !hasPrefixForIri(prefixes, MATH_NS)) out.push(`@prefix math: <${MATH_NS}> .`);
-  if (prefixes.length || needsLog || needsMath) out.push('');
+  if (needsString && !hasPrefixForIri(prefixes, STRING_NS)) out.push(`@prefix string: <${STRING_NS}> .`);
+  if (prefixes.length || needsLog || needsMath || needsString) out.push('');
 
   // Emit "plain" data triples first (outside SRL DATA blocks)
   if (dataOutside.trim()) out.push(dataOutside.trim(), '');
@@ -2029,6 +2286,7 @@ function n3ToSrl(n3Text) {
 
   const logLabels = logPrefixLabels(prefixes);
   const mathLabels = mathPrefixLabels(prefixes);
+  const stringLabels = stringPrefixLabels(prefixes);
 
   // First pass: convert bodies, extract FILTER-able math statements, and group for possible OR merge.
   const cooked = [];
@@ -2040,18 +2298,20 @@ function n3ToSrl(n3Text) {
 
     // FILTER mapping (math builtins)
     const ex = extractMathFiltersFromBody(body1, mathLabels);
+    const bx = extractStringBindsFromBody(ex.baseBody, stringLabels);
 
     cooked.push({
       head,
-      baseBody: ex.baseBody,
+      baseBody: bx.baseBody,
       filters: ex.filters.map((f) => f.expr),
+      binds: bx.binds,
     });
   }
 
   // Group by head + baseBody to optionally merge disjunctions into a single FILTER with '||'
   const groups = new Map();
   for (const r of cooked) {
-    const key = `${r.head}@@${r.baseBody}`;
+    const key = `${r.head}@@${r.baseBody}@@${(r.binds || []).join(' ')}`;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(r);
   }
@@ -2060,7 +2320,8 @@ function n3ToSrl(n3Text) {
     if (group.length === 1) {
       const r = group[0];
       const filterText = r.filters.map((e) => `FILTER ( ${e} )`).join(' ');
-      const body = normalizeInsideBracesKeepStyle(`${r.baseBody} ${filterText}`.trim());
+      const bindText = (r.binds || []).join(' ');
+      const body = normalizeInsideBracesKeepStyle(`${r.baseBody} ${filterText} ${bindText}`.trim());
       out.push(`RULE { ${r.head} } WHERE { ${body} }`);
       continue;
     }
@@ -2078,7 +2339,8 @@ function n3ToSrl(n3Text) {
     // Fallback: emit them as separate rules
     for (const r of group) {
       const filterText = r.filters.map((e) => `FILTER ( ${e} )`).join(' ');
-      const body = normalizeInsideBracesKeepStyle(`${r.baseBody} ${filterText}`.trim());
+      const bindText = (r.binds || []).join(' ');
+      const body = normalizeInsideBracesKeepStyle(`${r.baseBody} ${filterText} ${bindText}`.trim());
       out.push(`RULE { ${r.head} } WHERE { ${body} }`);
     }
   }
