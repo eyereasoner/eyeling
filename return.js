@@ -54,7 +54,7 @@ const rt = {
 };
 
 // ---------------------------------------------------------------------------
-// Minimal Turtle/N3 model + lexer + parser (adapted from eyeling.js)
+// Minimal Turtle/N3 model + lexer + parser
 // ---------------------------------------------------------------------------
 
 const RDF_NS = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
@@ -200,7 +200,7 @@ class PrefixEnv {
   }
 }
 
-// -------------------- LEXER (adapted) --------------------
+// -------------------- LEXER ------------------------------
 
 class Token {
   constructor(typ, value = null) {
@@ -2356,11 +2356,11 @@ const EXAMPLE_TRIG = `@prefix ex: <http://example.org/#> .
 
 ex:s ex:p "o" .
 
-ex:g1 {
+_:g1 {
   ex:s ex:p "o1" .
 }
 
-ex:g2 {
+_:g2 {
   ex:s ex:p "o2" .
 }
 `;
