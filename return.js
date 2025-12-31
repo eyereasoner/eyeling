@@ -2,7 +2,7 @@
 'use strict';
 
 /*
- * return.js — Roundtripper between RDF (TriG, SRL, ...) and N3.
+ * return.js — Roundtripper RDF+SRL N3.
  *
  * TriG<->N3
  *   TriG: <graphName> { ...triples... }
@@ -60,6 +60,7 @@ const rt = {
 const RDF_NS = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
 const OWL_NS = 'http://www.w3.org/2002/07/owl#';
 const LOG_NS = 'http://www.w3.org/2000/10/swap/log#';
+const MATH_NS = 'http://www.w3.org/2000/10/swap/math#';
 
 // Avoid literal triple-quote sequences in this source (helps embedding in tools).
 const DQ3 = '"'.repeat(3);
@@ -1228,6 +1229,364 @@ function logPrefixLabels(prefixes) {
   return prefixes.filter((p) => (p.iri || '').trim() === LOG_NS).map((p) => p.label);
 }
 
+function prefixEnvFromSrlPrefixes(prefixLines) {
+  const env = PrefixEnv.newDefault();
+  if (Array.isArray(prefixLines)) {
+    for (const { label, iri } of prefixLines) {
+      const lab = (label || '').trim();
+      const base = (iri || '').trim();
+      if (!lab || !base) continue;
+      // SRL uses "PREFIX :" for default prefix; store it as "" in PrefixEnv.
+      let pfx = lab.replace(/:$/, '');
+      if (pfx === ':') pfx = '';
+      env.setPrefix(pfx, base);
+    }
+  }
+  return env;
+}
+
+function parseTriplesBlockAllowImplicitDots(bodyText, env) {
+  const p = new TurtleParser(lex(bodyText));
+  if (env) p.prefixes = env;
+  const triples = [];
+
+  function canStartSubject(tok) {
+    if (!tok) return false;
+    return tok.typ === 'IriRef' || tok.typ === 'Ident' || tok.typ === 'Var' ||
+           tok.typ === 'LBracket' || tok.typ === 'LParen' || tok.typ === 'LBrace';
+  }
+
+  while (p.peek().typ !== 'EOF') {
+    // Skip stray dots (permissive)
+    if (p.peek().typ === 'Dot') {
+      p.next();
+      continue;
+    }
+
+    const subj = p.parseTerm();
+
+    let more;
+    if (p.peek().typ === 'Dot') {
+      more = [];
+      if (p.pendingTriples.length > 0) {
+        more = p.pendingTriples;
+        p.pendingTriples = [];
+      }
+      p.next(); // consume dot
+    } else {
+      more = p.parsePredicateObjectList(subj);
+      // In SPARQL graph patterns, the '.' between triple blocks is optional.
+      if (p.peek().typ === 'Dot') p.next();
+      else if (p.peek().typ === 'EOF') { /* ok */ }
+      else if (canStartSubject(p.peek())) { /* implicit separator */ }
+      else throw new Error(`Expected '.' or start of next triple, got ${p.peek().toString()}`);
+    }
+
+    triples.push(...more);
+  }
+
+  return triples;
+}
+
+function triplesToN3Body(triples, env) {
+  // Render as explicit triple statements (with dots)
+  return normalizeInsideBracesKeepStyle(
+    triples
+      .map((tr) => `${termToText(tr.s, env)} ${termToText(tr.p, env)} ${termToText(tr.o, env)} .`)
+      .join(' ')
+  );
+}
+
+
+
+function mathPrefixLabels(prefixes) {
+  if (!Array.isArray(prefixes)) return [];
+  return prefixes.filter((p) => (p.iri || '').trim() === MATH_NS).map((p) => p.label);
+}
+
+function readBalancedParens(s, i) {
+  if (s[i] !== '(') throw new Error("Unclosed '(...)'");
+  let depth = 0;
+  let j = i;
+  let inString = false;
+  let quote = null;
+  let escaped = false;
+
+  for (; j < s.length; j++) {
+    const ch = s[j];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (ch === '\\') {
+        escaped = true;
+        continue;
+      }
+      if (ch === quote) {
+        inString = false;
+        quote = null;
+      }
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      inString = true;
+      quote = ch;
+      continue;
+    }
+
+    if (ch === '(') depth++;
+    else if (ch === ')') {
+      depth--;
+      if (depth === 0) {
+        return { content: s.slice(i + 1, j), endIdx: j + 1 };
+      }
+    }
+  }
+
+  throw new Error("Unclosed '(...)'");
+}
+
+function extractSrlDataBlocks(text) {
+  const blocks = [];
+  let i = 0;
+  let out = '';
+  const s = text || '';
+
+  while (i < s.length) {
+    const idx = s.indexOf('DATA', i);
+    if (idx < 0) {
+      out += s.slice(i);
+      break;
+    }
+
+    const before = idx === 0 ? ' ' : s[idx - 1];
+    const after = idx + 4 < s.length ? s[idx + 4] : ' ';
+    if (/[A-Za-z0-9_]/.test(before) || /[A-Za-z0-9_]/.test(after)) {
+      i = idx + 4;
+      continue;
+    }
+
+    out += s.slice(i, idx);
+    let j = idx + 4;
+    while (j < s.length && /\s/.test(s[j])) j++;
+    if (s[j] !== '{') {
+      // Not a DATA block, keep literal "DATA"
+      out += 'DATA';
+      i = idx + 4;
+      continue;
+    }
+
+    const blk = readBalancedBraces(s, j);
+    blocks.push((blk.content || '').trim());
+    i = blk.endIdx;
+  }
+
+  return { dataText: out.trim(), dataBlocks: blocks };
+}
+
+// Extract SRL FILTER(...) clauses from a WHERE body and return them as raw expressions.
+function extractSrlFilters(bodyRaw) {
+  const s = bodyRaw || '';
+  let i = 0;
+  let out = '';
+  const filters = [];
+
+  while (i < s.length) {
+    const idx = s.indexOf('FILTER', i);
+    if (idx < 0) {
+      out += s.slice(i);
+      break;
+    }
+
+    const before = idx === 0 ? ' ' : s[idx - 1];
+    const after = idx + 6 < s.length ? s[idx + 6] : ' ';
+    if (/[A-Za-z0-9_]/.test(before) || /[A-Za-z0-9_]/.test(after)) {
+      i = idx + 6;
+      continue;
+    }
+
+    out += s.slice(i, idx);
+
+    let j = idx + 6;
+    while (j < s.length && /\s/.test(s[j])) j++;
+    if (s[j] !== '(') {
+      // Not a FILTER(...), keep it
+      out += 'FILTER';
+      i = idx + 6;
+      continue;
+    }
+
+    const par = readBalancedParens(s, j);
+    filters.push((par.content || '').trim());
+    i = par.endIdx;
+  }
+
+  return { body: normalizeInsideBracesKeepStyle(out), filters };
+}
+
+function stripOuterParensOnce(expr) {
+  const t = (expr || '').trim();
+  if (!t.startsWith('(') || !t.endsWith(')')) return t;
+  try {
+    const par = readBalancedParens(t, 0);
+    // Only strip if it consumes the whole string
+    if (par.endIdx === t.length) return (par.content || '').trim();
+  } catch {}
+  return t;
+}
+
+function splitTopLevelOr(expr) {
+  // Split on '||' that occurs at paren depth 0 (ignoring strings).
+  const s = expr || '';
+  const parts = [];
+  let buf = '';
+  let depth = 0;
+  let inString = false;
+  let quote = null;
+  let escaped = false;
+
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+
+    if (inString) {
+      buf += ch;
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (ch === '\\') {
+        escaped = true;
+        continue;
+      }
+      if (ch === quote) {
+        inString = false;
+        quote = null;
+      }
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      inString = true;
+      quote = ch;
+      buf += ch;
+      continue;
+    }
+
+    if (ch === '(') {
+      depth++;
+      buf += ch;
+      continue;
+    }
+    if (ch === ')') {
+      depth = Math.max(0, depth - 1);
+      buf += ch;
+      continue;
+    }
+
+    if (depth === 0 && ch === '|' && s[i + 1] === '|') {
+      parts.push(buf.trim());
+      buf = '';
+      i++;
+      continue;
+    }
+
+    buf += ch;
+  }
+
+  if (buf.trim()) parts.push(buf.trim());
+  return parts.length > 1 ? parts : null;
+}
+
+function parseSimpleComparison(expr) {
+  const t0 = stripOuterParensOnce(expr);
+  const t = t0.trim();
+
+  // Very small subset: ?v OP number
+  const m = t.match(/^(\?[A-Za-z_][A-Za-z0-9_-]*)\s*(>=|<=|!=|=|>|<)\s*([-+]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\s*$/);
+  if (!m) return null;
+
+  const v = m[1];
+  const op = m[2];
+  const num = m[3];
+
+  const pred =
+    op === '>' ? 'greaterThan'
+      : op === '<' ? 'lessThan'
+        : op === '=' ? 'equalTo'
+          : op === '!=' ? 'notEqualTo'
+            : op === '>=' ? 'notLessThan'
+              : op === '<=' ? 'notGreaterThan'
+                : null;
+
+  if (!pred) return null;
+
+  return { var: v, op, num, pred };
+}
+
+function filterExprToN3Alternatives(expr) {
+  // Returns an array of alternatives, each alternative is an array of N3 statements (strings).
+  const e = (expr || '').trim();
+  const orParts = splitTopLevelOr(e);
+  if (orParts) {
+    const alts = [];
+    for (const p of orParts) {
+      const cmp = parseSimpleComparison(p);
+      if (!cmp) return null;
+      alts.push([`${cmp.var} math:${cmp.pred} ${cmp.num} .`]);
+    }
+    return alts;
+  }
+
+  const cmp = parseSimpleComparison(e);
+  if (!cmp) return null;
+  return [[`${cmp.var} math:${cmp.pred} ${cmp.num} .`]];
+}
+
+function extractMathFiltersFromBody(bodyRaw, mathLabels) {
+  const labels = Array.isArray(mathLabels) && mathLabels.length ? mathLabels : ['math:'];
+  const s = bodyRaw || '';
+  const filters = [];
+  let out = s;
+
+  // Build predicate alternatives (prefixed + full IRI)
+  const preds = [
+    { name: 'greaterThan', op: '>' },
+    { name: 'lessThan', op: '<' },
+    { name: 'equalTo', op: '=' },
+    { name: 'notEqualTo', op: '!=' },
+    { name: 'notLessThan', op: '>=' },
+    { name: 'notGreaterThan', op: '<=' },
+  ];
+
+  for (const { name, op } of preds) {
+    const full = `<${MATH_NS}${name}>`;
+    const pref = labels.map((lab) => `${lab}${name}`);
+
+    // Match both full IRI and any math prefix label
+    const predGroup = [full, ...pref.map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))].join('|');
+    const reStmt = new RegExp(
+      '(^|[\\s;\\n\\r\\t])' +
+      '(\\?[A-Za-z_][A-Za-z0-9_-]*)\\s+' +
+      `(?:${predGroup})\\s+` +
+      '([-+]?\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?)\\s*\\.?' +
+      '(?=\\s|$)',
+      'g'
+    );
+
+    out = out.replace(reStmt, (m0, lead, v, num) => {
+      filters.push({ expr: `${v} ${op} ${num}` });
+      return lead || ' ';
+    });
+  }
+
+  return { baseBody: normalizeInsideBracesKeepStyle(out), filters };
+}
+
+
+
 // SRL:   NOT { ... }
 // N3 :   ?SCOPE log:notIncludes { ... } .
 function srlWhereBodyToN3Body(bodyRaw) {
@@ -1368,6 +1727,15 @@ function stripOnlyWholeLineHashComments(src) {
 function normalizeInsideBracesKeepStyle(s) {
   return (s || '').trim().replace(/\s+/g, ' ').trim();
 }
+
+function indentLines(s, n) {
+  const pad = ' '.repeat(n);
+  return (s || '')
+    .split('\n')
+    .map((line) => (line.trim().length ? pad + line : line))
+    .join('\n');
+}
+
 
 function parseSrlPrefixLines(src) {
   const prefixes = [];
@@ -1561,25 +1929,76 @@ function srlToN3(srlText) {
   const cleaned = stripOnlyWholeLineHashComments(srlText);
   const { prefixes, rest } = parseSrlPrefixLines(cleaned);
   const { dataText, rules } = extractSrlRules(rest);
+  const env = prefixEnvFromSrlPrefixes(prefixes);
 
-  // Convert rules first so we know whether we need log:
+  // DATA { ... } blocks are SRL-only; map their content to plain N3 data triples.
+  const dataExtract = extractSrlDataBlocks(dataText);
+  const dataOutside = dataExtract.dataText || '';
+  const dataBlocks = dataExtract.dataBlocks || [];
+
+  // Convert rules first so we know whether we need log:/math:
   const renderedRules = [];
   let needsLog = false;
+  let needsMath = false;
+
   for (const r of rules) {
-    const conv = srlWhereBodyToN3Body(r.body);
-    const body = conv.body;
-    needsLog = needsLog || conv.usedLog;
+    // 1) NOT { ... }  ->  ?SCOPE log:notIncludes { ... } .
+    const convNot = srlWhereBodyToN3Body(r.body);
+    needsLog = needsLog || convNot.usedLog;
+    if (convNot.usedLog && !env.map.log) env.setPrefix('log', LOG_NS);
+
+    // 2) FILTER(...) -> math:* builtins (possibly multiple alternative rules for OR)
+    const convFilter = extractSrlFilters(convNot.body);
+    const bodyNoFilter = convFilter.body;
+    const filterExprs = convFilter.filters;
+
+    // Build rule alternatives (disjunction => multiple rules)
+    let alts = [{ builtins: [] }];
+
+    for (const f of filterExprs) {
+      const n3alts = filterExprToN3Alternatives(f);
+      if (!n3alts) {
+        throw new Error(`Unsupported SRL FILTER expression for N3 mapping: ${f}`);
+      }
+
+      needsMath = true;
+      if (!env.map.math) env.setPrefix('math', MATH_NS);
+
+      // Expand OR alternatives
+      const next = [];
+      for (const a of alts) {
+        for (const option of n3alts) {
+          next.push({ builtins: a.builtins.concat(option) });
+        }
+      }
+      alts = next;
+    }
+
     const head = normalizeInsideBracesKeepStyle(r.head);
-    renderedRules.push(`{ ${body} } => { ${head} } .`);
+
+    for (const a of alts) {
+      const extra = a.builtins.length ? ` ${a.builtins.join(' ')} ` : '';
+      const combined = `${bodyNoFilter} ${extra}`.trim();
+      const triples = parseTriplesBlockAllowImplicitDots(combined, env);
+      const body = triplesToN3Body(triples, env);
+      renderedRules.push(`{ ${body} } => { ${head} } .`);
+    }
   }
 
   const out = [];
 
   for (const { label, iri } of prefixes) out.push(`@prefix ${label} <${iri}> .`);
   if (needsLog && !hasPrefixForIri(prefixes, LOG_NS)) out.push(`@prefix log: <${LOG_NS}> .`);
-  if (prefixes.length || needsLog) out.push('');
+  if (needsMath && !hasPrefixForIri(prefixes, MATH_NS)) out.push(`@prefix math: <${MATH_NS}> .`);
+  if (prefixes.length || needsLog || needsMath) out.push('');
 
-  if (dataText.trim()) out.push(dataText.trim(), '');
+  // Emit "plain" data triples first (outside SRL DATA blocks)
+  if (dataOutside.trim()) out.push(dataOutside.trim(), '');
+
+  // Emit each SRL DATA { ... } block as plain N3 data triples
+  for (const blk of dataBlocks) {
+    if (blk.trim()) out.push(blk.trim(), '');
+  }
 
   out.push(...renderedRules);
 
@@ -1596,14 +2015,72 @@ function n3ToSrl(n3Text) {
   for (const { label, iri } of prefixes) out.push(`PREFIX ${label} <${iri}>`);
   if (prefixes.length) out.push('');
 
-  if (dataText.trim()) out.push(dataText.trim(), '');
+  // N3 has no explicit SRL DATA block marker, so we serialize top-level data as DATA { ... }.
+  if (dataText.trim()) {
+    const inner = dataText.trim();
+    if (inner.includes('\n')) {
+      out.push('DATA {');
+      out.push(indentLines(inner, 2));
+      out.push('}', '');
+    } else {
+      out.push(`DATA { ${inner} }`, '');
+    }
+  }
 
   const logLabels = logPrefixLabels(prefixes);
+  const mathLabels = mathPrefixLabels(prefixes);
 
+  // First pass: convert bodies, extract FILTER-able math statements, and group for possible OR merge.
+  const cooked = [];
   for (const r of rules) {
-    const body = n3BodyToSrlWhereBody(r.body, logLabels);
     const head = normalizeInsideBracesKeepStyle(r.head);
-    out.push(`RULE { ${head} } WHERE { ${body} }`);
+
+    // NOT mapping
+    const body1 = n3BodyToSrlWhereBody(r.body, logLabels);
+
+    // FILTER mapping (math builtins)
+    const ex = extractMathFiltersFromBody(body1, mathLabels);
+
+    cooked.push({
+      head,
+      baseBody: ex.baseBody,
+      filters: ex.filters.map((f) => f.expr),
+    });
+  }
+
+  // Group by head + baseBody to optionally merge disjunctions into a single FILTER with '||'
+  const groups = new Map();
+  for (const r of cooked) {
+    const key = `${r.head}@@${r.baseBody}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(r);
+  }
+
+  for (const group of groups.values()) {
+    if (group.length === 1) {
+      const r = group[0];
+      const filterText = r.filters.map((e) => `FILTER ( ${e} )`).join(' ');
+      const body = normalizeInsideBracesKeepStyle(`${r.baseBody} ${filterText}`.trim());
+      out.push(`RULE { ${r.head} } WHERE { ${body} }`);
+      continue;
+    }
+
+    // Try OR merge: same head+baseBody and each has exactly one filter expression
+    const ok = group.every((r) => r.filters.length === 1);
+    if (ok) {
+      const parts = group.map((r) => r.filters[0]);
+      const orExpr = parts.map((p) => `( ${p} )`).join(' || ');
+      const body = normalizeInsideBracesKeepStyle(`${group[0].baseBody} FILTER ( ${orExpr} )`.trim());
+      out.push(`RULE { ${group[0].head} } WHERE { ${body} }`);
+      continue;
+    }
+
+    // Fallback: emit them as separate rules
+    for (const r of group) {
+      const filterText = r.filters.map((e) => `FILTER ( ${e} )`).join(' ');
+      const body = normalizeInsideBracesKeepStyle(`${r.baseBody} ${filterText}`.trim());
+      out.push(`RULE { ${r.head} } WHERE { ${body} }`);
+    }
   }
 
   return out.join('\n').trim() + '\n';
