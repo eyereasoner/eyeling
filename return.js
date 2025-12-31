@@ -114,7 +114,7 @@ class OpenListTerm extends Term {
     this.tailVar = tailVar; // string
   }
 }
-class FormulaTerm extends Term {
+class GraphTerm extends Term {
   constructor(triples) {
     super();
     this.triples = triples; // Triple[]
@@ -642,7 +642,7 @@ function lex(inputText) {
   return tokens;
 }
 
-// -------------------- PARSER (Turtle + N3-formulas; TriG extension separately) --------------------
+// -------------------- PARSER (Turtle + N3-graphs; TriG extension separately) --------------------
 
 class TurtleParser {
   constructor(tokens) {
@@ -850,7 +850,7 @@ class TurtleParser {
     if (typ === 'Var') return new Var(val || '');
     if (typ === 'LParen') return this.parseList();
     if (typ === 'LBracket') return this.parseBlank();
-    if (typ === 'LBrace') return this.parseFormula(); // N3 formula term
+    if (typ === 'LBrace') return this.parseGraph(); // N3 graph term
 
     throw new Error(`Unexpected term token: ${tok.toString()}`);
   }
@@ -891,7 +891,7 @@ class TurtleParser {
 
   // Parses inside "{ ... }" AFTER the '{' has been consumed.
   // We accept both "s p o ." and "s p o" before '}' as last triple (permissive).
-  parseFormula() {
+  parseGraph() {
     const triples = [];
     while (this.peek().typ !== 'RBrace') {
       const subj = this.parseTerm();
@@ -913,7 +913,7 @@ class TurtleParser {
       triples.push(...more);
     }
     this.next(); // consume '}'
-    return new FormulaTerm(triples);
+    return new GraphTerm(triples);
   }
 
   parsePredicateObjectList(subject) {
@@ -1012,7 +1012,7 @@ class TriGParser extends TurtleParser {
       // Default graph block: { ... }
       if (this.peek().typ === 'LBrace') {
         this.next(); // consume '{'
-        const f = this.parseFormula();
+        const f = this.parseGraph();
         if (this.peek().typ === 'Dot') this.next(); // accept optional '.'
         for (const tr of f.triples) quads.push({ s: tr.s, p: tr.p, o: tr.o, g: null });
         continue;
@@ -1023,7 +1023,7 @@ class TriGParser extends TurtleParser {
 
       if (this.peek().typ === 'LBrace') {
         this.next(); // consume '{'
-        const f = this.parseFormula();
+        const f = this.parseGraph();
         if (this.peek().typ === 'Dot') this.next(); // accept optional '.'
         for (const tr of f.triples) quads.push({ s: tr.s, p: tr.p, o: tr.o, g: first });
         continue;
@@ -1064,7 +1064,7 @@ function termToText(t, prefixes) {
   if (t instanceof Var) return `?${t.name}`;
   if (t instanceof ListTerm) return `(${t.elems.map((x) => termToText(x, prefixes)).join(' ')})`;
   if (t instanceof OpenListTerm) return `(${t.prefix.map((x) => termToText(x, prefixes)).join(' ')} ... ?${t.tailVar})`;
-  if (t instanceof FormulaTerm) {
+  if (t instanceof GraphTerm) {
     const inner = t.triples.map((tr) => `${termToText(tr.s, prefixes)} ${termToText(tr.p, prefixes)} ${termToText(tr.o, prefixes)} .`).join(' ');
     return `{ ${inner} }`;
   }
@@ -1138,7 +1138,7 @@ function writeN3RtGraph({ datasetQuads, prefixes }) {
 
   const grouped = groupQuadsByGraph(datasetQuads);
 
-  function writeFormulaTriples(triples) {
+  function writeGraphTriples(triples) {
     return triples.map((tr) => `  ${termToText(tr.s, prefixes)} ${termToText(tr.p, prefixes)} ${termToText(tr.o, prefixes)} .`).join('\n');
   }
 
@@ -1155,7 +1155,7 @@ function writeN3RtGraph({ datasetQuads, prefixes }) {
   named.sort((a, b) => a[0].localeCompare(b[0]));
   for (const [, { gTerm, triples }] of named) {
     blocks.push(`${termToText(gTerm, prefixes)} rt:graph {`);
-    if (triples.length) blocks.push(writeFormulaTriples(triples));
+    if (triples.length) blocks.push(writeGraphTriples(triples));
     blocks.push('} .', '');
   }
 
@@ -1172,7 +1172,7 @@ function parseTriG(text) {
 }
 
 function parseN3(text) {
-  // We only need enough N3 to read mapping triples and formula blocks,
+  // We only need enough N3 to read mapping triples and graph blocks,
   // which is the same as TurtleParser.parseTurtleDocument() because parseTerm supports { ... }.
   const p = new TurtleParser(lex(text));
   return p.parseTurtleDocument();
@@ -1195,7 +1195,7 @@ function n3ToTrig(n3Text) {
     const isGraphMapping =
       tr.p instanceof Iri &&
       tr.p.value === rt.graph &&
-      tr.o instanceof FormulaTerm;
+      tr.o instanceof GraphTerm;
 
     if (isGraphMapping) {
       const g = tr.s;
@@ -2114,6 +2114,9 @@ RULE { ?x :childOf ?y } WHERE { ?y :motherOf ?x }
 
 RULE { ?x :descendedFrom ?y } WHERE { ?x :childOf ?y }
 RULE { ?x :descendedFrom ?y } WHERE { ?x :childOf ?z . ?z :childOf ?y }
+
+RULE { ?x :ancestorOf ?y } WHERE { ?y :descendedFrom ?x }
+RULE { ?a :ancestorOf ?b } WHERE { ?a :ancestorOf ?c . ?c :ancestorOf ?b }
 `;
 
 function quadToNQuadString(q) {
