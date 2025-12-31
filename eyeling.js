@@ -315,13 +315,24 @@ class DerivedFact {
 // ===========================================================================
 
 class Token {
-  constructor(typ, value = null) {
+  constructor(typ, value = null, offset = null) {
     this.typ = typ;
     this.value = value;
+    // Codepoint offset in the original source (Array.from(text) index).
+    this.offset = offset;
   }
   toString() {
-    if (this.value == null) return `Token(${this.typ})`;
-    return `Token(${this.typ}, ${JSON.stringify(this.value)})`;
+    const loc = typeof this.offset === 'number' ? `@${this.offset}` : '';
+    if (this.value == null) return `Token(${this.typ}${loc})`;
+    return `Token(${this.typ}${loc}, ${JSON.stringify(this.value)})`;
+  }
+}
+
+class N3SyntaxError extends SyntaxError {
+  constructor(message, offset = null) {
+    super(message);
+    this.name = 'N3SyntaxError';
+    this.offset = offset;
   }
 }
 
@@ -434,12 +445,12 @@ function lex(inputText) {
     // 3) Two-character operators: => and <=
     if (c === '=') {
       if (peek(1) === '>') {
-        tokens.push(new Token('OpImplies'));
+        tokens.push(new Token('OpImplies', null, i));
         i += 2;
         continue;
       } else {
         // N3 syntactic sugar: '=' means owl:sameAs
-        tokens.push(new Token('Equals'));
+        tokens.push(new Token('Equals', null, i));
         i += 1;
         continue;
       }
@@ -447,17 +458,18 @@ function lex(inputText) {
 
     if (c === '<') {
       if (peek(1) === '=') {
-        tokens.push(new Token('OpImpliedBy'));
+        tokens.push(new Token('OpImpliedBy', null, i));
         i += 2;
         continue;
       }
       // N3 predicate inversion: "<-" (swap subject/object for this predicate)
       if (peek(1) === '-') {
-        tokens.push(new Token('OpPredInvert'));
+        tokens.push(new Token('OpPredInvert', null, i));
         i += 2;
         continue;
       }
       // Otherwise IRIREF <...>
+      const start = i;
       i++; // skip '<'
       const iriChars = [];
       while (i < n && chars[i] !== '>') {
@@ -465,27 +477,27 @@ function lex(inputText) {
         i++;
       }
       if (i >= n || chars[i] !== '>') {
-        throw new Error('Unterminated IRI <...>');
+        throw new N3SyntaxError('Unterminated IRI <...>', start);
       }
       i++; // skip '>'
       const iri = iriChars.join('');
-      tokens.push(new Token('IriRef', iri));
+      tokens.push(new Token('IriRef', iri, start));
       continue;
     }
 
     // 4) Path + datatype operators: !, ^, ^^
     if (c === '!') {
-      tokens.push(new Token('OpPathFwd'));
+      tokens.push(new Token('OpPathFwd', null, i));
       i += 1;
       continue;
     }
     if (c === '^') {
       if (peek(1) === '^') {
-        tokens.push(new Token('HatHat'));
+        tokens.push(new Token('HatHat', null, i));
         i += 2;
         continue;
       }
-      tokens.push(new Token('OpPathRev'));
+      tokens.push(new Token('OpPathRev', null, i));
       i += 1;
       continue;
     }
@@ -503,13 +515,15 @@ function lex(inputText) {
         ',': 'Comma',
         '.': 'Dot',
       };
-      tokens.push(new Token(mapping[c]));
+      tokens.push(new Token(mapping[c], null, i));
       i++;
       continue;
     }
 
     // String literal: short "..." or long """..."""
     if (c === '"') {
+      const start = i;
+
       // Long string literal """ ... """
       if (peek(1) === '"' && peek(2) === '"') {
         i += 3; // consume opening """
@@ -553,11 +567,11 @@ function lex(inputText) {
           sChars.push(cc);
           i++;
         }
-        if (!closed) throw new Error('Unterminated long string literal """..."""');
+        if (!closed) throw new N3SyntaxError('Unterminated long string literal """..."""', start);
         const raw = '"""' + sChars.join('') + '"""';
         const decoded = decodeN3StringEscapes(stripQuotes(raw));
         const s = JSON.stringify(decoded); // canonical short quoted form
-        tokens.push(new Token('Literal', s));
+        tokens.push(new Token('Literal', s, start));
         continue;
       }
 
@@ -582,12 +596,14 @@ function lex(inputText) {
       const raw = '"' + sChars.join('') + '"';
       const decoded = decodeN3StringEscapes(stripQuotes(raw));
       const s = JSON.stringify(decoded); // canonical short quoted form
-      tokens.push(new Token('Literal', s));
+      tokens.push(new Token('Literal', s, start));
       continue;
     }
 
     // String literal: short '...' or long '''...'''
     if (c === "'") {
+      const start = i;
+
       // Long string literal ''' ... '''
       if (peek(1) === "'" && peek(2) === "'") {
         i += 3; // consume opening '''
@@ -631,11 +647,11 @@ function lex(inputText) {
           sChars.push(cc);
           i++;
         }
-        if (!closed) throw new Error("Unterminated long string literal '''...'''");
+        if (!closed) throw new N3SyntaxError("Unterminated long string literal '''...'''", start);
         const raw = "'''" + sChars.join('') + "'''";
         const decoded = decodeN3StringEscapes(stripQuotes(raw));
         const s = JSON.stringify(decoded); // canonical short quoted form
-        tokens.push(new Token('Literal', s));
+        tokens.push(new Token('Literal', s, start));
         continue;
       }
 
@@ -660,12 +676,13 @@ function lex(inputText) {
       const raw = "'" + sChars.join('') + "'";
       const decoded = decodeN3StringEscapes(stripQuotes(raw));
       const s = JSON.stringify(decoded); // canonical short quoted form
-      tokens.push(new Token('Literal', s));
+      tokens.push(new Token('Literal', s, start));
       continue;
     }
 
     // Variable ?name
     if (c === '?') {
+      const start = i;
       i++;
       const nameChars = [];
       let cc;
@@ -674,12 +691,13 @@ function lex(inputText) {
         i++;
       }
       const name = nameChars.join('');
-      tokens.push(new Token('Var', name));
+      tokens.push(new Token('Var', name, start));
       continue;
     }
 
     // Directives: @prefix, @base (and language tags after string literals)
     if (c === '@') {
+      const start = i;
       const prevTok = tokens.length ? tokens[tokens.length - 1] : null;
       const prevWasQuotedLiteral =
         prevTok && prevTok.typ === 'Literal' && typeof prevTok.value === 'string' && prevTok.value.startsWith('"');
@@ -692,7 +710,7 @@ function lex(inputText) {
         const tagChars = [];
         let cc = peek();
         if (cc === null || !/[A-Za-z]/.test(cc)) {
-          throw new Error("Invalid language tag (expected [A-Za-z] after '@')");
+          throw new N3SyntaxError("Invalid language tag (expected [A-Za-z] after '@')", start);
         }
         while ((cc = peek()) !== null && /[A-Za-z]/.test(cc)) {
           tagChars.push(cc);
@@ -707,11 +725,11 @@ function lex(inputText) {
             i++;
           }
           if (!segChars.length) {
-            throw new Error("Invalid language tag (expected [A-Za-z0-9]+ after '-')");
+            throw new N3SyntaxError("Invalid language tag (expected [A-Za-z0-9]+ after '-')", start);
           }
           tagChars.push(...segChars);
         }
-        tokens.push(new Token('LangTag', tagChars.join('')));
+        tokens.push(new Token('LangTag', tagChars.join(''), start));
         continue;
       }
 
@@ -723,14 +741,15 @@ function lex(inputText) {
         i++;
       }
       const word = wordChars.join('');
-      if (word === 'prefix') tokens.push(new Token('AtPrefix'));
-      else if (word === 'base') tokens.push(new Token('AtBase'));
-      else throw new Error(`Unknown directive @${word}`);
+      if (word === 'prefix') tokens.push(new Token('AtPrefix', null, start));
+      else if (word === 'base') tokens.push(new Token('AtBase', null, start));
+      else throw new N3SyntaxError(`Unknown directive @${word}`, start);
       continue;
     }
 
     // 6) Numeric literal (integer or float)
     if (/[0-9]/.test(c) || (c === '-' && peek(1) !== null && /[0-9]/.test(peek(1)))) {
+      const start = i;
       const numChars = [c];
       i++;
       while (i < n) {
@@ -770,11 +789,12 @@ function lex(inputText) {
         }
       }
 
-      tokens.push(new Token('Literal', numChars.join('')));
+      tokens.push(new Token('Literal', numChars.join(''), start));
       continue;
     }
 
     // 7) Identifiers / keywords / QNames
+    const start = i;
     const wordChars = [];
     let cc;
     while ((cc = peek()) !== null && isNameChar(cc)) {
@@ -782,19 +802,19 @@ function lex(inputText) {
       i++;
     }
     if (!wordChars.length) {
-      throw new Error(`Unexpected char: ${JSON.stringify(c)}`);
+      throw new N3SyntaxError(`Unexpected char: ${JSON.stringify(c)}`, i);
     }
     const word = wordChars.join('');
     if (word === 'true' || word === 'false') {
-      tokens.push(new Token('Literal', word));
+      tokens.push(new Token('Literal', word, start));
     } else if ([...word].every((ch) => /[0-9.\-]/.test(ch))) {
-      tokens.push(new Token('Literal', word));
+      tokens.push(new Token('Literal', word, start));
     } else {
-      tokens.push(new Token('Ident', word));
+      tokens.push(new Token('Ident', word, start));
     }
   }
 
-  tokens.push(new Token('EOF'));
+  tokens.push(new Token('EOF', null, n));
   return tokens;
 }
 
@@ -984,10 +1004,15 @@ class Parser {
     return tok;
   }
 
+  fail(message, tok = this.peek()) {
+    const off = tok && typeof tok.offset === 'number' ? tok.offset : null;
+    throw new N3SyntaxError(message, off);
+  }
+
   expectDot() {
     const tok = this.next();
     if (tok.typ !== 'Dot') {
-      throw new Error(`Expected '.', got ${tok.toString()}`);
+      this.fail(`Expected '.', got ${tok.toString()}`, tok);
     }
   }
 
@@ -1079,7 +1104,7 @@ class Parser {
   parsePrefixDirective() {
     const tok = this.next();
     if (tok.typ !== 'Ident') {
-      throw new Error(`Expected prefix name, got ${tok.toString()}`);
+      this.fail(`Expected prefix name, got ${tok.toString()}`, tok);
     }
     const pref = tok.value || '';
     const prefName = pref.endsWith(':') ? pref.slice(0, -1) : pref;
@@ -1099,7 +1124,7 @@ class Parser {
     } else if (tok2.typ === 'Ident') {
       iri = this.prefixes.expandQName(tok2.value || '');
     } else {
-      throw new Error(`Expected IRI after @prefix, got ${tok2.toString()}`);
+      this.fail(`Expected IRI after @prefix, got ${tok2.toString()}`, tok2);
     }
     this.expectDot();
     this.prefixes.set(prefName, iri);
@@ -1113,7 +1138,7 @@ class Parser {
     } else if (tok.typ === 'Ident') {
       iri = tok.value || '';
     } else {
-      throw new Error(`Expected IRI after @base, got ${tok.toString()}`);
+      this.fail(`Expected IRI after @base, got ${tok.toString()}`, tok);
     }
     this.expectDot();
     this.prefixes.setBase(iri);
@@ -1123,7 +1148,7 @@ class Parser {
     // SPARQL/Turtle-style PREFIX directive: PREFIX pfx: <iri>  (no trailing '.')
     const tok = this.next();
     if (tok.typ !== 'Ident') {
-      throw new Error(`Expected prefix name after PREFIX, got ${tok.toString()}`);
+      this.fail(`Expected prefix name after PREFIX, got ${tok.toString()}`, tok);
     }
     const pref = tok.value || '';
     const prefName = pref.endsWith(':') ? pref.slice(0, -1) : pref;
@@ -1135,7 +1160,7 @@ class Parser {
     } else if (tok2.typ === 'Ident') {
       iri = this.prefixes.expandQName(tok2.value || '');
     } else {
-      throw new Error(`Expected IRI after PREFIX, got ${tok2.toString()}`);
+      this.fail(`Expected IRI after PREFIX, got ${tok2.toString()}`, tok2);
     }
 
     // N3/Turtle: PREFIX directives do not have a trailing '.', but accept it permissively.
@@ -1153,7 +1178,7 @@ class Parser {
     } else if (tok.typ === 'Ident') {
       iri = tok.value || '';
     } else {
-      throw new Error(`Expected IRI after BASE, got ${tok.toString()}`);
+      this.fail(`Expected IRI after BASE, got ${tok.toString()}`, tok);
     }
 
     // N3/Turtle: BASE directives do not have a trailing '.', but accept it permissively.
@@ -1213,7 +1238,7 @@ class Parser {
       if (this.peek().typ === 'LangTag') {
         // Only quoted string literals can carry a language tag.
         if (!(s.startsWith('"') && s.endsWith('"'))) {
-          throw new Error('Language tag is only allowed on quoted string literals');
+          this.fail('Language tag is only allowed on quoted string literals', this.peek());
         }
         const langTok = this.next();
         const lang = langTok.value || '';
@@ -1221,7 +1246,7 @@ class Parser {
 
         // N3/Turtle: language tags and datatypes are mutually exclusive.
         if (this.peek().typ === 'HatHat') {
-          throw new Error('A literal cannot have both a language tag (@...) and a datatype (^^...)');
+          this.fail('A literal cannot have both a language tag (@...) and a datatype (^^...)', this.peek());
         }
       }
 
@@ -1236,7 +1261,7 @@ class Parser {
           if (qn.includes(':')) dtIri = this.prefixes.expandQName(qn);
           else dtIri = qn;
         } else {
-          throw new Error(`Expected datatype after ^^, got ${dtTok.toString()}`);
+          this.fail(`Expected datatype after ^^, got ${dtTok.toString()}`, dtTok);
         }
         s = `${s}^^<${dtIri}>`;
       }
@@ -1248,7 +1273,7 @@ class Parser {
     if (typ === 'LBracket') return this.parseBlank();
     if (typ === 'LBrace') return this.parseGraph();
 
-    throw new Error(`Unexpected term token: ${tok.toString()}`);
+    this.fail(`Unexpected term token: ${tok.toString()}`, tok);
   }
 
   parseList() {
@@ -1271,12 +1296,12 @@ class Parser {
     // IRI property list: [ id <IRI> predicateObjectList? ]
     // Lets you embed descriptions of an IRI directly in object position.
     if (this.peek().typ === 'Ident' && (this.peek().value || '') === 'id') {
-      this.next(); // consume 'id'
+      const iriTok = this.next(); // consume 'id'
       const iriTerm = this.parseTerm();
 
       // N3 note: 'id' form is not meant to be used with blank node identifiers.
       if (iriTerm instanceof Blank && iriTerm.label.startsWith('_:')) {
-        throw new Error("Cannot use 'id' keyword with a blank node identifier inside [...]");
+        this.fail("Cannot use 'id' keyword with a blank node identifier inside [...]", iriTok);
       }
 
       // Optional ';' right after the id IRI (tolerated).
@@ -1322,7 +1347,7 @@ class Parser {
       }
 
       if (this.peek().typ !== 'RBracket') {
-        throw new Error(`Expected ']' at end of IRI property list, got ${JSON.stringify(this.peek())}`);
+        this.fail(`Expected ']' at end of IRI property list, got ${this.peek().toString()}`);
       }
       this.next();
       return iriTerm;
@@ -1370,7 +1395,7 @@ class Parser {
     if (this.peek().typ === 'RBracket') {
       this.next();
     } else {
-      throw new Error(`Expected ']' at end of blank node property list, got ${JSON.stringify(this.peek())}`);
+      this.fail(`Expected ']' at end of blank node property list, got ${this.peek().toString()}`);
     }
 
     return new Blank(id);
@@ -1389,7 +1414,7 @@ class Parser {
         else if (this.peek().typ === 'RBrace') {
           // ok
         } else {
-          throw new Error(`Expected '.' or '}', got ${this.peek().toString()}`);
+          this.fail(`Expected '.' or '}', got ${this.peek().toString()}`);
         }
       } else if (this.peek().typ === 'OpImpliedBy') {
         this.next();
@@ -1400,7 +1425,7 @@ class Parser {
         else if (this.peek().typ === 'RBrace') {
           // ok
         } else {
-          throw new Error(`Expected '.' or '}', got ${this.peek().toString()}`);
+          this.fail(`Expected '.' or '}', got ${this.peek().toString()}`);
         }
       } else {
         // N3 grammar allows: triples ::= subject predicateObjectList?
@@ -1419,7 +1444,7 @@ class Parser {
         else if (this.peek().typ === 'RBrace') {
           // ok
         } else {
-          throw new Error(`Expected '.' or '}', got ${this.peek().toString()}`);
+          this.fail(`Expected '.' or '}', got ${this.peek().toString()}`);
         }
       }
     }
@@ -1452,7 +1477,7 @@ class Parser {
         this.next(); // consume "is"
         verb = this.parseTerm();
         if (!(this.peek().typ === 'Ident' && (this.peek().value || '') === 'of')) {
-          throw new Error(`Expected 'of' after 'is <expr>', got ${this.peek().toString()}`);
+          this.fail(`Expected 'of' after 'is <expr>', got ${this.peek().toString()}`);
         }
         this.next(); // consume "of"
         invert = true;
@@ -5794,6 +5819,41 @@ function printExplanation(df, prefixes) {
   console.log('# ----------------------------------------------------------------------\n');
 }
 
+
+function offsetToLineCol(text, offset) {
+  const chars = Array.from(text);
+  const n = Math.max(0, Math.min(typeof offset === 'number' ? offset : 0, chars.length));
+  let line = 1;
+  let col = 1;
+  for (let i = 0; i < n; i++) {
+    const c = chars[i];
+    if (c === '\n') {
+      line++;
+      col = 1;
+    } else if (c === '\r') {
+      line++;
+      col = 1;
+      if (i + 1 < n && chars[i + 1] === '\n') i++; // swallow \n in CRLF
+    } else {
+      col++;
+    }
+  }
+  return { line, col };
+}
+
+function formatN3SyntaxError(err, text, path) {
+  const off = err && typeof err.offset === 'number' ? err.offset : null;
+  const label = path ? String(path) : '<input>';
+  if (off === null) {
+    return `Syntax error in ${label}: ${err && err.message ? err.message : String(err)}`;
+  }
+  const { line, col } = offsetToLineCol(text, off);
+  const lines = String(text).split(/\r\n|\n|\r/);
+  const lineText = lines[line - 1] ?? '';
+  const caret = ' '.repeat(Math.max(0, col - 1)) + '^';
+  return `Syntax error in ${label}:${line}:${col}: ${err.message}\n${lineText}\n${caret}`;
+}
+
 // ===========================================================================
 // CLI entry point
 // ===========================================================================
@@ -5875,9 +5935,19 @@ function main() {
     process.exit(1);
   }
 
-  const toks = lex(text);
-  const parser = new Parser(toks);
-  const [prefixes, triples, frules, brules] = parser.parseDocument();
+  let toks;
+  let prefixes, triples, frules, brules;
+  try {
+    toks = lex(text);
+    const parser = new Parser(toks);
+    [prefixes, triples, frules, brules] = parser.parseDocument();
+  } catch (e) {
+    if (e && e.name === 'N3SyntaxError') {
+      console.error(formatN3SyntaxError(e, text, path));
+      process.exit(1);
+    }
+    throw e;
+  }
   if (showAst) {
     function astReplacer(_key, value) {
       if (value instanceof Set) return Array.from(value);
