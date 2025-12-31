@@ -2367,9 +2367,7 @@ _:g2 {
 
 const EXAMPLE_SRL = `PREFIX : <http://example.org/#>
 
-:A :fatherOf :X .
-:B :motherOf :X .
-:C :motherOf :A .
+DATA { :A :fatherOf :X . :B :motherOf :X . :C :motherOf :A . }
 
 RULE { ?x :childOf ?y } WHERE { ?y :fatherOf ?x }
 RULE { ?x :childOf ?y } WHERE { ?y :motherOf ?x }

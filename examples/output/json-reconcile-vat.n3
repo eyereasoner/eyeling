@@ -1,4 +1,4 @@
-@prefix ex: <http://example.org/> .
+@prefix ex: <http://example.org/#> .
 @prefix genid: <https://eyereasoner.github.io/.well-known/genid/> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 

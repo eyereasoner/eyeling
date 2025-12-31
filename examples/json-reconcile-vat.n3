@@ -9,7 +9,7 @@
 @prefix math:   <http://www.w3.org/2000/10/swap/math#> .
 @prefix log:    <http://www.w3.org/2000/10/swap/log#> .
 @prefix owl:    <http://www.w3.org/2002/07/owl#> .
-@prefix ex:     <http://example.org/> .
+@prefix ex:     <http://example.org/#> .
 
 # ------------------------------------------------------------------
 # Master data (canonical N3 graph)

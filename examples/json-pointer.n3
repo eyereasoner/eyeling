@@ -7,7 +7,7 @@
 @prefix string: <http://www.w3.org/2000/10/swap/string#> .
 @prefix list:   <http://www.w3.org/2000/10/swap/list#> .
 @prefix log:    <http://www.w3.org/2000/10/swap/log#> .
-@prefix ex:     <http://example.org/> .
+@prefix ex:     <http://example.org/#> .
 
 ex:doc ex:json """{
   "users": [

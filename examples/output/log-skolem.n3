@@ -1,4 +1,4 @@
-@prefix : <http://example.org/> .
+@prefix : <http://example.org/#> .
 @prefix genid: <https://eyereasoner.github.io/.well-known/genid/> .
 
-:Result :skolem genid:0c562a90-a44f-264a-86e5-9664948aa178 .
+:Result :skolem genid:32007e38-bd28-5f18-4712-ae1df708a5d4 .

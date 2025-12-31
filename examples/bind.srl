@@ -1,4 +1,4 @@
-PREFIX : <http://example/>
+PREFIX : <http://example/#>
 
 DATA { :phayes a :Person ; :givenName "Pat"; :familyName "Hayes" . }
 

@@ -1,7 +1,7 @@
 # alignment-demo.n3
 # Minimal alignment example (SKOS mappings + inferred roll-up to a reference concept)
 
-@prefix ex:   <http://example.org/> .
+@prefix ex:   <http://example.org/#> .
 @prefix ref:  <http://example.org/taxonomy/ref/> .
 @prefix tel:  <http://example.org/taxonomy/telraam/> .
 @prefix anpr: <http://example.org/taxonomy/anpr/> .

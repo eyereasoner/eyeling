@@ -1,4 +1,4 @@
-PREFIX : <http://example/>
+PREFIX : <http://example/#>
 
 DATA { :x :p 1 ; :q 2 . }
 

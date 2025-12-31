@@ -1,5 +1,5 @@
 @prefix anpr: <http://example.org/anpr/> .
-@prefix ex: <http://example.org/> .
+@prefix ex: <http://example.org/#> .
 @prefix ref: <http://example.org/ref/> .
 
 anpr:VehicleWithPlate ex:treatedAs ref:Car .

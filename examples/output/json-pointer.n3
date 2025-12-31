@@ -1,4 +1,4 @@
-@prefix ex: <http://example.org/> .
+@prefix ex: <http://example.org/#> .
 
 ex:checks ex:firstUserNameOk true .
 <urn:example:user:u1> a ex:AllowedUser .

@@ -1,4 +1,4 @@
-@prefix : <http://example.org/> .
+@prefix : <http://example.org/#> .
 
 :uriString :is "https://www.w3.org" .
 :uriResource :is <https://www.w3.org> .

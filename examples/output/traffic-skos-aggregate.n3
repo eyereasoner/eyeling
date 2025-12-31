@@ -1,5 +1,5 @@
 @prefix anpr: <http://example.org/taxonomy/anpr/> .
-@prefix ex: <http://example.org/> .
+@prefix ex: <http://example.org/#> .
 @prefix genid: <https://eyereasoner.github.io/.well-known/genid/> .
 @prefix prov: <http://www.w3.org/ns/prov#> .
 @prefix ref: <http://example.org/taxonomy/ref/> .
@@ -130,18 +130,18 @@ anpr:PassengerCar ex:narrowerOrEqualOf ref:RoadUser .
 anpr:Van ex:narrowerOrEqualOf ref:RoadUser .
 anpr:Truck ex:narrowerOrEqualOf ref:RoadUser .
 anpr:Bus ex:narrowerOrEqualOf ref:RoadUser .
-genid:5d9446e0-5075-531c-f72b-7fb8f210a4dc a sosa:Observation .
-genid:5d9446e0-5075-531c-f72b-7fb8f210a4dc a ex:AggregatedObservation .
-genid:5d9446e0-5075-531c-f72b-7fb8f210a4dc sosa:observedProperty ref:Car .
-genid:5d9446e0-5075-531c-f72b-7fb8f210a4dc sosa:hasFeatureOfInterest ex:segment1 .
-genid:5d9446e0-5075-531c-f72b-7fb8f210a4dc sosa:resultTime "2025-12-23T08:00:00Z"^^xsd:dateTime .
-genid:5d9446e0-5075-531c-f72b-7fb8f210a4dc sosa:hasSimpleResult 22 .
-genid:5d9446e0-5075-531c-f72b-7fb8f210a4dc ex:basedOnRequest ex:request_cars_at_t1 .
-genid:5d9446e0-5075-531c-f72b-7fb8f210a4dc ex:contributingValues (10 2 8 1 1 0) .
-genid:5d9446e0-5075-531c-f72b-7fb8f210a4dc ex:contributingObservations (ex:obs_tel_car ex:obs_tel_heavy ex:obs_anpr_passenger ex:obs_anpr_van ex:obs_anpr_truck ex:obs_anpr_bus) .
-genid:5d9446e0-5075-531c-f72b-7fb8f210a4dc prov:wasDerivedFrom ex:obs_tel_car .
-genid:5d9446e0-5075-531c-f72b-7fb8f210a4dc prov:wasDerivedFrom ex:obs_tel_heavy .
-genid:5d9446e0-5075-531c-f72b-7fb8f210a4dc prov:wasDerivedFrom ex:obs_anpr_passenger .
-genid:5d9446e0-5075-531c-f72b-7fb8f210a4dc prov:wasDerivedFrom ex:obs_anpr_van .
-genid:5d9446e0-5075-531c-f72b-7fb8f210a4dc prov:wasDerivedFrom ex:obs_anpr_truck .
-genid:5d9446e0-5075-531c-f72b-7fb8f210a4dc prov:wasDerivedFrom ex:obs_anpr_bus .
+genid:baddfb7c-3e49-3ca8-bc4f-6de82f22dc60 a sosa:Observation .
+genid:baddfb7c-3e49-3ca8-bc4f-6de82f22dc60 a ex:AggregatedObservation .
+genid:baddfb7c-3e49-3ca8-bc4f-6de82f22dc60 sosa:observedProperty ref:Car .
+genid:baddfb7c-3e49-3ca8-bc4f-6de82f22dc60 sosa:hasFeatureOfInterest ex:segment1 .
+genid:baddfb7c-3e49-3ca8-bc4f-6de82f22dc60 sosa:resultTime "2025-12-23T08:00:00Z"^^xsd:dateTime .
+genid:baddfb7c-3e49-3ca8-bc4f-6de82f22dc60 sosa:hasSimpleResult 22 .
+genid:baddfb7c-3e49-3ca8-bc4f-6de82f22dc60 ex:basedOnRequest ex:request_cars_at_t1 .
+genid:baddfb7c-3e49-3ca8-bc4f-6de82f22dc60 ex:contributingValues (10 2 8 1 1 0) .
+genid:baddfb7c-3e49-3ca8-bc4f-6de82f22dc60 ex:contributingObservations (ex:obs_tel_car ex:obs_tel_heavy ex:obs_anpr_passenger ex:obs_anpr_van ex:obs_anpr_truck ex:obs_anpr_bus) .
+genid:baddfb7c-3e49-3ca8-bc4f-6de82f22dc60 prov:wasDerivedFrom ex:obs_tel_car .
+genid:baddfb7c-3e49-3ca8-bc4f-6de82f22dc60 prov:wasDerivedFrom ex:obs_tel_heavy .
+genid:baddfb7c-3e49-3ca8-bc4f-6de82f22dc60 prov:wasDerivedFrom ex:obs_anpr_passenger .
+genid:baddfb7c-3e49-3ca8-bc4f-6de82f22dc60 prov:wasDerivedFrom ex:obs_anpr_van .
+genid:baddfb7c-3e49-3ca8-bc4f-6de82f22dc60 prov:wasDerivedFrom ex:obs_anpr_truck .
+genid:baddfb7c-3e49-3ca8-bc4f-6de82f22dc60 prov:wasDerivedFrom ex:obs_anpr_bus .

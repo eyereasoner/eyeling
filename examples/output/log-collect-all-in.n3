@@ -1,4 +1,4 @@
-@prefix : <http://example.org/> .
+@prefix : <http://example.org/#> .
 
 :result1 :is ("Huey" "Dewey" "Louie") .
 :result2 :is (("Huey") ("Dewey") ("Louie")) .
