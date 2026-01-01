@@ -4934,6 +4934,11 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
       if (!scopeFacts) return []; // DELAY until snapshot exists
     }
 
+    // If sols is a blank node succeed without collecting/binding.
+    if (listTerm instanceof Blank) {
+      return [{ ...subst }];
+    }
+
     const visited2 = [];
     const sols = proveGoals(Array.from(clauseTerm.triples), {}, scopeFacts, scopeBackRules, depth + 1, visited2, varGen);
 
@@ -4995,8 +5000,8 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
   if (pv === LOG_NS + 'uri') {
     // Direction 1: subject is an IRI -> object is its string representation
     if (g.s instanceof Iri) {
-      const uriStr = g.s.value; // raw IRI string, e.g. "https://www.w3.org"
-      const lit = makeStringLiteral(uriStr); // "https://www.w3.org"
+      const uriStr = g.s.value; // raw IRI string
+      const lit = makeStringLiteral(uriStr); // "..."
       const s2 = unifyTerm(goal.o, lit, subst);
       return s2 !== null ? [s2] : [];
     }
@@ -5005,6 +5010,14 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     if (g.o instanceof Literal) {
       const uriStr = termToJsString(g.o); // JS string from the literal
       if (uriStr === null) return [];
+
+      // Reject strings that cannot be safely serialized as <...> in Turtle/N3.
+      // Turtle IRIREF forbids control/space and these characters: < > " { } | ^ ` \
+      // (and eyeling also prints IRIs starting with "_:" as blank-node labels)
+      if (uriStr.startsWith('_:') || /[\u0000-\u0020<>"{}|^`\\]/.test(uriStr)) {
+        return [];
+      }
+
       const iri = internIri(uriStr);
       const s2 = unifyTerm(goal.s, iri, subst);
       return s2 !== null ? [s2] : [];
@@ -5905,7 +5918,6 @@ function printExplanation(df, prefixes) {
   console.log('# Therefore the derived triple above is entailed by the rules and facts.');
   console.log('# ----------------------------------------------------------------------\n');
 }
-
 
 function offsetToLineCol(text, offset) {
   const chars = Array.from(text);
