@@ -4638,6 +4638,58 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     return [{ ...subst }];
   }
 
+  // log:conjunction
+  // Schema: ( $s.i+ )+ log:conjunction $o?
+  // $o is a formula containing a copy of each formula in the subject list.
+  // Duplicates are removed.
+  if (pv === LOG_NS + 'conjunction') {
+    if (!(g.s instanceof ListTerm)) return [];
+
+    const parts = g.s.elems;
+    if (!parts.length) return [];
+
+    /** @type {Triple[]} */
+    const merged = [];
+
+    // Fast-path dedup for IRI/Literal-only triples.
+    const fastKeySet = new Set();
+
+    for (const part of parts) {
+      // Support the empty formula token `true`.
+      if (part instanceof Literal && part.value === 'true') continue;
+
+      if (!(part instanceof GraphTerm)) return [];
+
+      for (const tr of part.triples) {
+        const k = tripleFastKey(tr);
+        if (k !== null) {
+          if (fastKeySet.has(k)) continue;
+          fastKeySet.add(k);
+          merged.push(tr);
+          continue;
+        }
+
+        // Fallback: structural equality (still respects plain-string == xsd:string).
+        let dup = false;
+        for (const ex of merged) {
+          if (triplesEqual(tr, ex)) {
+            dup = true;
+            break;
+          }
+        }
+        if (!dup) merged.push(tr);
+      }
+    }
+
+    const outFormula = new GraphTerm(merged);
+
+    // Allow blank nodes as a don't-care output (common in builtin schemas).
+    if (g.o instanceof Blank) return [{ ...subst }];
+
+    const s2 = unifyTerm(g.o, outFormula, subst);
+    return s2 !== null ? [s2] : [];
+  }
+
   // log:dtlit
   // Schema: ( $s.1? $s.2? )? log:dtlit $o?
   // true iff $o is a datatyped literal with string value $s.1 and datatype IRI $s.2
@@ -4802,6 +4854,41 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     }
 
     return results;
+  }
+
+  // log:includes (provable in scope)
+  // Schema: $s+ log:includes $o+
+  // When the subject is a formula, the scope is that concrete formula (syntactic containment).
+  // Otherwise, the scope is the current document scope (facts + backward rules).
+  if (pv === LOG_NS + 'includes') {
+    // Empty formula is always included.
+    if (g.o instanceof Literal && g.o.value === 'true') return [{ ...subst }];
+    if (!(g.o instanceof GraphTerm)) return [];
+
+    /** @type {Triple[] | null} */
+    let scopeFacts = null;
+    /** @type {Rule[]} */
+    let scopeBackRules = backRules;
+
+    // If the subject is a formula, treat it as a concrete scope graph.
+    // Also support `true` as the empty formula.
+    if (g.s instanceof GraphTerm) {
+      scopeFacts = g.s.triples.slice();
+      ensureFactIndexes(scopeFacts);
+      Object.defineProperty(scopeFacts, '__scopedSnapshot', { value: scopeFacts, enumerable: false, writable: true });
+      scopeBackRules = []; // concrete scope = syntactic containment (no extra rules)
+    } else if (g.s instanceof Literal && g.s.value === 'true') {
+      scopeFacts = [];
+      ensureFactIndexes(scopeFacts);
+      Object.defineProperty(scopeFacts, '__scopedSnapshot', { value: scopeFacts, enumerable: false, writable: true });
+      scopeBackRules = [];
+    } else {
+      scopeFacts = facts; // dynamic scope
+    }
+
+    const visited2 = [];
+    // Start from the incoming substitution so bindings flow outward.
+    return proveGoals(Array.from(g.o.triples), { ...subst }, scopeFacts, scopeBackRules, depth + 1, visited2, varGen);
   }
 
   // log:notIncludes (not provable in scope)
