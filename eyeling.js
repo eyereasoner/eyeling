@@ -4722,19 +4722,26 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     const inputList = inputTerm.elems;
     if (!(predTerm instanceof Iri)) return [];
     const pred = internIri(predTerm.value);
-    if (!isBuiltinPred(pred)) return [];
+
+    // Allow mapping *any* predicate (not just builtins).
+    // Semantics: for each input element `el`, collect *all* solutions of `el pred ?y`
+    // (facts, rules, and builtins), in order, and concatenate them into the output list.
+    // If an element has no solutions, it contributes nothing.
     if (!inputList.every((e) => isGroundTerm(e))) return [];
 
     const results = [];
     for (const el of inputList) {
       const yvar = new Var('_mapY');
       const goal2 = new Triple(el, pred, yvar);
-      const sols = evalBuiltin(goal2, subst, facts, backRules, depth + 1, varGen);
-      if (!sols.length) return [];
-      const yval = applySubstTerm(yvar, sols[0]);
-      if (yval instanceof Var) return [];
-      results.push(yval);
+      const sols = proveGoals([goal2], subst, facts, backRules, depth + 1, [], varGen);
+
+      for (const sol of sols) {
+        const yval = applySubstTerm(yvar, sol);
+        if (yval instanceof Var) continue;
+        results.push(yval);
+      }
     }
+
     const outList = new ListTerm(results);
     const s2 = unifyTerm(g.o, outList, subst);
     return s2 !== null ? [s2] : [];
