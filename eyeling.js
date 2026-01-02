@@ -91,6 +91,61 @@ const __logContentCache = new Map(); // iri -> string | null (null means fetch/r
 const __logSemanticsCache = new Map(); // iri -> GraphTerm | null (null means parse failed)
 const __logConclusionCache = new WeakMap(); // GraphTerm -> GraphTerm (deductive closure)
 
+// Environment detection (Node vs Browser/Worker).
+// Eyeling is primarily synchronous, so we use sync XHR in browsers for log:content/log:semantics.
+// Note: Browser fetches are subject to CORS; use CORS-enabled resources or a proxy.
+const __IS_NODE =
+  typeof process !== 'undefined' &&
+  !!(process.versions && process.versions.node);
+
+function __hasXmlHttpRequest() {
+  return typeof XMLHttpRequest !== 'undefined';
+}
+
+function __resolveBrowserUrl(ref) {
+  if (!ref) return ref;
+  // If already absolute, keep as-is.
+  if (/^[A-Za-z][A-Za-z0-9+.-]*:/.test(ref)) return ref;
+  const base =
+    (typeof document !== 'undefined' && document.baseURI) ||
+    (typeof location !== 'undefined' && location.href) ||
+    '';
+  try {
+    return new URL(ref, base).toString();
+  } catch {
+    return ref;
+  }
+}
+
+function __fetchHttpTextSyncBrowser(url) {
+  if (!__hasXmlHttpRequest()) return null;
+  try {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url, false); // synchronous
+    try {
+      xhr.setRequestHeader(
+        'Accept',
+        'text/n3, text/turtle, application/n-triples, application/n-quads, text/plain;q=0.1, */*;q=0.01'
+      );
+    } catch {
+      // Some environments restrict setting headers (ignore).
+    }
+    xhr.send(null);
+    const sc = xhr.status || 0;
+    if (sc < 200 || sc >= 300) return null;
+    return xhr.responseText;
+  } catch {
+    return null;
+  }
+}
+
+function __normalizeDerefIri(iriNoFrag) {
+  // In Node, treat non-http as local path; leave as-is.
+  if (__IS_NODE) return iriNoFrag;
+  // In browsers/workers, resolve relative references against the page URL.
+  return __resolveBrowserUrl(iriNoFrag);
+}
+
 function __stripFragment(iri) {
   const i = iri.indexOf('#');
   return i >= 0 ? iri.slice(0, i) : iri;
@@ -115,6 +170,7 @@ function __fileIriToPath(fileIri) {
 }
 
 function __readFileText(pathOrFileIri) {
+  if (!__IS_NODE) return null;
   const fs = require('fs');
   let path = pathOrFileIri;
   if (__isFileIri(pathOrFileIri)) path = __fileIriToPath(pathOrFileIri);
@@ -126,6 +182,7 @@ function __readFileText(pathOrFileIri) {
 }
 
 function __fetchHttpTextViaSubprocess(url) {
+  if (!__IS_NODE) return null;
   const cp = require('child_process');
   // Use a subprocess so this code remains synchronous without rewriting the whole reasoner to async.
   const script = `
@@ -181,16 +238,27 @@ function __fetchHttpTextViaSubprocess(url) {
 }
 
 function __derefTextSync(iriNoFrag) {
-  if (__logContentCache.has(iriNoFrag)) return __logContentCache.get(iriNoFrag);
+  const norm = __normalizeDerefIri(iriNoFrag);
+  const key = typeof norm === 'string' && norm ? norm : iriNoFrag;
+
+  if (__logContentCache.has(key)) return __logContentCache.get(key);
 
   let text = null;
-  if (__isHttpIri(iriNoFrag)) {
-    text = __fetchHttpTextViaSubprocess(iriNoFrag);
+
+  if (__IS_NODE) {
+    if (__isHttpIri(key)) {
+      text = __fetchHttpTextViaSubprocess(key);
+    } else {
+      // Treat any non-http(s) IRI as a local path (including file://), for basic usability.
+      text = __readFileText(key);
+    }
   } else {
-    // Treat any non-http(s) IRI as a local path (including file://), for basic usability.
-    text = __readFileText(iriNoFrag);
+    // Browser / Worker: we can only dereference over HTTP(S), and it must pass CORS.
+    const url = typeof norm === 'string' && norm ? norm : key;
+    if (__isHttpIri(url)) text = __fetchHttpTextSyncBrowser(url);
   }
-  __logContentCache.set(iriNoFrag, text);
+
+  __logContentCache.set(key, text);
   return text;
 }
 
@@ -218,19 +286,22 @@ function __parseSemanticsToFormula(text, baseIri) {
 }
 
 function __derefSemanticsSync(iriNoFrag) {
-  if (__logSemanticsCache.has(iriNoFrag)) return __logSemanticsCache.get(iriNoFrag);
+  const norm = __normalizeDerefIri(iriNoFrag);
+  const key = typeof norm === 'string' && norm ? norm : iriNoFrag;
+  if (__logSemanticsCache.has(key)) return __logSemanticsCache.get(key);
 
   const text = __derefTextSync(iriNoFrag);
   if (typeof text !== 'string') {
-    __logSemanticsCache.set(iriNoFrag, null);
+    __logSemanticsCache.set(key, null);
     return null;
   }
   try {
-    const formula = __parseSemanticsToFormula(text, iriNoFrag);
-    __logSemanticsCache.set(iriNoFrag, formula);
+    const baseIri = (typeof key === 'string' && key) ? key : iriNoFrag;
+      const formula = __parseSemanticsToFormula(text, baseIri);
+    __logSemanticsCache.set(key, formula);
     return formula;
   } catch {
-    __logSemanticsCache.set(iriNoFrag, null);
+    __logSemanticsCache.set(key, null);
     return null;
   }
 }
