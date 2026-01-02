@@ -1,0 +1,19 @@
+# =============================================
+# Reaching out onto the Web
+# See https://www.w3.org/2000/10/swap/doc/Reach
+# =============================================
+
+@prefix : <http://example.org/>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+
+{
+  <https://www.w3.org/2000/10/swap/test/s1.n3>
+      log:content   ?txt ;
+      log:semantics ?f .
+}
+=>
+{
+  :gotContent :is ?txt .
+  :gotFormula :is ?f .
+}.
+

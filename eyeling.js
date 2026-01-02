@@ -82,6 +82,159 @@ const __parseNumericInfoCache = new Map(); // lit string -> info|null
 // Cache for string:jsonPointer: jsonText -> { parsed: any|null, ptrCache: Map<string, Term|null> }
 const jsonPointerCache = new Map();
 
+// -----------------------------------------------------------------------------
+// log:content / log:semantics support (basic, synchronous)
+// -----------------------------------------------------------------------------
+// Cache dereferenced resources within a single run.
+// Key is the dereferenced document IRI *without* fragment.
+const __logContentCache = new Map(); // iri -> string | null (null means fetch/read failed)
+const __logSemanticsCache = new Map(); // iri -> GraphTerm | null (null means parse failed)
+
+function __stripFragment(iri) {
+  const i = iri.indexOf('#');
+  return i >= 0 ? iri.slice(0, i) : iri;
+}
+
+function __isHttpIri(iri) {
+  return typeof iri === 'string' && (iri.startsWith('http://') || iri.startsWith('https://'));
+}
+
+function __isFileIri(iri) {
+  return typeof iri === 'string' && iri.startsWith('file://');
+}
+
+function __fileIriToPath(fileIri) {
+  // Basic file:// URI decoding. Handles file:///abs/path and file://localhost/abs/path.
+  try {
+    const u = new URL(fileIri);
+    return decodeURIComponent(u.pathname);
+  } catch {
+    return decodeURIComponent(fileIri.replace(/^file:\/\//, ''));
+  }
+}
+
+function __readFileText(pathOrFileIri) {
+  const fs = require('fs');
+  let path = pathOrFileIri;
+  if (__isFileIri(pathOrFileIri)) path = __fileIriToPath(pathOrFileIri);
+  try {
+    return fs.readFileSync(path, { encoding: 'utf8' });
+  } catch {
+    return null;
+  }
+}
+
+function __fetchHttpTextViaSubprocess(url) {
+  const cp = require('child_process');
+  // Use a subprocess so this code remains synchronous without rewriting the whole reasoner to async.
+  const script = `
+    const url = process.argv[1];
+    const maxRedirects = 10;
+    function get(u, n) {
+      if (n > maxRedirects) { console.error('Too many redirects'); process.exit(3); }
+      let mod;
+      if (u.startsWith('https://')) mod = require('https');
+      else if (u.startsWith('http://')) mod = require('http');
+      else { console.error('Not http(s)'); process.exit(2); }
+
+      const { URL } = require('url');
+      const uu = new URL(u);
+      const opts = {
+        protocol: uu.protocol,
+        hostname: uu.hostname,
+        port: uu.port || undefined,
+        path: uu.pathname + uu.search,
+        headers: {
+          'accept': 'text/n3, text/turtle, application/n-triples, application/n-quads, text/plain;q=0.1, */*;q=0.01',
+          'user-agent': 'eyeling-log-builtins'
+        }
+      };
+      const req = mod.request(opts, (res) => {
+        const sc = res.statusCode || 0;
+        if (sc >= 300 && sc < 400 && res.headers && res.headers.location) {
+          const next = new URL(res.headers.location, u).toString();
+          res.resume();
+          return get(next, n + 1);
+        }
+        if (sc < 200 || sc >= 300) {
+          res.resume();
+          console.error('HTTP status ' + sc);
+          process.exit(4);
+        }
+        res.setEncoding('utf8');
+        let data = '';
+        res.on('data', (c) => { data += c; });
+        res.on('end', () => { process.stdout.write(data); });
+      });
+      req.on('error', (e) => { console.error(e && e.message ? e.message : String(e)); process.exit(5); });
+      req.end();
+    }
+    get(url, 0);
+  `;
+  const r = cp.spawnSync(process.execPath, ['-e', script, url], {
+    encoding: 'utf8',
+    maxBuffer: 32 * 1024 * 1024
+  });
+  if (r.status !== 0) return null;
+  return r.stdout;
+}
+
+function __derefTextSync(iriNoFrag) {
+  if (__logContentCache.has(iriNoFrag)) return __logContentCache.get(iriNoFrag);
+
+  let text = null;
+  if (__isHttpIri(iriNoFrag)) {
+    text = __fetchHttpTextViaSubprocess(iriNoFrag);
+  } else {
+    // Treat any non-http(s) IRI as a local path (including file://), for basic usability.
+    text = __readFileText(iriNoFrag);
+  }
+  __logContentCache.set(iriNoFrag, text);
+  return text;
+}
+
+function __parseSemanticsToFormula(text, baseIri) {
+  const toks = lex(text);
+  const parser = new Parser(toks);
+  if (typeof baseIri === 'string' && baseIri) parser.prefixes.setBase(baseIri);
+
+  const [_prefixes, triples, frules, brules] = parser.parseDocument();
+
+  const all = triples.slice();
+  const impliesPred = internIri(LOG_NS + 'implies');
+  const impliedByPred = internIri(LOG_NS + 'impliedBy');
+
+  // Represent top-level => / <= rules as triples between formula terms,
+  // so the returned formula can include them.
+  for (const r of frules) {
+    all.push(new Triple(new GraphTerm(r.premise), impliesPred, new GraphTerm(r.conclusion)));
+  }
+  for (const r of brules) {
+    all.push(new Triple(new GraphTerm(r.conclusion), impliedByPred, new GraphTerm(r.premise)));
+  }
+
+  return new GraphTerm(all);
+}
+
+function __derefSemanticsSync(iriNoFrag) {
+  if (__logSemanticsCache.has(iriNoFrag)) return __logSemanticsCache.get(iriNoFrag);
+
+  const text = __derefTextSync(iriNoFrag);
+  if (typeof text !== 'string') {
+    __logSemanticsCache.set(iriNoFrag, null);
+    return null;
+  }
+  try {
+    const formula = __parseSemanticsToFormula(text, iriNoFrag);
+    __logSemanticsCache.set(iriNoFrag, formula);
+    return formula;
+  } catch {
+    __logSemanticsCache.set(iriNoFrag, null);
+    return null;
+  }
+}
+
+
 // Controls whether human-readable proof comments are printed.
 let proofCommentsEnabled = false;
 // Super restricted mode: disable *all* builtins except => / <= (log:implies / log:impliedBy)
@@ -4689,6 +4842,53 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     const s2 = unifyTerm(g.o, outFormula, subst);
     return s2 !== null ? [s2] : [];
   }
+
+  // log:content
+  // Schema: $s+ log:content $o?
+  // Dereferences $s and returns the online resource as an xsd:string.
+  if (pv === LOG_NS + 'content') {
+    const iri = iriValue(g.s);
+    if (iri === null) return [];
+    const docIri = __stripFragment(iri);
+
+    const text = __derefTextSync(docIri);
+    if (typeof text !== 'string') return [];
+
+    const lit = internLiteral(`${JSON.stringify(text)}^^<${XSD_NS}string>`);
+
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = lit;
+      return [s2];
+    }
+    if (g.o instanceof Blank) return [{ ...subst }];
+
+    const s2 = unifyTerm(g.o, lit, subst);
+    return s2 !== null ? [s2] : [];
+  }
+
+  // log:semantics
+  // Schema: $s+ log:semantics $o?
+  // Dereferences $s, parses the retrieved resource, and returns it as a formula.
+  if (pv === LOG_NS + 'semantics') {
+    const iri = iriValue(g.s);
+    if (iri === null) return [];
+    const docIri = __stripFragment(iri);
+
+    const formula = __derefSemanticsSync(docIri);
+    if (!(formula instanceof GraphTerm)) return [];
+
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = formula;
+      return [s2];
+    }
+    if (g.o instanceof Blank) return [{ ...subst }];
+
+    const s2 = unifyTerm(g.o, formula, subst);
+    return s2 !== null ? [s2] : [];
+  }
+
 
   // log:dtlit
   // Schema: ( $s.1? $s.2? )? log:dtlit $o?

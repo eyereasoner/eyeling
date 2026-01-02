@@ -1,0 +1,12 @@
+@prefix : <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:gotContent :is "# Schema for test data\n#\n# This is only \n@prefix daml: <http://www.daml.org/2001/03/daml+oil#> .\n@prefix mech: <#> .\n\n@prefix : <#> .\n\n:includes a daml:TransitiveProperty .\n\n:partOf a daml:TransitiveProperty; daml:inverseOf :includes .\n\n:dependsOn a daml:TransitiveProperty ;\n      daml:hasSubProperty  :includes .   # Real name of subproperty?\n\n\n\n\n"^^xsd:string .
+:gotFormula :is {
+    <https://www.w3.org/2000/10/swap/test/s1.n3#includes> a <http://www.daml.org/2001/03/daml+oil#TransitiveProperty> .
+    <https://www.w3.org/2000/10/swap/test/s1.n3#partOf> a <http://www.daml.org/2001/03/daml+oil#TransitiveProperty> .
+    <https://www.w3.org/2000/10/swap/test/s1.n3#partOf> <http://www.daml.org/2001/03/daml+oil#inverseOf> <https://www.w3.org/2000/10/swap/test/s1.n3#includes> .
+    <https://www.w3.org/2000/10/swap/test/s1.n3#dependsOn> a <http://www.daml.org/2001/03/daml+oil#TransitiveProperty> .
+    <https://www.w3.org/2000/10/swap/test/s1.n3#dependsOn> <http://www.daml.org/2001/03/daml+oil#hasSubProperty> <https://www.w3.org/2000/10/swap/test/s1.n3#includes> .
+} .
