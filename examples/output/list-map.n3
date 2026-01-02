@@ -1,0 +1,6 @@
+@prefix : <http://example.org/#> .
+
+:test1 :is true .
+:test2 :is true .
+:test3 :is true .
+:test4 :is true .

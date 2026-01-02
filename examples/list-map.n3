@@ -1,0 +1,17 @@
+# ========================================================
+# List map
+# behaves like the functional programming operator flatMap
+# Examples from Giacomo Citi
+# ========================================================
+
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix : <http://example.org/#>.
+
+:s1 :p1 :o1 .
+:s2 :p1 :o2 .
+:s3 :p1 :o3, :o4 .
+
+{ ((:s1 :s2) :p1) list:map (:o1 :o2) } => { :test1 :is true } .
+{ ((:s1 :s2 :s3) :p1) list:map (:o1 :o2 :o3 :o4) } => { :test2 :is true } .
+{ ((:s4) :p1) list:map () } => { :test3 :is true } .
+{ ((:s1) :p2) list:map () } => { :test4 :is true } .

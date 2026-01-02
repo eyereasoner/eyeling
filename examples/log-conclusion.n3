@@ -1,0 +1,20 @@
+# ======================
+# log:conclusion example
+# ======================
+
+@prefix : <http://example.org/>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+:let :param { 
+    :Felix a :Cat . 
+    { ?X a :Cat . } => { ?X :says "Meow" . } .
+} .
+
+{ 
+    :let :param ?param .
+    ?param log:conclusion ?conclusion .
+} 
+=> 
+{ 
+    :result :is ?conclusion . 
+} .

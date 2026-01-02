@@ -89,6 +89,7 @@ const jsonPointerCache = new Map();
 // Key is the dereferenced document IRI *without* fragment.
 const __logContentCache = new Map(); // iri -> string | null (null means fetch/read failed)
 const __logSemanticsCache = new Map(); // iri -> GraphTerm | null (null means parse failed)
+const __logConclusionCache = new WeakMap(); // GraphTerm -> GraphTerm (deductive closure)
 
 function __stripFragment(iri) {
   const i = iri.indexOf('#');
@@ -233,6 +234,87 @@ function __derefSemanticsSync(iriNoFrag) {
     return null;
   }
 }
+function __makeRuleFromTerms(left, right, isForward) {
+  // Mirror Parser.makeRule, but usable at runtime (e.g., log:conclusion).
+  let premiseTerm, conclTerm;
+
+  if (isForward) {
+    premiseTerm = left;
+    conclTerm = right;
+  } else {
+    premiseTerm = right;
+    conclTerm = left;
+  }
+
+  let isFuse = false;
+  if (isForward) {
+    if (conclTerm instanceof Literal && conclTerm.value === 'false') {
+      isFuse = true;
+    }
+  }
+
+  let rawPremise;
+  if (premiseTerm instanceof GraphTerm) {
+    rawPremise = premiseTerm.triples;
+  } else if (premiseTerm instanceof Literal && premiseTerm.value === 'true') {
+    rawPremise = [];
+  } else {
+    rawPremise = [];
+  }
+
+  let rawConclusion;
+  if (conclTerm instanceof GraphTerm) {
+    rawConclusion = conclTerm.triples;
+  } else if (conclTerm instanceof Literal && conclTerm.value === 'false') {
+    rawConclusion = [];
+  } else {
+    rawConclusion = [];
+  }
+
+  const headBlankLabels = collectBlankLabelsInTriples(rawConclusion);
+  const [premise0, conclusion] = liftBlankRuleVars(rawPremise, rawConclusion);
+  const premise = isForward ? reorderPremiseForConstraints(premise0) : premise0;
+  return new Rule(premise, conclusion, isForward, isFuse, headBlankLabels);
+}
+
+function __computeConclusionFromFormula(formula) {
+  if (!(formula instanceof GraphTerm)) return null;
+
+  const cached = __logConclusionCache.get(formula);
+  if (cached) return cached;
+
+  // Facts start as *all* triples in the formula, including rule triples.
+  const facts2 = formula.triples.slice();
+
+  // Extract rules from rule-triples present inside the formula.
+  const fw = [];
+  const bw = [];
+
+  for (const tr of formula.triples) {
+    // Treat {A} => {B} as a forward rule.
+    if (isLogImplies(tr.p)) {
+      fw.push(__makeRuleFromTerms(tr.s, tr.o, true));
+      continue;
+    }
+
+    // Treat {A} <= {B} as the same rule in the other direction, i.e., {B} => {A},
+    // so it participates in deductive closure even if only <= is used.
+    if (isLogImpliedBy(tr.p)) {
+      fw.push(__makeRuleFromTerms(tr.o, tr.s, true));
+      // Also index it as a backward rule for completeness (helps proveGoals in some cases).
+      bw.push(__makeRuleFromTerms(tr.s, tr.o, false));
+      continue;
+    }
+  }
+
+  // Saturate within this local formula only.
+  forwardChain(facts2, fw, bw);
+
+  const out = new GraphTerm(facts2.slice());
+  __logConclusionCache.set(formula, out);
+  return out;
+}
+
 
 
 // Controls whether human-readable proof comments are printed.
@@ -4850,6 +4932,31 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     return s2 !== null ? [s2] : [];
   }
 
+
+// log:conclusion
+// Schema: $s+ log:conclusion $o?
+// $o is the deductive closure of the subject formula $s (including rule inferences).
+if (pv === LOG_NS + 'conclusion') {
+  // Accept 'true' as the empty formula.
+  let inFormula = null;
+  if (g.s instanceof GraphTerm) inFormula = g.s;
+  else if (g.s instanceof Literal && g.s.value === 'true') inFormula = new GraphTerm([]);
+  else return [];
+
+  const conclusion = __computeConclusionFromFormula(inFormula);
+  if (!(conclusion instanceof GraphTerm)) return [];
+
+  if (g.o instanceof Var) {
+    const s2 = { ...subst };
+    s2[g.o.name] = conclusion;
+    return [s2];
+  }
+  if (g.o instanceof Blank) return [{ ...subst }];
+
+  const s2 = unifyTerm(g.o, conclusion, subst);
+  return s2 !== null ? [s2] : [];
+}
+
   // log:content
   // Schema: $s+ log:content $o?
   // Dereferences $s and returns the online resource as an xsd:string.
@@ -5998,10 +6105,17 @@ function termToN3(t, pref) {
     return '(' + inside.join(' ') + ')';
   }
   if (t instanceof GraphTerm) {
+    const indent = '    ';
+    const indentBlock = (str) =>
+      str
+        .split(/\r?\n/)
+        .map((ln) => (ln.length ? indent + ln : ln))
+        .join('\n');
+
     let s = '{\n';
     for (const tr of t.triples) {
-      let line = tripleToN3(tr, pref).trimEnd();
-      if (line) s += '    ' + line + '\n';
+      const block = tripleToN3(tr, pref).trimEnd();
+      if (block) s += indentBlock(block) + '\n';
     }
     s += '}';
     return s;
