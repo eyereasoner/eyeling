@@ -1,0 +1,8 @@
+@prefix : <http://example.org/> .
+
+:out :year 2023 .
+:out :month 4 .
+:out :day 1 .
+:out :minute 6 .
+:out :second 4 .
+:out :tz "Z" .

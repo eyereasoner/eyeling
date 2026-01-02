@@ -216,10 +216,10 @@ Commonly used N3/Turtle features:
 
 - **crypto**: `crypto:md5` `crypto:sha` `crypto:sha256` `crypto:sha512`
 - **list**: `list:append` `list:first` `list:firstRest` `list:in` `list:iterate` `list:last` `list:length` `list:map` `list:member` `list:memberAt` `list:notMember` `list:remove` `list:rest` `list:reverse` `list:sort`
-- **log**: `log:collectAllIn` `log:content` `log:equalTo` `log:forAllIn` `log:impliedBy` `log:implies` `log:notEqualTo` `log:notIncludes` `log:semantics` `log:skolem` `log:uri`
+- **log**: `log:collectAllIn` `log:content` `log:dtlit` `log:equalTo` `log:forAllIn` `log:impliedBy` `log:implies` `log:includes` `log:langlit` `log:notEqualTo` `log:notIncludes` `log:outputString` `log:parsedAsN3` `log:rawType` `log:semantics` `log:semanticsOrError` `log:skolem` `log:uri`
 - **math**: `math:absoluteValue` `math:acos` `math:asin` `math:atan` `math:cos` `math:cosh` `math:degrees` `math:difference` `math:equalTo` `math:exponentiation` `math:greaterThan` `math:integerQuotient` `math:lessThan` `math:negation` `math:notEqualTo` `math:notGreaterThan` `math:notLessThan` `math:product` `math:quotient` `math:remainder` `math:rounded` `math:sin` `math:sinh` `math:sum` `math:tan` `math:tanh`
 - **string**: `string:concatenation` `string:contains` `string:containsIgnoringCase` `string:endsWith` `string:equalIgnoringCase` `string:format` `string:greaterThan` `string:jsonPointer` `string:lessThan` `string:matches` `string:notEqualIgnoringCase` `string:notGreaterThan` `string:notLessThan` `string:notMatches` `string:replace` `string:scrape` `string:startsWith`
-- **time**: `time:localTime`
+- **time**: `time:day` `time:localTime` `time:minute` `time:month` `time:second` `time:timeZone` `time:year`
 
 ## License
 

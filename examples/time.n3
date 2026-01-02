@@ -1,0 +1,29 @@
+# =======================
+# time: builtins examples
+# =======================
+
+@prefix : <http://example.org/> .
+@prefix time: <http://www.w3.org/2000/10/swap/time#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:Let :dt "2023-04-01T18:06:04Z"^^xsd:dateTime .
+
+{
+  :Let :dt ?d .
+  ?d time:year ?y ;
+     time:month ?m ;
+     time:day ?day ;
+     time:minute ?min ;
+     time:second ?sec ;
+     time:timeZone ?tz .
+}
+=>
+{
+  :out :year ?y ;
+       :month ?m ;
+       :day ?day ;
+       :minute ?min ;
+       :second ?sec ;
+       :tz ?tz .
+} .
+

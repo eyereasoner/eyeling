@@ -95,9 +95,7 @@ const __logConclusionCache = new WeakMap(); // GraphTerm -> GraphTerm (deductive
 // Environment detection (Node vs Browser/Worker).
 // Eyeling is primarily synchronous, so we use sync XHR in browsers for log:content/log:semantics.
 // Note: Browser fetches are subject to CORS; use CORS-enabled resources or a proxy.
-const __IS_NODE =
-  typeof process !== 'undefined' &&
-  !!(process.versions && process.versions.node);
+const __IS_NODE = typeof process !== 'undefined' && !!(process.versions && process.versions.node);
 
 function __hasXmlHttpRequest() {
   return typeof XMLHttpRequest !== 'undefined';
@@ -107,10 +105,7 @@ function __resolveBrowserUrl(ref) {
   if (!ref) return ref;
   // If already absolute, keep as-is.
   if (/^[A-Za-z][A-Za-z0-9+.-]*:/.test(ref)) return ref;
-  const base =
-    (typeof document !== 'undefined' && document.baseURI) ||
-    (typeof location !== 'undefined' && location.href) ||
-    '';
+  const base = (typeof document !== 'undefined' && document.baseURI) || (typeof location !== 'undefined' && location.href) || '';
   try {
     return new URL(ref, base).toString();
   } catch {
@@ -124,10 +119,7 @@ function __fetchHttpTextSyncBrowser(url) {
     const xhr = new XMLHttpRequest();
     xhr.open('GET', url, false); // synchronous
     try {
-      xhr.setRequestHeader(
-        'Accept',
-        'text/n3, text/turtle, application/n-triples, application/n-quads, text/plain;q=0.1, */*;q=0.01'
-      );
+      xhr.setRequestHeader('Accept', 'text/n3, text/turtle, application/n-triples, application/n-quads, text/plain;q=0.1, */*;q=0.01');
     } catch {
       // Some environments restrict setting headers (ignore).
     }
@@ -232,7 +224,7 @@ function __fetchHttpTextViaSubprocess(url) {
   `;
   const r = cp.spawnSync(process.execPath, ['-e', script, url], {
     encoding: 'utf8',
-    maxBuffer: 32 * 1024 * 1024
+    maxBuffer: 32 * 1024 * 1024,
   });
   if (r.status !== 0) return null;
   return r.stdout;
@@ -297,8 +289,8 @@ function __derefSemanticsSync(iriNoFrag) {
     return null;
   }
   try {
-    const baseIri = (typeof key === 'string' && key) ? key : iriNoFrag;
-      const formula = __parseSemanticsToFormula(text, baseIri);
+    const baseIri = typeof key === 'string' && key ? key : iriNoFrag;
+    const formula = __parseSemanticsToFormula(text, baseIri);
     __logSemanticsCache.set(key, formula);
     return formula;
   } catch {
@@ -386,8 +378,6 @@ function __computeConclusionFromFormula(formula) {
   __logConclusionCache.set(formula, out);
   return out;
 }
-
-
 
 // Controls whether human-readable proof comments are printed.
 let proofCommentsEnabled = false;
@@ -3489,6 +3479,33 @@ function parseXsdDatetimeTerm(t) {
   return d; // Date in local/UTC, we only use timestamp
 }
 
+function parseXsdDateTimeLexParts(t) {
+  // Parse *lexical* components of an xsd:dateTime literal without timezone normalization.
+  // Returns { yearStr, month, day, minute, second, tz } or null.
+  if (!(t instanceof Literal)) return null;
+  const [lex, dt] = literalParts(t.value);
+  if (dt !== XSD_NS + 'dateTime') return null;
+  const val = stripQuotes(lex);
+
+  // xsd:dateTime lexical: YYYY-MM-DDThh:mm:ss(.s+)?(Z|(+|-)hh:mm)?
+  const m = /^(-?\d{4,})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|[+-]\d{2}:\d{2})?$/.exec(val);
+  if (!m) return null;
+
+  const yearStr = m[1];
+  const month = parseInt(m[2], 10);
+  const day = parseInt(m[3], 10);
+  const minute = parseInt(m[5], 10);
+  const second = parseInt(m[6], 10);
+  const tz = m[7] || null;
+
+  if (!(month >= 1 && month <= 12)) return null;
+  if (!(day >= 1 && day <= 31)) return null;
+  if (!(minute >= 0 && minute <= 59)) return null;
+  if (!(second >= 0 && second <= 59)) return null;
+
+  return { yearStr, month, day, minute, second, tz };
+}
+
 function parseDatetimeLike(t) {
   const d = parseXsdDateTerm(t);
   if (d !== null) return d;
@@ -4579,6 +4596,162 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
   // 4.3 time: builtins
   // -----------------------------------------------------------------
 
+  // time:day
+  // Gets as object the integer day component of the subject xsd:dateTime.
+  // Schema: $s+ time:day $o-
+  if (pv === TIME_NS + 'day') {
+    const parts = parseXsdDateTimeLexParts(g.s);
+    if (!parts) return [];
+    const out = internLiteral(String(parts.day));
+
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = out;
+      return [s2];
+    }
+    if (g.o instanceof Blank) return [{ ...subst }];
+
+    const oi = parseIntLiteral(g.o);
+    if (oi !== null) {
+      try {
+        if (oi === BigInt(parts.day)) return [{ ...subst }];
+      } catch {}
+    }
+
+    const s2 = unifyTerm(g.o, out, subst);
+    return s2 !== null ? [s2] : [];
+  }
+
+  // time:minute
+  // Gets as object the integer minutes component of the subject xsd:dateTime.
+  // Schema: $s+ time:minute $o-
+  if (pv === TIME_NS + 'minute') {
+    const parts = parseXsdDateTimeLexParts(g.s);
+    if (!parts) return [];
+    const out = internLiteral(String(parts.minute));
+
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = out;
+      return [s2];
+    }
+    if (g.o instanceof Blank) return [{ ...subst }];
+
+    const oi = parseIntLiteral(g.o);
+    if (oi !== null) {
+      try {
+        if (oi === BigInt(parts.minute)) return [{ ...subst }];
+      } catch {}
+    }
+
+    const s2 = unifyTerm(g.o, out, subst);
+    return s2 !== null ? [s2] : [];
+  }
+
+  // time:month
+  // Gets as object the integer month component of the subject xsd:dateTime.
+  // Schema: $s+ time:month $o-
+  if (pv === TIME_NS + 'month') {
+    const parts = parseXsdDateTimeLexParts(g.s);
+    if (!parts) return [];
+    const out = internLiteral(String(parts.month));
+
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = out;
+      return [s2];
+    }
+    if (g.o instanceof Blank) return [{ ...subst }];
+
+    const oi = parseIntLiteral(g.o);
+    if (oi !== null) {
+      try {
+        if (oi === BigInt(parts.month)) return [{ ...subst }];
+      } catch {}
+    }
+
+    const s2 = unifyTerm(g.o, out, subst);
+    return s2 !== null ? [s2] : [];
+  }
+
+  // time:second
+  // Gets as object the integer seconds component of the subject xsd:dateTime.
+  // Schema: $s+ time:second $o-
+  if (pv === TIME_NS + 'second') {
+    const parts = parseXsdDateTimeLexParts(g.s);
+    if (!parts) return [];
+    const out = internLiteral(String(parts.second));
+
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = out;
+      return [s2];
+    }
+    if (g.o instanceof Blank) return [{ ...subst }];
+
+    const oi = parseIntLiteral(g.o);
+    if (oi !== null) {
+      try {
+        if (oi === BigInt(parts.second)) return [{ ...subst }];
+      } catch {}
+    }
+
+    const s2 = unifyTerm(g.o, out, subst);
+    return s2 !== null ? [s2] : [];
+  }
+
+  // time:timeZone
+  // Gets as object the trailing timezone offset of the subject xsd:dateTime (e.g., "-05:00" or "Z").
+  // Schema: $s+ time:timeZone $o-
+  if (pv === TIME_NS + 'timeZone') {
+    const parts = parseXsdDateTimeLexParts(g.s);
+    if (!parts) return [];
+    if (parts.tz === null) return [];
+    const out = internLiteral(`"${parts.tz}"`);
+
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = out;
+      return [s2];
+    }
+    if (g.o instanceof Blank) return [{ ...subst }];
+
+    if (termsEqual(g.o, out)) return [{ ...subst }];
+
+    // Also accept explicitly typed xsd:string literals.
+    if (g.o instanceof Literal) {
+      const [lexO, dtO] = literalParts(g.o.value);
+      if (dtO === XSD_NS + 'string' && stripQuotes(lexO) === parts.tz) return [{ ...subst }];
+    }
+    return [];
+  }
+
+  // time:year
+  // Gets as object the integer year component of the subject xsd:dateTime.
+  // Schema: $s+ time:year $o-
+  if (pv === TIME_NS + 'year') {
+    const parts = parseXsdDateTimeLexParts(g.s);
+    if (!parts) return [];
+    const out = internLiteral(String(parts.yearStr));
+
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = out;
+      return [s2];
+    }
+    if (g.o instanceof Blank) return [{ ...subst }];
+
+    const oi = parseIntLiteral(g.o);
+    if (oi !== null) {
+      try {
+        if (oi === BigInt(parts.yearStr)) return [{ ...subst }];
+      } catch {}
+    }
+
+    const s2 = unifyTerm(g.o, out, subst);
+    return s2 !== null ? [s2] : [];
+  }
+
   // time:localTime
   // "" time:localTime ?D.  binds ?D to “now” as xsd:dateTime.
   if (pv === TIME_NS + 'localTime') {
@@ -5021,30 +5194,29 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     return s2 !== null ? [s2] : [];
   }
 
+  // log:conclusion
+  // Schema: $s+ log:conclusion $o?
+  // $o is the deductive closure of the subject formula $s (including rule inferences).
+  if (pv === LOG_NS + 'conclusion') {
+    // Accept 'true' as the empty formula.
+    let inFormula = null;
+    if (g.s instanceof GraphTerm) inFormula = g.s;
+    else if (g.s instanceof Literal && g.s.value === 'true') inFormula = new GraphTerm([]);
+    else return [];
 
-// log:conclusion
-// Schema: $s+ log:conclusion $o?
-// $o is the deductive closure of the subject formula $s (including rule inferences).
-if (pv === LOG_NS + 'conclusion') {
-  // Accept 'true' as the empty formula.
-  let inFormula = null;
-  if (g.s instanceof GraphTerm) inFormula = g.s;
-  else if (g.s instanceof Literal && g.s.value === 'true') inFormula = new GraphTerm([]);
-  else return [];
+    const conclusion = __computeConclusionFromFormula(inFormula);
+    if (!(conclusion instanceof GraphTerm)) return [];
 
-  const conclusion = __computeConclusionFromFormula(inFormula);
-  if (!(conclusion instanceof GraphTerm)) return [];
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = conclusion;
+      return [s2];
+    }
+    if (g.o instanceof Blank) return [{ ...subst }];
 
-  if (g.o instanceof Var) {
-    const s2 = { ...subst };
-    s2[g.o.name] = conclusion;
-    return [s2];
+    const s2 = unifyTerm(g.o, conclusion, subst);
+    return s2 !== null ? [s2] : [];
   }
-  if (g.o instanceof Blank) return [{ ...subst }];
-
-  const s2 = unifyTerm(g.o, conclusion, subst);
-  return s2 !== null ? [s2] : [];
-}
 
   // log:content
   // Schema: $s+ log:content $o?
@@ -5194,8 +5366,6 @@ if (pv === LOG_NS + 'conclusion') {
     const s2 = unifyTerm(g.o, ty, subst);
     return s2 !== null ? [s2] : [];
   }
-
-
 
   // log:dtlit
   // Schema: ( $s.1? $s.2? )? log:dtlit $o?
@@ -5435,7 +5605,6 @@ if (pv === LOG_NS + 'conclusion') {
     if (s === null) return [];
     return [{ ...subst }];
   }
-
 
   // log:collectAllIn (scoped)
   if (pv === LOG_NS + 'collectAllIn') {
@@ -6574,7 +6743,6 @@ function __collectOutputStringsFromFacts(facts, prefixes) {
 
   return pairs.map((p) => p.text).join('');
 }
-
 
 function main() {
   // Drop "node" and script name; keep only user-provided args
