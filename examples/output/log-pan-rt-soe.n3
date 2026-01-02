@@ -1,0 +1,9 @@
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+:parsedFormula :is {
+    :s :p :o .
+} .
+:parsedType :is log:Formula .
+:remoteValue :is "error(dereference_failed,https://www.w3.org/2000/10/swap/test/s2.n3)" .
+:remoteType :is log:Literal .

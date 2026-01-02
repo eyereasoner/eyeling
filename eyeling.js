@@ -89,6 +89,7 @@ const jsonPointerCache = new Map();
 // Key is the dereferenced document IRI *without* fragment.
 const __logContentCache = new Map(); // iri -> string | null (null means fetch/read failed)
 const __logSemanticsCache = new Map(); // iri -> GraphTerm | null (null means parse failed)
+const __logSemanticsOrErrorCache = new Map(); // iri -> Term (GraphTerm | Literal) for log:semanticsOrError
 const __logConclusionCache = new WeakMap(); // GraphTerm -> GraphTerm (deductive closure)
 
 // Environment detection (Node vs Browser/Worker).
@@ -2971,6 +2972,23 @@ function stripQuotes(lex) {
   return lex;
 }
 
+function termToJsXsdStringNoLang(t) {
+  // Strict xsd:string extraction *without* language tags.
+  // Accept:
+  //   - plain string literals ("...")
+  //   - "..."^^xsd:string
+  // Reject:
+  //   - language-tagged strings ("..."@en)
+  //   - any other datatype
+  if (!(t instanceof Literal)) return null;
+  if (literalHasLangTag(t.value)) return null;
+
+  const [lex, dt] = literalParts(t.value);
+  if (!isQuotedLexical(lex)) return null;
+  if (dt !== null && dt !== XSD_NS + 'string' && dt !== 'xsd:string') return null;
+  return decodeN3StringEscapes(stripQuotes(lex));
+}
+
 function termToJsString(t) {
   // Strict string extraction for SWAP/N3 string builtins:
   //   - accept plain string literals ("...") and language-tagged ones ("..."@en)
@@ -5073,6 +5091,110 @@ if (pv === LOG_NS + 'conclusion') {
     const s2 = unifyTerm(g.o, formula, subst);
     return s2 !== null ? [s2] : [];
   }
+
+  // log:semanticsOrError
+  // Schema: $s+ log:semanticsOrError $o?
+  // Like log:semantics, but yields an xsd:string error message on failure.
+  if (pv === LOG_NS + 'semanticsOrError') {
+    const iri = iriValue(g.s);
+    if (iri === null) return [];
+
+    const docIri = __stripFragment(iri);
+    const norm = __normalizeDerefIri(docIri);
+    const key = typeof norm === 'string' && norm ? norm : docIri;
+
+    let term = null;
+
+    if (__logSemanticsOrErrorCache.has(key)) {
+      term = __logSemanticsOrErrorCache.get(key);
+    } else {
+      // If we already successfully computed log:semantics, reuse it.
+      const formula = __derefSemanticsSync(docIri);
+
+      if (formula instanceof GraphTerm) {
+        term = formula;
+      } else {
+        // Try to get an informative error.
+        const txt = __derefTextSync(docIri);
+        if (typeof txt !== 'string') {
+          term = makeStringLiteral(`error(dereference_failed,${docIri})`);
+        } else {
+          try {
+            const baseIri = typeof key === 'string' && key ? key : docIri;
+            term = __parseSemanticsToFormula(txt, baseIri);
+            // Keep the semantics cache consistent.
+            __logSemanticsCache.set(key, term);
+          } catch (e) {
+            const msg = e && e.message ? e.message : String(e);
+            term = makeStringLiteral(`error(parse_error,${msg})`);
+          }
+        }
+      }
+
+      __logSemanticsOrErrorCache.set(key, term);
+    }
+
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = term;
+      return [s2];
+    }
+    if (g.o instanceof Blank) return [{ ...subst }];
+
+    const s2 = unifyTerm(g.o, term, subst);
+    return s2 !== null ? [s2] : [];
+  }
+
+  // log:parsedAsN3
+  // Schema: $s+ log:parsedAsN3 $o-
+  // Parses the subject xsd:string as N3 and returns it as a formula.
+  if (pv === LOG_NS + 'parsedAsN3') {
+    const txt = termToJsXsdStringNoLang(g.s);
+    if (txt === null) return [];
+
+    let formula;
+    try {
+      // No external base is specified in the builtin definition; the parsed
+      // string may contain its own @base / @prefix directives.
+      formula = __parseSemanticsToFormula(txt, '');
+    } catch {
+      return [];
+    }
+
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = formula;
+      return [s2];
+    }
+    if (g.o instanceof Blank) return [{ ...subst }];
+
+    const s2 = unifyTerm(g.o, formula, subst);
+    return s2 !== null ? [s2] : [];
+  }
+
+  // log:rawType
+  // Schema: $s+ log:rawType $o-
+  // Returns one of log:Formula, log:Literal, rdf:List, or log:Other.
+  if (pv === LOG_NS + 'rawType') {
+    if (g.s instanceof Var) return [];
+
+    let ty;
+    if (g.s instanceof GraphTerm) ty = internIri(LOG_NS + 'Formula');
+    else if (g.s instanceof Literal) ty = internIri(LOG_NS + 'Literal');
+    else if (g.s instanceof ListTerm || g.s instanceof OpenListTerm) ty = internIri(RDF_NS + 'List');
+    else ty = internIri(LOG_NS + 'Other');
+
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = ty;
+      return [s2];
+    }
+    if (g.o instanceof Blank) return [{ ...subst }];
+
+    const s2 = unifyTerm(g.o, ty, subst);
+    return s2 !== null ? [s2] : [];
+  }
+
 
 
   // log:dtlit

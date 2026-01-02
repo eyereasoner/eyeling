@@ -1,0 +1,29 @@
+# =======================================================
+# log:parsedAsN3 log:rawType log:semanticsOrError example
+# =======================================================
+
+@prefix :    <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+:Let :param """
+@prefix : <http://example.org/> .
+:s :p :o .
+""" .
+
+{
+  :Let :param ?txt .
+  ?txt log:parsedAsN3 ?f .
+  ?f   log:rawType ?tParsed .
+
+  <https://www.w3.org/2000/10/swap/test/s2.n3> log:semanticsOrError ?x .
+  ?x log:rawType ?tRemote .
+}
+=>
+{
+  :parsedFormula :is ?f .
+  :parsedType    :is ?tParsed .
+  :remoteValue   :is ?x .
+  :remoteType    :is ?tRemote .
+} .
+
