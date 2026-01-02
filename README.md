@@ -108,6 +108,7 @@ Options:
   -n, --no-proof-comments Disable proof explanations (default).
   -s, --super-restricted  Disable all builtins except => and <=.
   -a, --ast               Print parsed AST as JSON and exit.
+  --strings               Print log:outputString strings (ordered by key) instead of N3 output.
 ```
 
 By default, `eyeling`:

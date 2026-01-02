@@ -5300,6 +5300,21 @@ if (pv === LOG_NS + 'conclusion') {
     return sols.length ? [] : [{ ...subst }];
   }
 
+  // log:outputString
+  // Schema: $s+ log:outputString $o+
+  // Side-effecting output directive. As a builtin goal, we simply succeed
+  // when both sides are bound and the object is a string literal.
+  // Actual printing is handled at the end of a reasoning run (see --strings).
+  if (pv === LOG_NS + 'outputString') {
+    // Require subject to be bound (not a variable) and object to be a concrete string literal.
+    if (g.s instanceof Var) return [];
+    if (g.o instanceof Var) return [];
+    const s = termToJsString(g.o);
+    if (s === null) return [];
+    return [{ ...subst }];
+  }
+
+
   // log:collectAllIn (scoped)
   if (pv === LOG_NS + 'collectAllIn') {
     if (!(g.s instanceof ListTerm) || g.s.elems.length !== 3) return [];
@@ -6348,6 +6363,97 @@ function formatN3SyntaxError(err, text, path) {
 // ===========================================================================
 // CLI entry point
 // ===========================================================================
+// ===========================================================================
+// log:outputString support
+// ===========================================================================
+
+function __compareOutputStringKeys(a, b, prefixes) {
+  // Deterministic ordering of keys. The spec only requires "order of the subject keys"
+  // and leaves concrete term ordering reasoner-dependent. We implement:
+  //   1) numeric literals (numeric value)
+  //   2) plain literals (lexical form)
+  //   3) IRIs
+  //   4) blank nodes (label)
+  //   5) fallback: skolemKeyFromTerm
+  const aNum = parseNumericLiteralInfo(a);
+  const bNum = parseNumericLiteralInfo(b);
+  if (aNum && bNum) {
+    // bigint or number
+    if (aNum.kind === 'bigint' && bNum.kind === 'bigint') {
+      if (aNum.value < bNum.value) return -1;
+      if (aNum.value > bNum.value) return 1;
+      return 0;
+    }
+    const av = Number(aNum.value);
+    const bv = Number(bNum.value);
+    if (av < bv) return -1;
+    if (av > bv) return 1;
+    return 0;
+  }
+  if (aNum && !bNum) return -1;
+  if (!aNum && bNum) return 1;
+
+  // Plain literal ordering (lexical)
+  if (a instanceof Literal && b instanceof Literal) {
+    const [alex] = literalParts(a.value);
+    const [blex] = literalParts(b.value);
+    if (alex < blex) return -1;
+    if (alex > blex) return 1;
+    return 0;
+  }
+  if (a instanceof Literal && !(b instanceof Literal)) return -1;
+  if (!(a instanceof Literal) && b instanceof Literal) return 1;
+
+  // IRIs
+  if (a instanceof Iri && b instanceof Iri) {
+    if (a.value < b.value) return -1;
+    if (a.value > b.value) return 1;
+    return 0;
+  }
+  if (a instanceof Iri && !(b instanceof Iri)) return -1;
+  if (!(a instanceof Iri) && b instanceof Iri) return 1;
+
+  // Blank nodes
+  if (a instanceof Blank && b instanceof Blank) {
+    if (a.label < b.label) return -1;
+    if (a.label > b.label) return 1;
+    return 0;
+  }
+  if (a instanceof Blank && !(b instanceof Blank)) return -1;
+  if (!(a instanceof Blank) && b instanceof Blank) return 1;
+
+  // Fallback
+  const ak = skolemKeyFromTerm(a);
+  const bk = skolemKeyFromTerm(b);
+  if (ak < bk) return -1;
+  if (ak > bk) return 1;
+  return 0;
+}
+
+function __collectOutputStringsFromFacts(facts, prefixes) {
+  // Gather all (key, string) pairs from the saturated fact store.
+  const pairs = [];
+  for (const tr of facts) {
+    if (!(tr && tr.p instanceof Iri)) continue;
+    if (tr.p.value !== LOG_NS + 'outputString') continue;
+    if (!(tr.o instanceof Literal)) continue;
+
+    const s = termToJsString(tr.o);
+    if (s === null) continue;
+
+    pairs.push({ key: tr.s, text: s, idx: pairs.length });
+  }
+
+  pairs.sort((a, b) => {
+    const c = __compareOutputStringKeys(a.key, b.key, prefixes);
+    if (c !== 0) return c;
+    return a.idx - b.idx; // stable tie-breaker
+  });
+
+  return pairs.map((p) => p.text).join('');
+}
+
+
 function main() {
   // Drop "node" and script name; keep only user-provided args
   const argv = process.argv.slice(2);
@@ -6364,7 +6470,8 @@ function main() {
       `  -p, --proof-comments    Enable proof explanations.\n` +
       `  -n, --no-proof-comments Disable proof explanations (default).\n` +
       `  -s, --super-restricted  Disable all builtins except => and <=.\n` +
-      `  -a, --ast               Print parsed AST as JSON and exit.\n`;
+      `  -a, --ast               Print parsed AST as JSON and exit.\n` +
+      `  --strings               Print log:outputString strings (ordered by key) instead of N3 output.\n`;
     (toStderr ? console.error : console.log)(msg);
   }
 
@@ -6384,6 +6491,8 @@ function main() {
   }
 
   const showAst = argv.includes('--ast') || argv.includes('-a');
+
+  const outputStringsMode = argv.includes('--strings');
 
   // --proof-comments / -p: enable proof explanations
   if (argv.includes('--proof-comments') || argv.includes('-p')) {
@@ -6460,6 +6569,12 @@ function main() {
 
   const facts = triples.filter((tr) => isGroundTriple(tr));
   const derived = forwardChain(facts, frules, brules);
+  // If requested, print log:outputString values (ordered by subject key) and exit.
+  if (outputStringsMode) {
+    const out = __collectOutputStringsFromFacts(facts, prefixes);
+    if (out) process.stdout.write(out);
+    process.exit(0);
+  }
   const derivedTriples = derived.map((df) => df.fact);
   const usedPrefixes = prefixes.prefixesUsedForOutput(derivedTriples);
 
