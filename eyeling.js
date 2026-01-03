@@ -16,8 +16,20 @@
  *  5) Print only newly derived forward facts with explanations.
  */
 
-const { version } = require('./package.json');
-const nodeCrypto = require('crypto');
+// -----------------------------------------------------------------------------
+// Browser/Worker-safe version + crypto wiring
+// -----------------------------------------------------------------------------
+let version = 'dev';
+try {
+  // Node: keep package.json version if available
+  if (typeof require === 'function') version = require('./package.json').version || version;
+} catch (_) {}
+
+let nodeCrypto = null;
+try {
+  // Node: crypto available
+  if (typeof require === 'function') nodeCrypto = require('crypto');
+} catch (_) {}
 
 // ===========================================================================
 // Namespace constants
@@ -6237,7 +6249,7 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen) {
 // Forward chaining to fixpoint
 // ===========================================================================
 
-function forwardChain(facts, forwardRules, backRules) {
+function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) {
   ensureFactIndexes(facts);
   ensureBackRuleIndexes(backRules);
 
@@ -6322,7 +6334,10 @@ function forwardChain(facts, forwardRules, backRules) {
               if (!hasFactIndexed(facts, instantiated)) {
                 factList.push(instantiated);
                 pushFactIndexed(facts, instantiated);
-                derivedForward.push(new DerivedFact(instantiated, r, instantiatedPremises.slice(), { ...s }));
+                const df = new DerivedFact(instantiated, r, instantiatedPremises.slice(), { ...s });
+                derivedForward.push(df);
+                if (typeof onDerived === 'function') onDerived(df);
+
                 changed = true;
               }
 
@@ -6386,7 +6401,10 @@ function forwardChain(facts, forwardRules, backRules) {
 
             factList.push(inst);
             pushFactIndexed(facts, inst);
-            derivedForward.push(new DerivedFact(inst, r, instantiatedPremises.slice(), { ...s }));
+            const df = new DerivedFact(inst, r, instantiatedPremises.slice(), { ...s });
+            derivedForward.push(df);
+            if (typeof onDerived === 'function') onDerived(df);
+
             changed = true;
           }
         }
@@ -6721,6 +6739,53 @@ function __collectOutputStringsFromFacts(facts, prefixes) {
 
   return pairs.map((p) => p.text).join('');
 }
+
+function reasonStream(n3Text, opts = {}) {
+  const { baseIri = null, proof = false, onDerived = null, includeInputFactsInClosure = true } = opts;
+
+  proofCommentsEnabled = !!proof;
+
+  const toks = lex(n3Text);
+  const parser = new Parser(toks);
+  if (baseIri) parser.prefixes.setBase(baseIri);
+
+  let prefixes, triples, frules, brules;
+  [prefixes, triples, frules, brules] = parser.parseDocument();
+
+  materializeRdfLists(triples, frules, brules);
+
+  // facts becomes the saturated closure because pushFactIndexed(...) appends into it
+  const facts = triples.filter((tr) => isGroundTriple(tr));
+
+  const derived = forwardChain(facts, frules, brules, (df) => {
+    if (typeof onDerived === 'function') {
+      onDerived({
+        triple: tripleToN3(df.fact, prefixes),
+        df,
+      });
+    }
+  });
+
+  const closureTriples = includeInputFactsInClosure ? facts : derived.map((d) => d.fact);
+
+  return {
+    prefixes,
+    facts, // saturated closure (Triple[])
+    derived, // DerivedFact[]
+    closureN3: closureTriples.map((t) => tripleToN3(t, prefixes)).join('\n'),
+  };
+}
+
+// Minimal export surface for Node + browser/worker
+const EYELING_API = { reasonStream };
+
+try {
+  if (typeof module !== 'undefined' && module.exports) module.exports = EYELING_API;
+} catch (_) {}
+
+try {
+  if (typeof self !== 'undefined') self.eyeling = EYELING_API;
+} catch (_) {}
 
 function main() {
   // Drop "node" and script name; keep only user-provided args
