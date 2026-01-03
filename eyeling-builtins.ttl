@@ -1,0 +1,332 @@
+@prefix ex: <https://eyereasoner.github.io/eyeling/vocab#> .
+@prefix crypto: <http://www.w3.org/2000/10/swap/crypto#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix time: <http://www.w3.org/2000/10/swap/time#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# ------------------------------------------------------------------------------
+# Builtin catalog (eyeling.js)
+#
+# This file lists the SWAP-style builtins that eyeling.js currently implements
+# in evalBuiltin(), plus rdf:first/rdf:rest aliases for list:first/list:rest.
+#
+# Notes:
+# - ex:kind is intentionally coarse:
+#     ex:Test      = succeeds/fails, no new variable bindings (a "constraint")
+#     ex:Function  = computes an output and may bind variables
+#     ex:Relation  = unification-based, may bind variables
+#     ex:Generator = may yield multiple solutions
+#     ex:IO        = dereferences/parses external content (Node or browser)
+#     ex:Meta      = formula/type/meta-level operations
+#     ex:SideEffect= produces output; does not bind variables
+# - ex:isConstraint corresponds to isConstraintBuiltin(tr) in eyeling.js, with
+#   one suggested addition noted in the comments below.
+# ------------------------------------------------------------------------------
+
+ex:EyelingBuiltinCatalog a ex:Catalog ;
+  rdfs:comment "Builtins implemented by eyeling.js (main branch, raw GitHub URL). Namespaces follow SWAP (crypto/math/time/list/log/string) plus rdf:first/rest aliases." .
+
+ex:Test a ex:Kind .
+ex:Function a ex:Kind .
+ex:Relation a ex:Kind .
+ex:Generator a ex:Kind .
+ex:IO a ex:Kind .
+ex:Meta a ex:Kind .
+ex:SideEffect a ex:Kind .
+
+ex:isConstraint a rdf:Property ;
+  rdfs:comment "True for builtins classified as constraint/test builtins by isConstraintBuiltin(tr) (premise reordering helper)." .
+ex:kind a rdf:Property .
+ex:aliasOf a rdf:Property .
+
+# --- crypto: ---------------------------------------------------------
+
+crypto:sha a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Hash builtin (SHA-1). Computes digest over the subject (string-ish) and unifies/binds the object with the digest." .
+
+crypto:md5 a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Hash builtin (MD5). Computes digest over the subject (string-ish) and unifies/binds the object with the digest." .
+
+crypto:sha256 a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Hash builtin (SHA-256). Computes digest over the subject (string-ish) and unifies/binds the object with the digest." .
+
+crypto:sha512 a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Hash builtin (SHA-512). Computes digest over the subject (string-ish) and unifies/binds the object with the digest." .
+
+# --- math: comparisons (constraint/test) -----------------------------
+
+math:equalTo a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+  rdfs:comment "Numeric comparison (=). No bindings; succeeds iff subject and object are numerically equal (supports XSD numeric literals, including special float/double lexicals)." .
+
+math:notEqualTo a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+  rdfs:comment "Numeric comparison (!=). No bindings; succeeds iff subject and object are numerically different." .
+
+math:greaterThan a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+  rdfs:comment "Numeric comparison (>). No bindings." .
+
+math:lessThan a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+  rdfs:comment "Numeric comparison (<). No bindings." .
+
+math:notLessThan a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+  rdfs:comment "Numeric comparison (>=). No bindings." .
+
+math:notGreaterThan a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+  rdfs:comment "Numeric comparison (<=). No bindings." .
+
+# --- math: arithmetic / numeric functions ----------------------------
+
+math:sum a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Sum of a list of 2+ numeric terms. Binds/unifies object with the total (integer mode uses BigInt when possible)." .
+
+math:product a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Product of a list of 2+ numeric terms. Binds/unifies object with the product (integer mode uses BigInt when possible)." .
+
+math:difference a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Difference of a 2-element list (a b). Supports datetime-datetime -> duration; datetime-duration -> datetime; integer BigInt; otherwise numeric a-b." .
+
+math:quotient a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Quotient of a 2-element list (a b). Binds/unifies object with a/b (guards division by zero and non-finite results)." .
+
+math:integerQuotient a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Integer quotient of (a b), truncating toward zero. Prefers BigInt integer division when possible." .
+
+math:remainder a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Remainder/modulus of (a b). Prefers exact BigInt remainder when possible; otherwise requires integer-valued Numbers." .
+
+math:rounded a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Rounds subject to nearest integer (JS tie-breaking: toward +∞). Binds/unifies object with the rounded integer value." .
+
+math:exponentiation a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Exponentiation. Forward: (base exponent) -> result. Limited inverse: if base is numeric and exponent is a variable, may solve exponent via logs for positive base != 1 and positive result." .
+
+math:absoluteValue a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Absolute value. Computes |s| and unifies/binds object; output datatype follows common numeric datatype selection." .
+
+math:acos a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "acos relation (supports inverse via cos for supported cases)." .
+
+math:asin a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "asin relation (supports inverse via sin for supported cases)." .
+
+math:atan a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "atan relation (supports inverse via tan for supported cases)." .
+
+math:sin a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "sin relation (inverse uses principal asin)." .
+
+math:cos a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "cos relation (inverse uses principal acos)." .
+
+math:tan a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "tan relation (inverse uses principal atan)." .
+
+math:sinh a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "sinh relation (only if JS Math.sinh/Math.asinh exist)." .
+
+math:cosh a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "cosh relation (only if JS Math.cosh/Math.acosh exist)." .
+
+math:tanh a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "tanh relation (only if JS Math.tanh/Math.atanh exist)." .
+
+math:degrees a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Converts radians->degrees; inverse converts degrees->radians." .
+
+math:negation a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Numeric negation; inverse is itself." .
+
+# --- time: -----------------------------------------------------------
+
+time:day a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Extracts day component from xsd:dateTime subject; binds/unifies object with integer token." .
+
+time:minute a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Extracts minute component from xsd:dateTime subject; binds/unifies object with integer token." .
+
+time:month a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Extracts month component from xsd:dateTime subject; binds/unifies object with integer token." .
+
+time:second a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Extracts second component from xsd:dateTime subject; binds/unifies object with integer token." .
+
+time:timeZone a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Extracts timezone suffix from xsd:dateTime subject (e.g., 'Z' or '-05:00'); binds/unifies object with a string literal." .
+
+time:year a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Extracts year component from xsd:dateTime subject; binds/unifies object with integer token." .
+
+time:localTime a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Binds object to 'now' as an xsd:dateTime literal (supports deterministic override via internal setting)." .
+
+# --- list: (plus rdf:first/rest aliases) -----------------------------
+
+list:append a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Concatenates all subject lists; binds/unifies object with the concatenation. If object is a list, can also split." .
+
+list:first a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "First element of a list. Supports open lists in limited cases." .
+
+rdf:first a ex:Builtin ; ex:kind ex:Function ; ex:aliasOf list:first ;
+  rdfs:comment "Alias of list:first (RDF Collections support)." .
+
+list:rest a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Tail of a (non-empty) list. Supports open lists in limited cases." .
+
+rdf:rest a ex:Builtin ; ex:kind ex:Function ; ex:aliasOf list:rest ;
+  rdfs:comment "Alias of list:rest (RDF Collections support)." .
+
+list:iterate a ex:Builtin ; ex:kind ex:Generator ;
+  rdfs:comment "Multi-solution: for each element in the subject list, unifies object with (index value). Index is 0-based." .
+
+list:last a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Unifies/binds object with the last element of the subject list." .
+
+list:memberAt a ex:Builtin ; ex:kind ex:Generator ;
+  rdfs:comment "Multi-solution: (list index) -> value. Index is 0-based; can bind index and/or value." .
+
+list:remove a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Removes all occurrences of an item from a list; requires the item be ground; binds/unifies object with filtered list." .
+
+list:member a ex:Builtin ; ex:kind ex:Generator ;
+  rdfs:comment "Multi-solution: yields each list element as object (unification-based)." .
+
+list:in a ex:Builtin ; ex:kind ex:Generator ;
+  rdfs:comment "Multi-solution: yields each list element as subject (unification-based)." .
+
+list:length a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Length of a list as an integer token. Strict when object is ground (no integer<->decimal equality)." .
+
+list:notMember a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+  rdfs:comment "Constraint/test: succeeds iff object does not unify with any element of the subject list. No new bindings." .
+
+list:reverse a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Reverses a list. Supports either direction when one side is a ListTerm." .
+
+list:sort a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Sorts a ground list (numbers numerically when both sides parse as numbers; otherwise lexical; lists lexicographically). Requires all elements ground." .
+
+list:map a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Maps a predicate over a ground input list, collecting *all* solutions for each element and concatenating results into the output list." .
+
+list:firstRest a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Pairs/unpairs a list with (first rest). Supports constructing open lists in some cases." .
+
+# --- log: ------------------------------------------------------------
+
+log:equalTo a ex:Builtin ; ex:kind ex:Relation ;
+  rdfs:comment "Unification: succeeds iff subject and object unify; may bind variables." .
+
+log:notEqualTo a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+  rdfs:comment "Constraint/test: succeeds iff subject and object do NOT unify (implemented as: if unification succeeds, builtin fails). No new bindings returned." .
+
+log:conjunction a ex:Builtin ; ex:kind ex:Meta ;
+  rdfs:comment "Merges a list of formulas into one formula; removes duplicate triples; accepts 'true' as empty formula." .
+
+log:conclusion a ex:Builtin ; ex:kind ex:Meta ;
+  rdfs:comment "Computes deductive closure of a formula (including rule inferences) and unifies/binds object with that formula." .
+
+log:content a ex:Builtin ; ex:kind ex:IO ;
+  rdfs:comment "Dereferences subject IRI (fragment-stripped) and returns retrieved bytes as xsd:string." .
+
+log:semantics a ex:Builtin ; ex:kind ex:IO ;
+  rdfs:comment "Dereferences and parses subject IRI as N3/Turtle into a formula." .
+
+log:semanticsOrError a ex:Builtin ; ex:kind ex:IO ;
+  rdfs:comment "Like log:semantics, but returns an xsd:string error message term when dereference/parse fails." .
+
+log:parsedAsN3 a ex:Builtin ; ex:kind ex:Meta ;
+  rdfs:comment "Parses an N3 string (xsd:string-ish) into a formula." .
+
+log:rawType a ex:Builtin ; ex:kind ex:Meta ;
+  rdfs:comment "Returns one of log:Formula, log:Literal, rdf:List, or log:Other for the subject term." .
+
+log:dtlit a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Builds a datatype literal from (lex datatypeIri). Binds/unifies object with the resulting Literal." .
+
+log:langlit a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Builds a language-tagged literal from (lex lang). Binds/unifies object with the resulting Literal." .
+
+log:implies a ex:Builtin ; ex:kind ex:Relation ;
+  rdfs:comment "Rule/formula relation used for =>. In superRestrictedMode, this and log:impliedBy are the only builtins treated as builtins." .
+
+log:impliedBy a ex:Builtin ; ex:kind ex:Relation ;
+  rdfs:comment "Rule/formula relation used for <=." .
+
+log:includes a ex:Builtin ; ex:kind ex:Generator ;
+  rdfs:comment "Proves the object formula in the (possibly scoped) facts/rules; returns the set of proof substitutions (may bind variables)." .
+
+log:notIncludes a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+  rdfs:comment "Constraint/test: succeeds iff proving the object formula yields no solutions. No new bindings." .
+
+log:collectAllIn a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Scoped collector: given (valueTemplate whereClause outList) and a scope formula, collects all solutions of whereClause and binds/unifies outList with the list of instantiated valueTemplate results." .
+
+log:forAllIn a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+  rdfs:comment "Constraint/test: for all solutions of whereClause, thenClause must have at least one solution in the same scope. No new bindings." .
+
+log:skolem a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Deterministically maps a ground subject term to a Skolem IRI under https://eyereasoner.github.io/.well-known/genid/ and binds/unifies object to it." .
+
+log:uri a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Converts between an IRI and its string representation (with safety checks on IRIREF characters)." .
+
+log:outputString a ex:Builtin ; ex:kind ex:SideEffect ;
+  rdfs:comment "Side-effect (printing). Requires ground subject and non-variable object string. Does not bind variables. NOTE: this is NOT currently included in isConstraintBuiltin(tr), but it behaves like a no-binding constraint/side-effect and might be worth delaying to the end of premises if you rely on it." .
+
+# --- string: (tests + functions) ------------------------------------
+
+string:concatenation a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Concatenates a list of string-ish terms; binds/unifies object with the resulting string literal." .
+
+string:contains a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+  rdfs:comment "Constraint/test: subject contains object (substring). No bindings." .
+
+string:containsIgnoringCase a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+  rdfs:comment "Constraint/test: case-insensitive contains. No bindings." .
+
+string:endsWith a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+  rdfs:comment "Constraint/test: subject ends with object. No bindings." .
+
+string:startsWith a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+  rdfs:comment "Constraint/test: subject starts with object. No bindings." .
+
+string:equalIgnoringCase a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+  rdfs:comment "Constraint/test: case-insensitive equality. No bindings." .
+
+string:notEqualIgnoringCase a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+  rdfs:comment "Constraint/test: case-insensitive inequality. No bindings." .
+
+string:greaterThan a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+  rdfs:comment "Constraint/test: Unicode codepoint order (>) on decoded strings. No bindings." .
+
+string:lessThan a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+  rdfs:comment "Constraint/test: Unicode codepoint order (<) on decoded strings. No bindings." .
+
+string:notGreaterThan a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+  rdfs:comment "Constraint/test: Unicode codepoint order (<=). No bindings." .
+
+string:notLessThan a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+  rdfs:comment "Constraint/test: Unicode codepoint order (>=). No bindings." .
+
+string:matches a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+  rdfs:comment "Constraint/test: regex match. Pattern is compiled with swap-style escaping helper. No bindings." .
+
+string:notMatches a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+  rdfs:comment "Constraint/test: negated regex match. No bindings." .
+
+string:replace a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Regex replace: subject list (data pattern replacement) -> output string literal." .
+
+string:scrape a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Regex scrape: subject list (data pattern) -> first capturing group (as string literal) if match succeeds." .
+
+string:format a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Simple formatter: (fmt arg1 ... argN) -> output string. Only %s and %% are supported; other specifiers fail." .
+
+string:jsonPointer a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "JSON Pointer lookup: (jsonText pointer) -> value term. Expects rdf:JSON-typed literal (or treated as rdf:JSON); caches parsed JSON and pointer lookups." .

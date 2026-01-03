@@ -117,7 +117,8 @@ function __resolveBrowserUrl(ref) {
   if (!ref) return ref;
   // If already absolute, keep as-is.
   if (/^[A-Za-z][A-Za-z0-9+.-]*:/.test(ref)) return ref;
-  const base = (typeof document !== 'undefined' && document.baseURI) || (typeof location !== 'undefined' && location.href) || '';
+  const base =
+    (typeof document !== 'undefined' && document.baseURI) || (typeof location !== 'undefined' && location.href) || '';
   try {
     return new URL(ref, base).toString();
   } catch {
@@ -131,7 +132,10 @@ function __fetchHttpTextSyncBrowser(url) {
     const xhr = new XMLHttpRequest();
     xhr.open('GET', url, false); // synchronous
     try {
-      xhr.setRequestHeader('Accept', 'text/n3, text/turtle, application/n-triples, application/n-quads, text/plain;q=0.1, */*;q=0.01');
+      xhr.setRequestHeader(
+        'Accept',
+        'text/n3, text/turtle, application/n-triples, application/n-quads, text/plain;q=0.1, */*;q=0.01',
+      );
     } catch {
       // Some environments restrict setting headers (ignore).
     }
@@ -461,7 +465,21 @@ function utcIsoDateTimeStringFromEpochSeconds(sec) {
   const s2 = d.getUTCSeconds();
   const ms2 = d.getUTCMilliseconds();
   const msPart = ms2 ? '.' + String(ms2).padStart(3, '0') : '';
-  return pad(year, 4) + '-' + pad(month) + '-' + pad(day) + 'T' + pad(hour) + ':' + pad(min) + ':' + pad(s2) + msPart + '+00:00';
+  return (
+    pad(year, 4) +
+    '-' +
+    pad(month) +
+    '-' +
+    pad(day) +
+    'T' +
+    pad(hour) +
+    ':' +
+    pad(min) +
+    ':' +
+    pad(s2) +
+    msPart +
+    '+00:00'
+  );
 }
 
 function getNowLex() {
@@ -499,7 +517,9 @@ function deterministicSkolemIdFromKey(key) {
   const hex = [h1, h2, h3, h4].map((h) => h.toString(16).padStart(8, '0')).join(''); // 32 hex chars
 
   // Format like a UUID: 8-4-4-4-12
-  return hex.slice(0, 8) + '-' + hex.slice(8, 12) + '-' + hex.slice(12, 16) + '-' + hex.slice(16, 20) + '-' + hex.slice(20);
+  return (
+    hex.slice(0, 8) + '-' + hex.slice(8, 12) + '-' + hex.slice(12, 16) + '-' + hex.slice(16, 20) + '-' + hex.slice(20)
+  );
 }
 
 let runLocalTimeCache = null;
@@ -1904,7 +1924,12 @@ function liftBlankRuleVars(premise, conclusion) {
     }
     if (t instanceof GraphTerm) {
       const triples = t.triples.map(
-        (tr) => new Triple(convertTerm(tr.s, mapping, counter), convertTerm(tr.p, mapping, counter), convertTerm(tr.o, mapping, counter)),
+        (tr) =>
+          new Triple(
+            convertTerm(tr.s, mapping, counter),
+            convertTerm(tr.p, mapping, counter),
+            convertTerm(tr.o, mapping, counter),
+          ),
       );
       return new GraphTerm(triples);
     }
@@ -1912,7 +1937,11 @@ function liftBlankRuleVars(premise, conclusion) {
   }
 
   function convertTriple(tr, mapping, counter) {
-    return new Triple(convertTerm(tr.s, mapping, counter), convertTerm(tr.p, mapping, counter), convertTerm(tr.o, mapping, counter));
+    return new Triple(
+      convertTerm(tr.s, mapping, counter),
+      convertTerm(tr.p, mapping, counter),
+      convertTerm(tr.o, mapping, counter),
+    );
   }
 
   const mapping = {};
@@ -1961,7 +1990,9 @@ function skolemizeTermForHeadBlanks(t, headBlankLabels, mapping, skCounter, firi
   }
 
   if (t instanceof ListTerm) {
-    return new ListTerm(t.elems.map((e) => skolemizeTermForHeadBlanks(e, headBlankLabels, mapping, skCounter, firingKey, globalMap)));
+    return new ListTerm(
+      t.elems.map((e) => skolemizeTermForHeadBlanks(e, headBlankLabels, mapping, skCounter, firingKey, globalMap)),
+    );
   }
 
   if (t instanceof OpenListTerm) {
@@ -1973,7 +2004,9 @@ function skolemizeTermForHeadBlanks(t, headBlankLabels, mapping, skCounter, firi
 
   if (t instanceof GraphTerm) {
     return new GraphTerm(
-      t.triples.map((tr) => skolemizeTripleForHeadBlanks(tr, headBlankLabels, mapping, skCounter, firingKey, globalMap)),
+      t.triples.map((tr) =>
+        skolemizeTripleForHeadBlanks(tr, headBlankLabels, mapping, skCounter, firingKey, globalMap),
+      ),
     );
   }
 
@@ -2182,7 +2215,11 @@ function alphaEqTermInGraph(a, b, vmap, bmap) {
 }
 
 function alphaEqTripleInGraph(a, b, vmap, bmap) {
-  return alphaEqTermInGraph(a.s, b.s, vmap, bmap) && alphaEqTermInGraph(a.p, b.p, vmap, bmap) && alphaEqTermInGraph(a.o, b.o, vmap, bmap);
+  return (
+    alphaEqTermInGraph(a.s, b.s, vmap, bmap) &&
+    alphaEqTermInGraph(a.p, b.p, vmap, bmap) &&
+    alphaEqTermInGraph(a.o, b.o, vmap, bmap)
+  );
 }
 
 function alphaEqGraphTriples(xs, ys) {
@@ -2504,7 +2541,12 @@ function isConstraintBuiltin(tr) {
   }
 
   // log: tests that are purely constraints (no new bindings)
-  if (v === LOG_NS + 'forAllIn' || v === LOG_NS + 'notEqualTo' || v === LOG_NS + 'notIncludes') {
+  if (
+    v === LOG_NS + 'forAllIn' ||
+    v === LOG_NS + 'notEqualTo' ||
+    v === LOG_NS + 'notIncludes' ||
+    v === LOG_NS + 'outputString'
+  ) {
     return true;
   }
 
@@ -2717,13 +2759,19 @@ function unifyGraphTriples(xs, ys, subst) {
 }
 
 function unifyTerm(a, b, subst) {
-  return unifyTermWithOptions(a, b, subst, { boolValueEq: true, intDecimalEq: false });
+  return unifyTermWithOptions(a, b, subst, {
+    boolValueEq: true,
+    intDecimalEq: false,
+  });
 }
 
 function unifyTermListAppend(a, b, subst) {
   // Keep list:append behavior: allow integer<->decimal exact equality,
   // but do NOT add boolean-value equivalence (preserves current semantics).
-  return unifyTermWithOptions(a, b, subst, { boolValueEq: false, intDecimalEq: true });
+  return unifyTermWithOptions(a, b, subst, {
+    boolValueEq: false,
+    intDecimalEq: true,
+  });
 }
 
 function unifyTermWithOptions(a, b, subst, opts) {
@@ -3282,7 +3330,8 @@ function isQuotedLexical(lex) {
   //   long:   """..."""  or  '''...'''
   if (typeof lex !== 'string') return false;
   const n = lex.length;
-  if (n >= 6 && ((lex.startsWith('"""') && lex.endsWith('"""')) || (lex.startsWith("'''") && lex.endsWith("'''")))) return true;
+  if (n >= 6 && ((lex.startsWith('"""') && lex.endsWith('"""')) || (lex.startsWith("'''") && lex.endsWith("'''"))))
+    return true;
   if (n >= 2) {
     const a = lex[0];
     const b = lex[n - 1];
@@ -3562,7 +3611,13 @@ function parseIso8601DurationToSeconds(s) {
   }
 
   const totalDays =
-    years * 365.2425 + months * 30.436875 + weeks * 7.0 + days + hours / 24.0 + minutes / (24.0 * 60.0) + seconds / (24.0 * 3600.0);
+    years * 365.2425 +
+    months * 30.436875 +
+    weeks * 7.0 +
+    days +
+    hours / 24.0 +
+    minutes / (24.0 * 60.0) +
+    seconds / (24.0 * 3600.0);
 
   return totalDays * 86400.0;
 }
@@ -5557,7 +5612,11 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
 
     const scopeFacts = g.s.triples.slice();
     ensureFactIndexes(scopeFacts);
-    Object.defineProperty(scopeFacts, '__scopedSnapshot', { value: scopeFacts, enumerable: false, writable: true });
+    Object.defineProperty(scopeFacts, '__scopedSnapshot', {
+      value: scopeFacts,
+      enumerable: false,
+      writable: true,
+    });
 
     const visited2 = [];
     // Start from the incoming substitution so bindings flow outward.
@@ -5575,7 +5634,11 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
 
     const scopeFacts = g.s.triples.slice();
     ensureFactIndexes(scopeFacts);
-    Object.defineProperty(scopeFacts, '__scopedSnapshot', { value: scopeFacts, enumerable: false, writable: true });
+    Object.defineProperty(scopeFacts, '__scopedSnapshot', {
+      value: scopeFacts,
+      enumerable: false,
+      writable: true,
+    });
 
     const visited2 = [];
     const sols = proveGoals(Array.from(g.o.triples), { ...subst }, scopeFacts, [], depth + 1, visited2, varGen);
@@ -5608,7 +5671,11 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     if (g.o instanceof GraphTerm) {
       scopeFacts = g.o.triples.slice();
       ensureFactIndexes(scopeFacts);
-      Object.defineProperty(scopeFacts, '__scopedSnapshot', { value: scopeFacts, enumerable: false, writable: true });
+      Object.defineProperty(scopeFacts, '__scopedSnapshot', {
+        value: scopeFacts,
+        enumerable: false,
+        writable: true,
+      });
       scopeBackRules = [];
     } else {
       scopeFacts = facts.__scopedSnapshot || null;
@@ -5621,7 +5688,15 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     }
 
     const visited2 = [];
-    const sols = proveGoals(Array.from(clauseTerm.triples), {}, scopeFacts, scopeBackRules, depth + 1, visited2, varGen);
+    const sols = proveGoals(
+      Array.from(clauseTerm.triples),
+      {},
+      scopeFacts,
+      scopeBackRules,
+      depth + 1,
+      visited2,
+      varGen,
+    );
 
     const collected = sols.map((sBody) => applySubstTerm(valueTempl, sBody));
     const collectedList = new ListTerm(collected);
@@ -5642,7 +5717,11 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     if (g.o instanceof GraphTerm) {
       scopeFacts = g.o.triples.slice();
       ensureFactIndexes(scopeFacts);
-      Object.defineProperty(scopeFacts, '__scopedSnapshot', { value: scopeFacts, enumerable: false, writable: true });
+      Object.defineProperty(scopeFacts, '__scopedSnapshot', {
+        value: scopeFacts,
+        enumerable: false,
+        writable: true,
+      });
       scopeBackRules = [];
     } else {
       scopeFacts = facts.__scopedSnapshot || null;
@@ -5650,11 +5729,27 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     }
 
     const visited1 = [];
-    const sols1 = proveGoals(Array.from(whereClause.triples), {}, scopeFacts, scopeBackRules, depth + 1, visited1, varGen);
+    const sols1 = proveGoals(
+      Array.from(whereClause.triples),
+      {},
+      scopeFacts,
+      scopeBackRules,
+      depth + 1,
+      visited1,
+      varGen,
+    );
 
     for (const s1 of sols1) {
       const visited2 = [];
-      const sols2 = proveGoals(Array.from(thenClause.triples), s1, scopeFacts, scopeBackRules, depth + 1, visited2, varGen);
+      const sols2 = proveGoals(
+        Array.from(thenClause.triples),
+        s1,
+        scopeFacts,
+        scopeBackRules,
+        depth + 1,
+        visited2,
+        varGen,
+      );
       if (!sols2.length) return [];
     }
     return [{ ...subst }];
@@ -6170,7 +6265,12 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen) {
           results.push(gcCompactForGoals(composed, [], answerVars));
         } else {
           const nextSubst = maybeCompactSubst(composed, restGoals, answerVars, state.depth + 1);
-          nextStates.push({ goals: restGoals, subst: nextSubst, depth: state.depth + 1, visited: state.visited });
+          nextStates.push({
+            goals: restGoals,
+            subst: nextSubst,
+            depth: state.depth + 1,
+            visited: state.visited,
+          });
         }
       }
       // Push in reverse so the *first* generated alternative is explored first (LIFO stack).
@@ -6195,7 +6295,12 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen) {
           results.push(gcCompactForGoals(composed, [], answerVars));
         } else {
           const nextSubst = maybeCompactSubst(composed, restGoals, answerVars, state.depth + 1);
-          nextStates.push({ goals: restGoals, subst: nextSubst, depth: state.depth + 1, visited: state.visited });
+          nextStates.push({
+            goals: restGoals,
+            subst: nextSubst,
+            depth: state.depth + 1,
+            visited: state.visited,
+          });
         }
       }
       for (let i = nextStates.length - 1; i >= 0; i--) stack.push(nextStates[i]);
@@ -6211,7 +6316,12 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen) {
           results.push(gcCompactForGoals(composed, [], answerVars));
         } else {
           const nextSubst = maybeCompactSubst(composed, restGoals, answerVars, state.depth + 1);
-          nextStates.push({ goals: restGoals, subst: nextSubst, depth: state.depth + 1, visited: state.visited });
+          nextStates.push({
+            goals: restGoals,
+            subst: nextSubst,
+            depth: state.depth + 1,
+            visited: state.visited,
+          });
         }
       }
       for (let i = nextStates.length - 1; i >= 0; i--) stack.push(nextStates[i]);
@@ -6236,7 +6346,12 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen) {
         if (composed === null) continue;
         const newGoals = body.concat(restGoals);
         const nextSubst = maybeCompactSubst(composed, newGoals, answerVars, state.depth + 1);
-        nextStates.push({ goals: newGoals, subst: nextSubst, depth: state.depth + 1, visited: visitedForRules });
+        nextStates.push({
+          goals: newGoals,
+          subst: nextSubst,
+          depth: state.depth + 1,
+          visited: visitedForRules,
+        });
       }
       for (let i = nextStates.length - 1; i >= 0; i--) stack.push(nextStates[i]);
     }
@@ -6278,7 +6393,12 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
 
   function setScopedSnapshot(snap) {
     if (!Object.prototype.hasOwnProperty.call(facts, '__scopedSnapshot')) {
-      Object.defineProperty(facts, '__scopedSnapshot', { value: snap, enumerable: false, writable: true, configurable: true });
+      Object.defineProperty(facts, '__scopedSnapshot', {
+        value: snap,
+        enumerable: false,
+        writable: true,
+        configurable: true,
+      });
     } else {
       facts.__scopedSnapshot = snap;
     }
@@ -6287,7 +6407,12 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
   function makeScopedSnapshot() {
     const snap = facts.slice();
     ensureFactIndexes(snap);
-    Object.defineProperty(snap, '__scopedSnapshot', { value: snap, enumerable: false, writable: true, configurable: true });
+    Object.defineProperty(snap, '__scopedSnapshot', {
+      value: snap,
+      enumerable: false,
+      writable: true,
+      configurable: true,
+    });
     return snap;
   }
 
@@ -6321,14 +6446,22 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
             const isFwRuleTriple =
               isLogImplies(instantiated.p) &&
               ((instantiated.s instanceof GraphTerm && instantiated.o instanceof GraphTerm) ||
-                (instantiated.s instanceof Literal && instantiated.s.value === 'true' && instantiated.o instanceof GraphTerm) ||
-                (instantiated.s instanceof GraphTerm && instantiated.o instanceof Literal && instantiated.o.value === 'true'));
+                (instantiated.s instanceof Literal &&
+                  instantiated.s.value === 'true' &&
+                  instantiated.o instanceof GraphTerm) ||
+                (instantiated.s instanceof GraphTerm &&
+                  instantiated.o instanceof Literal &&
+                  instantiated.o.value === 'true'));
 
             const isBwRuleTriple =
               isLogImpliedBy(instantiated.p) &&
               ((instantiated.s instanceof GraphTerm && instantiated.o instanceof GraphTerm) ||
-                (instantiated.s instanceof GraphTerm && instantiated.o instanceof Literal && instantiated.o.value === 'true') ||
-                (instantiated.s instanceof Literal && instantiated.s.value === 'true' && instantiated.o instanceof GraphTerm));
+                (instantiated.s instanceof GraphTerm &&
+                  instantiated.o instanceof Literal &&
+                  instantiated.o.value === 'true') ||
+                (instantiated.s instanceof Literal &&
+                  instantiated.s.value === 'true' &&
+                  instantiated.o instanceof GraphTerm));
 
             if (isFwRuleTriple || isBwRuleTriple) {
               if (!hasFactIndexed(facts, instantiated)) {
@@ -6394,14 +6527,23 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
             }
 
             // Only skolemize blank nodes that occur explicitly in the rule head
-            const inst = skolemizeTripleForHeadBlanks(instantiated, r.headBlankLabels, skMap, skCounter, fireKey, headSkolemCache);
+            const inst = skolemizeTripleForHeadBlanks(
+              instantiated,
+              r.headBlankLabels,
+              skMap,
+              skCounter,
+              fireKey,
+              headSkolemCache,
+            );
 
             if (!isGroundTriple(inst)) continue;
             if (hasFactIndexed(facts, inst)) continue;
 
             factList.push(inst);
             pushFactIndexed(facts, inst);
-            const df = new DerivedFact(inst, r, instantiatedPremises.slice(), { ...s });
+            const df = new DerivedFact(inst, r, instantiatedPremises.slice(), {
+              ...s,
+            });
             derivedForward.push(df);
             if (typeof onDerived === 'function') onDerived(df);
 
