@@ -9,7 +9,7 @@
 :Bob a :Person.
 
 {
-  ?SCOPE log:notIncludes { :Alice :hates ?X }.
+  (1 { :Alice :hates ?X } ()) log:collectAllIn ?SCOPE .
   ?X a :Person.
 }
 =>

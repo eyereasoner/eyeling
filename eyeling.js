@@ -5533,62 +5533,40 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     return results;
   }
 
-  // log:includes (provable in scope)
+  // log:includes
   // Schema: $s+ log:includes $o+
-  // When the subject is a formula, the scope is that concrete formula (syntactic containment).
-  // Otherwise, the scope is the current document scope (facts + backward rules).
+  // Object may be a concrete formula or the literal `true` (empty formula).
   if (pv === LOG_NS + 'includes') {
+    if (!(g.s instanceof GraphTerm)) return [];
+
     // Empty formula is always included.
     if (g.o instanceof Literal && g.o.value === 'true') return [{ ...subst }];
     if (!(g.o instanceof GraphTerm)) return [];
 
-    /** @type {Triple[] | null} */
-    let scopeFacts = null;
-    /** @type {Rule[]} */
-    let scopeBackRules = backRules;
-
-    // If the subject is a formula, treat it as a concrete scope graph.
-    // Also support `true` as the empty formula.
-    if (g.s instanceof GraphTerm) {
-      scopeFacts = g.s.triples.slice();
-      ensureFactIndexes(scopeFacts);
-      Object.defineProperty(scopeFacts, '__scopedSnapshot', { value: scopeFacts, enumerable: false, writable: true });
-      scopeBackRules = []; // concrete scope = syntactic containment (no extra rules)
-    } else if (g.s instanceof Literal && g.s.value === 'true') {
-      scopeFacts = [];
-      ensureFactIndexes(scopeFacts);
-      Object.defineProperty(scopeFacts, '__scopedSnapshot', { value: scopeFacts, enumerable: false, writable: true });
-      scopeBackRules = [];
-    } else {
-      scopeFacts = facts; // dynamic scope
-    }
+    const scopeFacts = g.s.triples.slice();
+    ensureFactIndexes(scopeFacts);
+    Object.defineProperty(scopeFacts, '__scopedSnapshot', { value: scopeFacts, enumerable: false, writable: true });
 
     const visited2 = [];
     // Start from the incoming substitution so bindings flow outward.
-    return proveGoals(Array.from(g.o.triples), { ...subst }, scopeFacts, scopeBackRules, depth + 1, visited2, varGen);
+    return proveGoals(Array.from(g.o.triples), { ...subst }, scopeFacts, [], depth + 1, visited2, varGen);
   }
 
-  // log:notIncludes (not provable in scope)
-  // Delay until we have a frozen scope snapshot to avoid early success.
+  // log:notIncludes
+  // Schema: $s+ log:notIncludes $o+
   if (pv === LOG_NS + 'notIncludes') {
+    if (!(g.s instanceof GraphTerm)) return [];
+
+    // Empty formula is always included, so it is never "not included".
+    if (g.o instanceof Literal && g.o.value === 'true') return [];
     if (!(g.o instanceof GraphTerm)) return [];
 
-    let scopeFacts = null;
-    let scopeBackRules = backRules;
-
-    // If the subject is a formula, treat it as the concrete scope graph
-    if (g.s instanceof GraphTerm) {
-      scopeFacts = g.s.triples.slice();
-      ensureFactIndexes(scopeFacts);
-      Object.defineProperty(scopeFacts, '__scopedSnapshot', { value: scopeFacts, enumerable: false, writable: true });
-      scopeBackRules = []; // concrete scope = syntactic containment (no extra rules)
-    } else {
-      scopeFacts = facts.__scopedSnapshot || null;
-      if (!scopeFacts) return []; // DELAY until saturation snapshot exists
-    }
+    const scopeFacts = g.s.triples.slice();
+    ensureFactIndexes(scopeFacts);
+    Object.defineProperty(scopeFacts, '__scopedSnapshot', { value: scopeFacts, enumerable: false, writable: true });
 
     const visited2 = [];
-    const sols = proveGoals(Array.from(g.o.triples), {}, scopeFacts, scopeBackRules, depth + 1, visited2, varGen);
+    const sols = proveGoals(Array.from(g.o.triples), { ...subst }, scopeFacts, [], depth + 1, visited2, varGen);
     return sols.length ? [] : [{ ...subst }];
   }
 

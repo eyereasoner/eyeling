@@ -241,14 +241,30 @@ function decodeN3StringEscapes(s) {
     }
     const e = s[++i];
     switch (e) {
-      case 't': out += '\t'; break;
-      case 'n': out += '\n'; break;
-      case 'r': out += '\r'; break;
-      case 'b': out += '\b'; break;
-      case 'f': out += '\f'; break;
-      case '"': out += '"'; break;
-      case "'": out += "'"; break;
-      case '\\': out += '\\'; break;
+      case 't':
+        out += '\t';
+        break;
+      case 'n':
+        out += '\n';
+        break;
+      case 'r':
+        out += '\r';
+        break;
+      case 'b':
+        out += '\b';
+        break;
+      case 'f':
+        out += '\f';
+        break;
+      case '"':
+        out += '"';
+        break;
+      case "'":
+        out += "'";
+        break;
+      case '\\':
+        out += '\\';
+        break;
       case 'u': {
         const hex = s.slice(i + 1, i + 5);
         if (/^[0-9A-Fa-f]{4}$/.test(hex)) {
@@ -1072,7 +1088,9 @@ function termToText(t, prefixes) {
   if (t instanceof ListTerm) return `(${t.elems.map((x) => termToText(x, prefixes)).join(' ')})`;
   if (t instanceof OpenListTerm) return `(${t.prefix.map((x) => termToText(x, prefixes)).join(' ')} ... ?${t.tailVar})`;
   if (t instanceof GraphTerm) {
-    const inner = t.triples.map((tr) => `${termToText(tr.s, prefixes)} ${termToText(tr.p, prefixes)} ${termToText(tr.o, prefixes)} .`).join(' ');
+    const inner = t.triples
+      .map((tr) => `${termToText(tr.s, prefixes)} ${termToText(tr.p, prefixes)} ${termToText(tr.o, prefixes)} .`)
+      .join(' ');
     return `{ ${inner} }`;
   }
   return String(t);
@@ -1199,10 +1217,7 @@ function n3ToTrig(n3Text) {
   // - Back-compat:    rt:default rt:graph { ... } .
   const outQuads = [];
   for (const tr of triples) {
-    const isGraphMapping =
-      tr.p instanceof Iri &&
-      tr.p.value === rt.graph &&
-      tr.o instanceof GraphTerm;
+    const isGraphMapping = tr.p instanceof Iri && tr.p.value === rt.graph && tr.o instanceof GraphTerm;
 
     if (isGraphMapping) {
       const g = tr.s;
@@ -1259,8 +1274,14 @@ function parseTriplesBlockAllowImplicitDots(bodyText, env) {
 
   function canStartSubject(tok) {
     if (!tok) return false;
-    return tok.typ === 'IriRef' || tok.typ === 'Ident' || tok.typ === 'Var' ||
-           tok.typ === 'LBracket' || tok.typ === 'LParen' || tok.typ === 'LBrace';
+    return (
+      tok.typ === 'IriRef' ||
+      tok.typ === 'Ident' ||
+      tok.typ === 'Var' ||
+      tok.typ === 'LBracket' ||
+      tok.typ === 'LParen' ||
+      tok.typ === 'LBrace'
+    );
   }
 
   while (p.peek().typ !== 'EOF') {
@@ -1284,9 +1305,11 @@ function parseTriplesBlockAllowImplicitDots(bodyText, env) {
       more = p.parsePredicateObjectList(subj);
       // In SPARQL graph patterns, the '.' between triple blocks is optional.
       if (p.peek().typ === 'Dot') p.next();
-      else if (p.peek().typ === 'EOF') { /* ok */ }
-      else if (canStartSubject(p.peek())) { /* implicit separator */ }
-      else throw new Error(`Expected '.' or start of next triple, got ${p.peek().toString()}`);
+      else if (p.peek().typ === 'EOF') {
+        /* ok */
+      } else if (canStartSubject(p.peek())) {
+        /* implicit separator */
+      } else throw new Error(`Expected '.' or start of next triple, got ${p.peek().toString()}`);
     }
 
     triples.push(...more);
@@ -1298,13 +1321,9 @@ function parseTriplesBlockAllowImplicitDots(bodyText, env) {
 function triplesToN3Body(triples, env) {
   // Render as explicit triple statements (with dots)
   return normalizeInsideBracesKeepStyle(
-    triples
-      .map((tr) => `${termToText(tr.s, env)} ${termToText(tr.p, env)} ${termToText(tr.o, env)} .`)
-      .join(' ')
+    triples.map((tr) => `${termToText(tr.s, env)} ${termToText(tr.p, env)} ${termToText(tr.o, env)} .`).join(' '),
   );
 }
-
-
 
 function mathPrefixLabels(prefixes) {
   if (!Array.isArray(prefixes)) return [];
@@ -1315,8 +1334,6 @@ function stringPrefixLabels(prefixes) {
   if (!Array.isArray(prefixes)) return [];
   return prefixes.filter((p) => (p.iri || '').trim() === STRING_NS).map((p) => p.label);
 }
-
-
 
 function readBalancedParens(s, i) {
   if (s[i] !== '(') throw new Error("Unclosed '(...)'");
@@ -1551,12 +1568,36 @@ function splitTopLevelCommaArgs(s) {
       continue;
     }
 
-    if (ch === '(') { depthPar++; buf += ch; continue; }
-    if (ch === ')') { depthPar--; buf += ch; continue; }
-    if (ch === '{') { depthBr++; buf += ch; continue; }
-    if (ch === '}') { depthBr--; buf += ch; continue; }
-    if (ch === '[') { depthSq++; buf += ch; continue; }
-    if (ch === ']') { depthSq--; buf += ch; continue; }
+    if (ch === '(') {
+      depthPar++;
+      buf += ch;
+      continue;
+    }
+    if (ch === ')') {
+      depthPar--;
+      buf += ch;
+      continue;
+    }
+    if (ch === '{') {
+      depthBr++;
+      buf += ch;
+      continue;
+    }
+    if (ch === '}') {
+      depthBr--;
+      buf += ch;
+      continue;
+    }
+    if (ch === '[') {
+      depthSq++;
+      buf += ch;
+      continue;
+    }
+    if (ch === ']') {
+      depthSq--;
+      buf += ch;
+      continue;
+    }
 
     if (depthPar === 0 && depthBr === 0 && depthSq === 0 && ch === ',') {
       if (buf.trim()) parts.push(buf.trim());
@@ -1584,7 +1625,9 @@ function bindExprToN3Statements(bindInner) {
   if (!m2) return null;
 
   const argsRaw = m2[1];
-  const args = splitTopLevelCommaArgs(argsRaw).map((x) => x.trim()).filter(Boolean);
+  const args = splitTopLevelCommaArgs(argsRaw)
+    .map((x) => x.trim())
+    .filter(Boolean);
   if (!args.length) return null;
 
   // N3: (a b c) string:concatenation ?outVar .
@@ -1636,8 +1679,6 @@ function extractSrlBinds(bodyRaw) {
   return { body: normalizeInsideBracesKeepStyle(out), binds, usedString };
 }
 
-
-
 function parseSimpleComparison(expr) {
   const t0 = stripOuterParensOnce(expr);
   const t = t0.trim();
@@ -1651,12 +1692,18 @@ function parseSimpleComparison(expr) {
   const num = m[3];
 
   const pred =
-    op === '>' ? 'greaterThan'
-      : op === '<' ? 'lessThan'
-        : op === '=' ? 'equalTo'
-          : op === '!=' ? 'notEqualTo'
-            : op === '>=' ? 'notLessThan'
-              : op === '<=' ? 'notGreaterThan'
+    op === '>'
+      ? 'greaterThan'
+      : op === '<'
+        ? 'lessThan'
+        : op === '='
+          ? 'equalTo'
+          : op === '!='
+            ? 'notEqualTo'
+            : op === '>='
+              ? 'notLessThan'
+              : op === '<='
+                ? 'notGreaterThan'
                 : null;
 
   if (!pred) return null;
@@ -1683,8 +1730,6 @@ function filterExprToN3Alternatives(expr) {
   return [[`${cmp.var} math:${cmp.pred} ${cmp.num} .`]];
 }
 
-
-
 function splitListTermsFromN3List(listInner) {
   const s = (listInner || '').trim();
   const terms = [];
@@ -1706,20 +1751,58 @@ function splitListTermsFromN3List(listInner) {
 
     if (inString) {
       buf += ch;
-      if (escaped) { escaped = false; continue; }
-      if (ch === '\\') { escaped = true; continue; }
-      if (ch === quote) { inString = false; quote = null; }
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (ch === '\\') {
+        escaped = true;
+        continue;
+      }
+      if (ch === quote) {
+        inString = false;
+        quote = null;
+      }
       continue;
     }
 
-    if (ch === '"' || ch === "'") { inString = true; quote = ch; buf += ch; continue; }
+    if (ch === '"' || ch === "'") {
+      inString = true;
+      quote = ch;
+      buf += ch;
+      continue;
+    }
 
-    if (ch === '(') { depthPar++; buf += ch; continue; }
-    if (ch === ')') { depthPar--; buf += ch; continue; }
-    if (ch === '{') { depthBr++; buf += ch; continue; }
-    if (ch === '}') { depthBr--; buf += ch; continue; }
-    if (ch === '[') { depthSq++; buf += ch; continue; }
-    if (ch === ']') { depthSq--; buf += ch; continue; }
+    if (ch === '(') {
+      depthPar++;
+      buf += ch;
+      continue;
+    }
+    if (ch === ')') {
+      depthPar--;
+      buf += ch;
+      continue;
+    }
+    if (ch === '{') {
+      depthBr++;
+      buf += ch;
+      continue;
+    }
+    if (ch === '}') {
+      depthBr--;
+      buf += ch;
+      continue;
+    }
+    if (ch === '[') {
+      depthSq++;
+      buf += ch;
+      continue;
+    }
+    if (ch === ']') {
+      depthSq--;
+      buf += ch;
+      continue;
+    }
 
     // allow commas as separators too
     if (depthPar === 0 && depthBr === 0 && depthSq === 0 && (ch === ',' || /\s/.test(ch))) {
@@ -1743,12 +1826,21 @@ function extractStringBindsFromBody(bodyRaw, stringLabels) {
 
   while (i < s.length) {
     const idx = s.indexOf('(', i);
-    if (idx < 0) { out += s.slice(i); break; }
+    if (idx < 0) {
+      out += s.slice(i);
+      break;
+    }
 
     out += s.slice(i, idx);
 
     let blk;
-    try { blk = readBalancedParens(s, idx); } catch { out += s.slice(idx, idx + 1); i = idx + 1; continue; }
+    try {
+      blk = readBalancedParens(s, idx);
+    } catch {
+      out += s.slice(idx, idx + 1);
+      i = idx + 1;
+      continue;
+    }
     const inner = (blk.content || '').trim();
     let j = blk.endIdx;
     while (j < s.length && /\s/.test(s[j])) j++;
@@ -1757,21 +1849,35 @@ function extractStringBindsFromBody(bodyRaw, stringLabels) {
     const full = `<${STRING_NS}concatenation>`;
     let predLen = 0;
     let matched = false;
-    if (s.startsWith(full, j)) { matched = true; predLen = full.length; }
-    else {
+    if (s.startsWith(full, j)) {
+      matched = true;
+      predLen = full.length;
+    } else {
       for (const lab of labels) {
         const tok = `${lab}concatenation`;
-        if (s.startsWith(tok, j)) { matched = true; predLen = tok.length; break; }
+        if (s.startsWith(tok, j)) {
+          matched = true;
+          predLen = tok.length;
+          break;
+        }
       }
     }
 
-    if (!matched) { out += '(' + inner + ')'; i = blk.endIdx; continue; }
+    if (!matched) {
+      out += '(' + inner + ')';
+      i = blk.endIdx;
+      continue;
+    }
 
     j += predLen;
     while (j < s.length && /\s/.test(s[j])) j++;
 
     const mVar = s.slice(j).match(/^(\?[A-Za-z_][A-Za-z0-9_-]*)/);
-    if (!mVar) { out += '(' + inner + ')'; i = blk.endIdx; continue; }
+    if (!mVar) {
+      out += '(' + inner + ')';
+      i = blk.endIdx;
+      continue;
+    }
 
     const outVar = mVar[1];
     j += outVar.length;
@@ -1814,11 +1920,11 @@ function extractMathFiltersFromBody(bodyRaw, mathLabels) {
     const predGroup = [full, ...pref.map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))].join('|');
     const reStmt = new RegExp(
       '(^|[\\s;\\n\\r\\t])' +
-      '(\\?[A-Za-z_][A-Za-z0-9_-]*)\\s+' +
-      `(?:${predGroup})\\s+` +
-      '([-+]?\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?)\\s*\\.?' +
-      '(?=\\s|$)',
-      'g'
+        '(\\?[A-Za-z_][A-Za-z0-9_-]*)\\s+' +
+        `(?:${predGroup})\\s+` +
+        '([-+]?\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?)\\s*\\.?' +
+        '(?=\\s|$)',
+      'g',
     );
 
     out = out.replace(reStmt, (m0, lead, v, num) => {
@@ -1830,10 +1936,8 @@ function extractMathFiltersFromBody(bodyRaw, mathLabels) {
   return { baseBody: normalizeInsideBracesKeepStyle(out), filters };
 }
 
-
-
 // SRL:   NOT { ... }
-// N3 :   ?SCOPE log:notIncludes { ... } .
+// N3 :   (1 { ... } ()) log:collectAllIn ?SCOPE .
 function srlWhereBodyToN3Body(bodyRaw) {
   const s = bodyRaw || '';
   let i = 0;
@@ -1870,7 +1974,7 @@ function srlWhereBodyToN3Body(bodyRaw) {
     const blk = readBalancedBraces(s, j);
     const inner = (blk.content || '').trim();
 
-    out += ` ?SCOPE log:notIncludes { ${inner} } . `;
+    out += ` (1 { ${inner} } ()) log:collectAllIn ?SCOPE . `;
     usedLog = true;
     i = blk.endIdx;
   }
@@ -1878,12 +1982,14 @@ function srlWhereBodyToN3Body(bodyRaw) {
   return { body: normalizeInsideBracesKeepStyle(out), usedLog };
 }
 
-// N3 :   ?SCOPE log:notIncludes { ... } .
+// N3 :   (1 { ... } ()) log:collectAllIn ?SCOPE .
 // SRL:   NOT { ... }
 function n3BodyToSrlWhereBody(bodyRaw, logLabels) {
   const s = bodyRaw || '';
   const labels = Array.isArray(logLabels) && logLabels.length ? logLabels : ['log:'];
   const scope = '?SCOPE';
+
+  const predTokens = [`<${LOG_NS}collectAllIn>`, ...labels.map((lab) => `${lab}collectAllIn`)];
   let i = 0;
   let out = '';
 
@@ -1892,73 +1998,110 @@ function n3BodyToSrlWhereBody(bodyRaw, logLabels) {
   }
 
   while (i < s.length) {
-    const idx = s.indexOf(scope, i);
-    if (idx < 0) {
+    // Find the next collectAllIn predicate occurrence
+    let bestPos = -1;
+    let bestTok = null;
+    for (const tok of predTokens) {
+      const pos = s.indexOf(tok, i);
+      if (pos >= 0 && (bestPos < 0 || pos < bestPos)) {
+        bestPos = pos;
+        bestTok = tok;
+      }
+    }
+
+    if (bestPos < 0) {
       out += s.slice(i);
       break;
     }
 
-    const before = idx === 0 ? null : s[idx - 1];
-    if (!isBoundary(before)) {
-      i = idx + scope.length;
+    const predPos = bestPos;
+
+    // Subject must be a (...) list ending right before the predicate
+    let k = predPos - 1;
+    while (k >= 0 && /\s/.test(s[k])) k--;
+    if (k < 0 || s[k] !== ')') {
+      out += s.slice(i, predPos + bestTok.length);
+      i = predPos + bestTok.length;
       continue;
     }
+    const subjEndIdx = k + 1;
 
-    let j = idx + scope.length;
-    out += s.slice(i, idx);
+    // Find the matching '(' for this ')'
+    let subjStart = -1;
+    let subjPar = null;
+    let searchFrom = k;
 
-    // skip ws
-    while (j < s.length && /\s/.test(s[j])) j++;
-
-    // predicate token
-    let predLen = 0;
-    let matched = false;
-
-    // full IRI form
-    const full = `<${LOG_NS}notIncludes>`;
-    if (s.startsWith(full, j)) {
-      predLen = full.length;
-      matched = true;
-    } else {
-      for (const lab of labels) {
-        const tok = `${lab}notIncludes`;
-        if (s.startsWith(tok, j)) {
-          predLen = tok.length;
-          matched = true;
+    while (true) {
+      const cand = s.lastIndexOf('(', searchFrom);
+      if (cand < 0) break;
+      const before = cand === 0 ? null : s[cand - 1];
+      if (!isBoundary(before)) {
+        searchFrom = cand - 1;
+        continue;
+      }
+      try {
+        const par = readBalancedParens(s, cand);
+        if (par.endIdx === subjEndIdx) {
+          subjStart = cand;
+          subjPar = par;
           break;
         }
-      }
+      } catch {}
+      searchFrom = cand - 1;
     }
 
-    if (!matched) {
-      // not our pattern; keep literal scope and move on
-      out += scope;
-      i = idx + scope.length;
+    if (subjStart < 0 || !subjPar) {
+      out += s.slice(i, predPos + bestTok.length);
+      i = predPos + bestTok.length;
       continue;
     }
 
-    j += predLen;
+    // Match: (1 { ... } ()) log:collectAllIn ?SCOPE .
+    const terms = splitListTermsFromN3List(subjPar.content);
+    if (terms.length !== 3) {
+      out += s.slice(i, predPos + bestTok.length);
+      i = predPos + bestTok.length;
+      continue;
+    }
+    const t0 = (terms[0] || '').trim();
+    const t1 = (terms[1] || '').trim();
+    const t2 = (terms[2] || '').trim();
+
+    if (t0 !== '1' || t2 !== '()' || !t1.startsWith('{')) {
+      out += s.slice(i, predPos + bestTok.length);
+      i = predPos + bestTok.length;
+      continue;
+    }
+
+    let inner = null;
+    try {
+      const blk = readBalancedBraces(t1, 0);
+      inner = (blk.content || '').trim();
+    } catch {
+      out += s.slice(i, predPos + bestTok.length);
+      i = predPos + bestTok.length;
+      continue;
+    }
+
+    // Object must be ?SCOPE (scope position); consume optional trailing '.'
+    let j = predPos + bestTok.length;
     while (j < s.length && /\s/.test(s[j])) j++;
-    if (s[j] !== '{') {
-      // malformed; keep text as-is
-      out += scope;
-      i = idx + scope.length;
+    if (!s.startsWith(scope, j)) {
+      out += s.slice(i, predPos + bestTok.length);
+      i = predPos + bestTok.length;
       continue;
     }
+    j += scope.length;
+    while (j < s.length && /\s/.test(s[j])) j++;
+    if (s[j] === '.') j++;
 
-    const blk = readBalancedBraces(s, j);
-    const inner = (blk.content || '').trim();
-    let k = blk.endIdx;
-    while (k < s.length && /\s/.test(s[k])) k++;
-    if (s[k] === '.') k++; // consume optional trailing '.'
-
+    out += s.slice(i, subjStart);
     out += `NOT { ${inner} } `;
-    i = k;
+    i = j;
   }
 
   return normalizeInsideBracesKeepStyle(out);
 }
-
 
 function stripOnlyWholeLineHashComments(src) {
   // IMPORTANT: do NOT treat '#' as an inline comment marker here,
@@ -1980,7 +2123,6 @@ function indentLines(s, n) {
     .map((line) => (line.trim().length ? pad + line : line))
     .join('\n');
 }
-
 
 function parseSrlPrefixLines(src) {
   const prefixes = [];
@@ -2188,7 +2330,7 @@ function srlToN3(srlText) {
   let needsString = false;
 
   for (const r of rules) {
-    // 1) NOT { ... }  ->  ?SCOPE log:notIncludes { ... } .
+    // 1) NOT { ... }  ->  (1 { ... } ()) log:collectAllIn ?SCOPE .
     const convNot = srlWhereBodyToN3Body(r.body);
     needsLog = needsLog || convNot.usedLog;
     if (convNot.usedLog && !env.map.log) env.setPrefix('log', LOG_NS);
@@ -2393,12 +2535,17 @@ function quadToNQuadString(q) {
 
 function sortedNQuadsFromTriG(trigText) {
   const { quads } = parseTriG(trigText);
-  return quads.map(quadToNQuadString).map((s) => s.trim()).filter(Boolean).sort().join('\n');
+  return quads
+    .map(quadToNQuadString)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .sort()
+    .join('\n');
 }
 
 function printHelp() {
   process.stdout.write(
-`return.js — TriG<->N3 (rt:graph) and SRL<->N3 (rules)
+    `return.js — TriG<->N3 (rt:graph) and SRL<->N3 (rules)
 
 Demos:
   node return.js --demo trig
@@ -2415,7 +2562,7 @@ SRL (PREFIX + RULE/WHERE) <-> N3 rules:
 Options:
   --help
   --reason   run eyeling on produced N3 (if available)
-`
+`,
   );
 }
 
@@ -2491,11 +2638,7 @@ async function main() {
     return;
   }
 
-  const text = inputFile
-    ? await fs.readFile(inputFile, 'utf8')
-    : (from === 'srl' || to === 'srl')
-      ? EXAMPLE_SRL
-      : EXAMPLE_TRIG;
+  const text = inputFile ? await fs.readFile(inputFile, 'utf8') : from === 'srl' || to === 'srl' ? EXAMPLE_SRL : EXAMPLE_TRIG;
 
   if (from === 'trig' && to === 'n3') {
     process.stdout.write(trigToN3(text));
@@ -2530,4 +2673,3 @@ main().catch((e) => {
   console.error(e);
   process.exitCode = 1;
 });
-

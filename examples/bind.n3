@@ -4,4 +4,4 @@
 
 :phayes a :Person ; :givenName "Pat"; :familyName "Hayes" .
 
-{ ?x a :Person . ?SCOPE log:notIncludes { ?x :name ?someName . } . ?x :givenName ?name1 . ?x :familyName ?name2 . (?name1 " " ?name2) string:concatenation ?FN . } => { ?x :name ?FN } .
+{ ?x a :Person . (1 { ?x :name ?someName . } ()) log:collectAllIn ?SCOPE . ?x :givenName ?name1 . ?x :familyName ?name2 . (?name1 " " ?name2) string:concatenation ?FN . } => { ?x :name ?FN } .
