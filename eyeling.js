@@ -5700,9 +5700,8 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   // to mimic EYE's fm(...) formatting branch.
   if (pv === LOG_NS + 'trace') {
     const pref = __tracePrefixes || PrefixEnv.newDefault();
-    const xStr = termToN3(g.s, pref);
 
-    const xNum = parseNum(g.s);
+    const xStr = termToN3(g.s, pref);
     const yStr = termToN3(g.o, pref);
 
     __traceWriteLine(`${xStr} TRACE ${yStr}`);
@@ -7127,6 +7126,8 @@ function main() {
     toks = lex(text);
     const parser = new Parser(toks);
     [prefixes, triples, frules, brules] = parser.parseDocument();
+    // Make the parsed prefixes available to log:trace output (CLI path)
+    __tracePrefixes = prefixes;
   } catch (e) {
     if (e && e.name === 'N3SyntaxError') {
       console.error(formatN3SyntaxError(e, text, path));
