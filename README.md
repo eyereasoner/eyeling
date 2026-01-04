@@ -17,13 +17,14 @@ A [Notation3 (N3)](https://notation3.org/) reasoner in **JavaScript**.
 Try it here:
 
 - [Eyeling playground](https://eyereasoner.github.io/eyeling/demo)
+  - Edit an N3 program directly.
+  - Load an N3 program from a URL (in the "Load N3 from URL" box or as ?url=...).
+  - Share a link with the program encoded in the URL fragment (`#...`).
+
 - [Eyeling streaming playground](https://eyereasoner.github.io/eyeling/stream)
-
-The playground runs `eyeling` client-side. You can:
-
-- edit an N3 program directly
-- load an N3 program from a URL (in the "Load N3 from URL" box or as ?url=...)
-- share a link with the program encoded in the URL fragment (`#...`)
+  - Browse a Wikidata entity, load its facts, and see Eyeling’s **deductive closure appear incrementally** as triples are derived.
+  - Edit **N3 rules live** and re-run to watch how different inference rules change what gets derived.
+  - Demo **CORS-safe dynamic fetching**: derived “fetch requests” can trigger extra facts (e.g., Wikiquote extracts) that are injected and re-reasoned.
 
 ## Quick start
 
@@ -165,6 +166,7 @@ The CLI prints only newly derived forward facts.
 - backward rules are indexed by head predicate
 - the backward prover is **iterative** (explicit stack), so deep chains won’t blow the JS call stack
 - for very deep backward chains, substitutions may be compactified (semantics-preserving) to avoid quadratic “copy a growing substitution object” behavior
+- if the head is **structurally ground** and has no head blanks, one body proof suffices—and if the head triples are already known, we can skip the body proof.
 
 ## Blank nodes and quantification
 
@@ -202,7 +204,7 @@ Rules whose conclusion is `false` are treated as hard failures:
 
 As soon as the premise is provable, `eyeling` exits with status code `2`.
 
-## Syntax + built-ins
+## Syntax
 
 `eyeling`’s parser targets (nearly) the full *Notation3 Language* grammar from the [W3C N3 Community Group spec](https://w3c.github.io/N3/spec/).
 
@@ -223,14 +225,9 @@ Commonly used N3/Turtle features:
 - Resource paths (`!` and `^`)
 - `#` line comments
 
-`eyeling` implements a pragmatic subset of common N3 builtin families and evaluates them during backward goal proving:
+## Builtins
 
-- **crypto**: `crypto:md5` `crypto:sha` `crypto:sha256` `crypto:sha512`
-- **list**: `list:append` `list:first` `list:firstRest` `list:in` `list:iterate` `list:last` `list:length` `list:map` `list:member` `list:memberAt` `list:notMember` `list:remove` `list:rest` `list:reverse` `list:sort`
-- **log**: `log:collectAllIn` `log:content` `log:dtlit` `log:equalTo` `log:forAllIn` `log:impliedBy` `log:implies` `log:includes` `log:langlit` `log:notEqualTo` `log:notIncludes` `log:outputString` `log:parsedAsN3` `log:rawType` `log:semantics` `log:semanticsOrError` `log:skolem` `log:trace` `log:uri`
-- **math**: `math:absoluteValue` `math:acos` `math:asin` `math:atan` `math:cos` `math:cosh` `math:degrees` `math:difference` `math:equalTo` `math:exponentiation` `math:greaterThan` `math:integerQuotient` `math:lessThan` `math:negation` `math:notEqualTo` `math:notGreaterThan` `math:notLessThan` `math:product` `math:quotient` `math:remainder` `math:rounded` `math:sin` `math:sinh` `math:sum` `math:tan` `math:tanh`
-- **string**: `string:concatenation` `string:contains` `string:containsIgnoringCase` `string:endsWith` `string:equalIgnoringCase` `string:format` `string:greaterThan` `string:jsonPointer` `string:lessThan` `string:matches` `string:notEqualIgnoringCase` `string:notGreaterThan` `string:notLessThan` `string:notMatches` `string:replace` `string:scrape` `string:startsWith`
-- **time**: `time:day` `time:hour` `time:localTime` `time:minute` `time:month` `time:second` `time:timeZone` `time:year`
+`eyeling` implements the builtins described in [eyeling-builtins]
 
 ## License
 
