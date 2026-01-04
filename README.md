@@ -227,7 +227,7 @@ Commonly used N3/Turtle features:
 
 ## Builtins
 
-`eyeling` implements the builtins described in [eyeling-builtins]
+`eyeling` implements the builtins described in [eyeling-builtins](https://github.com/eyereasoner/eyeling/blob/main/eyeling-builtins.ttl).
 
 ## License
 
