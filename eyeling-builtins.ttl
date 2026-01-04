@@ -145,6 +145,9 @@ math:negation a ex:Builtin ; ex:kind ex:Function ;
 time:day a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Extracts day component from xsd:dateTime subject; binds/unifies object with integer token." .
 
+time:hour a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Extracts hour component from xsd:dateTime subject; binds/unifies object with integer token." .
+
 time:minute a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Extracts minute component from xsd:dateTime subject; binds/unifies object with integer token." .
 

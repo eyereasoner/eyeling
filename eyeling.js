@@ -3542,7 +3542,7 @@ function parseXsdDatetimeTerm(t) {
 
 function parseXsdDateTimeLexParts(t) {
   // Parse *lexical* components of an xsd:dateTime literal without timezone normalization.
-  // Returns { yearStr, month, day, minute, second, tz } or null.
+  // Returns { yearStr, month, day, hour, minute, second, tz } or null.
   if (!(t instanceof Literal)) return null;
   const [lex, dt] = literalParts(t.value);
   if (dt !== XSD_NS + 'dateTime') return null;
@@ -3555,16 +3555,18 @@ function parseXsdDateTimeLexParts(t) {
   const yearStr = m[1];
   const month = parseInt(m[2], 10);
   const day = parseInt(m[3], 10);
+  const hour = parseInt(m[4], 10);
   const minute = parseInt(m[5], 10);
   const second = parseInt(m[6], 10);
   const tz = m[7] || null;
 
   if (!(month >= 1 && month <= 12)) return null;
   if (!(day >= 1 && day <= 31)) return null;
+  if (!(hour >= 0 && hour <= 23)) return null;
   if (!(minute >= 0 && minute <= 59)) return null;
   if (!(second >= 0 && second <= 59)) return null;
 
-  return { yearStr, month, day, minute, second, tz };
+  return { yearStr, month, day, hour, minute, second, tz };
 }
 
 function parseDatetimeLike(t) {
@@ -4682,6 +4684,32 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     if (oi !== null) {
       try {
         if (oi === BigInt(parts.day)) return [{ ...subst }];
+      } catch {}
+    }
+
+    const s2 = unifyTerm(g.o, out, subst);
+    return s2 !== null ? [s2] : [];
+  }
+
+  // time:hour
+  // Gets as object the integer hour component of the subject xsd:dateTime.
+  // Schema: $s+ time:hour $o-
+  if (pv === TIME_NS + 'hour') {
+    const parts = parseXsdDateTimeLexParts(g.s);
+    if (!parts) return [];
+    const out = internLiteral(String(parts.hour));
+
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = out;
+      return [s2];
+    }
+    if (g.o instanceof Blank) return [{ ...subst }];
+
+    const oi = parseIntLiteral(g.o);
+    if (oi !== null) {
+      try {
+        if (oi === BigInt(parts.hour)) return [{ ...subst }];
       } catch {}
     }
 

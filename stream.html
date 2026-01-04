@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Eyeling × Wikidata — Streaming Closure (Magritte default)</title>
+  <title>Eyeling × Wikidata — Streaming Closure (Practical Layout)</title>
 
   <style>
     :root{
@@ -53,6 +53,7 @@
       border-radius: 10px;
       cursor: pointer;
       font-weight: 700;
+      white-space: nowrap;
     }
     .topbar button.secondary{
       background: var(--btn2);
@@ -65,13 +66,14 @@
       cursor: not-allowed;
     }
 
+    /* Two columns: LEFT = browser + dataset, RIGHT = closure + rules */
     .layout{
       display: grid;
-      grid-template-columns: 1.05fr 0.95fr;
+      grid-template-columns: 1fr 1fr;
       gap: 12px;
       padding: 12px;
       box-sizing:border-box;
-      max-width: 1400px;
+      max-width: 1500px;
       margin: 0 auto;
       align-items: start;
     }
@@ -80,14 +82,10 @@
       .layout{ grid-template-columns: 1fr; }
     }
 
-    .leftcol{
+    .col{
       display:flex;
       flex-direction: column;
       gap: 12px;
-      min-width: 0;
-    }
-
-    .rightcol{
       min-width: 0;
     }
 
@@ -125,7 +123,6 @@
 
     textarea{
       width: 100%;
-      resize: none;                 /* we auto-grow; user scrolls page */
       background: var(--codebg);
       border: 1px solid var(--line);
       color: var(--text);
@@ -135,14 +132,28 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 12px;
       line-height: 1.35;
-      overflow: hidden;             /* no internal scrollbars; we grow height */
-      min-height: 120px;
+    }
+
+    textarea.preview{
+      height: 220px;
+      overflow: auto;
+      resize: vertical;
+    }
+
+    textarea.rules{
+      height: min(42vh, 420px);
+      min-height: 240px;
+      overflow: auto;
+      resize: vertical;
     }
 
     .list{
       display:flex;
       flex-direction:column;
       gap:8px;
+      max-height: 240px;
+      overflow: auto;
+      padding-right: 2px;
     }
 
     .item{
@@ -174,28 +185,8 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 12px;
       line-height: 1.35;
-    }
-
-    details{
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      background: #fff;
-      overflow: hidden;
-    }
-    details > summary{
-      cursor: pointer;
-      padding: 10px 12px;
-      font-weight: 900;
-      color: var(--muted);
-      list-style: none;
-    }
-    details > summary::-webkit-details-marker { display:none; }
-    details .detailsBody{
-      padding: 10px 12px 12px;
-      border-top: 1px solid var(--line);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      max-height: min(52vh, 560px);
+      overflow: auto;
     }
 
     .badge{
@@ -206,6 +197,55 @@
       border: 1px solid var(--line);
       background: #fff;
       color: var(--muted);
+    }
+
+    .modalBackdrop{
+      position: fixed;
+      inset: 0;
+      background: rgba(12,18,28,.55);
+      display:none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 1000;
+    }
+    .modal{
+      width: min(1100px, 96vw);
+      height: min(86vh, 900px);
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      box-shadow: 0 20px 80px rgba(0,0,0,.25);
+      display:flex;
+      flex-direction: column;
+      overflow:hidden;
+    }
+    .modalHeader{
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap:10px;
+      background: #fff;
+    }
+    .modalHeader .title{
+      font-weight: 900;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .modalBody{
+      padding: 12px;
+      display:flex;
+      flex-direction: column;
+      gap:10px;
+      height: 100%;
+    }
+    textarea.full{
+      flex: 1 1 auto;
+      height: 100%;
+      resize: none;
+      overflow: auto;
     }
   </style>
 </head>
@@ -220,8 +260,8 @@
   </div>
 
   <div class="layout">
-    <div class="leftcol">
-      <!-- 1) Browse -->
+    <!-- LEFT: browser + dataset -->
+    <div class="col">
       <section class="panel" id="panelBrowse">
         <h2>Wikidata browser + dataset</h2>
         <div class="content">
@@ -234,34 +274,23 @@
           <div class="muted">
             Selected: <span id="selId" class="mono">—</span>
             <span id="selLabel"></span>
+            <span id="dsInfo" class="badge" style="display:none"></span>
           </div>
 
           <div class="list" id="results"></div>
 
-          <div class="muted">Dataset (Turtle/N3). This is what Eyeling reasons over:</div>
-          <textarea id="dataBox" spellcheck="false"></textarea>
-        </div>
-      </section>
+          <div class="row">
+            <div class="muted" style="flex:1">Dataset preview (first lines). Full dataset opens in a pop-up.</div>
+            <button id="openDatasetBtn" class="secondary" disabled>Open full dataset</button>
+          </div>
 
-      <!-- 2) Rules (collapsed by default) -->
-      <section class="panel" id="panelRules">
-        <h2>Rules</h2>
-        <div class="content">
-          <details id="rulesDetails">
-            <summary>N3 logic rules (collapsed)</summary>
-            <div class="detailsBody">
-              <div class="muted">
-                Open to edit rules. Tip: for big items, disable class expansion first.
-              </div>
-              <textarea id="rulesBox" spellcheck="false"></textarea>
-            </div>
-          </details>
+          <textarea id="dataPreview" class="preview" spellcheck="false" readonly></textarea>
         </div>
       </section>
     </div>
 
-    <!-- 3) Output on the right -->
-    <div class="rightcol">
+    <!-- RIGHT: closure + rules -->
+    <div class="col">
       <section class="panel" id="panelOut">
         <h2>Streaming deductive closure</h2>
         <div class="content">
@@ -272,16 +301,34 @@
           <div class="out" id="outBox"></div>
         </div>
       </section>
+
+      <section class="panel" id="panelRules">
+        <h2>N3 logic rules</h2>
+        <div class="content">
+          <div class="muted">Edit rules here. (Reasoning runs over rules + the full dataset in memory.)</div>
+          <textarea id="rulesBox" class="rules" spellcheck="false"></textarea>
+        </div>
+      </section>
     </div>
   </div>
 
-  <!-- Load your updated eyeling.js (must expose self.eyeling.reasonStream) -->
+  <!-- Modal: full dataset -->
+  <div class="modalBackdrop" id="modalBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Full dataset">
+      <div class="modalHeader">
+        <div class="title">Full dataset (Turtle/N3)</div>
+        <button id="modalCloseBtn" class="secondary">Close</button>
+      </div>
+      <div class="modalBody">
+        <div class="muted">This is the full Turtle/N3 that Eyeling reasons over.</div>
+        <textarea id="dataFull" class="full" spellcheck="false" readonly></textarea>
+      </div>
+    </div>
+  </div>
+
   <script src="eyeling.js"></script>
 
   <script>
-    // ---------------------------
-    // Default rules (Wikidata-flavoured)
-    // ---------------------------
     const DEFAULT_RULES = `# Eyeling N3 rules (Wikidata-flavoured)
 @prefix wd: <http://www.wikidata.org/entity/> .
 @prefix wdt: <http://www.wikidata.org/prop/direct/> .
@@ -289,21 +336,17 @@
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
-# 1) instance-of and subclass-of
 { ?x wdt:P31 ?c } => { ?x a ?c } .
 { ?c wdt:P279 ?d } => { ?c rdfs:subClassOf ?d } .
 
-# 2) RDFS closure
 { ?a rdfs:subClassOf ?b . ?b rdfs:subClassOf ?c } => { ?a rdfs:subClassOf ?c } .
 { ?x a ?c . ?c rdfs:subClassOf ?d } => { ?x a ?d } .
 
-# 3) Symmetric properties (data-driven): if prop is symmetric property (Q18647518)
 { ?prop wdt:P31 wd:Q18647518 .
   ?prop wikibase:directClaim ?p .
   ?s ?p ?o
 } => { ?o ?p ?s } .
 
-# 4) Inverse properties (data-driven) using P1696
 { ?prop wdt:P1696 ?inv .
   ?prop wikibase:directClaim ?p .
   ?inv wikibase:directClaim ?q .
@@ -311,24 +354,18 @@
 } => { ?o ?q ?s } .
 `;
 
-    // ---------------------------
-    // Toy example dataset (small and readable)
-    // ---------------------------
     const TOY_DATA = `# Toy example (small and readable)
 @prefix wd: <http://www.wikidata.org/entity/> .
 @prefix wdt: <http://www.wikidata.org/prop/direct/> .
 @prefix wikibase: <http://wikiba.se/ontology#> .
 
-# Type propagation:
 wd:QAlice wdt:P31 wd:Q5 .
 wd:Q5 wdt:P279 wd:Q215627 .
 
-# Symmetry via property metadata:
 wd:P26 wdt:P31 wd:Q18647518 .
 wd:P26 wikibase:directClaim wdt:P26 .
 wd:QAlice wdt:P26 wd:QBob .
 
-# Inverse properties (part of / has part):
 wd:P361 wdt:P1696 wd:P527 .
 wd:P361 wikibase:directClaim wdt:P361 .
 wd:P527 wikibase:directClaim wdt:P527 .
@@ -336,32 +373,26 @@ wd:QWheel wdt:P361 wd:QCar .
 `;
 
     const MAGRITTE_LABEL = "René Magritte";
-    const MAGRITTE_QID = "Q7836"; // René Magritte in Wikidata
+    const MAGRITTE_QID = "Q7836";
+    const PREVIEW_LINES = 220;
+
     const $ = (id) => document.getElementById(id);
-
-    function autoGrowTextarea(el){
-      el.style.height = 'auto';
-      el.style.height = Math.max(120, el.scrollHeight + 2) + 'px';
-    }
-
     $('rulesBox').value = DEFAULT_RULES;
-    autoGrowTextarea($('rulesBox'));
 
-    // ---------------------------
-    // State
-    // ---------------------------
-    let selected = null;    // { id, label, description }
+    let selected = null;
     let worker = null;
     let runId = 0;
     let isRunning = false;
     let lastSelectedDiv = null;
     let resultDivById = new Map();
+    let datasetN3 = '';
 
     function updateButtons(){
       const hasSelection = !!selected;
-      const hasData = !!$('dataBox').value.trim();
+      const hasData = !!datasetN3.trim();
       $('loadBtn').disabled = isRunning || !hasSelection;
       $('reasonBtn').disabled = isRunning || !hasData;
+      $('openDatasetBtn').disabled = !hasData;
     }
 
     function setStatus(text){ $('runStatus').textContent = text; }
@@ -370,13 +401,29 @@ wd:QWheel wdt:P361 wd:QCar .
       $('derivedCount').textContent = '0';
     }
     function appendTriples(triples){
-      const box = $('outBox');
-      box.textContent += triples.join('\n') + '\n';
+      $('outBox').textContent += triples.join('\n') + '\n';
     }
 
-    // ---------------------------
-    // Wikidata helpers
-    // ---------------------------
+    function setDataset(text){
+      datasetN3 = text || '';
+      const lines = datasetN3.split(/\r?\n/);
+      const shown = lines.slice(0, PREVIEW_LINES).join('\n');
+      const suffix = lines.length > PREVIEW_LINES
+        ? `\n\n# … (${lines.length - PREVIEW_LINES} more lines hidden; click "Open full dataset")`
+        : '';
+      $('dataPreview').value = shown + suffix;
+      $('dataFull').value = datasetN3;
+
+      const bytes = new Blob([datasetN3]).size;
+      const kb = Math.round(bytes / 1024);
+      const info = `${lines.length.toLocaleString()} lines · ~${kb.toLocaleString()} KB`;
+      const badge = $('dsInfo');
+      badge.style.display = datasetN3 ? 'inline-block' : 'none';
+      badge.textContent = info;
+
+      updateButtons();
+    }
+
     const WD_API = 'https://www.wikidata.org/w/api.php';
 
     async function wdSearch(query){
@@ -450,9 +497,6 @@ wd:QWheel wdt:P361 wd:QCar .
       return ttlChunks.join('\n\n');
     }
 
-    // ---------------------------
-    // Worker setup (preferred for true streaming UI)
-    // ---------------------------
     function ensureWorker(){
       if (worker) worker.terminate();
 
@@ -491,7 +535,6 @@ wd:QWheel wdt:P361 wd:QCar .
       return worker;
     }
 
-    // Main-thread fallback (still works when Worker/importScripts is blocked)
     function runReasoningMainThread(program){
       if (!window.eyeling || !window.eyeling.reasonStream) {
         throw new Error("Eyeling not loaded. Ensure eyeling.js is next to this HTML and exposes self.eyeling.reasonStream.");
@@ -510,21 +553,14 @@ wd:QWheel wdt:P361 wd:QCar .
       $('derivedCount').textContent = String(derivedCount);
     }
 
-    // ---------------------------
-    // UI actions
-    // ---------------------------
     function selectResult(r, div){
       selected = r;
       $('selId').textContent = r.id;
       $('selLabel').textContent = ` — ${r.label}`;
 
       if (lastSelectedDiv) lastSelectedDiv.classList.remove('selected');
-      if (div) {
-        div.classList.add('selected');
-        lastSelectedDiv = div;
-      } else {
-        lastSelectedDiv = null;
-      }
+      if (div) { div.classList.add('selected'); lastSelectedDiv = div; }
+      else { lastSelectedDiv = null; }
 
       updateButtons();
     }
@@ -575,20 +611,16 @@ wd:QWheel wdt:P361 wd:QCar .
         const baseTTL = await fetchEntityTTL(selected.id);
 
         let extra = '';
-
         if ($('expandClasses').checked) {
           setStatus(`Fetching class hierarchy (depth 2)…`);
           extra += '\n\n' + await expandClassesDepth2(baseTTL);
         }
-
         if ($('fetchRuleProps').checked) {
           setStatus(`Fetching property pages referenced by rules…`);
           extra += '\n\n' + await fetchRulePropertyPages($('rulesBox').value);
         }
 
-        $('dataBox').value = baseTTL + extra;
-        autoGrowTextarea($('dataBox'));
-
+        setDataset(baseTTL + extra);
         setStatus(`Loaded ${selected.id}. Ready to reason.`);
       } catch(e){
         setStatus(`Load error: ${e.message || e}`);
@@ -603,28 +635,22 @@ wd:QWheel wdt:P361 wd:QCar .
       if (lastSelectedDiv) { lastSelectedDiv.classList.remove('selected'); lastSelectedDiv = null; }
       $('selId').textContent = 'toy';
       $('selLabel').textContent = ' — local demo data';
-      $('dataBox').value = TOY_DATA;
-      autoGrowTextarea($('dataBox'));
+      setDataset(TOY_DATA);
       setStatus('Toy example loaded. Ready to reason.');
       updateButtons();
     }
 
     function runReasoning(){
-      const data = $('dataBox').value;
       const rules = $('rulesBox').value;
-      if (!data.trim() || !rules.trim()) return;
+      if (!datasetN3.trim() || !rules.trim()) return;
 
-      autoGrowTextarea($('dataBox'));
-      autoGrowTextarea($('rulesBox'));
-
-      const program = rules + "\n\n" + data;
+      const program = rules + "\n\n" + datasetN3;
 
       clearOutput();
       isRunning = true;
       updateButtons();
       setStatus('Reasoning (streaming)…');
 
-      // Try Worker first (true streaming); fallback if blocked
       const supportsWorker = (typeof Worker !== 'undefined');
 
       if (supportsWorker) {
@@ -685,11 +711,10 @@ wd:QWheel wdt:P361 wd:QCar .
           }
         };
 
-        w.postMessage({ runId: thisRun, dataN3: data, rulesN3: rules });
+        w.postMessage({ runId: thisRun, dataN3: datasetN3, rulesN3: rules });
         return;
       }
 
-      // No worker support
       try {
         runReasoningMainThread(program);
         setStatus("Done (no worker).");
@@ -701,47 +726,42 @@ wd:QWheel wdt:P361 wd:QCar .
       }
     }
 
-    // ---------------------------
-    // Auto-load Magritte by default
-    // ---------------------------
-    async function loadDefaultMagritte(){
-      $('searchBox').value = MAGRITTE_LABEL;
-
-      const results = await doSearch();
-
-      // Prefer the known QID if present; otherwise fall back to first hit.
-      let target = results.find(r => r.id === MAGRITTE_QID) || results[0];
-      if (!target) return;
-
-      const div = resultDivById.get(target.id);
-      selectResult(target, div);
-
-      await loadSelection();
-      // Let UI paint, then start reasoning so you can see early derivations appear.
-      setTimeout(runReasoning, 60);
+    // Modal
+    function openModal(){
+      $('modalBackdrop').style.display = 'flex';
+      $('modalBackdrop').setAttribute('aria-hidden', 'false');
     }
+    function closeModal(){
+      $('modalBackdrop').style.display = 'none';
+      $('modalBackdrop').setAttribute('aria-hidden', 'true');
+    }
+    $('openDatasetBtn').onclick = openModal;
+    $('modalCloseBtn').onclick = closeModal;
+    $('modalBackdrop').addEventListener('click', (e) => { if (e.target === $('modalBackdrop')) closeModal(); });
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 
-    // ---------------------------
-    // Wire up events
-    // ---------------------------
+    // Wire up buttons
     $('searchBtn').onclick = doSearch;
     $('loadBtn').onclick = loadSelection;
     $('toyBtn').onclick = () => { loadToy(); setTimeout(runReasoning, 60); };
     $('reasonBtn').onclick = runReasoning;
-
-    $('dataBox').addEventListener('input', () => { autoGrowTextarea($('dataBox')); updateButtons(); });
-    $('rulesBox').addEventListener('input', () => { autoGrowTextarea($('rulesBox')); });
-
-    $('rulesDetails').addEventListener('toggle', () => { autoGrowTextarea($('rulesBox')); });
-
     $('searchBox').addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
 
+    async function loadDefaultMagritte(){
+      $('searchBox').value = MAGRITTE_LABEL;
+      const results = await doSearch();
+      const target = results.find(r => r.id === MAGRITTE_QID) || results[0];
+      if (!target) return;
+      const div = resultDivById.get(target.id);
+      selectResult(target, div);
+      await loadSelection();
+      setTimeout(runReasoning, 60);
+    }
+
     window.addEventListener('DOMContentLoaded', async () => {
-      // Start with Magritte (Wikidata) as default example.
       try {
         await loadDefaultMagritte();
       } catch (e) {
-        // If Wikidata fetch fails (offline/CORS), fall back to the toy example so the page is still usable.
         setStatus(`Default load failed (${e.message || e}). Loading toy example instead…`);
         loadToy();
         setTimeout(runReasoning, 60);
