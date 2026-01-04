@@ -4131,7 +4131,7 @@ function evalCryptoHashBuiltin(g, subst, algo) {
 // ===========================================================================
 // Backward proof & builtins mutual recursion — declarations first
 
-function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
+function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   const g = applySubstTriple(goal, subst);
   const pv = iriValue(g.p);
   if (pv === null) return null;
@@ -5648,7 +5648,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
 
     const visited2 = [];
     // Start from the incoming substitution so bindings flow outward.
-    return proveGoals(Array.from(g.o.triples), { ...subst }, scopeFacts, [], depth + 1, visited2, varGen);
+    return proveGoals(Array.from(g.o.triples), { ...subst }, scopeFacts, [], depth + 1, visited2, varGen, maxResults);
   }
 
   // log:notIncludes
@@ -5669,7 +5669,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen) {
     });
 
     const visited2 = [];
-    const sols = proveGoals(Array.from(g.o.triples), { ...subst }, scopeFacts, [], depth + 1, visited2, varGen);
+    const sols = proveGoals(Array.from(g.o.triples), { ...subst }, scopeFacts, [], depth + 1, visited2, varGen, 1);
     return sols.length ? [] : [{ ...subst }];
   }
 
@@ -6244,10 +6244,11 @@ function maybeCompactSubst(subst, goals, answerVars, depth) {
   return gcCompactForGoals(subst, goals, answerVars);
 }
 
-function proveGoals(goals, subst, facts, backRules, depth, visited, varGen) {
+function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxResults) {
   // Iterative DFS over proof states using an explicit stack.
   // Each state carries its own substitution and remaining goals.
   const results = [];
+  const max = typeof maxResults === 'number' && maxResults > 0 ? maxResults : Infinity;
 
   const initialGoals = Array.isArray(goals) ? goals.slice() : [];
   const initialSubst = subst ? { ...subst } : {};
@@ -6258,6 +6259,8 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen) {
   gcCollectVarsInGoals(initialGoals, answerVars);
   if (!initialGoals.length) {
     results.push(gcCompactForGoals(initialSubst, [], answerVars));
+
+    if (results.length >= max) return results;
     return results;
   }
 
@@ -6275,6 +6278,8 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen) {
 
     if (!state.goals.length) {
       results.push(gcCompactForGoals(state.subst, [], answerVars));
+
+      if (results.length >= max) return results;
       continue;
     }
 
@@ -6284,13 +6289,18 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen) {
 
     // 1) Builtins
     if (isBuiltinPred(goal0.p)) {
-      const deltas = evalBuiltin(goal0, {}, facts, backRules, state.depth, varGen);
+      const remaining = max - results.length;
+      if (remaining <= 0) return results;
+      const builtinMax = Number.isFinite(remaining) && !restGoals.length ? remaining : undefined;
+      const deltas = evalBuiltin(goal0, {}, facts, backRules, state.depth, varGen, builtinMax);
       const nextStates = [];
       for (const delta of deltas) {
         const composed = composeSubst(state.subst, delta);
         if (composed === null) continue;
         if (!restGoals.length) {
           results.push(gcCompactForGoals(composed, [], answerVars));
+
+          if (results.length >= max) return results;
         } else {
           const nextSubst = maybeCompactSubst(composed, restGoals, answerVars, state.depth + 1);
           nextStates.push({
@@ -6321,6 +6331,8 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen) {
         if (composed === null) continue;
         if (!restGoals.length) {
           results.push(gcCompactForGoals(composed, [], answerVars));
+
+          if (results.length >= max) return results;
         } else {
           const nextSubst = maybeCompactSubst(composed, restGoals, answerVars, state.depth + 1);
           nextStates.push({
@@ -6342,6 +6354,8 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen) {
         if (composed === null) continue;
         if (!restGoals.length) {
           results.push(gcCompactForGoals(composed, [], answerVars));
+
+          if (results.length >= max) return results;
         } else {
           const nextSubst = maybeCompactSubst(composed, restGoals, answerVars, state.depth + 1);
           nextStates.push({
@@ -6454,7 +6468,38 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
         const r = forwardRules[i];
         const empty = {};
         const visited = [];
-        const sols = proveGoals(r.premise.slice(), empty, facts, backRules, 0, visited, varGen);
+        // Optimization: if the rule head is **structurally ground** (no vars anywhere, even inside
+        // quoted formulas) and has no head blanks, then the head does not depend on which body
+        // solution we pick. In that case, we only need *one* proof of the body, and once all head
+        // triples are already known we can skip proving the body entirely.
+        function isStrictGroundTerm(t) {
+          if (t instanceof Var) return false;
+          if (t instanceof Blank) return false;
+          if (t instanceof OpenListTerm) return false;
+          if (t instanceof ListTerm) return t.elems.every(isStrictGroundTerm);
+          if (t instanceof GraphTerm) return t.triples.every(isStrictGroundTriple);
+          return true; // Iri/Literal and any other atomic terms
+        }
+        function isStrictGroundTriple(tr) {
+          return isStrictGroundTerm(tr.s) && isStrictGroundTerm(tr.p) && isStrictGroundTerm(tr.o);
+        }
+
+        const headIsStrictGround =
+          !r.isFuse && (!r.headBlankLabels || r.headBlankLabels.size === 0) && r.conclusion.every(isStrictGroundTriple);
+
+        if (headIsStrictGround) {
+          let allKnown = true;
+          for (const tr of r.conclusion) {
+            if (!hasFactIndexed(facts, tr)) {
+              allKnown = false;
+              break;
+            }
+          }
+          if (allKnown) continue;
+        }
+
+        const maxSols = (r.isFuse || headIsStrictGround) ? 1 : undefined;
+        const sols = proveGoals(r.premise.slice(), empty, facts, backRules, 0, visited, varGen, maxSols);
 
         // Inference fuse
         if (r.isFuse && sols.length) {
