@@ -114,6 +114,7 @@
     <button id="toyBtn" class="secondary">Load toy example</button>
     <button id="clearBtn" class="secondary">Clear output</button>
     <label class="muted" style="display:flex;align-items:center;gap:6px;margin-left:4px;"><input type="checkbox" id="clearOnRun" />clear on run</label>
+    <span id="eyelingVersion" class="badge" style="margin-left:auto">Eyeling</span>
     <button id="reasonBtn" disabled>Reason (stream)</button>
   </div>
 
@@ -240,6 +241,27 @@ wd:Q7836 wdt:P31 wd:Q5 .
     const PREVIEW_LINES = 220;
 
     const $ = (id) => document.getElementById(id);
+
+    async function showEyelingVersion(){
+      const el = $('eyelingVersion');
+      if (!el) return;
+
+      // Prefer an exported version if available
+      const v = (window.eyeling && (window.eyeling.version || window.eyeling.VERSION)) || null;
+      if (v) { el.textContent = `Eyeling v${v}`; return; }
+
+      // Fallback: read package.json from the same directory (works on GitHub Pages / http(s))
+      try{
+        const res = await fetch('./package.json', { cache: 'no-store' });
+        if (res.ok){
+          const j = await res.json();
+          if (j && j.version){ el.textContent = `Eyeling v${j.version}`; return; }
+        }
+      } catch(_) {}
+
+      el.textContent = 'Eyeling (version ?)';
+    }
+
     $('rulesBox').value = DEFAULT_RULES;
 
     let selected = null;
@@ -717,6 +739,7 @@ wd:Q7836 wdt:P31 wd:Q5 .
 
     window.addEventListener('DOMContentLoaded', async () => {
       try {
+        await showEyelingVersion();
         await loadDefaultMagritte();
       } catch (e) {
         setStatus(`Default load failed (${e.message || e}). Loading toy example instead…`);
