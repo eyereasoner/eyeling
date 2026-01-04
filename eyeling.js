@@ -400,6 +400,27 @@ let proofCommentsEnabled = false;
 // Super restricted mode: disable *all* builtins except => / <= (log:implies / log:impliedBy)
 let superRestrictedMode = false;
 
+// Debug/trace printing support (log:trace)
+let __tracePrefixes = null;
+
+function __traceWriteLine(line) {
+  // Prefer stderr in Node, fall back to console.error elsewhere.
+  try {
+    if (
+      __IS_NODE &&
+      typeof process !== 'undefined' &&
+      process.stderr &&
+      typeof process.stderr.write === 'function'
+    ) {
+      process.stderr.write(String(line) + '\n');
+      return;
+    }
+  } catch (_) {}
+  try {
+    if (typeof console !== 'undefined' && typeof console.error === 'function') console.error(line);
+  } catch (_) {}
+}
+
 // ----------------------------------------------------------------------------
 // Deterministic time support
 // ----------------------------------------------------------------------------
@@ -5673,6 +5694,21 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     return sols.length ? [] : [{ ...subst }];
   }
 
+  // log:trace
+  // Schema: $s? log:trace $o?
+  // Side-effecting debug output (to stderr). Always succeeds once.
+  // to mimic EYE's fm(...) formatting branch.
+  if (pv === LOG_NS + 'trace') {
+    const pref = __tracePrefixes || PrefixEnv.newDefault();
+    const xStr = termToN3(g.s, pref);
+
+    const xNum = parseNum(g.s);
+    const yStr = termToN3(g.o, pref);
+
+    __traceWriteLine(`${xStr} TRACE ${yStr}`);
+    return [{ ...subst }];
+  }
+
   // log:outputString
   // Schema: $s+ log:outputString $o+
   // Side-effecting output directive. As a builtin goal, we simply succeed
@@ -6966,6 +7002,8 @@ function reasonStream(n3Text, opts = {}) {
 
   let prefixes, triples, frules, brules;
   [prefixes, triples, frules, brules] = parser.parseDocument();
+  // Make the parsed prefixes available to log:trace output
+  __tracePrefixes = prefixes;
 
   materializeRdfLists(triples, frules, brules);
 

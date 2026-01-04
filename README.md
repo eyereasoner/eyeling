@@ -8,6 +8,7 @@ A [Notation3 (N3)](https://notation3.org/) reasoner in **JavaScript**.
 - a practical N3/Turtle superset (enough for lots of real rulesets)
 - supports forward (`=>`) + backward (`<=`) chaining over Horn-style rules
 - prints only newly derived forward facts, optionally preceded by compact proof comments
+- can report derived triples as they are produced (streaming callback via `reasonStream`)
 - “pass-only-new” style output (we never want to leak raw input data; backward rules can act like “functions” over raw data)
 - works fully client-side (browser) and in Node.js
 
@@ -16,6 +17,7 @@ A [Notation3 (N3)](https://notation3.org/) reasoner in **JavaScript**.
 Try it here:
 
 - [Eyeling playground](https://eyereasoner.github.io/eyeling/demo)
+- [Eyeling streaming playground](https://eyereasoner.github.io/eyeling/stream)
 
 The playground runs `eyeling` client-side. You can:
 
@@ -70,6 +72,15 @@ ESM:
 import eyeling from "eyeling";
 const output = eyeling.reason({ proofComments: false }, input);
 console.log(output);
+```
+
+Streaming (browser/worker, direct `eyeling.js`):
+
+```js
+const { closureN3 } = eyeling.reasonStream(input, {
+  proof: false,
+  onDerived: ({ triple }) => console.log(triple),
+});
 ```
 
 Note: the API currently shells out to the bundled `eyeling.js` CLI under the hood (simple + robust).
@@ -216,7 +227,7 @@ Commonly used N3/Turtle features:
 
 - **crypto**: `crypto:md5` `crypto:sha` `crypto:sha256` `crypto:sha512`
 - **list**: `list:append` `list:first` `list:firstRest` `list:in` `list:iterate` `list:last` `list:length` `list:map` `list:member` `list:memberAt` `list:notMember` `list:remove` `list:rest` `list:reverse` `list:sort`
-- **log**: `log:collectAllIn` `log:content` `log:dtlit` `log:equalTo` `log:forAllIn` `log:impliedBy` `log:implies` `log:includes` `log:langlit` `log:notEqualTo` `log:notIncludes` `log:outputString` `log:parsedAsN3` `log:rawType` `log:semantics` `log:semanticsOrError` `log:skolem` `log:uri`
+- **log**: `log:collectAllIn` `log:content` `log:dtlit` `log:equalTo` `log:forAllIn` `log:impliedBy` `log:implies` `log:includes` `log:langlit` `log:notEqualTo` `log:notIncludes` `log:outputString` `log:parsedAsN3` `log:rawType` `log:semantics` `log:semanticsOrError` `log:skolem` `log:trace` `log:uri`
 - **math**: `math:absoluteValue` `math:acos` `math:asin` `math:atan` `math:cos` `math:cosh` `math:degrees` `math:difference` `math:equalTo` `math:exponentiation` `math:greaterThan` `math:integerQuotient` `math:lessThan` `math:negation` `math:notEqualTo` `math:notGreaterThan` `math:notLessThan` `math:product` `math:quotient` `math:remainder` `math:rounded` `math:sin` `math:sinh` `math:sum` `math:tan` `math:tanh`
 - **string**: `string:concatenation` `string:contains` `string:containsIgnoringCase` `string:endsWith` `string:equalIgnoringCase` `string:format` `string:greaterThan` `string:jsonPointer` `string:lessThan` `string:matches` `string:notEqualIgnoringCase` `string:notGreaterThan` `string:notLessThan` `string:notMatches` `string:replace` `string:scrape` `string:startsWith`
 - **time**: `time:day` `time:hour` `time:localTime` `time:minute` `time:month` `time:second` `time:timeZone` `time:year`
