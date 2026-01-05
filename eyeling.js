@@ -104,6 +104,17 @@ const __logSemanticsCache = new Map(); // iri -> GraphTerm | null (null means pa
 const __logSemanticsOrErrorCache = new Map(); // iri -> Term (GraphTerm | Literal) for log:semanticsOrError
 const __logConclusionCache = new WeakMap(); // GraphTerm -> GraphTerm (deductive closure)
 
+// When enabled, force http:// IRIs to be dereferenced as https://
+// (CLI: --enforce-https, API: reasonStream({ enforceHttps: true })).
+let enforceHttpsEnabled = false;
+
+function __maybeEnforceHttps(iri) {
+  if (!enforceHttpsEnabled) return iri;
+  return typeof iri === 'string' && iri.startsWith('http://')
+    ? 'https://' + iri.slice('http://'.length)
+    : iri;
+}
+
 // Environment detection (Node vs Browser/Worker).
 // Eyeling is primarily synchronous, so we use sync XHR in browsers for log:content/log:semantics.
 // Note: Browser fetches are subject to CORS; use CORS-enabled resources or a proxy.
@@ -150,9 +161,9 @@ function __fetchHttpTextSyncBrowser(url) {
 
 function __normalizeDerefIri(iriNoFrag) {
   // In Node, treat non-http as local path; leave as-is.
-  if (__IS_NODE) return iriNoFrag;
+  if (__IS_NODE) return __maybeEnforceHttps(iriNoFrag);
   // In browsers/workers, resolve relative references against the page URL.
-  return __resolveBrowserUrl(iriNoFrag);
+  return __maybeEnforceHttps(__resolveBrowserUrl(iriNoFrag));
 }
 
 function __stripFragment(iri) {
@@ -195,9 +206,17 @@ function __fetchHttpTextViaSubprocess(url) {
   const cp = require('child_process');
   // Use a subprocess so this code remains synchronous without rewriting the whole reasoner to async.
   const script = `
+    const enforceHttps = ${enforceHttpsEnabled ? 'true' : 'false'};
     const url = process.argv[1];
     const maxRedirects = 10;
+    function norm(u) {
+      if (enforceHttps && typeof u === 'string' && u.startsWith('http://')) {
+        return 'https://' + u.slice('http://'.length);
+      }
+      return u;
+    }
     function get(u, n) {
+      u = norm(u);
       if (n > maxRedirects) { console.error('Too many redirects'); process.exit(3); }
       let mod;
       if (u.startsWith('https://')) mod = require('https');
@@ -219,7 +238,8 @@ function __fetchHttpTextViaSubprocess(url) {
       const req = mod.request(opts, (res) => {
         const sc = res.statusCode || 0;
         if (sc >= 300 && sc < 400 && res.headers && res.headers.location) {
-          const next = new URL(res.headers.location, u).toString();
+          let next = new URL(res.headers.location, u).toString();
+          next = norm(next);
           res.resume();
           return get(next, n + 1);
         }
@@ -6991,8 +7011,16 @@ function __collectOutputStringsFromFacts(facts, prefixes) {
 }
 
 function reasonStream(n3Text, opts = {}) {
-  const { baseIri = null, proof = false, onDerived = null, includeInputFactsInClosure = true } = opts;
+  const {
+    baseIri = null,
+    proof = false,
+    onDerived = null,
+    includeInputFactsInClosure = true,
+    enforceHttps = false,
+  } = opts;
 
+  const __oldEnforceHttps = enforceHttpsEnabled;
+  enforceHttpsEnabled = !!enforceHttps;
   proofCommentsEnabled = !!proof;
 
   const toks = lex(n3Text);
@@ -7020,12 +7048,14 @@ function reasonStream(n3Text, opts = {}) {
 
   const closureTriples = includeInputFactsInClosure ? facts : derived.map((d) => d.fact);
 
-  return {
+  const __out = {
     prefixes,
     facts, // saturated closure (Triple[])
     derived, // DerivedFact[]
     closureN3: closureTriples.map((t) => tripleToN3(t, prefixes)).join('\n'),
   };
+  enforceHttpsEnabled = __oldEnforceHttps;
+  return __out;
 }
 
 // Minimal export surface for Node + browser/worker
@@ -7056,7 +7086,8 @@ function main() {
       `  -n, --no-proof-comments Disable proof explanations (default).\n` +
       `  -s, --super-restricted  Disable all builtins except => and <=.\n` +
       `  -a, --ast               Print parsed AST as JSON and exit.\n` +
-      `  --strings               Print log:outputString strings (ordered by key) instead of N3 output.\n`;
+      `  --strings               Print log:outputString strings (ordered by key) instead of N3 output.\n` +
+      `  --enforce-https         Rewrite http:// IRIs to https:// for log dereferencing builtins.\n`;
     (toStderr ? console.error : console.log)(msg);
   }
 
@@ -7078,6 +7109,11 @@ function main() {
   const showAst = argv.includes('--ast') || argv.includes('-a');
 
   const outputStringsMode = argv.includes('--strings');
+
+  // --enforce-https: rewrite http:// -> https:// for log dereferencing builtins
+  if (argv.includes('--enforce-https')) {
+    enforceHttpsEnabled = true;
+  }
 
   // --proof-comments / -p: enable proof explanations
   if (argv.includes('--proof-comments') || argv.includes('-p')) {

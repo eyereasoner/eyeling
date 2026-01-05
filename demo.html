@@ -418,6 +418,11 @@
           <input id="proof-comments" type="checkbox" />
           Turn proof comments on (-p)
         </label>
+        <label class="toggle" title="Rewrite http:// IRIs to https:// for log dereferencing builtins (mixed-content safe)">
+          <input id="enforce-https" type="checkbox" checked />
+          Enforce HTTPS for dereferencing (--enforce-https)
+        </label>
+
 
         <span class="status" id="status">Idle.</span>
       </div>
@@ -457,7 +462,20 @@
       const uriInput = document.getElementById("n3-uri");
       const loadUriBtn = document.getElementById("load-uri-btn");
       const proofCheckbox = document.getElementById("proof-comments");
+      const enforceHttpsCheckbox = document.getElementById("enforce-https");
       const versionEl = document.getElementById("eyeling-version");
+
+// Persist "enforce https" toggle (default ON)
+try {
+  const saved = localStorage.getItem("eyeling.enforceHttps");
+  if (saved !== null) enforceHttpsCheckbox.checked = saved === "1";
+  enforceHttpsCheckbox.addEventListener("change", () => {
+    localStorage.setItem(
+      "eyeling.enforceHttps",
+      enforceHttpsCheckbox.checked ? "1" : "0"
+    );
+  });
+} catch (_) {}
 
       const EYELING_JS_URL =
         "https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/eyeling.js";
@@ -724,6 +742,7 @@
                 "node",
                 "eyeling.js",
                 ...(proofCheckbox.checked ? ["-p"] : []),
+                ...(enforceHttpsCheckbox.checked ? ["--enforce-https"] : []),
                 "input.n3",
               ],
               exit: (code) => {

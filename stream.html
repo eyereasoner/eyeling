@@ -114,6 +114,7 @@
     <button id="toyBtn" class="secondary">Load toy example</button>
     <button id="clearBtn" class="secondary">Clear output</button>
     <label class="muted" style="display:flex;align-items:center;gap:6px;margin-left:4px;"><input type="checkbox" id="clearOnRun" />clear on run</label>
+    <label class="muted" title="Rewrite http:// IRIs to https:// for log dereferencing builtins (mixed-content safe)" style="display:flex;align-items:center;gap:6px;margin-left:4px;"><input type="checkbox" id="enforceHttps" checked />enforce https</label>
     <span id="eyelingVersion" class="badge" style="margin-left:auto">Eyeling</span>
     <button id="reasonBtn" disabled>Reason (stream)</button>
   </div>
@@ -241,6 +242,15 @@ wd:Q7836 wdt:P31 wd:Q5 .
     const PREVIEW_LINES = 220;
 
     const $ = (id) => document.getElementById(id);
+
+    // Persist "enforce https" toggle (default ON)
+    try {
+      const saved = localStorage.getItem('eyeling.enforceHttps');
+      if (saved !== null) $('enforceHttps').checked = saved === '1';
+      $('enforceHttps').addEventListener('change', () => {
+        localStorage.setItem('eyeling.enforceHttps', $('enforceHttps').checked ? '1' : '0');
+      });
+    } catch (_) {}
 
     async function showEyelingVersion(){
       const el = $('eyelingVersion');
@@ -461,7 +471,7 @@ wd:Q7836 wdt:P31 wd:Q5 .
       const workerSrc = `
         importScripts('eyeling.js');
         self.onmessage = (ev) => {
-          const { runId, dataN3, rulesN3 } = ev.data;
+          const { runId, dataN3, rulesN3, enforceHttps } = ev.data;
           let buffer = [];
           const FLUSH_EVERY = 4;
 
@@ -469,6 +479,7 @@ wd:Q7836 wdt:P31 wd:Q5 .
             const program = rulesN3 + "\\n\\n" + dataN3;
 
             self.eyeling.reasonStream(program, {
+              enforceHttps: !!enforceHttps,
               onDerived: ({ triple }) => {
                 buffer.push(triple);
                 if (buffer.length >= FLUSH_EVERY) {
@@ -498,6 +509,7 @@ wd:Q7836 wdt:P31 wd:Q5 .
 
       const triples = [];
       window.eyeling.reasonStream(program, {
+        enforceHttps: $('enforceHttps').checked,
         onDerived: ({ triple }) => triples.push(triple)
       });
       appendTriples(triples);
@@ -603,7 +615,7 @@ wd:Q7836 wdt:P31 wd:Q5 .
           }
         };
 
-        w.postMessage({ runId: thisRun, dataN3: datasetN3, rulesN3: rules });
+        w.postMessage({ runId: thisRun, dataN3: datasetN3, rulesN3: rules, enforceHttps: $('enforceHttps').checked });
         return;
       }
 

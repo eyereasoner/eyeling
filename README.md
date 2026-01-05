@@ -121,6 +121,7 @@ Options:
   -s, --super-restricted  Disable all builtins except => and <=.
   -a, --ast               Print parsed AST as JSON and exit.
   --strings               Print log:outputString strings (ordered by key) instead of N3 output.
+  --enforce-https         Rewrite http:// IRIs to https:// for log dereferencing builtins.
 ```
 
 By default, `eyeling`:
