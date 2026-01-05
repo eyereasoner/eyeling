@@ -3081,18 +3081,33 @@ function termToJsXsdStringNoLang(t) {
 }
 
 function termToJsString(t) {
-  // Strict string extraction for SWAP/N3 string builtins:
-  //   - accept plain string literals ("...") and language-tagged ones ("..."@en)
-  //   - accept "..."^^xsd:string
-  //   - reject any other datatype (e.g., "x"^^xsd:integer, "x"^^xsd:foobar)
+  // Domain is xsd:string for SWAP/N3 string builtins (string:*).
+  //
+  // Per the N3 Builtins spec, when the domain is xsd:string we must be able to
+  // cast *any* IRI or literal value (incl. numeric, boolean, dateTime, anyURI,
+  // rdf:langString, and plain literals) to a string.
+  //
+  // We implement this as:
+  //   - IRI    -> its IRI string
+  //   - Literal:
+  //       * quoted lexical form: decode N3/Turtle escapes and strip quotes
+  //       * unquoted lexical form: use as-is (e.g., 1234, true, 1971-..., 1.23E4)
+  //   - Everything else (blank nodes, lists, formulas, vars) -> fail
+  if (t instanceof Iri) return t.value;
   if (!(t instanceof Literal)) return null;
-  const [lex, dt] = literalParts(t.value);
-  if (!isQuotedLexical(lex)) return null;
-  if (dt !== null && dt !== XSD_NS + 'string' && dt !== 'xsd:string') return null;
-  // Interpret N3/Turtle string escapes (\" \n \uXXXX \UXXXXXXXX …) to obtain
-  // the actual string value used by SWAP/N3 string builtins.
-  return decodeN3StringEscapes(stripQuotes(lex));
+
+  const [lex, _dt] = literalParts(t.value);
+
+  if (isQuotedLexical(lex)) {
+    // Interpret N3/Turtle string escapes (\" \n \uXXXX \UXXXXXXXX …)
+    // to obtain the actual string value.
+    return decodeN3StringEscapes(stripQuotes(lex));
+  }
+
+  // Unquoted lexical (numbers/booleans/dateTimes, etc.)
+  return typeof lex === 'string' ? lex : String(lex);
 }
+
 
 function makeStringLiteral(str) {
   // JSON.stringify gives us a valid N3/Turtle-style quoted string
