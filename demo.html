@@ -708,6 +708,281 @@ try {
       // --- EYELING RUNNER SETUP ---
       let runnerPromise = null;
 
+      // --- EYELING WORKER SETUP (keeps UI responsive) ---
+      let workerRunnerPromise = null;
+
+      async function getEyelingWorkerRunner() {
+        // Returns an object: { run(n3Text, {proof,enforceHttps}): Promise<{result,durationMs}> }
+        // Falls back to null if Workers are unavailable.
+        if (typeof Worker === "undefined") return null;
+        if (workerRunnerPromise) return workerRunnerPromise;
+
+        workerRunnerPromise = (async () => {
+          // Ensure we have a version for the worker's ./package.json shim.
+          await ensureEyelingVersion();
+
+          const workerSource = `
+            let cleanedSource = null;
+            let baseVersion = "unknown";
+            let initPromise = null;
+
+            function cleanShebang(src) {
+              // NOTE: This code lives inside a template literal on the main thread.
+              // We need double escapes (\\n) here so the worker sees the backslash-n sequence.
+              return String(src || "").replace(/^#![^\\n]*\\n/, "");
+            }
+
+            async function init(payload) {
+              if (initPromise) return initPromise;
+              initPromise = (async () => {
+                baseVersion = payload && payload.version ? String(payload.version) : "unknown";
+                const jsUrl = payload && payload.eyelingJsUrl ? String(payload.eyelingJsUrl) : "";
+                if (!jsUrl) throw new Error("Missing eyelingJsUrl");
+
+                const resp = await fetch(jsUrl);
+                if (!resp.ok) throw new Error("Failed to load eyeling.js (" + resp.status + ")");
+                const raw = await resp.text();
+                cleanedSource = cleanShebang(raw);
+              })();
+              return initPromise;
+            }
+
+            function runOnce(n3Input, proof, enforceHttps, versionOverride) {
+              const lines = [];
+
+              const consoleShim = {
+                log: (...args) => lines.push(args.join(" ")),
+                error: (...args) => lines.push(args.join(" ")),
+              };
+
+              const fsShim = {
+                readFileSync: () => n3Input,
+              };
+
+              const processShim = {
+                argv: [
+                  "node",
+                  "eyeling.js",
+                  ...(proof ? ["-p"] : []),
+                  ...(enforceHttps ? ["--enforce-https"] : []),
+                  "input.n3",
+                ],
+                exit: (code) => {
+                  throw { __eyelingExit: true, code };
+                },
+              };
+
+              const moduleShim = { exports: {} };
+
+              function requireShim(id) {
+                if (id === "./package.json") {
+                  return { version: (versionOverride || baseVersion || "unknown") };
+                }
+                if (id === "fs") return fsShim;
+                if (id === "crypto") {
+                  return {
+                    createHash: () => ({
+                      update: () => {},
+                      digest: () => "",
+                    }),
+                  };
+                }
+                return {};
+              }
+
+              // Make eyeling think this is the main module so main() runs.
+              requireShim.main = moduleShim;
+
+              try {
+                const fn = new Function(
+                  "require",
+                  "module",
+                  "exports",
+                  "process",
+                  "console",
+                  cleanedSource
+                );
+                fn(requireShim, moduleShim, moduleShim.exports, processShim, consoleShim);
+              } catch (e) {
+                if (!e || !e.__eyelingExit) {
+                  lines.push(
+                    "JavaScript error: " + (e && e.message ? e.message : String(e))
+                  );
+                }
+              }
+
+              return lines.join("\\n");
+            }
+
+            const pending = new Map();
+
+            function resolvePending(id, payload) {
+              const p = pending.get(id);
+              if (!p) return;
+              pending.delete(id);
+              p.resolve(payload);
+            }
+
+            function rejectPending(id, err) {
+              const p = pending.get(id);
+              if (!p) return;
+              pending.delete(id);
+              p.reject(err);
+            }
+
+            self.onmessage = async (ev) => {
+              const msg = ev && ev.data ? ev.data : {};
+              try {
+                if (msg.type === "init") {
+                  await init(msg);
+                  self.postMessage({ type: "inited" });
+                  return;
+                }
+                if (msg.type === "run") {
+                  if (!initPromise) {
+                    // If caller forgot init, try a best-effort init.
+                    await init(msg);
+                  } else {
+                    await initPromise;
+                  }
+
+                  const t0 = self.performance && performance.now ? performance.now() : Date.now();
+                  const result = runOnce(
+                    msg.n3Input || "",
+                    !!msg.proof,
+                    !!msg.enforceHttps,
+                    msg.version || baseVersion
+                  );
+                  const t1 = self.performance && performance.now ? performance.now() : Date.now();
+
+                  self.postMessage({
+                    type: "result",
+                    id: msg.id,
+                    result,
+                    durationMs: Math.max(0, t1 - t0),
+                  });
+                  return;
+                }
+              } catch (e) {
+                const errText = e && e.message ? e.message : String(e);
+
+                if (msg && msg.type === "run" && msg.id != null) {
+                  self.postMessage({
+                    type: "result",
+                    id: msg.id,
+                    error: errText,
+                    durationMs: 0,
+                  });
+                  return;
+                }
+                self.postMessage({ type: "initError", error: errText });
+              }
+            };
+          `;
+
+          const blob = new Blob([workerSource], { type: "text/javascript" });
+          const url = URL.createObjectURL(blob);
+          const worker = new Worker(url);
+
+          let nextId = 1;
+          const pending = new Map();
+
+          function failAll(err) {
+            for (const [id, p] of pending.entries()) {
+              pending.delete(id);
+              p.reject(err);
+            }
+          }
+
+          worker.addEventListener("message", (ev) => {
+            const msg = ev && ev.data ? ev.data : {};
+            if (msg.type === "inited") {
+              return;
+            }
+            if (msg.type === "initError") {
+              failAll(new Error(msg.error || "Worker init failed"));
+              return;
+            }
+            if (msg.type === "result") {
+              const p = pending.get(msg.id);
+              if (!p) return;
+              pending.delete(msg.id);
+
+              if (msg.error) {
+                p.reject(new Error(msg.error));
+              } else {
+                p.resolve({
+                  result: msg.result || "",
+                  durationMs: typeof msg.durationMs === "number" ? msg.durationMs : 0,
+                });
+              }
+            }
+          });
+
+          worker.addEventListener("error", (ev) => {
+            const err = new Error(
+              "Worker error: " + (ev && ev.message ? ev.message : "unknown")
+            );
+            failAll(err);
+          });
+
+          // Wait for init confirmation.
+          const initAck = new Promise((resolve, reject) => {
+            function onMessage(ev) {
+              const msg = ev && ev.data ? ev.data : {};
+              if (msg.type === "inited") {
+                worker.removeEventListener("message", onMessage);
+                worker.removeEventListener("message", onInitError);
+                resolve();
+              }
+            }
+            function onInitError(ev) {
+              const msg = ev && ev.data ? ev.data : {};
+              if (msg.type === "initError") {
+                worker.removeEventListener("message", onMessage);
+                worker.removeEventListener("message", onInitError);
+                reject(new Error(msg.error || "Worker init failed"));
+              }
+            }
+            worker.addEventListener("message", onMessage);
+            worker.addEventListener("message", onInitError);
+          });
+
+          worker.postMessage({
+            type: "init",
+            eyelingJsUrl: EYELING_JS_URL,
+            version: eyelingVersion || "unknown",
+          });
+
+          await initAck;
+
+          // Now that the worker has loaded the Blob source, we can revoke the URL.
+          URL.revokeObjectURL(url);
+
+          return {
+            run: (n3Input, opts) => {
+              const id = nextId++;
+              const proof = !!(opts && opts.proof);
+              const enforceHttps = !!(opts && opts.enforceHttps);
+
+              return new Promise((resolve, reject) => {
+                pending.set(id, { resolve, reject });
+                worker.postMessage({
+                  type: "run",
+                  id,
+                  n3Input: String(n3Input || ""),
+                  proof,
+                  enforceHttps,
+                  version: eyelingVersion || "unknown",
+                });
+              });
+            },
+          };
+        })();
+
+        return workerRunnerPromise;
+      }
+
       async function getEyelingRunner() {
         if (runnerPromise) return runnerPromise;
 
@@ -769,7 +1044,7 @@ try {
               return {};
             }
 
-            // Make eyeling think this is the main module so `main()` runs.
+            // Make eyeling think this is the main module so main() runs.
             requireShim.main = moduleShim;
 
             try {
@@ -823,12 +1098,33 @@ try {
         let thinkingInterval = setInterval(setThinking, 100);
 
         try {
-          const runner = await getEyelingRunner();
+          // Prefer Web Worker to avoid freezing the UI.
+          // If the worker fails to initialize for any reason, fall back to the main-thread runner.
+          let workerRunner = null;
+          try {
+            workerRunner = await getEyelingWorkerRunner();
+          } catch (_e) {
+            workerRunner = null;
+          }
 
-          // One more chance to paint before the (potentially) synchronous run blocks the UI.
+          // One more chance to paint before any heavy work begins.
           await new Promise(requestAnimationFrame);
 
-          const result = runner(editor.getValue());
+          let result = "";
+          let durationMs = null;
+
+          if (workerRunner) {
+            const out = await workerRunner.run(editor.getValue(), {
+              proof: proofCheckbox.checked,
+              enforceHttps: enforceHttpsCheckbox.checked,
+            });
+            result = out && typeof out.result === "string" ? out.result : "";
+            durationMs = out && typeof out.durationMs === "number" ? out.durationMs : null;
+          } else {
+            // Fallback for environments without Workers.
+            const runner = await getEyelingRunner();
+            result = runner(editor.getValue());
+          }
 
           clearInterval(thinkingInterval);
           thinkingInterval = null;
@@ -841,7 +1137,10 @@ try {
           }
 
           const totalSeconds = (performance.now() - startMs) / 1000;
-          statusEl.textContent = `Done. (Thinking for ${totalSeconds.toFixed(2)} seconds)`;
+          const workerSeconds = durationMs != null ? durationMs / 1000 : null;
+          statusEl.textContent = workerSeconds != null
+            ? `Done. (Worker time: ${workerSeconds.toFixed(2)}s, total: ${totalSeconds.toFixed(2)}s)`
+            : `Done. (Thinking for ${totalSeconds.toFixed(2)} seconds)`;
         } catch (e) {
           if (thinkingInterval) {
             clearInterval(thinkingInterval);
