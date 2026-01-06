@@ -1,0 +1,29 @@
+@prefix ex: <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix tfn: <https://w3id.org/time-fn#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+
+ex:e1 a ex:Event ;
+    ex:when "2000-01-02T03:04:05"^^xsd:dateTime ;   # floating (no TZ)
+    ex:day  "2000-01-02"^^xsd:date ;
+    ex:tz   "Z" .
+  ex:e2 a ex:Event ;
+    ex:when "2000-01-02T03:04:05-03:00"^^xsd:dateTime ;
+    ex:day  "2000-01-02"^^xsd:date ;
+    ex:tz   "-03:00" .
+
+{
+    ?this ex:when ?whenRaw .
+    ?this ex:day ?day .
+    ?this ex:tz ?tz .
+    ?startInc math:notGreaterThan ?whenBound .
+    ?whenBound math:notGreaterThan ?endInc .
+    (?whenRaw ?tz) tfn:bindDefaultTimezone ?whenBound .
+    (?day) tfn:periodMinInclusive ?startInc .
+    (?day) tfn:periodMaxInclusive ?endInc .
+    (?day) tfn:periodMinExclusive ?startEx .
+    (?day) tfn:periodMaxExclusive ?endEx .
+} => {
+    ?this ex:occursOn ?day .
+    ?this ex:whenBound ?whenBound .
+} .

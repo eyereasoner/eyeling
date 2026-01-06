@@ -62,6 +62,14 @@ const OWL_NS = 'http://www.w3.org/2002/07/owl#';
 const LOG_NS = 'http://www.w3.org/2000/10/swap/log#';
 const MATH_NS = 'http://www.w3.org/2000/10/swap/math#';
 const STRING_NS = 'http://www.w3.org/2000/10/swap/string#';
+const TIMEFN_NS = 'https://w3id.org/time-fn#';
+const TIMEFN_BUILTIN_NAMES = new Set([
+  'periodMinInclusive',
+  'periodMaxInclusive',
+  'periodMinExclusive',
+  'periodMaxExclusive',
+  'bindDefaultTimezone',
+]);
 
 // Avoid literal triple-quote sequences in this source (helps embedding in tools).
 const DQ3 = '"'.repeat(3);
@@ -598,8 +606,9 @@ function lex(inputText) {
       continue;
     }
 
-    // 9) var: ?x
-    if (c === '?') {
+    // 9) var: ?x  (SPARQL vars)  or  $this / $value (SHACL SPARQL vars)
+    if (c === '?' || c === '$') {
+      const sigil = c;
       i++;
       const nameChars = [];
       let cc;
@@ -607,7 +616,7 @@ function lex(inputText) {
         nameChars.push(cc);
         i++;
       }
-      if (!nameChars.length) throw new Error("Expected variable name after '?'");
+      if (!nameChars.length) throw new Error(`Expected variable name after '${sigil}'`);
       tokens.push(new Token('Var', nameChars.join('')));
       continue;
     }
@@ -1335,6 +1344,11 @@ function stringPrefixLabels(prefixes) {
   return prefixes.filter((p) => (p.iri || '').trim() === STRING_NS).map((p) => p.label);
 }
 
+function timeFnPrefixLabels(prefixes) {
+  if (!Array.isArray(prefixes)) return [];
+  return prefixes.filter((p) => (p.iri || '').trim() === TIMEFN_NS).map((p) => p.label);
+}
+
 function readBalancedParens(s, i) {
   if (s[i] !== '(') throw new Error("Unclosed '(...)'");
   let depth = 0;
@@ -1531,6 +1545,68 @@ function splitTopLevelOr(expr) {
   return parts.length > 1 ? parts : null;
 }
 
+function splitTopLevelAnd(expr) {
+  // Split on '&&' that occurs at paren depth 0 (ignoring strings).
+  const s = expr || '';
+  const parts = [];
+  let buf = '';
+  let depth = 0;
+  let inString = false;
+  let quote = null;
+  let escaped = false;
+
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+
+    if (inString) {
+      buf += ch;
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (ch === '\\') {
+        escaped = true;
+        continue;
+      }
+      if (ch === quote) {
+        inString = false;
+        quote = null;
+      }
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      inString = true;
+      quote = ch;
+      buf += ch;
+      continue;
+    }
+
+    if (ch === '(') {
+      depth++;
+      buf += ch;
+      continue;
+    }
+    if (ch === ')') {
+      depth = Math.max(0, depth - 1);
+      buf += ch;
+      continue;
+    }
+
+    if (depth === 0 && ch === '&' && s[i + 1] === '&') {
+      parts.push(buf.trim());
+      buf = '';
+      i++;
+      continue;
+    }
+
+    buf += ch;
+  }
+
+  if (buf.trim()) parts.push(buf.trim());
+  return parts.length > 1 ? parts : null;
+}
+
 function splitTopLevelCommaArgs(s) {
   const parts = [];
   let buf = '';
@@ -1612,8 +1688,9 @@ function splitTopLevelCommaArgs(s) {
   return parts;
 }
 
+
 function bindExprToN3Statements(bindInner) {
-  // bindInner is the inside of BIND(...), e.g. 'concat(?a, " ", ?b) AS ?FN'
+  // bindInner is the inside of BIND(...), e.g. 'tfn:periodMinInclusive(?d) AS ?min'
   const s = (bindInner || '').trim();
   const m = s.match(/^(.*)\s+AS\s+(\?[A-Za-z_][A-Za-z0-9_-]*)\s*$/i);
   if (!m) return null;
@@ -1621,19 +1698,56 @@ function bindExprToN3Statements(bindInner) {
   const expr = m[1].trim();
   const outVar = m[2].trim();
 
-  const m2 = expr.match(/^concat\s*\((.*)\)\s*$/i);
-  if (!m2) return null;
+  // 1) concat(...)  ->  ( ... ) string:concatenation ?outVar .
+  const mConcat = expr.match(/^concat\s*\((.*)\)\s*$/i);
+  if (mConcat) {
+    const argsRaw = mConcat[1];
+    const args = splitTopLevelCommaArgs(argsRaw)
+      .map((x) => x.trim())
+      .filter(Boolean);
+    if (!args.length) return null;
+    const list = `(${args.join(' ')})`;
+    return { stmt: `${list} string:concatenation ${outVar} .`, usedString: true, usedTime: false };
+  }
 
-  const argsRaw = m2[1];
-  const args = splitTopLevelCommaArgs(argsRaw)
-    .map((x) => x.trim())
-    .filter(Boolean);
-  if (!args.length) return null;
+  // 2) Time Functions (Section 2.2 in the UGent time-fn paper)
+  //    SRL: BIND( tfn:periodMinInclusive(?x) AS ?y )
+  //    N3 : ( ?x ) tfn:periodMinInclusive ?y .
+  const mFn = expr.match(/^([A-Za-z][A-Za-z0-9_-]*:[A-Za-z_][A-Za-z0-9_-]*|<[^>]+>)\s*\((.*)\)\s*$/);
+  if (mFn) {
+    const fnTok = mFn[1].trim();
+    const argsRaw = mFn[2];
 
-  // N3: (a b c) string:concatenation ?outVar .
-  const list = `(${args.join(' ')})`;
-  return { stmt: `${list} string:concatenation ${outVar} .`, usedString: true };
+    // Determine local name (for checking we support it)
+    let local = null;
+    if (fnTok.startsWith('<') && fnTok.endsWith('>')) {
+      const iri = fnTok.slice(1, -1);
+      if (iri.startsWith(TIMEFN_NS)) local = iri.slice(TIMEFN_NS.length);
+    } else {
+      const idx = fnTok.indexOf(':');
+      if (idx >= 0) local = fnTok.slice(idx + 1);
+    }
+
+    if (local && TIMEFN_BUILTIN_NAMES.has(local)) {
+      const args = splitTopLevelCommaArgs(argsRaw)
+        .map((x) => x.trim())
+        .filter(Boolean);
+
+      if (!args.length) return null;
+      if (local === 'bindDefaultTimezone') {
+        if (args.length !== 2) return null;
+      } else {
+        if (args.length !== 1) return null;
+      }
+
+      const list = `(${args.join(' ')})`;
+      return { stmt: `${list} ${fnTok} ${outVar} .`, usedString: false, usedTime: true };
+    }
+  }
+
+  return null;
 }
+
 
 function extractSrlBinds(bodyRaw) {
   const s = bodyRaw || '';
@@ -1641,6 +1755,7 @@ function extractSrlBinds(bodyRaw) {
   let out = '';
   const binds = [];
   let usedString = false;
+  let usedTime = false;
 
   while (i < s.length) {
     const idx = s.indexOf('BIND', i);
@@ -1671,28 +1786,31 @@ function extractSrlBinds(bodyRaw) {
     const conv = bindExprToN3Statements(inner);
     if (!conv) throw new Error(`Unsupported SRL BIND expression for N3 mapping: ${inner}`);
     binds.push(conv.stmt);
-    usedString = usedString || conv.usedString;
+    usedString = usedString || !!conv.usedString;
+    usedTime = usedTime || !!conv.usedTime;
 
     i = blk.endIdx;
   }
 
-  return { body: normalizeInsideBracesKeepStyle(out), binds, usedString };
+  return { body: normalizeInsideBracesKeepStyle(out), binds, usedString, usedTime };
 }
+
 
 function parseSimpleComparison(expr) {
   const t0 = stripOuterParensOnce(expr);
-  const t = t0.trim();
+  const t = (t0 || '').trim();
+  if (!t) return null;
 
-  // Very small subset: ?v OP number
-  const m = t.match(/^(\?[A-Za-z_][A-Za-z0-9_-]*)\s*(>=|<=|!=|=|>|<)\s*([-+]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\s*$/);
-  if (!m) return null;
+  const ops2 = ['>=', '<=', '!='];
+  const ops1 = ['=', '>', '<'];
 
-  const v = m[1];
-  const op = m[2];
-  const num = m[3];
+  let depth = 0;
+  let inString = false;
+  let quote = null;
+  let escaped = false;
 
-  const pred =
-    op === '>'
+  function mapPred(op) {
+    return op === '>'
       ? 'greaterThan'
       : op === '<'
         ? 'lessThan'
@@ -1705,29 +1823,87 @@ function parseSimpleComparison(expr) {
               : op === '<='
                 ? 'notGreaterThan'
                 : null;
-
-  if (!pred) return null;
-
-  return { var: v, op, num, pred };
-}
-
-function filterExprToN3Alternatives(expr) {
-  // Returns an array of alternatives, each alternative is an array of N3 statements (strings).
-  const e = (expr || '').trim();
-  const orParts = splitTopLevelOr(e);
-  if (orParts) {
-    const alts = [];
-    for (const p of orParts) {
-      const cmp = parseSimpleComparison(p);
-      if (!cmp) return null;
-      alts.push([`${cmp.var} math:${cmp.pred} ${cmp.num} .`]);
-    }
-    return alts;
   }
 
-  const cmp = parseSimpleComparison(e);
-  if (!cmp) return null;
-  return [[`${cmp.var} math:${cmp.pred} ${cmp.num} .`]];
+  for (let i = 0; i < t.length; i++) {
+    const ch = t[i];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch === '\\') {
+        escaped = true;
+      } else if (ch === quote) {
+        inString = false;
+        quote = null;
+      }
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      inString = true;
+      quote = ch;
+      continue;
+    }
+
+    if (ch === '(') {
+      depth++;
+      continue;
+    }
+    if (ch === ')') {
+      depth = Math.max(0, depth - 1);
+      continue;
+    }
+
+    if (depth !== 0) continue;
+
+    // 2-char ops first
+    const two = t.slice(i, i + 2);
+    if (ops2.includes(two)) {
+      const left = t.slice(0, i).trim();
+      const right = t.slice(i + 2).trim();
+      const pred = mapPred(two);
+      if (!left || !right || !pred) return null;
+      return { left, op: two, right, pred };
+    }
+
+    if (ops1.includes(ch)) {
+      const left = t.slice(0, i).trim();
+      const right = t.slice(i + 1).trim();
+      const pred = mapPred(ch);
+      if (!left || !right || !pred) return null;
+      return { left, op: ch, right, pred };
+    }
+  }
+
+  return null;
+}
+
+
+function filterExprToN3Alternatives(expr) {
+  // Returns an array of alternatives.
+  // Each alternative is an array of N3 statements (strings) to be added to the rule body.
+  const e = (expr || '').trim();
+  if (!e) return null;
+
+  const orParts = splitTopLevelOr(e);
+  const options = orParts ? orParts : [e];
+
+  const alts = [];
+  for (const opt of options) {
+    const andParts = splitTopLevelAnd(opt) || [opt];
+    const stmts = [];
+
+    for (const p of andParts) {
+      const cmp = parseSimpleComparison(p);
+      if (!cmp) return null;
+      stmts.push(`${cmp.left} math:${cmp.pred} ${cmp.right} .`);
+    }
+
+    alts.push(stmts);
+  }
+
+  return alts;
 }
 
 function splitListTermsFromN3List(listInner) {
@@ -1896,13 +2072,112 @@ function extractStringBindsFromBody(bodyRaw, stringLabels) {
   return { baseBody: normalizeInsideBracesKeepStyle(out), binds };
 }
 
+function extractTimeFnBindsFromBody(bodyRaw, timeLabels) {
+  const labels = Array.isArray(timeLabels) && timeLabels.length ? timeLabels : [];
+  const s = bodyRaw || '';
+  const binds = [];
+  let out = '';
+  let i = 0;
+
+  const fullPreds = Array.from(TIMEFN_BUILTIN_NAMES).map((n) => `<${TIMEFN_NS}${n}>`);
+
+  while (i < s.length) {
+    const idx = s.indexOf('(', i);
+    if (idx < 0) {
+      out += s.slice(i);
+      break;
+    }
+
+    out += s.slice(i, idx);
+
+    let blk;
+    try {
+      blk = readBalancedParens(s, idx);
+    } catch {
+      out += s.slice(idx, idx + 1);
+      i = idx + 1;
+      continue;
+    }
+
+    const inner = (blk.content || '').trim();
+    let j = blk.endIdx;
+    while (j < s.length && /\s/.test(s[j])) j++;
+
+    // Predicate token after list
+    let matchedLocal = null;
+    let matchedPredToken = null;
+
+    // Full IRI match
+    for (const fp of fullPreds) {
+      if (s.startsWith(fp, j)) {
+        matchedPredToken = fp;
+        matchedLocal = fp.slice(1, -1).slice(TIMEFN_NS.length);
+        j += fp.length;
+        break;
+      }
+    }
+
+    // Prefixed match
+    if (!matchedPredToken) {
+      for (const lab of labels) {
+        for (const local of TIMEFN_BUILTIN_NAMES) {
+          const tok = `${lab}${local}`;
+          if (s.startsWith(tok, j)) {
+            matchedPredToken = tok;
+            matchedLocal = local;
+            j += tok.length;
+            break;
+          }
+        }
+        if (matchedPredToken) break;
+      }
+    }
+
+    if (!matchedPredToken || !matchedLocal) {
+      out += '(' + inner + ')';
+      i = blk.endIdx;
+      continue;
+    }
+
+    while (j < s.length && /\s/.test(s[j])) j++;
+
+    const mVar = s.slice(j).match(/^(\?[A-Za-z_][A-Za-z0-9_-]*)/);
+    if (!mVar) {
+      out += '(' + inner + ')';
+      i = blk.endIdx;
+      continue;
+    }
+
+    const outVar = mVar[1];
+    j += outVar.length;
+
+    // consume optional trailing dot
+    while (j < s.length && /\s/.test(s[j])) j++;
+    if (s[j] === '.') j++;
+
+    const terms = splitListTermsFromN3List(inner);
+    const fnSrl =
+      matchedPredToken.startsWith('<') && labels.length
+        ? `${labels[0]}${matchedLocal}`
+        : matchedPredToken;
+
+    const bind = `BIND(${fnSrl}(${terms.join(', ')}) AS ${outVar})`;
+    binds.push(bind);
+
+    i = j;
+  }
+
+  return { baseBody: normalizeInsideBracesKeepStyle(out), binds };
+}
+
+
 function extractMathFiltersFromBody(bodyRaw, mathLabels) {
   const labels = Array.isArray(mathLabels) && mathLabels.length ? mathLabels : ['math:'];
   const s = bodyRaw || '';
   const filters = [];
   let out = s;
 
-  // Build predicate alternatives (prefixed + full IRI)
+  // Predicate alternatives (prefixed + full IRI)
   const preds = [
     { name: 'greaterThan', op: '>' },
     { name: 'lessThan', op: '<' },
@@ -1912,23 +2187,26 @@ function extractMathFiltersFromBody(bodyRaw, mathLabels) {
     { name: 'notGreaterThan', op: '<=' },
   ];
 
+  // Token-ish term matcher that works for variables, prefixed names, IRIs and typical typed literals.
+  // (Not a full N3 grammar — deliberately minimal for the roundtripper subset.)
+  const TERM = String.raw`(?:\?[A-Za-z_][A-Za-z0-9_-]*|<[^>]*>|[A-Za-z][A-Za-z0-9_-]*:[A-Za-z0-9_.-]+|_:[A-Za-z0-9_-]+|"[^"\\]*(?:\\.[^"\\]*)*"(?:(?:\^\^)[^\s;]+|@[A-Za-z0-9-]+)?|[-+]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)`;
+
   for (const { name, op } of preds) {
     const full = `<${MATH_NS}${name}>`;
     const pref = labels.map((lab) => `${lab}${name}`);
 
-    // Match both full IRI and any math prefix label
     const predGroup = [full, ...pref.map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))].join('|');
+
     const reStmt = new RegExp(
       '(^|[\\s;\\n\\r\\t])' +
-        '(\\?[A-Za-z_][A-Za-z0-9_-]*)\\s+' +
+        `(${TERM})\\s+` +
         `(?:${predGroup})\\s+` +
-        '([-+]?\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?)\\s*\\.?' +
-        '(?=\\s|$)',
+        `(${TERM})\\s*\\.?(?=\\s|$)`,
       'g',
     );
 
-    out = out.replace(reStmt, (m0, lead, v, num) => {
-      filters.push({ expr: `${v} ${op} ${num}` });
+    out = out.replace(reStmt, (m0, lead, left, right) => {
+      filters.push({ expr: `${left} ${op} ${right}` });
       return lead || ' ';
     });
   }
@@ -2116,6 +2394,63 @@ function normalizeInsideBracesKeepStyle(s) {
   return (s || '').trim().replace(/\s+/g, ' ').trim();
 }
 
+
+function srlDollarVarsToQVars(text) {
+  // SHACL SPARQL uses $this/$value; N3 uses ?vars.
+  // Convert $name -> ?name, ignoring occurrences inside strings.
+  const s = text || '';
+  let out = '';
+  let inString = false;
+  let quote = null;
+  let escaped = false;
+
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+
+    if (inString) {
+      out += ch;
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (ch === '\\') {
+        escaped = true;
+        continue;
+      }
+      if (ch === quote) {
+        inString = false;
+        quote = null;
+      }
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      inString = true;
+      quote = ch;
+      out += ch;
+      continue;
+    }
+
+    if (ch === '$') {
+      let j = i + 1;
+      let name = '';
+      while (j < s.length && /[A-Za-z0-9_\-]/.test(s[j])) {
+        name += s[j];
+        j++;
+      }
+      if (name.length) {
+        out += '?' + name;
+        i = j - 1;
+        continue;
+      }
+    }
+
+    out += ch;
+  }
+
+  return out;
+}
+
 function indentLines(s, n) {
   const pad = ' '.repeat(n);
   return (s || '')
@@ -2156,12 +2491,14 @@ function parseN3PrefixLines(src) {
   return { prefixes, rest: other.join('\n') };
 }
 
+
 function readBalancedBraces(src, startIdx) {
   if (src[startIdx] !== '{') throw new Error("Expected '{'");
 
   let i = startIdx;
   let depth = 0;
   let inString = false;
+  let quote = null;
   let escaped = false;
   let out = '';
 
@@ -2170,6 +2507,7 @@ function readBalancedBraces(src, startIdx) {
 
     if (inString) {
       out += ch;
+
       if (escaped) {
         escaped = false;
         continue;
@@ -2178,12 +2516,22 @@ function readBalancedBraces(src, startIdx) {
         escaped = true;
         continue;
       }
-      if (ch === '"') inString = false;
+      if (ch === quote) {
+        inString = false;
+        quote = null;
+      }
       continue;
     }
 
-    if (ch === '"') {
+    // Treat \" or \' outside strings as literal quotes (common when SRL is copy-pasted from JS strings)
+    if ((ch === '"' || ch === "'") && i > 0 && src[i - 1] === '\\') {
+      out += ch;
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
       inString = true;
+      quote = ch;
       out += ch;
       continue;
     }
@@ -2371,7 +2719,7 @@ function srlToN3(srlText) {
       alts = next;
     }
 
-    const head = normalizeInsideBracesKeepStyle(r.head);
+    const head = srlDollarVarsToQVars(normalizeInsideBracesKeepStyle(r.head));
 
     for (const a of alts) {
       const extra = a.builtins.length ? ` ${a.builtins.join(' ')} ` : '';
@@ -2429,6 +2777,7 @@ function n3ToSrl(n3Text) {
   const logLabels = logPrefixLabels(prefixes);
   const mathLabels = mathPrefixLabels(prefixes);
   const stringLabels = stringPrefixLabels(prefixes);
+  const timeLabels = timeFnPrefixLabels(prefixes);
 
   // First pass: convert bodies, extract FILTER-able math statements, and group for possible OR merge.
   const cooked = [];
@@ -2441,12 +2790,13 @@ function n3ToSrl(n3Text) {
     // FILTER mapping (math builtins)
     const ex = extractMathFiltersFromBody(body1, mathLabels);
     const bx = extractStringBindsFromBody(ex.baseBody, stringLabels);
+    const tx = extractTimeFnBindsFromBody(bx.baseBody, timeLabels);
 
     cooked.push({
       head,
-      baseBody: bx.baseBody,
+      baseBody: tx.baseBody,
       filters: ex.filters.map((f) => f.expr),
-      binds: bx.binds,
+      binds: (bx.binds || []).concat(tx.binds || []),
     });
   }
 

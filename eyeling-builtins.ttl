@@ -8,6 +8,7 @@
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix tfn: <https://w3id.org/time-fn#> .
 
 # ------------------------------------------------------------------------------
 # Builtin catalog (eyeling.js)
@@ -336,3 +337,26 @@ string:format a ex:Builtin ; ex:kind ex:Function ;
 
 string:jsonPointer a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "JSON Pointer lookup: (jsonText pointer) -> value term. Expects rdf:JSON-typed literal (or treated as rdf:JSON); caches parsed JSON and pointer lookups." .
+
+# --- tfn: (Time Functions) -------------------------------------------
+# Source semantics: Smessaert et al., “It’s About Time: Time Functions for Comparing Partial and Floating Time Literals in SPARQL”, §2.2.
+
+tfn:periodMinInclusive a ex:Builtin ;
+  ex:kind ex:Function ;
+  rdfs:comment "Time Functions: inclusive lower bound of the period represented by a temporal literal (xsd:date, xsd:gYearMonth, xsd:gYear, xsd:dateTime, ...), returned as xsd:dateTime." .
+
+tfn:periodMaxInclusive a ex:Builtin ;
+  ex:kind ex:Function ;
+  rdfs:comment "Time Functions: inclusive upper bound of the period represented by a temporal literal, returned as xsd:dateTime." .
+
+tfn:periodMinExclusive a ex:Builtin ;
+  ex:kind ex:Function ;
+  rdfs:comment "Time Functions: exclusive lower bound of the period represented by a temporal literal, returned as xsd:dateTime." .
+
+tfn:periodMaxExclusive a ex:Builtin ;
+  ex:kind ex:Function ;
+  rdfs:comment "Time Functions: exclusive upper bound of the period represented by a temporal literal, returned as xsd:dateTime." .
+
+tfn:bindDefaultTimezone a ex:Builtin ;
+  ex:kind ex:Function ;
+  rdfs:comment "Time Functions: binds a default timezone to a floating time literal. Input is (timeLiteral timeZone). If the literal already has a timezone, it is returned unchanged; otherwise the specified timezone is applied." .
