@@ -152,6 +152,31 @@
       box-shadow: none;
     }
 
+    /* Secondary + danger button variants (Playground) */
+    button.secondary {
+      background: #e5e7eb;
+      color: #111827;
+      box-shadow: none;
+    }
+    button.secondary:hover:not(:disabled) {
+      box-shadow: 0 10px 15px rgba(17, 24, 39, 0.12);
+    }
+
+    button.danger {
+      background: #dc2626;
+      color: #ffffff;
+      box-shadow: 0 10px 15px rgba(220, 38, 38, 0.25);
+    }
+    button.danger:hover:not(:disabled) {
+      box-shadow: 0 14px 24px rgba(220, 38, 38, 0.32);
+    }
+
+    /* Stream demo stop button */
+    #streamApp .stream-topbar button.danger{
+      background:#dc2626;
+      color:#fff;
+    }
+
     .status {
       font-size: 0.8rem;
       color: #6b7280;
@@ -326,6 +351,12 @@
         font-size: 16px;
       }
 
+      #pause-btn,
+      #stop-btn {
+        width: 100%;
+        font-size: 16px;
+      }
+
       /* Make toggles/status readable and line-wrap */
       .toggle {
         width: 100%;
@@ -448,7 +479,7 @@
     }
     #streamApp .stream-topbar{
       padding:10px 12px; border-bottom:1px solid var(--s-line);
-      display:flex; gap:10px; align-items:center; background:#fff;
+      display:flex; gap:10px; align-items:center; background:#fff; flex-wrap: wrap;
       position:sticky; top:0; z-index:10;
     }
     #streamApp .stream-topbar input{
@@ -586,6 +617,8 @@
 
       <div class="controls">
         <button id="run-btn">Run reasoning</button>
+        <button id="pause-btn" class="secondary" disabled>Pause</button>
+        <button id="stop-btn" class="danger" disabled>Stop</button>
 
         <label class="toggle" title="Runs Eyeling with -p (proof comments)">
           <input id="proof-comments" type="checkbox" />
@@ -629,6 +662,8 @@
 
             <span id="stream-eyelingVersion" class="badge" style="margin-left:auto">Eyeling</span>
             <button id="stream-reasonBtn" disabled>Reason (stream)</button>
+            <button id="stream-pauseBtn" class="secondary" disabled>Pause</button>
+            <button id="stream-stopBtn" class="danger" disabled>Stop</button>
           </div>
 
           <div class="stream-layout">
@@ -735,6 +770,8 @@
       const inputTextArea = document.getElementById("n3-editor");
       const outputTextArea = document.getElementById("output-editor");
       const runBtn = document.getElementById("run-btn");
+      const pauseBtn = document.getElementById("pause-btn");
+      const stopBtn = document.getElementById("stop-btn");
       const statusEl = document.getElementById("status");
       const uriInput = document.getElementById("n3-uri");
       const loadUriBtn = document.getElementById("load-uri-btn");
@@ -1529,6 +1566,70 @@ try {
 
       // --- Streaming output for the Playground tab (keeps UI responsive) ---
       let activePlayCancel = null;
+      let activePlayAppender = null;
+      let playPaused = false;
+      let playPausedBuffer = [];
+
+      function setPlayPaused(next) {
+        playPaused = !!next;
+        if (pauseBtn) pauseBtn.textContent = playPaused ? "Resume" : "Pause";
+      }
+
+      function enablePlayControls(running) {
+        if (stopBtn) stopBtn.disabled = !running;
+        const canResume = playPaused && playPausedBuffer.length > 0;
+        if (pauseBtn) pauseBtn.disabled = !(running || canResume);
+        if (pauseBtn) pauseBtn.textContent = playPaused ? "Resume" : "Pause";
+      }
+
+      function flushPlayBuffer() {
+        if (!playPausedBuffer.length) return;
+        const text = playPausedBuffer.join("");
+        playPausedBuffer = [];
+        try {
+          const appender = activePlayAppender || makeCMAppender(outputEl, () => {
+            const mh = currentMaxHeights();
+            autoResizeCodeMirror(outputEl, 80, mh.output);
+          });
+          activePlayAppender = appender;
+          appender.append(text);
+          appender.flushNow();
+        } catch (_) {}
+      }
+
+      function stopPlayReasoning() {
+        try { if (activePlayCancel) activePlayCancel(); } catch (_) {}
+        activePlayCancel = null;
+        setPlayPaused(false);
+        playPausedBuffer = [];
+        enablePlayControls(false);
+        runBtn.disabled = false;
+        statusEl.textContent = "Stopped.";
+      }
+
+      if (pauseBtn) {
+        pauseBtn.addEventListener("click", () => {
+          // Toggle pause/resume. While paused, we buffer incoming batches.
+          if (!activePlayCancel && !(playPaused && playPausedBuffer.length)) return;
+
+          if (!playPaused) {
+            setPlayPaused(true);
+            statusEl.textContent = "Paused. Output frozen; buffering new triples…";
+            enablePlayControls(true);
+          } else {
+            setPlayPaused(false);
+            flushPlayBuffer();
+            statusEl.textContent = activePlayCancel
+              ? "Reasoning (streaming)…"
+              : "Idle.";
+            enablePlayControls(!!activePlayCancel);
+          }
+        });
+      }
+
+      if (stopBtn) {
+        stopBtn.addEventListener("click", stopPlayReasoning);
+      }
 
       function makeCMAppender(cm, afterFlush) {
         let pending = "";
@@ -1564,6 +1665,10 @@ try {
 
       async function runReasoner() {
         runBtn.disabled = true;
+        setPlayPaused(false);
+        playPausedBuffer = [];
+        enablePlayControls(true);
+
         clearErrorHighlight();
 
         const startMs = performance.now();
@@ -1587,6 +1692,7 @@ try {
           const mh = currentMaxHeights();
           autoResizeCodeMirror(outputEl, 80, mh.output);
         });
+        activePlayAppender = appender;
 
         // Cancel any prior run
         try { if (activePlayCancel) activePlayCancel(); } catch (_) {}
@@ -1606,21 +1712,34 @@ try {
           onBatch: (triples) => {
             if (!triples || !triples.length) return;
             derivedCount += triples.length;
-            appender.append(triples.join("\n") + "\n");
+            if (playPaused) {
+              playPausedBuffer.push(triples.join("\n") + "\n");
+            } else {
+              appender.append(triples.join("\n") + "\n");
+            }
             statusEl.textContent =
-              "Reasoning (streaming)… Derived: " + derivedCount.toLocaleString();
+              (playPaused ? "Paused… Derived: " : "Reasoning (streaming)… Derived: ") + derivedCount.toLocaleString();
           },
           onDone: () => {
             appender.flushNow();
             activePlayCancel = null;
+            // If paused, keep the pause button enabled so user can "Resume" and reveal buffered output.
+            enablePlayControls(false);
+
             const totalSeconds = (performance.now() - startMs) / 1000;
             statusEl.textContent =
-              "Done. Derived: " + derivedCount.toLocaleString() + " (" + totalSeconds.toFixed(2) + "s)";
+              (playPaused
+                ? "Done (paused). Derived: " + derivedCount.toLocaleString() + " — click Resume to display buffered output (" + totalSeconds.toFixed(2) + "s)"
+                : "Done. Derived: " + derivedCount.toLocaleString() + " (" + totalSeconds.toFixed(2) + "s)");
             runBtn.disabled = false;
           },
           onError: (msg) => {
             appender.flushNow();
             activePlayCancel = null;
+            enablePlayControls(false);
+            setPlayPaused(false);
+            playPausedBuffer = [];
+
 
             const mh = currentMaxHeights();
             outputEl.setValue("Reasoning error: " + msg);
@@ -1858,6 +1977,8 @@ wd:Q7836 wdt:P31 wd:Q5 .
         let worker = null;
         let runId = 0;
         let isRunning = false;
+        let streamPaused = false;
+        let streamPausedBuffer = [];
         let lastSelectedDiv = null;
         let resultDivById = new Map();
 
@@ -1894,9 +2015,15 @@ wd:Q7836 wdt:P31 wd:Q5 .
         function updateButtons() {
           const hasSelection = !!selected;
           const hasData = !!datasetN3.trim();
+
           $("loadBtn").disabled = isRunning || !hasSelection;
           $("reasonBtn").disabled = isRunning || !hasData;
           $("openDatasetBtn").disabled = !hasData;
+
+          const canResume = streamPaused && streamPausedBuffer.length > 0;
+          $("pauseBtn").disabled = !(isRunning || canResume);
+          $("stopBtn").disabled = !isRunning;
+          $("pauseBtn").textContent = streamPaused ? "Resume" : "Pause";
         }
 
         
@@ -1923,8 +2050,16 @@ wd:Q7836 wdt:P31 wd:Q5 .
             out.push(t);
           }
           if (!out.length) return;
-          outAppendText(out.join("\n") + "\n");
+
+          // Always keep counts up to date, even while paused.
           $("derivedCount").textContent = String(shownDerived.size);
+
+          if (streamPaused) {
+            streamPausedBuffer.push(out.join("\n") + "\n");
+            return;
+          }
+
+          outAppendText(out.join("\n") + "\n");
         }
         function setDataset(text) {
           datasetN3 = text || "";
@@ -2074,12 +2209,13 @@ wd:Q7836 wdt:P31 wd:Q5 .
 
         // --- Reasoning (background worker + true streaming) ---
         let activeStreamCancel = null;
-
         function runReasoning() {
           const rules = rulesCM.getValue();
           if (!datasetN3.trim() || !rules.trim()) return;
 
           isRunning = true;
+          streamPaused = false;
+          streamPausedBuffer = [];
           updateButtons();
           setStatus("Reasoning (streaming)…");
 
@@ -2108,13 +2244,13 @@ wd:Q7836 wdt:P31 wd:Q5 .
             },
             onDone: () => {
               activeStreamCancel = null;
-              setStatus(`Done. (Run ${thisRun})`);
+              setStatus(streamPaused ? `Done (paused). Click Resume to display buffered output. (Run ${thisRun})` : `Done. (Run ${thisRun})`);
               isRunning = false;
               updateButtons();
             },
             onError: (msg) => {
               activeStreamCancel = null;
-              setStatus(`Reasoning error: ${msg}`);
+              setStatus(streamPaused ? `Reasoning error (paused): ${msg}` : `Reasoning error: ${msg}`);
               isRunning = false;
               updateButtons();
             },
@@ -2230,6 +2366,36 @@ wd:Q7836 wdt:P31 wd:Q5 .
         $("toyBtn").onclick = () => { loadToy(); setTimeout(() => { if ($("clearOnRun").checked) clearOutput(); addRunHeader("Toy run"); runReasoning(); }, 60); };
         $("clearBtn").onclick = () => { clearOutput(); setStatus("Cleared."); };
         $("reasonBtn").onclick = () => { if ($("clearOnRun").checked) clearOutput(); addRunHeader("Manual run"); runReasoning(); };
+
+        $("pauseBtn").onclick = () => {
+          const canResume = streamPaused && streamPausedBuffer.length > 0;
+          if (!(isRunning || canResume)) return;
+
+          if (!streamPaused) {
+            streamPaused = true;
+            setStatus("Paused. Output frozen; buffering new triples…");
+          } else {
+            streamPaused = false;
+            if (streamPausedBuffer.length) {
+              outAppendText(streamPausedBuffer.join(""));
+              streamPausedBuffer = [];
+            }
+            setStatus(isRunning ? "Reasoning (streaming)…" : "Resumed. Buffered output appended.");
+          }
+
+          updateButtons();
+        };
+
+        $("stopBtn").onclick = () => {
+          try { if (activeStreamCancel) activeStreamCancel(); } catch (_) {}
+          activeStreamCancel = null;
+          streamPaused = false;
+          streamPausedBuffer = [];
+          isRunning = false;
+          setStatus("Stopped.");
+          updateButtons();
+        };
+
 
         $("searchBox").addEventListener("keydown", (e) => { if (e.key === "Enter") doSearch(); });
 
