@@ -369,7 +369,7 @@
         }
       }
     }
-  
+
     /* --- Tabs (Playground / Streaming demo) --- */
     .tabs {
       display: flex;
@@ -379,6 +379,9 @@
       margin-top: -0.25rem;
     }
     .tab-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       border: 1px solid rgba(148, 163, 184, 0.35);
       background: rgba(255, 255, 255, 0.85);
       color: #111827;
@@ -397,7 +400,27 @@
       box-shadow: 0 10px 15px rgba(37, 99, 235, 0.22);
     }
     .tab-content { display: none; }
-    .tab-content.is-active { display: block; }
+
+    /* Radios drive tab visibility (works even if JS fails / is blocked) */
+    .tab-radio {
+      position: absolute;
+      left: -9999px;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+    }
+
+    #tab-radio-playground:checked ~ #tab-playground { display: block; }
+    #tab-radio-stream:checked ~ #tab-stream { display: block; }
+
+    /* Selected tab styling without JS */
+    #tab-radio-playground:checked ~ .tabs .tab-btn[data-tab="playground"],
+    #tab-radio-stream:checked ~ .tabs .tab-btn[data-tab="stream"] {
+      background: #2563eb;
+      border-color: #2563eb;
+      color: #ffffff;
+      box-shadow: 0 10px 15px rgba(37, 99, 235, 0.22);
+    }
 
     .playground-inner {
       max-width: 960px;
@@ -530,13 +553,15 @@
       </p>
     </header>
 
+    <input class="tab-radio" type="radio" name="eyeling-demo-tab" id="tab-radio-playground" checked>
+    <input class="tab-radio" type="radio" name="eyeling-demo-tab" id="tab-radio-stream">
 
     <nav class="tabs" role="tablist" aria-label="Eyeling demos">
-      <button class="tab-btn" type="button" role="tab" data-tab="playground" aria-controls="tab-playground" aria-selected="true">Playground</button>
-      <button class="tab-btn" type="button" role="tab" data-tab="stream" aria-controls="tab-stream" aria-selected="false">Streaming demo</button>
+      <label class="tab-btn" role="tab" tabindex="0" data-tab="playground" aria-controls="tab-playground" aria-selected="true" for="tab-radio-playground">Playground</label>
+      <label class="tab-btn" role="tab" tabindex="0" data-tab="stream" aria-controls="tab-stream" aria-selected="false" for="tab-radio-stream">Streaming demo</label>
     </nav>
 
-    <div id="tab-playground" class="tab-content is-active" role="tabpanel" aria-label="Playground">
+    <div id="tab-playground" class="tab-content" role="tabpanel" aria-label="Playground">
       <div class="playground-inner">
     <section class="card">
       <h2 class="section-title">Input N3</h2>
@@ -736,6 +761,182 @@ try {
 
       let eyelingVersion = "unknown";
       let versionPromise = null;
+
+      // --- Unified background streaming runner (shared with the Streaming demo tab) ---
+      // Exposes: window.__eyelingUnified.startStreamRun({program,enforceHttps,proof,onBatch,onDone,onError})
+      (function initUnifiedEyelingRunner() {
+        const U = window.__eyelingUnified || (window.__eyelingUnified = {});
+        if (U && typeof U.startStreamRun === "function") return;
+
+        let activeWorker = null;
+        let nextRunId = 0;
+
+        function stopActiveWorker() {
+          if (!activeWorker) return;
+          try { activeWorker.terminate(); } catch (_) {}
+          activeWorker = null;
+        }
+
+        function nowMs() {
+          return (window.performance && performance.now) ? performance.now() : Date.now();
+        }
+
+        // Start a run. Creates/terminates workers as needed (single active run at a time).
+        U.startStreamRun = function startStreamRun(args) {
+          const program = String(args && args.program ? args.program : "");
+          const enforceHttps = !!(args && args.enforceHttps);
+          const proof = !!(args && args.proof);
+          const onBatch = args && typeof args.onBatch === "function" ? args.onBatch : null;
+          const onDone = args && typeof args.onDone === "function" ? args.onDone : null;
+          const onError = args && typeof args.onError === "function" ? args.onError : null;
+
+          const runId = ++nextRunId;
+
+          // Best-effort fallback for environments without Web Workers.
+          if (typeof Worker === "undefined") {
+            try {
+              if (!window.eyeling || typeof window.eyeling.reasonStream !== "function") {
+                throw new Error("Eyeling reasonStream API not available.");
+              }
+              const batch = [];
+              const BATCH_MAX = 16;
+
+              function flush(force) {
+                if (!batch.length) return;
+                if (force || batch.length >= BATCH_MAX) {
+                  onBatch && onBatch(batch.splice(0));
+                }
+              }
+
+              window.eyeling.reasonStream(program, {
+                enforceHttps,
+                proof,
+                onDerived: ({ triple }) => {
+                  batch.push(triple);
+                  flush(false);
+                },
+              });
+
+              flush(true);
+              onDone && onDone({ runId });
+            } catch (e) {
+              onError && onError((e && e.message) ? e.message : String(e));
+            }
+
+            return { runId, cancel: () => {} };
+          }
+
+          // Worker path (keeps UI responsive and enables true streaming)
+          stopActiveWorker();
+
+          const eyelingUrl = new URL("eyeling.js", window.location.href).toString();
+          const eyelingUrlEsc = eyelingUrl.replace(/\\/g, "\\\\").replace(/"/g, "\\\"");
+
+          const workerSrc = `
+            importScripts("${eyelingUrlEsc}");
+            const now = () => (self.performance && performance.now) ? performance.now() : Date.now();
+
+            self.onmessage = (ev) => {
+              const msg = ev && ev.data ? ev.data : {};
+              if (msg.type !== "run") return;
+
+              const runId = msg.runId;
+              const program = String(msg.program || "");
+              const enforceHttps = !!msg.enforceHttps;
+              const proof = !!msg.proof;
+
+              const batch = [];
+              const BATCH_MAX = 10;          // small batches = more "real-time"
+              const MAX_LATENCY_MS = 15;     // try to post at least every ~15ms
+              let lastFlush = now();
+
+              function flush(force) {
+                const t = now();
+                if (!batch.length) return;
+                if (force || batch.length >= BATCH_MAX || (t - lastFlush) >= MAX_LATENCY_MS) {
+                  // Copy the array so the main thread can process immediately.
+                  self.postMessage({ type: "derived_batch", runId, triples: batch.splice(0) });
+                  lastFlush = t;
+                }
+              }
+
+              try {
+                if (!self.eyeling || typeof self.eyeling.reasonStream !== "function") {
+                  throw new Error("Eyeling reasonStream API not available.");
+                }
+
+                self.eyeling.reasonStream(program, {
+                  enforceHttps,
+                  proof,
+                  onDerived: ({ triple }) => {
+                    batch.push(triple);
+                    flush(false);
+                  },
+                });
+
+                flush(true);
+                self.postMessage({ type: "done", runId });
+              } catch (e) {
+                self.postMessage({
+                  type: "error",
+                  runId,
+                  message: (e && e.message) ? e.message : String(e),
+                });
+              }
+            };
+          `;
+
+          const blob = new Blob([workerSrc], { type: "text/javascript" });
+          const url = URL.createObjectURL(blob);
+          const w = new Worker(url);
+          activeWorker = w;
+
+          let finished = false;
+          function cleanup() {
+            if (finished) return;
+            finished = true;
+            try { URL.revokeObjectURL(url); } catch (_) {}
+          }
+
+          w.onmessage = (ev) => {
+            const msg = ev && ev.data ? ev.data : {};
+            if (msg.runId !== runId) return;
+
+            if (msg.type === "derived_batch") {
+              onBatch && onBatch(msg.triples || []);
+            } else if (msg.type === "done") {
+              cleanup();
+              onDone && onDone({ runId });
+            } else if (msg.type === "error") {
+              cleanup();
+              onError && onError(msg.message || "Unknown error");
+            }
+          };
+
+          w.onerror = (ev) => {
+            cleanup();
+            onError && onError("Worker error: " + (ev && ev.message ? ev.message : "unknown"));
+          };
+
+          // Kick off the work
+          w.postMessage({
+            type: "run",
+            runId,
+            program,
+            enforceHttps,
+            proof,
+          });
+
+          return {
+            runId,
+            cancel: () => {
+              try { w.terminate(); } catch (_) {}
+              cleanup();
+              if (activeWorker === w) activeWorker = null;
+            },
+          };
+        };
+      })();
 
       function isSmallScreen() {
         return window.matchMedia && window.matchMedia("(max-width: 640px)").matches;
@@ -1326,95 +1527,111 @@ try {
         return runnerPromise;
       }
 
+      // --- Streaming output for the Playground tab (keeps UI responsive) ---
+      let activePlayCancel = null;
+
+      function makeCMAppender(cm, afterFlush) {
+        let pending = "";
+        let scheduled = false;
+
+        function flush() {
+          scheduled = false;
+          if (!pending) return;
+
+          const scroller = cm.getScrollerElement();
+          const nearBottom =
+            scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 20;
+
+          const lastLine = cm.lastLine();
+          const lastCh = cm.getLine(lastLine).length;
+          cm.replaceRange(pending, { line: lastLine, ch: lastCh });
+          pending = "";
+
+          if (nearBottom) scroller.scrollTop = scroller.scrollHeight;
+          afterFlush && afterFlush();
+        }
+
+        return {
+          append(text) {
+            pending += text;
+            if (scheduled) return;
+            scheduled = true;
+            requestAnimationFrame(flush);
+          },
+          flushNow() { flush(); },
+        };
+      }
+
       async function runReasoner() {
         runBtn.disabled = true;
         clearErrorHighlight();
 
         const startMs = performance.now();
-        statusEl.textContent = "Running reasoning...";
+        let derivedCount = 0;
+
+        statusEl.textContent = "Reasoning (streaming)…";
 
         // Clear output immediately.
-        const setThinking = () => {
+        {
           const mh = currentMaxHeights();
-          outputEl.setValue(`Thinking ...`);
+          outputEl.setValue("# Derived triples (streaming):\n");
           autoResizeCodeMirror(outputEl, 80, mh.output);
-        };
-
-        setThinking();
+        }
 
         if (hashSyncEnabled) updateShareUrl();
 
-        // Let the browser paint before we do anything potentially expensive.
+        // Let the browser paint before we start.
         await new Promise(requestAnimationFrame);
 
-        let thinkingInterval = setInterval(setThinking, 100);
+        const appender = makeCMAppender(outputEl, () => {
+          const mh = currentMaxHeights();
+          autoResizeCodeMirror(outputEl, 80, mh.output);
+        });
 
-        try {
-          // Prefer Web Worker to avoid freezing the UI.
-          // If the worker fails to initialize for any reason, fall back to the main-thread runner.
-          let workerRunner = null;
-          try {
-            workerRunner = await getEyelingWorkerRunner();
-          } catch (_e) {
-            workerRunner = null;
-          }
+        // Cancel any prior run
+        try { if (activePlayCancel) activePlayCancel(); } catch (_) {}
+        activePlayCancel = null;
 
-          // One more chance to paint before any heavy work begins.
-          await new Promise(requestAnimationFrame);
-
-          let result = "";
-          let durationMs = null;
-
-          if (workerRunner) {
-            const out = await workerRunner.run(editor.getValue(), {
-              proof: proofCheckbox.checked,
-              enforceHttps: enforceHttpsCheckbox.checked,
-            });
-            result = out && typeof out.result === "string" ? out.result : "";
-            durationMs = out && typeof out.durationMs === "number" ? out.durationMs : null;
-          } else {
-            // Fallback for environments without Workers.
-            const runner = await getEyelingRunner();
-            result = runner(editor.getValue());
-          }
-
-          clearInterval(thinkingInterval);
-          thinkingInterval = null;
-
-          {
-            const mh = currentMaxHeights();
-            outputEl.setValue(result || "(no output)");
-            highlightErrorFromOutput(result);
-            autoResizeCodeMirror(outputEl, 80, mh.output);
-          }
-
-          const totalSeconds = (performance.now() - startMs) / 1000;
-          const workerSeconds = durationMs != null ? durationMs / 1000 : null;
-          statusEl.textContent = workerSeconds != null
-            ? `Done. (Worker time: ${workerSeconds.toFixed(2)}s, total: ${totalSeconds.toFixed(2)}s)`
-            : `Done. (Thinking for ${totalSeconds.toFixed(2)} seconds)`;
-        } catch (e) {
-          if (thinkingInterval) {
-            clearInterval(thinkingInterval);
-            thinkingInterval = null;
-          }
-
-          {
-            const mh = currentMaxHeights();
-            outputEl.setValue(
-              "Failed to run Eyeling: " + (e && e.message ? e.message : String(e))
-            );
-            autoResizeCodeMirror(outputEl, 80, mh.output);
-          }
-
-          statusEl.textContent = "Error.";
-        } finally {
-          if (thinkingInterval) {
-            clearInterval(thinkingInterval);
-            thinkingInterval = null;
-          }
+        const U = window.__eyelingUnified;
+        if (!U || typeof U.startStreamRun !== "function") {
+          statusEl.textContent = "Error: unified worker not available.";
           runBtn.disabled = false;
+          return;
         }
+
+        const { cancel } = U.startStreamRun({
+          program: editor.getValue(),
+          enforceHttps: enforceHttpsCheckbox.checked,
+          proof: proofCheckbox.checked,
+          onBatch: (triples) => {
+            if (!triples || !triples.length) return;
+            derivedCount += triples.length;
+            appender.append(triples.join("\n") + "\n");
+            statusEl.textContent =
+              "Reasoning (streaming)… Derived: " + derivedCount.toLocaleString();
+          },
+          onDone: () => {
+            appender.flushNow();
+            activePlayCancel = null;
+            const totalSeconds = (performance.now() - startMs) / 1000;
+            statusEl.textContent =
+              "Done. Derived: " + derivedCount.toLocaleString() + " (" + totalSeconds.toFixed(2) + "s)";
+            runBtn.disabled = false;
+          },
+          onError: (msg) => {
+            appender.flushNow();
+            activePlayCancel = null;
+
+            const mh = currentMaxHeights();
+            outputEl.setValue("Reasoning error: " + msg);
+            autoResizeCodeMirror(outputEl, 80, mh.output);
+
+            statusEl.textContent = "Error.";
+            runBtn.disabled = false;
+          },
+        });
+
+        activePlayCancel = cancel;
       }
 
       async function loadFromUri() {
@@ -1472,26 +1689,33 @@ try {
     (function () {
       const TAB_KEY = "eyeling.demo.activeTab";
       const tabButtons = Array.from(document.querySelectorAll(".tab-btn"));
-      const tabPlay = document.getElementById("tab-playground");
-      const tabStream = document.getElementById("tab-stream");
+      const radioPlay = document.getElementById("tab-radio-playground");
+      const radioStream = document.getElementById("tab-radio-stream");
 
-      function setSelected(tabName) {
-        const isStream = tabName === "stream";
+      function applyFromRadios() {
+        const tabName = (radioStream && radioStream.checked) ? "stream" : "playground";
 
-        tabPlay.classList.toggle("is-active", !isStream);
-        tabStream.classList.toggle("is-active", isStream);
-
+        // Keep aria-selected in sync (nice for a11y; also keeps old CSS working)
         for (const btn of tabButtons) {
-          const selected = btn.dataset.tab === tabName;
+          const selected = (btn.getAttribute("data-tab") === tabName);
           btn.setAttribute("aria-selected", selected ? "true" : "false");
         }
 
         try { localStorage.setItem(TAB_KEY, tabName); } catch (_) {}
 
-        if (isStream && !window.__eyelingStreamInited) {
+        if (tabName === "stream" && !window.__eyelingStreamInited) {
           window.__eyelingStreamInited = true;
           initStreamApp();
         }
+      }
+
+      function setSelected(tabName) {
+        if (tabName === "stream") {
+          if (radioStream) radioStream.checked = true;
+        } else {
+          if (radioPlay) radioPlay.checked = true;
+        }
+        applyFromRadios();
       }
 
       function initialTab() {
@@ -1508,8 +1732,18 @@ try {
         return "playground";
       }
 
+      // Labels toggle radios by themselves; we just update aria/localStorage + lazy init.
+      if (radioPlay) radioPlay.addEventListener("change", applyFromRadios);
+      if (radioStream) radioStream.addEventListener("change", applyFromRadios);
+
+      // Keyboard support for labels (Space / Enter)
       for (const btn of tabButtons) {
-        btn.addEventListener("click", () => setSelected(btn.dataset.tab));
+        btn.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " " ) {
+            e.preventDefault();
+            btn.click();
+          }
+        });
       }
 
       setSelected(initialTab());
@@ -1631,6 +1865,32 @@ wd:Q7836 wdt:P31 wd:Q5 .
         let fetchedFacts = new Set();
         let shownDerived = new Set();
 
+        // Efficient streaming output (append in chunks, avoid re-setting huge textContent)
+        const outBox = $("outBox");
+        let outPending = [];
+        let outFlushScheduled = false;
+
+        function outAppendText(text) {
+          if (!text) return;
+          outPending.push(String(text));
+          if (outFlushScheduled) return;
+          outFlushScheduled = true;
+
+          requestAnimationFrame(() => {
+            outFlushScheduled = false;
+            if (!outPending.length) return;
+
+            const nearBottom =
+              outBox.scrollTop + outBox.clientHeight >= outBox.scrollHeight - 20;
+
+            const chunk = outPending.join("");
+            outPending = [];
+            outBox.appendChild(document.createTextNode(chunk));
+
+            if (nearBottom) outBox.scrollTop = outBox.scrollHeight;
+          });
+        }
+
         function updateButtons() {
           const hasSelection = !!selected;
           const hasData = !!datasetN3.trim();
@@ -1639,30 +1899,33 @@ wd:Q7836 wdt:P31 wd:Q5 .
           $("openDatasetBtn").disabled = !hasData;
         }
 
+        
         function setStatus(text) { $("runStatus").textContent = text; }
+
         function clearOutput() {
-          $("outBox").textContent = `# Derived triples (streaming):\n`;
+          outBox.textContent = "";
+          outPending = [];
+          outAppendText("# Derived triples (streaming):\n");
           $("derivedCount").textContent = "0";
           shownDerived.clear();
         }
 
         function addRunHeader(tag) {
           const stamp = new Date().toLocaleString();
-          $("outBox").textContent += `\n# ---- ${tag} @ ${stamp} ----\n`;
+          outAppendText(`\n# ---- ${tag} @ ${stamp} ----\n`);
         }
 
         function appendTriples(triples) {
           const out = [];
-          for (const t of triples) {
+          for (const t of (triples || [])) {
             if (shownDerived.has(t)) continue;
             shownDerived.add(t);
             out.push(t);
           }
           if (!out.length) return;
-          $("outBox").textContent += out.join("\n") + "\n";
+          outAppendText(out.join("\n") + "\n");
           $("derivedCount").textContent = String(shownDerived.size);
         }
-
         function setDataset(text) {
           datasetN3 = text || "";
           const lines = datasetN3.split(/\r?\n/);
@@ -1809,108 +2072,8 @@ wd:Q7836 wdt:P31 wd:Q5 .
           return page.extract || "";
         }
 
-        function ensureWorker() {
-          if (worker) worker.terminate();
-
-          const workerSrc = `
-            importScripts('eyeling.js');
-            self.onmessage = (ev) => {
-              const { runId, dataN3, rulesN3, enforceHttps } = ev.data;
-              let buffer = [];
-              const FLUSH_EVERY = 4;
-
-              try {
-                const program = rulesN3 + "\\n\\n" + dataN3;
-
-                self.eyeling.reasonStream(program, {
-                  enforceHttps: !!enforceHttps,
-                  onDerived: ({ triple }) => {
-                    buffer.push(triple);
-                    if (buffer.length >= FLUSH_EVERY) {
-                      self.postMessage({ runId, type: 'derived_batch', triples: buffer });
-                      buffer = [];
-                    }
-                  }
-                });
-
-                if (buffer.length) self.postMessage({ runId, type: 'derived_batch', triples: buffer });
-                self.postMessage({ runId, type: 'done' });
-              } catch (e) {
-                self.postMessage({ runId, type: 'error', message: (e && e.message) ? e.message : String(e) });
-              }
-            };
-          `;
-
-          const blob = new Blob([workerSrc], { type: "text/javascript" });
-          worker = new Worker(URL.createObjectURL(blob));
-          return worker;
-        }
-
-        function runReasoningMainThread(program) {
-          if (!window.eyeling || !window.eyeling.reasonStream) {
-            throw new Error("Eyeling not loaded. Ensure eyeling.js exposes window.eyeling.reasonStream.");
-          }
-
-          const triples = [];
-          window.eyeling.reasonStream(program, {
-            enforceHttps: !!streamEnforce?.checked,
-            onDerived: ({ triple }) => triples.push(triple),
-          });
-          appendTriples(triples);
-        }
-
-        let rerunTimer = null;
-        function scheduleRerun() {
-          if (rerunTimer) return;
-          rerunTimer = setTimeout(() => {
-            rerunTimer = null;
-            addRunHeader("Auto re-run (after fetch)");
-            runReasoning();
-          }, 250);
-        }
-
-        async function maybeHandleDynamicFetch(triples) {
-          if (!$("autoFetchWikiquote").checked) return;
-
-          for (const t of triples) {
-            if (!t.includes("needsWikiquoteExtract")) continue;
-
-            const m = t.match(/^(\S+)\s+(\S+)\s+(.+)\s*\.\s*$/);
-            if (!m) continue;
-            const subj = m[1], pred = m[2], obj = m[3];
-
-            if (!pred.includes("needsWikiquoteExtract")) continue;
-            if (!/^wd:Q\d+$/.test(subj)) continue;
-
-            let title = null;
-            const mLong = obj.match(/^"""\s*([\s\S]*?)\s*"""\s*$/);
-            if (mLong) title = mLong[1];
-            else {
-              const mShort = obj.match(/^"([^"]*)"/);
-              if (mShort) title = mShort[1];
-            }
-            if (!title) continue;
-
-            try {
-              setStatus(`Fetching it.wikiquote extract for ${subj}…`);
-              const extract = await fetchItWikiquoteExtract(title);
-              if (!extract) {
-                setStatus(`No extract found on it.wikiquote for "${title}".`);
-                continue;
-              }
-              const capped = extract.length > 2000 ? (extract.slice(0, 2000) + "…") : extract;
-              const fact = `${subj} <http://example.org/wikiquoteExtract> ${escLiteral(capped)} .`;
-              const added = addFactN3(fact);
-              if (added) {
-                $("fetchedCount").textContent = String(fetchedFacts.size);
-                setStatus("Fetched wikiquote extract and added as fact; re-running reasoning…");
-                scheduleRerun();
-              }
-            } catch (e) {
-              setStatus(`Wikiquote fetch failed: ${e.message || e}`);
-            }
-          }
-        }
+        // --- Reasoning (background worker + true streaming) ---
+        let activeStreamCancel = null;
 
         function runReasoning() {
           const rules = rulesCM.getValue();
@@ -1920,57 +2083,46 @@ wd:Q7836 wdt:P31 wd:Q5 .
           updateButtons();
           setStatus("Reasoning (streaming)…");
 
-          const supportsWorker = (typeof Worker !== "undefined");
-
-          if (supportsWorker) {
-            const w = ensureWorker();
-            const thisRun = ++runId;
-
-            w.onmessage = async (ev) => {
-              const msg = ev.data;
-              if (msg.runId !== thisRun) return;
-
-              if (msg.type === "derived_batch") {
-                appendTriples(msg.triples);
-                await maybeHandleDynamicFetch(msg.triples);
-              } else if (msg.type === "done") {
-                setStatus(`Done. (Run ${thisRun})`);
-                isRunning = false;
-                updateButtons();
-              } else if (msg.type === "error") {
-                setStatus(`Reasoning error: ${msg.message}`);
-                isRunning = false;
-                updateButtons();
-              }
-            };
-
-            w.onerror = () => {
-              try {
-                setStatus("Worker error; falling back to main-thread run…");
-                runReasoningMainThread(rules + "\n\n" + datasetN3);
-                setStatus("Done (fallback).");
-              } catch (err) {
-                setStatus(`Reasoning error: ${err.message || err}`);
-              } finally {
-                isRunning = false;
-                updateButtons();
-              }
-            };
-
-            w.postMessage({ runId: thisRun, dataN3: datasetN3, rulesN3: rules, enforceHttps: !!streamEnforce?.checked });
+          const U = window.__eyelingUnified;
+          if (!U || typeof U.startStreamRun !== "function") {
+            setStatus("Error: unified worker not available.");
+            isRunning = false;
+            updateButtons();
             return;
           }
 
-          try {
-            runReasoningMainThread(rules + "\n\n" + datasetN3);
-            setStatus("Done (no worker).");
-          } catch (e) {
-            setStatus(`Reasoning error: ${e.message || e}`);
-          } finally {
-            isRunning = false;
-            updateButtons();
-          }
+          // Cancel any previous run (also avoids piling up output work)
+          try { if (activeStreamCancel) activeStreamCancel(); } catch (_) {}
+          activeStreamCancel = null;
+
+          const program = rules + "\n\n" + datasetN3;
+
+          const { runId: thisRun, cancel } = U.startStreamRun({
+            program,
+            enforceHttps: !!streamEnforce?.checked,
+            proof: false,
+            onBatch: (triples) => {
+              appendTriples(triples);
+              // Fire-and-forget dynamic fetch; may schedule a rerun.
+              try { maybeHandleDynamicFetch(triples); } catch (_) {}
+            },
+            onDone: () => {
+              activeStreamCancel = null;
+              setStatus(`Done. (Run ${thisRun})`);
+              isRunning = false;
+              updateButtons();
+            },
+            onError: (msg) => {
+              activeStreamCancel = null;
+              setStatus(`Reasoning error: ${msg}`);
+              isRunning = false;
+              updateButtons();
+            },
+          });
+
+          activeStreamCancel = cancel;
         }
+
 
         function selectResult(r, div) {
           selected = r;
