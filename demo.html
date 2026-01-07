@@ -1021,7 +1021,12 @@
         let versionPromise = null;
 
         // --- Unified background streaming runner (shared with the Streaming demo tab) ---
-        // Exposes: window.__eyelingUnified.startStreamRun({program,enforceHttps,proof,onBatch,onDone,onError})
+        // Exposes: window.__eyelingUnified.startStreamRun({
+        //   program, enforceHttps, proof,
+        //   onBatch(derivedTriples[]),
+        //   onStdout(text), onStderr(text),
+        //   onDone({runId}), onError(message)
+        // })
         (function initUnifiedEyelingRunner() {
           const U = window.__eyelingUnified || (window.__eyelingUnified = {});
           if (U && typeof U.startStreamRun === 'function') return;
@@ -1103,6 +1108,8 @@
             const enforceHttps = !!(args && args.enforceHttps);
             const proof = !!(args && args.proof);
             const onBatch = args && typeof args.onBatch === 'function' ? args.onBatch : null;
+            const onStdout = args && typeof args.onStdout === 'function' ? args.onStdout : null;
+            const onStderr = args && typeof args.onStderr === 'function' ? args.onStderr : null;
             const onDone = args && typeof args.onDone === 'function' ? args.onDone : null;
             const onError = args && typeof args.onError === 'function' ? args.onError : null;
 
@@ -1124,12 +1131,11 @@
                   }
                 }
 
-                // Capture stderr (log:trace uses console.error in browser/worker) and keep it in the same output stream as N3 comments.
+                // Capture stderr (log:trace uses console.error in browser/worker)
                 const __origConsoleError = console.error;
                 console.error = (...args) => {
                   try {
-                    batch.push('# ' + args.join(' '));
-                    flush(false);
+                    onStderr && onStderr(args.join(' '));
                   } catch (_) {}
                   try {
                     __origConsoleError && __origConsoleError.apply(console, args);
@@ -1176,14 +1182,21 @@
               const enforceHttps = !!msg.enforceHttps;
               const proof = !!msg.proof;
 
-              // Forward stderr (log:trace) to the main thread; keep it in Output pane as N3 comments.
+              // Forward stdout/stderr to the main thread.
+              // - stdout is used for proof comments (when enabled)
+              // - stderr is used by log:trace in browser/worker builds
+              const __origLog = console.log;
+              console.log = (...args) => {
+                try { self.postMessage({ type: "stdout", runId, text: args.join(" ") }); } catch (_) {}
+                try { __origLog && __origLog.apply(console, args); } catch (_) {}
+              };
               const __origErr = console.error;
               console.error = (...args) => {
                 try { self.postMessage({ type: "stderr", runId, text: args.join(" ") }); } catch (_) {}
                 try { __origErr && __origErr.apply(console, args); } catch (_) {}
               };
 
-              const batch = [];
+const batch = [];
               const BATCH_MAX = 10;          // small batches = more "real-time"
               const MAX_LATENCY_MS = 15;     // try to post at least every ~15ms
               let lastFlush = now();
@@ -1199,18 +1212,64 @@
               }
 
               try {
-                if (!self.eyeling || typeof self.eyeling.reasonStream !== "function") {
-                  throw new Error("Eyeling reasonStream API not available.");
+                // Implement a streaming run that *also* supports proof comments.
+                // The public API (eyeling.reasonStream) streams triples but does not print
+                // proof explanations; those are printed only in the CLI path. Here we
+                // reuse the same internal functions and forward console.log output.
+                if (typeof lex !== "function" || typeof Parser !== "function" || typeof forwardChain !== "function") {
+                  throw new Error("Eyeling internals not available (lex/Parser/forwardChain missing).");
                 }
 
-                self.eyeling.reasonStream(program, {
-                  enforceHttps,
-                  proof,
-                  onDerived: ({ triple }) => {
-                    batch.push(triple);
-                    flush(false);
-                  },
-                });
+                const __oldEnforce = (typeof enforceHttpsEnabled !== "undefined") ? enforceHttpsEnabled : false;
+                const __oldProof = (typeof proofCommentsEnabled !== "undefined") ? proofCommentsEnabled : false;
+                const __oldTrace = (typeof __tracePrefixes !== "undefined") ? __tracePrefixes : null;
+
+                try {
+                  if (typeof enforceHttpsEnabled !== "undefined") enforceHttpsEnabled = !!enforceHttps;
+                  if (typeof proofCommentsEnabled !== "undefined") proofCommentsEnabled = !!proof;
+
+                  const toks = lex(program);
+                  const parser = new Parser(toks);
+                  let prefixes, triples, frules, brules;
+                  [prefixes, triples, frules, brules] = parser.parseDocument();
+
+                  // Make parsed prefixes available to log:trace output.
+                  try { if (typeof __tracePrefixes !== "undefined") __tracePrefixes = prefixes; } catch (_) {}
+
+                  // Build rdf:List internal terms from rdf:first/rdf:rest.
+                  if (typeof materializeRdfLists === "function") {
+                    materializeRdfLists(triples, frules, brules);
+                  }
+
+                  const facts = triples.filter((tr) => (typeof isGroundTriple === "function") ? isGroundTriple(tr) : true);
+
+                  forwardChain(facts, frules, brules, (df) => {
+                    try {
+                      if (proof && typeof printExplanation === "function") {
+                        // Prints via console.log (forwarded to main thread as stdout).
+                        printExplanation(df, prefixes);
+                      }
+                    } catch (_) {}
+
+                    // Derived triple (as N3, using the parsed prefixes)
+                    let t = "";
+                    try {
+                      if (typeof tripleToN3 === "function") t = tripleToN3(df.fact, prefixes);
+                      else if (df && df.fact && df.fact.toString) t = String(df.fact);
+                    } catch (_) {}
+
+                    if (t) {
+                      batch.push(t);
+                      // When proof comments are enabled, flush immediately so the
+                      // derived triple follows the proof block closely.
+                      flush(!!proof);
+                    }
+                  });
+                } finally {
+                  try { if (typeof enforceHttpsEnabled !== "undefined") enforceHttpsEnabled = __oldEnforce; } catch (_) {}
+                  try { if (typeof proofCommentsEnabled !== "undefined") proofCommentsEnabled = __oldProof; } catch (_) {}
+                  try { if (typeof __tracePrefixes !== "undefined") __tracePrefixes = __oldTrace; } catch (_) {}
+                }
 
                 flush(true);
                 self.postMessage({ type: "done", runId });
@@ -1240,6 +1299,9 @@
                   runId,
                   message: msgText,
                 });
+              } finally {
+                try { console.log = __origLog; } catch (_) {}
+                try { console.error = __origErr; } catch (_) {}
               }
             };
           `;
@@ -1264,10 +1326,12 @@
 
               if (msg.type === 'derived_batch') {
                 onBatch && onBatch(msg.triples || []);
-              } else if (msg.type === 'stderr') {
-                // Keep stderr in Output pane, but as N3 comments so the closure stays valid.
+              } else if (msg.type === 'stdout') {
                 const t = msg.text == null ? '' : String(msg.text);
-                if (t) onBatch && onBatch(['# ' + t]);
+                if (t) onStdout && onStdout(t);
+              } else if (msg.type === 'stderr') {
+                const t = msg.text == null ? '' : String(msg.text);
+                if (t) onStderr && onStderr(t);
               } else if (msg.type === 'done') {
                 cleanup();
                 onDone && onDone({ runId });
@@ -2084,6 +2148,25 @@
             program: editor.getValue(),
             enforceHttps: enforceHttpsCheckbox.checked,
             proof: proofCheckbox.checked,
+            onStdout: (text) => {
+              const s = String(text == null ? '' : text);
+              if (!s) return;
+              const chunk = s.endsWith('\n') ? s : s + '\n';
+              if (playPaused) playPausedBuffer.push(chunk);
+              else appender.append(chunk);
+            },
+            onStderr: (text) => {
+              const s = String(text == null ? '' : text);
+              if (!s) return;
+              const lines = s.split(/\r\n|\n|\r/);
+              const out =
+                lines
+                  .filter((ln) => ln.length)
+                  .map((ln) => (ln.trimStart().startsWith('#') ? ln : '# ' + ln))
+                  .join('\n') + '\n';
+              if (playPaused) playPausedBuffer.push(out);
+              else appender.append(out);
+            },
             onBatch: (triples) => {
               if (!triples || !triples.length) return;
               derivedCount += triples.length;
@@ -2694,6 +2777,22 @@ wd:Q7836 wdt:P31 wd:Q5 .
               program,
               enforceHttps: !!streamEnforce?.checked,
               proof: false,
+              onStdout: (text) => {
+                const s = String(text == null ? '' : text);
+                if (!s) return;
+                outAppendText(s.endsWith('\n') ? s : s + '\n');
+              },
+              onStderr: (text) => {
+                const s = String(text == null ? '' : text);
+                if (!s) return;
+                const lines = s.split(/\r\n|\n|\r/);
+                const out =
+                  lines
+                    .filter((ln) => ln.length)
+                    .map((ln) => (ln.trimStart().startsWith('#') ? ln : '# ' + ln))
+                    .join('\n') + '\n';
+                outAppendText(out);
+              },
               onBatch: (triples) => {
                 appendTriples(triples);
                 // Fire-and-forget dynamic fetch; may schedule a rerun.
