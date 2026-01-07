@@ -111,9 +111,7 @@ let enforceHttpsEnabled = false;
 
 function __maybeEnforceHttps(iri) {
   if (!enforceHttpsEnabled) return iri;
-  return typeof iri === 'string' && iri.startsWith('http://')
-    ? 'https://' + iri.slice('http://'.length)
-    : iri;
+  return typeof iri === 'string' && iri.startsWith('http://') ? 'https://' + iri.slice('http://'.length) : iri;
 }
 
 // Environment detection (Node vs Browser/Worker).
@@ -427,12 +425,7 @@ let __tracePrefixes = null;
 function __traceWriteLine(line) {
   // Prefer stderr in Node, fall back to console.error elsewhere.
   try {
-    if (
-      __IS_NODE &&
-      typeof process !== 'undefined' &&
-      process.stderr &&
-      typeof process.stderr.write === 'function'
-    ) {
+    if (__IS_NODE && typeof process !== 'undefined' && process.stderr && typeof process.stderr.write === 'function') {
       process.stderr.write(String(line) + '\n');
       return;
     }
@@ -3109,7 +3102,6 @@ function termToJsString(t) {
   return typeof lex === 'string' ? lex : String(lex);
 }
 
-
 function makeStringLiteral(str) {
   // JSON.stringify gives us a valid N3/Turtle-style quoted string
   // (with proper escaping for quotes, backslashes, newlines, …).
@@ -3757,19 +3749,37 @@ function __tfnFormatYear(y) {
 
 function __tfnAdd1ms(c) {
   // Mutates and returns c; c: {year,month,day,hour,minute,second,millis}
-  if (c.millis < 999) { c.millis++; return c; }
+  if (c.millis < 999) {
+    c.millis++;
+    return c;
+  }
   c.millis = 0;
-  if (c.second < 59) { c.second++; return c; }
+  if (c.second < 59) {
+    c.second++;
+    return c;
+  }
   c.second = 0;
-  if (c.minute < 59) { c.minute++; return c; }
+  if (c.minute < 59) {
+    c.minute++;
+    return c;
+  }
   c.minute = 0;
-  if (c.hour < 23) { c.hour++; return c; }
+  if (c.hour < 23) {
+    c.hour++;
+    return c;
+  }
   c.hour = 0;
 
   const dim = __tfnDaysInMonth(c.year, c.month);
-  if (c.day < dim) { c.day++; return c; }
+  if (c.day < dim) {
+    c.day++;
+    return c;
+  }
   c.day = 1;
-  if (c.month < 12) { c.month++; return c; }
+  if (c.month < 12) {
+    c.month++;
+    return c;
+  }
   c.month = 1;
   c.year = c.year + 1n;
   return c;
@@ -3777,16 +3787,31 @@ function __tfnAdd1ms(c) {
 
 function __tfnSub1ms(c) {
   // Mutates and returns c; c: {year,month,day,hour,minute,second,millis}
-  if (c.millis > 0) { c.millis--; return c; }
+  if (c.millis > 0) {
+    c.millis--;
+    return c;
+  }
   c.millis = 999;
-  if (c.second > 0) { c.second--; return c; }
+  if (c.second > 0) {
+    c.second--;
+    return c;
+  }
   c.second = 59;
-  if (c.minute > 0) { c.minute--; return c; }
+  if (c.minute > 0) {
+    c.minute--;
+    return c;
+  }
   c.minute = 59;
-  if (c.hour > 0) { c.hour--; return c; }
+  if (c.hour > 0) {
+    c.hour--;
+    return c;
+  }
   c.hour = 23;
 
-  if (c.day > 1) { c.day--; return c; }
+  if (c.day > 1) {
+    c.day--;
+    return c;
+  }
   // move to previous month
   if (c.month > 1) {
     c.month--;
@@ -3824,7 +3849,15 @@ function __tfnComputePeriodBounds(parts) {
 
   if (parts.kind === 'date') {
     const startC = { year: parts.year, month: parts.month, day: parts.day, hour: 0, minute: 0, second: 0, millis: 0 };
-    const endC = { year: parts.year, month: parts.month, day: parts.day, hour: 23, minute: 59, second: 59, millis: 999 };
+    const endC = {
+      year: parts.year,
+      month: parts.month,
+      day: parts.day,
+      hour: 23,
+      minute: 59,
+      second: 59,
+      millis: 999,
+    };
     return { tzMin, tzMax, startC, endC };
   }
 
@@ -3857,12 +3890,8 @@ function __tfnBindDefaultTimezone(timeLit, tzLit) {
   if (__tfnHasTimezoneSuffix(v)) return timeLit;
 
   // Only support the temporal types we parse.
-  if (
-    dt !== XSD_NS + 'dateTime' &&
-    dt !== XSD_NS + 'date' &&
-    dt !== XSD_NS + 'gYearMonth' &&
-    dt !== XSD_NS + 'gYear'
-  ) return null;
+  if (dt !== XSD_NS + 'dateTime' && dt !== XSD_NS + 'date' && dt !== XSD_NS + 'gYearMonth' && dt !== XSD_NS + 'gYear')
+    return null;
 
   const outLex = `"${v}${tz}"^^<${dt}>`;
   return internLiteral(outLex);
@@ -5163,72 +5192,73 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     return [];
   }
 
-// -----------------------------------------------------------------
-// 4.3.1 tfn: Time Functions builtins
-// -----------------------------------------------------------------
+  // -----------------------------------------------------------------
+  // 4.3.1 tfn: Time Functions builtins
+  // -----------------------------------------------------------------
 
-// tfn:periodMinInclusive / periodMaxInclusive / periodMinExclusive / periodMaxExclusive
-// Schema: ( $s.1+ )+ tfn:* $o-
-const tfnPeriodKind =
-  pv === TFN_NS + 'periodMinInclusive'
-    ? 'minInc'
-    : pv === TFN_NS + 'periodMaxInclusive'
-      ? 'maxInc'
-      : pv === TFN_NS + 'periodMinExclusive'
-        ? 'minEx'
-        : pv === TFN_NS + 'periodMaxExclusive'
-          ? 'maxEx'
-          : null;
-if (tfnPeriodKind) {
-  if (!(g.s instanceof ListTerm) || g.s.elems.length !== 1) return [];
-  const arg = g.s.elems[0];
-  const parts = __tfnParseTemporalLiteralParts(arg);
-  if (!parts) return [];
-  const bounds = __tfnComputePeriodBounds(parts);
-  if (!bounds) return [];
+  // tfn:periodMinInclusive / periodMaxInclusive / periodMinExclusive / periodMaxExclusive
+  // Schema: ( $s.1+ )+ tfn:* $o-
+  const tfnPeriodKind =
+    pv === TFN_NS + 'periodMinInclusive'
+      ? 'minInc'
+      : pv === TFN_NS + 'periodMaxInclusive'
+        ? 'maxInc'
+        : pv === TFN_NS + 'periodMinExclusive'
+          ? 'minEx'
+          : pv === TFN_NS + 'periodMaxExclusive'
+            ? 'maxEx'
+            : null;
+  if (tfnPeriodKind) {
+    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 1) return [];
+    const arg = g.s.elems[0];
+    const parts = __tfnParseTemporalLiteralParts(arg);
+    if (!parts) return [];
+    const bounds = __tfnComputePeriodBounds(parts);
+    if (!bounds) return [];
 
-  let out;
-  if (tfnPeriodKind === 'minInc') {
-    out = __tfnMakeDateTimeLiteral({ ...bounds.startC }, bounds.tzMin);
-  } else if (tfnPeriodKind === 'maxInc') {
-    out = __tfnMakeDateTimeLiteral({ ...bounds.endC }, bounds.tzMax);
-  } else if (tfnPeriodKind === 'minEx') {
-    const c = __tfnSub1ms({ ...bounds.startC });
-    out = __tfnMakeDateTimeLiteral(c, bounds.tzMin);
-  } else { // maxEx
-    const c = __tfnAdd1ms({ ...bounds.endC });
-    out = __tfnMakeDateTimeLiteral(c, bounds.tzMax);
+    let out;
+    if (tfnPeriodKind === 'minInc') {
+      out = __tfnMakeDateTimeLiteral({ ...bounds.startC }, bounds.tzMin);
+    } else if (tfnPeriodKind === 'maxInc') {
+      out = __tfnMakeDateTimeLiteral({ ...bounds.endC }, bounds.tzMax);
+    } else if (tfnPeriodKind === 'minEx') {
+      const c = __tfnSub1ms({ ...bounds.startC });
+      out = __tfnMakeDateTimeLiteral(c, bounds.tzMin);
+    } else {
+      // maxEx
+      const c = __tfnAdd1ms({ ...bounds.endC });
+      out = __tfnMakeDateTimeLiteral(c, bounds.tzMax);
+    }
+
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = out;
+      return [s2];
+    }
+    if (g.o instanceof Blank) return [{ ...subst }];
+
+    const s2 = unifyTerm(g.o, out, subst);
+    return s2 !== null ? [s2] : [];
   }
 
-  if (g.o instanceof Var) {
-    const s2 = { ...subst };
-    s2[g.o.name] = out;
-    return [s2];
+  // tfn:bindDefaultTimezone
+  // Schema: ( $s.1+ $s.2+ )+ tfn:bindDefaultTimezone $o-
+  if (pv === TFN_NS + 'bindDefaultTimezone') {
+    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
+    const [timeLit, tzLit] = g.s.elems;
+    const out = __tfnBindDefaultTimezone(timeLit, tzLit);
+    if (!out) return [];
+
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = out;
+      return [s2];
+    }
+    if (g.o instanceof Blank) return [{ ...subst }];
+
+    const s2 = unifyTerm(g.o, out, subst);
+    return s2 !== null ? [s2] : [];
   }
-  if (g.o instanceof Blank) return [{ ...subst }];
-
-  const s2 = unifyTerm(g.o, out, subst);
-  return s2 !== null ? [s2] : [];
-}
-
-// tfn:bindDefaultTimezone
-// Schema: ( $s.1+ $s.2+ )+ tfn:bindDefaultTimezone $o-
-if (pv === TFN_NS + 'bindDefaultTimezone') {
-  if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
-  const [timeLit, tzLit] = g.s.elems;
-  const out = __tfnBindDefaultTimezone(timeLit, tzLit);
-  if (!out) return [];
-
-  if (g.o instanceof Var) {
-    const s2 = { ...subst };
-    s2[g.o.name] = out;
-    return [s2];
-  }
-  if (g.o instanceof Blank) return [{ ...subst }];
-
-  const s2 = unifyTerm(g.o, out, subst);
-  return s2 !== null ? [s2] : [];
-}
 
   // -----------------------------------------------------------------
   // 4.4 list: builtins
@@ -6879,7 +6909,7 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
           if (allKnown) continue;
         }
 
-        const maxSols = (r.isFuse || headIsStrictGround) ? 1 : undefined;
+        const maxSols = r.isFuse || headIsStrictGround ? 1 : undefined;
         const sols = proveGoals(r.premise.slice(), empty, facts, backRules, 0, visited, varGen, maxSols);
 
         // Inference fuse

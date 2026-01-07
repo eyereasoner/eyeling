@@ -22,7 +22,11 @@ function reason(opt = {}, n3_input = '') {
   const proofCommentsSpecified = typeof opt.proofComments === 'boolean' || typeof opt.noProofComments === 'boolean';
 
   const proofComments =
-    typeof opt.proofComments === 'boolean' ? opt.proofComments : typeof opt.noProofComments === 'boolean' ? !opt.noProofComments : false;
+    typeof opt.proofComments === 'boolean'
+      ? opt.proofComments
+      : typeof opt.noProofComments === 'boolean'
+        ? !opt.noProofComments
+        : false;
 
   // Only pass a flag when the caller explicitly asked.
   // (CLI default is now: no proof comments.)

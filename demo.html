@@ -1,765 +1,980 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <!-- Mobile-friendly viewport + safe-area support -->
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <head>
+    <meta charset="utf-8" />
+    <!-- Mobile-friendly viewport + safe-area support -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
-  <title>Eyeling N3 Playground</title>
+    <title>Eyeling N3 Playground</title>
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css" />
 
-  <style>
-    * { box-sizing: border-box; }
+    <style>
+      * {
+        box-sizing: border-box;
+      }
 
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f5f5f7;
-      color: #111827;
+      body {
+        margin: 0;
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        background: #f5f5f7;
+        color: #111827;
 
-      /* Avoid weird auto-scaling on mobile */
-      -webkit-text-size-adjust: 100%;
-      text-size-adjust: 100%;
-    }
+        /* Avoid weird auto-scaling on mobile */
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+      }
 
-    .page {
-      max-width: 1500px;
-      margin: 0 auto;
-
-      /* Safe areas (iPhone notch/home bar) */
-      padding-top: calc(1.5rem + env(safe-area-inset-top));
-      padding-right: calc(1rem + env(safe-area-inset-right));
-      padding-bottom: calc(3rem + env(safe-area-inset-bottom));
-      padding-left: calc(1rem + env(safe-area-inset-left));
-
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-
-    header h1 {
-      margin: 0;
-      font-size: 1.4rem;
-      font-weight: 600;
-    }
-
-    header p {
-      margin: 0.25rem 0 0;
-      font-size: 0.9rem;
-      color: #6b7280;
-    }
-
-    header a {
-      color: #2563eb;
-      text-decoration: none;
-    }
-    header a:hover { text-decoration: underline; }
-
-    .meta {
-      margin-top: 0.35rem;
-      font-size: 0.85rem;
-      color: #6b7280;
-    }
-
-    label {
-      font-size: 0.9rem;
-      font-weight: 500;
-      color: #374151;
-      margin-bottom: 0.35rem;
-      display: inline-block;
-    }
-
-    textarea {
-      width: 100%;
-      border-radius: 0.75rem;
-      border: 1px solid #d1d5db;
-      padding: 1rem;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-        "Courier New", monospace;
-      font-size: 0.9rem;
-      line-height: 1.4;
-      resize: none;
-      overflow: hidden; /* no scrollbars inside the editor */
-      background: #ffffff;
-    }
-
-    textarea:focus {
-      outline: none;
-      border-color: #2563eb;
-      box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.35);
-    }
-
-    .controls {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      gap: 0.75rem;
-      margin-top: 0.25rem;
-      flex-wrap: wrap;
-    }
-
-    .toggle {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.45rem;
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: #374151;
-      user-select: none;
-      cursor: pointer;
-    }
-
-    .toggle input {
-      width: 1rem;
-      height: 1rem;
-      accent-color: #2563eb;
-      cursor: pointer;
-      touch-action: manipulation;
-    }
-
-    button {
-      border: none;
-      border-radius: 999px;
-      padding: 0.5rem 1.25rem;
-      font-size: 0.9rem;
-      font-weight: 500;
-      cursor: pointer;
-      background: #2563eb;
-      color: #ffffff;
-      box-shadow: 0 10px 15px rgba(37, 99, 235, 0.25);
-      transition: transform 0.05s ease-out, box-shadow 0.05s ease-out, opacity 0.1s;
-
-      /* Better taps on mobile */
-      min-height: 44px;
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    button:hover:not(:disabled) {
-      transform: translateY(-1px);
-      box-shadow: 0 14px 24px rgba(37, 99, 235, 0.32);
-    }
-
-    button:active:not(:disabled) {
-      transform: translateY(0);
-      box-shadow: 0 8px 12px rgba(37, 99, 235, 0.2);
-    }
-
-    button:disabled {
-      opacity: 0.6;
-      cursor: default;
-      box-shadow: none;
-    }
-
-    /* Secondary + danger button variants (Playground) */
-    button.secondary {
-      background: #e5e7eb;
-      color: #111827;
-      box-shadow: none;
-    }
-    button.secondary:hover:not(:disabled) {
-      box-shadow: 0 10px 15px rgba(17, 24, 39, 0.12);
-    }
-
-    button.danger {
-      background: #dc2626;
-      color: #ffffff;
-      box-shadow: 0 10px 15px rgba(220, 38, 38, 0.25);
-    }
-    button.danger:hover:not(:disabled) {
-      box-shadow: 0 14px 24px rgba(220, 38, 38, 0.32);
-    }
-
-    /* Stream demo stop button */
-    #streamApp .stream-topbar button.danger{
-      background:#dc2626;
-      color:#fff;
-    }
-
-    .status {
-      font-size: 0.8rem;
-      color: #6b7280;
-    }
-
-    /* (fallback only; output is now CodeMirror) */
-    pre#output {
-      margin: 0.25rem 0 0;
-      border-radius: 0.75rem;
-      border: 1px solid #d1d5db;
-      padding: 1rem;
-      background: #ffffff;
-      color: #111827;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-        "Courier New", monospace;
-      font-size: 0.85rem;
-      line-height: 1.4;
-      white-space: pre-wrap;
-      word-break: break-word;
-      overflow: hidden; /* no scrollbars inside the output box */
-      min-height: 5rem;
-    }
-
-    .card {
-      background: #ffffff;
-      border-radius: 1rem;
-      padding: 1rem 1.25rem 1.25rem;
-      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-      border: 1px solid rgba(148, 163, 184, 0.25);
-    }
-
-    .section-title {
-      font-size: 1rem;
-      font-weight: 500;
-      margin: 0 0 0.5rem;
-      color: #111827;
-    }
-
-    .uri-row { margin-bottom: 0.75rem; }
-
-    .uri-input-row {
-      display: flex;
-      flex-direction: row;
-      gap: 0.5rem;
-      align-items: center;
-      margin-top: 0.25rem;
-    }
-
-    .uri-input-row input[type="text"] {
-      flex: 1;
-      border-radius: 999px;
-      border: 1px solid #d1d5db;
-      padding: 0.45rem 0.75rem;
-      font-size: 0.85rem;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f9fafb;
-    }
-
-    .uri-input-row input[type="text"]:focus {
-      outline: none;
-      border-color: #2563eb;
-      box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25);
-      background: #ffffff;
-    }
-
-    .hint {
-      display: block;
-      font-size: 0.75rem;
-      color: #9ca3af;
-      margin-top: 0.15rem;
-    }
-
-    /* --- CodeMirror (syntax highlighted) editors --- */
-    .CodeMirror {
-      height: auto;
-      border: 1px solid #d1d5db;
-      border-radius: 0.75rem;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-        "Courier New", monospace;
-      font-size: 0.9rem;
-      line-height: 1.4;
-      background: #ffffff;
-    }
-
-    .CodeMirror.CodeMirror-focused {
-      outline: none;
-      border-color: #2563eb;
-      box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.35);
-    }
-
-    .CodeMirror-scroll {
-      overflow: hidden !important; /* desktop: no scrollbars; we auto-size instead */
-    }
-
-    .CodeMirror-gutters {
-      border-right: 1px solid #e5e7eb;
-      background: #f9fafb;
-    }
-
-    .cm-output {
-      font-size: 0.85rem;
-      min-height: 5rem;
-    }
-
-
-    /* Output pane: allow internal scrolling when height-capped */
-    .cm-output .CodeMirror-scroll {
-      overflow: auto !important;
-    }
-
-    /* Highlight N3 syntax error line in the editor */
-    .cm-error-line {
-      background: rgba(239, 68, 68, 0.18) !important;
-    }
-    /* CodeMirror’s line background element (more specific) */
-    .CodeMirror-linebackground.cm-error-line {
-      background: rgba(239, 68, 68, 0.18) !important;
-      box-shadow: inset 3px 0 0 rgba(239, 68, 68, 0.65) !important;
-    }
-
-    /* ---------------------------
-       MOBILE POLISH (key changes)
-       --------------------------- */
-    @media (max-width: 640px) {
       .page {
-        gap: 0.85rem;
-        padding-top: calc(1.1rem + env(safe-area-inset-top));
-        padding-right: calc(0.85rem + env(safe-area-inset-right));
-        padding-bottom: calc(2.5rem + env(safe-area-inset-bottom));
-        padding-left: calc(0.85rem + env(safe-area-inset-left));
+        max-width: 1500px;
+        margin: 0 auto;
+
+        /* Safe areas (iPhone notch/home bar) */
+        padding-top: calc(1.5rem + env(safe-area-inset-top));
+        padding-right: calc(1rem + env(safe-area-inset-right));
+        padding-bottom: calc(3rem + env(safe-area-inset-bottom));
+        padding-left: calc(1rem + env(safe-area-inset-left));
+
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
       }
 
       header h1 {
-        font-size: 1.25rem;
+        margin: 0;
+        font-size: 1.4rem;
+        font-weight: 600;
       }
 
       header p {
-        font-size: 0.95rem;
+        margin: 0.25rem 0 0;
+        font-size: 0.9rem;
+        color: #6b7280;
+      }
+
+      header a {
+        color: #2563eb;
+        text-decoration: none;
+      }
+      header a:hover {
+        text-decoration: underline;
+      }
+
+      .meta {
+        margin-top: 0.35rem;
+        font-size: 0.85rem;
+        color: #6b7280;
+      }
+
+      label {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 0.35rem;
+        display: inline-block;
+      }
+
+      textarea {
+        width: 100%;
+        border-radius: 0.75rem;
+        border: 1px solid #d1d5db;
+        padding: 1rem;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        font-size: 0.9rem;
+        line-height: 1.4;
+        resize: none;
+        overflow: hidden; /* no scrollbars inside the editor */
+        background: #ffffff;
+      }
+
+      textarea:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.35);
+      }
+
+      .controls {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 0.75rem;
+        margin-top: 0.25rem;
+        flex-wrap: wrap;
+      }
+
+      .toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #374151;
+        user-select: none;
+        cursor: pointer;
+      }
+
+      .toggle input {
+        width: 1rem;
+        height: 1rem;
+        accent-color: #2563eb;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+
+      button {
+        border: none;
+        border-radius: 999px;
+        padding: 0.5rem 1.25rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        background: #2563eb;
+        color: #ffffff;
+        box-shadow: 0 10px 15px rgba(37, 99, 235, 0.25);
+        transition:
+          transform 0.05s ease-out,
+          box-shadow 0.05s ease-out,
+          opacity 0.1s;
+
+        /* Better taps on mobile */
+        min-height: 44px;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      button:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 24px rgba(37, 99, 235, 0.32);
+      }
+
+      button:active:not(:disabled) {
+        transform: translateY(0);
+        box-shadow: 0 8px 12px rgba(37, 99, 235, 0.2);
+      }
+
+      button:disabled {
+        opacity: 0.6;
+        cursor: default;
+        box-shadow: none;
+      }
+
+      /* Secondary + danger button variants (Playground) */
+      button.secondary {
+        background: #e5e7eb;
+        color: #111827;
+        box-shadow: none;
+      }
+      button.secondary:hover:not(:disabled) {
+        box-shadow: 0 10px 15px rgba(17, 24, 39, 0.12);
+      }
+
+      button.danger {
+        background: #dc2626;
+        color: #ffffff;
+        box-shadow: 0 10px 15px rgba(220, 38, 38, 0.25);
+      }
+      button.danger:hover:not(:disabled) {
+        box-shadow: 0 14px 24px rgba(220, 38, 38, 0.32);
+      }
+
+      /* Stream demo stop button */
+      #streamApp .stream-topbar button.danger {
+        background: #dc2626;
+        color: #fff;
+      }
+
+      .status {
+        font-size: 0.8rem;
+        color: #6b7280;
+      }
+
+      /* (fallback only; output is now CodeMirror) */
+      pre#output {
+        margin: 0.25rem 0 0;
+        border-radius: 0.75rem;
+        border: 1px solid #d1d5db;
+        padding: 1rem;
+        background: #ffffff;
+        color: #111827;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        font-size: 0.85rem;
+        line-height: 1.4;
+        white-space: pre-wrap;
+        word-break: break-word;
+        overflow: hidden; /* no scrollbars inside the output box */
+        min-height: 5rem;
       }
 
       .card {
-        padding: 0.95rem 1rem 1.05rem;
+        background: #ffffff;
         border-radius: 1rem;
+        padding: 1rem 1.25rem 1.25rem;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+        border: 1px solid rgba(148, 163, 184, 0.25);
       }
 
-      /* Stack URL input + button (no squishing) */
+      .section-title {
+        font-size: 1rem;
+        font-weight: 500;
+        margin: 0 0 0.5rem;
+        color: #111827;
+      }
+
+      .uri-row {
+        margin-bottom: 0.75rem;
+      }
+
       .uri-input-row {
-        flex-direction: column;
-        align-items: stretch;
+        display: flex;
+        flex-direction: row;
+        gap: 0.5rem;
+        align-items: center;
+        margin-top: 0.25rem;
       }
 
-      /* Prevent iOS "zoom on focus" (>=16px) */
-      .uri-input-row input[type="text"] {
-        font-size: 16px;
-        padding: 0.65rem 0.9rem;
-        width: 100%;
+      .uri-input-row input[type='text'] {
+        flex: 1;
+        border-radius: 999px;
+        border: 1px solid #d1d5db;
+        padding: 0.45rem 0.75rem;
+        font-size: 0.85rem;
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        background: #f9fafb;
       }
 
-      /* Make the load button full-width */
-      #load-uri-btn {
-        width: 100%;
-        justify-content: center;
+      .uri-input-row input[type='text']:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25);
+        background: #ffffff;
       }
 
-      /* Controls become a sticky action area on mobile */
-      .controls {
-        position: sticky;
-        bottom: calc(env(safe-area-inset-bottom) + 10px);
-        padding: 0.75rem 0;
-        margin-top: 0.75rem;
-        background: rgba(245, 245, 247, 0.88);
-        backdrop-filter: blur(10px);
-        border-top: 1px solid rgba(148, 163, 184, 0.35);
-
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.6rem;
+      .hint {
+        display: block;
+        font-size: 0.75rem;
+        color: #9ca3af;
+        margin-top: 0.15rem;
       }
 
-      /* Full-width run button, bigger type for easy taps */
-      #run-btn {
-        width: 100%;
-        font-size: 16px;
-      }
-
-      #pause-btn,
-      #stop-btn {
-        width: 100%;
-        font-size: 16px;
-      }
-
-      /* Make toggles/status readable and line-wrap */
-      .toggle {
-        width: 100%;
-        font-size: 0.95rem;
-      }
-      .status {
-        font-size: 0.9rem;
-      }
-
-      /* On mobile we cap editor height and allow internal scrolling */
+      /* --- CodeMirror (syntax highlighted) editors --- */
       .CodeMirror {
-        font-size: 0.95rem;
+        height: auto;
+        border: 1px solid #d1d5db;
+        border-radius: 0.75rem;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        font-size: 0.9rem;
+        line-height: 1.4;
+        background: #ffffff;
       }
+
+      .CodeMirror.CodeMirror-focused {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.35);
+      }
+
       .CodeMirror-scroll {
-        overflow: auto !important;
-        -webkit-overflow-scrolling: touch;
+        overflow: hidden !important; /* desktop: no scrollbars; we auto-size instead */
       }
-    }
 
-    /* Optional: Dark mode (keeps it pleasant on mobile) */
-    @media (prefers-color-scheme: dark) {
-      body { background: #0b0f14; color: #e7eaf0; }
-      header p, .meta, .status { color: #a7b0bf; }
-      label, .toggle { color: #cbd5e1; }
-      .card { background: #0f1620; border-color: rgba(148,163,184,0.18); box-shadow: 0 18px 40px rgba(0,0,0,0.35); }
-      .section-title { color: #e7eaf0; }
+      .CodeMirror-gutters {
+        border-right: 1px solid #e5e7eb;
+        background: #f9fafb;
+      }
 
-      .cm-error-line { background: rgba(239, 68, 68, 0.22); }
+      .cm-output {
+        font-size: 0.85rem;
+        min-height: 5rem;
+      }
 
-      textarea { background: #0f1620; border-color: #1f2a37; color: #e7eaf0; }
-      .CodeMirror { background: #0f1620; border-color: #1f2a37; }
-      .CodeMirror-gutters { background: #0b0f14; border-right-color: #1f2a37; }
+      /* Output pane: allow internal scrolling when height-capped */
+      .cm-output .CodeMirror-scroll {
+        overflow: auto !important;
+      }
 
-      .uri-input-row input[type="text"] { background: #0b0f14; border-color: #1f2a37; color: #e7eaf0; }
-      .uri-input-row input[type="text"]:focus { background: #0f1620; }
+      /* Highlight N3 syntax error line in the editor */
+      .cm-error-line {
+        background: rgba(239, 68, 68, 0.18) !important;
+      }
+      /* CodeMirror’s line background element (more specific) */
+      .CodeMirror-linebackground.cm-error-line {
+        background: rgba(239, 68, 68, 0.18) !important;
+        box-shadow: inset 3px 0 0 rgba(239, 68, 68, 0.65) !important;
+      }
 
+      /* ---------------------------
+       MOBILE POLISH (key changes)
+       --------------------------- */
       @media (max-width: 640px) {
+        .page {
+          gap: 0.85rem;
+          padding-top: calc(1.1rem + env(safe-area-inset-top));
+          padding-right: calc(0.85rem + env(safe-area-inset-right));
+          padding-bottom: calc(2.5rem + env(safe-area-inset-bottom));
+          padding-left: calc(0.85rem + env(safe-area-inset-left));
+        }
+
+        header h1 {
+          font-size: 1.25rem;
+        }
+
+        header p {
+          font-size: 0.95rem;
+        }
+
+        .card {
+          padding: 0.95rem 1rem 1.05rem;
+          border-radius: 1rem;
+        }
+
+        /* Stack URL input + button (no squishing) */
+        .uri-input-row {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        /* Prevent iOS "zoom on focus" (>=16px) */
+        .uri-input-row input[type='text'] {
+          font-size: 16px;
+          padding: 0.65rem 0.9rem;
+          width: 100%;
+        }
+
+        /* Make the load button full-width */
+        #load-uri-btn {
+          width: 100%;
+          justify-content: center;
+        }
+
+        /* Controls become a sticky action area on mobile */
         .controls {
-          background: rgba(11, 15, 20, 0.88);
-          border-top-color: rgba(148, 163, 184, 0.18);
+          position: sticky;
+          bottom: calc(env(safe-area-inset-bottom) + 10px);
+          padding: 0.75rem 0;
+          margin-top: 0.75rem;
+          background: rgba(245, 245, 247, 0.88);
+          backdrop-filter: blur(10px);
+          border-top: 1px solid rgba(148, 163, 184, 0.35);
+
+          flex-direction: column;
+          align-items: stretch;
+          gap: 0.6rem;
+        }
+
+        /* Full-width run button, bigger type for easy taps */
+        #run-btn {
+          width: 100%;
+          font-size: 16px;
+        }
+
+        #pause-btn,
+        #stop-btn {
+          width: 100%;
+          font-size: 16px;
+        }
+
+        /* Make toggles/status readable and line-wrap */
+        .toggle {
+          width: 100%;
+          font-size: 0.95rem;
+        }
+        .status {
+          font-size: 0.9rem;
+        }
+
+        /* On mobile we cap editor height and allow internal scrolling */
+        .CodeMirror {
+          font-size: 0.95rem;
+        }
+        .CodeMirror-scroll {
+          overflow: auto !important;
+          -webkit-overflow-scrolling: touch;
         }
       }
-    }
 
-    /* --- Tabs (Playground / Streaming demo) --- */
-    .tabs {
-      display: flex;
-      gap: 0.5rem;
-      align-items: center;
-      flex-wrap: wrap;
-      margin-top: -0.25rem;
-    }
-    .tab-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid rgba(148, 163, 184, 0.35);
-      background: rgba(255, 255, 255, 0.85);
-      color: #111827;
-      border-radius: 999px;
-      padding: 0.45rem 0.95rem;
-      font-size: 0.85rem;
-      font-weight: 600;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      min-height: 40px;
-    }
-    .tab-btn[aria-selected="true"] {
-      background: #2563eb;
-      border-color: #2563eb;
-      color: #ffffff;
-      box-shadow: 0 10px 15px rgba(37, 99, 235, 0.22);
-    }
-    .tab-content { display: none; }
+      /* Optional: Dark mode (keeps it pleasant on mobile) */
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #0b0f14;
+          color: #e7eaf0;
+        }
+        header p,
+        .meta,
+        .status {
+          color: #a7b0bf;
+        }
+        label,
+        .toggle {
+          color: #cbd5e1;
+        }
+        .card {
+          background: #0f1620;
+          border-color: rgba(148, 163, 184, 0.18);
+          box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+        }
+        .section-title {
+          color: #e7eaf0;
+        }
 
-    /* Radios drive tab visibility (works even if JS fails / is blocked) */
-    .tab-radio {
-      position: absolute;
-      left: -9999px;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
-    }
+        .cm-error-line {
+          background: rgba(239, 68, 68, 0.22);
+        }
 
-    #tab-radio-playground:checked ~ #tab-playground { display: block; }
-    #tab-radio-stream:checked ~ #tab-stream { display: block; }
+        textarea {
+          background: #0f1620;
+          border-color: #1f2a37;
+          color: #e7eaf0;
+        }
+        .CodeMirror {
+          background: #0f1620;
+          border-color: #1f2a37;
+        }
+        .CodeMirror-gutters {
+          background: #0b0f14;
+          border-right-color: #1f2a37;
+        }
 
-    /* Selected tab styling without JS */
-    #tab-radio-playground:checked ~ .tabs .tab-btn[data-tab="playground"],
-    #tab-radio-stream:checked ~ .tabs .tab-btn[data-tab="stream"] {
-      background: #2563eb;
-      border-color: #2563eb;
-      color: #ffffff;
-      box-shadow: 0 10px 15px rgba(37, 99, 235, 0.22);
-    }
+        .uri-input-row input[type='text'] {
+          background: #0b0f14;
+          border-color: #1f2a37;
+          color: #e7eaf0;
+        }
+        .uri-input-row input[type='text']:focus {
+          background: #0f1620;
+        }
 
-    .playground-inner {
-      max-width: 960px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
+        @media (max-width: 640px) {
+          .controls {
+            background: rgba(11, 15, 20, 0.88);
+            border-top-color: rgba(148, 163, 184, 0.18);
+          }
+        }
+      }
 
-    /* --- Stream app (scoped) --- */
-    #streamApp{
-      --s-bg:#f6f7fb;
-      --s-panel:#ffffff;
-      --s-text:#1b2430;
-      --s-muted:#5b6b7c;
-      --s-line:#d6dee8;
-      --s-btn:#2563eb;
-      --s-btn2:#e7edf7;
-      --s-codebg:#f3f5f9;
-      background: var(--s-bg);
-      border-radius: 1rem;
-      border: 1px solid rgba(148, 163, 184, 0.25);
-      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
-      overflow: hidden;
-    }
-    #streamApp .stream-topbar{
-      padding:10px 12px; border-bottom:1px solid var(--s-line);
-      display:flex; gap:10px; align-items:center; background:#fff; flex-wrap: wrap;
-      position:sticky; top:0; z-index:10;
-    }
-    #streamApp .stream-topbar input{
-      background:#fff; border:1px solid var(--s-line); color:var(--s-text);
-      padding:9px 10px; border-radius:10px; flex:1; min-width: 220px;
-    }
-    #streamApp .stream-topbar button{
-      background:var(--s-btn); border:0; color:#fff; padding:9px 12px;
-      border-radius:10px; cursor:pointer; font-weight:700; white-space:nowrap;
-      min-height: 40px;
-    }
-    #streamApp .stream-topbar button.secondary{
-      background:var(--s-btn2); color:var(--s-text); border:1px solid var(--s-line);
-      font-weight:700;
-    }
-    #streamApp .stream-topbar button:disabled{ opacity:.55; cursor:not-allowed; }
-    #streamApp .stream-layout{
-      display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:12px;
-      box-sizing:border-box; max-width:1500px; margin:0 auto; align-items:start;
-    }
-    @media (max-width: 980px){ #streamApp .stream-layout{ grid-template-columns:1fr; } }
-    #streamApp .stream-col{ display:flex; flex-direction:column; gap:12px; min-width:0; }
+      /* --- Tabs (Playground / Streaming demo) --- */
+      .tabs {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: -0.25rem;
+      }
+      .tab-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        background: rgba(255, 255, 255, 0.85);
+        color: #111827;
+        border-radius: 999px;
+        padding: 0.45rem 0.95rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        min-height: 40px;
+      }
+      .tab-btn[aria-selected='true'] {
+        background: #2563eb;
+        border-color: #2563eb;
+        color: #ffffff;
+        box-shadow: 0 10px 15px rgba(37, 99, 235, 0.22);
+      }
+      .tab-content {
+        display: none;
+      }
 
-    #streamApp .stream-panel{
-      background:var(--s-panel); border:1px solid var(--s-line); border-radius:14px;
-      display:flex; flex-direction:column; overflow:hidden;
-      box-shadow:0 4px 16px rgba(16,24,40,.06);
-    }
-    #streamApp .stream-panel h2{
-      margin:0; padding:10px 12px; font-size:14px; font-weight:900;
-      border-bottom:1px solid var(--s-line); color:var(--s-muted);
-      letter-spacing:.2px;
-    }
-    #streamApp .stream-panel .content{ padding:12px; display:flex; flex-direction:column; gap:10px; }
+      /* Radios drive tab visibility (works even if JS fails / is blocked) */
+      .tab-radio {
+        position: absolute;
+        left: -9999px;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+      }
 
-    #streamApp .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    #streamApp .row label{ font-size:12px; color:var(--s-muted); display:flex; gap:6px; align-items:center; }
-    #streamApp .muted{ color:var(--s-muted); font-size:12px; }
-    #streamApp .status{ font-size:12px; color:var(--s-muted); }
-    #streamApp .badge{
-      display:inline-block; padding:3px 8px; border-radius:999px; font-size:12px;
-      border:1px solid var(--s-line); background:#fff; color:var(--s-muted);
-    }
+      #tab-radio-playground:checked ~ #tab-playground {
+        display: block;
+      }
+      #tab-radio-stream:checked ~ #tab-stream {
+        display: block;
+      }
 
-    #streamApp textarea{
-      width:100%; background:var(--s-codebg); border:1px solid var(--s-line);
-      color:var(--s-text); padding:10px; border-radius:12px; box-sizing:border-box;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size:12px; line-height:1.35;
-    }
-    #streamApp textarea.preview{ height:220px; overflow:auto; resize:vertical; }
-    #streamApp textarea.full{ height:100%; resize:none; overflow:auto; }
-    #streamApp .list{ display:flex; flex-direction:column; gap:8px; max-height:240px; overflow:auto; padding-right:2px; }
-    #streamApp .item{ padding:10px 12px; border:1px solid var(--s-line); border-radius:12px; background:#fff; cursor:pointer; user-select:none; }
-    #streamApp .item:hover{ border-color:#9db6ee; box-shadow:0 2px 10px rgba(37,99,235,.10); }
-    #streamApp .item.selected{ border-color:#2563eb; box-shadow:0 2px 12px rgba(37,99,235,.16); }
-    #streamApp .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      /* Selected tab styling without JS */
+      #tab-radio-playground:checked ~ .tabs .tab-btn[data-tab='playground'],
+      #tab-radio-stream:checked ~ .tabs .tab-btn[data-tab='stream'] {
+        background: #2563eb;
+        border-color: #2563eb;
+        color: #ffffff;
+        box-shadow: 0 10px 15px rgba(37, 99, 235, 0.22);
+      }
 
-    #streamApp .out{
-      white-space:pre-wrap; word-break:break-word; background:var(--s-codebg);
-      border:1px solid var(--s-line); border-radius:12px; padding:10px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size:12px; line-height:1.35;
-      max-height:min(52vh, 560px); overflow:auto;
-    }
+      .playground-inner {
+        max-width: 960px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
 
-    #streamApp .modalBackdrop{
-      position:fixed; inset:0; background:rgba(12,18,28,.55); display:none;
-      align-items:center; justify-content:center; padding:18px; z-index:1000;
-    }
-    #streamApp .modal{
-      width:min(1100px, 96vw); height:min(86vh, 900px); background:#fff;
-      border-radius:16px; border:1px solid var(--s-line);
-      box-shadow:0 20px 80px rgba(0,0,0,.25);
-      display:flex; flex-direction:column; overflow:hidden;
-    }
-    #streamApp .modalHeader{
-      padding:10px 12px; border-bottom:1px solid var(--s-line);
-      display:flex; align-items:center; justify-content:space-between; gap:10px; background:#fff;
-    }
-    #streamApp .modalHeader .title{ font-weight:900; color:var(--s-muted); font-size:14px; }
-    #streamApp .modalBody{ padding:12px; display:flex; flex-direction:column; gap:10px; height:100%; }
+      /* --- Stream app (scoped) --- */
+      #streamApp {
+        --s-bg: #f6f7fb;
+        --s-panel: #ffffff;
+        --s-text: #1b2430;
+        --s-muted: #5b6b7c;
+        --s-line: #d6dee8;
+        --s-btn: #2563eb;
+        --s-btn2: #e7edf7;
+        --s-codebg: #f3f5f9;
+        background: var(--s-bg);
+        border-radius: 1rem;
+        border: 1px solid rgba(148, 163, 184, 0.25);
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+        overflow: hidden;
+      }
+      #streamApp .stream-topbar {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--s-line);
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        background: #fff;
+        flex-wrap: wrap;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      #streamApp .stream-topbar input {
+        background: #fff;
+        border: 1px solid var(--s-line);
+        color: var(--s-text);
+        padding: 9px 10px;
+        border-radius: 10px;
+        flex: 1;
+        min-width: 220px;
+      }
+      #streamApp .stream-topbar button {
+        background: var(--s-btn);
+        border: 0;
+        color: #fff;
+        padding: 9px 12px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 700;
+        white-space: nowrap;
+        min-height: 40px;
+      }
+      #streamApp .stream-topbar button.secondary {
+        background: var(--s-btn2);
+        color: var(--s-text);
+        border: 1px solid var(--s-line);
+        font-weight: 700;
+      }
+      #streamApp .stream-topbar button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+      #streamApp .stream-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        padding: 12px;
+        box-sizing: border-box;
+        max-width: 1500px;
+        margin: 0 auto;
+        align-items: start;
+      }
+      @media (max-width: 980px) {
+        #streamApp .stream-layout {
+          grid-template-columns: 1fr;
+        }
+      }
+      #streamApp .stream-col {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        min-width: 0;
+      }
 
-  </style>
+      #streamApp .stream-panel {
+        background: var(--s-panel);
+        border: 1px solid var(--s-line);
+        border-radius: 14px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: 0 4px 16px rgba(16, 24, 40, 0.06);
+      }
+      #streamApp .stream-panel h2 {
+        margin: 0;
+        padding: 10px 12px;
+        font-size: 14px;
+        font-weight: 900;
+        border-bottom: 1px solid var(--s-line);
+        color: var(--s-muted);
+        letter-spacing: 0.2px;
+      }
+      #streamApp .stream-panel .content {
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
 
-  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/turtle/turtle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/sparql/sparql.min.js"></script>
-</head>
+      #streamApp .row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      #streamApp .row label {
+        font-size: 12px;
+        color: var(--s-muted);
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      #streamApp .muted {
+        color: var(--s-muted);
+        font-size: 12px;
+      }
+      #streamApp .status {
+        font-size: 12px;
+        color: var(--s-muted);
+      }
+      #streamApp .badge {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 999px;
+        font-size: 12px;
+        border: 1px solid var(--s-line);
+        background: #fff;
+        color: var(--s-muted);
+      }
 
-<body>
-  <div class="page">
-    <header>
-      <h1>Eyeling N3 Playground</h1>
-      <p>
-        Edit the N3 program below, load it from a URL, or share this page with the program encoded in the fragment.
-      </p>
-      <p class="meta">
-        Powered by
-        <a href="https://eyereasoner.github.io/eyeling/" target="_blank" rel="noopener noreferrer">Eyeling</a>
-        — running version <strong>v<span id="eyeling-version">…</span></strong>.
-      </p>
-    </header>
+      #streamApp textarea {
+        width: 100%;
+        background: var(--s-codebg);
+        border: 1px solid var(--s-line);
+        color: var(--s-text);
+        padding: 10px;
+        border-radius: 12px;
+        box-sizing: border-box;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 12px;
+        line-height: 1.35;
+      }
+      #streamApp textarea.preview {
+        height: 220px;
+        overflow: auto;
+        resize: vertical;
+      }
+      #streamApp textarea.full {
+        height: 100%;
+        resize: none;
+        overflow: auto;
+      }
+      #streamApp .list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-height: 240px;
+        overflow: auto;
+        padding-right: 2px;
+      }
+      #streamApp .item {
+        padding: 10px 12px;
+        border: 1px solid var(--s-line);
+        border-radius: 12px;
+        background: #fff;
+        cursor: pointer;
+        user-select: none;
+      }
+      #streamApp .item:hover {
+        border-color: #9db6ee;
+        box-shadow: 0 2px 10px rgba(37, 99, 235, 0.1);
+      }
+      #streamApp .item.selected {
+        border-color: #2563eb;
+        box-shadow: 0 2px 12px rgba(37, 99, 235, 0.16);
+      }
+      #streamApp .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
 
-    <input class="tab-radio" type="radio" name="eyeling-demo-tab" id="tab-radio-playground" checked>
-    <input class="tab-radio" type="radio" name="eyeling-demo-tab" id="tab-radio-stream">
+      #streamApp .out {
+        white-space: pre-wrap;
+        word-break: break-word;
+        background: var(--s-codebg);
+        border: 1px solid var(--s-line);
+        border-radius: 12px;
+        padding: 10px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 12px;
+        line-height: 1.35;
+        max-height: min(52vh, 560px);
+        overflow: auto;
+      }
 
-    <nav class="tabs" role="tablist" aria-label="Eyeling demos">
-      <label class="tab-btn" role="tab" tabindex="0" data-tab="playground" aria-controls="tab-playground" aria-selected="true" for="tab-radio-playground">Playground</label>
-      <label class="tab-btn" role="tab" tabindex="0" data-tab="stream" aria-controls="tab-stream" aria-selected="false" for="tab-radio-stream">Streaming demo</label>
-    </nav>
+      #streamApp .modalBackdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(12, 18, 28, 0.55);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+        z-index: 1000;
+      }
+      #streamApp .modal {
+        width: min(1100px, 96vw);
+        height: min(86vh, 900px);
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid var(--s-line);
+        box-shadow: 0 20px 80px rgba(0, 0, 0, 0.25);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      #streamApp .modalHeader {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--s-line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        background: #fff;
+      }
+      #streamApp .modalHeader .title {
+        font-weight: 900;
+        color: var(--s-muted);
+        font-size: 14px;
+      }
+      #streamApp .modalBody {
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        height: 100%;
+      }
+    </style>
 
-    <div id="tab-playground" class="tab-content" role="tabpanel" aria-label="Playground">
-      <div class="playground-inner">
-    <section class="card">
-      <h2 class="section-title">Input N3</h2>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/turtle/turtle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/sparql/sparql.min.js"></script>
+  </head>
 
-      <div class="uri-row">
-        <label for="n3-uri">Load N3 from URL</label>
-        <div class="uri-input-row">
-          <input
-            id="n3-uri"
-            type="text"
-            value="https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/witch.n3"
-          />
-          <button id="load-uri-btn" type="button">Load from URL</button>
+  <body>
+    <div class="page">
+      <header>
+        <h1>Eyeling N3 Playground</h1>
+        <p>
+          Edit the N3 program below, load it from a URL, or share this page with the program encoded in the fragment.
+        </p>
+        <p class="meta">
+          Powered by
+          <a href="https://eyereasoner.github.io/eyeling/" target="_blank" rel="noopener noreferrer">Eyeling</a>
+          — running version <strong>v<span id="eyeling-version">…</span></strong
+          >.
+        </p>
+      </header>
+
+      <input class="tab-radio" type="radio" name="eyeling-demo-tab" id="tab-radio-playground" checked />
+      <input class="tab-radio" type="radio" name="eyeling-demo-tab" id="tab-radio-stream" />
+
+      <nav class="tabs" role="tablist" aria-label="Eyeling demos">
+        <label
+          class="tab-btn"
+          role="tab"
+          tabindex="0"
+          data-tab="playground"
+          aria-controls="tab-playground"
+          aria-selected="true"
+          for="tab-radio-playground"
+          >Playground</label
+        >
+        <label
+          class="tab-btn"
+          role="tab"
+          tabindex="0"
+          data-tab="stream"
+          aria-controls="tab-stream"
+          aria-selected="false"
+          for="tab-radio-stream"
+          >Streaming demo</label
+        >
+      </nav>
+
+      <div id="tab-playground" class="tab-content" role="tabpanel" aria-label="Playground">
+        <div class="playground-inner">
+          <section class="card">
+            <h2 class="section-title">Input N3</h2>
+
+            <div class="uri-row">
+              <label for="n3-uri">Load N3 from URL</label>
+              <div class="uri-input-row">
+                <input
+                  id="n3-uri"
+                  type="text"
+                  value="https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/witch.n3" />
+                <button id="load-uri-btn" type="button">Load from URL</button>
+              </div>
+              <span class="hint"> Enter any N3 file URL (raw GitHub URLs work well) and click “Load from URL”. </span>
+            </div>
+
+            <label for="n3-editor">Editable N3 program</label>
+            <textarea id="n3-editor" spellcheck="false"></textarea>
+
+            <div class="controls">
+              <button id="run-btn">Run reasoning</button>
+              <button id="pause-btn" class="secondary" disabled>Pause</button>
+              <button id="stop-btn" class="danger" disabled>Stop</button>
+
+              <label class="toggle" title="Runs Eyeling with -p (proof comments)">
+                <input id="proof-comments" type="checkbox" />
+                Turn proof comments on (-p)
+              </label>
+              <label
+                class="toggle"
+                title="Rewrite http:// IRIs to https:// for log dereferencing builtins (mixed-content safe)">
+                <input id="enforce-https" type="checkbox" checked />
+                Enforce HTTPS for dereferencing (--enforce-https)
+              </label>
+
+              <span class="status" id="status">Idle.</span>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2 class="section-title">Output</h2>
+            <textarea id="output-editor" spellcheck="false" readonly>(no output yet)</textarea>
+          </section>
         </div>
-        <span class="hint">
-          Enter any N3 file URL (raw GitHub URLs work well) and click “Load from URL”.
-        </span>
       </div>
 
-      <label for="n3-editor">Editable N3 program</label>
-      <textarea id="n3-editor" spellcheck="false"></textarea>
+      <div id="tab-stream" class="tab-content" role="tabpanel" aria-label="Streaming demo">
+        <section class="card" style="padding: 0; overflow: hidden">
+          <div id="streamApp">
+            <div class="stream-topbar">
+              <input id="stream-searchBox" placeholder="Search Wikidata (e.g., René Magritte, Q7836)..." />
+              <button id="stream-searchBtn">Search</button>
+              <button id="stream-loadBtn" class="secondary" disabled>Load selection</button>
+              <button id="stream-toyBtn" class="secondary">Load toy example</button>
+              <button id="stream-clearBtn" class="secondary">Clear output</button>
 
-      <div class="controls">
-        <button id="run-btn">Run reasoning</button>
-        <button id="pause-btn" class="secondary" disabled>Pause</button>
-        <button id="stop-btn" class="danger" disabled>Stop</button>
+              <label class="muted" style="display: flex; align-items: center; gap: 6px; margin-left: 4px">
+                <input type="checkbox" id="stream-clearOnRun" />clear on run
+              </label>
 
-        <label class="toggle" title="Runs Eyeling with -p (proof comments)">
-          <input id="proof-comments" type="checkbox" />
-          Turn proof comments on (-p)
-        </label>
-        <label class="toggle" title="Rewrite http:// IRIs to https:// for log dereferencing builtins (mixed-content safe)">
-          <input id="enforce-https" type="checkbox" checked />
-          Enforce HTTPS for dereferencing (--enforce-https)
-        </label>
+              <label
+                class="muted"
+                title="Rewrite http:// IRIs to https:// for log dereferencing builtins (mixed-content safe)"
+                style="display: flex; align-items: center; gap: 6px; margin-left: 4px">
+                <input type="checkbox" id="stream-enforceHttps" checked />enforce https
+              </label>
 
+              <span id="stream-eyelingVersion" class="badge" style="margin-left: auto">Eyeling</span>
+              <button id="stream-reasonBtn" disabled>Reason (stream)</button>
+              <button id="stream-pauseBtn" class="secondary" disabled>Pause</button>
+              <button id="stream-stopBtn" class="danger" disabled>Stop</button>
+            </div>
 
-        <span class="status" id="status">Idle.</span>
-      </div>
-    </section>
+            <div class="stream-layout">
+              <div class="stream-col">
+                <section class="stream-panel">
+                  <h2>Wikidata browser + dataset</h2>
+                  <div class="content">
+                    <div class="row">
+                      <label title="Uses Wikidata API (origin=*) instead of EntityData .ttl, so it works under CORS">
+                        <input type="checkbox" id="stream-minimalOnly" checked />
+                        minimal dataset (entity-value claims + sitelinks)
+                      </label>
+                      <label
+                        title="If derived triples request wikiquote, fetch extract via it.wikiquote API (origin=*)">
+                        <input type="checkbox" id="stream-autoFetchWikiquote" checked />
+                        auto-fetch it.wikiquote extract when requested
+                      </label>
+                      <span class="badge" title="Default: René Magritte (Q7836)">default: Magritte</span>
+                    </div>
 
-    <section class="card">
-      <h2 class="section-title">Output</h2>
-      <textarea id="output-editor" spellcheck="false" readonly>(no output yet)</textarea>
-    </section>
+                    <div class="muted">
+                      Selected: <span id="stream-selId" class="mono">—</span>
+                      <span id="stream-selLabel"></span>
+                      <span id="stream-dsInfo" class="badge" style="display: none"></span>
+                    </div>
 
+                    <div class="list" id="stream-results"></div>
+
+                    <div class="row">
+                      <div class="muted" style="flex: 1">Dataset preview. Full dataset opens in a pop-up.</div>
+                      <button id="stream-openDatasetBtn" class="secondary" disabled>Open full dataset</button>
+                    </div>
+                    <textarea id="stream-dataPreview" class="preview" spellcheck="false" readonly></textarea>
+                  </div>
+                </section>
+              </div>
+
+              <div class="stream-col">
+                <section class="stream-panel">
+                  <h2>Streaming deductive closure</h2>
+                  <div class="content">
+                    <div class="row">
+                      <span class="status" id="stream-runStatus">Idle.</span>
+                      <span class="status">Derived: <span id="stream-derivedCount">0</span></span>
+                      <span class="status">Fetched facts: <span id="stream-fetchedCount">0</span></span>
+                    </div>
+                    <div class="out" id="stream-outBox"></div>
+                  </div>
+                </section>
+
+                <section class="stream-panel">
+                  <h2>N3 logic rules</h2>
+                  <div class="content">
+                    <div class="muted">
+                      This version avoids Wikidata TTL fetches (CORS issues) by using the Wikidata API + a small N3
+                      conversion. It also demonstrates “dynamic fetch” by turning a derived request into new facts
+                      (wikiquote extract).
+                    </div>
+                    <textarea id="stream-rulesBox" spellcheck="false"></textarea>
+                  </div>
+                </section>
+              </div>
+            </div>
+
+            <div class="modalBackdrop" id="stream-modalBackdrop" aria-hidden="true">
+              <div class="modal" role="dialog" aria-modal="true" aria-label="Full dataset">
+                <div class="modalHeader">
+                  <div class="title">Full dataset (Turtle/N3)</div>
+                  <button id="stream-modalCloseBtn" class="secondary">Close</button>
+                </div>
+                <div class="modalBody">
+                  <div class="muted">This is the full Turtle/N3 that Eyeling reasons over.</div>
+                  <textarea id="stream-dataFull" class="full" spellcheck="false" readonly></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
 
-    <div id="tab-stream" class="tab-content" role="tabpanel" aria-label="Streaming demo">
-      <section class="card" style="padding: 0; overflow: hidden;">
-        <div id="streamApp">
-          <div class="stream-topbar">
-            <input id="stream-searchBox" placeholder="Search Wikidata (e.g., René Magritte, Q7836)..." />
-            <button id="stream-searchBtn">Search</button>
-            <button id="stream-loadBtn" class="secondary" disabled>Load selection</button>
-            <button id="stream-toyBtn" class="secondary">Load toy example</button>
-            <button id="stream-clearBtn" class="secondary">Clear output</button>
+    <script src="eyeling.js"></script>
 
-            <label class="muted" style="display:flex;align-items:center;gap:6px;margin-left:4px;">
-              <input type="checkbox" id="stream-clearOnRun" />clear on run
-            </label>
-
-            <label class="muted" title="Rewrite http:// IRIs to https:// for log dereferencing builtins (mixed-content safe)" style="display:flex;align-items:center;gap:6px;margin-left:4px;">
-              <input type="checkbox" id="stream-enforceHttps" checked />enforce https
-            </label>
-
-            <span id="stream-eyelingVersion" class="badge" style="margin-left:auto">Eyeling</span>
-            <button id="stream-reasonBtn" disabled>Reason (stream)</button>
-            <button id="stream-pauseBtn" class="secondary" disabled>Pause</button>
-            <button id="stream-stopBtn" class="danger" disabled>Stop</button>
-          </div>
-
-          <div class="stream-layout">
-            <div class="stream-col">
-              <section class="stream-panel">
-                <h2>Wikidata browser + dataset</h2>
-                <div class="content">
-                  <div class="row">
-                    <label title="Uses Wikidata API (origin=*) instead of EntityData .ttl, so it works under CORS">
-                      <input type="checkbox" id="stream-minimalOnly" checked />
-                      minimal dataset (entity-value claims + sitelinks)
-                    </label>
-                    <label title="If derived triples request wikiquote, fetch extract via it.wikiquote API (origin=*)">
-                      <input type="checkbox" id="stream-autoFetchWikiquote" checked />
-                      auto-fetch it.wikiquote extract when requested
-                    </label>
-                    <span class="badge" title="Default: René Magritte (Q7836)">default: Magritte</span>
-                  </div>
-
-                  <div class="muted">
-                    Selected: <span id="stream-selId" class="mono">—</span>
-                    <span id="stream-selLabel"></span>
-                    <span id="stream-dsInfo" class="badge" style="display:none"></span>
-                  </div>
-
-                  <div class="list" id="stream-results"></div>
-
-                  <div class="row">
-                    <div class="muted" style="flex:1">Dataset preview. Full dataset opens in a pop-up.</div>
-                    <button id="stream-openDatasetBtn" class="secondary" disabled>Open full dataset</button>
-                  </div>
-                  <textarea id="stream-dataPreview" class="preview" spellcheck="false" readonly></textarea>
-                </div>
-              </section>
-            </div>
-
-            <div class="stream-col">
-              <section class="stream-panel">
-                <h2>Streaming deductive closure</h2>
-                <div class="content">
-                  <div class="row">
-                    <span class="status" id="stream-runStatus">Idle.</span>
-                    <span class="status">Derived: <span id="stream-derivedCount">0</span></span>
-                    <span class="status">Fetched facts: <span id="stream-fetchedCount">0</span></span>
-                  </div>
-                  <div class="out" id="stream-outBox"></div>
-                </div>
-              </section>
-
-              <section class="stream-panel">
-                <h2>N3 logic rules</h2>
-                <div class="content">
-                  <div class="muted">
-                    This version avoids Wikidata TTL fetches (CORS issues) by using the Wikidata API + a small N3 conversion.
-                    It also demonstrates “dynamic fetch” by turning a derived request into new facts (wikiquote extract).
-                  </div>
-                  <textarea id="stream-rulesBox" spellcheck="false"></textarea>
-                </div>
-              </section>
-            </div>
-          </div>
-
-          <div class="modalBackdrop" id="stream-modalBackdrop" aria-hidden="true">
-            <div class="modal" role="dialog" aria-modal="true" aria-label="Full dataset">
-              <div class="modalHeader">
-                <div class="title">Full dataset (Turtle/N3)</div>
-                <button id="stream-modalCloseBtn" class="secondary">Close</button>
-              </div>
-              <div class="modalBody">
-                <div class="muted">This is the full Turtle/N3 that Eyeling reasons over.</div>
-                <textarea id="stream-dataFull" class="full" spellcheck="false" readonly></textarea>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
-
-  </div>
-
-  <script src="eyeling.js"></script>
-
-  <script>
-    (function () {
-      const defaultN3 = `# ------------------
+    <script>
+      (function () {
+        const defaultN3 = `# ------------------
 # Socrates inference
 # ------------------
 
@@ -778,157 +993,177 @@
     ?S a ?B.
 }.`;
 
-      const inputTextArea = document.getElementById("n3-editor");
-      const outputTextArea = document.getElementById("output-editor");
-      const runBtn = document.getElementById("run-btn");
-      const pauseBtn = document.getElementById("pause-btn");
-      const stopBtn = document.getElementById("stop-btn");
-      const statusEl = document.getElementById("status");
-      const uriInput = document.getElementById("n3-uri");
-      const loadUriBtn = document.getElementById("load-uri-btn");
-      const proofCheckbox = document.getElementById("proof-comments");
-      const enforceHttpsCheckbox = document.getElementById("enforce-https");
-      const versionEl = document.getElementById("eyeling-version");
+        const inputTextArea = document.getElementById('n3-editor');
+        const outputTextArea = document.getElementById('output-editor');
+        const runBtn = document.getElementById('run-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const statusEl = document.getElementById('status');
+        const uriInput = document.getElementById('n3-uri');
+        const loadUriBtn = document.getElementById('load-uri-btn');
+        const proofCheckbox = document.getElementById('proof-comments');
+        const enforceHttpsCheckbox = document.getElementById('enforce-https');
+        const versionEl = document.getElementById('eyeling-version');
 
-// Persist "enforce https" toggle (default ON)
-try {
-  const saved = localStorage.getItem("eyeling.enforceHttps");
-  if (saved !== null) enforceHttpsCheckbox.checked = saved === "1";
-  enforceHttpsCheckbox.addEventListener("change", () => {
-    localStorage.setItem(
-      "eyeling.enforceHttps",
-      enforceHttpsCheckbox.checked ? "1" : "0"
-    );
-  });
-} catch (_) {}
+        // Persist "enforce https" toggle (default ON)
+        try {
+          const saved = localStorage.getItem('eyeling.enforceHttps');
+          if (saved !== null) enforceHttpsCheckbox.checked = saved === '1';
+          enforceHttpsCheckbox.addEventListener('change', () => {
+            localStorage.setItem('eyeling.enforceHttps', enforceHttpsCheckbox.checked ? '1' : '0');
+          });
+        } catch (_) {}
 
-      const EYELING_JS_URL =
-        "https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/eyeling.js";
-      const EYELING_PKG_URL =
-        "https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/package.json";
+        const EYELING_JS_URL = 'https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/eyeling.js';
+        const EYELING_PKG_URL = 'https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/package.json';
 
-      let eyelingVersion = "unknown";
-      let versionPromise = null;
+        let eyelingVersion = 'unknown';
+        let versionPromise = null;
 
-      // --- Unified background streaming runner (shared with the Streaming demo tab) ---
-      // Exposes: window.__eyelingUnified.startStreamRun({program,enforceHttps,proof,onBatch,onDone,onError})
-      (function initUnifiedEyelingRunner() {
-        const U = window.__eyelingUnified || (window.__eyelingUnified = {});
-        if (U && typeof U.startStreamRun === "function") return;
+        // --- Unified background streaming runner (shared with the Streaming demo tab) ---
+        // Exposes: window.__eyelingUnified.startStreamRun({program,enforceHttps,proof,onBatch,onDone,onError})
+        (function initUnifiedEyelingRunner() {
+          const U = window.__eyelingUnified || (window.__eyelingUnified = {});
+          if (U && typeof U.startStreamRun === 'function') return;
 
-        let activeWorker = null;
-        let nextRunId = 0;
+          let activeWorker = null;
+          let nextRunId = 0;
 
-        function stopActiveWorker() {
-          if (!activeWorker) return;
-          try { activeWorker.terminate(); } catch (_) {}
-          activeWorker = null;
-        }
-
-        function nowMs() {
-          return (window.performance && performance.now) ? performance.now() : Date.now();
-        }
-
-
-        // --- Syntax error formatting (for CodeMirror highlighting) ---
-        // Eyeling's parser throws N3SyntaxError with a codepoint offset. We convert that into line/col.
-        function offsetToLineCol(text, offset) {
-          const chars = Array.from(String(text || ""));
-          const n = Math.max(0, Math.min(typeof offset === "number" ? offset : 0, chars.length));
-          let line = 1;
-          let col = 1;
-          for (let i = 0; i < n; i++) {
-            const c = chars[i];
-            if (c === "\n") {
-              line++;
-              col = 1;
-            } else if (c === "\r") {
-              line++;
-              col = 1;
-              if (i + 1 < n && chars[i + 1] === "\n") i++; // swallow \n in CRLF
-            } else {
-              col++;
-            }
-          }
-          return { line, col };
-        }
-
-        function formatN3SyntaxError(err, text, label) {
-          const off = err && typeof err.offset === "number" ? err.offset : null;
-          const lbl = label ? String(label) : "";
-          if (off === null) {
-            return "Syntax error in " + lbl + ": " + (err && err.message ? err.message : String(err));
-          }
-          const lc = offsetToLineCol(text, off);
-          const lines = String(text || "").split(/\r\n|\n|\r/);
-          const lineText = lines[lc.line - 1] ?? "";
-          const caret = " ".repeat(Math.max(0, lc.col - 1)) + "^";
-          return (
-            "Syntax error in " + lbl + ":" + lc.line + ":" + lc.col + ": " + (err && err.message ? err.message : "Syntax error") +
-            "\n" + lineText +
-            "\n" + caret
-          );
-        }
-
-        function formatMaybeSyntaxError(err, text, label) {
-          if (err && err.name === "N3SyntaxError") {
-            return formatN3SyntaxError(err, text, label);
-          }
-          return (err && err.message) ? err.message : String(err);
-        }
-
-        // Start a run. Creates/terminates workers as needed (single active run at a time).
-        U.startStreamRun = function startStreamRun(args) {
-          const program = String(args && args.program ? args.program : "");
-          const enforceHttps = !!(args && args.enforceHttps);
-          const proof = !!(args && args.proof);
-          const onBatch = args && typeof args.onBatch === "function" ? args.onBatch : null;
-          const onDone = args && typeof args.onDone === "function" ? args.onDone : null;
-          const onError = args && typeof args.onError === "function" ? args.onError : null;
-
-          const runId = ++nextRunId;
-
-          // Best-effort fallback for environments without Web Workers.
-          if (typeof Worker === "undefined") {
+          function stopActiveWorker() {
+            if (!activeWorker) return;
             try {
-              if (!window.eyeling || typeof window.eyeling.reasonStream !== "function") {
-                throw new Error("Eyeling reasonStream API not available.");
-              }
-              const batch = [];
-              const BATCH_MAX = 16;
-
-              function flush(force) {
-                if (!batch.length) return;
-                if (force || batch.length >= BATCH_MAX) {
-                  onBatch && onBatch(batch.splice(0));
-                }
-              }
-
-              window.eyeling.reasonStream(program, {
-                enforceHttps,
-                proof,
-                onDerived: ({ triple }) => {
-                  batch.push(triple);
-                  flush(false);
-                },
-              });
-
-              flush(true);
-              onDone && onDone({ runId });
-            } catch (e) {
-              onError && onError(formatMaybeSyntaxError(e, program, "input.n3"));
-            }
-
-            return { runId, cancel: () => {} };
+              activeWorker.terminate();
+            } catch (_) {}
+            activeWorker = null;
           }
 
-          // Worker path (keeps UI responsive and enables true streaming)
-          stopActiveWorker();
+          function nowMs() {
+            return window.performance && performance.now ? performance.now() : Date.now();
+          }
 
-          const eyelingUrl = new URL("eyeling.js", window.location.href).toString();
-          const eyelingUrlEsc = eyelingUrl.replace(/\\/g, "\\\\").replace(/"/g, "\\\"");
+          // --- Syntax error formatting (for CodeMirror highlighting) ---
+          // Eyeling's parser throws N3SyntaxError with a codepoint offset. We convert that into line/col.
+          function offsetToLineCol(text, offset) {
+            const chars = Array.from(String(text || ''));
+            const n = Math.max(0, Math.min(typeof offset === 'number' ? offset : 0, chars.length));
+            let line = 1;
+            let col = 1;
+            for (let i = 0; i < n; i++) {
+              const c = chars[i];
+              if (c === '\n') {
+                line++;
+                col = 1;
+              } else if (c === '\r') {
+                line++;
+                col = 1;
+                if (i + 1 < n && chars[i + 1] === '\n') i++; // swallow \n in CRLF
+              } else {
+                col++;
+              }
+            }
+            return { line, col };
+          }
 
-          const workerSrc = `
+          function formatN3SyntaxError(err, text, label) {
+            const off = err && typeof err.offset === 'number' ? err.offset : null;
+            const lbl = label ? String(label) : '';
+            if (off === null) {
+              return 'Syntax error in ' + lbl + ': ' + (err && err.message ? err.message : String(err));
+            }
+            const lc = offsetToLineCol(text, off);
+            const lines = String(text || '').split(/\r\n|\n|\r/);
+            const lineText = lines[lc.line - 1] ?? '';
+            const caret = ' '.repeat(Math.max(0, lc.col - 1)) + '^';
+            return (
+              'Syntax error in ' +
+              lbl +
+              ':' +
+              lc.line +
+              ':' +
+              lc.col +
+              ': ' +
+              (err && err.message ? err.message : 'Syntax error') +
+              '\n' +
+              lineText +
+              '\n' +
+              caret
+            );
+          }
+
+          function formatMaybeSyntaxError(err, text, label) {
+            if (err && err.name === 'N3SyntaxError') {
+              return formatN3SyntaxError(err, text, label);
+            }
+            return err && err.message ? err.message : String(err);
+          }
+
+          // Start a run. Creates/terminates workers as needed (single active run at a time).
+          U.startStreamRun = function startStreamRun(args) {
+            const program = String(args && args.program ? args.program : '');
+            const enforceHttps = !!(args && args.enforceHttps);
+            const proof = !!(args && args.proof);
+            const onBatch = args && typeof args.onBatch === 'function' ? args.onBatch : null;
+            const onDone = args && typeof args.onDone === 'function' ? args.onDone : null;
+            const onError = args && typeof args.onError === 'function' ? args.onError : null;
+
+            const runId = ++nextRunId;
+
+            // Best-effort fallback for environments without Web Workers.
+            if (typeof Worker === 'undefined') {
+              try {
+                if (!window.eyeling || typeof window.eyeling.reasonStream !== 'function') {
+                  throw new Error('Eyeling reasonStream API not available.');
+                }
+                const batch = [];
+                const BATCH_MAX = 16;
+
+                function flush(force) {
+                  if (!batch.length) return;
+                  if (force || batch.length >= BATCH_MAX) {
+                    onBatch && onBatch(batch.splice(0));
+                  }
+                }
+
+                // Capture stderr (log:trace uses console.error in browser/worker) and keep it in the same output stream as N3 comments.
+                const __origConsoleError = console.error;
+                console.error = (...args) => {
+                  try {
+                    batch.push('# ' + args.join(' '));
+                    flush(false);
+                  } catch (_) {}
+                  try {
+                    __origConsoleError && __origConsoleError.apply(console, args);
+                  } catch (_) {}
+                };
+
+                try {
+                  window.eyeling.reasonStream(program, {
+                    enforceHttps,
+                    proof,
+                    onDerived: ({ triple }) => {
+                      batch.push(triple);
+                      flush(false);
+                    },
+                  });
+                } finally {
+                  console.error = __origConsoleError;
+                }
+                flush(true);
+                onDone && onDone({ runId });
+              } catch (e) {
+                onError && onError(formatMaybeSyntaxError(e, program, 'input.n3'));
+              }
+
+              return { runId, cancel: () => {} };
+            }
+
+            // Worker path (keeps UI responsive and enables true streaming)
+            stopActiveWorker();
+
+            const eyelingUrl = new URL('eyeling.js', window.location.href).toString();
+            const eyelingUrlEsc = eyelingUrl.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+
+            const workerSrc = `
             importScripts("${eyelingUrlEsc}");
             const now = () => (self.performance && performance.now) ? performance.now() : Date.now();
 
@@ -940,6 +1175,13 @@ try {
               const program = String(msg.program || "");
               const enforceHttps = !!msg.enforceHttps;
               const proof = !!msg.proof;
+
+              // Forward stderr (log:trace) to the main thread; keep it in Output pane as N3 comments.
+              const __origErr = console.error;
+              console.error = (...args) => {
+                try { self.postMessage({ type: "stderr", runId, text: args.join(" ") }); } catch (_) {}
+                try { __origErr && __origErr.apply(console, args); } catch (_) {}
+              };
 
               const batch = [];
               const BATCH_MAX = 10;          // small batches = more "real-time"
@@ -1002,350 +1244,355 @@ try {
             };
           `;
 
-          const blob = new Blob([workerSrc], { type: "text/javascript" });
-          const url = URL.createObjectURL(blob);
-          const w = new Worker(url);
-          activeWorker = w;
+            const blob = new Blob([workerSrc], { type: 'text/javascript' });
+            const url = URL.createObjectURL(blob);
+            const w = new Worker(url);
+            activeWorker = w;
 
-          let finished = false;
-          function cleanup() {
-            if (finished) return;
-            finished = true;
-            try { URL.revokeObjectURL(url); } catch (_) {}
-          }
-
-          w.onmessage = (ev) => {
-            const msg = ev && ev.data ? ev.data : {};
-            if (msg.runId !== runId) return;
-
-            if (msg.type === "derived_batch") {
-              onBatch && onBatch(msg.triples || []);
-            } else if (msg.type === "done") {
-              cleanup();
-              onDone && onDone({ runId });
-            } else if (msg.type === "error") {
-              cleanup();
-              onError && onError(msg.message || "Unknown error");
+            let finished = false;
+            function cleanup() {
+              if (finished) return;
+              finished = true;
+              try {
+                URL.revokeObjectURL(url);
+              } catch (_) {}
             }
-          };
 
-          w.onerror = (ev) => {
-            cleanup();
-            onError && onError("Worker error: " + (ev && ev.message ? ev.message : "unknown"));
-          };
+            w.onmessage = (ev) => {
+              const msg = ev && ev.data ? ev.data : {};
+              if (msg.runId !== runId) return;
 
-          // Kick off the work
-          w.postMessage({
-            type: "run",
-            runId,
-            program,
-            enforceHttps,
-            proof,
-          });
+              if (msg.type === 'derived_batch') {
+                onBatch && onBatch(msg.triples || []);
+              } else if (msg.type === 'stderr') {
+                // Keep stderr in Output pane, but as N3 comments so the closure stays valid.
+                const t = msg.text == null ? '' : String(msg.text);
+                if (t) onBatch && onBatch(['# ' + t]);
+              } else if (msg.type === 'done') {
+                cleanup();
+                onDone && onDone({ runId });
+              } else if (msg.type === 'error') {
+                cleanup();
+                onError && onError(msg.message || 'Unknown error');
+              }
+            };
 
-          return {
-            runId,
-            cancel: () => {
-              try { w.terminate(); } catch (_) {}
+            w.onerror = (ev) => {
               cleanup();
-              if (activeWorker === w) activeWorker = null;
-            },
+              onError && onError('Worker error: ' + (ev && ev.message ? ev.message : 'unknown'));
+            };
+
+            // Kick off the work
+            w.postMessage({
+              type: 'run',
+              runId,
+              program,
+              enforceHttps,
+              proof,
+            });
+
+            return {
+              runId,
+              cancel: () => {
+                try {
+                  w.terminate();
+                } catch (_) {}
+                cleanup();
+                if (activeWorker === w) activeWorker = null;
+              },
+            };
           };
-        };
-      })();
-
-      function isSmallScreen() {
-        return window.matchMedia && window.matchMedia("(max-width: 640px)").matches;
-      }
-
-      function currentMaxHeights() {
-        // On mobile we cap editor/output height and allow internal scrolling
-        if (!isSmallScreen()) return { editor: null, output: null };
-        const h = window.innerHeight || 800;
-        return {
-          editor: Math.max(260, Math.floor(h * 0.55)),
-          output: Math.max(160, Math.floor(h * 0.35)),
-        };
-      }
-
-      function autoResizeCodeMirror(cm, minHeightPx, maxHeightPx) {
-        // Ensure CodeMirror fits its *rendered* content (no internal scrollbars unless capped).
-        // IMPORTANT: don't use the scroller's scrollHeight here — with overflow hidden
-        // it can create a feedback loop where the editor grows a bit on every keystroke.
-        cm.refresh();
-
-        const wrapper = cm.getWrapperElement();
-
-        // Desktop cap for the Playground Output pane: ~50 lines max (scroll inside).
-        if (wrapper && wrapper.classList && wrapper.classList.contains("cm-output")) {
-          const lineCapPx = Math.round(cm.defaultTextHeight() * 50 + cm.defaultTextHeight());
-          if (Number.isFinite(lineCapPx) && lineCapPx > 0) {
-            maxHeightPx =
-              typeof maxHeightPx === "number"
-                ? Math.min(maxHeightPx, lineCapPx)
-                : lineCapPx;
-          }
-        }
-        const code = wrapper && wrapper.querySelector(".CodeMirror-code");
-        const sizer = wrapper && wrapper.querySelector(".CodeMirror-sizer");
-        const measureEl = code || sizer;
-
-        const contentHeight = measureEl
-          ? measureEl.getBoundingClientRect().height
-          : cm.getScrollInfo().height;
-
-        // Add a bit of breathing room so the last line isn't flush with the bottom.
-        const padding = cm.defaultTextHeight();
-
-        let target = Math.max(Math.ceil(contentHeight + padding), minHeightPx);
-        if (typeof maxHeightPx === "number") target = Math.min(target, maxHeightPx);
-
-        cm.setSize(null, target + "px");
-      }
-
-      function resizeAll() {
-        const mh = currentMaxHeights();
-        autoResizeCodeMirror(editor, 220, mh.editor);
-        autoResizeCodeMirror(outputEl, 80, mh.output);
-      }
-
-      // --- INITIAL CONTENT FROM HASH OR DEFAULT ---
-      function getProgramFromHash() {
-        const hash = window.location.hash || "";
-        if (!hash) return null;
-        const raw = hash.startsWith("#") ? hash.slice(1) : hash;
-        if (!raw) return null;
-        try {
-          return decodeURIComponent(raw);
-        } catch (e) {
-          return raw;
-        }
-      }
-
-      // --- Prefill + auto-load "Load N3 from URL" via query string ---
-      // Usage:
-      //   demo?url=https://example.com/file.n3
-      // Notes:
-      //   - If a #fragment is present, it takes precedence (existing behavior).
-      //   - When loading from ?url=..., we avoid rewriting the hash until the user edits,
-      //     so you can keep sharing a clean ?url=... link.
-      function getN3UriFromQuery() {
-        try {
-          const url = new URL(window.location.href);
-          // support a few aliases, but "url" is the main one
-          return (
-            url.searchParams.get("url") ||
-            url.searchParams.get("n3url") ||
-            url.searchParams.get("n3") ||
-            url.searchParams.get("load") ||
-            null
-          );
-        } catch (e) {
-          return null;
-        }
-      }
-
-      const paramProgram = getProgramFromHash();
-      const paramN3Uri = getN3UriFromQuery();
-
-      if (paramN3Uri) {
-        uriInput.value = paramN3Uri;
-      }
-
-      // In "URL-load mode" (no fragment, but ?url=...), don't start syncing to #hash
-      // until the user actually edits the editor.
-      let hashSyncEnabled = paramProgram !== null || !paramN3Uri;
-
-      const initialN3 = paramProgram !== null ? paramProgram : defaultN3;
-
-      // CodeMirror editors (syntax-highlighted)
-      const editor = CodeMirror.fromTextArea(inputTextArea, {
-        mode: { name: "sparql" },
-        lineNumbers: true,
-        lineWrapping: true,
-        viewportMargin: Infinity,
-      });
-
-      const outputEl = CodeMirror.fromTextArea(outputTextArea, {
-        mode: { name: "sparql" },
-        lineNumbers: true,
-        lineWrapping: true,
-        readOnly: true,
-        viewportMargin: Infinity,
-      });
-
-      // Slightly smaller font for output
-      outputEl.getWrapperElement().classList.add("cm-output");
-
-      // --- N3 SYNTAX ERROR HIGHLIGHTING ---
-      let errorLineHandle = null;
-
-      function clearErrorHighlight() {
-        if (!errorLineHandle) return;
-        editor.removeLineClass(errorLineHandle, "background", "cm-error-line");
-        errorLineHandle = null;
-      }
-
-            function highlightErrorFromOutput(outputText) {
-        if (!outputText) return;
-
-        // Eyeling error messages vary a bit. We try to find the first occurrence of
-        // something like:  Syntax error ...:<line>:<col>:
-        const text = String(outputText);
-        const lines = text.split(/\r?\n/);
-
-        let m = null;
-
-        function tryMatchLine(ln) {
-          if (!ln) return null;
-
-          // Common formats:
-          //   Syntax error in <file>:<line>:<col>: ...
-          //   Reasoning error: Syntax error ...:<line>:<col>: ...
-          let x =
-            ln.match(/(?:Syntax|Parse) error.*?:(\d+):(\d+)(?::|\b)/i) ||
-            ln.match(/\bline\s+(\d+)\b[^\d]{0,40}\bcol(?:umn)?\s+(\d+)\b/i);
-
-          // If the line mentions "Syntax error", accept a bare :line:col: too.
-          if (!x && /(?:syntax|parse) error/i.test(ln)) {
-            x = ln.match(/:(\d+):(\d+)(?::|\b)/);
-          }
-
-          return x;
-        }
-
-        const scanLimit = Math.min(lines.length, 80);
-
-        // Prefer scanning lines that mention "Syntax error"
-        for (let i = 0; i < scanLimit; i++) {
-          const ln = lines[i];
-          if (!/(?:syntax|parse) error/i.test(ln)) continue;
-          m = tryMatchLine(ln);
-          if (m) break;
-        }
-
-        // Fallback: scan a little more loosely
-        if (!m) {
-          for (let i = 0; i < scanLimit; i++) {
-            m = tryMatchLine(lines[i]);
-            if (m) break;
-          }
-        }
-
-        if (!m) return;
-
-        // Clear any previous highlight now that we found a concrete line/col.
-        clearErrorHighlight();
-
-        const line1 = parseInt(m[1], 10);
-        const col1 = parseInt(m[2], 10);
-        if (!Number.isFinite(line1) || line1 < 0) return;
-
-        // Eyeling reports line/col as 1-based in most cases, but some builds report 0-based.
-        const line = line1 > 0 ? line1 - 1 : 0;
-        const ch = Number.isFinite(col1)
-          ? (col1 > 0 ? col1 - 1 : 0)
-          : 0;
-        if (line < 0 || line >= editor.lineCount()) return;
-
-        errorLineHandle = editor.getLineHandle(line);
-        editor.addLineClass(errorLineHandle, "background", "cm-error-line");
-
-        // Nudge the editor to the error location.
-        editor.scrollIntoView({ line, ch }, 80);
-        editor.setCursor({ line, ch });
-      }
-
-      editor.setValue(initialN3);
-      resizeAll();
-
-      // Recompute caps on orientation/resize
-      window.addEventListener("resize", () => {
-        resizeAll();
-      }, { passive: true });
-
-      // --- URL SHARING SUPPORT ---
-      let shareUrlUpdateTimeout = null;
-
-      function updateShareUrl() {
-        try {
-          const encoded = encodeURIComponent(editor.getValue());
-          const url = new URL(window.location.href);
-          url.hash = encoded;
-          window.history.replaceState(null, "", url.toString());
-        } catch (e) {
-          console && console.warn && console.warn("Failed to update URL hash:", e);
-        }
-      }
-
-      function scheduleUpdateShareUrl() {
-        clearTimeout(shareUrlUpdateTimeout);
-        shareUrlUpdateTimeout = setTimeout(updateShareUrl, 300);
-      }
-
-      editor.on("change", function (_cm, changeObj) {
-        clearErrorHighlight();
-
-        const mh = currentMaxHeights();
-        autoResizeCodeMirror(editor, 220, mh.editor);
-
-        if (!hashSyncEnabled) {
-          // Only start syncing once the user actually edits (not programmatic setValue).
-          if (changeObj && changeObj.origin && changeObj.origin !== "setValue") {
-            hashSyncEnabled = true;
-          } else {
-            return;
-          }
-        }
-
-        scheduleUpdateShareUrl();
-      });
-
-      // --- EYELING VERSION (UI + runner) ---
-      function ensureEyelingVersion() {
-        if (versionPromise) return versionPromise;
-
-        versionPromise = (async () => {
-          try {
-            const resp = await fetch(EYELING_PKG_URL, { cache: "no-store" });
-            if (!resp.ok) throw new Error("HTTP " + resp.status);
-            const pkg = await resp.json();
-            if (pkg && pkg.version) {
-              eyelingVersion = String(pkg.version);
-              versionEl.textContent = eyelingVersion;
-            } else {
-              eyelingVersion = "unknown";
-              versionEl.textContent = "unknown";
-            }
-          } catch (e) {
-            eyelingVersion = "unknown";
-            versionEl.textContent = "unknown";
-          }
         })();
 
-        return versionPromise;
-      }
+        function isSmallScreen() {
+          return window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
+        }
 
-      // start loading version ASAP
-      ensureEyelingVersion();
+        function currentMaxHeights() {
+          // On mobile we cap editor/output height and allow internal scrolling
+          if (!isSmallScreen()) return { editor: null, output: null };
+          const h = window.innerHeight || 800;
+          return {
+            editor: Math.max(260, Math.floor(h * 0.55)),
+            output: Math.max(160, Math.floor(h * 0.35)),
+          };
+        }
 
-      // --- EYELING RUNNER SETUP ---
-      let runnerPromise = null;
+        function autoResizeCodeMirror(cm, minHeightPx, maxHeightPx) {
+          // Ensure CodeMirror fits its *rendered* content (no internal scrollbars unless capped).
+          // IMPORTANT: don't use the scroller's scrollHeight here — with overflow hidden
+          // it can create a feedback loop where the editor grows a bit on every keystroke.
+          cm.refresh();
 
-      // --- EYELING WORKER SETUP (keeps UI responsive) ---
-      let workerRunnerPromise = null;
+          const wrapper = cm.getWrapperElement();
 
-      async function getEyelingWorkerRunner() {
-        // Returns an object: { run(n3Text, {proof,enforceHttps}): Promise<{result,durationMs}> }
-        // Falls back to null if Workers are unavailable.
-        if (typeof Worker === "undefined") return null;
-        if (workerRunnerPromise) return workerRunnerPromise;
+          // Desktop cap for the Playground Output pane: ~50 lines max (scroll inside).
+          if (wrapper && wrapper.classList && wrapper.classList.contains('cm-output')) {
+            const lineCapPx = Math.round(cm.defaultTextHeight() * 50 + cm.defaultTextHeight());
+            if (Number.isFinite(lineCapPx) && lineCapPx > 0) {
+              maxHeightPx = typeof maxHeightPx === 'number' ? Math.min(maxHeightPx, lineCapPx) : lineCapPx;
+            }
+          }
+          const code = wrapper && wrapper.querySelector('.CodeMirror-code');
+          const sizer = wrapper && wrapper.querySelector('.CodeMirror-sizer');
+          const measureEl = code || sizer;
 
-        workerRunnerPromise = (async () => {
-          // Ensure we have a version for the worker's ./package.json shim.
-          await ensureEyelingVersion();
+          const contentHeight = measureEl ? measureEl.getBoundingClientRect().height : cm.getScrollInfo().height;
 
-          const workerSource = `
+          // Add a bit of breathing room so the last line isn't flush with the bottom.
+          const padding = cm.defaultTextHeight();
+
+          let target = Math.max(Math.ceil(contentHeight + padding), minHeightPx);
+          if (typeof maxHeightPx === 'number') target = Math.min(target, maxHeightPx);
+
+          cm.setSize(null, target + 'px');
+        }
+
+        function resizeAll() {
+          const mh = currentMaxHeights();
+          autoResizeCodeMirror(editor, 220, mh.editor);
+          autoResizeCodeMirror(outputEl, 80, mh.output);
+        }
+
+        // --- INITIAL CONTENT FROM HASH OR DEFAULT ---
+        function getProgramFromHash() {
+          const hash = window.location.hash || '';
+          if (!hash) return null;
+          const raw = hash.startsWith('#') ? hash.slice(1) : hash;
+          if (!raw) return null;
+          try {
+            return decodeURIComponent(raw);
+          } catch (e) {
+            return raw;
+          }
+        }
+
+        // --- Prefill + auto-load "Load N3 from URL" via query string ---
+        // Usage:
+        //   demo?url=https://example.com/file.n3
+        // Notes:
+        //   - If a #fragment is present, it takes precedence (existing behavior).
+        //   - When loading from ?url=..., we avoid rewriting the hash until the user edits,
+        //     so you can keep sharing a clean ?url=... link.
+        function getN3UriFromQuery() {
+          try {
+            const url = new URL(window.location.href);
+            // support a few aliases, but "url" is the main one
+            return (
+              url.searchParams.get('url') ||
+              url.searchParams.get('n3url') ||
+              url.searchParams.get('n3') ||
+              url.searchParams.get('load') ||
+              null
+            );
+          } catch (e) {
+            return null;
+          }
+        }
+
+        const paramProgram = getProgramFromHash();
+        const paramN3Uri = getN3UriFromQuery();
+
+        if (paramN3Uri) {
+          uriInput.value = paramN3Uri;
+        }
+
+        // In "URL-load mode" (no fragment, but ?url=...), don't start syncing to #hash
+        // until the user actually edits the editor.
+        let hashSyncEnabled = paramProgram !== null || !paramN3Uri;
+
+        const initialN3 = paramProgram !== null ? paramProgram : defaultN3;
+
+        // CodeMirror editors (syntax-highlighted)
+        const editor = CodeMirror.fromTextArea(inputTextArea, {
+          mode: { name: 'sparql' },
+          lineNumbers: true,
+          lineWrapping: true,
+          viewportMargin: Infinity,
+        });
+
+        const outputEl = CodeMirror.fromTextArea(outputTextArea, {
+          mode: { name: 'sparql' },
+          lineNumbers: true,
+          lineWrapping: true,
+          readOnly: true,
+          viewportMargin: Infinity,
+        });
+
+        // Slightly smaller font for output
+        outputEl.getWrapperElement().classList.add('cm-output');
+
+        // --- N3 SYNTAX ERROR HIGHLIGHTING ---
+        let errorLineHandle = null;
+
+        function clearErrorHighlight() {
+          if (!errorLineHandle) return;
+          editor.removeLineClass(errorLineHandle, 'background', 'cm-error-line');
+          errorLineHandle = null;
+        }
+
+        function highlightErrorFromOutput(outputText) {
+          if (!outputText) return;
+
+          // Eyeling error messages vary a bit. We try to find the first occurrence of
+          // something like:  Syntax error ...:<line>:<col>:
+          const text = String(outputText);
+          const lines = text.split(/\r?\n/);
+
+          let m = null;
+
+          function tryMatchLine(ln) {
+            if (!ln) return null;
+
+            // Common formats:
+            //   Syntax error in <file>:<line>:<col>: ...
+            //   Reasoning error: Syntax error ...:<line>:<col>: ...
+            let x =
+              ln.match(/(?:Syntax|Parse) error.*?:(\d+):(\d+)(?::|\b)/i) ||
+              ln.match(/\bline\s+(\d+)\b[^\d]{0,40}\bcol(?:umn)?\s+(\d+)\b/i);
+
+            // If the line mentions "Syntax error", accept a bare :line:col: too.
+            if (!x && /(?:syntax|parse) error/i.test(ln)) {
+              x = ln.match(/:(\d+):(\d+)(?::|\b)/);
+            }
+
+            return x;
+          }
+
+          const scanLimit = Math.min(lines.length, 80);
+
+          // Prefer scanning lines that mention "Syntax error"
+          for (let i = 0; i < scanLimit; i++) {
+            const ln = lines[i];
+            if (!/(?:syntax|parse) error/i.test(ln)) continue;
+            m = tryMatchLine(ln);
+            if (m) break;
+          }
+
+          // Fallback: scan a little more loosely
+          if (!m) {
+            for (let i = 0; i < scanLimit; i++) {
+              m = tryMatchLine(lines[i]);
+              if (m) break;
+            }
+          }
+
+          if (!m) return;
+
+          // Clear any previous highlight now that we found a concrete line/col.
+          clearErrorHighlight();
+
+          const line1 = parseInt(m[1], 10);
+          const col1 = parseInt(m[2], 10);
+          if (!Number.isFinite(line1) || line1 < 0) return;
+
+          // Eyeling reports line/col as 1-based in most cases, but some builds report 0-based.
+          const line = line1 > 0 ? line1 - 1 : 0;
+          const ch = Number.isFinite(col1) ? (col1 > 0 ? col1 - 1 : 0) : 0;
+          if (line < 0 || line >= editor.lineCount()) return;
+
+          errorLineHandle = editor.getLineHandle(line);
+          editor.addLineClass(errorLineHandle, 'background', 'cm-error-line');
+
+          // Nudge the editor to the error location.
+          editor.scrollIntoView({ line, ch }, 80);
+          editor.setCursor({ line, ch });
+        }
+
+        editor.setValue(initialN3);
+        resizeAll();
+
+        // Recompute caps on orientation/resize
+        window.addEventListener(
+          'resize',
+          () => {
+            resizeAll();
+          },
+          { passive: true },
+        );
+
+        // --- URL SHARING SUPPORT ---
+        let shareUrlUpdateTimeout = null;
+
+        function updateShareUrl() {
+          try {
+            const encoded = encodeURIComponent(editor.getValue());
+            const url = new URL(window.location.href);
+            url.hash = encoded;
+            window.history.replaceState(null, '', url.toString());
+          } catch (e) {
+            console && console.warn && console.warn('Failed to update URL hash:', e);
+          }
+        }
+
+        function scheduleUpdateShareUrl() {
+          clearTimeout(shareUrlUpdateTimeout);
+          shareUrlUpdateTimeout = setTimeout(updateShareUrl, 300);
+        }
+
+        editor.on('change', function (_cm, changeObj) {
+          clearErrorHighlight();
+
+          const mh = currentMaxHeights();
+          autoResizeCodeMirror(editor, 220, mh.editor);
+
+          if (!hashSyncEnabled) {
+            // Only start syncing once the user actually edits (not programmatic setValue).
+            if (changeObj && changeObj.origin && changeObj.origin !== 'setValue') {
+              hashSyncEnabled = true;
+            } else {
+              return;
+            }
+          }
+
+          scheduleUpdateShareUrl();
+        });
+
+        // --- EYELING VERSION (UI + runner) ---
+        function ensureEyelingVersion() {
+          if (versionPromise) return versionPromise;
+
+          versionPromise = (async () => {
+            try {
+              const resp = await fetch(EYELING_PKG_URL, { cache: 'no-store' });
+              if (!resp.ok) throw new Error('HTTP ' + resp.status);
+              const pkg = await resp.json();
+              if (pkg && pkg.version) {
+                eyelingVersion = String(pkg.version);
+                versionEl.textContent = eyelingVersion;
+              } else {
+                eyelingVersion = 'unknown';
+                versionEl.textContent = 'unknown';
+              }
+            } catch (e) {
+              eyelingVersion = 'unknown';
+              versionEl.textContent = 'unknown';
+            }
+          })();
+
+          return versionPromise;
+        }
+
+        // start loading version ASAP
+        ensureEyelingVersion();
+
+        // --- EYELING RUNNER SETUP ---
+        let runnerPromise = null;
+
+        // --- EYELING WORKER SETUP (keeps UI responsive) ---
+        let workerRunnerPromise = null;
+
+        async function getEyelingWorkerRunner() {
+          // Returns an object: { run(n3Text, {proof,enforceHttps}): Promise<{result,durationMs}> }
+          // Falls back to null if Workers are unavailable.
+          if (typeof Worker === 'undefined') return null;
+          if (workerRunnerPromise) return workerRunnerPromise;
+
+          workerRunnerPromise = (async () => {
+            // Ensure we have a version for the worker's ./package.json shim.
+            await ensureEyelingVersion();
+
+            const workerSource = `
             let cleanedSource = null;
             let baseVersion = "unknown";
             let initPromise = null;
@@ -1504,514 +1751,511 @@ try {
             };
           `;
 
-          const blob = new Blob([workerSource], { type: "text/javascript" });
-          const url = URL.createObjectURL(blob);
-          const worker = new Worker(url);
+            const blob = new Blob([workerSource], { type: 'text/javascript' });
+            const url = URL.createObjectURL(blob);
+            const worker = new Worker(url);
 
-          let nextId = 1;
-          const pending = new Map();
+            let nextId = 1;
+            const pending = new Map();
 
-          function failAll(err) {
-            for (const [id, p] of pending.entries()) {
-              pending.delete(id);
-              p.reject(err);
-            }
-          }
-
-          worker.addEventListener("message", (ev) => {
-            const msg = ev && ev.data ? ev.data : {};
-            if (msg.type === "inited") {
-              return;
-            }
-            if (msg.type === "initError") {
-              failAll(new Error(msg.error || "Worker init failed"));
-              return;
-            }
-            if (msg.type === "result") {
-              const p = pending.get(msg.id);
-              if (!p) return;
-              pending.delete(msg.id);
-
-              if (msg.error) {
-                p.reject(new Error(msg.error));
-              } else {
-                p.resolve({
-                  result: msg.result || "",
-                  durationMs: typeof msg.durationMs === "number" ? msg.durationMs : 0,
-                });
+            function failAll(err) {
+              for (const [id, p] of pending.entries()) {
+                pending.delete(id);
+                p.reject(err);
               }
             }
-          });
 
-          worker.addEventListener("error", (ev) => {
-            const err = new Error(
-              "Worker error: " + (ev && ev.message ? ev.message : "unknown")
-            );
-            failAll(err);
-          });
-
-          // Wait for init confirmation.
-          const initAck = new Promise((resolve, reject) => {
-            function onMessage(ev) {
+            worker.addEventListener('message', (ev) => {
               const msg = ev && ev.data ? ev.data : {};
-              if (msg.type === "inited") {
-                worker.removeEventListener("message", onMessage);
-                worker.removeEventListener("message", onInitError);
-                resolve();
+              if (msg.type === 'inited') {
+                return;
               }
-            }
-            function onInitError(ev) {
-              const msg = ev && ev.data ? ev.data : {};
-              if (msg.type === "initError") {
-                worker.removeEventListener("message", onMessage);
-                worker.removeEventListener("message", onInitError);
-                reject(new Error(msg.error || "Worker init failed"));
+              if (msg.type === 'initError') {
+                failAll(new Error(msg.error || 'Worker init failed'));
+                return;
               }
-            }
-            worker.addEventListener("message", onMessage);
-            worker.addEventListener("message", onInitError);
-          });
+              if (msg.type === 'result') {
+                const p = pending.get(msg.id);
+                if (!p) return;
+                pending.delete(msg.id);
 
-          worker.postMessage({
-            type: "init",
-            eyelingJsUrl: EYELING_JS_URL,
-            version: eyelingVersion || "unknown",
-          });
+                if (msg.error) {
+                  p.reject(new Error(msg.error));
+                } else {
+                  p.resolve({
+                    result: msg.result || '',
+                    durationMs: typeof msg.durationMs === 'number' ? msg.durationMs : 0,
+                  });
+                }
+              }
+            });
 
-          await initAck;
+            worker.addEventListener('error', (ev) => {
+              const err = new Error('Worker error: ' + (ev && ev.message ? ev.message : 'unknown'));
+              failAll(err);
+            });
 
-          // Now that the worker has loaded the Blob source, we can revoke the URL.
-          URL.revokeObjectURL(url);
+            // Wait for init confirmation.
+            const initAck = new Promise((resolve, reject) => {
+              function onMessage(ev) {
+                const msg = ev && ev.data ? ev.data : {};
+                if (msg.type === 'inited') {
+                  worker.removeEventListener('message', onMessage);
+                  worker.removeEventListener('message', onInitError);
+                  resolve();
+                }
+              }
+              function onInitError(ev) {
+                const msg = ev && ev.data ? ev.data : {};
+                if (msg.type === 'initError') {
+                  worker.removeEventListener('message', onMessage);
+                  worker.removeEventListener('message', onInitError);
+                  reject(new Error(msg.error || 'Worker init failed'));
+                }
+              }
+              worker.addEventListener('message', onMessage);
+              worker.addEventListener('message', onInitError);
+            });
 
-          return {
-            run: (n3Input, opts) => {
-              const id = nextId++;
-              const proof = !!(opts && opts.proof);
-              const enforceHttps = !!(opts && opts.enforceHttps);
+            worker.postMessage({
+              type: 'init',
+              eyelingJsUrl: EYELING_JS_URL,
+              version: eyelingVersion || 'unknown',
+            });
 
-              return new Promise((resolve, reject) => {
-                pending.set(id, { resolve, reject });
-                worker.postMessage({
-                  type: "run",
-                  id,
-                  n3Input: String(n3Input || ""),
-                  proof,
-                  enforceHttps,
-                  version: eyelingVersion || "unknown",
+            await initAck;
+
+            // Now that the worker has loaded the Blob source, we can revoke the URL.
+            URL.revokeObjectURL(url);
+
+            return {
+              run: (n3Input, opts) => {
+                const id = nextId++;
+                const proof = !!(opts && opts.proof);
+                const enforceHttps = !!(opts && opts.enforceHttps);
+
+                return new Promise((resolve, reject) => {
+                  pending.set(id, { resolve, reject });
+                  worker.postMessage({
+                    type: 'run',
+                    id,
+                    n3Input: String(n3Input || ''),
+                    proof,
+                    enforceHttps,
+                    version: eyelingVersion || 'unknown',
+                  });
                 });
-              });
-            },
-          };
-        })();
-
-        return workerRunnerPromise;
-      }
-
-      async function getEyelingRunner() {
-        if (runnerPromise) return runnerPromise;
-
-        runnerPromise = (async () => {
-          // Make sure version is known (so require("./package.json") can match UI)
-          await ensureEyelingVersion();
-
-          const resp = await fetch(EYELING_JS_URL);
-          if (!resp.ok) {
-            throw new Error("Failed to load eyeling.js (" + resp.status + ")");
-          }
-
-          const rawSource = await resp.text();
-          const cleanedSource = rawSource.replace(/^#![^\n]*\n/, "");
-
-          // Build a function that runs eyeling as a CLI once, given N3 text.
-          function runOnce(n3Input) {
-            const lines = [];
-
-            const consoleShim = {
-              log: (...args) => lines.push(args.join(" ")),
-              error: (...args) => lines.push(args.join(" ")),
-            };
-
-            const fsShim = {
-              readFileSync: () => n3Input,
-            };
-
-            const processShim = {
-              // Simulate: node eyeling.js [-n] input.n3
-              argv: [
-                "node",
-                "eyeling.js",
-                ...(proofCheckbox.checked ? ["-p"] : []),
-                ...(enforceHttpsCheckbox.checked ? ["--enforce-https"] : []),
-                "input.n3",
-              ],
-              exit: (code) => {
-                throw { __eyelingExit: true, code };
               },
             };
+          })();
 
-            const moduleShim = { exports: {} };
+          return workerRunnerPromise;
+        }
 
-            function requireShim(id) {
-              if (id === "./package.json") {
-                return { version: eyelingVersion || "unknown" };
-              }
-              if (id === "fs") return fsShim;
-              if (id === "crypto") {
-                // Minimal stub – enough for examples that don't depend on crypto.
-                return {
-                  createHash: () => ({
-                    update: () => {},
-                    digest: () => "",
-                  }),
-                };
-              }
-              return {};
+        async function getEyelingRunner() {
+          if (runnerPromise) return runnerPromise;
+
+          runnerPromise = (async () => {
+            // Make sure version is known (so require("./package.json") can match UI)
+            await ensureEyelingVersion();
+
+            const resp = await fetch(EYELING_JS_URL);
+            if (!resp.ok) {
+              throw new Error('Failed to load eyeling.js (' + resp.status + ')');
             }
 
-            // Make eyeling think this is the main module so main() runs.
-            requireShim.main = moduleShim;
+            const rawSource = await resp.text();
+            const cleanedSource = rawSource.replace(/^#![^\n]*\n/, '');
 
-            try {
-              const fn = new Function(
-                "require",
-                "module",
-                "exports",
-                "process",
-                "console",
-                cleanedSource
-              );
-              fn(requireShim, moduleShim, moduleShim.exports, processShim, consoleShim);
-            } catch (e) {
-              if (!e || !e.__eyelingExit) {
-                lines.push(
-                  "JavaScript error: " + (e && e.message ? e.message : String(e))
-                );
+            // Build a function that runs eyeling as a CLI once, given N3 text.
+            function runOnce(n3Input) {
+              const lines = [];
+
+              const consoleShim = {
+                log: (...args) => lines.push(args.join(' ')),
+                error: (...args) => lines.push(args.join(' ')),
+              };
+
+              const fsShim = {
+                readFileSync: () => n3Input,
+              };
+
+              const processShim = {
+                // Simulate: node eyeling.js [-n] input.n3
+                argv: [
+                  'node',
+                  'eyeling.js',
+                  ...(proofCheckbox.checked ? ['-p'] : []),
+                  ...(enforceHttpsCheckbox.checked ? ['--enforce-https'] : []),
+                  'input.n3',
+                ],
+                exit: (code) => {
+                  throw { __eyelingExit: true, code };
+                },
+              };
+
+              const moduleShim = { exports: {} };
+
+              function requireShim(id) {
+                if (id === './package.json') {
+                  return { version: eyelingVersion || 'unknown' };
+                }
+                if (id === 'fs') return fsShim;
+                if (id === 'crypto') {
+                  // Minimal stub – enough for examples that don't depend on crypto.
+                  return {
+                    createHash: () => ({
+                      update: () => {},
+                      digest: () => '',
+                    }),
+                  };
+                }
+                return {};
               }
+
+              // Make eyeling think this is the main module so main() runs.
+              requireShim.main = moduleShim;
+
+              try {
+                const fn = new Function('require', 'module', 'exports', 'process', 'console', cleanedSource);
+                fn(requireShim, moduleShim, moduleShim.exports, processShim, consoleShim);
+              } catch (e) {
+                if (!e || !e.__eyelingExit) {
+                  lines.push('JavaScript error: ' + (e && e.message ? e.message : String(e)));
+                }
+              }
+
+              return lines.join('\n');
             }
 
-            return lines.join("\n");
+            return runOnce;
+          })();
+
+          return runnerPromise;
+        }
+
+        // --- Streaming output for the Playground tab (keeps UI responsive) ---
+        let activePlayCancel = null;
+        let activePlayAppender = null;
+        let playPaused = false;
+        let playPausedBuffer = [];
+
+        function setPlayPaused(next) {
+          playPaused = !!next;
+          if (pauseBtn) pauseBtn.textContent = playPaused ? 'Resume' : 'Pause';
+        }
+
+        function enablePlayControls(running) {
+          if (stopBtn) stopBtn.disabled = !running;
+          const canResume = playPaused && playPausedBuffer.length > 0;
+          if (pauseBtn) pauseBtn.disabled = !(running || canResume);
+          if (pauseBtn) pauseBtn.textContent = playPaused ? 'Resume' : 'Pause';
+        }
+
+        function flushPlayBuffer() {
+          if (!playPausedBuffer.length) return;
+          const text = playPausedBuffer.join('');
+          playPausedBuffer = [];
+          try {
+            const appender =
+              activePlayAppender ||
+              makeCMAppender(outputEl, () => {
+                const mh = currentMaxHeights();
+                autoResizeCodeMirror(outputEl, 80, mh.output);
+              });
+            activePlayAppender = appender;
+            appender.append(text);
+            appender.flushNow();
+          } catch (_) {}
+        }
+
+        function stopPlayReasoning() {
+          try {
+            if (activePlayCancel) activePlayCancel();
+          } catch (_) {}
+          activePlayCancel = null;
+          setPlayPaused(false);
+          playPausedBuffer = [];
+          enablePlayControls(false);
+          runBtn.disabled = false;
+          statusEl.textContent = 'Stopped.';
+        }
+
+        if (pauseBtn) {
+          pauseBtn.addEventListener('click', () => {
+            // Toggle pause/resume. While paused, we buffer incoming batches.
+            if (!activePlayCancel && !(playPaused && playPausedBuffer.length)) return;
+
+            if (!playPaused) {
+              setPlayPaused(true);
+              statusEl.textContent = 'Paused. Output frozen; buffering new triples…';
+              enablePlayControls(true);
+            } else {
+              setPlayPaused(false);
+              flushPlayBuffer();
+              statusEl.textContent = activePlayCancel ? 'Reasoning (streaming)…' : 'Idle.';
+              enablePlayControls(!!activePlayCancel);
+            }
+          });
+        }
+
+        if (stopBtn) {
+          stopBtn.addEventListener('click', stopPlayReasoning);
+        }
+
+        function makeCMAppender(cm, afterFlush) {
+          let pending = '';
+          let scheduled = false;
+
+          function flush() {
+            scheduled = false;
+            if (!pending) return;
+
+            const scroller = cm.getScrollerElement();
+            const nearBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 20;
+
+            const lastLine = cm.lastLine();
+            const lastCh = cm.getLine(lastLine).length;
+            cm.replaceRange(pending, { line: lastLine, ch: lastCh });
+            pending = '';
+
+            if (nearBottom) scroller.scrollTop = scroller.scrollHeight;
+            afterFlush && afterFlush();
           }
 
-          return runOnce;
-        })();
+          return {
+            append(text) {
+              pending += text;
+              if (scheduled) return;
+              scheduled = true;
+              requestAnimationFrame(flush);
+            },
+            flushNow() {
+              flush();
+            },
+          };
+        }
 
-        return runnerPromise;
-      }
+        async function runReasoner() {
+          runBtn.disabled = true;
+          setPlayPaused(false);
+          playPausedBuffer = [];
+          enablePlayControls(true);
 
-      // --- Streaming output for the Playground tab (keeps UI responsive) ---
-      let activePlayCancel = null;
-      let activePlayAppender = null;
-      let playPaused = false;
-      let playPausedBuffer = [];
+          clearErrorHighlight();
 
-      function setPlayPaused(next) {
-        playPaused = !!next;
-        if (pauseBtn) pauseBtn.textContent = playPaused ? "Resume" : "Pause";
-      }
+          const startMs = performance.now();
+          let derivedCount = 0;
 
-      function enablePlayControls(running) {
-        if (stopBtn) stopBtn.disabled = !running;
-        const canResume = playPaused && playPausedBuffer.length > 0;
-        if (pauseBtn) pauseBtn.disabled = !(running || canResume);
-        if (pauseBtn) pauseBtn.textContent = playPaused ? "Resume" : "Pause";
-      }
+          statusEl.textContent = 'Reasoning (streaming)…';
 
-      function flushPlayBuffer() {
-        if (!playPausedBuffer.length) return;
-        const text = playPausedBuffer.join("");
-        playPausedBuffer = [];
-        try {
-          const appender = activePlayAppender || makeCMAppender(outputEl, () => {
+          // Clear output immediately.
+          {
+            const mh = currentMaxHeights();
+            outputEl.setValue('# Derived triples (streaming):\n');
+            autoResizeCodeMirror(outputEl, 80, mh.output);
+          }
+
+          if (hashSyncEnabled) updateShareUrl();
+
+          // Let the browser paint before we start.
+          await new Promise(requestAnimationFrame);
+
+          const appender = makeCMAppender(outputEl, () => {
             const mh = currentMaxHeights();
             autoResizeCodeMirror(outputEl, 80, mh.output);
           });
           activePlayAppender = appender;
-          appender.append(text);
-          appender.flushNow();
-        } catch (_) {}
-      }
 
-      function stopPlayReasoning() {
-        try { if (activePlayCancel) activePlayCancel(); } catch (_) {}
-        activePlayCancel = null;
-        setPlayPaused(false);
-        playPausedBuffer = [];
-        enablePlayControls(false);
-        runBtn.disabled = false;
-        statusEl.textContent = "Stopped.";
-      }
+          // Cancel any prior run
+          try {
+            if (activePlayCancel) activePlayCancel();
+          } catch (_) {}
+          activePlayCancel = null;
 
-      if (pauseBtn) {
-        pauseBtn.addEventListener("click", () => {
-          // Toggle pause/resume. While paused, we buffer incoming batches.
-          if (!activePlayCancel && !(playPaused && playPausedBuffer.length)) return;
-
-          if (!playPaused) {
-            setPlayPaused(true);
-            statusEl.textContent = "Paused. Output frozen; buffering new triples…";
-            enablePlayControls(true);
-          } else {
-            setPlayPaused(false);
-            flushPlayBuffer();
-            statusEl.textContent = activePlayCancel
-              ? "Reasoning (streaming)…"
-              : "Idle.";
-            enablePlayControls(!!activePlayCancel);
+          const U = window.__eyelingUnified;
+          if (!U || typeof U.startStreamRun !== 'function') {
+            statusEl.textContent = 'Error: unified worker not available.';
+            runBtn.disabled = false;
+            return;
           }
-        });
-      }
 
-      if (stopBtn) {
-        stopBtn.addEventListener("click", stopPlayReasoning);
-      }
+          const { cancel } = U.startStreamRun({
+            program: editor.getValue(),
+            enforceHttps: enforceHttpsCheckbox.checked,
+            proof: proofCheckbox.checked,
+            onBatch: (triples) => {
+              if (!triples || !triples.length) return;
+              derivedCount += triples.length;
+              if (playPaused) {
+                playPausedBuffer.push(triples.join('\n') + '\n');
+              } else {
+                appender.append(triples.join('\n') + '\n');
+              }
+              statusEl.textContent =
+                (playPaused ? 'Paused… Derived: ' : 'Reasoning (streaming)… Derived: ') + derivedCount.toLocaleString();
+            },
+            onDone: () => {
+              appender.flushNow();
+              activePlayCancel = null;
+              // If paused, keep the pause button enabled so user can "Resume" and reveal buffered output.
+              enablePlayControls(false);
 
-      function makeCMAppender(cm, afterFlush) {
-        let pending = "";
-        let scheduled = false;
+              const totalSeconds = (performance.now() - startMs) / 1000;
+              statusEl.textContent = playPaused
+                ? 'Done (paused). Derived: ' +
+                  derivedCount.toLocaleString() +
+                  ' — click Resume to display buffered output (' +
+                  totalSeconds.toFixed(2) +
+                  's)'
+                : 'Done. Derived: ' + derivedCount.toLocaleString() + ' (' + totalSeconds.toFixed(2) + 's)';
+              runBtn.disabled = false;
+            },
+            onError: (msg) => {
+              appender.flushNow();
+              activePlayCancel = null;
+              enablePlayControls(false);
+              setPlayPaused(false);
+              playPausedBuffer = [];
 
-        function flush() {
-          scheduled = false;
-          if (!pending) return;
+              const mh = currentMaxHeights();
+              outputEl.setValue('Reasoning error: ' + msg);
+              autoResizeCodeMirror(outputEl, 80, mh.output);
 
-          const scroller = cm.getScrollerElement();
-          const nearBottom =
-            scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 20;
+              // Highlight syntax errors back in the program editor (red line background)
+              try {
+                highlightErrorFromOutput('Reasoning error: ' + msg);
+              } catch (_) {}
 
-          const lastLine = cm.lastLine();
-          const lastCh = cm.getLine(lastLine).length;
-          cm.replaceRange(pending, { line: lastLine, ch: lastCh });
-          pending = "";
+              statusEl.textContent = 'Error.';
+              runBtn.disabled = false;
+            },
+          });
 
-          if (nearBottom) scroller.scrollTop = scroller.scrollHeight;
-          afterFlush && afterFlush();
+          activePlayCancel = cancel;
         }
 
-        return {
-          append(text) {
-            pending += text;
-            if (scheduled) return;
-            scheduled = true;
-            requestAnimationFrame(flush);
-          },
-          flushNow() { flush(); },
-        };
-      }
+        async function loadFromUri() {
+          const uri = uriInput.value.trim();
+          if (!uri) return;
 
-      async function runReasoner() {
-        runBtn.disabled = true;
-        setPlayPaused(false);
-        playPausedBuffer = [];
-        enablePlayControls(true);
+          loadUriBtn.disabled = true;
+          statusEl.textContent = 'Loading N3 from URL...';
+          try {
+            const resp = await fetch(uri);
+            if (!resp.ok) {
+              throw new Error('HTTP ' + resp.status + ' when fetching ' + uri);
+            }
+            const text = await resp.text();
+            editor.setValue(text);
+            clearErrorHighlight();
 
-        clearErrorHighlight();
+            {
+              const mh = currentMaxHeights();
+              autoResizeCodeMirror(editor, 220, mh.editor);
+            }
 
-        const startMs = performance.now();
-        let derivedCount = 0;
+            statusEl.textContent = 'Loaded N3 from URL.';
+            if (hashSyncEnabled) updateShareUrl();
+          } catch (e) {
+            statusEl.textContent = 'Failed to load URL.';
 
-        statusEl.textContent = "Reasoning (streaming)…";
-
-        // Clear output immediately.
-        {
-          const mh = currentMaxHeights();
-          outputEl.setValue("# Derived triples (streaming):\n");
-          autoResizeCodeMirror(outputEl, 80, mh.output);
+            {
+              const mh = currentMaxHeights();
+              outputEl.setValue('Error while loading N3 from URL:\n' + (e && e.message ? e.message : String(e)));
+              autoResizeCodeMirror(outputEl, 80, mh.output);
+            }
+          } finally {
+            loadUriBtn.disabled = false;
+          }
         }
 
+        runBtn.addEventListener('click', runReasoner);
+        loadUriBtn.addEventListener('click', loadFromUri);
+
+        // Initialize URL hash with whatever we started with (unless we're in URL-load mode)
         if (hashSyncEnabled) updateShareUrl();
 
-        // Let the browser paint before we start.
-        await new Promise(requestAnimationFrame);
+        // If ?url=... is present (and there's no #fragment), auto-load it.
+        if (paramN3Uri && paramProgram === null) {
+          loadFromUri();
+        }
+      })();
+    </script>
 
-        const appender = makeCMAppender(outputEl, () => {
-          const mh = currentMaxHeights();
-          autoResizeCodeMirror(outputEl, 80, mh.output);
-        });
-        activePlayAppender = appender;
+    <script>
+      (function () {
+        const TAB_KEY = 'eyeling.demo.activeTab';
+        const tabButtons = Array.from(document.querySelectorAll('.tab-btn'));
+        const radioPlay = document.getElementById('tab-radio-playground');
+        const radioStream = document.getElementById('tab-radio-stream');
 
-        // Cancel any prior run
-        try { if (activePlayCancel) activePlayCancel(); } catch (_) {}
-        activePlayCancel = null;
+        function applyFromRadios() {
+          const tabName = radioStream && radioStream.checked ? 'stream' : 'playground';
 
-        const U = window.__eyelingUnified;
-        if (!U || typeof U.startStreamRun !== "function") {
-          statusEl.textContent = "Error: unified worker not available.";
-          runBtn.disabled = false;
-          return;
+          // Keep aria-selected in sync (nice for a11y; also keeps old CSS working)
+          for (const btn of tabButtons) {
+            const selected = btn.getAttribute('data-tab') === tabName;
+            btn.setAttribute('aria-selected', selected ? 'true' : 'false');
+          }
+
+          try {
+            localStorage.setItem(TAB_KEY, tabName);
+          } catch (_) {}
+
+          if (tabName === 'stream' && !window.__eyelingStreamInited) {
+            window.__eyelingStreamInited = true;
+            initStreamApp();
+          }
         }
 
-        const { cancel } = U.startStreamRun({
-          program: editor.getValue(),
-          enforceHttps: enforceHttpsCheckbox.checked,
-          proof: proofCheckbox.checked,
-          onBatch: (triples) => {
-            if (!triples || !triples.length) return;
-            derivedCount += triples.length;
-            if (playPaused) {
-              playPausedBuffer.push(triples.join("\n") + "\n");
-            } else {
-              appender.append(triples.join("\n") + "\n");
-            }
-            statusEl.textContent =
-              (playPaused ? "Paused… Derived: " : "Reasoning (streaming)… Derived: ") + derivedCount.toLocaleString();
-          },
-          onDone: () => {
-            appender.flushNow();
-            activePlayCancel = null;
-            // If paused, keep the pause button enabled so user can "Resume" and reveal buffered output.
-            enablePlayControls(false);
-
-            const totalSeconds = (performance.now() - startMs) / 1000;
-            statusEl.textContent =
-              (playPaused
-                ? "Done (paused). Derived: " + derivedCount.toLocaleString() + " — click Resume to display buffered output (" + totalSeconds.toFixed(2) + "s)"
-                : "Done. Derived: " + derivedCount.toLocaleString() + " (" + totalSeconds.toFixed(2) + "s)");
-            runBtn.disabled = false;
-          },
-          onError: (msg) => {
-            appender.flushNow();
-            activePlayCancel = null;
-            enablePlayControls(false);
-            setPlayPaused(false);
-            playPausedBuffer = [];
-
-
-            const mh = currentMaxHeights();
-            outputEl.setValue("Reasoning error: " + msg);
-            autoResizeCodeMirror(outputEl, 80, mh.output);
-
-            // Highlight syntax errors back in the program editor (red line background)
-            try { highlightErrorFromOutput("Reasoning error: " + msg); } catch (_) {}
-
-            statusEl.textContent = "Error.";
-            runBtn.disabled = false;
-          },
-        });
-
-        activePlayCancel = cancel;
-      }
-
-      async function loadFromUri() {
-        const uri = uriInput.value.trim();
-        if (!uri) return;
-
-        loadUriBtn.disabled = true;
-        statusEl.textContent = "Loading N3 from URL...";
-        try {
-          const resp = await fetch(uri);
-          if (!resp.ok) {
-            throw new Error("HTTP " + resp.status + " when fetching " + uri);
+        function setSelected(tabName) {
+          if (tabName === 'stream') {
+            if (radioStream) radioStream.checked = true;
+          } else {
+            if (radioPlay) radioPlay.checked = true;
           }
-          const text = await resp.text();
-          editor.setValue(text);
-          clearErrorHighlight();
-
-          {
-            const mh = currentMaxHeights();
-            autoResizeCodeMirror(editor, 220, mh.editor);
-          }
-
-          statusEl.textContent = "Loaded N3 from URL.";
-          if (hashSyncEnabled) updateShareUrl();
-        } catch (e) {
-          statusEl.textContent = "Failed to load URL.";
-
-          {
-            const mh = currentMaxHeights();
-            outputEl.setValue(
-              "Error while loading N3 from URL:\n" +
-              (e && e.message ? e.message : String(e))
-            );
-            autoResizeCodeMirror(outputEl, 80, mh.output);
-          }
-        } finally {
-          loadUriBtn.disabled = false;
+          applyFromRadios();
         }
-      }
 
-      runBtn.addEventListener("click", runReasoner);
-      loadUriBtn.addEventListener("click", loadFromUri);
+        function initialTab() {
+          try {
+            const u = new URL(window.location.href);
+            const q = (u.searchParams.get('tab') || '').toLowerCase();
+            if (q === 'stream') return 'stream';
+            if (q === 'playground') return 'playground';
+          } catch (_) {}
+          try {
+            const saved = localStorage.getItem(TAB_KEY);
+            if (saved === 'stream' || saved === 'playground') return saved;
+          } catch (_) {}
+          return 'playground';
+        }
 
-      // Initialize URL hash with whatever we started with (unless we're in URL-load mode)
-      if (hashSyncEnabled) updateShareUrl();
+        // Labels toggle radios by themselves; we just update aria/localStorage + lazy init.
+        if (radioPlay) radioPlay.addEventListener('change', applyFromRadios);
+        if (radioStream) radioStream.addEventListener('change', applyFromRadios);
 
-      // If ?url=... is present (and there's no #fragment), auto-load it.
-      if (paramN3Uri && paramProgram === null) {
-        loadFromUri();
-      }
-    })();
-  </script>
-
-  <script>
-    (function () {
-      const TAB_KEY = "eyeling.demo.activeTab";
-      const tabButtons = Array.from(document.querySelectorAll(".tab-btn"));
-      const radioPlay = document.getElementById("tab-radio-playground");
-      const radioStream = document.getElementById("tab-radio-stream");
-
-      function applyFromRadios() {
-        const tabName = (radioStream && radioStream.checked) ? "stream" : "playground";
-
-        // Keep aria-selected in sync (nice for a11y; also keeps old CSS working)
+        // Keyboard support for labels (Space / Enter)
         for (const btn of tabButtons) {
-          const selected = (btn.getAttribute("data-tab") === tabName);
-          btn.setAttribute("aria-selected", selected ? "true" : "false");
+          btn.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              btn.click();
+            }
+          });
         }
 
-        try { localStorage.setItem(TAB_KEY, tabName); } catch (_) {}
+        setSelected(initialTab());
 
-        if (tabName === "stream" && !window.__eyelingStreamInited) {
-          window.__eyelingStreamInited = true;
-          initStreamApp();
-        }
-      }
+        // ---------------------------
+        // STREAM APP (lazy-initialized)
+        // ---------------------------
+        function initStreamApp() {
+          const P = 'stream-';
+          const $ = (id) => document.getElementById(P + id);
 
-      function setSelected(tabName) {
-        if (tabName === "stream") {
-          if (radioStream) radioStream.checked = true;
-        } else {
-          if (radioPlay) radioPlay.checked = true;
-        }
-        applyFromRadios();
-      }
-
-      function initialTab() {
-        try {
-          const u = new URL(window.location.href);
-          const q = (u.searchParams.get("tab") || "").toLowerCase();
-          if (q === "stream") return "stream";
-          if (q === "playground") return "playground";
-        } catch (_) {}
-        try {
-          const saved = localStorage.getItem(TAB_KEY);
-          if (saved === "stream" || saved === "playground") return saved;
-        } catch (_) {}
-        return "playground";
-      }
-
-      // Labels toggle radios by themselves; we just update aria/localStorage + lazy init.
-      if (radioPlay) radioPlay.addEventListener("change", applyFromRadios);
-      if (radioStream) radioStream.addEventListener("change", applyFromRadios);
-
-      // Keyboard support for labels (Space / Enter)
-      for (const btn of tabButtons) {
-        btn.addEventListener("keydown", (e) => {
-          if (e.key === "Enter" || e.key === " " ) {
-            e.preventDefault();
-            btn.click();
-          }
-        });
-      }
-
-      setSelected(initialTab());
-
-      // ---------------------------
-      // STREAM APP (lazy-initialized)
-      // ---------------------------
-      function initStreamApp() {
-        const P = "stream-";
-        const $ = (id) => document.getElementById(P + id);
-
-        const DEFAULT_RULES = `# Eyeling rules (CORS-safe “dynamic fetch” demo)
+          const DEFAULT_RULES = `# Eyeling rules (CORS-safe “dynamic fetch” demo)
 @prefix wd: <http://www.wikidata.org/entity/> .
 @prefix wdt: <http://www.wikidata.org/prop/direct/> .
 @prefix wikibase: <http://wikiba.se/ontology#> .
@@ -2037,7 +2281,7 @@ try {
 { ?item :wikiquoteExtract ?txt } => { ?item :hasWikiquote true } .
 `;
 
-        const TOY_DATA = `@prefix wd: <http://www.wikidata.org/entity/> .
+          const TOY_DATA = `@prefix wd: <http://www.wikidata.org/entity/> .
 @prefix wdt: <http://www.wikidata.org/prop/direct/> .
 @prefix schema: <http://schema.org/> .
 @prefix : <http://example.org/> .
@@ -2049,593 +2293,655 @@ wd:Q7836 wdt:P31 wd:Q5 .
   schema:name "René Magritte" .
 `;
 
-        const MAGRITTE_LABEL = "René Magritte";
-        const MAGRITTE_QID = "Q7836";
-        const PREVIEW_LINES = 220;
+          const MAGRITTE_LABEL = 'René Magritte';
+          const MAGRITTE_QID = 'Q7836';
+          const PREVIEW_LINES = 220;
 
-        // CodeMirror (syntax highlighted) for the rules pane
-        const rulesCM = CodeMirror.fromTextArea($("rulesBox"), {
-          mode: { name: "sparql" },
-          lineNumbers: true,
-          lineWrapping: true,
-          viewportMargin: Infinity,
-        });
-        rulesCM.setValue(DEFAULT_RULES);
-
-        // --- N3 SYNTAX ERROR HIGHLIGHTING (rules pane; best-effort) ---
-        let rulesErrorLineHandle = null;
-
-        function clearRulesErrorHighlight() {
-          if (!rulesErrorLineHandle) return;
-          rulesCM.removeLineClass(rulesErrorLineHandle, "background", "cm-error-line");
-          rulesErrorLineHandle = null;
-        }
-
-        function parseSyntaxLineCol(message) {
-          if (!message) return null;
-          const text = String(message);
-          const lines = text.split(/\r?\n/);
-          const scanLimit = Math.min(lines.length, 80);
-
-          function tryMatchLine(ln) {
-            if (!ln) return null;
-            return (
-              ln.match(/(?:Syntax|Parse) error.*?:(\d+):(\d+)(?::|\b)/i) ||
-              ln.match(/\bline\s+(\d+)\b[^\d]{0,40}\bcol(?:umn)?\s+(\d+)\b/i) ||
-              (/(?:syntax|parse) error/i.test(ln) ? ln.match(/:(\d+):(\d+)(?::|\b)/) : null)
-            );
-          }
-
-          // Prefer "Syntax error" lines
-          for (let i = 0; i < scanLimit; i++) {
-            const ln = lines[i];
-            if (!/(?:syntax|parse) error/i.test(ln)) continue;
-            const m = tryMatchLine(ln);
-            if (m) return { line1: parseInt(m[1], 10), col1: parseInt(m[2], 10) };
-          }
-
-          // Fallback: scan loosely
-          for (let i = 0; i < scanLimit; i++) {
-            const m = tryMatchLine(lines[i]);
-            if (m) return { line1: parseInt(m[1], 10), col1: parseInt(m[2], 10) };
-          }
-
-          return null;
-        }
-
-        function highlightRulesErrorFromMessage(message, rulesText) {
-          const lc = parseSyntaxLineCol(message);
-          if (!lc) return;
-          clearRulesErrorHighlight();
-
-          const line1 = lc.line1;
-          const col1 = lc.col1;
-          if (!Number.isFinite(line1) || line1 < 0) return;
-
-          const ruleLines = String(rulesText || "").split(/\r?\n/).length;
-          if (line1 > ruleLines) return; // error likely in dataset portion
-
-          const line = line1 > 0 ? line1 - 1 : 0;
-          const ch = Number.isFinite(col1) ? (col1 > 0 ? col1 - 1 : 0) : 0;
-          if (line < 0 || line >= rulesCM.lineCount()) return;
-
-          rulesErrorLineHandle = rulesCM.getLineHandle(line);
-          rulesCM.addLineClass(rulesErrorLineHandle, "background", "cm-error-line");
-          rulesCM.scrollIntoView({ line, ch }, 80);
-          rulesCM.setCursor({ line, ch });
-        }
-
-        // Make it behave like a resizable textarea
-        const wrap = rulesCM.getWrapperElement();
-        wrap.style.height = "min(42vh, 420px)";
-        wrap.style.minHeight = "240px";
-        wrap.style.resize = "vertical";
-        wrap.style.overflow = "hidden";
-
-        // ---------- Shared enforce-https toggle ----------
-        const demoEnforce = document.getElementById("enforce-https");
-        const streamEnforce = $("enforceHttps");
-
-        function readEnforceHttpsDefault() {
-          let v = true;
-          try {
-            const saved = localStorage.getItem("eyeling.enforceHttps");
-            if (saved !== null) v = saved === "1";
-          } catch (_) {}
-          return v;
-        }
-
-        function setAllEnforceHttps(val) {
-          if (demoEnforce) demoEnforce.checked = !!val;
-          if (streamEnforce) streamEnforce.checked = !!val;
-          try { localStorage.setItem("eyeling.enforceHttps", val ? "1" : "0"); } catch (_) {}
-        }
-
-        setAllEnforceHttps(readEnforceHttpsDefault());
-        if (streamEnforce) streamEnforce.addEventListener("change", () => setAllEnforceHttps(streamEnforce.checked));
-        if (demoEnforce) demoEnforce.addEventListener("change", () => setAllEnforceHttps(demoEnforce.checked));
-
-        async function showEyelingVersion() {
-          const el = $("eyelingVersion");
-          if (!el) return;
-
-          const v = (window.eyeling && (window.eyeling.version || window.eyeling.VERSION)) || null;
-          if (v) { el.textContent = `Eyeling v${v}`; return; }
-
-          try {
-            const res = await fetch("./package.json", { cache: "no-store" });
-            if (res.ok) {
-              const j = await res.json();
-              if (j && j.version) { el.textContent = `Eyeling v${j.version}`; return; }
-            }
-          } catch (_) {}
-
-          el.textContent = "Eyeling (version ?)";
-        }
-
-        let selected = null;
-        let worker = null;
-        let runId = 0;
-        let isRunning = false;
-        let streamPaused = false;
-        let streamPausedBuffer = [];
-        let lastSelectedDiv = null;
-        let resultDivById = new Map();
-
-        let datasetN3 = "";
-        let fetchedFacts = new Set();
-        let shownDerived = new Set();
-
-        // Efficient streaming output (append in chunks, avoid re-setting huge textContent)
-        const outBox = $("outBox");
-        let outPending = [];
-        let outFlushScheduled = false;
-
-        function outAppendText(text) {
-          if (!text) return;
-          outPending.push(String(text));
-          if (outFlushScheduled) return;
-          outFlushScheduled = true;
-
-          requestAnimationFrame(() => {
-            outFlushScheduled = false;
-            if (!outPending.length) return;
-
-            const nearBottom =
-              outBox.scrollTop + outBox.clientHeight >= outBox.scrollHeight - 20;
-
-            const chunk = outPending.join("");
-            outPending = [];
-            outBox.appendChild(document.createTextNode(chunk));
-
-            if (nearBottom) outBox.scrollTop = outBox.scrollHeight;
+          // CodeMirror (syntax highlighted) for the rules pane
+          const rulesCM = CodeMirror.fromTextArea($('rulesBox'), {
+            mode: { name: 'sparql' },
+            lineNumbers: true,
+            lineWrapping: true,
+            viewportMargin: Infinity,
           });
-        }
+          rulesCM.setValue(DEFAULT_RULES);
 
-        function updateButtons() {
-          const hasSelection = !!selected;
-          const hasData = !!datasetN3.trim();
+          // --- N3 SYNTAX ERROR HIGHLIGHTING (rules pane; best-effort) ---
+          let rulesErrorLineHandle = null;
 
-          $("loadBtn").disabled = isRunning || !hasSelection;
-          $("reasonBtn").disabled = isRunning || !hasData;
-          $("openDatasetBtn").disabled = !hasData;
-
-          const canResume = streamPaused && streamPausedBuffer.length > 0;
-          $("pauseBtn").disabled = !(isRunning || canResume);
-          $("stopBtn").disabled = !isRunning;
-          $("pauseBtn").textContent = streamPaused ? "Resume" : "Pause";
-        }
-
-        
-        function setStatus(text) { $("runStatus").textContent = text; }
-
-        function clearOutput() {
-          outBox.textContent = "";
-          outPending = [];
-          outAppendText("# Derived triples (streaming):\n");
-          $("derivedCount").textContent = "0";
-          shownDerived.clear();
-        }
-
-        function addRunHeader(tag) {
-          const stamp = new Date().toLocaleString();
-          outAppendText(`\n# ---- ${tag} @ ${stamp} ----\n`);
-        }
-
-        function appendTriples(triples) {
-          const out = [];
-          for (const t of (triples || [])) {
-            if (shownDerived.has(t)) continue;
-            shownDerived.add(t);
-            out.push(t);
-          }
-          if (!out.length) return;
-
-          // Always keep counts up to date, even while paused.
-          $("derivedCount").textContent = String(shownDerived.size);
-
-          if (streamPaused) {
-            streamPausedBuffer.push(out.join("\n") + "\n");
-            return;
+          function clearRulesErrorHighlight() {
+            if (!rulesErrorLineHandle) return;
+            rulesCM.removeLineClass(rulesErrorLineHandle, 'background', 'cm-error-line');
+            rulesErrorLineHandle = null;
           }
 
-          outAppendText(out.join("\n") + "\n");
-        }
-        function setDataset(text) {
-          datasetN3 = text || "";
-          const lines = datasetN3.split(/\r?\n/);
-          const shown = lines.slice(0, PREVIEW_LINES).join("\n");
-          const suffix = lines.length > PREVIEW_LINES
-            ? `\n\n# … (${lines.length - PREVIEW_LINES} more lines hidden; click "Open full dataset")`
-            : "";
-          $("dataPreview").value = shown + suffix;
-          $("dataFull").value = datasetN3;
+          function parseSyntaxLineCol(message) {
+            if (!message) return null;
+            const text = String(message);
+            const lines = text.split(/\r?\n/);
+            const scanLimit = Math.min(lines.length, 80);
 
-          const bytes = new Blob([datasetN3]).size;
-          const kb = Math.round(bytes / 1024);
-          const info = `${lines.length.toLocaleString()} lines · ~${kb.toLocaleString()} KB`;
-          const badge = $("dsInfo");
-          badge.style.display = datasetN3 ? "inline-block" : "none";
-          badge.textContent = info;
+            function tryMatchLine(ln) {
+              if (!ln) return null;
+              return (
+                ln.match(/(?:Syntax|Parse) error.*?:(\d+):(\d+)(?::|\b)/i) ||
+                ln.match(/\bline\s+(\d+)\b[^\d]{0,40}\bcol(?:umn)?\s+(\d+)\b/i) ||
+                (/(?:syntax|parse) error/i.test(ln) ? ln.match(/:(\d+):(\d+)(?::|\b)/) : null)
+              );
+            }
 
-          $("fetchedCount").textContent = String(fetchedFacts.size);
-          updateButtons();
-        }
+            // Prefer "Syntax error" lines
+            for (let i = 0; i < scanLimit; i++) {
+              const ln = lines[i];
+              if (!/(?:syntax|parse) error/i.test(ln)) continue;
+              const m = tryMatchLine(ln);
+              if (m) return { line1: parseInt(m[1], 10), col1: parseInt(m[2], 10) };
+            }
 
-        function addFactN3(tripleLine) {
-          const key = tripleLine.trim();
-          if (!key) return false;
-          if (fetchedFacts.has(key)) return false;
-          fetchedFacts.add(key);
-          datasetN3 += "\n" + key + "\n";
-          setDataset(datasetN3);
-          return true;
-        }
+            // Fallback: scan loosely
+            for (let i = 0; i < scanLimit; i++) {
+              const m = tryMatchLine(lines[i]);
+              if (m) return { line1: parseInt(m[1], 10), col1: parseInt(m[2], 10) };
+            }
 
-        const WD_API = "https://www.wikidata.org/w/api.php";
+            return null;
+          }
 
-        async function wdSearch(query) {
-          const url = `${WD_API}?action=wbsearchentities&format=json&language=en&limit=10&origin=*&search=${encodeURIComponent(query)}`;
-          const res = await fetch(url);
-          if (!res.ok) throw new Error(`Wikidata search failed: HTTP ${res.status}`);
-          const json = await res.json();
-          return (json.search || []).map(x => ({
-            id: x.id,
-            label: x.label || x.id,
-            description: x.description || ""
-          }));
-        }
+          function highlightRulesErrorFromMessage(message, rulesText) {
+            const lc = parseSyntaxLineCol(message);
+            if (!lc) return;
+            clearRulesErrorHighlight();
 
-        async function wbGetEntities(ids) {
-          const url = `${WD_API}?action=wbgetentities&format=json&origin=*&ids=${encodeURIComponent(ids.join("|"))}&props=claims|sitelinks|labels`;
-          const res = await fetch(url);
-          if (!res.ok) throw new Error(`wbgetentities failed: HTTP ${res.status}`);
-          return await res.json();
-        }
+            const line1 = lc.line1;
+            const col1 = lc.col1;
+            if (!Number.isFinite(line1) || line1 < 0) return;
 
-        function escLiteral(s) {
-          const t = String(s).replace(/\\/g, "\\\\").replace(/"""/g, '\\"""');
-          return '"""' + t + '"""';
-        }
+            const ruleLines = String(rulesText || '').split(/\r?\n/).length;
+            if (line1 > ruleLines) return; // error likely in dataset portion
 
-        function qidToIri(id) {
-          if (/^Q\d+$/.test(id)) return `wd:${id}`;
-          if (/^P\d+$/.test(id)) return `wd:${id}`;
-          return null;
-        }
+            const line = line1 > 0 ? line1 - 1 : 0;
+            const ch = Number.isFinite(col1) ? (col1 > 0 ? col1 - 1 : 0) : 0;
+            if (line < 0 || line >= rulesCM.lineCount()) return;
 
-        function siteToBaseUrl(site) {
-          const mWq = site.match(/^([a-z-]+)wikiquote$/);
-          if (mWq) return `https://${mWq[1]}.wikiquote.org/wiki/`;
-          const mWp = site.match(/^([a-z-]+)wiki$/);
-          if (mWp) return `https://${mWp[1]}.wikipedia.org/wiki/`;
-          if (site === "commonswiki") return "https://commons.wikimedia.org/wiki/";
-          return null;
-        }
+            rulesErrorLineHandle = rulesCM.getLineHandle(line);
+            rulesCM.addLineClass(rulesErrorLineHandle, 'background', 'cm-error-line');
+            rulesCM.scrollIntoView({ line, ch }, 80);
+            rulesCM.setCursor({ line, ch });
+          }
 
-        function n3PfxHeader() {
-          return [
-            "@prefix wd: <http://www.wikidata.org/entity/> .",
-            "@prefix wdt: <http://www.wikidata.org/prop/direct/> .",
-            "@prefix wikibase: <http://wikiba.se/ontology#> .",
-            "@prefix schema: <http://schema.org/> .",
-            "@prefix : <http://example.org/> .",
-            "",
-          ].join("\n");
-        }
+          // Make it behave like a resizable textarea
+          const wrap = rulesCM.getWrapperElement();
+          wrap.style.height = 'min(42vh, 420px)';
+          wrap.style.minHeight = '240px';
+          wrap.style.resize = 'vertical';
+          wrap.style.overflow = 'hidden';
 
-        function entityJsonToMinimalN3(entity, minimalOnly) {
-          const lines = [];
-          const eid = entity.id;
-          lines.push(`${qidToIri(eid)} a wikibase:${entity.type === "property" ? "Property" : "Item"} .`);
+          // ---------- Shared enforce-https toggle ----------
+          const demoEnforce = document.getElementById('enforce-https');
+          const streamEnforce = $('enforceHttps');
 
-          const claims = entity.claims || {};
-          for (const pid of Object.keys(claims)) {
-            const stmts = claims[pid] || [];
-            for (const st of stmts) {
-              const mainsnak = st.mainsnak;
-              if (!mainsnak || mainsnak.snaktype !== "value") continue;
-              const dv = mainsnak.datavalue;
-              if (!dv) continue;
+          function readEnforceHttpsDefault() {
+            let v = true;
+            try {
+              const saved = localStorage.getItem('eyeling.enforceHttps');
+              if (saved !== null) v = saved === '1';
+            } catch (_) {}
+            return v;
+          }
 
-              const subj = qidToIri(eid);
-              const pred = `wdt:${pid}`;
+          function setAllEnforceHttps(val) {
+            if (demoEnforce) demoEnforce.checked = !!val;
+            if (streamEnforce) streamEnforce.checked = !!val;
+            try {
+              localStorage.setItem('eyeling.enforceHttps', val ? '1' : '0');
+            } catch (_) {}
+          }
 
-              if (dv.type === "wikibase-entityid") {
-                const valId = dv.value && dv.value.id;
-                const obj = qidToIri(valId);
-                if (!obj) continue;
-                lines.push(`${subj} ${pred} ${obj} .`);
-              } else if (!minimalOnly && dv.type === "string") {
-                lines.push(`${subj} ${pred} ${escLiteral(dv.value)} .`);
+          setAllEnforceHttps(readEnforceHttpsDefault());
+          if (streamEnforce) streamEnforce.addEventListener('change', () => setAllEnforceHttps(streamEnforce.checked));
+          if (demoEnforce) demoEnforce.addEventListener('change', () => setAllEnforceHttps(demoEnforce.checked));
+
+          async function showEyelingVersion() {
+            const el = $('eyelingVersion');
+            if (!el) return;
+
+            const v = (window.eyeling && (window.eyeling.version || window.eyeling.VERSION)) || null;
+            if (v) {
+              el.textContent = `Eyeling v${v}`;
+              return;
+            }
+
+            try {
+              const res = await fetch('./package.json', { cache: 'no-store' });
+              if (res.ok) {
+                const j = await res.json();
+                if (j && j.version) {
+                  el.textContent = `Eyeling v${j.version}`;
+                  return;
+                }
+              }
+            } catch (_) {}
+
+            el.textContent = 'Eyeling (version ?)';
+          }
+
+          let selected = null;
+          let worker = null;
+          let runId = 0;
+          let isRunning = false;
+          let streamPaused = false;
+          let streamPausedBuffer = [];
+          let lastSelectedDiv = null;
+          let resultDivById = new Map();
+
+          let datasetN3 = '';
+          let fetchedFacts = new Set();
+          let shownDerived = new Set();
+
+          // Efficient streaming output (append in chunks, avoid re-setting huge textContent)
+          const outBox = $('outBox');
+          let outPending = [];
+          let outFlushScheduled = false;
+
+          function outAppendText(text) {
+            if (!text) return;
+            outPending.push(String(text));
+            if (outFlushScheduled) return;
+            outFlushScheduled = true;
+
+            requestAnimationFrame(() => {
+              outFlushScheduled = false;
+              if (!outPending.length) return;
+
+              const nearBottom = outBox.scrollTop + outBox.clientHeight >= outBox.scrollHeight - 20;
+
+              const chunk = outPending.join('');
+              outPending = [];
+              outBox.appendChild(document.createTextNode(chunk));
+
+              if (nearBottom) outBox.scrollTop = outBox.scrollHeight;
+            });
+          }
+
+          function updateButtons() {
+            const hasSelection = !!selected;
+            const hasData = !!datasetN3.trim();
+
+            $('loadBtn').disabled = isRunning || !hasSelection;
+            $('reasonBtn').disabled = isRunning || !hasData;
+            $('openDatasetBtn').disabled = !hasData;
+
+            const canResume = streamPaused && streamPausedBuffer.length > 0;
+            $('pauseBtn').disabled = !(isRunning || canResume);
+            $('stopBtn').disabled = !isRunning;
+            $('pauseBtn').textContent = streamPaused ? 'Resume' : 'Pause';
+          }
+
+          function setStatus(text) {
+            $('runStatus').textContent = text;
+          }
+
+          function clearOutput() {
+            outBox.textContent = '';
+            outPending = [];
+            outAppendText('# Derived triples (streaming):\n');
+            $('derivedCount').textContent = '0';
+            shownDerived.clear();
+          }
+
+          function addRunHeader(tag) {
+            const stamp = new Date().toLocaleString();
+            outAppendText(`\n# ---- ${tag} @ ${stamp} ----\n`);
+          }
+
+          function appendTriples(triples) {
+            const out = [];
+            for (const t of triples || []) {
+              if (shownDerived.has(t)) continue;
+              shownDerived.add(t);
+              out.push(t);
+            }
+            if (!out.length) return;
+
+            // Always keep counts up to date, even while paused.
+            $('derivedCount').textContent = String(shownDerived.size);
+
+            if (streamPaused) {
+              streamPausedBuffer.push(out.join('\n') + '\n');
+              return;
+            }
+
+            outAppendText(out.join('\n') + '\n');
+          }
+          function setDataset(text) {
+            datasetN3 = text || '';
+            const lines = datasetN3.split(/\r?\n/);
+            const shown = lines.slice(0, PREVIEW_LINES).join('\n');
+            const suffix =
+              lines.length > PREVIEW_LINES
+                ? `\n\n# … (${lines.length - PREVIEW_LINES} more lines hidden; click "Open full dataset")`
+                : '';
+            $('dataPreview').value = shown + suffix;
+            $('dataFull').value = datasetN3;
+
+            const bytes = new Blob([datasetN3]).size;
+            const kb = Math.round(bytes / 1024);
+            const info = `${lines.length.toLocaleString()} lines · ~${kb.toLocaleString()} KB`;
+            const badge = $('dsInfo');
+            badge.style.display = datasetN3 ? 'inline-block' : 'none';
+            badge.textContent = info;
+
+            $('fetchedCount').textContent = String(fetchedFacts.size);
+            updateButtons();
+          }
+
+          function addFactN3(tripleLine) {
+            const key = tripleLine.trim();
+            if (!key) return false;
+            if (fetchedFacts.has(key)) return false;
+            fetchedFacts.add(key);
+            datasetN3 += '\n' + key + '\n';
+            setDataset(datasetN3);
+            return true;
+          }
+
+          const WD_API = 'https://www.wikidata.org/w/api.php';
+
+          async function wdSearch(query) {
+            const url = `${WD_API}?action=wbsearchentities&format=json&language=en&limit=10&origin=*&search=${encodeURIComponent(query)}`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`Wikidata search failed: HTTP ${res.status}`);
+            const json = await res.json();
+            return (json.search || []).map((x) => ({
+              id: x.id,
+              label: x.label || x.id,
+              description: x.description || '',
+            }));
+          }
+
+          async function wbGetEntities(ids) {
+            const url = `${WD_API}?action=wbgetentities&format=json&origin=*&ids=${encodeURIComponent(ids.join('|'))}&props=claims|sitelinks|labels`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`wbgetentities failed: HTTP ${res.status}`);
+            return await res.json();
+          }
+
+          function escLiteral(s) {
+            const t = String(s).replace(/\\/g, '\\\\').replace(/"""/g, '\\"""');
+            return '"""' + t + '"""';
+          }
+
+          function qidToIri(id) {
+            if (/^Q\d+$/.test(id)) return `wd:${id}`;
+            if (/^P\d+$/.test(id)) return `wd:${id}`;
+            return null;
+          }
+
+          function siteToBaseUrl(site) {
+            const mWq = site.match(/^([a-z-]+)wikiquote$/);
+            if (mWq) return `https://${mWq[1]}.wikiquote.org/wiki/`;
+            const mWp = site.match(/^([a-z-]+)wiki$/);
+            if (mWp) return `https://${mWp[1]}.wikipedia.org/wiki/`;
+            if (site === 'commonswiki') return 'https://commons.wikimedia.org/wiki/';
+            return null;
+          }
+
+          function n3PfxHeader() {
+            return [
+              '@prefix wd: <http://www.wikidata.org/entity/> .',
+              '@prefix wdt: <http://www.wikidata.org/prop/direct/> .',
+              '@prefix wikibase: <http://wikiba.se/ontology#> .',
+              '@prefix schema: <http://schema.org/> .',
+              '@prefix : <http://example.org/> .',
+              '',
+            ].join('\n');
+          }
+
+          function entityJsonToMinimalN3(entity, minimalOnly) {
+            const lines = [];
+            const eid = entity.id;
+            lines.push(`${qidToIri(eid)} a wikibase:${entity.type === 'property' ? 'Property' : 'Item'} .`);
+
+            const claims = entity.claims || {};
+            for (const pid of Object.keys(claims)) {
+              const stmts = claims[pid] || [];
+              for (const st of stmts) {
+                const mainsnak = st.mainsnak;
+                if (!mainsnak || mainsnak.snaktype !== 'value') continue;
+                const dv = mainsnak.datavalue;
+                if (!dv) continue;
+
+                const subj = qidToIri(eid);
+                const pred = `wdt:${pid}`;
+
+                if (dv.type === 'wikibase-entityid') {
+                  const valId = dv.value && dv.value.id;
+                  const obj = qidToIri(valId);
+                  if (!obj) continue;
+                  lines.push(`${subj} ${pred} ${obj} .`);
+                } else if (!minimalOnly && dv.type === 'string') {
+                  lines.push(`${subj} ${pred} ${escLiteral(dv.value)} .`);
+                }
               }
             }
-          }
 
-          const sitelinks = entity.sitelinks || {};
-          for (const site of Object.keys(sitelinks)) {
-            const base = siteToBaseUrl(site);
-            if (!base) continue;
-            const title = sitelinks[site].title;
-            if (!title) continue;
+            const sitelinks = entity.sitelinks || {};
+            for (const site of Object.keys(sitelinks)) {
+              const base = siteToBaseUrl(site);
+              if (!base) continue;
+              const title = sitelinks[site].title;
+              if (!title) continue;
 
-            const urlTitle = encodeURIComponent(title.replace(/ /g, "_"));
-            const articleUrl = `<${base}${urlTitle}>`;
+              const urlTitle = encodeURIComponent(title.replace(/ /g, '_'));
+              const articleUrl = `<${base}${urlTitle}>`;
 
-            const isPartOf =
-              site.endsWith("wikiquote") ? `<https://${site.replace("wikiquote", "")}.wikiquote.org/>` :
-              site.endsWith("wiki") ? `<https://${site.replace("wiki", "")}.wikipedia.org/>` :
-              null;
+              const isPartOf = site.endsWith('wikiquote')
+                ? `<https://${site.replace('wikiquote', '')}.wikiquote.org/>`
+                : site.endsWith('wiki')
+                  ? `<https://${site.replace('wiki', '')}.wikipedia.org/>`
+                  : null;
 
-            lines.push(
-              `${articleUrl} a schema:Article ; schema:about ${qidToIri(eid)} ;` +
-              (isPartOf ? ` schema:isPartOf ${isPartOf} ;` : "") +
-              ` schema:name ${escLiteral(title)} .`
-            );
-          }
-
-          return lines.join("\n");
-        }
-
-        async function fetchItWikiquoteExtract(title) {
-          const url = `https://it.wikiquote.org/w/api.php?action=query&prop=extracts&explaintext=1&exsectionformat=plain&format=json&origin=*&titles=${encodeURIComponent(title)}`;
-          const res = await fetch(url);
-          if (!res.ok) throw new Error(`wikiquote API failed: HTTP ${res.status}`);
-          const j = await res.json();
-          const pages = j && j.query && j.query.pages ? Object.values(j.query.pages) : [];
-          const page = pages[0] || {};
-          return page.extract || "";
-        }
-
-        // --- Reasoning (background worker + true streaming) ---
-        let activeStreamCancel = null;
-        function runReasoning() {
-          const rules = rulesCM.getValue();
-          if (!datasetN3.trim() || !rules.trim()) return;
-
-          isRunning = true;
-          streamPaused = false;
-          streamPausedBuffer = [];
-          updateButtons();
-          setStatus("Reasoning (streaming)…");
-          clearRulesErrorHighlight();
-
-          const U = window.__eyelingUnified;
-          if (!U || typeof U.startStreamRun !== "function") {
-            setStatus("Error: unified worker not available.");
-            isRunning = false;
-            updateButtons();
-            return;
-          }
-
-          // Cancel any previous run (also avoids piling up output work)
-          try { if (activeStreamCancel) activeStreamCancel(); } catch (_) {}
-          activeStreamCancel = null;
-
-          const program = rules + "\n\n" + datasetN3;
-
-          const { runId: thisRun, cancel } = U.startStreamRun({
-            program,
-            enforceHttps: !!streamEnforce?.checked,
-            proof: false,
-            onBatch: (triples) => {
-              appendTriples(triples);
-              // Fire-and-forget dynamic fetch; may schedule a rerun.
-              try { maybeHandleDynamicFetch(triples); } catch (_) {}
-            },
-            onDone: () => {
-              activeStreamCancel = null;
-              setStatus(streamPaused ? `Done (paused). Click Resume to display buffered output. (Run ${thisRun})` : `Done. (Run ${thisRun})`);
-              isRunning = false;
-              updateButtons();
-            },
-            onError: (msg) => {
-              activeStreamCancel = null;
-              setStatus(streamPaused ? `Reasoning error (paused): ${msg}` : `Reasoning error: ${msg}`);
-
-              // Also write the error into the streaming output pane (so it's visible).
-              try { outAppendText(`\n# Reasoning error: ${msg}\n`); } catch (_) {}
-
-              // Best-effort highlight if the syntax error is in the rules portion.
-              try {
-                const combinedErr = (outBox?.textContent || "") + "\n" + (streamPausedBuffer ? streamPausedBuffer.join("") : "") + "\n" + msg;
-                highlightRulesErrorFromMessage(combinedErr, rules);
-              } catch (_) {}
-
-              isRunning = false;
-              updateButtons();
-            },
-          });
-
-          activeStreamCancel = cancel;
-        }
-
-
-        function selectResult(r, div) {
-          selected = r;
-          $("selId").textContent = r.id;
-          $("selLabel").textContent = ` — ${r.label}`;
-
-          if (lastSelectedDiv) lastSelectedDiv.classList.remove("selected");
-          if (div) { div.classList.add("selected"); lastSelectedDiv = div; }
-          else { lastSelectedDiv = null; }
-
-          updateButtons();
-        }
-
-        async function doSearch() {
-          const q = $("searchBox").value.trim();
-          if (!q) return [];
-
-          $("results").innerHTML = "";
-          resultDivById = new Map();
-          selected = null;
-          $("selId").textContent = "—";
-          $("selLabel").textContent = "";
-          lastSelectedDiv = null;
-          setStatus("Searching…");
-          updateButtons();
-
-          try {
-            const results = await wdSearch(q);
-            setStatus(`Found ${results.length} result(s). Click one, then “Load selection”.`);
-
-            for (const r of results) {
-              const div = document.createElement("div");
-              div.className = "item";
-              div.innerHTML = `<div class="mono">${r.id}</div><div style="font-weight:800">${r.label}</div><div class="muted">${r.description}</div>`;
-              div.onclick = () => selectResult(r, div);
-              $("results").appendChild(div);
-              resultDivById.set(r.id, div);
+              lines.push(
+                `${articleUrl} a schema:Article ; schema:about ${qidToIri(eid)} ;` +
+                  (isPartOf ? ` schema:isPartOf ${isPartOf} ;` : '') +
+                  ` schema:name ${escLiteral(title)} .`,
+              );
             }
 
-            updateButtons();
-            return results;
-          } catch (e) {
-            setStatus(`Search error: ${e.message || e}`);
-            updateButtons();
-            return [];
+            return lines.join('\n');
           }
-        }
 
-        async function loadSelection() {
-          if (!selected) return;
-
-          isRunning = true;
-          updateButtons();
-          setStatus(`Loading ${selected.id} (via Wikidata API)…`);
-
-          try {
-            fetchedFacts = new Set();
-            $("fetchedCount").textContent = "0";
-
-            const json = await wbGetEntities([selected.id]);
-            const ent = json && json.entities && json.entities[selected.id];
-            if (!ent) throw new Error(`No entity data returned for ${selected.id}`);
-
-            const minimalOnly = $("minimalOnly").checked;
-            const n3 = n3PfxHeader() + entityJsonToMinimalN3(ent, minimalOnly);
-
-            setDataset(n3);
-            setStatus(`Loaded ${selected.id}. Ready to reason.`);
-          } catch (e) {
-            setStatus(`Load error: ${e.message || e}`);
-          } finally {
-            isRunning = false;
-            updateButtons();
+          async function fetchItWikiquoteExtract(title) {
+            const url = `https://it.wikiquote.org/w/api.php?action=query&prop=extracts&explaintext=1&exsectionformat=plain&format=json&origin=*&titles=${encodeURIComponent(title)}`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`wikiquote API failed: HTTP ${res.status}`);
+            const j = await res.json();
+            const pages = j && j.query && j.query.pages ? Object.values(j.query.pages) : [];
+            const page = pages[0] || {};
+            return page.extract || '';
           }
-        }
 
-        function loadToy() {
-          selected = null;
-          if (lastSelectedDiv) { lastSelectedDiv.classList.remove("selected"); lastSelectedDiv = null; }
-          $("selId").textContent = "toy";
-          $("selLabel").textContent = " — local demo data";
-          fetchedFacts = new Set();
-          $("fetchedCount").textContent = "0";
-          setDataset(TOY_DATA);
-          setStatus("Toy example loaded. Ready to reason.");
-          updateButtons();
-        }
+          // --- Reasoning (background worker + true streaming) ---
+          let activeStreamCancel = null;
+          function runReasoning() {
+            const rules = rulesCM.getValue();
+            if (!datasetN3.trim() || !rules.trim()) return;
 
-        function openModal() {
-          $("modalBackdrop").style.display = "flex";
-          $("modalBackdrop").setAttribute("aria-hidden", "false");
-        }
-        function closeModal() {
-          $("modalBackdrop").style.display = "none";
-          $("modalBackdrop").setAttribute("aria-hidden", "true");
-        }
-
-        $("openDatasetBtn").onclick = openModal;
-        $("modalCloseBtn").onclick = closeModal;
-        $("modalBackdrop").addEventListener("click", (e) => { if (e.target === $("modalBackdrop")) closeModal(); });
-        window.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
-
-        $("searchBtn").onclick = doSearch;
-        $("loadBtn").onclick = loadSelection;
-        $("toyBtn").onclick = () => { loadToy(); setTimeout(() => { if ($("clearOnRun").checked) clearOutput(); addRunHeader("Toy run"); runReasoning(); }, 60); };
-        $("clearBtn").onclick = () => { clearOutput(); setStatus("Cleared."); };
-        $("reasonBtn").onclick = () => { if ($("clearOnRun").checked) clearOutput(); addRunHeader("Manual run"); runReasoning(); };
-
-        $("pauseBtn").onclick = () => {
-          const canResume = streamPaused && streamPausedBuffer.length > 0;
-          if (!(isRunning || canResume)) return;
-
-          if (!streamPaused) {
-            streamPaused = true;
-            setStatus("Paused. Output frozen; buffering new triples…");
-          } else {
+            isRunning = true;
             streamPaused = false;
-            if (streamPausedBuffer.length) {
-              outAppendText(streamPausedBuffer.join(""));
-              streamPausedBuffer = [];
+            streamPausedBuffer = [];
+            updateButtons();
+            setStatus('Reasoning (streaming)…');
+            clearRulesErrorHighlight();
+
+            const U = window.__eyelingUnified;
+            if (!U || typeof U.startStreamRun !== 'function') {
+              setStatus('Error: unified worker not available.');
+              isRunning = false;
+              updateButtons();
+              return;
             }
-            setStatus(isRunning ? "Reasoning (streaming)…" : "Resumed. Buffered output appended.");
+
+            // Cancel any previous run (also avoids piling up output work)
+            try {
+              if (activeStreamCancel) activeStreamCancel();
+            } catch (_) {}
+            activeStreamCancel = null;
+
+            const program = rules + '\n\n' + datasetN3;
+
+            const { runId: thisRun, cancel } = U.startStreamRun({
+              program,
+              enforceHttps: !!streamEnforce?.checked,
+              proof: false,
+              onBatch: (triples) => {
+                appendTriples(triples);
+                // Fire-and-forget dynamic fetch; may schedule a rerun.
+                try {
+                  maybeHandleDynamicFetch(triples);
+                } catch (_) {}
+              },
+              onDone: () => {
+                activeStreamCancel = null;
+                setStatus(
+                  streamPaused
+                    ? `Done (paused). Click Resume to display buffered output. (Run ${thisRun})`
+                    : `Done. (Run ${thisRun})`,
+                );
+                isRunning = false;
+                updateButtons();
+              },
+              onError: (msg) => {
+                activeStreamCancel = null;
+                setStatus(streamPaused ? `Reasoning error (paused): ${msg}` : `Reasoning error: ${msg}`);
+
+                // Also write the error into the streaming output pane (so it's visible).
+                try {
+                  outAppendText(`\n# Reasoning error: ${msg}\n`);
+                } catch (_) {}
+
+                // Best-effort highlight if the syntax error is in the rules portion.
+                try {
+                  const combinedErr =
+                    (outBox?.textContent || '') +
+                    '\n' +
+                    (streamPausedBuffer ? streamPausedBuffer.join('') : '') +
+                    '\n' +
+                    msg;
+                  highlightRulesErrorFromMessage(combinedErr, rules);
+                } catch (_) {}
+
+                isRunning = false;
+                updateButtons();
+              },
+            });
+
+            activeStreamCancel = cancel;
           }
 
-          updateButtons();
-        };
+          function selectResult(r, div) {
+            selected = r;
+            $('selId').textContent = r.id;
+            $('selLabel').textContent = ` — ${r.label}`;
 
-        $("stopBtn").onclick = () => {
-          try { if (activeStreamCancel) activeStreamCancel(); } catch (_) {}
-          activeStreamCancel = null;
-          streamPaused = false;
-          streamPausedBuffer = [];
-          isRunning = false;
-          setStatus("Stopped.");
-          updateButtons();
-        };
+            if (lastSelectedDiv) lastSelectedDiv.classList.remove('selected');
+            if (div) {
+              div.classList.add('selected');
+              lastSelectedDiv = div;
+            } else {
+              lastSelectedDiv = null;
+            }
 
+            updateButtons();
+          }
 
-        $("searchBox").addEventListener("keydown", (e) => { if (e.key === "Enter") doSearch(); });
+          async function doSearch() {
+            const q = $('searchBox').value.trim();
+            if (!q) return [];
 
-        async function loadDefaultMagritte() {
-          $("searchBox").value = MAGRITTE_LABEL;
-          const results = await doSearch();
-          const target = results.find(r => r.id === MAGRITTE_QID) || results[0];
-          if (!target) return;
-          const div = resultDivById.get(target.id);
-          selectResult(target, div);
-          await loadSelection();
-          setTimeout(() => { if ($("clearOnRun").checked) clearOutput(); addRunHeader("Auto run (default)"); runReasoning(); }, 80);
-        }
+            $('results').innerHTML = '';
+            resultDivById = new Map();
+            selected = null;
+            $('selId').textContent = '—';
+            $('selLabel').textContent = '';
+            lastSelectedDiv = null;
+            setStatus('Searching…');
+            updateButtons();
 
-        // Initial view
-        clearOutput();
-        showEyelingVersion()
-          .then(loadDefaultMagritte)
-          .catch((e) => {
-            setStatus(`Default load failed (${e.message || e}). Loading toy example instead…`);
-            loadToy();
-            setTimeout(() => { if ($("clearOnRun").checked) clearOutput(); addRunHeader("Auto run (toy fallback)"); runReasoning(); }, 60);
+            try {
+              const results = await wdSearch(q);
+              setStatus(`Found ${results.length} result(s). Click one, then “Load selection”.`);
+
+              for (const r of results) {
+                const div = document.createElement('div');
+                div.className = 'item';
+                div.innerHTML = `<div class="mono">${r.id}</div><div style="font-weight:800">${r.label}</div><div class="muted">${r.description}</div>`;
+                div.onclick = () => selectResult(r, div);
+                $('results').appendChild(div);
+                resultDivById.set(r.id, div);
+              }
+
+              updateButtons();
+              return results;
+            } catch (e) {
+              setStatus(`Search error: ${e.message || e}`);
+              updateButtons();
+              return [];
+            }
+          }
+
+          async function loadSelection() {
+            if (!selected) return;
+
+            isRunning = true;
+            updateButtons();
+            setStatus(`Loading ${selected.id} (via Wikidata API)…`);
+
+            try {
+              fetchedFacts = new Set();
+              $('fetchedCount').textContent = '0';
+
+              const json = await wbGetEntities([selected.id]);
+              const ent = json && json.entities && json.entities[selected.id];
+              if (!ent) throw new Error(`No entity data returned for ${selected.id}`);
+
+              const minimalOnly = $('minimalOnly').checked;
+              const n3 = n3PfxHeader() + entityJsonToMinimalN3(ent, minimalOnly);
+
+              setDataset(n3);
+              setStatus(`Loaded ${selected.id}. Ready to reason.`);
+            } catch (e) {
+              setStatus(`Load error: ${e.message || e}`);
+            } finally {
+              isRunning = false;
+              updateButtons();
+            }
+          }
+
+          function loadToy() {
+            selected = null;
+            if (lastSelectedDiv) {
+              lastSelectedDiv.classList.remove('selected');
+              lastSelectedDiv = null;
+            }
+            $('selId').textContent = 'toy';
+            $('selLabel').textContent = ' — local demo data';
+            fetchedFacts = new Set();
+            $('fetchedCount').textContent = '0';
+            setDataset(TOY_DATA);
+            setStatus('Toy example loaded. Ready to reason.');
+            updateButtons();
+          }
+
+          function openModal() {
+            $('modalBackdrop').style.display = 'flex';
+            $('modalBackdrop').setAttribute('aria-hidden', 'false');
+          }
+          function closeModal() {
+            $('modalBackdrop').style.display = 'none';
+            $('modalBackdrop').setAttribute('aria-hidden', 'true');
+          }
+
+          $('openDatasetBtn').onclick = openModal;
+          $('modalCloseBtn').onclick = closeModal;
+          $('modalBackdrop').addEventListener('click', (e) => {
+            if (e.target === $('modalBackdrop')) closeModal();
+          });
+          window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
           });
 
-        setTimeout(() => { try { rulesCM.refresh(); } catch (_) {} }, 60);
-      }
-    })();
-  </script>
+          $('searchBtn').onclick = doSearch;
+          $('loadBtn').onclick = loadSelection;
+          $('toyBtn').onclick = () => {
+            loadToy();
+            setTimeout(() => {
+              if ($('clearOnRun').checked) clearOutput();
+              addRunHeader('Toy run');
+              runReasoning();
+            }, 60);
+          };
+          $('clearBtn').onclick = () => {
+            clearOutput();
+            setStatus('Cleared.');
+          };
+          $('reasonBtn').onclick = () => {
+            if ($('clearOnRun').checked) clearOutput();
+            addRunHeader('Manual run');
+            runReasoning();
+          };
 
-</body>
+          $('pauseBtn').onclick = () => {
+            const canResume = streamPaused && streamPausedBuffer.length > 0;
+            if (!(isRunning || canResume)) return;
+
+            if (!streamPaused) {
+              streamPaused = true;
+              setStatus('Paused. Output frozen; buffering new triples…');
+            } else {
+              streamPaused = false;
+              if (streamPausedBuffer.length) {
+                outAppendText(streamPausedBuffer.join(''));
+                streamPausedBuffer = [];
+              }
+              setStatus(isRunning ? 'Reasoning (streaming)…' : 'Resumed. Buffered output appended.');
+            }
+
+            updateButtons();
+          };
+
+          $('stopBtn').onclick = () => {
+            try {
+              if (activeStreamCancel) activeStreamCancel();
+            } catch (_) {}
+            activeStreamCancel = null;
+            streamPaused = false;
+            streamPausedBuffer = [];
+            isRunning = false;
+            setStatus('Stopped.');
+            updateButtons();
+          };
+
+          $('searchBox').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') doSearch();
+          });
+
+          async function loadDefaultMagritte() {
+            $('searchBox').value = MAGRITTE_LABEL;
+            const results = await doSearch();
+            const target = results.find((r) => r.id === MAGRITTE_QID) || results[0];
+            if (!target) return;
+            const div = resultDivById.get(target.id);
+            selectResult(target, div);
+            await loadSelection();
+            setTimeout(() => {
+              if ($('clearOnRun').checked) clearOutput();
+              addRunHeader('Auto run (default)');
+              runReasoning();
+            }, 80);
+          }
+
+          // Initial view
+          clearOutput();
+          showEyelingVersion()
+            .then(loadDefaultMagritte)
+            .catch((e) => {
+              setStatus(`Default load failed (${e.message || e}). Loading toy example instead…`);
+              loadToy();
+              setTimeout(() => {
+                if ($('clearOnRun').checked) clearOutput();
+                addRunHeader('Auto run (toy fallback)');
+                runReasoning();
+              }, 60);
+            });
+
+          setTimeout(() => {
+            try {
+              rulesCM.refresh();
+            } catch (_) {}
+          }, 60);
+        }
+      })();
+    </script>
+  </body>
 </html>
-

@@ -543,7 +543,8 @@ function lex(inputText) {
           i++;
           const segChars = [];
           let dd = peek();
-          if (dd === null || !/[A-Za-z0-9]/.test(dd)) throw new Error("Invalid language tag (expected [A-Za-z0-9]+ after '-')");
+          if (dd === null || !/[A-Za-z0-9]/.test(dd))
+            throw new Error("Invalid language tag (expected [A-Za-z0-9]+ after '-')");
           while ((dd = peek()) !== null && /[A-Za-z0-9]/.test(dd)) {
             segChars.push(dd);
             i++;
@@ -851,7 +852,8 @@ class TurtleParser {
 
       // Optional language tag: "... "@en
       if (this.peek().typ === 'LangTag') {
-        if (!(s.startsWith('"') && s.endsWith('"'))) throw new Error('Language tag is only allowed on quoted string literals');
+        if (!(s.startsWith('"') && s.endsWith('"')))
+          throw new Error('Language tag is only allowed on quoted string literals');
         const langTok = this.next();
         s = `${s}@${langTok.value || ''}`;
         if (this.peek().typ === 'HatHat') throw new Error('A literal cannot have both a language tag and a datatype');
@@ -1148,7 +1150,8 @@ function writeTriG({ quads, prefixes }) {
   // Default graph first
   if (grouped.has('DEFAULT')) {
     const { triples } = grouped.get('DEFAULT');
-    for (const tr of triples) blocks.push(`${termToText(tr.s, prefixes)} ${termToText(tr.p, prefixes)} ${termToText(tr.o, prefixes)} .`);
+    for (const tr of triples)
+      blocks.push(`${termToText(tr.s, prefixes)} ${termToText(tr.p, prefixes)} ${termToText(tr.o, prefixes)} .`);
     blocks.push('');
   }
 
@@ -1158,7 +1161,8 @@ function writeTriG({ quads, prefixes }) {
 
   for (const [, { gTerm, triples }] of named) {
     blocks.push(`${termToText(gTerm, prefixes)} {`);
-    for (const tr of triples) blocks.push(`  ${termToText(tr.s, prefixes)} ${termToText(tr.p, prefixes)} ${termToText(tr.o, prefixes)} .`);
+    for (const tr of triples)
+      blocks.push(`  ${termToText(tr.s, prefixes)} ${termToText(tr.p, prefixes)} ${termToText(tr.o, prefixes)} .`);
     blocks.push('}', '');
   }
 
@@ -1173,7 +1177,9 @@ function writeN3RtGraph({ datasetQuads, prefixes }) {
   const grouped = groupQuadsByGraph(datasetQuads);
 
   function writeGraphTriples(triples) {
-    return triples.map((tr) => `  ${termToText(tr.s, prefixes)} ${termToText(tr.p, prefixes)} ${termToText(tr.o, prefixes)} .`).join('\n');
+    return triples
+      .map((tr) => `  ${termToText(tr.s, prefixes)} ${termToText(tr.p, prefixes)} ${termToText(tr.o, prefixes)} .`)
+      .join('\n');
   }
 
   // default graph: emit triples at top-level (no rt:graph wrapper)
@@ -1688,7 +1694,6 @@ function splitTopLevelCommaArgs(s) {
   return parts;
 }
 
-
 function bindExprToN3Statements(bindInner) {
   // bindInner is the inside of BIND(...), e.g. 'tfn:periodMinInclusive(?d) AS ?min'
   const s = (bindInner || '').trim();
@@ -1748,7 +1753,6 @@ function bindExprToN3Statements(bindInner) {
   return null;
 }
 
-
 function extractSrlBinds(bodyRaw) {
   const s = bodyRaw || '';
   let i = 0;
@@ -1794,7 +1798,6 @@ function extractSrlBinds(bodyRaw) {
 
   return { body: normalizeInsideBracesKeepStyle(out), binds, usedString, usedTime };
 }
-
 
 function parseSimpleComparison(expr) {
   const t0 = stripOuterParensOnce(expr);
@@ -1878,7 +1881,6 @@ function parseSimpleComparison(expr) {
 
   return null;
 }
-
 
 function filterExprToN3Alternatives(expr) {
   // Returns an array of alternatives.
@@ -2156,10 +2158,7 @@ function extractTimeFnBindsFromBody(bodyRaw, timeLabels) {
     if (s[j] === '.') j++;
 
     const terms = splitListTermsFromN3List(inner);
-    const fnSrl =
-      matchedPredToken.startsWith('<') && labels.length
-        ? `${labels[0]}${matchedLocal}`
-        : matchedPredToken;
+    const fnSrl = matchedPredToken.startsWith('<') && labels.length ? `${labels[0]}${matchedLocal}` : matchedPredToken;
 
     const bind = `BIND(${fnSrl}(${terms.join(', ')}) AS ${outVar})`;
     binds.push(bind);
@@ -2169,7 +2168,6 @@ function extractTimeFnBindsFromBody(bodyRaw, timeLabels) {
 
   return { baseBody: normalizeInsideBracesKeepStyle(out), binds };
 }
-
 
 function extractMathFiltersFromBody(bodyRaw, mathLabels) {
   const labels = Array.isArray(mathLabels) && mathLabels.length ? mathLabels : ['math:'];
@@ -2198,10 +2196,7 @@ function extractMathFiltersFromBody(bodyRaw, mathLabels) {
     const predGroup = [full, ...pref.map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))].join('|');
 
     const reStmt = new RegExp(
-      '(^|[\\s;\\n\\r\\t])' +
-        `(${TERM})\\s+` +
-        `(?:${predGroup})\\s+` +
-        `(${TERM})\\s*\\.?(?=\\s|$)`,
+      '(^|[\\s;\\n\\r\\t])' + `(${TERM})\\s+` + `(?:${predGroup})\\s+` + `(${TERM})\\s*\\.?(?=\\s|$)`,
       'g',
     );
 
@@ -2394,7 +2389,6 @@ function normalizeInsideBracesKeepStyle(s) {
   return (s || '').trim().replace(/\s+/g, ' ').trim();
 }
 
-
 function srlDollarVarsToQVars(text) {
   // SHACL SPARQL uses $this/$value; N3 uses ?vars.
   // Convert $name -> ?name, ignoring occurrences inside strings.
@@ -2490,7 +2484,6 @@ function parseN3PrefixLines(src) {
 
   return { prefixes, rest: other.join('\n') };
 }
-
 
 function readBalancedBraces(src, startIdx) {
   if (src[startIdx] !== '{') throw new Error("Expected '{'");
@@ -2988,7 +2981,11 @@ async function main() {
     return;
   }
 
-  const text = inputFile ? await fs.readFile(inputFile, 'utf8') : from === 'srl' || to === 'srl' ? EXAMPLE_SRL : EXAMPLE_TRIG;
+  const text = inputFile
+    ? await fs.readFile(inputFile, 'utf8')
+    : from === 'srl' || to === 'srl'
+      ? EXAMPLE_SRL
+      : EXAMPLE_TRIG;
 
   if (from === 'trig' && to === 'n3') {
     process.stdout.write(trigToN3(text));
