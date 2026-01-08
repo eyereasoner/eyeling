@@ -122,6 +122,7 @@ Options:
   -a, --ast               Print parsed AST as JSON and exit.
   --strings               Print log:outputString strings (ordered by key) instead of N3 output.
   --enforce-https         Rewrite http:// IRIs to https:// for log dereferencing builtins.
+  --stream                Stream derived triples as soon as they are derived.
 ```
 
 By default, `eyeling`:

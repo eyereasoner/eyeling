@@ -7443,7 +7443,8 @@ function main() {
       `  -s, --super-restricted  Disable all builtins except => and <=.\n` +
       `  -a, --ast               Print parsed AST as JSON and exit.\n` +
       `  --strings               Print log:outputString strings (ordered by key) instead of N3 output.\n` +
-      `  --enforce-https         Rewrite http:// IRIs to https:// for log dereferencing builtins.\n`;
+      `  --enforce-https         Rewrite http:// IRIs to https:// for log dereferencing builtins.\n` +
+      `  --stream                Stream derived triples as soon as they are derived.\n`;
     (toStderr ? console.error : console.log)(msg);
   }
 
@@ -7465,6 +7466,7 @@ function main() {
   const showAst = argv.includes('--ast') || argv.includes('-a');
 
   const outputStringsMode = argv.includes('--strings');
+  const streamMode = argv.includes('--stream');
 
   // --enforce-https: rewrite http:// -> https:// for log dereferencing builtins
   if (argv.includes('--enforce-https')) {
@@ -7547,13 +7549,133 @@ function main() {
   materializeRdfLists(triples, frules, brules);
 
   const facts = triples.filter((tr) => isGroundTriple(tr));
-  const derived = forwardChain(facts, frules, brules);
+
   // If requested, print log:outputString values (ordered by subject key) and exit.
+  // Note: log:outputString values may depend on derived facts, so we must saturate first.
   if (outputStringsMode) {
+    forwardChain(facts, frules, brules);
     const out = __collectOutputStringsFromFacts(facts, prefixes);
     if (out) process.stdout.write(out);
     process.exit(0);
   }
+
+  // In --stream mode we print prefixes *before* any derivations happen.
+  // To keep the header small and stable, emit only prefixes that are actually
+  // used (as QNames) in the *input* N3 program.
+  function prefixesUsedInInputTokens(toks2, prefEnv) {
+    const used = new Set();
+
+    function maybeAddFromQName(name) {
+      if (typeof name !== 'string') return;
+      if (!name.includes(':')) return;
+      if (name.startsWith('_:')) return; // blank node
+
+      // Split only on the first ':'
+      const idx = name.indexOf(':');
+      const p = name.slice(0, idx); // may be '' for ":foo"
+
+      // Ignore things like "http://..." unless that prefix is actually defined.
+      if (!Object.prototype.hasOwnProperty.call(prefEnv.map, p)) return;
+
+      used.add(p);
+    }
+
+    for (let i = 0; i < toks2.length; i++) {
+      const t = toks2[i];
+
+      // Skip @prefix ... .
+      if (t.typ === 'AtPrefix') {
+        // @prefix <pfx:> <iri> .
+        // We skip the directive itself so declared-but-unused prefixes don't count.
+        // Advance until we pass the terminating dot (if present).
+        while (i < toks2.length && toks2[i].typ !== 'Dot' && toks2[i].typ !== 'EOF') i++;
+        continue;
+      }
+      // Skip @base ... .
+      if (t.typ === 'AtBase') {
+        while (i < toks2.length && toks2[i].typ !== 'Dot' && toks2[i].typ !== 'EOF') i++;
+        continue;
+      }
+
+      // Skip SPARQL/Turtle PREFIX pfx: <iri>
+      if (
+        t.typ === 'Ident' &&
+        typeof t.value === 'string' &&
+        t.value.toLowerCase() === 'prefix' &&
+        toks2[i + 1] &&
+        toks2[i + 1].typ === 'Ident' &&
+        typeof toks2[i + 1].value === 'string' &&
+        toks2[i + 1].value.endsWith(':') &&
+        toks2[i + 2] &&
+        (toks2[i + 2].typ === 'IriRef' || toks2[i + 2].typ === 'Ident')
+      ) {
+        // Consume PREFIX <pfx:> <iri>
+        i += 2;
+        continue;
+      }
+      // Skip SPARQL BASE <iri>
+      if (
+        t.typ === 'Ident' &&
+        typeof t.value === 'string' &&
+        t.value.toLowerCase() === 'base' &&
+        toks2[i + 1] &&
+        toks2[i + 1].typ === 'IriRef'
+      ) {
+        i += 1;
+        continue;
+      }
+
+      // Count QNames in identifiers (including datatypes like xsd:integer).
+      if (t.typ === 'Ident') {
+        maybeAddFromQName(t.value);
+      }
+    }
+
+    return used;
+  }
+
+  function restrictPrefixEnv(prefEnv, usedSet) {
+    const m = {};
+    for (const p of usedSet) {
+      if (Object.prototype.hasOwnProperty.call(prefEnv.map, p)) {
+        m[p] = prefEnv.map[p];
+      }
+    }
+    return new PrefixEnv(m, prefEnv.baseIri || '');
+  }
+
+  // Streaming mode: print (input) prefixes first, then print derived triples as soon as they are found.
+  if (streamMode) {
+    const usedInInput = prefixesUsedInInputTokens(toks, prefixes);
+    const outPrefixes = restrictPrefixEnv(prefixes, usedInInput);
+
+    // Ensure log:trace uses the same compact prefix set as the output.
+    __tracePrefixes = outPrefixes;
+
+    const entries = Object.entries(outPrefixes.map)
+      .filter(([_p, base]) => !!base)
+      .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+
+    for (const [pfx, base] of entries) {
+      if (pfx === '') console.log(`@prefix : <${base}> .`);
+      else console.log(`@prefix ${pfx}: <${base}> .`);
+    }
+    if (entries.length) console.log();
+
+    forwardChain(facts, frules, brules, (df) => {
+      if (proofCommentsEnabled) {
+        printExplanation(df, outPrefixes);
+        console.log(tripleToN3(df.fact, outPrefixes));
+        console.log();
+      } else {
+        console.log(tripleToN3(df.fact, outPrefixes));
+      }
+    });
+    return;
+  }
+
+  // Default (non-streaming): derive everything first, then print only the newly derived facts.
+  const derived = forwardChain(facts, frules, brules);
   const derivedTriples = derived.map((df) => df.fact);
   const usedPrefixes = prefixes.prefixesUsedForOutput(derivedTriples);
 

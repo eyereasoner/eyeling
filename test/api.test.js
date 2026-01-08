@@ -2,6 +2,9 @@
 
 const assert = require('node:assert/strict');
 const { reason } = require('..');
+// Direct eyeling.js API (in-process) for testing reasonStream/onDerived.
+// This is the "latest eyeling.js" surface and is used by the browser demo.
+const { reasonStream } = require('../eyeling.js');
 
 const TTY = process.stdout.isTTY;
 const C = TTY ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', dim: '\x1b[2m', n: '\x1b[0m' } : { g: '', r: '', y: '', dim: '', n: '' };
@@ -687,6 +690,104 @@ _:l2 rdf:rest rdf:nil.
       new RegExp(`${EX}s>\\s+<${EX}q3>\\s+<${EX}b>\\s*\\.`),
     ],
   },
+
+  // -------------------------
+  // Newer eyeling.js features
+  // -------------------------
+
+  {
+    name: '51 --strings: prints log:outputString values ordered by key (subject)',
+    opt: ['--strings', '-n'],
+    input: `@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+
+<http://example.org/2> log:outputString "B".
+<http://example.org/1> log:outputString "A".
+`,
+    // CLI prints concatenated strings and exits.
+    check(out) {
+      assert.equal(String(out).trimEnd(), 'AB');
+    },
+  },
+
+  {
+    name: '52 --ast: prints parse result as JSON array [prefixes, triples, frules, brules]',
+    opt: ['--ast'],
+    input: `@prefix ex: <http://example.org/>.
+ex:s ex:p ex:o.
+`,
+    expect: [/^\s*\[/m],
+    check(out) {
+      const v = JSON.parse(String(out));
+      assert.ok(Array.isArray(v), 'AST output should be a JSON array');
+      assert.equal(v.length, 4, 'AST output should have 4 top-level elements');
+      // The second element is the parsed triples array.
+      assert.ok(Array.isArray(v[1]), 'AST[1] (triples) should be an array');
+    },
+  },
+
+  {
+    name: '53 --stream: prints prefixes used in input (not just derived output) before streaming triples',
+    opt: ['--stream', '-n'],
+    input: `@prefix ex: <http://example.org/>.
+@prefix p: <http://premise.example/>.
+@prefix unused: <http://unused.example/>.
+
+ex:a p:trig ex:b.
+{ ?s p:trig ?o. } => { ?s ex:q ?o. }.
+`,
+    expect: [
+      /@prefix\s+ex:\s+<http:\/\/example\.org\/>\s*\./m,
+      /@prefix\s+p:\s+<http:\/\/premise\.example\/>\s*\./m,
+      /(?:ex:a|<http:\/\/example\.org\/a>)\s+(?:ex:q|<http:\/\/example\.org\/q>)\s+(?:ex:b|<http:\/\/example\.org\/b>)\s*\./m,
+    ],
+    notExpect: [/@prefix\s+unused:/m, /^#/m],
+    check(out) {
+      const lines = String(out).split(/\r?\n/);
+      const firstNonPrefix = lines.findIndex((l) => {
+        const t = l.trim();
+        return t && !t.startsWith('@prefix');
+      });
+      assert.ok(firstNonPrefix > 0, 'Expected at least one @prefix line before the first triple');
+      for (let i = 0; i < firstNonPrefix; i++) {
+        const t = lines[i].trim();
+        if (!t) continue;
+        assert.ok(t.startsWith('@prefix'), `Non-prefix line found before first triple: ${lines[i]}`);
+      }
+    },
+  },
+
+  {
+    name: '54 reasonStream: onDerived callback fires and includeInputFactsInClosure=false excludes input facts',
+    run() {
+      const input = `
+{ <http://example.org/s> <http://example.org/p> <http://example.org/o>. }
+  => { <http://example.org/s> <http://example.org/q> <http://example.org/o>. }.
+
+<http://example.org/s> <http://example.org/p> <http://example.org/o>.
+`;
+
+      const seen = [];
+      const r = reasonStream(input, {
+        proof: false,
+        includeInputFactsInClosure: false,
+        onDerived: ({ triple }) => seen.push(triple),
+      });
+
+      // stash for check()
+      this._seen = seen;
+      this._result = r;
+      return r.closureN3;
+    },
+    expect: [/http:\/\/example\.org\/q/m],
+    notExpect: [/http:\/\/example\.org\/p/m],
+    check(out, tc) {
+      assert.equal(tc._seen.length, 1, 'Expected onDerived to be called once');
+      assert.match(tc._seen[0], /http:\/\/example\.org\/q/, 'Expected streamed triple to be the derived one');
+      // closureN3 should be exactly the derived triple (no input facts).
+      assert.ok(String(out).trim().includes('http://example.org/q'));
+      assert.ok(!String(out).includes('http://example.org/p'));
+    },
+  },
 ];
 
 let passed = 0;
@@ -699,7 +800,7 @@ let failed = 0;
   for (const tc of cases) {
     const start = msNow();
     try {
-      const out = reason(tc.opt, tc.input);
+      const out = typeof tc.run === 'function' ? await tc.run() : reason(tc.opt, tc.input);
 
       if (tc.expectErrorCode != null || tc.expectError) {
         throw new Error(`Expected an error, but reason() returned output:\n${out}`);
@@ -708,7 +809,7 @@ let failed = 0;
       for (const re of tc.expect || []) mustMatch(out, re, `${tc.name}: missing expected pattern ${re}`);
       for (const re of tc.notExpect || []) mustNotMatch(out, re, `${tc.name}: unexpected pattern ${re}`);
 
-      if (typeof tc.check === 'function') tc.check(out);
+      if (typeof tc.check === 'function') tc.check(out, tc);
 
       const dur = msNow() - start;
       ok(`${tc.name} ${C.dim}(${dur} ms)${C.n}`);
