@@ -89,7 +89,7 @@
   { ?req a :Request; :agent ?x; :job ?job. ?x :healthStatus :Sick. ?job :isKindOf :Work. }
     => { ?req :decision :Deny. }.
 
-  # Health: Sick + Work + Work => Deny (avoid infecting colleagues)
+  # Health: Sick + Work + Office => Deny (avoid infecting colleagues)
   :R_SickWork a air:Rule;
     air:if   { ?req a :Request; :agent ?x; :job ?job; :location :Office.
                ?x :healthStatus :Sick. ?job :isKindOf :Office. };
