@@ -7,7 +7,9 @@ const path = require('node:path');
 const cp = require('node:child_process');
 
 const TTY = process.stdout.isTTY;
-const C = TTY ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', dim: '\x1b[2m', n: '\x1b[0m' } : { g: '', r: '', y: '', dim: '', n: '' };
+const C = TTY
+  ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', dim: '\x1b[2m', n: '\x1b[0m' }
+  : { g: '', r: '', y: '', dim: '', n: '' };
 const msTag = (ms) => `${C.dim}(${ms} ms)${C.n}`;
 
 function ok(msg) {

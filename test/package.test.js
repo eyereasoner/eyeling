@@ -7,7 +7,9 @@ const path = require('node:path');
 const cp = require('node:child_process');
 
 const TTY = process.stdout.isTTY;
-const C = TTY ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', dim: '\x1b[2m', n: '\x1b[0m' } : { g: '', r: '', y: '', dim: '', n: '' };
+const C = TTY
+  ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', dim: '\x1b[2m', n: '\x1b[0m' }
+  : { g: '', r: '', y: '', dim: '', n: '' };
 
 function info(msg) {
   console.log(`${C.y}==${C.n} ${msg}`);
@@ -110,7 +112,9 @@ function main() {
     ok('API works');
 
     info('CLI smoke test');
-    const bin = isWin() ? path.join(tmp, 'node_modules', '.bin', 'eyeling.cmd') : path.join(tmp, 'node_modules', '.bin', 'eyeling');
+    const bin = isWin()
+      ? path.join(tmp, 'node_modules', '.bin', 'eyeling.cmd')
+      : path.join(tmp, 'node_modules', '.bin', 'eyeling');
     runChecked(bin, ['-v'], { cwd: tmp, stdio: 'inherit' });
     ok('CLI works');
 

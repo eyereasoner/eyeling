@@ -7,7 +7,9 @@ const { reason } = require('..');
 const { reasonStream } = require('../eyeling.js');
 
 const TTY = process.stdout.isTTY;
-const C = TTY ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', dim: '\x1b[2m', n: '\x1b[0m' } : { g: '', r: '', y: '', dim: '', n: '' };
+const C = TTY
+  ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', dim: '\x1b[2m', n: '\x1b[0m' }
+  : { g: '', r: '', y: '', dim: '', n: '' };
 
 function ok(msg) {
   console.log(`${C.g}OK${C.n} ${msg}`);
@@ -353,7 +355,10 @@ ${U('a')} ${U('p')} ${U('b')}.
     name: '17 heavier reachability: branching graph reach closure',
     opt: { proofComments: false, maxBuffer: 200 * 1024 * 1024 },
     input: reachabilityGraphN3(12),
-    expect: [new RegExp(`${EX}g0>\\s+<${EX}reach>\\s+<${EX}g12>\\s*\\.`), new RegExp(`${EX}g2>\\s+<${EX}reach>\\s+<${EX}g10>\\s*\\.`)],
+    expect: [
+      new RegExp(`${EX}g0>\\s+<${EX}reach>\\s+<${EX}g12>\\s*\\.`),
+      new RegExp(`${EX}g2>\\s+<${EX}reach>\\s+<${EX}g10>\\s*\\.`),
+    ],
   },
   {
     name: '18 heavier taxonomy: diamond subclass inference',
@@ -381,7 +386,10 @@ ${U('a')} ${U('p')} ${U('b')}.
     name: '21 heavier equivalence: sameAs propagation (with symmetric sameAs)',
     opt: { proofComments: false },
     input: sameAsN3(),
-    expect: [new RegExp(`${EX}b>\\s+<${EX}p>\\s+<${EX}o>\\s*\\.`), new RegExp(`${EX}b>\\s+<${EX}sameAs>\\s+<${EX}a>\\s*\\.`)],
+    expect: [
+      new RegExp(`${EX}b>\\s+<${EX}p>\\s+<${EX}o>\\s*\\.`),
+      new RegExp(`${EX}b>\\s+<${EX}sameAs>\\s+<${EX}a>\\s*\\.`),
+    ],
   },
   {
     name: '22 heavier closure: transitive property via generic rule',
@@ -393,7 +401,10 @@ ${U('c')} ${U('sub')} ${U('d')}.
 ${U('d')} ${U('sub')} ${U('e')}.
 ${transitiveClosureN3('sub')}
 `,
-    expect: [new RegExp(`${EX}a>\\s+<${EX}sub>\\s+<${EX}e>\\s*\\.`), new RegExp(`${EX}b>\\s+<${EX}sub>\\s+<${EX}d>\\s*\\.`)],
+    expect: [
+      new RegExp(`${EX}a>\\s+<${EX}sub>\\s+<${EX}e>\\s*\\.`),
+      new RegExp(`${EX}b>\\s+<${EX}sub>\\s+<${EX}d>\\s*\\.`),
+    ],
   },
   {
     name: '23 heavier social: symmetric + reachFriend closure',
@@ -408,7 +419,10 @@ ${transitiveClosureN3('sub')}
     name: '24 heavier volume: 400 facts, simple rewrite rule p -> q',
     opt: { proofComments: false, maxBuffer: 200 * 1024 * 1024 },
     input: bigFactsN3(400),
-    expect: [new RegExp(`${EX}x>\\s+<${EX}q>\\s+<${EX}o0>\\s*\\.`), new RegExp(`${EX}x>\\s+<${EX}q>\\s+<${EX}o399>\\s*\\.`)],
+    expect: [
+      new RegExp(`${EX}x>\\s+<${EX}q>\\s+<${EX}o0>\\s*\\.`),
+      new RegExp(`${EX}x>\\s+<${EX}q>\\s+<${EX}o399>\\s*\\.`),
+    ],
   },
   {
     name: '25 heavier negative entailment: batch + forbidden => false (expect exit 2)',
@@ -494,7 +508,10 @@ ${U('c')} ${U('p')} ${U('d')}.
 
 { ?s ${U('p')} ?o. } => { ?s ${U('q')} ?o. }.
 `,
-    expect: [new RegExp(`${EX}a>\\s+<${EX}q>\\s+<${EX}b>\\s*\\.`), new RegExp(`${EX}c>\\s+<${EX}q>\\s+<${EX}d>\\s*\\.`)],
+    expect: [
+      new RegExp(`${EX}a>\\s+<${EX}q>\\s+<${EX}b>\\s*\\.`),
+      new RegExp(`${EX}c>\\s+<${EX}q>\\s+<${EX}d>\\s*\\.`),
+    ],
   },
 
   {
@@ -540,7 +557,10 @@ ${U('s')} ${U('p')} ${U('o')}.
 
 { ${U('s')} ${U('p')} ${U('o')}. } => { ${U('s')} ${U('q')} ${U('o')}. ${U('s')} ${U('r')} ${U('o')}. }.
 `,
-    expect: [new RegExp(`${EX}s>\\s+<${EX}q>\\s+<${EX}o>\\s*\\.`), new RegExp(`${EX}s>\\s+<${EX}r>\\s+<${EX}o>\\s*\\.`)],
+    expect: [
+      new RegExp(`${EX}s>\\s+<${EX}q>\\s+<${EX}o>\\s*\\.`),
+      new RegExp(`${EX}s>\\s+<${EX}r>\\s+<${EX}o>\\s*\\.`),
+    ],
   },
 
   {
