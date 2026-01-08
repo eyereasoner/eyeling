@@ -1,0 +1,145 @@
+# =============================================================================
+# Scenario:
+#   - Jos has the flu; flu is a type of Disease.
+#   - If someone has a Disease, they should not be working.
+#   - A doctor says Jos can do ProgrammingWork (quoted statement).
+#   - ProgrammingWork is a subclass of Work, so Jos can do Work.
+#
+# Paraconsistent core:
+#   - From canDo Work      => :isWorking true
+#   - From should not work => :isWorking false
+#   - Both can hold; we flag inconsistency locally.
+#
+# Conflict resolution (pragmatic):
+#   - If the person is sick BUT can do remote-capable programming work,
+#     resolve as: work from home only, not at the employer (avoid infecting colleagues).
+# =============================================================================
+
+@prefix :    <http://example.org/#>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+
+# -----------------------------------------------------------------------------
+# Facts
+# -----------------------------------------------------------------------------
+
+:Jos a :Person ;
+     :has :Flue .
+
+:Flue :typeOf :Disease.
+
+# Locations
+:Home     a :Location.
+:Employer a :Location.
+
+# Job taxonomy
+:ProgrammingWork rdfs:subClassOf :Work.
+
+# Mark programming as remote-capable
+:ProgrammingWork :remoteCapable true.
+
+# "The doctor said Jos can do programming work"
+:Doctor :says {
+  :Jos :canDo :ProgrammingWork.
+}.
+
+# -----------------------------------------------------------------------------
+# Lift quoted statements (doctor's claim) into actionable facts
+# -----------------------------------------------------------------------------
+{
+  ?doc :says ?G.
+  ?G log:includes { ?x :canDo ?job. }.
+} => {
+  ?x :canDo ?job.
+}.
+
+# -----------------------------------------------------------------------------
+# Type propagation (Flue -> Disease)
+# -----------------------------------------------------------------------------
+{
+  ?S :has ?A .
+  ?A :typeOf ?B .
+} => {
+  ?S :has ?B .
+}.
+
+# -----------------------------------------------------------------------------
+# If you have a disease, you should not be working
+# -----------------------------------------------------------------------------
+{
+  ?a :has :Disease .
+} => {
+  ?a :should :notbeworking .
+  ?a :avoidInfectingColleagues true .
+}.
+
+# -----------------------------------------------------------------------------
+# Subclass propagation for what someone can do
+# -----------------------------------------------------------------------------
+{
+  ?x :canDo ?job .
+  ?job rdfs:subClassOf ?superJob .
+} => {
+  ?x :canDo ?superJob .
+}.
+
+# -----------------------------------------------------------------------------
+# Turn "canDo Work" vs "should not be working" into a boolean conflict
+# -----------------------------------------------------------------------------
+
+# If you can do Work, then (toy operationalization) you're "working" = true
+{
+  ?x :canDo :Work .
+} => {
+  ?x :isWorking true .
+}.
+
+# If you should not be working, then "working" = false
+{
+  ?x :should :notbeworking .
+} => {
+  ?x :isWorking false .
+}.
+
+# -----------------------------------------------------------------------------
+# Inconsistency detection (localize the conflict)
+# -----------------------------------------------------------------------------
+{
+  ?x :isWorking true .
+  ?x :isWorking false .
+} => {
+  ?x :inconsistent :isWorking .
+  ?x :needsReview :isWorking .
+}.
+
+# -----------------------------------------------------------------------------
+# Conflict resolution rules (pragmatic, domain-specific)
+# -----------------------------------------------------------------------------
+
+# Resolution principle:
+# If there's a work/no-work conflict AND the person is sick AND they can do
+# remote-capable programming work, then allow working ONLY at home.
+{
+  ?x :inconsistent :isWorking .
+  ?x :has :Disease .
+  ?x :canDo :ProgrammingWork .
+  :ProgrammingWork :remoteCapable true .
+} => {
+  ?x :workDecision :RemoteWorkOnly .
+  ?x :isWorkingResolved true .
+
+  # Make the "meaningful" derived permissions explicit:
+  ?x :mayWorkAt :Home .
+  ?x :mustNotWorkAt :Employer.
+
+  # Optional explanation
+  ?x :because :avoidInfectingColleagues .
+}.
+
+# If you have a disease, you should avoid the employer (independent advisory rule)
+{
+  ?x :has :Disease .
+} => {
+  ?x :shouldAvoid :Employer .
+}.
+

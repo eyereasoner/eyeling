@@ -1,0 +1,17 @@
+@prefix : <http://example.org/#> .
+
+:Jos :canDo :ProgrammingWork .
+:Jos :has :Disease .
+:Jos :should :notbeworking .
+:Jos :avoidInfectingColleagues true .
+:Jos :canDo :Work .
+:Jos :isWorking true .
+:Jos :isWorking false .
+:Jos :inconsistent :isWorking .
+:Jos :needsReview :isWorking .
+:Jos :workDecision :RemoteWorkOnly .
+:Jos :isWorkingResolved true .
+:Jos :mayWorkAt :Home .
+:Jos :mustNotWorkAt :Employer .
+:Jos :because :avoidInfectingColleagues .
+:Jos :shouldAvoid :Employer .
