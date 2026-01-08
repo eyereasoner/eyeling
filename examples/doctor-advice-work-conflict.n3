@@ -37,7 +37,7 @@
 
   :ProgrammingWork rdfs:subClassOf :Work.
 
-  # Requests (renamed Request_...)
+  # Requests
   :Request_Jos_Prog_Home a :Request ;
       :agent :Jos ;
       :job :ProgrammingWork ;
@@ -69,9 +69,9 @@
   # canDo propagates to supertypes
   { ?x :canDo ?job. ?job rdfs:subClassOf ?super. } => { ?x :canDo ?super. }.
 
-  ############################################################
+  # ----------------------------------------------------------
   # AIR-annotated rules (documentation) + executable counterparts
-  ############################################################
+  # ----------------------------------------------------------
 
   # Doctor: if canDo requested job => Permit
   :R_DoctorPermit a air:Rule;
