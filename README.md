@@ -21,7 +21,7 @@ Try it here:
   - Load an N3 program from a URL (in the "Load N3 from URL" box or as ?url=...).
   - Share a link with the program encoded in the URL fragment (`#...`).
 
-- Streaming demo
+- Streaming demo tab
   - Browse a Wikidata entity, load its facts, and see Eyeling’s **deductive closure appear incrementally** as triples are derived.
   - Edit **N3 rules live** and re-run to watch how different inference rules change what gets derived.
   - Demo **CORS-safe dynamic fetching**: derived “fetch requests” can trigger extra facts (e.g., Wikiquote extracts) that are injected and re-reasoned.

@@ -5,8 +5,8 @@
 # Scenario:
 #   - Jos has Flu; Flu is a Disease -> Jos is Sick.
 #   - Doctor says Jos can do ProgrammingWork.
-#   - Policy: Sick => deny Work (general).
-#   - Policy: Sick + Work => deny Work (avoid infecting colleagues).
+#   - Policy: Sick + Work => deny Work (general).
+#   - Policy: Sick + Work + Office => deny Work (avoid infecting colleagues).
 #   - Resolution: If conflicted:
 #       * Work  => Deny
 #       * Home+ProgrammingWork => Permit
