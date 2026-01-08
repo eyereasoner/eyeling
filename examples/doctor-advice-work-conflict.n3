@@ -43,7 +43,7 @@
       :job :ProgrammingWork ;
       :location :Home .
 
-  :Request_Jos_Prog_Work a :Request ;
+  :Request_Jos_Prog_Office a :Request ;
       :agent :Jos ;
       :job :ProgrammingWork ;
       :location :Office .
