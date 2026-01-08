@@ -1,0 +1,242 @@
+# =============================================================================
+# ODRL Policies with scoped NAF via log:conclusion + log:(not)Includes
+#
+# Pattern:
+#   - Put "data + rules" in a quoted KB formula
+#   - Compute its deductive closure with log:conclusion
+#   - Ask questions about what the closure entails using log:includes / log:notIncludes
+#
+# What you get as output:
+#   - :decisionStatus  in { :PermitOnly, :DenyOnly, :Both, :Neither }
+#   - :effectiveDecision applying ODRL conflict strategy
+#
+# ODRL conflict strategies:
+#   odrl:perm      => Permission overrides Prohibition
+#   odrl:prohibit  => Prohibition overrides Permission
+#   odrl:invalid   => Conflicts void the whole policy
+# =============================================================================
+
+@prefix :    <http://example.org/odrl-paraconsistent#>.
+@prefix odrl: <http://www.w3.org/ns/odrl/2/>.
+@prefix log:  <http://www.w3.org/2000/10/swap/log#>.
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+
+# ---------------------------------------------------------------
+# 1) KB formula: ODRL policies + requests + matching rules
+#    (kept inside a formula so raw derivations don’t clutter output)
+# ---------------------------------------------------------------
+
+:kb :hasFormula {
+
+  # ----------------------
+  # Assets / Parties
+  # ----------------------
+  :Report a odrl:Asset.
+  :Alice  a odrl:Party.
+  :Bob    a odrl:Party.
+
+  # ----------------------
+  # Policy Sets
+  # ----------------------
+
+  # Same rules, different conflict strategy:
+  :PS_Prohibit a odrl:Set; odrl:conflict odrl:prohibit.
+  :PS_Perm     a odrl:Set; odrl:conflict odrl:perm.
+  :PS_Invalid  a odrl:Set; odrl:conflict odrl:invalid.
+
+  # Rule templates (blank nodes are fine here)
+  # Permission: Alice may print Report for purpose Research
+  :PS_Prohibit odrl:permission [
+    odrl:target   :Report;
+    odrl:action   odrl:print;
+    odrl:assignee :Alice;
+    odrl:constraint [
+      odrl:leftOperand odrl:purpose;
+      odrl:operator    odrl:eq;
+      odrl:rightOperand :Research
+    ]
+  ].
+
+  :PS_Perm odrl:permission [
+    odrl:target   :Report;
+    odrl:action   odrl:print;
+    odrl:assignee :Alice;
+    odrl:constraint [
+      odrl:leftOperand odrl:purpose;
+      odrl:operator    odrl:eq;
+      odrl:rightOperand :Research
+    ]
+  ].
+
+  :PS_Invalid odrl:permission [
+    odrl:target   :Report;
+    odrl:action   odrl:print;
+    odrl:assignee :Alice;
+    odrl:constraint [
+      odrl:leftOperand odrl:purpose;
+      odrl:operator    odrl:eq;
+      odrl:rightOperand :Research
+    ]
+  ].
+
+  # Prohibition: Alice is prohibited to print Report (no constraint => always)
+  :PS_Prohibit odrl:prohibition [
+    odrl:target   :Report;
+    odrl:action   odrl:print;
+    odrl:assignee :Alice
+  ].
+
+  :PS_Perm odrl:prohibition [
+    odrl:target   :Report;
+    odrl:action   odrl:print;
+    odrl:assignee :Alice
+  ].
+
+  :PS_Invalid odrl:prohibition [
+    odrl:target   :Report;
+    odrl:action   odrl:print;
+    odrl:assignee :Alice
+  ].
+
+  # Extra: Bob may read (permit-only example)
+  :PS_Prohibit odrl:permission [
+    odrl:target   :Report;
+    odrl:action   odrl:read;
+    odrl:assignee :Bob
+  ].
+
+  # Extra: Bob is prohibited to distribute (deny-only example)
+  :PS_Prohibit odrl:prohibition [
+    odrl:target   :Report;
+    odrl:action   odrl:distribute;
+    odrl:assignee :Bob
+  ].
+
+  # ----------------------
+  # Requests we want to evaluate
+  # ----------------------
+
+  :Req_Alice_Print_Research_Prohibit
+    a :Request;
+    :policy   :PS_Prohibit;
+    :assignee :Alice;
+    :action   odrl:print;
+    :target   :Report;
+    :purpose  :Research.
+
+  :Req_Alice_Print_Research_Perm
+    a :Request;
+    :policy   :PS_Perm;
+    :assignee :Alice;
+    :action   odrl:print;
+    :target   :Report;
+    :purpose  :Research.
+
+  :Req_Alice_Print_Research_Invalid
+    a :Request;
+    :policy   :PS_Invalid;
+    :assignee :Alice;
+    :action   odrl:print;
+    :target   :Report;
+    :purpose  :Research.
+
+  :Req_Bob_Read
+    a :Request;
+    :policy   :PS_Prohibit;
+    :assignee :Bob;
+    :action   odrl:read;
+    :target   :Report.
+
+  :Req_Bob_Distribute
+    a :Request;
+    :policy   :PS_Prohibit;
+    :assignee :Bob;
+    :action   odrl:distribute;
+    :target   :Report.
+
+  :Req_Bob_Archive
+    a :Request;
+    :policy   :PS_Prohibit;
+    :assignee :Bob;
+    :action   odrl:archive;   # no rules mention this action => Neither
+    :target   :Report.
+
+  # ----------------------
+  # Decision derivation rules (inside KB)
+  # ----------------------
+
+  # Permission without constraint
+  { ?req a :Request; :policy ?ps; :assignee ?who; :action ?act; :target ?asset.
+    ?ps odrl:permission ?perm.
+    ?perm odrl:assignee ?who; odrl:action ?act; odrl:target ?asset.
+  } => { ?req :decision :Permit. }.
+
+  # Permission with purpose constraint (eq)
+  { ?req a :Request; :policy ?ps; :assignee ?who; :action ?act; :target ?asset; :purpose ?purpose.
+    ?ps odrl:permission ?perm.
+    ?perm odrl:assignee ?who; odrl:action ?act; odrl:target ?asset; odrl:constraint ?c.
+    ?c odrl:leftOperand odrl:purpose; odrl:operator odrl:eq; odrl:rightOperand ?purpose.
+  } => { ?req :decision :Permit. }.
+
+  # Prohibition without constraint
+  { ?req a :Request; :policy ?ps; :assignee ?who; :action ?act; :target ?asset.
+    ?ps odrl:prohibition ?proh.
+    ?proh odrl:assignee ?who; odrl:action ?act; odrl:target ?asset.
+  } => { ?req :decision :Deny. }.
+}.
+
+# ---------------------------------------------------------------
+# 2) Pull a few “queryable” facts out of the closure
+# ---------------------------------------------------------------
+
+{ :kb :hasFormula ?F. ?F log:conclusion ?C.
+  ?C log:includes { ?req :policy ?ps. ?ps odrl:conflict ?strategy. }.
+} => { ?req :conflictStrategy ?strategy. }.
+
+# ---------------------------------------------------------------
+# 3) DecisionStatus via scoped NAF on the closure
+# ---------------------------------------------------------------
+
+# Both (conflict)
+{ :kb :hasFormula ?F. ?F log:conclusion ?C.
+  ?C log:includes { ?req :decision :Permit. }.
+  ?C log:includes { ?req :decision :Deny. }.
+} => { ?req :decisionStatus :Both. }.
+
+# PermitOnly
+{ :kb :hasFormula ?F. ?F log:conclusion ?C.
+  ?C log:includes    { ?req :decision :Permit. }.
+  ?C log:notIncludes { ?req :decision :Deny. }.
+} => { ?req :decisionStatus :PermitOnly. }.
+
+# DenyOnly
+{ :kb :hasFormula ?F. ?F log:conclusion ?C.
+  ?C log:includes    { ?req :decision :Deny. }.
+  ?C log:notIncludes { ?req :decision :Permit. }.
+} => { ?req :decisionStatus :DenyOnly. }.
+
+# Neither (no applicable rules)
+{ :kb :hasFormula ?F. ?F log:conclusion ?C.
+  ?C log:notIncludes { ?req :decision :Permit. }.
+  ?C log:notIncludes { ?req :decision :Deny. }.
+} => { ?req :decisionStatus :Neither. }.
+
+# ---------------------------------------------------------------
+# 4) Effective decision applying ODRL conflict strategy
+# ---------------------------------------------------------------
+
+# Non-conflicts
+{ ?req :decisionStatus :PermitOnly. } => { ?req :effectiveDecision :Permit. }.
+{ ?req :decisionStatus :DenyOnly.   } => { ?req :effectiveDecision :Deny.   }.
+{ ?req :decisionStatus :Neither.    } => { ?req :effectiveDecision :NotSpecified. }.
+
+# Conflicts resolved by strategy
+{ ?req :decisionStatus :Both. ?req :conflictStrategy odrl:prohibit. }
+  => { ?req :effectiveDecision :Deny. }.
+
+{ ?req :decisionStatus :Both. ?req :conflictStrategy odrl:perm. }
+  => { ?req :effectiveDecision :Permit. }.
+
+{ ?req :decisionStatus :Both. ?req :conflictStrategy odrl:invalid. }
+  => { ?req :effectiveDecision :VoidPolicy. }.
+
