@@ -230,13 +230,13 @@
 { ?req :decisionStatus :DenyOnly.   } => { ?req :effectiveDecision :Deny.   }.
 { ?req :decisionStatus :Neither.    } => { ?req :effectiveDecision :NotSpecified. }.
 
-# Conflicts resolved by strategy
+# Conflicts resolved by strategy + flag in the SAME derivation
 { ?req :decisionStatus :Both. ?req :conflictStrategy odrl:prohibit. }
-  => { ?req :effectiveDecision :Deny. }.
+  => { ?req :effectiveDecision :Deny;       :needsReview true. }.
 
 { ?req :decisionStatus :Both. ?req :conflictStrategy odrl:perm. }
-  => { ?req :effectiveDecision :Permit. }.
+  => { ?req :effectiveDecision :Permit;     :needsReview true. }.
 
 { ?req :decisionStatus :Both. ?req :conflictStrategy odrl:invalid. }
-  => { ?req :effectiveDecision :VoidPolicy. }.
+  => { ?req :effectiveDecision :VoidPolicy; :needsReview true. }.
 
