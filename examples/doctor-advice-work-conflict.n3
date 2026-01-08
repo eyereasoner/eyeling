@@ -33,7 +33,7 @@
   :Flu :typeOf :Disease.
 
   :Home a :Location.
-  :Work a :Location.
+  :Office a :Location.
 
   :ProgrammingWork rdfs:subClassOf :Work.
 
@@ -46,7 +46,7 @@
   :Request_Jos_Prog_Work a :Request ;
       :agent :Jos ;
       :job :ProgrammingWork ;
-      :location :Work .
+      :location :Office .
 
   # Doctor said (quoted)
   :Doctor :says { :Jos :canDo :ProgrammingWork. }.
@@ -91,12 +91,12 @@
 
   # Health: Sick + Work + Work => Deny (avoid infecting colleagues)
   :R_SickWork a air:Rule;
-    air:if   { ?req a :Request; :agent ?x; :job ?job; :location :Work.
-               ?x :healthStatus :Sick. ?job :isKindOf :Work. };
+    air:if   { ?req a :Request; :agent ?x; :job ?job; :location :Office.
+               ?x :healthStatus :Sick. ?job :isKindOf :Office. };
     air:then { ?req :decision :Deny. ?x :avoidInfectingColleagues true. }.
 
-  { ?req a :Request; :agent ?x; :job ?job; :location :Work.
-    ?x :healthStatus :Sick. ?job :isKindOf :Work. }
+  { ?req a :Request; :agent ?x; :job ?job; :location :Office.
+    ?x :healthStatus :Sick. ?job :isKindOf :Office. }
     => { ?req :decision :Deny. ?x :avoidInfectingColleagues true. }.
 
   # Resolution hint: Sick + ProgrammingWork at Home => Permit
@@ -153,7 +153,7 @@
 { :kb :hasFormula ?F. ?F log:conclusion ?C.
   ?C log:includes { ?req :decision :Permit. }.
   ?C log:includes { ?req :decision :Deny. }.
-  ?C log:includes { ?req :location :Work. }.
+  ?C log:includes { ?req :location :Office }.
 } => { ?req :effectiveDecision :Deny. }.
 
 # Conflict + Home + ProgrammingWork => Permit (+ flag)
@@ -168,7 +168,7 @@
 { :kb :hasFormula ?F. ?F log:conclusion ?C.
   ?C log:includes    { ?req :decision :Permit. }.
   ?C log:includes    { ?req :decision :Deny. }.
-  ?C log:notIncludes { ?req :location :Work. }.
+  ?C log:notIncludes { ?req :location :Office. }.
   ?C log:notIncludes { ?req :location :Home. ?req :job :ProgrammingWork. }.
 } => { ?req :effectiveDecision :Undecided. }.
 
@@ -177,6 +177,6 @@
 # -----------------------------------------------------------------------------
 
 { ?rH :agent ?who; :location :Home;    :effectiveDecision :Permit.
-  ?rC :agent ?who; :location :Work; :effectiveDecision :Deny.
+  ?rC :agent ?who; :location :Office; :effectiveDecision :Deny.
 } => { ?who :workDecision :RemoteWorkOnly. }.
 
