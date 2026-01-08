@@ -24,9 +24,9 @@
 # -----------------------------------------------------------------------------
 
 :Jos a :Person ;
-     :has :Flue .
+     :has :Flu .
 
-:Flue :typeOf :Disease.
+:Flu :typeOf :Disease.
 
 # Locations
 :Home     a :Location.
@@ -54,7 +54,7 @@
 }.
 
 # -----------------------------------------------------------------------------
-# Type propagation (Flue -> Disease)
+# Type propagation (Flu -> Disease)
 # -----------------------------------------------------------------------------
 {
   ?S :has ?A .
