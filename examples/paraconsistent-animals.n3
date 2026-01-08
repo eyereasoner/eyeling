@@ -1,0 +1,109 @@
+# =============================================================================
+# Paraconsistent N3 example
+#
+# What it demonstrates:
+#   1) Contradictions tolerated: we can have both :p true and :p false.
+#   2) Scoped NAF via deductive closure:
+#        - compute closure with log:conclusion
+#        - check "absence" using log:notIncludes (scoped NAF)
+#        - check "presence" using log:includes
+#   3) Only meaningful derivations are materialized:
+#        - raw/possibly-contradictory facts are kept inside a quoted KB graph
+#        - we only output statuses + "safe" summaries
+# =============================================================================
+
+@prefix :    <http://example.org/paraconsistent#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+
+# ---------------------------------------------------------------
+# 1) Knowledge base (data + domain rules) stored as a graph term
+#    (so its internal derivations are not printed as top-level output)
+# ---------------------------------------------------------------
+
+:kb :hasFormula {
+
+  # --- Data (intentionally inconsistent in places) ---
+  :tweety  a :Bird, :Penguin.
+  :falco   a :Bird.
+  :opus    a :Penguin.
+  :batsy   a :Mammal, :Bat.
+  :nemo    a :Fish.
+
+  # explicit observation that conflicts with "Birds fly"
+  :mythic  a :Bird.
+  :mythic  :canFly false.
+
+  # --- Domain rules that may conflict ---
+  { ?x a :Bird.    } => { ?x :canFly true.  ?x :hasWings true. }.
+  { ?x a :Penguin. } => { ?x :canFly false. }.
+
+  { ?x a :Mammal.  } => { ?x :hasWings false. }.
+  { ?x a :Bat.     } => { ?x :hasWings true.  ?x :canFly true. }.
+
+  { ?x a :Fish.    } => { ?x :canSwim true.  ?x :hasWings false. }.
+}.
+
+# ---------------------------------------------------------------
+# 2) Status computation using:
+#      ?KB log:conclusion ?C .
+#      ?C  log:includes / log:notIncludes  { ... } .
+#
+# Status values: :TrueOnly / :FalseOnly / :Both
+# ---------------------------------------------------------------
+
+# Helper: get the closure once per match (no need to print it)
+{ :kb :hasFormula ?F. ?F log:conclusion ?C.
+  ?C log:includes { ?x :canFly true. }.
+  ?C log:includes { ?x :canFly false. }.
+} => { ?x :canFlyStatus :Both. }.
+
+{ :kb :hasFormula ?F. ?F log:conclusion ?C.
+  ?C log:includes    { ?x :canFly true. }.
+  ?C log:notIncludes { ?x :canFly false. }.
+} => { ?x :canFlyStatus :TrueOnly. }.
+
+{ :kb :hasFormula ?F. ?F log:conclusion ?C.
+  ?C log:includes    { ?x :canFly false. }.
+  ?C log:notIncludes { ?x :canFly true. }.
+} => { ?x :canFlyStatus :FalseOnly. }.
+
+
+{ :kb :hasFormula ?F. ?F log:conclusion ?C.
+  ?C log:includes { ?x :hasWings true. }.
+  ?C log:includes { ?x :hasWings false. }.
+} => { ?x :hasWingsStatus :Both. }.
+
+{ :kb :hasFormula ?F. ?F log:conclusion ?C.
+  ?C log:includes    { ?x :hasWings true. }.
+  ?C log:notIncludes { ?x :hasWings false. }.
+} => { ?x :hasWingsStatus :TrueOnly. }.
+
+{ :kb :hasFormula ?F. ?F log:conclusion ?C.
+  ?C log:includes    { ?x :hasWings false. }.
+  ?C log:notIncludes { ?x :hasWings true. }.
+} => { ?x :hasWingsStatus :FalseOnly. }.
+
+# ---------------------------------------------------------------
+# 3) Localize inconsistencies (paraconsistent: flag, don't explode)
+# ---------------------------------------------------------------
+
+{ ?x :canFlyStatus :Both. }    => { ?x :inconsistent :canFly.    ?x :needsReview :canFly. }.
+{ ?x :hasWingsStatus :Both. }  => { ?x :inconsistent :hasWings.  ?x :needsReview :hasWings. }.
+
+# ---------------------------------------------------------------
+# 4) Meaningful materialized summaries ("safe" single-valued views)
+# ---------------------------------------------------------------
+
+{ ?x :canFlyStatus :TrueOnly.  } => { ?x :canFlySafely true. }.
+{ ?x :canFlyStatus :FalseOnly. } => { ?x :canFlySafely false. }.
+{ ?x :canFlyStatus :Both.      } => { ?x :canFlySafely :Undecided. }.
+
+{ ?x :hasWingsStatus :TrueOnly.  } => { ?x :hasWingsSafely true. }.
+{ ?x :hasWingsStatus :FalseOnly. } => { ?x :hasWingsSafely false. }.
+{ ?x :hasWingsStatus :Both.      } => { ?x :hasWingsSafely :Undecided. }.
+
+# Safe behavior derived only from the safe canFlyStatus
+{ ?x :canFlyStatus :TrueOnly.  } => { ?x :movesBySafely :Flying.  ?x :migratesSafely true. }.
+{ ?x :canFlyStatus :FalseOnly. } => { ?x :movesBySafely :Walking. ?x :migratesSafely false. }.
+{ ?x :canFlyStatus :Both.      } => { ?x :movesBySafely :Unknown. ?x :migratesSafely :Undecided. }.
+
