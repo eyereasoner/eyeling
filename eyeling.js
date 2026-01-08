@@ -7449,7 +7449,6 @@ function main() {
       `  -a, --ast               Print parsed AST as JSON and exit.\n` +
       `  -e, --enforce-https     Rewrite http:// IRIs to https:// for log dereferencing builtins.\n` +
       `  -h, --help              Show this help and exit.\n` +
-      `  -n, --no-proof-comments Disable proof explanations (default).\n` +
       `  -p, --proof-comments    Enable proof explanations.\n` +
       `  -r, --strings           Print log:outputString strings (ordered by key) instead of N3 output.\n` +
       `  -s, --super-restricted  Disable all builtins except => and <=.\n` +
@@ -7486,12 +7485,6 @@ function main() {
   // --proof-comments / -p: enable proof explanations
   if (argv.includes('--proof-comments') || argv.includes('-p')) {
     proofCommentsEnabled = true;
-  }
-
-  // --no-proof-comments / -n: disable proof explanations (default)
-  // Keep this after --proof-comments so -n wins if both are present.
-  if (argv.includes('--no-proof-comments') || argv.includes('-n')) {
-    proofCommentsEnabled = false;
   }
 
   // --super-restricted / -s: disable all builtins except => / <=

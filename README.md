@@ -117,7 +117,6 @@ Options:
   -a, --ast               Print parsed AST as JSON and exit.
   -e, --enforce-https     Rewrite http:// IRIs to https:// for log dereferencing builtins.
   -h, --help              Show this help and exit.
-  -n, --no-proof-comments Disable proof explanations (default).
   -p, --proof-comments    Enable proof explanations.
   -r, --strings           Print log:outputString strings (ordered by key) instead of N3 output.
   -s, --super-restricted  Disable all builtins except => and <=.
@@ -136,7 +135,7 @@ By default, `eyeling`:
 
 For each newly derived triple, `eyeling` prints:
 
-1. a proof-style comment block explaining why the triple holds (unless `-n`), and then
+1. a proof-style comment block explaining why the triple holds, and then
 2. the triple itself in N3/Turtle syntax.
 
 The proof comments are compact “local justifications” per derived triple (not a single exported global proof tree).
