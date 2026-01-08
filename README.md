@@ -114,15 +114,15 @@ npm run test:packlist
 Usage: eyeling [options] <file.n3>
 
 Options:
-  -h, --help              Show this help and exit.
-  -v, --version           Print version and exit.
-  -p, --proof-comments    Enable proof explanations.
-  -n, --no-proof-comments Disable proof explanations (default).
-  -s, --super-restricted  Disable all builtins except => and <=.
   -a, --ast               Print parsed AST as JSON and exit.
-  --strings               Print log:outputString strings (ordered by key) instead of N3 output.
-  --enforce-https         Rewrite http:// IRIs to https:// for log dereferencing builtins.
-  --stream                Stream derived triples as soon as they are derived.
+  -e, --enforce-https     Rewrite http:// IRIs to https:// for log dereferencing builtins.
+  -h, --help              Show this help and exit.
+  -n, --no-proof-comments Disable proof explanations (default).
+  -p, --proof-comments    Enable proof explanations.
+  -r, --strings           Print log:outputString strings (ordered by key) instead of N3 output.
+  -s, --super-restricted  Disable all builtins except => and <=.
+  -t, --stream            Stream derived triples as soon as they are derived.
+  -v, --version           Print version and exit.
 ```
 
 By default, `eyeling`:

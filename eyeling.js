@@ -7427,7 +7427,17 @@ try {
 
 function main() {
   // Drop "node" and script name; keep only user-provided args
-  const argv = process.argv.slice(2);
+  // Expand combined short options: -pt == -p -t
+  const argvRaw = process.argv.slice(2);
+  const argv = [];
+  for (const a of argvRaw) {
+    if (a === '-' || !a.startsWith('-') || a.startsWith('--') || a.length === 2) {
+      argv.push(a);
+      continue;
+    }
+    // Combined short flags (no flag in eyeling takes a value)
+    for (const ch of a.slice(1)) argv.push('-' + ch);
+  }
   const prog = String(process.argv[1] || 'eyeling')
     .split(/[\/]/)
     .pop();
@@ -7436,15 +7446,15 @@ function main() {
     const msg =
       `Usage: ${prog} [options] <file.n3>\n\n` +
       `Options:\n` +
-      `  -h, --help              Show this help and exit.\n` +
-      `  -v, --version           Print version and exit.\n` +
-      `  -p, --proof-comments    Enable proof explanations.\n` +
-      `  -n, --no-proof-comments Disable proof explanations (default).\n` +
-      `  -s, --super-restricted  Disable all builtins except => and <=.\n` +
       `  -a, --ast               Print parsed AST as JSON and exit.\n` +
-      `  --strings               Print log:outputString strings (ordered by key) instead of N3 output.\n` +
-      `  --enforce-https         Rewrite http:// IRIs to https:// for log dereferencing builtins.\n` +
-      `  --stream                Stream derived triples as soon as they are derived.\n`;
+      `  -e, --enforce-https     Rewrite http:// IRIs to https:// for log dereferencing builtins.\n` +
+      `  -h, --help              Show this help and exit.\n` +
+      `  -n, --no-proof-comments Disable proof explanations (default).\n` +
+      `  -p, --proof-comments    Enable proof explanations.\n` +
+      `  -r, --strings           Print log:outputString strings (ordered by key) instead of N3 output.\n` +
+      `  -s, --super-restricted  Disable all builtins except => and <=.\n` +
+      `  -t, --stream            Stream derived triples as soon as they are derived.\n` +
+      `  -v, --version           Print version and exit.\n`;
     (toStderr ? console.error : console.log)(msg);
   }
 
@@ -7465,11 +7475,11 @@ function main() {
 
   const showAst = argv.includes('--ast') || argv.includes('-a');
 
-  const outputStringsMode = argv.includes('--strings');
-  const streamMode = argv.includes('--stream');
+  const outputStringsMode = argv.includes('--strings') || argv.includes('-r');
+  const streamMode = argv.includes('--stream') || argv.includes('-t');
 
   // --enforce-https: rewrite http:// -> https:// for log dereferencing builtins
-  if (argv.includes('--enforce-https')) {
+  if (argv.includes('--enforce-https') || argv.includes('-e')) {
     enforceHttpsEnabled = true;
   }
 
