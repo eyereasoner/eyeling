@@ -2,6 +2,7 @@
 @prefix a: <http://example.org/partnerA#> .
 @prefix b: <http://example.org/partnerB#> .
 @prefix my: <http://example.org/my#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
 
 :RosterExportToPartnerA :usesAlignment :Align_A_v2 .
 :RosterExportToPartnerB :usesAlignment :Align_B_v1 .
@@ -33,12 +34,14 @@ my:Course_KG a:hasStudent my:Student_B .
 my:Course_KG b:hasLearner my:Student_A .
 my:Course_KG b:hasLearner my:Student_B .
 :PartnerA_Roster :fromPattern :RosterExportToPartnerA .
-:PartnerA_Roster :includesStudent my:Student_A .
 :PartnerA_Roster :includesCourse my:Course_KG .
+:PartnerA_Roster :includesStudent my:Student_A .
 :PartnerA_Roster :ready true .
 :PartnerA_Roster :includesStudent my:Student_B .
 :PartnerB_Roster :fromPattern :RosterExportToPartnerB .
-:PartnerB_Roster :includesLearner my:Student_A .
 :PartnerB_Roster :includesModule my:Course_KG .
+:PartnerB_Roster :includesLearner my:Student_A .
 :PartnerB_Roster :ready true .
 :PartnerB_Roster :includesLearner my:Student_B .
+:PartnerA_Report sh:conforms true .
+:PartnerB_Report sh:conforms true .
