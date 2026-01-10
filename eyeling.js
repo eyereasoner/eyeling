@@ -4454,6 +4454,30 @@ function evalCryptoHashBuiltin(g, subst, algo) {
   return s2 !== null ? [s2] : [];
 }
 
+// ---------------------------------------------------------------------------
+// log: scoped-closure priority helper
+// ---------------------------------------------------------------------------
+// When log:collectAllIn / log:forAllIn are used with an object that is a
+// natural number literal, that number is treated as a *priority* (closure level).
+// See the adapted semantics near those builtins.
+function __logNaturalPriorityFromTerm(t) {
+  const info = parseNumericLiteralInfo(t);
+  if (!info) return null;
+  if (info.dt !== XSD_INTEGER_DT) return null;
+
+  const v = info.value;
+  if (typeof v === 'bigint') {
+    if (v < 0n) return null;
+    if (v > BigInt(Number.MAX_SAFE_INTEGER)) return null;
+    return Number(v);
+  }
+  if (typeof v === 'number') {
+    if (!Number.isInteger(v) || v < 0) return null;
+    return v;
+  }
+  return null;
+}
+
 // ===========================================================================
 // Builtin evaluation
 // ===========================================================================
@@ -6103,6 +6127,15 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const [valueTempl, clauseTerm, listTerm] = g.s.elems;
     if (!(clauseTerm instanceof GraphTerm)) return [];
 
+    // Priority / closure semantics:
+    //   - object = GraphTerm: explicit scope, run immediately (no closure gating)
+    //   - object = natural number literal N: delay until saturated closure level >= N
+    //       * N = 0 => run immediately (use the live fact store)
+    //       * N >= 1 => run only when a scoped snapshot exists at closure level >= N
+    //   - object = Var: treat as priority 1 and bind it to 1
+    //   - any other object: backward-compatible default priority 1
+
+    let outSubst = { ...subst };
     let scopeFacts = null;
     let scopeBackRules = backRules;
 
@@ -6114,15 +6147,40 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
         enumerable: false,
         writable: true,
       });
+      const lvlHere = facts && typeof facts.__scopedClosureLevel === 'number' ? facts.__scopedClosureLevel : 0;
+      Object.defineProperty(scopeFacts, '__scopedClosureLevel', {
+        value: lvlHere,
+        enumerable: false,
+        writable: true,
+      });
       scopeBackRules = [];
     } else {
-      scopeFacts = facts.__scopedSnapshot || null;
-      if (!scopeFacts) return []; // DELAY until snapshot exists
+      let prio = 1;
+      if (g.o instanceof Var) {
+        // Bind the object var to 1 (default priority)
+        outSubst[g.o.name] = internLiteral('1');
+        prio = 1;
+      } else {
+        const p0 = __logNaturalPriorityFromTerm(g.o);
+        if (p0 !== null) prio = p0;
+      }
+
+      if (prio === 0) {
+        // Immediate: use live closure during the current fixpoint phase.
+        scopeFacts = facts;
+        scopeBackRules = backRules;
+      } else {
+        const snap = facts.__scopedSnapshot || null;
+        const lvl = (facts && typeof facts.__scopedClosureLevel === 'number' && facts.__scopedClosureLevel) || 0;
+        if (!snap) return []; // DELAY until snapshot exists
+        if (lvl < prio) return []; // DELAY until saturated closure prio exists
+        scopeFacts = snap;
+      }
     }
 
     // If sols is a blank node succeed without collecting/binding.
     if (listTerm instanceof Blank) {
-      return [{ ...subst }];
+      return [outSubst];
     }
 
     const visited2 = [];
@@ -6139,7 +6197,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const collected = sols.map((sBody) => applySubstTerm(valueTempl, sBody));
     const collectedList = new ListTerm(collected);
 
-    const s2 = unifyTerm(listTerm, collectedList, { ...subst });
+    const s2 = unifyTerm(listTerm, collectedList, outSubst);
     return s2 ? [s2] : [];
   }
 
@@ -6149,6 +6207,9 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const [whereClause, thenClause] = g.s.elems;
     if (!(whereClause instanceof GraphTerm) || !(thenClause instanceof GraphTerm)) return [];
 
+    // See log:collectAllIn above for the priority / closure semantics.
+
+    let outSubst = { ...subst };
     let scopeFacts = null;
     let scopeBackRules = backRules;
 
@@ -6160,10 +6221,33 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
         enumerable: false,
         writable: true,
       });
+      const lvlHere = facts && typeof facts.__scopedClosureLevel === 'number' ? facts.__scopedClosureLevel : 0;
+      Object.defineProperty(scopeFacts, '__scopedClosureLevel', {
+        value: lvlHere,
+        enumerable: false,
+        writable: true,
+      });
       scopeBackRules = [];
     } else {
-      scopeFacts = facts.__scopedSnapshot || null;
-      if (!scopeFacts) return []; // DELAY until snapshot exists
+      let prio = 1;
+      if (g.o instanceof Var) {
+        outSubst[g.o.name] = internLiteral('1');
+        prio = 1;
+      } else {
+        const p0 = __logNaturalPriorityFromTerm(g.o);
+        if (p0 !== null) prio = p0;
+      }
+
+      if (prio === 0) {
+        scopeFacts = facts;
+        scopeBackRules = backRules;
+      } else {
+        const snap = facts.__scopedSnapshot || null;
+        const lvl = (facts && typeof facts.__scopedClosureLevel === 'number' && facts.__scopedClosureLevel) || 0;
+        if (!snap) return []; // DELAY until snapshot exists
+        if (lvl < prio) return []; // DELAY until saturated closure prio exists
+        scopeFacts = snap;
+      }
     }
 
     const visited1 = [];
@@ -6190,7 +6274,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       );
       if (!sols2.length) return [];
     }
-    return [{ ...subst }];
+    return [outSubst];
   }
 
   // log:skolem
@@ -6844,7 +6928,45 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
   backRules.__allForwardRules = forwardRules;
   backRules.__allBackwardRules = backRules;
 
-  function setScopedSnapshot(snap) {
+  // Closure level counter used by log:collectAllIn/log:forAllIn priority gating.
+  // Level 0 means "no frozen snapshot" (during Phase A of each outer iteration).
+  let scopedClosureLevel = 0;
+
+  // Scan known rules for the maximum requested closure priority in
+  // log:collectAllIn / log:forAllIn goals.
+  function computeMaxScopedClosurePriorityNeeded() {
+    let maxP = 0;
+    function scanTriple(tr) {
+      if (!(tr && tr.p instanceof Iri)) return;
+      const pv = tr.p.value;
+      if (pv !== LOG_NS + 'collectAllIn' && pv !== LOG_NS + 'forAllIn') return;
+      // Explicit scope graphs are immediate and do not require a closure.
+      if (tr.o instanceof GraphTerm) return;
+      // Variable or non-numeric object => default priority 1 (if used).
+      if (tr.o instanceof Var) {
+        if (maxP < 1) maxP = 1;
+        return;
+      }
+      const p0 = __logNaturalPriorityFromTerm(tr.o);
+      if (p0 !== null) {
+        if (p0 > maxP) maxP = p0;
+      } else {
+        if (maxP < 1) maxP = 1;
+      }
+    }
+
+    for (const r of forwardRules) {
+      for (const tr of r.premise) scanTriple(tr);
+    }
+    for (const r of backRules) {
+      for (const tr of r.premise) scanTriple(tr);
+    }
+    return maxP;
+  }
+
+  let maxScopedClosurePriorityNeeded = computeMaxScopedClosurePriorityNeeded();
+
+  function setScopedSnapshot(snap, level) {
     if (!Object.prototype.hasOwnProperty.call(facts, '__scopedSnapshot')) {
       Object.defineProperty(facts, '__scopedSnapshot', {
         value: snap,
@@ -6855,6 +6977,17 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
     } else {
       facts.__scopedSnapshot = snap;
     }
+
+    if (!Object.prototype.hasOwnProperty.call(facts, '__scopedClosureLevel')) {
+      Object.defineProperty(facts, '__scopedClosureLevel', {
+        value: level,
+        enumerable: false,
+        writable: true,
+        configurable: true,
+      });
+    } else {
+      facts.__scopedClosureLevel = level;
+    }
   }
 
   function makeScopedSnapshot() {
@@ -6862,6 +6995,13 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
     ensureFactIndexes(snap);
     Object.defineProperty(snap, '__scopedSnapshot', {
       value: snap,
+      enumerable: false,
+      writable: true,
+      configurable: true,
+    });
+    // Propagate closure level so nested scoped builtins can see it.
+    Object.defineProperty(snap, '__scopedClosureLevel', {
+      value: scopedClosureLevel,
       enumerable: false,
       writable: true,
       configurable: true,
@@ -7045,20 +7185,26 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
 
   while (true) {
     // Phase A: scoped builtins disabled => they “delay” (fail) during saturation
-    setScopedSnapshot(null);
+    setScopedSnapshot(null, 0);
     const changedA = runFixpoint();
 
     // Freeze saturated scope
+    scopedClosureLevel += 1;
     const snap = makeScopedSnapshot();
 
     // Phase B: scoped builtins enabled, but they query only `snap`
-    setScopedSnapshot(snap);
+    setScopedSnapshot(snap, scopedClosureLevel);
     const changedB = runFixpoint();
 
-    if (!changedA && !changedB) break;
+    // Rules may have been added dynamically (rule-producing triples), possibly
+    // introducing higher closure priorities. Keep iterating until we have
+    // reached the maximum requested priority and no further changes occur.
+    maxScopedClosurePriorityNeeded = Math.max(maxScopedClosurePriorityNeeded, computeMaxScopedClosurePriorityNeeded());
+
+    if (!changedA && !changedB && scopedClosureLevel >= maxScopedClosurePriorityNeeded) break;
   }
 
-  setScopedSnapshot(null);
+  setScopedSnapshot(null, 0);
 
   return derivedForward;
 }

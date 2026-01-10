@@ -363,3 +363,17 @@ my:Student_B a my:Student ;
   ] .
 }.
 
+# --------------------------
+# sh:conforms
+# --------------------------
+
+# If any result exists (in the current graph) -> conforms false
+{ ?rep a sh:ValidationReport.
+  ?rep sh:result ?r.
+} => { ?rep sh:conforms false. }.
+
+# If no result exists (SNAF in current scope) -> conforms true
+{ ?rep a sh:ValidationReport.
+  (1 { ?rep sh:result ?r. } () ) log:collectAllIn 2.
+} => { ?rep sh:conforms true. }.
+
