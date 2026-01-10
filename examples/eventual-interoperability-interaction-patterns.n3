@@ -31,6 +31,8 @@
 @prefix align: <http://example.org/align#>.
 @prefix :      <http://example.org/demo#>.
 
+@prefix list: <http://www.w3.org/2000/10/swap/list#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
 @prefix log:   <http://www.w3.org/2000/10/swap/log#>.
 @prefix owl:   <http://www.w3.org/2002/07/owl#>.
 @prefix sh:    <http://www.w3.org/ns/shacl#>.
@@ -289,7 +291,7 @@ my:Student_B a my:Student ;
   :forRoster  :PartnerB_Roster .
 
 # --------------------------
-# minCount(1) violations
+# minCount violations
 # --------------------------
 
 {
@@ -305,14 +307,17 @@ my:Student_B a my:Student ;
          sh:property ?ps .
 
   ?ps sh:path ?path ;
-      sh:minCount 1 .
+      sh:minCount ?min .
 
   # focus nodes: nodes aligned for this pattern and of the target class
   ?focus a ?class ;
          :alignedBy ?pat .
+  # count values in the closure for (focus,path)
+  ( 1 { ?focus ?path ?v. } ?vals ) log:collectAllIn ?SCOPE.
+  ?vals list:length ?count .
 
-  # scoped NAF: no value for (focus,path) in the current scope
-  ( 1 { ?focus ?path ?v. } () ) log:collectAllIn ?SCOPE.
+  # violation if count < min
+  ?count math:lessThan ?min .
 } => {
   ?rep sh:result [
     a sh:ValidationResult ;
@@ -320,7 +325,7 @@ my:Student_B a my:Student ;
     sh:resultPath ?path ;
     sh:sourceShape ?shape ;
     sh:sourceConstraintComponent sh:MinCountConstraintComponent ;
-    sh:resultMessage "Missing required property (minCount 1)."
+    sh:resultMessage "Missing required property (minCount)."
   ] .
 }.
 
@@ -357,19 +362,4 @@ my:Student_B a my:Student ;
     sh:resultMessage "Value does not have required sh:class."
   ] .
 }.
-
-# --------------------------
-# sh:conforms
-# --------------------------
-
-# If there is at least one result -> conforms false
-{ ?rep a sh:ValidationReport .
-  ?rep sh:result ?r .
-} => { ?rep sh:conforms false . }.
-
-# If there are no results -> conforms true
-{
-  ?rep a sh:ValidationReport .
-  ( 1 { ?rep sh:result ?r. } () ) log:collectAllIn ?SCOPE.
-} => { ?rep sh:conforms true . }.
 
