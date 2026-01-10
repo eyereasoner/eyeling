@@ -6132,7 +6132,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     //   - object = natural number literal N: delay until saturated closure level >= N
     //       * N = 0 => run immediately (use the live fact store)
     //       * N >= 1 => run only when a scoped snapshot exists at closure level >= N
-    //   - object = Var: treat as priority 1 and bind it to 1
+    //   - object = Var: treat as priority 1 (do not bind)
     //   - any other object: backward-compatible default priority 1
 
     let outSubst = { ...subst };
@@ -6157,8 +6157,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     } else {
       let prio = 1;
       if (g.o instanceof Var) {
-        // Bind the object var to 1 (default priority)
-        outSubst[g.o.name] = internLiteral('1');
+        // Unbound var: behave as priority 1 (do not bind)
         prio = 1;
       } else {
         const p0 = __logNaturalPriorityFromTerm(g.o);
@@ -6231,7 +6230,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     } else {
       let prio = 1;
       if (g.o instanceof Var) {
-        outSubst[g.o.name] = internLiteral('1');
+        // Unbound var: behave as priority 1 (do not bind)
         prio = 1;
       } else {
         const p0 = __logNaturalPriorityFromTerm(g.o);
