@@ -1,0 +1,5 @@
+@prefix : <http://example.org/demo#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+:PartnerA_Report sh:conforms true .
+:PartnerB_Report sh:conforms true .

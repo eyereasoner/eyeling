@@ -1,0 +1,24 @@
+# --------------------------
+# sh:conforms example
+# --------------------------
+
+@prefix log:  <http://www.w3.org/2000/10/swap/log#>.
+@prefix sh:    <http://www.w3.org/ns/shacl#>.
+@prefix :      <http://example.org/demo#>.
+
+# If any result exists (in the current graph) -> conforms false
+{ <https://eyereasoner.github.io/eyeling/examples/eventual-interoperability-interaction-patterns.n3> log:semantics ?formula.
+  #<file:///home/jdroo/github.com/eyereasoner/eyeling/examples/eventual-interoperability-interaction-patterns.n3> log:semantics ?formula.
+  ?formula log:conclusion ?closure.
+  ?closure log:includes { ?rep a sh:ValidationReport. }.
+  ?closure log:includes { ?rep sh:result ?r. }.
+} => { ?rep sh:conforms false. }.
+
+# If no result exists (SNAF in current scope) -> conforms true
+{ <https://eyereasoner.github.io/eyeling/examples/eventual-interoperability-interaction-patterns.n3> log:semantics ?formula.
+  #<file:///home/jdroo/github.com/eyereasoner/eyeling/examples/eventual-interoperability-interaction-patterns.n3> log:semantics ?formula.
+  ?formula log:conclusion ?closure.
+  ?closure log:includes { ?rep a sh:ValidationReport. }.
+  ?closure log:notIncludes { ?rep sh:result ?r. }.
+} => { ?rep sh:conforms true. }.
+
