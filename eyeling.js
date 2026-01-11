@@ -4458,7 +4458,7 @@ function evalCryptoHashBuiltin(g, subst, algo) {
 // log: scoped-closure priority helper
 // ---------------------------------------------------------------------------
 // When log:collectAllIn / log:forAllIn are used with an object that is a
-// natural number literal, that number is treated as a *priority* (closure level).
+// positive integer literal (>= 1), that number is treated as a *priority* (closure level).
 // See the adapted semantics near those builtins.
 function __logNaturalPriorityFromTerm(t) {
   const info = parseNumericLiteralInfo(t);
@@ -4467,12 +4467,12 @@ function __logNaturalPriorityFromTerm(t) {
 
   const v = info.value;
   if (typeof v === 'bigint') {
-    if (v < 0n) return null;
+    if (v < 1n) return null;
     if (v > BigInt(Number.MAX_SAFE_INTEGER)) return null;
     return Number(v);
   }
   if (typeof v === 'number') {
-    if (!Number.isInteger(v) || v < 0) return null;
+    if (!Number.isInteger(v) || v < 1) return null;
     return v;
   }
   return null;
@@ -6129,9 +6129,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
 
     // Priority / closure semantics:
     //   - object = GraphTerm: explicit scope, run immediately (no closure gating)
-    //   - object = natural number literal N: delay until saturated closure level >= N
-    //       * N = 0 => run immediately (use the live fact store)
-    //       * N >= 1 => run only when a scoped snapshot exists at closure level >= N
+    //   - object = positive integer literal N (>= 1): delay until saturated closure level >= N
     //   - object = Var: treat as priority 1 (do not bind)
     //   - any other object: backward-compatible default priority 1
 
@@ -6164,17 +6162,11 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
         if (p0 !== null) prio = p0;
       }
 
-      if (prio === 0) {
-        // Immediate: use live closure during the current fixpoint phase.
-        scopeFacts = facts;
-        scopeBackRules = backRules;
-      } else {
-        const snap = facts.__scopedSnapshot || null;
-        const lvl = (facts && typeof facts.__scopedClosureLevel === 'number' && facts.__scopedClosureLevel) || 0;
-        if (!snap) return []; // DELAY until snapshot exists
-        if (lvl < prio) return []; // DELAY until saturated closure prio exists
-        scopeFacts = snap;
-      }
+      const snap = facts.__scopedSnapshot || null;
+      const lvl = (facts && typeof facts.__scopedClosureLevel === 'number' && facts.__scopedClosureLevel) || 0;
+      if (!snap) return []; // DELAY until snapshot exists
+      if (lvl < prio) return []; // DELAY until saturated closure prio exists
+      scopeFacts = snap;
     }
 
     // If sols is a blank node succeed without collecting/binding.
@@ -6237,16 +6229,11 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
         if (p0 !== null) prio = p0;
       }
 
-      if (prio === 0) {
-        scopeFacts = facts;
-        scopeBackRules = backRules;
-      } else {
-        const snap = facts.__scopedSnapshot || null;
-        const lvl = (facts && typeof facts.__scopedClosureLevel === 'number' && facts.__scopedClosureLevel) || 0;
-        if (!snap) return []; // DELAY until snapshot exists
-        if (lvl < prio) return []; // DELAY until saturated closure prio exists
-        scopeFacts = snap;
-      }
+      const snap = facts.__scopedSnapshot || null;
+      const lvl = (facts && typeof facts.__scopedClosureLevel === 'number' && facts.__scopedClosureLevel) || 0;
+      if (!snap) return []; // DELAY until snapshot exists
+      if (lvl < prio) return []; // DELAY until saturated closure prio exists
+      scopeFacts = snap;
     }
 
     const visited1 = [];
