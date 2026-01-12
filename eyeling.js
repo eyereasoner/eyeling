@@ -6049,47 +6049,125 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   }
 
   // log:includes
-  // Schema: $s+ log:includes $o+
+  // Schema: $s? log:includes $o+
   // Object may be a concrete formula or the literal `true` (empty formula).
+  //
+  // Priority / closure semantics (subject-driven):
+  //   - subject = GraphTerm: explicit scope, run immediately (no closure gating)
+  //   - subject = positive integer literal N (>= 1): delay until saturated closure level >= N
+  //   - subject = Var: treat as priority 1 (do not bind)
+  //   - any other subject: backward-compatible default priority 1
   if (pv === LOG_NS + 'includes') {
-    if (!(g.s instanceof GraphTerm)) return [];
+    let scopeFacts = null;
+    let scopeBackRules = backRules;
 
-    // Empty formula is always included.
+    if (g.s instanceof GraphTerm) {
+      // Explicit scope graph: immediate, and do not use rules outside the quoted graph.
+      scopeFacts = g.s.triples.slice();
+      ensureFactIndexes(scopeFacts);
+      Object.defineProperty(scopeFacts, '__scopedSnapshot', {
+        value: scopeFacts,
+        enumerable: false,
+        writable: true,
+      });
+      const lvlHere = facts && typeof facts.__scopedClosureLevel === 'number' ? facts.__scopedClosureLevel : 0;
+      Object.defineProperty(scopeFacts, '__scopedClosureLevel', {
+        value: lvlHere,
+        enumerable: false,
+        writable: true,
+      });
+      scopeBackRules = [];
+    } else {
+      // Priority-gated scope: query the frozen snapshot for the requested closure level.
+      let prio = 1;
+      if (g.s instanceof Var) {
+        prio = 1; // do not bind
+      } else {
+        const p0 = __logNaturalPriorityFromTerm(g.s);
+        if (p0 !== null) prio = p0;
+      }
+
+      const snap = facts.__scopedSnapshot || null;
+      const lvl = (facts && typeof facts.__scopedClosureLevel === 'number' && facts.__scopedClosureLevel) || 0;
+      if (!snap) return []; // DELAY until snapshot exists
+      if (lvl < prio) return []; // DELAY until saturated closure prio exists
+      scopeFacts = snap;
+    }
+
+    // Empty formula is always included (but may be priority-gated above).
     if (g.o instanceof Literal && g.o.value === 'true') return [{ ...subst }];
     if (!(g.o instanceof GraphTerm)) return [];
 
-    const scopeFacts = g.s.triples.slice();
-    ensureFactIndexes(scopeFacts);
-    Object.defineProperty(scopeFacts, '__scopedSnapshot', {
-      value: scopeFacts,
-      enumerable: false,
-      writable: true,
-    });
-
     const visited2 = [];
     // Start from the incoming substitution so bindings flow outward.
-    return proveGoals(Array.from(g.o.triples), { ...subst }, scopeFacts, [], depth + 1, visited2, varGen, maxResults);
+    return proveGoals(
+      Array.from(g.o.triples),
+      { ...subst },
+      scopeFacts,
+      scopeBackRules,
+      depth + 1,
+      visited2,
+      varGen,
+      maxResults,
+    );
   }
 
   // log:notIncludes
-  // Schema: $s+ log:notIncludes $o+
+  // Schema: $s? log:notIncludes $o+
+  //
+  // Priority / closure semantics (subject-driven): same as log:includes above.
   if (pv === LOG_NS + 'notIncludes') {
-    if (!(g.s instanceof GraphTerm)) return [];
+    let scopeFacts = null;
+    let scopeBackRules = backRules;
 
-    // Empty formula is always included, so it is never "not included".
+    if (g.s instanceof GraphTerm) {
+      // Explicit scope graph: immediate, and do not use rules outside the quoted graph.
+      scopeFacts = g.s.triples.slice();
+      ensureFactIndexes(scopeFacts);
+      Object.defineProperty(scopeFacts, '__scopedSnapshot', {
+        value: scopeFacts,
+        enumerable: false,
+        writable: true,
+      });
+      const lvlHere = facts && typeof facts.__scopedClosureLevel === 'number' ? facts.__scopedClosureLevel : 0;
+      Object.defineProperty(scopeFacts, '__scopedClosureLevel', {
+        value: lvlHere,
+        enumerable: false,
+        writable: true,
+      });
+      scopeBackRules = [];
+    } else {
+      // Priority-gated scope: query the frozen snapshot for the requested closure level.
+      let prio = 1;
+      if (g.s instanceof Var) {
+        prio = 1; // do not bind
+      } else {
+        const p0 = __logNaturalPriorityFromTerm(g.s);
+        if (p0 !== null) prio = p0;
+      }
+
+      const snap = facts.__scopedSnapshot || null;
+      const lvl = (facts && typeof facts.__scopedClosureLevel === 'number' && facts.__scopedClosureLevel) || 0;
+      if (!snap) return []; // DELAY until snapshot exists
+      if (lvl < prio) return []; // DELAY until saturated closure prio exists
+      scopeFacts = snap;
+    }
+
+    // Empty formula is always included, so it is never "not included" (but may be priority-gated above).
     if (g.o instanceof Literal && g.o.value === 'true') return [];
     if (!(g.o instanceof GraphTerm)) return [];
 
-    const scopeFacts = g.s.triples.slice();
-    ensureFactIndexes(scopeFacts);
-    Object.defineProperty(scopeFacts, '__scopedSnapshot', {
-      value: scopeFacts,
-      enumerable: false,
-      writable: true,
-    });
-
     const visited2 = [];
-    const sols = proveGoals(Array.from(g.o.triples), { ...subst }, scopeFacts, [], depth + 1, visited2, varGen, 1);
+    const sols = proveGoals(
+      Array.from(g.o.triples),
+      { ...subst },
+      scopeFacts,
+      scopeBackRules,
+      depth + 1,
+      visited2,
+      varGen,
+      1,
+    );
     return sols.length ? [] : [{ ...subst }];
   }
 
@@ -6925,21 +7003,43 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
     function scanTriple(tr) {
       if (!(tr && tr.p instanceof Iri)) return;
       const pv = tr.p.value;
-      if (pv !== LOG_NS + 'collectAllIn' && pv !== LOG_NS + 'forAllIn') return;
-      // Explicit scope graphs are immediate and do not require a closure.
-      if (tr.o instanceof GraphTerm) return;
-      // Variable or non-numeric object => default priority 1 (if used).
-      if (tr.o instanceof Var) {
-        if (maxP < 1) maxP = 1;
+
+      // log:collectAllIn / log:forAllIn use the object position for the priority.
+      if (pv === LOG_NS + 'collectAllIn' || pv === LOG_NS + 'forAllIn') {
+        // Explicit scope graphs are immediate and do not require a closure.
+        if (tr.o instanceof GraphTerm) return;
+        // Variable or non-numeric object => default priority 1 (if used).
+        if (tr.o instanceof Var) {
+          if (maxP < 1) maxP = 1;
+          return;
+        }
+        const p0 = __logNaturalPriorityFromTerm(tr.o);
+        if (p0 !== null) {
+          if (p0 > maxP) maxP = p0;
+        } else {
+          if (maxP < 1) maxP = 1;
+        }
         return;
       }
-      const p0 = __logNaturalPriorityFromTerm(tr.o);
-      if (p0 !== null) {
-        if (p0 > maxP) maxP = p0;
-      } else {
-        if (maxP < 1) maxP = 1;
+
+      // log:includes / log:notIncludes use the subject position for the priority.
+      if (pv === LOG_NS + 'includes' || pv === LOG_NS + 'notIncludes') {
+        // Explicit scope graphs are immediate and do not require a closure.
+        if (tr.s instanceof GraphTerm) return;
+        // Variable or non-numeric subject => default priority 1 (if used).
+        if (tr.s instanceof Var) {
+          if (maxP < 1) maxP = 1;
+          return;
+        }
+        const p0 = __logNaturalPriorityFromTerm(tr.s);
+        if (p0 !== null) {
+          if (p0 > maxP) maxP = p0;
+        } else {
+          if (maxP < 1) maxP = 1;
+        }
       }
     }
+
 
     for (const r of forwardRules) {
       for (const tr of r.premise) scanTriple(tr);
