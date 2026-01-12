@@ -49,6 +49,10 @@ function reason(opt = {}, n3_input = '') {
     const res = cp.spawnSync(process.execPath, [eyelingPath, ...args, inputFile], { encoding: 'utf8', maxBuffer });
 
     if (res.error) throw res.error;
+
+    // Always forward stderr (log:trace, warnings, parse errors, etc.)
+    if (res.stderr) process.stderr.write(res.stderr);
+
     if (res.status !== 0) {
       const err = new Error(res.stderr || `eyeling exited with code ${res.status}`);
       err.code = res.status;
