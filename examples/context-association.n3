@@ -1,0 +1,32 @@
+@prefix rt: <urn:return#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix sec: <https://w3id.org/security#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix : <http://example.org/#> .
+
+_:g0 rt:graph {
+  :Bob foaf:name "Bob" .
+} .
+
+_:g1 rt:graph {
+  _:g0 sec:proof _:dataSignature .
+  _:signature1 a sec:DataIntegrityProof .
+  _:signature1 sec:cryptosuite "ecdsa-rdfc-2019" .
+  _:signature1 sec:created "2021-11-13T18:19:39Z" .
+  _:signature1 sec:verificationMethod "https://university.example/issuers/14#key-1" .
+  _:signature1 sec:proofPurpose "assertionMethod" .
+  _:signature1 sec:proofValue "z58DAdFfa9SkqZMVPxAQp...jQCrfFPP2oumHKtz" .
+  _:signature1 sec:issuer <https://university.example/issuers/14> .
+  _:signature1 sec:validFrom "2024-04-03T00:00:00.000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+  _:signature1 sec:validUntil "2025-04-03T00:00:00.000Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+} .
+
+_:g3 rt:graph {
+  _:g1 sec:proof _:signature2 .
+  _:signature2 a sec:DataIntegrityProof .
+  _:signature2 sec:cryptosuite "ecdsa-rdfc-2019" .
+  _:signature2 sec:created "2021-11-13T18:19:39Z" .
+  _:signature2 sec:verificationMethod "https://university.example/issuers/14#key-1" .
+  _:signature2 sec:proofPurpose "assertionMethod" .
+  _:signature2 sec:proofValue "adad123efv434r5200...dqed2t44v43das" .
+} .

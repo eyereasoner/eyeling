@@ -1,0 +1,9 @@
+@prefix rt: <urn:return#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix : <http://www.example.org/> .
+
+_:b rdf:reifies { :Socrates a :Human . } .
+_:b :is true .
+:employee38 :familyName "Smith" .
+_:id rdf:reifies { :employee38 :jobTitle "Assistant Designer" . } .
+_:id :accordingTo :employee22 .

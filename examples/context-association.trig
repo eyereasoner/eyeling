@@ -1,0 +1,35 @@
+@prefix foaf: <http://xmlns.com/foaf/0.1/>.
+@prefix sec: <https://w3id.org/security#>.
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
+@prefix : <http://example.org/#>.
+
+_:g0 {
+    :Bob foaf:name "Bob".
+}
+
+# sign data graph
+_:g1 {
+    _:g0 sec:proof _:dataSignature.
+    _:signature1 
+        a sec:DataIntegrityProof;
+        sec:cryptosuite "ecdsa-rdfc-2019";
+        sec:created "2021-11-13T18:19:39Z";
+        sec:verificationMethod "https://university.example/issuers/14#key-1";
+        sec:proofPurpose "assertionMethod";
+        sec:proofValue "z58DAdFfa9SkqZMVPxAQp...jQCrfFPP2oumHKtz";
+        sec:issuer <https://university.example/issuers/14>;
+        sec:validFrom "2024-04-03T00:00:00.000Z"^^xsd:dateTime;
+        sec:validUntil "2025-04-03T00:00:00.000Z"^^xsd:dateTime.
+}
+
+# sign signature graph for verifiable metadata if needed
+_:g3 {
+    _:g1 sec:proof _:signature2.
+    _:signature2 
+        a sec:DataIntegrityProof;
+        sec:cryptosuite "ecdsa-rdfc-2019";
+        sec:created "2021-11-13T18:19:39Z";
+        sec:verificationMethod "https://university.example/issuers/14#key-1";
+        sec:proofPurpose "assertionMethod";
+        sec:proofValue "adad123efv434r5200...dqed2t44v43das".
+}

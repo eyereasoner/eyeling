@@ -12,18 +12,4 @@ ex:e1 a ex:Event ;
     ex:day  "2000-01-02"^^xsd:date ;
     ex:tz   "-03:00" .
 
-{
-    ?this ex:when ?whenRaw .
-    ?this ex:day ?day .
-    ?this ex:tz ?tz .
-    ?startInc math:notGreaterThan ?whenBound .
-    ?whenBound math:notGreaterThan ?endInc .
-    (?whenRaw ?tz) tfn:bindDefaultTimezone ?whenBound .
-    (?day) tfn:periodMinInclusive ?startInc .
-    (?day) tfn:periodMaxInclusive ?endInc .
-    (?day) tfn:periodMinExclusive ?startEx .
-    (?day) tfn:periodMaxExclusive ?endEx .
-} => {
-    ?this ex:occursOn ?day .
-    ?this ex:whenBound ?whenBound .
-} .
+{ ?this ex:when ?whenRaw . ?this ex:day ?day . ?this ex:tz ?tz . ?startInc math:notGreaterThan ?whenBound . ?whenBound math:notGreaterThan ?endInc . (?whenRaw ?tz) tfn:bindDefaultTimezone ?whenBound . (?day) tfn:periodMinInclusive ?startInc . (?day) tfn:periodMaxInclusive ?endInc . (?day) tfn:periodMinExclusive ?startEx . (?day) tfn:periodMaxExclusive ?endEx . } => { ?this ex:occursOn ?day . ?this ex:whenBound ?whenBound . } .

@@ -1,0 +1,8 @@
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX :    <http://www.example.org/>
+
+_:b rdf:reifies <<(:Socrates a :Human)>> .
+_:b :is true .
+
+:employee38 :familyName "Smith" .
+<<:employee38 :jobTitle "Assistant Designer" ~ _:id>> :accordingTo :employee22 .
