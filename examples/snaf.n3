@@ -1,18 +1,6 @@
-# ==========================
-# Scoped Negation As Failure
-# ==========================
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix : <http://example.org/#> .
 
-@prefix log: <http://www.w3.org/2000/10/swap/log#>.
-@prefix : <http://example.org/#>.
+:Alice :loves :Bob. :Bob a :Person.
 
-:Alice :loves :Bob.
-:Bob a :Person.
-
-{
-  (1 { :Alice :hates ?X } ()) log:collectAllIn ?SCOPE .
-  ?X a :Person.
-}
-=>
-{
-  :Alice :hates :Nobody.
-}.
+{ (1 { :Alice :hates ?X . } ()) log:collectAllIn ?SCOPE . ?X a :Person . } => { :Alice :hates :Nobody. } .

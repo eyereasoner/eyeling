@@ -21,18 +21,14 @@
  * RDF 1.2 Turtle-star / TriG-star
  *   - triple terms:    rdf:reifies <<( s p o )>>
  *   - sugar form:      << s p o >> :is true .
- *   For compatibility with eyeling (which does not parse << >>), triple terms
- *   are emitted as single-triple graph terms in N3:
+ *   triple terms are emitted as singleton graph terms in N3:
  *     rdf:reifies { s p o . } .
  *
  * ----------------------------------------------------------------------------
  * Usage
- *   node n3.js input.ttl  > out.n3
- *   node n3.js input.trig > out.n3
- *   node n3.js input.srl  > out.n3
- *
- *   # executable (shebang):
- *   ./n3.js input.ttl > out.n3
+ *   n3 file.ttl  > file.n3
+ *   n3 file.trig > file.n3
+ *   n3 file.srl  > file.n3
  */
 
 const fs = require('node:fs/promises');
@@ -3211,16 +3207,12 @@ function printHelp() {
   process.stdout.write(`Usage:
   n3 <file.ttl|file.trig|file.srl>
 
-Converts RDF 1.2 Turtle/TriG (including Turtle-star/TriG-star) and SRL rules to N3.
-
-  • .ttl  -> N3 triples
-  • .trig -> N3 dataset mapping using rt:graph
-  • .srl  -> N3 rules
+Converts RDF 1.2 Turtle/TriG and SHACL 1.2 Rules to N3.
 
 Examples:
-  n3 data.ttl  > out.n3
-  n3 data.trig > out.n3
-  n3 rules.srl > rules.n3
+  n3 file.ttl > file.n3
+  n3 file.trig > file.n3
+  n3 file.srl > file.n3
 `);
 }
 
