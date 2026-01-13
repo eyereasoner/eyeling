@@ -2,23 +2,42 @@
 'use strict';
 
 /*
- * return.js — Roundtripper RDF+SRL <->  N3.
+ * n3.js — Convert Turtle (.ttl), TriG (.trig) or SRL (.srl) to N3.
  *
+ * This tool always emits N3 to stdout. The input syntax is selected by the file
+ * extension:
+ *   - .ttl  (RDF 1.2 Turtle)
+ *   - .trig (RDF 1.2 TriG)
+ *   - .srl  (SRL rules)
+ *
+ * TriG → N3 mapping (named graphs)
+ *   TriG: <graphName> { ...triples... }
+ *   N3:   <graphName> rt:graph { ...triples... } .
+ *
+ * SRL → N3 mapping (rules)
+ *   SRL: RULE { Head } WHERE { Body }
+ *   N3:  { Body } => { Head } .
+ *
+ * RDF 1.2 Turtle-star / TriG-star
+ *   - triple terms:    rdf:reifies <<( s p o )>>
+ *   - sugar form:      << s p o >> :is true .
+ *   For compatibility with eyeling (which does not parse << >>), triple terms
+ *   are emitted as single-triple graph terms in N3:
+ *     rdf:reifies { s p o . } .
+ *
+ * ----------------------------------------------------------------------------
  * Usage
- *   node return.js --help
+ *   node n3.js input.ttl  > out.n3
+ *   node n3.js input.trig > out.n3
+ *   node n3.js input.srl  > out.n3
  *
- *   node return.js --from ttl  --to n3   input.ttl  > out.n3
- *   node return.js --from trig --to n3   input.trig > out.n3
- *   node return.js --from n3   --to ttl  input.n3   > out.ttl
- *   node return.js --from n3   --to trig input.n3   > out.trig
- *
- *   node return.js --from srl  --to n3   input.srl  > out.n3
- *   node return.js --from n3   --to srl  input.n3   > out.srl
+ *   # executable (shebang):
+ *   ./n3.js input.ttl > out.n3
  */
 
 const fs = require('node:fs/promises');
+const path = require('node:path');
 const process = require('node:process');
-
 
 // ---------------------------------------------------------------------------
 // Mapping namespace
@@ -304,7 +323,6 @@ function lex(inputText) {
       while (i < n && chars[i] !== '\n' && chars[i] !== '\r') i++;
       continue;
     }
-
     // 3) operators: =>, <= ; single '=' as owl:sameAs
     if (c === '=') {
       if (peek(1) === '>') {
@@ -376,27 +394,28 @@ function lex(inputText) {
     }
 
     // 5) punctuation
-// RDF 1.2: allow decimal literals that start with ".<digit>" (e.g., .5)
-if ('{}()[];,'.includes(c) || c === '.' || c === ',') {
-  if (c === '.' && peek(1) !== null && /[0-9]/.test(peek(1))) {
-    // handled by numeric literal logic below
-  } else {
-    const mapping = {
-      '{': 'LBrace',
-      '}': 'RBrace',
-      '(': 'LParen',
-      ')': 'RParen',
-      '[': 'LBracket',
-      ']': 'RBracket',
-      ';': 'Semicolon',
-      ',': 'Comma',
-      '.': 'Dot',
-    };
-    tokens.push(new Token(mapping[c]));
-    i++;
-    continue;
-  }
-}
+    // RDF 1.2: allow decimal literals that start with ".<digit>" (e.g., .5)
+    if ('{}()[];,~'.includes(c) || c === '.' || c === ',') {
+      if (c === '.' && peek(1) !== null && /[0-9]/.test(peek(1))) {
+        // handled by numeric literal logic below
+      } else {
+        const mapping = {
+          '{': 'LBrace',
+          '}': 'RBrace',
+          '(': 'LParen',
+          ')': 'RParen',
+          '[': 'LBracket',
+          ']': 'RBracket',
+          ';': 'Semicolon',
+          '~': 'Tilde',
+          ',': 'Comma',
+          '.': 'Dot',
+        };
+        tokens.push(new Token(mapping[c]));
+        i++;
+        continue;
+      }
+    }
 
     // 6) string literals: short or long (double or single)
     if (c === '"') {
@@ -534,63 +553,63 @@ if ('{}()[];,'.includes(c) || c === '.' || c === ',') {
       i++; // consume '@'
 
       if (prevWasQuotedLiteral) {
-  // RDF 1.2: language tags follow BCP47 and may be followed by an initial text direction: @lang--ltr / @lang--rtl
-  const tagChars = [];
-  let cc = peek();
-  if (cc === null || !/[A-Za-z]/.test(cc)) throw new Error("Invalid language tag (expected [A-Za-z] after '@')");
+        // RDF 1.2: language tags follow BCP47 and may be followed by an initial text direction: @lang--ltr / @lang--rtl
+        const tagChars = [];
+        let cc = peek();
+        if (cc === null || !/[A-Za-z]/.test(cc)) throw new Error("Invalid language tag (expected [A-Za-z] after '@')");
 
-  // Primary language subtag (1..8 alpha)
-  while ((cc = peek()) !== null && /[A-Za-z]/.test(cc)) {
-    tagChars.push(cc);
-    i++;
-    // primary subtag length limit
-    if (tagChars.length > 8) throw new Error("Invalid language tag (primary subtag too long; max 8)");
-  }
+        // Primary language subtag (1..8 alpha)
+        while ((cc = peek()) !== null && /[A-Za-z]/.test(cc)) {
+          tagChars.push(cc);
+          i++;
+          // primary subtag length limit
+          if (tagChars.length > 8) throw new Error('Invalid language tag (primary subtag too long; max 8)');
+        }
 
-  // Additional BCP47 subtags: -[A-Za-z0-9]{1,8}
-  while ((cc = peek()) === '-' && peek(1) !== '-') {
-    tagChars.push('-');
-    i++;
-    const segChars = [];
-    let dd = peek();
-    if (dd === null || !/[A-Za-z0-9]/.test(dd))
-      throw new Error("Invalid language tag (expected [A-Za-z0-9]+ after '-')");
-    while ((dd = peek()) !== null && /[A-Za-z0-9]/.test(dd)) {
-      segChars.push(dd);
-      i++;
-      if (segChars.length > 8) throw new Error("Invalid language tag subtag too long; max 8");
-    }
-    if (!segChars.length) throw new Error("Invalid language tag (expected [A-Za-z0-9]+ after '-')");
-    tagChars.push(...segChars);
-  }
+        // Additional BCP47 subtags: -[A-Za-z0-9]{1,8}
+        while ((cc = peek()) === '-' && peek(1) !== '-') {
+          tagChars.push('-');
+          i++;
+          const segChars = [];
+          let dd = peek();
+          if (dd === null || !/[A-Za-z0-9]/.test(dd))
+            throw new Error("Invalid language tag (expected [A-Za-z0-9]+ after '-')");
+          while ((dd = peek()) !== null && /[A-Za-z0-9]/.test(dd)) {
+            segChars.push(dd);
+            i++;
+            if (segChars.length > 8) throw new Error('Invalid language tag subtag too long; max 8');
+          }
+          if (!segChars.length) throw new Error("Invalid language tag (expected [A-Za-z0-9]+ after '-')");
+          tagChars.push(...segChars);
+        }
 
-  // Optional initial direction suffix: --ltr / --rtl
-  if (peek() === '-' && peek(1) === '-') {
-    i += 2;
-    const dirChars = [];
-    let dd;
-    while ((dd = peek()) !== null && /[A-Za-z]/.test(dd)) {
-      dirChars.push(dd);
-      i++;
-      if (dirChars.length > 3) break;
-    }
-    const dir = dirChars.join('').toLowerCase();
-    if (dir !== 'ltr' && dir !== 'rtl') {
-      throw new Error("Invalid language direction (expected --ltr or --rtl)");
-    }
-    tagChars.push('-', '-', dir);
-  }
+        // Optional initial direction suffix: --ltr / --rtl
+        if (peek() === '-' && peek(1) === '-') {
+          i += 2;
+          const dirChars = [];
+          let dd;
+          while ((dd = peek()) !== null && /[A-Za-z]/.test(dd)) {
+            dirChars.push(dd);
+            i++;
+            if (dirChars.length > 3) break;
+          }
+          const dir = dirChars.join('').toLowerCase();
+          if (dir !== 'ltr' && dir !== 'rtl') {
+            throw new Error('Invalid language direction (expected --ltr or --rtl)');
+          }
+          tagChars.push('-', '-', dir);
+        }
 
-  const lang = tagChars.join('');
-  if (!LANGTAG_WITH_DIR_REGEX.test(lang)) {
-    throw new Error(`Invalid BCP47 language tag: ${lang}`);
-  }
+        const lang = tagChars.join('');
+        if (!LANGTAG_WITH_DIR_REGEX.test(lang)) {
+          throw new Error(`Invalid BCP47 language tag: ${lang}`);
+        }
 
-  tokens.push(new Token('LangTag', lang));
-  continue;
-}
+        tokens.push(new Token('LangTag', lang));
+        continue;
+      }
 
-const wordChars = [];
+      const wordChars = [];
       let cc;
       while ((cc = peek()) !== null && /[A-Za-z]/.test(cc)) {
         wordChars.push(cc);
@@ -604,40 +623,42 @@ const wordChars = [];
     }
 
     // 8) numeric literals (RDF 1.2 Turtle shorthand: integer / decimal / double)
-//   integer: [+-]?[0-9]+
-//   decimal: [+-]?[0-9]*\.[0-9]+   (allows .5)
-//   double : [+-]?(?:[0-9]+\.[0-9]*|\.[0-9]+|[0-9]+)[eE][+-]?[0-9]+
-if (
-  /[0-9]/.test(c) ||
-  (c === '.' && peek(1) !== null && /[0-9]/.test(peek(1))) ||
-  ((c === '-' || c === '+') && peek(1) !== null && (/[0-9]/.test(peek(1)) || (peek(1) === '.' && peek(2) !== null && /[0-9]/.test(peek(2)))))
-) {
-  const rest = chars.slice(i).join('');
+    //   integer: [+-]?[0-9]+
+    //   decimal: [+-]?[0-9]*\.[0-9]+   (allows .5)
+    //   double : [+-]?(?:[0-9]+\.[0-9]*|\.[0-9]+|[0-9]+)[eE][+-]?[0-9]+
+    if (
+      /[0-9]/.test(c) ||
+      (c === '.' && peek(1) !== null && /[0-9]/.test(peek(1))) ||
+      ((c === '-' || c === '+') &&
+        peek(1) !== null &&
+        (/[0-9]/.test(peek(1)) || (peek(1) === '.' && peek(2) !== null && /[0-9]/.test(peek(2)))))
+    ) {
+      const rest = chars.slice(i).join('');
 
-  let m = rest.match(/^[+-]?(?:[0-9]+\.[0-9]*|\.[0-9]+|[0-9]+)[eE][+-]?[0-9]+/);
-  if (m) {
-    tokens.push(new Token('Literal', m[0]));
-    i += m[0].length;
-    continue;
-  }
+      let m = rest.match(/^[+-]?(?:[0-9]+\.[0-9]*|\.[0-9]+|[0-9]+)[eE][+-]?[0-9]+/);
+      if (m) {
+        tokens.push(new Token('Literal', m[0]));
+        i += m[0].length;
+        continue;
+      }
 
-  m = rest.match(/^[+-]?[0-9]*\.[0-9]+/);
-  if (m) {
-    tokens.push(new Token('Literal', m[0]));
-    i += m[0].length;
-    continue;
-  }
+      m = rest.match(/^[+-]?[0-9]*\.[0-9]+/);
+      if (m) {
+        tokens.push(new Token('Literal', m[0]));
+        i += m[0].length;
+        continue;
+      }
 
-  m = rest.match(/^[+-]?[0-9]+/);
-  if (m) {
-    tokens.push(new Token('Literal', m[0]));
-    i += m[0].length;
-    continue;
-  }
+      m = rest.match(/^[+-]?[0-9]+/);
+      if (m) {
+        tokens.push(new Token('Literal', m[0]));
+        i += m[0].length;
+        continue;
+      }
 
-  // If we got here, it looked like a number start but didn't match any legal form.
-  throw new Error(`Invalid numeric literal near: ${rest.slice(0, 32)}`);
-}
+      // If we got here, it looked like a number start but didn't match any legal form.
+      throw new Error(`Invalid numeric literal near: ${rest.slice(0, 32)}`);
+    }
 
     // 9) var: ?x  (SPARQL vars)  or  $this / $value (SHACL SPARQL vars)
     if (c === '?' || c === '$') {
@@ -710,6 +731,8 @@ class TurtleParser {
     this.prefixes = PrefixEnv.newDefault();
     this.blankCounter = 0;
     this.pendingTriples = [];
+    this.reifierCounter = 0;
+    this._reifiesEmitted = new Set();
   }
 
   peek() {
@@ -726,6 +749,38 @@ class TurtleParser {
     const tok = this.next();
     if (tok.typ !== typ) throw new Error(`Expected ${typ}, got ${tok.toString()}`);
     return tok;
+  }
+
+  // Generate a fresh blank node used for RDF 1.2 reifiedTriple sugar (<< s p o >>)
+  freshReifier() {
+    this.reifierCounter += 1;
+    return new Blank(`_:n3r${this.reifierCounter}`);
+  }
+
+  _termKey(t) {
+    if (t == null) return '[]';
+    if (t instanceof Iri) return `I:${t.value}`;
+    if (t instanceof Blank) return `B:${t.label}`;
+    if (t instanceof Literal) return `L:${t.value}`;
+    if (t instanceof Var) return `V:${t.name}`;
+    if (t instanceof ListTerm) return `T:(` + t.elems.map((x) => this._termKey(x)).join(' ') + `)`;
+    if (t instanceof GraphTerm) {
+      const inner = t.triples
+        .map((tr) => `${this._termKey(tr.s)} ${this._termKey(tr.p)} ${this._termKey(tr.o)}`)
+        .join(' | ');
+      return `G:{${inner}}`;
+    }
+    return `X:${String(t)}`;
+  }
+
+  // Emit the implicit (or explicit) reifier triple required by RDF 1.2 reifiedTriple sugar:
+  //   reifier rdf:reifies tripleTerm .
+  // We represent tripleTerm in N3 as a quoted graph term: { s p o . }
+  emitReifies(reifier, tripleGraph) {
+    const key = `${this._termKey(reifier)}|${this._termKey(tripleGraph)}`;
+    if (this._reifiesEmitted.has(key)) return;
+    this._reifiesEmitted.add(key);
+    this.pendingTriples.push(new Triple(reifier, internIri(RDF_NS + 'reifies'), tripleGraph));
   }
 
   // Accept '.' OR (when inside {...}) accept '}' as implicit terminator for last triple
@@ -790,14 +845,18 @@ class TurtleParser {
   parseTurtleDocument() {
     const triples = [];
     while (this.peek().typ !== 'EOF') {
-// RDF 1.2: VERSION announcement (e.g., VERSION "1.2")
-if (this.peek().typ === 'Ident' && typeof this.peek().value === 'string' && this.peek().value.toLowerCase() === 'version') {
-  this.next(); // VERSION
-  const vTok = this.next();
-  if (vTok.typ !== 'Literal') throw new Error(`Expected a literal after VERSION, got ${vTok.toString()}`);
-  if (this.peek().typ === 'Dot') this.next(); // permissive
-  continue;
-}
+      // RDF 1.2: VERSION announcement (e.g., VERSION "1.2")
+      if (
+        this.peek().typ === 'Ident' &&
+        typeof this.peek().value === 'string' &&
+        this.peek().value.toLowerCase() === 'version'
+      ) {
+        this.next(); // VERSION
+        const vTok = this.next();
+        if (vTok.typ !== 'Literal') throw new Error(`Expected a literal after VERSION, got ${vTok.toString()}`);
+        if (this.peek().typ === 'Dot') this.next(); // permissive
+        continue;
+      }
 
       if (this.peek().typ === 'AtPrefix') {
         this.next();
@@ -843,6 +902,8 @@ if (this.peek().typ === 'Ident' && typeof this.peek().value === 'string' && this
         if (this.pendingTriples.length > 0) {
           more = this.pendingTriples;
           this.pendingTriples = [];
+          this.reifierCounter = 0;
+          this._reifiesEmitted = new Set();
         }
         this.next();
       } else {
@@ -922,46 +983,45 @@ if (this.peek().typ === 'Ident' && typeof this.peek().value === 'string' && this
     if (typ === 'LBrace') return this.parseGraph(); // N3 graph term
     if (typ === 'StarOpen') return this.parseStarTerm();
 
-  throw new Error(`Unexpected term token: ${tok.toString()}`);
-}
+    throw new Error(`Unexpected term token: ${tok.toString()}`);
+  }
 
-parseStarTerm() {
-  // RDF 1.2 Turtle-star / TriG-star:
-  // - tripleTerm: <<( s p o )>>
-  // - reifiedTriple (syntactic sugar): << s p o [~ reifier] >>
-  if (this.peek().typ === 'LParen') {
-    // tripleTerm
-    this.next(); // '('
+  parseStarTerm() {
+    // RDF 1.2 Turtle-star / TriG-star:
+    // - tripleTerm: <<( s p o )>>
+    // - reifiedTriple (syntactic sugar): << s p o [~ reifier] >>
+    if (this.peek().typ === 'LParen') {
+      // tripleTerm
+      this.next(); // '('
+      const s = this.parseTerm();
+      const p = this.parseTerm();
+      const o = this.parseTerm();
+      this.expect('RParen');
+      this.expect('StarClose');
+      return new GraphTerm([new Triple(s, p, o)]);
+    }
+
+    // reifiedTriple sugar -> expand to a reifier node that rdf:reifies a tripleTerm
     const s = this.parseTerm();
     const p = this.parseTerm();
     const o = this.parseTerm();
-    this.expect('RParen');
+
+    let reifier;
+    if (this.peek().typ === 'Tilde') {
+      this.next();
+      reifier = this.parseTerm();
+    } else {
+      reifier = this.freshReifier();
+    }
+
     this.expect('StarClose');
-    return new GraphTerm([new Triple(s, p, o)]);
+
+    const tripleTerm = new GraphTerm([new Triple(s, p, o)]);
+    this.emitReifies(reifier, tripleTerm);
+    return reifier;
   }
 
-  // reifiedTriple sugar -> expand to a reifier node that rdf:reifies a tripleTerm
-  const s = this.parseTerm();
-  const p = this.parseTerm();
-  const o = this.parseTerm();
-
-  let reifier;
-  if (this.peek().typ === 'Tilde') {
-    this.next();
-    reifier = this.parseTerm();
-  } else {
-    this.blankCounter += 1;
-    reifier = new Blank(`_:b${this.blankCounter}`);
-  }
-
-  this.expect('StarClose');
-
-  const tripleTerm = new GraphTerm([new Triple(s, p, o)]);
-  this.pendingTriples.push(new Triple(reifier, internIri(RDF_NS + 'reifies'), tripleTerm));
-  return reifier;
-}
-
-parseList() {
+  parseList() {
     const elems = [];
     while (this.peek().typ !== 'RParen') {
       // Be permissive: allow commas inside lists (even though Turtle lists are whitespace-separated).
@@ -1013,6 +1073,8 @@ parseList() {
         if (this.pendingTriples.length > 0) {
           more = this.pendingTriples;
           this.pendingTriples = [];
+          this.reifierCounter = 0;
+          this._reifiesEmitted = new Set();
         }
         this.next();
       } else {
@@ -1033,6 +1095,8 @@ parseList() {
     if (this.pendingTriples.length > 0) {
       out.push(...this.pendingTriples);
       this.pendingTriples = [];
+      this.reifierCounter = 0;
+      this._reifiesEmitted = new Set();
     }
 
     while (true) {
@@ -1084,14 +1148,18 @@ class TriGParser extends TurtleParser {
     const quads = []; // { s,p,o,g } where g is Term|null
 
     while (this.peek().typ !== 'EOF') {
-// RDF 1.2: VERSION announcement (e.g., VERSION "1.2")
-if (this.peek().typ === 'Ident' && typeof this.peek().value === 'string' && this.peek().value.toLowerCase() === 'version') {
-  this.next(); // VERSION
-  const vTok = this.next();
-  if (vTok.typ !== 'Literal') throw new Error(`Expected a literal after VERSION, got ${vTok.toString()}`);
-  if (this.peek().typ === 'Dot') this.next(); // permissive
-  continue;
-}
+      // RDF 1.2: VERSION announcement (e.g., VERSION "1.2")
+      if (
+        this.peek().typ === 'Ident' &&
+        typeof this.peek().value === 'string' &&
+        this.peek().value.toLowerCase() === 'version'
+      ) {
+        this.next(); // VERSION
+        const vTok = this.next();
+        if (vTok.typ !== 'Literal') throw new Error(`Expected a literal after VERSION, got ${vTok.toString()}`);
+        if (this.peek().typ === 'Dot') this.next(); // permissive
+        continue;
+      }
 
       // directives
       if (this.peek().typ === 'AtPrefix') {
@@ -1156,6 +1224,8 @@ if (this.peek().typ === 'Ident' && typeof this.peek().value === 'string' && this
         if (this.pendingTriples.length > 0) {
           more = this.pendingTriples;
           this.pendingTriples = [];
+          this.reifierCounter = 0;
+          this._reifiesEmitted = new Set();
         }
         this.next();
       } else {
@@ -1392,6 +1462,26 @@ function parseN3(text) {
   // which is the same as TurtleParser.parseTurtleDocument() because parseTerm supports { ... }.
   const p = new TurtleParser(lex(text));
   return p.parseTurtleDocument();
+}
+
+function parseTurtle(text) {
+  const p = new TurtleParser(lex(text));
+  return p.parseTurtleDocument();
+}
+
+function writeN3Triples({ triples, prefixes }) {
+  const blocks = [];
+  const pro = renderPrefixPrologue(prefixes, { includeRt: false }).trim();
+  if (pro) blocks.push(pro, '');
+  for (const tr of triples) {
+    blocks.push(`${termToText(tr.s, prefixes)} ${termToText(tr.p, prefixes)} ${termToText(tr.o, prefixes)} .`);
+  }
+  return blocks.join('\n').trim() + '\n';
+}
+
+function turtleToN3(ttlText) {
+  const { triples, prefixes } = parseTurtle(ttlText);
+  return writeN3Triples({ triples, prefixes });
 }
 
 function trigToN3(trigText) {
@@ -3084,7 +3174,7 @@ function sortedNQuadsFromTriG(trigText) {
 
 function printHelp() {
   process.stdout.write(
-    `return.js — RDF 1.2 Turtle/TriG <-> N3 (eyeling-friendly)
+    `return.js — RDF 1.2 Turtle/TriG <-> N3
 
 Conversions:
   node return.js --from ttl  --to n3   input.ttl  > out.n3
@@ -3117,73 +3207,58 @@ async function readStdinUtf8() {
   });
 }
 
+function printHelp() {
+  process.stdout.write(`Usage:
+  n3 <file.ttl|file.trig|file.srl>
+
+Converts RDF 1.2 Turtle/TriG (including Turtle-star/TriG-star) and SRL rules to N3.
+
+  • .ttl  -> N3 triples
+  • .trig -> N3 dataset mapping using rt:graph
+  • .srl  -> N3 rules
+
+Examples:
+  n3 data.ttl  > out.n3
+  n3 data.trig > out.n3
+  n3 rules.srl > rules.n3
+`);
+}
+
 async function main() {
   const args = process.argv.slice(2);
-  const flag = (f) => args.includes(f);
-
-  if (args.length === 0 || flag('--help') || flag('-h')) {
+  if (args.length === 0 || args.includes('--help') || args.includes('-h')) {
     printHelp();
+    if (args.length === 0) process.exitCode = 2;
+    return;
+  }
+  if (args.length !== 1) {
+    printHelp();
+    process.exitCode = 2;
     return;
   }
 
-  const inputFile = (() => {
-    const skipNext = new Set(['--from', '--to']);
-    for (let i = 0; i < args.length; i++) {
-      const a = args[i];
-      if (skipNext.has(a)) {
-        i++;
-        continue;
-      }
-      if (a.startsWith('-')) continue;
-      return a;
-    }
-    return null;
-  })();
+  const inputFile = args[0];
+  const ext = path.extname(inputFile).toLowerCase();
 
-  const from = (() => {
-    const i = args.indexOf('--from');
-    return i >= 0 ? args[i + 1] : null;
-  })();
-  const to = (() => {
-    const i = args.indexOf('--to');
-    return i >= 0 ? args[i + 1] : null;
-  })();
+  const text = await fs.readFile(inputFile, 'utf8');
 
-  const text = inputFile ? await fs.readFile(inputFile, 'utf8') : await readStdinUtf8();
-
-  // Turtle/TriG <-> N3
-  if (from === 'ttl' && to === 'n3') {
-    process.stdout.write(ttlToN3(text));
+  if (ext === '.ttl') {
+    process.stdout.write(turtleToN3(text));
     return;
   }
-  if (from === 'trig' && to === 'n3') {
+  if (ext === '.trig') {
     process.stdout.write(trigToN3(text));
     return;
   }
-  if ((from === 'n3' || from === 'notation3') && to === 'ttl') {
-    process.stdout.write(n3ToTtl(text));
-    return;
-  }
-  if ((from === 'n3' || from === 'notation3') && to === 'trig') {
-    process.stdout.write(n3ToTrig(text));
-    return;
-  }
-
-  // SRL <-> N3 rules
-  if (from === 'srl' && to === 'n3') {
+  if (ext === '.srl') {
     process.stdout.write(srlToN3(text));
     return;
   }
-  if ((from === 'n3' || from === 'notation3') && to === 'srl') {
-    process.stdout.write(n3ToSrl(text));
-    return;
-  }
 
-  printHelp();
-  process.exitCode = 2;
+  throw new Error(`Unsupported file extension "${ext}". Use .ttl, .trig or .srl`);
 }
 
 main().catch((e) => {
-  console.error(e);
+  console.error(e?.stack || String(e));
   process.exitCode = 1;
 });
