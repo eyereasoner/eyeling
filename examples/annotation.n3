@@ -1,5 +1,4 @@
 @prefix : <http://example.com/> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 :a :name "Alice" .
 :t <http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies> { :a :name "Alice" . } .
