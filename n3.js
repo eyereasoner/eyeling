@@ -344,6 +344,18 @@ function lex(inputText) {
       continue;
     }
 
+    // RDF 1.2 Turtle/TriG annotations: annotation blocks {| ... |}
+    if (c === '{' && peek(1) === '|') {
+      tokens.push(new Token('AnnOpen'));
+      i += 2;
+      continue;
+    }
+    if (c === '|' && peek(1) === '}') {
+      tokens.push(new Token('AnnClose'));
+      i += 2;
+      continue;
+    }
+
     if (c === '<') {
       if (peek(1) === '<') {
         tokens.push(new Token('StarOpen'));
@@ -898,8 +910,6 @@ class TurtleParser {
         if (this.pendingTriples.length > 0) {
           more = this.pendingTriples;
           this.pendingTriples = [];
-          this.reifierCounter = 0;
-          this._reifiesEmitted = new Set();
         }
         this.next();
       } else {
@@ -1069,8 +1079,6 @@ class TurtleParser {
         if (this.pendingTriples.length > 0) {
           more = this.pendingTriples;
           this.pendingTriples = [];
-          this.reifierCounter = 0;
-          this._reifiesEmitted = new Set();
         }
         this.next();
       } else {
@@ -1091,8 +1099,6 @@ class TurtleParser {
     if (this.pendingTriples.length > 0) {
       out.push(...this.pendingTriples);
       this.pendingTriples = [];
-      this.reifierCounter = 0;
-      this._reifiesEmitted = new Set();
     }
 
     while (true) {
@@ -1114,12 +1120,17 @@ class TurtleParser {
         verb = this.parseTerm();
       }
 
-      const objs = this.parseObjectList();
-      for (const o of objs) out.push(invert ? new Triple(o, verb, subject) : new Triple(subject, verb, o));
+      out.push(...this.parseAnnotatedObjectList(subject, verb, invert));
 
       if (this.peek().typ === 'Semicolon') {
         this.next();
-        if (this.peek().typ === 'Dot' || this.peek().typ === 'RBrace' || this.peek().typ === 'RBracket') break;
+        if (
+          this.peek().typ === 'Dot' ||
+          this.peek().typ === 'RBrace' ||
+          this.peek().typ === 'RBracket' ||
+          this.peek().typ === 'AnnClose'
+        )
+          break;
         continue;
       }
       break;
@@ -1135,6 +1146,76 @@ class TurtleParser {
       objs.push(this.parseTerm());
     }
     return objs;
+  }
+
+  // RDF 1.2 Turtle/TriG: triple annotations and reifiers
+  // After an object, Turtle 1.2 allows optional:
+  //   ~ <reifier>
+  //   {| <predicateObjectList> |}
+  // We convert these into eyeling-friendly N3 by emitting:
+  //   <reifier> rdf:reifies { <s> <p> <o> . } .
+  //   <reifier> <annP> <annO> .
+
+  parseAnnotationBlock(reifier) {
+    this.expect('AnnOpen');
+    const out = [];
+    if (this.peek().typ !== 'AnnClose') {
+      out.push(...this.parsePredicateObjectList(reifier));
+    }
+    this.expect('AnnClose');
+    return out;
+  }
+
+  parseAnnotatedObjectList(subject, verb, invert) {
+    const out = [];
+    out.push(...this.parseAnnotatedObjectTriples(subject, verb, invert));
+    while (this.peek().typ === 'Comma') {
+      this.next();
+      out.push(...this.parseAnnotatedObjectTriples(subject, verb, invert));
+    }
+    return out;
+  }
+
+  parseAnnotatedObjectTriples(subject, verb, invert) {
+    const out = [];
+
+    const obj = this.parseTerm();
+    const s = invert ? obj : subject;
+    const o = invert ? subject : obj;
+
+    // asserted triple
+    out.push(new Triple(s, verb, o));
+
+    // optional reifier and/or annotation blocks
+    let reifier = null;
+
+    if (this.peek().typ === 'Tilde') {
+      this.next();
+      // Allow empty reifier: ~ {| ... |} (fresh blank node)
+      if (this.peek().typ === 'AnnOpen') reifier = this.freshReifier();
+      else reifier = this.parseTerm();
+    }
+
+    // If there is an annotation block without an explicit reifier, allocate one
+    if (!reifier && this.peek().typ === 'AnnOpen') {
+      reifier = this.freshReifier();
+    }
+
+    if (reifier) {
+      const tripleTerm = new GraphTerm([new Triple(s, verb, o)]);
+      this.emitReifies(reifier, tripleTerm);
+      if (this.pendingTriples.length) {
+        out.push(...this.pendingTriples);
+        this.pendingTriples = [];
+      }
+
+      // zero or more annotation blocks
+      while (this.peek().typ === 'AnnOpen') {
+        out.push(...this.parseAnnotationBlock(reifier));
+      }
+    }
+
+    return out;
   }
 }
 
@@ -1220,8 +1301,6 @@ class TriGParser extends TurtleParser {
         if (this.pendingTriples.length > 0) {
           more = this.pendingTriples;
           this.pendingTriples = [];
-          this.reifierCounter = 0;
-          this._reifiesEmitted = new Set();
         }
         this.next();
       } else {
@@ -3170,7 +3249,7 @@ function sortedNQuadsFromTriG(trigText) {
 
 function printHelp() {
   process.stdout.write(
-    `return.js — RDF 1.2 Turtle/TriG <-> N3
+    `return.js — RDF 1.2 Turtle/TriG <-> N3 (eyeling-friendly)
 
 Conversions:
   node return.js --from ttl  --to n3   input.ttl  > out.n3
