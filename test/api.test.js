@@ -1,10 +1,68 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const { reason } = require('..');
+const path = require('node:path');
+const { spawnSync } = require('node:child_process');
+const ROOT = path.resolve(__dirname, '..');
 // Direct eyeling.js API (in-process) for testing reasonStream/onDerived.
 // This is the "latest eyeling.js" surface and is used by the browser demo.
 const { reasonStream } = require('../eyeling.js');
+
+// Run reason() in a subprocess with stderr captured, so expected parse errors
+// don't spam the parent process' stderr (while still being available as e.stderr).
+const DEFAULT_MAX_BUFFER = 200 * 1024 * 1024;
+
+function reasonQuiet(opt, input) {
+  const payloadB64 = Buffer.from(JSON.stringify({ opt, input }), 'utf8').toString('base64');
+
+  // Allow tests to bump buffers similarly to the in-process API.
+  const maxBuffer =
+    opt && typeof opt === 'object' && !Array.isArray(opt) && typeof opt.maxBuffer === 'number'
+      ? opt.maxBuffer
+      : DEFAULT_MAX_BUFFER;
+
+  const childCode = `
+    const payload = JSON.parse(Buffer.from(process.argv[1], 'base64').toString('utf8'));
+    const mod = require(${JSON.stringify(ROOT)});
+    const reason = (mod && mod.reason) || (mod && mod.default && mod.default.reason);
+
+    try {
+      const out = reason(payload.opt, payload.input);
+      if (out != null) process.stdout.write(String(out));
+      process.exit(0);
+    } catch (e) {
+      let code = 1;
+      if (e && typeof e === 'object' && 'code' in e) {
+        const c = e.code;
+        const n = typeof c === 'number' ? c : (typeof c === 'string' && /^\d+$/.test(c) ? Number(c) : null);
+        if (Number.isInteger(n)) code = n;
+      }
+
+      // Forward captured stderr from the inner reason() wrapper (if any),
+      // otherwise print the error itself.
+      if (e && typeof e === 'object' && e.stderr) process.stderr.write(String(e.stderr));
+      else if (e && e.stack) process.stderr.write(String(e.stack));
+      else process.stderr.write(String(e));
+
+      process.exit(code);
+    }
+  `;
+
+  const r = spawnSync(process.execPath, ['-e', childCode, payloadB64], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    maxBuffer,
+  });
+
+  if (r.error) throw r.error;
+  if (r.status === 0) return r.stdout;
+
+  const err = new Error(`reason() failed with exit ${r.status}`);
+  err.code = r.status;
+  err.stdout = r.stdout;
+  err.stderr = r.stderr;
+  throw err;
+}
 
 const TTY = process.stdout.isTTY;
 const C = TTY
@@ -820,7 +878,7 @@ let failed = 0;
   for (const tc of cases) {
     const start = msNow();
     try {
-      const out = typeof tc.run === 'function' ? await tc.run() : reason(tc.opt, tc.input);
+      const out = typeof tc.run === 'function' ? await tc.run() : reasonQuiet(tc.opt, tc.input);
 
       if (tc.expectErrorCode != null || tc.expectError) {
         throw new Error(`Expected an error, but reason() returned output:\n${out}`);
