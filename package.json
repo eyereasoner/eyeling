@@ -22,9 +22,10 @@
     "index.js",
     "index.d.ts",
     "eyeling.js",
-    "eyeling-builtins.ttl",
+    "n3.js",
     "test",
     "examples",
+    "eyeling-builtins.ttl",
     "README.md",
     "LICENSE.md"
   ],
