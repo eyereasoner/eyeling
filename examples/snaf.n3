@@ -3,4 +3,4 @@
 
 :Alice :loves :Bob. :Bob a :Person.
 
-{ (1 { :Alice :hates ?X . } ()) log:collectAllIn ?SCOPE . ?X a :Person . } => { :Alice :hates :Nobody. } .
+{ ?SCOPE log:notIncludes { :Alice :hates ?X . } . ?X a :Person . } => { :Alice :hates :Nobody. } .

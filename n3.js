@@ -2055,10 +2055,6 @@ function trigToN3(trigText) {
   return writeN3RtGraph({ datasetQuads: quads, prefixes });
 }
 
-function hasPrefixForIri(prefixes, iri) {
-  return Array.isArray(prefixes) && prefixes.some((p) => (p.iri || '').trim() === iri);
-}
-
 function prefixEnvFromSrlPrefixes(prefixLines) {
   const env = PrefixEnv.newDefault();
   if (Array.isArray(prefixLines)) {
@@ -2722,7 +2718,7 @@ function srlWhereBodyToN3Body(bodyRaw) {
     const blk = readBalancedBraces(s, j);
     const inner = (blk.content || '').trim();
 
-    out += ` (1 { ${inner} } ()) log:collectAllIn ?SCOPE . `;
+    out += ` ?SCOPE log:notIncludes { ${inner} } . `;
     usedLog = true;
     i = blk.endIdx;
   }
@@ -2730,7 +2726,7 @@ function srlWhereBodyToN3Body(bodyRaw) {
   return { body: normalizeInsideBracesKeepStyle(out), usedLog };
 }
 
-// N3 :   (1 { ... } ()) log:collectAllIn ?SCOPE .
+// N3 :   ?SCOPE log:notIncludes { ... } .
 // SRL:   NOT { ... }
 function stripOnlyWholeLineHashComments(src) {
   // IMPORTANT: do NOT treat '#' as an inline comment marker here,
@@ -2941,7 +2937,7 @@ function srlToN3(srlText) {
   let needsString = false;
 
   for (const r of rules) {
-    // 1) NOT { ... }  ->  (1 { ... } ()) log:collectAllIn ?SCOPE .
+    // 1) NOT { ... }  ->  ?SCOPE log:notIncludes { ... } .
     const convNot = srlWhereBodyToN3Body(r.body);
     needsLog = needsLog || convNot.usedLog;
     if (convNot.usedLog && !env.map.log) env.setPrefix('log', LOG_NS);
@@ -2994,23 +2990,39 @@ function srlToN3(srlText) {
     }
   }
 
-  const out = [];
-
-  for (const { label, iri } of prefixes) out.push(`@prefix ${label} <${iri}> .`);
-  if (needsLog && !hasPrefixForIri(prefixes, LOG_NS)) out.push(`@prefix log: <${LOG_NS}> .`);
-  if (needsMath && !hasPrefixForIri(prefixes, MATH_NS)) out.push(`@prefix math: <${MATH_NS}> .`);
-  if (needsString && !hasPrefixForIri(prefixes, STRING_NS)) out.push(`@prefix string: <${STRING_NS}> .`);
-  if (prefixes.length || needsLog || needsMath || needsString) out.push('');
+  // Build body first (data + rules), then decide which prefixes are actually needed.
+  const bodyParts = [];
 
   // Emit "plain" data triples first (outside SRL DATA blocks)
-  if (dataOutside.trim()) out.push(dataOutside.trim(), '');
+  if (dataOutside.trim()) bodyParts.push(dataOutside.trim(), '');
 
   // Emit each SRL DATA { ... } block as plain N3 data triples
   for (const blk of dataBlocks) {
-    if (blk.trim()) out.push(blk.trim(), '');
+    if (blk.trim()) bodyParts.push(blk.trim(), '');
   }
 
-  out.push(...renderedRules);
+  bodyParts.push(...renderedRules);
+
+  let bodyText = bodyParts.join('\n').trim();
+
+  // Decide whether rdf:/xsd: are needed in the final output (SRL emits a lot as raw text).
+  const usesRdf = /\brdf:/.test(bodyText) || bodyText.includes(`<${RDF_NS}`) || bodyText.includes(`^^<${RDF_NS}`);
+  const usesXsd = /\bxsd:/.test(bodyText) || bodyText.includes(`<${XSD_NS}`) || bodyText.includes(`^^<${XSD_NS}`);
+
+  // Ensure prefixes requested by generated content are declared.
+  if (usesRdf && !env.map.rdf) env.setPrefix('rdf', RDF_NS);
+  if (usesXsd && !env.map.xsd) env.setPrefix('xsd', XSD_NS);
+
+  // If we have xsd:, prefer qname datatypes in the body, e.g. ^^xsd:date.
+  if (env.map.xsd) {
+    const esc = XSD_NS.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    bodyText = bodyText.replace(new RegExp(`\\^\\^<${esc}([^>]+)>`, 'g'), '^^xsd:$1');
+  }
+
+  const out = [];
+  const pro = renderPrefixPrologue(env, { includeRt: false }).trim();
+  if (pro) out.push(pro, '');
+  if (bodyText) out.push(bodyText);
 
   return out.join('\n').trim() + '\n';
 }
