@@ -1,7 +1,0 @@
-@prefix : <http://example/#> .
-@prefix log: <http://www.w3.org/2000/10/swap/log#> .
-@prefix string: <http://www.w3.org/2000/10/swap/string#> .
-
-:phayes a :Person ; :givenName "Pat"; :familyName "Hayes" .
-
-{ ?x a :Person . ?SCOPE log:notIncludes { ?x :name ?someName . } . ?x :givenName ?name1 . ?x :familyName ?name2 . (?name1 " " ?name2) string:concatenation ?FN . } => { ?x :name ?FN } .
