@@ -1292,6 +1292,23 @@ class TriGParser extends TurtleParser {
         continue;
       }
 
+      // Named graph block using SPARQL-style GRAPH keyword:
+      //   GRAPH <graphName> { ... }
+      // This is shown in RDF 1.2 TriG "Alternative ways to write named graphs".
+      if (
+        this.peek().typ === 'Ident' &&
+        typeof this.peek().value === 'string' &&
+        this.peek().value.toLowerCase() === 'graph'
+      ) {
+        this.next(); // GRAPH
+        const gname = this.parseTerm();
+        this.expect('LBrace');
+        const f = this.parseGraph();
+        if (this.peek().typ === 'Dot') this.next(); // accept optional '.'
+        for (const tr of f.triples) quads.push({ s: tr.s, p: tr.p, o: tr.o, g: gname });
+        continue;
+      }
+
       // Either a Turtle triple in default graph, or a named graph block: graphName { ... }
       const first = this.parseTerm();
 
