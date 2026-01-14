@@ -2,6 +2,10 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix tfn: <https://w3id.org/time-fn#> .
 @prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix : <https://w3id.org/time-fn/rules#> .
 
 ex:e1 a ex:Event ;
     ex:when "2000-01-02T03:04:05"^^xsd:dateTime ;   # floating (no TZ)
@@ -12,4 +16,565 @@ ex:e1 a ex:Event ;
     ex:day  "2000-01-02"^^xsd:date ;
     ex:tz   "-03:00" .
 
-{ ?this ex:when ?whenRaw . ?this ex:day ?day . ?this ex:tz ?tz . ?startInc math:notGreaterThan ?whenBound . ?whenBound math:notGreaterThan ?endInc . (?whenRaw ?tz) tfn:bindDefaultTimezone ?whenBound . (?day) tfn:periodMinInclusive ?startInc . (?day) tfn:periodMaxInclusive ?endInc . (?day) tfn:periodMinExclusive ?startEx . (?day) tfn:periodMaxExclusive ?endEx . } => { ?this ex:occursOn ?day . ?this ex:whenBound ?whenBound . } .
+{ ?this ex:when ?whenRaw .
+  ?this ex:day ?day .
+  ?this ex:tz ?tz .
+  (?whenRaw ?tz) tfn:bindDefaultTimezone ?whenBound .
+  (?day) tfn:periodMinInclusive ?startInc .
+  (?day) tfn:periodMaxInclusive ?endInc .
+  (?day) tfn:periodMinExclusive ?startEx .
+  (?day) tfn:periodMaxExclusive ?endEx .
+  ?startInc math:notGreaterThan ?whenBound .
+  ?whenBound math:notGreaterThan ?endInc .
+} => { ?this ex:occursOn ?day . ?this ex:whenBound ?whenBound . } .
+
+# Backward rules implementing the Time Functions (tfn:*) from:
+#   https://spec.knows.idlab.ugent.be/time-fn/latest/
+
+######################################################################
+# Helpers: timezone suffix & core lexical form
+######################################################################
+
+# tz suffix extraction: Z
+{ ?lex :tzSuffix "Z" } <= { ?lex string:endsWith "Z" . } .
+
+# tz suffix extraction: ±HH:MM
+{ ?lex :tzSuffix ?tz } <= {
+  ?lex string:matches ".*[+-][0-9][0-9]:[0-9][0-9]$" .
+  ( ?lex "([+-][0-9][0-9]:[0-9][0-9])$" ) string:scrape ?tz .
+} .
+
+# tz suffix extraction: none
+{ ?lex :tzSuffix "" } <= {
+  ?lex string:notMatches ".*(Z|[+-][0-9][0-9]:[0-9][0-9])$" .
+} .
+
+# core lexical form (strip trailing Z)
+{ ?lex :coreNoTz ?core } <= {
+  ?lex string:endsWith "Z" .
+  ( ?lex "Z$" "" ) string:replace ?core .
+} .
+
+# core lexical form (strip trailing ±HH:MM)
+{ ?lex :coreNoTz ?core } <= {
+  ?lex string:matches ".*[+-][0-9][0-9]:[0-9][0-9]$" .
+  ( ?lex "([+-][0-9][0-9]:[0-9][0-9])$" "" ) string:replace ?core .
+} .
+
+# core lexical form (no tz)
+{ ?lex :coreNoTz ?lex } <= {
+  ?lex string:notMatches ".*(Z|[+-][0-9][0-9]:[0-9][0-9])$" .
+} .
+
+# timezone defaults for floating literals
+{ ?lex :tzForMin "+14:00" } <= { ?lex :tzSuffix "" . } .
+{ ?lex :tzForMin ?tz } <= { ?lex :tzSuffix ?tz . ?tz log:notEqualTo "" . } .
+
+{ ?lex :tzForMax "-14:00" } <= { ?lex :tzSuffix "" . } .
+{ ?lex :tzForMax ?tz } <= { ?lex :tzSuffix ?tz . ?tz log:notEqualTo "" . } .
+
+######################################################################
+# Helpers: ensure xsd:dateTime core has milliseconds
+######################################################################
+
+{ ?core :ensureMs ?core } <= { ?core string:matches ".*\\.[0-9][0-9][0-9]$" . } .
+
+{ ?core :ensureMs ?core2 } <= {
+  ?core string:notMatches ".*\\.[0-9][0-9][0-9]$" .
+  ( ?core ".000" ) string:concatenation ?core2 .
+} .
+
+######################################################################
+# Helpers: parse parts from lexical strings
+######################################################################
+
+# Parse YYYY-MM-DD
+{ ?dateCore :dateParts (?y ?m ?d) } <= {
+  ( ?dateCore "^(\\d{4,})" ) string:scrape ?yS .
+  ( ?dateCore "^\\d{4,}-(\\d\\d)" ) string:scrape ?mS .
+  ( ?dateCore "^\\d{4,}-\\d\\d-(\\d\\d)$" ) string:scrape ?dS .
+  ( ?yS xsd:integer ) log:dtlit ?y .
+  ( ?mS xsd:integer ) log:dtlit ?m .
+  ( ?dS xsd:integer ) log:dtlit ?d .
+} .
+
+# Parse YYYY-MM
+{ ?ymCore :yearMonthParts (?y ?m) } <= {
+  ( ?ymCore "^(\\d{4,})" ) string:scrape ?yS .
+  ( ?ymCore "^\\d{4,}-(\\d\\d)$" ) string:scrape ?mS .
+  ( ?yS xsd:integer ) log:dtlit ?y .
+  ( ?mS xsd:integer ) log:dtlit ?m .
+} .
+
+# Parse YYYY
+{ ?yCore :yearPart ?y } <= {
+  ( ?yCore "^(\\d{4,})$" ) string:scrape ?yS .
+  ( ?yS xsd:integer ) log:dtlit ?y .
+} .
+
+# Parse YYYY-MM-DDTHH:MM:SS.mmm
+{ ?dtCore :dateTimeParts (?y ?m ?d ?hh ?mm ?ss ?ms) } <= {
+  ( ?dtCore "^(\\d{4,})" ) string:scrape ?yS .
+  ( ?dtCore "^\\d{4,}-(\\d\\d)" ) string:scrape ?mS .
+  ( ?dtCore "^\\d{4,}-\\d\\d-(\\d\\d)" ) string:scrape ?dS .
+  ( ?dtCore "T(\\d\\d):" ) string:scrape ?hhS .
+  ( ?dtCore "T\\d\\d:(\\d\\d):" ) string:scrape ?mmS .
+  ( ?dtCore "T\\d\\d:\\d\\d:(\\d\\d)" ) string:scrape ?ssS .
+  ( ?dtCore "\\.(\\d\\d\\d)$" ) string:scrape ?msS .
+  ( ?yS  xsd:integer ) log:dtlit ?y .
+  ( ?mS  xsd:integer ) log:dtlit ?m .
+  ( ?dS  xsd:integer ) log:dtlit ?d .
+  ( ?hhS xsd:integer ) log:dtlit ?hh .
+  ( ?mmS xsd:integer ) log:dtlit ?mm .
+  ( ?ssS xsd:integer ) log:dtlit ?ss .
+  ( ?msS xsd:integer ) log:dtlit ?ms .
+} .
+
+######################################################################
+# Helpers: formatting (pad2 / pad3)
+######################################################################
+
+{ ?n :pad2 ?s } <= {
+  ?n math:lessThan 10 .
+  ( ?nS ?t ) log:dtlit ?n .
+  ( "0" ?nS ) string:concatenation ?s .
+} .
+
+{ ?n :pad2 ?s } <= {
+  ?n math:notLessThan 10 .
+  ( ?nS ?t ) log:dtlit ?n .
+  ?s log:equalTo ?nS .
+} .
+
+{ ?n :pad3 ?s } <= {
+  ?n math:lessThan 10 .
+  ( ?nS ?t ) log:dtlit ?n .
+  ( "00" ?nS ) string:concatenation ?s .
+} .
+
+{ ?n :pad3 ?s } <= {
+  ?n math:notLessThan 10 .
+  ?n math:lessThan 100 .
+  ( ?nS ?t ) log:dtlit ?n .
+  ( "0" ?nS ) string:concatenation ?s .
+} .
+
+{ ?n :pad3 ?s } <= {
+  ?n math:notLessThan 100 .
+  ( ?nS ?t ) log:dtlit ?n .
+  ?s log:equalTo ?nS .
+} .
+
+######################################################################
+# Helpers: leap years & month lengths
+######################################################################
+
+{ ?y :isLeapYear true } <= { ( ?y 400 ) math:remainder 0 . } .
+
+{ ?y :isLeapYear true } <= {
+  ( ?y 400 ) math:remainder ?r400 . ?r400 math:notEqualTo 0 .
+  ( ?y 100 ) math:remainder ?r100 . ?r100 math:notEqualTo 0 .
+  ( ?y 4 )   math:remainder 0 .
+} .
+
+{ ?y :isLeapYear false } <= {
+  ( ?y 400 ) math:remainder ?r400 . ?r400 math:notEqualTo 0 .
+  ( ?y 100 ) math:remainder 0 .
+} .
+
+{ ?y :isLeapYear false } <= { ( ?y 4 ) math:remainder ?r4 . ?r4 math:notEqualTo 0 . } .
+
+{ ( ?y ?m ) :daysInMonth 31 } <= { ?m list:in (1 3 5 7 8 10 12) . } .
+{ ( ?y ?m ) :daysInMonth 30 } <= { ?m list:in (4 6 9 11) . } .
+
+{ ( ?y 2 ) :daysInMonth 29 } <= { ?y :isLeapYear true . } .
+{ ( ?y 2 ) :daysInMonth 28 } <= { ?y :isLeapYear false . } .
+
+######################################################################
+# Helpers: next/prev month, next/prev day
+######################################################################
+
+{ ( ?y ?m ) :nextMonth ( ?y ?m2 ) } <= {
+  ?m math:lessThan 12 .
+  ( ?m 1 ) math:sum ?m2 .
+} .
+
+{ ( ?y ?m ) :nextMonth ( ?y2 1 ) } <= {
+  ?m math:equalTo 12 .
+  ( ?y 1 ) math:sum ?y2 .
+} .
+
+{ ( ?y ?m ) :prevMonth ( ?y ?m2 ) } <= {
+  ?m math:greaterThan 1 .
+  ( ?m 1 ) math:difference ?m2 .
+} .
+
+{ ( ?y ?m ) :prevMonth ( ?y2 12 ) } <= {
+  ?m math:equalTo 1 .
+  ( ?y 1 ) math:difference ?y2 .
+} .
+
+{ ( ?y ?m ?d ) :nextDay ( ?y ?m ?d2 ) } <= {
+  ( ?y ?m ) :daysInMonth ?dim .
+  ?d math:lessThan ?dim .
+  ( ?d 1 ) math:sum ?d2 .
+} .
+
+{ ( ?y ?m ?d ) :nextDay ( ?y ?m2 1 ) } <= {
+  ( ?y ?m ) :daysInMonth ?dim .
+  ?d math:equalTo ?dim .
+  ?m math:lessThan 12 .
+  ( ?m 1 ) math:sum ?m2 .
+} .
+
+{ ( ?y ?m ?d ) :nextDay ( ?y2 1 1 ) } <= {
+  ( ?y ?m ) :daysInMonth ?dim .
+  ?d math:equalTo ?dim .
+  ?m math:equalTo 12 .
+  ( ?y 1 ) math:sum ?y2 .
+} .
+
+{ ( ?y ?m ?d ) :prevDay ( ?y ?m ?d2 ) } <= {
+  ?d math:greaterThan 1 .
+  ( ?d 1 ) math:difference ?d2 .
+} .
+
+# NOTE: prevDay across month boundary (d=1). We compute previous month/year first.
+{ ( ?y ?m 1 ) :prevDay ( ?yPrev ?mPrev ?dPrevLast ) } <= {
+  ( ?y ?m ) :prevMonth ( ?yPrev ?mPrev ) .
+  ( ?yPrev ?mPrev ) :daysInMonth ?dPrevLast .
+} .
+
+######################################################################
+# Helpers: +1ms / -1ms on date-time parts
+######################################################################
+
+# addCarry on 0..999 (milliseconds)
+{ ?ms :inc1000 ( ?ms2 0 ) } <= {
+  ?ms math:lessThan 999 .
+  ( ?ms 1 ) math:sum ?ms2 .
+} .
+{ ?ms :inc1000 ( 0 1 ) } <= { ?ms math:equalTo 999 . } .
+
+# decCarry on 0..999 (milliseconds)
+{ ?ms :dec1000 ( ?ms2 0 ) } <= {
+  ?ms math:greaterThan 0 .
+  ( ?ms 1 ) math:difference ?ms2 .
+} .
+{ ?ms :dec1000 ( 999 1 ) } <= { ?ms math:equalTo 0 . } .
+
+# Add carry to 0..59 (seconds/minutes): (value carryIn) -> (valueOut carryOut)
+{ ( ?v 0 ) :addCarry60 ( ?v 0 ) } <= { } .
+{ ( ?v 1 ) :addCarry60 ( ?v2 0 ) } <= {
+  ?v math:lessThan 59 .
+  ( ?v 1 ) math:sum ?v2 .
+} .
+{ ( ?v 1 ) :addCarry60 ( 0 1 ) } <= { ?v math:equalTo 59 . } .
+
+# Sub borrow from 0..59 (seconds/minutes): (value borrowIn) -> (valueOut borrowOut)
+{ ( ?v 0 ) :subBorrow60 ( ?v 0 ) } <= { } .
+{ ( ?v 1 ) :subBorrow60 ( ?v2 0 ) } <= {
+  ?v math:greaterThan 0 .
+  ( ?v 1 ) math:difference ?v2 .
+} .
+{ ( ?v 1 ) :subBorrow60 ( 59 1 ) } <= { ?v math:equalTo 0 . } .
+
+# Add carry to 0..23 (hours): (value carryIn) -> (valueOut carryOut)
+{ ( ?v 0 ) :addCarry24 ( ?v 0 ) } <= { } .
+{ ( ?v 1 ) :addCarry24 ( ?v2 0 ) } <= {
+  ?v math:lessThan 23 .
+  ( ?v 1 ) math:sum ?v2 .
+} .
+{ ( ?v 1 ) :addCarry24 ( 0 1 ) } <= { ?v math:equalTo 23 . } .
+
+# Sub borrow from 0..23 (hours): (value borrowIn) -> (valueOut borrowOut)
+{ ( ?v 0 ) :subBorrow24 ( ?v 0 ) } <= { } .
+{ ( ?v 1 ) :subBorrow24 ( ?v2 0 ) } <= {
+  ?v math:greaterThan 0 .
+  ( ?v 1 ) math:difference ?v2 .
+} .
+{ ( ?v 1 ) :subBorrow24 ( 23 1 ) } <= { ?v math:equalTo 0 . } .
+
+# Add carry to date: (y m d carryIn) -> (y2 m2 d2)
+{ ( ?y ?m ?d 0 ) :addCarryDay ( ?y ?m ?d ) } <= { } .
+{ ( ?y ?m ?d 1 ) :addCarryDay ( ?y2 ?m2 ?d2 ) } <= { ( ?y ?m ?d ) :nextDay ( ?y2 ?m2 ?d2 ) . } .
+
+# Sub borrow from date: (y m d borrowIn) -> (y2 m2 d2)
+{ ( ?y ?m ?d 0 ) :subBorrowDay ( ?y ?m ?d ) } <= { } .
+{ ( ?y ?m ?d 1 ) :subBorrowDay ( ?y2 ?m2 ?d2 ) } <= { ( ?y ?m ?d ) :prevDay ( ?y2 ?m2 ?d2 ) . } .
+
+# Full +1ms: (y m d hh mm ss ms) -> (...)
+{ ( ?y ?m ?d ?hh ?mm ?ss ?ms ) :add1ms ( ?y2 ?m2 ?d2 ?hh2 ?mm2 ?ss2 ?ms2 ) } <= {
+  ?ms :inc1000 ( ?ms2 ?c1 ) .
+  ( ?ss ?c1 ) :addCarry60 ( ?ss2 ?c2 ) .
+  ( ?mm ?c2 ) :addCarry60 ( ?mm2 ?c3 ) .
+  ( ?hh ?c3 ) :addCarry24 ( ?hh2 ?c4 ) .
+  ( ?y ?m ?d ?c4 ) :addCarryDay ( ?y2 ?m2 ?d2 ) .
+} .
+
+# Full -1ms: (y m d hh mm ss ms) -> (...)
+{ ( ?y ?m ?d ?hh ?mm ?ss ?ms ) :sub1ms ( ?y2 ?m2 ?d2 ?hh2 ?mm2 ?ss2 ?ms2 ) } <= {
+  ?ms :dec1000 ( ?ms2 ?b1 ) .
+  ( ?ss ?b1 ) :subBorrow60 ( ?ss2 ?b2 ) .
+  ( ?mm ?b2 ) :subBorrow60 ( ?mm2 ?b3 ) .
+  ( ?hh ?b3 ) :subBorrow24 ( ?hh2 ?b4 ) .
+  ( ?y ?m ?d ?b4 ) :subBorrowDay ( ?y2 ?m2 ?d2 ) .
+} .
+
+######################################################################
+# Helpers: build xsd:dateTime literal from parts + timezone
+######################################################################
+
+{ ( ?y ?m ?d ?hh ?mm ?ss ?ms ?tz ) :buildDateTime ?dt } <= {
+  ( ?yS ?tY ) log:dtlit ?y .
+  ?m :pad2 ?mS .
+  ?d :pad2 ?dS .
+  ?hh :pad2 ?hhS .
+  ?mm :pad2 ?mmS .
+  ?ss :pad2 ?ssS .
+  ?ms :pad3 ?msS .
+  ( ?yS "-" ?mS "-" ?dS "T" ?hhS ":" ?mmS ":" ?ssS "." ?msS ?tz ) string:concatenation ?lex .
+  ( ?lex xsd:dateTime ) log:dtlit ?dt .
+} .
+
+######################################################################
+# Unary list wrappers (optional convenience)
+######################################################################
+
+{ ( ?p ) tfn:periodMinInclusive ?o } <= { ?p tfn:periodMinInclusive ?o . } .
+{ ( ?p ) tfn:periodMaxInclusive ?o } <= { ?p tfn:periodMaxInclusive ?o . } .
+{ ( ?p ) tfn:periodMinExclusive ?o } <= { ?p tfn:periodMinExclusive ?o . } .
+{ ( ?p ) tfn:periodMaxExclusive ?o } <= { ?p tfn:periodMaxExclusive ?o . } .
+
+######################################################################
+# tfn:bindDefaultTimezone
+######################################################################
+
+# If timezone present: unchanged
+{ ( ?time ?defaultTz ) tfn:bindDefaultTimezone ?out } <= {
+  ( ?lex ?dt ) log:dtlit ?time .
+  ?lex :tzSuffix ?tz .
+  ?tz log:notEqualTo "" .
+  ?out log:equalTo ?time .
+} .
+
+# If no timezone: append default and keep datatype
+{ ( ?time ?defaultTz ) tfn:bindDefaultTimezone ?out } <= {
+  ( ?lex ?dt ) log:dtlit ?time .
+  ?lex :tzSuffix "" .
+  ( ?lex ?defaultTz ) string:concatenation ?lex2 .
+  ( ?lex2 ?dt ) log:dtlit ?out .
+} .
+
+######################################################################
+# tfn:periodMinInclusive
+######################################################################
+
+# xsd:dateTime with tz -> same
+{ ?p tfn:periodMinInclusive ?out } <= {
+  ( ?lex xsd:dateTime ) log:dtlit ?p .
+  ?lex :tzSuffix ?tz .
+  ?tz log:notEqualTo "" .
+  ?out log:equalTo ?p .
+} .
+
+# xsd:dateTime without tz -> bind +14:00
+{ ?p tfn:periodMinInclusive ?out } <= {
+  ( ?lex xsd:dateTime ) log:dtlit ?p .
+  ?lex :tzSuffix "" .
+  ?lex :coreNoTz ?core .
+  ( ?core "+14:00" ) string:concatenation ?lex2 .
+  ( ?lex2 xsd:dateTime ) log:dtlit ?out .
+} .
+
+# xsd:date -> YYYY-MM-DDT00:00:00.000 with given tz or +14:00
+{ ?p tfn:periodMinInclusive ?out } <= {
+  ( ?lex xsd:date ) log:dtlit ?p .
+  ?lex :coreNoTz ?core .
+  ?lex :tzForMin ?tz .
+  ?core :dateParts ( ?y ?m ?d ) .
+  ( ?y ?m ?d 0 0 0 0 ?tz ) :buildDateTime ?out .
+} .
+
+# xsd:gYearMonth -> YYYY-MM-01T00:00:00.000 with given tz or +14:00
+{ ?p tfn:periodMinInclusive ?out } <= {
+  ( ?lex xsd:gYearMonth ) log:dtlit ?p .
+  ?lex :coreNoTz ?core .
+  ?lex :tzForMin ?tz .
+  ?core :yearMonthParts ( ?y ?m ) .
+  ( ?y ?m 1 0 0 0 0 ?tz ) :buildDateTime ?out .
+} .
+
+# xsd:gYear -> YYYY-01-01T00:00:00.000 with given tz or +14:00
+{ ?p tfn:periodMinInclusive ?out } <= {
+  ( ?lex xsd:gYear ) log:dtlit ?p .
+  ?lex :coreNoTz ?core .
+  ?lex :tzForMin ?tz .
+  ?core :yearPart ?y .
+  ( ?y 1 1 0 0 0 0 ?tz ) :buildDateTime ?out .
+} .
+
+######################################################################
+# tfn:periodMaxInclusive
+######################################################################
+
+# xsd:dateTime with tz -> same
+{ ?p tfn:periodMaxInclusive ?out } <= {
+  ( ?lex xsd:dateTime ) log:dtlit ?p .
+  ?lex :tzSuffix ?tz .
+  ?tz log:notEqualTo "" .
+  ?out log:equalTo ?p .
+} .
+
+# xsd:dateTime without tz -> bind -14:00
+{ ?p tfn:periodMaxInclusive ?out } <= {
+  ( ?lex xsd:dateTime ) log:dtlit ?p .
+  ?lex :tzSuffix "" .
+  ?lex :coreNoTz ?core .
+  ( ?core "-14:00" ) string:concatenation ?lex2 .
+  ( ?lex2 xsd:dateTime ) log:dtlit ?out .
+} .
+
+# xsd:date -> YYYY-MM-DDT23:59:59.999 with given tz or -14:00
+{ ?p tfn:periodMaxInclusive ?out } <= {
+  ( ?lex xsd:date ) log:dtlit ?p .
+  ?lex :coreNoTz ?core .
+  ?lex :tzForMax ?tz .
+  ?core :dateParts ( ?y ?m ?d ) .
+  ( ?y ?m ?d 23 59 59 999 ?tz ) :buildDateTime ?out .
+} .
+
+# xsd:gYearMonth -> YYYY-MM-lastDayT23:59:59.999 with given tz or -14:00
+{ ?p tfn:periodMaxInclusive ?out } <= {
+  ( ?lex xsd:gYearMonth ) log:dtlit ?p .
+  ?lex :coreNoTz ?core .
+  ?lex :tzForMax ?tz .
+  ?core :yearMonthParts ( ?y ?m ) .
+  ( ?y ?m ) :daysInMonth ?dLast .
+  ( ?y ?m ?dLast 23 59 59 999 ?tz ) :buildDateTime ?out .
+} .
+
+# xsd:gYear -> YYYY-12-31T23:59:59.999 with given tz or -14:00
+{ ?p tfn:periodMaxInclusive ?out } <= {
+  ( ?lex xsd:gYear ) log:dtlit ?p .
+  ?lex :coreNoTz ?core .
+  ?lex :tzForMax ?tz .
+  ?core :yearPart ?y .
+  ( ?y 12 31 23 59 59 999 ?tz ) :buildDateTime ?out .
+} .
+
+######################################################################
+# tfn:periodMinExclusive
+######################################################################
+
+# xsd:dateTime with tz -> subtract 1ms, keep tz
+{ ?p tfn:periodMinExclusive ?out } <= {
+  ( ?lex xsd:dateTime ) log:dtlit ?p .
+  ?lex :tzSuffix ?tz .
+  ?tz log:notEqualTo "" .
+  ?lex :coreNoTz ?core0 .
+  ?core0 :ensureMs ?core .
+  ?core :dateTimeParts ( ?y ?m ?d ?hh ?mm ?ss ?ms ) .
+  ( ?y ?m ?d ?hh ?mm ?ss ?ms ) :sub1ms ( ?y2 ?m2 ?d2 ?hh2 ?mm2 ?ss2 ?ms2 ) .
+  ( ?y2 ?m2 ?d2 ?hh2 ?mm2 ?ss2 ?ms2 ?tz ) :buildDateTime ?out .
+} .
+
+# xsd:dateTime without tz -> subtract 1ms, bind +14:00
+{ ?p tfn:periodMinExclusive ?out } <= {
+  ( ?lex xsd:dateTime ) log:dtlit ?p .
+  ?lex :tzSuffix "" .
+  ?lex :coreNoTz ?core0 .
+  ?core0 :ensureMs ?core .
+  ?core :dateTimeParts ( ?y ?m ?d ?hh ?mm ?ss ?ms ) .
+  ( ?y ?m ?d ?hh ?mm ?ss ?ms ) :sub1ms ( ?y2 ?m2 ?d2 ?hh2 ?mm2 ?ss2 ?ms2 ) .
+  ( ?y2 ?m2 ?d2 ?hh2 ?mm2 ?ss2 ?ms2 "+14:00" ) :buildDateTime ?out .
+} .
+
+# xsd:date -> previous day at 23:59:59.999, tz or +14:00
+{ ?p tfn:periodMinExclusive ?out } <= {
+  ( ?lex xsd:date ) log:dtlit ?p .
+  ?lex :coreNoTz ?core .
+  ?lex :tzForMin ?tz .
+  ?core :dateParts ( ?y ?m ?d ) .
+  ( ?y ?m ?d ) :prevDay ( ?y2 ?m2 ?d2 ) .
+  ( ?y2 ?m2 ?d2 23 59 59 999 ?tz ) :buildDateTime ?out .
+} .
+
+# xsd:gYearMonth -> previous month's last day at 23:59:59.999, tz or +14:00
+{ ?p tfn:periodMinExclusive ?out } <= {
+  ( ?lex xsd:gYearMonth ) log:dtlit ?p .
+  ?lex :coreNoTz ?core .
+  ?lex :tzForMin ?tz .
+  ?core :yearMonthParts ( ?y ?m ) .
+  ( ?y ?m ) :prevMonth ( ?yPrev ?mPrev ) .
+  ( ?yPrev ?mPrev ) :daysInMonth ?dPrevLast .
+  ( ?yPrev ?mPrev ?dPrevLast 23 59 59 999 ?tz ) :buildDateTime ?out .
+} .
+
+# xsd:gYear -> previous year Dec 31 at 23:59:59.999, tz or +14:00
+{ ?p tfn:periodMinExclusive ?out } <= {
+  ( ?lex xsd:gYear ) log:dtlit ?p .
+  ?lex :coreNoTz ?core .
+  ?lex :tzForMin ?tz .
+  ?core :yearPart ?y .
+  ( ?y 1 ) math:difference ?yPrev .
+  ( ?yPrev 12 31 23 59 59 999 ?tz ) :buildDateTime ?out .
+} .
+
+######################################################################
+# tfn:periodMaxExclusive
+######################################################################
+
+# xsd:dateTime with tz -> add 1ms, keep tz
+{ ?p tfn:periodMaxExclusive ?out } <= {
+  ( ?lex xsd:dateTime ) log:dtlit ?p .
+  ?lex :tzSuffix ?tz .
+  ?tz log:notEqualTo "" .
+  ?lex :coreNoTz ?core0 .
+  ?core0 :ensureMs ?core .
+  ?core :dateTimeParts ( ?y ?m ?d ?hh ?mm ?ss ?ms ) .
+  ( ?y ?m ?d ?hh ?mm ?ss ?ms ) :add1ms ( ?y2 ?m2 ?d2 ?hh2 ?mm2 ?ss2 ?ms2 ) .
+  ( ?y2 ?m2 ?d2 ?hh2 ?mm2 ?ss2 ?ms2 ?tz ) :buildDateTime ?out .
+} .
+
+# xsd:dateTime without tz -> add 1ms, bind -14:00
+{ ?p tfn:periodMaxExclusive ?out } <= {
+  ( ?lex xsd:dateTime ) log:dtlit ?p .
+  ?lex :tzSuffix "" .
+  ?lex :coreNoTz ?core0 .
+  ?core0 :ensureMs ?core .
+  ?core :dateTimeParts ( ?y ?m ?d ?hh ?mm ?ss ?ms ) .
+  ( ?y ?m ?d ?hh ?mm ?ss ?ms ) :add1ms ( ?y2 ?m2 ?d2 ?hh2 ?mm2 ?ss2 ?ms2 ) .
+  ( ?y2 ?m2 ?d2 ?hh2 ?mm2 ?ss2 ?ms2 "-14:00" ) :buildDateTime ?out .
+} .
+
+# xsd:date -> next day at 00:00:00.000, tz or -14:00
+{ ?p tfn:periodMaxExclusive ?out } <= {
+  ( ?lex xsd:date ) log:dtlit ?p .
+  ?lex :coreNoTz ?core .
+  ?lex :tzForMax ?tz .
+  ?core :dateParts ( ?y ?m ?d ) .
+  ( ?y ?m ?d ) :nextDay ( ?y2 ?m2 ?d2 ) .
+  ( ?y2 ?m2 ?d2 0 0 0 0 ?tz ) :buildDateTime ?out .
+} .
+
+# xsd:gYearMonth -> next month, first day at 00:00:00.000, tz or -14:00
+{ ?p tfn:periodMaxExclusive ?out } <= {
+  ( ?lex xsd:gYearMonth ) log:dtlit ?p .
+  ?lex :coreNoTz ?core .
+  ?lex :tzForMax ?tz .
+  ?core :yearMonthParts ( ?y ?m ) .
+  ( ?y ?m ) :nextMonth ( ?y2 ?m2 ) .
+  ( ?y2 ?m2 1 0 0 0 0 ?tz ) :buildDateTime ?out .
+} .
+
+# xsd:gYear -> next year Jan 1 at 00:00:00.000, tz or -14:00
+{ ?p tfn:periodMaxExclusive ?out } <= {
+  ( ?lex xsd:gYear ) log:dtlit ?p .
+  ?lex :coreNoTz ?core .
+  ?lex :tzForMax ?tz .
+  ?core :yearPart ?y .
+  ( ?y 1 ) math:sum ?yNext .
+  ( ?yNext 1 1 0 0 0 0 ?tz ) :buildDateTime ?out .
+} .
+

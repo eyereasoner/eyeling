@@ -1,7 +1,0 @@
-@prefix ex: <http://example.org/> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-
-ex:e1 ex:occursOn "2000-01-02"^^xsd:date .
-ex:e1 ex:whenBound "2000-01-02T03:04:05Z"^^xsd:dateTime .
-ex:e2 ex:occursOn "2000-01-02"^^xsd:date .
-ex:e2 ex:whenBound "2000-01-02T03:04:05-03:00"^^xsd:dateTime .
