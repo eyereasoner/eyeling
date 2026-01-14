@@ -107,6 +107,7 @@ const rt = {
 // ---------------------------------------------------------------------------
 
 const RDF_NS = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
+const XSD_NS = 'http://www.w3.org/2001/XMLSchema#';
 const OWL_NS = 'http://www.w3.org/2002/07/owl#';
 const LOG_NS = 'http://www.w3.org/2000/10/swap/log#';
 const MATH_NS = 'http://www.w3.org/2000/10/swap/math#';
@@ -1399,6 +1400,30 @@ class TriGParser extends TurtleParser {
 // Serializers (Turtle-ish / TriG-ish / N3-ish)
 // ---------------------------------------------------------------------------
 
+/**
+ * Render a Turtle/N3 literal token string, shrinking any datatype IRIRef (^^<...>)
+ * to a prefixed name if possible, e.g. ^^<http://www.w3.org/2001/XMLSchema#date> -> ^^xsd:date
+ * when an appropriate prefix is in scope.
+ *
+ * Note: this keeps the original lexical spelling and only rewrites the datatype IRIRef.
+ */
+function literalToText(raw, prefixes) {
+  if (!raw || typeof raw !== 'string') return String(raw);
+
+  // Typed literal with datatype as IRIREF.
+  // Example: "2021-07-07"^^<http://www.w3.org/2001/XMLSchema#date>
+  // We only rewrite the datatype part.
+  const m = raw.match(/\^\^<([^>]+)>/);
+  if (!m) return raw;
+
+  const dtIri = m[1];
+  const qn = prefixes ? prefixes.shrinkIri(dtIri) : null;
+  if (!qn) return raw;
+
+  // Replace only the first occurrence.
+  return raw.replace(`^^<${dtIri}>`, `^^${qn}`);
+}
+
 function termToText(t, prefixes, skolemMap) {
   if (t == null) return '[]';
   if (t instanceof Iri) {
@@ -1410,7 +1435,7 @@ function termToText(t, prefixes, skolemMap) {
     if (skolemMap && skolemMap.has(t.label)) return skolemMap.get(t.label);
     return t.label;
   }
-  if (t instanceof Literal) return t.value;
+  if (t instanceof Literal) return literalToText(t.value, prefixes);
   if (t instanceof Var) return `?${t.name}`;
   if (t instanceof ListTerm) return `(${t.elems.map((x) => termToText(x, prefixes, skolemMap)).join(' ')})`;
   if (t instanceof OpenListTerm)
@@ -1716,6 +1741,18 @@ function pruneUnusedPrefixes(prefixes, triples) {
       used.add(pfx);
       return;
     }
+
+    if (t instanceof Literal) {
+      // A typed literal may reference a QName in its datatype, e.g. "2021-07-07"^^xsd:date.
+      // Our Literal stores the full lexical token, so we conservatively scan for ^^prefix:local.
+      const re = /\^\^([A-Za-z_][A-Za-z0-9_.-]*|):[A-Za-z_][A-Za-z0-9_.-]*/g;
+      for (const m of t.value.matchAll(re)) {
+        const pfx = m[1] || '';
+        used.add(pfx);
+      }
+      return;
+    }
+
     if (t instanceof ListTerm) {
       for (const e of t.elems) visitTerm(e);
       return;
@@ -1776,6 +1813,114 @@ function ensureSkolemPrefix(prefixes, skolemMap) {
   return new PrefixEnv(newMap, baseIri);
 }
 
+function usesRdfNamespace(triples) {
+  let used = false;
+
+  function visitTerm(t) {
+    if (!t || used) return;
+
+    if (t instanceof Iri) {
+      // rdf:type is rendered as 'a', so it doesn't require declaring rdf:
+      if (t.value.startsWith(RDF_NS) && t.value !== RDF_NS + 'type') used = true;
+      return;
+    }
+
+    if (t instanceof Literal) {
+      // Conservative: detect rdf: appearing in a datatype token, e.g. ^^rdf:langString or ^^<...rdf-syntax-ns#...>
+      if (t.value.includes('^^rdf:') || t.value.includes(`^^<${RDF_NS}`)) used = true;
+      return;
+    }
+
+    if (t instanceof ListTerm) {
+      for (const e of t.elems) visitTerm(e);
+      return;
+    }
+
+    if (t instanceof GraphTerm) {
+      for (const tr of t.triples) {
+        visitTerm(tr.s);
+        visitTerm(tr.p);
+        visitTerm(tr.o);
+      }
+    }
+  }
+
+  for (const tr of triples || []) {
+    visitTerm(tr.s);
+    visitTerm(tr.p);
+    visitTerm(tr.o);
+    if (used) break;
+  }
+  return used;
+}
+
+function ensureRdfPrefixIfUsed(prefixes, triples) {
+  if (!usesRdfNamespace(triples)) return prefixes;
+
+  // If rdf: is already declared, keep it as-is; otherwise add it.
+  const baseMap = prefixes && prefixes.map ? prefixes.map : {};
+  if (Object.prototype.hasOwnProperty.call(baseMap, 'rdf')) return prefixes;
+
+  const newMap = { ...baseMap, rdf: RDF_NS };
+  const baseIri = prefixes ? prefixes.baseIri : '';
+  return new PrefixEnv(newMap, baseIri);
+}
+
+function usesXsdPrefix(triples) {
+  let used = false;
+
+  function visitTerm(t) {
+    if (!t || used) return;
+
+    if (t instanceof Iri) {
+      // If an XSD namespace IRI is printed (rare, but possible), xsd: prefix is required.
+      if (t.value.startsWith(XSD_NS)) used = true;
+      return;
+    }
+
+    if (t instanceof Literal) {
+      // Detect xsd: use in typed literal tokens, e.g. "2021-07-07"^^xsd:date.
+      // Also detect explicit IRI datatypes in XSD namespace.
+      if (t.value.includes('^^xsd:') || t.value.includes(`^^<${XSD_NS}`)) used = true;
+      return;
+    }
+
+    if (t instanceof ListTerm) {
+      for (const e of t.elems) visitTerm(e);
+      return;
+    }
+
+    if (t instanceof GraphTerm) {
+      for (const tr of t.triples) {
+        visitTerm(tr.s);
+        visitTerm(tr.p);
+        visitTerm(tr.o);
+      }
+      return;
+    }
+  }
+
+  for (const tr of triples || []) {
+    visitTerm(tr.s);
+    visitTerm(tr.p);
+    visitTerm(tr.o);
+    if (used) break;
+  }
+  return used;
+}
+
+function ensureXsdPrefixIfUsed(prefixes, triples) {
+  if (!usesXsdPrefix(triples)) return prefixes;
+
+  // If xsd: is already declared, keep it as-is; otherwise add it.
+  const baseMap = prefixes && prefixes.map ? prefixes.map : {};
+  if (Object.prototype.hasOwnProperty.call(baseMap, 'xsd')) return prefixes;
+
+  const newMap = { ...baseMap, xsd: XSD_NS };
+  const baseIri = prefixes ? prefixes.baseIri : '';
+  return new PrefixEnv(newMap, baseIri);
+}
+
 function groupQuadsByGraph(quads) {
   const m = new Map(); // key -> { gTerm, triples: Triple[] }
   function keyOfGraph(g) {
@@ -1817,8 +1962,10 @@ function writeN3RtGraph({ datasetQuads, prefixes }) {
 
   const prunedPrefixes = pruneUnusedPrefixes(prefixes, pseudoTriplesForUse);
   const skolemMap = buildSkolemMapForBnodesThatCrossScopes(pseudoTriplesForUse);
-  const outPrefixes = ensureSkolemPrefix(prunedPrefixes, skolemMap);
-
+  const outPrefixes = ensureRdfPrefixIfUsed(
+    ensureXsdPrefixIfUsed(ensureSkolemPrefix(prunedPrefixes, skolemMap), pseudoTriplesForUse),
+    pseudoTriplesForUse,
+  );
   const pro = renderPrefixPrologue(outPrefixes, { includeRt: true }).trim();
   if (pro) blocks.push(pro, '');
 
@@ -1883,7 +2030,10 @@ function writeN3Triples({ triples, prefixes }) {
   const foldedTriples = foldRdfLists(triples);
   const prunedPrefixes = pruneUnusedPrefixes(prefixes, foldedTriples);
   const skolemMap = buildSkolemMapForBnodesThatCrossScopes(foldedTriples);
-  const outPrefixes = ensureSkolemPrefix(prunedPrefixes, skolemMap);
+  const outPrefixes = ensureRdfPrefixIfUsed(
+    ensureXsdPrefixIfUsed(ensureSkolemPrefix(prunedPrefixes, skolemMap), foldedTriples),
+    foldedTriples,
+  );
   const blocks = [];
   const pro = renderPrefixPrologue(outPrefixes, { includeRt: false }).trim();
   if (pro) blocks.push(pro, '');

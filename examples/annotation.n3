@@ -1,6 +1,8 @@
 @prefix : <http://example.com/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 
 :a :name "Alice" .
-:t <http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies> { :a :name "Alice" . } .
+:t rdf:reifies { :a :name "Alice" . } .
 :t :statedBy :bob .
-:t :recorded "2021-07-07"^^<http://www.w3.org/2001/XMLSchema#date> .
+:t :recorded "2021-07-07"^^xsd:date .
