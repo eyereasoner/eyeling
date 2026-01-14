@@ -35,6 +35,63 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const process = require('node:process');
 
+const crypto = require('node:crypto');
+
+function _stripIriRef(s) {
+  // Allow passing an IRIREF like <...>
+  if (typeof s !== 'string') return '';
+  s = s.trim();
+  if (s.startsWith('<') && s.endsWith('>')) return s.slice(1, -1);
+  return s;
+}
+
+function normalizeSkolemRoot(root) {
+  root = _stripIriRef(root);
+  if (!root) return '';
+  // Ensure it ends with '/.well-known/genid/' OR at least with '/'
+  if (!root.endsWith('/')) root += '/';
+  return root;
+}
+
+// Skolemization (Option C)
+//
+// We mint recognizable Skolem IRIs using a stable, per-input UUID:
+//
+//   @prefix skolem: <https://eyereasoner.github.io/.well-known/genid/UUID#>.
+//
+// and then replace cross-scope blank nodes with IRIs like: skolem:e38
+//
+// The UUID is deterministic from the *input file content* (SHA-256 based).
+const SKOLEM_PREFIX = 'skolem';
+const DEFAULT_SKOLEM_ROOT = 'https://eyereasoner.github.io/.well-known/genid/';
+const SKOLEM_ROOT = normalizeSkolemRoot(process.env.SKOLEM_ROOT) || DEFAULT_SKOLEM_ROOT;
+
+let SKOLEM_UUID = null; // e.g., '3f2504e0-4f89-5d3a-9a0c-0305e82c3301'
+let SKOLEM_PREFIX_IRI = null; // e.g., 'https://.../.well-known/genid/<UUID>#'
+
+function _deterministicUuidFromText(inputText) {
+  const h = crypto.createHash('sha256').update(inputText, 'utf8').digest();
+  const b = Buffer.from(h.subarray(0, 16));
+
+  // Set version (5) and variant (RFC 4122) bits to make it look like a UUID.
+  b[6] = (b[6] & 0x0f) | 0x50;
+  b[8] = (b[8] & 0x3f) | 0x80;
+
+  const hex = b.toString('hex');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+function initSkolemForInput(inputText) {
+  SKOLEM_UUID = _deterministicUuidFromText(inputText);
+  SKOLEM_PREFIX_IRI = `${SKOLEM_ROOT}${SKOLEM_UUID}#`;
+}
+
+function _pnLocalSafe(s) {
+  // Turtle PN_LOCAL allows percent escapes (PLX). We make sure all "special"
+  // encodeURIComponent survivors are percent-escaped too.
+  return encodeURIComponent(s).replace(/[!'()*]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase());
+}
+
 // ---------------------------------------------------------------------------
 // Mapping namespace
 // ---------------------------------------------------------------------------
@@ -1292,9 +1349,7 @@ class TriGParser extends TurtleParser {
         continue;
       }
 
-      // Named graph block using SPARQL-style GRAPH keyword:
-      //   GRAPH <graphName> { ... }
-      // This is shown in RDF 1.2 TriG "Alternative ways to write named graphs".
+      // SPARQL-style named graph block: GRAPH <g> { ... }
       if (
         this.peek().typ === 'Ident' &&
         typeof this.peek().value === 'string' &&
@@ -1382,46 +1437,66 @@ function termToText(t, prefixes, skolemMap) {
 // with a stable IRI constant (<urn:skolem:...>) to preserve identity.
 // ---------------------------------------------------------------------------
 
-function buildSkolemMapForBnodesThatCrossQuotedGraphs(triples) {
-  const inQuoted = new Set();
-  const outside = new Set();
+function buildSkolemMapForBnodesThatCrossScopes(triples) {
+  // In RDF (incl. RDF 1.2 triple terms and TriG datasets), blank nodes can be
+  // shared across different “scopes” in the concrete syntax (e.g., between the
+  // default graph and named graphs, or between multiple named graphs, or between
+  // asserted triples and triple terms). In N3, blank nodes inside quoted graph
+  // terms (`{ ... }`) do NOT automatically corefer with blank nodes outside, or
+  // in other quoted graph terms.
+  //
+  // To preserve coreference, we Skolemize blank nodes that appear in more than
+  // one scope:
+  //   - OUT: outside any GraphTerm
+  //   - Gk:  inside the k-th encountered GraphTerm (each GraphTerm gets its own)
+  //
+  // Each such blank node label is replaced by a minted IRI in the skolem: namespace (see SKOLEM_PREFIX_IRI).
+  const scopesByLbl = new Map();
+  let graphTermId = 0;
 
-  function visitTerm(t, isInsideQuoted) {
+  function add(lbl, scope) {
+    if (!scopesByLbl.has(lbl)) scopesByLbl.set(lbl, new Set());
+    scopesByLbl.get(lbl).add(scope);
+  }
+
+  function visitTerm(t, scope) {
     if (!t) return;
     if (t instanceof Blank) {
-      (isInsideQuoted ? inQuoted : outside).add(t.label);
+      add(t.label, scope);
       return;
     }
     if (t instanceof ListTerm) {
-      for (const e of t.elems) visitTerm(e, isInsideQuoted);
+      for (const e of t.elems) visitTerm(e, scope);
       return;
     }
     if (t instanceof OpenListTerm) {
-      for (const e of t.prefix) visitTerm(e, isInsideQuoted);
+      for (const e of t.prefix) visitTerm(e, scope);
       return;
     }
     if (t instanceof GraphTerm) {
+      const innerScope = `G${graphTermId++}`;
       for (const tr of t.triples) {
-        visitTerm(tr.s, true);
-        visitTerm(tr.p, true);
-        visitTerm(tr.o, true);
+        visitTerm(tr.s, innerScope);
+        visitTerm(tr.p, innerScope);
+        visitTerm(tr.o, innerScope);
       }
       return;
     }
   }
 
   for (const tr of triples) {
-    visitTerm(tr.s, false);
-    visitTerm(tr.p, false);
-    visitTerm(tr.o, false);
+    visitTerm(tr.s, 'OUT');
+    visitTerm(tr.p, 'OUT');
+    visitTerm(tr.o, 'OUT');
   }
 
   const skolemMap = new Map();
-  for (const lbl of inQuoted) {
-    if (!outside.has(lbl)) continue;
+  for (const [lbl, scopes] of scopesByLbl.entries()) {
+    if (scopes.size <= 1) continue;
+
     const id = lbl.startsWith('_:') ? lbl.slice(2) : lbl;
-    const enc = encodeURIComponent(id);
-    skolemMap.set(lbl, `<urn:skolem:${enc}>`);
+    const local = _pnLocalSafe(id);
+    skolemMap.set(lbl, `${SKOLEM_PREFIX}:${local}`);
   }
   return skolemMap;
 }
@@ -1689,6 +1764,18 @@ function renderPrefixPrologue(prefixes, { includeRt = false } = {}) {
   return out.join('\n');
 }
 
+function ensureSkolemPrefix(prefixes, skolemMap) {
+  if (!skolemMap || skolemMap.size === 0) return prefixes;
+
+  // If initSkolemForInput() was not called (library usage), fall back to a fresh UUID.
+  if (!SKOLEM_PREFIX_IRI) SKOLEM_PREFIX_IRI = `${SKOLEM_ROOT}${crypto.randomUUID()}#`;
+
+  const baseMap = prefixes && prefixes.map ? prefixes.map : {};
+  const newMap = { ...baseMap, [SKOLEM_PREFIX]: SKOLEM_PREFIX_IRI };
+  const baseIri = prefixes ? prefixes.baseIri : '';
+  return new PrefixEnv(newMap, baseIri);
+}
+
 function groupQuadsByGraph(quads) {
   const m = new Map(); // key -> { gTerm, triples: Triple[] }
   function keyOfGraph(g) {
@@ -1708,12 +1795,31 @@ function groupQuadsByGraph(quads) {
 function writeN3RtGraph({ datasetQuads, prefixes }) {
   const blocks = [];
   const grouped = groupQuadsByGraph(datasetQuads);
-  const allTriplesForUse = [];
-  for (const { triples } of grouped.values()) allTriplesForUse.push(...foldRdfLists(triples));
-  const prunedPrefixes = pruneUnusedPrefixes(prefixes, allTriplesForUse);
-  const skolemMap = buildSkolemMapForBnodesThatCrossQuotedGraphs(allTriplesForUse);
 
-  const pro = renderPrefixPrologue(prunedPrefixes, { includeRt: true }).trim();
+  // For prefix pruning + Skolemization we build a synthetic triple stream that
+  // matches the *output* structure:
+  //   - default graph triples are “outside” any GraphTerm
+  //   - each named graph is wrapped as: gTerm rt:graph { ... }
+  // This allows us to detect blank nodes that must corefer across graphs.
+  const pseudoTriplesForUse = [];
+  const rtGraphIri = new Iri(rt.graph);
+
+  if (grouped.has('DEFAULT')) {
+    const { triples } = grouped.get('DEFAULT');
+    pseudoTriplesForUse.push(...foldRdfLists(triples));
+  }
+
+  for (const [k, { gTerm, triples }] of grouped.entries()) {
+    if (k === 'DEFAULT') continue;
+    const folded = foldRdfLists(triples);
+    pseudoTriplesForUse.push({ s: gTerm, p: rtGraphIri, o: new GraphTerm(folded) });
+  }
+
+  const prunedPrefixes = pruneUnusedPrefixes(prefixes, pseudoTriplesForUse);
+  const skolemMap = buildSkolemMapForBnodesThatCrossScopes(pseudoTriplesForUse);
+  const outPrefixes = ensureSkolemPrefix(prunedPrefixes, skolemMap);
+
+  const pro = renderPrefixPrologue(outPrefixes, { includeRt: true }).trim();
   if (pro) blocks.push(pro, '');
 
   function writeGraphTriples(triples) {
@@ -1721,7 +1827,7 @@ function writeN3RtGraph({ datasetQuads, prefixes }) {
     return folded
       .map(
         (tr) =>
-          `  ${termToText(tr.s, prunedPrefixes, skolemMap)} ${termToText(tr.p, prunedPrefixes, skolemMap)} ${termToText(tr.o, prunedPrefixes, skolemMap)} .`,
+          `  ${termToText(tr.s, outPrefixes, skolemMap)} ${termToText(tr.p, outPrefixes, skolemMap)} ${termToText(tr.o, outPrefixes, skolemMap)} .`,
       )
       .join('\n');
   }
@@ -1732,7 +1838,7 @@ function writeN3RtGraph({ datasetQuads, prefixes }) {
     const folded = foldRdfLists(triples);
     for (const tr of folded) {
       blocks.push(
-        `${termToText(tr.s, prunedPrefixes, skolemMap)} ${termToText(tr.p, prunedPrefixes, skolemMap)} ${termToText(tr.o, prunedPrefixes, skolemMap)} .`,
+        `${termToText(tr.s, outPrefixes, skolemMap)} ${termToText(tr.p, outPrefixes, skolemMap)} ${termToText(tr.o, outPrefixes, skolemMap)} .`,
       );
     }
     blocks.push('');
@@ -1741,14 +1847,14 @@ function writeN3RtGraph({ datasetQuads, prefixes }) {
   const named = [...grouped.entries()].filter(([k]) => k !== 'DEFAULT');
   named.sort((a, b) => a[0].localeCompare(b[0]));
   for (const [, { gTerm, triples }] of named) {
-    blocks.push(`${termToText(gTerm, prunedPrefixes, skolemMap)} rt:graph {`);
+    blocks.push(`${termToText(gTerm, outPrefixes, skolemMap)} rt:graph {`);
     const folded = foldRdfLists(triples);
     if (folded.length) {
       blocks.push(
         folded
           .map(
             (tr) =>
-              `  ${termToText(tr.s, prunedPrefixes, skolemMap)} ${termToText(tr.p, prunedPrefixes, skolemMap)} ${termToText(tr.o, prunedPrefixes, skolemMap)} .`,
+              `  ${termToText(tr.s, outPrefixes, skolemMap)} ${termToText(tr.p, outPrefixes, skolemMap)} ${termToText(tr.o, outPrefixes, skolemMap)} .`,
           )
           .join('\n'),
       );
@@ -1776,13 +1882,14 @@ function parseTurtle(text) {
 function writeN3Triples({ triples, prefixes }) {
   const foldedTriples = foldRdfLists(triples);
   const prunedPrefixes = pruneUnusedPrefixes(prefixes, foldedTriples);
-  const skolemMap = buildSkolemMapForBnodesThatCrossQuotedGraphs(foldedTriples);
+  const skolemMap = buildSkolemMapForBnodesThatCrossScopes(foldedTriples);
+  const outPrefixes = ensureSkolemPrefix(prunedPrefixes, skolemMap);
   const blocks = [];
-  const pro = renderPrefixPrologue(prunedPrefixes, { includeRt: false }).trim();
+  const pro = renderPrefixPrologue(outPrefixes, { includeRt: false }).trim();
   if (pro) blocks.push(pro, '');
   for (const tr of foldedTriples) {
     blocks.push(
-      `${termToText(tr.s, prunedPrefixes, skolemMap)} ${termToText(tr.p, prunedPrefixes, skolemMap)} ${termToText(tr.o, prunedPrefixes, skolemMap)} .`,
+      `${termToText(tr.s, outPrefixes, skolemMap)} ${termToText(tr.p, outPrefixes, skolemMap)} ${termToText(tr.o, outPrefixes, skolemMap)} .`,
     );
   }
   return blocks.join('\n').trim() + '\n';
@@ -2788,6 +2895,7 @@ async function main() {
   const ext = path.extname(inputFile).toLowerCase();
 
   const text = await fs.readFile(inputFile, 'utf8');
+  initSkolemForInput(text);
 
   if (ext === '.ttl') {
     process.stdout.write(turtleToN3(text));

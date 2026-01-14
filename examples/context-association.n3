@@ -2,13 +2,14 @@
 @prefix : <http://example.org/#> .
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix sec: <https://w3id.org/security#> .
+@prefix skolem: <https://eyereasoner.github.io/.well-known/genid/5649fff4-464d-5969-88ed-956a6b5f0d90#> .
 
-_:g0 rt:graph {
+skolem:g0 rt:graph {
   :Bob foaf:name "Bob" .
 } .
 
-_:g1 rt:graph {
-  _:g0 sec:proof _:dataSignature .
+skolem:g1 rt:graph {
+  skolem:g0 sec:proof _:dataSignature .
   _:signature1 a sec:DataIntegrityProof .
   _:signature1 sec:cryptosuite "ecdsa-rdfc-2019" .
   _:signature1 sec:created "2021-11-13T18:19:39Z" .
@@ -21,7 +22,7 @@ _:g1 rt:graph {
 } .
 
 _:g3 rt:graph {
-  _:g1 sec:proof _:signature2 .
+  skolem:g1 sec:proof _:signature2 .
   _:signature2 a sec:DataIntegrityProof .
   _:signature2 sec:cryptosuite "ecdsa-rdfc-2019" .
   _:signature2 sec:created "2021-11-13T18:19:39Z" .
