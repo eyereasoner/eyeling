@@ -1327,25 +1327,86 @@ class TriGParser extends TurtleParser {
 // Serializers (Turtle-ish / TriG-ish / N3-ish)
 // ---------------------------------------------------------------------------
 
-function termToText(t, prefixes) {
+function termToText(t, prefixes, skolemMap) {
   if (t == null) return '[]';
   if (t instanceof Iri) {
     if (t.value === RDF_NS + 'type') return 'a';
     const qn = prefixes ? prefixes.shrinkIri(t.value) : null;
     return qn || `<${t.value}>`;
   }
-  if (t instanceof Blank) return t.label;
+  if (t instanceof Blank) {
+    if (skolemMap && skolemMap.has(t.label)) return skolemMap.get(t.label);
+    return t.label;
+  }
   if (t instanceof Literal) return t.value;
   if (t instanceof Var) return `?${t.name}`;
-  if (t instanceof ListTerm) return `(${t.elems.map((x) => termToText(x, prefixes)).join(' ')})`;
-  if (t instanceof OpenListTerm) return `(${t.prefix.map((x) => termToText(x, prefixes)).join(' ')} ... ?${t.tailVar})`;
+  if (t instanceof ListTerm) return `(${t.elems.map((x) => termToText(x, prefixes, skolemMap)).join(' ')})`;
+  if (t instanceof OpenListTerm)
+    return `(${t.prefix.map((x) => termToText(x, prefixes, skolemMap)).join(' ')} ... ?${t.tailVar})`;
   if (t instanceof GraphTerm) {
     const inner = t.triples
-      .map((tr) => `${termToText(tr.s, prefixes)} ${termToText(tr.p, prefixes)} ${termToText(tr.o, prefixes)} .`)
+      .map(
+        (tr) =>
+          `${termToText(tr.s, prefixes, skolemMap)} ${termToText(tr.p, prefixes, skolemMap)} ${termToText(tr.o, prefixes, skolemMap)} .`,
+      )
       .join(' ');
     return `{ ${inner} }`;
   }
   return String(t);
+}
+
+// ---------------------------------------------------------------------------
+// Skolemize blank nodes that would otherwise "split" across quoted graph terms.
+//
+// In N3, blank nodes inside { ... } are existentially scoped to that formula,
+// so reusing the same _:id outside does NOT imply coreference.
+// For RDF 1.2 triple terms we serialize as { s p o . }, we optionally replace
+// any blank node that appears both inside a quoted graph term AND outside it
+// with a stable IRI constant (<urn:skolem:...>) to preserve identity.
+// ---------------------------------------------------------------------------
+
+function buildSkolemMapForBnodesThatCrossQuotedGraphs(triples) {
+  const inQuoted = new Set();
+  const outside = new Set();
+
+  function visitTerm(t, isInsideQuoted) {
+    if (!t) return;
+    if (t instanceof Blank) {
+      (isInsideQuoted ? inQuoted : outside).add(t.label);
+      return;
+    }
+    if (t instanceof ListTerm) {
+      for (const e of t.elems) visitTerm(e, isInsideQuoted);
+      return;
+    }
+    if (t instanceof OpenListTerm) {
+      for (const e of t.prefix) visitTerm(e, isInsideQuoted);
+      return;
+    }
+    if (t instanceof GraphTerm) {
+      for (const tr of t.triples) {
+        visitTerm(tr.s, true);
+        visitTerm(tr.p, true);
+        visitTerm(tr.o, true);
+      }
+      return;
+    }
+  }
+
+  for (const tr of triples) {
+    visitTerm(tr.s, false);
+    visitTerm(tr.p, false);
+    visitTerm(tr.o, false);
+  }
+
+  const skolemMap = new Map();
+  for (const lbl of inQuoted) {
+    if (!outside.has(lbl)) continue;
+    const id = lbl.startsWith('_:') ? lbl.slice(2) : lbl;
+    const enc = encodeURIComponent(id);
+    skolemMap.set(lbl, `<urn:skolem:${enc}>`);
+  }
+  return skolemMap;
 }
 
 // ---------------------------------------------------------------------------
@@ -1633,6 +1694,7 @@ function writeN3RtGraph({ datasetQuads, prefixes }) {
   const allTriplesForUse = [];
   for (const { triples } of grouped.values()) allTriplesForUse.push(...foldRdfLists(triples));
   const prunedPrefixes = pruneUnusedPrefixes(prefixes, allTriplesForUse);
+  const skolemMap = buildSkolemMapForBnodesThatCrossQuotedGraphs(allTriplesForUse);
 
   const pro = renderPrefixPrologue(prunedPrefixes, { includeRt: true }).trim();
   if (pro) blocks.push(pro, '');
@@ -1642,7 +1704,7 @@ function writeN3RtGraph({ datasetQuads, prefixes }) {
     return folded
       .map(
         (tr) =>
-          `  ${termToText(tr.s, prunedPrefixes)} ${termToText(tr.p, prunedPrefixes)} ${termToText(tr.o, prunedPrefixes)} .`,
+          `  ${termToText(tr.s, prunedPrefixes, skolemMap)} ${termToText(tr.p, prunedPrefixes, skolemMap)} ${termToText(tr.o, prunedPrefixes, skolemMap)} .`,
       )
       .join('\n');
   }
@@ -1653,7 +1715,7 @@ function writeN3RtGraph({ datasetQuads, prefixes }) {
     const folded = foldRdfLists(triples);
     for (const tr of folded) {
       blocks.push(
-        `${termToText(tr.s, prunedPrefixes)} ${termToText(tr.p, prunedPrefixes)} ${termToText(tr.o, prunedPrefixes)} .`,
+        `${termToText(tr.s, prunedPrefixes, skolemMap)} ${termToText(tr.p, prunedPrefixes, skolemMap)} ${termToText(tr.o, prunedPrefixes, skolemMap)} .`,
       );
     }
     blocks.push('');
@@ -1662,14 +1724,14 @@ function writeN3RtGraph({ datasetQuads, prefixes }) {
   const named = [...grouped.entries()].filter(([k]) => k !== 'DEFAULT');
   named.sort((a, b) => a[0].localeCompare(b[0]));
   for (const [, { gTerm, triples }] of named) {
-    blocks.push(`${termToText(gTerm, prunedPrefixes)} rt:graph {`);
+    blocks.push(`${termToText(gTerm, prunedPrefixes, skolemMap)} rt:graph {`);
     const folded = foldRdfLists(triples);
     if (folded.length) {
       blocks.push(
         folded
           .map(
             (tr) =>
-              `  ${termToText(tr.s, prunedPrefixes)} ${termToText(tr.p, prunedPrefixes)} ${termToText(tr.o, prunedPrefixes)} .`,
+              `  ${termToText(tr.s, prunedPrefixes, skolemMap)} ${termToText(tr.p, prunedPrefixes, skolemMap)} ${termToText(tr.o, prunedPrefixes, skolemMap)} .`,
           )
           .join('\n'),
       );
@@ -1697,12 +1759,13 @@ function parseTurtle(text) {
 function writeN3Triples({ triples, prefixes }) {
   const foldedTriples = foldRdfLists(triples);
   const prunedPrefixes = pruneUnusedPrefixes(prefixes, foldedTriples);
+  const skolemMap = buildSkolemMapForBnodesThatCrossQuotedGraphs(foldedTriples);
   const blocks = [];
   const pro = renderPrefixPrologue(prunedPrefixes, { includeRt: false }).trim();
   if (pro) blocks.push(pro, '');
   for (const tr of foldedTriples) {
     blocks.push(
-      `${termToText(tr.s, prunedPrefixes)} ${termToText(tr.p, prunedPrefixes)} ${termToText(tr.o, prunedPrefixes)} .`,
+      `${termToText(tr.s, prunedPrefixes, skolemMap)} ${termToText(tr.p, prunedPrefixes, skolemMap)} ${termToText(tr.o, prunedPrefixes, skolemMap)} .`,
     );
   }
   return blocks.join('\n').trim() + '\n';
