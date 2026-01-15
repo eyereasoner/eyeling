@@ -1,4 +1,4 @@
 @prefix : <https://eyereasoner.github.io/eye/reasoning#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
 
 (100 "3.1415929035585526"^^xsd:decimal) :pi true .

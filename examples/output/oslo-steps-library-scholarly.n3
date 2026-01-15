@@ -1,7 +1,15 @@
 @prefix : <https://eyereasoner.github.io/eye/reasoning#> .
+@prefix cost: <https://example.org/cost#> .
+@prefix ex: <https://example.org/vocab#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix gps: <https://eyereasoner.github.io/eye/reasoning/gps/gps-schema#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix o-steps: <https://fast.ilabt.imec.be/ns/oslo-steps#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix state: <https://example.org/states#> .
 @prefix step: <https://example.org/steps#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix var: <http://www.w3.org/2000/10/swap/var#> .
 
 :alice gps:path ((step:verifyIdentitySSO step:verifyAffiliationAuto step:submitRequestSelfService step:locateViaCatalogue step:grantAccessOpenAccess) "13"^^xsd:decimal "0"^^xsd:decimal "0.8143828223999998"^^xsd:decimal "0.7730058039999999"^^xsd:decimal) .
 :alice gps:path ((step:verifyIdentitySSO step:verifyAffiliationAuto step:submitRequestSelfService step:locateViaCatalogue step:grantAccessSubscription) "14"^^xsd:decimal "0.5"^^xsd:decimal "0.8586427583999998"^^xsd:decimal "0.7490984079999999"^^xsd:decimal) .

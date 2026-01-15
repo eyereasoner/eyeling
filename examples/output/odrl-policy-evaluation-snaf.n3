@@ -1,4 +1,5 @@
 @prefix : <http://example.org/odrl-paraconsistent#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
 @prefix odrl: <http://www.w3.org/ns/odrl/2/> .
 
 :Req_Alice_Print_Research_Prohibit :conflictStrategy odrl:prohibit .

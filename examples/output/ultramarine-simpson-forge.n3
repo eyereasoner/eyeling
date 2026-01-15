@@ -1,5 +1,7 @@
 @prefix : <http://example.org/ultramarine-simpson#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
 
 _:b1 :y "0"^^xsd:decimal .
 _:b1 :dy "1"^^xsd:decimal .

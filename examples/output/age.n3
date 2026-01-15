@@ -1,3 +1,6 @@
 @prefix : <https://example.org/#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix time: <http://www.w3.org/2000/10/swap/time#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 :test :is true .

@@ -1,3 +1,5 @@
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
 @prefix polygon: <https://eyereasoner.github.io/eye/reasoning/polygon#> .
 
 ((4 2) (6 2) (7 6) (4 6) (5 5) (5 3) (4 2)) polygon:area 7 .

@@ -1,4 +1,7 @@
 @prefix : <http://example.org/#> .
+@prefix air: <http://dig.csail.mit.edu/TAMI/2007/amord/air#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
 :Request_Jos_Prog_Home :agent :Jos .
 :Request_Jos_Prog_Home :job :ProgrammingWork .

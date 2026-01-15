@@ -1,7 +1,15 @@
 @prefix : <https://eyereasoner.github.io/eye/reasoning#> .
+@prefix cost: <https://example.org/cost#> .
+@prefix ex: <https://example.org/vocab#> .
 @prefix gps: <https://eyereasoner.github.io/eye/reasoning/gps/gps-schema#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix o-persoon: <https://data.vlaanderen.be/ns/persoon#> .
+@prefix o-steps: <https://fast.ilabt.imec.be/ns/oslo-steps#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix state: <https://example.org/states#> .
 @prefix step: <https://example.org/steps#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix var: <http://www.w3.org/2000/10/swap/var#> .
 
 :bob gps:path ((step:providePersonalInfoOnline step:provideMovingDataOnline step:provideNewAddress step:declareAddressChangeOnline step:confirmAddressChangePolice) "20325"^^xsd:decimal "2"^^xsd:decimal "0.9318751595999999"^^xsd:decimal "0.70959186"^^xsd:decimal) .
 :bob gps:path ((step:providePersonalInfoOnline step:provideMovingDataOnline step:provideNewAddress step:declareAddressChangePostal step:confirmAddressChangePolice) "20355"^^xsd:decimal "4"^^xsd:decimal "0.9033483689999999"^^xsd:decimal "0.6938231520000001"^^xsd:decimal) .

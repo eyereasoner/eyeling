@@ -1,5 +1,5 @@
 @prefix : <http://example.org/spectral-week#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
 
 :Greenhouse :redEnergy "960"^^xsd:decimal .
 :Shade :redEnergy "180"^^xsd:decimal .

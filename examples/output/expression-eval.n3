@@ -1,3 +1,4 @@
 @prefix : <http://example.org/expression-eval#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
 
 :Root :result 12 .

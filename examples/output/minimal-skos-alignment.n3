@@ -1,6 +1,7 @@
 @prefix anpr: <http://example.org/anpr/> .
 @prefix ex: <http://example.org/#> .
 @prefix ref: <http://example.org/ref/> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 
 anpr:VehicleWithPlate ex:treatedAs ref:Car .
 anpr:PassengerCar ex:treatedAs ref:Car .

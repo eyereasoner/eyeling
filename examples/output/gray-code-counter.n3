@@ -1,3 +1,4 @@
 @prefix : <https://eyereasoner.github.io/eye/reasoning#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
 
 ((1 1 1 1 1 1 1 1 1) (0 0 0)) :isgcc ((0 0 1) (0 1 1) (0 1 0) (1 1 0) (1 1 1) (1 0 1) (1 0 0) (0 0 0) (0 0 1)) .

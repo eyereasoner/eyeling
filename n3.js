@@ -2,32 +2,33 @@
 'use strict';
 
 /*
- * n3.js — Turtle/TriG → N3 converter (RDF 1.2).
+ * n3.js — Convert Turtle (.ttl), TriG (.trig) or SRL (.srl) to N3.
  *
- * Input:
- *   - .ttl  RDF 1.2 Turtle
- *   - .trig RDF 1.2 TriG (datasets / named graphs)
+ * This tool always emits N3 to stdout. The input syntax is selected by the file
+ * extension:
+ *   - .ttl  (RDF 1.2 Turtle)
+ *   - .trig (RDF 1.2 TriG)
+ *   - .srl  (SRL rules)
  *
- * Output:
- *   - N3 (to stdout), with a small "return" vocabulary (http://www.w3.org/ns/sparql-service-description#) to encode
- *     datasets:
- *       <g> sd:graph { ... } .
+ * TriG → N3 mapping (named graphs)
+ *   TriG: <graphName> { ...triples... }
+ *   N3:   <graphName> rt:graph { ...triples... } .
  *
- * RDF 1.2 features supported:
- *   - RDF-star / triple terms and annotations are mapped to reification via
- *     rdf:reifies and a singleton quoted graph:
- *       _:t rdf:reifies { s p o . } .
+ * SRL → N3 mapping (rules)
+ *   SRL: RULE { Head } WHERE { Body }
+ *   N3:  { Body } => { Head } .
  *
- * Extras:
- *   - RDF Collections are folded back to list syntax: ( ... )
- *   - Blank nodes that would otherwise lose identity across quoted graphs
- *     are Skolemized using a stable, per-input base:
- *       @prefix skolem: <https://eyereasoner.github.io/.well-known/genid/UUID#> .
- *     You can override the root with $SKOLEM_ROOT (must end with '/').
+ * RDF 1.2 Turtle-star / TriG-star
+ *   - triple terms:    rdf:reifies <<( s p o )>>
+ *   - sugar form:      << s p o >> :is true .
+ *   triple terms are emitted as singleton graph terms in N3:
+ *     rdf:reifies { s p o . } .
  *
- * Usage:
- *   node n3.js file.ttl  > file.n3
- *   node n3.js file.trig > file.n3
+ * ----------------------------------------------------------------------------
+ * Usage
+ *   n3 file.ttl  > file.n3
+ *   n3 file.trig > file.n3
+ *   n3 file.srl  > file.n3
  */
 
 const fs = require('node:fs/promises');
@@ -95,9 +96,10 @@ function _pnLocalSafe(s) {
 // Mapping namespace
 // ---------------------------------------------------------------------------
 
-const SD_NS = 'http://www.w3.org/ns/sparql-service-description#';
-const sd = {
-  graph: `${SD_NS}graph`,
+const RT = 'urn:return#';
+const rt = {
+  default: `${RT}default`,
+  graph: `${RT}graph`,
 };
 
 // ---------------------------------------------------------------------------
@@ -106,6 +108,18 @@ const sd = {
 
 const RDF_NS = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
 const XSD_NS = 'http://www.w3.org/2001/XMLSchema#';
+const OWL_NS = 'http://www.w3.org/2002/07/owl#';
+const LOG_NS = 'http://www.w3.org/2000/10/swap/log#';
+const MATH_NS = 'http://www.w3.org/2000/10/swap/math#';
+const STRING_NS = 'http://www.w3.org/2000/10/swap/string#';
+const TIMEFN_NS = 'https://w3id.org/time-fn#';
+const TIMEFN_BUILTIN_NAMES = new Set([
+  'periodMinInclusive',
+  'periodMaxInclusive',
+  'periodMinExclusive',
+  'periodMaxExclusive',
+  'bindDefaultTimezone',
+]);
 
 // Avoid literal triple-quote sequences in this source (helps embedding in tools).
 const DQ3 = '"'.repeat(3);
@@ -143,10 +157,23 @@ class Blank extends Term {
     this.label = label; // _:b1 etc
   }
 }
+class Var extends Term {
+  constructor(name) {
+    super();
+    this.name = name; // no leading '?'
+  }
+}
 class ListTerm extends Term {
   constructor(elems) {
     super();
     this.elems = elems;
+  }
+}
+class OpenListTerm extends Term {
+  constructor(prefix, tailVar) {
+    super();
+    this.prefix = prefix; // Term[]
+    this.tailVar = tailVar; // string
   }
 }
 class GraphTerm extends Term {
@@ -350,6 +377,18 @@ function lex(inputText) {
       while (i < n && chars[i] !== '\n' && chars[i] !== '\r') i++;
       continue;
     }
+    // 3) operators: =>, <= ; single '=' as owl:sameAs
+    if (c === '=') {
+      if (peek(1) === '>') {
+        tokens.push(new Token('OpImplies'));
+        i += 2;
+        continue;
+      } else {
+        tokens.push(new Token('Equals'));
+        i += 1;
+        continue;
+      }
+    }
 
     // RDF 1.2 Turtle-star / TriG-star tokens
     if (c === '>' && peek(1) === '>') {
@@ -381,6 +420,16 @@ function lex(inputText) {
         i += 2;
         continue;
       }
+      if (peek(1) === '=') {
+        tokens.push(new Token('OpImpliedBy'));
+        i += 2;
+        continue;
+      }
+      if (peek(1) === '-') {
+        tokens.push(new Token('OpPredInvert'));
+        i += 2;
+        continue;
+      }
       i++; // consume '<'
       const iriChars = [];
       while (i < n && chars[i] !== '>') {
@@ -394,14 +443,20 @@ function lex(inputText) {
     }
 
     // 4) path operators: !, ^, ^^
-    // datatype marker: ^^
+    if (c === '!') {
+      tokens.push(new Token('OpPathFwd'));
+      i++;
+      continue;
+    }
     if (c === '^') {
       if (peek(1) === '^') {
         tokens.push(new Token('HatHat'));
         i += 2;
         continue;
       }
-      throw new Error("Unexpected '^' (did you mean '^^' for a datatype?)");
+      tokens.push(new Token('OpPathRev'));
+      i++;
+      continue;
     }
 
     // 5) punctuation
@@ -629,7 +684,6 @@ function lex(inputText) {
       const word = wordChars.join('');
       if (word === 'prefix') tokens.push(new Token('AtPrefix'));
       else if (word === 'base') tokens.push(new Token('AtBase'));
-      else if (word === 'version') tokens.push(new Token('AtVersion'));
       else throw new Error(`Unknown directive @${word}`);
       continue;
     }
@@ -670,6 +724,21 @@ function lex(inputText) {
 
       // If we got here, it looked like a number start but didn't match any legal form.
       throw new Error(`Invalid numeric literal near: ${rest.slice(0, 32)}`);
+    }
+
+    // 9) var: ?x  (SPARQL vars)  or  $this / $value (SHACL SPARQL vars)
+    if (c === '?' || c === '$') {
+      const sigil = c;
+      i++;
+      const nameChars = [];
+      let cc;
+      while ((cc = peek()) !== null && isNameChar(cc)) {
+        nameChars.push(cc);
+        i++;
+      }
+      if (!nameChars.length) throw new Error(`Expected variable name after '${sigil}'`);
+      tokens.push(new Token('Var', nameChars.join('')));
+      continue;
     }
 
     // 10) identifier / qname / keywords
@@ -759,6 +828,7 @@ class TurtleParser {
     if (t instanceof Iri) return `I:${t.value}`;
     if (t instanceof Blank) return `B:${t.label}`;
     if (t instanceof Literal) return `L:${t.value}`;
+    if (t instanceof Var) return `V:${t.name}`;
     if (t instanceof ListTerm) return `T:(` + t.elems.map((x) => this._termKey(x)).join(' ') + `)`;
     if (t instanceof GraphTerm) {
       const inner = t.triples
@@ -837,6 +907,7 @@ class TurtleParser {
     if (this.peek().typ === 'Dot') this.next(); // permissive
     this.prefixes.setBase(iri);
   }
+
   parseTurtleDocument() {
     const triples = [];
     while (this.peek().typ !== 'EOF') {
@@ -863,22 +934,6 @@ class TurtleParser {
         this.parseBaseDirective();
         continue;
       }
-      if (this.peek().typ === 'AtVersion') {
-        this.next();
-        const vTok = this.next();
-        if (vTok.typ !== 'Literal') throw new Error(`Expected a literal after @version, got ${vTok.toString()}`);
-        if (this.peek().typ === 'Dot') this.next();
-        else this.expect('Dot');
-        continue;
-      }
-      if (this.peek().typ === 'AtVersion') {
-        this.next();
-        const vTok = this.next();
-        if (vTok.typ !== 'Literal') throw new Error(`Expected a literal after @version, got ${vTok.toString()}`);
-        this.expect('Dot');
-        continue;
-      }
-
       // SPARQL-style directives
       if (
         this.peek().typ === 'Ident' &&
@@ -905,43 +960,45 @@ class TurtleParser {
         continue;
       }
 
-      // Triples statement
-      let subj;
-      if (this.peek().typ === 'StarOpen') {
-        this.next(); // consume '<<'
-        subj = this.parseStarTerm(false); // reifiedTriple
-      } else {
-        subj = this.parseTerm();
-        if (subj instanceof GraphTerm) throw new Error('tripleTerm (<<( s p o )>>) is not allowed in subject position');
-        if (subj instanceof Literal) throw new Error('Literals are not allowed in subject position');
-      }
+      const subj = this.parseTerm();
 
+      let more;
       if (this.peek().typ === 'Dot') {
-        // Only allowed for reifiedTriple or blankNodePropertyList statements (i.e., when something was emitted into pendingTriples)
-        if (this.pendingTriples.length === 0) {
-          throw new Error(`Expected predicateObjectList after subject, got '.'`);
+        more = [];
+        if (this.pendingTriples.length > 0) {
+          more = this.pendingTriples;
+          this.pendingTriples = [];
         }
-        triples.push(...this.pendingTriples);
-        this.pendingTriples = [];
         this.next();
-        continue;
+      } else {
+        more = this.parsePredicateObjectList(subj);
+        this.expect('Dot');
       }
-
-      const more = this.parsePredicateObjectList(subj);
-      this.expect('Dot');
       triples.push(...more);
     }
     return { triples, prefixes: this.prefixes };
   }
 
   parseTerm() {
-    return this.parsePathItem();
+    let t = this.parsePathItem();
+    while (this.peek().typ === 'OpPathFwd' || this.peek().typ === 'OpPathRev') {
+      const dir = this.next().typ;
+      const pred = this.parsePathItem();
+
+      this.blankCounter += 1;
+      const bn = new Blank(`_:b${this.blankCounter}`);
+      this.pendingTriples.push(dir === 'OpPathFwd' ? new Triple(t, pred, bn) : new Triple(bn, pred, t));
+      t = bn;
+    }
+    return t;
   }
 
   parsePathItem() {
     const tok = this.next();
     const typ = tok.typ;
     const val = tok.value;
+
+    if (typ === 'Equals') return internIri(OWL_NS + 'sameAs');
 
     if (typ === 'IriRef') {
       const base = this.prefixes.baseIri || '';
@@ -950,11 +1007,10 @@ class TurtleParser {
 
     if (typ === 'Ident') {
       const name = val || '';
+      if (name === 'a') return internIri(RDF_NS + 'type');
       if (name.startsWith('_:')) return new Blank(name);
       if (name.includes(':')) return internIri(this.prefixes.expandQName(name));
-      throw new Error(
-        `Bare identifier '${name}' is not allowed here in Turtle/TriG (expected an IRI, blank node, literal, list, or triple term)`,
-      );
+      return internIri(name);
     }
 
     if (typ === 'Literal') {
@@ -984,6 +1040,8 @@ class TurtleParser {
 
       return internLiteral(s);
     }
+
+    if (typ === 'Var') return new Var(val || '');
     if (typ === 'LParen') return this.parseList();
     if (typ === 'LBracket') return this.parseBlank();
     if (typ === 'LBrace') return this.parseGraph(); // N3 graph term
@@ -991,24 +1049,16 @@ class TurtleParser {
 
     throw new Error(`Unexpected term token: ${tok.toString()}`);
   }
-  parseStarTerm(allowTripleTerm = true) {
+
+  parseStarTerm() {
     // RDF 1.2 Turtle-star / TriG-star:
     // - tripleTerm: <<( s p o )>>
     // - reifiedTriple (syntactic sugar): << s p o [~ reifier] >>
     if (this.peek().typ === 'LParen') {
-      if (!allowTripleTerm) throw new Error('tripleTerm (<<( s p o )>>) is not allowed in subject position');
       // tripleTerm
       this.next(); // '('
       const s = this.parseTerm();
-
-      let p;
-      if (this.peek().typ === 'Ident' && (this.peek().value || '') === 'a') {
-        this.next();
-        p = internIri(RDF_NS + 'type');
-      } else {
-        p = this.parsePredicate();
-      }
-
+      const p = this.parseTerm();
       const o = this.parseTerm();
       this.expect('RParen');
       this.expect('StarClose');
@@ -1017,15 +1067,7 @@ class TurtleParser {
 
     // reifiedTriple sugar -> expand to a reifier node that rdf:reifies a tripleTerm
     const s = this.parseTerm();
-
-    let p;
-    if (this.peek().typ === 'Ident' && (this.peek().value || '') === 'a') {
-      this.next();
-      p = internIri(RDF_NS + 'type');
-    } else {
-      p = this.parsePredicate();
-    }
-
+    const p = this.parseTerm();
     const o = this.parseTerm();
 
     let reifier;
@@ -1042,9 +1084,15 @@ class TurtleParser {
     this.emitReifies(reifier, tripleTerm);
     return reifier;
   }
+
   parseList() {
     const elems = [];
     while (this.peek().typ !== 'RParen') {
+      // Be permissive: allow commas inside lists (even though Turtle lists are whitespace-separated).
+      if (this.peek().typ === 'Comma') {
+        this.next();
+        continue;
+      }
       elems.push(this.parseTerm());
       if (this.peek().typ === 'EOF') throw new Error("Unterminated list '(' ... ')'");
     }
@@ -1081,81 +1129,30 @@ class TurtleParser {
   // Parses inside "{ ... }" AFTER the '{' has been consumed.
   // We accept both "s p o ." and "s p o" before '}' as last triple (permissive).
   parseGraph() {
-    // Parses inside "{ ... }" AFTER the '{' has been consumed.
-    // Per TriG grammar, the final '.' before '}' is optional.
-    const outTriples = [];
-
+    const triples = [];
     while (this.peek().typ !== 'RBrace') {
-      // allow directives inside graph blocks (permissive)
-      if (this.peek().typ === 'AtPrefix') {
-        this.next();
-        this.parsePrefixDirective();
-        continue;
-      }
-      if (this.peek().typ === 'AtBase') {
-        this.next();
-        this.parseBaseDirective();
-        continue;
-      }
-      if (this.peek().typ === 'AtVersion') {
-        this.next();
-        const vTok = this.next();
-        if (vTok.typ !== 'Literal') throw new Error(`Expected a literal after @version, got ${vTok.toString()}`);
-        if (this.peek().typ === 'Dot') this.next();
-        else this.expect('Dot');
-        continue;
-      }
-      if (this.peek().typ === 'AtVersion') {
-        this.next();
-        const vTok = this.next();
-        if (vTok.typ !== 'Literal') throw new Error(`Expected a literal after @version, got ${vTok.toString()}`);
-        if (this.peek().typ === 'Dot') this.next();
-        continue;
-      }
+      const subj = this.parseTerm();
 
-      let subj;
-      if (this.peek().typ === 'StarOpen') {
-        this.next(); // '<<'
-        subj = this.parseStarTerm(false);
-      } else {
-        subj = this.parseTerm();
-        if (subj instanceof GraphTerm) throw new Error('tripleTerm (<<( s p o )>>) is not allowed in subject position');
-        if (subj instanceof Literal) throw new Error('Literals are not allowed in subject position');
-      }
-
+      let more;
       if (this.peek().typ === 'Dot') {
-        if (this.pendingTriples.length === 0) {
-          throw new Error(`Expected predicateObjectList after subject, got '.'`);
+        more = [];
+        if (this.pendingTriples.length > 0) {
+          more = this.pendingTriples;
+          this.pendingTriples = [];
         }
-        outTriples.push(...this.pendingTriples);
-        this.pendingTriples = [];
         this.next();
-        continue;
+      } else {
+        more = this.parsePredicateObjectList(subj);
+        this.expectDotOrRBrace();
+        if (this.peek().typ === 'Dot') this.next();
       }
 
-      outTriples.push(...this.parsePredicateObjectList(subj));
-
-      if (this.peek().typ === 'Dot') {
-        this.next();
-      } else if (this.peek().typ !== 'RBrace') {
-        this.expect('Dot');
-      }
+      triples.push(...more);
     }
+    this.next(); // consume '}'
+    return new GraphTerm(triples);
+  }
 
-    this.expect('RBrace');
-    return new GraphTerm(outTriples);
-  }
-  // verb ::= iri | 'a'  (Turtle/TriG)
-  parsePredicate() {
-    const tok = this.peek();
-    if (tok.typ === 'IriRef') return this.parseTerm();
-    if (tok.typ === 'Ident') {
-      const name = tok.value || '';
-      if (name.startsWith('_:')) throw new Error('Blank nodes are not allowed in predicate position');
-      if (name.includes(':')) return this.parseTerm();
-    }
-    throw new Error(`Expected an IRI in predicate position, got ${tok.toString()}`);
-  }
   parsePredicateObjectList(subject) {
     const out = [];
 
@@ -1166,15 +1163,24 @@ class TurtleParser {
 
     while (true) {
       let verb;
+      let invert = false;
 
       if (this.peek().typ === 'Ident' && (this.peek().value || '') === 'a') {
         this.next();
         verb = internIri(RDF_NS + 'type');
+      } else if (this.peek().typ === 'Ident' && (this.peek().value || '') === 'has') {
+        this.next();
+        invert = true;
+        verb = this.parseTerm();
       } else {
-        verb = this.parsePredicate();
+        if (this.peek().typ === 'OpPredInvert') {
+          invert = true;
+          this.next();
+        }
+        verb = this.parseTerm();
       }
 
-      out.push(...this.parseAnnotatedObjectList(subject, verb));
+      out.push(...this.parseAnnotatedObjectList(subject, verb, invert));
 
       if (this.peek().typ === 'Semicolon') {
         this.next();
@@ -1190,6 +1196,8 @@ class TurtleParser {
       break;
     }
 
+    // Include any triples generated by nested blank node property lists / reifiers
+    // that were encountered while parsing this predicate-object list.
     if (this.pendingTriples.length > 0) {
       out.push(...this.pendingTriples);
       this.pendingTriples = [];
@@ -1224,22 +1232,26 @@ class TurtleParser {
     this.expect('AnnClose');
     return out;
   }
-  parseAnnotatedObjectList(subject, verb) {
+
+  parseAnnotatedObjectList(subject, verb, invert) {
     const out = [];
-    out.push(...this.parseAnnotatedObjectTriples(subject, verb));
+    out.push(...this.parseAnnotatedObjectTriples(subject, verb, invert));
     while (this.peek().typ === 'Comma') {
       this.next();
-      out.push(...this.parseAnnotatedObjectTriples(subject, verb));
+      out.push(...this.parseAnnotatedObjectTriples(subject, verb, invert));
     }
     return out;
   }
-  parseAnnotatedObjectTriples(subject, verb) {
+
+  parseAnnotatedObjectTriples(subject, verb, invert) {
     const out = [];
 
     const obj = this.parseTerm();
+    const s = invert ? obj : subject;
+    const o = invert ? subject : obj;
 
     // asserted triple
-    out.push(new Triple(subject, verb, obj));
+    out.push(new Triple(s, verb, o));
 
     // optional reifier and/or annotation blocks
     let reifier = null;
@@ -1257,9 +1269,8 @@ class TurtleParser {
     }
 
     if (reifier) {
-      const tripleTerm = new GraphTerm([new Triple(subject, verb, obj)]);
+      const tripleTerm = new GraphTerm([new Triple(s, verb, o)]);
       this.emitReifies(reifier, tripleTerm);
-
       if (this.pendingTriples.length) {
         out.push(...this.pendingTriples);
         this.pendingTriples = [];
@@ -1303,14 +1314,6 @@ class TriGParser extends TurtleParser {
       if (this.peek().typ === 'AtBase') {
         this.next();
         this.parseBaseDirective();
-        continue;
-      }
-      if (this.peek().typ === 'AtVersion') {
-        this.next();
-        const vTok = this.next();
-        if (vTok.typ !== 'Literal') throw new Error(`Expected a literal after @version, got ${vTok.toString()}`);
-        if (this.peek().typ === 'Dot') this.next();
-        else this.expect('Dot');
         continue;
       }
       if (
@@ -1433,7 +1436,10 @@ function termToText(t, prefixes, skolemMap) {
     return t.label;
   }
   if (t instanceof Literal) return literalToText(t.value, prefixes);
+  if (t instanceof Var) return `?${t.name}`;
   if (t instanceof ListTerm) return `(${t.elems.map((x) => termToText(x, prefixes, skolemMap)).join(' ')})`;
+  if (t instanceof OpenListTerm)
+    return `(${t.prefix.map((x) => termToText(x, prefixes, skolemMap)).join(' ')} ... ?${t.tailVar})`;
   if (t instanceof GraphTerm) {
     const inner = t.triples
       .map(
@@ -1488,6 +1494,10 @@ function buildSkolemMapForBnodesThatCrossScopes(triples) {
       for (const e of t.elems) visitTerm(e, scope);
       return;
     }
+    if (t instanceof OpenListTerm) {
+      for (const e of t.prefix) visitTerm(e, scope);
+      return;
+    }
     if (t instanceof GraphTerm) {
       const innerScope = `G${graphTermId++}`;
       for (const tr of t.triples) {
@@ -1534,7 +1544,9 @@ function _termKey(t) {
   if (t instanceof Iri) return `I:${t.value}`;
   if (t instanceof Blank) return `B:${t.label}`;
   if (t instanceof Literal) return `L:${t.value}`;
+  if (t instanceof Var) return `V:${t.name}`;
   if (t instanceof ListTerm) return `T:(` + t.elems.map(_termKey).join(' ') + `)`;
+  if (t instanceof OpenListTerm) return `T:(` + t.prefix.map(_termKey).join(' ') + ` ... ?${t.tailVar})`;
   if (t instanceof GraphTerm)
     return `G:{` + t.triples.map((tr) => `${_termKey(tr.s)} ${_termKey(tr.p)} ${_termKey(tr.o)}`).join(' ; ') + `}`;
   return `X:${String(t)}`;
@@ -1690,6 +1702,12 @@ function foldRdfLists(triples) {
     if (t instanceof ListTerm) {
       return new ListTerm(t.elems.map((x) => replaceTerm(x)));
     }
+    if (t instanceof OpenListTerm) {
+      return new OpenListTerm(
+        t.prefix.map((x) => replaceTerm(x)),
+        t.tailVar,
+      );
+    }
     if (t instanceof GraphTerm) {
       const inner = t.triples.map((tr) => new Triple(replaceTerm(tr.s), replaceTerm(tr.p), replaceTerm(tr.o)));
       return new GraphTerm(inner);
@@ -1766,16 +1784,16 @@ function isIri(t, iri) {
   return t instanceof Iri && t.value === iri;
 }
 
-function renderPrefixPrologue(prefixes, { includeSd = false } = {}) {
+function renderPrefixPrologue(prefixes, { includeRt = false } = {}) {
   const out = [];
-  if (includeSd) out.push(`@prefix sd: <${SD_NS}> .`);
+  if (includeRt) out.push(`@prefix rt: <${RT}> .`);
 
   if (prefixes && prefixes.baseIri) out.push(`@base <${prefixes.baseIri}> .`);
 
   if (prefixes && prefixes.map) {
     for (const [pfx, iri] of Object.entries(prefixes.map)) {
       if (!iri) continue;
-      if (includeSd && pfx === 'sd' && iri === SD_NS) continue;
+      if (includeRt && pfx === 'rt' && iri === RT) continue;
       const label = pfx === '' ? ':' : `${pfx}:`;
       out.push(`@prefix ${label} <${iri}> .`);
     }
@@ -1926,10 +1944,10 @@ function writeN3RtGraph({ datasetQuads, prefixes }) {
   // For prefix pruning + Skolemization we build a synthetic triple stream that
   // matches the *output* structure:
   //   - default graph triples are “outside” any GraphTerm
-  //   - each named graph is wrapped as: gTerm sd:graph { ... }
+  //   - each named graph is wrapped as: gTerm rt:graph { ... }
   // This allows us to detect blank nodes that must corefer across graphs.
   const pseudoTriplesForUse = [];
-  const rtGraphIri = new Iri(sd.graph);
+  const rtGraphIri = new Iri(rt.graph);
 
   if (grouped.has('DEFAULT')) {
     const { triples } = grouped.get('DEFAULT');
@@ -1948,7 +1966,7 @@ function writeN3RtGraph({ datasetQuads, prefixes }) {
     ensureXsdPrefixIfUsed(ensureSkolemPrefix(prunedPrefixes, skolemMap), pseudoTriplesForUse),
     pseudoTriplesForUse,
   );
-  const pro = renderPrefixPrologue(outPrefixes, { includeSd: true }).trim();
+  const pro = renderPrefixPrologue(outPrefixes, { includeRt: true }).trim();
   if (pro) blocks.push(pro, '');
 
   function writeGraphTriples(triples) {
@@ -1961,7 +1979,7 @@ function writeN3RtGraph({ datasetQuads, prefixes }) {
       .join('\n');
   }
 
-  // default graph: emit triples at top-level (no sd:graph wrapper)
+  // default graph: emit triples at top-level (no rt:graph wrapper)
   if (grouped.has('DEFAULT')) {
     const { triples } = grouped.get('DEFAULT');
     const folded = foldRdfLists(triples);
@@ -1976,7 +1994,7 @@ function writeN3RtGraph({ datasetQuads, prefixes }) {
   const named = [...grouped.entries()].filter(([k]) => k !== 'DEFAULT');
   named.sort((a, b) => a[0].localeCompare(b[0]));
   for (const [, { gTerm, triples }] of named) {
-    blocks.push(`${termToText(gTerm, outPrefixes, skolemMap)} sd:graph {`);
+    blocks.push(`${termToText(gTerm, outPrefixes, skolemMap)} rt:graph {`);
     const folded = foldRdfLists(triples);
     if (folded.length) {
       blocks.push(
@@ -1995,7 +2013,7 @@ function writeN3RtGraph({ datasetQuads, prefixes }) {
 }
 
 // ---------------------------------------------------------------------------
-// Roundtrip: TriG <-> N3 (sd:graph mapping)
+// Roundtrip: TriG <-> N3 (rt:graph mapping)
 // ---------------------------------------------------------------------------
 
 function parseTriG(text) {
@@ -2017,7 +2035,7 @@ function writeN3Triples({ triples, prefixes }) {
     foldedTriples,
   );
   const blocks = [];
-  const pro = renderPrefixPrologue(outPrefixes, { includeSd: false }).trim();
+  const pro = renderPrefixPrologue(outPrefixes, { includeRt: false }).trim();
   if (pro) blocks.push(pro, '');
   for (const tr of foldedTriples) {
     blocks.push(
@@ -2037,15 +2055,988 @@ function trigToN3(trigText) {
   return writeN3RtGraph({ datasetQuads: quads, prefixes });
 }
 
+function prefixEnvFromSrlPrefixes(prefixLines) {
+  const env = PrefixEnv.newDefault();
+  if (Array.isArray(prefixLines)) {
+    for (const { label, iri } of prefixLines) {
+      const lab = (label || '').trim();
+      const base = (iri || '').trim();
+      if (!lab || !base) continue;
+      // SRL uses "PREFIX :" for default prefix; store it as "" in PrefixEnv.
+      let pfx = lab.replace(/:$/, '');
+      if (pfx === ':') pfx = '';
+      env.setPrefix(pfx, base);
+    }
+  }
+  return env;
+}
+
+function parseTriplesBlockAllowImplicitDots(bodyText, env) {
+  const p = new TurtleParser(lex(bodyText));
+  if (env) p.prefixes = env;
+  const triples = [];
+
+  function canStartSubject(tok) {
+    if (!tok) return false;
+    return (
+      tok.typ === 'IriRef' ||
+      tok.typ === 'Ident' ||
+      tok.typ === 'Var' ||
+      tok.typ === 'LBracket' ||
+      tok.typ === 'LParen' ||
+      tok.typ === 'LBrace'
+    );
+  }
+
+  while (p.peek().typ !== 'EOF') {
+    // Skip stray dots (permissive)
+    if (p.peek().typ === 'Dot') {
+      p.next();
+      continue;
+    }
+
+    const subj = p.parseTerm();
+
+    let more;
+    if (p.peek().typ === 'Dot') {
+      more = [];
+      if (p.pendingTriples.length > 0) {
+        more = p.pendingTriples;
+        p.pendingTriples = [];
+      }
+      p.next(); // consume dot
+    } else {
+      more = p.parsePredicateObjectList(subj);
+      // In SPARQL graph patterns, the '.' between triple blocks is optional.
+      if (p.peek().typ === 'Dot') p.next();
+      else if (p.peek().typ === 'EOF') {
+        /* ok */
+      } else if (canStartSubject(p.peek())) {
+        /* implicit separator */
+      } else throw new Error(`Expected '.' or start of next triple, got ${p.peek().toString()}`);
+    }
+
+    triples.push(...more);
+  }
+
+  return triples;
+}
+
+function triplesToN3Body(triples, env) {
+  // Render as explicit triple statements (with dots)
+  return normalizeInsideBracesKeepStyle(
+    triples.map((tr) => `${termToText(tr.s, env)} ${termToText(tr.p, env)} ${termToText(tr.o, env)} .`).join(' '),
+  );
+}
+
+function readBalancedParens(s, i) {
+  if (s[i] !== '(') throw new Error("Unclosed '(...)'");
+  let depth = 0;
+  let j = i;
+  let inString = false;
+  let quote = null;
+  let escaped = false;
+
+  for (; j < s.length; j++) {
+    const ch = s[j];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (ch === '\\') {
+        escaped = true;
+        continue;
+      }
+      if (ch === quote) {
+        inString = false;
+        quote = null;
+      }
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      inString = true;
+      quote = ch;
+      continue;
+    }
+
+    if (ch === '(') depth++;
+    else if (ch === ')') {
+      depth--;
+      if (depth === 0) {
+        return { content: s.slice(i + 1, j), endIdx: j + 1 };
+      }
+    }
+  }
+
+  throw new Error("Unclosed '(...)'");
+}
+
+function extractSrlDataBlocks(text) {
+  const blocks = [];
+  let i = 0;
+  let out = '';
+  const s = text || '';
+
+  while (i < s.length) {
+    const idx = s.indexOf('DATA', i);
+    if (idx < 0) {
+      out += s.slice(i);
+      break;
+    }
+
+    const before = idx === 0 ? ' ' : s[idx - 1];
+    const after = idx + 4 < s.length ? s[idx + 4] : ' ';
+    if (/[A-Za-z0-9_]/.test(before) || /[A-Za-z0-9_]/.test(after)) {
+      i = idx + 4;
+      continue;
+    }
+
+    out += s.slice(i, idx);
+    let j = idx + 4;
+    while (j < s.length && /\s/.test(s[j])) j++;
+    if (s[j] !== '{') {
+      // Not a DATA block, keep literal "DATA"
+      out += 'DATA';
+      i = idx + 4;
+      continue;
+    }
+
+    const blk = readBalancedBraces(s, j);
+    blocks.push((blk.content || '').trim());
+    i = blk.endIdx;
+  }
+
+  return { dataText: out.trim(), dataBlocks: blocks };
+}
+
+// Extract SRL FILTER(...) clauses from a WHERE body and return them as raw expressions.
+function extractSrlFilters(bodyRaw) {
+  const s = bodyRaw || '';
+  let i = 0;
+  let out = '';
+  const filters = [];
+
+  while (i < s.length) {
+    const idx = s.indexOf('FILTER', i);
+    if (idx < 0) {
+      out += s.slice(i);
+      break;
+    }
+
+    const before = idx === 0 ? ' ' : s[idx - 1];
+    const after = idx + 6 < s.length ? s[idx + 6] : ' ';
+    if (/[A-Za-z0-9_]/.test(before) || /[A-Za-z0-9_]/.test(after)) {
+      i = idx + 6;
+      continue;
+    }
+
+    out += s.slice(i, idx);
+
+    let j = idx + 6;
+    while (j < s.length && /\s/.test(s[j])) j++;
+    if (s[j] !== '(') {
+      // Not a FILTER(...), keep it
+      out += 'FILTER';
+      i = idx + 6;
+      continue;
+    }
+
+    const par = readBalancedParens(s, j);
+    filters.push((par.content || '').trim());
+    i = par.endIdx;
+  }
+
+  return { body: normalizeInsideBracesKeepStyle(out), filters };
+}
+
+function stripOuterParensOnce(expr) {
+  const t = (expr || '').trim();
+  if (!t.startsWith('(') || !t.endsWith(')')) return t;
+  try {
+    const par = readBalancedParens(t, 0);
+    // Only strip if it consumes the whole string
+    if (par.endIdx === t.length) return (par.content || '').trim();
+  } catch {}
+  return t;
+}
+
+function splitTopLevelOr(expr) {
+  // Split on '||' that occurs at paren depth 0 (ignoring strings).
+  const s = expr || '';
+  const parts = [];
+  let buf = '';
+  let depth = 0;
+  let inString = false;
+  let quote = null;
+  let escaped = false;
+
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+
+    if (inString) {
+      buf += ch;
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (ch === '\\') {
+        escaped = true;
+        continue;
+      }
+      if (ch === quote) {
+        inString = false;
+        quote = null;
+      }
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      inString = true;
+      quote = ch;
+      buf += ch;
+      continue;
+    }
+
+    if (ch === '(') {
+      depth++;
+      buf += ch;
+      continue;
+    }
+    if (ch === ')') {
+      depth = Math.max(0, depth - 1);
+      buf += ch;
+      continue;
+    }
+
+    if (depth === 0 && ch === '|' && s[i + 1] === '|') {
+      parts.push(buf.trim());
+      buf = '';
+      i++;
+      continue;
+    }
+
+    buf += ch;
+  }
+
+  if (buf.trim()) parts.push(buf.trim());
+  return parts.length > 1 ? parts : null;
+}
+
+function splitTopLevelAnd(expr) {
+  // Split on '&&' that occurs at paren depth 0 (ignoring strings).
+  const s = expr || '';
+  const parts = [];
+  let buf = '';
+  let depth = 0;
+  let inString = false;
+  let quote = null;
+  let escaped = false;
+
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+
+    if (inString) {
+      buf += ch;
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (ch === '\\') {
+        escaped = true;
+        continue;
+      }
+      if (ch === quote) {
+        inString = false;
+        quote = null;
+      }
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      inString = true;
+      quote = ch;
+      buf += ch;
+      continue;
+    }
+
+    if (ch === '(') {
+      depth++;
+      buf += ch;
+      continue;
+    }
+    if (ch === ')') {
+      depth = Math.max(0, depth - 1);
+      buf += ch;
+      continue;
+    }
+
+    if (depth === 0 && ch === '&' && s[i + 1] === '&') {
+      parts.push(buf.trim());
+      buf = '';
+      i++;
+      continue;
+    }
+
+    buf += ch;
+  }
+
+  if (buf.trim()) parts.push(buf.trim());
+  return parts.length > 1 ? parts : null;
+}
+
+function splitTopLevelCommaArgs(s) {
+  const parts = [];
+  let buf = '';
+  let depthPar = 0;
+  let depthBr = 0;
+  let depthSq = 0;
+  let inString = false;
+  let quote = null;
+  let escaped = false;
+
+  for (let i = 0; i < (s || '').length; i++) {
+    const ch = s[i];
+
+    if (inString) {
+      buf += ch;
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (ch === '\\') {
+        escaped = true;
+        continue;
+      }
+      if (ch === quote) {
+        inString = false;
+        quote = null;
+      }
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      inString = true;
+      quote = ch;
+      buf += ch;
+      continue;
+    }
+
+    if (ch === '(') {
+      depthPar++;
+      buf += ch;
+      continue;
+    }
+    if (ch === ')') {
+      depthPar--;
+      buf += ch;
+      continue;
+    }
+    if (ch === '{') {
+      depthBr++;
+      buf += ch;
+      continue;
+    }
+    if (ch === '}') {
+      depthBr--;
+      buf += ch;
+      continue;
+    }
+    if (ch === '[') {
+      depthSq++;
+      buf += ch;
+      continue;
+    }
+    if (ch === ']') {
+      depthSq--;
+      buf += ch;
+      continue;
+    }
+
+    if (depthPar === 0 && depthBr === 0 && depthSq === 0 && ch === ',') {
+      if (buf.trim()) parts.push(buf.trim());
+      buf = '';
+      continue;
+    }
+
+    buf += ch;
+  }
+
+  if (buf.trim()) parts.push(buf.trim());
+  return parts;
+}
+
+function bindExprToN3Statements(bindInner) {
+  // bindInner is the inside of BIND(...), e.g. 'tfn:periodMinInclusive(?d) AS ?min'
+  const s = (bindInner || '').trim();
+  const m = s.match(/^(.*)\s+AS\s+(\?[A-Za-z_][A-Za-z0-9_-]*)\s*$/i);
+  if (!m) return null;
+
+  const expr = m[1].trim();
+  const outVar = m[2].trim();
+
+  // 1) concat(...)  ->  ( ... ) string:concatenation ?outVar .
+  const mConcat = expr.match(/^concat\s*\((.*)\)\s*$/i);
+  if (mConcat) {
+    const argsRaw = mConcat[1];
+    const args = splitTopLevelCommaArgs(argsRaw)
+      .map((x) => x.trim())
+      .filter(Boolean);
+    if (!args.length) return null;
+    const list = `(${args.join(' ')})`;
+    return { stmt: `${list} string:concatenation ${outVar} .`, usedString: true, usedTime: false };
+  }
+
+  // 2) Time Functions (Section 2.2 in the UGent time-fn paper)
+  //    SRL: BIND( tfn:periodMinInclusive(?x) AS ?y )
+  //    N3 : ( ?x ) tfn:periodMinInclusive ?y .
+  const mFn = expr.match(/^([A-Za-z][A-Za-z0-9_-]*:[A-Za-z_][A-Za-z0-9_-]*|<[^>]+>)\s*\((.*)\)\s*$/);
+  if (mFn) {
+    const fnTok = mFn[1].trim();
+    const argsRaw = mFn[2];
+
+    // Determine local name (for checking we support it)
+    let local = null;
+    if (fnTok.startsWith('<') && fnTok.endsWith('>')) {
+      const iri = fnTok.slice(1, -1);
+      if (iri.startsWith(TIMEFN_NS)) local = iri.slice(TIMEFN_NS.length);
+    } else {
+      const idx = fnTok.indexOf(':');
+      if (idx >= 0) local = fnTok.slice(idx + 1);
+    }
+
+    if (local && TIMEFN_BUILTIN_NAMES.has(local)) {
+      const args = splitTopLevelCommaArgs(argsRaw)
+        .map((x) => x.trim())
+        .filter(Boolean);
+
+      if (!args.length) return null;
+      if (local === 'bindDefaultTimezone') {
+        if (args.length !== 2) return null;
+      } else {
+        if (args.length !== 1) return null;
+      }
+
+      const list = `(${args.join(' ')})`;
+      return { stmt: `${list} ${fnTok} ${outVar} .`, usedString: false, usedTime: true };
+    }
+  }
+
+  return null;
+}
+
+function extractSrlBinds(bodyRaw) {
+  const s = bodyRaw || '';
+  let i = 0;
+  let out = '';
+  const binds = [];
+  let usedString = false;
+  let usedTime = false;
+
+  while (i < s.length) {
+    const idx = s.indexOf('BIND', i);
+    if (idx < 0) {
+      out += s.slice(i);
+      break;
+    }
+
+    const before = idx === 0 ? ' ' : s[idx - 1];
+    const after = idx + 4 < s.length ? s[idx + 4] : ' ';
+    if (/[A-Za-z0-9_]/.test(before) || /[A-Za-z0-9_]/.test(after)) {
+      i = idx + 4;
+      continue;
+    }
+
+    let j = idx + 4;
+    while (j < s.length && /\s/.test(s[j])) j++;
+    if (s[j] !== '(') {
+      out += s.slice(i, idx + 4);
+      i = idx + 4;
+      continue;
+    }
+
+    out += s.slice(i, idx);
+    const blk = readBalancedParens(s, j);
+    const inner = (blk.content || '').trim();
+
+    const conv = bindExprToN3Statements(inner);
+    if (!conv) throw new Error(`Unsupported SRL BIND expression for N3 mapping: ${inner}`);
+    binds.push(conv.stmt);
+    usedString = usedString || !!conv.usedString;
+    usedTime = usedTime || !!conv.usedTime;
+
+    i = blk.endIdx;
+  }
+
+  return { body: normalizeInsideBracesKeepStyle(out), binds, usedString, usedTime };
+}
+
+function parseSimpleComparison(expr) {
+  const t0 = stripOuterParensOnce(expr);
+  const t = (t0 || '').trim();
+  if (!t) return null;
+
+  const ops2 = ['>=', '<=', '!='];
+  const ops1 = ['=', '>', '<'];
+
+  let depth = 0;
+  let inString = false;
+  let quote = null;
+  let escaped = false;
+
+  function mapPred(op) {
+    return op === '>'
+      ? 'greaterThan'
+      : op === '<'
+        ? 'lessThan'
+        : op === '='
+          ? 'equalTo'
+          : op === '!='
+            ? 'notEqualTo'
+            : op === '>='
+              ? 'notLessThan'
+              : op === '<='
+                ? 'notGreaterThan'
+                : null;
+  }
+
+  for (let i = 0; i < t.length; i++) {
+    const ch = t[i];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch === '\\') {
+        escaped = true;
+      } else if (ch === quote) {
+        inString = false;
+        quote = null;
+      }
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      inString = true;
+      quote = ch;
+      continue;
+    }
+
+    if (ch === '(') {
+      depth++;
+      continue;
+    }
+    if (ch === ')') {
+      depth = Math.max(0, depth - 1);
+      continue;
+    }
+
+    if (depth !== 0) continue;
+
+    // 2-char ops first
+    const two = t.slice(i, i + 2);
+    if (ops2.includes(two)) {
+      const left = t.slice(0, i).trim();
+      const right = t.slice(i + 2).trim();
+      const pred = mapPred(two);
+      if (!left || !right || !pred) return null;
+      return { left, op: two, right, pred };
+    }
+
+    if (ops1.includes(ch)) {
+      const left = t.slice(0, i).trim();
+      const right = t.slice(i + 1).trim();
+      const pred = mapPred(ch);
+      if (!left || !right || !pred) return null;
+      return { left, op: ch, right, pred };
+    }
+  }
+
+  return null;
+}
+
+function filterExprToN3Alternatives(expr) {
+  // Returns an array of alternatives.
+  // Each alternative is an array of N3 statements (strings) to be added to the rule body.
+  const e = (expr || '').trim();
+  if (!e) return null;
+
+  const orParts = splitTopLevelOr(e);
+  const options = orParts ? orParts : [e];
+
+  const alts = [];
+  for (const opt of options) {
+    const andParts = splitTopLevelAnd(opt) || [opt];
+    const stmts = [];
+
+    for (const p of andParts) {
+      const cmp = parseSimpleComparison(p);
+      if (!cmp) return null;
+      stmts.push(`${cmp.left} math:${cmp.pred} ${cmp.right} .`);
+    }
+
+    alts.push(stmts);
+  }
+
+  return alts;
+}
+
+function srlWhereBodyToN3Body(bodyRaw) {
+  const s = bodyRaw || '';
+  let i = 0;
+  let out = '';
+  let usedLog = false;
+
+  while (i < s.length) {
+    const idx = s.indexOf('NOT', i);
+    if (idx < 0) {
+      out += s.slice(i);
+      break;
+    }
+
+    // token boundary check for "NOT"
+    const before = idx === 0 ? ' ' : s[idx - 1];
+    const after = idx + 3 < s.length ? s[idx + 3] : ' ';
+    if (/[A-Za-z0-9_]/.test(before) || /[A-Za-z0-9_]/.test(after)) {
+      i = idx + 3;
+      continue;
+    }
+
+    // Look ahead for "{"
+    let j = idx + 3;
+    while (j < s.length && /\s/.test(s[j])) j++;
+    if (s[j] !== '{') {
+      // Not a negation element; keep the text and continue
+      out += s.slice(i, idx + 3);
+      i = idx + 3;
+      continue;
+    }
+
+    // Capture the NOT {...} block
+    out += s.slice(i, idx);
+    const blk = readBalancedBraces(s, j);
+    const inner = (blk.content || '').trim();
+
+    out += ` ?SCOPE log:notIncludes { ${inner} } . `;
+    usedLog = true;
+    i = blk.endIdx;
+  }
+
+  return { body: normalizeInsideBracesKeepStyle(out), usedLog };
+}
+
+// N3 :   ?SCOPE log:notIncludes { ... } .
+// SRL:   NOT { ... }
+function stripOnlyWholeLineHashComments(src) {
+  // IMPORTANT: do NOT treat '#' as an inline comment marker here,
+  // because IRIs commonly contain '#', e.g. <http://example.org/#>.
+  return src
+    .split('\n')
+    .map((line) => (line.trim().startsWith('#') ? '' : line))
+    .join('\n');
+}
+
+function normalizeInsideBracesKeepStyle(s) {
+  return (s || '').trim().replace(/\s+/g, ' ').trim();
+}
+
+function srlDollarVarsToQVars(text) {
+  // SHACL SPARQL uses $this/$value; N3 uses ?vars.
+  // Convert $name -> ?name, ignoring occurrences inside strings.
+  const s = text || '';
+  let out = '';
+  let inString = false;
+  let quote = null;
+  let escaped = false;
+
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+
+    if (inString) {
+      out += ch;
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (ch === '\\') {
+        escaped = true;
+        continue;
+      }
+      if (ch === quote) {
+        inString = false;
+        quote = null;
+      }
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      inString = true;
+      quote = ch;
+      out += ch;
+      continue;
+    }
+
+    if (ch === '$') {
+      let j = i + 1;
+      let name = '';
+      while (j < s.length && /[A-Za-z0-9_\-]/.test(s[j])) {
+        name += s[j];
+        j++;
+      }
+      if (name.length) {
+        out += '?' + name;
+        i = j - 1;
+        continue;
+      }
+    }
+
+    out += ch;
+  }
+
+  return out;
+}
+
+function parseSrlPrefixLines(src) {
+  const prefixes = [];
+  const other = [];
+
+  for (const rawLine of src.split('\n')) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    const m = line.match(/^PREFIX\s+([^\s]+)\s*<([^>]+)>\s*\.?\s*$/i);
+    if (m) prefixes.push({ label: m[1].trim(), iri: m[2].trim() });
+    else other.push(rawLine);
+  }
+
+  return { prefixes, rest: other.join('\n') };
+}
+
+function readBalancedBraces(src, startIdx) {
+  if (src[startIdx] !== '{') throw new Error("Expected '{'");
+
+  let i = startIdx;
+  let depth = 0;
+  let inString = false;
+  let quote = null;
+  let escaped = false;
+  let out = '';
+
+  for (; i < src.length; i++) {
+    const ch = src[i];
+
+    if (inString) {
+      out += ch;
+
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (ch === '\\') {
+        escaped = true;
+        continue;
+      }
+      if (ch === quote) {
+        inString = false;
+        quote = null;
+      }
+      continue;
+    }
+
+    // Treat \" or \' outside strings as literal quotes (common when SRL is copy-pasted from JS strings)
+    if ((ch === '"' || ch === "'") && i > 0 && src[i - 1] === '\\') {
+      out += ch;
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      inString = true;
+      quote = ch;
+      out += ch;
+      continue;
+    }
+
+    if (ch === '{') {
+      depth++;
+      if (depth > 1) out += ch;
+      continue;
+    }
+
+    if (ch === '}') {
+      depth--;
+      if (depth === 0) return { content: out, endIdx: i + 1 };
+      out += ch;
+      continue;
+    }
+
+    if (depth >= 1) out += ch;
+  }
+
+  throw new Error("Unclosed '{...}'");
+}
+
+function extractSrlRules(src) {
+  const rules = [];
+  let i = 0;
+  let dataParts = [];
+  const s = src;
+
+  while (i < s.length) {
+    const idx = s.indexOf('RULE', i);
+    if (idx < 0) {
+      dataParts.push(s.slice(i));
+      break;
+    }
+
+    const before = idx === 0 ? ' ' : s[idx - 1];
+    const after = idx + 4 < s.length ? s[idx + 4] : ' ';
+    if (/[A-Za-z0-9_]/.test(before) || /[A-Za-z0-9_]/.test(after)) {
+      i = idx + 4;
+      continue;
+    }
+
+    dataParts.push(s.slice(i, idx));
+    i = idx + 4;
+
+    while (i < s.length && /\s/.test(s[i])) i++;
+    if (s[i] !== '{') throw new Error("SRL parse error: expected '{' after RULE");
+    const head = readBalancedBraces(s, i);
+    i = head.endIdx;
+
+    while (i < s.length && /\s/.test(s[i])) i++;
+    if (!s.slice(i, i + 5).match(/^WHERE/i)) throw new Error('SRL parse error: expected WHERE');
+    i += 5;
+
+    while (i < s.length && /\s/.test(s[i])) i++;
+    if (s[i] !== '{') throw new Error("SRL parse error: expected '{' after WHERE");
+    const body = readBalancedBraces(s, i);
+    i = body.endIdx;
+
+    rules.push({ head: head.content, body: body.content });
+  }
+
+  return { dataText: dataParts.join('').trim(), rules };
+}
+
+function srlToN3(srlText) {
+  const cleaned = stripOnlyWholeLineHashComments(srlText);
+  const { prefixes, rest } = parseSrlPrefixLines(cleaned);
+  const { dataText, rules } = extractSrlRules(rest);
+  const env = prefixEnvFromSrlPrefixes(prefixes);
+
+  // DATA { ... } blocks are SRL-only; map their content to plain N3 data triples.
+  const dataExtract = extractSrlDataBlocks(dataText);
+  const dataOutside = dataExtract.dataText || '';
+  const dataBlocks = dataExtract.dataBlocks || [];
+
+  // Convert rules first so we know whether we need log:/math:
+  const renderedRules = [];
+  let needsLog = false;
+  let needsMath = false;
+  let needsString = false;
+
+  for (const r of rules) {
+    // 1) NOT { ... }  ->  ?SCOPE log:notIncludes { ... } .
+    const convNot = srlWhereBodyToN3Body(r.body);
+    needsLog = needsLog || convNot.usedLog;
+    if (convNot.usedLog && !env.map.log) env.setPrefix('log', LOG_NS);
+
+    // 2) FILTER(...) -> math:* builtins (possibly multiple alternative rules for OR)
+    const convFilter = extractSrlFilters(convNot.body);
+    const bodyNoFilter = convFilter.body;
+    const filterExprs = convFilter.filters;
+
+    // 3) BIND(concat(... ) AS ?v) -> string:concatenation builtins
+    const convBind = extractSrlBinds(bodyNoFilter);
+    const bodyNoBind = convBind.body;
+    const bindBuiltins = convBind.binds;
+    if (convBind.usedString) {
+      needsString = true;
+      if (!env.map.string) env.setPrefix('string', STRING_NS);
+    }
+
+    // Build rule alternatives (disjunction => multiple rules)
+    let alts = [{ builtins: [] }];
+
+    for (const f of filterExprs) {
+      const n3alts = filterExprToN3Alternatives(f);
+      if (!n3alts) {
+        throw new Error(`Unsupported SRL FILTER expression for N3 mapping: ${f}`);
+      }
+
+      needsMath = true;
+      if (!env.map.math) env.setPrefix('math', MATH_NS);
+
+      // Expand OR alternatives
+      const next = [];
+      for (const a of alts) {
+        for (const option of n3alts) {
+          next.push({ builtins: a.builtins.concat(option) });
+        }
+      }
+      alts = next;
+    }
+
+    const head = srlDollarVarsToQVars(normalizeInsideBracesKeepStyle(r.head));
+
+    for (const a of alts) {
+      const extra = a.builtins.length ? ` ${a.builtins.join(' ')} ` : '';
+      const bindExtra = bindBuiltins.length ? ` ${bindBuiltins.join(' ')} ` : '';
+      const combined = `${bodyNoBind} ${extra} ${bindExtra}`.trim();
+      const triples = parseTriplesBlockAllowImplicitDots(combined, env);
+      const body = triplesToN3Body(triples, env);
+      renderedRules.push(`{ ${body} } => { ${head} } .`);
+    }
+  }
+
+  // Build body first (data + rules), then decide which prefixes are actually needed.
+  const bodyParts = [];
+
+  // Emit "plain" data triples first (outside SRL DATA blocks)
+  if (dataOutside.trim()) bodyParts.push(dataOutside.trim(), '');
+
+  // Emit each SRL DATA { ... } block as plain N3 data triples
+  for (const blk of dataBlocks) {
+    if (blk.trim()) bodyParts.push(blk.trim(), '');
+  }
+
+  bodyParts.push(...renderedRules);
+
+  let bodyText = bodyParts.join('\n').trim();
+
+  // Decide whether rdf:/xsd: are needed in the final output (SRL emits a lot as raw text).
+  const usesRdf = /\brdf:/.test(bodyText) || bodyText.includes(`<${RDF_NS}`) || bodyText.includes(`^^<${RDF_NS}`);
+  const usesXsd = /\bxsd:/.test(bodyText) || bodyText.includes(`<${XSD_NS}`) || bodyText.includes(`^^<${XSD_NS}`);
+
+  // Ensure prefixes requested by generated content are declared.
+  if (usesRdf && !env.map.rdf) env.setPrefix('rdf', RDF_NS);
+  if (usesXsd && !env.map.xsd) env.setPrefix('xsd', XSD_NS);
+
+  // If we have xsd:, prefer qname datatypes in the body, e.g. ^^xsd:date.
+  if (env.map.xsd) {
+    const esc = XSD_NS.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    bodyText = bodyText.replace(new RegExp(`\\^\\^<${esc}([^>]+)>`, 'g'), '^^xsd:$1');
+  }
+
+  const out = [];
+  const pro = renderPrefixPrologue(env, { includeRt: false }).trim();
+  if (pro) out.push(pro, '');
+  if (bodyText) out.push(bodyText);
+
+  return out.join('\n').trim() + '\n';
+}
+
 function printHelp() {
   process.stdout.write(`Usage:
-  n3 <file.ttl|file.trig>
+  n3 <file.ttl|file.trig|file.srl>
 
-Converts RDF 1.2 Turtle/TriG to N3.
+Converts RDF 1.2 Turtle/TriG and SHACL 1.2 Rules to N3.
 
 Examples:
   n3 file.ttl > file.n3
   n3 file.trig > file.n3
+  n3 file.srl > file.n3
 `);
 }
 
@@ -2076,7 +3067,12 @@ async function main() {
     process.stdout.write(trigToN3(text));
     return;
   }
-  throw new Error(`Unsupported file extension "${ext}". Use .ttl or .trig`);
+  if (ext === '.srl') {
+    process.stdout.write(srlToN3(text));
+    return;
+  }
+
+  throw new Error(`Unsupported file extension "${ext}". Use .ttl, .trig or .srl`);
 }
 
 main().catch((e) => {

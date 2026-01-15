@@ -1,4 +1,5 @@
 @prefix : <http://example.org/#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
 
 :test :is {
     (1 0 1 0 0 1) :compute (1 0 1 0 1 0 "#") .

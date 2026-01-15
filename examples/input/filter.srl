@@ -1,0 +1,9 @@
+PREFIX : <http://example/#>
+
+DATA { :x :p 1 ; :q 2 . }
+
+RULE { ?x :bothPositive true . }
+WHERE { ?x :p ?v1  FILTER ( ?v1 > 0 )  ?x :q ?v2  FILTER ( ?v2 > 0 )  }
+
+RULE { ?x :oneIsZero true . }
+WHERE { ?x :p ?v1 ;  :q ?v2  FILTER ( ( ?v1 = 0 ) || ( ?v2 = 0 ) )  }

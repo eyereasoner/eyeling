@@ -1,6 +1,7 @@
 @prefix : <https://eyereasoner.github.io/eye/reasoning#> .
 @prefix gps: <https://eyereasoner.github.io/eye/reasoning/gps/gps-schema#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
 
 :car1 gps:plan ((:drive_bru_liege :drive_liege_aachen :shuttle_aachen_cologne) "210"^^xsd:decimal "0.054000000000000006"^^xsd:decimal "0.9741748499999999"^^xsd:decimal "0.8983199999999999"^^xsd:decimal :low :none (:t :t :t :t :t)) .
 :car1 gps:plan ((:drive_bru_liege :drive_liege_aachen :fast_charge_aachen_payg :public_road_aachen_cologne) "230"^^xsd:decimal "0.056999999999999995"^^xsd:decimal "0.9412635375"^^xsd:decimal "0.8317439999999998"^^xsd:decimal :low :none (:t :t :t :t)) .

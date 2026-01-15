@@ -1,6 +1,6 @@
 @prefix : <http://example.org/#> .
 @prefix complex: <https://eyereasoner.github.io/eye/complex#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
 
 :test :is {
     ((-1 0) (0.5 0)) complex:exponentiation ("6.123233995736766e-17"^^xsd:decimal "1"^^xsd:decimal) .

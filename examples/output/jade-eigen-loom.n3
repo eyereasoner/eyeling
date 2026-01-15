@@ -1,5 +1,7 @@
 @prefix : <http://example.org/jade-eigen-loom#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
 
 :PCA1 :n 7 .
 :PCA1 :meanX "6.714285714285714"^^xsd:decimal .

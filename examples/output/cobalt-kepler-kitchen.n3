@@ -1,5 +1,7 @@
 @prefix : <http://example.org/cobalt-kepler#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
 
 _:b1 :periapsis "6993"^^xsd:decimal .
 _:b1 :apoapsis "7006.999999999999"^^xsd:decimal .
