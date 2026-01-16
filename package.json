@@ -1,6 +1,6 @@
 {
   "name": "eyeling",
-  "version": "1.8.11",
+  "version": "1.9.0",
   "description": "A minimal Notation3 (N3) reasoner in JavaScript.",
   "main": "./index.js",
   "keywords": [
@@ -49,7 +49,7 @@
     "pretest:maken3": "npm run build",
     "pretest:examples": "npm run build",
     "pretest:package": "npm run build",
-    "prepack": "npm run build -- --quiet"    
+    "prepack": "npm run build -- --quiet"
   },
   "devDependencies": {
     "typescript": "^5.0.0"
