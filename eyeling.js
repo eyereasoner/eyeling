@@ -624,6 +624,637 @@ class DerivedFact {
     }
 }
 // ===========================================================================
+// Blank-node lifting and Skolemization
+// ===========================================================================
+function liftBlankRuleVars(premise, conclusion) {
+    function convertTerm(t, mapping, counter) {
+        if (t instanceof Blank) {
+            const label = t.label;
+            if (!mapping.hasOwnProperty(label)) {
+                counter[0] += 1;
+                mapping[label] = `_b${counter[0]}`;
+            }
+            return new Var(mapping[label]);
+        }
+        if (t instanceof ListTerm) {
+            return new ListTerm(t.elems.map((e) => convertTerm(e, mapping, counter)));
+        }
+        if (t instanceof OpenListTerm) {
+            return new OpenListTerm(t.prefix.map((e) => convertTerm(e, mapping, counter)), t.tailVar);
+        }
+        if (t instanceof GraphTerm) {
+            const triples = t.triples.map((tr) => new Triple(convertTerm(tr.s, mapping, counter), convertTerm(tr.p, mapping, counter), convertTerm(tr.o, mapping, counter)));
+            return new GraphTerm(triples);
+        }
+        return t;
+    }
+    function convertTriple(tr, mapping, counter) {
+        return new Triple(convertTerm(tr.s, mapping, counter), convertTerm(tr.p, mapping, counter), convertTerm(tr.o, mapping, counter));
+    }
+    const mapping = {};
+    const counter = [0];
+    const newPremise = premise.map((tr) => convertTriple(tr, mapping, counter));
+    return [newPremise, conclusion];
+}
+// Skolemization for blank nodes that occur explicitly in a rule head.
+//
+// IMPORTANT: we must be *stable per rule firing*, otherwise a rule whose
+// premises stay true would keep generating fresh _:sk_N blank nodes on every
+// outer fixpoint iteration (non-termination once we do strict duplicate checks).
+//
+// We achieve this by optionally keying head-blank allocations by a "firingKey"
+// (usually derived from the instantiated premises and rule index) and caching
+// them in a run-global map.
+function skolemizeTermForHeadBlanks(t, headBlankLabels, mapping, skCounter, firingKey, globalMap) {
+    if (t instanceof Blank) {
+        const label = t.label;
+        // Only skolemize blanks that occur explicitly in the rule head
+        if (!headBlankLabels || !headBlankLabels.has(label)) {
+            return t; // this is a data blank (e.g. bound via ?X), keep it
+        }
+        if (!mapping.hasOwnProperty(label)) {
+            // If we have a global cache keyed by firingKey, use it to ensure
+            // deterministic blank IDs for the same rule+substitution instance.
+            if (globalMap && firingKey) {
+                const gk = `${firingKey}|${label}`;
+                let sk = globalMap.get(gk);
+                if (!sk) {
+                    const idx = skCounter[0];
+                    skCounter[0] += 1;
+                    sk = `_:sk_${idx}`;
+                    globalMap.set(gk, sk);
+                }
+                mapping[label] = sk;
+            }
+            else {
+                const idx = skCounter[0];
+                skCounter[0] += 1;
+                mapping[label] = `_:sk_${idx}`;
+            }
+        }
+        return new Blank(mapping[label]);
+    }
+    if (t instanceof ListTerm) {
+        return new ListTerm(t.elems.map((e) => skolemizeTermForHeadBlanks(e, headBlankLabels, mapping, skCounter, firingKey, globalMap)));
+    }
+    if (t instanceof OpenListTerm) {
+        return new OpenListTerm(t.prefix.map((e) => skolemizeTermForHeadBlanks(e, headBlankLabels, mapping, skCounter, firingKey, globalMap)), t.tailVar);
+    }
+    if (t instanceof GraphTerm) {
+        return new GraphTerm(t.triples.map((tr) => skolemizeTripleForHeadBlanks(tr, headBlankLabels, mapping, skCounter, firingKey, globalMap)));
+    }
+    return t;
+}
+function skolemizeTripleForHeadBlanks(tr, headBlankLabels, mapping, skCounter, firingKey, globalMap) {
+    return new Triple(skolemizeTermForHeadBlanks(tr.s, headBlankLabels, mapping, skCounter, firingKey, globalMap), skolemizeTermForHeadBlanks(tr.p, headBlankLabels, mapping, skCounter, firingKey, globalMap), skolemizeTermForHeadBlanks(tr.o, headBlankLabels, mapping, skCounter, firingKey, globalMap));
+}
+// ===========================================================================
+// Alpha equivalence helpers
+// ===========================================================================
+function termsEqual(a, b) {
+    if (a === b)
+        return true;
+    if (!a || !b)
+        return false;
+    if (a.constructor !== b.constructor)
+        return false;
+    if (a instanceof Iri)
+        return a.value === b.value;
+    if (a instanceof Literal) {
+        if (a.value === b.value)
+            return true;
+        // Plain "abc" == "abc"^^xsd:string (but not language-tagged strings)
+        if (literalsEquivalentAsXsdString(a.value, b.value))
+            return true;
+        // Keep in sync with unifyTerm(): numeric-value equality, datatype-aware.
+        const ai = parseNumericLiteralInfo(a);
+        const bi = parseNumericLiteralInfo(b);
+        if (ai && bi) {
+            // Same datatype => compare values
+            if (ai.dt === bi.dt) {
+                if (ai.kind === 'bigint' && bi.kind === 'bigint')
+                    return ai.value === bi.value;
+                const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
+                const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
+                return !Number.isNaN(an) && !Number.isNaN(bn) && an === bn;
+            }
+        }
+        return false;
+    }
+    if (a instanceof Var)
+        return a.name === b.name;
+    if (a instanceof Blank)
+        return a.label === b.label;
+    if (a instanceof ListTerm) {
+        if (a.elems.length !== b.elems.length)
+            return false;
+        for (let i = 0; i < a.elems.length; i++) {
+            if (!termsEqual(a.elems[i], b.elems[i]))
+                return false;
+        }
+        return true;
+    }
+    if (a instanceof OpenListTerm) {
+        if (a.tailVar !== b.tailVar)
+            return false;
+        if (a.prefix.length !== b.prefix.length)
+            return false;
+        for (let i = 0; i < a.prefix.length; i++) {
+            if (!termsEqual(a.prefix[i], b.prefix[i]))
+                return false;
+        }
+        return true;
+    }
+    if (a instanceof GraphTerm) {
+        return alphaEqGraphTriples(a.triples, b.triples);
+    }
+    return false;
+}
+function termsEqualNoIntDecimal(a, b) {
+    if (a === b)
+        return true;
+    if (!a || !b)
+        return false;
+    if (a.constructor !== b.constructor)
+        return false;
+    if (a instanceof Iri)
+        return a.value === b.value;
+    if (a instanceof Literal) {
+        if (a.value === b.value)
+            return true;
+        // Plain "abc" == "abc"^^xsd:string (but not language-tagged)
+        if (literalsEquivalentAsXsdString(a.value, b.value))
+            return true;
+        // Numeric equality ONLY when datatypes agree (no integer<->decimal here)
+        const ai = parseNumericLiteralInfo(a);
+        const bi = parseNumericLiteralInfo(b);
+        if (ai && bi && ai.dt === bi.dt) {
+            // integer: exact bigint
+            if (ai.kind === 'bigint' && bi.kind === 'bigint')
+                return ai.value === bi.value;
+            // decimal: compare exactly via num/scale if possible
+            if (ai.dt === XSD_NS + 'decimal') {
+                const da = parseXsdDecimalToBigIntScale(ai.lexStr);
+                const db = parseXsdDecimalToBigIntScale(bi.lexStr);
+                if (da && db) {
+                    const scale = Math.max(da.scale, db.scale);
+                    const na = da.num * pow10n(scale - da.scale);
+                    const nb = db.num * pow10n(scale - db.scale);
+                    return na === nb;
+                }
+            }
+            // double/float-ish: JS number (same as your normal same-dt path)
+            const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
+            const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
+            return !Number.isNaN(an) && !Number.isNaN(bn) && an === bn;
+        }
+        return false;
+    }
+    if (a instanceof Var)
+        return a.name === b.name;
+    if (a instanceof Blank)
+        return a.label === b.label;
+    if (a instanceof ListTerm) {
+        if (a.elems.length !== b.elems.length)
+            return false;
+        for (let i = 0; i < a.elems.length; i++) {
+            if (!termsEqualNoIntDecimal(a.elems[i], b.elems[i]))
+                return false;
+        }
+        return true;
+    }
+    if (a instanceof OpenListTerm) {
+        if (a.tailVar !== b.tailVar)
+            return false;
+        if (a.prefix.length !== b.prefix.length)
+            return false;
+        for (let i = 0; i < a.prefix.length; i++) {
+            if (!termsEqualNoIntDecimal(a.prefix[i], b.prefix[i]))
+                return false;
+        }
+        return true;
+    }
+    if (a instanceof GraphTerm) {
+        return alphaEqGraphTriples(a.triples, b.triples);
+    }
+    return false;
+}
+function triplesEqual(a, b) {
+    return termsEqual(a.s, b.s) && termsEqual(a.p, b.p) && termsEqual(a.o, b.o);
+}
+function triplesListEqual(xs, ys) {
+    if (xs.length !== ys.length)
+        return false;
+    for (let i = 0; i < xs.length; i++) {
+        if (!triplesEqual(xs[i], ys[i]))
+            return false;
+    }
+    return true;
+}
+// Alpha-equivalence for quoted formulas, up to *variable* and blank-node renaming.
+// Treats a formula as an unordered set of triples (order-insensitive match).
+function alphaEqVarName(x, y, vmap) {
+    if (vmap.hasOwnProperty(x))
+        return vmap[x] === y;
+    vmap[x] = y;
+    return true;
+}
+function alphaEqTermInGraph(a, b, vmap, bmap) {
+    // Blank nodes: renamable
+    if (a instanceof Blank && b instanceof Blank) {
+        const x = a.label;
+        const y = b.label;
+        if (bmap.hasOwnProperty(x))
+            return bmap[x] === y;
+        bmap[x] = y;
+        return true;
+    }
+    // Variables: renamable (ONLY inside quoted formulas)
+    if (a instanceof Var && b instanceof Var) {
+        return alphaEqVarName(a.name, b.name, vmap);
+    }
+    if (a instanceof Iri && b instanceof Iri)
+        return a.value === b.value;
+    if (a instanceof Literal && b instanceof Literal)
+        return a.value === b.value;
+    if (a instanceof ListTerm && b instanceof ListTerm) {
+        if (a.elems.length !== b.elems.length)
+            return false;
+        for (let i = 0; i < a.elems.length; i++) {
+            if (!alphaEqTermInGraph(a.elems[i], b.elems[i], vmap, bmap))
+                return false;
+        }
+        return true;
+    }
+    if (a instanceof OpenListTerm && b instanceof OpenListTerm) {
+        if (a.prefix.length !== b.prefix.length)
+            return false;
+        for (let i = 0; i < a.prefix.length; i++) {
+            if (!alphaEqTermInGraph(a.prefix[i], b.prefix[i], vmap, bmap))
+                return false;
+        }
+        // tailVar is a var-name string, so treat it as renamable too
+        return alphaEqVarName(a.tailVar, b.tailVar, vmap);
+    }
+    // Nested formulas: compare with fresh maps (separate scope)
+    if (a instanceof GraphTerm && b instanceof GraphTerm) {
+        return alphaEqGraphTriples(a.triples, b.triples);
+    }
+    return false;
+}
+function alphaEqTripleInGraph(a, b, vmap, bmap) {
+    return (alphaEqTermInGraph(a.s, b.s, vmap, bmap) &&
+        alphaEqTermInGraph(a.p, b.p, vmap, bmap) &&
+        alphaEqTermInGraph(a.o, b.o, vmap, bmap));
+}
+function alphaEqGraphTriples(xs, ys) {
+    if (xs.length !== ys.length)
+        return false;
+    // Fast path: exact same sequence.
+    if (triplesListEqual(xs, ys))
+        return true;
+    // Order-insensitive backtracking match, threading var/blank mappings.
+    const used = new Array(ys.length).fill(false);
+    function step(i, vmap, bmap) {
+        if (i >= xs.length)
+            return true;
+        const x = xs[i];
+        for (let j = 0; j < ys.length; j++) {
+            if (used[j])
+                continue;
+            const y = ys[j];
+            // Cheap pruning when both predicates are IRIs.
+            if (x.p instanceof Iri && y.p instanceof Iri && x.p.value !== y.p.value)
+                continue;
+            const v2 = { ...vmap };
+            const b2 = { ...bmap };
+            if (!alphaEqTripleInGraph(x, y, v2, b2))
+                continue;
+            used[j] = true;
+            if (step(i + 1, v2, b2))
+                return true;
+            used[j] = false;
+        }
+        return false;
+    }
+    return step(0, {}, {});
+}
+function alphaEqTerm(a, b, bmap) {
+    if (a instanceof Blank && b instanceof Blank) {
+        const x = a.label;
+        const y = b.label;
+        if (bmap.hasOwnProperty(x)) {
+            return bmap[x] === y;
+        }
+        else {
+            bmap[x] = y;
+            return true;
+        }
+    }
+    if (a instanceof Iri && b instanceof Iri)
+        return a.value === b.value;
+    if (a instanceof Literal && b instanceof Literal)
+        return a.value === b.value;
+    if (a instanceof Var && b instanceof Var)
+        return a.name === b.name;
+    if (a instanceof ListTerm && b instanceof ListTerm) {
+        if (a.elems.length !== b.elems.length)
+            return false;
+        for (let i = 0; i < a.elems.length; i++) {
+            if (!alphaEqTerm(a.elems[i], b.elems[i], bmap))
+                return false;
+        }
+        return true;
+    }
+    if (a instanceof OpenListTerm && b instanceof OpenListTerm) {
+        if (a.tailVar !== b.tailVar || a.prefix.length !== b.prefix.length)
+            return false;
+        for (let i = 0; i < a.prefix.length; i++) {
+            if (!alphaEqTerm(a.prefix[i], b.prefix[i], bmap))
+                return false;
+        }
+        return true;
+    }
+    if (a instanceof GraphTerm && b instanceof GraphTerm) {
+        // formulas are alpha-equivalent up to var/blank renaming
+        return alphaEqGraphTriples(a.triples, b.triples);
+    }
+    return false;
+}
+function alphaEqTriple(a, b) {
+    const bmap = {};
+    return alphaEqTerm(a.s, b.s, bmap) && alphaEqTerm(a.p, b.p, bmap) && alphaEqTerm(a.o, b.o, bmap);
+}
+// ===========================================================================
+// Indexes (facts + backward rules)
+// ===========================================================================
+//
+// Facts:
+//   - __byPred: Map<predicateIRI, Triple[]>
+//   - __byPO:   Map<predicateIRI, Map<objectKey, Triple[]>>
+//   - __keySet: Set<"S\tP\tO"> for IRI/Literal-only triples (fast dup check)
+//
+// Backward rules:
+//   - __byHeadPred:   Map<headPredicateIRI, Rule[]>
+//   - __wildHeadPred: Rule[] (non-IRI head predicate)
+function termFastKey(t) {
+    if (t instanceof Iri)
+        return 'I:' + t.value;
+    if (t instanceof Literal)
+        return 'L:' + normalizeLiteralForFastKey(t.value);
+    return null;
+}
+function tripleFastKey(tr) {
+    const ks = termFastKey(tr.s);
+    const kp = termFastKey(tr.p);
+    const ko = termFastKey(tr.o);
+    if (ks === null || kp === null || ko === null)
+        return null;
+    return ks + '\t' + kp + '\t' + ko;
+}
+function ensureFactIndexes(facts) {
+    if (facts.__byPred && facts.__byPS && facts.__byPO && facts.__keySet)
+        return;
+    Object.defineProperty(facts, '__byPred', {
+        value: new Map(),
+        enumerable: false,
+        writable: true,
+    });
+    Object.defineProperty(facts, '__byPS', {
+        value: new Map(),
+        enumerable: false,
+        writable: true,
+    });
+    Object.defineProperty(facts, '__byPO', {
+        value: new Map(),
+        enumerable: false,
+        writable: true,
+    });
+    Object.defineProperty(facts, '__keySet', {
+        value: new Set(),
+        enumerable: false,
+        writable: true,
+    });
+    for (const f of facts)
+        indexFact(facts, f);
+}
+function indexFact(facts, tr) {
+    if (tr.p instanceof Iri) {
+        const pk = tr.p.value;
+        let pb = facts.__byPred.get(pk);
+        if (!pb) {
+            pb = [];
+            facts.__byPred.set(pk, pb);
+        }
+        pb.push(tr);
+        const sk = termFastKey(tr.s);
+        if (sk !== null) {
+            let ps = facts.__byPS.get(pk);
+            if (!ps) {
+                ps = new Map();
+                facts.__byPS.set(pk, ps);
+            }
+            let psb = ps.get(sk);
+            if (!psb) {
+                psb = [];
+                ps.set(sk, psb);
+            }
+            psb.push(tr);
+        }
+        const ok = termFastKey(tr.o);
+        if (ok !== null) {
+            let po = facts.__byPO.get(pk);
+            if (!po) {
+                po = new Map();
+                facts.__byPO.set(pk, po);
+            }
+            let pob = po.get(ok);
+            if (!pob) {
+                pob = [];
+                po.set(ok, pob);
+            }
+            pob.push(tr);
+        }
+    }
+    const key = tripleFastKey(tr);
+    if (key !== null)
+        facts.__keySet.add(key);
+}
+function candidateFacts(facts, goal) {
+    ensureFactIndexes(facts);
+    if (goal.p instanceof Iri) {
+        const pk = goal.p.value;
+        const sk = termFastKey(goal.s);
+        const ok = termFastKey(goal.o);
+        /** @type {Triple[] | null} */
+        let byPS = null;
+        if (sk !== null) {
+            const ps = facts.__byPS.get(pk);
+            if (ps)
+                byPS = ps.get(sk) || null;
+        }
+        /** @type {Triple[] | null} */
+        let byPO = null;
+        if (ok !== null) {
+            const po = facts.__byPO.get(pk);
+            if (po)
+                byPO = po.get(ok) || null;
+        }
+        if (byPS && byPO)
+            return byPS.length <= byPO.length ? byPS : byPO;
+        if (byPS)
+            return byPS;
+        if (byPO)
+            return byPO;
+        return facts.__byPred.get(pk) || [];
+    }
+    return facts;
+}
+function hasFactIndexed(facts, tr) {
+    ensureFactIndexes(facts);
+    const key = tripleFastKey(tr);
+    if (key !== null)
+        return facts.__keySet.has(key);
+    if (tr.p instanceof Iri) {
+        const pk = tr.p.value;
+        const ok = termFastKey(tr.o);
+        if (ok !== null) {
+            const po = facts.__byPO.get(pk);
+            if (po) {
+                const pob = po.get(ok) || [];
+                // Facts are all in the same graph. Different blank node labels represent
+                // different existentials unless explicitly connected. Do NOT treat
+                // triples as duplicates modulo blank renaming, or you'll incorrectly
+                // drop facts like: _:sk_0 :x 8.0  (because _:b8 :x 8.0 exists).
+                return pob.some((t) => triplesEqual(t, tr));
+            }
+        }
+        const pb = facts.__byPred.get(pk) || [];
+        return pb.some((t) => triplesEqual(t, tr));
+    }
+    // Non-IRI predicate: fall back to strict triple equality.
+    return facts.some((t) => triplesEqual(t, tr));
+}
+function pushFactIndexed(facts, tr) {
+    ensureFactIndexes(facts);
+    facts.push(tr);
+    indexFact(facts, tr);
+}
+function ensureBackRuleIndexes(backRules) {
+    if (backRules.__byHeadPred && backRules.__wildHeadPred)
+        return;
+    Object.defineProperty(backRules, '__byHeadPred', {
+        value: new Map(),
+        enumerable: false,
+        writable: true,
+    });
+    Object.defineProperty(backRules, '__wildHeadPred', {
+        value: [],
+        enumerable: false,
+        writable: true,
+    });
+    for (const r of backRules)
+        indexBackRule(backRules, r);
+}
+function indexBackRule(backRules, r) {
+    if (!r || !r.conclusion || r.conclusion.length !== 1)
+        return;
+    const head = r.conclusion[0];
+    if (head && head.p instanceof Iri) {
+        const k = head.p.value;
+        let bucket = backRules.__byHeadPred.get(k);
+        if (!bucket) {
+            bucket = [];
+            backRules.__byHeadPred.set(k, bucket);
+        }
+        bucket.push(r);
+    }
+    else {
+        backRules.__wildHeadPred.push(r);
+    }
+}
+// ===========================================================================
+// Special predicate helpers
+// ===========================================================================
+function isRdfTypePred(p) {
+    return p instanceof Iri && p.value === RDF_NS + 'type';
+}
+function isOwlSameAsPred(t) {
+    return t instanceof Iri && t.value === OWL_NS + 'sameAs';
+}
+function isLogImplies(p) {
+    return p instanceof Iri && p.value === LOG_NS + 'implies';
+}
+function isLogImpliedBy(p) {
+    return p instanceof Iri && p.value === LOG_NS + 'impliedBy';
+}
+// ===========================================================================
+// Constraint / "test" builtins
+// ===========================================================================
+function isConstraintBuiltin(tr) {
+    if (!(tr.p instanceof Iri))
+        return false;
+    const v = tr.p.value;
+    // math: numeric comparisons (no new bindings, just tests)
+    if (v === MATH_NS + 'equalTo' ||
+        v === MATH_NS + 'greaterThan' ||
+        v === MATH_NS + 'lessThan' ||
+        v === MATH_NS + 'notEqualTo' ||
+        v === MATH_NS + 'notGreaterThan' ||
+        v === MATH_NS + 'notLessThan') {
+        return true;
+    }
+    // list: membership test with no bindings
+    if (v === LIST_NS + 'notMember') {
+        return true;
+    }
+    // log: tests that are purely constraints (no new bindings)
+    if (v === LOG_NS + 'forAllIn' ||
+        v === LOG_NS + 'notEqualTo' ||
+        v === LOG_NS + 'notIncludes' ||
+        v === LOG_NS + 'outputString') {
+        return true;
+    }
+    // string: relational / membership style tests (no bindings)
+    if (v === STRING_NS + 'contains' ||
+        v === STRING_NS + 'containsIgnoringCase' ||
+        v === STRING_NS + 'endsWith' ||
+        v === STRING_NS + 'equalIgnoringCase' ||
+        v === STRING_NS + 'greaterThan' ||
+        v === STRING_NS + 'lessThan' ||
+        v === STRING_NS + 'matches' ||
+        v === STRING_NS + 'notEqualIgnoringCase' ||
+        v === STRING_NS + 'notGreaterThan' ||
+        v === STRING_NS + 'notLessThan' ||
+        v === STRING_NS + 'notMatches' ||
+        v === STRING_NS + 'startsWith') {
+        return true;
+    }
+    return false;
+}
+// Move constraint builtins to the end of the rule premise.
+// This is a simple "delaying" strategy similar in spirit to Prolog's when/2:
+// - normal goals first (can bind variables),
+// - pure test / constraint builtins last (checked once bindings are in place).
+function reorderPremiseForConstraints(premise) {
+    if (!premise || premise.length === 0)
+        return premise;
+    const normal = [];
+    const delayed = [];
+    for (const tr of premise) {
+        if (isConstraintBuiltin(tr))
+            delayed.push(tr);
+        else
+            normal.push(tr);
+    }
+    return normal.concat(delayed);
+}
+// @ts-nocheck
+/* eslint-disable */
+// ===========================================================================
+// N3 lexer + parser
+// ===========================================================================
+// ===========================================================================
 // LEXER
 // ===========================================================================
 class Token {
@@ -1854,632 +2485,6 @@ class Parser {
         const premise = isForward ? reorderPremiseForConstraints(premise0) : premise0;
         return new Rule(premise, conclusion, isForward, isFuse, headBlankLabels);
     }
-}
-// ===========================================================================
-// Blank-node lifting and Skolemization
-// ===========================================================================
-function liftBlankRuleVars(premise, conclusion) {
-    function convertTerm(t, mapping, counter) {
-        if (t instanceof Blank) {
-            const label = t.label;
-            if (!mapping.hasOwnProperty(label)) {
-                counter[0] += 1;
-                mapping[label] = `_b${counter[0]}`;
-            }
-            return new Var(mapping[label]);
-        }
-        if (t instanceof ListTerm) {
-            return new ListTerm(t.elems.map((e) => convertTerm(e, mapping, counter)));
-        }
-        if (t instanceof OpenListTerm) {
-            return new OpenListTerm(t.prefix.map((e) => convertTerm(e, mapping, counter)), t.tailVar);
-        }
-        if (t instanceof GraphTerm) {
-            const triples = t.triples.map((tr) => new Triple(convertTerm(tr.s, mapping, counter), convertTerm(tr.p, mapping, counter), convertTerm(tr.o, mapping, counter)));
-            return new GraphTerm(triples);
-        }
-        return t;
-    }
-    function convertTriple(tr, mapping, counter) {
-        return new Triple(convertTerm(tr.s, mapping, counter), convertTerm(tr.p, mapping, counter), convertTerm(tr.o, mapping, counter));
-    }
-    const mapping = {};
-    const counter = [0];
-    const newPremise = premise.map((tr) => convertTriple(tr, mapping, counter));
-    return [newPremise, conclusion];
-}
-// Skolemization for blank nodes that occur explicitly in a rule head.
-//
-// IMPORTANT: we must be *stable per rule firing*, otherwise a rule whose
-// premises stay true would keep generating fresh _:sk_N blank nodes on every
-// outer fixpoint iteration (non-termination once we do strict duplicate checks).
-//
-// We achieve this by optionally keying head-blank allocations by a "firingKey"
-// (usually derived from the instantiated premises and rule index) and caching
-// them in a run-global map.
-function skolemizeTermForHeadBlanks(t, headBlankLabels, mapping, skCounter, firingKey, globalMap) {
-    if (t instanceof Blank) {
-        const label = t.label;
-        // Only skolemize blanks that occur explicitly in the rule head
-        if (!headBlankLabels || !headBlankLabels.has(label)) {
-            return t; // this is a data blank (e.g. bound via ?X), keep it
-        }
-        if (!mapping.hasOwnProperty(label)) {
-            // If we have a global cache keyed by firingKey, use it to ensure
-            // deterministic blank IDs for the same rule+substitution instance.
-            if (globalMap && firingKey) {
-                const gk = `${firingKey}|${label}`;
-                let sk = globalMap.get(gk);
-                if (!sk) {
-                    const idx = skCounter[0];
-                    skCounter[0] += 1;
-                    sk = `_:sk_${idx}`;
-                    globalMap.set(gk, sk);
-                }
-                mapping[label] = sk;
-            }
-            else {
-                const idx = skCounter[0];
-                skCounter[0] += 1;
-                mapping[label] = `_:sk_${idx}`;
-            }
-        }
-        return new Blank(mapping[label]);
-    }
-    if (t instanceof ListTerm) {
-        return new ListTerm(t.elems.map((e) => skolemizeTermForHeadBlanks(e, headBlankLabels, mapping, skCounter, firingKey, globalMap)));
-    }
-    if (t instanceof OpenListTerm) {
-        return new OpenListTerm(t.prefix.map((e) => skolemizeTermForHeadBlanks(e, headBlankLabels, mapping, skCounter, firingKey, globalMap)), t.tailVar);
-    }
-    if (t instanceof GraphTerm) {
-        return new GraphTerm(t.triples.map((tr) => skolemizeTripleForHeadBlanks(tr, headBlankLabels, mapping, skCounter, firingKey, globalMap)));
-    }
-    return t;
-}
-function skolemizeTripleForHeadBlanks(tr, headBlankLabels, mapping, skCounter, firingKey, globalMap) {
-    return new Triple(skolemizeTermForHeadBlanks(tr.s, headBlankLabels, mapping, skCounter, firingKey, globalMap), skolemizeTermForHeadBlanks(tr.p, headBlankLabels, mapping, skCounter, firingKey, globalMap), skolemizeTermForHeadBlanks(tr.o, headBlankLabels, mapping, skCounter, firingKey, globalMap));
-}
-// ===========================================================================
-// Alpha equivalence helpers
-// ===========================================================================
-function termsEqual(a, b) {
-    if (a === b)
-        return true;
-    if (!a || !b)
-        return false;
-    if (a.constructor !== b.constructor)
-        return false;
-    if (a instanceof Iri)
-        return a.value === b.value;
-    if (a instanceof Literal) {
-        if (a.value === b.value)
-            return true;
-        // Plain "abc" == "abc"^^xsd:string (but not language-tagged strings)
-        if (literalsEquivalentAsXsdString(a.value, b.value))
-            return true;
-        // Keep in sync with unifyTerm(): numeric-value equality, datatype-aware.
-        const ai = parseNumericLiteralInfo(a);
-        const bi = parseNumericLiteralInfo(b);
-        if (ai && bi) {
-            // Same datatype => compare values
-            if (ai.dt === bi.dt) {
-                if (ai.kind === 'bigint' && bi.kind === 'bigint')
-                    return ai.value === bi.value;
-                const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
-                const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
-                return !Number.isNaN(an) && !Number.isNaN(bn) && an === bn;
-            }
-        }
-        return false;
-    }
-    if (a instanceof Var)
-        return a.name === b.name;
-    if (a instanceof Blank)
-        return a.label === b.label;
-    if (a instanceof ListTerm) {
-        if (a.elems.length !== b.elems.length)
-            return false;
-        for (let i = 0; i < a.elems.length; i++) {
-            if (!termsEqual(a.elems[i], b.elems[i]))
-                return false;
-        }
-        return true;
-    }
-    if (a instanceof OpenListTerm) {
-        if (a.tailVar !== b.tailVar)
-            return false;
-        if (a.prefix.length !== b.prefix.length)
-            return false;
-        for (let i = 0; i < a.prefix.length; i++) {
-            if (!termsEqual(a.prefix[i], b.prefix[i]))
-                return false;
-        }
-        return true;
-    }
-    if (a instanceof GraphTerm) {
-        return alphaEqGraphTriples(a.triples, b.triples);
-    }
-    return false;
-}
-function termsEqualNoIntDecimal(a, b) {
-    if (a === b)
-        return true;
-    if (!a || !b)
-        return false;
-    if (a.constructor !== b.constructor)
-        return false;
-    if (a instanceof Iri)
-        return a.value === b.value;
-    if (a instanceof Literal) {
-        if (a.value === b.value)
-            return true;
-        // Plain "abc" == "abc"^^xsd:string (but not language-tagged)
-        if (literalsEquivalentAsXsdString(a.value, b.value))
-            return true;
-        // Numeric equality ONLY when datatypes agree (no integer<->decimal here)
-        const ai = parseNumericLiteralInfo(a);
-        const bi = parseNumericLiteralInfo(b);
-        if (ai && bi && ai.dt === bi.dt) {
-            // integer: exact bigint
-            if (ai.kind === 'bigint' && bi.kind === 'bigint')
-                return ai.value === bi.value;
-            // decimal: compare exactly via num/scale if possible
-            if (ai.dt === XSD_NS + 'decimal') {
-                const da = parseXsdDecimalToBigIntScale(ai.lexStr);
-                const db = parseXsdDecimalToBigIntScale(bi.lexStr);
-                if (da && db) {
-                    const scale = Math.max(da.scale, db.scale);
-                    const na = da.num * pow10n(scale - da.scale);
-                    const nb = db.num * pow10n(scale - db.scale);
-                    return na === nb;
-                }
-            }
-            // double/float-ish: JS number (same as your normal same-dt path)
-            const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
-            const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
-            return !Number.isNaN(an) && !Number.isNaN(bn) && an === bn;
-        }
-        return false;
-    }
-    if (a instanceof Var)
-        return a.name === b.name;
-    if (a instanceof Blank)
-        return a.label === b.label;
-    if (a instanceof ListTerm) {
-        if (a.elems.length !== b.elems.length)
-            return false;
-        for (let i = 0; i < a.elems.length; i++) {
-            if (!termsEqualNoIntDecimal(a.elems[i], b.elems[i]))
-                return false;
-        }
-        return true;
-    }
-    if (a instanceof OpenListTerm) {
-        if (a.tailVar !== b.tailVar)
-            return false;
-        if (a.prefix.length !== b.prefix.length)
-            return false;
-        for (let i = 0; i < a.prefix.length; i++) {
-            if (!termsEqualNoIntDecimal(a.prefix[i], b.prefix[i]))
-                return false;
-        }
-        return true;
-    }
-    if (a instanceof GraphTerm) {
-        return alphaEqGraphTriples(a.triples, b.triples);
-    }
-    return false;
-}
-function triplesEqual(a, b) {
-    return termsEqual(a.s, b.s) && termsEqual(a.p, b.p) && termsEqual(a.o, b.o);
-}
-function triplesListEqual(xs, ys) {
-    if (xs.length !== ys.length)
-        return false;
-    for (let i = 0; i < xs.length; i++) {
-        if (!triplesEqual(xs[i], ys[i]))
-            return false;
-    }
-    return true;
-}
-// Alpha-equivalence for quoted formulas, up to *variable* and blank-node renaming.
-// Treats a formula as an unordered set of triples (order-insensitive match).
-function alphaEqVarName(x, y, vmap) {
-    if (vmap.hasOwnProperty(x))
-        return vmap[x] === y;
-    vmap[x] = y;
-    return true;
-}
-function alphaEqTermInGraph(a, b, vmap, bmap) {
-    // Blank nodes: renamable
-    if (a instanceof Blank && b instanceof Blank) {
-        const x = a.label;
-        const y = b.label;
-        if (bmap.hasOwnProperty(x))
-            return bmap[x] === y;
-        bmap[x] = y;
-        return true;
-    }
-    // Variables: renamable (ONLY inside quoted formulas)
-    if (a instanceof Var && b instanceof Var) {
-        return alphaEqVarName(a.name, b.name, vmap);
-    }
-    if (a instanceof Iri && b instanceof Iri)
-        return a.value === b.value;
-    if (a instanceof Literal && b instanceof Literal)
-        return a.value === b.value;
-    if (a instanceof ListTerm && b instanceof ListTerm) {
-        if (a.elems.length !== b.elems.length)
-            return false;
-        for (let i = 0; i < a.elems.length; i++) {
-            if (!alphaEqTermInGraph(a.elems[i], b.elems[i], vmap, bmap))
-                return false;
-        }
-        return true;
-    }
-    if (a instanceof OpenListTerm && b instanceof OpenListTerm) {
-        if (a.prefix.length !== b.prefix.length)
-            return false;
-        for (let i = 0; i < a.prefix.length; i++) {
-            if (!alphaEqTermInGraph(a.prefix[i], b.prefix[i], vmap, bmap))
-                return false;
-        }
-        // tailVar is a var-name string, so treat it as renamable too
-        return alphaEqVarName(a.tailVar, b.tailVar, vmap);
-    }
-    // Nested formulas: compare with fresh maps (separate scope)
-    if (a instanceof GraphTerm && b instanceof GraphTerm) {
-        return alphaEqGraphTriples(a.triples, b.triples);
-    }
-    return false;
-}
-function alphaEqTripleInGraph(a, b, vmap, bmap) {
-    return (alphaEqTermInGraph(a.s, b.s, vmap, bmap) &&
-        alphaEqTermInGraph(a.p, b.p, vmap, bmap) &&
-        alphaEqTermInGraph(a.o, b.o, vmap, bmap));
-}
-function alphaEqGraphTriples(xs, ys) {
-    if (xs.length !== ys.length)
-        return false;
-    // Fast path: exact same sequence.
-    if (triplesListEqual(xs, ys))
-        return true;
-    // Order-insensitive backtracking match, threading var/blank mappings.
-    const used = new Array(ys.length).fill(false);
-    function step(i, vmap, bmap) {
-        if (i >= xs.length)
-            return true;
-        const x = xs[i];
-        for (let j = 0; j < ys.length; j++) {
-            if (used[j])
-                continue;
-            const y = ys[j];
-            // Cheap pruning when both predicates are IRIs.
-            if (x.p instanceof Iri && y.p instanceof Iri && x.p.value !== y.p.value)
-                continue;
-            const v2 = { ...vmap };
-            const b2 = { ...bmap };
-            if (!alphaEqTripleInGraph(x, y, v2, b2))
-                continue;
-            used[j] = true;
-            if (step(i + 1, v2, b2))
-                return true;
-            used[j] = false;
-        }
-        return false;
-    }
-    return step(0, {}, {});
-}
-function alphaEqTerm(a, b, bmap) {
-    if (a instanceof Blank && b instanceof Blank) {
-        const x = a.label;
-        const y = b.label;
-        if (bmap.hasOwnProperty(x)) {
-            return bmap[x] === y;
-        }
-        else {
-            bmap[x] = y;
-            return true;
-        }
-    }
-    if (a instanceof Iri && b instanceof Iri)
-        return a.value === b.value;
-    if (a instanceof Literal && b instanceof Literal)
-        return a.value === b.value;
-    if (a instanceof Var && b instanceof Var)
-        return a.name === b.name;
-    if (a instanceof ListTerm && b instanceof ListTerm) {
-        if (a.elems.length !== b.elems.length)
-            return false;
-        for (let i = 0; i < a.elems.length; i++) {
-            if (!alphaEqTerm(a.elems[i], b.elems[i], bmap))
-                return false;
-        }
-        return true;
-    }
-    if (a instanceof OpenListTerm && b instanceof OpenListTerm) {
-        if (a.tailVar !== b.tailVar || a.prefix.length !== b.prefix.length)
-            return false;
-        for (let i = 0; i < a.prefix.length; i++) {
-            if (!alphaEqTerm(a.prefix[i], b.prefix[i], bmap))
-                return false;
-        }
-        return true;
-    }
-    if (a instanceof GraphTerm && b instanceof GraphTerm) {
-        // formulas are alpha-equivalent up to var/blank renaming
-        return alphaEqGraphTriples(a.triples, b.triples);
-    }
-    return false;
-}
-function alphaEqTriple(a, b) {
-    const bmap = {};
-    return alphaEqTerm(a.s, b.s, bmap) && alphaEqTerm(a.p, b.p, bmap) && alphaEqTerm(a.o, b.o, bmap);
-}
-// ===========================================================================
-// Indexes (facts + backward rules)
-// ===========================================================================
-//
-// Facts:
-//   - __byPred: Map<predicateIRI, Triple[]>
-//   - __byPO:   Map<predicateIRI, Map<objectKey, Triple[]>>
-//   - __keySet: Set<"S\tP\tO"> for IRI/Literal-only triples (fast dup check)
-//
-// Backward rules:
-//   - __byHeadPred:   Map<headPredicateIRI, Rule[]>
-//   - __wildHeadPred: Rule[] (non-IRI head predicate)
-function termFastKey(t) {
-    if (t instanceof Iri)
-        return 'I:' + t.value;
-    if (t instanceof Literal)
-        return 'L:' + normalizeLiteralForFastKey(t.value);
-    return null;
-}
-function tripleFastKey(tr) {
-    const ks = termFastKey(tr.s);
-    const kp = termFastKey(tr.p);
-    const ko = termFastKey(tr.o);
-    if (ks === null || kp === null || ko === null)
-        return null;
-    return ks + '\t' + kp + '\t' + ko;
-}
-function ensureFactIndexes(facts) {
-    if (facts.__byPred && facts.__byPS && facts.__byPO && facts.__keySet)
-        return;
-    Object.defineProperty(facts, '__byPred', {
-        value: new Map(),
-        enumerable: false,
-        writable: true,
-    });
-    Object.defineProperty(facts, '__byPS', {
-        value: new Map(),
-        enumerable: false,
-        writable: true,
-    });
-    Object.defineProperty(facts, '__byPO', {
-        value: new Map(),
-        enumerable: false,
-        writable: true,
-    });
-    Object.defineProperty(facts, '__keySet', {
-        value: new Set(),
-        enumerable: false,
-        writable: true,
-    });
-    for (const f of facts)
-        indexFact(facts, f);
-}
-function indexFact(facts, tr) {
-    if (tr.p instanceof Iri) {
-        const pk = tr.p.value;
-        let pb = facts.__byPred.get(pk);
-        if (!pb) {
-            pb = [];
-            facts.__byPred.set(pk, pb);
-        }
-        pb.push(tr);
-        const sk = termFastKey(tr.s);
-        if (sk !== null) {
-            let ps = facts.__byPS.get(pk);
-            if (!ps) {
-                ps = new Map();
-                facts.__byPS.set(pk, ps);
-            }
-            let psb = ps.get(sk);
-            if (!psb) {
-                psb = [];
-                ps.set(sk, psb);
-            }
-            psb.push(tr);
-        }
-        const ok = termFastKey(tr.o);
-        if (ok !== null) {
-            let po = facts.__byPO.get(pk);
-            if (!po) {
-                po = new Map();
-                facts.__byPO.set(pk, po);
-            }
-            let pob = po.get(ok);
-            if (!pob) {
-                pob = [];
-                po.set(ok, pob);
-            }
-            pob.push(tr);
-        }
-    }
-    const key = tripleFastKey(tr);
-    if (key !== null)
-        facts.__keySet.add(key);
-}
-function candidateFacts(facts, goal) {
-    ensureFactIndexes(facts);
-    if (goal.p instanceof Iri) {
-        const pk = goal.p.value;
-        const sk = termFastKey(goal.s);
-        const ok = termFastKey(goal.o);
-        /** @type {Triple[] | null} */
-        let byPS = null;
-        if (sk !== null) {
-            const ps = facts.__byPS.get(pk);
-            if (ps)
-                byPS = ps.get(sk) || null;
-        }
-        /** @type {Triple[] | null} */
-        let byPO = null;
-        if (ok !== null) {
-            const po = facts.__byPO.get(pk);
-            if (po)
-                byPO = po.get(ok) || null;
-        }
-        if (byPS && byPO)
-            return byPS.length <= byPO.length ? byPS : byPO;
-        if (byPS)
-            return byPS;
-        if (byPO)
-            return byPO;
-        return facts.__byPred.get(pk) || [];
-    }
-    return facts;
-}
-function hasFactIndexed(facts, tr) {
-    ensureFactIndexes(facts);
-    const key = tripleFastKey(tr);
-    if (key !== null)
-        return facts.__keySet.has(key);
-    if (tr.p instanceof Iri) {
-        const pk = tr.p.value;
-        const ok = termFastKey(tr.o);
-        if (ok !== null) {
-            const po = facts.__byPO.get(pk);
-            if (po) {
-                const pob = po.get(ok) || [];
-                // Facts are all in the same graph. Different blank node labels represent
-                // different existentials unless explicitly connected. Do NOT treat
-                // triples as duplicates modulo blank renaming, or you'll incorrectly
-                // drop facts like: _:sk_0 :x 8.0  (because _:b8 :x 8.0 exists).
-                return pob.some((t) => triplesEqual(t, tr));
-            }
-        }
-        const pb = facts.__byPred.get(pk) || [];
-        return pb.some((t) => triplesEqual(t, tr));
-    }
-    // Non-IRI predicate: fall back to strict triple equality.
-    return facts.some((t) => triplesEqual(t, tr));
-}
-function pushFactIndexed(facts, tr) {
-    ensureFactIndexes(facts);
-    facts.push(tr);
-    indexFact(facts, tr);
-}
-function ensureBackRuleIndexes(backRules) {
-    if (backRules.__byHeadPred && backRules.__wildHeadPred)
-        return;
-    Object.defineProperty(backRules, '__byHeadPred', {
-        value: new Map(),
-        enumerable: false,
-        writable: true,
-    });
-    Object.defineProperty(backRules, '__wildHeadPred', {
-        value: [],
-        enumerable: false,
-        writable: true,
-    });
-    for (const r of backRules)
-        indexBackRule(backRules, r);
-}
-function indexBackRule(backRules, r) {
-    if (!r || !r.conclusion || r.conclusion.length !== 1)
-        return;
-    const head = r.conclusion[0];
-    if (head && head.p instanceof Iri) {
-        const k = head.p.value;
-        let bucket = backRules.__byHeadPred.get(k);
-        if (!bucket) {
-            bucket = [];
-            backRules.__byHeadPred.set(k, bucket);
-        }
-        bucket.push(r);
-    }
-    else {
-        backRules.__wildHeadPred.push(r);
-    }
-}
-// ===========================================================================
-// Special predicate helpers
-// ===========================================================================
-function isRdfTypePred(p) {
-    return p instanceof Iri && p.value === RDF_NS + 'type';
-}
-function isOwlSameAsPred(t) {
-    return t instanceof Iri && t.value === OWL_NS + 'sameAs';
-}
-function isLogImplies(p) {
-    return p instanceof Iri && p.value === LOG_NS + 'implies';
-}
-function isLogImpliedBy(p) {
-    return p instanceof Iri && p.value === LOG_NS + 'impliedBy';
-}
-// ===========================================================================
-// Constraint / "test" builtins
-// ===========================================================================
-function isConstraintBuiltin(tr) {
-    if (!(tr.p instanceof Iri))
-        return false;
-    const v = tr.p.value;
-    // math: numeric comparisons (no new bindings, just tests)
-    if (v === MATH_NS + 'equalTo' ||
-        v === MATH_NS + 'greaterThan' ||
-        v === MATH_NS + 'lessThan' ||
-        v === MATH_NS + 'notEqualTo' ||
-        v === MATH_NS + 'notGreaterThan' ||
-        v === MATH_NS + 'notLessThan') {
-        return true;
-    }
-    // list: membership test with no bindings
-    if (v === LIST_NS + 'notMember') {
-        return true;
-    }
-    // log: tests that are purely constraints (no new bindings)
-    if (v === LOG_NS + 'forAllIn' ||
-        v === LOG_NS + 'notEqualTo' ||
-        v === LOG_NS + 'notIncludes' ||
-        v === LOG_NS + 'outputString') {
-        return true;
-    }
-    // string: relational / membership style tests (no bindings)
-    if (v === STRING_NS + 'contains' ||
-        v === STRING_NS + 'containsIgnoringCase' ||
-        v === STRING_NS + 'endsWith' ||
-        v === STRING_NS + 'equalIgnoringCase' ||
-        v === STRING_NS + 'greaterThan' ||
-        v === STRING_NS + 'lessThan' ||
-        v === STRING_NS + 'matches' ||
-        v === STRING_NS + 'notEqualIgnoringCase' ||
-        v === STRING_NS + 'notGreaterThan' ||
-        v === STRING_NS + 'notLessThan' ||
-        v === STRING_NS + 'notMatches' ||
-        v === STRING_NS + 'startsWith') {
-        return true;
-    }
-    return false;
-}
-// Move constraint builtins to the end of the rule premise.
-// This is a simple "delaying" strategy similar in spirit to Prolog's when/2:
-// - normal goals first (can bind variables),
-// - pure test / constraint builtins last (checked once bindings are in place).
-function reorderPremiseForConstraints(premise) {
-    if (!premise || premise.length === 0)
-        return premise;
-    const normal = [];
-    const delayed = [];
-    for (const tr of premise) {
-        if (isConstraintBuiltin(tr))
-            delayed.push(tr);
-        else
-            normal.push(tr);
-    }
-    return normal.concat(delayed);
 }
 // @ts-nocheck
 /* eslint-disable */
