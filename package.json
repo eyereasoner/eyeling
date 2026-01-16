@@ -23,6 +23,8 @@
     "index.d.ts",
     "eyeling.js",
     "eyeling-builtins.ttl",
+    "src",
+    "tsconfig.json",
     "test",
     "examples",
     "README.md",
@@ -39,6 +41,17 @@
     "test:package": "node test/package.test.js",
     "test": "npm run test:packlist && npm run test:api && npm run test:maken3 && npm run test:examples",
     "preversion": "npm test",
-    "postversion": "git push origin HEAD --follow-tags"
+    "postversion": "git push origin HEAD --follow-tags",
+    "build": "node scripts/build.mjs",
+    "pretest": "npm run build",
+    "pretest:packlist": "npm run build",
+    "pretest:api": "npm run build",
+    "pretest:maken3": "npm run build",
+    "pretest:examples": "npm run build",
+    "pretest:package": "npm run build",
+    "prepack": "npm run build -- --quiet"    
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
   }
 }

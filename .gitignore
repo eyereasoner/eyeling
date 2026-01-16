@@ -1,2 +1,12 @@
-package-lock.json
+# generated
+build/
+dist/
+*.tsbuildinfo
+
+# deps
 node_modules/
+
+# misc
+.DS_Store
+npm-debug.log*
+
