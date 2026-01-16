@@ -52,6 +52,16 @@
     "prepack": "npm run build -- --quiet"
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.9.3"
+  },
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "require": "./index.js",
+      "default": "./index.js"
+    },
+    "./eyeling.js": "./eyeling.js",
+    "./eyeling-builtins.ttl": "./eyeling-builtins.ttl",
+    "./package.json": "./package.json"
   }
 }
