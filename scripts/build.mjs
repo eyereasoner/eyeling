@@ -19,6 +19,7 @@ run('tsc -p tsconfig.json');
 //    (demo.html expects this exact filename)
 const parts = [
   path.join('build', 'eyeling-core.js'),
+  path.join('build', 'eyeling-buitins.js'),
   path.join('build', 'eyeling-engine.js'),
   path.join('build', 'eyeling-api.js'),
 ];

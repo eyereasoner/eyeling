@@ -2484,334 +2484,6 @@ function reorderPremiseForConstraints(premise) {
 // @ts-nocheck
 /* eslint-disable */
 // ===========================================================================
-// Unification + substitution
-// ===========================================================================
-function containsVarTerm(t, v) {
-    if (t instanceof Var)
-        return t.name === v;
-    if (t instanceof ListTerm)
-        return t.elems.some((e) => containsVarTerm(e, v));
-    if (t instanceof OpenListTerm)
-        return t.prefix.some((e) => containsVarTerm(e, v)) || t.tailVar === v;
-    if (t instanceof GraphTerm)
-        return t.triples.some((tr) => containsVarTerm(tr.s, v) || containsVarTerm(tr.p, v) || containsVarTerm(tr.o, v));
-    return false;
-}
-function isGroundTermInGraph(t) {
-    // variables inside graph terms are treated as local placeholders,
-    // so they don't make the *surrounding triple* non-ground.
-    if (t instanceof OpenListTerm)
-        return false;
-    if (t instanceof ListTerm)
-        return t.elems.every((e) => isGroundTermInGraph(e));
-    if (t instanceof GraphTerm)
-        return t.triples.every((tr) => isGroundTripleInGraph(tr));
-    // Iri/Literal/Blank/Var are all OK inside formulas
-    return true;
-}
-function isGroundTripleInGraph(tr) {
-    return isGroundTermInGraph(tr.s) && isGroundTermInGraph(tr.p) && isGroundTermInGraph(tr.o);
-}
-function isGroundTerm(t) {
-    if (t instanceof Var)
-        return false;
-    if (t instanceof ListTerm)
-        return t.elems.every((e) => isGroundTerm(e));
-    if (t instanceof OpenListTerm)
-        return false;
-    if (t instanceof GraphTerm)
-        return t.triples.every((tr) => isGroundTripleInGraph(tr));
-    return true;
-}
-function isGroundTriple(tr) {
-    return isGroundTerm(tr.s) && isGroundTerm(tr.p) && isGroundTerm(tr.o);
-}
-// Canonical JSON-ish encoding for use as a Skolem cache key.
-// We only *call* this on ground terms in log:skolem, but it is
-// robust to seeing vars/open lists anyway.
-function skolemKeyFromTerm(t) {
-    function enc(u) {
-        if (u instanceof Iri)
-            return ['I', u.value];
-        if (u instanceof Literal)
-            return ['L', u.value];
-        if (u instanceof Blank)
-            return ['B', u.label];
-        if (u instanceof Var)
-            return ['V', u.name];
-        if (u instanceof ListTerm)
-            return ['List', u.elems.map(enc)];
-        if (u instanceof OpenListTerm)
-            return ['OpenList', u.prefix.map(enc), u.tailVar];
-        if (u instanceof GraphTerm)
-            return ['Graph', u.triples.map((tr) => [enc(tr.s), enc(tr.p), enc(tr.o)])];
-        return ['Other', String(u)];
-    }
-    return JSON.stringify(enc(t));
-}
-function applySubstTerm(t, s) {
-    // Common case: variable
-    if (t instanceof Var) {
-        // Fast path: unbound variable → no change
-        const first = s[t.name];
-        if (first === undefined) {
-            return t;
-        }
-        // Follow chains X -> Y -> ... until we hit a non-var or a cycle.
-        let cur = first;
-        const seen = new Set([t.name]);
-        while (cur instanceof Var) {
-            const name = cur.name;
-            if (seen.has(name))
-                break; // cycle
-            seen.add(name);
-            const nxt = s[name];
-            if (!nxt)
-                break;
-            cur = nxt;
-        }
-        if (cur instanceof Var) {
-            // Still a var: keep it as is (no need to clone)
-            return cur;
-        }
-        // Bound to a non-var term: apply substitution recursively in case it
-        // contains variables inside.
-        return applySubstTerm(cur, s);
-    }
-    // Non-variable terms
-    if (t instanceof ListTerm) {
-        return new ListTerm(t.elems.map((e) => applySubstTerm(e, s)));
-    }
-    if (t instanceof OpenListTerm) {
-        const newPrefix = t.prefix.map((e) => applySubstTerm(e, s));
-        const tailTerm = s[t.tailVar];
-        if (tailTerm !== undefined) {
-            const tailApplied = applySubstTerm(tailTerm, s);
-            if (tailApplied instanceof ListTerm) {
-                return new ListTerm(newPrefix.concat(tailApplied.elems));
-            }
-            else if (tailApplied instanceof OpenListTerm) {
-                return new OpenListTerm(newPrefix.concat(tailApplied.prefix), tailApplied.tailVar);
-            }
-            else {
-                return new OpenListTerm(newPrefix, t.tailVar);
-            }
-        }
-        else {
-            return new OpenListTerm(newPrefix, t.tailVar);
-        }
-    }
-    if (t instanceof GraphTerm) {
-        return new GraphTerm(t.triples.map((tr) => applySubstTriple(tr, s)));
-    }
-    return t;
-}
-function applySubstTriple(tr, s) {
-    return new Triple(applySubstTerm(tr.s, s), applySubstTerm(tr.p, s), applySubstTerm(tr.o, s));
-}
-function iriValue(t) {
-    return t instanceof Iri ? t.value : null;
-}
-function unifyOpenWithList(prefix, tailv, ys, subst) {
-    if (ys.length < prefix.length)
-        return null;
-    let s2 = { ...subst };
-    for (let i = 0; i < prefix.length; i++) {
-        s2 = unifyTerm(prefix[i], ys[i], s2);
-        if (s2 === null)
-            return null;
-    }
-    const rest = new ListTerm(ys.slice(prefix.length));
-    s2 = unifyTerm(new Var(tailv), rest, s2);
-    if (s2 === null)
-        return null;
-    return s2;
-}
-function unifyGraphTriples(xs, ys, subst) {
-    if (xs.length !== ys.length)
-        return null;
-    // Fast path: exact same sequence.
-    if (triplesListEqual(xs, ys))
-        return { ...subst };
-    // Backtracking match (order-insensitive), *threading* the substitution through.
-    const used = new Array(ys.length).fill(false);
-    function step(i, s) {
-        if (i >= xs.length)
-            return s;
-        const x = xs[i];
-        for (let j = 0; j < ys.length; j++) {
-            if (used[j])
-                continue;
-            const y = ys[j];
-            // Cheap pruning when both predicates are IRIs.
-            if (x.p instanceof Iri && y.p instanceof Iri && x.p.value !== y.p.value)
-                continue;
-            const s2 = unifyTriple(x, y, s); // IMPORTANT: use `s`, not {}
-            if (s2 === null)
-                continue;
-            used[j] = true;
-            const s3 = step(i + 1, s2);
-            if (s3 !== null)
-                return s3;
-            used[j] = false;
-        }
-        return null;
-    }
-    return step(0, { ...subst }); // IMPORTANT: start from the incoming subst
-}
-function unifyTerm(a, b, subst) {
-    return unifyTermWithOptions(a, b, subst, {
-        boolValueEq: true,
-        intDecimalEq: false,
-    });
-}
-function unifyTermListAppend(a, b, subst) {
-    // Keep list:append behavior: allow integer<->decimal exact equality,
-    // but do NOT add boolean-value equivalence (preserves current semantics).
-    return unifyTermWithOptions(a, b, subst, {
-        boolValueEq: false,
-        intDecimalEq: true,
-    });
-}
-function unifyTermWithOptions(a, b, subst, opts) {
-    a = applySubstTerm(a, subst);
-    b = applySubstTerm(b, subst);
-    // Variable binding
-    if (a instanceof Var) {
-        const v = a.name;
-        const t = b;
-        if (t instanceof Var && t.name === v)
-            return { ...subst };
-        if (containsVarTerm(t, v))
-            return null;
-        const s2 = { ...subst };
-        s2[v] = t;
-        return s2;
-    }
-    if (b instanceof Var) {
-        return unifyTermWithOptions(b, a, subst, opts);
-    }
-    // Exact matches
-    if (a instanceof Iri && b instanceof Iri && a.value === b.value)
-        return { ...subst };
-    if (a instanceof Literal && b instanceof Literal && a.value === b.value)
-        return { ...subst };
-    if (a instanceof Blank && b instanceof Blank && a.label === b.label)
-        return { ...subst };
-    // Plain string vs xsd:string equivalence
-    if (a instanceof Literal && b instanceof Literal) {
-        if (literalsEquivalentAsXsdString(a.value, b.value))
-            return { ...subst };
-    }
-    // Boolean-value equivalence (ONLY for normal unifyTerm)
-    if (opts.boolValueEq && a instanceof Literal && b instanceof Literal) {
-        const ai = parseBooleanLiteralInfo(a);
-        const bi = parseBooleanLiteralInfo(b);
-        if (ai && bi && ai.value === bi.value)
-            return { ...subst };
-    }
-    // Numeric-value match:
-    // - always allow equality when datatype matches (existing behavior)
-    // - optionally allow integer<->decimal exact equality (list:append only)
-    if (a instanceof Literal && b instanceof Literal) {
-        const ai = parseNumericLiteralInfo(a);
-        const bi = parseNumericLiteralInfo(b);
-        if (ai && bi) {
-            if (ai.dt === bi.dt) {
-                if (ai.kind === 'bigint' && bi.kind === 'bigint') {
-                    if (ai.value === bi.value)
-                        return { ...subst };
-                }
-                else {
-                    const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
-                    const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
-                    if (!Number.isNaN(an) && !Number.isNaN(bn) && an === bn)
-                        return { ...subst };
-                }
-            }
-            if (opts.intDecimalEq) {
-                const intDt = XSD_NS + 'integer';
-                const decDt = XSD_NS + 'decimal';
-                if ((ai.dt === intDt && bi.dt === decDt) || (ai.dt === decDt && bi.dt === intDt)) {
-                    const intInfo = ai.dt === intDt ? ai : bi; // bigint
-                    const decInfo = ai.dt === decDt ? ai : bi; // number + lexStr
-                    const dec = parseXsdDecimalToBigIntScale(decInfo.lexStr);
-                    if (dec) {
-                        const scaledInt = intInfo.value * pow10n(dec.scale);
-                        if (scaledInt === dec.num)
-                            return { ...subst };
-                    }
-                }
-            }
-        }
-    }
-    // Open list vs concrete list
-    if (a instanceof OpenListTerm && b instanceof ListTerm) {
-        return unifyOpenWithList(a.prefix, a.tailVar, b.elems, subst);
-    }
-    if (a instanceof ListTerm && b instanceof OpenListTerm) {
-        return unifyOpenWithList(b.prefix, b.tailVar, a.elems, subst);
-    }
-    // Open list vs open list
-    if (a instanceof OpenListTerm && b instanceof OpenListTerm) {
-        if (a.tailVar !== b.tailVar || a.prefix.length !== b.prefix.length)
-            return null;
-        let s2 = { ...subst };
-        for (let i = 0; i < a.prefix.length; i++) {
-            s2 = unifyTermWithOptions(a.prefix[i], b.prefix[i], s2, opts);
-            if (s2 === null)
-                return null;
-        }
-        return s2;
-    }
-    // List terms
-    if (a instanceof ListTerm && b instanceof ListTerm) {
-        if (a.elems.length !== b.elems.length)
-            return null;
-        let s2 = { ...subst };
-        for (let i = 0; i < a.elems.length; i++) {
-            s2 = unifyTermWithOptions(a.elems[i], b.elems[i], s2, opts);
-            if (s2 === null)
-                return null;
-        }
-        return s2;
-    }
-    // Graphs
-    if (a instanceof GraphTerm && b instanceof GraphTerm) {
-        if (alphaEqGraphTriples(a.triples, b.triples))
-            return { ...subst };
-        return unifyGraphTriples(a.triples, b.triples, subst);
-    }
-    return null;
-}
-function unifyTriple(pat, fact, subst) {
-    // Predicates are usually the cheapest and most selective
-    const s1 = unifyTerm(pat.p, fact.p, subst);
-    if (s1 === null)
-        return null;
-    const s2 = unifyTerm(pat.s, fact.s, s1);
-    if (s2 === null)
-        return null;
-    const s3 = unifyTerm(pat.o, fact.o, s2);
-    return s3;
-}
-function composeSubst(outer, delta) {
-    if (!delta || Object.keys(delta).length === 0) {
-        return { ...outer };
-    }
-    const out = { ...outer };
-    for (const [k, v] of Object.entries(delta)) {
-        if (out.hasOwnProperty(k)) {
-            if (!termsEqual(out[k], v))
-                return null;
-        }
-        else {
-            out[k] = v;
-        }
-    }
-    return out;
-}
-// ===========================================================================
 // BUILTINS
 // ===========================================================================
 function literalParts(lit) {
@@ -6093,6 +5765,336 @@ function isBuiltinPred(p) {
         v.startsWith(STRING_NS) ||
         v.startsWith(TIME_NS) ||
         v.startsWith(LIST_NS));
+}
+// @ts-nocheck
+/* eslint-disable */
+// ===========================================================================
+// Unification + substitution
+// ===========================================================================
+function containsVarTerm(t, v) {
+    if (t instanceof Var)
+        return t.name === v;
+    if (t instanceof ListTerm)
+        return t.elems.some((e) => containsVarTerm(e, v));
+    if (t instanceof OpenListTerm)
+        return t.prefix.some((e) => containsVarTerm(e, v)) || t.tailVar === v;
+    if (t instanceof GraphTerm)
+        return t.triples.some((tr) => containsVarTerm(tr.s, v) || containsVarTerm(tr.p, v) || containsVarTerm(tr.o, v));
+    return false;
+}
+function isGroundTermInGraph(t) {
+    // variables inside graph terms are treated as local placeholders,
+    // so they don't make the *surrounding triple* non-ground.
+    if (t instanceof OpenListTerm)
+        return false;
+    if (t instanceof ListTerm)
+        return t.elems.every((e) => isGroundTermInGraph(e));
+    if (t instanceof GraphTerm)
+        return t.triples.every((tr) => isGroundTripleInGraph(tr));
+    // Iri/Literal/Blank/Var are all OK inside formulas
+    return true;
+}
+function isGroundTripleInGraph(tr) {
+    return isGroundTermInGraph(tr.s) && isGroundTermInGraph(tr.p) && isGroundTermInGraph(tr.o);
+}
+function isGroundTerm(t) {
+    if (t instanceof Var)
+        return false;
+    if (t instanceof ListTerm)
+        return t.elems.every((e) => isGroundTerm(e));
+    if (t instanceof OpenListTerm)
+        return false;
+    if (t instanceof GraphTerm)
+        return t.triples.every((tr) => isGroundTripleInGraph(tr));
+    return true;
+}
+function isGroundTriple(tr) {
+    return isGroundTerm(tr.s) && isGroundTerm(tr.p) && isGroundTerm(tr.o);
+}
+// Canonical JSON-ish encoding for use as a Skolem cache key.
+// We only *call* this on ground terms in log:skolem, but it is
+// robust to seeing vars/open lists anyway.
+function skolemKeyFromTerm(t) {
+    function enc(u) {
+        if (u instanceof Iri)
+            return ['I', u.value];
+        if (u instanceof Literal)
+            return ['L', u.value];
+        if (u instanceof Blank)
+            return ['B', u.label];
+        if (u instanceof Var)
+            return ['V', u.name];
+        if (u instanceof ListTerm)
+            return ['List', u.elems.map(enc)];
+        if (u instanceof OpenListTerm)
+            return ['OpenList', u.prefix.map(enc), u.tailVar];
+        if (u instanceof GraphTerm)
+            return ['Graph', u.triples.map((tr) => [enc(tr.s), enc(tr.p), enc(tr.o)])];
+        return ['Other', String(u)];
+    }
+    return JSON.stringify(enc(t));
+}
+function applySubstTerm(t, s) {
+    // Common case: variable
+    if (t instanceof Var) {
+        // Fast path: unbound variable → no change
+        const first = s[t.name];
+        if (first === undefined) {
+            return t;
+        }
+        // Follow chains X -> Y -> ... until we hit a non-var or a cycle.
+        let cur = first;
+        const seen = new Set([t.name]);
+        while (cur instanceof Var) {
+            const name = cur.name;
+            if (seen.has(name))
+                break; // cycle
+            seen.add(name);
+            const nxt = s[name];
+            if (!nxt)
+                break;
+            cur = nxt;
+        }
+        if (cur instanceof Var) {
+            // Still a var: keep it as is (no need to clone)
+            return cur;
+        }
+        // Bound to a non-var term: apply substitution recursively in case it
+        // contains variables inside.
+        return applySubstTerm(cur, s);
+    }
+    // Non-variable terms
+    if (t instanceof ListTerm) {
+        return new ListTerm(t.elems.map((e) => applySubstTerm(e, s)));
+    }
+    if (t instanceof OpenListTerm) {
+        const newPrefix = t.prefix.map((e) => applySubstTerm(e, s));
+        const tailTerm = s[t.tailVar];
+        if (tailTerm !== undefined) {
+            const tailApplied = applySubstTerm(tailTerm, s);
+            if (tailApplied instanceof ListTerm) {
+                return new ListTerm(newPrefix.concat(tailApplied.elems));
+            }
+            else if (tailApplied instanceof OpenListTerm) {
+                return new OpenListTerm(newPrefix.concat(tailApplied.prefix), tailApplied.tailVar);
+            }
+            else {
+                return new OpenListTerm(newPrefix, t.tailVar);
+            }
+        }
+        else {
+            return new OpenListTerm(newPrefix, t.tailVar);
+        }
+    }
+    if (t instanceof GraphTerm) {
+        return new GraphTerm(t.triples.map((tr) => applySubstTriple(tr, s)));
+    }
+    return t;
+}
+function applySubstTriple(tr, s) {
+    return new Triple(applySubstTerm(tr.s, s), applySubstTerm(tr.p, s), applySubstTerm(tr.o, s));
+}
+function iriValue(t) {
+    return t instanceof Iri ? t.value : null;
+}
+function unifyOpenWithList(prefix, tailv, ys, subst) {
+    if (ys.length < prefix.length)
+        return null;
+    let s2 = { ...subst };
+    for (let i = 0; i < prefix.length; i++) {
+        s2 = unifyTerm(prefix[i], ys[i], s2);
+        if (s2 === null)
+            return null;
+    }
+    const rest = new ListTerm(ys.slice(prefix.length));
+    s2 = unifyTerm(new Var(tailv), rest, s2);
+    if (s2 === null)
+        return null;
+    return s2;
+}
+function unifyGraphTriples(xs, ys, subst) {
+    if (xs.length !== ys.length)
+        return null;
+    // Fast path: exact same sequence.
+    if (triplesListEqual(xs, ys))
+        return { ...subst };
+    // Backtracking match (order-insensitive), *threading* the substitution through.
+    const used = new Array(ys.length).fill(false);
+    function step(i, s) {
+        if (i >= xs.length)
+            return s;
+        const x = xs[i];
+        for (let j = 0; j < ys.length; j++) {
+            if (used[j])
+                continue;
+            const y = ys[j];
+            // Cheap pruning when both predicates are IRIs.
+            if (x.p instanceof Iri && y.p instanceof Iri && x.p.value !== y.p.value)
+                continue;
+            const s2 = unifyTriple(x, y, s); // IMPORTANT: use `s`, not {}
+            if (s2 === null)
+                continue;
+            used[j] = true;
+            const s3 = step(i + 1, s2);
+            if (s3 !== null)
+                return s3;
+            used[j] = false;
+        }
+        return null;
+    }
+    return step(0, { ...subst }); // IMPORTANT: start from the incoming subst
+}
+function unifyTerm(a, b, subst) {
+    return unifyTermWithOptions(a, b, subst, {
+        boolValueEq: true,
+        intDecimalEq: false,
+    });
+}
+function unifyTermListAppend(a, b, subst) {
+    // Keep list:append behavior: allow integer<->decimal exact equality,
+    // but do NOT add boolean-value equivalence (preserves current semantics).
+    return unifyTermWithOptions(a, b, subst, {
+        boolValueEq: false,
+        intDecimalEq: true,
+    });
+}
+function unifyTermWithOptions(a, b, subst, opts) {
+    a = applySubstTerm(a, subst);
+    b = applySubstTerm(b, subst);
+    // Variable binding
+    if (a instanceof Var) {
+        const v = a.name;
+        const t = b;
+        if (t instanceof Var && t.name === v)
+            return { ...subst };
+        if (containsVarTerm(t, v))
+            return null;
+        const s2 = { ...subst };
+        s2[v] = t;
+        return s2;
+    }
+    if (b instanceof Var) {
+        return unifyTermWithOptions(b, a, subst, opts);
+    }
+    // Exact matches
+    if (a instanceof Iri && b instanceof Iri && a.value === b.value)
+        return { ...subst };
+    if (a instanceof Literal && b instanceof Literal && a.value === b.value)
+        return { ...subst };
+    if (a instanceof Blank && b instanceof Blank && a.label === b.label)
+        return { ...subst };
+    // Plain string vs xsd:string equivalence
+    if (a instanceof Literal && b instanceof Literal) {
+        if (literalsEquivalentAsXsdString(a.value, b.value))
+            return { ...subst };
+    }
+    // Boolean-value equivalence (ONLY for normal unifyTerm)
+    if (opts.boolValueEq && a instanceof Literal && b instanceof Literal) {
+        const ai = parseBooleanLiteralInfo(a);
+        const bi = parseBooleanLiteralInfo(b);
+        if (ai && bi && ai.value === bi.value)
+            return { ...subst };
+    }
+    // Numeric-value match:
+    // - always allow equality when datatype matches (existing behavior)
+    // - optionally allow integer<->decimal exact equality (list:append only)
+    if (a instanceof Literal && b instanceof Literal) {
+        const ai = parseNumericLiteralInfo(a);
+        const bi = parseNumericLiteralInfo(b);
+        if (ai && bi) {
+            if (ai.dt === bi.dt) {
+                if (ai.kind === 'bigint' && bi.kind === 'bigint') {
+                    if (ai.value === bi.value)
+                        return { ...subst };
+                }
+                else {
+                    const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
+                    const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
+                    if (!Number.isNaN(an) && !Number.isNaN(bn) && an === bn)
+                        return { ...subst };
+                }
+            }
+            if (opts.intDecimalEq) {
+                const intDt = XSD_NS + 'integer';
+                const decDt = XSD_NS + 'decimal';
+                if ((ai.dt === intDt && bi.dt === decDt) || (ai.dt === decDt && bi.dt === intDt)) {
+                    const intInfo = ai.dt === intDt ? ai : bi; // bigint
+                    const decInfo = ai.dt === decDt ? ai : bi; // number + lexStr
+                    const dec = parseXsdDecimalToBigIntScale(decInfo.lexStr);
+                    if (dec) {
+                        const scaledInt = intInfo.value * pow10n(dec.scale);
+                        if (scaledInt === dec.num)
+                            return { ...subst };
+                    }
+                }
+            }
+        }
+    }
+    // Open list vs concrete list
+    if (a instanceof OpenListTerm && b instanceof ListTerm) {
+        return unifyOpenWithList(a.prefix, a.tailVar, b.elems, subst);
+    }
+    if (a instanceof ListTerm && b instanceof OpenListTerm) {
+        return unifyOpenWithList(b.prefix, b.tailVar, a.elems, subst);
+    }
+    // Open list vs open list
+    if (a instanceof OpenListTerm && b instanceof OpenListTerm) {
+        if (a.tailVar !== b.tailVar || a.prefix.length !== b.prefix.length)
+            return null;
+        let s2 = { ...subst };
+        for (let i = 0; i < a.prefix.length; i++) {
+            s2 = unifyTermWithOptions(a.prefix[i], b.prefix[i], s2, opts);
+            if (s2 === null)
+                return null;
+        }
+        return s2;
+    }
+    // List terms
+    if (a instanceof ListTerm && b instanceof ListTerm) {
+        if (a.elems.length !== b.elems.length)
+            return null;
+        let s2 = { ...subst };
+        for (let i = 0; i < a.elems.length; i++) {
+            s2 = unifyTermWithOptions(a.elems[i], b.elems[i], s2, opts);
+            if (s2 === null)
+                return null;
+        }
+        return s2;
+    }
+    // Graphs
+    if (a instanceof GraphTerm && b instanceof GraphTerm) {
+        if (alphaEqGraphTriples(a.triples, b.triples))
+            return { ...subst };
+        return unifyGraphTriples(a.triples, b.triples, subst);
+    }
+    return null;
+}
+function unifyTriple(pat, fact, subst) {
+    // Predicates are usually the cheapest and most selective
+    const s1 = unifyTerm(pat.p, fact.p, subst);
+    if (s1 === null)
+        return null;
+    const s2 = unifyTerm(pat.s, fact.s, s1);
+    if (s2 === null)
+        return null;
+    const s3 = unifyTerm(pat.o, fact.o, s2);
+    return s3;
+}
+function composeSubst(outer, delta) {
+    if (!delta || Object.keys(delta).length === 0) {
+        return { ...outer };
+    }
+    const out = { ...outer };
+    for (const [k, v] of Object.entries(delta)) {
+        if (out.hasOwnProperty(k)) {
+            if (!termsEqual(out[k], v))
+                return null;
+        }
+        else {
+            out[k] = v;
+        }
+    }
+    return out;
 }
 // ===========================================================================
 // Backward proof (SLD-style)
