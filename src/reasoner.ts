@@ -188,6 +188,7 @@ function __fileIriToPath(fileIri) {
 
 function __readFileText(pathOrFileIri) {
   if (!__IS_NODE) return null;
+  // Node-only. Kept as a runtime require and marked as external in the bundle build.
   const fs = require('fs');
   let path = pathOrFileIri;
   if (__isFileIri(pathOrFileIri)) path = __fileIriToPath(pathOrFileIri);
@@ -200,6 +201,7 @@ function __readFileText(pathOrFileIri) {
 
 function __fetchHttpTextViaSubprocess(url) {
   if (!__IS_NODE) return null;
+  // Node-only. Kept as a runtime require and marked as external in the bundle build.
   const cp = require('child_process');
   // Use a subprocess so this code remains synchronous without rewriting the whole reasoner to async.
   const script = `

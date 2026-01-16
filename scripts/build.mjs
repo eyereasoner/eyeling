@@ -14,11 +14,21 @@ await build({
   entryPoints: [path.join(root, 'src/eyeling.ts')],
   bundle: true,
 
-  // UMD-ish single file: runs in browser (no CommonJS wrapper) AND in Node.
+  // UMD-ish single file: runs in browser/worker (no CommonJS wrapper) AND in Node.
   // In Node, src/eyeling.ts sets module.exports when available.
   format: 'iife',
-  platform: 'node',
-  target: ['node18'],
+  // IMPORTANT: don't set platform="node".
+  // That lets esbuild constant-fold `typeof module !== 'undefined'` to true,
+  // which breaks browser/worker builds with `ReferenceError: module is not defined`.
+  platform: 'neutral',
+  target: ['es2020'],
+
+  // Keep Node builtins as runtime requires so the bundle still works in Node,
+  // but doesn't try to resolve/polyfill them for the browser.
+  external: [
+    'fs', 'child_process', 'crypto', 'http', 'https', 'url',
+    'node:fs', 'node:child_process', 'node:crypto', 'node:http', 'node:https', 'node:url',
+  ],
 
   outfile: path.join(root, 'eyeling.js'),
   banner: { js: '#!/usr/bin/env node\n' },

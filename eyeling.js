@@ -1,36 +1,21 @@
 #!/usr/bin/env node
 
 (() => {
+  var __getOwnPropNames = Object.getOwnPropertyNames;
   var __require = /* @__PURE__ */ ((x) => typeof require !== "undefined" ? require : typeof Proxy !== "undefined" ? new Proxy(x, {
     get: (a, b) => (typeof require !== "undefined" ? require : a)[b]
   }) : x)(function(x) {
     if (typeof require !== "undefined") return require.apply(this, arguments);
     throw Error('Dynamic require of "' + x + '" is not supported');
   });
+  var __esm = (fn, res) => function __init() {
+    return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+  };
+  var __commonJS = (cb, mod) => function __require2() {
+    return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+  };
 
   // src/reasoner.ts
-  var version = "dev";
-  try {
-    if (typeof __require === "function") version = __require("./package.json").version || version;
-  } catch (_) {
-  }
-  var nodeCrypto = null;
-  try {
-    if (typeof __require === "function") nodeCrypto = __require("crypto");
-  } catch (_) {
-  }
-  var RDF_NS = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
-  var RDFS_NS = "http://www.w3.org/2000/01/rdf-schema#";
-  var OWL_NS2 = "http://www.w3.org/2002/07/owl#";
-  var XSD_NS = "http://www.w3.org/2001/XMLSchema#";
-  var CRYPTO_NS = "http://www.w3.org/2000/10/swap/crypto#";
-  var MATH_NS = "http://www.w3.org/2000/10/swap/math#";
-  var TIME_NS = "http://www.w3.org/2000/10/swap/time#";
-  var LIST_NS = "http://www.w3.org/2000/10/swap/list#";
-  var LOG_NS = "http://www.w3.org/2000/10/swap/log#";
-  var STRING_NS = "http://www.w3.org/2000/10/swap/string#";
-  var SKOLEM_NS = "https://eyereasoner.github.io/.well-known/genid/";
-  var RDF_JSON_DT = RDF_NS + "JSON";
   function isRdfJsonDatatype(dt) {
     return dt === null || dt === RDF_JSON_DT || dt === "rdf:JSON";
   }
@@ -46,17 +31,6 @@
     }
     return internLiteral(JSON.stringify(jsonText) + "^^<" + RDF_JSON_DT + ">");
   }
-  var skolemCache = /* @__PURE__ */ new Map();
-  var __literalPartsCache = /* @__PURE__ */ new Map();
-  var __parseNumCache = /* @__PURE__ */ new Map();
-  var __parseIntCache = /* @__PURE__ */ new Map();
-  var __parseNumericInfoCache = /* @__PURE__ */ new Map();
-  var jsonPointerCache = /* @__PURE__ */ new Map();
-  var __logContentCache = /* @__PURE__ */ new Map();
-  var __logSemanticsCache = /* @__PURE__ */ new Map();
-  var __logSemanticsOrErrorCache = /* @__PURE__ */ new Map();
-  var __logConclusionCache = /* @__PURE__ */ new WeakMap();
-  var enforceHttpsEnabled = false;
   function setEnforceHttpsEnabled(v) {
     enforceHttpsEnabled = !!v;
   }
@@ -67,7 +41,6 @@
     if (!enforceHttpsEnabled) return iri;
     return typeof iri === "string" && iri.startsWith("http://") ? "https://" + iri.slice("http://".length) : iri;
   }
-  var __IS_NODE = typeof process !== "undefined" && !!(process.versions && process.versions.node);
   function __hasXmlHttpRequest() {
     return typeof XMLHttpRequest !== "undefined";
   }
@@ -81,11 +54,11 @@
       return ref;
     }
   }
-  function __fetchHttpTextSyncBrowser(url) {
+  function __fetchHttpTextSyncBrowser(url2) {
     if (!__hasXmlHttpRequest()) return null;
     try {
       const xhr = new XMLHttpRequest();
-      xhr.open("GET", url, false);
+      xhr.open("GET", url2, false);
       try {
         xhr.setRequestHeader(
           "Accept",
@@ -125,7 +98,7 @@
   }
   function __readFileText(pathOrFileIri) {
     if (!__IS_NODE) return null;
-    const fs = __require("fs");
+    const fs = eval("require")("fs");
     let path = pathOrFileIri;
     if (__isFileIri(pathOrFileIri)) path = __fileIriToPath(pathOrFileIri);
     try {
@@ -136,7 +109,7 @@
   }
   function __fetchHttpTextViaSubprocess(url) {
     if (!__IS_NODE) return null;
-    const cp = __require("child_process");
+    const cp = eval("require")("child_process");
     const script = `
     const enforceHttps = ${enforceHttpsEnabled ? "true" : "false"};
     const url = process.argv[1];
@@ -209,8 +182,8 @@
         text = __readFileText(key);
       }
     } else {
-      const url = typeof norm === "string" && norm ? norm : key;
-      if (__isHttpIri(url)) text = __fetchHttpTextSyncBrowser(url);
+      const url2 = typeof norm === "string" && norm ? norm : key;
+      if (__isHttpIri(url2)) text = __fetchHttpTextSyncBrowser(url2);
     }
     __logContentCache.set(key, text);
     return text;
@@ -226,11 +199,11 @@
     const all = triples.slice();
     const impliesPred = internIri(LOG_NS + "implies");
     const impliedByPred = internIri(LOG_NS + "impliedBy");
-    for (const r of frules) {
-      all.push(new Triple(new GraphTerm(r.premise), impliesPred, new GraphTerm(r.conclusion)));
+    for (const r2 of frules) {
+      all.push(new Triple(new GraphTerm(r2.premise), impliesPred, new GraphTerm(r2.conclusion)));
     }
-    for (const r of brules) {
-      all.push(new Triple(new GraphTerm(r.conclusion), impliedByPred, new GraphTerm(r.premise)));
+    for (const r2 of brules) {
+      all.push(new Triple(new GraphTerm(r2.conclusion), impliedByPred, new GraphTerm(r2.premise)));
     }
     return new GraphTerm(all);
   }
@@ -312,19 +285,18 @@
     __logConclusionCache.set(formula, out);
     return out;
   }
-  var proofCommentsEnabled = false;
   function setProofCommentsEnabled(v) {
     proofCommentsEnabled = !!v;
   }
-  var superRestrictedMode = false;
+  function getProofCommentsEnabled() {
+    return proofCommentsEnabled;
+  }
   function setSuperRestrictedMode(v) {
     superRestrictedMode = !!v;
   }
-  var __tracePrefixes = null;
-  var __traceDefaultPrefixes = null;
-  var __traceTermFormatter = null;
-  var __n3Lex = null;
-  var __N3ParserCtor = null;
+  function getSuperRestrictedMode() {
+    return superRestrictedMode;
+  }
   function installTraceFormatting(termFormatter, defaultPrefixes) {
     __traceTermFormatter = termFormatter;
     __traceDefaultPrefixes = defaultPrefixes;
@@ -349,8 +321,6 @@
     } catch (_) {
     }
   }
-  var fixedNowLex = null;
-  var runNowLex = null;
   function localIsoDateTimeString(d) {
     function pad(n, width = 2) {
       return String(n).padStart(width, "0");
@@ -411,28 +381,6 @@
     const hex = [h1, h2, h3, h4].map((h) => h.toString(16).padStart(8, "0")).join("");
     return hex.slice(0, 8) + "-" + hex.slice(8, 12) + "-" + hex.slice(12, 16) + "-" + hex.slice(16, 20) + "-" + hex.slice(20);
   }
-  var Term = class {
-  };
-  var Iri = class extends Term {
-    constructor(value) {
-      super();
-      this.value = value;
-    }
-  };
-  var Literal = class extends Term {
-    constructor(value) {
-      super();
-      this.value = value;
-    }
-  };
-  var Var = class extends Term {
-    constructor(name) {
-      super();
-      this.name = name;
-    }
-  };
-  var __iriIntern = /* @__PURE__ */ new Map();
-  var __literalIntern = /* @__PURE__ */ new Map();
   function internIri(value) {
     let t = __iriIntern.get(value);
     if (!t) {
@@ -449,55 +397,6 @@
     }
     return t;
   }
-  var Blank = class extends Term {
-    constructor(label) {
-      super();
-      this.label = label;
-    }
-  };
-  var ListTerm = class extends Term {
-    constructor(elems) {
-      super();
-      this.elems = elems;
-    }
-  };
-  var OpenListTerm = class extends Term {
-    constructor(prefix, tailVar) {
-      super();
-      this.prefix = prefix;
-      this.tailVar = tailVar;
-    }
-  };
-  var GraphTerm = class extends Term {
-    constructor(triples) {
-      super();
-      this.triples = triples;
-    }
-  };
-  var Triple = class {
-    constructor(s, p, o) {
-      this.s = s;
-      this.p = p;
-      this.o = o;
-    }
-  };
-  var Rule = class {
-    constructor(premise, conclusion, isForward, isFuse, headBlankLabels) {
-      this.premise = premise;
-      this.conclusion = conclusion;
-      this.isForward = isForward;
-      this.isFuse = isFuse;
-      this.headBlankLabels = headBlankLabels || /* @__PURE__ */ new Set();
-    }
-  };
-  var DerivedFact = class {
-    constructor(fact, rule, premises, subst) {
-      this.fact = fact;
-      this.rule = rule;
-      this.premises = premises;
-      this.subst = subst;
-    }
-  };
   function collectVarsInTerm(t, acc) {
     if (t instanceof Var) {
       acc.add(t.name);
@@ -811,6 +710,43 @@
     }
     return step(0, {}, {});
   }
+  function alphaEqTerm(a, b, bmap) {
+    if (a instanceof Blank && b instanceof Blank) {
+      const x = a.label;
+      const y = b.label;
+      if (bmap.hasOwnProperty(x)) {
+        return bmap[x] === y;
+      } else {
+        bmap[x] = y;
+        return true;
+      }
+    }
+    if (a instanceof Iri && b instanceof Iri) return a.value === b.value;
+    if (a instanceof Literal && b instanceof Literal) return a.value === b.value;
+    if (a instanceof Var && b instanceof Var) return a.name === b.name;
+    if (a instanceof ListTerm && b instanceof ListTerm) {
+      if (a.elems.length !== b.elems.length) return false;
+      for (let i = 0; i < a.elems.length; i++) {
+        if (!alphaEqTerm(a.elems[i], b.elems[i], bmap)) return false;
+      }
+      return true;
+    }
+    if (a instanceof OpenListTerm && b instanceof OpenListTerm) {
+      if (a.tailVar !== b.tailVar || a.prefix.length !== b.prefix.length) return false;
+      for (let i = 0; i < a.prefix.length; i++) {
+        if (!alphaEqTerm(a.prefix[i], b.prefix[i], bmap)) return false;
+      }
+      return true;
+    }
+    if (a instanceof GraphTerm && b instanceof GraphTerm) {
+      return alphaEqGraphTriples(a.triples, b.triples);
+    }
+    return false;
+  }
+  function alphaEqTriple(a, b) {
+    const bmap = {};
+    return alphaEqTerm(a.s, b.s, bmap) && alphaEqTerm(a.p, b.p, bmap) && alphaEqTerm(a.o, b.o, bmap);
+  }
   function termFastKey(t) {
     if (t instanceof Iri) return "I:" + t.value;
     if (t instanceof Literal) return "L:" + normalizeLiteralForFastKey(t.value);
@@ -947,11 +883,11 @@
       enumerable: false,
       writable: true
     });
-    for (const r of backRules) indexBackRule(backRules, r);
+    for (const r2 of backRules) indexBackRule(backRules, r2);
   }
-  function indexBackRule(backRules, r) {
-    if (!r || !r.conclusion || r.conclusion.length !== 1) return;
-    const head = r.conclusion[0];
+  function indexBackRule(backRules, r2) {
+    if (!r2 || !r2.conclusion || r2.conclusion.length !== 1) return;
+    const head = r2.conclusion[0];
     if (head && head.p instanceof Iri) {
       const k = head.p.value;
       let bucket = backRules.__byHeadPred.get(k);
@@ -959,16 +895,16 @@
         bucket = [];
         backRules.__byHeadPred.set(k, bucket);
       }
-      bucket.push(r);
+      bucket.push(r2);
     } else {
-      backRules.__wildHeadPred.push(r);
+      backRules.__wildHeadPred.push(r2);
     }
   }
   function isRdfTypePred(p) {
     return p instanceof Iri && p.value === RDF_NS + "type";
   }
   function isOwlSameAsPred(t) {
-    return t instanceof Iri && t.value === OWL_NS2 + "sameAs";
+    return t instanceof Iri && t.value === OWL_NS + "sameAs";
   }
   function isLogImplies(p) {
     return p instanceof Iri && p.value === LOG_NS + "implies";
@@ -1366,8 +1302,8 @@
         case "U": {
           const hex = s.slice(i + 1, i + 9);
           if (/^[0-9A-Fa-f]{8}$/.test(hex)) {
-            const cp = parseInt(hex, 16);
-            if (cp >= 0 && cp <= 1114111) out += String.fromCodePoint(cp);
+            const cp2 = parseInt(hex, 16);
+            if (cp2 >= 0 && cp2 <= 1114111) out += String.fromCodePoint(cp2);
             else out += "\\U" + hex;
             i += 8;
           } else {
@@ -1573,25 +1509,6 @@
       return null;
     }
   }
-  var XSD_DECIMAL_DT = XSD_NS + "decimal";
-  var XSD_DOUBLE_DT = XSD_NS + "double";
-  var XSD_FLOAT_DT = XSD_NS + "float";
-  var XSD_INTEGER_DT = XSD_NS + "integer";
-  var XSD_INTEGER_DERIVED_DTS = /* @__PURE__ */ new Set([
-    XSD_INTEGER_DT,
-    XSD_NS + "nonPositiveInteger",
-    XSD_NS + "negativeInteger",
-    XSD_NS + "long",
-    XSD_NS + "int",
-    XSD_NS + "short",
-    XSD_NS + "byte",
-    XSD_NS + "nonNegativeInteger",
-    XSD_NS + "unsignedLong",
-    XSD_NS + "unsignedInt",
-    XSD_NS + "unsignedShort",
-    XSD_NS + "unsignedByte",
-    XSD_NS + "positiveInteger"
-  ]);
   function parseBooleanLiteralInfo(t) {
     if (!(t instanceof Literal)) return null;
     const boolDt = XSD_NS + "boolean";
@@ -1999,18 +1916,18 @@
     return numericDatatypeFromLex(lex2);
   }
   function commonNumericDatatype(terms, outTerm) {
-    let r = 0;
+    let r2 = 0;
     const all = Array.isArray(terms) ? terms.slice() : [];
     if (outTerm) all.push(outTerm);
     for (const t of all) {
       const dt = numericDatatypeOfTerm(t);
       if (!dt) continue;
       const rr = numericRank(dt);
-      if (rr > r) r = rr;
+      if (rr > r2) r2 = rr;
     }
-    if (r === 3) return XSD_DOUBLE_DT;
-    if (r === 2) return XSD_FLOAT_DT;
-    if (r === 1) return XSD_DECIMAL_DT;
+    if (r2 === 3) return XSD_DOUBLE_DT;
+    if (r2 === 2) return XSD_FLOAT_DT;
+    if (r2 === 1) return XSD_DECIMAL_DT;
     return XSD_INTEGER_DT;
   }
   function makeNumericOutputLiteral(val, dt) {
@@ -2467,8 +2384,8 @@
       const bi = parseIntLiteral(b0);
       if (ai !== null && bi !== null) {
         if (bi === 0n) return [];
-        const r = ai % bi;
-        const lit2 = makeNumericOutputLiteral(r, XSD_INTEGER_DT);
+        const r2 = ai % bi;
+        const lit2 = makeNumericOutputLiteral(r2, XSD_INTEGER_DT);
         if (g.o instanceof Var) {
           const s2 = { ...subst };
           s2[g.o.name] = lit2;
@@ -2476,8 +2393,8 @@
         }
         if (g.o instanceof Blank) return [{ ...subst }];
         const oi = parseIntLiteral(g.o);
-        if (oi !== null && oi === r) return [{ ...subst }];
-        if (numEqualTerm(g.o, Number(r))) return [{ ...subst }];
+        if (oi !== null && oi === r2) return [{ ...subst }];
+        if (numEqualTerm(g.o, Number(r2))) return [{ ...subst }];
         return [];
       }
       const a = parseNum(a0);
@@ -3176,9 +3093,9 @@
       const results = [];
       for (const r0 of allFw) {
         if (!r0.isForward) continue;
-        const r = standardizeRule(r0, varGen);
-        const premF = new GraphTerm(r.premise);
-        const concTerm = r0.isFuse ? internLiteral("false") : new GraphTerm(r.conclusion);
+        const r2 = standardizeRule(r0, varGen);
+        const premF = new GraphTerm(r2.premise);
+        const concTerm = r0.isFuse ? internLiteral("false") : new GraphTerm(r2.conclusion);
         let s2 = unifyTerm(goal.s, premF, subst);
         if (s2 === null) continue;
         s2 = unifyTerm(goal.o, concTerm, s2);
@@ -3192,9 +3109,9 @@
       const results = [];
       for (const r0 of allBw) {
         if (r0.isForward) continue;
-        const r = standardizeRule(r0, varGen);
-        const headF = new GraphTerm(r.conclusion);
-        const bodyF = new GraphTerm(r.premise);
+        const r2 = standardizeRule(r0, varGen);
+        const headF = new GraphTerm(r2.conclusion);
+        const bodyF = new GraphTerm(r2.premise);
         let s2 = unifyTerm(goal.s, headF, subst);
         if (s2 === null) continue;
         s2 = unifyTerm(goal.o, bodyF, s2);
@@ -3869,11 +3786,11 @@
         ensureBackRuleIndexes(backRules);
         const candRules = (backRules.__byHeadPred.get(goal0.p.value) || []).concat(backRules.__wildHeadPred);
         const nextStates = [];
-        for (const r of candRules) {
-          if (r.conclusion.length !== 1) continue;
-          const rawHead = r.conclusion[0];
+        for (const r2 of candRules) {
+          if (r2.conclusion.length !== 1) continue;
+          const rawHead = r2.conclusion[0];
           if (rawHead.p instanceof Iri && rawHead.p.value !== goal0.p.value) continue;
-          const rStd = standardizeRule(r, varGen);
+          const rStd = standardizeRule(r2, varGen);
           const head = rStd.conclusion[0];
           const deltaHead = unifyTriple(head, goal0, {});
           if (deltaHead === null) continue;
@@ -3945,11 +3862,11 @@
           }
         }
       }
-      for (const r of forwardRules) {
-        for (const tr of r.premise) scanTriple(tr);
+      for (const r2 of forwardRules) {
+        for (const tr of r2.premise) scanTriple(tr);
       }
-      for (const r of backRules) {
-        for (const tr of r.premise) scanTriple(tr);
+      for (const r2 of backRules) {
+        for (const tr of r2.premise) scanTriple(tr);
       }
       return maxP;
     }
@@ -4008,13 +3925,13 @@
           }, isStrictGroundTriple = function(tr) {
             return isStrictGroundTerm(tr.s) && isStrictGroundTerm(tr.p) && isStrictGroundTerm(tr.o);
           };
-          const r = forwardRules[i];
+          const r2 = forwardRules[i];
           const empty = {};
           const visited = [];
-          const headIsStrictGround = !r.isFuse && (!r.headBlankLabels || r.headBlankLabels.size === 0) && r.conclusion.every(isStrictGroundTriple);
+          const headIsStrictGround = !r2.isFuse && (!r2.headBlankLabels || r2.headBlankLabels.size === 0) && r2.conclusion.every(isStrictGroundTriple);
           if (headIsStrictGround) {
             let allKnown = true;
-            for (const tr of r.conclusion) {
+            for (const tr of r2.conclusion) {
               if (!hasFactIndexed(facts, tr)) {
                 allKnown = false;
                 break;
@@ -4022,17 +3939,17 @@
             }
             if (allKnown) continue;
           }
-          const maxSols = r.isFuse || headIsStrictGround ? 1 : void 0;
-          const sols = proveGoals(r.premise.slice(), empty, facts, backRules, 0, visited, varGen, maxSols);
-          if (r.isFuse && sols.length) {
+          const maxSols = r2.isFuse || headIsStrictGround ? 1 : void 0;
+          const sols = proveGoals(r2.premise.slice(), empty, facts, backRules, 0, visited, varGen, maxSols);
+          if (r2.isFuse && sols.length) {
             console.log("# Inference fuse triggered: a { ... } => false. rule fired.");
             process.exit(2);
           }
           for (const s of sols) {
             const skMap = {};
-            const instantiatedPremises = r.premise.map((b) => applySubstTriple(b, s));
+            const instantiatedPremises = r2.premise.map((b) => applySubstTriple(b, s));
             const fireKey = firingKey(i, instantiatedPremises);
-            for (const cpat of r.conclusion) {
+            for (const cpat of r2.conclusion) {
               const instantiated = applySubstTriple(cpat, s);
               const isFwRuleTriple = isLogImplies(instantiated.p) && (instantiated.s instanceof GraphTerm && instantiated.o instanceof GraphTerm || instantiated.s instanceof Literal && instantiated.s.value === "true" && instantiated.o instanceof GraphTerm || instantiated.s instanceof GraphTerm && instantiated.o instanceof Literal && instantiated.o.value === "true");
               const isBwRuleTriple = isLogImpliedBy(instantiated.p) && (instantiated.s instanceof GraphTerm && instantiated.o instanceof GraphTerm || instantiated.s instanceof GraphTerm && instantiated.o instanceof Literal && instantiated.o.value === "true" || instantiated.s instanceof Literal && instantiated.s.value === "true" && instantiated.o instanceof GraphTerm);
@@ -4040,7 +3957,7 @@
                 if (!hasFactIndexed(facts, instantiated)) {
                   factList.push(instantiated);
                   pushFactIndexed(facts, instantiated);
-                  const df2 = new DerivedFact(instantiated, r, instantiatedPremises.slice(), { ...s });
+                  const df2 = new DerivedFact(instantiated, r2, instantiatedPremises.slice(), { ...s });
                   derivedForward.push(df2);
                   if (typeof onDerived === "function") onDerived(df2);
                   changed = true;
@@ -4074,7 +3991,7 @@
               }
               const inst = skolemizeTripleForHeadBlanks(
                 instantiated,
-                r.headBlankLabels,
+                r2.headBlankLabels,
                 skMap,
                 skCounter,
                 fireKey,
@@ -4084,7 +4001,7 @@
               if (hasFactIndexed(facts, inst)) continue;
               factList.push(inst);
               pushFactIndexed(facts, inst);
-              const df = new DerivedFact(inst, r, instantiatedPremises.slice(), {
+              const df = new DerivedFact(inst, r2, instantiatedPremises.slice(), {
                 ...s
               });
               derivedForward.push(df);
@@ -4111,6 +4028,146 @@
     setScopedSnapshot(null, 0);
     return derivedForward;
   }
+  var version, nodeCrypto, RDF_NS, RDFS_NS, OWL_NS, XSD_NS, CRYPTO_NS, MATH_NS, TIME_NS, LIST_NS, LOG_NS, STRING_NS, SKOLEM_NS, RDF_JSON_DT, skolemCache, __literalPartsCache, __parseNumCache, __parseIntCache, __parseNumericInfoCache, jsonPointerCache, __logContentCache, __logSemanticsCache, __logSemanticsOrErrorCache, __logConclusionCache, enforceHttpsEnabled, __IS_NODE, proofCommentsEnabled, superRestrictedMode, __tracePrefixes, __traceDefaultPrefixes, __traceTermFormatter, __n3Lex, __N3ParserCtor, fixedNowLex, runNowLex, runLocalTimeCache, Term, Iri, Literal, Var, __iriIntern, __literalIntern, Blank, ListTerm, OpenListTerm, GraphTerm, Triple, Rule, DerivedFact, XSD_DECIMAL_DT, XSD_DOUBLE_DT, XSD_FLOAT_DT, XSD_INTEGER_DT, XSD_INTEGER_DERIVED_DTS;
+  var init_reasoner = __esm({
+    "src/reasoner.ts"() {
+      "use strict";
+      version = "dev";
+      try {
+        if (typeof __require === "function") version = __require("./package.json").version || version;
+      } catch (_) {
+      }
+      nodeCrypto = null;
+      try {
+        if (typeof __require === "function") nodeCrypto = __require("crypto");
+      } catch (_) {
+      }
+      RDF_NS = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
+      RDFS_NS = "http://www.w3.org/2000/01/rdf-schema#";
+      OWL_NS = "http://www.w3.org/2002/07/owl#";
+      XSD_NS = "http://www.w3.org/2001/XMLSchema#";
+      CRYPTO_NS = "http://www.w3.org/2000/10/swap/crypto#";
+      MATH_NS = "http://www.w3.org/2000/10/swap/math#";
+      TIME_NS = "http://www.w3.org/2000/10/swap/time#";
+      LIST_NS = "http://www.w3.org/2000/10/swap/list#";
+      LOG_NS = "http://www.w3.org/2000/10/swap/log#";
+      STRING_NS = "http://www.w3.org/2000/10/swap/string#";
+      SKOLEM_NS = "https://eyereasoner.github.io/.well-known/genid/";
+      RDF_JSON_DT = RDF_NS + "JSON";
+      skolemCache = /* @__PURE__ */ new Map();
+      __literalPartsCache = /* @__PURE__ */ new Map();
+      __parseNumCache = /* @__PURE__ */ new Map();
+      __parseIntCache = /* @__PURE__ */ new Map();
+      __parseNumericInfoCache = /* @__PURE__ */ new Map();
+      jsonPointerCache = /* @__PURE__ */ new Map();
+      __logContentCache = /* @__PURE__ */ new Map();
+      __logSemanticsCache = /* @__PURE__ */ new Map();
+      __logSemanticsOrErrorCache = /* @__PURE__ */ new Map();
+      __logConclusionCache = /* @__PURE__ */ new WeakMap();
+      enforceHttpsEnabled = false;
+      __IS_NODE = typeof process !== "undefined" && !!(process.versions && process.versions.node);
+      proofCommentsEnabled = false;
+      superRestrictedMode = false;
+      __tracePrefixes = null;
+      __traceDefaultPrefixes = null;
+      __traceTermFormatter = null;
+      __n3Lex = null;
+      __N3ParserCtor = null;
+      fixedNowLex = null;
+      runNowLex = null;
+      runLocalTimeCache = null;
+      Term = class {
+      };
+      Iri = class extends Term {
+        constructor(value) {
+          super();
+          this.value = value;
+        }
+      };
+      Literal = class extends Term {
+        constructor(value) {
+          super();
+          this.value = value;
+        }
+      };
+      Var = class extends Term {
+        constructor(name) {
+          super();
+          this.name = name;
+        }
+      };
+      __iriIntern = /* @__PURE__ */ new Map();
+      __literalIntern = /* @__PURE__ */ new Map();
+      Blank = class extends Term {
+        constructor(label) {
+          super();
+          this.label = label;
+        }
+      };
+      ListTerm = class extends Term {
+        constructor(elems) {
+          super();
+          this.elems = elems;
+        }
+      };
+      OpenListTerm = class extends Term {
+        constructor(prefix, tailVar) {
+          super();
+          this.prefix = prefix;
+          this.tailVar = tailVar;
+        }
+      };
+      GraphTerm = class extends Term {
+        constructor(triples) {
+          super();
+          this.triples = triples;
+        }
+      };
+      Triple = class {
+        constructor(s, p, o) {
+          this.s = s;
+          this.p = p;
+          this.o = o;
+        }
+      };
+      Rule = class {
+        constructor(premise, conclusion, isForward, isFuse, headBlankLabels) {
+          this.premise = premise;
+          this.conclusion = conclusion;
+          this.isForward = isForward;
+          this.isFuse = isFuse;
+          this.headBlankLabels = headBlankLabels || /* @__PURE__ */ new Set();
+        }
+      };
+      DerivedFact = class {
+        constructor(fact, rule, premises, subst) {
+          this.fact = fact;
+          this.rule = rule;
+          this.premises = premises;
+          this.subst = subst;
+        }
+      };
+      XSD_DECIMAL_DT = XSD_NS + "decimal";
+      XSD_DOUBLE_DT = XSD_NS + "double";
+      XSD_FLOAT_DT = XSD_NS + "float";
+      XSD_INTEGER_DT = XSD_NS + "integer";
+      XSD_INTEGER_DERIVED_DTS = /* @__PURE__ */ new Set([
+        XSD_INTEGER_DT,
+        XSD_NS + "nonPositiveInteger",
+        XSD_NS + "negativeInteger",
+        XSD_NS + "long",
+        XSD_NS + "int",
+        XSD_NS + "short",
+        XSD_NS + "byte",
+        XSD_NS + "nonNegativeInteger",
+        XSD_NS + "unsignedLong",
+        XSD_NS + "unsignedInt",
+        XSD_NS + "unsignedShort",
+        XSD_NS + "unsignedByte",
+        XSD_NS + "positiveInteger"
+      ]);
+    }
+  });
 
   // src/n3_input.ts
   function resolveIriRef(ref, base) {
@@ -4122,25 +4179,6 @@
       return ref;
     }
   }
-  var Token = class {
-    constructor(typ, value = null, offset = null) {
-      this.typ = typ;
-      this.value = value;
-      this.offset = offset;
-    }
-    toString() {
-      const loc = typeof this.offset === "number" ? `@${this.offset}` : "";
-      if (this.value == null) return `Token(${this.typ}${loc})`;
-      return `Token(${this.typ}${loc}, ${JSON.stringify(this.value)})`;
-    }
-  };
-  var N3SyntaxError = class extends SyntaxError {
-    constructor(message, offset = null) {
-      super(message);
-      this.name = "N3SyntaxError";
-      this.offset = offset;
-    }
-  };
   function isWs(c) {
     return /\s/.test(c);
   }
@@ -4486,79 +4524,6 @@
     tokens.push(new Token("EOF", null, n));
     return tokens;
   }
-  var PrefixEnv = class _PrefixEnv {
-    constructor(map, baseIri) {
-      this.map = map || {};
-      this.baseIri = baseIri || "";
-    }
-    static newDefault() {
-      const m = {};
-      m["rdf"] = RDF_NS;
-      m["rdfs"] = RDFS_NS;
-      m["xsd"] = XSD_NS;
-      m["log"] = LOG_NS;
-      m["math"] = MATH_NS;
-      m["string"] = STRING_NS;
-      m["list"] = LIST_NS;
-      m["time"] = TIME_NS;
-      m["genid"] = SKOLEM_NS;
-      m[""] = "";
-      return new _PrefixEnv(m, "");
-    }
-    set(pref, base) {
-      this.map[pref] = base;
-    }
-    setBase(baseIri) {
-      this.baseIri = baseIri || "";
-    }
-    expandQName(q) {
-      if (q.includes(":")) {
-        const [p, local] = q.split(":", 2);
-        const base = this.map[p] || "";
-        if (base) return base + local;
-        return q;
-      }
-      return q;
-    }
-    shrinkIri(iri) {
-      let best = null;
-      for (const [p2, base] of Object.entries(this.map)) {
-        if (!base) continue;
-        if (iri.startsWith(base)) {
-          const local2 = iri.slice(base.length);
-          if (!local2) continue;
-          const cand = [p2, local2];
-          if (best === null || cand[1].length < best[1].length) best = cand;
-        }
-      }
-      if (best === null) return null;
-      const [p, local] = best;
-      if (p === "") return `:${local}`;
-      return `${p}:${local}`;
-    }
-    prefixesUsedForOutput(triples) {
-      const used = /* @__PURE__ */ new Set();
-      for (const t of triples) {
-        const iris = [];
-        iris.push(...collectIrisInTerm(t.s));
-        if (!isRdfTypePred(t.p)) {
-          iris.push(...collectIrisInTerm(t.p));
-        }
-        iris.push(...collectIrisInTerm(t.o));
-        for (const iri of iris) {
-          for (const [p, base] of Object.entries(this.map)) {
-            if (base && iri.startsWith(base)) used.add(p);
-          }
-        }
-      }
-      const v = [];
-      for (const p of used) {
-        if (this.map.hasOwnProperty(p)) v.push([p, this.map[p]]);
-      }
-      v.sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0);
-      return v;
-    }
-  };
   function collectIrisInTerm(t) {
     const out = [];
     if (t instanceof Iri) {
@@ -4603,469 +4568,6 @@
     }
     return acc;
   }
-  var Parser = class {
-    constructor(tokens) {
-      this.toks = tokens;
-      this.pos = 0;
-      this.prefixes = PrefixEnv.newDefault();
-      this.blankCounter = 0;
-      this.pendingTriples = [];
-    }
-    peek() {
-      return this.toks[this.pos];
-    }
-    next() {
-      const tok = this.toks[this.pos];
-      this.pos += 1;
-      return tok;
-    }
-    fail(message, tok = this.peek()) {
-      const off = tok && typeof tok.offset === "number" ? tok.offset : null;
-      throw new N3SyntaxError(message, off);
-    }
-    expectDot() {
-      const tok = this.next();
-      if (tok.typ !== "Dot") {
-        this.fail(`Expected '.', got ${tok.toString()}`, tok);
-      }
-    }
-    parseDocument() {
-      const triples = [];
-      const forwardRules = [];
-      const backwardRules = [];
-      while (this.peek().typ !== "EOF") {
-        if (this.peek().typ === "AtPrefix") {
-          this.next();
-          this.parsePrefixDirective();
-        } else if (this.peek().typ === "AtBase") {
-          this.next();
-          this.parseBaseDirective();
-        } else if (
-          // SPARQL-style/Turtle-style directives (case-insensitive, no trailing '.')
-          this.peek().typ === "Ident" && typeof this.peek().value === "string" && this.peek().value.toLowerCase() === "prefix" && this.toks[this.pos + 1] && this.toks[this.pos + 1].typ === "Ident" && typeof this.toks[this.pos + 1].value === "string" && // Require PNAME_NS form (e.g., "ex:" or ":") to avoid clashing with a normal triple starting with IRI "prefix".
-          this.toks[this.pos + 1].value.endsWith(":") && this.toks[this.pos + 2] && (this.toks[this.pos + 2].typ === "IriRef" || this.toks[this.pos + 2].typ === "Ident")
-        ) {
-          this.next();
-          this.parseSparqlPrefixDirective();
-        } else if (this.peek().typ === "Ident" && typeof this.peek().value === "string" && this.peek().value.toLowerCase() === "base" && this.toks[this.pos + 1] && // SPARQL BASE requires an IRIREF.
-        this.toks[this.pos + 1].typ === "IriRef") {
-          this.next();
-          this.parseSparqlBaseDirective();
-        } else {
-          const first = this.parseTerm();
-          if (this.peek().typ === "OpImplies") {
-            this.next();
-            const second = this.parseTerm();
-            this.expectDot();
-            forwardRules.push(this.makeRule(first, second, true));
-          } else if (this.peek().typ === "OpImpliedBy") {
-            this.next();
-            const second = this.parseTerm();
-            this.expectDot();
-            backwardRules.push(this.makeRule(first, second, false));
-          } else {
-            let more;
-            if (this.peek().typ === "Dot") {
-              more = [];
-              if (this.pendingTriples.length > 0) {
-                more = this.pendingTriples;
-                this.pendingTriples = [];
-              }
-              this.next();
-            } else {
-              more = this.parsePredicateObjectList(first);
-              this.expectDot();
-            }
-            for (const tr of more) {
-              if (isLogImplies(tr.p) && tr.s instanceof GraphTerm && tr.o instanceof GraphTerm) {
-                forwardRules.push(this.makeRule(tr.s, tr.o, true));
-              } else if (isLogImpliedBy(tr.p) && tr.s instanceof GraphTerm && tr.o instanceof GraphTerm) {
-                backwardRules.push(this.makeRule(tr.s, tr.o, false));
-              } else {
-                triples.push(tr);
-              }
-            }
-          }
-        }
-      }
-      return [this.prefixes, triples, forwardRules, backwardRules];
-    }
-    parsePrefixDirective() {
-      const tok = this.next();
-      if (tok.typ !== "Ident") {
-        this.fail(`Expected prefix name, got ${tok.toString()}`, tok);
-      }
-      const pref = tok.value || "";
-      const prefName = pref.endsWith(":") ? pref.slice(0, -1) : pref;
-      if (this.peek().typ === "Dot") {
-        this.next();
-        if (!this.prefixes.map.hasOwnProperty(prefName)) {
-          this.prefixes.set(prefName, "");
-        }
-        return;
-      }
-      const tok2 = this.next();
-      let iri;
-      if (tok2.typ === "IriRef") {
-        iri = resolveIriRef(tok2.value || "", this.prefixes.baseIri || "");
-      } else if (tok2.typ === "Ident") {
-        iri = this.prefixes.expandQName(tok2.value || "");
-      } else {
-        this.fail(`Expected IRI after @prefix, got ${tok2.toString()}`, tok2);
-      }
-      this.expectDot();
-      this.prefixes.set(prefName, iri);
-    }
-    parseBaseDirective() {
-      const tok = this.next();
-      let iri;
-      if (tok.typ === "IriRef") {
-        iri = resolveIriRef(tok.value || "", this.prefixes.baseIri || "");
-      } else if (tok.typ === "Ident") {
-        iri = tok.value || "";
-      } else {
-        this.fail(`Expected IRI after @base, got ${tok.toString()}`, tok);
-      }
-      this.expectDot();
-      this.prefixes.setBase(iri);
-    }
-    parseSparqlPrefixDirective() {
-      const tok = this.next();
-      if (tok.typ !== "Ident") {
-        this.fail(`Expected prefix name after PREFIX, got ${tok.toString()}`, tok);
-      }
-      const pref = tok.value || "";
-      const prefName = pref.endsWith(":") ? pref.slice(0, -1) : pref;
-      const tok2 = this.next();
-      let iri;
-      if (tok2.typ === "IriRef") {
-        iri = resolveIriRef(tok2.value || "", this.prefixes.baseIri || "");
-      } else if (tok2.typ === "Ident") {
-        iri = this.prefixes.expandQName(tok2.value || "");
-      } else {
-        this.fail(`Expected IRI after PREFIX, got ${tok2.toString()}`, tok2);
-      }
-      if (this.peek().typ === "Dot") this.next();
-      this.prefixes.set(prefName, iri);
-    }
-    parseSparqlBaseDirective() {
-      const tok = this.next();
-      let iri;
-      if (tok.typ === "IriRef") {
-        iri = resolveIriRef(tok.value || "", this.prefixes.baseIri || "");
-      } else if (tok.typ === "Ident") {
-        iri = tok.value || "";
-      } else {
-        this.fail(`Expected IRI after BASE, got ${tok.toString()}`, tok);
-      }
-      if (this.peek().typ === "Dot") this.next();
-      this.prefixes.setBase(iri);
-    }
-    parseTerm() {
-      let t = this.parsePathItem();
-      while (this.peek().typ === "OpPathFwd" || this.peek().typ === "OpPathRev") {
-        const dir = this.next().typ;
-        const pred = this.parsePathItem();
-        this.blankCounter += 1;
-        const bn = new Blank(`_:b${this.blankCounter}`);
-        this.pendingTriples.push(dir === "OpPathFwd" ? new Triple(t, pred, bn) : new Triple(bn, pred, t));
-        t = bn;
-      }
-      return t;
-    }
-    parsePathItem() {
-      const tok = this.next();
-      const typ = tok.typ;
-      const val = tok.value;
-      if (typ === "Equals") {
-        return internIri(OWL_NS + "sameAs");
-      }
-      if (typ === "IriRef") {
-        const base = this.prefixes.baseIri || "";
-        return internIri(resolveIriRef(val || "", base));
-      }
-      if (typ === "Ident") {
-        const name = val || "";
-        if (name === "a") {
-          return internIri(RDF_NS + "type");
-        } else if (name.startsWith("_:")) {
-          return new Blank(name);
-        } else if (name.includes(":")) {
-          return internIri(this.prefixes.expandQName(name));
-        } else {
-          return internIri(name);
-        }
-      }
-      if (typ === "Literal") {
-        let s = val || "";
-        if (this.peek().typ === "LangTag") {
-          if (!(s.startsWith('"') && s.endsWith('"'))) {
-            this.fail("Language tag is only allowed on quoted string literals", this.peek());
-          }
-          const langTok = this.next();
-          const lang = langTok.value || "";
-          s = `${s}@${lang}`;
-          if (this.peek().typ === "HatHat") {
-            this.fail("A literal cannot have both a language tag (@...) and a datatype (^^...)", this.peek());
-          }
-        }
-        if (this.peek().typ === "HatHat") {
-          this.next();
-          const dtTok = this.next();
-          let dtIri;
-          if (dtTok.typ === "IriRef") {
-            dtIri = dtTok.value || "";
-          } else if (dtTok.typ === "Ident") {
-            const qn = dtTok.value || "";
-            if (qn.includes(":")) dtIri = this.prefixes.expandQName(qn);
-            else dtIri = qn;
-          } else {
-            this.fail(`Expected datatype after ^^, got ${dtTok.toString()}`, dtTok);
-          }
-          s = `${s}^^<${dtIri}>`;
-        }
-        return internLiteral(s);
-      }
-      if (typ === "Var") return new Var(val || "");
-      if (typ === "LParen") return this.parseList();
-      if (typ === "LBracket") return this.parseBlank();
-      if (typ === "LBrace") return this.parseGraph();
-      this.fail(`Unexpected term token: ${tok.toString()}`, tok);
-    }
-    parseList() {
-      const elems = [];
-      while (this.peek().typ !== "RParen") {
-        elems.push(this.parseTerm());
-      }
-      this.next();
-      return new ListTerm(elems);
-    }
-    parseBlank() {
-      if (this.peek().typ === "RBracket") {
-        this.next();
-        this.blankCounter += 1;
-        return new Blank(`_:b${this.blankCounter}`);
-      }
-      if (this.peek().typ === "Ident" && (this.peek().value || "") === "id") {
-        const iriTok = this.next();
-        const iriTerm = this.parseTerm();
-        if (iriTerm instanceof Blank && iriTerm.label.startsWith("_:")) {
-          this.fail("Cannot use 'id' keyword with a blank node identifier inside [...]", iriTok);
-        }
-        if (this.peek().typ === "Semicolon") this.next();
-        if (this.peek().typ === "RBracket") {
-          this.next();
-          return iriTerm;
-        }
-        const subj2 = iriTerm;
-        while (true) {
-          let pred;
-          let invert = false;
-          if (this.peek().typ === "Ident" && (this.peek().value || "") === "a") {
-            this.next();
-            pred = internIri(RDF_NS + "type");
-          } else if (this.peek().typ === "OpPredInvert") {
-            this.next();
-            pred = this.parseTerm();
-            invert = true;
-          } else {
-            pred = this.parseTerm();
-          }
-          const objs = [this.parseTerm()];
-          while (this.peek().typ === "Comma") {
-            this.next();
-            objs.push(this.parseTerm());
-          }
-          for (const o of objs) {
-            this.pendingTriples.push(invert ? new Triple(o, pred, subj2) : new Triple(subj2, pred, o));
-          }
-          if (this.peek().typ === "Semicolon") {
-            this.next();
-            if (this.peek().typ === "RBracket") break;
-            continue;
-          }
-          break;
-        }
-        if (this.peek().typ !== "RBracket") {
-          this.fail(`Expected ']' at end of IRI property list, got ${this.peek().toString()}`);
-        }
-        this.next();
-        return iriTerm;
-      }
-      this.blankCounter += 1;
-      const id = `_:b${this.blankCounter}`;
-      const subj = new Blank(id);
-      while (true) {
-        let pred;
-        let invert = false;
-        if (this.peek().typ === "Ident" && (this.peek().value || "") === "a") {
-          this.next();
-          pred = internIri(RDF_NS + "type");
-        } else if (this.peek().typ === "OpPredInvert") {
-          this.next();
-          pred = this.parseTerm();
-          invert = true;
-        } else {
-          pred = this.parseTerm();
-        }
-        const objs = [this.parseTerm()];
-        while (this.peek().typ === "Comma") {
-          this.next();
-          objs.push(this.parseTerm());
-        }
-        for (const o of objs) {
-          this.pendingTriples.push(invert ? new Triple(o, pred, subj) : new Triple(subj, pred, o));
-        }
-        if (this.peek().typ === "Semicolon") {
-          this.next();
-          if (this.peek().typ === "RBracket") break;
-          continue;
-        }
-        break;
-      }
-      if (this.peek().typ === "RBracket") {
-        this.next();
-      } else {
-        this.fail(`Expected ']' at end of blank node property list, got ${this.peek().toString()}`);
-      }
-      return new Blank(id);
-    }
-    parseGraph() {
-      const triples = [];
-      while (this.peek().typ !== "RBrace") {
-        const left = this.parseTerm();
-        if (this.peek().typ === "OpImplies") {
-          this.next();
-          const right = this.parseTerm();
-          const pred = internIri(LOG_NS + "implies");
-          triples.push(new Triple(left, pred, right));
-          if (this.peek().typ === "Dot") this.next();
-          else if (this.peek().typ === "RBrace") {
-          } else {
-            this.fail(`Expected '.' or '}', got ${this.peek().toString()}`);
-          }
-        } else if (this.peek().typ === "OpImpliedBy") {
-          this.next();
-          const right = this.parseTerm();
-          const pred = internIri(LOG_NS + "impliedBy");
-          triples.push(new Triple(left, pred, right));
-          if (this.peek().typ === "Dot") this.next();
-          else if (this.peek().typ === "RBrace") {
-          } else {
-            this.fail(`Expected '.' or '}', got ${this.peek().toString()}`);
-          }
-        } else {
-          if (this.peek().typ === "Dot" || this.peek().typ === "RBrace") {
-            if (this.pendingTriples.length > 0) {
-              triples.push(...this.pendingTriples);
-              this.pendingTriples = [];
-            }
-            if (this.peek().typ === "Dot") this.next();
-            continue;
-          }
-          triples.push(...this.parsePredicateObjectList(left));
-          if (this.peek().typ === "Dot") this.next();
-          else if (this.peek().typ === "RBrace") {
-          } else {
-            this.fail(`Expected '.' or '}', got ${this.peek().toString()}`);
-          }
-        }
-      }
-      this.next();
-      return new GraphTerm(triples);
-    }
-    parsePredicateObjectList(subject) {
-      const out = [];
-      if (this.pendingTriples.length > 0) {
-        out.push(...this.pendingTriples);
-        this.pendingTriples = [];
-      }
-      while (true) {
-        let verb;
-        let invert = false;
-        if (this.peek().typ === "Ident" && (this.peek().value || "") === "a") {
-          this.next();
-          verb = internIri(RDF_NS + "type");
-        } else if (this.peek().typ === "Ident" && (this.peek().value || "") === "has") {
-          this.next();
-          verb = this.parseTerm();
-        } else if (this.peek().typ === "Ident" && (this.peek().value || "") === "is") {
-          this.next();
-          verb = this.parseTerm();
-          if (!(this.peek().typ === "Ident" && (this.peek().value || "") === "of")) {
-            this.fail(`Expected 'of' after 'is <expr>', got ${this.peek().toString()}`);
-          }
-          this.next();
-          invert = true;
-        } else if (this.peek().typ === "OpPredInvert") {
-          this.next();
-          verb = this.parseTerm();
-          invert = true;
-        } else {
-          verb = this.parseTerm();
-        }
-        const objects = this.parseObjectList();
-        if (this.pendingTriples.length > 0) {
-          out.push(...this.pendingTriples);
-          this.pendingTriples = [];
-        }
-        for (const o of objects) {
-          out.push(new Triple(invert ? o : subject, verb, invert ? subject : o));
-        }
-        if (this.peek().typ === "Semicolon") {
-          this.next();
-          if (this.peek().typ === "Dot") break;
-          continue;
-        }
-        break;
-      }
-      return out;
-    }
-    parseObjectList() {
-      const objs = [this.parseTerm()];
-      while (this.peek().typ === "Comma") {
-        this.next();
-        objs.push(this.parseTerm());
-      }
-      return objs;
-    }
-    makeRule(left, right, isForward) {
-      let premiseTerm, conclTerm;
-      if (isForward) {
-        premiseTerm = left;
-        conclTerm = right;
-      } else {
-        premiseTerm = right;
-        conclTerm = left;
-      }
-      let isFuse = false;
-      if (isForward) {
-        if (conclTerm instanceof Literal && conclTerm.value === "false") {
-          isFuse = true;
-        }
-      }
-      let rawPremise;
-      if (premiseTerm instanceof GraphTerm) {
-        rawPremise = premiseTerm.triples;
-      } else if (premiseTerm instanceof Literal && premiseTerm.value === "true") {
-        rawPremise = [];
-      } else {
-        rawPremise = [];
-      }
-      let rawConclusion;
-      if (conclTerm instanceof GraphTerm) {
-        rawConclusion = conclTerm.triples;
-      } else if (conclTerm instanceof Literal && conclTerm.value === "false") {
-        rawConclusion = [];
-      } else {
-        rawConclusion = [];
-      }
-      const headBlankLabels = collectBlankLabelsInTriples2(rawConclusion);
-      const [premise0, conclusion] = liftBlankRuleVars(rawPremise, rawConclusion);
-      const premise = isForward ? reorderPremiseForConstraints(premise0) : premise0;
-      return new Rule(premise, conclusion, isForward, isFuse, headBlankLabels);
-    }
-  };
   function materializeRdfLists(triples, forwardRules, backwardRules) {
     const RDF_FIRST = RDF_NS + "first";
     const RDF_REST = RDF_NS + "rest";
@@ -5136,18 +4638,18 @@
       if (t instanceof ListTerm) {
         let changed = false;
         const elems = t.elems.map((e) => {
-          const r = rewriteTerm(e);
-          if (r !== e) changed = true;
-          return r;
+          const r2 = rewriteTerm(e);
+          if (r2 !== e) changed = true;
+          return r2;
         });
         return changed ? new ListTerm(elems) : t;
       }
       if (t instanceof OpenListTerm) {
         let changed = false;
         const prefix = t.prefix.map((e) => {
-          const r = rewriteTerm(e);
-          if (r !== e) changed = true;
-          return r;
+          const r2 = rewriteTerm(e);
+          if (r2 !== e) changed = true;
+          return r2;
         });
         return changed ? new OpenListTerm(prefix, t.tailVar) : t;
       }
@@ -5164,15 +4666,576 @@
     }
     for (const k of firstMap.keys()) buildListForKey(k);
     for (const tr of triples) rewriteTriple(tr);
-    for (const r of forwardRules) {
-      for (const tr of r.premise) rewriteTriple(tr);
-      for (const tr of r.conclusion) rewriteTriple(tr);
+    for (const r2 of forwardRules) {
+      for (const tr of r2.premise) rewriteTriple(tr);
+      for (const tr of r2.conclusion) rewriteTriple(tr);
     }
-    for (const r of backwardRules) {
-      for (const tr of r.premise) rewriteTriple(tr);
-      for (const tr of r.conclusion) rewriteTriple(tr);
+    for (const r2 of backwardRules) {
+      for (const tr of r2.premise) rewriteTriple(tr);
+      for (const tr of r2.conclusion) rewriteTriple(tr);
     }
   }
+  var Token, N3SyntaxError, PrefixEnv, Parser;
+  var init_n3_input = __esm({
+    "src/n3_input.ts"() {
+      init_reasoner();
+      Token = class {
+        constructor(typ, value = null, offset = null) {
+          this.typ = typ;
+          this.value = value;
+          this.offset = offset;
+        }
+        toString() {
+          const loc = typeof this.offset === "number" ? `@${this.offset}` : "";
+          if (this.value == null) return `Token(${this.typ}${loc})`;
+          return `Token(${this.typ}${loc}, ${JSON.stringify(this.value)})`;
+        }
+      };
+      N3SyntaxError = class extends SyntaxError {
+        constructor(message, offset = null) {
+          super(message);
+          this.name = "N3SyntaxError";
+          this.offset = offset;
+        }
+      };
+      PrefixEnv = class _PrefixEnv {
+        constructor(map, baseIri) {
+          this.map = map || {};
+          this.baseIri = baseIri || "";
+        }
+        static newDefault() {
+          const m = {};
+          m["rdf"] = RDF_NS;
+          m["rdfs"] = RDFS_NS;
+          m["xsd"] = XSD_NS;
+          m["log"] = LOG_NS;
+          m["math"] = MATH_NS;
+          m["string"] = STRING_NS;
+          m["list"] = LIST_NS;
+          m["time"] = TIME_NS;
+          m["genid"] = SKOLEM_NS;
+          m[""] = "";
+          return new _PrefixEnv(m, "");
+        }
+        set(pref, base) {
+          this.map[pref] = base;
+        }
+        setBase(baseIri) {
+          this.baseIri = baseIri || "";
+        }
+        expandQName(q) {
+          if (q.includes(":")) {
+            const [p, local] = q.split(":", 2);
+            const base = this.map[p] || "";
+            if (base) return base + local;
+            return q;
+          }
+          return q;
+        }
+        shrinkIri(iri) {
+          let best = null;
+          for (const [p2, base] of Object.entries(this.map)) {
+            if (!base) continue;
+            if (iri.startsWith(base)) {
+              const local2 = iri.slice(base.length);
+              if (!local2) continue;
+              const cand = [p2, local2];
+              if (best === null || cand[1].length < best[1].length) best = cand;
+            }
+          }
+          if (best === null) return null;
+          const [p, local] = best;
+          if (p === "") return `:${local}`;
+          return `${p}:${local}`;
+        }
+        prefixesUsedForOutput(triples) {
+          const used = /* @__PURE__ */ new Set();
+          for (const t of triples) {
+            const iris = [];
+            iris.push(...collectIrisInTerm(t.s));
+            if (!isRdfTypePred(t.p)) {
+              iris.push(...collectIrisInTerm(t.p));
+            }
+            iris.push(...collectIrisInTerm(t.o));
+            for (const iri of iris) {
+              for (const [p, base] of Object.entries(this.map)) {
+                if (base && iri.startsWith(base)) used.add(p);
+              }
+            }
+          }
+          const v = [];
+          for (const p of used) {
+            if (this.map.hasOwnProperty(p)) v.push([p, this.map[p]]);
+          }
+          v.sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0);
+          return v;
+        }
+      };
+      Parser = class {
+        constructor(tokens) {
+          this.toks = tokens;
+          this.pos = 0;
+          this.prefixes = PrefixEnv.newDefault();
+          this.blankCounter = 0;
+          this.pendingTriples = [];
+        }
+        peek() {
+          return this.toks[this.pos];
+        }
+        next() {
+          const tok = this.toks[this.pos];
+          this.pos += 1;
+          return tok;
+        }
+        fail(message, tok = this.peek()) {
+          const off = tok && typeof tok.offset === "number" ? tok.offset : null;
+          throw new N3SyntaxError(message, off);
+        }
+        expectDot() {
+          const tok = this.next();
+          if (tok.typ !== "Dot") {
+            this.fail(`Expected '.', got ${tok.toString()}`, tok);
+          }
+        }
+        parseDocument() {
+          const triples = [];
+          const forwardRules = [];
+          const backwardRules = [];
+          while (this.peek().typ !== "EOF") {
+            if (this.peek().typ === "AtPrefix") {
+              this.next();
+              this.parsePrefixDirective();
+            } else if (this.peek().typ === "AtBase") {
+              this.next();
+              this.parseBaseDirective();
+            } else if (
+              // SPARQL-style/Turtle-style directives (case-insensitive, no trailing '.')
+              this.peek().typ === "Ident" && typeof this.peek().value === "string" && this.peek().value.toLowerCase() === "prefix" && this.toks[this.pos + 1] && this.toks[this.pos + 1].typ === "Ident" && typeof this.toks[this.pos + 1].value === "string" && // Require PNAME_NS form (e.g., "ex:" or ":") to avoid clashing with a normal triple starting with IRI "prefix".
+              this.toks[this.pos + 1].value.endsWith(":") && this.toks[this.pos + 2] && (this.toks[this.pos + 2].typ === "IriRef" || this.toks[this.pos + 2].typ === "Ident")
+            ) {
+              this.next();
+              this.parseSparqlPrefixDirective();
+            } else if (this.peek().typ === "Ident" && typeof this.peek().value === "string" && this.peek().value.toLowerCase() === "base" && this.toks[this.pos + 1] && // SPARQL BASE requires an IRIREF.
+            this.toks[this.pos + 1].typ === "IriRef") {
+              this.next();
+              this.parseSparqlBaseDirective();
+            } else {
+              const first = this.parseTerm();
+              if (this.peek().typ === "OpImplies") {
+                this.next();
+                const second = this.parseTerm();
+                this.expectDot();
+                forwardRules.push(this.makeRule(first, second, true));
+              } else if (this.peek().typ === "OpImpliedBy") {
+                this.next();
+                const second = this.parseTerm();
+                this.expectDot();
+                backwardRules.push(this.makeRule(first, second, false));
+              } else {
+                let more;
+                if (this.peek().typ === "Dot") {
+                  more = [];
+                  if (this.pendingTriples.length > 0) {
+                    more = this.pendingTriples;
+                    this.pendingTriples = [];
+                  }
+                  this.next();
+                } else {
+                  more = this.parsePredicateObjectList(first);
+                  this.expectDot();
+                }
+                for (const tr of more) {
+                  if (isLogImplies(tr.p) && tr.s instanceof GraphTerm && tr.o instanceof GraphTerm) {
+                    forwardRules.push(this.makeRule(tr.s, tr.o, true));
+                  } else if (isLogImpliedBy(tr.p) && tr.s instanceof GraphTerm && tr.o instanceof GraphTerm) {
+                    backwardRules.push(this.makeRule(tr.s, tr.o, false));
+                  } else {
+                    triples.push(tr);
+                  }
+                }
+              }
+            }
+          }
+          return [this.prefixes, triples, forwardRules, backwardRules];
+        }
+        parsePrefixDirective() {
+          const tok = this.next();
+          if (tok.typ !== "Ident") {
+            this.fail(`Expected prefix name, got ${tok.toString()}`, tok);
+          }
+          const pref = tok.value || "";
+          const prefName = pref.endsWith(":") ? pref.slice(0, -1) : pref;
+          if (this.peek().typ === "Dot") {
+            this.next();
+            if (!this.prefixes.map.hasOwnProperty(prefName)) {
+              this.prefixes.set(prefName, "");
+            }
+            return;
+          }
+          const tok2 = this.next();
+          let iri;
+          if (tok2.typ === "IriRef") {
+            iri = resolveIriRef(tok2.value || "", this.prefixes.baseIri || "");
+          } else if (tok2.typ === "Ident") {
+            iri = this.prefixes.expandQName(tok2.value || "");
+          } else {
+            this.fail(`Expected IRI after @prefix, got ${tok2.toString()}`, tok2);
+          }
+          this.expectDot();
+          this.prefixes.set(prefName, iri);
+        }
+        parseBaseDirective() {
+          const tok = this.next();
+          let iri;
+          if (tok.typ === "IriRef") {
+            iri = resolveIriRef(tok.value || "", this.prefixes.baseIri || "");
+          } else if (tok.typ === "Ident") {
+            iri = tok.value || "";
+          } else {
+            this.fail(`Expected IRI after @base, got ${tok.toString()}`, tok);
+          }
+          this.expectDot();
+          this.prefixes.setBase(iri);
+        }
+        parseSparqlPrefixDirective() {
+          const tok = this.next();
+          if (tok.typ !== "Ident") {
+            this.fail(`Expected prefix name after PREFIX, got ${tok.toString()}`, tok);
+          }
+          const pref = tok.value || "";
+          const prefName = pref.endsWith(":") ? pref.slice(0, -1) : pref;
+          const tok2 = this.next();
+          let iri;
+          if (tok2.typ === "IriRef") {
+            iri = resolveIriRef(tok2.value || "", this.prefixes.baseIri || "");
+          } else if (tok2.typ === "Ident") {
+            iri = this.prefixes.expandQName(tok2.value || "");
+          } else {
+            this.fail(`Expected IRI after PREFIX, got ${tok2.toString()}`, tok2);
+          }
+          if (this.peek().typ === "Dot") this.next();
+          this.prefixes.set(prefName, iri);
+        }
+        parseSparqlBaseDirective() {
+          const tok = this.next();
+          let iri;
+          if (tok.typ === "IriRef") {
+            iri = resolveIriRef(tok.value || "", this.prefixes.baseIri || "");
+          } else if (tok.typ === "Ident") {
+            iri = tok.value || "";
+          } else {
+            this.fail(`Expected IRI after BASE, got ${tok.toString()}`, tok);
+          }
+          if (this.peek().typ === "Dot") this.next();
+          this.prefixes.setBase(iri);
+        }
+        parseTerm() {
+          let t = this.parsePathItem();
+          while (this.peek().typ === "OpPathFwd" || this.peek().typ === "OpPathRev") {
+            const dir = this.next().typ;
+            const pred = this.parsePathItem();
+            this.blankCounter += 1;
+            const bn = new Blank(`_:b${this.blankCounter}`);
+            this.pendingTriples.push(dir === "OpPathFwd" ? new Triple(t, pred, bn) : new Triple(bn, pred, t));
+            t = bn;
+          }
+          return t;
+        }
+        parsePathItem() {
+          const tok = this.next();
+          const typ = tok.typ;
+          const val = tok.value;
+          if (typ === "Equals") {
+            return internIri(OWL_NS + "sameAs");
+          }
+          if (typ === "IriRef") {
+            const base = this.prefixes.baseIri || "";
+            return internIri(resolveIriRef(val || "", base));
+          }
+          if (typ === "Ident") {
+            const name = val || "";
+            if (name === "a") {
+              return internIri(RDF_NS + "type");
+            } else if (name.startsWith("_:")) {
+              return new Blank(name);
+            } else if (name.includes(":")) {
+              return internIri(this.prefixes.expandQName(name));
+            } else {
+              return internIri(name);
+            }
+          }
+          if (typ === "Literal") {
+            let s = val || "";
+            if (this.peek().typ === "LangTag") {
+              if (!(s.startsWith('"') && s.endsWith('"'))) {
+                this.fail("Language tag is only allowed on quoted string literals", this.peek());
+              }
+              const langTok = this.next();
+              const lang = langTok.value || "";
+              s = `${s}@${lang}`;
+              if (this.peek().typ === "HatHat") {
+                this.fail("A literal cannot have both a language tag (@...) and a datatype (^^...)", this.peek());
+              }
+            }
+            if (this.peek().typ === "HatHat") {
+              this.next();
+              const dtTok = this.next();
+              let dtIri;
+              if (dtTok.typ === "IriRef") {
+                dtIri = dtTok.value || "";
+              } else if (dtTok.typ === "Ident") {
+                const qn = dtTok.value || "";
+                if (qn.includes(":")) dtIri = this.prefixes.expandQName(qn);
+                else dtIri = qn;
+              } else {
+                this.fail(`Expected datatype after ^^, got ${dtTok.toString()}`, dtTok);
+              }
+              s = `${s}^^<${dtIri}>`;
+            }
+            return internLiteral(s);
+          }
+          if (typ === "Var") return new Var(val || "");
+          if (typ === "LParen") return this.parseList();
+          if (typ === "LBracket") return this.parseBlank();
+          if (typ === "LBrace") return this.parseGraph();
+          this.fail(`Unexpected term token: ${tok.toString()}`, tok);
+        }
+        parseList() {
+          const elems = [];
+          while (this.peek().typ !== "RParen") {
+            elems.push(this.parseTerm());
+          }
+          this.next();
+          return new ListTerm(elems);
+        }
+        parseBlank() {
+          if (this.peek().typ === "RBracket") {
+            this.next();
+            this.blankCounter += 1;
+            return new Blank(`_:b${this.blankCounter}`);
+          }
+          if (this.peek().typ === "Ident" && (this.peek().value || "") === "id") {
+            const iriTok = this.next();
+            const iriTerm = this.parseTerm();
+            if (iriTerm instanceof Blank && iriTerm.label.startsWith("_:")) {
+              this.fail("Cannot use 'id' keyword with a blank node identifier inside [...]", iriTok);
+            }
+            if (this.peek().typ === "Semicolon") this.next();
+            if (this.peek().typ === "RBracket") {
+              this.next();
+              return iriTerm;
+            }
+            const subj2 = iriTerm;
+            while (true) {
+              let pred;
+              let invert = false;
+              if (this.peek().typ === "Ident" && (this.peek().value || "") === "a") {
+                this.next();
+                pred = internIri(RDF_NS + "type");
+              } else if (this.peek().typ === "OpPredInvert") {
+                this.next();
+                pred = this.parseTerm();
+                invert = true;
+              } else {
+                pred = this.parseTerm();
+              }
+              const objs = [this.parseTerm()];
+              while (this.peek().typ === "Comma") {
+                this.next();
+                objs.push(this.parseTerm());
+              }
+              for (const o of objs) {
+                this.pendingTriples.push(invert ? new Triple(o, pred, subj2) : new Triple(subj2, pred, o));
+              }
+              if (this.peek().typ === "Semicolon") {
+                this.next();
+                if (this.peek().typ === "RBracket") break;
+                continue;
+              }
+              break;
+            }
+            if (this.peek().typ !== "RBracket") {
+              this.fail(`Expected ']' at end of IRI property list, got ${this.peek().toString()}`);
+            }
+            this.next();
+            return iriTerm;
+          }
+          this.blankCounter += 1;
+          const id = `_:b${this.blankCounter}`;
+          const subj = new Blank(id);
+          while (true) {
+            let pred;
+            let invert = false;
+            if (this.peek().typ === "Ident" && (this.peek().value || "") === "a") {
+              this.next();
+              pred = internIri(RDF_NS + "type");
+            } else if (this.peek().typ === "OpPredInvert") {
+              this.next();
+              pred = this.parseTerm();
+              invert = true;
+            } else {
+              pred = this.parseTerm();
+            }
+            const objs = [this.parseTerm()];
+            while (this.peek().typ === "Comma") {
+              this.next();
+              objs.push(this.parseTerm());
+            }
+            for (const o of objs) {
+              this.pendingTriples.push(invert ? new Triple(o, pred, subj) : new Triple(subj, pred, o));
+            }
+            if (this.peek().typ === "Semicolon") {
+              this.next();
+              if (this.peek().typ === "RBracket") break;
+              continue;
+            }
+            break;
+          }
+          if (this.peek().typ === "RBracket") {
+            this.next();
+          } else {
+            this.fail(`Expected ']' at end of blank node property list, got ${this.peek().toString()}`);
+          }
+          return new Blank(id);
+        }
+        parseGraph() {
+          const triples = [];
+          while (this.peek().typ !== "RBrace") {
+            const left = this.parseTerm();
+            if (this.peek().typ === "OpImplies") {
+              this.next();
+              const right = this.parseTerm();
+              const pred = internIri(LOG_NS + "implies");
+              triples.push(new Triple(left, pred, right));
+              if (this.peek().typ === "Dot") this.next();
+              else if (this.peek().typ === "RBrace") {
+              } else {
+                this.fail(`Expected '.' or '}', got ${this.peek().toString()}`);
+              }
+            } else if (this.peek().typ === "OpImpliedBy") {
+              this.next();
+              const right = this.parseTerm();
+              const pred = internIri(LOG_NS + "impliedBy");
+              triples.push(new Triple(left, pred, right));
+              if (this.peek().typ === "Dot") this.next();
+              else if (this.peek().typ === "RBrace") {
+              } else {
+                this.fail(`Expected '.' or '}', got ${this.peek().toString()}`);
+              }
+            } else {
+              if (this.peek().typ === "Dot" || this.peek().typ === "RBrace") {
+                if (this.pendingTriples.length > 0) {
+                  triples.push(...this.pendingTriples);
+                  this.pendingTriples = [];
+                }
+                if (this.peek().typ === "Dot") this.next();
+                continue;
+              }
+              triples.push(...this.parsePredicateObjectList(left));
+              if (this.peek().typ === "Dot") this.next();
+              else if (this.peek().typ === "RBrace") {
+              } else {
+                this.fail(`Expected '.' or '}', got ${this.peek().toString()}`);
+              }
+            }
+          }
+          this.next();
+          return new GraphTerm(triples);
+        }
+        parsePredicateObjectList(subject) {
+          const out = [];
+          if (this.pendingTriples.length > 0) {
+            out.push(...this.pendingTriples);
+            this.pendingTriples = [];
+          }
+          while (true) {
+            let verb;
+            let invert = false;
+            if (this.peek().typ === "Ident" && (this.peek().value || "") === "a") {
+              this.next();
+              verb = internIri(RDF_NS + "type");
+            } else if (this.peek().typ === "Ident" && (this.peek().value || "") === "has") {
+              this.next();
+              verb = this.parseTerm();
+            } else if (this.peek().typ === "Ident" && (this.peek().value || "") === "is") {
+              this.next();
+              verb = this.parseTerm();
+              if (!(this.peek().typ === "Ident" && (this.peek().value || "") === "of")) {
+                this.fail(`Expected 'of' after 'is <expr>', got ${this.peek().toString()}`);
+              }
+              this.next();
+              invert = true;
+            } else if (this.peek().typ === "OpPredInvert") {
+              this.next();
+              verb = this.parseTerm();
+              invert = true;
+            } else {
+              verb = this.parseTerm();
+            }
+            const objects = this.parseObjectList();
+            if (this.pendingTriples.length > 0) {
+              out.push(...this.pendingTriples);
+              this.pendingTriples = [];
+            }
+            for (const o of objects) {
+              out.push(new Triple(invert ? o : subject, verb, invert ? subject : o));
+            }
+            if (this.peek().typ === "Semicolon") {
+              this.next();
+              if (this.peek().typ === "Dot") break;
+              continue;
+            }
+            break;
+          }
+          return out;
+        }
+        parseObjectList() {
+          const objs = [this.parseTerm()];
+          while (this.peek().typ === "Comma") {
+            this.next();
+            objs.push(this.parseTerm());
+          }
+          return objs;
+        }
+        makeRule(left, right, isForward) {
+          let premiseTerm, conclTerm;
+          if (isForward) {
+            premiseTerm = left;
+            conclTerm = right;
+          } else {
+            premiseTerm = right;
+            conclTerm = left;
+          }
+          let isFuse = false;
+          if (isForward) {
+            if (conclTerm instanceof Literal && conclTerm.value === "false") {
+              isFuse = true;
+            }
+          }
+          let rawPremise;
+          if (premiseTerm instanceof GraphTerm) {
+            rawPremise = premiseTerm.triples;
+          } else if (premiseTerm instanceof Literal && premiseTerm.value === "true") {
+            rawPremise = [];
+          } else {
+            rawPremise = [];
+          }
+          let rawConclusion;
+          if (conclTerm instanceof GraphTerm) {
+            rawConclusion = conclTerm.triples;
+          } else if (conclTerm instanceof Literal && conclTerm.value === "false") {
+            rawConclusion = [];
+          } else {
+            rawConclusion = [];
+          }
+          const headBlankLabels = collectBlankLabelsInTriples2(rawConclusion);
+          const [premise0, conclusion] = liftBlankRuleVars(rawPremise, rawConclusion);
+          const premise = isForward ? reorderPremiseForConstraints(premise0) : premise0;
+          return new Rule(premise, conclusion, isForward, isFuse, headBlankLabels);
+        }
+      };
+    }
+  });
 
   // src/n3_output.ts
   function termToN3(t, pref) {
@@ -5332,9 +5395,9 @@
     }
     return { line, col };
   }
-  function formatN3SyntaxError(err, text, path) {
+  function formatN3SyntaxError(err, text, path2) {
     const off = err && typeof err.offset === "number" ? err.offset : null;
-    const label = path ? String(path) : "<input>";
+    const label = path2 ? String(path2) : "<input>";
     if (off === null) {
       return `Syntax error in ${label}: ${err && err.message ? err.message : String(err)}`;
     }
@@ -5409,71 +5472,94 @@ ${caret}`;
     });
     return pairs.map((p) => p.text).join("");
   }
+  var init_n3_output = __esm({
+    "src/n3_output.ts"() {
+      init_reasoner();
+    }
+  });
 
   // src/eyeling.ts
-  installN3Input(lex, Parser);
-  installTraceFormatting(termToN3, PrefixEnv.newDefault());
-  function reasonStream(n3Text, opts = {}) {
-    const {
-      baseIri = null,
-      proof = false,
-      onDerived = null,
-      includeInputFactsInClosure = true,
-      enforceHttps = false
-    } = opts;
-    const __oldEnforceHttps = getEnforceHttpsEnabled();
-    setEnforceHttpsEnabled(!!enforceHttps);
-    setProofCommentsEnabled(!!proof);
-    const toks = lex(n3Text);
-    const parser = new Parser(toks);
-    if (baseIri) parser.prefixes.setBase(baseIri);
-    let prefixes, triples, frules, brules;
-    [prefixes, triples, frules, brules] = parser.parseDocument();
-    setTracePrefixes(prefixes);
-    materializeRdfLists(triples, frules, brules);
-    const facts = triples.filter((tr) => isGroundTriple(tr));
-    const derived = forwardChain(facts, frules, brules, (df) => {
-      if (typeof onDerived === "function") {
-        onDerived({
-          triple: tripleToN3(df.fact, prefixes),
-          df
+  var require_eyeling = __commonJS({
+    "src/eyeling.ts"(exports) {
+      init_n3_input();
+      init_reasoner();
+      init_n3_output();
+      installN3Input(lex, Parser);
+      installTraceFormatting(termToN3, PrefixEnv.newDefault());
+      function reasonStream(n3Text, opts = {}) {
+        const {
+          baseIri = null,
+          proof = false,
+          onDerived = null,
+          includeInputFactsInClosure = true,
+          enforceHttps = false
+        } = opts;
+        const __oldEnforceHttps = getEnforceHttpsEnabled();
+        setEnforceHttpsEnabled(!!enforceHttps);
+        setProofCommentsEnabled(!!proof);
+        const toks = lex(n3Text);
+        const parser = new Parser(toks);
+        if (baseIri) parser.prefixes.setBase(baseIri);
+        let prefixes, triples, frules, brules;
+        [prefixes, triples, frules, brules] = parser.parseDocument();
+        setTracePrefixes(prefixes);
+        materializeRdfLists(triples, frules, brules);
+        const facts = triples.filter((tr) => isGroundTriple(tr));
+        const derived = forwardChain(facts, frules, brules, (df) => {
+          if (typeof onDerived === "function") {
+            onDerived({
+              triple: tripleToN3(df.fact, prefixes),
+              df
+            });
+          }
         });
+        const derivedTriples = derived.map((d) => d.fact);
+        const closureTriples = includeInputFactsInClosure ? facts : derivedTriples;
+        const __out = {
+          prefixes,
+          facts,
+          derived,
+          closureN3: closureTriples.map((t) => tripleToN3(t, prefixes)).join("\n")
+        };
+        setEnforceHttpsEnabled(__oldEnforceHttps);
+        return __out;
       }
-    });
-    const derivedTriples = derived.map((d) => d.fact);
-    const closureTriples = includeInputFactsInClosure ? facts : derivedTriples;
-    const __out = {
-      prefixes,
-      facts,
-      derived,
-      closureN3: closureTriples.map((t) => tripleToN3(t, prefixes)).join("\n")
-    };
-    setEnforceHttpsEnabled(__oldEnforceHttps);
-    return __out;
-  }
-  var EYELING_API = { reasonStream };
-  try {
-    if (typeof module !== "undefined" && module.exports) module.exports = EYELING_API;
-  } catch (_) {
-  }
-  try {
-    if (typeof self !== "undefined") self.eyeling = EYELING_API;
-  } catch (_) {
-  }
-  function main() {
-    setProofCommentsEnabled(false);
-    const argvRaw = process.argv.slice(2);
-    const argv = [];
-    for (const a of argvRaw) {
-      if (a === "-" || !a.startsWith("-") || a.startsWith("--") || a.length === 2) {
-        argv.push(a);
-        continue;
+      var EYELING_API = {
+        // Primary supported surface
+        reasonStream,
+        // Compatibility / “internals” used by demo.html
+        lex,
+        Parser,
+        forwardChain,
+        materializeRdfLists,
+        PrefixEnv,
+        version
+      };
+      try {
+        if (typeof exports === "object" && exports) {
+          Object.assign(exports, EYELING_API);
+          exports.default = EYELING_API;
+        }
+      } catch (_) {
       }
-      for (const ch of a.slice(1)) argv.push("-" + ch);
-    }
-    const prog = String(process.argv[1] || "eyeling").split(/[\/]/).pop();
-    function printHelp(toStderr = false) {
-      const msg = `Usage: ${prog} [options] <file.n3>
+      try {
+        if (typeof self !== "undefined") self.eyeling = EYELING_API;
+      } catch (_) {
+      }
+      function main() {
+        setProofCommentsEnabled(false);
+        const argvRaw = process.argv.slice(2);
+        const argv = [];
+        for (const a of argvRaw) {
+          if (a === "-" || !a.startsWith("-") || a.startsWith("--") || a.length === 2) {
+            argv.push(a);
+            continue;
+          }
+          for (const ch of a.slice(1)) argv.push("-" + ch);
+        }
+        const prog = String(process.argv[1] || "eyeling").split(/[\/]/).pop();
+        function printHelp(toStderr = false) {
+          const msg = `Usage: ${prog} [options] <file.n3>
 
 Options:
   -a, --ast               Print parsed AST as JSON and exit.
@@ -5485,151 +5571,154 @@ Options:
   -t, --stream            Stream derived triples as soon as they are derived.
   -v, --version           Print version and exit.
 `;
-      (toStderr ? console.error : console.log)(msg);
-    }
-    if (argv.includes("--help") || argv.includes("-h")) {
-      printHelp(false);
-      process.exit(0);
-    }
-    if (argv.includes("--version") || argv.includes("-v")) {
-      console.log(`eyeling v${version}`);
-      process.exit(0);
-    }
-    const showAst = argv.includes("--ast") || argv.includes("-a");
-    const outputStringsMode = argv.includes("--strings") || argv.includes("-r");
-    const streamMode = argv.includes("--stream") || argv.includes("-t");
-    if (argv.includes("--enforce-https") || argv.includes("-e")) {
-      setEnforceHttpsEnabled(true);
-    }
-    if (argv.includes("--proof-comments") || argv.includes("-p")) {
-      setProofCommentsEnabled(true);
-    }
-    if (argv.includes("--no-proof-comments")) {
-      setProofCommentsEnabled(false);
-    }
-    if (argv.includes("--super-restricted") || argv.includes("-s")) {
-      setSuperRestrictedMode(true);
-    }
-    const positional = argv.filter((a) => !a.startsWith("-"));
-    if (positional.length === 0) {
-      printHelp(false);
-      process.exit(0);
-    }
-    if (positional.length !== 1) {
-      console.error("Error: expected exactly one input <file.n3>.");
-      printHelp(true);
-      process.exit(1);
-    }
-    const path = positional[0];
-    let text;
-    try {
-      const fs = __require("fs");
-      text = fs.readFileSync(path, { encoding: "utf8" });
-    } catch (e) {
-      console.error(`Error reading file ${JSON.stringify(path)}: ${e.message}`);
-      process.exit(1);
-    }
-    let toks;
-    let prefixes, triples, frules, brules;
-    try {
-      toks = lex(text);
-      const parser = new Parser(toks);
-      [prefixes, triples, frules, brules] = parser.parseDocument();
-      setTracePrefixes(prefixes);
-    } catch (e) {
-      if (e && e.name === "N3SyntaxError") {
-        console.error(formatN3SyntaxError(e, text, path));
-        process.exit(1);
-      }
-      throw e;
-    }
-    if (showAst) {
-      let astReplacer = function(_key, value) {
-        if (value instanceof Set) return Array.from(value);
-        if (value && typeof value === "object" && value.constructor) {
-          const t = value.constructor.name;
-          if (t && t !== "Object" && t !== "Array") return { _type: t, ...value };
+          (toStderr ? console.error : console.log)(msg);
         }
-        return value;
-      };
-      console.log(JSON.stringify([prefixes, triples, frules, brules], astReplacer, 2));
-      process.exit(0);
-    }
-    materializeRdfLists(triples, frules, brules);
-    const facts = triples.filter((tr) => isGroundTriple(tr));
-    if (outputStringsMode) {
-      forwardChain(facts, frules, brules);
-      const out = collectOutputStringsFromFacts(facts, prefixes);
-      if (out) process.stdout.write(out);
-      process.exit(0);
-    }
-    function prefixesUsedInInputTokens(toks2, prefEnv) {
-      const used = /* @__PURE__ */ new Set();
-      function maybeAddFromQName(name) {
-        if (typeof name !== "string") return;
-        if (!name.includes(":")) return;
-        if (name.startsWith("_:")) return;
-        const idx = name.indexOf(":");
-        const p = name.slice(0, idx);
-        if (!Object.prototype.hasOwnProperty.call(prefEnv.map, p)) return;
-        used.add(p);
-      }
-      for (let i = 0; i < toks2.length; i++) {
-        const t = toks2[i];
-        if (t.typ === "AtPrefix") {
-          while (i < toks2.length && toks2[i].typ !== "Dot" && toks2[i].typ !== "EOF") i++;
-          continue;
+        if (argv.includes("--help") || argv.includes("-h")) {
+          printHelp(false);
+          process.exit(0);
         }
-        if (t.typ === "AtBase") {
-          while (i < toks2.length && toks2[i].typ !== "Dot" && toks2[i].typ !== "EOF") i++;
-          continue;
+        if (argv.includes("--version") || argv.includes("-v")) {
+          console.log(`eyeling v${version}`);
+          process.exit(0);
         }
-        if (t.typ === "Ident") maybeAddFromQName(t.value);
-        if (t.typ === "PNameNs") maybeAddFromQName(t.value + ":");
-      }
-      const pfxLines = [];
-      for (const pfx of Array.from(used).sort()) {
-        const iri = prefEnv.map[pfx];
-        const pname = pfx === "" ? ":" : pfx + ":";
-        pfxLines.push(`@prefix ${pname} <${iri}> .`);
-      }
-      return pfxLines.join("\n");
-    }
-    const outPrefixes = prefixes;
-    if (streamMode) {
-      const header2 = prefixesUsedInInputTokens(toks, outPrefixes);
-      if (header2) console.log(header2 + "\n");
-      forwardChain(facts, frules, brules, (df) => {
+        const showAst = argv.includes("--ast") || argv.includes("-a");
+        const outputStringsMode = argv.includes("--strings") || argv.includes("-r");
+        const streamMode = argv.includes("--stream") || argv.includes("-t");
+        if (argv.includes("--enforce-https") || argv.includes("-e")) {
+          setEnforceHttpsEnabled(true);
+        }
         if (argv.includes("--proof-comments") || argv.includes("-p")) {
-          printExplanation(df, outPrefixes);
+          setProofCommentsEnabled(true);
         }
-        console.log(tripleToN3(df.fact, outPrefixes));
-      });
-      process.exit(0);
+        if (argv.includes("--no-proof-comments")) {
+          setProofCommentsEnabled(false);
+        }
+        if (argv.includes("--super-restricted") || argv.includes("-s")) {
+          setSuperRestrictedMode(true);
+        }
+        const positional = argv.filter((a) => !a.startsWith("-"));
+        if (positional.length === 0) {
+          printHelp(false);
+          process.exit(0);
+        }
+        if (positional.length !== 1) {
+          console.error("Error: expected exactly one input <file.n3>.");
+          printHelp(true);
+          process.exit(1);
+        }
+        const path2 = positional[0];
+        let text;
+        try {
+          const fs2 = __require("fs");
+          text = fs2.readFileSync(path2, { encoding: "utf8" });
+        } catch (e) {
+          console.error(`Error reading file ${JSON.stringify(path2)}: ${e.message}`);
+          process.exit(1);
+        }
+        let toks;
+        let prefixes, triples, frules, brules;
+        try {
+          toks = lex(text);
+          const parser = new Parser(toks);
+          [prefixes, triples, frules, brules] = parser.parseDocument();
+          setTracePrefixes(prefixes);
+        } catch (e) {
+          if (e && e.name === "N3SyntaxError") {
+            console.error(formatN3SyntaxError(e, text, path2));
+            process.exit(1);
+          }
+          throw e;
+        }
+        if (showAst) {
+          let astReplacer = function(_key, value) {
+            if (value instanceof Set) return Array.from(value);
+            if (value && typeof value === "object" && value.constructor) {
+              const t = value.constructor.name;
+              if (t && t !== "Object" && t !== "Array") return { _type: t, ...value };
+            }
+            return value;
+          };
+          console.log(JSON.stringify([prefixes, triples, frules, brules], astReplacer, 2));
+          process.exit(0);
+        }
+        materializeRdfLists(triples, frules, brules);
+        const facts = triples.filter((tr) => isGroundTriple(tr));
+        if (outputStringsMode) {
+          forwardChain(facts, frules, brules);
+          const out = collectOutputStringsFromFacts(facts, prefixes);
+          if (out) process.stdout.write(out);
+          process.exit(0);
+        }
+        function prefixesUsedInInputTokens(toks2, prefEnv) {
+          const used = /* @__PURE__ */ new Set();
+          function maybeAddFromQName(name) {
+            if (typeof name !== "string") return;
+            if (!name.includes(":")) return;
+            if (name.startsWith("_:")) return;
+            const idx = name.indexOf(":");
+            const p = name.slice(0, idx);
+            if (!Object.prototype.hasOwnProperty.call(prefEnv.map, p)) return;
+            used.add(p);
+          }
+          for (let i = 0; i < toks2.length; i++) {
+            const t = toks2[i];
+            if (t.typ === "AtPrefix") {
+              while (i < toks2.length && toks2[i].typ !== "Dot" && toks2[i].typ !== "EOF") i++;
+              continue;
+            }
+            if (t.typ === "AtBase") {
+              while (i < toks2.length && toks2[i].typ !== "Dot" && toks2[i].typ !== "EOF") i++;
+              continue;
+            }
+            if (t.typ === "Ident") maybeAddFromQName(t.value);
+            if (t.typ === "PNameNs") maybeAddFromQName(t.value + ":");
+          }
+          const pfxLines = [];
+          for (const pfx of Array.from(used).sort()) {
+            const iri = prefEnv.map[pfx];
+            const pname = pfx === "" ? ":" : pfx + ":";
+            pfxLines.push(`@prefix ${pname} <${iri}> .`);
+          }
+          return pfxLines.join("\n");
+        }
+        const outPrefixes = prefixes;
+        if (streamMode) {
+          const header2 = prefixesUsedInInputTokens(toks, outPrefixes);
+          if (header2) console.log(header2 + "\n");
+          forwardChain(facts, frules, brules, (df) => {
+            if (argv.includes("--proof-comments") || argv.includes("-p")) {
+              printExplanation(df, outPrefixes);
+            }
+            console.log(tripleToN3(df.fact, outPrefixes));
+          });
+          process.exit(0);
+        }
+        const derived = forwardChain(facts, frules, brules);
+        if (!derived || derived.length === 0) {
+          process.exit(0);
+        }
+        const header = prefixesUsedInInputTokens(toks, outPrefixes);
+        if (header) console.log(header + "\n");
+        if (argv.includes("--proof-comments") || argv.includes("-p")) {
+          for (const df of derived) printExplanation(df, outPrefixes);
+        }
+        const outN3 = derived.map((df) => tripleToN3(df.fact, outPrefixes)).join("\n");
+        if (outN3) console.log(outN3);
+      }
+      function __shouldRunMain() {
+        try {
+          if (typeof process === "undefined" || !process.argv || process.argv.length < 2) return false;
+          const arg1 = String(process.argv[1] || "");
+          if (!arg1) return false;
+          const base = typeof __filename === "string" ? __filename.split(/[\\/]/).pop() : "eyeling.js";
+          if (!base) return false;
+          return arg1 === __filename || arg1.endsWith("/" + base) || arg1.endsWith("\\" + base);
+        } catch (_) {
+          return false;
+        }
+      }
+      if (__shouldRunMain()) main();
     }
-    const derived = forwardChain(facts, frules, brules);
-    if (!derived || derived.length === 0) {
-      process.exit(0);
-    }
-    const header = prefixesUsedInInputTokens(toks, outPrefixes);
-    if (header) console.log(header + "\n");
-    if (argv.includes("--proof-comments") || argv.includes("-p")) {
-      for (const df of derived) printExplanation(df, outPrefixes);
-    }
-    const outN3 = derived.map((df) => tripleToN3(df.fact, outPrefixes)).join("\n");
-    if (outN3) console.log(outN3);
-  }
-  function __shouldRunMain() {
-    try {
-      if (typeof process === "undefined" || !process.argv || process.argv.length < 2) return false;
-      const arg1 = String(process.argv[1] || "");
-      if (!arg1) return false;
-      const base = typeof __filename === "string" ? __filename.split(/[\\/]/).pop() : "eyeling.js";
-      if (!base) return false;
-      return arg1 === __filename || arg1.endsWith("/" + base) || arg1.endsWith("\\" + base);
-    } catch (_) {
-      return false;
-    }
-  }
-  if (__shouldRunMain()) main();
+  });
+  require_eyeling();
 })();

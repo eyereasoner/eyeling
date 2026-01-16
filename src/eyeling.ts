@@ -20,7 +20,7 @@ import {
 installN3Input(lex, Parser);
 installTraceFormatting(termToN3, PrefixEnv.newDefault());
 
-export function reasonStream(n3Text, opts = {}) {
+function reasonStream(n3Text, opts = {}) {
   const {
     baseIri = null,
     proof = false,
@@ -72,18 +72,45 @@ export function reasonStream(n3Text, opts = {}) {
   return __out;
 }
 
-// Minimal export surface for Node + browser/worker
-const EYELING_API = { reasonStream };
+// Public API for Node + browser/worker.
+//
+// Note: demo.html (GitHub Pages) expects these internal hooks to exist:
+//   - eyeling.lex
+//   - eyeling.Parser
+//   - eyeling.forwardChain
+// so we expose them for backwards compatibility.
+const EYELING_API = {
+  // Primary supported surface
+  reasonStream,
 
+  // Compatibility / “internals” used by demo.html
+  lex,
+  Parser,
+  forwardChain,
+  materializeRdfLists,
+  PrefixEnv,
+  version,
+};
+
+// CommonJS export (Node): avoid referencing `module` so the same bundle runs in browsers/workers.
+// In Node, `exports` is available and is an alias of `module.exports`.
 try {
-  if (typeof module !== 'undefined' && module.exports) module.exports = EYELING_API;
+  // eslint-disable-next-line no-undef
+  if (typeof exports === 'object' && exports) {
+    // eslint-disable-next-line no-undef
+    Object.assign(exports, EYELING_API);
+    // ESM interop convenience for bundlers that expect `default`.
+    // eslint-disable-next-line no-undef
+    exports.default = EYELING_API;
+  }
 } catch (_) {}
+
 
 try {
   if (typeof self !== 'undefined') self.eyeling = EYELING_API;
 } catch (_) {}
 
-export function main() {
+function main() {
   // CLI default (and API default) is machine-friendly output: no proof comments.
   setProofCommentsEnabled(false);
 

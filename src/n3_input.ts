@@ -1,6 +1,6 @@
 // @ts-nocheck
 import {
-  RDF_NS, RDFS_NS, XSD_NS, LOG_NS, MATH_NS, STRING_NS, LIST_NS, TIME_NS, SKOLEM_NS, RDF_JSON_DT,
+  RDF_NS, RDFS_NS, OWL_NS, XSD_NS, LOG_NS, MATH_NS, STRING_NS, LIST_NS, TIME_NS, SKOLEM_NS, RDF_JSON_DT,
   Term, Iri, Literal, Var, Blank, ListTerm, OpenListTerm, GraphTerm, Triple, Rule,
   internIri, internLiteral,
   stripQuotes, decodeN3StringEscapes,
