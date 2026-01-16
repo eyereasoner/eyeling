@@ -4,7 +4,7 @@ A [Notation3 (N3)](https://notation3.org/) reasoner in **JavaScript**.
 
 `eyeling` is:
 
-- a single self-contained file (`eyeling.js`, no external deps)
+- a single self-contained distribution file (`eyeling.js`, no external deps) — built from the TypeScript sources in this repo
 - a practical N3/Turtle superset (enough for lots of real rulesets)
 - supports forward (`=>`) + backward (`<=`) chaining over Horn-style rules
 - prints only newly derived forward facts, optionally preceded by compact proof comments
@@ -107,6 +107,22 @@ npm run test:packlist
 - `test:examples` runs the examples in the `examples` directory and compares against the golden outputs in `examples/output`.
 - `test:package` does a “real consumer” smoke test: `npm pack` → install tarball into a temp project → run API + CLI + examples.
 - `test:packlist` sanity-checks what will be published in the npm tarball (and the CLI shebang/bin wiring).
+
+### Development (repo)
+
+The published npm package ships prebuilt JavaScript. In this repository, Eyeling is authored in TypeScript (`src/`) and `npm run build` regenerates the top-level `eyeling.js` used by `demo.html` and the CLI.
+
+```bash
+npm ci
+npm run build          # writes ./eyeling.js
+npm test               # runs build first
+```
+
+Tip: when a command expects JSON-only output (e.g. `npm pack --dry-run --json`), run:
+
+```bash
+npm run build -- --quiet
+```
 
 ### Usage
 

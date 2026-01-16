@@ -41,7 +41,7 @@
     "test:package": "node test/package.test.js",
     "test": "npm run test:packlist && npm run test:api && npm run test:maken3 && npm run test:examples",
     "preversion": "npm test",
-    "postversion": "git push origin HEAD --follow-tags",
+    "postversion": "git push --follow-tags",
     "build": "node scripts/build.mjs",
     "pretest": "npm run build",
     "pretest:packlist": "npm run build",
