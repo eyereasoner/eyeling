@@ -1,6 +1,4 @@
 @prefix : <http://example.org/#> .
-@prefix complex: <https://eyereasoner.github.io/eye/complex#> .
-@prefix math: <http://www.w3.org/2000/10/swap/math#> .
 
 :poly1 :verified true .
 :poly2 :verified true .

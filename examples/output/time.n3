@@ -1,6 +1,4 @@
 @prefix : <http://example.org/> .
-@prefix time: <http://www.w3.org/2000/10/swap/time#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 :out :year 2023 .
 :out :month 4 .

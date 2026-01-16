@@ -1,5 +1,5 @@
 @prefix : <http://example.org/light-eaters#> .
-@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 :Meadow :dailyLightEnergy "1000"^^xsd:decimal .
 :Forest :dailyLightEnergy "200"^^xsd:decimal .

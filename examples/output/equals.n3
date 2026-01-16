@@ -1,4 +1,3 @@
 @prefix : <http://example.org/socrates#> .
-@prefix owl: <http://www.w3.org/2002/07/owl#> .
 
 :test :is true .

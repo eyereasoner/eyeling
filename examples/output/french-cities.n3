@@ -1,6 +1,4 @@
 @prefix : <http://www.agfa.com/w3c/euler/graph.axiom#> .
-@prefix owl: <http://www.w3.org/2002/07/owl#> .
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
 :paris :path :orleans .
 :paris :path :chartres .

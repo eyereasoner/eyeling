@@ -1,5 +1,4 @@
 @prefix : <https://eyereasoner.github.io/eye/reasoning#> .
-@prefix math: <http://www.w3.org/2000/10/swap/math#> .
 
 :test :is {
     0 :fibonacci 0 .

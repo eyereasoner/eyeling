@@ -1,7 +1,5 @@
 @prefix : <http://example.org/ruby-runge#> .
-@prefix list: <http://www.w3.org/2000/10/swap/list#> .
-@prefix log: <http://www.w3.org/2000/10/swap/log#> .
-@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 :Interp1 :yAtX0 "-0.28000000000000014"^^xsd:decimal .
 :Interp1 :yAtXPlus "-0.27759800000000023"^^xsd:decimal .

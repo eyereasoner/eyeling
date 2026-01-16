@@ -1,6 +1,6 @@
 {
   "name": "eyeling",
-  "version": "1.8.10",
+  "version": "1.8.8",
   "description": "A minimal Notation3 (N3) reasoner in JavaScript.",
   "main": "./index.js",
   "keywords": [
@@ -17,16 +17,14 @@
   "bin": {
     "eyeling": "./eyeling.js"
   },
-  "type": "commonjs",
   "types": "./index.d.ts",
   "files": [
     "index.js",
     "index.d.ts",
     "eyeling.js",
-    "n3.js",
+    "eyeling-builtins.ttl",
     "test",
     "examples",
-    "eyeling-builtins.ttl",
     "README.md",
     "LICENSE.md"
   ],
@@ -36,18 +34,11 @@
   "scripts": {
     "test:packlist": "node test/packlist.test.js",
     "test:api": "node test/api.test.js",
-    "test:n3": "node test/n3.test.js",
+    "test:maken3": "node test/maken3.test.js",
     "test:examples": "node test/examples.test.js",
     "test:package": "node test/package.test.js",
-    "test": "npm run test:packlist && npm run test:api && npm run test:n3 && npm run test:examples",
+    "test": "npm run test:packlist && npm run test:api && npm run test:maken3 && npm run test:examples",
     "preversion": "npm test",
-    "postversion": "git push origin HEAD --follow-tags",
-    "build": "node scripts/build.mjs",
-    "pretest": "npm run build",
-    "prepack": "npm run build",
-    "pretest:api": "npm run build"
-  },
-  "devDependencies": {
-    "esbuild": "^0.27.2"
+    "postversion": "git push origin HEAD --follow-tags"
   }
 }

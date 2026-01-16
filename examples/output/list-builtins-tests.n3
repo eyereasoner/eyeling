@@ -1,5 +1,4 @@
 @prefix : <https://eyereasoner.github.io/ns#> .
-@prefix list: <http://www.w3.org/2000/10/swap/list#> .
 
 :ok_list_append_1 a :Pass .
 :ok_list_first_1 a :Pass .

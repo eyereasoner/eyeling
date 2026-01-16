@@ -1,7 +1,6 @@
 @prefix : <https://eyereasoner.github.io/eye/reasoning#> .
 @prefix gps: <https://eyereasoner.github.io/eye/reasoning/gps/gps-schema#> .
-@prefix list: <http://www.w3.org/2000/10/swap/list#> .
-@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 :d1 gps:plan ((:fly_gent_brugge :public_coastline_brugge_oostende) "2800"^^xsd:decimal "0.012"^^xsd:decimal "0.9602999999999999"^^xsd:decimal "0.9503999999999999"^^xsd:decimal :low :none (:t :t :t :t :t)) .
 :d1 gps:plan ((:fly_gent_brugge :buy_permit_brugge :public_coastline_brugge_oostende) "3250"^^xsd:decimal "0.014"^^xsd:decimal "0.941094"^^xsd:decimal "0.9503999999999999"^^xsd:decimal :low :yes (:t :t :t :t)) .

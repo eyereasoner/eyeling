@@ -1,10 +1,6 @@
 @prefix ex: <http://example.org/#> .
-@prefix list: <http://www.w3.org/2000/10/swap/list#> .
-@prefix log: <http://www.w3.org/2000/10/swap/log#> .
-@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix genid: <https://eyereasoner.github.io/.well-known/genid/> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-@prefix string: <http://www.w3.org/2000/10/swap/string#> .
 
 ex:checks ex:fragmentPointerWorks true .
 ex:checks ex:tildeEscapeWorks true .

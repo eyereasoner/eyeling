@@ -1,4 +1,4 @@
 @prefix : <http://example.org/#> .
-@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix genid: <https://eyereasoner.github.io/.well-known/genid/> .
 
 :Result :skolem genid:32007e38-bd28-5f18-4712-ae1df708a5d4 .

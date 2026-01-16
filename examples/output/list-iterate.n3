@@ -1,5 +1,4 @@
 @prefix : <urn:example:> .
-@prefix list: <http://www.w3.org/2000/10/swap/list#> .
 
 ("Huey" "Dewey" "Louie") :iterate (0 "Huey") .
 "Dewey" :hasIndex 1 .

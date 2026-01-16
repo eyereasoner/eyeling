@@ -1,7 +1,5 @@
 @prefix : <http://example.org/#> .
-@prefix complex: <https://eyereasoner.github.io/eye/complex#> .
-@prefix list: <http://www.w3.org/2000/10/swap/list#> .
-@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 :poly1 :hasRoot ("4.000000007450581"^^xsd:decimal "0"^^xsd:decimal) .
 :poly1 :hasRoot ("2.9999999925494194"^^xsd:decimal "0"^^xsd:decimal) .

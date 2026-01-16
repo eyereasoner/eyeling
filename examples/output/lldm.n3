@@ -1,7 +1,5 @@
 @prefix : <http://www.agfa.com/w3c/2002/10/medicad/op/lldmP#> .
-@prefix math: <http://www.w3.org/2000/10/swap/math#> .
-@prefix owl: <http://www.w3.org/2002/07/owl#> .
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 :meas47 :dx12Cm "-35"^^xsd:decimal .
 :meas47 :dy12Cm "2.2"^^xsd:decimal .

@@ -1,5 +1,4 @@
 @prefix : <https://eyereasoner.github.io/ns#> .
-@prefix string: <http://www.w3.org/2000/10/swap/string#> .
 
 :ok_string_concatenation_1 a :Pass .
 :ok_string_contains_1 a :Pass .

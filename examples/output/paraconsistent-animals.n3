@@ -1,5 +1,4 @@
 @prefix : <http://example.org/paraconsistent#> .
-@prefix log: <http://www.w3.org/2000/10/swap/log#> .
 
 :tweety :canFlyStatus :Both .
 :mythic :canFlyStatus :Both .

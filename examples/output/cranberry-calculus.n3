@@ -1,7 +1,5 @@
 @prefix : <http://example.org/cranberry-calculus#> .
-@prefix list: <http://www.w3.org/2000/10/swap/list#> .
-@prefix log: <http://www.w3.org/2000/10/swap/log#> .
-@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 :VecA :dotWithVecB "12"^^xsd:decimal .
 _:sk_0 :radians "0.9272952180016123"^^xsd:decimal .
