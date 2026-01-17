@@ -26,9 +26,9 @@
  *
  * ----------------------------------------------------------------------------
  * Usage
- *   n3 file.ttl  > file.n3
- *   n3 file.trig > file.n3
- *   n3 file.srl  > file.n3
+ *   n3gen file.ttl  > file.n3
+ *   n3gen file.trig > file.n3
+ *   n3gen file.srl  > file.n3
  */
 
 const fs = require('node:fs/promises');
@@ -3029,14 +3029,14 @@ function srlToN3(srlText) {
 
 function printHelp() {
   process.stdout.write(`Usage:
-  n3 <file.ttl|file.trig|file.srl>
+  n3gen <file.ttl|file.trig|file.srl>
 
 Converts RDF 1.2 Turtle/TriG and SHACL 1.2 Rules to N3.
 
 Examples:
-  n3 file.ttl > file.n3
-  n3 file.trig > file.n3
-  n3 file.srl > file.n3
+  n3gen file.ttl > file.n3
+  n3gen file.trig > file.n3
+  n3gen file.srl > file.n3
 `);
 }
 
