@@ -18,11 +18,11 @@ run('tsc -p tsconfig.json');
 // 2) Concatenate into a single browser/worker-friendly bundle at ./eyeling.js
 //    (demo.html expects this exact filename)
 const parts = [
-  path.join('build', 'eyeling-core.js'),
-  path.join('build', 'eyeling-n3.js'),
-  path.join('build', 'eyeling-builtins.js'),
-  path.join('build', 'eyeling-engine.js'),
-  path.join('build', 'eyeling-api.js'),
+  path.join('build', 'core.js'),
+  path.join('build', 'n3.js'),
+  path.join('build', 'builtins.js'),
+  path.join('build', 'engine.js'),
+  path.join('build', 'api.js'),
 ];
 
 const out = ['#!/usr/bin/env node\n'];

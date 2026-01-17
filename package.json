@@ -23,6 +23,8 @@
     "index.d.ts",
     "eyeling.js",
     "eyeling-builtins.ttl",
+    "demo.html",
+    "maken3.js",
     "src",
     "tsconfig.json",
     "test",
