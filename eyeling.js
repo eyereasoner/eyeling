@@ -357,6 +357,10 @@ const { liftBlankRuleVars, reorderPremiseForConstraints, isConstraintBuiltin } =
 
 const { termToN3, tripleToN3 } = require('./printing');
 
+const trace = require('./trace');
+const time = require('./time');
+const { deterministicSkolemIdFromKey } = require('./skolem');
+
 let version = 'dev';
 try {
   // Node: keep package.json version if available
@@ -725,146 +729,6 @@ function __computeConclusionFromFormula(formula) {
 let proofCommentsEnabled = false;
 // Super restricted mode: disable *all* builtins except => / <= (log:implies / log:impliedBy)
 let superRestrictedMode = false;
-
-// Debug/trace printing support (log:trace)
-let __tracePrefixes = null;
-
-function __traceWriteLine(line) {
-  // Prefer stderr in Node, fall back to console.error elsewhere.
-  try {
-    if (__IS_NODE && typeof process !== 'undefined' && process.stderr && typeof process.stderr.write === 'function') {
-      process.stderr.write(String(line) + '\n');
-      return;
-    }
-  } catch (_) {}
-  try {
-    if (typeof console !== 'undefined' && typeof console.error === 'function') console.error(line);
-  } catch (_) {}
-}
-
-// ----------------------------------------------------------------------------
-// Deterministic time support
-// ----------------------------------------------------------------------------
-// If set, overrides time:localTime across the whole run (and across runs if you
-// pass the same value). Store as xsd:dateTime *lexical* string (no quotes).
-let fixedNowLex = null;
-
-// If not fixed, we still memoize one value per run to avoid re-firing rules.
-let runNowLex = null;
-
-// ===========================================================================
-// Run-level time helpers
-// ===========================================================================
-
-function localIsoDateTimeString(d) {
-  function pad(n, width = 2) {
-    return String(n).padStart(width, '0');
-  }
-  const year = d.getFullYear();
-  const month = d.getMonth() + 1;
-  const day = d.getDate();
-  const hour = d.getHours();
-  const min = d.getMinutes();
-  const sec = d.getSeconds();
-  const ms = d.getMilliseconds();
-  const offsetMin = -d.getTimezoneOffset(); // minutes east of UTC
-  const sign = offsetMin >= 0 ? '+' : '-';
-  const abs = Math.abs(offsetMin);
-  const oh = Math.floor(abs / 60);
-  const om = abs % 60;
-  const msPart = ms ? '.' + String(ms).padStart(3, '0') : '';
-  return (
-    pad(year, 4) +
-    '-' +
-    pad(month) +
-    '-' +
-    pad(day) +
-    'T' +
-    pad(hour) +
-    ':' +
-    pad(min) +
-    ':' +
-    pad(sec) +
-    msPart +
-    sign +
-    pad(oh) +
-    ':' +
-    pad(om)
-  );
-}
-
-function utcIsoDateTimeStringFromEpochSeconds(sec) {
-  const ms = sec * 1000;
-  const d = new Date(ms);
-  function pad(n, w = 2) {
-    return String(n).padStart(w, '0');
-  }
-  const year = d.getUTCFullYear();
-  const month = d.getUTCMonth() + 1;
-  const day = d.getUTCDate();
-  const hour = d.getUTCHours();
-  const min = d.getUTCMinutes();
-  const s2 = d.getUTCSeconds();
-  const ms2 = d.getUTCMilliseconds();
-  const msPart = ms2 ? '.' + String(ms2).padStart(3, '0') : '';
-  return (
-    pad(year, 4) +
-    '-' +
-    pad(month) +
-    '-' +
-    pad(day) +
-    'T' +
-    pad(hour) +
-    ':' +
-    pad(min) +
-    ':' +
-    pad(s2) +
-    msPart +
-    '+00:00'
-  );
-}
-
-function getNowLex() {
-  if (fixedNowLex) return fixedNowLex;
-  if (runNowLex) return runNowLex;
-  runNowLex = localIsoDateTimeString(new Date());
-  return runNowLex;
-}
-
-// Deterministic pseudo-UUID from a string key (for log:skolem).
-// Not cryptographically strong, but stable and platform-independent.
-function deterministicSkolemIdFromKey(key) {
-  // Four 32-bit FNV-1a style accumulators with slight variation
-  let h1 = 0x811c9dc5;
-  let h2 = 0x811c9dc5;
-  let h3 = 0x811c9dc5;
-  let h4 = 0x811c9dc5;
-
-  for (let i = 0; i < key.length; i++) {
-    const c = key.charCodeAt(i);
-
-    h1 ^= c;
-    h1 = (h1 * 0x01000193) >>> 0;
-
-    h2 ^= c + 1;
-    h2 = (h2 * 0x01000193) >>> 0;
-
-    h3 ^= c + 2;
-    h3 = (h3 * 0x01000193) >>> 0;
-
-    h4 ^= c + 3;
-    h4 = (h4 * 0x01000193) >>> 0;
-  }
-
-  const hex = [h1, h2, h3, h4].map((h) => h.toString(16).padStart(8, '0')).join(''); // 32 hex chars
-
-  // Format like a UUID: 8-4-4-4-12
-  return (
-    hex.slice(0, 8) + '-' + hex.slice(8, 12) + '-' + hex.slice(12, 16) + '-' + hex.slice(16, 20) + '-' + hex.slice(20)
-  );
-}
-
-let runLocalTimeCache = null;
 
 // ===========================================================================
 function skolemizeTermForHeadBlanks(t, headBlankLabels, mapping, skCounter, firingKey, globalMap) {
@@ -3157,7 +3021,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       const secs = parseNumOrDuration(b0);
       if (secs !== null) {
         const outSecs = aDt.getTime() / 1000.0 - secs;
-        const lex = utcIsoDateTimeStringFromEpochSeconds(outSecs);
+        const lex = time.utcIsoDateTimeStringFromEpochSeconds(outSecs);
         const lit = internLiteral(`"${lex}"^^<${XSD_NS}dateTime>`);
         if (g.o instanceof Var) {
           const s2 = { ...subst };
@@ -3693,7 +3557,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   // time:localTime
   // "" time:localTime ?D.  binds ?D to “now” as xsd:dateTime.
   if (pv === TIME_NS + 'localTime') {
-    const now = getNowLex();
+    const now = time.getNowLex();
 
     if (g.o instanceof Var) {
       const s2 = { ...subst };
@@ -4599,12 +4463,12 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   // Side-effecting debug output (to stderr). Always succeeds once.
   // to mimic EYE's fm(...) formatting branch.
   if (pv === LOG_NS + 'trace') {
-    const pref = __tracePrefixes || PrefixEnv.newDefault();
+    const pref = trace.getTracePrefixes() || PrefixEnv.newDefault();
 
     const xStr = termToN3(g.s, pref);
     const yStr = termToN3(g.o, pref);
 
-    __traceWriteLine(`${xStr} TRACE ${yStr}`);
+    trace.writeTraceLine(`${xStr} TRACE ${yStr}`);
     return [{ ...subst }];
   }
 
@@ -5930,7 +5794,7 @@ function reasonStream(n3Text, opts = {}) {
   let prefixes, triples, frules, brules;
   [prefixes, triples, frules, brules] = parser.parseDocument();
   // Make the parsed prefixes available to log:trace output
-  __tracePrefixes = prefixes;
+  trace.setTracePrefixes(prefixes);
 
   materializeRdfLists(triples, frules, brules);
 
@@ -5995,11 +5859,11 @@ function setSuperRestrictedMode(v) {
 }
 
 function getTracePrefixes() {
-  return __tracePrefixes;
+  return trace.getTracePrefixes();
 }
 
 function setTracePrefixes(v) {
-  __tracePrefixes = v;
+  trace.setTracePrefixes(v);
 }
 
 module.exports = {
@@ -7881,6 +7745,202 @@ module.exports = {
   liftBlankRuleVars,
   isConstraintBuiltin,
   reorderPremiseForConstraints,
+};
+
+  };
+  __modules["lib/skolem.js"] = function(require, module, exports){
+'use strict';
+
+// Deterministic pseudo-UUID from a string key (for log:skolem).
+// Not cryptographically strong, but stable and platform-independent.
+
+function deterministicSkolemIdFromKey(key) {
+  // Four 32-bit FNV-1a style accumulators with slight variation
+  let h1 = 0x811c9dc5;
+  let h2 = 0x811c9dc5;
+  let h3 = 0x811c9dc5;
+  let h4 = 0x811c9dc5;
+
+  for (let i = 0; i < key.length; i++) {
+    const c = key.charCodeAt(i);
+
+    h1 ^= c;
+    h1 = (h1 * 0x01000193) >>> 0;
+
+    h2 ^= c + 1;
+    h2 = (h2 * 0x01000193) >>> 0;
+
+    h3 ^= c + 2;
+    h3 = (h3 * 0x01000193) >>> 0;
+
+    h4 ^= c + 3;
+    h4 = (h4 * 0x01000193) >>> 0;
+  }
+
+  const hex = [h1, h2, h3, h4]
+    .map((h) => h.toString(16).padStart(8, '0'))
+    .join(''); // 32 hex chars
+
+  // Format like a UUID: 8-4-4-4-12
+  return (
+    hex.slice(0, 8) +
+    '-' +
+    hex.slice(8, 12) +
+    '-' +
+    hex.slice(12, 16) +
+    '-' +
+    hex.slice(16, 20) +
+    '-' +
+    hex.slice(20)
+  );
+}
+
+module.exports = {
+  deterministicSkolemIdFromKey,
+};
+
+  };
+  __modules["lib/time.js"] = function(require, module, exports){
+'use strict';
+
+// Deterministic time support used by time:* builtins.
+// This logic is kept in its own module so the core engine stays focused.
+
+// If set, overrides time:localTime across the whole run.
+// Store as xsd:dateTime *lexical* string (no quotes).
+let fixedNowLex = null;
+
+// If not fixed, memoize one value per run to avoid re-firing rules.
+let runNowLex = null;
+
+function localIsoDateTimeString(d) {
+  function pad(n, width = 2) {
+    return String(n).padStart(width, '0');
+  }
+  const year = d.getFullYear();
+  const month = d.getMonth() + 1;
+  const day = d.getDate();
+  const hour = d.getHours();
+  const min = d.getMinutes();
+  const sec = d.getSeconds();
+  const ms = d.getMilliseconds();
+  const offsetMin = -d.getTimezoneOffset(); // minutes east of UTC
+  const sign = offsetMin >= 0 ? '+' : '-';
+  const abs = Math.abs(offsetMin);
+  const oh = Math.floor(abs / 60);
+  const om = abs % 60;
+  const msPart = ms ? '.' + String(ms).padStart(3, '0') : '';
+  return (
+    pad(year, 4) +
+    '-' +
+    pad(month) +
+    '-' +
+    pad(day) +
+    'T' +
+    pad(hour) +
+    ':' +
+    pad(min) +
+    ':' +
+    pad(sec) +
+    msPart +
+    sign +
+    pad(oh) +
+    ':' +
+    pad(om)
+  );
+}
+
+function utcIsoDateTimeStringFromEpochSeconds(sec) {
+  const ms = sec * 1000;
+  const d = new Date(ms);
+  function pad(n, w = 2) {
+    return String(n).padStart(w, '0');
+  }
+  const year = d.getUTCFullYear();
+  const month = d.getUTCMonth() + 1;
+  const day = d.getUTCDate();
+  const hour = d.getUTCHours();
+  const min = d.getUTCMinutes();
+  const s2 = d.getUTCSeconds();
+  const ms2 = d.getUTCMilliseconds();
+  const msPart = ms2 ? '.' + String(ms2).padStart(3, '0') : '';
+  return (
+    pad(year, 4) +
+    '-' +
+    pad(month) +
+    '-' +
+    pad(day) +
+    'T' +
+    pad(hour) +
+    ':' +
+    pad(min) +
+    ':' +
+    pad(s2) +
+    msPart +
+    '+00:00'
+  );
+}
+
+function getNowLex() {
+  if (fixedNowLex) return fixedNowLex;
+  if (runNowLex) return runNowLex;
+  runNowLex = localIsoDateTimeString(new Date());
+  return runNowLex;
+}
+
+function setFixedNowLex(v) {
+  fixedNowLex = v ? String(v) : null;
+  // When fixed changes, clear memoized run value.
+  runNowLex = null;
+}
+
+function resetRunNowLex() {
+  runNowLex = null;
+}
+
+module.exports = {
+  getNowLex,
+  setFixedNowLex,
+  resetRunNowLex,
+  utcIsoDateTimeStringFromEpochSeconds,
+};
+
+  };
+  __modules["lib/trace.js"] = function(require, module, exports){
+/* eslint-disable no-console */
+'use strict';
+
+// Small module for debug/trace printing (log:trace) and its run-level state.
+// Kept separate from engine.js so browser demo + CLI can share behavior.
+
+let tracePrefixes = null;
+
+function getTracePrefixes() {
+  return tracePrefixes;
+}
+
+function setTracePrefixes(v) {
+  tracePrefixes = v;
+}
+
+function writeTraceLine(line) {
+  // Prefer stderr in Node, fall back to console.error elsewhere.
+  try {
+    // eslint-disable-next-line no-undef
+    if (typeof process !== 'undefined' && process.stderr && typeof process.stderr.write === 'function') {
+      process.stderr.write(String(line) + '\n');
+      return;
+    }
+  } catch (_) {}
+  try {
+    if (typeof console !== 'undefined' && typeof console.error === 'function') console.error(line);
+  } catch (_) {}
+}
+
+module.exports = {
+  getTracePrefixes,
+  setTracePrefixes,
+  writeTraceLine,
 };
 
   };
