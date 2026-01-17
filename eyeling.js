@@ -9,6 +9,312 @@
   const __cache = Object.create(null);
 
   // ---- bundled modules ----
+  __modules["lib/cli.js"] = function(require, module, exports){
+'use strict';
+
+const engine = require('./engine');
+const { PrefixEnv } = require('./prelude');
+
+function offsetToLineCol(text, offset) {
+  const chars = Array.from(text);
+  const n = Math.max(0, Math.min(typeof offset === 'number' ? offset : 0, chars.length));
+  let line = 1;
+  let col = 1;
+  for (let i = 0; i < n; i++) {
+    const c = chars[i];
+    if (c === '\n') {
+      line++;
+      col = 1;
+    } else if (c === '\r') {
+      line++;
+      col = 1;
+      if (i + 1 < n && chars[i + 1] === '\n') i++; // swallow \n in CRLF
+    } else {
+      col++;
+    }
+  }
+  return { line, col };
+}
+
+function formatN3SyntaxError(err, text, path) {
+  const off = err && typeof err.offset === 'number' ? err.offset : null;
+  const label = path ? String(path) : '<input>';
+  if (off === null) {
+    return `Syntax error in ${label}: ${err && err.message ? err.message : String(err)}`;
+  }
+  const { line, col } = offsetToLineCol(text, off);
+  const lines = String(text).split(/\r\n|\n|\r/);
+  const lineText = lines[line - 1] ?? '';
+  const caret = ' '.repeat(Math.max(0, col - 1)) + '^';
+  return `Syntax error in ${label}:${line}:${col}: ${err.message}\n${lineText}\n${caret}`;
+}
+
+// CLI entry point (invoked when eyeling.js is run directly)
+function main() {
+  // Drop "node" and script name; keep only user-provided args
+  // Expand combined short options: -pt == -p -t
+  const argvRaw = process.argv.slice(2);
+  const argv = [];
+  for (const a of argvRaw) {
+    if (a === '-' || !a.startsWith('-') || a.startsWith('--') || a.length === 2) {
+      argv.push(a);
+      continue;
+    }
+    // Combined short flags (no flag in eyeling takes a value)
+    for (const ch of a.slice(1)) argv.push('-' + ch);
+  }
+  const prog = String(process.argv[1] || 'eyeling')
+    .split(/[\/]/)
+    .pop();
+
+  function printHelp(toStderr = false) {
+    const msg =
+      `Usage: ${prog} [options] <file.n3>\n\n` +
+      `Options:\n` +
+      `  -a, --ast               Print parsed AST as JSON and exit.\n` +
+      `  -e, --enforce-https     Rewrite http:// IRIs to https:// for log dereferencing builtins.\n` +
+      `  -h, --help              Show this help and exit.\n` +
+      `  -p, --proof-comments    Enable proof explanations.\n` +
+      `  -r, --strings           Print log:outputString strings (ordered by key) instead of N3 output.\n` +
+      `  -s, --super-restricted  Disable all builtins except => and <=.\n` +
+      `  -t, --stream            Stream derived triples as soon as they are derived.\n` +
+      `  -v, --version           Print version and exit.\n`;
+    (toStderr ? console.error : console.log)(msg);
+  }
+
+  // --help / -h: print help and exit
+  if (argv.includes('--help') || argv.includes('-h')) {
+    printHelp(false);
+    process.exit(0);
+  }
+
+  // --version / -v: print version and exit
+  if (argv.includes('--version') || argv.includes('-v')) {
+    console.log(`eyeling v${engine.version}`);
+    process.exit(0);
+  }
+
+  const showAst = argv.includes('--ast') || argv.includes('-a');
+  const outputStringsMode = argv.includes('--strings') || argv.includes('-r');
+  const streamMode = argv.includes('--stream') || argv.includes('-t');
+
+  // --enforce-https: rewrite http:// -> https:// for log dereferencing builtins
+  if (argv.includes('--enforce-https') || argv.includes('-e')) {
+    engine.setEnforceHttpsEnabled(true);
+  }
+
+  // --proof-comments / -p: enable proof explanations
+  if (argv.includes('--proof-comments') || argv.includes('-p')) {
+    engine.setProofCommentsEnabled(true);
+  }
+
+  // --super-restricted / -s: disable all builtins except => / <=
+  if (argv.includes('--super-restricted') || argv.includes('-s')) {
+    if (typeof engine.setSuperRestrictedMode === 'function') engine.setSuperRestrictedMode(true);
+  }
+
+  // Positional args (the N3 file)
+  const positional = argv.filter((a) => !a.startsWith('-'));
+  if (positional.length === 0) {
+    printHelp(false);
+    process.exit(0);
+  }
+  if (positional.length !== 1) {
+    console.error('Error: expected exactly one input <file.n3>.');
+    printHelp(true);
+    process.exit(1);
+  }
+
+  const filePath = positional[0];
+  let text;
+  try {
+    const fs = require('fs');
+    text = fs.readFileSync(filePath, { encoding: 'utf8' });
+  } catch (e) {
+    console.error(`Error reading file ${JSON.stringify(filePath)}: ${e.message}`);
+    process.exit(1);
+  }
+
+  let toks;
+  let prefixes, triples, frules, brules;
+  try {
+    toks = engine.lex(text);
+    const parser = new engine.Parser(toks);
+    [prefixes, triples, frules, brules] = parser.parseDocument();
+    // Make the parsed prefixes available to log:trace output (CLI path)
+    engine.setTracePrefixes(prefixes);
+  } catch (e) {
+    if (e && e.name === 'N3SyntaxError') {
+      console.error(formatN3SyntaxError(e, text, filePath));
+      process.exit(1);
+    }
+    throw e;
+  }
+
+  if (showAst) {
+    function astReplacer(_key, value) {
+      if (value instanceof Set) return Array.from(value);
+      if (value && typeof value === 'object' && value.constructor) {
+        const t = value.constructor.name;
+        if (t && t !== 'Object' && t !== 'Array') return { _type: t, ...value };
+      }
+      return value;
+    }
+    console.log(JSON.stringify([prefixes, triples, frules, brules], astReplacer, 2));
+    process.exit(0);
+  }
+
+  // Build internal ListTerm values from rdf:first/rdf:rest (+ rdf:nil)
+  engine.materializeRdfLists(triples, frules, brules);
+
+  const facts = triples.filter((tr) => engine.isGroundTriple(tr));
+
+  // If requested, print log:outputString values (ordered by subject key) and exit.
+  // Note: log:outputString values may depend on derived facts, so we must saturate first.
+  if (outputStringsMode) {
+    engine.forwardChain(facts, frules, brules);
+    const out = engine.collectOutputStringsFromFacts(facts, prefixes);
+    if (out) process.stdout.write(out);
+    process.exit(0);
+  }
+
+  // In --stream mode we print prefixes *before* any derivations happen.
+  // To keep the header small and stable, emit only prefixes that are actually
+  // used (as QNames) in the *input* N3 program.
+  function prefixesUsedInInputTokens(toks2, prefEnv) {
+    const used = new Set();
+
+    function maybeAddFromQName(name) {
+      if (typeof name !== 'string') return;
+      if (!name.includes(':')) return;
+      if (name.startsWith('_:')) return; // blank node
+
+      // Split only on the first ':'
+      const idx = name.indexOf(':');
+      const p = name.slice(0, idx); // may be '' for ":foo"
+
+      // Ignore things like "http://..." unless that prefix is actually defined.
+      if (!Object.prototype.hasOwnProperty.call(prefEnv.map, p)) return;
+
+      used.add(p);
+    }
+
+    for (let i = 0; i < toks2.length; i++) {
+      const t = toks2[i];
+
+      // Skip @prefix ... .
+      if (t.typ === 'AtPrefix') {
+        while (i < toks2.length && toks2[i].typ !== 'Dot' && toks2[i].typ !== 'EOF') i++;
+        continue;
+      }
+      // Skip @base ... .
+      if (t.typ === 'AtBase') {
+        while (i < toks2.length && toks2[i].typ !== 'Dot' && toks2[i].typ !== 'EOF') i++;
+        continue;
+      }
+
+      // Skip SPARQL/Turtle PREFIX pfx: <iri>
+      if (
+        t.typ === 'Ident' &&
+        typeof t.value === 'string' &&
+        t.value.toLowerCase() === 'prefix' &&
+        toks2[i + 1] &&
+        toks2[i + 1].typ === 'Ident' &&
+        typeof toks2[i + 1].value === 'string' &&
+        toks2[i + 1].value.endsWith(':') &&
+        toks2[i + 2] &&
+        (toks2[i + 2].typ === 'IriRef' || toks2[i + 2].typ === 'Ident')
+      ) {
+        i += 2;
+        continue;
+      }
+
+      // Skip SPARQL BASE <iri>
+      if (
+        t.typ === 'Ident' &&
+        typeof t.value === 'string' &&
+        t.value.toLowerCase() === 'base' &&
+        toks2[i + 1] &&
+        toks2[i + 1].typ === 'IriRef'
+      ) {
+        i += 1;
+        continue;
+      }
+
+      // Count QNames in identifiers (including datatypes like xsd:integer).
+      if (t.typ === 'Ident') {
+        maybeAddFromQName(t.value);
+      }
+    }
+
+    return used;
+  }
+
+  function restrictPrefixEnv(prefEnv, usedSet) {
+    const m = {};
+    for (const p of usedSet) {
+      if (Object.prototype.hasOwnProperty.call(prefEnv.map, p)) {
+        m[p] = prefEnv.map[p];
+      }
+    }
+    return new PrefixEnv(m, prefEnv.baseIri || '');
+  }
+
+  // Streaming mode: print (input) prefixes first, then print derived triples as soon as they are found.
+  if (streamMode) {
+    const usedInInput = prefixesUsedInInputTokens(toks, prefixes);
+    const outPrefixes = restrictPrefixEnv(prefixes, usedInInput);
+
+    // Ensure log:trace uses the same compact prefix set as the output.
+    engine.setTracePrefixes(outPrefixes);
+
+    const entries = Object.entries(outPrefixes.map)
+      .filter(([_p, base]) => !!base)
+      .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+
+    for (const [pfx, base] of entries) {
+      if (pfx === '') console.log(`@prefix : <${base}> .`);
+      else console.log(`@prefix ${pfx}: <${base}> .`);
+    }
+    if (entries.length) console.log();
+
+    engine.forwardChain(facts, frules, brules, (df) => {
+      if (engine.getProofCommentsEnabled()) {
+        engine.printExplanation(df, outPrefixes);
+        console.log(engine.tripleToN3(df.fact, outPrefixes));
+        console.log();
+      } else {
+        console.log(engine.tripleToN3(df.fact, outPrefixes));
+      }
+    });
+    return;
+  }
+
+  // Default (non-streaming): derive everything first, then print only the newly derived facts.
+  const derived = engine.forwardChain(facts, frules, brules);
+  const derivedTriples = derived.map((df) => df.fact);
+  const usedPrefixes = prefixes.prefixesUsedForOutput(derivedTriples);
+
+  for (const [pfx, base] of usedPrefixes) {
+    if (pfx === '') console.log(`@prefix : <${base}> .`);
+    else console.log(`@prefix ${pfx}: <${base}> .`);
+  }
+  if (derived.length && usedPrefixes.length) console.log();
+
+  for (const df of derived) {
+    if (engine.getProofCommentsEnabled()) {
+      engine.printExplanation(df, prefixes);
+      console.log(engine.tripleToN3(df.fact, prefixes));
+      console.log();
+    } else {
+      console.log(engine.tripleToN3(df.fact, prefixes));
+    }
+  }
+}
+
+module.exports = { main, formatN3SyntaxError };
+
+  };
   __modules["lib/engine.js"] = function(require, module, exports){
 'use strict';
 
@@ -48,6 +354,8 @@ const {
 const { lex, N3SyntaxError, decodeN3StringEscapes } = require('./lexer');
 const { Parser } = require('./parser');
 const { liftBlankRuleVars, reorderPremiseForConstraints, isConstraintBuiltin } = require('./rules');
+
+const { termToN3, tripleToN3 } = require('./printing');
 
 let version = 'dev';
 try {
@@ -5412,82 +5720,6 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
 // Pretty printing as N3/Turtle
 // ===========================================================================
 
-function termToN3(t, pref) {
-  if (t instanceof Iri) {
-    const i = t.value;
-    const q = pref.shrinkIri(i);
-    if (q !== null) return q;
-    if (i.startsWith('_:')) return i;
-    return `<${i}>`;
-  }
-  if (t instanceof Literal) {
-    const [lex, dt] = literalParts(t.value);
-
-    // Pretty-print xsd:boolean as bare true/false
-    if (dt === XSD_NS + 'boolean') {
-      const v = stripQuotes(lex);
-      if (v === 'true' || v === 'false') return v;
-      // optional: normalize 1/0 too
-      if (v === '1') return 'true';
-      if (v === '0') return 'false';
-    }
-
-    if (!dt) return t.value; // keep numbers, booleans, lang-tagged strings, etc.
-    const qdt = pref.shrinkIri(dt);
-    if (qdt !== null) return `${lex}^^${qdt}`; // e.g. ^^rdf:JSON
-    return `${lex}^^<${dt}>`; // fallback
-  }
-  if (t instanceof Var) return `?${t.name}`;
-  if (t instanceof Blank) return t.label;
-  if (t instanceof ListTerm) {
-    const inside = t.elems.map((e) => termToN3(e, pref));
-    return '(' + inside.join(' ') + ')';
-  }
-  if (t instanceof OpenListTerm) {
-    const inside = t.prefix.map((e) => termToN3(e, pref));
-    inside.push('?' + t.tailVar);
-    return '(' + inside.join(' ') + ')';
-  }
-  if (t instanceof GraphTerm) {
-    const indent = '    ';
-    const indentBlock = (str) =>
-      str
-        .split(/\r?\n/)
-        .map((ln) => (ln.length ? indent + ln : ln))
-        .join('\n');
-
-    let s = '{\n';
-    for (const tr of t.triples) {
-      const block = tripleToN3(tr, pref).trimEnd();
-      if (block) s += indentBlock(block) + '\n';
-    }
-    s += '}';
-    return s;
-  }
-  return JSON.stringify(t);
-}
-
-function tripleToN3(tr, prefixes) {
-  // log:implies / log:impliedBy as => / <= syntactic sugar everywhere
-  if (isLogImplies(tr.p)) {
-    const s = termToN3(tr.s, prefixes);
-    const o = termToN3(tr.o, prefixes);
-    return `${s} => ${o} .`;
-  }
-
-  if (isLogImpliedBy(tr.p)) {
-    const s = termToN3(tr.s, prefixes);
-    const o = termToN3(tr.o, prefixes);
-    return `${s} <= ${o} .`;
-  }
-
-  const s = termToN3(tr.s, prefixes);
-  const p = isRdfTypePred(tr.p) ? 'a' : isOwlSameAsPred(tr.p) ? '=' : termToN3(tr.p, prefixes);
-  const o = termToN3(tr.o, prefixes);
-
-  return `${s} ${p} ${o} .`;
-}
-
 function printExplanation(df, prefixes) {
   console.log('# ----------------------------------------------------------------------');
   console.log('# Proof for derived triple:');
@@ -5584,39 +5816,6 @@ function printExplanation(df, prefixes) {
   console.log('# ----------------------------------------------------------------------\n');
 }
 
-function offsetToLineCol(text, offset) {
-  const chars = Array.from(text);
-  const n = Math.max(0, Math.min(typeof offset === 'number' ? offset : 0, chars.length));
-  let line = 1;
-  let col = 1;
-  for (let i = 0; i < n; i++) {
-    const c = chars[i];
-    if (c === '\n') {
-      line++;
-      col = 1;
-    } else if (c === '\r') {
-      line++;
-      col = 1;
-      if (i + 1 < n && chars[i + 1] === '\n') i++; // swallow \n in CRLF
-    } else {
-      col++;
-    }
-  }
-  return { line, col };
-}
-
-function formatN3SyntaxError(err, text, path) {
-  const off = err && typeof err.offset === 'number' ? err.offset : null;
-  const label = path ? String(path) : '<input>';
-  if (off === null) {
-    return `Syntax error in ${label}: ${err && err.message ? err.message : String(err)}`;
-  }
-  const { line, col } = offsetToLineCol(text, off);
-  const lines = String(text).split(/\r\n|\n|\r/);
-  const lineText = lines[line - 1] ?? '';
-  const caret = ' '.repeat(Math.max(0, col - 1)) + '^';
-  return `Syntax error in ${label}:${line}:${col}: ${err.message}\n${lineText}\n${caret}`;
-}
 
 // ===========================================================================
 // CLI entry point
@@ -5688,7 +5887,7 @@ function __compareOutputStringKeys(a, b, prefixes) {
   return 0;
 }
 
-function __collectOutputStringsFromFacts(facts, prefixes) {
+function collectOutputStringsFromFacts(facts, prefixes) {
   // Gather all (key, string) pairs from the saturated fact store.
   const pairs = [];
   for (const tr of facts) {
@@ -5761,277 +5960,8 @@ function reasonStream(n3Text, opts = {}) {
 
 // Minimal export surface for Node + browser/worker
 function main() {
-  // Drop "node" and script name; keep only user-provided args
-  // Expand combined short options: -pt == -p -t
-  const argvRaw = process.argv.slice(2);
-  const argv = [];
-  for (const a of argvRaw) {
-    if (a === '-' || !a.startsWith('-') || a.startsWith('--') || a.length === 2) {
-      argv.push(a);
-      continue;
-    }
-    // Combined short flags (no flag in eyeling takes a value)
-    for (const ch of a.slice(1)) argv.push('-' + ch);
-  }
-  const prog = String(process.argv[1] || 'eyeling')
-    .split(/[\/]/)
-    .pop();
-
-  function printHelp(toStderr = false) {
-    const msg =
-      `Usage: ${prog} [options] <file.n3>\n\n` +
-      `Options:\n` +
-      `  -a, --ast               Print parsed AST as JSON and exit.\n` +
-      `  -e, --enforce-https     Rewrite http:// IRIs to https:// for log dereferencing builtins.\n` +
-      `  -h, --help              Show this help and exit.\n` +
-      `  -p, --proof-comments    Enable proof explanations.\n` +
-      `  -r, --strings           Print log:outputString strings (ordered by key) instead of N3 output.\n` +
-      `  -s, --super-restricted  Disable all builtins except => and <=.\n` +
-      `  -t, --stream            Stream derived triples as soon as they are derived.\n` +
-      `  -v, --version           Print version and exit.\n`;
-    (toStderr ? console.error : console.log)(msg);
-  }
-
-  // --------------------------------------------------------------------------
-  // Global options
-  // --------------------------------------------------------------------------
-  // --help / -h: print help and exit
-  if (argv.includes('--help') || argv.includes('-h')) {
-    printHelp(false);
-    process.exit(0);
-  }
-
-  // --version / -v: print version and exit
-  if (argv.includes('--version') || argv.includes('-v')) {
-    console.log(`eyeling v${version}`);
-    process.exit(0);
-  }
-
-  const showAst = argv.includes('--ast') || argv.includes('-a');
-
-  const outputStringsMode = argv.includes('--strings') || argv.includes('-r');
-  const streamMode = argv.includes('--stream') || argv.includes('-t');
-
-  // --enforce-https: rewrite http:// -> https:// for log dereferencing builtins
-  if (argv.includes('--enforce-https') || argv.includes('-e')) {
-    enforceHttpsEnabled = true;
-  }
-
-  // --proof-comments / -p: enable proof explanations
-  if (argv.includes('--proof-comments') || argv.includes('-p')) {
-    proofCommentsEnabled = true;
-  }
-
-  // --super-restricted / -s: disable all builtins except => / <=
-  if (argv.includes('--super-restricted') || argv.includes('-s')) {
-    superRestrictedMode = true;
-  }
-
-  // --------------------------------------------------------------------------
-  // Positional args (the N3 file)
-  // --------------------------------------------------------------------------
-  const positional = argv.filter((a) => !a.startsWith('-'));
-  if (positional.length === 0) {
-    // No args: show help like many CLI tools do.
-    printHelp(false);
-    process.exit(0);
-  }
-  if (positional.length !== 1) {
-    console.error('Error: expected exactly one input <file.n3>.');
-    printHelp(true);
-    process.exit(1);
-  }
-
-  const path = positional[0];
-  let text;
-  try {
-    const fs = require('fs');
-    text = fs.readFileSync(path, { encoding: 'utf8' });
-  } catch (e) {
-    console.error(`Error reading file ${JSON.stringify(path)}: ${e.message}`);
-    process.exit(1);
-  }
-
-  let toks;
-  let prefixes, triples, frules, brules;
-  try {
-    toks = lex(text);
-    const parser = new Parser(toks);
-    [prefixes, triples, frules, brules] = parser.parseDocument();
-    // Make the parsed prefixes available to log:trace output (CLI path)
-    __tracePrefixes = prefixes;
-  } catch (e) {
-    if (e && e.name === 'N3SyntaxError') {
-      console.error(formatN3SyntaxError(e, text, path));
-      process.exit(1);
-    }
-    throw e;
-  }
-  if (showAst) {
-    function astReplacer(_key, value) {
-      if (value instanceof Set) return Array.from(value);
-      if (value && typeof value === 'object' && value.constructor) {
-        const t = value.constructor.name;
-        if (t && t !== 'Object' && t !== 'Array') return { _type: t, ...value };
-      }
-      return value;
-    }
-    console.log(JSON.stringify([prefixes, triples, frules, brules], astReplacer, 2));
-    process.exit(0);
-  }
-
-  // console.log(JSON.stringify([prefixes, triples, frules, brules], null, 2));
-
-  // Build internal ListTerm values from rdf:first/rdf:rest (+ rdf:nil)
-  // input triples
-  materializeRdfLists(triples, frules, brules);
-
-  const facts = triples.filter((tr) => isGroundTriple(tr));
-
-  // If requested, print log:outputString values (ordered by subject key) and exit.
-  // Note: log:outputString values may depend on derived facts, so we must saturate first.
-  if (outputStringsMode) {
-    forwardChain(facts, frules, brules);
-    const out = __collectOutputStringsFromFacts(facts, prefixes);
-    if (out) process.stdout.write(out);
-    process.exit(0);
-  }
-
-  // In --stream mode we print prefixes *before* any derivations happen.
-  // To keep the header small and stable, emit only prefixes that are actually
-  // used (as QNames) in the *input* N3 program.
-  function prefixesUsedInInputTokens(toks2, prefEnv) {
-    const used = new Set();
-
-    function maybeAddFromQName(name) {
-      if (typeof name !== 'string') return;
-      if (!name.includes(':')) return;
-      if (name.startsWith('_:')) return; // blank node
-
-      // Split only on the first ':'
-      const idx = name.indexOf(':');
-      const p = name.slice(0, idx); // may be '' for ":foo"
-
-      // Ignore things like "http://..." unless that prefix is actually defined.
-      if (!Object.prototype.hasOwnProperty.call(prefEnv.map, p)) return;
-
-      used.add(p);
-    }
-
-    for (let i = 0; i < toks2.length; i++) {
-      const t = toks2[i];
-
-      // Skip @prefix ... .
-      if (t.typ === 'AtPrefix') {
-        // @prefix <pfx:> <iri> .
-        // We skip the directive itself so declared-but-unused prefixes don't count.
-        // Advance until we pass the terminating dot (if present).
-        while (i < toks2.length && toks2[i].typ !== 'Dot' && toks2[i].typ !== 'EOF') i++;
-        continue;
-      }
-      // Skip @base ... .
-      if (t.typ === 'AtBase') {
-        while (i < toks2.length && toks2[i].typ !== 'Dot' && toks2[i].typ !== 'EOF') i++;
-        continue;
-      }
-
-      // Skip SPARQL/Turtle PREFIX pfx: <iri>
-      if (
-        t.typ === 'Ident' &&
-        typeof t.value === 'string' &&
-        t.value.toLowerCase() === 'prefix' &&
-        toks2[i + 1] &&
-        toks2[i + 1].typ === 'Ident' &&
-        typeof toks2[i + 1].value === 'string' &&
-        toks2[i + 1].value.endsWith(':') &&
-        toks2[i + 2] &&
-        (toks2[i + 2].typ === 'IriRef' || toks2[i + 2].typ === 'Ident')
-      ) {
-        // Consume PREFIX <pfx:> <iri>
-        i += 2;
-        continue;
-      }
-      // Skip SPARQL BASE <iri>
-      if (
-        t.typ === 'Ident' &&
-        typeof t.value === 'string' &&
-        t.value.toLowerCase() === 'base' &&
-        toks2[i + 1] &&
-        toks2[i + 1].typ === 'IriRef'
-      ) {
-        i += 1;
-        continue;
-      }
-
-      // Count QNames in identifiers (including datatypes like xsd:integer).
-      if (t.typ === 'Ident') {
-        maybeAddFromQName(t.value);
-      }
-    }
-
-    return used;
-  }
-
-  function restrictPrefixEnv(prefEnv, usedSet) {
-    const m = {};
-    for (const p of usedSet) {
-      if (Object.prototype.hasOwnProperty.call(prefEnv.map, p)) {
-        m[p] = prefEnv.map[p];
-      }
-    }
-    return new PrefixEnv(m, prefEnv.baseIri || '');
-  }
-
-  // Streaming mode: print (input) prefixes first, then print derived triples as soon as they are found.
-  if (streamMode) {
-    const usedInInput = prefixesUsedInInputTokens(toks, prefixes);
-    const outPrefixes = restrictPrefixEnv(prefixes, usedInInput);
-
-    // Ensure log:trace uses the same compact prefix set as the output.
-    __tracePrefixes = outPrefixes;
-
-    const entries = Object.entries(outPrefixes.map)
-      .filter(([_p, base]) => !!base)
-      .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
-
-    for (const [pfx, base] of entries) {
-      if (pfx === '') console.log(`@prefix : <${base}> .`);
-      else console.log(`@prefix ${pfx}: <${base}> .`);
-    }
-    if (entries.length) console.log();
-
-    forwardChain(facts, frules, brules, (df) => {
-      if (proofCommentsEnabled) {
-        printExplanation(df, outPrefixes);
-        console.log(tripleToN3(df.fact, outPrefixes));
-        console.log();
-      } else {
-        console.log(tripleToN3(df.fact, outPrefixes));
-      }
-    });
-    return;
-  }
-
-  // Default (non-streaming): derive everything first, then print only the newly derived facts.
-  const derived = forwardChain(facts, frules, brules);
-  const derivedTriples = derived.map((df) => df.fact);
-  const usedPrefixes = prefixes.prefixesUsedForOutput(derivedTriples);
-
-  for (const [pfx, base] of usedPrefixes) {
-    if (pfx === '') console.log(`@prefix : <${base}> .`);
-    else console.log(`@prefix ${pfx}: <${base}> .`);
-  }
-  if (derived.length && usedPrefixes.length) console.log();
-
-  for (const df of derived) {
-    if (proofCommentsEnabled) {
-      printExplanation(df, prefixes);
-      console.log(tripleToN3(df.fact, prefixes));
-      console.log();
-    } else {
-      console.log(tripleToN3(df.fact, prefixes));
-    }
-  }
+  // Lazily require to avoid hard cycles in the module graph.
+  return require('./cli').main();
 }
 
 // ---------------------------------------------------------------------------
@@ -6056,6 +5986,14 @@ function setProofCommentsEnabled(v) {
   proofCommentsEnabled = !!v;
 }
 
+function getSuperRestrictedMode() {
+  return superRestrictedMode;
+}
+
+function setSuperRestrictedMode(v) {
+  superRestrictedMode = !!v;
+}
+
 function getTracePrefixes() {
   return __tracePrefixes;
 }
@@ -6066,6 +6004,7 @@ function setTracePrefixes(v) {
 
 module.exports = {
   reasonStream,
+  collectOutputStringsFromFacts,
   main,
   version,
   N3SyntaxError,
@@ -6082,6 +6021,8 @@ module.exports = {
   setEnforceHttpsEnabled,
   getProofCommentsEnabled,
   setProofCommentsEnabled,
+  getSuperRestrictedMode,
+  setSuperRestrictedMode,
   getTracePrefixes,
   setTracePrefixes,
 };
@@ -7686,6 +7627,119 @@ module.exports = {
   varsInRule,
   collectBlankLabelsInTriples,
 };
+
+  };
+  __modules["lib/printing.js"] = function(require, module, exports){
+'use strict';
+
+const {
+  XSD_NS,
+  Iri,
+  Literal,
+  Var,
+  Blank,
+  ListTerm,
+  OpenListTerm,
+  GraphTerm,
+  literalParts,
+  isRdfTypePred,
+  isOwlSameAsPred,
+  isLogImplies,
+  isLogImpliedBy,
+} = require('./prelude');
+
+function stripQuotes(lex) {
+  if (typeof lex !== 'string') return lex;
+  // Handle both short ('...' / "...") and long ('''...''' / """...""") forms.
+  if (lex.length >= 6) {
+    if (lex.startsWith('"""') && lex.endsWith('"""')) return lex.slice(3, -3);
+    if (lex.startsWith("'''") && lex.endsWith("'''")) return lex.slice(3, -3);
+  }
+  if (lex.length >= 2) {
+    const a = lex[0];
+    const b = lex[lex.length - 1];
+    if ((a === '"' && b === '"') || (a === "'" && b === "'")) return lex.slice(1, -1);
+  }
+  return lex;
+}
+
+function termToN3(t, pref) {
+  if (t instanceof Iri) {
+    const i = t.value;
+    const q = pref.shrinkIri(i);
+    if (q !== null) return q;
+    if (i.startsWith('_:')) return i;
+    return `<${i}>`;
+  }
+  if (t instanceof Literal) {
+    const [lex, dt] = literalParts(t.value);
+
+    // Pretty-print xsd:boolean as bare true/false
+    if (dt === XSD_NS + 'boolean') {
+      const v = stripQuotes(lex);
+      if (v === 'true' || v === 'false') return v;
+      // optional: normalize 1/0 too
+      if (v === '1') return 'true';
+      if (v === '0') return 'false';
+    }
+
+    if (!dt) return t.value; // keep numbers, booleans, lang-tagged strings, etc.
+    const qdt = pref.shrinkIri(dt);
+    if (qdt !== null) return `${lex}^^${qdt}`; // e.g. ^^rdf:JSON
+    return `${lex}^^<${dt}>`; // fallback
+  }
+  if (t instanceof Var) return `?${t.name}`;
+  if (t instanceof Blank) return t.label;
+  if (t instanceof ListTerm) {
+    const inside = t.elems.map((e) => termToN3(e, pref));
+    return '(' + inside.join(' ') + ')';
+  }
+  if (t instanceof OpenListTerm) {
+    const inside = t.prefix.map((e) => termToN3(e, pref));
+    inside.push('?' + t.tailVar);
+    return '(' + inside.join(' ') + ')';
+  }
+  if (t instanceof GraphTerm) {
+    const indent = '    ';
+    const indentBlock = (str) =>
+      str
+        .split(/\r?\n/)
+        .map((ln) => (ln.length ? indent + ln : ln))
+        .join('\n');
+
+    let s = '{\n';
+    for (const tr of t.triples) {
+      const block = tripleToN3(tr, pref).trimEnd();
+      if (block) s += indentBlock(block) + '\n';
+    }
+    s += '}';
+    return s;
+  }
+  return JSON.stringify(t);
+}
+
+function tripleToN3(tr, prefixes) {
+  // log:implies / log:impliedBy as => / <= syntactic sugar everywhere
+  if (isLogImplies(tr.p)) {
+    const s = termToN3(tr.s, prefixes);
+    const o = termToN3(tr.o, prefixes);
+    return `${s} => ${o} .`;
+  }
+
+  if (isLogImpliedBy(tr.p)) {
+    const s = termToN3(tr.s, prefixes);
+    const o = termToN3(tr.o, prefixes);
+    return `${s} <= ${o} .`;
+  }
+
+  const s = termToN3(tr.s, prefixes);
+  const p = isRdfTypePred(tr.p) ? 'a' : isOwlSameAsPred(tr.p) ? '=' : termToN3(tr.p, prefixes);
+  const o = termToN3(tr.o, prefixes);
+
+  return `${s} ${p} ${o} .`;
+}
+
+module.exports = { termToN3, tripleToN3 };
 
   };
   __modules["lib/rules.js"] = function(require, module, exports){
