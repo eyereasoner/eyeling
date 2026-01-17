@@ -1,15 +1,15 @@
-@prefix rt: <urn:return#> .
+@prefix rdfg: <http://www.w3.org/2009/rdfg#> .
 @prefix : <http://example.org/#> .
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix sec: <https://w3id.org/security#> .
 @prefix skolem: <https://eyereasoner.github.io/.well-known/genid/5649fff4-464d-5969-88ed-956a6b5f0d90#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-skolem:g0 rt:graph {
+skolem:g0 rdfg:isGraph {
   :Bob foaf:name "Bob" .
 } .
 
-skolem:g1 rt:graph {
+skolem:g1 rdfg:isGraph {
   skolem:g0 sec:proof _:dataSignature .
   _:signature1 a sec:DataIntegrityProof .
   _:signature1 sec:cryptosuite "ecdsa-rdfc-2019" .
@@ -22,7 +22,7 @@ skolem:g1 rt:graph {
   _:signature1 sec:validUntil "2025-04-03T00:00:00.000Z"^^xsd:dateTime .
 } .
 
-_:g3 rt:graph {
+_:g3 rdfg:isGraph {
   skolem:g1 sec:proof _:signature2 .
   _:signature2 a sec:DataIntegrityProof .
   _:signature2 sec:cryptosuite "ecdsa-rdfc-2019" .

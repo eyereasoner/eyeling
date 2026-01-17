@@ -12,7 +12,7 @@
  *
  * TriG → N3 mapping (named graphs)
  *   TriG: <graphName> { ...triples... }
- *   N3:   <graphName> rt:graph { ...triples... } .
+ *   N3:   <graphName> rdfg:isGraph { ...triples... } .
  *
  * SRL → N3 mapping (rules)
  *   SRL: RULE { Head } WHERE { Body }
@@ -96,10 +96,11 @@ function _pnLocalSafe(s) {
 // Mapping namespace
 // ---------------------------------------------------------------------------
 
-const RT = 'urn:return#';
-const rt = {
-  default: `${RT}default`,
-  graph: `${RT}graph`,
+// Use the W3C rdfg: vocabulary to represent TriG named graphs as N3 graph terms:
+//   <g> rdfg:isGraph { ... } .
+const RDFG_NS = 'http://www.w3.org/2009/rdfg#';
+const rdfg = {
+  isGraph: `${RDFG_NS}isGraph`,
 };
 
 // ---------------------------------------------------------------------------
@@ -1784,16 +1785,16 @@ function isIri(t, iri) {
   return t instanceof Iri && t.value === iri;
 }
 
-function renderPrefixPrologue(prefixes, { includeRt = false } = {}) {
+function renderPrefixPrologue(prefixes, { includeRdfg = false } = {}) {
   const out = [];
-  if (includeRt) out.push(`@prefix rt: <${RT}> .`);
+  if (includeRdfg) out.push(`@prefix rdfg: <${RDFG_NS}> .`);
 
   if (prefixes && prefixes.baseIri) out.push(`@base <${prefixes.baseIri}> .`);
 
   if (prefixes && prefixes.map) {
     for (const [pfx, iri] of Object.entries(prefixes.map)) {
       if (!iri) continue;
-      if (includeRt && pfx === 'rt' && iri === RT) continue;
+      if (includeRdfg && pfx === 'rdfg') continue;
       const label = pfx === '' ? ':' : `${pfx}:`;
       out.push(`@prefix ${label} <${iri}> .`);
     }
@@ -1937,17 +1938,17 @@ function groupQuadsByGraph(quads) {
   return m;
 }
 
-function writeN3RtGraph({ datasetQuads, prefixes }) {
+function writeN3RdfgIsGraph({ datasetQuads, prefixes }) {
   const blocks = [];
   const grouped = groupQuadsByGraph(datasetQuads);
 
   // For prefix pruning + Skolemization we build a synthetic triple stream that
   // matches the *output* structure:
   //   - default graph triples are “outside” any GraphTerm
-  //   - each named graph is wrapped as: gTerm rt:graph { ... }
+  //   - each named graph is wrapped as: gTerm rdfg:isGraph { ... }
   // This allows us to detect blank nodes that must corefer across graphs.
   const pseudoTriplesForUse = [];
-  const rtGraphIri = new Iri(rt.graph);
+  const rdfgIsGraphIri = new Iri(rdfg.isGraph);
 
   if (grouped.has('DEFAULT')) {
     const { triples } = grouped.get('DEFAULT');
@@ -1957,7 +1958,7 @@ function writeN3RtGraph({ datasetQuads, prefixes }) {
   for (const [k, { gTerm, triples }] of grouped.entries()) {
     if (k === 'DEFAULT') continue;
     const folded = foldRdfLists(triples);
-    pseudoTriplesForUse.push({ s: gTerm, p: rtGraphIri, o: new GraphTerm(folded) });
+    pseudoTriplesForUse.push({ s: gTerm, p: rdfgIsGraphIri, o: new GraphTerm(folded) });
   }
 
   const prunedPrefixes = pruneUnusedPrefixes(prefixes, pseudoTriplesForUse);
@@ -1966,7 +1967,7 @@ function writeN3RtGraph({ datasetQuads, prefixes }) {
     ensureXsdPrefixIfUsed(ensureSkolemPrefix(prunedPrefixes, skolemMap), pseudoTriplesForUse),
     pseudoTriplesForUse,
   );
-  const pro = renderPrefixPrologue(outPrefixes, { includeRt: true }).trim();
+  const pro = renderPrefixPrologue(outPrefixes, { includeRdfg: true }).trim();
   if (pro) blocks.push(pro, '');
 
   function writeGraphTriples(triples) {
@@ -1979,7 +1980,7 @@ function writeN3RtGraph({ datasetQuads, prefixes }) {
       .join('\n');
   }
 
-  // default graph: emit triples at top-level (no rt:graph wrapper)
+  // default graph: emit triples at top-level (no rdfg:isGraph wrapper)
   if (grouped.has('DEFAULT')) {
     const { triples } = grouped.get('DEFAULT');
     const folded = foldRdfLists(triples);
@@ -1994,7 +1995,7 @@ function writeN3RtGraph({ datasetQuads, prefixes }) {
   const named = [...grouped.entries()].filter(([k]) => k !== 'DEFAULT');
   named.sort((a, b) => a[0].localeCompare(b[0]));
   for (const [, { gTerm, triples }] of named) {
-    blocks.push(`${termToText(gTerm, outPrefixes, skolemMap)} rt:graph {`);
+    blocks.push(`${termToText(gTerm, outPrefixes, skolemMap)} rdfg:isGraph {`);
     const folded = foldRdfLists(triples);
     if (folded.length) {
       blocks.push(
@@ -2013,7 +2014,7 @@ function writeN3RtGraph({ datasetQuads, prefixes }) {
 }
 
 // ---------------------------------------------------------------------------
-// Roundtrip: TriG <-> N3 (rt:graph mapping)
+// Roundtrip: TriG <-> N3 (rdfg:isGraph mapping)
 // ---------------------------------------------------------------------------
 
 function parseTriG(text) {
@@ -2035,7 +2036,7 @@ function writeN3Triples({ triples, prefixes }) {
     foldedTriples,
   );
   const blocks = [];
-  const pro = renderPrefixPrologue(outPrefixes, { includeRt: false }).trim();
+  const pro = renderPrefixPrologue(outPrefixes, { includeRdfg: false }).trim();
   if (pro) blocks.push(pro, '');
   for (const tr of foldedTriples) {
     blocks.push(
@@ -2052,7 +2053,7 @@ function turtleToN3(ttlText) {
 
 function trigToN3(trigText) {
   const { quads, prefixes } = parseTriG(trigText);
-  return writeN3RtGraph({ datasetQuads: quads, prefixes });
+  return writeN3RdfgIsGraph({ datasetQuads: quads, prefixes });
 }
 
 function prefixEnvFromSrlPrefixes(prefixLines) {
@@ -3020,7 +3021,7 @@ function srlToN3(srlText) {
   }
 
   const out = [];
-  const pro = renderPrefixPrologue(env, { includeRt: false }).trim();
+  const pro = renderPrefixPrologue(env, { includeRdfg: false }).trim();
   if (pro) out.push(pro, '');
   if (bodyText) out.push(bodyText);
 
