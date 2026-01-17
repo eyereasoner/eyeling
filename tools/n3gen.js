@@ -2,7 +2,7 @@
 'use strict';
 
 /*
- * maken3.js — Convert Turtle (.ttl), TriG (.trig) or SRL (.srl) to N3.
+ * n3gen.js — Convert Turtle (.ttl), TriG (.trig) or SRL (.srl) to N3.
  *
  * This tool always emits N3 to stdout. The input syntax is selected by the file
  * extension:

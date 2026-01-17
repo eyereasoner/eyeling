@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-// Convert examples/input/*.{ttl,trig,srl} -> examples/*.n3 using maken3.js
+// Convert examples/input/*.{ttl,trig,srl} -> examples/*.n3 using n3gen.js
 // Designed to work both in a git checkout (maintainer mode) and in an npm-installed package.
 //
 // In git mode:
@@ -86,11 +86,11 @@ function showDiff({ IN_GIT, examplesDir, expectedPath, generatedPath, relExpecte
 function main() {
   const suiteStart = Date.now();
 
-  // test/maken3.test.js -> repo root is one level up
+  // test/n3gen.test.js -> repo root is one level up
   const root = path.resolve(__dirname, '..');
   const examplesDir = path.join(root, 'examples');
   const inputDir = path.join(examplesDir, 'input');
-  const makeN3JsPath = path.join(root, 'maken3.js');
+  const n3GenJsPath = path.join(root, 'tools/n3gen.js');
   const nodePath = process.execPath;
 
   if (!fs.existsSync(examplesDir)) {
@@ -101,8 +101,8 @@ function main() {
     fail(`Cannot find examples/input directory: ${inputDir}`);
     process.exit(1);
   }
-  if (!fs.existsSync(makeN3JsPath)) {
-    fail(`Cannot find maken3.js: ${makeN3JsPath}`);
+  if (!fs.existsSync(n3GenJsPath)) {
+    fail(`Cannot find n3gen.js: ${n3GenJsPath}`);
     process.exit(1);
   }
 
@@ -152,7 +152,7 @@ function main() {
 
     // Run converter (stdout -> file; stderr captured)
     const outFd = fs.openSync(generatedPath, 'w');
-    const r = cp.spawnSync(nodePath, [makeN3JsPath, inPath], {
+    const r = cp.spawnSync(nodePath, [n3GenJsPath, inPath], {
       cwd: root,
       stdio: ['ignore', outFd, 'pipe'],
       encoding: 'utf8',
