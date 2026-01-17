@@ -10,6 +10,13 @@
 
   // ---- bundled modules ----
   __modules["lib/cli.js"] = function(require, module, exports){
+/**
+ * Eyeling Reasoner — cli
+ *
+ * CLI helpers: argument handling, user-facing errors, and convenient wrappers
+ * around the core engine for command-line usage.
+ */
+
 'use strict';
 
 const engine = require('./engine');
@@ -315,110 +322,50 @@ function main() {
 module.exports = { main, formatN3SyntaxError };
 
   };
-  __modules["lib/engine.js"] = function(require, module, exports){
+  __modules["lib/deref.js"] = function(require, module, exports){
+/**
+ * Eyeling Reasoner — deref
+ *
+ * Synchronous dereferencing + parsing support for log:content / log:semantics.
+ * Includes small in-memory caches and optional HTTPS enforcement.
+ */
+
 'use strict';
 
+// Dereferencing + parsing support for log:content / log:semantics.
+// This is intentionally synchronous to keep the core engine synchronous.
+// In browsers/workers, dereferencing uses synchronous XHR (subject to CORS).
+
 const {
-  RDF_NS,
-  RDFS_NS,
-  OWL_NS,
-  XSD_NS,
-  CRYPTO_NS,
-  MATH_NS,
-  TIME_NS,
-  LIST_NS,
   LOG_NS,
-  STRING_NS,
-  SKOLEM_NS,
-  RDF_JSON_DT,
-  Literal,
-  Iri,
-  Var,
-  Blank,
-  ListTerm,
-  OpenListTerm,
   GraphTerm,
   Triple,
-  Rule,
-  DerivedFact,
   internIri,
   internLiteral,
-  PrefixEnv,
-  resolveIriRef,
-  collectIrisInTerm,
-  varsInRule,
-  collectBlankLabelsInTriples,
-  literalParts,
 } = require('./prelude');
 
-const { lex, N3SyntaxError, decodeN3StringEscapes } = require('./lexer');
+const { lex } = require('./lexer');
 const { Parser } = require('./parser');
-const { liftBlankRuleVars, reorderPremiseForConstraints, isConstraintBuiltin } = require('./rules');
-
-const { termToN3, tripleToN3 } = require('./printing');
-
-const trace = require('./trace');
-const time = require('./time');
-const { deterministicSkolemIdFromKey } = require('./skolem');
-
-let version = 'dev';
-try {
-  // Node: keep package.json version if available
-  if (typeof require === 'function') version = require('./package.json').version || version;
-} catch (_) {}
-
-let nodeCrypto = null;
-try {
-  // Node: crypto available
-  if (typeof require === 'function') nodeCrypto = require('crypto');
-} catch (_) {}
-function isRdfJsonDatatype(dt) {
-  // dt comes from literalParts() and may be expanded or prefixed depending on parsing/printing.
-  return dt === null || dt === RDF_JSON_DT || dt === 'rdf:JSON';
-}
-
-function termToJsonText(t) {
-  if (!(t instanceof Literal)) return null;
-  const [lex, dt] = literalParts(t.value);
-  if (!isRdfJsonDatatype(dt)) return null;
-  // decode escapes for short literals; long literals are taken verbatim
-  return termToJsStringDecoded(t);
-}
-
-function makeRdfJsonLiteral(jsonText) {
-  // Prefer a readable long literal when safe; fall back to short if needed.
-  if (!jsonText.includes('"""')) {
-    return internLiteral('"""' + jsonText + '"""^^<' + RDF_JSON_DT + '>');
-  }
-  return internLiteral(JSON.stringify(jsonText) + '^^<' + RDF_JSON_DT + '>');
-}
-// For a single reasoning run, this maps a canonical representation
-// of the subject term in log:skolem to a Skolem IRI.
-const skolemCache = new Map();
 
 // -----------------------------------------------------------------------------
-// Hot caches
+// Caches (module-level)
 // -----------------------------------------------------------------------------
-const __parseNumCache = new Map(); // lit string -> number|null
-const __parseIntCache = new Map(); // lit string -> bigint|null
-const __parseNumericInfoCache = new Map(); // lit string -> info|null
-
-// Cache for string:jsonPointer: jsonText -> { parsed: any|null, ptrCache: Map<string, Term|null> }
-const jsonPointerCache = new Map();
-
-// -----------------------------------------------------------------------------
-// log:content / log:semantics support (basic, synchronous)
-// -----------------------------------------------------------------------------
-// Cache dereferenced resources within a single run.
 // Key is the dereferenced document IRI *without* fragment.
 const __logContentCache = new Map(); // iri -> string | null (null means fetch/read failed)
 const __logSemanticsCache = new Map(); // iri -> GraphTerm | null (null means parse failed)
 const __logSemanticsOrErrorCache = new Map(); // iri -> Term (GraphTerm | Literal) for log:semanticsOrError
-const __logConclusionCache = new WeakMap(); // GraphTerm -> GraphTerm (deductive closure)
 
 // When enabled, force http:// IRIs to be dereferenced as https://
 // (CLI: --enforce-https, API: reasonStream({ enforceHttps: true })).
 let enforceHttpsEnabled = false;
+
+function getEnforceHttpsEnabled() {
+  return enforceHttpsEnabled;
+}
+
+function setEnforceHttpsEnabled(v) {
+  enforceHttpsEnabled = !!v;
+}
 
 function __maybeEnforceHttps(iri) {
   if (!enforceHttpsEnabled) return iri;
@@ -426,8 +373,6 @@ function __maybeEnforceHttps(iri) {
 }
 
 // Environment detection (Node vs Browser/Worker).
-// Eyeling is primarily synchronous, so we use sync XHR in browsers for log:content/log:semantics.
-// Note: Browser fetches are subject to CORS; use CORS-enabled resources or a proxy.
 const __IS_NODE = typeof process !== 'undefined' && !!(process.versions && process.versions.node);
 
 function __hasXmlHttpRequest() {
@@ -469,14 +414,14 @@ function __fetchHttpTextSyncBrowser(url) {
   }
 }
 
-function __normalizeDerefIri(iriNoFrag) {
+function normalizeDerefIri(iriNoFrag) {
   // In Node, treat non-http as local path; leave as-is.
   if (__IS_NODE) return __maybeEnforceHttps(iriNoFrag);
   // In browsers/workers, resolve relative references against the page URL.
   return __maybeEnforceHttps(__resolveBrowserUrl(iriNoFrag));
 }
 
-function __stripFragment(iri) {
+function stripFragment(iri) {
   const i = iri.indexOf('#');
   return i >= 0 ? iri.slice(0, i) : iri;
 }
@@ -576,8 +521,8 @@ function __fetchHttpTextViaSubprocess(url) {
   return r.stdout;
 }
 
-function __derefTextSync(iriNoFrag) {
-  const norm = __normalizeDerefIri(iriNoFrag);
+function derefTextSync(iriNoFrag) {
+  const norm = normalizeDerefIri(iriNoFrag);
   const key = typeof norm === 'string' && norm ? norm : iriNoFrag;
 
   if (__logContentCache.has(key)) return __logContentCache.get(key);
@@ -601,7 +546,10 @@ function __derefTextSync(iriNoFrag) {
   return text;
 }
 
-function __parseSemanticsToFormula(text, baseIri) {
+const __IMPLIES_PRED = internIri(LOG_NS + 'implies');
+const __IMPLIED_BY_PRED = internIri(LOG_NS + 'impliedBy');
+
+function parseSemanticsToFormula(text, baseIri) {
   const toks = lex(text);
   const parser = new Parser(toks);
   if (typeof baseIri === 'string' && baseIri) parser.prefixes.setBase(baseIri);
@@ -609,34 +557,32 @@ function __parseSemanticsToFormula(text, baseIri) {
   const [_prefixes, triples, frules, brules] = parser.parseDocument();
 
   const all = triples.slice();
-  const impliesPred = internIri(LOG_NS + 'implies');
-  const impliedByPred = internIri(LOG_NS + 'impliedBy');
 
   // Represent top-level => / <= rules as triples between formula terms,
   // so the returned formula can include them.
   for (const r of frules) {
-    all.push(new Triple(new GraphTerm(r.premise), impliesPred, new GraphTerm(r.conclusion)));
+    all.push(new Triple(new GraphTerm(r.premise), __IMPLIES_PRED, new GraphTerm(r.conclusion)));
   }
   for (const r of brules) {
-    all.push(new Triple(new GraphTerm(r.conclusion), impliedByPred, new GraphTerm(r.premise)));
+    all.push(new Triple(new GraphTerm(r.conclusion), __IMPLIED_BY_PRED, new GraphTerm(r.premise)));
   }
 
   return new GraphTerm(all);
 }
 
-function __derefSemanticsSync(iriNoFrag) {
-  const norm = __normalizeDerefIri(iriNoFrag);
+function derefSemanticsSync(iriNoFrag) {
+  const norm = normalizeDerefIri(iriNoFrag);
   const key = typeof norm === 'string' && norm ? norm : iriNoFrag;
   if (__logSemanticsCache.has(key)) return __logSemanticsCache.get(key);
 
-  const text = __derefTextSync(iriNoFrag);
+  const text = derefTextSync(iriNoFrag);
   if (typeof text !== 'string') {
     __logSemanticsCache.set(key, null);
     return null;
   }
   try {
     const baseIri = typeof key === 'string' && key ? key : iriNoFrag;
-    const formula = __parseSemanticsToFormula(text, baseIri);
+    const formula = parseSemanticsToFormula(text, baseIri);
     __logSemanticsCache.set(key, formula);
     return formula;
   } catch {
@@ -644,6 +590,174 @@ function __derefSemanticsSync(iriNoFrag) {
     return null;
   }
 }
+
+function __makeStringLiteral(str) {
+  return internLiteral(JSON.stringify(str));
+}
+
+function derefSemanticsOrError(iriNoFrag) {
+  const norm = normalizeDerefIri(iriNoFrag);
+  const key = typeof norm === 'string' && norm ? norm : iriNoFrag;
+
+  if (__logSemanticsOrErrorCache.has(key)) return __logSemanticsOrErrorCache.get(key);
+
+  let term = null;
+
+  // If we already successfully computed log:semantics, reuse it.
+  const formula = derefSemanticsSync(iriNoFrag);
+
+  if (formula instanceof GraphTerm) {
+    term = formula;
+  } else {
+    // Try to get an informative error.
+    const txt = derefTextSync(iriNoFrag);
+    if (typeof txt !== 'string') {
+      term = __makeStringLiteral(`error(dereference_failed,${iriNoFrag})`);
+    } else {
+      try {
+        const baseIri = typeof key === 'string' && key ? key : iriNoFrag;
+        term = parseSemanticsToFormula(txt, baseIri);
+        // Keep the semantics cache consistent.
+        __logSemanticsCache.set(key, term);
+      } catch (e) {
+        const msg = e && e.message ? e.message : String(e);
+        term = __makeStringLiteral(`error(parse_error,${msg})`);
+      }
+    }
+  }
+
+  __logSemanticsOrErrorCache.set(key, term);
+  return term;
+}
+
+module.exports = {
+  // flags
+  getEnforceHttpsEnabled,
+  setEnforceHttpsEnabled,
+
+  // helpers
+  stripFragment,
+  normalizeDerefIri,
+
+  // deref + parse
+  derefTextSync,
+  derefSemanticsSync,
+  derefSemanticsOrError,
+  parseSemanticsToFormula,
+
+  // caches (exposed for tests/debugging if needed)
+  __logContentCache,
+  __logSemanticsCache,
+  __logSemanticsOrErrorCache,
+};
+
+  };
+  __modules["lib/engine.js"] = function(require, module, exports){
+/**
+ * Eyeling Reasoner — engine
+ *
+ * Core inference engine: unification, forward/backward chaining, builtin evaluation,
+ * and proof/explanation bookkeeping. This module intentionally stays cohesive.
+ */
+
+'use strict';
+
+const {
+  RDF_NS,
+  RDFS_NS,
+  OWL_NS,
+  XSD_NS,
+  CRYPTO_NS,
+  MATH_NS,
+  TIME_NS,
+  LIST_NS,
+  LOG_NS,
+  STRING_NS,
+  SKOLEM_NS,
+  RDF_JSON_DT,
+  Literal,
+  Iri,
+  Var,
+  Blank,
+  ListTerm,
+  OpenListTerm,
+  GraphTerm,
+  Triple,
+  Rule,
+  DerivedFact,
+  internIri,
+  internLiteral,
+  PrefixEnv,
+  resolveIriRef,
+  collectIrisInTerm,
+  varsInRule,
+  collectBlankLabelsInTriples,
+  literalParts,
+} = require('./prelude');
+
+const { lex, N3SyntaxError, decodeN3StringEscapes } = require('./lexer');
+const { Parser } = require('./parser');
+const { liftBlankRuleVars, reorderPremiseForConstraints, isConstraintBuiltin } = require('./rules');
+
+const { termToN3, tripleToN3 } = require('./printing');
+
+const trace = require('./trace');
+const time = require('./time');
+const { deterministicSkolemIdFromKey } = require('./skolem');
+
+const deref = require('./deref');
+
+let version = 'dev';
+try {
+  // Node: keep package.json version if available
+  if (typeof require === 'function') version = require('./package.json').version || version;
+} catch (_) {}
+
+let nodeCrypto = null;
+try {
+  // Node: crypto available
+  if (typeof require === 'function') nodeCrypto = require('crypto');
+} catch (_) {}
+function isRdfJsonDatatype(dt) {
+  // dt comes from literalParts() and may be expanded or prefixed depending on parsing/printing.
+  return dt === null || dt === RDF_JSON_DT || dt === 'rdf:JSON';
+}
+
+function termToJsonText(t) {
+  if (!(t instanceof Literal)) return null;
+  const [lex, dt] = literalParts(t.value);
+  if (!isRdfJsonDatatype(dt)) return null;
+  // decode escapes for short literals; long literals are taken verbatim
+  return termToJsStringDecoded(t);
+}
+
+function makeRdfJsonLiteral(jsonText) {
+  // Prefer a readable long literal when safe; fall back to short if needed.
+  if (!jsonText.includes('"""')) {
+    return internLiteral('"""' + jsonText + '"""^^<' + RDF_JSON_DT + '>');
+  }
+  return internLiteral(JSON.stringify(jsonText) + '^^<' + RDF_JSON_DT + '>');
+}
+// For a single reasoning run, this maps a canonical representation
+// of the subject term in log:skolem to a Skolem IRI.
+const skolemCache = new Map();
+
+// -----------------------------------------------------------------------------
+// Hot caches
+// -----------------------------------------------------------------------------
+const __parseNumCache = new Map(); // lit string -> number|null
+const __parseIntCache = new Map(); // lit string -> bigint|null
+const __parseNumericInfoCache = new Map(); // lit string -> info|null
+
+// Cache for string:jsonPointer: jsonText -> { parsed: any|null, ptrCache: Map<string, Term|null> }
+const jsonPointerCache = new Map();
+
+// -----------------------------------------------------------------------------
+// log:conclusion cache
+// -----------------------------------------------------------------------------
+// Cache deductive closure for log:conclusion
+const __logConclusionCache = new WeakMap(); // GraphTerm -> GraphTerm (deductive closure)
+
 function __makeRuleFromTerms(left, right, isForward) {
   // Mirror Parser.makeRule, but usable at runtime (e.g., log:conclusion).
   let premiseTerm, conclTerm;
@@ -4026,9 +4140,9 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   if (pv === LOG_NS + 'content') {
     const iri = iriValue(g.s);
     if (iri === null) return [];
-    const docIri = __stripFragment(iri);
+    const docIri = deref.stripFragment(iri);
 
-    const text = __derefTextSync(docIri);
+    const text = deref.derefTextSync(docIri);
     if (typeof text !== 'string') return [];
 
     const lit = internLiteral(`${JSON.stringify(text)}^^<${XSD_NS}string>`);
@@ -4050,9 +4164,9 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   if (pv === LOG_NS + 'semantics') {
     const iri = iriValue(g.s);
     if (iri === null) return [];
-    const docIri = __stripFragment(iri);
+    const docIri = deref.stripFragment(iri);
 
-    const formula = __derefSemanticsSync(docIri);
+    const formula = deref.derefSemanticsSync(docIri);
     if (!(formula instanceof GraphTerm)) return [];
 
     if (g.o instanceof Var) {
@@ -4073,40 +4187,8 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const iri = iriValue(g.s);
     if (iri === null) return [];
 
-    const docIri = __stripFragment(iri);
-    const norm = __normalizeDerefIri(docIri);
-    const key = typeof norm === 'string' && norm ? norm : docIri;
-
-    let term = null;
-
-    if (__logSemanticsOrErrorCache.has(key)) {
-      term = __logSemanticsOrErrorCache.get(key);
-    } else {
-      // If we already successfully computed log:semantics, reuse it.
-      const formula = __derefSemanticsSync(docIri);
-
-      if (formula instanceof GraphTerm) {
-        term = formula;
-      } else {
-        // Try to get an informative error.
-        const txt = __derefTextSync(docIri);
-        if (typeof txt !== 'string') {
-          term = makeStringLiteral(`error(dereference_failed,${docIri})`);
-        } else {
-          try {
-            const baseIri = typeof key === 'string' && key ? key : docIri;
-            term = __parseSemanticsToFormula(txt, baseIri);
-            // Keep the semantics cache consistent.
-            __logSemanticsCache.set(key, term);
-          } catch (e) {
-            const msg = e && e.message ? e.message : String(e);
-            term = makeStringLiteral(`error(parse_error,${msg})`);
-          }
-        }
-      }
-
-      __logSemanticsOrErrorCache.set(key, term);
-    }
+    const docIri = deref.stripFragment(iri);
+    const term = deref.derefSemanticsOrError(docIri);
 
     if (g.o instanceof Var) {
       const s2 = { ...subst };
@@ -4130,7 +4212,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     try {
       // No external base is specified in the builtin definition; the parsed
       // string may contain its own @base / @prefix directives.
-      formula = __parseSemanticsToFormula(txt, '');
+      formula = deref.parseSemanticsToFormula(txt, '');
     } catch {
       return [];
     }
@@ -5783,8 +5865,8 @@ function reasonStream(n3Text, opts = {}) {
     enforceHttps = false,
   } = opts;
 
-  const __oldEnforceHttps = enforceHttpsEnabled;
-  enforceHttpsEnabled = !!enforceHttps;
+  const __oldEnforceHttps = deref.getEnforceHttpsEnabled();
+  deref.setEnforceHttpsEnabled(!!enforceHttps);
   proofCommentsEnabled = !!proof;
 
   const toks = lex(n3Text);
@@ -5818,7 +5900,7 @@ function reasonStream(n3Text, opts = {}) {
     derived, // DerivedFact[]
     closureN3: closureTriples.map((t) => tripleToN3(t, prefixes)).join('\n'),
   };
-  enforceHttpsEnabled = __oldEnforceHttps;
+  deref.setEnforceHttpsEnabled(__oldEnforceHttps);
   return __out;
 }
 
@@ -5835,11 +5917,11 @@ function main() {
 // as globals. demo.html (web worker) still relies on a subset of these.
 
 function getEnforceHttpsEnabled() {
-  return enforceHttpsEnabled;
+  return deref.getEnforceHttpsEnabled();
 }
 
 function setEnforceHttpsEnabled(v) {
-  enforceHttpsEnabled = !!v;
+  deref.setEnforceHttpsEnabled(!!v);
 }
 
 function getProofCommentsEnabled() {
@@ -5893,6 +5975,13 @@ module.exports = {
 
   };
   __modules["lib/entry.js"] = function(require, module, exports){
+/**
+ * Eyeling Reasoner — entry
+ *
+ * Package entry module used by the bundler and runtime entrypoints.
+ * Keeps exports wiring separate from the core engine implementation.
+ */
+
 'use strict';
 
 // Entry point for the bundled eyeling.js.
@@ -5925,6 +6014,13 @@ module.exports = {
 
   };
   __modules["lib/lexer.js"] = function(require, module, exports){
+/**
+ * Eyeling Reasoner — lexer
+ *
+ * Tokenizer for the supported N3/Turtle-like syntax. Produces a token stream
+ * consumed by lib/parser.js.
+ */
+
 'use strict';
 
 class Token {
@@ -6455,6 +6551,13 @@ module.exports = { Token, N3SyntaxError, lex, decodeN3StringEscapes };
 
   };
   __modules["lib/parser.js"] = function(require, module, exports){
+/**
+ * Eyeling Reasoner — parser
+ *
+ * Parser for the supported N3 syntax. Turns tokens into the internal term and
+ * formula representation used by the engine.
+ */
+
 'use strict';
 
 const {
@@ -7083,6 +7186,13 @@ module.exports = { Parser };
 
   };
   __modules["lib/prelude.js"] = function(require, module, exports){
+/**
+ * Eyeling Reasoner — prelude
+ *
+ * Core data model and shared utilities: Term/Triple/Formula types, namespaces,
+ * and prefix environment helpers used throughout the project.
+ */
+
 'use strict';
 
 // ===========================================================================
@@ -7494,6 +7604,13 @@ module.exports = {
 
   };
   __modules["lib/printing.js"] = function(require, module, exports){
+/**
+ * Eyeling Reasoner — printing
+ *
+ * Pretty-printing / serialization helpers for terms, triples, and formulas.
+ * Used by the CLI, demo, and explanations.
+ */
+
 'use strict';
 
 const {
@@ -7607,6 +7724,13 @@ module.exports = { termToN3, tripleToN3 };
 
   };
   __modules["lib/rules.js"] = function(require, module, exports){
+/**
+ * Eyeling Reasoner — rules
+ *
+ * Built-in rule helpers and utilities used by the engine. This is not the
+ * inference engine itself, but shared rule-related machinery.
+ */
+
 'use strict';
 
 const {
@@ -7749,6 +7873,13 @@ module.exports = {
 
   };
   __modules["lib/skolem.js"] = function(require, module, exports){
+/**
+ * Eyeling Reasoner — skolem
+ *
+ * Deterministic skolemization utilities: stable key generation and skolem term
+ * construction used by the engine and parser.
+ */
+
 'use strict';
 
 // Deterministic pseudo-UUID from a string key (for log:skolem).
@@ -7801,6 +7932,13 @@ module.exports = {
 
   };
   __modules["lib/time.js"] = function(require, module, exports){
+/**
+ * Eyeling Reasoner — time
+ *
+ * Date/time parsing and formatting helpers (e.g., xsd:dateTime handling) used
+ * by time-related builtins and normalization code.
+ */
+
 'use strict';
 
 // Deterministic time support used by time:* builtins.
@@ -7907,6 +8045,12 @@ module.exports = {
 
   };
   __modules["lib/trace.js"] = function(require, module, exports){
+/**
+ * Eyeling Reasoner — trace
+ *
+ * Debugging/tracing utilities used to record and inspect reasoning steps.
+ */
+
 /* eslint-disable no-console */
 'use strict';
 
