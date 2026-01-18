@@ -5,8 +5,32 @@
 > This handbook is written for a computer science student who wants to understand Eyeling as *code* and as a *reasoning machine*.  
 > It’s meant to be read linearly, but each chapter stands on its own.
 
+
+## Contents
+
+- [Preface](#preface)
+- [Chapter 1 — The execution model in one picture](#ch01)
+- [Chapter 2 — The repository, as a guided reading path](#ch02)
+- [Chapter 3 — The data model: terms, triples, formulas, rules](#ch03)
+- [Chapter 4 — From characters to AST: lexing and parsing](#ch04)
+- [Chapter 5 — Rule normalization: “compile-time” semantics](#ch05)
+- [Chapter 6 — Equality, alpha-equivalence, and unification](#ch06)
+- [Chapter 7 — Facts as a database: indexing and fast duplicate checks](#ch07)
+- [Chapter 8 — Backward chaining: the proof engine](#ch08)
+- [Chapter 9 — Forward chaining: saturation, skolemization, and meta-rules](#ch09)
+- [Chapter 10 — Scoped closure, priorities, and `log:conclusion`](#ch10)
+- [Chapter 11 — Built-ins as a standard library](#ch11)
+  - [11.3 A tour of builtin families](#ch11-03)
+  - [11.4 `log:outputString` as a controlled side effect](#ch11-04)
+- [Chapter 12 — Dereferencing and web-like semantics](#ch12)
+- [Chapter 13 — Printing, proofs, and the user-facing output](#ch13)
+- [Chapter 14 — Entry points: CLI, bundle exports, and npm API](#ch14)
+- [Chapter 15 — A worked example: Socrates, step by step](#ch15)
+- [Chapter 16 — Extending Eyeling (without breaking it)](#ch16)
+
 ---
 
+<a id="preface"></a>
 ## Preface: what Eyeling is (and what it is not)
 
 Eyeling is a small Notation3 (N3) reasoner implemented in JavaScript. Its job is to take:
@@ -31,6 +55,7 @@ This handbook is a tour of that miniature system.
 
 ---
 
+<a id="ch01"></a>
 ## Chapter 1 — The execution model in one picture
 
 Let’s name the pieces:
@@ -75,6 +100,7 @@ Because `PROVE` can call built-ins (math, string, list, crypto, dereferencing…
 
 ---
 
+<a id="ch02"></a>
 ## Chapter 2 — The repository, as a guided reading path
 
 If you want to follow the code in the same order Eyeling “thinks”, read:
@@ -107,6 +133,7 @@ text → tokens → AST (facts + rules) → engine → derived facts → printer
 
 ---
 
+<a id="ch03"></a>
 ## Chapter 3 — The data model: terms, triples, formulas, rules (`lib/prelude.js`)
 
 Eyeling uses a small AST. You can think of it as the “instruction set” for the rest of the reasoner.
@@ -160,6 +187,7 @@ Terms are treated as immutable: once interned, the code assumes you won’t muta
 
 ---
 
+<a id="ch04"></a>
 ## Chapter 4 — From characters to AST: lexing and parsing (`lib/lexer.js`, `lib/parser.js`)
 
 Eyeling’s parser is intentionally pragmatic: it aims to accept “the stuff people actually write” in N3/Turtle, including common shorthand.
@@ -229,6 +257,7 @@ Internally:
 
 ---
 
+<a id="ch05"></a>
 ## Chapter 5 — Rule normalization: “compile-time” semantics (`lib/rules.js`)
 
 Before rules hit the engine, Eyeling performs two lightweight transformations.
@@ -269,6 +298,7 @@ It’s not logically necessary, but it improves the chance that constraints run 
 
 ---
 
+<a id="ch06"></a>
 ## Chapter 6 — Equality, alpha-equivalence, and unification (`lib/engine.js`)
 
 Once you enter `engine.js`, you enter the “physics layer.” Everything else depends on the correctness of:
@@ -341,6 +371,7 @@ This lets built-ins and fast-key indexing treat some different lexical spellings
 
 ---
 
+<a id="ch07"></a>
 ## Chapter 7 — Facts as a database: indexing and fast duplicate checks
 
 Reasoning is mostly “join-like” operations: match a goal triple against known facts. Doing this naively is too slow, so Eyeling builds indexes on top of a plain array.
@@ -379,6 +410,7 @@ So:
 
 ---
 
+<a id="ch08"></a>
 ## Chapter 8 — Backward chaining: the proof engine (`proveGoals`)
 
 Eyeling’s backward prover is an iterative depth-first search (DFS) that looks a lot like Prolog’s SLD resolution, but written explicitly with a stack to avoid JS recursion limits.
@@ -458,6 +490,7 @@ This is semantics-preserving for the ongoing proof search, but dramatically impr
 
 ---
 
+<a id="ch09"></a>
 ## Chapter 9 — Forward chaining: saturation, skolemization, and meta-rules (`forwardChain`)
 
 Forward chaining is Eyeling’s outer control loop. It is where facts get added and the closure grows.
@@ -541,6 +574,7 @@ This is meta-programming: your rules can generate new rules during reasoning.
 
 ---
 
+<a id="ch10"></a>
 ## Chapter 10 — Scoped closure, priorities, and `log:conclusion`
 
 Some `log:` built-ins talk about “what is included in the closure” or “collect all solutions.” These are tricky in a forward-chaining engine because the closure is *evolving*.
@@ -596,6 +630,7 @@ This makes formulas a little world you can reason about as data.
 
 ---
 
+<a id="ch11"></a>
 ## Chapter 11 — Built-ins as a standard library (`evalBuiltin`)
 
 Built-ins are where Eyeling stops being “just a Datalog engine” and becomes a practical N3 tool.
@@ -628,6 +663,7 @@ Below is a drop-in replacement for **§11.3 “A tour of builtin families”** t
 
 ---
 
+<a id="ch11-03"></a>
 ## 11.3 A tour of builtin families
 
 Eyeling’s builtins are best thought of as *foreign predicates*: they look like ordinary N3 predicates in your rules, but when the engine tries to satisfy a goal whose predicate is a builtin, it does not search the fact store. Instead, it calls a piece of JavaScript that implements the predicate’s semantics.
@@ -1423,6 +1459,7 @@ Returned terms follow Eyeling’s `jsonToTerm` mapping:
 
 This design keeps the builtin total and predictable even for nested structures.
 
+<a id="ch11-04"></a>
 ## 11.4 `log:outputString` as a controlled side effect
 
 From a logic-programming point of view, printing is awkward: if you print *during* proof search, you risk producing output along branches that later backtrack, or producing the same line multiple times in different derivations. Eyeling avoids that whole class of problems by treating “output” as **data**.
@@ -1451,6 +1488,7 @@ In short: Eyeling makes `log:outputString` safe by refusing to treat it as an im
 
 ---
 
+<a id="ch12"></a>
 ## Chapter 12 — Dereferencing and web-like semantics (`lib/deref.js`)
 
 Some N3 workflows treat IRIs as pointers to more knowledge. Eyeling supports this with:
@@ -1487,6 +1525,7 @@ Eyeling can optionally rewrite `http://…` to `https://…` before dereferencin
 
 ---
 
+<a id="ch13"></a>
 ## Chapter 13 — Printing, proofs, and the user-facing output
 
 Once reasoning is done (or as it happens in streaming mode), Eyeling converts derived facts back to N3.
@@ -1520,6 +1559,7 @@ This is especially useful in interactive demos (and is the basis of the playgrou
 
 ---
 
+<a id="ch14"></a>
 ## Chapter 14 — Entry points: CLI, bundle exports, and npm API
 
 Eyeling exposes itself in three layers.
@@ -1557,6 +1597,7 @@ One practical implication:
 
 ---
 
+<a id="ch15"></a>
 ## Chapter 15 — A worked example: Socrates, step by step
 
 Consider:
@@ -1596,6 +1637,7 @@ That’s the whole engine in miniature: unify, compose substitutions, emit head 
 
 ---
 
+<a id="ch16"></a>
 ## Chapter 16 — Extending Eyeling (without breaking it)
 
 Eyeling is small, which makes it pleasant to extend — but there are a few invariants worth respecting.
