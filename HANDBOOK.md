@@ -20,13 +20,12 @@
 - [Chapter 9 — Forward chaining: saturation, skolemization, and meta-rules](#ch09)
 - [Chapter 10 — Scoped closure, priorities, and `log:conclusion`](#ch10)
 - [Chapter 11 — Built-ins as a standard library](#ch11)
-  - [11.3 A tour of builtin families](#ch11-03)
-  - [11.4 `log:outputString` as a controlled side effect](#ch11-04)
 - [Chapter 12 — Dereferencing and web-like semantics](#ch12)
 - [Chapter 13 — Printing, proofs, and the user-facing output](#ch13)
 - [Chapter 14 — Entry points: CLI, bundle exports, and npm API](#ch14)
 - [Chapter 15 — A worked example: Socrates, step by step](#ch15)
 - [Chapter 16 — Extending Eyeling (without breaking it)](#ch16)
+- [Epilogue](#epilogue)
 
 ---
 
@@ -663,7 +662,6 @@ Below is a drop-in replacement for **§11.3 “A tour of builtin families”** t
 
 ---
 
-<a id="ch11-03"></a>
 ## 11.3 A tour of builtin families
 
 Eyeling’s builtins are best thought of as *foreign predicates*: they look like ordinary N3 predicates in your rules, but when the engine tries to satisfy a goal whose predicate is a builtin, it does not search the fact store. Instead, it calls a piece of JavaScript that implements the predicate’s semantics.
@@ -1459,7 +1457,6 @@ Returned terms follow Eyeling’s `jsonToTerm` mapping:
 
 This design keeps the builtin total and predictable even for nested structures.
 
-<a id="ch11-04"></a>
 ## 11.4 `log:outputString` as a controlled side effect
 
 From a logic-programming point of view, printing is awkward: if you print *during* proof search, you risk producing output along branches that later backtrack, or producing the same line multiple times in different derivations. Eyeling avoids that whole class of problems by treating “output” as **data**.
@@ -1679,6 +1676,7 @@ If you extend parsing, preserve the Rule invariants:
 
 ---
 
+<a id="epilogue"></a>
 ## Epilogue: the philosophy of this engine
 
 Eyeling’s codebase is compact because it chooses one powerful idea and leans into it:
