@@ -117,6 +117,9 @@ If you want to follow the code in the same order Eyeling “thinks”, read:
    - built-ins (`evalBuiltin`)
    - scoped-closure machinery (for `log:*In` and includes tests)
    - explanations and output construction
+   - tracing hooks (`lib/trace.js`, `log:trace`)
+   - time helpers for `time:*` built-ins (`lib/time.js`)
+   - deterministic Skolem IDs (head existentials + `log:skolem`) (`lib/skolem.js`)
 6. `lib/deref.js` — synchronous dereferencing for `log:content` / `log:semantics`.
 7. `lib/printing.js` — conversion back to N3 text.
 8. `lib/cli.js` + `lib/entry.js` — command-line wiring and bundle entry exports.
@@ -540,6 +543,8 @@ But it does something subtle and important: it caches skolemization per (rule fi
 
 The “firing instance” is keyed by a deterministic string derived from the instantiated body (“firingKey”). This stabilizes the closure and prevents “existential churn.”
 
+Implementation: deterministic Skolem IDs live in `lib/skolem.js`; the per-firing cache and head-blank rewriting are implemented in `lib/engine.js`.
+
 ### 9.4 Inference fuses: `{ ... } => false`
 
 A rule whose conclusion is `false` is treated as a hard failure. During forward chaining:
@@ -878,6 +883,8 @@ Inversion uses principal values (e.g., `asin`, `acos`, `atan`) and does not atte
 ## 11.3.3 `time:` — dateTime inspection and “now”
 
 Eyeling’s time builtins work over `xsd:dateTime` lexical forms. They are deliberately simple: they extract components from the lexical form rather than implementing a full time zone database.
+
+Implementation: these helpers live in `lib/time.js` and are called from `lib/engine.js`’s builtin evaluator.
 
 ### Component extractors
 
@@ -1332,6 +1339,8 @@ Always succeeds once and prints a debug line to stderr:
 ```
 
 using the current prefix environment for pretty printing.
+
+Implementation: this is implemented by `lib/trace.js` and called from `lib/engine.js`.
 
 #### `log:outputString`
 

@@ -9,10 +9,10 @@ A compact [Notation3 (N3)](https://notation3.org/) reasoner in **JavaScript**.
 
 ## Links
 
-- **Handbook (deep dive):** [Inside Eyeling — HANDBOOK](https://eyereasoner.github.io/eyeling/HANDBOOK)
-- **Playground:** https://eyereasoner.github.io/eyeling/demo
-- **Notation3 test suite:** https://codeberg.org/phochste/notation3tests
-- **Eyeling conformance report:** https://codeberg.org/phochste/notation3tests/src/branch/main/reports/report.md
+- **Handbook:** [https://eyereasoner.github.io/eyeling/HANDBOOK](https://eyereasoner.github.io/eyeling/HANDBOOK)
+- **Playground:** [https://eyereasoner.github.io/eyeling/demo](https://eyereasoner.github.io/eyeling/demo)
+- **Notation3 test suite:** [https://codeberg.org/phochste/notation3tests](https://codeberg.org/phochste/notation3tests)
+- **Eyeling conformance report:** [https://codeberg.org/phochste/notation3tests/src/branch/main/reports/report.md](https://codeberg.org/phochste/notation3tests/src/branch/main/reports/report.md)
 
 Eyeling is regularly checked against the community Notation3 test suite; the report above tracks current pass/fail results.
 
@@ -84,7 +84,8 @@ const { closureN3 } = eyeling.reasonStream(input, {
 
 ## Builtins
 
-Builtins are defined in `eyeling-builtins.ttl` and described in the handbook.
+Builtins are defined in [eyeling-builtins.ttl](https://github.com/eyereasoner/eyeling/blob/main/eyeling-builtins.ttl)
+and described in the [HANDBOOK](https://eyereasoner.github.io/eyeling/HANDBOOK#ch11).
 
 ## Testing (repo checkout)
 
@@ -94,4 +95,4 @@ npm test
 
 ## License
 
-MIT (see `LICENSE.md`).
+MIT (see [LICENSE](https://github.com/eyereasoner/eyeling/blob/main/LICENSE.md)).
