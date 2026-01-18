@@ -21,6 +21,7 @@
   "files": [
     "LICENSE.md",
     "README.md",
+    "HANDBOOK.md",
     "examples",
     "eyeling-builtins.ttl",
     "eyeling.js",
