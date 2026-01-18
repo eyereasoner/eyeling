@@ -1,6 +1,6 @@
 # Inside Eyeling
 
-## A compact Notation3 reasoner in JavaScript — a self-contained handbook
+## A compact Notation3 reasoner in JavaScript — a handbook
 
 > This handbook is written for a computer science student who wants to understand Eyeling as *code* and as a *reasoning machine*.  
 > It’s meant to be read linearly, but each chapter stands on its own.
@@ -624,37 +624,830 @@ That means built-ins can be:
 
 List operations are a common source of generators; numeric comparisons are tests.
 
-### 11.3 A tour of builtin families
+Below is a drop-in replacement for **§11.3 “A tour of builtin families”** that aims to be *fully self-contained* and to cover **every builtin currently implemented in `lib/engine.js`** (including the `rdf:first` / `rdf:rest` aliases).
 
-This handbook won’t list every builtin (Eyeling ships a `eyeling-builtins.ttl` file describing them), but it helps to understand how they *feel* in the engine:
+---
 
-* **math:** arithmetic and numeric relations
-  comparisons (`greaterThan`, `lessThan`, …), arithmetic (`sum`, `difference`, …), rounding, trig, etc.
+## 11.3 A tour of builtin families
 
-* **string:** string relations and transformations
-  concatenation, substring, regex match / notMatch, case operations, comparisons, `startsWith`, `endsWith`, and a notable one:
+Eyeling’s builtins are best thought of as *foreign predicates*: they look like ordinary N3 predicates in your rules, but when the engine tries to satisfy a goal whose predicate is a builtin, it does not search the fact store. Instead, it calls a piece of JavaScript that implements the predicate’s semantics.
 
-  * `string:jsonPointer` — treats a literal with datatype `rdf:JSON` as JSON text and applies a JSON Pointer query, with caching.
+That one sentence explains a lot of “why does it behave like *that*?”:
 
-* **list:** list relations
-  member tests and generators, append, first/rest decompositions, etc. Open-list terms exist mainly to support relational list operations.
+* Builtins are evaluated **during backward proof** (goal solving), just like facts and backward rules.
+* A builtin may produce **zero solutions** (fail), **one solution** (deterministic succeed), or **many solutions** (a generator).
+* Most builtins behave like relations, not like functions: they can sometimes run “backwards” (bind the subject from the object) if the implementation supports it.
+* Some builtins are **pure tests** (constraints): they never introduce new bindings; they only succeed or fail. Eyeling recognizes a subset of these and tends to schedule them *late* in forward-rule premises so they run after other goals have had a chance to bind variables.
 
-* **time:** time extraction and formatting
-  year/month/day/hour/minute/second, and other small utilities.
+### 11.3.0 Reading builtin “signatures” in this handbook
 
-* **crypto:** hashing in Node environments (md5/sha variants), used as deterministic computation.
+The N3 Builtins tradition often describes builtins using “schema” annotations like:
 
-* **log:** meta-level and reasoning-specific tools
-  includes/notIncludes, collectAllIn/forAllIn (scoped), outputString (side-channel output), semantics/content dereferencing, skolemization, `log:conclusion`, and introspection hooks.
+* `$s+` / `$o+` — input must be bound (or at least not a variable in practice)
+* `$s-` / `$o-` — output position (often a variable that will be bound)
+* `$s?` / `$o?` — may be unbound
+* `$s.i` — list element *i* inside the subject list
 
-### 11.4 `log:outputString` as a controlled side effect
+Eyeling is a little more pragmatic: it implements the spirit of these schemas, but it also has several “engineering” conventions that appear across many builtins:
 
-Eyeling avoids printing during proof search. Instead, `log:outputString` produces facts that are later collected and printed (or returned) in a deterministic order.
+1. **Variables (`?X`) may be bound** by a builtin if the builtin is written to do so.
+2. **Blank nodes (`[]` / `_:`)** are frequently treated as “don’t care” placeholders. Many builtins accept a blank node in an output position and simply succeed without binding.
+3. **Fully unbound relations are usually not enumerated.** If both sides are unbound and enumerating solutions would be infinite (or huge), a number of builtins treat that situation as “satisfiable” and succeed once without binding anything. (This is mainly to keep meta-tests and some N3 conformance cases happy.)
 
-This is a classic trick in declarative systems:
+With that, we can tour the builtin families as Eyeling actually implements them.
 
-* represent output as data
-* render it at the end.
+---
+
+## 11.3.1 `crypto:` — digest functions (Node-only)
+
+These builtins hash a string and return a lowercase hex digest as a plain string literal.
+
+### `crypto:sha`, `crypto:md5`, `crypto:sha256`, `crypto:sha512`
+
+**Shape:**
+`$literal crypto:sha256 $digest`
+
+**Semantics (Eyeling):**
+
+* The **subject must be a literal**. Eyeling takes the literal’s lexical form (stripping quotes) as UTF-8 input.
+* The **object** is unified with a **plain string literal** containing the hex digest.
+
+**Important runtime note:** Eyeling uses Node’s `crypto` module. If `crypto` is not available (e.g., in some browser builds), these builtins simply **fail** (return no solutions).
+
+**Example:**
+
+```n3
+"hello" crypto:sha256 ?d.
+# ?d becomes "2cf24dba5...<snip>...9824"
+```
+
+---
+
+## 11.3.2 `math:` — numeric and numeric-like relations
+
+Eyeling’s `math:` builtins fall into three broad categories:
+
+1. **Comparisons**: constraint-style predicates (`>`, `<`, `=`, …).
+2. **Arithmetic on numbers**: sums, products, division, rounding, etc.
+3. **Unary analytic functions**: trig/hyperbolic functions and a few helpers.
+
+A key design choice: Eyeling parses numeric terms fairly strictly, but comparisons accept a wider “numeric-like” domain including durations and date/time values in some cases.
+
+### 11.3.2.1 Numeric comparisons (constraints)
+
+These builtins succeed or fail; they do not introduce new bindings.
+
+* `math:greaterThan`  (>)
+* `math:lessThan`     (<)
+* `math:notGreaterThan` (≤)
+* `math:notLessThan`    (≥)
+* `math:equalTo`        (=)
+* `math:notEqualTo`     (≠)
+
+**Shapes:**
+
+```n3
+$a math:greaterThan $b.
+$a math:equalTo $b.
+```
+
+Eyeling also accepts an older cwm-ish variant where the **subject is a 2-element list**:
+
+```n3
+( $a $b ) math:greaterThan true.   # (supported as a convenience)
+```
+
+**Accepted term types (Eyeling):**
+
+* Proper XSD numeric literals (`xsd:integer`, `xsd:decimal`, `xsd:float`, `xsd:double`, and integer-derived types).
+* Untyped numeric tokens (`123`, `-4.5`, `1.2e3`) when they look numeric.
+* `xsd:duration` literals (treated as seconds via a simplified model).
+* `xsd:date` and `xsd:dateTime` literals (converted to epoch seconds for comparison).
+
+**Edge cases:**
+
+* `NaN` is treated as **not equal to anything**, including itself, for `math:equalTo`.
+* Comparisons involving non-parsable values simply fail.
+
+Because these are pure tests, Eyeling treats them as **constraint builtins** and tends to push them to the end of forward-rule premises so they’re checked after other goals bind variables.
+
+---
+
+### 11.3.2.2 Arithmetic on lists of numbers
+
+These are “function-like” relations where the subject is usually a list and the object is the result.
+
+#### `math:sum`
+
+**Shape:** `( $x1 $x2 ... ) math:sum $total`
+
+* Subject must be a list of **at least two** numeric terms.
+* Computes the numeric sum.
+* Chooses an output datatype based on the “widest” numeric datatype seen among inputs and (optionally) the object position; integers stay integers unless the result is non-integer.
+
+#### `math:product`
+
+**Shape:** `( $x1 $x2 ... ) math:product $total`
+
+* Same conventions as `math:sum`, but multiplies.
+
+#### `math:difference`
+
+This one is more interesting because Eyeling supports a couple of mixed “numeric-like” cases.
+
+**Shape:** `( $a $b ) math:difference $c`
+
+Eyeling supports:
+
+1. **Numeric subtraction**: `c = a - b`.
+2. **DateTime difference**: `(dateTime1 dateTime2) math:difference duration`
+
+   * Produces an `xsd:duration` in whole days (internally computed via seconds then formatted).
+3. **DateTime minus duration**: `(dateTime duration) math:difference dateTime`
+
+   * Subtracts a duration from a dateTime and yields a new dateTime.
+
+If the types don’t fit any supported case, the builtin fails.
+
+#### `math:quotient`
+
+**Shape:** `( $a $b ) math:quotient $q`
+
+* Parses both inputs as numbers.
+* Requires finite values and `b != 0`.
+* Computes `a / b`, picking a suitable numeric datatype for output.
+
+#### `math:integerQuotient`
+
+**Shape:** `( $a $b ) math:integerQuotient $q`
+
+* Intended for integer division with remainder discarded (truncation toward zero).
+* Prefers exact arithmetic using **BigInt** if both inputs are integer literals.
+* Falls back to Number parsing if needed, but still requires integer-like values.
+
+#### `math:remainder`
+
+**Shape:** `( $a $b ) math:remainder $r`
+
+* Integer-only modulus.
+* Uses BigInt when possible; otherwise requires both numbers to still represent integers.
+* Fails on division by zero.
+
+#### `math:rounded`
+
+**Shape:** `$x math:rounded $n`
+
+* Rounds to nearest integer.
+* Tie-breaking follows JavaScript `Math.round`, i.e. halves go toward **+∞** (`-1.5 -> -1`, `1.5 -> 2`).
+* Eyeling emits the integer as an **integer token literal** (and also accepts typed numerics if they compare equal).
+
+---
+
+### 11.3.2.3 Exponentiation and unary numeric relations
+
+#### `math:exponentiation`
+
+**Shape:** `( $base $exp ) math:exponentiation $result`
+
+* Forward direction: if base and exponent are numeric, computes `base ** exp`.
+* Reverse direction (limited): Eyeling can sometimes solve for the exponent if:
+
+  * base and result are numeric, finite, and **positive**
+  * base is not 1
+  * exponent is unbound
+    In that case it uses logarithms: `exp = log(result) / log(base)`.
+
+This is a pragmatic inversion, not a full algebra system.
+
+#### Unary “math relations” (often invertible)
+
+Eyeling implements these as a shared pattern: if the subject is numeric, compute object; else if the object is numeric, compute subject via an inverse function; if both sides are unbound, succeed once (don’t enumerate).
+
+* `math:absoluteValue`
+* `math:negation`
+* `math:degrees` (and implicitly its inverse “radians” conversion)
+* `math:sin`, `math:cos`, `math:tan`
+* `math:asin`, `math:acos`, `math:atan`
+* `math:sinh`, `math:cosh`, `math:tanh` (only if JS provides the functions)
+
+**Example:**
+
+```n3
+"0"^^xsd:double math:cos ?c.      # forward
+?x math:cos "1"^^xsd:double.      # reverse (principal acos)
+```
+
+Inversion uses principal values (e.g., `asin`, `acos`, `atan`) and does not attempt to enumerate periodic families of solutions.
+
+---
+
+## 11.3.3 `time:` — dateTime inspection and “now”
+
+Eyeling’s time builtins work over `xsd:dateTime` lexical forms. They are deliberately simple: they extract components from the lexical form rather than implementing a full time zone database.
+
+### Component extractors
+
+* `time:year`
+* `time:month`
+* `time:day`
+* `time:hour`
+* `time:minute`
+* `time:second`
+
+**Shape:**
+`$dt time:month $m`
+
+**Semantics:**
+
+* Subject must be an `xsd:dateTime` literal in a format Eyeling can parse.
+* Object becomes the corresponding integer component (as an integer token literal).
+* If the object is already a numeric literal, Eyeling accepts it if it matches.
+
+### `time:timeZone`
+
+**Shape:**
+`$dt time:timeZone $tz`
+
+Returns the trailing zone designator:
+
+* `"Z"` for UTC, or
+* a string like `"+02:00"` / `"-05:00"`
+
+It yields a **plain string literal** (and also accepts typed `xsd:string` literals).
+
+### `time:localTime`
+
+**Shape:**
+`"" time:localTime ?now`
+
+Binds `?now` to the current local time as an `xsd:dateTime` literal.
+
+Two subtle but important engineering choices:
+
+1. Eyeling memoizes “now” per reasoning run so that repeated uses in one run don’t drift.
+2. Eyeling supports a fixed “now” override (used for deterministic tests).
+
+---
+
+## 11.3.4 `list:` — list structure, iteration, and higher-order helpers
+
+Eyeling has a real internal list term (`ListTerm`) that corresponds to N3’s `(a b c)` surface syntax.
+
+### RDF collections (`rdf:first` / `rdf:rest`) are materialized
+
+N3 and RDF can also express lists as linked blank nodes using `rdf:first` / `rdf:rest` and `rdf:nil`. Eyeling *materializes* such structures into internal list terms before reasoning so that `list:*` builtins can operate uniformly.
+
+For convenience and compatibility, Eyeling treats:
+
+* `rdf:first` as an alias of `list:first`
+* `rdf:rest`  as an alias of `list:rest`
+
+### Core list destructuring
+
+#### `list:first` (and `rdf:first`)
+
+**Shape:**
+`(a b c) list:first a`
+
+* Succeeds iff the subject is a **non-empty closed list**.
+* Unifies the object with the first element.
+
+#### `list:rest` (and `rdf:rest`)
+
+**Shape:**
+`(a b c) list:rest (b c)`
+
+Eyeling supports both:
+
+* closed lists `(a b c)`, and
+* *open lists* of the form `(a b ... ?T)` internally.
+
+For open lists, “rest” preserves openness:
+
+* Rest of `(a ... ?T)` is `?T`
+* Rest of `(a b ... ?T)` is `(b ... ?T)`
+
+#### `list:firstRest`
+
+This is a very useful “paired” view of a list.
+
+**Forward shape:**
+`(a b c) list:firstRest (a (b c))`
+
+**Backward shapes (construction):**
+
+* If the object is `(first restList)`, it can construct the list.
+* If `rest` is a variable, Eyeling constructs an open list term.
+
+This is the closest thing to Prolog’s `[H|T]` in Eyeling.
+
+---
+
+### Membership and iteration (multi-solution builtins)
+
+These builtins can yield multiple solutions.
+
+#### `list:member`
+
+**Shape:**
+`(a b c) list:member ?x`
+
+Generates one solution per element, unifying the object with each member.
+
+#### `list:in`
+
+**Shape:**
+`?x list:in (a b c)`
+
+Same idea, but the list is in the **object** position and the **subject** is unified with each element.
+
+#### `list:iterate`
+
+**Shape:**
+`(a b c) list:iterate ?pair`
+
+Generates `(index value)` pairs with **0-based indices**:
+
+* `(0 a)`, `(1 b)`, `(2 c)`, …
+
+A nice ergonomic detail: the object may be a pattern such as:
+
+```n3
+(a b c) list:iterate ( ?i "b" ).
+```
+
+In that case Eyeling unifies `?i` with `1` and checks the value part appropriately.
+
+#### `list:memberAt`
+
+**Shape:**
+`( (a b c) 1 ) list:memberAt b`
+
+The subject must be a 2-element list: `(listTerm indexTerm)`.
+
+Eyeling can use this relationally:
+
+* If the index is bound, it can return the value.
+* If the value is bound, it can search for indices that match.
+* If both are variables, it generates pairs (similar to `iterate`, but with separate index/value logic).
+
+Indices are **0-based**.
+
+---
+
+### Transformations and queries
+
+#### `list:length`
+
+**Shape:**
+`(a b c) list:length 3`
+
+Returns the length as an integer token literal.
+
+A small but intentional strictness: if the object is already ground, Eyeling does not accept “integer vs decimal equivalences” here; it wants the exact integer notion.
+
+#### `list:last`
+
+**Shape:**
+`(a b c) list:last c`
+
+Returns the last element of a non-empty list.
+
+#### `list:reverse`
+
+Reversible in the sense that either side may be the list:
+
+* If subject is a list, object becomes its reversal.
+* If object is a list, subject becomes its reversal.
+
+It does not enumerate arbitrary reversals; it’s a deterministic transform once one side is known.
+
+#### `list:remove`
+
+**Shape:**
+`( (a b a c) a ) list:remove (b c)`
+
+Removes all occurrences of an item from a list.
+
+Important constraint: the item to remove must be **ground** (fully known) before the builtin will run.
+
+#### `list:notMember` (constraint)
+
+**Shape:**
+`(a b c) list:notMember x`
+
+Succeeds iff the object cannot be unified with any element of the subject list. This is treated as a constraint builtin.
+
+#### `list:append`
+
+This is list concatenation, but Eyeling implements it in a pleasantly relational way.
+
+**Forward shape:**
+`( (a b) (c) (d e) ) list:append (a b c d e)`
+
+Subject is a list of lists; object is their concatenation.
+
+**Splitting (reverse-ish) mode:**
+If the **object is a concrete list**, Eyeling tries all ways of splitting it into the given number of parts and unifying each part with the corresponding subject element. This can yield multiple solutions and is handy for logic programming patterns.
+
+#### `list:sort`
+
+Sorts a list into a deterministic order.
+
+* Requires the input list’s elements to be **ground**.
+* Orders literals numerically when both sides look numeric; otherwise compares their lexical strings.
+* Orders lists lexicographically by elements.
+* Orders IRIs by IRI string.
+* Falls back to a stable structural key for mixed cases.
+
+Like `reverse`, this is “reversible” only in the sense that if one side is a list, the other side can be unified with its sorted form.
+
+#### `list:map` (higher-order)
+
+This is one of Eyeling’s most powerful list builtins because it calls back into the reasoner.
+
+**Shape:**
+`( (x1 x2 x3) ex:pred ) list:map ?outList`
+
+Semantics:
+
+1. The subject is a 2-element list: `(inputList predicateIri)`.
+2. `inputList` must be ground.
+3. For each element `el` in the input list, Eyeling proves the goal:
+
+   ```n3
+   el predicateIri ?y.
+   ```
+
+   using *the full engine* (facts, backward rules, and builtins).
+4. All resulting `?y` values are collected in proof order and concatenated into the output list.
+5. If an element produces no solutions, it contributes nothing.
+
+This makes `list:map` a compact “query over a list” operator.
+
+---
+
+## 11.3.5 `log:` — unification, formulas, scoping, and meta-level control
+
+The `log:` family is where N3 stops being “RDF with rules” and becomes a *meta-logic*. Eyeling supports the core operators you need to treat formulas as terms, reason inside quoted graphs, and compute closures.
+
+### Equality and inequality
+
+#### `log:equalTo`
+
+**Shape:**
+`$x log:equalTo $y`
+
+This is simply **term unification**: it succeeds if the two terms can be unified and returns any bindings that result.
+
+#### `log:notEqualTo` (constraint)
+
+Succeeds iff the terms **cannot** be unified. No new bindings.
+
+### Working with formulas as terms
+
+In Eyeling, a quoted formula `{ ... }` is represented as a `GraphTerm` whose content is a list of triples (and, when parsed from documents, rule terms can also appear as `log:implies` / `log:impliedBy` triples inside formulas).
+
+#### `log:conjunction`
+
+**Shape:**
+`( F1 F2 ... ) log:conjunction F`
+
+* Subject is a list of formulas.
+* Object becomes a formula containing all triples from all inputs.
+* Duplicate triples are removed.
+* The literal `true` is treated as the **empty formula** and is ignored in the merge.
+
+#### `log:conclusion`
+
+**Shape:**
+`F log:conclusion C`
+
+Computes the *deductive closure* of the formula `F` **using only the information inside `F`**:
+
+* Eyeling starts with all triples inside `F` as facts.
+* It treats `{A} => {B}` (represented internally as a `log:implies` triple between formulas) as a forward rule.
+* It treats `{A} <= {B}` as the corresponding forward direction for closure purposes.
+* Then it forward-chains to a fixpoint *within that local fact set*.
+* The result is returned as a formula containing all derived triples.
+
+Eyeling caches `log:conclusion` results per formula object, so repeated calls with the same formula term are cheap.
+
+### Dereferencing and parsing (I/O flavored)
+
+These builtins reach outside the current fact set. They are synchronous by design.
+
+#### `log:content`
+
+**Shape:**
+`<doc> log:content ?txt`
+
+* Dereferences the IRI (fragment stripped) and returns the raw bytes as an `xsd:string` literal.
+* In Node: HTTP(S) is fetched synchronously; non-HTTP is treated as a local file path (including `file://`).
+* In browsers/workers: uses synchronous XHR (subject to CORS).
+
+#### `log:semantics`
+
+**Shape:**
+`<doc> log:semantics ?formula`
+
+Dereferences and parses the remote/local resource as N3/Turtle-like syntax, returning a formula.
+
+A nice detail: top-level rules in the parsed document are represented *as data* inside the returned formula using `log:implies` / `log:impliedBy` triples between formula terms. This means you can treat “a document plus its rules” as a single first-class formula object.
+
+#### `log:semanticsOrError`
+
+Like `log:semantics`, but on failure it returns a string literal such as:
+
+* `error(dereference_failed,...)`
+* `error(parse_error,...)`
+
+This is convenient in robust pipelines where you want logic that can react to failures.
+
+#### `log:parsedAsN3`
+
+**Shape:**
+`" ...n3 text... " log:parsedAsN3 ?formula`
+
+Parses an in-memory string as N3 and returns the corresponding formula.
+
+### Type inspection
+
+#### `log:rawType`
+
+Returns one of four IRIs:
+
+* `log:Formula` (quoted graph)
+* `log:Literal`
+* `rdf:List` (closed or open list terms)
+* `log:Other` (IRIs, blank nodes, etc.)
+
+### Literal constructors
+
+These two are classic N3 “bridge” operators between structured data and concrete RDF literal forms.
+
+#### `log:dtlit`
+
+Relates a datatype literal to a pair `(lex datatypeIri)`.
+
+* If object is a literal, it can produce the subject list `(stringLiteral datatypeIri)`.
+* If subject is such a list, it can produce the corresponding datatype literal.
+* If both subject and object are variables, Eyeling treats this as satisfiable and succeeds once.
+
+Language-tagged strings are normalized: they are treated as having datatype `rdf:langString`.
+
+#### `log:langlit`
+
+Relates a language-tagged literal to a pair `(lex langTag)`.
+
+* If object is `"hello"@en`, subject can become `("hello" "en")`.
+* If subject is `("hello" "en")`, object can become `"hello"@en`.
+* Fully unbound succeeds once.
+
+### Rules as data: introspection
+
+#### `log:implies` and `log:impliedBy`
+
+As *syntax*, Eyeling parses `{A} => {B}` and `{A} <= {B}` into internal forward/backward rules.
+
+As *builtins*, `log:implies` and `log:impliedBy` let you **inspect the currently loaded rule set**:
+
+* `log:implies` enumerates forward rules as `(premiseFormula, conclusionFormula)` pairs.
+* `log:impliedBy` enumerates backward rules similarly.
+
+Each enumerated rule is standardized apart (fresh variable names) before unification so you can safely query over it.
+
+### Scoped proof inside formulas: `log:includes` and friends
+
+#### `log:includes`
+
+**Shape:**
+`Scope log:includes GoalFormula`
+
+This proves all triples in `GoalFormula` as goals, returning the substitutions that make them provable.
+
+Eyeling has **two modes**:
+
+1. **Explicit scope graph**: if `Scope` is a formula `{...}`
+
+   * Eyeling reasons *only inside that formula* (its triples are the fact store).
+   * External rules are not used.
+
+2. **Priority-gated global scope**: otherwise
+
+   * Eyeling uses a *frozen snapshot* of the current global closure.
+   * The “priority” is read from the subject if it’s a positive integer literal `N`.
+   * If the closure level is below `N`, the builtin “delays” by failing at that point in the search.
+
+This priority mechanism exists because Eyeling’s forward chaining runs in outer iterations with a “freeze snapshot then evaluate scoped builtins” phase. The goal is to make scoped meta-builtins stable and deterministic: they query a fixed snapshot rather than chasing a fact store that is being mutated mid-iteration.
+
+Also supported:
+
+* The object may be the literal `true`, meaning the empty formula, which is always included (subject to the priority gating above).
+
+#### `log:notIncludes` (constraint)
+
+Negation-as-failure version: it succeeds iff `log:includes` would yield no solutions (under the same scoping rules).
+
+#### `log:collectAllIn`
+
+**Shape:**
+`( ValueTemplate WhereFormula OutList ) log:collectAllIn Scope`
+
+* Proves `WhereFormula` in the chosen scope.
+* For each solution, applies it to `ValueTemplate` and collects the instantiated terms into a list.
+* Unifies `OutList` with that list.
+* If `OutList` is a blank node, Eyeling just checks satisfiable without binding/collecting.
+
+This is essentially a list-producing “findall”.
+
+#### `log:forAllIn` (constraint)
+
+**Shape:**
+`( WhereFormula ThenFormula ) log:forAllIn Scope`
+
+For every solution of `WhereFormula`, `ThenFormula` must be provable under the bindings of that solution. If any witness fails, the builtin fails. No bindings are returned.
+
+This is treated as a constraint builtin.
+
+### Skolemization and URI casting
+
+#### `log:skolem`
+
+**Shape:**
+`$groundTerm log:skolem ?iri`
+
+Deterministically maps a *ground* term to a Skolem IRI in Eyeling’s well-known namespace. This is extremely useful when you want a repeatable identifier derived from structured content.
+
+#### `log:uri`
+
+Bidirectional conversion between IRIs and their string form:
+
+* If subject is an IRI, object can be unified with a string literal of its IRI.
+* If object is a string literal, subject can be unified with the corresponding IRI — **but** Eyeling rejects strings that cannot be safely serialized as `<...>` in Turtle/N3, and it rejects `_:`-style strings to avoid confusing blank nodes with IRIs.
+* Some “fully unbound / don’t-care” combinations succeed once to avoid infinite enumeration.
+
+### Side effects and output directives
+
+#### `log:trace`
+
+Always succeeds once and prints a debug line to stderr:
+
+```
+<s> TRACE <o>
+```
+
+using the current prefix environment for pretty printing.
+
+#### `log:outputString`
+
+As a goal, this builtin simply checks that the terms are sufficiently bound/usable and then succeeds. The actual “printing” behavior is handled by the CLI:
+
+* When you run Eyeling with `--strings` / `-r`, the CLI collects all `log:outputString` triples from the *saturated* closure.
+* It sorts them deterministically by the subject “key” and concatenates the string values in that order.
+
+This is treated as a constraint builtin (it shouldn’t drive search; it should merely validate that strings exist once other reasoning has produced them).
+
+---
+
+## 11.3.6 `string:` — string casting, tests, regexes, and JSON pointers
+
+Eyeling implements string builtins with a deliberate interpretation of “domain is `xsd:string`”:
+
+* Any **IRI** can be cast to a string (its IRI text).
+* Any **literal** can be cast to a string:
+
+  * quoted lexical forms decode N3/Turtle escapes,
+  * unquoted lexical tokens are taken as-is (numbers, booleans, dateTimes, …).
+* Blank nodes, lists, formulas, and variables are not string-castable (and cause the builtin to fail).
+
+### Construction and concatenation
+
+#### `string:concatenation`
+
+**Shape:**
+`( s1 s2 ... ) string:concatenation s`
+
+Casts each element to a string and concatenates.
+
+#### `string:format`
+
+**Shape:**
+`( fmt a1 a2 ... ) string:format out`
+
+A tiny `sprintf` subset:
+
+* Supports only `%s` and `%%`.
+* Any other specifier (`%d`, `%f`, …) causes the builtin to fail.
+* Missing arguments are treated as empty strings.
+
+### Containment and prefix/suffix tests (constraints)
+
+* `string:contains`
+* `string:containsIgnoringCase`
+* `string:startsWith`
+* `string:endsWith`
+
+All are pure tests: they succeed or fail.
+
+### Case-insensitive equality tests (constraints)
+
+* `string:equalIgnoringCase`
+* `string:notEqualIgnoringCase`
+
+### Lexicographic comparisons (constraints)
+
+* `string:greaterThan`
+* `string:lessThan`
+* `string:notGreaterThan` (≤ in Unicode codepoint order)
+* `string:notLessThan`    (≥ in Unicode codepoint order)
+
+These compare JavaScript strings directly, i.e., Unicode code unit order (practically “lexicographic” for many uses, but not locale-aware collation).
+
+### Regex-based tests and extraction
+
+Eyeling compiles patterns using JavaScript `RegExp`, with a small compatibility layer:
+
+* If the pattern uses Unicode property escapes (like `\p{L}`) or code point escapes (`\u{...}`), Eyeling enables the `/u` flag.
+* In Unicode mode, some “identity escapes” that would be SyntaxErrors in JS are sanitized in a conservative way.
+
+#### `string:matches` / `string:notMatches` (constraints)
+
+**Shape:**
+`data string:matches pattern`
+
+Tests whether `pattern` matches `data`.
+
+#### `string:replace`
+
+**Shape:**
+`( data pattern replacement ) string:replace out`
+
+* Compiles `pattern` as a global regex (`/g`).
+* Uses JavaScript replacement semantics (so `$1`, `$2`, etc. work).
+* Returns the replaced string.
+
+#### `string:scrape`
+
+**Shape:**
+`( data pattern ) string:scrape out`
+
+Matches the regex once and returns the **first capturing group** (group 1). If there is no match or no group, it fails.
+
+### JSON pointer lookup
+
+#### `string:jsonPointer`
+
+**Shape:**
+`( jsonText pointer ) string:jsonPointer value`
+
+This builtin is intentionally “bridgey”: it lets you reach into JSON and get back an RDF/N3 term.
+
+Rules:
+
+* `jsonText` must be an `rdf:JSON` literal (Eyeling is permissive and may accept a couple of equivalent datatype spellings).
+* `pointer` is a string; Eyeling supports:
+
+  * standard RFC 6901 pointers like `/a/b/0`
+  * URI fragment form like `#/a/b` (it is decoded first)
+* The JSON is parsed and cached; pointer results are cached per `(jsonText, pointer)`.
+
+Returned terms follow Eyeling’s `jsonToTerm` mapping:
+
+* JSON `null` → `"null"` (a plain string literal)
+* JSON string → plain string literal
+* JSON number → numeric token literal (untyped)
+* JSON boolean → `true` / `false` token literal (untyped boolean token)
+* JSON array → an N3 list term whose elements are recursively converted
+* JSON object → an `rdf:JSON` literal containing the object’s JSON text
+
+This design keeps the builtin total and predictable even for nested structures.
+
+## 11.4 `log:outputString` as a controlled side effect
+
+From a logic-programming point of view, printing is awkward: if you print *during* proof search, you risk producing output along branches that later backtrack, or producing the same line multiple times in different derivations. Eyeling avoids that whole class of problems by treating “output” as **data**.
+
+The predicate `log:outputString` is the only officially supported “side-effect channel”, and even it is handled in two phases:
+
+1. **During reasoning (declarative phase):**  
+   `log:outputString` behaves like a constraint-style builtin: it succeeds when its arguments are well-formed and sufficiently bound (notably, when the object is a string literal that can be emitted). Importantly, it does *not* print anything at this time. If a rule derives a triple like:
+
+   ```n3
+   :k log:outputString "Hello\n".
+   ```
+
+then that triple simply becomes part of the fact base like any other fact.
+
+2. **After reasoning (rendering phase):**
+   Once saturation finishes, Eyeling scans the *final closure* for `log:outputString` facts and renders them deterministically. Concretely, the CLI collects all such triples, orders them in a stable way (using the subject as a key so output order is reproducible), and concatenates their string objects into the final emitted text.
+
+This separation is not just an aesthetic choice; it preserves the meaning of logic search:
+
+* Proof search may explore multiple branches and backtrack. Because output is only rendered from the **final** set of facts, backtracking cannot “un-print” anything and cannot cause duplicated prints from transient branches.
+* Output becomes explainable. If you enable proof comments or inspect the closure, `log:outputString` facts can be traced back to the rules that produced them.
+* Output becomes compositional. You can reason about output strings (e.g., sort them, filter them, derive them conditionally) just like any other data.
+
+In short: Eyeling makes `log:outputString` safe by refusing to treat it as an immediate effect. It is a *declarative output fact* whose concrete rendering is a final, deterministic post-processing step.
 
 ---
 
