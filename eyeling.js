@@ -561,7 +561,8 @@ function parseSemanticsToFormula(text, baseIri) {
   // Represent top-level => / <= rules as triples between formula terms,
   // so the returned formula can include them.
   for (const r of frules) {
-    all.push(new Triple(new GraphTerm(r.premise), __IMPLIES_PRED, new GraphTerm(r.conclusion)));
+    const concTerm = r.isFuse ? internLiteral('false') : new GraphTerm(r.conclusion);
+    all.push(new Triple(new GraphTerm(r.premise), __IMPLIES_PRED, concTerm));
   }
   for (const r of brules) {
     all.push(new Triple(new GraphTerm(r.conclusion), __IMPLIED_BY_PRED, new GraphTerm(r.premise)));
@@ -4169,14 +4170,12 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const formula = deref.derefSemanticsSync(docIri);
     if (!(formula instanceof GraphTerm)) return [];
 
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = formula;
-      return [s2];
-    }
+    // Avoid variable capture between the returned quoted formula and the
+    // surrounding proof environment.
+    const formulaStd = standardizeTermApart(formula, varGen);
     if (g.o instanceof Blank) return [{ ...subst }];
 
-    const s2 = unifyTerm(g.o, formula, subst);
+    const s2 = unifyTerm(g.o, formulaStd, subst);
     return s2 !== null ? [s2] : [];
   }
 
@@ -4188,13 +4187,12 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     if (iri === null) return [];
 
     const docIri = deref.stripFragment(iri);
-    const term = deref.derefSemanticsOrError(docIri);
+    let term = deref.derefSemanticsOrError(docIri);
 
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = term;
-      return [s2];
-    }
+    // Avoid variable capture between the returned quoted formula and the
+    // surrounding proof environment.
+    if (term instanceof GraphTerm) term = standardizeTermApart(term, varGen);
+
     if (g.o instanceof Blank) return [{ ...subst }];
 
     const s2 = unifyTerm(g.o, term, subst);
@@ -4217,11 +4215,10 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       return [];
     }
 
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = formula;
-      return [s2];
-    }
+    // Avoid variable capture between the parsed quoted formula and the
+    // surrounding proof environment.
+    formula = standardizeTermApart(formula, varGen);
+
     if (g.o instanceof Blank) return [{ ...subst }];
 
     const s2 = unifyTerm(g.o, formula, subst);
@@ -5008,6 +5005,63 @@ function isBuiltinPred(p) {
 // ===========================================================================
 // Backward proof (SLD-style)
 // ===========================================================================
+
+// Standardize variables inside an arbitrary term (including quoted formulas)
+// to fresh names, to avoid variable capture when a builtin returns a formula.
+//
+// This is similar to standardizeRule(), but operates on a single term.
+function standardizeTermApart(term, gen) {
+  function renameTerm(t, vmap, genArr) {
+    if (t instanceof Var) {
+      if (!vmap.hasOwnProperty(t.name)) {
+        const name = `__n3_${genArr[0]}`;
+        genArr[0] += 1;
+        vmap[t.name] = name;
+      }
+      return new Var(vmap[t.name]);
+    }
+    if (t instanceof ListTerm) {
+      let changed = false;
+      const elems2 = t.elems.map((e) => {
+        const e2 = renameTerm(e, vmap, genArr);
+        if (e2 !== e) changed = true;
+        return e2;
+      });
+      return changed ? new ListTerm(elems2) : t;
+    }
+    if (t instanceof OpenListTerm) {
+      let changed = false;
+      const newXs = t.prefix.map((e) => {
+        const e2 = renameTerm(e, vmap, genArr);
+        if (e2 !== e) changed = true;
+        return e2;
+      });
+      if (!vmap.hasOwnProperty(t.tailVar)) {
+        const name = `__n3_${genArr[0]}`;
+        genArr[0] += 1;
+        vmap[t.tailVar] = name;
+      }
+      const newTail = vmap[t.tailVar];
+      if (newTail !== t.tailVar) changed = true;
+      return changed ? new OpenListTerm(newXs, newTail) : t;
+    }
+    if (t instanceof GraphTerm) {
+      let changed = false;
+      const triples2 = t.triples.map((tr) => {
+        const s2 = renameTerm(tr.s, vmap, genArr);
+        const p2 = renameTerm(tr.p, vmap, genArr);
+        const o2 = renameTerm(tr.o, vmap, genArr);
+        if (s2 !== tr.s || p2 !== tr.p || o2 !== tr.o) changed = true;
+        return s2 === tr.s && p2 === tr.p && o2 === tr.o ? tr : new Triple(s2, p2, o2);
+      });
+      return changed ? new GraphTerm(triples2) : t;
+    }
+    return t;
+  }
+
+  const vmap = {};
+  return renameTerm(term, vmap, gen);
+}
 
 function standardizeRule(rule, gen) {
   function renameTerm(t, vmap, genArr) {
