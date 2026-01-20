@@ -866,6 +866,37 @@ ex:a p:trig ex:b.
       assert.ok(!String(out).includes('http://example.org/p'));
     },
   },
+  {
+    name: 'issue #6: RDF list nodes should not be rewritten; list:* builtins should traverse rdf:first/rest',
+    opt: {},
+    input: `@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix : <urn:example:> .
+
+:path2 rdf:first :b; rdf:rest rdf:nil.
+:path1 rdf:type :P; rdf:first :a; rdf:rest :path2.
+:path1-nok rdf:type :P; rdf:first :a; rdf:rest (:b).
+
+{ ?p rdf:type :P. ?p rdf:first ?first. }
+=>
+{ :result :query1 (?p ?first). }.
+
+{ ?p rdf:type :P. (?p ?i) list:memberAt ?m. }
+=>
+{ :result :query2 (?p ?i ?m). }.
+`,
+    expect: [
+      /:result\s+:query1\s+\(:path1\s+:a\)\s*\./,
+      /:result\s+:query1\s+\(:path1-nok\s+:a\)\s*\./,
+      /:result\s+:query2\s+\(:path1\s+0\s+:a\)\s*\./,
+      /:result\s+:query2\s+\(:path1\s+1\s+:b\)\s*\./,
+      /:result\s+:query2\s+\(:path1-nok\s+0\s+:a\)\s*\./,
+      /:result\s+:query2\s+\(:path1-nok\s+1\s+:b\)\s*\./,
+    ],
+    notExpect: [
+      /:result\s+:query1\s+\(\(:a\s+:b\)\s+:a\)/,
+    ],
+  }
 ];
 
 let passed = 0;

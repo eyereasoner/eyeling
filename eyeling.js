@@ -171,8 +171,8 @@ function main() {
     process.exit(0);
   }
 
-  // Build internal ListTerm values from rdf:first/rdf:rest (+ rdf:nil)
-  engine.materializeRdfLists(triples, frules, brules);
+  // NOTE: Do not rewrite rdf:first/rdf:rest RDF list nodes into list terms.
+  // list:* builtins interpret RDF list structures directly when needed.
 
   const facts = triples.filter((tr) => engine.isGroundTriple(tr));
 
@@ -1195,6 +1195,7 @@ function alphaEqTriple(a, b) {
 
 function termFastKey(t) {
   if (t instanceof Iri) return 'I:' + t.value;
+  if (t instanceof Blank) return 'B:' + t.label;
   if (t instanceof Literal) return 'L:' + normalizeLiteralForFastKey(t.value);
   return null;
 }
@@ -2731,6 +2732,118 @@ function listAppendSplit(parts, resElems, subst) {
   return out;
 }
 
+
+// ---------------------------------------------------------------------------
+// RDF-list support for list:* builtins
+// ---------------------------------------------------------------------------
+
+function __rdfListObjectsForSP(facts, predIri, subj) {
+  ensureFactIndexes(facts);
+  const sk = termFastKey(subj);
+  if (sk !== null) {
+    const ps = facts.__byPS.get(predIri);
+    if (ps) {
+      const bucket = ps.get(sk);
+      if (bucket && bucket.length) return bucket.map((tr) => tr.o);
+    }
+  }
+
+  // Fallback scan (covers non-indexable terms)
+  const pb = facts.__byPred.get(predIri) || [];
+  const out = [];
+  for (const tr of pb) {
+    if (termsEqual(tr.s, subj)) out.push(tr.o);
+  }
+  return out;
+}
+
+function __rdfListElemsFromNode(head, facts) {
+  if (!(head instanceof Iri || head instanceof Blank)) return null;
+
+  // Cache per fact-set (important in forward chaining)
+  if (!Object.prototype.hasOwnProperty.call(facts, '__rdfListCache')) {
+    Object.defineProperty(facts, '__rdfListCache', {
+      value: new Map(),
+      enumerable: false,
+      writable: true,
+      configurable: true,
+    });
+  }
+
+  const key = termFastKey(head);
+  if (key === null) return null;
+  const cache = facts.__rdfListCache;
+  if (cache.has(key)) return cache.get(key);
+
+  const RDF_FIRST = RDF_NS + 'first';
+  const RDF_REST = RDF_NS + 'rest';
+  const RDF_NIL = RDF_NS + 'nil';
+
+  const elems = [];
+  const seen = new Set();
+  let cur = head;
+
+  while (true) {
+    if (cur instanceof Iri && cur.value === RDF_NIL) {
+      cache.set(key, elems);
+      return elems;
+    }
+
+    if (!(cur instanceof Iri || cur instanceof Blank)) {
+      cache.set(key, null);
+      return null;
+    }
+
+    const ck = termFastKey(cur);
+    if (ck === null) {
+      cache.set(key, null);
+      return null;
+    }
+    if (seen.has(ck)) {
+      cache.set(key, null);
+      return null; // cycle
+    }
+    seen.add(ck);
+
+    const firsts = __rdfListObjectsForSP(facts, RDF_FIRST, cur);
+    const rests = __rdfListObjectsForSP(facts, RDF_REST, cur);
+
+    if (firsts.length !== 1 || rests.length !== 1) {
+      cache.set(key, null);
+      return null;
+    }
+
+    elems.push(firsts[0]);
+    const rest = rests[0];
+
+    if (rest instanceof Iri && rest.value === RDF_NIL) {
+      cache.set(key, elems);
+      return elems;
+    }
+
+    // Mixed tail: rdf:rest can be an N3 list literal (e.g., (:b))
+    if (rest instanceof ListTerm) {
+      elems.push(...rest.elems);
+      cache.set(key, elems);
+      return elems;
+    }
+    if (rest instanceof OpenListTerm) {
+      elems.push(...rest.prefix);
+      elems.push(new Var(rest.tailVar));
+      cache.set(key, elems);
+      return elems;
+    }
+
+    cur = rest;
+  }
+}
+
+function __listElemsForBuiltin(listLike, facts) {
+  if (listLike instanceof ListTerm) return listLike.elems;
+  if (listLike instanceof Iri || listLike instanceof Blank) return __rdfListElemsFromNode(listLike, facts);
+  return null;
+}
+
 function evalListFirstLikeBuiltin(sTerm, oTerm, subst) {
   if (!(sTerm instanceof ListTerm)) return [];
   if (!sTerm.elems.length) return [];
@@ -3717,14 +3830,28 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   // list:first and rdf:first
   // true iff $s is a list and $o is the first member of that list.
   // Schema: $s+ list:first $o-
-  if (pv === LIST_NS + 'first' || pv === RDF_NS + 'first') {
+  if (pv === LIST_NS + 'first') {
+    const xs = __listElemsForBuiltin(g.s, facts);
+    if (!xs || !xs.length) return [];
+    const s2 = unifyTerm(g.o, xs[0], subst);
+    return s2 !== null ? [s2] : [];
+  }
+  if (pv === RDF_NS + 'first') {
     return evalListFirstLikeBuiltin(g.s, g.o, subst);
   }
 
   // list:rest and rdf:rest
   // true iff $s is a (non-empty) list and $o is the rest (tail) of that list.
   // Schema: $s+ list:rest $o-
-  if (pv === LIST_NS + 'rest' || pv === RDF_NS + 'rest') {
+  if (pv === LIST_NS + 'rest') {
+    if (g.s instanceof ListTerm || g.s instanceof OpenListTerm) return evalListRestLikeBuiltin(g.s, g.o, subst);
+    const xs = __listElemsForBuiltin(g.s, facts);
+    if (!xs || !xs.length) return [];
+    const rest = new ListTerm(xs.slice(1));
+    const s2 = unifyTerm(g.o, rest, subst);
+    return s2 !== null ? [s2] : [];
+  }
+  if (pv === RDF_NS + 'rest') {
     return evalListRestLikeBuiltin(g.s, g.o, subst);
   }
 
@@ -3733,8 +3860,8 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   // For a list subject $s, generate solutions by unifying $o with (index value).
   // This allows $o to be a variable (e.g., ?Y) or a pattern (e.g., (?i "Dewey")).
   if (pv === LIST_NS + 'iterate') {
-    if (!(g.s instanceof ListTerm)) return [];
-    const xs = g.s.elems;
+    const xs = __listElemsForBuiltin(g.s, facts);
+    if (!xs) return [];
     const outs = [];
 
     for (let i = 0; i < xs.length; i++) {
@@ -3774,9 +3901,8 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   // true iff $s is a list and $o is the last member of that list.
   // Schema: $s+ list:last $o-
   if (pv === LIST_NS + 'last') {
-    if (!(g.s instanceof ListTerm)) return [];
-    const xs = g.s.elems;
-    if (!xs.length) return [];
+    const xs = __listElemsForBuiltin(g.s, facts);
+    if (!xs || !xs.length) return [];
     const last = xs[xs.length - 1];
     const s2 = unifyTerm(g.o, last, subst);
     return s2 !== null ? [s2] : [];
@@ -3787,10 +3913,10 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   // Schema: ( $s.1+ $s.2?[*] )+ list:memberAt $o?[*]
   if (pv === LIST_NS + 'memberAt') {
     if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
-    const [listTerm, indexTerm] = g.s.elems;
-    if (!(listTerm instanceof ListTerm)) return [];
+    const [listRef, indexTerm] = g.s.elems;
 
-    const xs = listTerm.elems;
+    const xs = __listElemsForBuiltin(listRef, facts);
+    if (!xs) return [];
     const outs = [];
 
     for (let i = 0; i < xs.length; i++) {
@@ -3847,9 +3973,10 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
 
   // list:member
   if (pv === LIST_NS + 'member') {
-    if (!(g.s instanceof ListTerm)) return [];
+    const xs = __listElemsForBuiltin(g.s, facts);
+    if (!xs) return [];
     const outs = [];
-    for (const x of g.s.elems) {
+    for (const x of xs) {
       const s2 = unifyTerm(g.o, x, subst);
       if (s2 !== null) outs.push(s2);
     }
@@ -3869,8 +3996,9 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
 
   // list:length  (strict: do not accept integer<->decimal matches for a ground object)
   if (pv === LIST_NS + 'length') {
-    if (!(g.s instanceof ListTerm)) return [];
-    const nTerm = internLiteral(String(g.s.elems.length));
+    const xs = __listElemsForBuiltin(g.s, facts);
+    if (!xs) return [];
+    const nTerm = internLiteral(String(xs.length));
 
     const o2 = applySubstTerm(g.o, subst);
     if (isGroundTerm(o2)) {
@@ -3883,8 +4011,9 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
 
   // list:notMember
   if (pv === LIST_NS + 'notMember') {
-    if (!(g.s instanceof ListTerm)) return [];
-    for (const el of g.s.elems) {
+    const xs = __listElemsForBuiltin(g.s, facts);
+    if (!xs) return [];
+    for (const el of xs) {
       if (unifyTerm(g.o, el, subst) !== null) return [];
     }
     return [{ ...subst }];
@@ -3892,12 +4021,23 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
 
   // list:reverse
   if (pv === LIST_NS + 'reverse') {
+    // Forward: compute o from s
     if (g.s instanceof ListTerm) {
       const rev = [...g.s.elems].reverse();
       const rterm = new ListTerm(rev);
       const s2 = unifyTerm(g.o, rterm, subst);
       return s2 !== null ? [s2] : [];
     }
+
+    const xs = __listElemsForBuiltin(g.s, facts);
+    if (xs) {
+      const rev = [...xs].reverse();
+      const rterm = new ListTerm(rev);
+      const s2 = unifyTerm(g.o, rterm, subst);
+      return s2 !== null ? [s2] : [];
+    }
+
+    // Reverse: compute s from o (only for explicit list terms)
     if (g.o instanceof ListTerm) {
       const rev = [...g.o.elems].reverse();
       const rterm = new ListTerm(rev);
@@ -5269,7 +5409,12 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
     const goal0 = applySubstTriple(rawGoal, state.subst);
 
     // 1) Builtins
-    if (isBuiltinPred(goal0.p)) {
+    const __pv0 = goal0.p instanceof Iri ? goal0.p.value : null;
+    const __rdfFirstOrRest = __pv0 === RDF_NS + 'first' || __pv0 === RDF_NS + 'rest';
+    const __treatBuiltin =
+      isBuiltinPred(goal0.p) && !(__rdfFirstOrRest && !(goal0.s instanceof ListTerm || goal0.s instanceof OpenListTerm));
+
+    if (__treatBuiltin) {
       const remaining = max - results.length;
       if (remaining <= 0) return results;
       const builtinMax = Number.isFinite(remaining) && !restGoals.length ? remaining : undefined;
@@ -5932,7 +6077,8 @@ function reasonStream(n3Text, opts = {}) {
   // Make the parsed prefixes available to log:trace output
   trace.setTracePrefixes(prefixes);
 
-  materializeRdfLists(triples, frules, brules);
+  // NOTE: Do not rewrite rdf:first/rdf:rest RDF list nodes into list terms.
+  // list:* builtins interpret RDF list structures directly when needed.
 
   // facts becomes the saturated closure because pushFactIndexed(...) appends into it
   const facts = triples.filter((tr) => isGroundTriple(tr));
