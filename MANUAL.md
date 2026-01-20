@@ -551,5 +551,5 @@ See `demo.html` in the repository for a working example.
 ## Where to look next
 
 - **Examples:** see [examples](https://github.com/eyereasoner/eyeling/blob/main/examples/)
-- **Builtins file:** [eyeling-builtins](https://github.com/eyereasoner/eyeling/blob/main/eyeling-builtins.md)
+- **Builtins file:** [eyeling-builtins](https://github.com/eyereasoner/eyeling/blob/main/eyeling-builtins.ttl)
 - **Implementation handbook:** [HANDBOOK](https://github.com/eyereasoner/eyeling/blob/main/HANDBOOK.md)
