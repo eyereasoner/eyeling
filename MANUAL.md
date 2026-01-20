@@ -303,6 +303,10 @@ This can be useful for tests and for workflows that compare outputs across runs.
 
 Eyeling implements a set of builtins in the following namespaces:
 
+**See also**
+- W3C N3 Built-ins overview (semantics/background): https://w3c.github.io/N3/reports/20230703/builtins.html
+- Eyeling implementation notes: https://github.com/eyereasoner/eyeling/blob/main/HANDBOOK.md#ch11
+
 - `log:` — logic/meta, rule operators, dereferencing, tracing, output strings
 - `math:` — numeric functions and comparisons
 - `string:` — string and regex utilities (including JSON pointer helpers)
