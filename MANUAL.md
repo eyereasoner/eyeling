@@ -2,7 +2,7 @@
 
 This manual is for **users** of the Eyeling Notation3 (N3) reasoner: how to run it, how to write inputs that work well in Eyeling, what the outputs mean, and how to embed Eyeling in your own code.
 
-If you want to understand Eyeling’s implementation internals, see **HANDBOOK.md**.
+If you want to understand Eyeling’s implementation internals, see [HANDBOOK](https://github.com/eyereasoner/eyeling/blob/main/HANDBOOK.md).
 
 ---
 
@@ -550,6 +550,6 @@ See `demo.html` in the repository for a working example.
 
 ## Where to look next
 
-- **Examples:** see `examples/*.n3`
-- **Builtins file:** `eyeling-builtins.ttl`
-- **Implementation handbook:** `HANDBOOK.md`
+- **Examples:** see [examples](https://github.com/eyereasoner/eyeling/blob/main/examples/)
+- **Builtins file:** [eyeling-builtins](https://github.com/eyereasoner/eyeling/blob/main/eyeling-builtins.md)
+- **Implementation handbook:** [HANDBOOK](https://github.com/eyereasoner/eyeling/blob/main/HANDBOOK.md)
