@@ -174,7 +174,7 @@ function main() {
     // Run eyeling on this file (cwd examplesDir so relative behavior matches old script)
     const outFd = fs.openSync(generatedPath, 'w');
 
-    const r = cp.spawnSync(nodePath, [eyelingJsPath, '-n', file], {
+    const r = cp.spawnSync(nodePath, [eyelingJsPath, '-d', file], {
       cwd: examplesDir,
       stdio: ['ignore', outFd, 'pipe'], // stdout -> file, stderr captured
       maxBuffer: 200 * 1024 * 1024,

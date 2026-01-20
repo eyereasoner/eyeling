@@ -78,14 +78,15 @@ function main() {
     const msg =
       `Usage: ${prog} [options] <file.n3>\n\n` +
       `Options:\n` +
-      `  -a, --ast               Print parsed AST as JSON and exit.\n` +
-      `  -e, --enforce-https     Rewrite http:// IRIs to https:// for log dereferencing builtins.\n` +
-      `  -h, --help              Show this help and exit.\n` +
-      `  -p, --proof-comments    Enable proof explanations.\n` +
-      `  -r, --strings           Print log:outputString strings (ordered by key) instead of N3 output.\n` +
-      `  -s, --super-restricted  Disable all builtins except => and <=.\n` +
-      `  -t, --stream            Stream derived triples as soon as they are derived.\n` +
-      `  -v, --version           Print version and exit.\n`;
+      `  -a, --ast                    Print parsed AST as JSON and exit.\n` +
+      `  -d, --deterministic-skolem   Make log:skolem stable across reasoning runs.\n` +
+      `  -e, --enforce-https          Rewrite http:// IRIs to https:// for log dereferencing builtins.\n` +
+      `  -h, --help                   Show this help and exit.\n` +
+      `  -p, --proof-comments         Enable proof explanations.\n` +
+      `  -r, --strings                Print log:outputString strings (ordered by key) instead of N3 output.\n` +
+      `  -s, --super-restricted       Disable all builtins except => and <=.\n` +
+      `  -t, --stream                 Stream derived triples as soon as they are derived.\n` +
+      `  -v, --version                Print version and exit.\n`;
     (toStderr ? console.error : console.log)(msg);
   }
 
@@ -108,6 +109,11 @@ function main() {
   // --enforce-https: rewrite http:// -> https:// for log dereferencing builtins
   if (argv.includes('--enforce-https') || argv.includes('-e')) {
     engine.setEnforceHttpsEnabled(true);
+  }
+
+  // --deterministic-skolem / -d: make log:skolem stable across runs
+  if (argv.includes('--deterministic-skolem') || argv.includes('-d')) {
+    if (typeof engine.setDeterministicSkolemEnabled === 'function') engine.setDeterministicSkolemEnabled(true);
   }
 
   // --proof-comments / -p: enable proof explanations
@@ -742,6 +748,87 @@ function makeRdfJsonLiteral(jsonText) {
 // For a single reasoning run, this maps a canonical representation
 // of the subject term in log:skolem to a Skolem IRI.
 const skolemCache = new Map();
+
+// log:skolem run salt and mode.
+//
+// Desired behavior:
+//   - Within one reasoning run: same subject -> same Skolem IRI.
+//   - Across reasoning runs (default): same subject -> different Skolem IRI.
+//   - Optional legacy mode: stable across runs (CLI: --deterministic-skolem).
+let deterministicSkolemAcrossRuns = false;
+let __skolemRunDepth = 0;
+let __skolemRunSalt = null;
+
+function __makeSkolemRunSalt() {
+  // Prefer WebCrypto if present (browser/worker)
+  try {
+    const g = typeof globalThis !== 'undefined' ? globalThis : null;
+    if (g && g.crypto) {
+      if (typeof g.crypto.randomUUID === 'function') return g.crypto.randomUUID();
+      if (typeof g.crypto.getRandomValues === 'function') {
+        const a = new Uint8Array(16);
+        g.crypto.getRandomValues(a);
+        return Array.from(a).map((b) => b.toString(16).padStart(2, '0')).join('');
+      }
+    }
+  } catch (_) {}
+
+  // Node.js crypto
+  try {
+    if (nodeCrypto) {
+      if (typeof nodeCrypto.randomUUID === 'function') return nodeCrypto.randomUUID();
+      if (typeof nodeCrypto.randomBytes === 'function') return nodeCrypto.randomBytes(16).toString('hex');
+    }
+  } catch (_) {}
+
+  // Last-resort fallback (not cryptographically strong)
+  return (
+    Date.now().toString(16) +
+    '-' +
+    Math.random().toString(16).slice(2) +
+    '-' +
+    Math.random().toString(16).slice(2)
+  );
+}
+
+function __enterReasoningRun() {
+  __skolemRunDepth += 1;
+  if (__skolemRunDepth === 1) {
+    skolemCache.clear();
+    __skolemRunSalt = deterministicSkolemAcrossRuns ? '' : __makeSkolemRunSalt();
+  }
+}
+
+function __exitReasoningRun() {
+  if (__skolemRunDepth > 0) __skolemRunDepth -= 1;
+  if (__skolemRunDepth === 0) {
+    // Clear the salt so a future top-level run gets a fresh one (default mode).
+    __skolemRunSalt = null;
+  }
+}
+
+function __skolemIdForKey(key) {
+  if (deterministicSkolemAcrossRuns) return deterministicSkolemIdFromKey(key);
+  // Ensure we have a run salt even if log:skolem is invoked outside forwardChain().
+  if (__skolemRunSalt === null) {
+    skolemCache.clear();
+    __skolemRunSalt = __makeSkolemRunSalt();
+  }
+  return deterministicSkolemIdFromKey(__skolemRunSalt + '|' + key);
+}
+
+function getDeterministicSkolemEnabled() {
+  return deterministicSkolemAcrossRuns;
+}
+
+function setDeterministicSkolemEnabled(v) {
+  deterministicSkolemAcrossRuns = !!v;
+  // Reset per-run state so the new mode takes effect immediately for the next run.
+  if (__skolemRunDepth === 0) {
+    __skolemRunSalt = null;
+    skolemCache.clear();
+  }
+}
 
 // -----------------------------------------------------------------------------
 // Hot caches
@@ -4855,7 +4942,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const key = skolemKeyFromTerm(g.s);
     let iri = skolemCache.get(key);
     if (!iri) {
-      const id = deterministicSkolemIdFromKey(key);
+      const id = __skolemIdForKey(key);
       iri = internIri(SKOLEM_NS + id);
       skolemCache.set(key, iri);
     }
@@ -5533,6 +5620,8 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
 // ===========================================================================
 
 function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) {
+  __enterReasoningRun();
+  try {
   ensureFactIndexes(facts);
   ensureBackRuleIndexes(backRules);
 
@@ -5859,6 +5948,9 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
   setScopedSnapshot(null, 0);
 
   return derivedForward;
+  } finally {
+    __exitReasoningRun();
+  }
 }
 
 // ===========================================================================
@@ -6171,6 +6263,8 @@ module.exports = {
   setSuperRestrictedMode,
   getTracePrefixes,
   setTracePrefixes,
+  getDeterministicSkolemEnabled,
+  setDeterministicSkolemEnabled,
 };
 
   };
