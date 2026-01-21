@@ -40,6 +40,7 @@
     "test:api": "node test/api.test.js",
     "test:n3gen": "node test/n3gen.test.js",
     "test:examples": "node test/examples.test.js",
+    "test:manifest": "node test/manifest.test.js",
     "test:package": "node test/package.test.js",
     "test": "npm run build && npm run test:packlist && npm run test:api && npm run test:n3gen && npm run test:examples",
     "preversion": "npm test",
