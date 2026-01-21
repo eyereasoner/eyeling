@@ -897,6 +897,53 @@ ex:a p:trig ex:b.
       /:result\s+:query1\s+\(\(:a\s+:b\)\s+:a\)/,
     ],
   }
+  ,
+  {
+    name: 'issue #6: duplicate rdf:first/rest statements should not break list:* builtins',
+    opt: {},
+    input: `@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix : <urn:example:> .
+
+# block 1
+:path2 rdf:first :b; rdf:rest rdf:nil.
+:path1 rdf:type :P; rdf:first :a; rdf:rest :path2.
+
+:let :mylist (:c :d).
+:let :mylist :path1.
+
+{ :let :mylist ?p. ?p list:length ?l. }
+=>
+{ :result :query1 (?p ?l). }.
+
+{ :let :mylist ?p. (?p ?i) list:memberAt ?m. }
+=>
+{ :result :query3 (?p ?i ?m). }.
+
+# duplicated block (exact same statements)
+:path2 rdf:first :b; rdf:rest rdf:nil.
+:path1 rdf:type :P; rdf:first :a; rdf:rest :path2.
+
+:let :mylist (:c :d).
+:let :mylist :path1.
+
+{ :let :mylist ?p. ?p list:length ?l. }
+=>
+{ :result :query1 (?p ?l). }.
+
+{ :let :mylist ?p. (?p ?i) list:memberAt ?m. }
+=>
+{ :result :query3 (?p ?i ?m). }.
+`,
+    expect: [
+      /:result\s+:query1\s+\(\(:c\s+:d\)\s+2\)\s*\./,
+      /:result\s+:query1\s+\(:path1\s+2\)\s*\./,
+      /:result\s+:query3\s+\(\(:c\s+:d\)\s+0\s+:c\)\s*\./,
+      /:result\s+:query3\s+\(\(:c\s+:d\)\s+1\s+:d\)\s*\./,
+      /:result\s+:query3\s+\(:path1\s+0\s+:a\)\s*\./,
+      /:result\s+:query3\s+\(:path1\s+1\s+:b\)\s*\./,
+    ],
+  }
 ];
 
 let passed = 0;

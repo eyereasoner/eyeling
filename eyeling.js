@@ -2893,6 +2893,19 @@ function __rdfListElemsFromNode(head, facts) {
   const seen = new Set();
   let cur = head;
 
+  // RDF graphs are sets: duplicate triples are semantically irrelevant.
+  // In practice, users may concatenate files or repeat blocks, which can
+  // duplicate rdf:first/rdf:rest statements. Treat identical duplicates as
+  // a single value; but keep detection of *conflicting* values.
+  function __uniqTerms(ts) {
+    /** @type {any[]} */
+    const out = [];
+    for (const t of ts) {
+      if (!out.some((u) => termsEqual(u, t))) out.push(t);
+    }
+    return out;
+  }
+
   while (true) {
     if (cur instanceof Iri && cur.value === RDF_NIL) {
       cache.set(key, elems);
@@ -2915,8 +2928,8 @@ function __rdfListElemsFromNode(head, facts) {
     }
     seen.add(ck);
 
-    const firsts = __rdfListObjectsForSP(facts, RDF_FIRST, cur);
-    const rests = __rdfListObjectsForSP(facts, RDF_REST, cur);
+    const firsts = __uniqTerms(__rdfListObjectsForSP(facts, RDF_FIRST, cur));
+    const rests = __uniqTerms(__rdfListObjectsForSP(facts, RDF_REST, cur));
 
     if (firsts.length !== 1 || rests.length !== 1) {
       cache.set(key, null);
