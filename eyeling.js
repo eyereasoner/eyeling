@@ -493,6 +493,10 @@ function __fetchHttpTextViaSubprocess(url) {
         path: uu.pathname + uu.search,
         headers: {
           'accept': 'text/n3, text/turtle, application/n-triples, application/n-quads, text/plain;q=0.1, */*;q=0.01',
+          // Ask for an uncompressed response when possible; some servers send
+          // compressed bodies that are not valid UTF-8 text for the parser.
+          // We still handle common encodings below if they are returned anyway.
+          'accept-encoding': 'identity',
           'user-agent': 'eyeling-log-builtins'
         }
       };
@@ -509,10 +513,29 @@ function __fetchHttpTextViaSubprocess(url) {
           console.error('HTTP status ' + sc);
           process.exit(4);
         }
-        res.setEncoding('utf8');
-        let data = '';
-        res.on('data', (c) => { data += c; });
-        res.on('end', () => { process.stdout.write(data); });
+        const chunks = [];
+        res.on('data', (c) => { chunks.push(c); });
+        res.on('end', () => {
+          try {
+            const { Buffer } = require('buffer');
+            const zlib = require('zlib');
+            const buf = Buffer.concat(chunks);
+            const enc = ((res.headers && res.headers['content-encoding']) || '').toString().toLowerCase();
+            let out = buf;
+            if (enc.includes('gzip')) out = zlib.gunzipSync(buf);
+            else if (enc.includes('deflate')) out = zlib.inflateSync(buf);
+            else if (enc.includes('br')) out = zlib.brotliDecompressSync(buf);
+            process.stdout.write(out.toString('utf8'));
+          } catch (e) {
+            // Best-effort fallback: treat as UTF-8.
+            try {
+              const { Buffer } = require('buffer');
+              process.stdout.write(Buffer.concat(chunks).toString('utf8'));
+            } catch {
+              process.exit(6);
+            }
+          }
+        });
       });
       req.on('error', (e) => { console.error(e && e.message ? e.message : String(e)); process.exit(5); });
       req.end();
@@ -7308,6 +7331,46 @@ class Parser {
   parseGraph() {
     const triples = [];
     while (this.peek().typ !== 'RBrace') {
+      // N3 allows @prefix/@base and SPARQL-style PREFIX/BASE directives anywhere
+      // outside of a triple. This includes inside quoted graph terms.
+      // These directives affect parsing (prefix/base resolution) but do not emit triples.
+      if (this.peek().typ === 'AtPrefix') {
+        this.next();
+        this.parsePrefixDirective();
+        continue;
+      }
+      if (this.peek().typ === 'AtBase') {
+        this.next();
+        this.parseBaseDirective();
+        continue;
+      }
+      if (
+        this.peek().typ === 'Ident' &&
+        typeof this.peek().value === 'string' &&
+        this.peek().value.toLowerCase() === 'prefix' &&
+        this.toks[this.pos + 1] &&
+        this.toks[this.pos + 1].typ === 'Ident' &&
+        typeof this.toks[this.pos + 1].value === 'string' &&
+        this.toks[this.pos + 1].value.endsWith(':') &&
+        this.toks[this.pos + 2] &&
+        (this.toks[this.pos + 2].typ === 'IriRef' || this.toks[this.pos + 2].typ === 'Ident')
+      ) {
+        this.next();
+        this.parseSparqlPrefixDirective();
+        continue;
+      }
+      if (
+        this.peek().typ === 'Ident' &&
+        typeof this.peek().value === 'string' &&
+        this.peek().value.toLowerCase() === 'base' &&
+        this.toks[this.pos + 1] &&
+        (this.toks[this.pos + 1].typ === 'IriRef' || this.toks[this.pos + 1].typ === 'Ident')
+      ) {
+        this.next();
+        this.parseSparqlBaseDirective();
+        continue;
+      }
+
       const left = this.parseTerm();
       if (this.peek().typ === 'OpImplies') {
         this.next();
