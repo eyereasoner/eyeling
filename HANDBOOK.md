@@ -1831,3 +1831,21 @@ If you depend on Eyeling as a library, the package exposes:
 
 See:
 - [Chapter 14 — Entry points: CLI, bundle exports, and npm API](#ch14)
+
+### A.9 Further reading
+If you want to go deeper into N3 itself and the logic/programming ideas behind Eyeling, these are good starting points:
+
+N3 / Semantic Web specs and reports:
+- https://w3c.github.io/N3/spec/
+- https://w3c.github.io/N3/reports/20230703/semantics.html
+- https://w3c.github.io/N3/reports/20230703/builtins.html
+
+Logic & reasoning background (Wikipedia):
+- https://en.wikipedia.org/wiki/Mathematical_logic
+- https://en.wikipedia.org/wiki/Automated_reasoning
+- https://en.wikipedia.org/wiki/Forward_chaining
+- https://en.wikipedia.org/wiki/Backward_chaining
+- https://en.wikipedia.org/wiki/Unification_%28computer_science%29
+- https://en.wikipedia.org/wiki/Prolog
+- https://en.wikipedia.org/wiki/Datalog
+- https://en.wikipedia.org/wiki/Skolem_normal_form
