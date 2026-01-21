@@ -26,6 +26,7 @@
 - [Chapter 15 — A worked example: Socrates, step by step](#ch15)
 - [Chapter 16 — Extending Eyeling (without breaking it)](#ch16)
 - [Epilogue](#epilogue)
+- [Appendix A — Eyeling user notes](#app-a)
 
 ---
 
@@ -1700,3 +1701,133 @@ If you remember only one sentence from this handbook, make it this:
 
 Everything else is engineering detail — interesting, careful, sometimes subtle — but always in service of that core shape.
 
+---
+
+<a id="app-a"></a>
+## Appendix A — Eyeling user notes
+
+This appendix is a compact, user-facing reference for **running Eyeling** and **writing inputs that work well**.
+For deeper explanations and implementation details, follow the chapter links in each section.
+
+### A.1 Install and run
+
+Eyeling is distributed as an npm package.
+
+- Run without installing:
+
+  ```bash
+  npx eyeling --help
+  npx eyeling yourfile.n3
+  ```
+
+- Or install globally:
+
+  ```bash
+  npm i -g eyeling
+  eyeling yourfile.n3
+  ```
+
+See also: [Chapter 14 — Entry points: CLI, bundle exports, and npm API](#ch14).
+
+### A.2 What Eyeling prints
+
+By default, Eyeling prints **newly derived forward facts** (the heads of fired `=>` rules), serialized as N3.
+It does **not** reprint your input facts.
+
+For proof/explanation output and output modes, see:
+- [Chapter 13 — Printing, proofs, and the user-facing output](#ch13)
+
+### A.3 CLI quick reference
+
+The authoritative list is always:
+
+```bash
+eyeling --help
+```
+
+Options:
+```
+  -a, --ast                    Print parsed AST as JSON and exit.
+  -d, --deterministic-skolem   Make log:skolem stable across reasoning runs.
+  -e, --enforce-https          Rewrite http:// IRIs to https:// for log dereferencing builtins.
+  -h, --help                   Show this help and exit.
+  -p, --proof-comments         Enable proof explanations.
+  -r, --strings                Print log:outputString strings (ordered by key) instead of N3 output.
+  -s, --super-restricted       Disable all builtins except => and <=.
+  -t, --stream                 Stream derived triples as soon as they are derived.
+  -v, --version                Print version and exit.
+```
+
+See also:
+- [Chapter 13 — Printing, proofs, and the user-facing output](#ch13)
+- [Chapter 12 — Dereferencing and web-like semantics](#ch12)
+
+### A.4 N3 syntax notes that matter in practice
+
+Eyeling implements a practical N3 subset centered around facts and rules.
+
+- A **fact** is a triple ending in `.`:
+
+  ```n3
+  :alice :knows :bob .
+  ```
+
+- A **forward rule**:
+
+  ```n3
+  { ?x :p ?y } => { ?y :q ?x } .
+  ```
+
+- A **backward rule**:
+
+  ```n3
+  { ?x :ancestor ?z } <= { ?x :parent ?z } .
+  ```
+
+Quoted graphs/formulas use `{ ... }`. Inside a quoted formula, directive scope matters:
+
+- `@prefix/@base` and `PREFIX/BASE` directives may appear at top level **or inside `{ ... }`**, and apply to the formula they occur in (formula-local scoping).
+
+For the formal grammar, see the N3 spec grammar:
+- https://w3c.github.io/N3/spec/#grammar
+
+See also:
+- [Chapter 4 — From characters to AST: lexing and parsing](#ch04)
+
+### A.5 Builtins
+
+Eyeling supports a built-in “standard library” across namespaces like `log:`, `math:`, `string:`, `list:`, `time:`, `crypto:`.
+
+References:
+- W3C N3 Built-ins overview: https://w3c.github.io/N3/reports/20230703/builtins.html
+- Eyeling implementation details: [Chapter 11 — Built-ins as a standard library](#ch11)
+- The shipped builtin catalogue: `eyeling-builtins.ttl` (in this repo)
+
+If you are running untrusted inputs, consider `--super-restricted` to disable all builtins except implication.
+
+### A.6 Skolemization and `log:skolem`
+
+When forward rule heads contain blank nodes (existentials), Eyeling replaces them with generated Skolem IRIs so derived facts are ground.
+
+See:
+- [Chapter 9 — Forward chaining: saturation, skolemization, and meta-rules](#ch09)
+
+### A.7 Networking and `log:semantics`
+
+`log:content`, `log:semantics`, and related builtins dereference IRIs and parse retrieved content.
+This is powerful, but it is also I/O.
+
+See:
+- [Chapter 12 — Dereferencing and web-like semantics](#ch12)
+
+Safety tip:
+- Use `--super-restricted` if you want to ensure *no* dereferencing (and no other builtins) can run.
+
+### A.8 Embedding Eyeling in JavaScript
+
+If you depend on Eyeling as a library, the package exposes:
+- a CLI wrapper API (`reason(...)`), and
+- in-process engine entry points (via the bundle exports).
+
+See:
+- [Chapter 14 — Entry points: CLI, bundle exports, and npm API](#ch14)
