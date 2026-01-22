@@ -1,0 +1,15 @@
+PREFIX : <http://example/#>
+
+DATA {
+  :bob   :age 20 ; :name "Bob" .
+  :alice :age 15 ; :name "Alice" .
+  :bea   :age 22 ; :name "Bea" .
+}
+
+# Demonstrates nested OR distribution:
+#   ?age >= 18 && ( STRSTARTS(?name,"A") || REGEX(?name,"^B") )
+RULE { ?p :adultNamedByRule true . }
+WHERE {
+  ?p :age ?age ; :name ?name .
+  FILTER ( ?age >= 18 && ( STRSTARTS(?name, "A") || REGEX(?name, "^B") ) )
+}

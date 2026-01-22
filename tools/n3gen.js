@@ -113,6 +113,9 @@ const OWL_NS = 'http://www.w3.org/2002/07/owl#';
 const LOG_NS = 'http://www.w3.org/2000/10/swap/log#';
 const MATH_NS = 'http://www.w3.org/2000/10/swap/math#';
 const STRING_NS = 'http://www.w3.org/2000/10/swap/string#';
+const LIST_NS = 'http://www.w3.org/2000/10/swap/list#';
+const CRYPTO_NS = 'http://www.w3.org/2000/10/swap/crypto#';
+const TIME_NS = 'http://www.w3.org/2000/10/swap/time#';
 const TIMEFN_NS = 'https://w3id.org/time-fn#';
 const TIMEFN_BUILTIN_NAMES = new Set([
   'periodMinInclusive',
@@ -2469,8 +2472,604 @@ function splitTopLevelCommaArgs(s) {
   return parts;
 }
 
-function bindExprToN3Statements(bindInner) {
-  // bindInner is the inside of BIND(...), e.g. 'tfn:periodMinInclusive(?d) AS ?min'
+
+function makeTempVarGenerator(prefix = '__e') {
+  let n = 0;
+  return () => `?${prefix}${++n}`;
+}
+
+function stripOuterParensAll(expr) {
+  let t = (expr || '').trim();
+  while (t.startsWith('(')) {
+    try {
+      const par = readBalancedParens(t, 0);
+      if (par.endIdx === t.length) {
+        t = (par.content || '').trim();
+        continue;
+      }
+    } catch {}
+    break;
+  }
+  return t;
+}
+
+function mergeUsed(a, b) {
+  const out = { ...a };
+  for (const k of Object.keys(b || {})) out[k] = out[k] || b[k];
+  return out;
+}
+
+function isStringLiteral(s) {
+  const t = (s || '').trim();
+  return t.startsWith('"') || t.startsWith("'");
+}
+
+function isNumericLike(s) {
+  const t = (s || '').trim();
+  // Plain numbers (with optional sign/decimal/exponent)
+  if (/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(t)) return true;
+  // Typed numeric literals like "1"^^xsd:integer or "1"^^<...#integer>
+  if (/^".*"\s*\^\^\s*(xsd:(?:integer|decimal|double|float)|<[^>]+#(?:integer|decimal|double|float)>)\s*$/i.test(t))
+    return true;
+  return false;
+}
+
+function prevNonWsChar(s, i) {
+  for (let j = i; j >= 0; j--) {
+    const ch = s[j];
+    if (!/\s/.test(ch)) return ch;
+  }
+  return null;
+}
+
+function findTopLevelBinaryOp(expr, ops, fromRight = true) {
+  // Scan left-to-right and then choose either the first or last match.
+  // This avoids incorrect parenthesis-depth tracking when scanning right-to-left.
+  const t = expr || '';
+  let depth = 0;
+  let inString = false;
+  let quote = null;
+  let escaped = false;
+
+  const candidates = [];
+  // Prefer longer operators first (e.g., "NOT IN" before "IN", ">=" before ">").
+  const opsSorted = [...(ops || [])].sort((a, b) => b.length - a.length);
+
+  for (let i = 0; i < t.length; i++) {
+    const ch = t[i];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (ch === '\\') {
+        escaped = true;
+        continue;
+      }
+      if (ch === quote) {
+        inString = false;
+        quote = null;
+      }
+      continue;
+    }
+
+    if (ch === '"' || ch === "'") {
+      inString = true;
+      quote = ch;
+      continue;
+    }
+
+    if (ch === '(') {
+      depth++;
+      continue;
+    }
+    if (ch === ')') {
+      depth = Math.max(0, depth - 1);
+      continue;
+    }
+    if (depth !== 0) continue;
+
+    let matchedHere = false;
+
+    for (const op of opsSorted) {
+      if (/^[A-Za-z]/.test(op)) {
+        // Word operator, case-insensitive, with simple boundary checks.
+        const slice = t.slice(i, i + op.length);
+        if (slice.length !== op.length) continue;
+        if (slice.toUpperCase() !== op.toUpperCase()) continue;
+        const beforeAdj = i > 0 ? t[i - 1] : ' ';
+        const afterAdj = t[i + op.length] || ' ';
+        if (/[A-Za-z0-9_]/.test(beforeAdj)) continue;
+        if (/[A-Za-z0-9_]/.test(afterAdj)) continue;
+        candidates.push({ idx: i, op, len: op.length });
+        i += op.length - 1;
+        matchedHere = true;
+        break;
+      } else {
+        const slice = t.slice(i, i + op.length);
+        if (slice !== op) continue;
+
+        // For + and -, ensure it's binary (not unary)
+        if (op === '+' || op === '-') {
+          const before = prevNonWsChar(t, i - 1);
+          if (!before || /[\(\,\=\+\-\*\/\^\&\|\!\<\>]/.test(before)) continue;
+        }
+
+        candidates.push({ idx: i, op, len: op.length });
+        i += op.length - 1;
+        matchedHere = true;
+        break;
+      }
+    }
+
+    if (matchedHere) continue;
+  }
+
+  if (!candidates.length) return null;
+  return fromRight ? candidates[candidates.length - 1] : candidates[0];
+}
+
+function tryParseFunctionCall(expr) {
+  const t = stripOuterParensAll(expr);
+  // Look for the first '(' at top-level
+  let depth = 0;
+  let inString = false;
+  let quote = null;
+  let escaped = false;
+  let openIdx = -1;
+
+  for (let i = 0; i < t.length; i++) {
+    const ch = t[i];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (ch === '\\') {
+        escaped = true;
+        continue;
+      }
+      if (ch === quote) {
+        inString = false;
+        quote = null;
+      }
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      inString = true;
+      quote = ch;
+      continue;
+    }
+
+    if (ch === '(') {
+      if (depth === 0) {
+        openIdx = i;
+        break;
+      }
+      depth++;
+      continue;
+    }
+  }
+
+  if (openIdx < 0) return null;
+  const name = t.slice(0, openIdx).trim();
+  if (!name) return null;
+
+  try {
+    const par = readBalancedParens(t, openIdx);
+    if (par.endIdx !== t.length) return null;
+    return { name, argsRaw: par.content || '' };
+  } catch {
+    return null;
+  }
+}
+
+function normalizeFnName(name) {
+  const n = (name || '').trim();
+  // Strip surrounding <>
+  if (n.startsWith('<') && n.endsWith('>')) return n.slice(1, -1);
+  return n;
+}
+
+function fnLocalName(name) {
+  const n = normalizeFnName(name);
+  const idx = n.lastIndexOf('#');
+  if (idx >= 0) return n.slice(idx + 1);
+  const c = n.indexOf(':');
+  if (c >= 0) return n.slice(c + 1);
+  return n;
+}
+
+function compileValueExpr(expr, ctx, targetVar = null) {
+  const used0 = {
+    usedMath: false,
+    usedString: false,
+    usedTime: false,
+    usedLog: false,
+    usedList: false,
+    usedCrypto: false,
+  };
+
+  let t = stripOuterParensAll(expr);
+
+  // Atomic?
+  if (
+    /^\s*[$?][A-Za-z_][A-Za-z0-9_-]*\s*$/.test(t) ||
+    isNumericLike(t) ||
+    isStringLiteral(t) ||
+    /^\s*<[^>]*>\s*$/.test(t) ||
+    /^\s*[_:][A-Za-z0-9_][A-Za-z0-9_-]*\s*$/.test(t) ||
+    /^\s*[A-Za-z][A-Za-z0-9_-]*:[A-Za-z_][A-Za-z0-9._-]*\s*$/.test(t) ||
+    /^\s*(true|false)\s*$/i.test(t)
+  ) {
+    if (!targetVar) return { term: t.trim(), stmts: [], used: used0 };
+    return {
+      term: targetVar,
+      stmts: [`${targetVar} log:equalTo ${t.trim()} .`],
+      used: { ...used0, usedLog: true },
+    };
+  }
+
+  // Unary '!' is value-error in SPARQL; keep as TODO.
+  // Unary minus (negation)
+  if (t.startsWith('-')) {
+    const rest = t.slice(1).trim();
+    // If "-<num>" then atomic already handled above; so here it's expression negation.
+    const out = targetVar || ctx.newVar();
+    const inner = compileValueExpr(rest, ctx, null);
+    const stmts = [...inner.stmts, `${inner.term} math:negation ${out} .`];
+    const used = mergeUsed(inner.used, { ...used0, usedMath: true });
+    return { term: out, stmts, used };
+  }
+
+  // Function call?
+  const call = tryParseFunctionCall(t);
+  if (call) {
+    const local = fnLocalName(call.name).toLowerCase();
+    const args = splitTopLevelCommaArgs(call.argsRaw).map((x) => x.trim()).filter(Boolean);
+
+    // time-fn:* (keep existing mapping)
+    {
+      let timeFnLocal = null;
+      const norm = normalizeFnName(call.name);
+      if (norm.startsWith(TIMEFN_NS)) timeFnLocal = norm.slice(TIMEFN_NS.length);
+      if (!timeFnLocal && call.name.includes(':')) timeFnLocal = call.name.split(':').slice(-1)[0];
+      if (timeFnLocal && TIMEFN_BUILTIN_NAMES.has(timeFnLocal)) {
+        const out = targetVar || ctx.newVar();
+        if (timeFnLocal === 'bindDefaultTimezone') {
+          if (args.length !== 2) return { term: out, stmts: [`# TODO BIND: ${t}`], used: used0 };
+        } else {
+          if (args.length !== 1) return { term: out, stmts: [`# TODO BIND: ${t}`], used: used0 };
+        }
+        const list = `(${args.join(' ')})`;
+        return { term: out, stmts: [`${list} ${call.name.trim()} ${out} .`], used: used0 };
+      }
+    }
+
+    const compiledArgs = args.map((a) => compileValueExpr(a, ctx, null));
+    let stmts = [];
+    let used = used0;
+    const argTerms = [];
+    for (const ca of compiledArgs) {
+      stmts = stmts.concat(ca.stmts);
+      used = mergeUsed(used, ca.used);
+      argTerms.push(ca.term);
+    }
+
+    const out = targetVar || ctx.newVar();
+
+    // SPARQL/XPath-ish builtins -> N3 builtins
+    if (local === 'concat') {
+      stmts.push(`(${argTerms.join(' ')}) string:concatenation ${out} .`);
+      used = mergeUsed(used, { usedString: true });
+      return { term: out, stmts, used };
+    }
+
+    if (local === 'replace') {
+      if (argTerms.length !== 3) return { term: out, stmts: [...stmts, `# TODO BIND: ${t}`], used };
+      stmts.push(`(${argTerms.join(' ')}) string:replace ${out} .`);
+      used = mergeUsed(used, { usedString: true });
+      return { term: out, stmts, used };
+    }
+
+    if (local === 'format') {
+      if (argTerms.length < 1) return { term: out, stmts: [...stmts, `# TODO BIND: ${t}`], used };
+      stmts.push(`(${argTerms.join(' ')}) string:format ${out} .`);
+      used = mergeUsed(used, { usedString: true });
+      return { term: out, stmts, used };
+    }
+
+    if (local === 'abs') {
+      if (argTerms.length !== 1) return { term: out, stmts: [...stmts, `# TODO BIND: ${t}`], used };
+      stmts.push(`${argTerms[0]} math:absoluteValue ${out} .`);
+      used = mergeUsed(used, { usedMath: true });
+      return { term: out, stmts, used };
+    }
+
+    if (local === 'round') {
+      if (argTerms.length !== 1) return { term: out, stmts: [...stmts, `# TODO BIND: ${t}`], used };
+      stmts.push(`${argTerms[0]} math:rounded ${out} .`);
+      used = mergeUsed(used, { usedMath: true });
+      return { term: out, stmts, used };
+    }
+
+    if (local === 'year' || local === 'month' || local === 'day' || local === 'minutes' || local === 'minute' || local === 'seconds' || local === 'second' || local === 'timezone') {
+      if (argTerms.length !== 1) return { term: out, stmts: [...stmts, `# TODO BIND: ${t}`], used };
+      const pred =
+        local === 'minutes' || local === 'minute'
+          ? 'time:minute'
+          : local === 'seconds' || local === 'second'
+            ? 'time:second'
+            : local === 'timezone'
+              ? 'time:timeZone'
+              : `time:${local}`;
+      stmts.push(`${argTerms[0]} ${pred} ${out} .`);
+      used = mergeUsed(used, { usedTime: true });
+      return { term: out, stmts, used };
+    }
+
+    if (local === 'strdt') {
+      if (argTerms.length !== 2) return { term: out, stmts: [...stmts, `# TODO BIND: ${t}`], used };
+      stmts.push(`(${argTerms.join(' ')}) log:dtlit ${out} .`);
+      used = mergeUsed(used, { usedLog: true });
+      return { term: out, stmts, used };
+    }
+
+    if (local === 'strlang') {
+      if (argTerms.length !== 2) return { term: out, stmts: [...stmts, `# TODO BIND: ${t}`], used };
+      stmts.push(`(${argTerms.join(' ')}) log:langlit ${out} .`);
+      used = mergeUsed(used, { usedLog: true });
+      return { term: out, stmts, used };
+    }
+
+    if (local === 'sha' || local === 'sha1') {
+      if (argTerms.length !== 1) return { term: out, stmts: [...stmts, `# TODO BIND: ${t}`], used };
+      stmts.push(`${argTerms[0]} crypto:sha ${out} .`);
+      used = mergeUsed(used, { usedCrypto: true });
+      return { term: out, stmts, used };
+    }
+
+    return { term: out, stmts: [...stmts, `# TODO BIND: ${t}`], used };
+  }
+
+  // Arithmetic ops (+,-,*,/,^,MOD,%)
+  // Precedence: ^, *,/,MOD,%, +,-
+  const opAdd = findTopLevelBinaryOp(t, ['+', '-'], true);
+  if (opAdd) {
+    const left = t.slice(0, opAdd.idx).trim();
+    const right = t.slice(opAdd.idx + opAdd.len).trim();
+    const out = targetVar || ctx.newVar();
+    const l = compileValueExpr(left, ctx, null);
+    const r = compileValueExpr(right, ctx, null);
+    const pred = opAdd.op === '+' ? 'math:sum' : 'math:difference';
+    const stmts = [...l.stmts, ...r.stmts, `(${l.term} ${r.term}) ${pred} ${out} .`];
+    const used = mergeUsed(mergeUsed(l.used, r.used), { ...used0, usedMath: true });
+    return { term: out, stmts, used };
+  }
+
+  const opMul = findTopLevelBinaryOp(t, ['*', '/', 'MOD', '%'], true);
+  if (opMul) {
+    const left = t.slice(0, opMul.idx).trim();
+    const right = t.slice(opMul.idx + opMul.len).trim();
+    const out = targetVar || ctx.newVar();
+    const l = compileValueExpr(left, ctx, null);
+    const r = compileValueExpr(right, ctx, null);
+    const pred =
+      opMul.op === '*'
+        ? 'math:product'
+        : opMul.op === '/'
+          ? 'math:quotient'
+          : 'math:remainder';
+    const stmts = [...l.stmts, ...r.stmts, `(${l.term} ${r.term}) ${pred} ${out} .`];
+    const used = mergeUsed(mergeUsed(l.used, r.used), { ...used0, usedMath: true });
+    return { term: out, stmts, used };
+  }
+
+  const opPow = findTopLevelBinaryOp(t, ['^'], false);
+  if (opPow) {
+    const left = t.slice(0, opPow.idx).trim();
+    const right = t.slice(opPow.idx + opPow.len).trim();
+    const out = targetVar || ctx.newVar();
+    const l = compileValueExpr(left, ctx, null);
+    const r = compileValueExpr(right, ctx, null);
+    const stmts = [...l.stmts, ...r.stmts, `(${l.term} ${r.term}) math:exponentiation ${out} .`];
+    const used = mergeUsed(mergeUsed(l.used, r.used), { ...used0, usedMath: true });
+    return { term: out, stmts, used };
+  }
+
+  // Fallback: emit TODO
+  if (!targetVar) return { term: t.trim(), stmts: [`# TODO expr: ${t.trim()}`], used: used0 };
+  return { term: targetVar, stmts: [`# TODO BIND: ${t.trim()} => ${targetVar}`], used: used0 };
+}
+
+function compileBooleanFactor(expr, ctx, invert = false) {
+  let t = stripOuterParensAll(expr).trim();
+  const used0 = {
+    usedMath: false,
+    usedString: false,
+    usedTime: false,
+    usedLog: false,
+    usedList: false,
+    usedCrypto: false,
+  };
+
+  // Handle unary !
+  if (t.startsWith('!')) {
+    return compileBooleanFactor(t.slice(1), ctx, !invert);
+  }
+
+  // IN / NOT IN
+  {
+    // Look for top-level IN keyword
+    const opIn = findTopLevelBinaryOp(t, ['NOT IN', 'IN'], true);
+    if (opIn && (opIn.op.toUpperCase() === 'IN' || opIn.op.toUpperCase() === 'NOT IN')) {
+      const leftExpr = t.slice(0, opIn.idx).trim();
+      const rightExpr = t.slice(opIn.idx + opIn.len).trim();
+      let listInner = rightExpr;
+      // Expect (...) list
+      listInner = stripOuterParensAll(listInner);
+      const items = splitTopLevelCommaArgs(listInner).map((x) => x.trim()).filter(Boolean);
+      const list = `(${items.join(' ')})`;
+      const left = compileValueExpr(leftExpr, ctx, null);
+      let stmts = [...left.stmts];
+      let used = mergeUsed(used0, left.used);
+      used = mergeUsed(used, { usedList: true });
+
+      const coreStmt = `${left.term} list:in ${list} .`;
+
+      const neg = invert || opIn.op.toUpperCase() === 'NOT IN';
+      if (neg) {
+        stmts.push(`?SCOPE log:notIncludes { ${coreStmt} } .`);
+        used = mergeUsed(used, { usedLog: true });
+      } else {
+        stmts.push(coreStmt);
+      }
+      return { stmts, used };
+    }
+  }
+
+  // Function call booleans: CONTAINS, STRSTARTS, STRENDS, REGEX, sameTerm
+  const call = tryParseFunctionCall(t);
+  if (call) {
+    const local = fnLocalName(call.name).toLowerCase();
+    const args = splitTopLevelCommaArgs(call.argsRaw).map((x) => x.trim()).filter(Boolean);
+    const compiledArgs = args.map((a) => compileValueExpr(a, ctx, null));
+
+    let stmts = [];
+    let used = used0;
+    const argTerms = [];
+    for (const ca of compiledArgs) {
+      stmts = stmts.concat(ca.stmts);
+      used = mergeUsed(used, ca.used);
+      argTerms.push(ca.term);
+    }
+
+    const makeNegatedNAF = (innerStmt) => {
+      stmts.push(`?SCOPE log:notIncludes { ${innerStmt} } .`);
+      used = mergeUsed(used, { usedLog: true });
+    };
+
+    if (local === 'contains' || local === 'strstarts' || local === 'strends') {
+      if (argTerms.length !== 2) return { stmts: [...stmts, `# TODO FILTER: ${t}`], used };
+      const pred =
+        local === 'contains' ? 'string:contains' : local === 'strstarts' ? 'string:startsWith' : 'string:endsWith';
+      const innerStmt = `${argTerms[0]} ${pred} ${argTerms[1]} .`;
+      used = mergeUsed(used, { usedString: true });
+      if (invert) makeNegatedNAF(innerStmt);
+      else stmts.push(innerStmt);
+      return { stmts, used };
+    }
+
+    if (local === 'regex') {
+      if (argTerms.length < 2) return { stmts: [...stmts, `# TODO FILTER: ${t}`], used };
+      // Ignore SPARQL regex flags (3rd arg) for now.
+      const pred = invert ? 'string:notMatches' : 'string:matches';
+      const innerStmt = `${argTerms[0]} ${pred} ${argTerms[1]} .`;
+      used = mergeUsed(used, { usedString: true });
+      stmts.push(innerStmt);
+      return { stmts, used };
+    }
+
+    if (local === 'sameterm') {
+      if (argTerms.length !== 2) return { stmts: [...stmts, `# TODO FILTER: ${t}`], used };
+      const pred = invert ? 'log:notEqualTo' : 'log:equalTo';
+      stmts.push(`${argTerms[0]} ${pred} ${argTerms[1]} .`);
+      used = mergeUsed(used, { usedLog: true });
+      return { stmts, used };
+    }
+  }
+
+  // Comparison
+  const cmp = parseSimpleComparison(t);
+  if (!cmp) return null;
+
+  const left = compileValueExpr(cmp.left, ctx, null);
+  const right = compileValueExpr(cmp.right, ctx, null);
+
+  let stmts = [...left.stmts, ...right.stmts];
+  let used = mergeUsed(mergeUsed(used0, left.used), right.used);
+
+  // Decide namespace: numeric => math; string literals => string for ordering; otherwise:
+  const leftNum = isNumericLike(cmp.left) || isNumericLike(left.term);
+  const rightNum = isNumericLike(cmp.right) || isNumericLike(right.term);
+  const anyNum = leftNum || rightNum;
+  const anyStr = isStringLiteral(cmp.left) || isStringLiteral(cmp.right);
+
+  const neg = invert;
+
+  // Equality/inequality: prefer math for numeric, log otherwise.
+  if (cmp.op === '=' || cmp.op === '!=') {
+    if (anyNum) {
+      const pred = neg
+        ? cmp.op === '='
+          ? 'math:notEqualTo'
+          : 'math:equalTo'
+        : `math:${cmp.pred}`;
+      stmts.push(`${left.term} ${pred} ${right.term} .`);
+      used = mergeUsed(used, { usedMath: true });
+      return { stmts, used };
+    }
+
+    const pred = neg ? (cmp.op === '=' ? 'log:notEqualTo' : 'log:equalTo') : cmp.op === '=' ? 'log:equalTo' : 'log:notEqualTo';
+    stmts.push(`${left.term} ${pred} ${right.term} .`);
+    used = mergeUsed(used, { usedLog: true });
+    return { stmts, used };
+  }
+
+  // Relational: numeric => math; string literal ordering => string; default math
+  if (!anyNum && anyStr) {
+    // string ordering
+    const map = (op, inv) => {
+      const base =
+        op === '>'
+          ? 'greaterThan'
+          : op === '<'
+            ? 'lessThan'
+            : op === '>='
+              ? 'notLessThan'
+              : op === '<='
+                ? 'notGreaterThan'
+                : null;
+      if (!base) return null;
+
+      if (!inv) return `string:${base}`;
+
+      // invert
+      if (op === '>') return 'string:notGreaterThan';
+      if (op === '<') return 'string:notLessThan';
+      if (op === '>=') return 'string:lessThan';
+      if (op === '<=') return 'string:greaterThan';
+      return null;
+    };
+    const pred = map(cmp.op, neg);
+    if (!pred) return null;
+    stmts.push(`${left.term} ${pred} ${right.term} .`);
+    used = mergeUsed(used, { usedString: true });
+    return { stmts, used };
+  }
+
+  // numeric/default math
+  {
+    const map = (op, inv, pred) => {
+      if (!inv) return `math:${pred}`;
+      if (op === '>') return 'math:notGreaterThan';
+      if (op === '<') return 'math:notLessThan';
+      if (op === '>=') return 'math:lessThan';
+      if (op === '<=') return 'math:greaterThan';
+      return null;
+    };
+    const pred = map(cmp.op, neg, cmp.pred);
+    if (!pred) return null;
+    stmts.push(`${left.term} ${pred} ${right.term} .`);
+    used = mergeUsed(used, { usedMath: true });
+    return { stmts, used };
+  }
+}
+
+function bindExprToN3Statements(bindInner, ctx) {
+  // bindInner is the inside of BIND(...), e.g. 'concat(?a," ",?b) AS ?x'
   const s = (bindInner || '').trim();
   const m = s.match(/^(.*)\s+AS\s+(\?[A-Za-z_][A-Za-z0-9_-]*)\s*$/i);
   if (!m) return null;
@@ -2478,63 +3077,23 @@ function bindExprToN3Statements(bindInner) {
   const expr = m[1].trim();
   const outVar = m[2].trim();
 
-  // 1) concat(...)  ->  ( ... ) string:concatenation ?outVar .
-  const mConcat = expr.match(/^concat\s*\((.*)\)\s*$/i);
-  if (mConcat) {
-    const argsRaw = mConcat[1];
-    const args = splitTopLevelCommaArgs(argsRaw)
-      .map((x) => x.trim())
-      .filter(Boolean);
-    if (!args.length) return null;
-    const list = `(${args.join(' ')})`;
-    return { stmt: `${list} string:concatenation ${outVar} .`, usedString: true, usedTime: false };
-  }
-
-  // 2) Time Functions (Section 2.2 in the UGent time-fn paper)
-  //    SRL: BIND( tfn:periodMinInclusive(?x) AS ?y )
-  //    N3 : ( ?x ) tfn:periodMinInclusive ?y .
-  const mFn = expr.match(/^([A-Za-z][A-Za-z0-9_-]*:[A-Za-z_][A-Za-z0-9_-]*|<[^>]+>)\s*\((.*)\)\s*$/);
-  if (mFn) {
-    const fnTok = mFn[1].trim();
-    const argsRaw = mFn[2];
-
-    // Determine local name (for checking we support it)
-    let local = null;
-    if (fnTok.startsWith('<') && fnTok.endsWith('>')) {
-      const iri = fnTok.slice(1, -1);
-      if (iri.startsWith(TIMEFN_NS)) local = iri.slice(TIMEFN_NS.length);
-    } else {
-      const idx = fnTok.indexOf(':');
-      if (idx >= 0) local = fnTok.slice(idx + 1);
-    }
-
-    if (local && TIMEFN_BUILTIN_NAMES.has(local)) {
-      const args = splitTopLevelCommaArgs(argsRaw)
-        .map((x) => x.trim())
-        .filter(Boolean);
-
-      if (!args.length) return null;
-      if (local === 'bindDefaultTimezone') {
-        if (args.length !== 2) return null;
-      } else {
-        if (args.length !== 1) return null;
-      }
-
-      const list = `(${args.join(' ')})`;
-      return { stmt: `${list} ${fnTok} ${outVar} .`, usedString: false, usedTime: true };
-    }
-  }
-
-  return null;
+  const compiled = compileValueExpr(expr, ctx, outVar);
+  return { stmts: compiled.stmts, used: compiled.used };
 }
 
-function extractSrlBinds(bodyRaw) {
+function extractSrlBinds(bodyRaw, ctx) {
   const s = bodyRaw || '';
   let i = 0;
   let out = '';
   const binds = [];
-  let usedString = false;
-  let usedTime = false;
+  let used = {
+    usedMath: false,
+    usedString: false,
+    usedTime: false,
+    usedLog: false,
+    usedList: false,
+    usedCrypto: false,
+  };
 
   while (i < s.length) {
     const idx = s.indexOf('BIND', i);
@@ -2562,16 +3121,15 @@ function extractSrlBinds(bodyRaw) {
     const blk = readBalancedParens(s, j);
     const inner = (blk.content || '').trim();
 
-    const conv = bindExprToN3Statements(inner);
+    const conv = bindExprToN3Statements(inner, ctx);
     if (!conv) throw new Error(`Unsupported SRL BIND expression for N3 mapping: ${inner}`);
-    binds.push(conv.stmt);
-    usedString = usedString || !!conv.usedString;
-    usedTime = usedTime || !!conv.usedTime;
+    binds.push(...conv.stmts);
+    used = mergeUsed(used, conv.used);
 
     i = blk.endIdx;
   }
 
-  return { body: normalizeInsideBracesKeepStyle(out), binds, usedString, usedTime };
+  return { body: normalizeInsideBracesKeepStyle(out), binds, used };
 }
 
 function parseSimpleComparison(expr) {
@@ -2657,31 +3215,99 @@ function parseSimpleComparison(expr) {
   return null;
 }
 
-function filterExprToN3Alternatives(expr) {
-  // Returns an array of alternatives.
-  // Each alternative is an array of N3 statements (strings) to be added to the rule body.
-  const e = (expr || '').trim();
-  if (!e) return null;
+function filterExprToN3Alternatives(expr, ctx) {
+  // Returns {alts, used} where:
+  // - alts is an array of alternatives
+  // - each alternative is an array of N3 statements (strings) to be added to the rule body
+  //
+  // Supports nested disjunction distribution, e.g.:
+  //   a && (b || c)  ==>  (a && b) || (a && c)
+  // and De Morgan for leading '!' over composite subexpressions.
+  const e0 = (expr || '').trim();
+  if (!e0) return null;
 
-  const orParts = splitTopLevelOr(e);
-  const options = orParts ? orParts : [e];
+  function crossProductDnfs(dnfA, dnfB) {
+    const next = [];
+    for (const a of dnfA) {
+      for (const b of dnfB) {
+        next.push(a.concat(b));
+      }
+    }
+    return next;
+  }
 
-  const alts = [];
-  for (const opt of options) {
-    const andParts = splitTopLevelAnd(opt) || [opt];
-    const stmts = [];
+  function toDnf(rawExpr, negate = false) {
+    let t = (rawExpr || '').trim();
+    if (!t) return [[]];
 
-    for (const p of andParts) {
-      const cmp = parseSimpleComparison(p);
-      if (!cmp) return null;
-      stmts.push(`${cmp.left} math:${cmp.pred} ${cmp.right} .`);
+    // Normalize leading '!' (can appear multiple times)
+    let neg = negate;
+    while (t.startsWith('!')) {
+      neg = !neg;
+      t = t.slice(1).trim();
     }
 
+    t = stripOuterParensAll(t);
+
+    // OR has lower precedence than AND.
+    const orParts = splitTopLevelOr(t);
+    if (orParts) {
+      if (!neg) {
+        let out = [];
+        for (const p of orParts) out = out.concat(toDnf(p, false));
+        return out;
+      }
+      // NOT (A OR B)  ==  (NOT A) AND (NOT B)
+      let out = [[]];
+      for (const p of orParts) {
+        out = crossProductDnfs(out, toDnf(p, true));
+      }
+      return out;
+    }
+
+    const andParts = splitTopLevelAnd(t);
+    if (andParts) {
+      if (!neg) {
+        let out = [[]];
+        for (const p of andParts) out = crossProductDnfs(out, toDnf(p, false));
+        return out;
+      }
+      // NOT (A AND B)  ==  (NOT A) OR (NOT B)
+      let out = [];
+      for (const p of andParts) out = out.concat(toDnf(p, true));
+      return out;
+    }
+
+    // Atomic
+    return [[neg ? '!' + t : t]];
+  }
+
+  const conjunctions = toDnf(e0, false);
+
+  const alts = [];
+  let used = {
+    usedMath: false,
+    usedString: false,
+    usedTime: false,
+    usedLog: false,
+    usedList: false,
+    usedCrypto: false,
+  };
+
+  for (const conj of conjunctions) {
+    let stmts = [];
+    for (const factor of conj) {
+      const bf = compileBooleanFactor(factor, ctx, false);
+      if (!bf) return null;
+      stmts = stmts.concat(bf.stmts);
+      used = mergeUsed(used, bf.used);
+    }
     alts.push(stmts);
   }
 
-  return alts;
+  return { alts, used };
 }
+
 
 function srlWhereBodyToN3Body(bodyRaw) {
   const s = bodyRaw || '';
@@ -2936,8 +3562,13 @@ function srlToN3(srlText) {
   let needsLog = false;
   let needsMath = false;
   let needsString = false;
+  let needsList = false;
+  let needsCrypto = false;
+  let needsTime = false;
 
   for (const r of rules) {
+    const ctx = { newVar: makeTempVarGenerator('__e') };
+
     // 1) NOT { ... }  ->  ?SCOPE log:notIncludes { ... } .
     const convNot = srlWhereBodyToN3Body(r.body);
     needsLog = needsLog || convNot.usedLog;
@@ -2949,30 +3580,73 @@ function srlToN3(srlText) {
     const filterExprs = convFilter.filters;
 
     // 3) BIND(concat(... ) AS ?v) -> string:concatenation builtins
-    const convBind = extractSrlBinds(bodyNoFilter);
+    const convBind = extractSrlBinds(bodyNoFilter, ctx);
     const bodyNoBind = convBind.body;
     const bindBuiltins = convBind.binds;
-    if (convBind.usedString) {
+    if (convBind.used.usedString) {
       needsString = true;
       if (!env.map.string) env.setPrefix('string', STRING_NS);
+    }
+    if (convBind.used.usedTime) {
+      needsTime = true;
+      if (!env.map.time) env.setPrefix('time', TIME_NS);
+    }
+    if (convBind.used.usedLog) {
+      needsLog = true;
+      if (!env.map.log) env.setPrefix('log', LOG_NS);
+    }
+    if (convBind.used.usedMath) {
+      needsMath = true;
+      if (!env.map.math) env.setPrefix('math', MATH_NS);
+    }
+    if (convBind.used.usedList) {
+      needsList = true;
+      if (!env.map.list) env.setPrefix('list', LIST_NS);
+    }
+    if (convBind.used.usedCrypto) {
+      needsCrypto = true;
+      if (!env.map.crypto) env.setPrefix('crypto', CRYPTO_NS);
     }
 
     // Build rule alternatives (disjunction => multiple rules)
     let alts = [{ builtins: [] }];
 
     for (const f of filterExprs) {
-      const n3alts = filterExprToN3Alternatives(f);
-      if (!n3alts) {
+      const conv = filterExprToN3Alternatives(f, ctx);
+      if (!conv) {
         throw new Error(`Unsupported SRL FILTER expression for N3 mapping: ${f}`);
       }
 
-      needsMath = true;
-      if (!env.map.math) env.setPrefix('math', MATH_NS);
+      // Ensure needed builtin prefixes
+      if (conv.used.usedMath) {
+        needsMath = true;
+        if (!env.map.math) env.setPrefix('math', MATH_NS);
+      }
+      if (conv.used.usedString) {
+        needsString = true;
+        if (!env.map.string) env.setPrefix('string', STRING_NS);
+      }
+      if (conv.used.usedLog) {
+        needsLog = true;
+        if (!env.map.log) env.setPrefix('log', LOG_NS);
+      }
+      if (conv.used.usedList) {
+        needsList = true;
+        if (!env.map.list) env.setPrefix('list', LIST_NS);
+      }
+      if (conv.used.usedCrypto) {
+        needsCrypto = true;
+        if (!env.map.crypto) env.setPrefix('crypto', CRYPTO_NS);
+      }
+      if (conv.used.usedTime) {
+        needsTime = true;
+        if (!env.map.time) env.setPrefix('time', TIME_NS);
+      }
 
       // Expand OR alternatives
       const next = [];
       for (const a of alts) {
-        for (const option of n3alts) {
+        for (const option of conv.alts) {
           next.push({ builtins: a.builtins.concat(option) });
         }
       }
