@@ -50,5 +50,5 @@
 
     "preversion": "npm test",
     "postversion": "git push --follow-tags"
-  },
+  }
 }
