@@ -23,7 +23,7 @@ const C = TTY
   ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', dim: '\x1b[2m', n: '\x1b[0m' }
   : { g: '', r: '', y: '', dim: '', n: '' };
 function ok(msg) {
-  console.log(`${C.g}OK${C.n} ${msg}`);
+  console.log(`${C.g}OK ${C.n} ${msg}`);
 }
 function info(msg) {
   console.log(`${C.y}==${C.n} ${msg}`);

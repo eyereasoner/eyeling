@@ -70,7 +70,7 @@ const C = TTY
   : { g: '', r: '', y: '', dim: '', n: '' };
 
 function ok(msg) {
-  console.log(`${C.g}OK${C.n} ${msg}`);
+  console.log(`${C.g}OK ${C.n} ${msg}`);
 }
 function info(msg) {
   console.log(`${C.y}==${C.n} ${msg}`);
@@ -867,7 +867,7 @@ ex:a p:trig ex:b.
     },
   },
   {
-    name: 'issue #6: RDF list nodes should not be rewritten; list:* builtins should traverse rdf:first/rest',
+    name: '55 issue #6: RDF list nodes should not be rewritten; list:* builtins should traverse rdf:first/rest',
     opt: {},
     input: `@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix list: <http://www.w3.org/2000/10/swap/list#> .
@@ -899,7 +899,7 @@ ex:a p:trig ex:b.
   }
   ,
   {
-    name: 'issue #6: duplicate rdf:first/rest statements should not break list:* builtins',
+    name: '56 issue #6: duplicate rdf:first/rest statements should not break list:* builtins',
     opt: {},
     input: `@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix list: <http://www.w3.org/2000/10/swap/list#> .
