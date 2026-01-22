@@ -1,6 +1,6 @@
 {
   "name": "eyeling",
-  "version": "1.10.14",
+  "version": "1.10.15",
   "description": "A minimal Notation3 (N3) reasoner in JavaScript.",
   "main": "./index.js",
   "keywords": [
@@ -36,7 +36,6 @@
   },
   "scripts": {
     "build": "node tools/bundle.js",
-
     "test:packlist": "node test/packlist.test.js",
     "test:api": "node test/api.test.js",
     "test:n3gen": "node test/n3gen.test.js",
@@ -44,10 +43,8 @@
     "test:manifest": "node test/manifest.test.js",
     "test:playground": "node test/playground.test.js",
     "test:package": "node test/package.test.js",
-
     "test:all": "npm run test:packlist && npm run test:api && npm run test:n3gen && npm run test:examples && npm run test:manifest && npm run test:playground && npm run test:package",
     "test": "npm run build && npm run test:all",
-
     "preversion": "npm test",
     "postversion": "git push --follow-tags"
   }
