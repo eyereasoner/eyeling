@@ -334,6 +334,3 @@ string:scrape a ex:Builtin ; ex:kind ex:Function ;
 string:format a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Simple formatter: (fmt arg1 ... argN) -> output string. Only %s and %% are supported; other specifiers fail." .
 
-string:jsonPointer a ex:Builtin ; ex:kind ex:Function ;
-  rdfs:comment "JSON Pointer lookup: (jsonText pointer) -> value term. Expects rdf:JSON-typed literal (or treated as rdf:JSON); caches parsed JSON and pointer lookups." .
-

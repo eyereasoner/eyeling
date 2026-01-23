@@ -1354,7 +1354,7 @@ This is treated as a constraint builtin (it shouldn’t drive search; it should 
 
 ---
 
-## 11.3.6 `string:` — string casting, tests, regexes, and JSON pointers
+## 11.3.6 `string:` — string casting, tests, and regexes
 
 Eyeling implements string builtins with a deliberate interpretation of “domain is `xsd:string`”:
 
@@ -1438,34 +1438,6 @@ Tests whether `pattern` matches `data`.
 
 Matches the regex once and returns the **first capturing group** (group 1). If there is no match or no group, it fails.
 
-### JSON pointer lookup
-
-#### `string:jsonPointer`
-
-**Shape:**
-`( jsonText pointer ) string:jsonPointer value`
-
-This builtin is intentionally “bridgey”: it lets you reach into JSON and get back an RDF/N3 term.
-
-Rules:
-
-* `jsonText` must be an `rdf:JSON` literal (Eyeling is permissive and may accept a couple of equivalent datatype spellings).
-* `pointer` is a string; Eyeling supports:
-
-  * standard RFC 6901 pointers like `/a/b/0`
-  * URI fragment form like `#/a/b` (it is decoded first)
-* The JSON is parsed and cached; pointer results are cached per `(jsonText, pointer)`.
-
-Returned terms follow Eyeling’s `jsonToTerm` mapping:
-
-* JSON `null` → `"null"` (a plain string literal)
-* JSON string → plain string literal
-* JSON number → numeric token literal (untyped)
-* JSON boolean → `true` / `false` token literal (untyped boolean token)
-* JSON array → an N3 list term whose elements are recursively converted
-* JSON object → an `rdf:JSON` literal containing the object’s JSON text
-
-This design keeps the builtin total and predictable even for nested structures.
 
 ## 11.4 `log:outputString` as a controlled side effect
 
