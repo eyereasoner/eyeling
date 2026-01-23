@@ -2217,6 +2217,35 @@ const batch = [];
           activePlayCancel = cancel;
         }
 
+        function injectBaseDirective(text, fetchedUrl) {
+          if (!fetchedUrl) return text;
+
+          let base;
+          try {
+            const u = new URL(fetchedUrl);
+            u.hash = '';                 // base is the document IRI, no fragment
+            base = u.toString();
+          } catch {
+            base = fetchedUrl;
+          }
+
+          const baseLine = `@base <${base}> .\n`;
+
+          // If the doc uses @base <> or BASE <> (needs an external base), replace it with the absolute base.
+          text = text.replace(/^\s*@base\s+<\s*>\s*\.\s*$/im, baseLine.trimEnd());
+          text = text.replace(/^\s*BASE\s+<\s*>\s*$/im, `BASE <${base}>`);
+
+          // If a non-empty base is already present, keep it.
+          const hasAtBase = /^\s*@base\s+<[^>]+>\s*\.\s*$/im.test(text);
+          const hasSparqlBase = /^\s*BASE\s+<[^>]+>\s*$/im.test(text);
+
+          if (!hasAtBase && !hasSparqlBase) {
+            text = baseLine + text;
+          }
+
+          return text;
+        }
+
         async function loadFromUri() {
           const uri = uriInput.value.trim();
           if (!uri) return;
@@ -2228,25 +2257,24 @@ const batch = [];
             if (!resp.ok) {
               throw new Error('HTTP ' + resp.status + ' when fetching ' + uri);
             }
-            const text = await resp.text();
+            let text = await resp.text();
+
+            // ✅ IMPORTANT: preserve base for <#...> by injecting @base <finalURL> .
+            text = injectBaseDirective(text, resp.url || uri);
+
             editor.setValue(text);
             clearErrorHighlight();
 
-            {
-              const mh = currentMaxHeights();
-              autoResizeCodeMirror(editor, 220, mh.editor);
-            }
+            const mh = currentMaxHeights();
+            autoResizeCodeMirror(editor, 220, mh.editor);
 
-            statusEl.textContent = 'Loaded N3 from URL.';
+            statusEl.textContent = 'Loaded N3 from URL (base preserved).';
             if (hashSyncEnabled) updateShareUrl();
           } catch (e) {
             statusEl.textContent = 'Failed to load URL.';
-
-            {
-              const mh = currentMaxHeights();
-              outputEl.setValue('Error while loading N3 from URL:\n' + (e && e.message ? e.message : String(e)));
-              autoResizeCodeMirror(outputEl, 80, mh.output);
-            }
+            const mh = currentMaxHeights();
+            outputEl.setValue('Error while loading N3 from URL:\n' + (e && e.message ? e.message : String(e)));
+            autoResizeCodeMirror(outputEl, 80, mh.output);
           } finally {
             loadUriBtn.disabled = false;
           }
