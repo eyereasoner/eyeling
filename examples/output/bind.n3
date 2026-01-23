@@ -1,3 +1,0 @@
-@prefix : <http://example/#> .
-
-:phayes :name "Pat Hayes" .

@@ -1,4 +1,0 @@
-@prefix : <http://example/#> .
-
-:bob :adultNamedByRule true .
-:bea :adultNamedByRule true .
