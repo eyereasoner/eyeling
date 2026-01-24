@@ -1,0 +1,10 @@
+@prefix : <http://example/#> .
+
+:test :triple {
+    :alice :knows :bob .
+} .
+:test :subject :alice .
+:test :predicate :knows .
+:test :object :bob .
+:test :subjectIsIRI true .
+:test :tripleOk true .

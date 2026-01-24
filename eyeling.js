@@ -1735,6 +1735,14 @@ function unifyTermListAppend(a, b, subst) {
   });
 }
 
+function unifyTermMaybe(target, value, subst) {
+  // Treat blanks as wildcards (succeed once without binding).
+  if (target instanceof Blank) return [{ ...subst }];
+
+  const s2 = unifyTerm(target, value, subst);
+  return s2 !== null ? [s2] : [];
+}
+
 function unifyTermWithOptions(a, b, subst, opts) {
   a = applySubstTerm(a, subst);
   b = applySubstTerm(b, subst);
@@ -3742,6 +3750,15 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       s2[g.o.name] = lit;
       return [s2];
     }
+    if (g.o instanceof Blank) return [{ ...subst }];
+
+    // Accept typed numeric literals too (e.g., "3"^^xsd:float) if numerically equal.
+    if (numEqualTerm(g.o, rVal)) return [{ ...subst }];
+
+    // Fallback to strict unification
+    const s2 = unifyTerm(g.o, lit, subst);
+    return s2 !== null ? [s2] : [];
+  }
 
   // math:ceiling (Eyeling extension)
   // Schema: $s+ math:ceiling $o-
@@ -3749,13 +3766,14 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   if (pv === MATH_NS + 'ceiling') {
     const info = parseNumericLiteralInfo(g.s);
     if (!info) return [];
-    if (typeof info.value !== 'number') {
-      // BigInt (xsd:integer) – already integral
+    if (info.kind === 'bigint') {
+      // Already integral
       const lit = internLiteral(String(info.value));
       return unifyTermMaybe(g.o, lit, subst);
     }
-    if (Number.isNaN(info.value) || !Number.isFinite(info.value)) return [];
-    const lit = internLiteral(String(Math.ceil(info.value)));
+    const n = info.value;
+    if (Number.isNaN(n) || !Number.isFinite(n)) return [];
+    const lit = internLiteral(String(Math.ceil(n)));
     return unifyTermMaybe(g.o, lit, subst);
   }
 
@@ -3765,23 +3783,14 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   if (pv === MATH_NS + 'floor') {
     const info = parseNumericLiteralInfo(g.s);
     if (!info) return [];
-    if (typeof info.value !== 'number') {
+    if (info.kind === 'bigint') {
       const lit = internLiteral(String(info.value));
       return unifyTermMaybe(g.o, lit, subst);
     }
-    if (Number.isNaN(info.value) || !Number.isFinite(info.value)) return [];
-    const lit = internLiteral(String(Math.floor(info.value)));
+    const n = info.value;
+    if (Number.isNaN(n) || !Number.isFinite(n)) return [];
+    const lit = internLiteral(String(Math.floor(n)));
     return unifyTermMaybe(g.o, lit, subst);
-  }
-
-    if (g.o instanceof Blank) return [{ ...subst }];
-
-    // Accept typed numeric literals too (e.g., "3"^^xsd:float) if numerically equal.
-    if (numEqualTerm(g.o, rVal)) return [{ ...subst }];
-
-    // Fallback to strict unification
-    const s2 = unifyTerm(g.o, lit, subst);
-    return s2 !== null ? [s2] : [];
   }
 
   // -----------------------------------------------------------------
@@ -4570,48 +4579,42 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       s2[g.o.name] = ty;
       return [s2];
     }
+    if (g.o instanceof Blank) return [{ ...subst }];
+
+    const s2 = unifyTerm(g.o, ty, subst);
+    return s2 !== null ? [s2] : [];
+  }
 
   // log:isIRI / log:isLiteral / log:isBlank / log:isNumeric / log:isTriple (Eyeling extensions)
   // Schema: $s+ log:isIRI $o?   (succeeds when s matches; o may be 'true' or a variable)
-  function unifyBoolTrue(obj, subst0) {
-    if (obj instanceof Blank) return [subst0];
-    const tTrue = internLiteral('true');
-    const s2 = unifyTermMaybe(obj, tTrue, subst0);
-    return s2 ? [s2] : [];
-  }
+  const __BOOL_TRUE = internLiteral('true');
 
   if (pv === LOG_NS + 'isIRI') {
     if (!(g.s instanceof Iri)) return [];
-    return unifyBoolTrue(g.o, subst);
+    return unifyTermMaybe(g.o, __BOOL_TRUE, subst);
   }
 
   if (pv === LOG_NS + 'isLiteral') {
     if (!(g.s instanceof Literal)) return [];
-    return unifyBoolTrue(g.o, subst);
+    return unifyTermMaybe(g.o, __BOOL_TRUE, subst);
   }
 
   if (pv === LOG_NS + 'isBlank') {
     if (!(g.s instanceof Blank)) return [];
-    return unifyBoolTrue(g.o, subst);
+    return unifyTermMaybe(g.o, __BOOL_TRUE, subst);
   }
 
   if (pv === LOG_NS + 'isNumeric') {
     if (!(g.s instanceof Literal)) return [];
     const dt = numericDatatypeOfTerm(g.s);
     if (!dt) return [];
-    return unifyBoolTrue(g.o, subst);
+    return unifyTermMaybe(g.o, __BOOL_TRUE, subst);
   }
 
   if (pv === LOG_NS + 'isTriple') {
     if (!(g.s instanceof GraphTerm)) return [];
     if (g.s.triples.length !== 1) return [];
-    return unifyBoolTrue(g.o, subst);
-  }
-
-    if (g.o instanceof Blank) return [{ ...subst }];
-
-    const s2 = unifyTerm(g.o, ty, subst);
-    return s2 !== null ? [s2] : [];
+    return unifyTermMaybe(g.o, __BOOL_TRUE, subst);
   }
 
   // log:dtlit
@@ -5086,6 +5089,9 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       skolemCache.set(key, iri);
     }
 
+    return unifyTermMaybe(g.o, iri, subst);
+  }
+
   // log:uuid / log:struuid (Eyeling extensions)
   // NOTE: these generate fresh values and can affect termination; prefer log:skolem for deterministic IDs.
   //
@@ -5101,11 +5107,6 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const uuid = __randomUuidV4();
     const lit = makeStringLiteral(uuid);
     return unifyTermMaybe(g.o, lit, subst);
-  }
-
-
-    const s2 = unifyTerm(goal.o, iri, subst);
-    return s2 !== null ? [s2] : [];
   }
 
   // log:uri
@@ -5211,6 +5212,19 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       args.push(aStr);
     }
 
+    const formatted = simpleStringFormat(fmtStr, args);
+    if (formatted === null) return []; // unsupported format specifier(s)
+
+    const lit = makeStringLiteral(formatted);
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = lit;
+      return [s2];
+    }
+    const s2 = unifyTerm(g.o, lit, subst);
+    return s2 !== null ? [s2] : [];
+  }
+
   // string:length (Eyeling extension)
   // Schema: $s+ string:length $o-
   if (pv === STRING_NS + 'length') {
@@ -5246,44 +5260,35 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   // NOTE: start is 1-based (SPARQL SUBSTR), len is optional.
   if (pv === STRING_NS + 'substring') {
     if (!(g.s instanceof ListTerm)) return [];
-    const items = g.s.items;
-    if (items.length !== 2 && items.length !== 3) return [];
-    const s0 = termToJsStringDecoded(items[0]);
+    const elems = g.s.elems;
+    if (elems.length !== 2 && elems.length !== 3) return [];
+
+    const s0 = termToJsStringDecoded(elems[0]);
     if (s0 === null) return [];
-    const startInfo = parseNumericLiteralInfo(items[1]);
-    if (!startInfo || typeof startInfo.value !== 'number' || Number.isNaN(startInfo.value)) return [];
-    let start = Math.floor(startInfo.value);
-    if (!Number.isFinite(start)) return [];
+
+    const startInfo = parseNumericLiteralInfo(elems[1]);
+    if (!startInfo) return [];
+    let start = startInfo.kind === 'bigint' ? Number(startInfo.value) : startInfo.value;
+    if (!Number.isFinite(start) || Number.isNaN(start)) return [];
+    start = Math.floor(start);
     start = Math.max(1, start);
 
     let outStr = '';
-    if (items.length === 2) {
+    if (elems.length === 2) {
       outStr = s0.slice(start - 1);
     } else {
-      const lenInfo = parseNumericLiteralInfo(items[2]);
-      if (!lenInfo || typeof lenInfo.value !== 'number' || Number.isNaN(lenInfo.value)) return [];
-      let len = Math.floor(lenInfo.value);
-      if (!Number.isFinite(len)) return [];
-      if (len <= 0) outStr = '';
-      else outStr = s0.slice(start - 1, start - 1 + len);
+      const lenInfo = parseNumericLiteralInfo(elems[2]);
+      if (!lenInfo) return [];
+      let length = lenInfo.kind === 'bigint' ? Number(lenInfo.value) : lenInfo.value;
+      if (!Number.isFinite(length) || Number.isNaN(length)) return [];
+      length = Math.floor(length);
+
+      if (length <= 0) outStr = '';
+      else outStr = s0.slice(start - 1, start - 1 + length);
     }
 
     const lit = makeStringLiteral(outStr);
     return unifyTermMaybe(g.o, lit, subst);
-  }
-
-
-    const formatted = simpleStringFormat(fmtStr, args);
-    if (formatted === null) return []; // unsupported format specifier(s)
-
-    const lit = makeStringLiteral(formatted);
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = lit;
-      return [s2];
-    }
-    const s2 = unifyTerm(g.o, lit, subst);
-    return s2 !== null ? [s2] : [];
   }
 
   // string:jsonPointer
