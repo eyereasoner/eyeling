@@ -1,0 +1,8 @@
+@prefix : <http://example/#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+:alice a :Person ; :email "alice@example.org" .
+  :bob   a :Person .
+  :carol a :Person ; :email "carol@example.org" .
+
+{ ?p a :Person . ?SCOPE log:notIncludes { ?p :email ?_e . } . } => { ?p :needsEmail true . } .

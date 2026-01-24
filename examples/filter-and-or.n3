@@ -1,0 +1,11 @@
+@prefix : <http://example/#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+
+:x :p 1 ; :q 9 ; :r 0 .
+  :y :p -1 ; :q 3 ; :r 3 .
+  :z :p 4 ; :q 12 ; :r 2 .
+
+{ ?s :p ?p . ?s :q ?q . ?p math:greaterThan 0 . ?q math:lessThan 10 . } => { ?s :inRange true . } .
+{ ?s :p ?p . ?s :q ?q . ?s :r ?r . ?p math:equalTo 1 . } => { ?s :anyCondition true . } .
+{ ?s :p ?p . ?s :q ?q . ?s :r ?r . ?q math:equalTo 12 . } => { ?s :anyCondition true . } .
+{ ?s :p ?p . ?s :q ?q . ?s :r ?r . ?r math:equalTo 3 . } => { ?s :anyCondition true . } .

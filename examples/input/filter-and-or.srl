@@ -1,0 +1,19 @@
+PREFIX : <http://example/#>
+
+DATA {
+  :x :p 1 ; :q 9 ; :r 0 .
+  :y :p -1 ; :q 3 ; :r 3 .
+  :z :p 4 ; :q 12 ; :r 2 .
+}
+
+RULE { ?s :inRange true . }
+WHERE {
+  ?s :p ?p ; :q ?q .
+  FILTER ( (?p > 0) && (?q < 10) )
+}
+
+RULE { ?s :anyCondition true . }
+WHERE {
+  ?s :p ?p ; :q ?q ; :r ?r .
+  FILTER ( (?p = 1) || (?q = 12) || (?r = 3) )
+}

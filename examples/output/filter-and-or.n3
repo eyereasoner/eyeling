@@ -1,0 +1,6 @@
+@prefix : <http://example/#> .
+
+:x :inRange true .
+:x :anyCondition true .
+:z :anyCondition true .
+:y :anyCondition true .

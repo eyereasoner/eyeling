@@ -1,0 +1,9 @@
+@prefix : <http://example/#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+
+:alice a :Person ; :givenName "Alice" ; :familyName "Anderson" .
+  :bob   a :Person ; :givenName "Bob"   ; :familyName "Baker" ; :name "Bob B." .
+
+{ ?x a :Person . ?SCOPE log:notIncludes { ?x :name ?_anyName . } . ?x :givenName ?gn . ?x :familyName ?fn . (?gn " " ?fn) string:concatenation ?fullName . } => { ?x :name ?fullName . } .
+{ ?x a :Person . ?x :name ?n . ("Person: " ?n) string:concatenation ?label . } => { ?x :label ?label . } .
