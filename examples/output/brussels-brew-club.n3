@@ -1,0 +1,22 @@
+@prefix : <http://example.org/brewclub#> .
+@prefix genid: <https://eyereasoner.github.io/.well-known/genid/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:alice :age 23 .
+:alice :name "Alice" .
+:alice :city "Brussels" .
+:bob :age 16 .
+:bob :name "Bob" .
+:bob :city "Brussels" .
+genid:9e06e026-ada3-9430-3e11-8dd8c37dac24 a :MembershipCard .
+genid:9e06e026-ada3-9430-3e11-8dd8c37dac24 :holder :alice .
+genid:9e06e026-ada3-9430-3e11-8dd8c37dac24 :issuedAt "2000-01-01T00:00:00+00:00"^^xsd:dateTime .
+genid:9e06e026-ada3-9430-3e11-8dd8c37dac24 rdfs:label "Brew Club card for Alice" .
+:order1 :eligibleDiscount true .
+genid:35d6c1c8-ee0c-5a7a-8ec2-654c5e1b34b4 a :Receipt .
+genid:35d6c1c8-ee0c-5a7a-8ec2-654c5e1b34b4 :forOrder :order1 .
+genid:35d6c1c8-ee0c-5a7a-8ec2-654c5e1b34b4 :receiptId "ORD-2025-001" .
+genid:fbd10997-9fd6-99ce-fa19-a82424656d08 a :Receipt .
+genid:fbd10997-9fd6-99ce-fa19-a82424656d08 :forOrder :order2 .
+genid:fbd10997-9fd6-99ce-fa19-a82424656d08 :receiptId "ORD-2025-002" .

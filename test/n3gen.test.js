@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-// Convert examples/input/*.{ttl,trig} -> examples/*.n3 using n3gen.js
+// Convert examples/input/*.{ttl,trig,srl} -> examples/*.n3 using n3gen.js
 // Designed to work both in a git checkout (maintainer mode) and in an npm-installed package.
 //
 // In git mode:
@@ -109,14 +109,14 @@ function main() {
   const IN_GIT = inGitWorktree(root);
 
   const inputs = fs.readdirSync(inputDir)
-    .filter(f => /\.(ttl|trig)$/i.test(f))
+    .filter(f => /\.(ttl|trig|srl)$/i.test(f))
     .sort((a, b) => a.localeCompare(b));
 
   info(`Running n3 conversions for ${inputs.length} inputs (${IN_GIT ? 'git worktree mode' : 'npm-installed mode'})`);
   console.log(`${C.dim}node ${process.version}${C.n}`);
 
   if (inputs.length === 0) {
-    ok('No .ttl/.trig files found in examples/input/');
+    ok('No .ttl/.trig/.srl files found in examples/input/');
     process.exit(0);
   }
 
@@ -129,7 +129,7 @@ function main() {
     const start = Date.now();
 
     const inPath = path.join(inputDir, inFile);
-    const base = inFile.replace(/\.(ttl|trig)$/i, '');
+    const base = inFile.replace(/\.(ttl|trig|srl)$/i, '');
     const outFile = `${base}.n3`;
 
     const expectedPath = path.join(examplesDir, outFile);

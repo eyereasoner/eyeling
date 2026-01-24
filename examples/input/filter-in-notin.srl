@@ -1,0 +1,15 @@
+PREFIX : <http://example/#>
+
+DATA {
+  :a :score 1 .
+  :b :score 2 .
+  :c :score 3 .
+  :d :score 4 .
+}
+
+# Demonstrates IN/NOT IN (mapped to list:in + log:notIncludes)
+RULE { ?x :isSpecial true . }
+WHERE {
+  ?x :score ?s .
+  FILTER ( (?s IN (1, 3, 5)) && (?s NOT IN (2, 4)) )
+}

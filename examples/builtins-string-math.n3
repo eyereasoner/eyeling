@@ -1,0 +1,11 @@
+@prefix : <http://example/#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+@prefix time: <http://www.w3.org/2000/10/swap/time#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+
+:x :num 1.2 ;
+     :txt "Hello World" ;
+     :dt "2020-01-01T13:14:15Z"^^xsd:dateTime .
+
+{ :x :num ?v . :x :txt ?s . :x :dt ?dt . ?v math:ceiling ?c . ?v math:floor ?f . (?s 1 5) string:substring ?sub . ?s string:length ?len . ?s string:upperCase ?up . ?s string:lowerCase ?lo . ?s string:encodeForURI ?enc . ?dt time:hour ?h . } => { :x :ceil ?c ; :floor ?f ; :substr ?sub ; :strlen ?len ; :ucase ?up ; :lcase ?lo ; :encoded ?enc ; :hours ?h . } .

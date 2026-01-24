@@ -1,0 +1,13 @@
+@prefix ex: <http://example.org/#> .
+
+ex:checks ex:firstUserNameOk true .
+<urn:example:user:u1> a ex:AllowedUser .
+<urn:example:user:u1> ex:name "Ada Lovelace" .
+<urn:example:user:u1> ex:email "ada@example.org" .
+<urn:example:user:u1> ex:emailDomain "example.org" .
+<urn:example:user:u1> ex:userIndex 0 .
+<urn:example:user:u2> a ex:BlockedUser .
+<urn:example:user:u2> ex:name "Bob Mallory" .
+<urn:example:user:u2> ex:email "bob@evil.invalid" .
+<urn:example:user:u2> ex:emailDomain "evil.invalid" .
+<urn:example:user:u2> ex:userIndex 1 .

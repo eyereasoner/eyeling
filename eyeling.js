@@ -814,6 +814,37 @@ function __makeSkolemRunSalt() {
   );
 }
 
+function __randomUuidV4() {
+  // Best-effort UUID v4 generator (Node + browsers). Used by log:uuid / log:struuid.
+  try {
+    if (typeof globalThis !== 'undefined' && globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
+      return globalThis.crypto.randomUUID();
+    }
+  } catch {}
+
+  try {
+    if (nodeCrypto && typeof nodeCrypto.randomUUID === 'function') return nodeCrypto.randomUUID();
+  } catch {}
+
+  // Fallback: v4 using random bytes (Node) or Math.random
+  let bytes = null;
+  try {
+    if (nodeCrypto && typeof nodeCrypto.randomBytes === 'function') bytes = nodeCrypto.randomBytes(16);
+  } catch {}
+  if (!bytes) {
+    bytes = new Uint8Array(16);
+    for (let i = 0; i < 16; i++) bytes[i] = Math.floor(Math.random() * 256);
+  }
+
+  // Set version (4) and variant (RFC4122)
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+  const hex = Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+
 function __enterReasoningRun() {
   __skolemRunDepth += 1;
   if (__skolemRunDepth === 1) {
@@ -860,6 +891,8 @@ const __parseNumCache = new Map(); // lit string -> number|null
 const __parseIntCache = new Map(); // lit string -> bigint|null
 const __parseNumericInfoCache = new Map(); // lit string -> info|null
 
+// Cache for string:jsonPointer: jsonText -> { parsed: any|null, ptrCache: Map<string, Term|null> }
+const jsonPointerCache = new Map();
 
 // -----------------------------------------------------------------------------
 // log:conclusion cache
@@ -1990,6 +2023,112 @@ function termToJsStringDecoded(t) {
   return stripQuotes(lex);
 }
 
+function jsonPointerUnescape(seg) {
+  // RFC6901: ~1 -> '/', ~0 -> '~'
+  let out = '';
+  for (let i = 0; i < seg.length; i++) {
+    const c = seg[i];
+    if (c !== '~') {
+      out += c;
+      continue;
+    }
+    if (i + 1 >= seg.length) return null;
+    const n = seg[i + 1];
+    if (n === '0') out += '~';
+    else if (n === '1') out += '/';
+    else return null;
+    i++;
+  }
+  return out;
+}
+
+function jsonToTerm(v) {
+  if (v === null) return makeStringLiteral('null');
+  if (typeof v === 'string') return makeStringLiteral(v);
+  if (typeof v === 'number') return internLiteral(String(v));
+  if (typeof v === 'boolean') return internLiteral(v ? 'true' : 'false');
+  if (Array.isArray(v)) return new ListTerm(v.map(jsonToTerm));
+
+  if (v && typeof v === 'object') {
+    return makeRdfJsonLiteral(JSON.stringify(v));
+  }
+  return null;
+}
+
+function jsonPointerLookup(jsonText, pointer) {
+  let ptr = pointer;
+
+  // Support URI fragment form "#/a/b"
+  if (ptr.startsWith('#')) {
+    try {
+      ptr = decodeURIComponent(ptr.slice(1));
+    } catch {
+      return null;
+    }
+  }
+
+  let entry = jsonPointerCache.get(jsonText);
+  if (!entry) {
+    let parsed = null;
+    try {
+      parsed = JSON.parse(jsonText);
+    } catch {
+      parsed = null;
+    }
+    entry = { parsed, ptrCache: new Map() };
+    jsonPointerCache.set(jsonText, entry);
+  }
+  if (entry.parsed === null) return null;
+
+  if (entry.ptrCache.has(ptr)) return entry.ptrCache.get(ptr);
+
+  let cur = entry.parsed;
+
+  if (ptr === '') {
+    const t = jsonToTerm(cur);
+    entry.ptrCache.set(ptr, t);
+    return t;
+  }
+  if (!ptr.startsWith('/')) {
+    entry.ptrCache.set(ptr, null);
+    return null;
+  }
+
+  const parts = ptr.split('/').slice(1);
+  for (const raw of parts) {
+    const seg = jsonPointerUnescape(raw);
+    if (seg === null) {
+      entry.ptrCache.set(ptr, null);
+      return null;
+    }
+
+    if (Array.isArray(cur)) {
+      if (!/^(0|[1-9]\d*)$/.test(seg)) {
+        entry.ptrCache.set(ptr, null);
+        return null;
+      }
+      const idx = Number(seg);
+      if (idx < 0 || idx >= cur.length) {
+        entry.ptrCache.set(ptr, null);
+        return null;
+      }
+      cur = cur[idx];
+    } else if (cur !== null && typeof cur === 'object') {
+      if (!Object.prototype.hasOwnProperty.call(cur, seg)) {
+        entry.ptrCache.set(ptr, null);
+        return null;
+      }
+      cur = cur[seg];
+    } else {
+      entry.ptrCache.set(ptr, null);
+      return null;
+    }
+  }
+
+  const out = jsonToTerm(cur);
+  entry.ptrCache.set(ptr, out);
+  return out;
+}
 
 // Tiny subset of sprintf: supports only %s and %%.
 // Good enough for most N3 string:format use cases that just splice strings.
@@ -3108,7 +3247,9 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
           ? 'sha256'
           : pv === CRYPTO_NS + 'sha512'
             ? 'sha512'
-            : null;
+            : pv === CRYPTO_NS + 'sha384'
+              ? 'sha384'
+              : null;
   if (cryptoAlgo) return evalCryptoHashBuiltin(g, subst, cryptoAlgo);
 
   // -----------------------------------------------------------------
@@ -3601,6 +3742,38 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       s2[g.o.name] = lit;
       return [s2];
     }
+
+  // math:ceiling (Eyeling extension)
+  // Schema: $s+ math:ceiling $o-
+  // Smallest integer >= s (fails on NaN / non-numeric).
+  if (pv === MATH_NS + 'ceiling') {
+    const info = parseNumericLiteralInfo(g.s);
+    if (!info) return [];
+    if (typeof info.value !== 'number') {
+      // BigInt (xsd:integer) – already integral
+      const lit = internLiteral(String(info.value));
+      return unifyTermMaybe(g.o, lit, subst);
+    }
+    if (Number.isNaN(info.value) || !Number.isFinite(info.value)) return [];
+    const lit = internLiteral(String(Math.ceil(info.value)));
+    return unifyTermMaybe(g.o, lit, subst);
+  }
+
+  // math:floor (Eyeling extension)
+  // Schema: $s+ math:floor $o-
+  // Largest integer <= s (fails on NaN / non-numeric).
+  if (pv === MATH_NS + 'floor') {
+    const info = parseNumericLiteralInfo(g.s);
+    if (!info) return [];
+    if (typeof info.value !== 'number') {
+      const lit = internLiteral(String(info.value));
+      return unifyTermMaybe(g.o, lit, subst);
+    }
+    if (Number.isNaN(info.value) || !Number.isFinite(info.value)) return [];
+    const lit = internLiteral(String(Math.floor(info.value)));
+    return unifyTermMaybe(g.o, lit, subst);
+  }
+
     if (g.o instanceof Blank) return [{ ...subst }];
 
     // Accept typed numeric literals too (e.g., "3"^^xsd:float) if numerically equal.
@@ -4397,6 +4570,44 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       s2[g.o.name] = ty;
       return [s2];
     }
+
+  // log:isIRI / log:isLiteral / log:isBlank / log:isNumeric / log:isTriple (Eyeling extensions)
+  // Schema: $s+ log:isIRI $o?   (succeeds when s matches; o may be 'true' or a variable)
+  function unifyBoolTrue(obj, subst0) {
+    if (obj instanceof Blank) return [subst0];
+    const tTrue = internLiteral('true');
+    const s2 = unifyTermMaybe(obj, tTrue, subst0);
+    return s2 ? [s2] : [];
+  }
+
+  if (pv === LOG_NS + 'isIRI') {
+    if (!(g.s instanceof Iri)) return [];
+    return unifyBoolTrue(g.o, subst);
+  }
+
+  if (pv === LOG_NS + 'isLiteral') {
+    if (!(g.s instanceof Literal)) return [];
+    return unifyBoolTrue(g.o, subst);
+  }
+
+  if (pv === LOG_NS + 'isBlank') {
+    if (!(g.s instanceof Blank)) return [];
+    return unifyBoolTrue(g.o, subst);
+  }
+
+  if (pv === LOG_NS + 'isNumeric') {
+    if (!(g.s instanceof Literal)) return [];
+    const dt = numericDatatypeOfTerm(g.s);
+    if (!dt) return [];
+    return unifyBoolTrue(g.o, subst);
+  }
+
+  if (pv === LOG_NS + 'isTriple') {
+    if (!(g.s instanceof GraphTerm)) return [];
+    if (g.s.triples.length !== 1) return [];
+    return unifyBoolTrue(g.o, subst);
+  }
+
     if (g.o instanceof Blank) return [{ ...subst }];
 
     const s2 = unifyTerm(g.o, ty, subst);
@@ -4875,6 +5086,24 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       skolemCache.set(key, iri);
     }
 
+  // log:uuid / log:struuid (Eyeling extensions)
+  // NOTE: these generate fresh values and can affect termination; prefer log:skolem for deterministic IDs.
+  //
+  // log:uuid:     $s? log:uuid $o-     -> binds $o to a fresh <urn:uuid:...> IRI
+  // log:struuid:  $s? log:struuid $o- -> binds $o to a fresh UUID string literal
+  if (pv === LOG_NS + 'uuid') {
+    const uuid = __randomUuidV4();
+    const iri = internIri('urn:uuid:' + uuid);
+    return unifyTermMaybe(g.o, iri, subst);
+  }
+
+  if (pv === LOG_NS + 'struuid') {
+    const uuid = __randomUuidV4();
+    const lit = makeStringLiteral(uuid);
+    return unifyTermMaybe(g.o, lit, subst);
+  }
+
+
     const s2 = unifyTerm(goal.o, iri, subst);
     return s2 !== null ? [s2] : [];
   }
@@ -4982,6 +5211,68 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       args.push(aStr);
     }
 
+  // string:length (Eyeling extension)
+  // Schema: $s+ string:length $o-
+  if (pv === STRING_NS + 'length') {
+    const s0 = termToJsStringDecoded(g.s);
+    if (s0 === null) return [];
+    const lit = internLiteral(String(s0.length));
+    return unifyTermMaybe(g.o, lit, subst);
+  }
+
+  // string:upperCase / string:lowerCase (Eyeling extensions)
+  // Schema: $s+ string:upperCase $o-   ;  $s+ string:lowerCase $o-
+  if (pv === STRING_NS + 'upperCase' || pv === STRING_NS + 'lowerCase') {
+    const s0 = termToJsStringDecoded(g.s);
+    if (s0 === null) return [];
+    const out = pv.endsWith('upperCase') ? s0.toUpperCase() : s0.toLowerCase();
+    const lit = makeStringLiteral(out);
+    return unifyTermMaybe(g.o, lit, subst);
+  }
+
+  // string:encodeForURI (Eyeling extension)
+  // Schema: $s+ string:encodeForURI $o-
+  if (pv === STRING_NS + 'encodeForURI') {
+    const s0 = termToJsStringDecoded(g.s);
+    if (s0 === null) return [];
+    // SPARQL-like: start with encodeURIComponent and also escape [!'()*]
+    const enc = encodeURIComponent(s0).replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+    const lit = makeStringLiteral(enc);
+    return unifyTermMaybe(g.o, lit, subst);
+  }
+
+  // string:substring (Eyeling extension)
+  // Schema: ( $s+ $start+ [$len+] ) string:substring $o-
+  // NOTE: start is 1-based (SPARQL SUBSTR), len is optional.
+  if (pv === STRING_NS + 'substring') {
+    if (!(g.s instanceof ListTerm)) return [];
+    const items = g.s.items;
+    if (items.length !== 2 && items.length !== 3) return [];
+    const s0 = termToJsStringDecoded(items[0]);
+    if (s0 === null) return [];
+    const startInfo = parseNumericLiteralInfo(items[1]);
+    if (!startInfo || typeof startInfo.value !== 'number' || Number.isNaN(startInfo.value)) return [];
+    let start = Math.floor(startInfo.value);
+    if (!Number.isFinite(start)) return [];
+    start = Math.max(1, start);
+
+    let outStr = '';
+    if (items.length === 2) {
+      outStr = s0.slice(start - 1);
+    } else {
+      const lenInfo = parseNumericLiteralInfo(items[2]);
+      if (!lenInfo || typeof lenInfo.value !== 'number' || Number.isNaN(lenInfo.value)) return [];
+      let len = Math.floor(lenInfo.value);
+      if (!Number.isFinite(len)) return [];
+      if (len <= 0) outStr = '';
+      else outStr = s0.slice(start - 1, start - 1 + len);
+    }
+
+    const lit = makeStringLiteral(outStr);
+    return unifyTermMaybe(g.o, lit, subst);
+  }
+
+
     const formatted = simpleStringFormat(fmtStr, args);
     if (formatted === null) return []; // unsupported format specifier(s)
 
@@ -4995,6 +5286,21 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     return s2 !== null ? [s2] : [];
   }
 
+  // string:jsonPointer
+  // Schema: ( $jsonText $pointer ) string:jsonPointer $value
+  if (pv === STRING_NS + 'jsonPointer') {
+    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
+
+    const jsonText = termToJsonText(g.s.elems[0]);
+    const ptr = termToJsStringDecoded(g.s.elems[1]);
+    if (jsonText === null || ptr === null) return [];
+
+    const valTerm = jsonPointerLookup(jsonText, ptr);
+    if (valTerm === null) return [];
+
+    const s2 = unifyTerm(g.o, valTerm, subst);
+    return s2 !== null ? [s2] : [];
+  }
 
   // string:greaterThan
   if (pv === STRING_NS + 'greaterThan') {
@@ -8084,6 +8390,11 @@ function isConstraintBuiltin(tr) {
     v === LOG_NS + 'forAllIn' ||
     v === LOG_NS + 'notEqualTo' ||
     v === LOG_NS + 'notIncludes' ||
+    v === LOG_NS + 'isIRI' ||
+    v === LOG_NS + 'isLiteral' ||
+    v === LOG_NS + 'isBlank' ||
+    v === LOG_NS + 'isNumeric' ||
+    v === LOG_NS + 'isTriple' ||
     v === LOG_NS + 'outputString'
   ) {
     return true;

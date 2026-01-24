@@ -1,0 +1,4 @@
+@prefix : <http://example/#> .
+
+:a :isSpecial true .
+:c :isSpecial true .

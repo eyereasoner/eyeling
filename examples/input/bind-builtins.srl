@@ -1,0 +1,30 @@
+PREFIX : <http://example/#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+DATA {
+  # NOTE: Eyeling's time:* extractors currently operate on xsd:dateTime (not xsd:date).
+  :p1 :givenName "Ada" ; :familyName "Lovelace" ; :born "1815-12-10T00:00:00Z"^^xsd:dateTime .
+}
+
+# Demonstrates BIND compilation to N3 builtins:
+# - concat/replace (string:)
+# - sha1 (crypto:)
+# - year (time:)
+# - arithmetic (+,*) (math:)
+# - strlang/strdt (log:)
+RULE {
+  ?p :label ?lbl ; :labelEn ?lblEn ; :hash ?h ; :birthYear ?y ; :calc ?z ; :intLit ?i .
+}
+WHERE {
+  ?p :givenName ?g ; :familyName ?f ; :born ?d .
+
+  BIND(concat(?g, " ", ?f) AS ?full)
+  BIND(replace(?full, " ", "_") AS ?lbl)
+  BIND(strlang(?lbl, "en") AS ?lblEn)
+  BIND(sha1(?lbl) AS ?h)
+
+  BIND(year(?d) AS ?y)
+  BIND((?y + 1) * 2 AS ?z)
+
+  BIND(strdt("42", xsd:integer) AS ?i)
+}

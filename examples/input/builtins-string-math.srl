@@ -1,0 +1,38 @@
+PREFIX : <http://example/#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+DATA {
+  :x :num 1.2 ;
+     :txt "Hello World" ;
+     :dt "2020-01-01T13:14:15Z"^^xsd:dateTime .
+}
+
+RULE {
+  :x :ceil ?c ;
+     :floor ?f ;
+     :substr ?sub ;
+     :strlen ?len ;
+     :ucase ?up ;
+     :lcase ?lo ;
+     :encoded ?enc ;
+     :hours ?h .
+}
+WHERE {
+  :x :num ?v ;
+     :txt ?s ;
+     :dt ?dt .
+
+  BIND(CEIL(?v) AS ?c)
+  BIND(FLOOR(?v) AS ?f)
+
+  # SPARQL SUBSTR is 1-based; this should produce "Hello"
+  BIND(SUBSTR(?s, 1, 5) AS ?sub)
+
+  BIND(STRLEN(?s) AS ?len)
+  BIND(UCASE(?s) AS ?up)
+  BIND(LCASE(?s) AS ?lo)
+  BIND(ENCODE_FOR_URI(?s) AS ?enc)
+
+  BIND(HOURS(?dt) AS ?h)
+}
+

@@ -1,0 +1,27 @@
+PREFIX : <http://example/#>
+
+DATA {
+  :alice :knows :bob .
+  :bob   :age   42 .
+}
+
+RULE {
+  :test :triple ?t ;
+        :subject ?s ;
+        :predicate ?p ;
+        :object ?o ;
+        :subjectIsIRI true ;
+        :tripleOk true .
+}
+WHERE {
+  :alice :knows :bob .
+
+  BIND(TRIPLE(:alice, :knows, :bob) AS ?t)
+  BIND(SUBJECT(?t) AS ?s)
+  BIND(PREDICATE(?t) AS ?p)
+  BIND(OBJECT(?t) AS ?o)
+
+  # Term-test builtins (as in SPARQL)
+  FILTER ( isTRIPLE(?t) && isIRI(?s) )
+}
+

@@ -1,0 +1,10 @@
+@prefix : <http://example/#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+
+:bob   :age 20 ; :name "Bob" .
+  :alice :age 15 ; :name "Alice" .
+  :bea   :age 22 ; :name "Bea" .
+
+{ ?p :age ?age . ?p :name ?name . ?age math:notLessThan 18 . ?name string:startsWith "A" . } => { ?p :adultNamedByRule true . } .
+{ ?p :age ?age . ?p :name ?name . ?age math:notLessThan 18 . ?name string:matches "^B" . } => { ?p :adultNamedByRule true . } .

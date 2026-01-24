@@ -1,0 +1,15 @@
+PREFIX : <http://example/#>
+
+DATA {
+  :alice :name "Alice" .
+  :bob   :name "Bob" .
+  :eve   :name "Eve" .
+}
+
+# Demonstrates De Morgan push-down:
+#   !(A || B)  ==>  (!A && !B)
+RULE { ?p :passesNameFilter true . }
+WHERE {
+  ?p :name ?n .
+  FILTER ( !( CONTAINS(?n, "o") || STRSTARTS(?n, "E") ) )
+}
