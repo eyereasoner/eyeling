@@ -178,7 +178,7 @@ const SMOKE_EXAMPLES = [
   'age.n3',
   'basic-monadic.n3',
   'collection.n3',
-  'family.n3',
+  'family-cousins.n3',
   'backward.n3',
 ];
 

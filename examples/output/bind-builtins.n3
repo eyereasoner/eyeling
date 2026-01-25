@@ -1,9 +1,0 @@
-@prefix : <http://example/#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-
-:p1 :label "Ada_Lovelace" .
-:p1 :labelEn "Ada_Lovelace"@en .
-:p1 :hash "0c0844738e0d752f1915aabc2e9737b7f317f606" .
-:p1 :birthYear 1815 .
-:p1 :calc 3632 .
-:p1 :intLit "42"^^xsd:integer .

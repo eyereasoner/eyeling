@@ -814,37 +814,6 @@ function __makeSkolemRunSalt() {
   );
 }
 
-function __randomUuidV4() {
-  // Best-effort UUID v4 generator (Node + browsers). Used by log:uuid / log:struuid.
-  try {
-    if (typeof globalThis !== 'undefined' && globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
-      return globalThis.crypto.randomUUID();
-    }
-  } catch {}
-
-  try {
-    if (nodeCrypto && typeof nodeCrypto.randomUUID === 'function') return nodeCrypto.randomUUID();
-  } catch {}
-
-  // Fallback: v4 using random bytes (Node) or Math.random
-  let bytes = null;
-  try {
-    if (nodeCrypto && typeof nodeCrypto.randomBytes === 'function') bytes = nodeCrypto.randomBytes(16);
-  } catch {}
-  if (!bytes) {
-    bytes = new Uint8Array(16);
-    for (let i = 0; i < 16; i++) bytes[i] = Math.floor(Math.random() * 256);
-  }
-
-  // Set version (4) and variant (RFC4122)
-  bytes[6] = (bytes[6] & 0x0f) | 0x40;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-
-  const hex = Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-}
-
-
 function __enterReasoningRun() {
   __skolemRunDepth += 1;
   if (__skolemRunDepth === 1) {
@@ -891,8 +860,6 @@ const __parseNumCache = new Map(); // lit string -> number|null
 const __parseIntCache = new Map(); // lit string -> bigint|null
 const __parseNumericInfoCache = new Map(); // lit string -> info|null
 
-// Cache for string:jsonPointer: jsonText -> { parsed: any|null, ptrCache: Map<string, Term|null> }
-const jsonPointerCache = new Map();
 
 // -----------------------------------------------------------------------------
 // log:conclusion cache
@@ -1735,14 +1702,6 @@ function unifyTermListAppend(a, b, subst) {
   });
 }
 
-function unifyTermMaybe(target, value, subst) {
-  // Treat blanks as wildcards (succeed once without binding).
-  if (target instanceof Blank) return [{ ...subst }];
-
-  const s2 = unifyTerm(target, value, subst);
-  return s2 !== null ? [s2] : [];
-}
-
 function unifyTermWithOptions(a, b, subst, opts) {
   a = applySubstTerm(a, subst);
   b = applySubstTerm(b, subst);
@@ -2031,112 +1990,6 @@ function termToJsStringDecoded(t) {
   return stripQuotes(lex);
 }
 
-function jsonPointerUnescape(seg) {
-  // RFC6901: ~1 -> '/', ~0 -> '~'
-  let out = '';
-  for (let i = 0; i < seg.length; i++) {
-    const c = seg[i];
-    if (c !== '~') {
-      out += c;
-      continue;
-    }
-    if (i + 1 >= seg.length) return null;
-    const n = seg[i + 1];
-    if (n === '0') out += '~';
-    else if (n === '1') out += '/';
-    else return null;
-    i++;
-  }
-  return out;
-}
-
-function jsonToTerm(v) {
-  if (v === null) return makeStringLiteral('null');
-  if (typeof v === 'string') return makeStringLiteral(v);
-  if (typeof v === 'number') return internLiteral(String(v));
-  if (typeof v === 'boolean') return internLiteral(v ? 'true' : 'false');
-  if (Array.isArray(v)) return new ListTerm(v.map(jsonToTerm));
-
-  if (v && typeof v === 'object') {
-    return makeRdfJsonLiteral(JSON.stringify(v));
-  }
-  return null;
-}
-
-function jsonPointerLookup(jsonText, pointer) {
-  let ptr = pointer;
-
-  // Support URI fragment form "#/a/b"
-  if (ptr.startsWith('#')) {
-    try {
-      ptr = decodeURIComponent(ptr.slice(1));
-    } catch {
-      return null;
-    }
-  }
-
-  let entry = jsonPointerCache.get(jsonText);
-  if (!entry) {
-    let parsed = null;
-    try {
-      parsed = JSON.parse(jsonText);
-    } catch {
-      parsed = null;
-    }
-    entry = { parsed, ptrCache: new Map() };
-    jsonPointerCache.set(jsonText, entry);
-  }
-  if (entry.parsed === null) return null;
-
-  if (entry.ptrCache.has(ptr)) return entry.ptrCache.get(ptr);
-
-  let cur = entry.parsed;
-
-  if (ptr === '') {
-    const t = jsonToTerm(cur);
-    entry.ptrCache.set(ptr, t);
-    return t;
-  }
-  if (!ptr.startsWith('/')) {
-    entry.ptrCache.set(ptr, null);
-    return null;
-  }
-
-  const parts = ptr.split('/').slice(1);
-  for (const raw of parts) {
-    const seg = jsonPointerUnescape(raw);
-    if (seg === null) {
-      entry.ptrCache.set(ptr, null);
-      return null;
-    }
-
-    if (Array.isArray(cur)) {
-      if (!/^(0|[1-9]\d*)$/.test(seg)) {
-        entry.ptrCache.set(ptr, null);
-        return null;
-      }
-      const idx = Number(seg);
-      if (idx < 0 || idx >= cur.length) {
-        entry.ptrCache.set(ptr, null);
-        return null;
-      }
-      cur = cur[idx];
-    } else if (cur !== null && typeof cur === 'object') {
-      if (!Object.prototype.hasOwnProperty.call(cur, seg)) {
-        entry.ptrCache.set(ptr, null);
-        return null;
-      }
-      cur = cur[seg];
-    } else {
-      entry.ptrCache.set(ptr, null);
-      return null;
-    }
-  }
-
-  const out = jsonToTerm(cur);
-  entry.ptrCache.set(ptr, out);
-  return out;
-}
 
 // Tiny subset of sprintf: supports only %s and %%.
 // Good enough for most N3 string:format use cases that just splice strings.
@@ -3255,9 +3108,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
           ? 'sha256'
           : pv === CRYPTO_NS + 'sha512'
             ? 'sha512'
-            : pv === CRYPTO_NS + 'sha384'
-              ? 'sha384'
-              : null;
+            : null;
   if (cryptoAlgo) return evalCryptoHashBuiltin(g, subst, cryptoAlgo);
 
   // -----------------------------------------------------------------
@@ -3758,39 +3609,6 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     // Fallback to strict unification
     const s2 = unifyTerm(g.o, lit, subst);
     return s2 !== null ? [s2] : [];
-  }
-
-  // math:ceiling (Eyeling extension)
-  // Schema: $s+ math:ceiling $o-
-  // Smallest integer >= s (fails on NaN / non-numeric).
-  if (pv === MATH_NS + 'ceiling') {
-    const info = parseNumericLiteralInfo(g.s);
-    if (!info) return [];
-    if (info.kind === 'bigint') {
-      // Already integral
-      const lit = internLiteral(String(info.value));
-      return unifyTermMaybe(g.o, lit, subst);
-    }
-    const n = info.value;
-    if (Number.isNaN(n) || !Number.isFinite(n)) return [];
-    const lit = internLiteral(String(Math.ceil(n)));
-    return unifyTermMaybe(g.o, lit, subst);
-  }
-
-  // math:floor (Eyeling extension)
-  // Schema: $s+ math:floor $o-
-  // Largest integer <= s (fails on NaN / non-numeric).
-  if (pv === MATH_NS + 'floor') {
-    const info = parseNumericLiteralInfo(g.s);
-    if (!info) return [];
-    if (info.kind === 'bigint') {
-      const lit = internLiteral(String(info.value));
-      return unifyTermMaybe(g.o, lit, subst);
-    }
-    const n = info.value;
-    if (Number.isNaN(n) || !Number.isFinite(n)) return [];
-    const lit = internLiteral(String(Math.floor(n)));
-    return unifyTermMaybe(g.o, lit, subst);
   }
 
   // -----------------------------------------------------------------
@@ -4585,38 +4403,6 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     return s2 !== null ? [s2] : [];
   }
 
-  // log:isIRI / log:isLiteral / log:isBlank / log:isNumeric / log:isTriple (Eyeling extensions)
-  // Schema: $s+ log:isIRI $o?   (succeeds when s matches; o may be 'true' or a variable)
-  const __BOOL_TRUE = internLiteral('true');
-
-  if (pv === LOG_NS + 'isIRI') {
-    if (!(g.s instanceof Iri)) return [];
-    return unifyTermMaybe(g.o, __BOOL_TRUE, subst);
-  }
-
-  if (pv === LOG_NS + 'isLiteral') {
-    if (!(g.s instanceof Literal)) return [];
-    return unifyTermMaybe(g.o, __BOOL_TRUE, subst);
-  }
-
-  if (pv === LOG_NS + 'isBlank') {
-    if (!(g.s instanceof Blank)) return [];
-    return unifyTermMaybe(g.o, __BOOL_TRUE, subst);
-  }
-
-  if (pv === LOG_NS + 'isNumeric') {
-    if (!(g.s instanceof Literal)) return [];
-    const dt = numericDatatypeOfTerm(g.s);
-    if (!dt) return [];
-    return unifyTermMaybe(g.o, __BOOL_TRUE, subst);
-  }
-
-  if (pv === LOG_NS + 'isTriple') {
-    if (!(g.s instanceof GraphTerm)) return [];
-    if (g.s.triples.length !== 1) return [];
-    return unifyTermMaybe(g.o, __BOOL_TRUE, subst);
-  }
-
   // log:dtlit
   // Schema: ( $s.1? $s.2? )? log:dtlit $o?
   // true iff $o is a datatyped literal with string value $s.1 and datatype IRI $s.2
@@ -5089,24 +4875,8 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       skolemCache.set(key, iri);
     }
 
-    return unifyTermMaybe(g.o, iri, subst);
-  }
-
-  // log:uuid / log:struuid (Eyeling extensions)
-  // NOTE: these generate fresh values and can affect termination; prefer log:skolem for deterministic IDs.
-  //
-  // log:uuid:     $s? log:uuid $o-     -> binds $o to a fresh <urn:uuid:...> IRI
-  // log:struuid:  $s? log:struuid $o- -> binds $o to a fresh UUID string literal
-  if (pv === LOG_NS + 'uuid') {
-    const uuid = __randomUuidV4();
-    const iri = internIri('urn:uuid:' + uuid);
-    return unifyTermMaybe(g.o, iri, subst);
-  }
-
-  if (pv === LOG_NS + 'struuid') {
-    const uuid = __randomUuidV4();
-    const lit = makeStringLiteral(uuid);
-    return unifyTermMaybe(g.o, lit, subst);
+    const s2 = unifyTerm(goal.o, iri, subst);
+    return s2 !== null ? [s2] : [];
   }
 
   // log:uri
@@ -5225,87 +4995,6 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     return s2 !== null ? [s2] : [];
   }
 
-  // string:length (Eyeling extension)
-  // Schema: $s+ string:length $o-
-  if (pv === STRING_NS + 'length') {
-    const s0 = termToJsStringDecoded(g.s);
-    if (s0 === null) return [];
-    const lit = internLiteral(String(s0.length));
-    return unifyTermMaybe(g.o, lit, subst);
-  }
-
-  // string:upperCase / string:lowerCase (Eyeling extensions)
-  // Schema: $s+ string:upperCase $o-   ;  $s+ string:lowerCase $o-
-  if (pv === STRING_NS + 'upperCase' || pv === STRING_NS + 'lowerCase') {
-    const s0 = termToJsStringDecoded(g.s);
-    if (s0 === null) return [];
-    const out = pv.endsWith('upperCase') ? s0.toUpperCase() : s0.toLowerCase();
-    const lit = makeStringLiteral(out);
-    return unifyTermMaybe(g.o, lit, subst);
-  }
-
-  // string:encodeForURI (Eyeling extension)
-  // Schema: $s+ string:encodeForURI $o-
-  if (pv === STRING_NS + 'encodeForURI') {
-    const s0 = termToJsStringDecoded(g.s);
-    if (s0 === null) return [];
-    // SPARQL-like: start with encodeURIComponent and also escape [!'()*]
-    const enc = encodeURIComponent(s0).replace(/[!'()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
-    const lit = makeStringLiteral(enc);
-    return unifyTermMaybe(g.o, lit, subst);
-  }
-
-  // string:substring (Eyeling extension)
-  // Schema: ( $s+ $start+ [$len+] ) string:substring $o-
-  // NOTE: start is 1-based (SPARQL SUBSTR), len is optional.
-  if (pv === STRING_NS + 'substring') {
-    if (!(g.s instanceof ListTerm)) return [];
-    const elems = g.s.elems;
-    if (elems.length !== 2 && elems.length !== 3) return [];
-
-    const s0 = termToJsStringDecoded(elems[0]);
-    if (s0 === null) return [];
-
-    const startInfo = parseNumericLiteralInfo(elems[1]);
-    if (!startInfo) return [];
-    let start = startInfo.kind === 'bigint' ? Number(startInfo.value) : startInfo.value;
-    if (!Number.isFinite(start) || Number.isNaN(start)) return [];
-    start = Math.floor(start);
-    start = Math.max(1, start);
-
-    let outStr = '';
-    if (elems.length === 2) {
-      outStr = s0.slice(start - 1);
-    } else {
-      const lenInfo = parseNumericLiteralInfo(elems[2]);
-      if (!lenInfo) return [];
-      let length = lenInfo.kind === 'bigint' ? Number(lenInfo.value) : lenInfo.value;
-      if (!Number.isFinite(length) || Number.isNaN(length)) return [];
-      length = Math.floor(length);
-
-      if (length <= 0) outStr = '';
-      else outStr = s0.slice(start - 1, start - 1 + length);
-    }
-
-    const lit = makeStringLiteral(outStr);
-    return unifyTermMaybe(g.o, lit, subst);
-  }
-
-  // string:jsonPointer
-  // Schema: ( $jsonText $pointer ) string:jsonPointer $value
-  if (pv === STRING_NS + 'jsonPointer') {
-    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
-
-    const jsonText = termToJsonText(g.s.elems[0]);
-    const ptr = termToJsStringDecoded(g.s.elems[1]);
-    if (jsonText === null || ptr === null) return [];
-
-    const valTerm = jsonPointerLookup(jsonText, ptr);
-    if (valTerm === null) return [];
-
-    const s2 = unifyTerm(g.o, valTerm, subst);
-    return s2 !== null ? [s2] : [];
-  }
 
   // string:greaterThan
   if (pv === STRING_NS + 'greaterThan') {
@@ -5676,11 +5365,34 @@ function maybeCompactSubst(subst, goals, answerVars, depth) {
   return gcCompactForGoals(subst, goals, answerVars);
 }
 
-function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxResults) {
+function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxResults, opts) {
   // Iterative DFS over proof states using an explicit stack.
   // Each state carries its own substitution and remaining goals.
   const results = [];
   const max = typeof maxResults === 'number' && maxResults > 0 ? maxResults : Infinity;
+
+  // IMPORTANT: Goal reordering / deferral is only enabled when explicitly
+  // requested by the caller (used for forward rules).
+  const __allowDeferBuiltins = !!(opts && opts.deferBuiltins);
+
+  // Some builtins (notably forward-only arithmetic ones like math:sum) can
+  // only be evaluated once certain variables are bound by other goals in the
+  // same conjunction. N3 conjunctions are order-insensitive, so when a builtin
+  // goal currently yields no solutions but still contains unbound variables,
+  // we treat it as *deferred* and try other goals first. A small cycle guard
+  // prevents infinite rotation when no goal can make progress.
+
+  function termHasVarOrBlank(t) {
+    if (t instanceof Var || t instanceof Blank) return true;
+    if (t instanceof ListTerm) return t.elems.some(termHasVarOrBlank);
+    if (t instanceof OpenListTerm) return true; // tail var counts as unbound
+    if (t instanceof GraphTerm) return t.triples.some(tripleHasVarOrBlank);
+    return false;
+  }
+
+  function tripleHasVarOrBlank(tr) {
+    return termHasVarOrBlank(tr.s) || termHasVarOrBlank(tr.p) || termHasVarOrBlank(tr.o);
+  }
 
   const initialGoals = Array.isArray(goals) ? goals.slice() : [];
   const initialSubst = subst ? { ...subst } : {};
@@ -5702,6 +5414,8 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
       subst: initialSubst,
       depth: depth || 0,
       visited: initialVisited,
+      canDeferBuiltins: __allowDeferBuiltins,
+      deferCount: 0,
     },
   ];
 
@@ -5730,6 +5444,29 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
       if (remaining <= 0) return results;
       const builtinMax = Number.isFinite(remaining) && !restGoals.length ? remaining : undefined;
       const deltas = evalBuiltin(goal0, {}, facts, backRules, state.depth, varGen, builtinMax);
+
+      // If the builtin currently yields no solutions but still contains
+      // unbound variables, try other goals first (defer). This fixes
+      // order-sensitivity for forward-only builtins like math:sum.
+      const dc = typeof state.deferCount === 'number' ? state.deferCount : 0;
+      if (
+        state.canDeferBuiltins &&
+        !deltas.length &&
+        restGoals.length &&
+        tripleHasVarOrBlank(goal0) &&
+        dc < state.goals.length
+      ) {
+        stack.push({
+          goals: restGoals.concat([rawGoal]),
+          subst: state.subst,
+          depth: state.depth,
+          visited: state.visited,
+          canDeferBuiltins: state.canDeferBuiltins,
+          deferCount: dc + 1,
+        });
+        continue;
+      }
+
       const nextStates = [];
       for (const delta of deltas) {
         const composed = composeSubst(state.subst, delta);
@@ -5745,6 +5482,8 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
             subst: nextSubst,
             depth: state.depth + 1,
             visited: state.visited,
+            canDeferBuiltins: state.canDeferBuiltins,
+            deferCount: 0,
           });
         }
       }
@@ -5777,6 +5516,8 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
             subst: nextSubst,
             depth: state.depth + 1,
             visited: state.visited,
+            canDeferBuiltins: state.canDeferBuiltins,
+            deferCount: 0,
           });
         }
       }
@@ -5800,6 +5541,8 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
             subst: nextSubst,
             depth: state.depth + 1,
             visited: state.visited,
+            canDeferBuiltins: state.canDeferBuiltins,
+            deferCount: 0,
           });
         }
       }
@@ -5830,6 +5573,10 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
           subst: nextSubst,
           depth: state.depth + 1,
           visited: visitedForRules,
+          // When we enter a backward rule body, preserve the original
+          // (left-to-right) evaluation order to avoid non-termination.
+          canDeferBuiltins: false,
+          deferCount: 0,
         });
       }
       for (let i = nextStates.length - 1; i >= 0; i--) stack.push(nextStates[i]);
@@ -6015,7 +5762,13 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
         }
 
         const maxSols = r.isFuse || headIsStrictGround ? 1 : undefined;
-        const sols = proveGoals(r.premise.slice(), empty, facts, backRules, 0, visited, varGen, maxSols);
+        // Enable builtin deferral / goal reordering for forward rules only.
+        // This keeps forward-chaining conjunctions order-insensitive while
+        // preserving left-to-right evaluation inside backward rules (<=),
+        // which is important for termination on some programs (e.g., dijkstra).
+        const sols = proveGoals(r.premise.slice(), empty, facts, backRules, 0, visited, varGen, maxSols, {
+          deferBuiltins: true,
+        });
 
         // Inference fuse
         if (r.isFuse && sols.length) {
@@ -8395,11 +8148,6 @@ function isConstraintBuiltin(tr) {
     v === LOG_NS + 'forAllIn' ||
     v === LOG_NS + 'notEqualTo' ||
     v === LOG_NS + 'notIncludes' ||
-    v === LOG_NS + 'isIRI' ||
-    v === LOG_NS + 'isLiteral' ||
-    v === LOG_NS + 'isBlank' ||
-    v === LOG_NS + 'isNumeric' ||
-    v === LOG_NS + 'isTriple' ||
     v === LOG_NS + 'outputString'
   ) {
     return true;

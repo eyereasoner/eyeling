@@ -1,5 +1,0 @@
-@prefix : <http://example/#> .
-
-:bob :label "Person: Bob B." .
-:alice :name "Alice Anderson" .
-:alice :label "Person: Alice Anderson" .

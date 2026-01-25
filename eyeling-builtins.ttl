@@ -55,9 +55,6 @@ crypto:md5 a ex:Builtin ; ex:kind ex:Function ;
 crypto:sha256 a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Hash builtin (SHA-256). Computes digest over the subject (string-ish) and unifies/binds the object with the digest." .
 
-crypto:sha384 a ex:Builtin ; ex:kind ex:Function ;
-  rdfs:comment "Hash builtin (SHA-384). Computes digest over the subject (string-ish) and unifies/binds the object with the digest. (Eyeling extension; useful for SHACL/Sparql-style mappings.)" .
-
 crypto:sha512 a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Hash builtin (SHA-512). Computes digest over the subject (string-ish) and unifies/binds the object with the digest." .
 
@@ -103,12 +100,6 @@ math:remainder a ex:Builtin ; ex:kind ex:Function ;
 
 math:rounded a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Rounds subject to nearest integer (JS tie-breaking: toward +∞). Binds/unifies object with the rounded integer value." .
-
-math:ceiling a ex:Builtin ; ex:kind ex:Function ;
-  rdfs:comment "Ceiling of a numeric value (like SPARQL CEIL). Returns an integer token. (Eyeling extension.)" .
-
-math:floor a ex:Builtin ; ex:kind ex:Function ;
-  rdfs:comment "Floor of a numeric value (like SPARQL FLOOR). Returns an integer token. (Eyeling extension.)" .
 
 math:exponentiation a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Exponentiation. Forward: (base exponent) -> result. Limited inverse: if base is numeric and exponent is a variable, may solve exponent via logs for positive base != 1 and positive result." .
@@ -257,27 +248,6 @@ log:parsedAsN3 a ex:Builtin ; ex:kind ex:Meta ;
 log:rawType a ex:Builtin ; ex:kind ex:Meta ;
   rdfs:comment "Returns one of log:Formula, log:Literal, rdf:List, or log:Other for the subject term." .
 
-log:isIRI a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
-  rdfs:comment "Succeeds iff the subject is an IRI term (like SPARQL isIRI). Object is typically 'true'. (Eyeling extension.)" .
-
-log:isLiteral a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
-  rdfs:comment "Succeeds iff the subject is a literal term (like SPARQL isLITERAL). (Eyeling extension.)" .
-
-log:isBlank a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
-  rdfs:comment "Succeeds iff the subject is a blank node term (like SPARQL isBLANK). (Eyeling extension.)" .
-
-log:isNumeric a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
-  rdfs:comment "Succeeds iff the subject is a numeric literal (like SPARQL isNUMERIC). (Eyeling extension.)" .
-
-log:isTriple a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
-  rdfs:comment "Succeeds iff the subject is a formula with exactly one triple (like SPARQL isTRIPLE over RDF-star triple terms). (Eyeling extension.)" .
-
-log:uuid a ex:Builtin ; ex:kind ex:Function ;
-  rdfs:comment "Generates a fresh UUID IRI (<urn:uuid:...>). Non-deterministic; can affect termination. (Eyeling extension.)" .
-
-log:struuid a ex:Builtin ; ex:kind ex:Function ;
-  rdfs:comment "Generates a fresh UUID string literal. Non-deterministic; can affect termination. (Eyeling extension.)" .
-
 log:dtlit a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Builds a datatype literal from (lex datatypeIri). Binds/unifies object with the resulting Literal." .
 
@@ -363,22 +333,4 @@ string:scrape a ex:Builtin ; ex:kind ex:Function ;
 
 string:format a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Simple formatter: (fmt arg1 ... argN) -> output string. Only %s and %% are supported; other specifiers fail." .
-
-string:length a ex:Builtin ; ex:kind ex:Function ;
-  rdfs:comment "Length of a string (like SPARQL STRLEN). (Eyeling extension.)" .
-
-string:substring a ex:Builtin ; ex:kind ex:Function ;
-  rdfs:comment "Substring: subject must be a list (string start [len]); start is 1-based (like SPARQL SUBSTR). (Eyeling extension.)" .
-
-string:upperCase a ex:Builtin ; ex:kind ex:Function ;
-  rdfs:comment "Uppercase conversion (like SPARQL UCASE). (Eyeling extension.)" .
-
-string:lowerCase a ex:Builtin ; ex:kind ex:Function ;
-  rdfs:comment "Lowercase conversion (like SPARQL LCASE). (Eyeling extension.)" .
-
-string:encodeForURI a ex:Builtin ; ex:kind ex:Function ;
-  rdfs:comment "Percent-encode a string (like SPARQL ENCODE_FOR_URI). (Eyeling extension.)" .
-
-string:jsonPointer a ex:Builtin ; ex:kind ex:Function ;
-  rdfs:comment "JSON Pointer lookup: (jsonText pointer) -> value term. Expects rdf:JSON-typed literal (or treated as rdf:JSON); caches parsed JSON and pointer lookups." .
 

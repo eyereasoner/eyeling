@@ -702,7 +702,7 @@ With that, we can tour the builtin families as Eyeling actually implements them.
 
 These builtins hash a string and return a lowercase hex digest as a plain string literal.
 
-### `crypto:sha`, `crypto:md5`, `crypto:sha256`, `crypto:sha384`, `crypto:sha512`
+### `crypto:sha`, `crypto:md5`, `crypto:sha256`, `crypto:sha512`
 
 **Shape:**
 `$literal crypto:sha256 $digest`
@@ -1224,22 +1224,6 @@ Returns one of four IRIs:
 * `rdf:List` (closed or open list terms)
 * `log:Other` (IRIs, blank nodes, etc.)
 
-
-
-#### `log:isIRI` / `log:isLiteral` / `log:isBlank` / `log:isNumeric` / `log:isTriple` (extensions)
-
-Convenience *test* builtins (useful for SHACL/Sparql-style mappings). They **succeed** when the test holds and typically use `true` as the object.
-
-- **Shapes:**
-  - `$t+ log:isIRI true .`
-  - `$t+ log:isLiteral true .`
-  - `$t+ log:isBlank true .`
-  - `$t+ log:isNumeric true .`
-  - `$t+ log:isTriple true .` (formula with exactly one triple)
-
-These are treated as **constraints** for rule-body ordering.
-
-
 ### Literal constructors
 
 These two are classic N3 “bridge” operators between structured data and concrete RDF literal forms.
@@ -1337,19 +1321,6 @@ This is treated as a constraint builtin.
 
 Deterministically maps a *ground* term to a Skolem IRI in Eyeling’s well-known namespace. This is extremely useful when you want a repeatable identifier derived from structured content.
 
-
-
-#### `log:uuid` / `log:struuid` (extensions)
-
-Generate fresh UUID values.
-
-- **Shapes:**
-  - `"" log:uuid ?u .` binds `?u` to an IRI like `<urn:uuid:...>`.
-  - `"" log:struuid ?s .` binds `?s` to a UUID string literal.
-
-**Warning:** These are non-deterministic and can affect termination; prefer `log:skolem` for deterministic identifiers.
-
-
 #### `log:uri`
 
 Bidirectional conversion between IRIs and their string form:
@@ -1383,7 +1354,7 @@ This is treated as a constraint builtin (it shouldn’t drive search; it should 
 
 ---
 
-## 11.3.6 `string:` — string casting, tests, regexes, and JSON pointers
+## 11.3.6 `string:` — string casting, tests, and regexes
 
 Eyeling implements string builtins with a deliberate interpretation of “domain is `xsd:string`”:
 
@@ -1413,35 +1384,6 @@ A tiny `sprintf` subset:
 * Supports only `%s` and `%%`.
 * Any other specifier (`%d`, `%f`, …) causes the builtin to fail.
 * Missing arguments are treated as empty strings.
-
-
-
-#### `string:length` (extension)
-
-Length of the subject string, like SPARQL `STRLEN`.
-
-- **Shape:** `$s+ string:length $o-`
-- **Output:** `$o` is unified/bound to an integer token.
-
-#### `string:substring` (extension)
-
-Substring, like SPARQL `SUBSTR`.
-
-- **Shape:** `( $s+ $start+ [$len+] ) string:substring $o-`
-- **Notes:** `start` is **1-based**. `len` is optional; if omitted, the substring runs to the end.
-
-#### `string:upperCase` / `string:lowerCase` (extension)
-
-Case conversion, like SPARQL `UCASE` / `LCASE`.
-
-- **Shape:** `$s+ string:upperCase $o-` and `$s+ string:lowerCase $o-`
-
-#### `string:encodeForURI` (extension)
-
-Percent-encode a string, like SPARQL `ENCODE_FOR_URI`.
-
-- **Shape:** `$s+ string:encodeForURI $o-`
-
 
 ### Containment and prefix/suffix tests (constraints)
 
@@ -1496,34 +1438,6 @@ Tests whether `pattern` matches `data`.
 
 Matches the regex once and returns the **first capturing group** (group 1). If there is no match or no group, it fails.
 
-### JSON pointer lookup
-
-#### `string:jsonPointer`
-
-**Shape:**
-`( jsonText pointer ) string:jsonPointer value`
-
-This builtin is intentionally “bridgey”: it lets you reach into JSON and get back an RDF/N3 term.
-
-Rules:
-
-* `jsonText` must be an `rdf:JSON` literal (Eyeling is permissive and may accept a couple of equivalent datatype spellings).
-* `pointer` is a string; Eyeling supports:
-
-  * standard RFC 6901 pointers like `/a/b/0`
-  * URI fragment form like `#/a/b` (it is decoded first)
-* The JSON is parsed and cached; pointer results are cached per `(jsonText, pointer)`.
-
-Returned terms follow Eyeling’s `jsonToTerm` mapping:
-
-* JSON `null` → `"null"` (a plain string literal)
-* JSON string → plain string literal
-* JSON number → numeric token literal (untyped)
-* JSON boolean → `true` / `false` token literal (untyped boolean token)
-* JSON array → an N3 list term whose elements are recursively converted
-* JSON object → an `rdf:JSON` literal containing the object’s JSON text
-
-This design keeps the builtin total and predictable even for nested structures.
 
 ## 11.4 `log:outputString` as a controlled side effect
 

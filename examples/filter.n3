@@ -1,8 +1,0 @@
-@prefix : <http://example/#> .
-@prefix math: <http://www.w3.org/2000/10/swap/math#> .
-
-:x :p 1 ; :q 2 .
-
-{ ?x :p ?v1 . ?x :q ?v2 . ?v1 math:greaterThan 0 . ?v2 math:greaterThan 0 . } => { ?x :bothPositive true . } .
-{ ?x :p ?v1 . ?x :q ?v2 . ?v1 math:equalTo 0 . } => { ?x :oneIsZero true . } .
-{ ?x :p ?v1 . ?x :q ?v2 . ?v2 math:equalTo 0 . } => { ?x :oneIsZero true . } .

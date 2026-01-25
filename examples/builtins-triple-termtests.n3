@@ -1,7 +1,0 @@
-@prefix : <http://example/#> .
-@prefix log: <http://www.w3.org/2000/10/swap/log#> .
-
-:alice :knows :bob .
-  :bob   :age   42 .
-
-{ :alice :knows :bob . ?t log:isTriple true . ?s log:isIRI true . ?t log:equalTo { :alice :knows :bob . } . ?t log:includes { ?s ?__e2 ?__e3 . } . ?t log:includes { ?__e4 ?p ?__e6 . } . ?t log:includes { ?__e7 ?__e8 ?o . } . } => { :test :triple ?t ; :subject ?s ; :predicate ?p ; :object ?o ; :subjectIsIRI true ; :tripleOk true . } .
