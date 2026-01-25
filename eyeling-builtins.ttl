@@ -17,15 +17,13 @@
 #
 # Notes:
 # - ex:kind is intentionally coarse:
-#     ex:Test      = succeeds/fails, no new variable bindings (a "constraint")
+#     ex:Test      = succeeds/fails (typically no bindings)
 #     ex:Function  = computes an output and may bind variables
 #     ex:Relation  = unification-based, may bind variables
 #     ex:Generator = may yield multiple solutions
 #     ex:IO        = dereferences/parses external content (Node or browser)
 #     ex:Meta      = formula/type/meta-level operations
 #     ex:SideEffect= produces output; does not bind variables
-# - ex:isConstraint corresponds to isConstraintBuiltin(tr) in eyeling.js, with
-#   one suggested addition noted in the comments below.
 # ------------------------------------------------------------------------------
 
 ex:EyelingBuiltinCatalog a ex:Catalog ;
@@ -39,8 +37,6 @@ ex:IO a ex:Kind .
 ex:Meta a ex:Kind .
 ex:SideEffect a ex:Kind .
 
-ex:isConstraint a rdf:Property ;
-  rdfs:comment "True for builtins classified as constraint/test builtins by isConstraintBuiltin(tr) (premise reordering helper)." .
 ex:kind a rdf:Property .
 ex:aliasOf a rdf:Property .
 
@@ -60,22 +56,22 @@ crypto:sha512 a ex:Builtin ; ex:kind ex:Function ;
 
 # --- math: comparisons (constraint/test) -----------------------------
 
-math:equalTo a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+math:equalTo a ex:Builtin ; ex:kind ex:Test;
   rdfs:comment "Numeric comparison (=). No bindings; succeeds iff subject and object are numerically equal (supports XSD numeric literals, including special float/double lexicals)." .
 
-math:notEqualTo a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+math:notEqualTo a ex:Builtin ; ex:kind ex:Test;
   rdfs:comment "Numeric comparison (!=). No bindings; succeeds iff subject and object are numerically different." .
 
-math:greaterThan a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+math:greaterThan a ex:Builtin ; ex:kind ex:Test;
   rdfs:comment "Numeric comparison (>). No bindings." .
 
-math:lessThan a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+math:lessThan a ex:Builtin ; ex:kind ex:Test;
   rdfs:comment "Numeric comparison (<). No bindings." .
 
-math:notLessThan a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+math:notLessThan a ex:Builtin ; ex:kind ex:Test;
   rdfs:comment "Numeric comparison (>=). No bindings." .
 
-math:notGreaterThan a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+math:notGreaterThan a ex:Builtin ; ex:kind ex:Test;
   rdfs:comment "Numeric comparison (<=). No bindings." .
 
 # --- math: arithmetic / numeric functions ----------------------------
@@ -204,7 +200,7 @@ list:in a ex:Builtin ; ex:kind ex:Generator ;
 list:length a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Length of a list as an integer token. Strict when object is ground (no integer<->decimal equality)." .
 
-list:notMember a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+list:notMember a ex:Builtin ; ex:kind ex:Test;
   rdfs:comment "Constraint/test: succeeds iff object does not unify with any element of the subject list. No new bindings." .
 
 list:reverse a ex:Builtin ; ex:kind ex:Function ;
@@ -224,7 +220,7 @@ list:firstRest a ex:Builtin ; ex:kind ex:Function ;
 log:equalTo a ex:Builtin ; ex:kind ex:Relation ;
   rdfs:comment "Unification: succeeds iff subject and object unify; may bind variables." .
 
-log:notEqualTo a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+log:notEqualTo a ex:Builtin ; ex:kind ex:Test;
   rdfs:comment "Constraint/test: succeeds iff subject and object do NOT unify (implemented as: if unification succeeds, builtin fails). No new bindings returned." .
 
 log:conjunction a ex:Builtin ; ex:kind ex:Meta ;
@@ -263,13 +259,13 @@ log:impliedBy a ex:Builtin ; ex:kind ex:Relation ;
 log:includes a ex:Builtin ; ex:kind ex:Generator ;
   rdfs:comment "Proves the object formula in the (possibly scoped) facts/rules; returns the set of proof substitutions (may bind variables)." .
 
-log:notIncludes a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+log:notIncludes a ex:Builtin ; ex:kind ex:Test;
   rdfs:comment "Constraint/test: succeeds iff proving the object formula yields no solutions. No new bindings." .
 
 log:collectAllIn a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Scoped collector: given (valueTemplate whereClause outList) and a scope formula, collects all solutions of whereClause and binds/unifies outList with the list of instantiated valueTemplate results." .
 
-log:forAllIn a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+log:forAllIn a ex:Builtin ; ex:kind ex:Test;
   rdfs:comment "Constraint/test: for all solutions of whereClause, thenClause must have at least one solution in the same scope. No new bindings." .
 
 log:skolem a ex:Builtin ; ex:kind ex:Function ;
@@ -289,40 +285,40 @@ log:outputString a ex:Builtin ; ex:kind ex:SideEffect ;
 string:concatenation a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Concatenates a list of string-ish terms; binds/unifies object with the resulting string literal." .
 
-string:contains a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+string:contains a ex:Builtin ; ex:kind ex:Test;
   rdfs:comment "Constraint/test: subject contains object (substring). No bindings." .
 
-string:containsIgnoringCase a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+string:containsIgnoringCase a ex:Builtin ; ex:kind ex:Test;
   rdfs:comment "Constraint/test: case-insensitive contains. No bindings." .
 
-string:endsWith a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+string:endsWith a ex:Builtin ; ex:kind ex:Test;
   rdfs:comment "Constraint/test: subject ends with object. No bindings." .
 
-string:startsWith a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+string:startsWith a ex:Builtin ; ex:kind ex:Test;
   rdfs:comment "Constraint/test: subject starts with object. No bindings." .
 
-string:equalIgnoringCase a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+string:equalIgnoringCase a ex:Builtin ; ex:kind ex:Test;
   rdfs:comment "Constraint/test: case-insensitive equality. No bindings." .
 
-string:notEqualIgnoringCase a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+string:notEqualIgnoringCase a ex:Builtin ; ex:kind ex:Test;
   rdfs:comment "Constraint/test: case-insensitive inequality. No bindings." .
 
-string:greaterThan a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+string:greaterThan a ex:Builtin ; ex:kind ex:Test;
   rdfs:comment "Constraint/test: Unicode codepoint order (>) on decoded strings. No bindings." .
 
-string:lessThan a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+string:lessThan a ex:Builtin ; ex:kind ex:Test;
   rdfs:comment "Constraint/test: Unicode codepoint order (<) on decoded strings. No bindings." .
 
-string:notGreaterThan a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+string:notGreaterThan a ex:Builtin ; ex:kind ex:Test;
   rdfs:comment "Constraint/test: Unicode codepoint order (<=). No bindings." .
 
-string:notLessThan a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+string:notLessThan a ex:Builtin ; ex:kind ex:Test;
   rdfs:comment "Constraint/test: Unicode codepoint order (>=). No bindings." .
 
-string:matches a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+string:matches a ex:Builtin ; ex:kind ex:Test;
   rdfs:comment "Constraint/test: regex match. Pattern is compiled with swap-style escaping helper. No bindings." .
 
-string:notMatches a ex:Builtin ; ex:kind ex:Test ; ex:isConstraint true ;
+string:notMatches a ex:Builtin ; ex:kind ex:Test;
   rdfs:comment "Constraint/test: negated regex match. No bindings." .
 
 string:replace a ex:Builtin ; ex:kind ex:Function ;

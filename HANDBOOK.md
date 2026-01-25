@@ -769,7 +769,7 @@ Eyeling also accepts an older cwm-ish variant where the **subject is a 2-element
 * `NaN` is treated as **not equal to anything**, including itself, for `math:equalTo`.
 * Comparisons involving non-parsable values simply fail.
 
-Because these are pure tests, Eyeling treats them as **constraint builtins** and tends to push them to the end of forward-rule premises so they’re checked after other goals bind variables.
+These are pure tests. In forward rules, if a test builtin is encountered before its inputs are bound and it fails, Eyeling may **defer** it and try other goals first; once variables become bound, the test is retried.
 
 ---
 
@@ -1078,7 +1078,7 @@ Important constraint: the item to remove must be **ground** (fully known) before
 **Shape:**
 `(a b c) list:notMember x`
 
-Succeeds iff the object cannot be unified with any element of the subject list. This is treated as a constraint builtin.
+Succeeds iff the object cannot be unified with any element of the subject list. As a test, it typically works best once its inputs are bound; in forward rules Eyeling may defer it if it is reached before bindings are available.
 
 #### `list:append`
 
@@ -1310,7 +1310,7 @@ This is essentially a list-producing “findall”.
 
 For every solution of `WhereFormula`, `ThenFormula` must be provable under the bindings of that solution. If any witness fails, the builtin fails. No bindings are returned.
 
-This is treated as a constraint builtin.
+As a pure test (no returned bindings), this typically works best once its inputs are bound; in forward rules Eyeling may defer it if it is reached too early.
 
 ### Skolemization and URI casting
 
@@ -1350,7 +1350,7 @@ As a goal, this builtin simply checks that the terms are sufficiently bound/usab
 * When you run Eyeling with `--strings` / `-r`, the CLI collects all `log:outputString` triples from the *saturated* closure.
 * It sorts them deterministically by the subject “key” and concatenates the string values in that order.
 
-This is treated as a constraint builtin (it shouldn’t drive search; it should merely validate that strings exist once other reasoning has produced them).
+This is a pure test/side-effect marker (it shouldn’t drive search; it should merely validate that strings exist once other reasoning has produced them). In forward rules Eyeling may defer it if it is reached before the terms are usable.
 
 ---
 

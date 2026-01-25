@@ -727,7 +727,7 @@ const {
 
 const { lex, N3SyntaxError, decodeN3StringEscapes } = require('./lexer');
 const { Parser } = require('./parser');
-const { liftBlankRuleVars, reorderPremiseForConstraints, isConstraintBuiltin } = require('./rules');
+const { liftBlankRuleVars } = require('./rules');
 
 const { termToN3, tripleToN3 } = require('./printing');
 
@@ -905,8 +905,7 @@ function __makeRuleFromTerms(left, right, isForward) {
   }
 
   const headBlankLabels = collectBlankLabelsInTriples(rawConclusion);
-  const [premise0, conclusion] = liftBlankRuleVars(rawPremise, rawConclusion);
-  const premise = isForward ? reorderPremiseForConstraints(premise0) : premise0;
+  const [premise, conclusion] = liftBlankRuleVars(rawPremise, rawConclusion);
   return new Rule(premise, conclusion, isForward, isFuse, headBlankLabels);
 }
 
@@ -5876,8 +5875,7 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
 
               if (left !== null && right !== null) {
                 if (isFwRuleTriple) {
-                  const [premise0, conclusion] = liftBlankRuleVars(left, right);
-                  const premise = reorderPremiseForConstraints(premise0);
+                  const [premise, conclusion] = liftBlankRuleVars(left, right);
                   const headBlankLabels = collectBlankLabelsInTriples(conclusion);
                   const newRule = new Rule(premise, conclusion, true, false, headBlankLabels);
 
@@ -6907,7 +6905,7 @@ const {
 } = require('./prelude');
 
 const { N3SyntaxError } = require('./lexer');
-const { liftBlankRuleVars, reorderPremiseForConstraints } = require('./rules');
+const { liftBlankRuleVars } = require('./rules');
 
 class Parser {
   constructor(tokens) {
@@ -7527,8 +7525,9 @@ class Parser {
 
     const [premise0, conclusion] = liftBlankRuleVars(rawPremise, rawConclusion);
 
-    // Reorder constraints for *forward* rules.
-    const premise = isForward ? reorderPremiseForConstraints(premise0) : premise0;
+    // Keep premise order as written; the engine may defer some builtins in
+    // forward rules when they cannot yet run due to unbound variables.
+    const premise = premise0;
 
     return new Rule(premise, conclusion, isForward, isFuse, headBlankLabels);
   }
@@ -8105,11 +8104,6 @@ module.exports = { termToN3, tripleToN3 };
 'use strict';
 
 const {
-  MATH_NS,
-  LIST_NS,
-  LOG_NS,
-  STRING_NS,
-  Iri,
   Var,
   Blank,
   ListTerm,
@@ -8165,81 +8159,10 @@ function liftBlankRuleVars(premise, conclusion) {
   return [newPremise, conclusion];
 }
 
-function isConstraintBuiltin(tr) {
-  if (!(tr.p instanceof Iri)) return false;
-  const v = tr.p.value;
-
-  // math: numeric comparisons (no new bindings, just tests)
-  if (
-    v === MATH_NS + 'equalTo' ||
-    v === MATH_NS + 'greaterThan' ||
-    v === MATH_NS + 'lessThan' ||
-    v === MATH_NS + 'notEqualTo' ||
-    v === MATH_NS + 'notGreaterThan' ||
-    v === MATH_NS + 'notLessThan'
-  ) {
-    return true;
-  }
-
-  // list: membership test with no bindings
-  if (v === LIST_NS + 'notMember') {
-    return true;
-  }
-
-  // log: tests that are purely constraints (no new bindings)
-  if (
-    v === LOG_NS + 'forAllIn' ||
-    v === LOG_NS + 'notEqualTo' ||
-    v === LOG_NS + 'notIncludes' ||
-    v === LOG_NS + 'outputString'
-  ) {
-    return true;
-  }
-
-  // string: relational / membership style tests (no bindings)
-  if (
-    v === STRING_NS + 'contains' ||
-    v === STRING_NS + 'containsIgnoringCase' ||
-    v === STRING_NS + 'endsWith' ||
-    v === STRING_NS + 'equalIgnoringCase' ||
-    v === STRING_NS + 'greaterThan' ||
-    v === STRING_NS + 'lessThan' ||
-    v === STRING_NS + 'matches' ||
-    v === STRING_NS + 'notEqualIgnoringCase' ||
-    v === STRING_NS + 'notGreaterThan' ||
-    v === STRING_NS + 'notLessThan' ||
-    v === STRING_NS + 'notMatches' ||
-    v === STRING_NS + 'startsWith'
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-// Move constraint builtins to the end of the rule premise.
-// This is a simple "delaying" strategy similar in spirit to Prolog's when/2:
-// - normal goals first (can bind variables),
-// - pure test / constraint builtins last (checked once bindings are in place).
-function reorderPremiseForConstraints(premise) {
-  if (!premise || premise.length === 0) return premise;
-
-  const normal = [];
-  const delayed = [];
-
-  for (const tr of premise) {
-    if (isConstraintBuiltin(tr)) delayed.push(tr);
-    else normal.push(tr);
-  }
-  return normal.concat(delayed);
-}
-
 // ===========================================================================
 
 module.exports = {
   liftBlankRuleVars,
-  isConstraintBuiltin,
-  reorderPremiseForConstraints,
 };
 
   };
