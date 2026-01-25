@@ -2707,8 +2707,12 @@ function evalUnaryMathRel(g, subst, forwardFn, inverseFn /* may be null */) {
     return [];
   }
 
-  // Fully unbound: treat as satisfiable (avoid infinite enumeration)
-  if (sIsUnbound && oIsUnbound) return [{ ...subst }];
+  // Fully unbound: do *not* treat as immediately satisfiable.
+  // In goal proving, succeeding with no bindings can let a conjunction
+  // "pass" before other goals bind one side, preventing later evaluation
+  // in the now-solvable direction. Instead, we fail here so the engine's
+  // builtin deferral can retry the goal once variables are bound.
+  if (sIsUnbound && oIsUnbound) return [];
 
   return [];
 }
@@ -5394,6 +5398,26 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
     return termHasVarOrBlank(tr.s) || termHasVarOrBlank(tr.p) || termHasVarOrBlank(tr.o);
   }
 
+  // Some functional math relations (sin/cos/...) can be used as a pure
+  // satisfiability check. When *both* sides are unbound we avoid infinite
+  // enumeration by producing no bindings, but we still want the conjunction
+  // to succeed once it has been fully deferred to the end.
+  function isSatisfiableWhenFullyUnbound(pIriVal) {
+    return (
+      pIriVal === MATH_NS + 'sin' ||
+      pIriVal === MATH_NS + 'cos' ||
+      pIriVal === MATH_NS + 'tan' ||
+      pIriVal === MATH_NS + 'asin' ||
+      pIriVal === MATH_NS + 'acos' ||
+      pIriVal === MATH_NS + 'atan' ||
+      pIriVal === MATH_NS + 'sinh' ||
+      pIriVal === MATH_NS + 'cosh' ||
+      pIriVal === MATH_NS + 'tanh' ||
+      pIriVal === MATH_NS + 'degrees' ||
+      pIriVal === MATH_NS + 'negation'
+    );
+  }
+
   const initialGoals = Array.isArray(goals) ? goals.slice() : [];
   const initialSubst = subst ? { ...subst } : {};
   const initialVisited = visited ? visited.slice() : [];
@@ -5443,7 +5467,7 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
       const remaining = max - results.length;
       if (remaining <= 0) return results;
       const builtinMax = Number.isFinite(remaining) && !restGoals.length ? remaining : undefined;
-      const deltas = evalBuiltin(goal0, {}, facts, backRules, state.depth, varGen, builtinMax);
+      let deltas = evalBuiltin(goal0, {}, facts, backRules, state.depth, varGen, builtinMax);
 
       // If the builtin currently yields no solutions but still contains
       // unbound variables, try other goals first (defer). This fixes
@@ -5465,6 +5489,25 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
           deferCount: dc + 1,
         });
         continue;
+      }
+
+      // If we've rotated through the whole conjunction without being able to
+      // make progress, and this is a functional math relation with *both* sides
+      // unbound, treat it as satisfiable once (no bindings) rather than failing
+      // the whole conjunction.
+      const __fullyUnboundSO =
+        (goal0.s instanceof Var || goal0.s instanceof Blank) &&
+        (goal0.o instanceof Var || goal0.o instanceof Blank) &&
+        parseNum(goal0.s) === null &&
+        parseNum(goal0.o) === null;
+      if (
+        state.canDeferBuiltins &&
+        !deltas.length &&
+        isSatisfiableWhenFullyUnbound(__pv0) &&
+        __fullyUnboundSO &&
+        (!restGoals.length || dc >= state.goals.length)
+      ) {
+        deltas = [{}];
       }
 
       const nextStates = [];
