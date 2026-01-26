@@ -44,9 +44,10 @@
     "test:manifest": "node test/manifest.test.js",
     "test:playground": "node test/playground.test.js",
     "test:package": "node test/package.test.js",
-    "test:all": "node tools/test.js",
-    "pretest": "npm run -s lint && npm run -s build",
-    "test": "npm run -s test:all",
+    "test:all": "npm run test:api && npm run test:n3gen && npm run test:examples && npm run test:manifest && npm run test:playground",
+    "pretest": "npm run lint && npm run build && npm run test:packlist",
+    "test": "npm run test:all",
+    "posttest": "npm run test:package",
     "preversion": "npm test",
     "postversion": "git push --follow-tags"
   },
