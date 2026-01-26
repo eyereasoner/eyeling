@@ -34,7 +34,7 @@ function reasonQuiet(opt, input) {
       let code = 1;
       if (e && typeof e === 'object' && 'code' in e) {
         const c = e.code;
-        const n = typeof c === 'number' ? c : (typeof c === 'string' && /^\d+$/.test(c) ? Number(c) : null);
+        const n = typeof c === 'number' ? c : (typeof c === 'string' && /^\\d+$/.test(c) ? Number(c) : null);
         if (Number.isInteger(n)) code = n;
       }
 

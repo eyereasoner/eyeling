@@ -20,8 +20,6 @@
 
 const {
   RDF_NS,
-  RDFS_NS,
-  OWL_NS,
   XSD_NS,
   CRYPTO_NS,
   MATH_NS,
@@ -29,7 +27,6 @@ const {
   LIST_NS,
   LOG_NS,
   STRING_NS,
-  SKOLEM_NS,
   Literal,
   Iri,
   Var,
@@ -39,17 +36,14 @@ const {
   GraphTerm,
   Triple,
   Rule,
-  DerivedFact,
   internIri,
   internLiteral,
   PrefixEnv,
-  resolveIriRef,
-  collectIrisInTerm,
-  collectBlankLabelsInTriples,
   literalParts,
 } = require('./prelude');
 
 const { decodeN3StringEscapes } = require('./lexer');
+const { termToN3 } = require('./printing');
 const trace = require('./trace');
 const time = require('./time');
 const deref = require('./deref');
@@ -264,7 +258,7 @@ function termToJsStringDecoded(t) {
   if (lex.length >= 2 && lex[0] === '"' && lex[lex.length - 1] === '"') {
     try {
       return JSON.parse(lex);
-    } catch (e) {
+    } catch (_e) {
       /* fall through */
     }
     return stripQuotes(lex);
@@ -330,7 +324,7 @@ function compileSwapRegex(pattern, extraFlags) {
   const flags = (extraFlags || '') + (needU ? 'u' : '');
   try {
     return new RegExp(pattern, flags);
-  } catch (e) {
+  } catch (_e) {
     if (needU) {
       const p2 = sanitizeForUnicodeMode(pattern);
       if (p2 !== pattern) {
@@ -1323,7 +1317,7 @@ function hashLiteralTerm(t, algo) {
   try {
     const digest = nodeCrypto.createHash(algo).update(input, 'utf8').digest('hex');
     return internLiteral(JSON.stringify(digest));
-  } catch (e) {
+  } catch (_e) {
     return null;
   }
 }
@@ -3436,7 +3430,7 @@ function isBuiltinPred(p) {
 function standardizeTermApart(term, gen) {
   function renameTerm(t, vmap, genArr) {
     if (t instanceof Var) {
-      if (!vmap.hasOwnProperty(t.name)) {
+      if (!Object.prototype.hasOwnProperty.call(vmap, t.name)) {
         const name = `__n3_${genArr[0]}`;
         genArr[0] += 1;
         vmap[t.name] = name;
@@ -3459,7 +3453,7 @@ function standardizeTermApart(term, gen) {
         if (e2 !== e) changed = true;
         return e2;
       });
-      if (!vmap.hasOwnProperty(t.tailVar)) {
+      if (!Object.prototype.hasOwnProperty.call(vmap, t.tailVar)) {
         const name = `__n3_${genArr[0]}`;
         genArr[0] += 1;
         vmap[t.tailVar] = name;
@@ -3489,7 +3483,7 @@ function standardizeTermApart(term, gen) {
 function standardizeRule(rule, gen) {
   function renameTerm(t, vmap, genArr) {
     if (t instanceof Var) {
-      if (!vmap.hasOwnProperty(t.name)) {
+      if (!Object.prototype.hasOwnProperty.call(vmap, t.name)) {
         const name = `${t.name}__${genArr[0]}`;
         genArr[0] += 1;
         vmap[t.name] = name;
@@ -3512,7 +3506,7 @@ function standardizeRule(rule, gen) {
         if (e2 !== e) changed = true;
         return e2;
       });
-      if (!vmap.hasOwnProperty(t.tailVar)) {
+      if (!Object.prototype.hasOwnProperty.call(vmap, t.tailVar)) {
         const name = `${t.tailVar}__${genArr[0]}`;
         genArr[0] += 1;
         vmap[t.tailVar] = name;
@@ -3645,9 +3639,7 @@ function main() {
     // Combined short flags (no flag in eyeling takes a value)
     for (const ch of a.slice(1)) argv.push('-' + ch);
   }
-  const prog = String(process.argv[1] || 'eyeling')
-    .split(/[\/]/)
-    .pop();
+  const prog = String(process.argv[1] || 'eyeling').split(/\//).pop();
 
   function printHelp(toStderr = false) {
     const msg =
@@ -4399,11 +4391,6 @@ const {
   Rule,
   DerivedFact,
   internIri,
-  internLiteral,
-  PrefixEnv,
-  resolveIriRef,
-  collectIrisInTerm,
-  varsInRule,
   collectBlankLabelsInTriples,
 } = require('./prelude');
 
@@ -4429,7 +4416,7 @@ const {
 
 const { makeExplain } = require('./explain');
 
-const { termToN3, tripleToN3 } = require('./printing');
+const { tripleToN3 } = require('./printing');
 
 const trace = require('./trace');
 const { deterministicSkolemIdFromKey } = require('./skolem');
@@ -4658,7 +4645,7 @@ function skolemizeTermForHeadBlanks(t, headBlankLabels, mapping, skCounter, firi
       return t; // this is a data blank (e.g. bound via ?X), keep it
     }
 
-    if (!mapping.hasOwnProperty(label)) {
+    if (!Object.prototype.hasOwnProperty.call(mapping, label)) {
       // If we have a global cache keyed by firingKey, use it to ensure
       // deterministic blank IDs for the same rule+substitution instance.
       if (globalMap && firingKey) {
@@ -4857,7 +4844,7 @@ function triplesListEqual(xs, ys) {
 // Alpha-equivalence for quoted formulas, up to *variable* and blank-node renaming.
 // Treats a formula as an unordered set of triples (order-insensitive match).
 function alphaEqVarName(x, y, vmap) {
-  if (vmap.hasOwnProperty(x)) return vmap[x] === y;
+  if (Object.prototype.hasOwnProperty.call(vmap, x)) return vmap[x] === y;
   vmap[x] = y;
   return true;
 }
@@ -4867,7 +4854,7 @@ function alphaEqTermInGraph(a, b, vmap, bmap) {
   if (a instanceof Blank && b instanceof Blank) {
     const x = a.label;
     const y = b.label;
-    if (bmap.hasOwnProperty(x)) return bmap[x] === y;
+    if (Object.prototype.hasOwnProperty.call(bmap, x)) return bmap[x] === y;
     bmap[x] = y;
     return true;
   }
@@ -5491,7 +5478,7 @@ function composeSubst(outer, delta) {
   }
   const out = { ...outer };
   for (const [k, v] of Object.entries(delta)) {
-    if (out.hasOwnProperty(k)) {
+    if (Object.prototype.hasOwnProperty.call(out, k)) {
       if (!termsEqual(out[k], v)) return null;
     } else {
       out[k] = v;
@@ -6514,7 +6501,7 @@ function makeExplain(deps) {
   // log:outputString support
   // ===========================================================================
 
-  function __compareOutputStringKeys(a, b, prefixes) {
+  function __compareOutputStringKeys(a, b, _prefixes) {
     // Deterministic ordering of keys. The spec only requires "order of the subject keys"
     // and leaves concrete term ordering reasoner-dependent. We implement:
     //   1) numeric literals (numeric value)
@@ -7128,7 +7115,7 @@ function lex(inputText) {
     const word = wordChars.join('');
     if (word === 'true' || word === 'false') {
       tokens.push(new Token('Literal', word, start));
-    } else if ([...word].every((ch) => /[0-9.\-]/.test(ch))) {
+    } else if ([...word].every((ch) => /[0-9.-]/.test(ch))) {
       tokens.push(new Token('Literal', word, start));
     } else {
       tokens.push(new Token('Ident', word, start));
@@ -7156,31 +7143,19 @@ module.exports = { Token, N3SyntaxError, lex, decodeN3StringEscapes };
 
 const {
   RDF_NS,
-  RDFS_NS,
   OWL_NS,
-  XSD_NS,
-  CRYPTO_NS,
-  MATH_NS,
-  TIME_NS,
-  LIST_NS,
   LOG_NS,
-  STRING_NS,
-  SKOLEM_NS,
-  RDF_JSON_DT,
   resolveIriRef,
-  Iri,
   Literal,
   Var,
   Blank,
   ListTerm,
-  OpenListTerm,
   GraphTerm,
   Triple,
   Rule,
   internIri,
   internLiteral,
   PrefixEnv,
-  varsInRule,
   collectBlankLabelsInTriples,
   isLogImplies,
   isLogImpliedBy,
@@ -7315,7 +7290,7 @@ class Parser {
 
     if (this.peek().typ === 'Dot') {
       this.next();
-      if (!this.prefixes.map.hasOwnProperty(prefName)) {
+      if (!Object.prototype.hasOwnProperty.call(this.prefixes.map, prefName)) {
         this.prefixes.set(prefName, '');
       }
       return;
@@ -8046,7 +8021,7 @@ function isLogImpliedBy(p) {
 function isValidQNameLocal(local) {
   if (typeof local !== 'string' || local.length === 0) return false;
   // Disallow characters that would break PN_LOCAL unless escaped (we keep this conservative).
-  if (/[#:\/\?\s]/.test(local)) return false;
+  if (/[#:/?\s]/.test(local)) return false;
   // Allow a safe ASCII subset.
   if (/[^A-Za-z0-9._-]/.test(local)) return false;
   // Avoid edge cases that typically require escaping.
@@ -8398,7 +8373,7 @@ function liftBlankRuleVars(premise, conclusion) {
   function convertTerm(t, mapping, counter) {
     if (t instanceof Blank) {
       const label = t.label;
-      if (!mapping.hasOwnProperty(label)) {
+      if (!Object.prototype.hasOwnProperty.call(mapping, label)) {
         counter[0] += 1;
         mapping[label] = `_b${counter[0]}`;
       }
@@ -8627,7 +8602,6 @@ module.exports = {
  * Debugging/tracing utilities used to record and inspect reasoning steps.
  */
 
-/* eslint-disable no-console */
 'use strict';
 
 // Small module for debug/trace printing (log:trace) and its run-level state.
@@ -8646,7 +8620,6 @@ function setTracePrefixes(v) {
 function writeTraceLine(line) {
   // Prefer stderr in Node, fall back to console.error elsewhere.
   try {
-    // eslint-disable-next-line no-undef
     if (typeof process !== 'undefined' && process.stderr && typeof process.stderr.write === 'function') {
       process.stderr.write(String(line) + '\n');
       return;

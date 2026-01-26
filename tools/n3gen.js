@@ -239,7 +239,7 @@ class PrefixEnv {
 
     // Conservative “looks like PN_LOCAL-ish”
     if (!local) return null;
-    if (!/^[A-Za-z0-9_\-\.~]+$/.test(local)) return null;
+    if (!/^[A-Za-z0-9_.~-]+$/.test(local)) return null;
 
     if (bestPfx === '') return `:${local}`;
     return `${bestPfx}:${local}`;
@@ -1953,16 +1953,6 @@ function writeN3RdfgIsGraph({ datasetQuads, prefixes }) {
   );
   const pro = renderPrefixPrologue(outPrefixes, { includeRdfg: true }).trim();
   if (pro) blocks.push(pro, '');
-
-  function writeGraphTriples(triples) {
-    const folded = foldRdfLists(triples);
-    return folded
-      .map(
-        (tr) =>
-          `  ${termToText(tr.s, outPrefixes, skolemMap)} ${termToText(tr.p, outPrefixes, skolemMap)} ${termToText(tr.o, outPrefixes, skolemMap)} .`,
-      )
-      .join('\n');
-  }
 
   // default graph: emit triples at top-level (no rdfg:isGraph wrapper)
   if (grouped.has('DEFAULT')) {

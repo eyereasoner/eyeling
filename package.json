@@ -35,6 +35,7 @@
     "node": ">=18"
   },
   "scripts": {
+    "lint": "eslint .",
     "build": "node tools/bundle.js",
     "test:packlist": "node test/packlist.test.js",
     "test:api": "node test/api.test.js",
@@ -43,9 +44,14 @@
     "test:manifest": "node test/manifest.test.js",
     "test:playground": "node test/playground.test.js",
     "test:package": "node test/package.test.js",
-    "test:all": "npm run test:packlist && npm run test:api && npm run test:n3gen && npm run test:examples && npm run test:manifest && npm run test:playground && npm run test:package",
-    "test": "npm run build && npm run test:all",
+    "test:all": "node tools/test.js",
+    "pretest": "npm run -s lint && npm run -s build",
+    "test": "npm run -s test:all",
     "preversion": "npm test",
     "postversion": "git push --follow-tags"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.2",
+    "globals": "^17.1.0"
   }
 }
