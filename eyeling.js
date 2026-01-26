@@ -4384,17 +4384,10 @@ module.exports = {
 
 const {
   RDF_NS,
-  RDFS_NS,
-  OWL_NS,
   XSD_NS,
-  CRYPTO_NS,
   MATH_NS,
-  TIME_NS,
-  LIST_NS,
   LOG_NS,
-  STRING_NS,
   SKOLEM_NS,
-  RDF_JSON_DT,
   Literal,
   Iri,
   Var,
@@ -4412,10 +4405,9 @@ const {
   collectIrisInTerm,
   varsInRule,
   collectBlankLabelsInTriples,
-  literalParts,
 } = require('./prelude');
 
-const { lex, N3SyntaxError, decodeN3StringEscapes } = require('./lexer');
+const { lex, N3SyntaxError } = require('./lexer');
 const { Parser } = require('./parser');
 const { liftBlankRuleVars } = require('./rules');
 
@@ -4429,8 +4421,6 @@ const {
   pow10n,
   normalizeLiteralForFastKey,
   literalsEquivalentAsXsdString,
-  termToJsString,
-  termToJsStringDecoded,
   materializeRdfLists,
   // used by backward chaining
   standardizeRule,
@@ -4442,7 +4432,6 @@ const { makeExplain } = require('./explain');
 const { termToN3, tripleToN3 } = require('./printing');
 
 const trace = require('./trace');
-const time = require('./time');
 const { deterministicSkolemIdFromKey } = require('./skolem');
 
 const deref = require('./deref');
@@ -4458,26 +4447,6 @@ try {
   // Node: crypto available
   if (typeof require === 'function') nodeCrypto = require('crypto');
 } catch (_) {}
-function isRdfJsonDatatype(dt) {
-  // dt comes from literalParts() and may be expanded or prefixed depending on parsing/printing.
-  return dt === null || dt === RDF_JSON_DT || dt === 'rdf:JSON';
-}
-
-function termToJsonText(t) {
-  if (!(t instanceof Literal)) return null;
-  const [lex, dt] = literalParts(t.value);
-  if (!isRdfJsonDatatype(dt)) return null;
-  // decode escapes for short literals; long literals are taken verbatim
-  return termToJsStringDecoded(t);
-}
-
-function makeRdfJsonLiteral(jsonText) {
-  // Prefer a readable long literal when safe; fall back to short if needed.
-  if (!jsonText.includes('"""')) {
-    return internLiteral('"""' + jsonText + '"""^^<' + RDF_JSON_DT + '>');
-  }
-  return internLiteral(JSON.stringify(jsonText) + '^^<' + RDF_JSON_DT + '>');
-}
 // For a single reasoning run, this maps a canonical representation
 // of the subject term in log:skolem to a Skolem IRI.
 const skolemCache = new Map();
@@ -4975,45 +4944,6 @@ function alphaEqGraphTriples(xs, ys) {
   return step(0, {}, {});
 }
 
-function alphaEqTerm(a, b, bmap) {
-  if (a instanceof Blank && b instanceof Blank) {
-    const x = a.label;
-    const y = b.label;
-    if (bmap.hasOwnProperty(x)) {
-      return bmap[x] === y;
-    } else {
-      bmap[x] = y;
-      return true;
-    }
-  }
-  if (a instanceof Iri && b instanceof Iri) return a.value === b.value;
-  if (a instanceof Literal && b instanceof Literal) return a.value === b.value;
-  if (a instanceof Var && b instanceof Var) return a.name === b.name;
-  if (a instanceof ListTerm && b instanceof ListTerm) {
-    if (a.elems.length !== b.elems.length) return false;
-    for (let i = 0; i < a.elems.length; i++) {
-      if (!alphaEqTerm(a.elems[i], b.elems[i], bmap)) return false;
-    }
-    return true;
-  }
-  if (a instanceof OpenListTerm && b instanceof OpenListTerm) {
-    if (a.tailVar !== b.tailVar || a.prefix.length !== b.prefix.length) return false;
-    for (let i = 0; i < a.prefix.length; i++) {
-      if (!alphaEqTerm(a.prefix[i], b.prefix[i], bmap)) return false;
-    }
-    return true;
-  }
-  if (a instanceof GraphTerm && b instanceof GraphTerm) {
-    // formulas are alpha-equivalent up to var/blank renaming
-    return alphaEqGraphTriples(a.triples, b.triples);
-  }
-  return false;
-}
-
-function alphaEqTriple(a, b) {
-  const bmap = {};
-  return alphaEqTerm(a.s, b.s, bmap) && alphaEqTerm(a.p, b.p, bmap) && alphaEqTerm(a.o, b.o, bmap);
-}
 
 // ===========================================================================
 // Indexes (facts + backward rules)
@@ -5222,13 +5152,6 @@ function indexBackRule(backRules, r) {
 // Special predicate helpers
 // ===========================================================================
 
-function isRdfTypePred(p) {
-  return p instanceof Iri && p.value === RDF_NS + 'type';
-}
-
-function isOwlSameAsPred(t) {
-  return t instanceof Iri && t.value === OWL_NS + 'sameAs';
-}
 
 function isLogImplies(p) {
   return p instanceof Iri && p.value === LOG_NS + 'implies';
