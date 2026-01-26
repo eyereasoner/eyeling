@@ -109,22 +109,24 @@ If you want to follow the code in the same order Eyeling “thinks”, read:
 2. `lib/lexer.js` — N3/Turtle-ish tokenization.
 3. `lib/parser.js` — parsing tokens into triples, formulas, and rules.
 4. `lib/rules.js` — small rule “compiler passes” (blank lifting, constraint delaying).
-5. `lib/engine.js` — the core engine:
+5. `lib/engine.js` — the core inference engine:
    - equality + alpha equivalence for formulas
    - unification + substitutions
    - indexing facts and backward rules
-   - backward goal proving (`proveGoals`)
-   - forward saturation (`forwardChain`)
-   - built-ins (`evalBuiltin`)
+   - backward goal proving (`proveGoals`) and forward saturation (`forwardChain`)
    - scoped-closure machinery (for `log:*In` and includes tests)
-   - explanations and output construction
    - tracing hooks (`lib/trace.js`, `log:trace`)
    - time helpers for `time:*` built-ins (`lib/time.js`)
    - deterministic Skolem IDs (head existentials + `log:skolem`) (`lib/skolem.js`)
-6. `lib/deref.js` — synchronous dereferencing for `log:content` / `log:semantics`.
-7. `lib/printing.js` — conversion back to N3 text.
-8. `lib/cli.js` + `lib/entry.js` — command-line wiring and bundle entry exports.
-9. `index.js` — the npm API wrapper (spawns the bundled CLI synchronously).
+6. `lib/builtins.js` — builtin predicate evaluation plus shared literal/number/string/list helpers:
+   - `makeBuiltins(deps)` dependency-injects engine hooks (unification, proving, deref, …)
+   - exports `evalBuiltin(...)` and `isBuiltinPred(...)` back to the engine
+   - includes `materializeRdfLists(...)`, a small pre-pass that rewrites *anonymous* `rdf:first`/`rdf:rest` linked lists into concrete N3 list terms so `list:*` builtins can work uniformly
+7. `lib/explain.js` — proof comments + `log:outputString` aggregation (fact ordering and pretty output).
+8. `lib/deref.js` — synchronous dereferencing for `log:content` / `log:semantics` (used by builtins and engine).
+9. `lib/printing.js` — conversion back to N3 text.
+10. `lib/cli.js` + `lib/entry.js` — command-line wiring and bundle entry exports.
+11. `index.js` — the npm API wrapper (spawns the bundled CLI synchronously).
 
 This is almost literally a tiny compiler pipeline:
 
@@ -299,6 +301,30 @@ Eyeling treats these as “constraints” and moves them to the *end* of a forwa
 
 It’s not logically necessary, but it improves the chance that constraints run with variables already grounded, reducing wasted search.
 
+### 5.3 Materializing anonymous RDF collections into N3 list terms
+
+Many N3 documents encode lists using RDF’s linked-list vocabulary:
+
+```n3
+_:c rdf:first :a.
+_:c rdf:rest _:d.
+_:d rdf:first :b.
+_:d rdf:rest rdf:nil.
+```
+
+Eyeling supports *both* representations:
+
+* **Concrete N3 lists** like `(:a :b)` are parsed as `ListTerm([...])` directly.
+* **RDF collections** using `rdf:first`/`rdf:rest` can be traversed by list-aware builtins.
+
+To make list handling simpler and faster, Eyeling runs a small pre-pass called `materializeRdfLists(...)` (implemented in `lib/builtins.js` and invoked by the CLI/entry code). It:
+
+* scans the **input triples** for well‑formed `rdf:first`/`rdf:rest` chains,
+* **rewrites only anonymous (blank-node) list nodes** into concrete `ListTerm(...)`,
+* and applies that rewrite consistently across the input triple set and all rule premises/heads.
+
+Why only blank nodes? Named list nodes (IRIs) must keep their identity, because some programs treat them as addressable resources; Eyeling leaves those as `rdf:first`/`rdf:rest` graphs so list builtins can still walk them when needed.
+
 ---
 
 <a id="ch06"></a>
@@ -446,7 +472,7 @@ Eyeling’s order is intentional: built-ins often bind variables cheaply; rules 
 
 ### 8.3 Built-ins: return *deltas*, not full substitutions
 
-A built-in is evaluated as:
+A built-in is evaluated by the engine via the builtin library in `lib/builtins.js`:
 
 ```js
 deltas = evalBuiltin(goal0, {}, facts, backRules, ...)
@@ -454,9 +480,18 @@ for delta in deltas:
   composed = composeSubst(currentSubst, delta)
 ```
 
-So built-ins behave like relations that can generate zero, one, or many possible bindings.
+So built-ins behave like relations that can generate zero, one, or many possible bindings. A list generator might yield many deltas; a numeric test yields zero or one.
 
-This is important: a list generator might yield many deltas; a numeric test yields zero or one.
+#### 8.3.1 Builtin deferral and “vacuous” solutions
+
+Conjunction in N3 is order-insensitive, but many builtins are only useful once some variables are bound by *other* goals in the same body. When `proveGoals` is called from forward chaining, Eyeling enables **builtin deferral**: if a builtin goal can’t make progress yet, it is rotated to the end of the goal list and retried later (with a small cycle guard to avoid infinite rotation).
+
+“Can’t make progress” includes both cases:
+
+- the builtin returns **no solutions** (`[]`), and
+- the builtin returns only **vacuous solutions** (`[{}]`, i.e., success with *no new bindings*) while the goal still contains unbound vars/blanks.
+
+That second case matters for “satisfiable but non-enumerating” builtins (e.g., some `log:` helpers) where early vacuous success would otherwise prevent later goals from ever binding the variables the builtin needs.
 
 ### 8.4 Loop prevention: a simple visited list
 
@@ -636,9 +671,11 @@ This makes formulas a little world you can reason about as data.
 ---
 
 <a id="ch11"></a>
-## Chapter 11 — Built-ins as a standard library (`evalBuiltin`)
+## Chapter 11 — Built-ins as a standard library (`lib/builtins.js`)
 
 Built-ins are where Eyeling stops being “just a Datalog engine” and becomes a practical N3 tool.
+
+Implementation note: builtin code lives in `lib/builtins.js` and is wired into the prover by the engine via `makeBuiltins(deps)` (dependency injection keeps the modules loosely coupled).
 
 ### 11.1 How Eyeling recognizes built-ins
 
@@ -664,7 +701,7 @@ That means built-ins can be:
 
 List operations are a common source of generators; numeric comparisons are tests.
 
-Below is a drop-in replacement for **§11.3 “A tour of builtin families”** that aims to be *fully self-contained* and to cover **every builtin currently implemented in `lib/engine.js`** (including the `rdf:first` / `rdf:rest` aliases).
+Below is a drop-in replacement for **§11.3 “A tour of builtin families”** that aims to be *fully self-contained* and to cover **every builtin currently implemented in `lib/builtins.js`** (including the `rdf:first` / `rdf:rest` aliases).
 
 ---
 
@@ -1446,7 +1483,7 @@ From a logic-programming point of view, printing is awkward: if you print *durin
 The predicate `log:outputString` is the only officially supported “side-effect channel”, and even it is handled in two phases:
 
 1. **During reasoning (declarative phase):**  
-   `log:outputString` behaves like a constraint-style builtin: it succeeds when its arguments are well-formed and sufficiently bound (notably, when the object is a string literal that can be emitted). Importantly, it does *not* print anything at this time. If a rule derives a triple like:
+   `log:outputString` behaves like a constraint-style builtin (implemented in `lib/builtins.js`): it succeeds when its arguments are well-formed and sufficiently bound (notably, when the object is a string literal that can be emitted). Importantly, it does *not* print anything at this time. If a rule derives a triple like:
 
    ```n3
    :k log:outputString "Hello\n".
@@ -1455,7 +1492,7 @@ The predicate `log:outputString` is the only officially supported “side-effect
 then that triple simply becomes part of the fact base like any other fact.
 
 2. **After reasoning (rendering phase):**
-   Once saturation finishes, Eyeling scans the *final closure* for `log:outputString` facts and renders them deterministically. Concretely, the CLI collects all such triples, orders them in a stable way (using the subject as a key so output order is reproducible), and concatenates their string objects into the final emitted text.
+   Once saturation finishes, Eyeling scans the *final closure* for `log:outputString` facts and renders them deterministically (this post-pass lives in `lib/explain.js`). Concretely, the CLI collects all such triples, orders them in a stable way (using the subject as a key so output order is reproducible), and concatenates their string objects into the final emitted text.
 
 This separation is not just an aesthetic choice; it preserves the meaning of logic search:
 
@@ -1530,6 +1567,8 @@ When enabled, Eyeling prints a compact comment block per derived triple:
 
 It’s a “why this triple holds” explanation, not a globally exported proof graph.
 
+Implementation note: the engine records lightweight `DerivedFact` objects during forward chaining, and `lib/explain.js` (via `makeExplain(...)`) is responsible for turning those objects into the human-readable proof comment blocks.
+
 ### 13.3 Streaming derived facts
 
 The engine’s `reasonStream` API can accept an `onDerived` callback. Each time a new forward fact is derived, Eyeling can report it immediately.
@@ -1552,6 +1591,20 @@ The bundle contains the whole engine. The CLI path is the “canonical behavior�
 * print derived triples or output strings
 * optional proof comments
 * optional streaming
+
+#### 14.1.1 CLI options at a glance
+
+The current CLI supports a small set of flags (see `lib/cli.js`):
+
+* `-a`, `--ast` — print the parsed AST as JSON and exit.
+* `-d`, `--deterministic-skolem` — make `log:skolem` stable across runs.
+* `-e`, `--enforce-https` — rewrite `http://…` to `https://…` for dereferencing builtins.
+* `-p`, `--proof-comments` — include per-fact proof comment blocks in output.
+* `-r`, `--strings` — after reasoning, render only `log:outputString` values (ordered by subject key).
+* `-s`, `--super-restricted` — disable all builtins except `log:implies` / `log:impliedBy`.
+* `-t`, `--stream` — stream derived triples as soon as they are derived.
+* `-v`, `--version` — print version and exit.
+* `-h`, `--help` — show usage.
 
 ### 14.2 `lib/entry.js`: bundler-friendly exports
 
@@ -1623,20 +1676,24 @@ Eyeling is small, which makes it pleasant to extend — but there are a few inva
 
 ### 16.1 Adding a builtin
 
-Most extensions belong in `evalBuiltin`:
+Most extensions belong in `lib/builtins.js` (inside `evalBuiltin`):
 
 * Decide if your builtin is:
-
   * a test (0/1 solution)
   * functional (bind output)
   * generator (many solutions)
 * Return *deltas* `{ varName: Term }`, not full substitutions.
 * Be cautious with fully-unbound cases: generators can explode the search space.
+* If you add a *new predicate* (not just a new case inside an existing namespace), make sure it is recognized by `isBuiltinPred(...)`.
 
-If your builtin needs a stable view of the closure, follow the scoped-builtin pattern:
+A small architectural note: `lib/builtins.js` is initialized by the engine via `makeBuiltins(deps)`. It receives hooks (unification, proving, deref, scoped-closure helpers, …) instead of importing the engine directly, which keeps the module graph acyclic and makes browser bundling easier.
+
+If your builtin needs a stable view of the scoped closure, follow the scoped-builtin pattern:
 
 * read from `facts.__scopedSnapshot`
 * honor `facts.__scopedClosureLevel` and priority gating
+
+And if your builtin is “forward-only” (needs inputs bound), it’s fine to **fail early** until inputs are available — forward rule proving enables builtin deferral, so the goal can be retried later in the same conjunction.
 
 ### 16.2 Adding new term shapes
 
