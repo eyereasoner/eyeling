@@ -1818,7 +1818,7 @@ Quoted graphs/formulas use `{ ... }`. Inside a quoted formula, directive scope m
 - `@prefix/@base` and `PREFIX/BASE` directives may appear at top level **or inside `{ ... }`**, and apply to the formula they occur in (formula-local scoping).
 
 For the formal grammar, see the N3 spec grammar:
-- https://w3c.github.io/N3/spec/#grammar
+- [https://w3c.github.io/N3/spec/#grammar](https://w3c.github.io/N3/spec/#grammar)
 
 See also:
 - [Chapter 4 — From characters to AST: lexing and parsing](#ch04)
@@ -1828,7 +1828,7 @@ See also:
 Eyeling supports a built-in “standard library” across namespaces like `log:`, `math:`, `string:`, `list:`, `time:`, `crypto:`.
 
 References:
-- W3C N3 Built-ins overview: https://w3c.github.io/N3/reports/20230703/builtins.html
+- W3C N3 Built-ins overview: [https://w3c.github.io/N3/reports/20230703/builtins.html](https://w3c.github.io/N3/reports/20230703/builtins.html)
 - Eyeling implementation details: [Chapter 11 — Built-ins as a standard library](#ch11)
 - The shipped builtin catalogue: `eyeling-builtins.ttl` (in this repo)
 
@@ -1865,16 +1865,17 @@ See:
 If you want to go deeper into N3 itself and the logic/programming ideas behind Eyeling, these are good starting points:
 
 N3 / Semantic Web specs and reports:
-- https://w3c.github.io/N3/spec/
-- https://w3c.github.io/N3/reports/20230703/semantics.html
-- https://w3c.github.io/N3/reports/20230703/builtins.html
+- [https://w3c.github.io/N3/spec/](https://w3c.github.io/N3/spec/)
+- [https://w3c.github.io/N3/spec/builtins](https://w3c.github.io/N3/spec/builtins)
+- [https://w3c.github.io/N3/spec/semantics](https://w3c.github.io/N3/spec/semantics)
 
 Logic & reasoning background (Wikipedia):
-- https://en.wikipedia.org/wiki/Mathematical_logic
-- https://en.wikipedia.org/wiki/Automated_reasoning
-- https://en.wikipedia.org/wiki/Forward_chaining
-- https://en.wikipedia.org/wiki/Backward_chaining
-- https://en.wikipedia.org/wiki/Unification_%28computer_science%29
-- https://en.wikipedia.org/wiki/Prolog
-- https://en.wikipedia.org/wiki/Datalog
-- https://en.wikipedia.org/wiki/Skolem_normal_form
+- [https://en.wikipedia.org/wiki/Mathematical_logic](https://en.wikipedia.org/wiki/Mathematical_logic)
+- [https://en.wikipedia.org/wiki/Automated_reasoning](https://en.wikipedia.org/wiki/Automated_reasoning)
+- [https://en.wikipedia.org/wiki/Forward_chaining](https://en.wikipedia.org/wiki/Forward_chaining)
+- [https://en.wikipedia.org/wiki/Backward_chaining](https://en.wikipedia.org/wiki/Backward_chaining)
+- [https://en.wikipedia.org/wiki/Unification_%28computer_science%29](https://en.wikipedia.org/wiki/Unification_%28computer_science%29)
+- [https://en.wikipedia.org/wiki/Prolog](https://en.wikipedia.org/wiki/Prolog)
+- [https://en.wikipedia.org/wiki/Datalog](https://en.wikipedia.org/wiki/Datalog)
+- [https://en.wikipedia.org/wiki/Skolem_normal_form](https://en.wikipedia.org/wiki/Skolem_normal_form)
+
