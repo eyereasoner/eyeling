@@ -9,687 +9,13 @@
   const __cache = Object.create(null);
 
   // ---- bundled modules ----
-  __modules["lib/cli.js"] = function(require, module, exports){
+  __modules["lib/builtins.js"] = function(require, module, exports){
 /**
- * Eyeling Reasoner — cli
+ * Eyeling Reasoner — builtins
  *
- * CLI helpers: argument handling, user-facing errors, and convenient wrappers
- * around the core engine for command-line usage.
+ * Builtin evaluation plus shared literal/number/string helpers.
+ * This module is initialized by lib/engine.js via makeBuiltins(deps).
  */
-
-'use strict';
-
-const engine = require('./engine');
-const { PrefixEnv } = require('./prelude');
-
-function offsetToLineCol(text, offset) {
-  const chars = Array.from(text);
-  const n = Math.max(0, Math.min(typeof offset === 'number' ? offset : 0, chars.length));
-  let line = 1;
-  let col = 1;
-  for (let i = 0; i < n; i++) {
-    const c = chars[i];
-    if (c === '\n') {
-      line++;
-      col = 1;
-    } else if (c === '\r') {
-      line++;
-      col = 1;
-      if (i + 1 < n && chars[i + 1] === '\n') i++; // swallow \n in CRLF
-    } else {
-      col++;
-    }
-  }
-  return { line, col };
-}
-
-function formatN3SyntaxError(err, text, path) {
-  const off = err && typeof err.offset === 'number' ? err.offset : null;
-  const label = path ? String(path) : '<input>';
-  if (off === null) {
-    return `Syntax error in ${label}: ${err && err.message ? err.message : String(err)}`;
-  }
-  const { line, col } = offsetToLineCol(text, off);
-  const lines = String(text).split(/\r\n|\n|\r/);
-  const lineText = lines[line - 1] ?? '';
-  const caret = ' '.repeat(Math.max(0, col - 1)) + '^';
-  return `Syntax error in ${label}:${line}:${col}: ${err.message}\n${lineText}\n${caret}`;
-}
-
-// CLI entry point (invoked when eyeling.js is run directly)
-function main() {
-  // Drop "node" and script name; keep only user-provided args
-  // Expand combined short options: -pt == -p -t
-  const argvRaw = process.argv.slice(2);
-  const argv = [];
-  for (const a of argvRaw) {
-    if (a === '-' || !a.startsWith('-') || a.startsWith('--') || a.length === 2) {
-      argv.push(a);
-      continue;
-    }
-    // Combined short flags (no flag in eyeling takes a value)
-    for (const ch of a.slice(1)) argv.push('-' + ch);
-  }
-  const prog = String(process.argv[1] || 'eyeling')
-    .split(/[\/]/)
-    .pop();
-
-  function printHelp(toStderr = false) {
-    const msg =
-      `Usage: ${prog} [options] <file.n3>\n\n` +
-      `Options:\n` +
-      `  -a, --ast                    Print parsed AST as JSON and exit.\n` +
-      `  -d, --deterministic-skolem   Make log:skolem stable across reasoning runs.\n` +
-      `  -e, --enforce-https          Rewrite http:// IRIs to https:// for log dereferencing builtins.\n` +
-      `  -h, --help                   Show this help and exit.\n` +
-      `  -p, --proof-comments         Enable proof explanations.\n` +
-      `  -r, --strings                Print log:outputString strings (ordered by key) instead of N3 output.\n` +
-      `  -s, --super-restricted       Disable all builtins except => and <=.\n` +
-      `  -t, --stream                 Stream derived triples as soon as they are derived.\n` +
-      `  -v, --version                Print version and exit.\n`;
-    (toStderr ? console.error : console.log)(msg);
-  }
-
-  // --help / -h: print help and exit
-  if (argv.includes('--help') || argv.includes('-h')) {
-    printHelp(false);
-    process.exit(0);
-  }
-
-  // --version / -v: print version and exit
-  if (argv.includes('--version') || argv.includes('-v')) {
-    console.log(`eyeling v${engine.version}`);
-    process.exit(0);
-  }
-
-  const showAst = argv.includes('--ast') || argv.includes('-a');
-  const outputStringsMode = argv.includes('--strings') || argv.includes('-r');
-  const streamMode = argv.includes('--stream') || argv.includes('-t');
-
-  // --enforce-https: rewrite http:// -> https:// for log dereferencing builtins
-  if (argv.includes('--enforce-https') || argv.includes('-e')) {
-    engine.setEnforceHttpsEnabled(true);
-  }
-
-  // --deterministic-skolem / -d: make log:skolem stable across runs
-  if (argv.includes('--deterministic-skolem') || argv.includes('-d')) {
-    if (typeof engine.setDeterministicSkolemEnabled === 'function') engine.setDeterministicSkolemEnabled(true);
-  }
-
-  // --proof-comments / -p: enable proof explanations
-  if (argv.includes('--proof-comments') || argv.includes('-p')) {
-    engine.setProofCommentsEnabled(true);
-  }
-
-  // --super-restricted / -s: disable all builtins except => / <=
-  if (argv.includes('--super-restricted') || argv.includes('-s')) {
-    if (typeof engine.setSuperRestrictedMode === 'function') engine.setSuperRestrictedMode(true);
-  }
-
-  // Positional args (the N3 file)
-  const positional = argv.filter((a) => !a.startsWith('-'));
-  if (positional.length === 0) {
-    printHelp(false);
-    process.exit(0);
-  }
-  if (positional.length !== 1) {
-    console.error('Error: expected exactly one input <file.n3>.');
-    printHelp(true);
-    process.exit(1);
-  }
-
-  const filePath = positional[0];
-  let text;
-  try {
-    const fs = require('fs');
-    text = fs.readFileSync(filePath, { encoding: 'utf8' });
-  } catch (e) {
-    console.error(`Error reading file ${JSON.stringify(filePath)}: ${e.message}`);
-    process.exit(1);
-  }
-
-  let toks;
-  let prefixes, triples, frules, brules;
-  try {
-    toks = engine.lex(text);
-    const parser = new engine.Parser(toks);
-    [prefixes, triples, frules, brules] = parser.parseDocument();
-    // Make the parsed prefixes available to log:trace output (CLI path)
-    engine.setTracePrefixes(prefixes);
-  } catch (e) {
-    if (e && e.name === 'N3SyntaxError') {
-      console.error(formatN3SyntaxError(e, text, filePath));
-      process.exit(1);
-    }
-    throw e;
-  }
-
-  if (showAst) {
-    function astReplacer(_key, value) {
-      if (value instanceof Set) return Array.from(value);
-      if (value && typeof value === 'object' && value.constructor) {
-        const t = value.constructor.name;
-        if (t && t !== 'Object' && t !== 'Array') return { _type: t, ...value };
-      }
-      return value;
-    }
-    console.log(JSON.stringify([prefixes, triples, frules, brules], astReplacer, 2));
-    process.exit(0);
-  }
-
-  // NOTE: Do not rewrite rdf:first/rdf:rest RDF list nodes into list terms.
-  // list:* builtins interpret RDF list structures directly when needed.
-
-  const facts = triples.filter((tr) => engine.isGroundTriple(tr));
-
-  // If requested, print log:outputString values (ordered by subject key) and exit.
-  // Note: log:outputString values may depend on derived facts, so we must saturate first.
-  if (outputStringsMode) {
-    engine.forwardChain(facts, frules, brules);
-    const out = engine.collectOutputStringsFromFacts(facts, prefixes);
-    if (out) process.stdout.write(out);
-    process.exit(0);
-  }
-
-  // In --stream mode we print prefixes *before* any derivations happen.
-  // To keep the header small and stable, emit only prefixes that are actually
-  // used (as QNames) in the *input* N3 program.
-  function prefixesUsedInInputTokens(toks2, prefEnv) {
-    const used = new Set();
-
-    function maybeAddFromQName(name) {
-      if (typeof name !== 'string') return;
-      if (!name.includes(':')) return;
-      if (name.startsWith('_:')) return; // blank node
-
-      // Split only on the first ':'
-      const idx = name.indexOf(':');
-      const p = name.slice(0, idx); // may be '' for ":foo"
-
-      // Ignore things like "http://..." unless that prefix is actually defined.
-      if (!Object.prototype.hasOwnProperty.call(prefEnv.map, p)) return;
-
-      used.add(p);
-    }
-
-    for (let i = 0; i < toks2.length; i++) {
-      const t = toks2[i];
-
-      // Skip @prefix ... .
-      if (t.typ === 'AtPrefix') {
-        while (i < toks2.length && toks2[i].typ !== 'Dot' && toks2[i].typ !== 'EOF') i++;
-        continue;
-      }
-      // Skip @base ... .
-      if (t.typ === 'AtBase') {
-        while (i < toks2.length && toks2[i].typ !== 'Dot' && toks2[i].typ !== 'EOF') i++;
-        continue;
-      }
-
-      // Skip SPARQL/Turtle PREFIX pfx: <iri>
-      if (
-        t.typ === 'Ident' &&
-        typeof t.value === 'string' &&
-        t.value.toLowerCase() === 'prefix' &&
-        toks2[i + 1] &&
-        toks2[i + 1].typ === 'Ident' &&
-        typeof toks2[i + 1].value === 'string' &&
-        toks2[i + 1].value.endsWith(':') &&
-        toks2[i + 2] &&
-        (toks2[i + 2].typ === 'IriRef' || toks2[i + 2].typ === 'Ident')
-      ) {
-        i += 2;
-        continue;
-      }
-
-      // Skip SPARQL BASE <iri>
-      if (
-        t.typ === 'Ident' &&
-        typeof t.value === 'string' &&
-        t.value.toLowerCase() === 'base' &&
-        toks2[i + 1] &&
-        toks2[i + 1].typ === 'IriRef'
-      ) {
-        i += 1;
-        continue;
-      }
-
-      // Count QNames in identifiers (including datatypes like xsd:integer).
-      if (t.typ === 'Ident') {
-        maybeAddFromQName(t.value);
-      }
-    }
-
-    return used;
-  }
-
-  function restrictPrefixEnv(prefEnv, usedSet) {
-    const m = {};
-    for (const p of usedSet) {
-      if (Object.prototype.hasOwnProperty.call(prefEnv.map, p)) {
-        m[p] = prefEnv.map[p];
-      }
-    }
-    return new PrefixEnv(m, prefEnv.baseIri || '');
-  }
-
-  // Streaming mode: print (input) prefixes first, then print derived triples as soon as they are found.
-  if (streamMode) {
-    const usedInInput = prefixesUsedInInputTokens(toks, prefixes);
-    const outPrefixes = restrictPrefixEnv(prefixes, usedInInput);
-
-    // Ensure log:trace uses the same compact prefix set as the output.
-    engine.setTracePrefixes(outPrefixes);
-
-    const entries = Object.entries(outPrefixes.map)
-      .filter(([_p, base]) => !!base)
-      .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
-
-    for (const [pfx, base] of entries) {
-      if (pfx === '') console.log(`@prefix : <${base}> .`);
-      else console.log(`@prefix ${pfx}: <${base}> .`);
-    }
-    if (entries.length) console.log();
-
-    engine.forwardChain(facts, frules, brules, (df) => {
-      if (engine.getProofCommentsEnabled()) {
-        engine.printExplanation(df, outPrefixes);
-        console.log(engine.tripleToN3(df.fact, outPrefixes));
-        console.log();
-      } else {
-        console.log(engine.tripleToN3(df.fact, outPrefixes));
-      }
-    });
-    return;
-  }
-
-  // Default (non-streaming): derive everything first, then print only the newly derived facts.
-  const derived = engine.forwardChain(facts, frules, brules);
-  const derivedTriples = derived.map((df) => df.fact);
-  const usedPrefixes = prefixes.prefixesUsedForOutput(derivedTriples);
-
-  for (const [pfx, base] of usedPrefixes) {
-    if (pfx === '') console.log(`@prefix : <${base}> .`);
-    else console.log(`@prefix ${pfx}: <${base}> .`);
-  }
-  if (derived.length && usedPrefixes.length) console.log();
-
-  for (const df of derived) {
-    if (engine.getProofCommentsEnabled()) {
-      engine.printExplanation(df, prefixes);
-      console.log(engine.tripleToN3(df.fact, prefixes));
-      console.log();
-    } else {
-      console.log(engine.tripleToN3(df.fact, prefixes));
-    }
-  }
-}
-
-module.exports = { main, formatN3SyntaxError };
-
-  };
-  __modules["lib/deref.js"] = function(require, module, exports){
-/**
- * Eyeling Reasoner — deref
- *
- * Synchronous dereferencing + parsing support for log:content / log:semantics.
- * Includes small in-memory caches and optional HTTPS enforcement.
- */
-
-'use strict';
-
-// Dereferencing + parsing support for log:content / log:semantics.
-// This is intentionally synchronous to keep the core engine synchronous.
-// In browsers/workers, dereferencing uses synchronous XHR (subject to CORS).
-
-const {
-  LOG_NS,
-  GraphTerm,
-  Triple,
-  internIri,
-  internLiteral,
-} = require('./prelude');
-
-const { lex } = require('./lexer');
-const { Parser } = require('./parser');
-
-// -----------------------------------------------------------------------------
-// Caches (module-level)
-// -----------------------------------------------------------------------------
-// Key is the dereferenced document IRI *without* fragment.
-const __logContentCache = new Map(); // iri -> string | null (null means fetch/read failed)
-const __logSemanticsCache = new Map(); // iri -> GraphTerm | null (null means parse failed)
-const __logSemanticsOrErrorCache = new Map(); // iri -> Term (GraphTerm | Literal) for log:semanticsOrError
-
-// When enabled, force http:// IRIs to be dereferenced as https://
-// (CLI: --enforce-https, API: reasonStream({ enforceHttps: true })).
-let enforceHttpsEnabled = false;
-
-function getEnforceHttpsEnabled() {
-  return enforceHttpsEnabled;
-}
-
-function setEnforceHttpsEnabled(v) {
-  enforceHttpsEnabled = !!v;
-}
-
-function __maybeEnforceHttps(iri) {
-  if (!enforceHttpsEnabled) return iri;
-  return typeof iri === 'string' && iri.startsWith('http://') ? 'https://' + iri.slice('http://'.length) : iri;
-}
-
-// Environment detection (Node vs Browser/Worker).
-const __IS_NODE = typeof process !== 'undefined' && !!(process.versions && process.versions.node);
-
-function __hasXmlHttpRequest() {
-  return typeof XMLHttpRequest !== 'undefined';
-}
-
-function __resolveBrowserUrl(ref) {
-  if (!ref) return ref;
-  // If already absolute, keep as-is.
-  if (/^[A-Za-z][A-Za-z0-9+.-]*:/.test(ref)) return ref;
-  const base =
-    (typeof document !== 'undefined' && document.baseURI) || (typeof location !== 'undefined' && location.href) || '';
-  try {
-    return new URL(ref, base).toString();
-  } catch {
-    return ref;
-  }
-}
-
-function __fetchHttpTextSyncBrowser(url) {
-  if (!__hasXmlHttpRequest()) return null;
-  try {
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', url, false); // synchronous
-    try {
-      xhr.setRequestHeader(
-        'Accept',
-        'text/n3, text/turtle, application/n-triples, application/n-quads, text/plain;q=0.1, */*;q=0.01',
-      );
-    } catch {
-      // Some environments restrict setting headers (ignore).
-    }
-    xhr.send(null);
-    const sc = xhr.status || 0;
-    if (sc < 200 || sc >= 300) return null;
-    return xhr.responseText;
-  } catch {
-    return null;
-  }
-}
-
-function normalizeDerefIri(iriNoFrag) {
-  // In Node, treat non-http as local path; leave as-is.
-  if (__IS_NODE) return __maybeEnforceHttps(iriNoFrag);
-  // In browsers/workers, resolve relative references against the page URL.
-  return __maybeEnforceHttps(__resolveBrowserUrl(iriNoFrag));
-}
-
-function stripFragment(iri) {
-  const i = iri.indexOf('#');
-  return i >= 0 ? iri.slice(0, i) : iri;
-}
-
-function __isHttpIri(iri) {
-  return typeof iri === 'string' && (iri.startsWith('http://') || iri.startsWith('https://'));
-}
-
-function __isFileIri(iri) {
-  return typeof iri === 'string' && iri.startsWith('file://');
-}
-
-function __fileIriToPath(fileIri) {
-  // Basic file:// URI decoding. Handles file:///abs/path and file://localhost/abs/path.
-  try {
-    const u = new URL(fileIri);
-    return decodeURIComponent(u.pathname);
-  } catch {
-    return decodeURIComponent(fileIri.replace(/^file:\/\//, ''));
-  }
-}
-
-function __readFileText(pathOrFileIri) {
-  if (!__IS_NODE) return null;
-  const fs = require('fs');
-  let path = pathOrFileIri;
-  if (__isFileIri(pathOrFileIri)) path = __fileIriToPath(pathOrFileIri);
-  try {
-    return fs.readFileSync(path, { encoding: 'utf8' });
-  } catch {
-    return null;
-  }
-}
-
-function __fetchHttpTextViaSubprocess(url) {
-  if (!__IS_NODE) return null;
-  const cp = require('child_process');
-  // Use a subprocess so this code remains synchronous without rewriting the whole reasoner to async.
-  const script = `
-    const enforceHttps = ${enforceHttpsEnabled ? 'true' : 'false'};
-    const url = process.argv[1];
-    const maxRedirects = 10;
-    function norm(u) {
-      if (enforceHttps && typeof u === 'string' && u.startsWith('http://')) {
-        return 'https://' + u.slice('http://'.length);
-      }
-      return u;
-    }
-    function get(u, n) {
-      u = norm(u);
-      if (n > maxRedirects) { console.error('Too many redirects'); process.exit(3); }
-      let mod;
-      if (u.startsWith('https://')) mod = require('https');
-      else if (u.startsWith('http://')) mod = require('http');
-      else { console.error('Not http(s)'); process.exit(2); }
-
-      const { URL } = require('url');
-      const uu = new URL(u);
-      const opts = {
-        protocol: uu.protocol,
-        hostname: uu.hostname,
-        port: uu.port || undefined,
-        path: uu.pathname + uu.search,
-        headers: {
-          'accept': 'text/n3, text/turtle, application/n-triples, application/n-quads, text/plain;q=0.1, */*;q=0.01',
-          // Ask for an uncompressed response when possible; some servers send
-          // compressed bodies that are not valid UTF-8 text for the parser.
-          // We still handle common encodings below if they are returned anyway.
-          'accept-encoding': 'identity',
-          'user-agent': 'eyeling-log-builtins'
-        }
-      };
-      const req = mod.request(opts, (res) => {
-        const sc = res.statusCode || 0;
-        if (sc >= 300 && sc < 400 && res.headers && res.headers.location) {
-          let next = new URL(res.headers.location, u).toString();
-          next = norm(next);
-          res.resume();
-          return get(next, n + 1);
-        }
-        if (sc < 200 || sc >= 300) {
-          res.resume();
-          console.error('HTTP status ' + sc);
-          process.exit(4);
-        }
-        const chunks = [];
-        res.on('data', (c) => { chunks.push(c); });
-        res.on('end', () => {
-          try {
-            const { Buffer } = require('buffer');
-            const zlib = require('zlib');
-            const buf = Buffer.concat(chunks);
-            const enc = ((res.headers && res.headers['content-encoding']) || '').toString().toLowerCase();
-            let out = buf;
-            if (enc.includes('gzip')) out = zlib.gunzipSync(buf);
-            else if (enc.includes('deflate')) out = zlib.inflateSync(buf);
-            else if (enc.includes('br')) out = zlib.brotliDecompressSync(buf);
-            process.stdout.write(out.toString('utf8'));
-          } catch (e) {
-            // Best-effort fallback: treat as UTF-8.
-            try {
-              const { Buffer } = require('buffer');
-              process.stdout.write(Buffer.concat(chunks).toString('utf8'));
-            } catch {
-              process.exit(6);
-            }
-          }
-        });
-      });
-      req.on('error', (e) => { console.error(e && e.message ? e.message : String(e)); process.exit(5); });
-      req.end();
-    }
-    get(url, 0);
-  `;
-  const r = cp.spawnSync(process.execPath, ['-e', script, url], {
-    encoding: 'utf8',
-    maxBuffer: 32 * 1024 * 1024,
-  });
-  if (r.status !== 0) return null;
-  return r.stdout;
-}
-
-function derefTextSync(iriNoFrag) {
-  const norm = normalizeDerefIri(iriNoFrag);
-  const key = typeof norm === 'string' && norm ? norm : iriNoFrag;
-
-  if (__logContentCache.has(key)) return __logContentCache.get(key);
-
-  let text = null;
-
-  if (__IS_NODE) {
-    if (__isHttpIri(key)) {
-      text = __fetchHttpTextViaSubprocess(key);
-    } else {
-      // Treat any non-http(s) IRI as a local path (including file://), for basic usability.
-      text = __readFileText(key);
-    }
-  } else {
-    // Browser / Worker: we can only dereference over HTTP(S), and it must pass CORS.
-    const url = typeof norm === 'string' && norm ? norm : key;
-    if (__isHttpIri(url)) text = __fetchHttpTextSyncBrowser(url);
-  }
-
-  __logContentCache.set(key, text);
-  return text;
-}
-
-const __IMPLIES_PRED = internIri(LOG_NS + 'implies');
-const __IMPLIED_BY_PRED = internIri(LOG_NS + 'impliedBy');
-
-function parseSemanticsToFormula(text, baseIri) {
-  const toks = lex(text);
-  const parser = new Parser(toks);
-  if (typeof baseIri === 'string' && baseIri) parser.prefixes.setBase(baseIri);
-
-  const [_prefixes, triples, frules, brules] = parser.parseDocument();
-
-  const all = triples.slice();
-
-  // Represent top-level => / <= rules as triples between formula terms,
-  // so the returned formula can include them.
-  for (const r of frules) {
-    const concTerm = r.isFuse ? internLiteral('false') : new GraphTerm(r.conclusion);
-    all.push(new Triple(new GraphTerm(r.premise), __IMPLIES_PRED, concTerm));
-  }
-  for (const r of brules) {
-    all.push(new Triple(new GraphTerm(r.conclusion), __IMPLIED_BY_PRED, new GraphTerm(r.premise)));
-  }
-
-  return new GraphTerm(all);
-}
-
-function derefSemanticsSync(iriNoFrag) {
-  const norm = normalizeDerefIri(iriNoFrag);
-  const key = typeof norm === 'string' && norm ? norm : iriNoFrag;
-  if (__logSemanticsCache.has(key)) return __logSemanticsCache.get(key);
-
-  const text = derefTextSync(iriNoFrag);
-  if (typeof text !== 'string') {
-    __logSemanticsCache.set(key, null);
-    return null;
-  }
-  try {
-    const baseIri = typeof key === 'string' && key ? key : iriNoFrag;
-    const formula = parseSemanticsToFormula(text, baseIri);
-    __logSemanticsCache.set(key, formula);
-    return formula;
-  } catch {
-    __logSemanticsCache.set(key, null);
-    return null;
-  }
-}
-
-function __makeStringLiteral(str) {
-  return internLiteral(JSON.stringify(str));
-}
-
-function derefSemanticsOrError(iriNoFrag) {
-  const norm = normalizeDerefIri(iriNoFrag);
-  const key = typeof norm === 'string' && norm ? norm : iriNoFrag;
-
-  if (__logSemanticsOrErrorCache.has(key)) return __logSemanticsOrErrorCache.get(key);
-
-  let term = null;
-
-  // If we already successfully computed log:semantics, reuse it.
-  const formula = derefSemanticsSync(iriNoFrag);
-
-  if (formula instanceof GraphTerm) {
-    term = formula;
-  } else {
-    // Try to get an informative error.
-    const txt = derefTextSync(iriNoFrag);
-    if (typeof txt !== 'string') {
-      term = __makeStringLiteral(`error(dereference_failed,${iriNoFrag})`);
-    } else {
-      try {
-        const baseIri = typeof key === 'string' && key ? key : iriNoFrag;
-        term = parseSemanticsToFormula(txt, baseIri);
-        // Keep the semantics cache consistent.
-        __logSemanticsCache.set(key, term);
-      } catch (e) {
-        const msg = e && e.message ? e.message : String(e);
-        term = __makeStringLiteral(`error(parse_error,${msg})`);
-      }
-    }
-  }
-
-  __logSemanticsOrErrorCache.set(key, term);
-  return term;
-}
-
-module.exports = {
-  // flags
-  getEnforceHttpsEnabled,
-  setEnforceHttpsEnabled,
-
-  // helpers
-  stripFragment,
-  normalizeDerefIri,
-
-  // deref + parse
-  derefTextSync,
-  derefSemanticsSync,
-  derefSemanticsOrError,
-  parseSemanticsToFormula,
-
-  // caches (exposed for tests/debugging if needed)
-  __logContentCache,
-  __logSemanticsCache,
-  __logSemanticsOrErrorCache,
-};
-
-  };
-  __modules["lib/engine.js"] = function(require, module, exports){
-/**
- * Eyeling Reasoner — engine
- *
- * Core inference engine: unification, forward/backward chaining, builtin evaluation,
- * and proof/explanation bookkeeping. This module intentionally stays cohesive.
- */
-
 'use strict';
 
 const {
@@ -704,7 +30,6 @@ const {
   LOG_NS,
   STRING_NS,
   SKOLEM_NS,
-  RDF_JSON_DT,
   Literal,
   Iri,
   Var,
@@ -720,1125 +45,63 @@ const {
   PrefixEnv,
   resolveIriRef,
   collectIrisInTerm,
-  varsInRule,
   collectBlankLabelsInTriples,
   literalParts,
 } = require('./prelude');
 
-const { lex, N3SyntaxError, decodeN3StringEscapes } = require('./lexer');
-const { Parser } = require('./parser');
-const { liftBlankRuleVars } = require('./rules');
-
-const { termToN3, tripleToN3 } = require('./printing');
-
+const { decodeN3StringEscapes } = require('./lexer');
 const trace = require('./trace');
 const time = require('./time');
-const { deterministicSkolemIdFromKey } = require('./skolem');
-
 const deref = require('./deref');
-
-let version = 'dev';
-try {
-  // Node: keep package.json version if available
-  if (typeof require === 'function') version = require('./package.json').version || version;
-} catch (_) {}
 
 let nodeCrypto = null;
 try {
-  // Node: crypto available
   if (typeof require === 'function') nodeCrypto = require('crypto');
 } catch (_) {}
-function isRdfJsonDatatype(dt) {
-  // dt comes from literalParts() and may be expanded or prefixed depending on parsing/printing.
-  return dt === null || dt === RDF_JSON_DT || dt === 'rdf:JSON';
-}
 
-function termToJsonText(t) {
-  if (!(t instanceof Literal)) return null;
-  const [lex, dt] = literalParts(t.value);
-  if (!isRdfJsonDatatype(dt)) return null;
-  // decode escapes for short literals; long literals are taken verbatim
-  return termToJsStringDecoded(t);
-}
-
-function makeRdfJsonLiteral(jsonText) {
-  // Prefer a readable long literal when safe; fall back to short if needed.
-  if (!jsonText.includes('"""')) {
-    return internLiteral('"""' + jsonText + '"""^^<' + RDF_JSON_DT + '>');
-  }
-  return internLiteral(JSON.stringify(jsonText) + '^^<' + RDF_JSON_DT + '>');
-}
-// For a single reasoning run, this maps a canonical representation
-// of the subject term in log:skolem to a Skolem IRI.
-const skolemCache = new Map();
-
-// log:skolem run salt and mode.
 //
-// Desired behavior:
-//   - Within one reasoning run: same subject -> same Skolem IRI.
-//   - Across reasoning runs (default): same subject -> different Skolem IRI.
-//   - Optional legacy mode: stable across runs (CLI: --deterministic-skolem).
-let deterministicSkolemAcrossRuns = false;
-let __skolemRunDepth = 0;
-let __skolemRunSalt = null;
-
-function __makeSkolemRunSalt() {
-  // Prefer WebCrypto if present (browser/worker)
-  try {
-    const g = typeof globalThis !== 'undefined' ? globalThis : null;
-    if (g && g.crypto) {
-      if (typeof g.crypto.randomUUID === 'function') return g.crypto.randomUUID();
-      if (typeof g.crypto.getRandomValues === 'function') {
-        const a = new Uint8Array(16);
-        g.crypto.getRandomValues(a);
-        return Array.from(a).map((b) => b.toString(16).padStart(2, '0')).join('');
-      }
-    }
-  } catch (_) {}
-
-  // Node.js crypto
-  try {
-    if (nodeCrypto) {
-      if (typeof nodeCrypto.randomUUID === 'function') return nodeCrypto.randomUUID();
-      if (typeof nodeCrypto.randomBytes === 'function') return nodeCrypto.randomBytes(16).toString('hex');
-    }
-  } catch (_) {}
-
-  // Last-resort fallback (not cryptographically strong)
-  return (
-    Date.now().toString(16) +
-    '-' +
-    Math.random().toString(16).slice(2) +
-    '-' +
-    Math.random().toString(16).slice(2)
-  );
-}
-
-function __enterReasoningRun() {
-  __skolemRunDepth += 1;
-  if (__skolemRunDepth === 1) {
-    skolemCache.clear();
-    __skolemRunSalt = deterministicSkolemAcrossRuns ? '' : __makeSkolemRunSalt();
-  }
-}
-
-function __exitReasoningRun() {
-  if (__skolemRunDepth > 0) __skolemRunDepth -= 1;
-  if (__skolemRunDepth === 0) {
-    // Clear the salt so a future top-level run gets a fresh one (default mode).
-    __skolemRunSalt = null;
-  }
-}
-
-function __skolemIdForKey(key) {
-  if (deterministicSkolemAcrossRuns) return deterministicSkolemIdFromKey(key);
-  // Ensure we have a run salt even if log:skolem is invoked outside forwardChain().
-  if (__skolemRunSalt === null) {
-    skolemCache.clear();
-    __skolemRunSalt = __makeSkolemRunSalt();
-  }
-  return deterministicSkolemIdFromKey(__skolemRunSalt + '|' + key);
-}
-
-function getDeterministicSkolemEnabled() {
-  return deterministicSkolemAcrossRuns;
-}
-
-function setDeterministicSkolemEnabled(v) {
-  deterministicSkolemAcrossRuns = !!v;
-  // Reset per-run state so the new mode takes effect immediately for the next run.
-  if (__skolemRunDepth === 0) {
-    __skolemRunSalt = null;
-    skolemCache.clear();
-  }
-}
-
-// -----------------------------------------------------------------------------
-// Hot caches
-// -----------------------------------------------------------------------------
+// Hot caches (moved from engine.js)
+//
 const __parseNumCache = new Map(); // lit string -> number|null
 const __parseIntCache = new Map(); // lit string -> bigint|null
 const __parseNumericInfoCache = new Map(); // lit string -> info|null
 
-
-// -----------------------------------------------------------------------------
-// log:conclusion cache
-// -----------------------------------------------------------------------------
-// Cache deductive closure for log:conclusion
-const __logConclusionCache = new WeakMap(); // GraphTerm -> GraphTerm (deductive closure)
-
-function __makeRuleFromTerms(left, right, isForward) {
-  // Mirror Parser.makeRule, but usable at runtime (e.g., log:conclusion).
-  let premiseTerm, conclTerm;
-
-  if (isForward) {
-    premiseTerm = left;
-    conclTerm = right;
-  } else {
-    premiseTerm = right;
-    conclTerm = left;
-  }
-
-  let isFuse = false;
-  if (isForward) {
-    if (conclTerm instanceof Literal && conclTerm.value === 'false') {
-      isFuse = true;
-    }
-  }
-
-  let rawPremise;
-  if (premiseTerm instanceof GraphTerm) {
-    rawPremise = premiseTerm.triples;
-  } else if (premiseTerm instanceof Literal && premiseTerm.value === 'true') {
-    rawPremise = [];
-  } else {
-    rawPremise = [];
-  }
-
-  let rawConclusion;
-  if (conclTerm instanceof GraphTerm) {
-    rawConclusion = conclTerm.triples;
-  } else if (conclTerm instanceof Literal && conclTerm.value === 'false') {
-    rawConclusion = [];
-  } else {
-    rawConclusion = [];
-  }
-
-  const headBlankLabels = collectBlankLabelsInTriples(rawConclusion);
-  const [premise, conclusion] = liftBlankRuleVars(rawPremise, rawConclusion);
-  return new Rule(premise, conclusion, isForward, isFuse, headBlankLabels);
-}
-
-function __computeConclusionFromFormula(formula) {
-  if (!(formula instanceof GraphTerm)) return null;
-
-  const cached = __logConclusionCache.get(formula);
-  if (cached) return cached;
-
-  // Facts start as *all* triples in the formula, including rule triples.
-  const facts2 = formula.triples.slice();
-
-  // Extract rules from rule-triples present inside the formula.
-  const fw = [];
-  const bw = [];
-
-  for (const tr of formula.triples) {
-    // Treat {A} => {B} as a forward rule.
-    if (isLogImplies(tr.p)) {
-      fw.push(__makeRuleFromTerms(tr.s, tr.o, true));
-      continue;
-    }
-
-    // Treat {A} <= {B} as the same rule in the other direction, i.e., {B} => {A},
-    // so it participates in deductive closure even if only <= is used.
-    if (isLogImpliedBy(tr.p)) {
-      fw.push(__makeRuleFromTerms(tr.o, tr.s, true));
-      // Also index it as a backward rule for completeness (helps proveGoals in some cases).
-      bw.push(__makeRuleFromTerms(tr.s, tr.o, false));
-      continue;
-    }
-  }
-
-  // Saturate within this local formula only.
-  forwardChain(facts2, fw, bw);
-
-  const out = new GraphTerm(facts2.slice());
-  __logConclusionCache.set(formula, out);
-  return out;
-}
-
-// Controls whether human-readable proof comments are printed.
-let proofCommentsEnabled = false;
-// Super restricted mode: disable *all* builtins except => / <= (log:implies / log:impliedBy)
-let superRestrictedMode = false;
-
-// ===========================================================================
-function skolemizeTermForHeadBlanks(t, headBlankLabels, mapping, skCounter, firingKey, globalMap) {
-  if (t instanceof Blank) {
-    const label = t.label;
-    // Only skolemize blanks that occur explicitly in the rule head
-    if (!headBlankLabels || !headBlankLabels.has(label)) {
-      return t; // this is a data blank (e.g. bound via ?X), keep it
-    }
-
-    if (!mapping.hasOwnProperty(label)) {
-      // If we have a global cache keyed by firingKey, use it to ensure
-      // deterministic blank IDs for the same rule+substitution instance.
-      if (globalMap && firingKey) {
-        const gk = `${firingKey}|${label}`;
-        let sk = globalMap.get(gk);
-        if (!sk) {
-          const idx = skCounter[0];
-          skCounter[0] += 1;
-          sk = `_:sk_${idx}`;
-          globalMap.set(gk, sk);
-        }
-        mapping[label] = sk;
-      } else {
-        const idx = skCounter[0];
-        skCounter[0] += 1;
-        mapping[label] = `_:sk_${idx}`;
-      }
-    }
-    return new Blank(mapping[label]);
-  }
-
-  if (t instanceof ListTerm) {
-    return new ListTerm(
-      t.elems.map((e) => skolemizeTermForHeadBlanks(e, headBlankLabels, mapping, skCounter, firingKey, globalMap)),
-    );
-  }
-
-  if (t instanceof OpenListTerm) {
-    return new OpenListTerm(
-      t.prefix.map((e) => skolemizeTermForHeadBlanks(e, headBlankLabels, mapping, skCounter, firingKey, globalMap)),
-      t.tailVar,
-    );
-  }
-
-  if (t instanceof GraphTerm) {
-    return new GraphTerm(
-      t.triples.map((tr) =>
-        skolemizeTripleForHeadBlanks(tr, headBlankLabels, mapping, skCounter, firingKey, globalMap),
-      ),
-    );
-  }
-
-  return t;
-}
-
-function skolemizeTripleForHeadBlanks(tr, headBlankLabels, mapping, skCounter, firingKey, globalMap) {
-  return new Triple(
-    skolemizeTermForHeadBlanks(tr.s, headBlankLabels, mapping, skCounter, firingKey, globalMap),
-    skolemizeTermForHeadBlanks(tr.p, headBlankLabels, mapping, skCounter, firingKey, globalMap),
-    skolemizeTermForHeadBlanks(tr.o, headBlankLabels, mapping, skCounter, firingKey, globalMap),
-  );
-}
-
-// ===========================================================================
-// Alpha equivalence helpers
-// ===========================================================================
-
-function termsEqual(a, b) {
-  if (a === b) return true;
-  if (!a || !b) return false;
-  if (a.constructor !== b.constructor) return false;
-
-  if (a instanceof Iri) return a.value === b.value;
-
-  if (a instanceof Literal) {
-    if (a.value === b.value) return true;
-
-    // Plain "abc" == "abc"^^xsd:string (but not language-tagged strings)
-    if (literalsEquivalentAsXsdString(a.value, b.value)) return true;
-
-    // Keep in sync with unifyTerm(): numeric-value equality, datatype-aware.
-    const ai = parseNumericLiteralInfo(a);
-    const bi = parseNumericLiteralInfo(b);
-
-    if (ai && bi) {
-      // Same datatype => compare values
-      if (ai.dt === bi.dt) {
-        if (ai.kind === 'bigint' && bi.kind === 'bigint') return ai.value === bi.value;
-
-        const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
-        const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
-        return !Number.isNaN(an) && !Number.isNaN(bn) && an === bn;
-      }
-    }
-
-    return false;
-  }
-
-  if (a instanceof Var) return a.name === b.name;
-  if (a instanceof Blank) return a.label === b.label;
-
-  if (a instanceof ListTerm) {
-    if (a.elems.length !== b.elems.length) return false;
-    for (let i = 0; i < a.elems.length; i++) {
-      if (!termsEqual(a.elems[i], b.elems[i])) return false;
-    }
-    return true;
-  }
-
-  if (a instanceof OpenListTerm) {
-    if (a.tailVar !== b.tailVar) return false;
-    if (a.prefix.length !== b.prefix.length) return false;
-    for (let i = 0; i < a.prefix.length; i++) {
-      if (!termsEqual(a.prefix[i], b.prefix[i])) return false;
-    }
-    return true;
-  }
-
-  if (a instanceof GraphTerm) {
-    return alphaEqGraphTriples(a.triples, b.triples);
-  }
-
-  return false;
-}
-
-function termsEqualNoIntDecimal(a, b) {
-  if (a === b) return true;
-  if (!a || !b) return false;
-  if (a.constructor !== b.constructor) return false;
-
-  if (a instanceof Iri) return a.value === b.value;
-
-  if (a instanceof Literal) {
-    if (a.value === b.value) return true;
-
-    // Plain "abc" == "abc"^^xsd:string (but not language-tagged)
-    if (literalsEquivalentAsXsdString(a.value, b.value)) return true;
-
-    // Numeric equality ONLY when datatypes agree (no integer<->decimal here)
-    const ai = parseNumericLiteralInfo(a);
-    const bi = parseNumericLiteralInfo(b);
-    if (ai && bi && ai.dt === bi.dt) {
-      // integer: exact bigint
-      if (ai.kind === 'bigint' && bi.kind === 'bigint') return ai.value === bi.value;
-
-      // decimal: compare exactly via num/scale if possible
-      if (ai.dt === XSD_NS + 'decimal') {
-        const da = parseXsdDecimalToBigIntScale(ai.lexStr);
-        const db = parseXsdDecimalToBigIntScale(bi.lexStr);
-        if (da && db) {
-          const scale = Math.max(da.scale, db.scale);
-          const na = da.num * pow10n(scale - da.scale);
-          const nb = db.num * pow10n(scale - db.scale);
-          return na === nb;
-        }
-      }
-
-      // double/float-ish: JS number (same as your normal same-dt path)
-      const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
-      const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
-      return !Number.isNaN(an) && !Number.isNaN(bn) && an === bn;
-    }
-
-    return false;
-  }
-
-  if (a instanceof Var) return a.name === b.name;
-  if (a instanceof Blank) return a.label === b.label;
-
-  if (a instanceof ListTerm) {
-    if (a.elems.length !== b.elems.length) return false;
-    for (let i = 0; i < a.elems.length; i++) {
-      if (!termsEqualNoIntDecimal(a.elems[i], b.elems[i])) return false;
-    }
-    return true;
-  }
-
-  if (a instanceof OpenListTerm) {
-    if (a.tailVar !== b.tailVar) return false;
-    if (a.prefix.length !== b.prefix.length) return false;
-    for (let i = 0; i < a.prefix.length; i++) {
-      if (!termsEqualNoIntDecimal(a.prefix[i], b.prefix[i])) return false;
-    }
-    return true;
-  }
-
-  if (a instanceof GraphTerm) {
-    return alphaEqGraphTriples(a.triples, b.triples);
-  }
-
-  return false;
-}
-
-function triplesEqual(a, b) {
-  return termsEqual(a.s, b.s) && termsEqual(a.p, b.p) && termsEqual(a.o, b.o);
-}
-
-function triplesListEqual(xs, ys) {
-  if (xs.length !== ys.length) return false;
-  for (let i = 0; i < xs.length; i++) {
-    if (!triplesEqual(xs[i], ys[i])) return false;
-  }
-  return true;
-}
-
-// Alpha-equivalence for quoted formulas, up to *variable* and blank-node renaming.
-// Treats a formula as an unordered set of triples (order-insensitive match).
-function alphaEqVarName(x, y, vmap) {
-  if (vmap.hasOwnProperty(x)) return vmap[x] === y;
-  vmap[x] = y;
-  return true;
-}
-
-function alphaEqTermInGraph(a, b, vmap, bmap) {
-  // Blank nodes: renamable
-  if (a instanceof Blank && b instanceof Blank) {
-    const x = a.label;
-    const y = b.label;
-    if (bmap.hasOwnProperty(x)) return bmap[x] === y;
-    bmap[x] = y;
-    return true;
-  }
-
-  // Variables: renamable (ONLY inside quoted formulas)
-  if (a instanceof Var && b instanceof Var) {
-    return alphaEqVarName(a.name, b.name, vmap);
-  }
-
-  if (a instanceof Iri && b instanceof Iri) return a.value === b.value;
-  if (a instanceof Literal && b instanceof Literal) return a.value === b.value;
-
-  if (a instanceof ListTerm && b instanceof ListTerm) {
-    if (a.elems.length !== b.elems.length) return false;
-    for (let i = 0; i < a.elems.length; i++) {
-      if (!alphaEqTermInGraph(a.elems[i], b.elems[i], vmap, bmap)) return false;
-    }
-    return true;
-  }
-
-  if (a instanceof OpenListTerm && b instanceof OpenListTerm) {
-    if (a.prefix.length !== b.prefix.length) return false;
-    for (let i = 0; i < a.prefix.length; i++) {
-      if (!alphaEqTermInGraph(a.prefix[i], b.prefix[i], vmap, bmap)) return false;
-    }
-    // tailVar is a var-name string, so treat it as renamable too
-    return alphaEqVarName(a.tailVar, b.tailVar, vmap);
-  }
-
-  // Nested formulas: compare with fresh maps (separate scope)
-  if (a instanceof GraphTerm && b instanceof GraphTerm) {
-    return alphaEqGraphTriples(a.triples, b.triples);
-  }
-
-  return false;
-}
-
-function alphaEqTripleInGraph(a, b, vmap, bmap) {
-  return (
-    alphaEqTermInGraph(a.s, b.s, vmap, bmap) &&
-    alphaEqTermInGraph(a.p, b.p, vmap, bmap) &&
-    alphaEqTermInGraph(a.o, b.o, vmap, bmap)
-  );
-}
-
-function alphaEqGraphTriples(xs, ys) {
-  if (xs.length !== ys.length) return false;
-  // Fast path: exact same sequence.
-  if (triplesListEqual(xs, ys)) return true;
-
-  // Order-insensitive backtracking match, threading var/blank mappings.
-  const used = new Array(ys.length).fill(false);
-
-  function step(i, vmap, bmap) {
-    if (i >= xs.length) return true;
-    const x = xs[i];
-    for (let j = 0; j < ys.length; j++) {
-      if (used[j]) continue;
-      const y = ys[j];
-      // Cheap pruning when both predicates are IRIs.
-      if (x.p instanceof Iri && y.p instanceof Iri && x.p.value !== y.p.value) continue;
-
-      const v2 = { ...vmap };
-      const b2 = { ...bmap };
-      if (!alphaEqTripleInGraph(x, y, v2, b2)) continue;
-
-      used[j] = true;
-      if (step(i + 1, v2, b2)) return true;
-      used[j] = false;
-    }
-    return false;
-  }
-
-  return step(0, {}, {});
-}
-
-function alphaEqTerm(a, b, bmap) {
-  if (a instanceof Blank && b instanceof Blank) {
-    const x = a.label;
-    const y = b.label;
-    if (bmap.hasOwnProperty(x)) {
-      return bmap[x] === y;
-    } else {
-      bmap[x] = y;
-      return true;
-    }
-  }
-  if (a instanceof Iri && b instanceof Iri) return a.value === b.value;
-  if (a instanceof Literal && b instanceof Literal) return a.value === b.value;
-  if (a instanceof Var && b instanceof Var) return a.name === b.name;
-  if (a instanceof ListTerm && b instanceof ListTerm) {
-    if (a.elems.length !== b.elems.length) return false;
-    for (let i = 0; i < a.elems.length; i++) {
-      if (!alphaEqTerm(a.elems[i], b.elems[i], bmap)) return false;
-    }
-    return true;
-  }
-  if (a instanceof OpenListTerm && b instanceof OpenListTerm) {
-    if (a.tailVar !== b.tailVar || a.prefix.length !== b.prefix.length) return false;
-    for (let i = 0; i < a.prefix.length; i++) {
-      if (!alphaEqTerm(a.prefix[i], b.prefix[i], bmap)) return false;
-    }
-    return true;
-  }
-  if (a instanceof GraphTerm && b instanceof GraphTerm) {
-    // formulas are alpha-equivalent up to var/blank renaming
-    return alphaEqGraphTriples(a.triples, b.triples);
-  }
-  return false;
-}
-
-function alphaEqTriple(a, b) {
-  const bmap = {};
-  return alphaEqTerm(a.s, b.s, bmap) && alphaEqTerm(a.p, b.p, bmap) && alphaEqTerm(a.o, b.o, bmap);
-}
-
-// ===========================================================================
-// Indexes (facts + backward rules)
-// ===========================================================================
 //
-// Facts:
-//   - __byPred: Map<predicateIRI, Triple[]>
-//   - __byPO:   Map<predicateIRI, Map<objectKey, Triple[]>>
-//   - __keySet: Set<"S\tP\tO"> for IRI/Literal-only triples (fast dup check)
+// Engine hooks (injected once by makeBuiltins)
 //
-// Backward rules:
-//   - __byHeadPred:   Map<headPredicateIRI, Rule[]>
-//   - __wildHeadPred: Rule[] (non-IRI head predicate)
+let applySubstTerm;
+let applySubstTriple;
+let unifyTerm;
+let unifyTermListAppend;
+let termsEqual;
+let proveGoals;
+let isGroundTerm;
+let iriValue;
+let skolemIriFromGroundTerm;
+let computeConclusionFromFormula;
+let getSuperRestrictedMode;
+// Optional hooks from engine for fact indexing & strict numeric equality
+let termFastKey;
+let ensureFactIndexes;
+let termsEqualNoIntDecimal;
 
-function termFastKey(t) {
-  if (t instanceof Iri) return 'I:' + t.value;
-  if (t instanceof Blank) return 'B:' + t.label;
-  if (t instanceof Literal) return 'L:' + normalizeLiteralForFastKey(t.value);
-  return null;
+function makeBuiltins(deps) {
+  applySubstTerm = deps.applySubstTerm;
+  applySubstTriple = deps.applySubstTriple;
+  unifyTerm = deps.unifyTerm;
+  unifyTermListAppend = deps.unifyTermListAppend;
+  termsEqual = deps.termsEqual;
+  proveGoals = deps.proveGoals;
+  isGroundTerm = deps.isGroundTerm;
+  iriValue = deps.iriValue;
+  skolemIriFromGroundTerm = deps.skolemIriFromGroundTerm;
+  computeConclusionFromFormula = deps.computeConclusionFromFormula;
+  getSuperRestrictedMode = deps.getSuperRestrictedMode;
+  termFastKey = deps.termFastKey;
+  ensureFactIndexes = deps.ensureFactIndexes;
+  termsEqualNoIntDecimal = deps.termsEqualNoIntDecimal;
+  return { evalBuiltin, isBuiltinPred };
 }
-
-function tripleFastKey(tr) {
-  const ks = termFastKey(tr.s);
-  const kp = termFastKey(tr.p);
-  const ko = termFastKey(tr.o);
-  if (ks === null || kp === null || ko === null) return null;
-  return ks + '\t' + kp + '\t' + ko;
-}
-
-function ensureFactIndexes(facts) {
-  if (facts.__byPred && facts.__byPS && facts.__byPO && facts.__keySet) return;
-
-  Object.defineProperty(facts, '__byPred', {
-    value: new Map(),
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(facts, '__byPS', {
-    value: new Map(),
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(facts, '__byPO', {
-    value: new Map(),
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(facts, '__keySet', {
-    value: new Set(),
-    enumerable: false,
-    writable: true,
-  });
-
-  for (const f of facts) indexFact(facts, f);
-}
-
-function indexFact(facts, tr) {
-  if (tr.p instanceof Iri) {
-    const pk = tr.p.value;
-
-    let pb = facts.__byPred.get(pk);
-    if (!pb) {
-      pb = [];
-      facts.__byPred.set(pk, pb);
-    }
-    pb.push(tr);
-
-    const sk = termFastKey(tr.s);
-    if (sk !== null) {
-      let ps = facts.__byPS.get(pk);
-      if (!ps) {
-        ps = new Map();
-        facts.__byPS.set(pk, ps);
-      }
-      let psb = ps.get(sk);
-      if (!psb) {
-        psb = [];
-        ps.set(sk, psb);
-      }
-      psb.push(tr);
-    }
-
-    const ok = termFastKey(tr.o);
-    if (ok !== null) {
-      let po = facts.__byPO.get(pk);
-      if (!po) {
-        po = new Map();
-        facts.__byPO.set(pk, po);
-      }
-      let pob = po.get(ok);
-      if (!pob) {
-        pob = [];
-        po.set(ok, pob);
-      }
-      pob.push(tr);
-    }
-  }
-
-  const key = tripleFastKey(tr);
-  if (key !== null) facts.__keySet.add(key);
-}
-
-function candidateFacts(facts, goal) {
-  ensureFactIndexes(facts);
-
-  if (goal.p instanceof Iri) {
-    const pk = goal.p.value;
-
-    const sk = termFastKey(goal.s);
-    const ok = termFastKey(goal.o);
-
-    /** @type {Triple[] | null} */
-    let byPS = null;
-    if (sk !== null) {
-      const ps = facts.__byPS.get(pk);
-      if (ps) byPS = ps.get(sk) || null;
-    }
-
-    /** @type {Triple[] | null} */
-    let byPO = null;
-    if (ok !== null) {
-      const po = facts.__byPO.get(pk);
-      if (po) byPO = po.get(ok) || null;
-    }
-
-    if (byPS && byPO) return byPS.length <= byPO.length ? byPS : byPO;
-    if (byPS) return byPS;
-    if (byPO) return byPO;
-
-    return facts.__byPred.get(pk) || [];
-  }
-
-  return facts;
-}
-
-function hasFactIndexed(facts, tr) {
-  ensureFactIndexes(facts);
-
-  const key = tripleFastKey(tr);
-  if (key !== null) return facts.__keySet.has(key);
-
-  if (tr.p instanceof Iri) {
-    const pk = tr.p.value;
-
-    const ok = termFastKey(tr.o);
-    if (ok !== null) {
-      const po = facts.__byPO.get(pk);
-      if (po) {
-        const pob = po.get(ok) || [];
-        // Facts are all in the same graph. Different blank node labels represent
-        // different existentials unless explicitly connected. Do NOT treat
-        // triples as duplicates modulo blank renaming, or you'll incorrectly
-        // drop facts like: _:sk_0 :x 8.0  (because _:b8 :x 8.0 exists).
-        return pob.some((t) => triplesEqual(t, tr));
-      }
-    }
-
-    const pb = facts.__byPred.get(pk) || [];
-    return pb.some((t) => triplesEqual(t, tr));
-  }
-
-  // Non-IRI predicate: fall back to strict triple equality.
-  return facts.some((t) => triplesEqual(t, tr));
-}
-
-function pushFactIndexed(facts, tr) {
-  ensureFactIndexes(facts);
-  facts.push(tr);
-  indexFact(facts, tr);
-}
-
-function ensureBackRuleIndexes(backRules) {
-  if (backRules.__byHeadPred && backRules.__wildHeadPred) return;
-
-  Object.defineProperty(backRules, '__byHeadPred', {
-    value: new Map(),
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(backRules, '__wildHeadPred', {
-    value: [],
-    enumerable: false,
-    writable: true,
-  });
-
-  for (const r of backRules) indexBackRule(backRules, r);
-}
-
-function indexBackRule(backRules, r) {
-  if (!r || !r.conclusion || r.conclusion.length !== 1) return;
-  const head = r.conclusion[0];
-  if (head && head.p instanceof Iri) {
-    const k = head.p.value;
-    let bucket = backRules.__byHeadPred.get(k);
-    if (!bucket) {
-      bucket = [];
-      backRules.__byHeadPred.set(k, bucket);
-    }
-    bucket.push(r);
-  } else {
-    backRules.__wildHeadPred.push(r);
-  }
-}
-
-// ===========================================================================
-// Special predicate helpers
-// ===========================================================================
-
-function isRdfTypePred(p) {
-  return p instanceof Iri && p.value === RDF_NS + 'type';
-}
-
-function isOwlSameAsPred(t) {
-  return t instanceof Iri && t.value === OWL_NS + 'sameAs';
-}
-
-function isLogImplies(p) {
-  return p instanceof Iri && p.value === LOG_NS + 'implies';
-}
-
-function isLogImpliedBy(p) {
-  return p instanceof Iri && p.value === LOG_NS + 'impliedBy';
-}
-
-// ===========================================================================
-// Constraint / "test" builtins
-// ===========================================================================
-
-
-// ===========================================================================
-// Unification + substitution
-// ===========================================================================
-
-function containsVarTerm(t, v) {
-  if (t instanceof Var) return t.name === v;
-  if (t instanceof ListTerm) return t.elems.some((e) => containsVarTerm(e, v));
-  if (t instanceof OpenListTerm) return t.prefix.some((e) => containsVarTerm(e, v)) || t.tailVar === v;
-  if (t instanceof GraphTerm)
-    return t.triples.some((tr) => containsVarTerm(tr.s, v) || containsVarTerm(tr.p, v) || containsVarTerm(tr.o, v));
-  return false;
-}
-
-function isGroundTermInGraph(t) {
-  // variables inside graph terms are treated as local placeholders,
-  // so they don't make the *surrounding triple* non-ground.
-  if (t instanceof OpenListTerm) return false;
-  if (t instanceof ListTerm) return t.elems.every((e) => isGroundTermInGraph(e));
-  if (t instanceof GraphTerm) return t.triples.every((tr) => isGroundTripleInGraph(tr));
-  // Iri/Literal/Blank/Var are all OK inside formulas
-  return true;
-}
-
-function isGroundTripleInGraph(tr) {
-  return isGroundTermInGraph(tr.s) && isGroundTermInGraph(tr.p) && isGroundTermInGraph(tr.o);
-}
-
-function isGroundTerm(t) {
-  if (t instanceof Var) return false;
-  if (t instanceof ListTerm) return t.elems.every((e) => isGroundTerm(e));
-  if (t instanceof OpenListTerm) return false;
-  if (t instanceof GraphTerm) return t.triples.every((tr) => isGroundTripleInGraph(tr));
-  return true;
-}
-
-function isGroundTriple(tr) {
-  return isGroundTerm(tr.s) && isGroundTerm(tr.p) && isGroundTerm(tr.o);
-}
-
-// Canonical JSON-ish encoding for use as a Skolem cache key.
-// We only *call* this on ground terms in log:skolem, but it is
-// robust to seeing vars/open lists anyway.
-function skolemKeyFromTerm(t) {
-  function enc(u) {
-    if (u instanceof Iri) return ['I', u.value];
-    if (u instanceof Literal) return ['L', u.value];
-    if (u instanceof Blank) return ['B', u.label];
-    if (u instanceof Var) return ['V', u.name];
-    if (u instanceof ListTerm) return ['List', u.elems.map(enc)];
-    if (u instanceof OpenListTerm) return ['OpenList', u.prefix.map(enc), u.tailVar];
-    if (u instanceof GraphTerm) return ['Graph', u.triples.map((tr) => [enc(tr.s), enc(tr.p), enc(tr.o)])];
-    return ['Other', String(u)];
-  }
-  return JSON.stringify(enc(t));
-}
-
-function applySubstTerm(t, s) {
-  // Common case: variable
-  if (t instanceof Var) {
-    // Fast path: unbound variable → no change
-    const first = s[t.name];
-    if (first === undefined) {
-      return t;
-    }
-
-    // Follow chains X -> Y -> ... until we hit a non-var or a cycle.
-    let cur = first;
-    const seen = new Set([t.name]);
-    while (cur instanceof Var) {
-      const name = cur.name;
-      if (seen.has(name)) break; // cycle
-      seen.add(name);
-      const nxt = s[name];
-      if (!nxt) break;
-      cur = nxt;
-    }
-
-    if (cur instanceof Var) {
-      // Still a var: keep it as is (no need to clone)
-      return cur;
-    }
-    // Bound to a non-var term: apply substitution recursively in case it
-    // contains variables inside.
-    return applySubstTerm(cur, s);
-  }
-
-  // Non-variable terms
-  if (t instanceof ListTerm) {
-    return new ListTerm(t.elems.map((e) => applySubstTerm(e, s)));
-  }
-
-  if (t instanceof OpenListTerm) {
-    const newPrefix = t.prefix.map((e) => applySubstTerm(e, s));
-    const tailTerm = s[t.tailVar];
-    if (tailTerm !== undefined) {
-      const tailApplied = applySubstTerm(tailTerm, s);
-      if (tailApplied instanceof ListTerm) {
-        return new ListTerm(newPrefix.concat(tailApplied.elems));
-      } else if (tailApplied instanceof OpenListTerm) {
-        return new OpenListTerm(newPrefix.concat(tailApplied.prefix), tailApplied.tailVar);
-      } else {
-        return new OpenListTerm(newPrefix, t.tailVar);
-      }
-    } else {
-      return new OpenListTerm(newPrefix, t.tailVar);
-    }
-  }
-
-  if (t instanceof GraphTerm) {
-    return new GraphTerm(t.triples.map((tr) => applySubstTriple(tr, s)));
-  }
-
-  return t;
-}
-
-function applySubstTriple(tr, s) {
-  return new Triple(applySubstTerm(tr.s, s), applySubstTerm(tr.p, s), applySubstTerm(tr.o, s));
-}
-
-function iriValue(t) {
-  return t instanceof Iri ? t.value : null;
-}
-
-function unifyOpenWithList(prefix, tailv, ys, subst) {
-  if (ys.length < prefix.length) return null;
-  let s2 = { ...subst };
-  for (let i = 0; i < prefix.length; i++) {
-    s2 = unifyTerm(prefix[i], ys[i], s2);
-    if (s2 === null) return null;
-  }
-  const rest = new ListTerm(ys.slice(prefix.length));
-  s2 = unifyTerm(new Var(tailv), rest, s2);
-  if (s2 === null) return null;
-  return s2;
-}
-
-function unifyGraphTriples(xs, ys, subst) {
-  if (xs.length !== ys.length) return null;
-
-  // Fast path: exact same sequence.
-  if (triplesListEqual(xs, ys)) return { ...subst };
-
-  // Backtracking match (order-insensitive), *threading* the substitution through.
-  const used = new Array(ys.length).fill(false);
-
-  function step(i, s) {
-    if (i >= xs.length) return s;
-    const x = xs[i];
-
-    for (let j = 0; j < ys.length; j++) {
-      if (used[j]) continue;
-      const y = ys[j];
-
-      // Cheap pruning when both predicates are IRIs.
-      if (x.p instanceof Iri && y.p instanceof Iri && x.p.value !== y.p.value) continue;
-
-      const s2 = unifyTriple(x, y, s); // IMPORTANT: use `s`, not {}
-      if (s2 === null) continue;
-
-      used[j] = true;
-      const s3 = step(i + 1, s2);
-      if (s3 !== null) return s3;
-      used[j] = false;
-    }
-    return null;
-  }
-
-  return step(0, { ...subst }); // IMPORTANT: start from the incoming subst
-}
-
-function unifyTerm(a, b, subst) {
-  return unifyTermWithOptions(a, b, subst, {
-    boolValueEq: true,
-    intDecimalEq: false,
-  });
-}
-
-function unifyTermListAppend(a, b, subst) {
-  // Keep list:append behavior: allow integer<->decimal exact equality,
-  // but do NOT add boolean-value equivalence (preserves current semantics).
-  return unifyTermWithOptions(a, b, subst, {
-    boolValueEq: false,
-    intDecimalEq: true,
-  });
-}
-
-function unifyTermWithOptions(a, b, subst, opts) {
-  a = applySubstTerm(a, subst);
-  b = applySubstTerm(b, subst);
-
-  // Variable binding
-  if (a instanceof Var) {
-    const v = a.name;
-    const t = b;
-    if (t instanceof Var && t.name === v) return { ...subst };
-    if (containsVarTerm(t, v)) return null;
-    const s2 = { ...subst };
-    s2[v] = t;
-    return s2;
-  }
-  if (b instanceof Var) {
-    return unifyTermWithOptions(b, a, subst, opts);
-  }
-
-  // Exact matches
-  if (a instanceof Iri && b instanceof Iri && a.value === b.value) return { ...subst };
-  if (a instanceof Literal && b instanceof Literal && a.value === b.value) return { ...subst };
-  if (a instanceof Blank && b instanceof Blank && a.label === b.label) return { ...subst };
-
-  // Plain string vs xsd:string equivalence
-  if (a instanceof Literal && b instanceof Literal) {
-    if (literalsEquivalentAsXsdString(a.value, b.value)) return { ...subst };
-  }
-
-  // Boolean-value equivalence (ONLY for normal unifyTerm)
-  if (opts.boolValueEq && a instanceof Literal && b instanceof Literal) {
-    const ai = parseBooleanLiteralInfo(a);
-    const bi = parseBooleanLiteralInfo(b);
-    if (ai && bi && ai.value === bi.value) return { ...subst };
-  }
-
-  // Numeric-value match:
-  // - always allow equality when datatype matches (existing behavior)
-  // - optionally allow integer<->decimal exact equality (list:append only)
-  if (a instanceof Literal && b instanceof Literal) {
-    const ai = parseNumericLiteralInfo(a);
-    const bi = parseNumericLiteralInfo(b);
-    if (ai && bi) {
-      if (ai.dt === bi.dt) {
-        if (ai.kind === 'bigint' && bi.kind === 'bigint') {
-          if (ai.value === bi.value) return { ...subst };
-        } else {
-          const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
-          const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
-          if (!Number.isNaN(an) && !Number.isNaN(bn) && an === bn) return { ...subst };
-        }
-      }
-
-      if (opts.intDecimalEq) {
-        const intDt = XSD_NS + 'integer';
-        const decDt = XSD_NS + 'decimal';
-        if ((ai.dt === intDt && bi.dt === decDt) || (ai.dt === decDt && bi.dt === intDt)) {
-          const intInfo = ai.dt === intDt ? ai : bi; // bigint
-          const decInfo = ai.dt === decDt ? ai : bi; // number + lexStr
-          const dec = parseXsdDecimalToBigIntScale(decInfo.lexStr);
-          if (dec) {
-            const scaledInt = intInfo.value * pow10n(dec.scale);
-            if (scaledInt === dec.num) return { ...subst };
-          }
-        }
-      }
-    }
-  }
-
-  // Open list vs concrete list
-  if (a instanceof OpenListTerm && b instanceof ListTerm) {
-    return unifyOpenWithList(a.prefix, a.tailVar, b.elems, subst);
-  }
-  if (a instanceof ListTerm && b instanceof OpenListTerm) {
-    return unifyOpenWithList(b.prefix, b.tailVar, a.elems, subst);
-  }
-
-  // Open list vs open list
-  if (a instanceof OpenListTerm && b instanceof OpenListTerm) {
-    if (a.tailVar !== b.tailVar || a.prefix.length !== b.prefix.length) return null;
-    let s2 = { ...subst };
-    for (let i = 0; i < a.prefix.length; i++) {
-      s2 = unifyTermWithOptions(a.prefix[i], b.prefix[i], s2, opts);
-      if (s2 === null) return null;
-    }
-    return s2;
-  }
-
-  // List terms
-  if (a instanceof ListTerm && b instanceof ListTerm) {
-    if (a.elems.length !== b.elems.length) return null;
-    let s2 = { ...subst };
-    for (let i = 0; i < a.elems.length; i++) {
-      s2 = unifyTermWithOptions(a.elems[i], b.elems[i], s2, opts);
-      if (s2 === null) return null;
-    }
-    return s2;
-  }
-
-  // Graphs
-  if (a instanceof GraphTerm && b instanceof GraphTerm) {
-    if (alphaEqGraphTriples(a.triples, b.triples)) return { ...subst };
-    return unifyGraphTriples(a.triples, b.triples, subst);
-  }
-
-  return null;
-}
-
-function unifyTriple(pat, fact, subst) {
-  // Predicates are usually the cheapest and most selective
-  const s1 = unifyTerm(pat.p, fact.p, subst);
-  if (s1 === null) return null;
-
-  const s2 = unifyTerm(pat.s, fact.s, s1);
-  if (s2 === null) return null;
-
-  const s3 = unifyTerm(pat.o, fact.o, s2);
-  return s3;
-}
-
-function composeSubst(outer, delta) {
-  if (!delta || Object.keys(delta).length === 0) {
-    return { ...outer };
-  }
-  const out = { ...outer };
-  for (const [k, v] of Object.entries(delta)) {
-    if (out.hasOwnProperty(k)) {
-      if (!termsEqual(out[k], v)) return null;
-    } else {
-      out[k] = v;
-    }
-  }
-  return out;
-}
-
-// ===========================================================================
-// BUILTINS
-// ===========================================================================
-
 
 function literalHasLangTag(lit) {
   // True iff the literal is a quoted string literal with a language tag suffix,
@@ -1897,6 +160,27 @@ function normalizeLiteralForFastKey(lit) {
     return `${lex}^^<${XSD_NS}string>`;
   }
   return lit;
+}
+
+// ---------------------------------------------------------------------------
+// Fast-key helpers (used for cheap dedup/indexing)
+// ---------------------------------------------------------------------------
+// Note: the engine also has a richer termFastKey for indexing facts. Builtins
+// use these local helpers for purely syntactic fast-paths (e.g., dedup in
+// log:conjunction) and should remain robust even if the engine changes.
+
+function __termFastKeyLocal(t) {
+  if (t instanceof Iri) return `I:${t.value}`;
+  if (t instanceof Literal) return `L:${normalizeLiteralForFastKey(t.value)}`;
+  return null;
+}
+
+function tripleFastKey(tr) {
+  const ks = __termFastKeyLocal(tr.s);
+  const kp = __termFastKeyLocal(tr.p);
+  const ko = __termFastKeyLocal(tr.o);
+  if (ks === null || kp === null || ko === null) return null;
+  return `${ks}|${kp}|${ko}`;
 }
 
 function stripQuotes(lex) {
@@ -2906,8 +1190,9 @@ function materializeRdfLists(triples, forwardRules, backwardRules) {
   const RDF_NIL = RDF_NS + 'nil';
 
   function nodeKey(t) {
-    if (t instanceof Blank) return 'B:' + t.label;
-    if (t instanceof Iri) return 'I:' + t.value;
+    // Only rewrite anonymous RDF list nodes (blank nodes). Named list nodes
+    // must keep their identity; list:* builtins can traverse rdf:first/rest.
+    if (t instanceof Blank) return `b:${t.label}`;
     return null;
   }
 
@@ -3090,7 +1375,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   if (pv === null) return null;
 
   // Super restricted mode: disable *all* builtins except => / <= (log:implies / log:impliedBy)
-  if (superRestrictedMode) {
+  if (typeof getSuperRestrictedMode === 'function' && getSuperRestrictedMode()) {
     const allow1 = LOG_NS + 'implies';
     const allow2 = LOG_NS + 'impliedBy';
     if (pv !== allow1 && pv !== allow2) return [];
@@ -4279,7 +2564,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     else if (g.s instanceof Literal && g.s.value === 'true') inFormula = new GraphTerm([]);
     else return [];
 
-    const conclusion = __computeConclusionFromFormula(inFormula);
+    const conclusion = computeConclusionFromFormula(inFormula);
     if (!(conclusion instanceof GraphTerm)) return [];
 
     if (g.o instanceof Var) {
@@ -4869,19 +3154,14 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   if (pv === LOG_NS + 'skolem') {
     // Subject must be ground; commonly a list, but we allow any ground term.
     if (!isGroundTerm(g.s)) return [];
+    if (typeof skolemIriFromGroundTerm !== 'function') return [];
 
-    const key = skolemKeyFromTerm(g.s);
-    let iri = skolemCache.get(key);
-    if (!iri) {
-      const id = __skolemIdForKey(key);
-      iri = internIri(SKOLEM_NS + id);
-      skolemCache.set(key, iri);
-    }
-
+    const iri = skolemIriFromGroundTerm(g.s);
     const s2 = unifyTerm(goal.o, iri, subst);
     return s2 !== null ? [s2] : [];
   }
 
+  // log:uri
   // log:uri
   if (pv === LOG_NS + 'uri') {
     // Direction 1: subject is an IRI -> object is its string representation
@@ -5126,7 +3406,7 @@ function isBuiltinPred(p) {
   // Super restricted mode: only treat => / <= as builtins.
   // Everything else should be handled as ordinary predicates (and thus must be
   // provided explicitly as facts/rules, without builtin evaluation).
-  if (superRestrictedMode) {
+  if (typeof getSuperRestrictedMode === 'function' && getSuperRestrictedMode()) {
     return v === LOG_NS + 'implies' || v === LOG_NS + 'impliedBy';
   }
 
@@ -5271,12 +3551,2035 @@ function standardizeRule(rule, gen) {
   return new Rule(premise, conclusion, rule.isForward, rule.isFuse, rule.headBlankLabels);
 }
 
+
+function triplesEqual(a, b) {
+  return termsEqual(a.s, b.s) && termsEqual(a.p, b.p) && termsEqual(a.o, b.o);
+}
+
 function listHasTriple(list, tr) {
   return list.some((t) => triplesEqual(t, tr));
 }
 
 // ===========================================================================
 // Substitution compaction (to avoid O(depth^2) in deep backward chains)
+
+
+module.exports = {
+  makeBuiltins,
+  // shared helpers used by engine/explain
+  parseBooleanLiteralInfo,
+  parseNumericLiteralInfo,
+  // numeric helpers used by engine unification / equality
+  parseXsdDecimalToBigIntScale,
+  pow10n,
+  normalizeLiteralForFastKey,
+  literalsEquivalentAsXsdString,
+  termToJsString,
+  termToJsStringDecoded,
+  materializeRdfLists,
+  // used by backward chaining
+  standardizeRule,
+  standardizeTermApart,
+  listHasTriple,
+};
+
+  };
+  __modules["lib/cli.js"] = function(require, module, exports){
+/**
+ * Eyeling Reasoner — cli
+ *
+ * CLI helpers: argument handling, user-facing errors, and convenient wrappers
+ * around the core engine for command-line usage.
+ */
+
+'use strict';
+
+const engine = require('./engine');
+const { PrefixEnv } = require('./prelude');
+
+function offsetToLineCol(text, offset) {
+  const chars = Array.from(text);
+  const n = Math.max(0, Math.min(typeof offset === 'number' ? offset : 0, chars.length));
+  let line = 1;
+  let col = 1;
+  for (let i = 0; i < n; i++) {
+    const c = chars[i];
+    if (c === '\n') {
+      line++;
+      col = 1;
+    } else if (c === '\r') {
+      line++;
+      col = 1;
+      if (i + 1 < n && chars[i + 1] === '\n') i++; // swallow \n in CRLF
+    } else {
+      col++;
+    }
+  }
+  return { line, col };
+}
+
+function formatN3SyntaxError(err, text, path) {
+  const off = err && typeof err.offset === 'number' ? err.offset : null;
+  const label = path ? String(path) : '<input>';
+  if (off === null) {
+    return `Syntax error in ${label}: ${err && err.message ? err.message : String(err)}`;
+  }
+  const { line, col } = offsetToLineCol(text, off);
+  const lines = String(text).split(/\r\n|\n|\r/);
+  const lineText = lines[line - 1] ?? '';
+  const caret = ' '.repeat(Math.max(0, col - 1)) + '^';
+  return `Syntax error in ${label}:${line}:${col}: ${err.message}\n${lineText}\n${caret}`;
+}
+
+// CLI entry point (invoked when eyeling.js is run directly)
+function main() {
+  // Drop "node" and script name; keep only user-provided args
+  // Expand combined short options: -pt == -p -t
+  const argvRaw = process.argv.slice(2);
+  const argv = [];
+  for (const a of argvRaw) {
+    if (a === '-' || !a.startsWith('-') || a.startsWith('--') || a.length === 2) {
+      argv.push(a);
+      continue;
+    }
+    // Combined short flags (no flag in eyeling takes a value)
+    for (const ch of a.slice(1)) argv.push('-' + ch);
+  }
+  const prog = String(process.argv[1] || 'eyeling')
+    .split(/[\/]/)
+    .pop();
+
+  function printHelp(toStderr = false) {
+    const msg =
+      `Usage: ${prog} [options] <file.n3>\n\n` +
+      `Options:\n` +
+      `  -a, --ast                    Print parsed AST as JSON and exit.\n` +
+      `  -d, --deterministic-skolem   Make log:skolem stable across reasoning runs.\n` +
+      `  -e, --enforce-https          Rewrite http:// IRIs to https:// for log dereferencing builtins.\n` +
+      `  -h, --help                   Show this help and exit.\n` +
+      `  -p, --proof-comments         Enable proof explanations.\n` +
+      `  -r, --strings                Print log:outputString strings (ordered by key) instead of N3 output.\n` +
+      `  -s, --super-restricted       Disable all builtins except => and <=.\n` +
+      `  -t, --stream                 Stream derived triples as soon as they are derived.\n` +
+      `  -v, --version                Print version and exit.\n`;
+    (toStderr ? console.error : console.log)(msg);
+  }
+
+  // --help / -h: print help and exit
+  if (argv.includes('--help') || argv.includes('-h')) {
+    printHelp(false);
+    process.exit(0);
+  }
+
+  // --version / -v: print version and exit
+  if (argv.includes('--version') || argv.includes('-v')) {
+    console.log(`eyeling v${engine.version}`);
+    process.exit(0);
+  }
+
+  const showAst = argv.includes('--ast') || argv.includes('-a');
+  const outputStringsMode = argv.includes('--strings') || argv.includes('-r');
+  const streamMode = argv.includes('--stream') || argv.includes('-t');
+
+  // --enforce-https: rewrite http:// -> https:// for log dereferencing builtins
+  if (argv.includes('--enforce-https') || argv.includes('-e')) {
+    engine.setEnforceHttpsEnabled(true);
+  }
+
+  // --deterministic-skolem / -d: make log:skolem stable across runs
+  if (argv.includes('--deterministic-skolem') || argv.includes('-d')) {
+    if (typeof engine.setDeterministicSkolemEnabled === 'function') engine.setDeterministicSkolemEnabled(true);
+  }
+
+  // --proof-comments / -p: enable proof explanations
+  if (argv.includes('--proof-comments') || argv.includes('-p')) {
+    engine.setProofCommentsEnabled(true);
+  }
+
+  // --super-restricted / -s: disable all builtins except => / <=
+  if (argv.includes('--super-restricted') || argv.includes('-s')) {
+    if (typeof engine.setSuperRestrictedMode === 'function') engine.setSuperRestrictedMode(true);
+  }
+
+  // Positional args (the N3 file)
+  const positional = argv.filter((a) => !a.startsWith('-'));
+  if (positional.length === 0) {
+    printHelp(false);
+    process.exit(0);
+  }
+  if (positional.length !== 1) {
+    console.error('Error: expected exactly one input <file.n3>.');
+    printHelp(true);
+    process.exit(1);
+  }
+
+  const filePath = positional[0];
+  let text;
+  try {
+    const fs = require('fs');
+    text = fs.readFileSync(filePath, { encoding: 'utf8' });
+  } catch (e) {
+    console.error(`Error reading file ${JSON.stringify(filePath)}: ${e.message}`);
+    process.exit(1);
+  }
+
+  let toks;
+  let prefixes, triples, frules, brules;
+  try {
+    toks = engine.lex(text);
+    const parser = new engine.Parser(toks);
+    [prefixes, triples, frules, brules] = parser.parseDocument();
+    // Make the parsed prefixes available to log:trace output (CLI path)
+    engine.setTracePrefixes(prefixes);
+  } catch (e) {
+    if (e && e.name === 'N3SyntaxError') {
+      console.error(formatN3SyntaxError(e, text, filePath));
+      process.exit(1);
+    }
+    throw e;
+  }
+
+  if (showAst) {
+    function astReplacer(_key, value) {
+      if (value instanceof Set) return Array.from(value);
+      if (value && typeof value === 'object' && value.constructor) {
+        const t = value.constructor.name;
+        if (t && t !== 'Object' && t !== 'Array') return { _type: t, ...value };
+      }
+      return value;
+    }
+    console.log(JSON.stringify([prefixes, triples, frules, brules], astReplacer, 2));
+    process.exit(0);
+  }
+
+  // Materialize anonymous rdf:first/rdf:rest collections into list terms.
+  // Named list nodes keep identity; list:* builtins can traverse them.
+  engine.materializeRdfLists(triples, frules, brules);
+
+
+  const facts = triples.filter((tr) => engine.isGroundTriple(tr));
+
+  // If requested, print log:outputString values (ordered by subject key) and exit.
+  // Note: log:outputString values may depend on derived facts, so we must saturate first.
+  if (outputStringsMode) {
+    engine.forwardChain(facts, frules, brules);
+    const out = engine.collectOutputStringsFromFacts(facts, prefixes);
+    if (out) process.stdout.write(out);
+    process.exit(0);
+  }
+
+  // In --stream mode we print prefixes *before* any derivations happen.
+  // To keep the header small and stable, emit only prefixes that are actually
+  // used (as QNames) in the *input* N3 program.
+  function prefixesUsedInInputTokens(toks2, prefEnv) {
+    const used = new Set();
+
+    function maybeAddFromQName(name) {
+      if (typeof name !== 'string') return;
+      if (!name.includes(':')) return;
+      if (name.startsWith('_:')) return; // blank node
+
+      // Split only on the first ':'
+      const idx = name.indexOf(':');
+      const p = name.slice(0, idx); // may be '' for ":foo"
+
+      // Ignore things like "http://..." unless that prefix is actually defined.
+      if (!Object.prototype.hasOwnProperty.call(prefEnv.map, p)) return;
+
+      used.add(p);
+    }
+
+    for (let i = 0; i < toks2.length; i++) {
+      const t = toks2[i];
+
+      // Skip @prefix ... .
+      if (t.typ === 'AtPrefix') {
+        while (i < toks2.length && toks2[i].typ !== 'Dot' && toks2[i].typ !== 'EOF') i++;
+        continue;
+      }
+      // Skip @base ... .
+      if (t.typ === 'AtBase') {
+        while (i < toks2.length && toks2[i].typ !== 'Dot' && toks2[i].typ !== 'EOF') i++;
+        continue;
+      }
+
+      // Skip SPARQL/Turtle PREFIX pfx: <iri>
+      if (
+        t.typ === 'Ident' &&
+        typeof t.value === 'string' &&
+        t.value.toLowerCase() === 'prefix' &&
+        toks2[i + 1] &&
+        toks2[i + 1].typ === 'Ident' &&
+        typeof toks2[i + 1].value === 'string' &&
+        toks2[i + 1].value.endsWith(':') &&
+        toks2[i + 2] &&
+        (toks2[i + 2].typ === 'IriRef' || toks2[i + 2].typ === 'Ident')
+      ) {
+        i += 2;
+        continue;
+      }
+
+      // Skip SPARQL BASE <iri>
+      if (
+        t.typ === 'Ident' &&
+        typeof t.value === 'string' &&
+        t.value.toLowerCase() === 'base' &&
+        toks2[i + 1] &&
+        toks2[i + 1].typ === 'IriRef'
+      ) {
+        i += 1;
+        continue;
+      }
+
+      // Count QNames in identifiers (including datatypes like xsd:integer).
+      if (t.typ === 'Ident') {
+        maybeAddFromQName(t.value);
+      }
+    }
+
+    return used;
+  }
+
+  function restrictPrefixEnv(prefEnv, usedSet) {
+    const m = {};
+    for (const p of usedSet) {
+      if (Object.prototype.hasOwnProperty.call(prefEnv.map, p)) {
+        m[p] = prefEnv.map[p];
+      }
+    }
+    return new PrefixEnv(m, prefEnv.baseIri || '');
+  }
+
+  // Streaming mode: print (input) prefixes first, then print derived triples as soon as they are found.
+  if (streamMode) {
+    const usedInInput = prefixesUsedInInputTokens(toks, prefixes);
+    const outPrefixes = restrictPrefixEnv(prefixes, usedInInput);
+
+    // Ensure log:trace uses the same compact prefix set as the output.
+    engine.setTracePrefixes(outPrefixes);
+
+    const entries = Object.entries(outPrefixes.map)
+      .filter(([_p, base]) => !!base)
+      .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+
+    for (const [pfx, base] of entries) {
+      if (pfx === '') console.log(`@prefix : <${base}> .`);
+      else console.log(`@prefix ${pfx}: <${base}> .`);
+    }
+    if (entries.length) console.log();
+
+    engine.forwardChain(facts, frules, brules, (df) => {
+      if (engine.getProofCommentsEnabled()) {
+        engine.printExplanation(df, outPrefixes);
+        console.log(engine.tripleToN3(df.fact, outPrefixes));
+        console.log();
+      } else {
+        console.log(engine.tripleToN3(df.fact, outPrefixes));
+      }
+    });
+    return;
+  }
+
+  // Default (non-streaming): derive everything first, then print only the newly derived facts.
+  const derived = engine.forwardChain(facts, frules, brules);
+  const derivedTriples = derived.map((df) => df.fact);
+  const usedPrefixes = prefixes.prefixesUsedForOutput(derivedTriples);
+
+  for (const [pfx, base] of usedPrefixes) {
+    if (pfx === '') console.log(`@prefix : <${base}> .`);
+    else console.log(`@prefix ${pfx}: <${base}> .`);
+  }
+  if (derived.length && usedPrefixes.length) console.log();
+
+  for (const df of derived) {
+    if (engine.getProofCommentsEnabled()) {
+      engine.printExplanation(df, prefixes);
+      console.log(engine.tripleToN3(df.fact, prefixes));
+      console.log();
+    } else {
+      console.log(engine.tripleToN3(df.fact, prefixes));
+    }
+  }
+}
+
+module.exports = { main, formatN3SyntaxError };
+
+  };
+  __modules["lib/deref.js"] = function(require, module, exports){
+/**
+ * Eyeling Reasoner — deref
+ *
+ * Synchronous dereferencing + parsing support for log:content / log:semantics.
+ * Includes small in-memory caches and optional HTTPS enforcement.
+ */
+
+'use strict';
+
+// Dereferencing + parsing support for log:content / log:semantics.
+// This is intentionally synchronous to keep the core engine synchronous.
+// In browsers/workers, dereferencing uses synchronous XHR (subject to CORS).
+
+const {
+  LOG_NS,
+  GraphTerm,
+  Triple,
+  internIri,
+  internLiteral,
+} = require('./prelude');
+
+const { lex } = require('./lexer');
+const { Parser } = require('./parser');
+
+// -----------------------------------------------------------------------------
+// Offline fixtures
+// -----------------------------------------------------------------------------
+// Some bundled examples (e.g. examples/reaching-out.n3) dereference well-known
+// W3C resources. To keep the test suite runnable offline (CI, air-gapped
+// environments), we ship a tiny set of built-in fixtures.
+//
+// IMPORTANT: keys must be *document* IRIs (no fragment).
+
+const __OFFLINE_FIXTURES = new Map([
+  [
+    'https://www.w3.org/2000/10/swap/test/s1.n3',
+    // Exact content of https://www.w3.org/2000/10/swap/test/s1.n3
+    // (kept byte-for-byte stable to match examples/output/reaching-out.n3)
+    [
+      '# Schema for test data',
+      '#',
+      '# This is only ',
+      '@prefix daml: <http://www.daml.org/2001/03/daml+oil#> .',
+      '@prefix mech: <#> .',
+      '',
+      '@prefix : <#> .',
+      '',
+      ':includes a daml:TransitiveProperty .',
+      '',
+      ':partOf a daml:TransitiveProperty; daml:inverseOf :includes .',
+      '',
+      ':dependsOn a daml:TransitiveProperty ;',
+      '      daml:hasSubProperty  :includes .   # Real name of subproperty?',
+      '',
+      '',
+      '',
+      '',
+      '',
+    ].join('\n'),
+  ],
+  // Also accept the http:// form when --enforce-https is disabled.
+  [
+    'http://www.w3.org/2000/10/swap/test/s1.n3',
+    [
+      '# Schema for test data',
+      '#',
+      '# This is only ',
+      '@prefix daml: <http://www.daml.org/2001/03/daml+oil#> .',
+      '@prefix mech: <#> .',
+      '',
+      '@prefix : <#> .',
+      '',
+      ':includes a daml:TransitiveProperty .',
+      '',
+      ':partOf a daml:TransitiveProperty; daml:inverseOf :includes .',
+      '',
+      ':dependsOn a daml:TransitiveProperty ;',
+      '      daml:hasSubProperty  :includes .   # Real name of subproperty?',
+      '',
+      '',
+      '',
+      '',
+      '',
+    ].join('\n'),
+  ],
+  // (Duplicate key removed; the entry above already covers http://.)
+]);
+
+// Larger example programs sometimes dereference files that are shipped inside
+// this package (e.g. examples/shacl-conforms.n3). To keep these examples
+// runnable offline, mirror a small set of well-known HTTP(S) document IRIs to
+// local files.
+//
+// IMPORTANT: keys must be *document* IRIs (no fragment).
+// Values are repo-relative paths from the package root.
+const __OFFLINE_LOCAL_MIRRORS = new Map([
+  [
+    'https://eyereasoner.github.io/eyeling/examples/eventual-interoperability-interaction-patterns.n3',
+    'examples/eventual-interoperability-interaction-patterns.n3',
+  ],
+  [
+    'http://eyereasoner.github.io/eyeling/examples/eventual-interoperability-interaction-patterns.n3',
+    'examples/eventual-interoperability-interaction-patterns.n3',
+  ],
+]);
+
+function __offlineFixtureTextForKey(key) {
+  if (__OFFLINE_FIXTURES.has(key)) return __OFFLINE_FIXTURES.get(key);
+  const rel = __OFFLINE_LOCAL_MIRRORS.get(key);
+  if (!rel || !__IS_NODE) return null;
+  try {
+    const path = require('path');
+    // In the source tree, deref.js lives in lib/, so the package root is one
+    // directory up. In the bundled CLI (eyeling.js), __dirname is the package
+    // root. Try both layouts.
+    const abs1 = path.join(__dirname, '..', rel);
+    const t1 = __readFileText(abs1);
+    if (typeof t1 === 'string') return t1;
+
+    const abs2 = path.join(__dirname, rel);
+    const t2 = __readFileText(abs2);
+    if (typeof t2 === 'string') return t2;
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Caches (module-level)
+// -----------------------------------------------------------------------------
+// Key is the dereferenced document IRI *without* fragment.
+const __logContentCache = new Map(); // iri -> string | null (null means fetch/read failed)
+const __logSemanticsCache = new Map(); // iri -> GraphTerm | null (null means parse failed)
+const __logSemanticsOrErrorCache = new Map(); // iri -> Term (GraphTerm | Literal) for log:semanticsOrError
+
+// When enabled, force http:// IRIs to be dereferenced as https://
+// (CLI: --enforce-https, API: reasonStream({ enforceHttps: true })).
+let enforceHttpsEnabled = false;
+
+function getEnforceHttpsEnabled() {
+  return enforceHttpsEnabled;
+}
+
+function setEnforceHttpsEnabled(v) {
+  enforceHttpsEnabled = !!v;
+}
+
+function __maybeEnforceHttps(iri) {
+  if (!enforceHttpsEnabled) return iri;
+  return typeof iri === 'string' && iri.startsWith('http://') ? 'https://' + iri.slice('http://'.length) : iri;
+}
+
+// Environment detection (Node vs Browser/Worker).
+const __IS_NODE = typeof process !== 'undefined' && !!(process.versions && process.versions.node);
+
+function __hasXmlHttpRequest() {
+  return typeof XMLHttpRequest !== 'undefined';
+}
+
+function __resolveBrowserUrl(ref) {
+  if (!ref) return ref;
+  // If already absolute, keep as-is.
+  if (/^[A-Za-z][A-Za-z0-9+.-]*:/.test(ref)) return ref;
+  const base =
+    (typeof document !== 'undefined' && document.baseURI) || (typeof location !== 'undefined' && location.href) || '';
+  try {
+    return new URL(ref, base).toString();
+  } catch {
+    return ref;
+  }
+}
+
+function __fetchHttpTextSyncBrowser(url) {
+  if (!__hasXmlHttpRequest()) return null;
+  try {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url, false); // synchronous
+    try {
+      xhr.setRequestHeader(
+        'Accept',
+        'text/n3, text/turtle, application/n-triples, application/n-quads, text/plain;q=0.1, */*;q=0.01',
+      );
+    } catch {
+      // Some environments restrict setting headers (ignore).
+    }
+    xhr.send(null);
+    const sc = xhr.status || 0;
+    if (sc < 200 || sc >= 300) return null;
+    return xhr.responseText;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeDerefIri(iriNoFrag) {
+  // In Node, treat non-http as local path; leave as-is.
+  if (__IS_NODE) return __maybeEnforceHttps(iriNoFrag);
+  // In browsers/workers, resolve relative references against the page URL.
+  return __maybeEnforceHttps(__resolveBrowserUrl(iriNoFrag));
+}
+
+function stripFragment(iri) {
+  const i = iri.indexOf('#');
+  return i >= 0 ? iri.slice(0, i) : iri;
+}
+
+function __isHttpIri(iri) {
+  return typeof iri === 'string' && (iri.startsWith('http://') || iri.startsWith('https://'));
+}
+
+function __isFileIri(iri) {
+  return typeof iri === 'string' && iri.startsWith('file://');
+}
+
+function __fileIriToPath(fileIri) {
+  // Basic file:// URI decoding. Handles file:///abs/path and file://localhost/abs/path.
+  try {
+    const u = new URL(fileIri);
+    return decodeURIComponent(u.pathname);
+  } catch {
+    return decodeURIComponent(fileIri.replace(/^file:\/\//, ''));
+  }
+}
+
+function __readFileText(pathOrFileIri) {
+  if (!__IS_NODE) return null;
+  const fs = require('fs');
+  let path = pathOrFileIri;
+  if (__isFileIri(pathOrFileIri)) path = __fileIriToPath(pathOrFileIri);
+  try {
+    return fs.readFileSync(path, { encoding: 'utf8' });
+  } catch {
+    return null;
+  }
+}
+
+function __fetchHttpTextViaSubprocess(url) {
+  if (!__IS_NODE) return null;
+  const cp = require('child_process');
+  // Use a subprocess so this code remains synchronous without rewriting the whole reasoner to async.
+  const script = `
+    const enforceHttps = ${enforceHttpsEnabled ? 'true' : 'false'};
+    const url = process.argv[1];
+    const maxRedirects = 10;
+    function norm(u) {
+      if (enforceHttps && typeof u === 'string' && u.startsWith('http://')) {
+        return 'https://' + u.slice('http://'.length);
+      }
+      return u;
+    }
+    function get(u, n) {
+      u = norm(u);
+      if (n > maxRedirects) { console.error('Too many redirects'); process.exit(3); }
+      let mod;
+      if (u.startsWith('https://')) mod = require('https');
+      else if (u.startsWith('http://')) mod = require('http');
+      else { console.error('Not http(s)'); process.exit(2); }
+
+      const { URL } = require('url');
+      const uu = new URL(u);
+      const opts = {
+        protocol: uu.protocol,
+        hostname: uu.hostname,
+        port: uu.port || undefined,
+        path: uu.pathname + uu.search,
+        headers: {
+          'accept': 'text/n3, text/turtle, application/n-triples, application/n-quads, text/plain;q=0.1, */*;q=0.01',
+          // Ask for an uncompressed response when possible; some servers send
+          // compressed bodies that are not valid UTF-8 text for the parser.
+          // We still handle common encodings below if they are returned anyway.
+          'accept-encoding': 'identity',
+          'user-agent': 'eyeling-log-builtins'
+        }
+      };
+      const req = mod.request(opts, (res) => {
+        const sc = res.statusCode || 0;
+        if (sc >= 300 && sc < 400 && res.headers && res.headers.location) {
+          let next = new URL(res.headers.location, u).toString();
+          next = norm(next);
+          res.resume();
+          return get(next, n + 1);
+        }
+        if (sc < 200 || sc >= 300) {
+          res.resume();
+          console.error('HTTP status ' + sc);
+          process.exit(4);
+        }
+        const chunks = [];
+        res.on('data', (c) => { chunks.push(c); });
+        res.on('end', () => {
+          try {
+            const { Buffer } = require('buffer');
+            const zlib = require('zlib');
+            const buf = Buffer.concat(chunks);
+            const enc = ((res.headers && res.headers['content-encoding']) || '').toString().toLowerCase();
+            let out = buf;
+            if (enc.includes('gzip')) out = zlib.gunzipSync(buf);
+            else if (enc.includes('deflate')) out = zlib.inflateSync(buf);
+            else if (enc.includes('br')) out = zlib.brotliDecompressSync(buf);
+            process.stdout.write(out.toString('utf8'));
+          } catch (e) {
+            // Best-effort fallback: treat as UTF-8.
+            try {
+              const { Buffer } = require('buffer');
+              process.stdout.write(Buffer.concat(chunks).toString('utf8'));
+            } catch {
+              process.exit(6);
+            }
+          }
+        });
+      });
+      req.on('error', (e) => { console.error(e && e.message ? e.message : String(e)); process.exit(5); });
+      req.end();
+    }
+    get(url, 0);
+  `;
+  const r = cp.spawnSync(process.execPath, ['-e', script, url], {
+    encoding: 'utf8',
+    maxBuffer: 32 * 1024 * 1024,
+  });
+  if (r.status !== 0) return null;
+  return r.stdout;
+}
+
+function derefTextSync(iriNoFrag) {
+  const norm = normalizeDerefIri(iriNoFrag);
+  const key = typeof norm === 'string' && norm ? norm : iriNoFrag;
+
+  if (__logContentCache.has(key)) return __logContentCache.get(key);
+
+  // Offline fixtures (before attempting network / filesystem access).
+  // This keeps bundled examples deterministic even without Internet access.
+  const __fixtureTxt = __offlineFixtureTextForKey(key);
+  if (__fixtureTxt !== null && typeof __fixtureTxt !== 'undefined') {
+    __logContentCache.set(key, __fixtureTxt);
+    return __fixtureTxt;
+  }
+
+  let text = null;
+
+  if (__IS_NODE) {
+    if (__isHttpIri(key)) {
+      text = __fetchHttpTextViaSubprocess(key);
+    } else {
+      // Treat any non-http(s) IRI as a local path (including file://), for basic usability.
+      text = __readFileText(key);
+    }
+  } else {
+    // Browser / Worker: we can only dereference over HTTP(S), and it must pass CORS.
+    const url = typeof norm === 'string' && norm ? norm : key;
+    if (__isHttpIri(url)) text = __fetchHttpTextSyncBrowser(url);
+  }
+
+  __logContentCache.set(key, text);
+  return text;
+}
+
+const __IMPLIES_PRED = internIri(LOG_NS + 'implies');
+const __IMPLIED_BY_PRED = internIri(LOG_NS + 'impliedBy');
+
+function parseSemanticsToFormula(text, baseIri) {
+  const toks = lex(text);
+  const parser = new Parser(toks);
+  if (typeof baseIri === 'string' && baseIri) parser.prefixes.setBase(baseIri);
+
+  const [_prefixes, triples, frules, brules] = parser.parseDocument();
+
+  const all = triples.slice();
+
+  // Represent top-level => / <= rules as triples between formula terms,
+  // so the returned formula can include them.
+  for (const r of frules) {
+    const concTerm = r.isFuse ? internLiteral('false') : new GraphTerm(r.conclusion);
+    all.push(new Triple(new GraphTerm(r.premise), __IMPLIES_PRED, concTerm));
+  }
+  for (const r of brules) {
+    all.push(new Triple(new GraphTerm(r.conclusion), __IMPLIED_BY_PRED, new GraphTerm(r.premise)));
+  }
+
+  return new GraphTerm(all);
+}
+
+function derefSemanticsSync(iriNoFrag) {
+  const norm = normalizeDerefIri(iriNoFrag);
+  const key = typeof norm === 'string' && norm ? norm : iriNoFrag;
+  if (__logSemanticsCache.has(key)) return __logSemanticsCache.get(key);
+
+  const text = derefTextSync(iriNoFrag);
+  if (typeof text !== 'string') {
+    __logSemanticsCache.set(key, null);
+    return null;
+  }
+  try {
+    const baseIri = typeof key === 'string' && key ? key : iriNoFrag;
+    const formula = parseSemanticsToFormula(text, baseIri);
+    __logSemanticsCache.set(key, formula);
+    return formula;
+  } catch {
+    __logSemanticsCache.set(key, null);
+    return null;
+  }
+}
+
+function __makeStringLiteral(str) {
+  return internLiteral(JSON.stringify(str));
+}
+
+function derefSemanticsOrError(iriNoFrag) {
+  const norm = normalizeDerefIri(iriNoFrag);
+  const key = typeof norm === 'string' && norm ? norm : iriNoFrag;
+
+  if (__logSemanticsOrErrorCache.has(key)) return __logSemanticsOrErrorCache.get(key);
+
+  let term = null;
+
+  // If we already successfully computed log:semantics, reuse it.
+  const formula = derefSemanticsSync(iriNoFrag);
+
+  if (formula instanceof GraphTerm) {
+    term = formula;
+  } else {
+    // Try to get an informative error.
+    const txt = derefTextSync(iriNoFrag);
+    if (typeof txt !== 'string') {
+      term = __makeStringLiteral(`error(dereference_failed,${iriNoFrag})`);
+    } else {
+      try {
+        const baseIri = typeof key === 'string' && key ? key : iriNoFrag;
+        term = parseSemanticsToFormula(txt, baseIri);
+        // Keep the semantics cache consistent.
+        __logSemanticsCache.set(key, term);
+      } catch (e) {
+        const msg = e && e.message ? e.message : String(e);
+        term = __makeStringLiteral(`error(parse_error,${msg})`);
+      }
+    }
+  }
+
+  __logSemanticsOrErrorCache.set(key, term);
+  return term;
+}
+
+module.exports = {
+  // flags
+  getEnforceHttpsEnabled,
+  setEnforceHttpsEnabled,
+
+  // helpers
+  stripFragment,
+  normalizeDerefIri,
+
+  // deref + parse
+  derefTextSync,
+  derefSemanticsSync,
+  derefSemanticsOrError,
+  parseSemanticsToFormula,
+
+  // caches (exposed for tests/debugging if needed)
+  __logContentCache,
+  __logSemanticsCache,
+  __logSemanticsOrErrorCache,
+};
+
+  };
+  __modules["lib/engine.js"] = function(require, module, exports){
+/**
+ * Eyeling Reasoner — engine
+ *
+ * Core inference engine: unification, forward/backward chaining, builtin evaluation,
+ * and proof/explanation bookkeeping. This module intentionally stays cohesive.
+ */
+
+'use strict';
+
+const {
+  RDF_NS,
+  RDFS_NS,
+  OWL_NS,
+  XSD_NS,
+  CRYPTO_NS,
+  MATH_NS,
+  TIME_NS,
+  LIST_NS,
+  LOG_NS,
+  STRING_NS,
+  SKOLEM_NS,
+  RDF_JSON_DT,
+  Literal,
+  Iri,
+  Var,
+  Blank,
+  ListTerm,
+  OpenListTerm,
+  GraphTerm,
+  Triple,
+  Rule,
+  DerivedFact,
+  internIri,
+  internLiteral,
+  PrefixEnv,
+  resolveIriRef,
+  collectIrisInTerm,
+  varsInRule,
+  collectBlankLabelsInTriples,
+  literalParts,
+} = require('./prelude');
+
+const { lex, N3SyntaxError, decodeN3StringEscapes } = require('./lexer');
+const { Parser } = require('./parser');
+const { liftBlankRuleVars } = require('./rules');
+
+const {
+  makeBuiltins,
+  // helpers used by engine core
+  parseBooleanLiteralInfo,
+  parseNumericLiteralInfo,
+  // numeric helpers used by engine unification / equality
+  parseXsdDecimalToBigIntScale,
+  pow10n,
+  normalizeLiteralForFastKey,
+  literalsEquivalentAsXsdString,
+  termToJsString,
+  termToJsStringDecoded,
+  materializeRdfLists,
+  // used by backward chaining
+  standardizeRule,
+  listHasTriple,
+} = require('./builtins');
+
+const { makeExplain } = require('./explain');
+
+const { termToN3, tripleToN3 } = require('./printing');
+
+const trace = require('./trace');
+const time = require('./time');
+const { deterministicSkolemIdFromKey } = require('./skolem');
+
+const deref = require('./deref');
+
+let version = 'dev';
+try {
+  // Node: keep package.json version if available
+  if (typeof require === 'function') version = require('./package.json').version || version;
+} catch (_) {}
+
+let nodeCrypto = null;
+try {
+  // Node: crypto available
+  if (typeof require === 'function') nodeCrypto = require('crypto');
+} catch (_) {}
+function isRdfJsonDatatype(dt) {
+  // dt comes from literalParts() and may be expanded or prefixed depending on parsing/printing.
+  return dt === null || dt === RDF_JSON_DT || dt === 'rdf:JSON';
+}
+
+function termToJsonText(t) {
+  if (!(t instanceof Literal)) return null;
+  const [lex, dt] = literalParts(t.value);
+  if (!isRdfJsonDatatype(dt)) return null;
+  // decode escapes for short literals; long literals are taken verbatim
+  return termToJsStringDecoded(t);
+}
+
+function makeRdfJsonLiteral(jsonText) {
+  // Prefer a readable long literal when safe; fall back to short if needed.
+  if (!jsonText.includes('"""')) {
+    return internLiteral('"""' + jsonText + '"""^^<' + RDF_JSON_DT + '>');
+  }
+  return internLiteral(JSON.stringify(jsonText) + '^^<' + RDF_JSON_DT + '>');
+}
+// For a single reasoning run, this maps a canonical representation
+// of the subject term in log:skolem to a Skolem IRI.
+const skolemCache = new Map();
+
+// log:skolem run salt and mode.
+//
+// Desired behavior:
+//   - Within one reasoning run: same subject -> same Skolem IRI.
+//   - Across reasoning runs (default): same subject -> different Skolem IRI.
+//   - Optional legacy mode: stable across runs (CLI: --deterministic-skolem).
+let deterministicSkolemAcrossRuns = false;
+let __skolemRunDepth = 0;
+let __skolemRunSalt = null;
+
+function __makeSkolemRunSalt() {
+  // Prefer WebCrypto if present (browser/worker)
+  try {
+    const g = typeof globalThis !== 'undefined' ? globalThis : null;
+    if (g && g.crypto) {
+      if (typeof g.crypto.randomUUID === 'function') return g.crypto.randomUUID();
+      if (typeof g.crypto.getRandomValues === 'function') {
+        const a = new Uint8Array(16);
+        g.crypto.getRandomValues(a);
+        return Array.from(a).map((b) => b.toString(16).padStart(2, '0')).join('');
+      }
+    }
+  } catch (_) {}
+
+  // Node.js crypto
+  try {
+    if (nodeCrypto) {
+      if (typeof nodeCrypto.randomUUID === 'function') return nodeCrypto.randomUUID();
+      if (typeof nodeCrypto.randomBytes === 'function') return nodeCrypto.randomBytes(16).toString('hex');
+    }
+  } catch (_) {}
+
+  // Last-resort fallback (not cryptographically strong)
+  return (
+    Date.now().toString(16) +
+    '-' +
+    Math.random().toString(16).slice(2) +
+    '-' +
+    Math.random().toString(16).slice(2)
+  );
+}
+
+function __enterReasoningRun() {
+  __skolemRunDepth += 1;
+  if (__skolemRunDepth === 1) {
+    skolemCache.clear();
+    __skolemRunSalt = deterministicSkolemAcrossRuns ? '' : __makeSkolemRunSalt();
+  }
+}
+
+function __exitReasoningRun() {
+  if (__skolemRunDepth > 0) __skolemRunDepth -= 1;
+  if (__skolemRunDepth === 0) {
+    // Clear the salt so a future top-level run gets a fresh one (default mode).
+    __skolemRunSalt = null;
+  }
+}
+
+function __skolemIdForKey(key) {
+  if (deterministicSkolemAcrossRuns) return deterministicSkolemIdFromKey(key);
+  // Ensure we have a run salt even if log:skolem is invoked outside forwardChain().
+  if (__skolemRunSalt === null) {
+    skolemCache.clear();
+    __skolemRunSalt = __makeSkolemRunSalt();
+  }
+  return deterministicSkolemIdFromKey(__skolemRunSalt + '|' + key);
+}
+
+function getDeterministicSkolemEnabled() {
+  return deterministicSkolemAcrossRuns;
+}
+
+function setDeterministicSkolemEnabled(v) {
+  deterministicSkolemAcrossRuns = !!v;
+  // Reset per-run state so the new mode takes effect immediately for the next run.
+  if (__skolemRunDepth === 0) {
+    __skolemRunSalt = null;
+    skolemCache.clear();
+  }
+}
+
+// -----------------------------------------------------------------------------
+// log:conclusion cache
+// -----------------------------------------------------------------------------
+// Cache deductive closure for log:conclusion
+const __logConclusionCache = new WeakMap(); // GraphTerm -> GraphTerm (deductive closure)
+
+function __makeRuleFromTerms(left, right, isForward) {
+  // Mirror Parser.makeRule, but usable at runtime (e.g., log:conclusion).
+  let premiseTerm, conclTerm;
+
+  if (isForward) {
+    premiseTerm = left;
+    conclTerm = right;
+  } else {
+    premiseTerm = right;
+    conclTerm = left;
+  }
+
+  let isFuse = false;
+  if (isForward) {
+    if (conclTerm instanceof Literal && conclTerm.value === 'false') {
+      isFuse = true;
+    }
+  }
+
+  let rawPremise;
+  if (premiseTerm instanceof GraphTerm) {
+    rawPremise = premiseTerm.triples;
+  } else if (premiseTerm instanceof Literal && premiseTerm.value === 'true') {
+    rawPremise = [];
+  } else {
+    rawPremise = [];
+  }
+
+  let rawConclusion;
+  if (conclTerm instanceof GraphTerm) {
+    rawConclusion = conclTerm.triples;
+  } else if (conclTerm instanceof Literal && conclTerm.value === 'false') {
+    rawConclusion = [];
+  } else {
+    rawConclusion = [];
+  }
+
+  const headBlankLabels = collectBlankLabelsInTriples(rawConclusion);
+  const [premise, conclusion] = liftBlankRuleVars(rawPremise, rawConclusion);
+  return new Rule(premise, conclusion, isForward, isFuse, headBlankLabels);
+}
+
+function __computeConclusionFromFormula(formula) {
+  if (!(formula instanceof GraphTerm)) return null;
+
+  const cached = __logConclusionCache.get(formula);
+  if (cached) return cached;
+
+  // Facts start as *all* triples in the formula, including rule triples.
+  const facts2 = formula.triples.slice();
+
+  // Extract rules from rule-triples present inside the formula.
+  const fw = [];
+  const bw = [];
+
+  for (const tr of formula.triples) {
+    // Treat {A} => {B} as a forward rule.
+    if (isLogImplies(tr.p)) {
+      fw.push(__makeRuleFromTerms(tr.s, tr.o, true));
+      continue;
+    }
+
+    // Treat {A} <= {B} as the same rule in the other direction, i.e., {B} => {A},
+    // so it participates in deductive closure even if only <= is used.
+    if (isLogImpliedBy(tr.p)) {
+      fw.push(__makeRuleFromTerms(tr.o, tr.s, true));
+      // Also index it as a backward rule for completeness (helps proveGoals in some cases).
+      bw.push(__makeRuleFromTerms(tr.s, tr.o, false));
+      continue;
+    }
+  }
+
+  // Saturate within this local formula only.
+  forwardChain(facts2, fw, bw);
+
+  const out = new GraphTerm(facts2.slice());
+  __logConclusionCache.set(formula, out);
+  return out;
+}
+
+// Controls whether human-readable proof comments are printed.
+let proofCommentsEnabled = false;
+// Super restricted mode: disable *all* builtins except => / <= (log:implies / log:impliedBy)
+let superRestrictedMode = false;
+
+
+// Initialize builtin evaluation (implemented in lib/builtins.js).
+const { evalBuiltin, isBuiltinPred } = makeBuiltins({
+  applySubstTerm,
+  applySubstTriple,
+  unifyTerm,
+  unifyTermListAppend,
+  termsEqual,
+  proveGoals,
+  isGroundTerm,
+  iriValue,
+  skolemIriFromGroundTerm,
+  computeConclusionFromFormula: __computeConclusionFromFormula,
+  getSuperRestrictedMode: () => superRestrictedMode,
+  termFastKey,
+  ensureFactIndexes,
+  termsEqualNoIntDecimal,
+});
+
+// Initialize proof/output helpers (implemented in lib/explain.js).
+const { printExplanation, collectOutputStringsFromFacts } = makeExplain({
+  applySubstTerm,
+  skolemKeyFromTerm,
+});
+
+
+// ===========================================================================
+function skolemizeTermForHeadBlanks(t, headBlankLabels, mapping, skCounter, firingKey, globalMap) {
+  if (t instanceof Blank) {
+    const label = t.label;
+    // Only skolemize blanks that occur explicitly in the rule head
+    if (!headBlankLabels || !headBlankLabels.has(label)) {
+      return t; // this is a data blank (e.g. bound via ?X), keep it
+    }
+
+    if (!mapping.hasOwnProperty(label)) {
+      // If we have a global cache keyed by firingKey, use it to ensure
+      // deterministic blank IDs for the same rule+substitution instance.
+      if (globalMap && firingKey) {
+        const gk = `${firingKey}|${label}`;
+        let sk = globalMap.get(gk);
+        if (!sk) {
+          const idx = skCounter[0];
+          skCounter[0] += 1;
+          sk = `_:sk_${idx}`;
+          globalMap.set(gk, sk);
+        }
+        mapping[label] = sk;
+      } else {
+        const idx = skCounter[0];
+        skCounter[0] += 1;
+        mapping[label] = `_:sk_${idx}`;
+      }
+    }
+    return new Blank(mapping[label]);
+  }
+
+  if (t instanceof ListTerm) {
+    return new ListTerm(
+      t.elems.map((e) => skolemizeTermForHeadBlanks(e, headBlankLabels, mapping, skCounter, firingKey, globalMap)),
+    );
+  }
+
+  if (t instanceof OpenListTerm) {
+    return new OpenListTerm(
+      t.prefix.map((e) => skolemizeTermForHeadBlanks(e, headBlankLabels, mapping, skCounter, firingKey, globalMap)),
+      t.tailVar,
+    );
+  }
+
+  if (t instanceof GraphTerm) {
+    return new GraphTerm(
+      t.triples.map((tr) =>
+        skolemizeTripleForHeadBlanks(tr, headBlankLabels, mapping, skCounter, firingKey, globalMap),
+      ),
+    );
+  }
+
+  return t;
+}
+
+function skolemizeTripleForHeadBlanks(tr, headBlankLabels, mapping, skCounter, firingKey, globalMap) {
+  return new Triple(
+    skolemizeTermForHeadBlanks(tr.s, headBlankLabels, mapping, skCounter, firingKey, globalMap),
+    skolemizeTermForHeadBlanks(tr.p, headBlankLabels, mapping, skCounter, firingKey, globalMap),
+    skolemizeTermForHeadBlanks(tr.o, headBlankLabels, mapping, skCounter, firingKey, globalMap),
+  );
+}
+
+// ===========================================================================
+// Alpha equivalence helpers
+// ===========================================================================
+
+function termsEqual(a, b) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (a.constructor !== b.constructor) return false;
+
+  if (a instanceof Iri) return a.value === b.value;
+
+  if (a instanceof Literal) {
+    if (a.value === b.value) return true;
+
+    // Plain "abc" == "abc"^^xsd:string (but not language-tagged strings)
+    if (literalsEquivalentAsXsdString(a.value, b.value)) return true;
+
+    // Keep in sync with unifyTerm(): numeric-value equality, datatype-aware.
+    const ai = parseNumericLiteralInfo(a);
+    const bi = parseNumericLiteralInfo(b);
+
+    if (ai && bi) {
+      // Same datatype => compare values
+      if (ai.dt === bi.dt) {
+        if (ai.kind === 'bigint' && bi.kind === 'bigint') return ai.value === bi.value;
+
+        const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
+        const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
+        return !Number.isNaN(an) && !Number.isNaN(bn) && an === bn;
+      }
+    }
+
+    return false;
+  }
+
+  if (a instanceof Var) return a.name === b.name;
+  if (a instanceof Blank) return a.label === b.label;
+
+  if (a instanceof ListTerm) {
+    if (a.elems.length !== b.elems.length) return false;
+    for (let i = 0; i < a.elems.length; i++) {
+      if (!termsEqual(a.elems[i], b.elems[i])) return false;
+    }
+    return true;
+  }
+
+  if (a instanceof OpenListTerm) {
+    if (a.tailVar !== b.tailVar) return false;
+    if (a.prefix.length !== b.prefix.length) return false;
+    for (let i = 0; i < a.prefix.length; i++) {
+      if (!termsEqual(a.prefix[i], b.prefix[i])) return false;
+    }
+    return true;
+  }
+
+  if (a instanceof GraphTerm) {
+    return alphaEqGraphTriples(a.triples, b.triples);
+  }
+
+  return false;
+}
+
+function termsEqualNoIntDecimal(a, b) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (a.constructor !== b.constructor) return false;
+
+  if (a instanceof Iri) return a.value === b.value;
+
+  if (a instanceof Literal) {
+    if (a.value === b.value) return true;
+
+    // Plain "abc" == "abc"^^xsd:string (but not language-tagged)
+    if (literalsEquivalentAsXsdString(a.value, b.value)) return true;
+
+    // Numeric equality ONLY when datatypes agree (no integer<->decimal here)
+    const ai = parseNumericLiteralInfo(a);
+    const bi = parseNumericLiteralInfo(b);
+    if (ai && bi && ai.dt === bi.dt) {
+      // integer: exact bigint
+      if (ai.kind === 'bigint' && bi.kind === 'bigint') return ai.value === bi.value;
+
+      // decimal: compare exactly via num/scale if possible
+      if (ai.dt === XSD_NS + 'decimal') {
+        const da = parseXsdDecimalToBigIntScale(ai.lexStr);
+        const db = parseXsdDecimalToBigIntScale(bi.lexStr);
+        if (da && db) {
+          const scale = Math.max(da.scale, db.scale);
+          const na = da.num * pow10n(scale - da.scale);
+          const nb = db.num * pow10n(scale - db.scale);
+          return na === nb;
+        }
+      }
+
+      // double/float-ish: JS number (same as your normal same-dt path)
+      const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
+      const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
+      return !Number.isNaN(an) && !Number.isNaN(bn) && an === bn;
+    }
+
+    return false;
+  }
+
+  if (a instanceof Var) return a.name === b.name;
+  if (a instanceof Blank) return a.label === b.label;
+
+  if (a instanceof ListTerm) {
+    if (a.elems.length !== b.elems.length) return false;
+    for (let i = 0; i < a.elems.length; i++) {
+      if (!termsEqualNoIntDecimal(a.elems[i], b.elems[i])) return false;
+    }
+    return true;
+  }
+
+  if (a instanceof OpenListTerm) {
+    if (a.tailVar !== b.tailVar) return false;
+    if (a.prefix.length !== b.prefix.length) return false;
+    for (let i = 0; i < a.prefix.length; i++) {
+      if (!termsEqualNoIntDecimal(a.prefix[i], b.prefix[i])) return false;
+    }
+    return true;
+  }
+
+  if (a instanceof GraphTerm) {
+    return alphaEqGraphTriples(a.triples, b.triples);
+  }
+
+  return false;
+}
+
+function triplesEqual(a, b) {
+  return termsEqual(a.s, b.s) && termsEqual(a.p, b.p) && termsEqual(a.o, b.o);
+}
+
+function triplesListEqual(xs, ys) {
+  if (xs.length !== ys.length) return false;
+  for (let i = 0; i < xs.length; i++) {
+    if (!triplesEqual(xs[i], ys[i])) return false;
+  }
+  return true;
+}
+
+// Alpha-equivalence for quoted formulas, up to *variable* and blank-node renaming.
+// Treats a formula as an unordered set of triples (order-insensitive match).
+function alphaEqVarName(x, y, vmap) {
+  if (vmap.hasOwnProperty(x)) return vmap[x] === y;
+  vmap[x] = y;
+  return true;
+}
+
+function alphaEqTermInGraph(a, b, vmap, bmap) {
+  // Blank nodes: renamable
+  if (a instanceof Blank && b instanceof Blank) {
+    const x = a.label;
+    const y = b.label;
+    if (bmap.hasOwnProperty(x)) return bmap[x] === y;
+    bmap[x] = y;
+    return true;
+  }
+
+  // Variables: renamable (ONLY inside quoted formulas)
+  if (a instanceof Var && b instanceof Var) {
+    return alphaEqVarName(a.name, b.name, vmap);
+  }
+
+  if (a instanceof Iri && b instanceof Iri) return a.value === b.value;
+  if (a instanceof Literal && b instanceof Literal) return a.value === b.value;
+
+  if (a instanceof ListTerm && b instanceof ListTerm) {
+    if (a.elems.length !== b.elems.length) return false;
+    for (let i = 0; i < a.elems.length; i++) {
+      if (!alphaEqTermInGraph(a.elems[i], b.elems[i], vmap, bmap)) return false;
+    }
+    return true;
+  }
+
+  if (a instanceof OpenListTerm && b instanceof OpenListTerm) {
+    if (a.prefix.length !== b.prefix.length) return false;
+    for (let i = 0; i < a.prefix.length; i++) {
+      if (!alphaEqTermInGraph(a.prefix[i], b.prefix[i], vmap, bmap)) return false;
+    }
+    // tailVar is a var-name string, so treat it as renamable too
+    return alphaEqVarName(a.tailVar, b.tailVar, vmap);
+  }
+
+  // Nested formulas: compare with fresh maps (separate scope)
+  if (a instanceof GraphTerm && b instanceof GraphTerm) {
+    return alphaEqGraphTriples(a.triples, b.triples);
+  }
+
+  return false;
+}
+
+function alphaEqTripleInGraph(a, b, vmap, bmap) {
+  return (
+    alphaEqTermInGraph(a.s, b.s, vmap, bmap) &&
+    alphaEqTermInGraph(a.p, b.p, vmap, bmap) &&
+    alphaEqTermInGraph(a.o, b.o, vmap, bmap)
+  );
+}
+
+function alphaEqGraphTriples(xs, ys) {
+  if (xs.length !== ys.length) return false;
+  // Fast path: exact same sequence.
+  if (triplesListEqual(xs, ys)) return true;
+
+  // Order-insensitive backtracking match, threading var/blank mappings.
+  const used = new Array(ys.length).fill(false);
+
+  function step(i, vmap, bmap) {
+    if (i >= xs.length) return true;
+    const x = xs[i];
+    for (let j = 0; j < ys.length; j++) {
+      if (used[j]) continue;
+      const y = ys[j];
+      // Cheap pruning when both predicates are IRIs.
+      if (x.p instanceof Iri && y.p instanceof Iri && x.p.value !== y.p.value) continue;
+
+      const v2 = { ...vmap };
+      const b2 = { ...bmap };
+      if (!alphaEqTripleInGraph(x, y, v2, b2)) continue;
+
+      used[j] = true;
+      if (step(i + 1, v2, b2)) return true;
+      used[j] = false;
+    }
+    return false;
+  }
+
+  return step(0, {}, {});
+}
+
+function alphaEqTerm(a, b, bmap) {
+  if (a instanceof Blank && b instanceof Blank) {
+    const x = a.label;
+    const y = b.label;
+    if (bmap.hasOwnProperty(x)) {
+      return bmap[x] === y;
+    } else {
+      bmap[x] = y;
+      return true;
+    }
+  }
+  if (a instanceof Iri && b instanceof Iri) return a.value === b.value;
+  if (a instanceof Literal && b instanceof Literal) return a.value === b.value;
+  if (a instanceof Var && b instanceof Var) return a.name === b.name;
+  if (a instanceof ListTerm && b instanceof ListTerm) {
+    if (a.elems.length !== b.elems.length) return false;
+    for (let i = 0; i < a.elems.length; i++) {
+      if (!alphaEqTerm(a.elems[i], b.elems[i], bmap)) return false;
+    }
+    return true;
+  }
+  if (a instanceof OpenListTerm && b instanceof OpenListTerm) {
+    if (a.tailVar !== b.tailVar || a.prefix.length !== b.prefix.length) return false;
+    for (let i = 0; i < a.prefix.length; i++) {
+      if (!alphaEqTerm(a.prefix[i], b.prefix[i], bmap)) return false;
+    }
+    return true;
+  }
+  if (a instanceof GraphTerm && b instanceof GraphTerm) {
+    // formulas are alpha-equivalent up to var/blank renaming
+    return alphaEqGraphTriples(a.triples, b.triples);
+  }
+  return false;
+}
+
+function alphaEqTriple(a, b) {
+  const bmap = {};
+  return alphaEqTerm(a.s, b.s, bmap) && alphaEqTerm(a.p, b.p, bmap) && alphaEqTerm(a.o, b.o, bmap);
+}
+
+// ===========================================================================
+// Indexes (facts + backward rules)
+// ===========================================================================
+//
+// Facts:
+//   - __byPred: Map<predicateIRI, Triple[]>
+//   - __byPO:   Map<predicateIRI, Map<objectKey, Triple[]>>
+//   - __keySet: Set<"S\tP\tO"> for IRI/Literal-only triples (fast dup check)
+//
+// Backward rules:
+//   - __byHeadPred:   Map<headPredicateIRI, Rule[]>
+//   - __wildHeadPred: Rule[] (non-IRI head predicate)
+
+function termFastKey(t) {
+  if (t instanceof Iri) return 'I:' + t.value;
+  if (t instanceof Blank) return 'B:' + t.label;
+  if (t instanceof Literal) return 'L:' + normalizeLiteralForFastKey(t.value);
+  return null;
+}
+
+function tripleFastKey(tr) {
+  const ks = termFastKey(tr.s);
+  const kp = termFastKey(tr.p);
+  const ko = termFastKey(tr.o);
+  if (ks === null || kp === null || ko === null) return null;
+  return ks + '\t' + kp + '\t' + ko;
+}
+
+function ensureFactIndexes(facts) {
+  if (facts.__byPred && facts.__byPS && facts.__byPO && facts.__keySet) return;
+
+  Object.defineProperty(facts, '__byPred', {
+    value: new Map(),
+    enumerable: false,
+    writable: true,
+  });
+  Object.defineProperty(facts, '__byPS', {
+    value: new Map(),
+    enumerable: false,
+    writable: true,
+  });
+  Object.defineProperty(facts, '__byPO', {
+    value: new Map(),
+    enumerable: false,
+    writable: true,
+  });
+  Object.defineProperty(facts, '__keySet', {
+    value: new Set(),
+    enumerable: false,
+    writable: true,
+  });
+
+  for (const f of facts) indexFact(facts, f);
+}
+
+function indexFact(facts, tr) {
+  if (tr.p instanceof Iri) {
+    const pk = tr.p.value;
+
+    let pb = facts.__byPred.get(pk);
+    if (!pb) {
+      pb = [];
+      facts.__byPred.set(pk, pb);
+    }
+    pb.push(tr);
+
+    const sk = termFastKey(tr.s);
+    if (sk !== null) {
+      let ps = facts.__byPS.get(pk);
+      if (!ps) {
+        ps = new Map();
+        facts.__byPS.set(pk, ps);
+      }
+      let psb = ps.get(sk);
+      if (!psb) {
+        psb = [];
+        ps.set(sk, psb);
+      }
+      psb.push(tr);
+    }
+
+    const ok = termFastKey(tr.o);
+    if (ok !== null) {
+      let po = facts.__byPO.get(pk);
+      if (!po) {
+        po = new Map();
+        facts.__byPO.set(pk, po);
+      }
+      let pob = po.get(ok);
+      if (!pob) {
+        pob = [];
+        po.set(ok, pob);
+      }
+      pob.push(tr);
+    }
+  }
+
+  const key = tripleFastKey(tr);
+  if (key !== null) facts.__keySet.add(key);
+}
+
+function candidateFacts(facts, goal) {
+  ensureFactIndexes(facts);
+
+  if (goal.p instanceof Iri) {
+    const pk = goal.p.value;
+
+    const sk = termFastKey(goal.s);
+    const ok = termFastKey(goal.o);
+
+    /** @type {Triple[] | null} */
+    let byPS = null;
+    if (sk !== null) {
+      const ps = facts.__byPS.get(pk);
+      if (ps) byPS = ps.get(sk) || null;
+    }
+
+    /** @type {Triple[] | null} */
+    let byPO = null;
+    if (ok !== null) {
+      const po = facts.__byPO.get(pk);
+      if (po) byPO = po.get(ok) || null;
+    }
+
+    if (byPS && byPO) return byPS.length <= byPO.length ? byPS : byPO;
+    if (byPS) return byPS;
+    if (byPO) return byPO;
+
+    return facts.__byPred.get(pk) || [];
+  }
+
+  return facts;
+}
+
+function hasFactIndexed(facts, tr) {
+  ensureFactIndexes(facts);
+
+  const key = tripleFastKey(tr);
+  if (key !== null) return facts.__keySet.has(key);
+
+  if (tr.p instanceof Iri) {
+    const pk = tr.p.value;
+
+    const ok = termFastKey(tr.o);
+    if (ok !== null) {
+      const po = facts.__byPO.get(pk);
+      if (po) {
+        const pob = po.get(ok) || [];
+        // Facts are all in the same graph. Different blank node labels represent
+        // different existentials unless explicitly connected. Do NOT treat
+        // triples as duplicates modulo blank renaming, or you'll incorrectly
+        // drop facts like: _:sk_0 :x 8.0  (because _:b8 :x 8.0 exists).
+        return pob.some((t) => triplesEqual(t, tr));
+      }
+    }
+
+    const pb = facts.__byPred.get(pk) || [];
+    return pb.some((t) => triplesEqual(t, tr));
+  }
+
+  // Non-IRI predicate: fall back to strict triple equality.
+  return facts.some((t) => triplesEqual(t, tr));
+}
+
+function pushFactIndexed(facts, tr) {
+  ensureFactIndexes(facts);
+  facts.push(tr);
+  indexFact(facts, tr);
+}
+
+function ensureBackRuleIndexes(backRules) {
+  if (backRules.__byHeadPred && backRules.__wildHeadPred) return;
+
+  Object.defineProperty(backRules, '__byHeadPred', {
+    value: new Map(),
+    enumerable: false,
+    writable: true,
+  });
+  Object.defineProperty(backRules, '__wildHeadPred', {
+    value: [],
+    enumerable: false,
+    writable: true,
+  });
+
+  for (const r of backRules) indexBackRule(backRules, r);
+}
+
+function indexBackRule(backRules, r) {
+  if (!r || !r.conclusion || r.conclusion.length !== 1) return;
+  const head = r.conclusion[0];
+  if (head && head.p instanceof Iri) {
+    const k = head.p.value;
+    let bucket = backRules.__byHeadPred.get(k);
+    if (!bucket) {
+      bucket = [];
+      backRules.__byHeadPred.set(k, bucket);
+    }
+    bucket.push(r);
+  } else {
+    backRules.__wildHeadPred.push(r);
+  }
+}
+
+// ===========================================================================
+// Special predicate helpers
+// ===========================================================================
+
+function isRdfTypePred(p) {
+  return p instanceof Iri && p.value === RDF_NS + 'type';
+}
+
+function isOwlSameAsPred(t) {
+  return t instanceof Iri && t.value === OWL_NS + 'sameAs';
+}
+
+function isLogImplies(p) {
+  return p instanceof Iri && p.value === LOG_NS + 'implies';
+}
+
+function isLogImpliedBy(p) {
+  return p instanceof Iri && p.value === LOG_NS + 'impliedBy';
+}
+
+// ===========================================================================
+// Constraint / "test" builtins
+// ===========================================================================
+
+
+// ===========================================================================
+// Unification + substitution
+// ===========================================================================
+
+function containsVarTerm(t, v) {
+  if (t instanceof Var) return t.name === v;
+  if (t instanceof ListTerm) return t.elems.some((e) => containsVarTerm(e, v));
+  if (t instanceof OpenListTerm) return t.prefix.some((e) => containsVarTerm(e, v)) || t.tailVar === v;
+  if (t instanceof GraphTerm)
+    return t.triples.some((tr) => containsVarTerm(tr.s, v) || containsVarTerm(tr.p, v) || containsVarTerm(tr.o, v));
+  return false;
+}
+
+function isGroundTermInGraph(t) {
+  // variables inside graph terms are treated as local placeholders,
+  // so they don't make the *surrounding triple* non-ground.
+  if (t instanceof OpenListTerm) return false;
+  if (t instanceof ListTerm) return t.elems.every((e) => isGroundTermInGraph(e));
+  if (t instanceof GraphTerm) return t.triples.every((tr) => isGroundTripleInGraph(tr));
+  // Iri/Literal/Blank/Var are all OK inside formulas
+  return true;
+}
+
+function isGroundTripleInGraph(tr) {
+  return isGroundTermInGraph(tr.s) && isGroundTermInGraph(tr.p) && isGroundTermInGraph(tr.o);
+}
+
+function isGroundTerm(t) {
+  if (t instanceof Var) return false;
+  if (t instanceof ListTerm) return t.elems.every((e) => isGroundTerm(e));
+  if (t instanceof OpenListTerm) return false;
+  if (t instanceof GraphTerm) return t.triples.every((tr) => isGroundTripleInGraph(tr));
+  return true;
+}
+
+function isGroundTriple(tr) {
+  return isGroundTerm(tr.s) && isGroundTerm(tr.p) && isGroundTerm(tr.o);
+}
+
+// Canonical JSON-ish encoding for use as a Skolem cache key.
+// We only *call* this on ground terms in log:skolem, but it is
+// robust to seeing vars/open lists anyway.
+function skolemKeyFromTerm(t) {
+  function enc(u) {
+    if (u instanceof Iri) return ['I', u.value];
+    if (u instanceof Literal) return ['L', u.value];
+    if (u instanceof Blank) return ['B', u.label];
+    if (u instanceof Var) return ['V', u.name];
+    if (u instanceof ListTerm) return ['List', u.elems.map(enc)];
+    if (u instanceof OpenListTerm) return ['OpenList', u.prefix.map(enc), u.tailVar];
+    if (u instanceof GraphTerm) return ['Graph', u.triples.map((tr) => [enc(tr.s), enc(tr.p), enc(tr.o)])];
+    return ['Other', String(u)];
+  }
+  return JSON.stringify(enc(t));
+}
+
+function skolemIriFromGroundTerm(t) {
+  // t must be ground (checked by caller).
+  const key = skolemKeyFromTerm(t);
+  let iri = skolemCache.get(key);
+  if (!iri) {
+    const id = __skolemIdForKey(key);
+    iri = internIri(SKOLEM_NS + id);
+    skolemCache.set(key, iri);
+  }
+  return iri;
+}
+
+
+
+function applySubstTerm(t, s) {
+  // Common case: variable
+  if (t instanceof Var) {
+    // Fast path: unbound variable → no change
+    const first = s[t.name];
+    if (first === undefined) {
+      return t;
+    }
+
+    // Follow chains X -> Y -> ... until we hit a non-var or a cycle.
+    let cur = first;
+    const seen = new Set([t.name]);
+    while (cur instanceof Var) {
+      const name = cur.name;
+      if (seen.has(name)) break; // cycle
+      seen.add(name);
+      const nxt = s[name];
+      if (!nxt) break;
+      cur = nxt;
+    }
+
+    if (cur instanceof Var) {
+      // Still a var: keep it as is (no need to clone)
+      return cur;
+    }
+    // Bound to a non-var term: apply substitution recursively in case it
+    // contains variables inside.
+    return applySubstTerm(cur, s);
+  }
+
+  // Non-variable terms
+  if (t instanceof ListTerm) {
+    return new ListTerm(t.elems.map((e) => applySubstTerm(e, s)));
+  }
+
+  if (t instanceof OpenListTerm) {
+    const newPrefix = t.prefix.map((e) => applySubstTerm(e, s));
+    const tailTerm = s[t.tailVar];
+    if (tailTerm !== undefined) {
+      const tailApplied = applySubstTerm(tailTerm, s);
+      if (tailApplied instanceof ListTerm) {
+        return new ListTerm(newPrefix.concat(tailApplied.elems));
+      } else if (tailApplied instanceof OpenListTerm) {
+        return new OpenListTerm(newPrefix.concat(tailApplied.prefix), tailApplied.tailVar);
+      } else {
+        return new OpenListTerm(newPrefix, t.tailVar);
+      }
+    } else {
+      return new OpenListTerm(newPrefix, t.tailVar);
+    }
+  }
+
+  if (t instanceof GraphTerm) {
+    return new GraphTerm(t.triples.map((tr) => applySubstTriple(tr, s)));
+  }
+
+  return t;
+}
+
+function applySubstTriple(tr, s) {
+  return new Triple(applySubstTerm(tr.s, s), applySubstTerm(tr.p, s), applySubstTerm(tr.o, s));
+}
+
+function iriValue(t) {
+  return t instanceof Iri ? t.value : null;
+}
+
+function unifyOpenWithList(prefix, tailv, ys, subst) {
+  if (ys.length < prefix.length) return null;
+  let s2 = { ...subst };
+  for (let i = 0; i < prefix.length; i++) {
+    s2 = unifyTerm(prefix[i], ys[i], s2);
+    if (s2 === null) return null;
+  }
+  const rest = new ListTerm(ys.slice(prefix.length));
+  s2 = unifyTerm(new Var(tailv), rest, s2);
+  if (s2 === null) return null;
+  return s2;
+}
+
+function unifyGraphTriples(xs, ys, subst) {
+  if (xs.length !== ys.length) return null;
+
+  // Fast path: exact same sequence.
+  if (triplesListEqual(xs, ys)) return { ...subst };
+
+  // Backtracking match (order-insensitive), *threading* the substitution through.
+  const used = new Array(ys.length).fill(false);
+
+  function step(i, s) {
+    if (i >= xs.length) return s;
+    const x = xs[i];
+
+    for (let j = 0; j < ys.length; j++) {
+      if (used[j]) continue;
+      const y = ys[j];
+
+      // Cheap pruning when both predicates are IRIs.
+      if (x.p instanceof Iri && y.p instanceof Iri && x.p.value !== y.p.value) continue;
+
+      const s2 = unifyTriple(x, y, s); // IMPORTANT: use `s`, not {}
+      if (s2 === null) continue;
+
+      used[j] = true;
+      const s3 = step(i + 1, s2);
+      if (s3 !== null) return s3;
+      used[j] = false;
+    }
+    return null;
+  }
+
+  return step(0, { ...subst }); // IMPORTANT: start from the incoming subst
+}
+
+function unifyTerm(a, b, subst) {
+  return unifyTermWithOptions(a, b, subst, {
+    boolValueEq: true,
+    intDecimalEq: false,
+  });
+}
+
+function unifyTermListAppend(a, b, subst) {
+  // Keep list:append behavior: allow integer<->decimal exact equality,
+  // but do NOT add boolean-value equivalence (preserves current semantics).
+  return unifyTermWithOptions(a, b, subst, {
+    boolValueEq: false,
+    intDecimalEq: true,
+  });
+}
+
+function unifyTermWithOptions(a, b, subst, opts) {
+  a = applySubstTerm(a, subst);
+  b = applySubstTerm(b, subst);
+
+  // Variable binding
+  if (a instanceof Var) {
+    const v = a.name;
+    const t = b;
+    if (t instanceof Var && t.name === v) return { ...subst };
+    if (containsVarTerm(t, v)) return null;
+    const s2 = { ...subst };
+    s2[v] = t;
+    return s2;
+  }
+  if (b instanceof Var) {
+    return unifyTermWithOptions(b, a, subst, opts);
+  }
+
+  // Exact matches
+  if (a instanceof Iri && b instanceof Iri && a.value === b.value) return { ...subst };
+  if (a instanceof Literal && b instanceof Literal && a.value === b.value) return { ...subst };
+  if (a instanceof Blank && b instanceof Blank && a.label === b.label) return { ...subst };
+
+  // Plain string vs xsd:string equivalence
+  if (a instanceof Literal && b instanceof Literal) {
+    if (literalsEquivalentAsXsdString(a.value, b.value)) return { ...subst };
+  }
+
+  // Boolean-value equivalence (ONLY for normal unifyTerm)
+  if (opts.boolValueEq && a instanceof Literal && b instanceof Literal) {
+    const ai = parseBooleanLiteralInfo(a);
+    const bi = parseBooleanLiteralInfo(b);
+    if (ai && bi && ai.value === bi.value) return { ...subst };
+  }
+
+  // Numeric-value match:
+  // - always allow equality when datatype matches (existing behavior)
+  // - optionally allow integer<->decimal exact equality (list:append only)
+  if (a instanceof Literal && b instanceof Literal) {
+    const ai = parseNumericLiteralInfo(a);
+    const bi = parseNumericLiteralInfo(b);
+    if (ai && bi) {
+      if (ai.dt === bi.dt) {
+        if (ai.kind === 'bigint' && bi.kind === 'bigint') {
+          if (ai.value === bi.value) return { ...subst };
+        } else {
+          const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
+          const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
+          if (!Number.isNaN(an) && !Number.isNaN(bn) && an === bn) return { ...subst };
+        }
+      }
+
+      if (opts.intDecimalEq) {
+        const intDt = XSD_NS + 'integer';
+        const decDt = XSD_NS + 'decimal';
+        if ((ai.dt === intDt && bi.dt === decDt) || (ai.dt === decDt && bi.dt === intDt)) {
+          const intInfo = ai.dt === intDt ? ai : bi; // bigint
+          const decInfo = ai.dt === decDt ? ai : bi; // number + lexStr
+          const dec = parseXsdDecimalToBigIntScale(decInfo.lexStr);
+          if (dec) {
+            const scaledInt = intInfo.value * pow10n(dec.scale);
+            if (scaledInt === dec.num) return { ...subst };
+          }
+        }
+      }
+    }
+  }
+
+  // Open list vs concrete list
+  if (a instanceof OpenListTerm && b instanceof ListTerm) {
+    return unifyOpenWithList(a.prefix, a.tailVar, b.elems, subst);
+  }
+  if (a instanceof ListTerm && b instanceof OpenListTerm) {
+    return unifyOpenWithList(b.prefix, b.tailVar, a.elems, subst);
+  }
+
+  // Open list vs open list
+  if (a instanceof OpenListTerm && b instanceof OpenListTerm) {
+    if (a.tailVar !== b.tailVar || a.prefix.length !== b.prefix.length) return null;
+    let s2 = { ...subst };
+    for (let i = 0; i < a.prefix.length; i++) {
+      s2 = unifyTermWithOptions(a.prefix[i], b.prefix[i], s2, opts);
+      if (s2 === null) return null;
+    }
+    return s2;
+  }
+
+  // List terms
+  if (a instanceof ListTerm && b instanceof ListTerm) {
+    if (a.elems.length !== b.elems.length) return null;
+    let s2 = { ...subst };
+    for (let i = 0; i < a.elems.length; i++) {
+      s2 = unifyTermWithOptions(a.elems[i], b.elems[i], s2, opts);
+      if (s2 === null) return null;
+    }
+    return s2;
+  }
+
+  // Graphs
+  if (a instanceof GraphTerm && b instanceof GraphTerm) {
+    if (alphaEqGraphTriples(a.triples, b.triples)) return { ...subst };
+    return unifyGraphTriples(a.triples, b.triples, subst);
+  }
+
+  return null;
+}
+
+function unifyTriple(pat, fact, subst) {
+  // Predicates are usually the cheapest and most selective
+  const s1 = unifyTerm(pat.p, fact.p, subst);
+  if (s1 === null) return null;
+
+  const s2 = unifyTerm(pat.s, fact.s, s1);
+  if (s2 === null) return null;
+
+  const s3 = unifyTerm(pat.o, fact.o, s2);
+  return s3;
+}
+
+function composeSubst(outer, delta) {
+  if (!delta || Object.keys(delta).length === 0) {
+    return { ...outer };
+  }
+  const out = { ...outer };
+  for (const [k, v] of Object.entries(delta)) {
+    if (out.hasOwnProperty(k)) {
+      if (!termsEqual(out[k], v)) return null;
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
+
+// (builtins moved to lib/builtins.js)
+
 // ===========================================================================
 //
 // Why: backward chaining with standardizeRule introduces fresh variables at
@@ -5496,9 +5799,7 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
       // the whole conjunction.
       const __fullyUnboundSO =
         (goal0.s instanceof Var || goal0.s instanceof Blank) &&
-        (goal0.o instanceof Var || goal0.o instanceof Blank) &&
-        parseNum(goal0.s) === null &&
-        parseNum(goal0.o) === null;
+        (goal0.o instanceof Var || goal0.o instanceof Blank);
       if (
         state.canDeferBuiltins &&
         !deltas.length &&
@@ -5667,7 +5968,30 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
 
   // Scan known rules for the maximum requested closure priority in
   // log:collectAllIn / log:forAllIn goals.
-  function computeMaxScopedClosurePriorityNeeded() {
+  function __logNaturalPriorityFromTerm(t) {
+  // Parse a 'naturalPriority' used by log:* scoped-closure builtins (e.g., log:collectAllIn).
+  // Accept non-negative integral numeric literals; return null if not parseable.
+  if (!(t instanceof Literal)) return null;
+  const info = parseNumericLiteralInfo(t);
+  if (!info) return null;
+  if (info.kind === 'integer') {
+    const bi = info.value; // BigInt
+    if (bi < 0n) return null;
+    // clamp to MAX_SAFE_INTEGER (priorities are expected to be small)
+    const max = BigInt(Number.MAX_SAFE_INTEGER);
+    return Number(bi > max ? max : bi);
+  }
+  if (info.kind === 'decimal') {
+    const n = info.value; // number
+    if (!Number.isFinite(n)) return null;
+    if (Math.floor(n) !== n) return null;
+    if (n < 0) return null;
+    return n;
+  }
+  return null;
+}
+
+function computeMaxScopedClosurePriorityNeeded() {
     let maxP = 0;
     function scanTriple(tr) {
       if (!(tr && tr.p instanceof Iri)) return;
@@ -5971,199 +6295,8 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
   }
 }
 
-// ===========================================================================
-// Pretty printing as N3/Turtle
-// ===========================================================================
 
-function printExplanation(df, prefixes) {
-  console.log('# ----------------------------------------------------------------------');
-  console.log('# Proof for derived triple:');
-
-  // Fact line(s), indented 2 spaces after '# '
-  for (const line of tripleToN3(df.fact, prefixes).split(/\r?\n/)) {
-    const stripped = line.replace(/\s+$/, '');
-    if (stripped) {
-      console.log('#   ' + stripped);
-    }
-  }
-
-  if (!df.premises.length) {
-    console.log('# This triple is the head of a forward rule with an empty premise,');
-    console.log('# so it holds unconditionally whenever the program is loaded.');
-  } else {
-    console.log('# It holds because the following instance of the rule body is provable:');
-
-    // Premises, also indented 2 spaces after '# '
-    for (const prem of df.premises) {
-      for (const line of tripleToN3(prem, prefixes).split(/\r?\n/)) {
-        const stripped = line.replace(/\s+$/, '');
-        if (stripped) {
-          console.log('#   ' + stripped);
-        }
-      }
-    }
-
-    console.log('# via the schematic forward rule:');
-
-    // Rule pretty-printed
-    console.log('#   {');
-    for (const tr of df.rule.premise) {
-      for (const line of tripleToN3(tr, prefixes).split(/\r?\n/)) {
-        const stripped = line.replace(/\s+$/, '');
-        if (stripped) {
-          console.log('#     ' + stripped);
-        }
-      }
-    }
-    console.log('#   } => {');
-    for (const tr of df.rule.conclusion) {
-      for (const line of tripleToN3(tr, prefixes).split(/\r?\n/)) {
-        const stripped = line.replace(/\s+$/, '');
-        if (stripped) {
-          console.log('#     ' + stripped);
-        }
-      }
-    }
-    console.log('#   } .');
-  }
-
-  // Substitution block
-  const ruleVars = varsInRule(df.rule);
-  const visibleNames = Object.keys(df.subst)
-    .filter((name) => ruleVars.has(name))
-    .sort();
-
-  if (visibleNames.length) {
-    console.log('# with substitution (on rule variables):');
-    for (const v of visibleNames) {
-      const fullTerm = applySubstTerm(new Var(v), df.subst);
-      const rendered = termToN3(fullTerm, prefixes);
-      const lines = rendered.split(/\r?\n/);
-
-      if (lines.length === 1) {
-        // single-line term
-        const stripped = lines[0].replace(/\s+$/, '');
-        if (stripped) {
-          console.log('#   ?' + v + ' = ' + stripped);
-        }
-      } else {
-        // multi-line term (e.g. a formula)
-        const first = lines[0].trimEnd(); // usually "{"
-        if (first) {
-          console.log('#   ?' + v + ' = ' + first);
-        }
-        for (let i = 1; i < lines.length; i++) {
-          const stripped = lines[i].trim();
-          if (!stripped) continue;
-          if (i === lines.length - 1) {
-            // closing brace
-            console.log('#   ' + stripped);
-          } else {
-            // inner triple lines
-            console.log('#     ' + stripped);
-          }
-        }
-      }
-    }
-  }
-
-  console.log('# Therefore the derived triple above is entailed by the rules and facts.');
-  console.log('# ----------------------------------------------------------------------\n');
-}
-
-
-// ===========================================================================
-// CLI entry point
-// ===========================================================================
-// ===========================================================================
-// log:outputString support
-// ===========================================================================
-
-function __compareOutputStringKeys(a, b, prefixes) {
-  // Deterministic ordering of keys. The spec only requires "order of the subject keys"
-  // and leaves concrete term ordering reasoner-dependent. We implement:
-  //   1) numeric literals (numeric value)
-  //   2) plain literals (lexical form)
-  //   3) IRIs
-  //   4) blank nodes (label)
-  //   5) fallback: skolemKeyFromTerm
-  const aNum = parseNumericLiteralInfo(a);
-  const bNum = parseNumericLiteralInfo(b);
-  if (aNum && bNum) {
-    // bigint or number
-    if (aNum.kind === 'bigint' && bNum.kind === 'bigint') {
-      if (aNum.value < bNum.value) return -1;
-      if (aNum.value > bNum.value) return 1;
-      return 0;
-    }
-    const av = Number(aNum.value);
-    const bv = Number(bNum.value);
-    if (av < bv) return -1;
-    if (av > bv) return 1;
-    return 0;
-  }
-  if (aNum && !bNum) return -1;
-  if (!aNum && bNum) return 1;
-
-  // Plain literal ordering (lexical)
-  if (a instanceof Literal && b instanceof Literal) {
-    const [alex] = literalParts(a.value);
-    const [blex] = literalParts(b.value);
-    if (alex < blex) return -1;
-    if (alex > blex) return 1;
-    return 0;
-  }
-  if (a instanceof Literal && !(b instanceof Literal)) return -1;
-  if (!(a instanceof Literal) && b instanceof Literal) return 1;
-
-  // IRIs
-  if (a instanceof Iri && b instanceof Iri) {
-    if (a.value < b.value) return -1;
-    if (a.value > b.value) return 1;
-    return 0;
-  }
-  if (a instanceof Iri && !(b instanceof Iri)) return -1;
-  if (!(a instanceof Iri) && b instanceof Iri) return 1;
-
-  // Blank nodes
-  if (a instanceof Blank && b instanceof Blank) {
-    if (a.label < b.label) return -1;
-    if (a.label > b.label) return 1;
-    return 0;
-  }
-  if (a instanceof Blank && !(b instanceof Blank)) return -1;
-  if (!(a instanceof Blank) && b instanceof Blank) return 1;
-
-  // Fallback
-  const ak = skolemKeyFromTerm(a);
-  const bk = skolemKeyFromTerm(b);
-  if (ak < bk) return -1;
-  if (ak > bk) return 1;
-  return 0;
-}
-
-function collectOutputStringsFromFacts(facts, prefixes) {
-  // Gather all (key, string) pairs from the saturated fact store.
-  const pairs = [];
-  for (const tr of facts) {
-    if (!(tr && tr.p instanceof Iri)) continue;
-    if (tr.p.value !== LOG_NS + 'outputString') continue;
-    if (!(tr.o instanceof Literal)) continue;
-
-    const s = termToJsString(tr.o);
-    if (s === null) continue;
-
-    pairs.push({ key: tr.s, text: s, idx: pairs.length });
-  }
-
-  pairs.sort((a, b) => {
-    const c = __compareOutputStringKeys(a.key, b.key, prefixes);
-    if (c !== 0) return c;
-    return a.idx - b.idx; // stable tie-breaker
-  });
-
-  return pairs.map((p) => p.text).join('');
-}
+// (proof printing + log:outputString moved to lib/explain.js)
 
 function reasonStream(n3Text, opts = {}) {
   const {
@@ -6187,8 +6320,9 @@ function reasonStream(n3Text, opts = {}) {
   // Make the parsed prefixes available to log:trace output
   trace.setTracePrefixes(prefixes);
 
-  // NOTE: Do not rewrite rdf:first/rdf:rest RDF list nodes into list terms.
-  // list:* builtins interpret RDF list structures directly when needed.
+  // Materialize anonymous rdf:first/rdf:rest collections into list terms.
+  // Named list nodes keep identity; list:* builtins can traverse them.
+  materializeRdfLists(triples, frules, brules);
 
   // facts becomes the saturated closure because pushFactIndexed(...) appends into it
   const facts = triples.filter((tr) => isGroundTriple(tr));
@@ -6323,6 +6457,229 @@ module.exports = {
   getTracePrefixes: engine.getTracePrefixes,
   setTracePrefixes: engine.setTracePrefixes,
 };
+
+  };
+  __modules["lib/explain.js"] = function(require, module, exports){
+/**
+ * Eyeling Reasoner — explain/output
+ *
+ * Pretty-printing of proofs and log:outputString aggregation.
+ * Extracted from engine.js to keep the core engine focused on inference/search.
+ */
+'use strict';
+
+const {
+  LOG_NS,
+  Literal,
+  Iri,
+  Blank,
+  Var,
+  varsInRule,
+  literalParts,
+} = require('./prelude');
+
+const { termToN3, tripleToN3 } = require('./printing');
+const { parseNumericLiteralInfo, termToJsString } = require('./builtins');
+
+function makeExplain(deps) {
+  const applySubstTerm = deps.applySubstTerm;
+  const skolemKeyFromTerm = deps.skolemKeyFromTerm;
+
+  function printExplanation(df, prefixes) {
+    console.log('# ----------------------------------------------------------------------');
+    console.log('# Proof for derived triple:');
+
+    // Fact line(s), indented 2 spaces after '# '
+    for (const line of tripleToN3(df.fact, prefixes).split(/\r?\n/)) {
+      const stripped = line.replace(/\s+$/, '');
+      if (stripped) {
+        console.log('#   ' + stripped);
+      }
+    }
+
+    if (!df.premises.length) {
+      console.log('# This triple is the head of a forward rule with an empty premise,');
+      console.log('# so it holds unconditionally whenever the program is loaded.');
+    } else {
+      console.log('# It holds because the following instance of the rule body is provable:');
+
+      // Premises, also indented 2 spaces after '# '
+      for (const prem of df.premises) {
+        for (const line of tripleToN3(prem, prefixes).split(/\r?\n/)) {
+          const stripped = line.replace(/\s+$/, '');
+          if (stripped) {
+            console.log('#   ' + stripped);
+          }
+        }
+      }
+
+      console.log('# via the schematic forward rule:');
+
+      // Rule pretty-printed
+      console.log('#   {');
+      for (const tr of df.rule.premise) {
+        for (const line of tripleToN3(tr, prefixes).split(/\r?\n/)) {
+          const stripped = line.replace(/\s+$/, '');
+          if (stripped) {
+            console.log('#     ' + stripped);
+          }
+        }
+      }
+      console.log('#   } => {');
+      for (const tr of df.rule.conclusion) {
+        for (const line of tripleToN3(tr, prefixes).split(/\r?\n/)) {
+          const stripped = line.replace(/\s+$/, '');
+          if (stripped) {
+            console.log('#     ' + stripped);
+          }
+        }
+      }
+      console.log('#   } .');
+    }
+
+    // Substitution block
+    const ruleVars = varsInRule(df.rule);
+    const visibleNames = Object.keys(df.subst)
+      .filter((name) => ruleVars.has(name))
+      .sort();
+
+    if (visibleNames.length) {
+      console.log('# with substitution (on rule variables):');
+      for (const v of visibleNames) {
+        const fullTerm = applySubstTerm(new Var(v), df.subst);
+        const rendered = termToN3(fullTerm, prefixes);
+        const lines = rendered.split(/\r?\n/);
+
+        if (lines.length === 1) {
+          // single-line term
+          const stripped = lines[0].replace(/\s+$/, '');
+          if (stripped) {
+            console.log('#   ?' + v + ' = ' + stripped);
+          }
+        } else {
+          // multi-line term (e.g. a formula)
+          const first = lines[0].trimEnd(); // usually "{"
+          if (first) {
+            console.log('#   ?' + v + ' = ' + first);
+          }
+          for (let i = 1; i < lines.length; i++) {
+            const stripped = lines[i].trim();
+            if (!stripped) continue;
+            if (i === lines.length - 1) {
+              // closing brace
+              console.log('#   ' + stripped);
+            } else {
+              // inner triple lines
+              console.log('#     ' + stripped);
+            }
+          }
+        }
+      }
+    }
+
+    console.log('# Therefore the derived triple above is entailed by the rules and facts.');
+    console.log('# ----------------------------------------------------------------------\n');
+  }
+
+
+  // ===========================================================================
+  // CLI entry point
+  // ===========================================================================
+  // ===========================================================================
+  // log:outputString support
+  // ===========================================================================
+
+  function __compareOutputStringKeys(a, b, prefixes) {
+    // Deterministic ordering of keys. The spec only requires "order of the subject keys"
+    // and leaves concrete term ordering reasoner-dependent. We implement:
+    //   1) numeric literals (numeric value)
+    //   2) plain literals (lexical form)
+    //   3) IRIs
+    //   4) blank nodes (label)
+    //   5) fallback: skolemKeyFromTerm
+    const aNum = parseNumericLiteralInfo(a);
+    const bNum = parseNumericLiteralInfo(b);
+    if (aNum && bNum) {
+      // bigint or number
+      if (aNum.kind === 'bigint' && bNum.kind === 'bigint') {
+        if (aNum.value < bNum.value) return -1;
+        if (aNum.value > bNum.value) return 1;
+        return 0;
+      }
+      const av = Number(aNum.value);
+      const bv = Number(bNum.value);
+      if (av < bv) return -1;
+      if (av > bv) return 1;
+      return 0;
+    }
+    if (aNum && !bNum) return -1;
+    if (!aNum && bNum) return 1;
+
+    // Plain literal ordering (lexical)
+    if (a instanceof Literal && b instanceof Literal) {
+      const [alex] = literalParts(a.value);
+      const [blex] = literalParts(b.value);
+      if (alex < blex) return -1;
+      if (alex > blex) return 1;
+      return 0;
+    }
+    if (a instanceof Literal && !(b instanceof Literal)) return -1;
+    if (!(a instanceof Literal) && b instanceof Literal) return 1;
+
+    // IRIs
+    if (a instanceof Iri && b instanceof Iri) {
+      if (a.value < b.value) return -1;
+      if (a.value > b.value) return 1;
+      return 0;
+    }
+    if (a instanceof Iri && !(b instanceof Iri)) return -1;
+    if (!(a instanceof Iri) && b instanceof Iri) return 1;
+
+    // Blank nodes
+    if (a instanceof Blank && b instanceof Blank) {
+      if (a.label < b.label) return -1;
+      if (a.label > b.label) return 1;
+      return 0;
+    }
+    if (a instanceof Blank && !(b instanceof Blank)) return -1;
+    if (!(a instanceof Blank) && b instanceof Blank) return 1;
+
+    // Fallback
+    const ak = skolemKeyFromTerm(a);
+    const bk = skolemKeyFromTerm(b);
+    if (ak < bk) return -1;
+    if (ak > bk) return 1;
+    return 0;
+  }
+
+  function collectOutputStringsFromFacts(facts, prefixes) {
+    // Gather all (key, string) pairs from the saturated fact store.
+    const pairs = [];
+    for (const tr of facts) {
+      if (!(tr && tr.p instanceof Iri)) continue;
+      if (tr.p.value !== LOG_NS + 'outputString') continue;
+      if (!(tr.o instanceof Literal)) continue;
+
+      const s = termToJsString(tr.o);
+      if (s === null) continue;
+
+      pairs.push({ key: tr.s, text: s, idx: pairs.length });
+    }
+
+    pairs.sort((a, b) => {
+      const c = __compareOutputStringKeys(a.key, b.key, prefixes);
+      if (c !== 0) return c;
+      return a.idx - b.idx; // stable tie-breaker
+    });
+
+    return pairs.map((p) => p.text).join('');
+  }
+
+
+  return { printExplanation, collectOutputStringsFromFacts };
+}
+
+module.exports = { makeExplain };
 
   };
   __modules["lib/lexer.js"] = function(require, module, exports){
