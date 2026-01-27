@@ -50,9 +50,5 @@
     "posttest": "npm run test:package",
     "preversion": "npm test",
     "postversion": "git push --follow-tags"
-  },
-  "devDependencies": {
-    "eslint": "^9.39.2",
-    "globals": "^17.1.0"
   }
 }
