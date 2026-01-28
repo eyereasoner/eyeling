@@ -365,11 +365,23 @@ A substitution is a plain JS object:
 { X: Term, Y: Term, ... }
 ```
 
-When applying substitutions, Eyeling follows chains:
+When applying substitutions, Eyeling follows **chains**:
 
 * if `X → Var(Y)` and `Y → Iri(...)`, applying to `X` yields the IRI.
 
-This matters because unification can bind variables to variables; it’s normal in logic programming, and you want `applySubst` to “chase the link” until it reaches a stable term.
+Chains arise naturally during unification (e.g. when variables unify with other variables) and during rule firing. Eyeling treats substitutions as *persistent maps*: when a new binding is added, the engine makes a shallow copy and records only the new binding.
+
+Implementation details (and why they matter):
+
+* **`applySubstTerm` is the only “chain chaser”.** It follows `Var → Term` links until it reaches a stable term.
+  * Unification’s occurs-check prevents most cycles, but `applySubstTerm` still defends against accidental cyclic chains.
+  * The cycle guard is written to avoid allocating a `Set` in the common case (short chains).
+* **Structural sharing is deliberate.** Applying a substitution often changes nothing:
+  * `applySubstTerm` returns the original term when it is unaffected.
+  * list/open-list/graph terms are only rebuilt if at least one component changes (lazy copy-on-change).
+  * `applySubstTriple` returns the original `Triple` when `s/p/o` are unchanged.
+
+These “no-op returns” are one of the biggest practical performance wins in the engine: backward chaining and forward rule instantiation apply substitutions constantly, so avoiding allocations reduces GC pressure without changing semantics.
 
 ### 6.4 Unification: the core operation
 
@@ -480,6 +492,9 @@ for delta in deltas:
   composed = composeSubst(currentSubst, delta)
 ```
 
+**Implementation note (performance):** `composeSubst` has a fast path — if `delta` is empty (or only repeats bindings already present in `currentSubst`), it returns the original substitution object instead of cloning. This makes constraint-style builtins that often yield `{}` much cheaper, but it does **not** change the search-space: a vacuous solution can still amplify later branching.
+
+
 So built-ins behave like relations that can generate zero, one, or many possible bindings. A list generator might yield many deltas; a numeric test yields zero or one.
 
 #### 8.3.1 Builtin deferral and “vacuous” solutions
@@ -578,6 +593,8 @@ Eyeling handles this by replacing head blank labels with fresh blank labels of t
 But it does something subtle and important: it caches skolemization per (rule firing, head blank label), so that the *same* firing instance doesn’t keep generating new blanks across outer iterations.
 
 The “firing instance” is keyed by a deterministic string derived from the instantiated body (“firingKey”). This stabilizes the closure and prevents “existential churn.”
+
+**Implementation note (performance):** the firing-instance key is computed in a hot loop, so `firingKey(...)` builds a compact string via concatenation rather than `JSON.stringify`. If you change what counts as a distinct “firing instance”, update the key format and the skolem cache together.
 
 Implementation: deterministic Skolem IDs live in `lib/skolem.js`; the per-firing cache and head-blank rewriting are implemented in `lib/engine.js`.
 
@@ -1878,4 +1895,3 @@ Logic & reasoning background (Wikipedia):
 - [https://en.wikipedia.org/wiki/Prolog](https://en.wikipedia.org/wiki/Prolog)
 - [https://en.wikipedia.org/wiki/Datalog](https://en.wikipedia.org/wiki/Datalog)
 - [https://en.wikipedia.org/wiki/Skolem_normal_form](https://en.wikipedia.org/wiki/Skolem_normal_form)
-
