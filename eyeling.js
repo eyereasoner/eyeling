@@ -6699,8 +6699,56 @@ function isWs(c) {
   return /\s/.test(c);
 }
 
-function isNameChar(c) {
-  return /[0-9A-Za-z_\-:]/.test(c);
+// Turtle/N3 prefixed names (PNAME_*) allow many Unicode letters and certain
+// punctuation, plus %-escapes and backslash escapes in PN_LOCAL.
+//
+// The original lexer only accepted ASCII in identifiers, which incorrectly
+// rejected valid N3 such as:
+//   res:COUNTRY_United%20States rdfs:label "United States".
+//   res:CITY_Chañaral rdfs:label "Chañaral".
+//
+// We implement a grammar-aligned matcher for PN_CHARS* and PLX fragments.
+function isHexDigit(c) {
+  return c !== null && /^[0-9A-Fa-f]$/.test(c);
+}
+
+function isPnCharsBase(c) {
+  // Approximation of PN_CHARS_BASE from the N3 grammar using Unicode properties.
+  // Covers most letters used in practice (including ñ) and common scripts.
+  return c !== null && /[A-Za-z]|\p{L}|\p{Nl}/u.test(c);
+}
+
+function isPnCharsU(c) {
+  // PN_CHARS_U ::= PN_CHARS_BASE | '_'
+  return c === '_' || isPnCharsBase(c);
+}
+
+function isPnChars(c) {
+  // PN_CHARS ::= PN_CHARS_U | '-' | [0-9] | U+00B7 | [U+0300-U+036F] | [U+203F-U+2040]
+  if (c === null) return false;
+  if (isPnCharsU(c)) return true;
+  if (c === '-' || /[0-9]/.test(c) || c === '\u00B7') return true;
+  const cp = c.codePointAt(0);
+  return (cp >= 0x0300 && cp <= 0x036f) || (cp >= 0x203f && cp <= 0x2040);
+}
+
+// PN_LOCAL_ESC from the N3/Turtle grammar.
+const PN_LOCAL_ESC_SET = new Set([
+  '_', '~', '.', '-', '!', '$', '&', "'", '(', ')', '*', '+', ',', ';', '=', '/', '?', '#', '@', '%',
+]);
+
+function isIdentChar(c) {
+  // Allowed raw chars in PNAME tokens beyond PN_CHARS*: ':' is allowed in PN_LOCAL.
+  return c === ':' || isPnChars(c);
+}
+
+function canContinueAfterDot(next) {
+  // PN_LOCAL allows '.' but it cannot appear at the end.
+  // We include '.' only if it is followed by something that could continue a name.
+  if (next === null) return false;
+  if (isIdentChar(next)) return true;
+  if (next === '%' || next === '\\') return true;
+  return false;
 }
 
 function decodeN3StringEscapes(s) {
@@ -6801,6 +6849,69 @@ function lex(inputText) {
   function peek(offset = 0) {
     const j = i + offset;
     return j >= 0 && j < n ? chars[j] : null;
+  }
+
+  // Read an identifier-like token (prefixed name / blank node id / keyword).
+  // Implements the relevant bits of the N3/Turtle grammar for PNAME_*:
+  // - Accepts Unicode PN_CHARS*, ':' in local part, and '_' etc.
+  // - Accepts percent escapes (%HH) as PLX fragments.
+  // - Accepts PN_LOCAL_ESC backslash escapes and decodes them ("\\." -> ".").
+  // - Accepts '.' inside a name only when it is not terminal.
+  function readIdentText(startOffsetForErrors) {
+    const out = [];
+    while (i < n) {
+      const cc = peek();
+      if (cc === null || isWs(cc)) break;
+
+      // Hard stops: delimiters cannot appear unescaped inside PNAME tokens.
+      if ('{}()[];,'.includes(cc)) break;
+
+      // Dot is allowed inside PN_LOCAL, but not at the end.
+      if (cc === '.') {
+        if (!canContinueAfterDot(peek(1))) break;
+        out.push('.');
+        i++;
+        continue;
+      }
+
+      // Percent escape: %HH
+      if (cc === '%') {
+        const h1 = peek(1);
+        const h2 = peek(2);
+        if (!isHexDigit(h1) || !isHexDigit(h2)) {
+          throw new N3SyntaxError(
+            'Invalid percent escape in prefixed name (expected %HH)',
+            typeof startOffsetForErrors === 'number' ? startOffsetForErrors : i,
+          );
+        }
+        out.push('%', h1, h2);
+        i += 3;
+        continue;
+      }
+
+      // Backslash escape in PN_LOCAL (PN_LOCAL_ESC)
+      if (cc === '\\') {
+        const esc = peek(1);
+        if (esc !== null && PN_LOCAL_ESC_SET.has(esc)) {
+          out.push(esc); // decoded form
+          i += 2;
+          continue;
+        }
+        throw new N3SyntaxError(
+          'Invalid local name escape (use \\_ \\~ \\. \\- ... per N3 grammar)',
+          typeof startOffsetForErrors === 'number' ? startOffsetForErrors : i,
+        );
+      }
+
+      if (isIdentChar(cc)) {
+        out.push(cc);
+        i++;
+        continue;
+      }
+
+      break;
+    }
+    return out.join('');
   }
 
   while (i < n) {
@@ -7061,13 +7172,10 @@ function lex(inputText) {
     if (c === '?') {
       const start = i;
       i++;
-      const nameChars = [];
-      let cc;
-      while ((cc = peek()) !== null && isNameChar(cc)) {
-        nameChars.push(cc);
-        i++;
+      const name = readIdentText(start);
+      if (!name) {
+        throw new N3SyntaxError("Expected variable name after '?'.", start);
       }
-      const name = nameChars.join('');
       tokens.push(new Token('Var', name, start));
       continue;
     }
@@ -7172,16 +7280,10 @@ function lex(inputText) {
 
     // 7) Identifiers / keywords / QNames
     const start = i;
-    const wordChars = [];
-    let cc;
-    while ((cc = peek()) !== null && isNameChar(cc)) {
-      wordChars.push(cc);
-      i++;
-    }
-    if (!wordChars.length) {
+    const word = readIdentText(start);
+    if (!word) {
       throw new N3SyntaxError(`Unexpected char: ${JSON.stringify(c)}`, i);
     }
-    const word = wordChars.join('');
     if (word === 'true' || word === 'false') {
       tokens.push(new Token('Literal', word, start));
     } else if ([...word].every((ch) => /[0-9.-]/.test(ch))) {

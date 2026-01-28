@@ -804,6 +804,25 @@ ex:s ex:p ex:o.
   },
 
   {
+    name: '52b parse: prefixed names allow %HH escapes and Unicode chars (N3 grammar)',
+    opt: ['--ast'],
+    input: `@prefix res: <http://example.org/res/>.
+
+res:COUNTRY_United%20States rdfs:label "United States".
+res:CITY_Chañaral rdfs:label "Chañaral".
+`,
+    check(out) {
+      const v = JSON.parse(String(out));
+      assert.ok(Array.isArray(v) && v.length === 4, 'AST output should be a JSON array [prefixes, triples, frules, brules]');
+      const triples = v[1];
+      assert.ok(Array.isArray(triples), 'AST[1] (triples) should be an array');
+      const sIris = triples.map((t) => t.s && t.s.value);
+      assert.ok(sIris.includes('http://example.org/res/COUNTRY_United%20States'));
+      assert.ok(sIris.includes('http://example.org/res/CITY_Chañaral'));
+    },
+  },
+
+  {
     name: '53 --stream: prints prefixes used in input (not just derived output) before streaming triples',
     opt: ['--stream', '-n'],
     input: `@prefix ex: <http://example.org/>.
