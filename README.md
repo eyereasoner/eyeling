@@ -10,6 +10,7 @@ A compact [Notation3 (N3)](https://notation3.org/) reasoner in **JavaScript**.
 ## Links
 
 - **Handbook:** [https://eyereasoner.github.io/eyeling/HANDBOOK](https://eyereasoner.github.io/eyeling/HANDBOOK)
+- **Semantics:** [https://eyereasoner.github.io/eyeling/SEMANTICS](https://eyereasoner.github.io/eyeling/SEMANTICS)
 - **Playground:** [https://eyereasoner.github.io/eyeling/demo](https://eyereasoner.github.io/eyeling/demo)
 - **Notation3 test suite:** [https://codeberg.org/phochste/notation3tests](https://codeberg.org/phochste/notation3tests)
 - **Eyeling conformance report:** [https://codeberg.org/phochste/notation3tests/src/branch/main/reports/report.md](https://codeberg.org/phochste/notation3tests/src/branch/main/reports/report.md)
