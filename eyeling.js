@@ -1251,13 +1251,13 @@ function materializeRdfLists(triples, forwardRules, backwardRules) {
   }
 
   function rewriteTerm(t) {
+    // rdf:nil is the empty list ()
+    if (t instanceof Iri && t.value === RDF_NIL) return new ListTerm([]);
     // Replace list nodes (Blank/Iri) by their constructed ListTerm when possible
     const k = nodeKey(t);
     if (k) {
       const built = buildListForKey(k);
       if (built) return built;
-      // Also rewrite rdf:nil even if not otherwise referenced
-      if (t instanceof Iri && t.value === RDF_NIL) return new ListTerm([]);
       return t;
     }
     if (t instanceof ListTerm) {
@@ -4405,6 +4405,11 @@ const {
   collectBlankLabelsInTriples,
 } = require('./prelude');
 
+// In N3/Turtle, rdf:nil is the canonical IRI for the empty RDF list.
+// Eyeling represents list literals with ListTerm; ensure rdf:nil unifies with ().
+const RDF_NIL_IRI = RDF_NS + 'nil';
+const __EMPTY_LIST = new ListTerm([]);
+
 const { lex, N3SyntaxError } = require('./lexer');
 const { Parser } = require('./parser');
 const { liftBlankRuleVars } = require('./rules');
@@ -4718,6 +4723,10 @@ function termsEqual(a, b) {
   if (a === b) return true;
   if (!a || !b) return false;
   if (a.__tid && b.__tid && a.__tid === b.__tid) return true;
+
+  // rdf:nil is equivalent to the empty list ()
+  if (a instanceof Iri && a.value === RDF_NIL_IRI && b instanceof ListTerm && b.elems.length === 0) return true;
+  if (b instanceof Iri && b.value === RDF_NIL_IRI && a instanceof ListTerm && a.elems.length === 0) return true;
   if (a.constructor !== b.constructor) return false;
 
   if (a instanceof Iri) return a.value === b.value;
@@ -4777,6 +4786,10 @@ function termsEqualNoIntDecimal(a, b) {
   if (a === b) return true;
   if (!a || !b) return false;
   if (a.__tid && b.__tid && a.__tid === b.__tid) return true;
+
+  // rdf:nil is equivalent to the empty list ()
+  if (a instanceof Iri && a.value === RDF_NIL_IRI && b instanceof ListTerm && b.elems.length === 0) return true;
+  if (b instanceof Iri && b.value === RDF_NIL_IRI && a instanceof ListTerm && a.elems.length === 0) return true;
   if (a.constructor !== b.constructor) return false;
 
   if (a instanceof Iri) return a.value === b.value;
@@ -5426,6 +5439,11 @@ function unifyTermListAppend(a, b, subst) {
 function unifyTermWithOptions(a, b, subst, opts) {
   a = applySubstTerm(a, subst);
   b = applySubstTerm(b, subst);
+
+  // Normalize rdf:nil IRI to the empty list term, so it unifies with () and
+  // list builtins treat it consistently.
+  if (a instanceof Iri && a.value === RDF_NIL_IRI) a = __EMPTY_LIST;
+  if (b instanceof Iri && b.value === RDF_NIL_IRI) b = __EMPTY_LIST;
 
   // Variable binding
   if (a instanceof Var) {

@@ -750,6 +750,27 @@ ${U('a')} <-${U('p')} ${U('b')}.`,
   },
 
   {
+    name: '49b rdf:nil matches empty list in rdf:rest (issue #7)',
+    opt: { proofComments: false },
+    input: `@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+
+${U('o1')} ${U('path')} (${U('c')} ${U('d')}).
+
+{ ?o ${U('path')} ?path. } => { ?path rdf:type ${U('P')}. }.
+{ ?p1 rdf:type ${U('P')}. ?p1 rdf:rest ?p2. } => { ?p2 rdf:type ${U('P')}. }.
+
+# query1 uses ()
+{ ?p rdf:type ${U('P')}. ?p rdf:rest (). } => { ${U('result')} ${U('query1')} (?p). }.
+# query2 uses rdf:nil
+{ ?p rdf:type ${U('P')}. ?p rdf:rest rdf:nil. } => { ${U('result')} ${U('query2')} (?p). }.
+`,
+    expect: [
+      new RegExp(`${EX}result>\\s+<${EX}query1>\\s+\\(\\(\\s*<${EX}d>\\s*\\)\\)\\s*\\.`),
+      new RegExp(`${EX}result>\\s+<${EX}query2>\\s+\\(\\(\\s*<${EX}d>\\s*\\)\\)\\s*\\.`),
+    ],
+  },
+
+  {
     name: '50 rdf collection materialization: rdf:first/rdf:rest triples become list terms',
     opt: { proofComments: false },
     input: ` ${U('s')} ${U('p')} _:l1.
