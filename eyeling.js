@@ -3428,19 +3428,23 @@ function isBuiltinPred(p) {
 //
 // This is similar to standardizeRule(), but operates on a single term.
 function standardizeTermApart(term, gen) {
-  function renameTerm(t, vmap, genArr) {
+  // Optimization: reuse Var objects for each standardized variable within a
+  // single standardization pass. This substantially reduces allocations in
+  // recursive backward chaining.
+  function renameTerm(t, vmapName, vmapVar, genArr) {
     if (t instanceof Var) {
-      if (!Object.prototype.hasOwnProperty.call(vmap, t.name)) {
+      if (!Object.prototype.hasOwnProperty.call(vmapVar, t.name)) {
         const name = `__n3_${genArr[0]}`;
         genArr[0] += 1;
-        vmap[t.name] = name;
+        vmapName[t.name] = name;
+        vmapVar[t.name] = new Var(name);
       }
-      return new Var(vmap[t.name]);
+      return vmapVar[t.name];
     }
     if (t instanceof ListTerm) {
       let changed = false;
       const elems2 = t.elems.map((e) => {
-        const e2 = renameTerm(e, vmap, genArr);
+        const e2 = renameTerm(e, vmapName, vmapVar, genArr);
         if (e2 !== e) changed = true;
         return e2;
       });
@@ -3449,25 +3453,26 @@ function standardizeTermApart(term, gen) {
     if (t instanceof OpenListTerm) {
       let changed = false;
       const newXs = t.prefix.map((e) => {
-        const e2 = renameTerm(e, vmap, genArr);
+        const e2 = renameTerm(e, vmapName, vmapVar, genArr);
         if (e2 !== e) changed = true;
         return e2;
       });
-      if (!Object.prototype.hasOwnProperty.call(vmap, t.tailVar)) {
+      if (!Object.prototype.hasOwnProperty.call(vmapName, t.tailVar)) {
         const name = `__n3_${genArr[0]}`;
         genArr[0] += 1;
-        vmap[t.tailVar] = name;
+        vmapName[t.tailVar] = name;
+        vmapVar[t.tailVar] = new Var(name);
       }
-      const newTail = vmap[t.tailVar];
+      const newTail = vmapName[t.tailVar];
       if (newTail !== t.tailVar) changed = true;
       return changed ? new OpenListTerm(newXs, newTail) : t;
     }
     if (t instanceof GraphTerm) {
       let changed = false;
       const triples2 = t.triples.map((tr) => {
-        const s2 = renameTerm(tr.s, vmap, genArr);
-        const p2 = renameTerm(tr.p, vmap, genArr);
-        const o2 = renameTerm(tr.o, vmap, genArr);
+        const s2 = renameTerm(tr.s, vmapName, vmapVar, genArr);
+        const p2 = renameTerm(tr.p, vmapName, vmapVar, genArr);
+        const o2 = renameTerm(tr.o, vmapName, vmapVar, genArr);
         if (s2 !== tr.s || p2 !== tr.p || o2 !== tr.o) changed = true;
         return s2 === tr.s && p2 === tr.p && o2 === tr.o ? tr : new Triple(s2, p2, o2);
       });
@@ -3476,24 +3481,28 @@ function standardizeTermApart(term, gen) {
     return t;
   }
 
-  const vmap = {};
-  return renameTerm(term, vmap, gen);
+  const vmapName = {};
+  const vmapVar = {};
+  return renameTerm(term, vmapName, vmapVar, gen);
 }
 
 function standardizeRule(rule, gen) {
-  function renameTerm(t, vmap, genArr) {
+  // Optimization: reuse Var objects for each standardized variable within a
+  // single standardization pass.
+  function renameTerm(t, vmapName, vmapVar, genArr) {
     if (t instanceof Var) {
-      if (!Object.prototype.hasOwnProperty.call(vmap, t.name)) {
+      if (!Object.prototype.hasOwnProperty.call(vmapVar, t.name)) {
         const name = `${t.name}__${genArr[0]}`;
         genArr[0] += 1;
-        vmap[t.name] = name;
+        vmapName[t.name] = name;
+        vmapVar[t.name] = new Var(name);
       }
-      return new Var(vmap[t.name]);
+      return vmapVar[t.name];
     }
     if (t instanceof ListTerm) {
       let changed = false;
       const elems2 = t.elems.map((e) => {
-        const e2 = renameTerm(e, vmap, genArr);
+        const e2 = renameTerm(e, vmapName, vmapVar, genArr);
         if (e2 !== e) changed = true;
         return e2;
       });
@@ -3502,25 +3511,26 @@ function standardizeRule(rule, gen) {
     if (t instanceof OpenListTerm) {
       let changed = false;
       const newXs = t.prefix.map((e) => {
-        const e2 = renameTerm(e, vmap, genArr);
+        const e2 = renameTerm(e, vmapName, vmapVar, genArr);
         if (e2 !== e) changed = true;
         return e2;
       });
-      if (!Object.prototype.hasOwnProperty.call(vmap, t.tailVar)) {
+      if (!Object.prototype.hasOwnProperty.call(vmapName, t.tailVar)) {
         const name = `${t.tailVar}__${genArr[0]}`;
         genArr[0] += 1;
-        vmap[t.tailVar] = name;
+        vmapName[t.tailVar] = name;
+        vmapVar[t.tailVar] = new Var(name);
       }
-      const newTail = vmap[t.tailVar];
+      const newTail = vmapName[t.tailVar];
       if (newTail !== t.tailVar) changed = true;
       return changed ? new OpenListTerm(newXs, newTail) : t;
     }
     if (t instanceof GraphTerm) {
       let changed = false;
       const triples2 = t.triples.map((tr) => {
-        const s2 = renameTerm(tr.s, vmap, genArr);
-        const p2 = renameTerm(tr.p, vmap, genArr);
-        const o2 = renameTerm(tr.o, vmap, genArr);
+        const s2 = renameTerm(tr.s, vmapName, vmapVar, genArr);
+        const p2 = renameTerm(tr.p, vmapName, vmapVar, genArr);
+        const o2 = renameTerm(tr.o, vmapName, vmapVar, genArr);
         if (s2 !== tr.s || p2 !== tr.p || o2 !== tr.o) changed = true;
         return s2 === tr.s && p2 === tr.p && o2 === tr.o ? tr : new Triple(s2, p2, o2);
       });
@@ -3529,17 +3539,18 @@ function standardizeRule(rule, gen) {
     return t;
   }
 
-  const vmap2 = {};
+  const vmapName2 = {};
+  const vmapVar2 = {};
   const premise = rule.premise.map((tr) => {
-    const s2 = renameTerm(tr.s, vmap2, gen);
-    const p2 = renameTerm(tr.p, vmap2, gen);
-    const o2 = renameTerm(tr.o, vmap2, gen);
+    const s2 = renameTerm(tr.s, vmapName2, vmapVar2, gen);
+    const p2 = renameTerm(tr.p, vmapName2, vmapVar2, gen);
+    const o2 = renameTerm(tr.o, vmapName2, vmapVar2, gen);
     return s2 === tr.s && p2 === tr.p && o2 === tr.o ? tr : new Triple(s2, p2, o2);
   });
   const conclusion = rule.conclusion.map((tr) => {
-    const s2 = renameTerm(tr.s, vmap2, gen);
-    const p2 = renameTerm(tr.p, vmap2, gen);
-    const o2 = renameTerm(tr.o, vmap2, gen);
+    const s2 = renameTerm(tr.s, vmapName2, vmapVar2, gen);
+    const p2 = renameTerm(tr.p, vmapName2, vmapVar2, gen);
+    const o2 = renameTerm(tr.o, vmapName2, vmapVar2, gen);
     return s2 === tr.s && p2 === tr.p && o2 === tr.o ? tr : new Triple(s2, p2, o2);
   });
   return new Rule(premise, conclusion, rule.isForward, rule.isFuse, rule.headBlankLabels);
@@ -5922,6 +5933,41 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
   const varGen = [0];
   const skCounter = [0];
 
+  // Speed up dynamic rule promotion by maintaining O(1) membership sets.
+  // (Some workloads derive many rule-producing triples.)
+  function __ruleKey(isForward, isFuse, premise, conclusion) {
+    let out = (isForward ? 'F' : 'B') + (isFuse ? '!' : '') + '|P|';
+    for (let i = 0; i < premise.length; i++) {
+      const tr = premise[i];
+      if (i) out += '\n';
+      out += skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
+    }
+    out += '|C|';
+    for (let i = 0; i < conclusion.length; i++) {
+      const tr = conclusion[i];
+      if (i) out += '\n';
+      out += skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
+    }
+    return out;
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(forwardRules, '__ruleKeySet')) {
+    Object.defineProperty(forwardRules, '__ruleKeySet', {
+      value: new Set(forwardRules.map((r) => __ruleKey(r.isForward, r.isFuse, r.premise, r.conclusion))),
+      enumerable: false,
+      writable: false,
+      configurable: true,
+    });
+  }
+  if (!Object.prototype.hasOwnProperty.call(backRules, '__ruleKeySet')) {
+    Object.defineProperty(backRules, '__ruleKeySet', {
+      value: new Set(backRules.map((r) => __ruleKey(r.isForward, r.isFuse, r.premise, r.conclusion))),
+      enumerable: false,
+      writable: false,
+      configurable: true,
+    });
+  }
+
   // Cache head blank-node skolemization per (rule firing, head blank label).
   // This prevents repeatedly generating fresh _:sk_N blanks for the *same*
   // rule+substitution instance across outer fixpoint iterations.
@@ -6025,6 +6071,80 @@ function computeMaxScopedClosurePriorityNeeded() {
 
   let maxScopedClosurePriorityNeeded = computeMaxScopedClosurePriorityNeeded();
 
+  // Conservative fast-skip for forward rules that cannot possibly succeed
+  // until a scoped snapshot exists (or a given closure level is reached).
+  // This avoids expensive work (e.g. deep backward chaining) in Phase A.
+  function __termContainsVarName(t, name) {
+    if (t instanceof Var) return t.name === name;
+    if (t instanceof ListTerm) return t.elems.some((e) => __termContainsVarName(e, name));
+    if (t instanceof OpenListTerm) return t.tailVar === name || t.prefix.some((e) => __termContainsVarName(e, name));
+    if (t instanceof GraphTerm)
+      return t.triples.some(
+        (tr) => __termContainsVarName(tr.s, name) || __termContainsVarName(tr.p, name) || __termContainsVarName(tr.o, name),
+      );
+    return false;
+  }
+
+  function __varOccursElsewhereInPremise(premise, name, idx, field) {
+    for (let i = 0; i < premise.length; i++) {
+      const tr = premise[i];
+      if (!(tr && tr.s && tr.p && tr.o)) continue;
+
+      // Skip the specific scope/priority occurrence we are analyzing.
+      if (!(i === idx && field === 's') && __termContainsVarName(tr.s, name)) return true;
+      if (!(i === idx && field === 'p') && __termContainsVarName(tr.p, name)) return true;
+      if (!(i === idx && field === 'o') && __termContainsVarName(tr.o, name)) return true;
+    }
+    return false;
+  }
+
+  function __computeForwardRuleScopedSkipInfo(rule) {
+    let needsSnap = false;
+    let requiredLevel = 0;
+
+    for (let i = 0; i < rule.premise.length; i++) {
+      const tr = rule.premise[i];
+      if (!(tr && tr.p instanceof Iri)) continue;
+      const pv = tr.p.value;
+
+      if (pv === LOG_NS + 'collectAllIn' || pv === LOG_NS + 'forAllIn') {
+        if (tr.o instanceof GraphTerm) continue; // explicit scope
+        // If scope term is a Var that appears elsewhere, it might be bound to a GraphTerm.
+        // Be conservative and do not skip in that case.
+        if (tr.o instanceof Var) {
+          if (__varOccursElsewhereInPremise(rule.premise, tr.o.name, i, 'o')) return null;
+          needsSnap = true;
+          requiredLevel = Math.max(requiredLevel, 1);
+        } else {
+          needsSnap = true;
+          let prio = 1;
+          const p0 = __logNaturalPriorityFromTerm(tr.o);
+          if (p0 !== null) prio = p0;
+          requiredLevel = Math.max(requiredLevel, prio);
+        }
+        continue;
+      }
+
+      if (pv === LOG_NS + 'includes' || pv === LOG_NS + 'notIncludes') {
+        if (tr.s instanceof GraphTerm) continue; // explicit scope
+        if (tr.s instanceof Var) {
+          if (__varOccursElsewhereInPremise(rule.premise, tr.s.name, i, 's')) return null;
+          needsSnap = true;
+          requiredLevel = Math.max(requiredLevel, 1);
+        } else {
+          needsSnap = true;
+          let prio = 1;
+          const p0 = __logNaturalPriorityFromTerm(tr.s);
+          if (p0 !== null) prio = p0;
+          requiredLevel = Math.max(requiredLevel, prio);
+        }
+      }
+    }
+
+    if (!needsSnap) return { needsSnap: false, requiredLevel: 0 };
+    return { needsSnap: true, requiredLevel };
+  }
+
   function setScopedSnapshot(snap, level) {
     if (!Object.prototype.hasOwnProperty.call(facts, '__scopedSnapshot')) {
       Object.defineProperty(facts, '__scopedSnapshot', {
@@ -6076,6 +6196,29 @@ function computeMaxScopedClosurePriorityNeeded() {
 
       for (let i = 0; i < forwardRules.length; i++) {
         const r = forwardRules[i];
+
+        // Skip forward rules that are guaranteed to "delay" due to scoped
+        // builtins (log:collectAllIn / log:forAllIn / log:includes / log:notIncludes)
+        // until a snapshot exists (and a certain closure level is reached).
+        // This prevents expensive proofs that will definitely fail in Phase A
+        // and in early closure levels.
+        if (!Object.prototype.hasOwnProperty.call(r, '__scopedSkipInfo')) {
+          const info = __computeForwardRuleScopedSkipInfo(r);
+          Object.defineProperty(r, '__scopedSkipInfo', {
+            value: info,
+            enumerable: false,
+            writable: false,
+            configurable: true,
+          });
+        }
+        const info = r.__scopedSkipInfo;
+        if (info && info.needsSnap) {
+          const snapHere = facts.__scopedSnapshot || null;
+          const lvlHere = (facts && typeof facts.__scopedClosureLevel === 'number' && facts.__scopedClosureLevel) || 0;
+          if (!snapHere) continue;
+          if (lvlHere < info.requiredLevel) continue;
+        }
+
         const empty = {};
         const visited = [];
         // Optimization: if the rule head is **structurally ground** (no vars anywhere, even inside
@@ -6184,27 +6327,19 @@ function computeMaxScopedClosurePriorityNeeded() {
                   const headBlankLabels = collectBlankLabelsInTriples(conclusion);
                   const newRule = new Rule(premise, conclusion, true, false, headBlankLabels);
 
-                  const already = forwardRules.some(
-                    (rr) =>
-                      rr.isForward === newRule.isForward &&
-                      rr.isFuse === newRule.isFuse &&
-                      triplesListEqual(rr.premise, newRule.premise) &&
-                      triplesListEqual(rr.conclusion, newRule.conclusion),
-                  );
-                  if (!already) forwardRules.push(newRule);
+                  const key = __ruleKey(newRule.isForward, newRule.isFuse, newRule.premise, newRule.conclusion);
+                  if (!forwardRules.__ruleKeySet.has(key)) {
+                    forwardRules.__ruleKeySet.add(key);
+                    forwardRules.push(newRule);
+                  }
                 } else if (isBwRuleTriple) {
                   const [premise, conclusion] = liftBlankRuleVars(right, left);
                   const headBlankLabels = collectBlankLabelsInTriples(conclusion);
                   const newRule = new Rule(premise, conclusion, false, false, headBlankLabels);
 
-                  const already = backRules.some(
-                    (rr) =>
-                      rr.isForward === newRule.isForward &&
-                      rr.isFuse === newRule.isFuse &&
-                      triplesListEqual(rr.premise, newRule.premise) &&
-                      triplesListEqual(rr.conclusion, newRule.conclusion),
-                  );
-                  if (!already) {
+                  const key = __ruleKey(newRule.isForward, newRule.isFuse, newRule.premise, newRule.conclusion);
+                  if (!backRules.__ruleKeySet.has(key)) {
+                    backRules.__ruleKeySet.add(key);
                     backRules.push(newRule);
                     indexBackRule(backRules, newRule);
                   }
