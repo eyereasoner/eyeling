@@ -4717,6 +4717,7 @@ function skolemizeTripleForHeadBlanks(tr, headBlankLabels, mapping, skCounter, f
 function termsEqual(a, b) {
   if (a === b) return true;
   if (!a || !b) return false;
+  if (a.__tid && b.__tid && a.__tid === b.__tid) return true;
   if (a.constructor !== b.constructor) return false;
 
   if (a instanceof Iri) return a.value === b.value;
@@ -4775,6 +4776,7 @@ function termsEqual(a, b) {
 function termsEqualNoIntDecimal(a, b) {
   if (a === b) return true;
   if (!a || !b) return false;
+  if (a.__tid && b.__tid && a.__tid === b.__tid) return true;
   if (a.constructor !== b.constructor) return false;
 
   if (a instanceof Iri) return a.value === b.value;
@@ -4957,9 +4959,7 @@ function alphaEqGraphTriples(xs, ys) {
 //   - __wildHeadPred: Rule[] (non-IRI head predicate)
 
 function termFastKey(t) {
-  if (t instanceof Iri) return 'I:' + t.value;
-  if (t instanceof Blank) return 'B:' + t.label;
-  if (t instanceof Literal) return 'L:' + normalizeLiteralForFastKey(t.value);
+  if (t instanceof Iri || t instanceof Blank || t instanceof Literal) return t.__tid;
   return null;
 }
 
@@ -5440,6 +5440,9 @@ function unifyTermWithOptions(a, b, subst, opts) {
   if (b instanceof Var) {
     return unifyTermWithOptions(b, a, subst, opts);
   }
+
+  // Fast path: identical atomic term ids (covers IRI, blank, and string/xsd:string equivalence)
+  if (a.__tid && b.__tid && a.__tid === b.__tid) return subst;
 
   // Exact matches
   if (a instanceof Iri && b instanceof Iri && a.value === b.value) return subst;
@@ -8157,6 +8160,76 @@ function literalParts(lit) {
   return res;
 }
 
+// -----------------------------------------------------------------------------
+// Global stable term IDs (performance)
+// -----------------------------------------------------------------------------
+// A small integer ID is assigned per *value-based* key, and stored on each term
+// as non-enumerable property `__tid`. This enables cheaper indexing and
+// equality fast-paths than repeated string key construction.
+
+let __nextTid = 1;
+const __tidIntern = new Map(); // string key -> number
+
+function __getTid(key) {
+  let id = __tidIntern.get(key);
+  if (!id) {
+    id = __nextTid++;
+    __tidIntern.set(key, id);
+  }
+  return id;
+}
+
+function __isQuotedLexical(lit) {
+  if (typeof lit !== 'string') return false;
+  if (lit.length >= 6) {
+    if (lit.startsWith('"""') && lit.endsWith('"""')) return true;
+    if (lit.startsWith("'''") && lit.endsWith("'''")) return true;
+  }
+  if (lit.length >= 2) {
+    const a = lit[0];
+    const b = lit[lit.length - 1];
+    if ((a === '"' && b === '"') || (a === "'" && b === "'")) return true;
+  }
+  return false;
+}
+
+function __literalHasLangTag(lit) {
+  if (typeof lit !== 'string' || !__isQuotedLexical(lit)) return false;
+  let end = -1;
+  let qlen = 1;
+  if (lit.startsWith('"""')) {
+    end = lit.lastIndexOf('"""');
+    qlen = 3;
+  } else if (lit.startsWith("'''")) {
+    end = lit.lastIndexOf("'''");
+    qlen = 3;
+  } else {
+    end = lit.lastIndexOf(lit[0]);
+    qlen = 1;
+  }
+  if (end < 0) return false;
+  const after = lit.slice(end + qlen);
+  if (!after.startsWith('@')) return false;
+  const lang = after.slice(1);
+  return /^[A-Za-z]+(?:-[A-Za-z0-9]+)*$/.test(lang);
+}
+
+function __isPlainStringLiteralValue(lit) {
+  if (typeof lit !== 'string') return false;
+  if (lit.indexOf('^^') >= 0) return false;
+  if (!__isQuotedLexical(lit)) return false;
+  return !__literalHasLangTag(lit);
+}
+
+function normalizeLiteralForTid(lit) {
+  // Canonicalize so that plain string and explicit xsd:string share the same id.
+  if (typeof lit !== 'string') return lit;
+  const [lex, dt] = literalParts(lit);
+  if (dt === XSD_NS + 'string') return `${lex}^^<${XSD_NS}string>`;
+  if (dt === null && __isPlainStringLiteralValue(lit)) return `${lex}^^<${XSD_NS}string>`;
+  return lit;
+}
+
 // ===========================================================================
 // AST (Abstract Syntax Tree)
 // ===========================================================================
@@ -8167,6 +8240,7 @@ class Iri extends Term {
   constructor(value) {
     super();
     this.value = value;
+    Object.defineProperty(this, '__tid', { value: __getTid('I:' + value), enumerable: false });
   }
 }
 
@@ -8174,6 +8248,7 @@ class Literal extends Term {
   constructor(value) {
     super();
     this.value = value; // raw lexical form, e.g. "foo", 12, true, or "\"1944-08-21\"^^..."
+    Object.defineProperty(this, '__tid', { value: __getTid('L:' + normalizeLiteralForTid(value)), enumerable: false });
   }
 }
 
@@ -8188,6 +8263,7 @@ class Blank extends Term {
   constructor(label) {
     super();
     this.label = label; // _:b1, etc.
+    Object.defineProperty(this, '__tid', { value: __getTid('B:' + label), enumerable: false });
   }
 }
 

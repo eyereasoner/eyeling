@@ -176,11 +176,19 @@ Two details matter later:
 
 Eyeling interns IRIs and Literals by string value. Interning is a quiet performance trick with big consequences:
 
-- repeated IRIs become pointer-equal
+- repeated IRIs/Literals become pointer-equal
 - indexing is cheaper
 - comparisons are faster and allocations drop.
 
-Terms are treated as immutable: once interned, the code assumes you won’t mutate `.value`.
+In addition, interned **Iri**/**Literal** terms (and generated **Blank** terms) get a small, non-enumerable integer id `.__tid` that is stable for the lifetime of the process. This `__tid` is used as the engine’s “fast key”:
+
+- fact indexes (`__byPS` / `__byPO`) key by `__tid` instead of building `"I:..."` / `"L:..."` strings
+- duplicate detection uses `"sid	pid	oid"` where each component is a `__tid`
+- unification/equality has an early-out when two terms share the same `__tid`
+
+For blanks, the id is derived from the blank label (so different blank labels remain different existentials).
+
+Terms are treated as immutable: once interned/created, the code assumes you won’t mutate `.value` (or `.label` for blanks).
 
 ### 3.4 Prefix environment
 
@@ -434,9 +442,11 @@ Facts live in an array `facts: Triple[]`.
 Eyeling attaches hidden (non-enumerable) index fields:
 
 * `facts.__byPred: Map<predicateIRI, Triple[]>`
-* `facts.__byPS: Map<predicateIRI, Map<subjectKey, Triple[]>>`
-* `facts.__byPO: Map<predicateIRI, Map<objectKey, Triple[]>>`
-* `facts.__keySet: Set<string>` for a fast-path “S\tP\tO” key when all terms are IRI/Literal-like
+* `facts.__byPS: Map<predicateIRI, Map<termId, Triple[]>>` where `termId` is `term.__tid`
+* `facts.__byPO: Map<predicateIRI, Map<termId, Triple[]>>` where `termId` is `term.__tid`
+* `facts.__keySet: Set<string>` for a fast-path `"sid	pid	oid"` key (all three are `__tid` values)
+
+`termFastKey(term)` returns a `termId` (`term.__tid`) for **Iri**, **Literal**, and **Blank** terms, and `null` for structured terms (lists, quoted graphs) and variables.
 
 The “fast key” only exists when `termFastKey` succeeds for all three terms.
 
@@ -450,14 +460,14 @@ When proving a goal with IRI predicate, Eyeling computes candidate facts by:
 
 This is a cheap selectivity heuristic. In type-heavy RDF, `(p,o)` is often extremely selective (e.g., `rdf:type` + a class IRI), so the PO index can be a major speed win.
 
-### 7.3 Duplicate detection is careful about blanks
+### 7.3 Duplicate detection with fast keys
 
-A tempting optimization would be “treat two triples as duplicates modulo blank renaming.” Eyeling does **not** do this globally, because it would be unsound: different blank labels represent different existentials unless explicitly linked.
+When adding derived facts, Eyeling uses a fast-path duplicate check when possible:
 
-So:
+- If all three terms have a fast key (Iri/Literal/Blank → `__tid`), it checks membership in `facts.__keySet` using the `"sid	pid	oid"` key.
+- Otherwise (lists, quoted graphs, variables), it falls back to structural triple equality.
 
-* fast-key dedup works for IRI/Literal-only triples
-* otherwise, it falls back to real triple equality on actual blank labels.
+This still treats blanks correctly: blanks are *not* interchangeable; the blank **label** (and thus its `__tid`) is part of the key.
 
 ---
 
