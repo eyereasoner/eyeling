@@ -369,7 +369,17 @@ When applying substitutions, Eyeling follows **chains**:
 
 * if `X → Var(Y)` and `Y → Iri(...)`, applying to `X` yields the IRI.
 
-Chains arise naturally during unification (e.g. when variables unify with other variables) and during rule firing. Eyeling treats substitutions as *persistent maps*: when a new binding is added, the engine makes a shallow copy and records only the new binding.
+Chains arise naturally during unification (e.g. when variables unify with other variables) and during rule firing.
+
+At the API boundary, a substitution is still just a plain object, and unification still produces *delta* objects (small `{ varName: Term }` maps).  
+But inside the hot backward-chaining loop (`proveGoals`), Eyeling uses a Prolog-style **trail** to avoid cloning substitutions at every step:
+
+* keep one **mutable** substitution object during DFS
+* when a candidate match yields a delta, **apply the bindings in place**
+* record newly-bound variable names on a **trail stack**
+* on backtracking, **undo** only the bindings pushed since a saved “mark”
+
+This keeps the search semantics identical, but removes the “copy a growing object per step” cost that dominates deep/branchy proofs. Returned solutions are emitted as compact plain objects, so callers never observe mutation.
 
 Implementation details (and why they matter):
 
@@ -489,10 +499,13 @@ A built-in is evaluated by the engine via the builtin library in `lib/builtins.j
 ```js
 deltas = evalBuiltin(goal0, {}, facts, backRules, ...)
 for delta in deltas:
-  composed = composeSubst(currentSubst, delta)
+  mark = trail.length
+  if applyDeltaToSubst(delta):
+    dfs(restGoals)
+  undoTo(mark)
 ```
 
-**Implementation note (performance):** `composeSubst` has a fast path — if `delta` is empty (or only repeats bindings already present in `currentSubst`), it returns the original substitution object instead of cloning. This makes constraint-style builtins that often yield `{}` much cheaper, but it does **not** change the search-space: a vacuous solution can still amplify later branching.
+**Implementation note (performance):** in the core DFS, Eyeling applies builtin (and unification) deltas into a single mutable substitution and uses a **trail** to undo bindings on backtracking. This preserves the meaning of “threading substitutions through a proof”, but avoids allocating and copying full substitution objects on every branch. Empty deltas (`{}`) are genuinely cheap: they don’t touch the trail and only incur the control-flow overhead of exploring a branch.
 
 
 So built-ins behave like relations that can generate zero, one, or many possible bindings. A list generator might yield many deltas; a numeric test yields zero or one.
@@ -530,11 +543,13 @@ That “standardize apart” step is essential. Without it, reusing a rule multi
 **Implementation note (performance):** `standardizeRule` is called for every backward-rule candidate during proof search.  
 To reduce allocation pressure, Eyeling reuses a single fresh `Var(...)` object per *original* variable name within one standardization pass (all occurrences of `?x` in the rule become the same fresh `?x__N` object). This is semantics-preserving — it still “separates” invocations — but it avoids creating many duplicate Var objects when a variable appears repeatedly in a rule body.
 
-### 8.6 Substitution compaction: keeping DFS from going quadratic
+### 8.6 Substitution compaction: keeping DFS fast on deep proofs
 
-Deep backward chains can create large substitutions. If you copy a growing object at every step, you can accidentally get O(depth²) behavior.
+The trail-based substitution store removes the biggest accidental quadratic cost (copying a growing substitution object at every step).  
+But substitutions can still grow large in deep/branchy searches, and long variable chains make `applySubstTerm` work harder.
 
-Eyeling avoids that with `maybeCompactSubst`:
+Eyeling therefore still uses `maybeCompactSubst` when emitting answers (and occasionally during deep search): it keeps only bindings relevant to the remaining goals and the original “answer variables”, trimming dead bindings and shortening chains.
+
 
 * if depth is high or substitution is large, it keeps only bindings relevant to:
 
