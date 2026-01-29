@@ -527,6 +527,9 @@ For each candidate rule:
 
 That “standardize apart” step is essential. Without it, reusing a rule multiple times would accidentally share variables across invocations, producing incorrect bindings.
 
+**Implementation note (performance):** `standardizeRule` is called for every backward-rule candidate during proof search.  
+To reduce allocation pressure, Eyeling reuses a single fresh `Var(...)` object per *original* variable name within one standardization pass (all occurrences of `?x` in the rule become the same fresh `?x__N` object). This is semantics-preserving — it still “separates” invocations — but it avoids creating many duplicate Var objects when a variable appears repeatedly in a rule body.
+
 ### 8.6 Substitution compaction: keeping DFS from going quadratic
 
 Deep backward chains can create large substitutions. If you copy a growing object at every step, you can accidentally get O(depth²) behavior.
@@ -629,6 +632,9 @@ When such a triple is derived in a forward rule head:
 
 This is meta-programming: your rules can generate new rules during reasoning.
 
+**Implementation note (performance):** rule triples are often derived repeatedly (especially inside loops).  
+To keep promotion cheap, Eyeling maintains a `Set` of canonical rule keys for both the forward-rule list and the backward-rule list. Promotion checks membership in O(1) time instead of scanning the rule arrays and doing structural comparisons each time.
+
 ---
 
 <a id="ch10"></a>
@@ -653,6 +659,9 @@ Forward chaining runs inside an *outer loop* that alternates:
 * Eyeling runs saturation again (new facts can appear due to scoped queries)
 
 This produces deterministic behavior for scoped operations: they observe a stable snapshot, not a moving target.
+
+**Implementation note (performance):** in Phase A there is no snapshot, so scoped built-ins (and priority-gated scoped queries) are guaranteed to “delay” by failing.  
+Instead of proving the entire forward-rule body only to fail at the end, Eyeling precomputes whether a forward rule depends on scoped built-ins and skips it until a snapshot exists and the requested closure level is reached. This can avoid very expensive proof searches in programs that combine recursion with `log:*In` built-ins.
 
 ### 10.2 Priority-gated closure levels
 
