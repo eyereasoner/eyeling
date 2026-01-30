@@ -275,10 +275,10 @@ log:uri a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Converts between an IRI and its string representation (with safety checks on IRIREF characters)." .
 
 log:trace a ex:Builtin ; ex:kind ex:SideEffect ;
-  rdfs:comment "Side-effect (debug tracing). Prints '<subject> TRACE <object>' to stderr (Node: process.stderr; browser: console.error). Always succeeds once; does not bind variables.
+  rdfs:comment "Side-effect (debug tracing). Prints '<subject> TRACE <object>' to stderr (Node: process.stderr; browser: console.error). Always succeeds once; does not bind variables." .
 
 log:outputString a ex:Builtin ; ex:kind ex:SideEffect ;
-  rdfs:comment "Side-effect (printing). Requires ground subject and non-variable object string. Does not bind variables.
+  rdfs:comment "Side-effect (printing). Requires ground subject and non-variable object string. Does not bind variables." .
 
 # --- string: (tests + functions) ------------------------------------
 
