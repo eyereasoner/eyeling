@@ -1,0 +1,172 @@
+# ============================================================================
+# Gödel Template + Substitution Example
+#
+# Goal
+#   Model a “Gödel-like” sentence as DATA:
+#     - a token template with a hole (prefix ++ numeral(n) ++ suffix)
+#     - a substitution step that splices in the decimal numeral tokens for n
+#     - a Gödel encoding that maps the resulting token list to a number:
+#         g = Π prime[i] ^ code(token[i])
+#
+# Notes
+#   • This is a toy arithmetization: the token alphabet and codes are small and
+#     illustrative, not the full formal encoding used in incompleteness proofs.
+#   • The numeral construction is demand-driven via backward rules (<=):
+#     Eyeling will only compute digits(n) when some other rule needs it.
+#   • Integer quotient is obtained via:
+#       r = n mod 10
+#       q = (n - r) / 10
+#     so q stays integral even though math:quotient is real division.
+#
+# What to look for in the output
+#   - :Demo :digits ( :d4 :d2 )                     (numeral tokens)
+#   - :Demo :tokens ( ... :d4 :d2 ... )             (instantiated sentence)
+#   - :Demo :godelPairs ( (2 c0) (3 c1) ... )       (prime/exponent pairs)
+#   - :Demo :godelNumber <big integer>              (Gödel number)
+# ============================================================================
+
+@prefix :     <http://example.org/godel-template#>.
+@prefix list: <http://www.w3.org/2000/10/swap/list#>.
+@prefix log:  <http://www.w3.org/2000/10/swap/log#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+
+# ----------------------------------------------------------------------------
+# 0) Token alphabet + codes (toy)
+# ----------------------------------------------------------------------------
+
+:NOT       :code  1.
+:PROVABLE  :code  2.
+:IN        :code  3.
+:S         :code  4.
+:LP        :code  5.
+:RP        :code  6.
+
+# Digit tokens (each has a numeric value + a token code)
+:d0 :digitValue 0; :code 10.
+:d1 :digitValue 1; :code 11.
+:d2 :digitValue 2; :code 12.
+:d3 :digitValue 3; :code 13.
+:d4 :digitValue 4; :code 14.
+:d5 :digitValue 5; :code 15.
+:d6 :digitValue 6; :code 16.
+:d7 :digitValue 7; :code 17.
+:d8 :digitValue 8; :code 18.
+:d9 :digitValue 9; :code 19.
+
+# primes for positions 0.. (enough for prefix + digits + suffix)
+:primeBases :is ( 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 ).
+
+# ----------------------------------------------------------------------------
+# 1) Template schema as data
+#    Think:  NOT PROVABLE IN S ( <decimal numeral> )
+# ----------------------------------------------------------------------------
+
+:GSchema a :Template;
+  :english "This statement cannot be proven within this system.";
+  :prefixTokens ( :NOT :PROVABLE :IN :S :LP );
+  :suffixTokens ( :RP ).
+
+# ----------------------------------------------------------------------------
+# 2) Decimal numeral tokens via backward rules (demand-driven)
+# ----------------------------------------------------------------------------
+
+# Base case: n < 10  => digits(n) = ( d(n) )
+{
+  ?n :digits ( ?d ).
+} <= {
+  ?n math:lessThan 10.
+  ?d :digitValue ?n.
+}.
+
+# Recursive case: n >= 10
+# digits(n) = digits(q) ++ ( d(r) )
+#   where r = n mod 10
+#         q = (n - r)/10  (integer-safe)
+{
+  ?n :digits ?digs.
+} <= {
+  ?n math:notLessThan 10.
+
+  ( ?n 10 ) math:remainder ?r.
+  ( ?n ?r ) math:difference ?nMinusR.
+  ( ?nMinusR 10 ) math:quotient ?q.
+
+  ?q :digits ?qdigs.
+  ?dr :digitValue ?r.
+
+  ( ?qdigs ( ?dr ) ) list:append ?digs.
+}.
+
+# ----------------------------------------------------------------------------
+# 3) Substitute numeral(n) into the template to get the token list
+# ----------------------------------------------------------------------------
+
+:Demo :n 42.
+
+{
+  :Demo :n ?n.
+  ?n :digits ?digits.
+
+  :GSchema :prefixTokens ?pre.
+  :GSchema :suffixTokens ?suf.
+
+  ( ?pre ?digits ) list:append ?tmp.
+  ( ?tmp ?suf ) list:append ?tokens.
+}
+=>
+{
+  :Demo :digits ?digits.
+  :Demo :tokens ?tokens.
+}.
+
+# ----------------------------------------------------------------------------
+# 4) Gödel encode tokens: g = Π prime[i] ^ code(token[i])
+#    - build pairs (prime code)
+#    - compute factors prime^code
+#    - multiply factors
+# ----------------------------------------------------------------------------
+
+# Build godelPairs as a list of list-pairs: ( (p0 c0) (p1 c1) ... )
+{
+  :Demo :tokens ?tokens.
+  :primeBases :is ?primes.
+
+  ( (?p ?c)
+    {
+      ?tokens list:iterate (?i ?tok).
+      ( ?primes ?i ) list:memberAt ?p.
+      ?tok :code ?c.
+    }
+    ?pairs
+  ) log:collectAllIn _:scope.
+}
+=>
+{
+  :Demo :godelPairs ?pairs.
+}.
+
+# Compute godelNumber from the factors (p^c) and their product
+{
+  :Demo :godelPairs ?pairs.
+
+  ( ?factor
+    {
+      ?pairs list:member ?pair.
+      ?pair math:exponentiation ?factor.
+    }
+    ?factors
+  ) log:collectAllIn _:scope.
+
+  ?factors math:product ?g.
+}
+=>
+{
+  :Demo :godelNumber ?g.
+
+  # convenient outputs (so you can spot them quickly)
+  :outDigits :is ?digits.
+  :outTokens :is ?tokens.
+  :outPairs  :is ?pairs.
+  :outG      :is ?g.
+}.
+

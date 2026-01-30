@@ -1,0 +1,8 @@
+@prefix : <http://example.org/godel-template#> .
+
+:Demo :digits (:d4 :d2) .
+:Demo :tokens (:NOT :PROVABLE :IN :S :LP :d4 :d2 :RP) .
+:Demo :godelPairs ((2 1) (3 2) (5 3) (7 4) (11 5) (13 14) (17 12) (19 6)) .
+:Demo :godelNumber 93897428453934743498383922339000952994095115872750 .
+:outPairs :is ((2 1) (3 2) (5 3) (7 4) (11 5) (13 14) (17 12) (19 6)) .
+:outG :is 93897428453934743498383922339000952994095115872750 .
