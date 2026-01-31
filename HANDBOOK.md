@@ -182,7 +182,7 @@ Eyeling interns IRIs and Literals by string value. Interning is a quiet performa
 
 In addition, interned **Iri**/**Literal** terms (and generated **Blank** terms) get a small, non-enumerable integer id `.__tid` that is stable for the lifetime of the process. This `__tid` is used as the engine’s “fast key”:
 
-- fact indexes (`__byPS` / `__byPO`) key by `__tid` instead of building `"I:..."` / `"L:..."` strings
+- fact indexes (`__byPred` / `__byPS` / `__byPO`) key by `__tid` values (predicate buckets are keyed by `predicate.__tid`, and PS/PO buckets are keyed by the subject/object `.__tid`)
 - duplicate detection uses `"sid	pid	oid"` where each component is a `__tid`
 - unification/equality has an early-out when two terms share the same `__tid`
 
@@ -441,9 +441,9 @@ Facts live in an array `facts: Triple[]`.
 
 Eyeling attaches hidden (non-enumerable) index fields:
 
-* `facts.__byPred: Map<predicateIRI, Triple[]>`
-* `facts.__byPS: Map<predicateIRI, Map<termId, Triple[]>>` where `termId` is `term.__tid`
-* `facts.__byPO: Map<predicateIRI, Map<termId, Triple[]>>` where `termId` is `term.__tid`
+* `facts.__byPred: Map<predicateId, Triple[]>` where `predicateId` is `predicate.__tid`
+* `facts.__byPS: Map<predicateId, Map<termId, Triple[]>>` where `termId` is `term.__tid`
+* `facts.__byPO: Map<predicateId, Map<termId, Triple[]>>` where `termId` is `term.__tid`
 * `facts.__keySet: Set<string>` for a fast-path `"sid	pid	oid"` key (all three are `__tid` values)
 
 `termFastKey(term)` returns a `termId` (`term.__tid`) for **Iri**, **Literal**, and **Blank** terms, and `null` for structured terms (lists, quoted graphs) and variables.
@@ -518,9 +518,6 @@ for delta in deltas:
 **Implementation note (performance):** in the core DFS, Eyeling applies builtin (and unification) deltas into a single mutable substitution and uses a **trail** to undo bindings on backtracking. This preserves the meaning of “threading substitutions through a proof”, but avoids allocating and copying full substitution objects on every branch. Empty deltas (`{}`) are genuinely cheap: they don’t touch the trail and only incur the control-flow overhead of exploring a branch.
 
 **Implementation note (performance):** as of this version, Eyeling also avoids allocating short-lived substitution objects when matching goals against **facts** and when unifying a **backward-rule head** with the current goal. Instead of calling the pure `unifyTriple(..., subst)` (which clones the substitution on each variable bind), the prover performs an **in-place unification** directly into the mutable `substMut` store and records only the newly-bound variable names on the trail. This typically reduces GC pressure significantly on reachability / path-search workloads, where unification is executed extremely frequently.
-
-**Implementation note (performance): ground-goal memoization.** When the current goal triple is fully ground (contains no `Var`, no open-list term, and no quoted formula), satisfying it cannot introduce new bindings. Eyeling maintains a small per-proof memo cache for such ground goals, keyed by a canonical triple key. If the cache records that a ground goal is satisfiable (either by a direct fact match or only via backward rules), the prover skips re-proving it and continues with the remaining goals. This reduces repeated work in programs that issue the same membership-style checks many times (even without full tabling). The cache is bounded (default: 20k entries) and uses an LRU-style eviction; advanced callers can override the bound via `opts.groundMemoMax` passed to `proveGoals`.
-
 
 
 So built-ins behave like relations that can generate zero, one, or many possible bindings. A list generator might yield many deltas; a numeric test yields zero or one.
