@@ -182,7 +182,7 @@ Eyeling interns IRIs and Literals by string value. Interning is a quiet performa
 
 In addition, interned **Iri**/**Literal** terms (and generated **Blank** terms) get a small, non-enumerable integer id `.__tid` that is stable for the lifetime of the process. This `__tid` is used as the engine’s “fast key”:
 
-- fact indexes (`__byPred` / `__byPS` / `__byPO`) key by `__tid` values (predicate buckets are keyed by `predicate.__tid`, and PS/PO buckets are keyed by the subject/object `.__tid`)
+- fact indexes (`__byPred` / `__byPS` / `__byPO`) key by `__tid` values **and store fact *indices*** (predicate buckets are keyed by `predicate.__tid`, and PS/PO buckets are keyed by the subject/object `.__tid`; buckets contain integer indices into the `facts` array)
 - duplicate detection uses `"sid	pid	oid"` where each component is a `__tid`
 - unification/equality has an early-out when two terms share the same `__tid`
 
@@ -441,9 +441,9 @@ Facts live in an array `facts: Triple[]`.
 
 Eyeling attaches hidden (non-enumerable) index fields:
 
-* `facts.__byPred: Map<predicateId, Triple[]>` where `predicateId` is `predicate.__tid`
-* `facts.__byPS: Map<predicateId, Map<termId, Triple[]>>` where `termId` is `term.__tid`
-* `facts.__byPO: Map<predicateId, Map<termId, Triple[]>>` where `termId` is `term.__tid`
+* `facts.__byPred: Map<predicateId, number[]>` where each entry is an index into `facts` (and `predicateId` is `predicate.__tid`)
+* `facts.__byPS: Map<predicateId, Map<termId, number[]>>` where each entry is an index into `facts` (and `termId` is `term.__tid`)
+* `facts.__byPO: Map<predicateId, Map<termId, number[]>>` where each entry is an index into `facts` (and `termId` is `term.__tid`)
 * `facts.__keySet: Set<string>` for a fast-path `"sid	pid	oid"` key (all three are `__tid` values)
 
 `termFastKey(term)` returns a `termId` (`term.__tid`) for **Iri**, **Literal**, and **Blank** terms, and `null` for structured terms (lists, quoted graphs) and variables.

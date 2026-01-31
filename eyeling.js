@@ -1027,14 +1027,15 @@ function __rdfListObjectsForSP(facts, predIri, subj) {
     const ps = facts.__byPS.get(pk);
     if (ps) {
       const bucket = ps.get(sk);
-      if (bucket && bucket.length) return bucket.map((tr) => tr.o);
+      if (bucket && bucket.length) return bucket.map((i) => facts[i].o);
     }
   }
 
   // Fallback scan (covers non-indexable terms)
   const pb = facts.__byPred.get(pk) || [];
   const out = [];
-  for (const tr of pb) {
+  for (const i of pb) {
+    const tr = facts[i];
     if (termsEqual(tr.s, subj)) out.push(tr.o);
   }
   return out;
@@ -4955,9 +4956,9 @@ function alphaEqGraphTriples(xs, ys) {
 // ===========================================================================
 //
 // Facts:
-//   - __byPred: Map<predicateId, Triple[]>
-//   - __byPS:   Map<predicateId, Map<subjectId, Triple[]>>
-//   - __byPO:   Map<predicateId, Map<objectId, Triple[]>>
+//   - __byPred: Map<predicateId, number[]>   (indices into facts array)
+//   - __byPS:   Map<predicateId, Map<subjectId, number[]>>
+//   - __byPO:   Map<predicateId, Map<objectId, number[]>>
 //   - __keySet: Set<"S\tP\tO"> for Iri/Literal/Blank-only triples (fast dup check)
 //
 // Backward rules:
@@ -5001,10 +5002,10 @@ function ensureFactIndexes(facts) {
     writable: true,
   });
 
-  for (const f of facts) indexFact(facts, f);
+  for (let i = 0; i < facts.length; i++) indexFact(facts, facts[i], i);
 }
 
-function indexFact(facts, tr) {
+function indexFact(facts, tr, idx) {
   if (tr.p instanceof Iri) {
     // Use predicate term id as the primary key to avoid hashing long IRI strings.
     const pk = tr.p.__tid;
@@ -5014,7 +5015,7 @@ function indexFact(facts, tr) {
       pb = [];
       facts.__byPred.set(pk, pb);
     }
-    pb.push(tr);
+    pb.push(idx);
 
     const sk = termFastKey(tr.s);
     if (sk !== null) {
@@ -5028,7 +5029,7 @@ function indexFact(facts, tr) {
         psb = [];
         ps.set(sk, psb);
       }
-      psb.push(tr);
+      psb.push(idx);
     }
 
     const ok = termFastKey(tr.o);
@@ -5043,7 +5044,7 @@ function indexFact(facts, tr) {
         pob = [];
         po.set(ok, pob);
       }
-      pob.push(tr);
+      pob.push(idx);
     }
   }
 
@@ -5060,14 +5061,14 @@ function candidateFacts(facts, goal) {
     const sk = termFastKey(goal.s);
     const ok = termFastKey(goal.o);
 
-    /** @type {Triple[] | null} */
+    /** @type {number[] | null} */
     let byPS = null;
     if (sk !== null) {
       const ps = facts.__byPS.get(pk);
       if (ps) byPS = ps.get(sk) || null;
     }
 
-    /** @type {Triple[] | null} */
+    /** @type {number[] | null} */
     let byPO = null;
     if (ok !== null) {
       const po = facts.__byPO.get(pk);
@@ -5081,7 +5082,7 @@ function candidateFacts(facts, goal) {
     return facts.__byPred.get(pk) || [];
   }
 
-  return facts;
+  return null;
 }
 
 function hasFactIndexed(facts, tr) {
@@ -5102,12 +5103,12 @@ function hasFactIndexed(facts, tr) {
         // different existentials unless explicitly connected. Do NOT treat
         // triples as duplicates modulo blank renaming, or you'll incorrectly
         // drop facts like: _:sk_0 :x 8.0  (because _:b8 :x 8.0 exists).
-        return pob.some((t) => triplesEqual(t, tr));
+        return pob.some((i) => triplesEqual(facts[i], tr));
       }
     }
 
     const pb = facts.__byPred.get(pk) || [];
-    return pb.some((t) => triplesEqual(t, tr));
+    return pb.some((i) => triplesEqual(facts[i], tr));
   }
 
   // Non-IRI predicate: fall back to strict triple equality.
@@ -5116,8 +5117,9 @@ function hasFactIndexed(facts, tr) {
 
 function pushFactIndexed(facts, tr) {
   ensureFactIndexes(facts);
+  const idx = facts.length;
   facts.push(tr);
-  indexFact(facts, tr);
+  indexFact(facts, tr, idx);
 }
 
 function ensureBackRuleIndexes(backRules) {
@@ -5934,7 +5936,8 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
     // 4) Try to satisfy the goal from known facts
     if (goal0.p instanceof Iri) {
       const candidates = candidateFacts(facts, goal0);
-      for (const f of candidates) {
+      for (const idx of candidates) {
+        const f = facts[idx];
         const mark = trail.length;
         if (!unifyTripleTrail(goal0, f)) {
           undoTo(mark);
