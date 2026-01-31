@@ -517,6 +517,8 @@ for delta in deltas:
 
 **Implementation note (performance):** in the core DFS, Eyeling applies builtin (and unification) deltas into a single mutable substitution and uses a **trail** to undo bindings on backtracking. This preserves the meaning of “threading substitutions through a proof”, but avoids allocating and copying full substitution objects on every branch. Empty deltas (`{}`) are genuinely cheap: they don’t touch the trail and only incur the control-flow overhead of exploring a branch.
 
+**Implementation note (performance):** as of this version, Eyeling also avoids allocating short-lived substitution objects when matching goals against **facts** and when unifying a **backward-rule head** with the current goal. Instead of calling the pure `unifyTriple(..., subst)` (which clones the substitution on each variable bind), the prover performs an **in-place unification** directly into the mutable `substMut` store and records only the newly-bound variable names on the trail. This typically reduces GC pressure significantly on reachability / path-search workloads, where unification is executed extremely frequently.
+
 
 So built-ins behave like relations that can generate zero, one, or many possible bindings. A list generator might yield many deltas; a numeric test yields zero or one.
 
@@ -675,6 +677,9 @@ Forward chaining runs inside an *outer loop* that alternates:
 * Eyeling runs saturation again (new facts can appear due to scoped queries)
 
 This produces deterministic behavior for scoped operations: they observe a stable snapshot, not a moving target.
+
+**Implementation note (performance):** the two-phase scheme is only needed when the program actually uses scoped built-ins.
+If no rule contains `log:collectAllIn`, `log:forAllIn`, `log:includes`, or `log:notIncludes`, Eyeling now **skips Phase B entirely** and runs only a single saturation. This avoids re-running the forward fixpoint and can prevent a “query-like” forward rule (one whose body contains an expensive backward proof search) from being executed twice.
 
 **Implementation note (performance):** in Phase A there is no snapshot, so scoped built-ins (and priority-gated scoped queries) are guaranteed to “delay” by failing.  
 Instead of proving the entire forward-rule body only to fail at the end, Eyeling precomputes whether a forward rule depends on scoped built-ins and skips it until a snapshot exists and the requested closure level is reached. This can avoid very expensive proof searches in programs that combine recursion with `log:*In` built-ins.
@@ -1061,6 +1066,8 @@ This is a very useful “paired” view of a list.
 * If `rest` is a variable, Eyeling constructs an open list term.
 
 This is the closest thing to Prolog’s `[H|T]` in Eyeling.
+
+**Implementation note (performance):** `list:firstRest` is a hot builtin in many recursive list-building programs (including path finding). Eyeling constructs the new prefix using pre-sized arrays and simple loops (instead of spread syntax) to reduce transient allocations.
 
 ---
 

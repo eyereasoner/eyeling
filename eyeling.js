@@ -2457,7 +2457,10 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       const first = g.o.elems[0];
       const rest = g.o.elems[1];
       if (rest instanceof ListTerm) {
-        const xs = [first, ...rest.elems];
+        const n = rest.elems.length;
+        const xs = new Array(n + 1);
+        xs[0] = first;
+        for (let i = 0; i < n; i++) xs[i + 1] = rest.elems[i];
         const constructed = new ListTerm(xs);
         const s2 = unifyTerm(g.s, constructed, subst);
         return s2 !== null ? [s2] : [];
@@ -2468,7 +2471,10 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
         return s2 !== null ? [s2] : [];
       }
       if (rest instanceof OpenListTerm) {
-        const newPrefix = [first, ...rest.prefix];
+        const n = rest.prefix.length;
+        const newPrefix = new Array(n + 1);
+        newPrefix[0] = first;
+        for (let i = 0; i < n; i++) newPrefix[i + 1] = rest.prefix[i];
         const constructed = new OpenListTerm(newPrefix, rest.tailVar);
         const s2 = unifyTerm(g.s, constructed, subst);
         return s2 !== null ? [s2] : [];
@@ -5685,6 +5691,135 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
     trail.length = mark;
   }
 
+  // In-place unification into the mutable substitution + trail.
+  // This avoids allocating short-lived "delta" substitution objects on the hot path
+  // (facts and backward-rule head matching).
+  //
+  // Semantics: identical to unifyTriple/unifyTerm (bool-value equivalence enabled,
+  // integer<->decimal exact equivalence disabled).
+  function bindVarTrail(varName, t) {
+    // t is assumed already substitution-applied (or at least safe to bind).
+    if (Object.prototype.hasOwnProperty.call(substMut, varName)) {
+      return unifyTermTrail(substMut[varName], t);
+    }
+    if (t instanceof Var && t.name === varName) return true;
+    if (containsVarTerm(t, varName)) return false;
+    substMut[varName] = t;
+    trail.push(varName);
+    return true;
+  }
+
+  function unifyOpenWithListTrail(prefix, tailVar, elems) {
+    if (prefix.length > elems.length) return false;
+    for (let i = 0; i < prefix.length; i++) {
+      if (!unifyTermTrail(prefix[i], elems[i])) return false;
+    }
+    const rest = new ListTerm(elems.slice(prefix.length));
+    return bindVarTrail(tailVar, rest);
+  }
+
+  function unifyTermTrail(a, b) {
+    a = applySubstTerm(a, substMut);
+    b = applySubstTerm(b, substMut);
+
+    // Normalize rdf:nil IRI to the empty list term, so it unifies with () and
+    // list builtins treat it consistently.
+    if (a instanceof Iri && a.value === RDF_NIL_IRI) a = __EMPTY_LIST;
+    if (b instanceof Iri && b.value === RDF_NIL_IRI) b = __EMPTY_LIST;
+
+    // Variable binding
+    if (a instanceof Var) return bindVarTrail(a.name, b);
+    if (b instanceof Var) return bindVarTrail(b.name, a);
+
+    // Fast path: identical atomic term ids (covers IRI, blank, and string/xsd:string equivalence)
+    if (a.__tid && b.__tid && a.__tid === b.__tid) return true;
+
+    // Exact matches
+    if (a instanceof Iri && b instanceof Iri && a.value === b.value) return true;
+    if (a instanceof Literal && b instanceof Literal && a.value === b.value) return true;
+    if (a instanceof Blank && b instanceof Blank && a.label === b.label) return true;
+
+    // Plain string vs xsd:string equivalence
+    if (a instanceof Literal && b instanceof Literal) {
+      if (literalsEquivalentAsXsdString(a.value, b.value)) return true;
+    }
+
+    // Boolean-value equivalence (matches unifyTerm semantics)
+    if (a instanceof Literal && b instanceof Literal) {
+      const ai = parseBooleanLiteralInfo(a);
+      const bi = parseBooleanLiteralInfo(b);
+      if (ai && bi && ai.value === bi.value) return true;
+    }
+
+    // Numeric-value match (datatype must match; no int<->decimal equivalence here)
+    if (a instanceof Literal && b instanceof Literal) {
+      const ai = parseNumericLiteralInfo(a);
+      const bi = parseNumericLiteralInfo(b);
+      if (ai && bi && ai.dt === bi.dt) {
+        if (ai.kind === 'bigint' && bi.kind === 'bigint') {
+          if (ai.value === bi.value) return true;
+        } else {
+          const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
+          const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
+          if (!Number.isNaN(an) && !Number.isNaN(bn) && an === bn) return true;
+        }
+      }
+    }
+
+    // Open list vs concrete list
+    if (a instanceof OpenListTerm && b instanceof ListTerm) {
+      return unifyOpenWithListTrail(a.prefix, a.tailVar, b.elems);
+    }
+    if (a instanceof ListTerm && b instanceof OpenListTerm) {
+      return unifyOpenWithListTrail(b.prefix, b.tailVar, a.elems);
+    }
+
+    // Open list vs open list
+    if (a instanceof OpenListTerm && b instanceof OpenListTerm) {
+      if (a.tailVar !== b.tailVar || a.prefix.length !== b.prefix.length) return false;
+      for (let i = 0; i < a.prefix.length; i++) {
+        if (!unifyTermTrail(a.prefix[i], b.prefix[i])) return false;
+      }
+      return true;
+    }
+
+    // List terms
+    if (a instanceof ListTerm && b instanceof ListTerm) {
+      if (a.elems.length !== b.elems.length) return false;
+      for (let i = 0; i < a.elems.length; i++) {
+        if (!unifyTermTrail(a.elems[i], b.elems[i])) return false;
+      }
+      return true;
+    }
+
+    // Graphs
+    if (a instanceof GraphTerm && b instanceof GraphTerm) {
+      if (alphaEqGraphTriples(a.triples, b.triples)) return true;
+      // Fallback: reuse allocation-heavy graph unifier rarely hit in typical workloads.
+      const delta = unifyGraphTriples(a.triples, b.triples, {});
+      if (delta === null) return false;
+      const mark = trail.length;
+      for (const k in delta) {
+        if (!Object.prototype.hasOwnProperty.call(delta, k)) continue;
+        if (!bindVarTrail(k, delta[k])) {
+          undoTo(mark);
+          return false;
+        }
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+  function unifyTripleTrail(pat, fact) {
+    // Predicates are usually the cheapest and most selective
+    if (!unifyTermTrail(pat.p, fact.p)) return false;
+    if (!unifyTermTrail(pat.s, fact.s)) return false;
+    if (!unifyTermTrail(pat.o, fact.o)) return false;
+    return true;
+  }
+
   function dfs(goalsNow, curDepth, visitedNow, canDeferBuiltins, deferCount) {
     if (results.length >= max) return;
     if (!goalsNow.length) {
@@ -5773,17 +5908,15 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
 
         const rStd = standardizeRule(r, varGen);
         const head = rStd.conclusion[0];
-        const deltaHead = unifyTriple(head, goal0, {});
-        if (deltaHead === null) continue;
-
         const mark = trail.length;
-        if (!applyDeltaToSubst(deltaHead)) {
+        if (!unifyTripleTrail(head, goal0)) {
           undoTo(mark);
           continue;
         }
 
-        const body = rStd.premise.map((b) => applySubstTriple(b, deltaHead));
-        const newGoals = body.concat(restGoals);
+        // No need to eagerly apply the head unifier to the body: dfs() will apply
+        // the current substMut to each goal as it is selected.
+        const newGoals = rStd.premise.concat(restGoals);
 
         // When we enter a backward rule body, preserve the original
         // (left-to-right) evaluation order to avoid non-termination.
@@ -5798,11 +5931,8 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
     if (goal0.p instanceof Iri) {
       const candidates = candidateFacts(facts, goal0);
       for (const f of candidates) {
-        const delta = unifyTriple(goal0, f, {});
-        if (delta === null) continue;
-
         const mark = trail.length;
-        if (!applyDeltaToSubst(delta)) {
+        if (!unifyTripleTrail(goal0, f)) {
           undoTo(mark);
           continue;
         }
@@ -5819,11 +5949,8 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
       }
     } else {
       for (const f of facts) {
-        const delta = unifyTriple(goal0, f, {});
-        if (delta === null) continue;
-
         const mark = trail.length;
-        if (!applyDeltaToSubst(delta)) {
+        if (!unifyTripleTrail(goal0, f)) {
           undoTo(mark);
           continue;
         }
@@ -6318,6 +6445,18 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
       setScopedSnapshot(null, 0);
       const changedA = runFixpoint();
 
+      // Rules may have been added dynamically (rule-producing triples), possibly
+      // introducing scoped builtins and/or higher closure priorities.
+      maxScopedClosurePriorityNeeded = Math.max(
+        maxScopedClosurePriorityNeeded,
+        computeMaxScopedClosurePriorityNeeded(),
+      );
+
+      // If there are no scoped builtins in the entire program, Phase B is pure
+      // overhead: it would just re-run the forward fixpoint and can double the
+      // cost of expensive "query-like" forward rules.
+      if (maxScopedClosurePriorityNeeded === 0) break;
+
       // Freeze saturated scope
       scopedClosureLevel += 1;
       const snap = makeScopedSnapshot();
@@ -6326,9 +6465,7 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
       setScopedSnapshot(snap, scopedClosureLevel);
       const changedB = runFixpoint();
 
-      // Rules may have been added dynamically (rule-producing triples), possibly
-      // introducing higher closure priorities. Keep iterating until we have
-      // reached the maximum requested priority and no further changes occur.
+      // Phase B can also derive rule-producing triples.
       maxScopedClosurePriorityNeeded = Math.max(
         maxScopedClosurePriorityNeeded,
         computeMaxScopedClosurePriorityNeeded(),
