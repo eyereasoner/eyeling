@@ -519,6 +519,9 @@ for delta in deltas:
 
 **Implementation note (performance):** as of this version, Eyeling also avoids allocating short-lived substitution objects when matching goals against **facts** and when unifying a **backward-rule head** with the current goal. Instead of calling the pure `unifyTriple(..., subst)` (which clones the substitution on each variable bind), the prover performs an **in-place unification** directly into the mutable `substMut` store and records only the newly-bound variable names on the trail. This typically reduces GC pressure significantly on reachability / path-search workloads, where unification is executed extremely frequently.
 
+**Implementation note (performance): ground-goal memoization.** When the current goal triple is fully ground (contains no `Var`, no open-list term, and no quoted formula), satisfying it cannot introduce new bindings. Eyeling maintains a small per-proof memo cache for such ground goals, keyed by a canonical triple key. If the cache records that a ground goal is satisfiable (either by a direct fact match or only via backward rules), the prover skips re-proving it and continues with the remaining goals. This reduces repeated work in programs that issue the same membership-style checks many times (even without full tabling). The cache is bounded (default: 20k entries) and uses an LRU-style eviction; advanced callers can override the bound via `opts.groundMemoMax` passed to `proveGoals`.
+
+
 
 So built-ins behave like relations that can generate zero, one, or many possible bindings. A list generator might yield many deltas; a numeric test yields zero or one.
 
