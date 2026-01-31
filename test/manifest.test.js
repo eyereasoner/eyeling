@@ -85,10 +85,7 @@ function rmrf(p) {
   }
 
   const tmpBase = os.tmpdir();
-  const workDir = path.join(
-    tmpBase,
-    `eyeling-notation3tests-${Date.now()}-${Math.random().toString(16).slice(2)}`
-  );
+  const workDir = path.join(tmpBase, `eyeling-notation3tests-${Date.now()}-${Math.random().toString(16).slice(2)}`);
   const suiteDir = path.join(workDir, 'notation3tests');
 
   console.log(`${C.dim}Working directory:${C.n} ${workDir}`);
@@ -121,7 +118,11 @@ function rmrf(p) {
   }
   ok(`built eyeling ${C.dim}(${r.ms} ms)${C.n}`);
 
-  const pack = runCapture('npm', ['pack', '--silent'], { cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' });
+  const pack = runCapture('npm', ['pack', '--silent'], {
+    cwd: ROOT,
+    stdio: ['ignore', 'pipe', 'pipe'],
+    encoding: 'utf8',
+  });
   if (pack.status !== 0) {
     console.error(pack.stderr || '');
     fail(`npm pack failed (exit ${pack.status})`);

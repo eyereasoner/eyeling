@@ -21,9 +21,15 @@ const C = TTY
   ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', dim: '\x1b[2m', n: '\x1b[0m' }
   : { g: '', r: '', y: '', dim: '', n: '' };
 
-function ok(msg) { console.log(`${C.g}OK ${C.n} ${msg}`); }
-function fail(msg) { console.error(`${C.r}FAIL${C.n} ${msg}`); }
-function info(msg) { console.log(`${C.y}==${C.n} ${msg}`); }
+function ok(msg) {
+  console.log(`${C.g}OK ${C.n} ${msg}`);
+}
+function fail(msg) {
+  console.error(`${C.r}FAIL${C.n} ${msg}`);
+}
+function info(msg) {
+  console.log(`${C.y}==${C.n} ${msg}`);
+}
 
 function run(cmd, args, opts = {}) {
   return cp.spawnSync(cmd, args, {
@@ -55,7 +61,9 @@ function mkTmpDir() {
 }
 
 function rmrf(p) {
-  try { fs.rmSync(p, { recursive: true, force: true }); } catch {}
+  try {
+    fs.rmSync(p, { recursive: true, force: true });
+  } catch {}
 }
 
 function showDiff({ IN_GIT, examplesDir, expectedPath, generatedPath, relExpectedPosix }) {
@@ -108,8 +116,9 @@ function main() {
 
   const IN_GIT = inGitWorktree(root);
 
-  const inputs = fs.readdirSync(inputDir)
-    .filter(f => /\.(ttl|trig)$/i.test(f))
+  const inputs = fs
+    .readdirSync(inputDir)
+    .filter((f) => /\.(ttl|trig)$/i.test(f))
     .sort((a, b) => a.localeCompare(b));
 
   info(`Running n3 conversions for ${inputs.length} inputs (${IN_GIT ? 'git worktree mode' : 'npm-installed mode'})`);
@@ -160,7 +169,7 @@ function main() {
     });
     fs.closeSync(outFd);
 
-    const rc = (r.status == null) ? 1 : r.status;
+    const rc = r.status == null ? 1 : r.status;
     const ms = Date.now() - start;
 
     if (rc !== 0) {
@@ -177,7 +186,7 @@ function main() {
     if (IN_GIT) {
       if (isTracked(examplesDir, relExpectedPosix)) {
         const d = run('git', ['diff', '--quiet', '--', relExpectedPosix], { cwd: examplesDir });
-        diffOk = (d.status === 0);
+        diffOk = d.status === 0;
       } else {
         // Untracked file counts as a diff (work to do)
         diffOk = false;
@@ -185,10 +194,10 @@ function main() {
     } else {
       if (hasGit()) {
         const d = run('git', ['diff', '--no-index', '--quiet', expectedPath, generatedPath], { cwd: examplesDir });
-        diffOk = (d.status === 0);
+        diffOk = d.status === 0;
       } else {
         const d = run('diff', ['-u', expectedPath, generatedPath], { cwd: examplesDir });
-        diffOk = (d.status === 0);
+        diffOk = d.status === 0;
       }
     }
 

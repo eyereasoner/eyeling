@@ -362,181 +362,217 @@ async function main() {
 
     chrome = spawn(browserPath, chromeArgs, { stdio: ['ignore', 'ignore', 'pipe'] });
 
-  let wsUrl = null;
-  const wsRe = /DevTools listening on (ws:\/\/[^\s]+)/;
-  const stderrChunks = [];
+    let wsUrl = null;
+    const wsRe = /DevTools listening on (ws:\/\/[^\s]+)/;
+    const stderrChunks = [];
 
-  chrome.stderr.on('data', (buf) => {
-    const s = String(buf);
-    stderrChunks.push(s);
-    const m = wsRe.exec(s);
-    if (m && m[1]) wsUrl = m[1];
-  });
+    chrome.stderr.on('data', (buf) => {
+      const s = String(buf);
+      stderrChunks.push(s);
+      const m = wsRe.exec(s);
+      if (m && m[1]) wsUrl = m[1];
+    });
 
-  // Wait for DevTools endpoint.
-  const start = Date.now();
-  while (!wsUrl) {
-    if (chrome.exitCode != null) {
-      throw new Error(`Chromium exited early: ${chrome.exitCode}\n${stderrChunks.join('')}`);
+    // Wait for DevTools endpoint.
+    const start = Date.now();
+    while (!wsUrl) {
+      if (chrome.exitCode != null) {
+        throw new Error(`Chromium exited early: ${chrome.exitCode}\n${stderrChunks.join('')}`);
+      }
+      if (Date.now() - start > 15000) {
+        throw new Error(`Timed out waiting for DevTools URL.\n${stderrChunks.join('')}`);
+      }
+      await sleep(50);
     }
-    if (Date.now() - start > 15000) {
-      throw new Error(`Timed out waiting for DevTools URL.\n${stderrChunks.join('')}`);
-    }
-    await sleep(50);
-  }
 
-  info(`Chromium: ${browserPath}`);
-  info(`CDP: ${wsUrl}`);
+    info(`Chromium: ${browserPath}`);
+    info(`CDP: ${wsUrl}`);
 
     ws = new WebSocket(wsUrl);
-  await new Promise((resolve, reject) => {
-    ws.onopen = resolve;
-    ws.onerror = reject;
-  });
-  const cdp = new CDP(ws);
+    await new Promise((resolve, reject) => {
+      ws.onopen = resolve;
+      ws.onerror = reject;
+    });
+    const cdp = new CDP(ws);
 
-  // Create and attach to a new page target.
-  const { targetId } = await cdp.send('Target.createTarget', { url: 'about:blank' });
-  const { sessionId } = await cdp.send('Target.attachToTarget', { targetId, flatten: true });
+    // Create and attach to a new page target.
+    const { targetId } = await cdp.send('Target.createTarget', { url: 'about:blank' });
+    const { sessionId } = await cdp.send('Target.attachToTarget', { targetId, flatten: true });
 
-  // Capture exceptions and console errors.
-  const exceptions = [];
-  const consoleErrors = [];
-  cdp.on('Runtime.exceptionThrown', sessionId, (p) => exceptions.push(p));
-  cdp.on('Log.entryAdded', sessionId, (p) => {
-    if (p && p.entry && p.entry.level === 'error') consoleErrors.push(p.entry);
-  });
-  cdp.on('Runtime.consoleAPICalled', sessionId, (p) => {
-    if (p && p.type === 'error') consoleErrors.push({ source: 'console', text: JSON.stringify(p.args || []) });
-  });
+    // Capture exceptions and console errors.
+    const exceptions = [];
+    const consoleErrors = [];
+    cdp.on('Runtime.exceptionThrown', sessionId, (p) => exceptions.push(p));
+    cdp.on('Log.entryAdded', sessionId, (p) => {
+      if (p && p.entry && p.entry.level === 'error') consoleErrors.push(p.entry);
+    });
+    cdp.on('Runtime.consoleAPICalled', sessionId, (p) => {
+      if (p && p.type === 'error') consoleErrors.push({ source: 'console', text: JSON.stringify(p.args || []) });
+    });
 
-  await cdp.send('Page.enable', {}, sessionId);
-  await cdp.send('Runtime.enable', {}, sessionId);
-  await cdp.send('Log.enable', {}, sessionId);
-  await cdp.send('Network.enable', {}, sessionId);
+    await cdp.send('Page.enable', {}, sessionId);
+    await cdp.send('Runtime.enable', {}, sessionId);
+    await cdp.send('Log.enable', {}, sessionId);
+    await cdp.send('Network.enable', {}, sessionId);
 
-  // Intercept CodeMirror + remote GitHub raw URLs (keep test deterministic).
-  const localPkg = fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8');
-  const localEyeling = fs.readFileSync(path.join(ROOT, 'eyeling.js'), 'utf8');
+    // Intercept CodeMirror + remote GitHub raw URLs (keep test deterministic).
+    const localPkg = fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8');
+    const localEyeling = fs.readFileSync(path.join(ROOT, 'eyeling.js'), 'utf8');
 
-  const intercept = new Map([
-    // CodeMirror assets (CDN)
-    ['https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js', { ct: 'application/javascript', body: CODEMIRROR_STUB }],
-    ['https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/turtle/turtle.min.js', { ct: 'application/javascript', body: '' }],
-    ['https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/sparql/sparql.min.js', { ct: 'application/javascript', body: '' }],
-    ['https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css', { ct: 'text/css', body: '/* stub */\n' }],
-
-    // GitHub raw references used for "latest" version display
-    ['https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/package.json', { ct: 'application/json', body: localPkg }],
-    ['https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/eyeling.js', { ct: 'application/javascript', body: localEyeling }],
-  ]);
-
-  await cdp.send(
-    'Fetch.enable',
-    {
-      patterns: [
-        { urlPattern: 'https://cdn.jsdelivr.net/npm/codemirror@5.65.16/*', requestStage: 'Request' },
-        { urlPattern: 'https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/*', requestStage: 'Request' },
+    const intercept = new Map([
+      // CodeMirror assets (CDN)
+      [
+        'https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js',
+        { ct: 'application/javascript', body: CODEMIRROR_STUB },
       ],
-    },
-    sessionId
-  );
+      [
+        'https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/turtle/turtle.min.js',
+        { ct: 'application/javascript', body: '' },
+      ],
+      [
+        'https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/sparql/sparql.min.js',
+        { ct: 'application/javascript', body: '' },
+      ],
+      [
+        'https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css',
+        { ct: 'text/css', body: '/* stub */\n' },
+      ],
 
-  cdp.on('Fetch.requestPaused', sessionId, async (p) => {
-    const url = p && p.request && p.request.url ? p.request.url : '';
-    const hit = intercept.get(url);
-    try {
-      if (hit) {
-        await cdp.send(
-          'Fetch.fulfillRequest',
+      // GitHub raw references used for "latest" version display
+      [
+        'https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/package.json',
+        { ct: 'application/json', body: localPkg },
+      ],
+      [
+        'https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/eyeling.js',
+        { ct: 'application/javascript', body: localEyeling },
+      ],
+    ]);
+
+    await cdp.send(
+      'Fetch.enable',
+      {
+        patterns: [
+          { urlPattern: 'https://cdn.jsdelivr.net/npm/codemirror@5.65.16/*', requestStage: 'Request' },
           {
-            requestId: p.requestId,
-            responseCode: 200,
-            responseHeaders: [
-              { name: 'Content-Type', value: `${hit.ct}; charset=utf-8` },
-              { name: 'Cache-Control', value: 'no-store' },
-              // Avoid CORS surprises for fetch() from the page.
-              { name: 'Access-Control-Allow-Origin', value: '*' },
-            ],
-            body: b64(hit.body),
+            urlPattern: 'https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/*',
+            requestStage: 'Request',
           },
-          sessionId
-        );
-      } else {
-        await cdp.send('Fetch.continueRequest', { requestId: p.requestId }, sessionId);
-      }
-    } catch (_) {
-      // Best-effort: if interception fails, just continue.
+        ],
+      },
+      sessionId,
+    );
+
+    cdp.on('Fetch.requestPaused', sessionId, async (p) => {
+      const url = p && p.request && p.request.url ? p.request.url : '';
+      const hit = intercept.get(url);
       try {
-        await cdp.send('Fetch.continueRequest', { requestId: p.requestId }, sessionId);
-      } catch (_) {}
-    }
-  });
+        if (hit) {
+          await cdp.send(
+            'Fetch.fulfillRequest',
+            {
+              requestId: p.requestId,
+              responseCode: 200,
+              responseHeaders: [
+                { name: 'Content-Type', value: `${hit.ct}; charset=utf-8` },
+                { name: 'Cache-Control', value: 'no-store' },
+                // Avoid CORS surprises for fetch() from the page.
+                { name: 'Access-Control-Allow-Origin', value: '*' },
+              ],
+              body: b64(hit.body),
+            },
+            sessionId,
+          );
+        } else {
+          await cdp.send('Fetch.continueRequest', { requestId: p.requestId }, sessionId);
+        }
+      } catch (_) {
+        // Best-effort: if interception fails, just continue.
+        try {
+          await cdp.send('Fetch.continueRequest', { requestId: p.requestId }, sessionId);
+        } catch (_) {}
+      }
+    });
 
     const loadFired = cdp.once('Page.loadEventFired', sessionId, 30000);
     const nav = await cdp.send('Page.navigate', { url: demoUrl }, sessionId);
     assert.ok(!nav.errorText, `demo.html navigation failed: ${nav.errorText}`);
     await loadFired;
 
-  // Click the Run button.
-  await cdp.send(
-    'Runtime.evaluate',
-    { expression: `document.getElementById('run-btn') && document.getElementById('run-btn').click();`, returnByValue: true },
-    sessionId
-  );
+    // Click the Run button.
+    await cdp.send(
+      'Runtime.evaluate',
+      {
+        expression: `document.getElementById('run-btn') && document.getElementById('run-btn').click();`,
+        returnByValue: true,
+      },
+      sessionId,
+    );
 
-  // Wait for completion and capture output.
-// The demo reports completion with status strings like:
-//   "Done. Derived: …", "Done (paused). …", or "Done. (Run N)".
-let last = { status: '', output: '' };
-const deadline = Date.now() + 60000;
+    // Wait for completion and capture output.
+    // The demo reports completion with status strings like:
+    //   "Done. Derived: …", "Done (paused). …", or "Done. (Run N)".
+    let last = { status: '', output: '' };
+    const deadline = Date.now() + 60000;
 
-while (Date.now() < deadline) {
-  // Fail fast on runtime exceptions (often indicates a broken CodeMirror stub or worker init).
-  if (exceptions.length) {
-    throw new Error(`Uncaught exception in demo.html: ${JSON.stringify(exceptions[0] || {})}`);
-  }
+    while (Date.now() < deadline) {
+      // Fail fast on runtime exceptions (often indicates a broken CodeMirror stub or worker init).
+      if (exceptions.length) {
+        throw new Error(`Uncaught exception in demo.html: ${JSON.stringify(exceptions[0] || {})}`);
+      }
 
-  const r = await cdp.send(
-    'Runtime.evaluate',
-    {
-      expression: `(() => {
+      const r = await cdp.send(
+        'Runtime.evaluate',
+        {
+          expression: `(() => {
         const s = document.getElementById('status');
         const o = document.getElementById('output-editor');
         return { status: s ? String(s.textContent || '') : '', output: o ? String(o.value || '') : '' };
       })()`,
-      returnByValue: true,
-    },
-    sessionId
-  );
-  last = r && r.result ? r.result.value : last;
+          returnByValue: true,
+        },
+        sessionId,
+      );
+      last = r && r.result ? r.result.value : last;
 
-  const st = (last && typeof last.status === 'string') ? last.status : '';
+      const st = last && typeof last.status === 'string' ? last.status : '';
 
-  // Treat any "Reasoning error" as failure.
-  if (/Reasoning error/i.test(st)) {
-    throw new Error(`Playground reported error: ${st}
+      // Treat any "Reasoning error" as failure.
+      if (/Reasoning error/i.test(st)) {
+        throw new Error(`Playground reported error: ${st}
 Output:
 ${last.output || ''}`);
-  }
+      }
 
-  // Success conditions: status starts with "Done" (covers "Done." and "Done (paused).")
-  if (String(st || '').trim().startsWith('Done')) break;
+      // Success conditions: status starts with "Done" (covers "Done." and "Done (paused).")
+      if (
+        String(st || '')
+          .trim()
+          .startsWith('Done')
+      )
+        break;
 
-  await sleep(100);
-}
+      await sleep(100);
+    }
 
-assert.ok(last && typeof last.status === 'string' && String(last.status || '').trim().startsWith('Done'), `Expected Done. Got: ${last.status}`);
-  assert.ok(last && typeof last.output === 'string' && last.output.length > 0, 'Expected non-empty output');
-  assert.match(last.output, /Socrates/i, 'Expected output to mention Socrates');
-  assert.match(last.output, /Mortal/i, 'Expected output to mention Mortal');
+    assert.ok(
+      last &&
+        typeof last.status === 'string' &&
+        String(last.status || '')
+          .trim()
+          .startsWith('Done'),
+      `Expected Done. Got: ${last.status}`,
+    );
+    assert.ok(last && typeof last.output === 'string' && last.output.length > 0, 'Expected non-empty output');
+    assert.match(last.output, /Socrates/i, 'Expected output to mention Socrates');
+    assert.match(last.output, /Mortal/i, 'Expected output to mention Mortal');
 
-  // Ensure no uncaught runtime exceptions.
-  assert.equal(exceptions.length, 0, `Uncaught exceptions in demo.html: ${JSON.stringify(exceptions[0] || {})}`);
+    // Ensure no uncaught runtime exceptions.
+    assert.equal(exceptions.length, 0, `Uncaught exceptions in demo.html: ${JSON.stringify(exceptions[0] || {})}`);
 
-  // Console errors are noisy and often indicate a broken UI.
-  // (We suppress known noise like /favicon.ico on the server.)
-  assert.equal(consoleErrors.length, 0, `Console errors in demo.html: ${JSON.stringify(consoleErrors[0] || {})}`);
+    // Console errors are noisy and often indicate a broken UI.
+    // (We suppress known noise like /favicon.ico on the server.)
+    assert.equal(consoleErrors.length, 0, `Console errors in demo.html: ${JSON.stringify(consoleErrors[0] || {})}`);
 
     // Cleanup.
     try {

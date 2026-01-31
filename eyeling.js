@@ -267,7 +267,6 @@ function termToJsStringDecoded(t) {
   return stripQuotes(lex);
 }
 
-
 // Tiny subset of sprintf: supports only %s and %%.
 // Good enough for most N3 string:format use cases that just splice strings.
 function simpleStringFormat(fmt, args) {
@@ -1007,14 +1006,13 @@ function listAppendSplit(parts, resElems, subst) {
   const n = resElems.length;
   for (let k = 0; k <= n; k++) {
     const left = new ListTerm(resElems.slice(0, k));
-    let s1 = unifyTermListAppend(parts[0], left, subst);
+    const s1 = unifyTermListAppend(parts[0], left, subst);
     if (s1 === null) continue;
     const restElems = resElems.slice(k);
     out.push(...listAppendSplit(parts.slice(1), restElems, s1));
   }
   return out;
 }
-
 
 // ---------------------------------------------------------------------------
 // RDF-list support for list:* builtins
@@ -3014,7 +3012,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     //   - object = Var: treat as priority 1 (do not bind)
     //   - any other object: backward-compatible default priority 1
 
-    let outSubst = { ...subst };
+    const outSubst = { ...subst };
     let scopeFacts = null;
     let scopeBackRules = backRules;
 
@@ -3081,7 +3079,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
 
     // See log:collectAllIn above for the priority / closure semantics.
 
-    let outSubst = { ...subst };
+    const outSubst = { ...subst };
     let scopeFacts = null;
     let scopeBackRules = backRules;
 
@@ -3271,7 +3269,6 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const s2 = unifyTerm(g.o, lit, subst);
     return s2 !== null ? [s2] : [];
   }
-
 
   // string:greaterThan
   if (pv === STRING_NS + 'greaterThan') {
@@ -3556,7 +3553,6 @@ function standardizeRule(rule, gen) {
   return new Rule(premise, conclusion, rule.isForward, rule.isFuse, rule.headBlankLabels);
 }
 
-
 function triplesEqual(a, b) {
   return termsEqual(a.s, b.s) && termsEqual(a.p, b.p) && termsEqual(a.o, b.o);
 }
@@ -3567,7 +3563,6 @@ function listHasTriple(list, tr) {
 
 // ===========================================================================
 // Substitution compaction (to avoid O(depth^2) in deep backward chains)
-
 
 module.exports = {
   makeBuiltins,
@@ -3650,7 +3645,9 @@ function main() {
     // Combined short flags (no flag in eyeling takes a value)
     for (const ch of a.slice(1)) argv.push('-' + ch);
   }
-  const prog = String(process.argv[1] || 'eyeling').split(/\//).pop();
+  const prog = String(process.argv[1] || 'eyeling')
+    .split(/\//)
+    .pop();
 
   function printHelp(toStderr = false) {
     const msg =
@@ -3758,7 +3755,6 @@ function main() {
   // Materialize anonymous rdf:first/rdf:rest collections into list terms.
   // Named list nodes keep identity; list:* builtins can traverse them.
   engine.materializeRdfLists(triples, frules, brules);
-
 
   const facts = triples.filter((tr) => engine.isGroundTriple(tr));
 
@@ -3922,13 +3918,7 @@ module.exports = { main, formatN3SyntaxError };
 // This is intentionally synchronous to keep the core engine synchronous.
 // In browsers/workers, dereferencing uses synchronous XHR (subject to CORS).
 
-const {
-  LOG_NS,
-  GraphTerm,
-  Triple,
-  internIri,
-  internLiteral,
-} = require('./prelude');
+const { LOG_NS, GraphTerm, Triple, internIri, internLiteral } = require('./prelude');
 
 const { lex } = require('./lexer');
 const { Parser } = require('./parser');
@@ -4422,7 +4412,6 @@ const {
   // numeric helpers used by engine unification / equality
   parseXsdDecimalToBigIntScale,
   pow10n,
-  normalizeLiteralForFastKey,
   literalsEquivalentAsXsdString,
   materializeRdfLists,
   // used by backward chaining
@@ -4473,7 +4462,9 @@ function __makeSkolemRunSalt() {
       if (typeof g.crypto.getRandomValues === 'function') {
         const a = new Uint8Array(16);
         g.crypto.getRandomValues(a);
-        return Array.from(a).map((b) => b.toString(16).padStart(2, '0')).join('');
+        return Array.from(a)
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join('');
       }
     }
   } catch (_) {}
@@ -4488,11 +4479,7 @@ function __makeSkolemRunSalt() {
 
   // Last-resort fallback (not cryptographically strong)
   return (
-    Date.now().toString(16) +
-    '-' +
-    Math.random().toString(16).slice(2) +
-    '-' +
-    Math.random().toString(16).slice(2)
+    Date.now().toString(16) + '-' + Math.random().toString(16).slice(2) + '-' + Math.random().toString(16).slice(2)
   );
 }
 
@@ -4626,7 +4613,6 @@ let proofCommentsEnabled = false;
 // Super restricted mode: disable *all* builtins except => / <= (log:implies / log:impliedBy)
 let superRestrictedMode = false;
 
-
 // Initialize builtin evaluation (implemented in lib/builtins.js).
 const { evalBuiltin, isBuiltinPred } = makeBuiltins({
   applySubstTerm,
@@ -4650,7 +4636,6 @@ const { printExplanation, collectOutputStringsFromFacts } = makeExplain({
   applySubstTerm,
   skolemKeyFromTerm,
 });
-
 
 // ===========================================================================
 function skolemizeTermForHeadBlanks(t, headBlankLabels, mapping, skCounter, firingKey, globalMap) {
@@ -4957,7 +4942,6 @@ function alphaEqGraphTriples(xs, ys) {
   return step(0, {}, {});
 }
 
-
 // ===========================================================================
 // Indexes (facts + backward rules)
 // ===========================================================================
@@ -5163,7 +5147,6 @@ function indexBackRule(backRules, r) {
 // Special predicate helpers
 // ===========================================================================
 
-
 function isLogImplies(p) {
   return p instanceof Iri && p.value === LOG_NS + 'implies';
 }
@@ -5171,11 +5154,6 @@ function isLogImplies(p) {
 function isLogImpliedBy(p) {
   return p instanceof Iri && p.value === LOG_NS + 'impliedBy';
 }
-
-// ===========================================================================
-// Constraint / "test" builtins
-// ===========================================================================
-
 
 // ===========================================================================
 // Unification + substitution
@@ -5245,8 +5223,6 @@ function skolemIriFromGroundTerm(t) {
   return iri;
 }
 
-
-
 function applySubstTerm(t, s) {
   // Common case: variable
   if (t instanceof Var) {
@@ -5256,7 +5232,7 @@ function applySubstTerm(t, s) {
     // Follow chains X -> Y -> ... until we hit a non-var or a cycle.
     // Avoid allocating a Set in the common case (short chains).
     let cur = first;
-    let seen0 = t.name;
+    const seen0 = t.name;
     let seen1 = null;
     let seen2 = null;
     let seenSet = null;
@@ -5563,37 +5539,6 @@ function unifyTriple(pat, fact, subst) {
   return s3;
 }
 
-function composeSubst(outer, delta) {
-  if (!delta) return outer;
-
-  // Fast path: avoid copying `outer` when `delta` is empty or only repeats existing bindings.
-  let out = null;
-
-  for (const k in delta) {
-    if (!Object.prototype.hasOwnProperty.call(delta, k)) continue;
-    const v = delta[k];
-
-    if (Object.prototype.hasOwnProperty.call(outer, k)) {
-      if (!termsEqual(outer[k], v)) return null;
-      continue;
-    }
-
-    if (!out) out = { ...outer };
-    out[k] = v;
-  }
-
-  return out || outer;
-}
-
-
-// (builtins moved to lib/builtins.js)
-
-// ===========================================================================
-//
-// Why: backward chaining with standardizeRule introduces fresh variables at
-// each step. composeSubst frequently copies a growing substitution object.
-// For deep linear recursions this becomes quadratic.
-//
 // Strategy: when the substitution is "large" or search depth is high,
 // keep only bindings that are still relevant to:
 //   - variables appearing in the remaining goals
@@ -5632,14 +5577,6 @@ function gcCollectVarsInGoals(goals, out) {
   for (const g of goals) gcCollectVarsInTriple(g, out);
 }
 
-function substSizeOver(subst, limit) {
-  let c = 0;
-  for (const _k in subst) {
-    if (++c > limit) return true;
-  }
-  return false;
-}
-
 function gcCompactForGoals(subst, goals, answerVars) {
   const keep = new Set(answerVars);
   gcCollectVarsInGoals(goals, keep);
@@ -5669,14 +5606,6 @@ function gcCompactForGoals(subst, goals, answerVars) {
     if (keep.has(k)) out[k] = subst[k];
   }
   return out;
-}
-
-function maybeCompactSubst(subst, goals, answerVars, depth) {
-  // Keep the fast path fast.
-  // Only compact when the substitution is clearly getting large, or
-  // we are in a deep chain (where the quadratic behavior shows up).
-  if (depth < 128 && !substSizeOver(subst, 256)) return subst;
-  return gcCompactForGoals(subst, goals, answerVars);
 }
 
 function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxResults, opts) {
@@ -5771,7 +5700,8 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
     const __pv0 = goal0.p instanceof Iri ? goal0.p.value : null;
     const __rdfFirstOrRest = __pv0 === RDF_NS + 'first' || __pv0 === RDF_NS + 'rest';
     const __treatBuiltin =
-      isBuiltinPred(goal0.p) && !(__rdfFirstOrRest && !(goal0.s instanceof ListTerm || goal0.s instanceof OpenListTerm));
+      isBuiltinPred(goal0.p) &&
+      !(__rdfFirstOrRest && !(goal0.s instanceof ListTerm || goal0.s instanceof OpenListTerm));
 
     if (__treatBuiltin) {
       const remaining = max - results.length;
@@ -5922,492 +5852,498 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
 function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) {
   __enterReasoningRun();
   try {
-  ensureFactIndexes(facts);
-  ensureBackRuleIndexes(backRules);
+    ensureFactIndexes(facts);
+    ensureBackRuleIndexes(backRules);
 
-  const factList = facts.slice();
-  const derivedForward = [];
-  const varGen = [0];
-  const skCounter = [0];
+    const factList = facts.slice();
+    const derivedForward = [];
+    const varGen = [0];
+    const skCounter = [0];
 
-  // Speed up dynamic rule promotion by maintaining O(1) membership sets.
-  // (Some workloads derive many rule-producing triples.)
-  function __ruleKey(isForward, isFuse, premise, conclusion) {
-    let out = (isForward ? 'F' : 'B') + (isFuse ? '!' : '') + '|P|';
-    for (let i = 0; i < premise.length; i++) {
-      const tr = premise[i];
-      if (i) out += '\n';
-      out += skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
-    }
-    out += '|C|';
-    for (let i = 0; i < conclusion.length; i++) {
-      const tr = conclusion[i];
-      if (i) out += '\n';
-      out += skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
-    }
-    return out;
-  }
-
-  if (!Object.prototype.hasOwnProperty.call(forwardRules, '__ruleKeySet')) {
-    Object.defineProperty(forwardRules, '__ruleKeySet', {
-      value: new Set(forwardRules.map((r) => __ruleKey(r.isForward, r.isFuse, r.premise, r.conclusion))),
-      enumerable: false,
-      writable: false,
-      configurable: true,
-    });
-  }
-  if (!Object.prototype.hasOwnProperty.call(backRules, '__ruleKeySet')) {
-    Object.defineProperty(backRules, '__ruleKeySet', {
-      value: new Set(backRules.map((r) => __ruleKey(r.isForward, r.isFuse, r.premise, r.conclusion))),
-      enumerable: false,
-      writable: false,
-      configurable: true,
-    });
-  }
-
-  // Cache head blank-node skolemization per (rule firing, head blank label).
-  // This prevents repeatedly generating fresh _:sk_N blanks for the *same*
-  // rule+substitution instance across outer fixpoint iterations.
-  const headSkolemCache = new Map();
-
-  function firingKey(ruleIndex, instantiatedPremises) {
-    // Deterministic key derived from the instantiated body (ground per substitution).
-    // Avoid repeated JSON.stringify of arrays-of-strings (hot path).
-    let out = `R${ruleIndex}|`;
-    for (let i = 0; i < instantiatedPremises.length; i++) {
-      const tr = instantiatedPremises[i];
-      if (i) out += '\n';
-      out += skolemKeyFromTerm(tr.s) + '	' + skolemKeyFromTerm(tr.p) + '	' + skolemKeyFromTerm(tr.o);
-    }
-    return out;
-  }
-
-  // Make rules visible to introspection builtins
-  backRules.__allForwardRules = forwardRules;
-  backRules.__allBackwardRules = backRules;
-
-  // Closure level counter used by log:collectAllIn/log:forAllIn priority gating.
-  // Level 0 means "no frozen snapshot" (during Phase A of each outer iteration).
-  let scopedClosureLevel = 0;
-
-  // Scan known rules for the maximum requested closure priority in
-  // log:collectAllIn / log:forAllIn goals.
-  function __logNaturalPriorityFromTerm(t) {
-  // Parse a 'naturalPriority' used by log:* scoped-closure builtins (e.g., log:collectAllIn).
-  // Accept non-negative integral numeric literals; return null if not parseable.
-  if (!(t instanceof Literal)) return null;
-  const info = parseNumericLiteralInfo(t);
-  if (!info) return null;
-  if (info.kind === 'integer') {
-    const bi = info.value; // BigInt
-    if (bi < 0n) return null;
-    // clamp to MAX_SAFE_INTEGER (priorities are expected to be small)
-    const max = BigInt(Number.MAX_SAFE_INTEGER);
-    return Number(bi > max ? max : bi);
-  }
-  if (info.kind === 'decimal') {
-    const n = info.value; // number
-    if (!Number.isFinite(n)) return null;
-    if (Math.floor(n) !== n) return null;
-    if (n < 0) return null;
-    return n;
-  }
-  return null;
-}
-
-function computeMaxScopedClosurePriorityNeeded() {
-    let maxP = 0;
-    function scanTriple(tr) {
-      if (!(tr && tr.p instanceof Iri)) return;
-      const pv = tr.p.value;
-
-      // log:collectAllIn / log:forAllIn use the object position for the priority.
-      if (pv === LOG_NS + 'collectAllIn' || pv === LOG_NS + 'forAllIn') {
-        // Explicit scope graphs are immediate and do not require a closure.
-        if (tr.o instanceof GraphTerm) return;
-        // Variable or non-numeric object => default priority 1 (if used).
-        if (tr.o instanceof Var) {
-          if (maxP < 1) maxP = 1;
-          return;
-        }
-        const p0 = __logNaturalPriorityFromTerm(tr.o);
-        if (p0 !== null) {
-          if (p0 > maxP) maxP = p0;
-        } else {
-          if (maxP < 1) maxP = 1;
-        }
-        return;
+    // Speed up dynamic rule promotion by maintaining O(1) membership sets.
+    // (Some workloads derive many rule-producing triples.)
+    function __ruleKey(isForward, isFuse, premise, conclusion) {
+      let out = (isForward ? 'F' : 'B') + (isFuse ? '!' : '') + '|P|';
+      for (let i = 0; i < premise.length; i++) {
+        const tr = premise[i];
+        if (i) out += '\n';
+        out += skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
       }
-
-      // log:includes / log:notIncludes use the subject position for the priority.
-      if (pv === LOG_NS + 'includes' || pv === LOG_NS + 'notIncludes') {
-        // Explicit scope graphs are immediate and do not require a closure.
-        if (tr.s instanceof GraphTerm) return;
-        // Variable or non-numeric subject => default priority 1 (if used).
-        if (tr.s instanceof Var) {
-          if (maxP < 1) maxP = 1;
-          return;
-        }
-        const p0 = __logNaturalPriorityFromTerm(tr.s);
-        if (p0 !== null) {
-          if (p0 > maxP) maxP = p0;
-        } else {
-          if (maxP < 1) maxP = 1;
-        }
+      out += '|C|';
+      for (let i = 0; i < conclusion.length; i++) {
+        const tr = conclusion[i];
+        if (i) out += '\n';
+        out += skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
       }
+      return out;
     }
 
-    for (const r of forwardRules) {
-      for (const tr of r.premise) scanTriple(tr);
+    if (!Object.prototype.hasOwnProperty.call(forwardRules, '__ruleKeySet')) {
+      Object.defineProperty(forwardRules, '__ruleKeySet', {
+        value: new Set(forwardRules.map((r) => __ruleKey(r.isForward, r.isFuse, r.premise, r.conclusion))),
+        enumerable: false,
+        writable: false,
+        configurable: true,
+      });
     }
-    for (const r of backRules) {
-      for (const tr of r.premise) scanTriple(tr);
+    if (!Object.prototype.hasOwnProperty.call(backRules, '__ruleKeySet')) {
+      Object.defineProperty(backRules, '__ruleKeySet', {
+        value: new Set(backRules.map((r) => __ruleKey(r.isForward, r.isFuse, r.premise, r.conclusion))),
+        enumerable: false,
+        writable: false,
+        configurable: true,
+      });
     }
-    return maxP;
-  }
 
-  let maxScopedClosurePriorityNeeded = computeMaxScopedClosurePriorityNeeded();
+    // Cache head blank-node skolemization per (rule firing, head blank label).
+    // This prevents repeatedly generating fresh _:sk_N blanks for the *same*
+    // rule+substitution instance across outer fixpoint iterations.
+    const headSkolemCache = new Map();
 
-  // Conservative fast-skip for forward rules that cannot possibly succeed
-  // until a scoped snapshot exists (or a given closure level is reached).
-  // This avoids expensive work (e.g. deep backward chaining) in Phase A.
-  function __termContainsVarName(t, name) {
-    if (t instanceof Var) return t.name === name;
-    if (t instanceof ListTerm) return t.elems.some((e) => __termContainsVarName(e, name));
-    if (t instanceof OpenListTerm) return t.tailVar === name || t.prefix.some((e) => __termContainsVarName(e, name));
-    if (t instanceof GraphTerm)
-      return t.triples.some(
-        (tr) => __termContainsVarName(tr.s, name) || __termContainsVarName(tr.p, name) || __termContainsVarName(tr.o, name),
-      );
-    return false;
-  }
-
-  function __varOccursElsewhereInPremise(premise, name, idx, field) {
-    for (let i = 0; i < premise.length; i++) {
-      const tr = premise[i];
-      if (!(tr && tr.s && tr.p && tr.o)) continue;
-
-      // Skip the specific scope/priority occurrence we are analyzing.
-      if (!(i === idx && field === 's') && __termContainsVarName(tr.s, name)) return true;
-      if (!(i === idx && field === 'p') && __termContainsVarName(tr.p, name)) return true;
-      if (!(i === idx && field === 'o') && __termContainsVarName(tr.o, name)) return true;
+    function firingKey(ruleIndex, instantiatedPremises) {
+      // Deterministic key derived from the instantiated body (ground per substitution).
+      // Avoid repeated JSON.stringify of arrays-of-strings (hot path).
+      let out = `R${ruleIndex}|`;
+      for (let i = 0; i < instantiatedPremises.length; i++) {
+        const tr = instantiatedPremises[i];
+        if (i) out += '\n';
+        out += skolemKeyFromTerm(tr.s) + '	' + skolemKeyFromTerm(tr.p) + '	' + skolemKeyFromTerm(tr.o);
+      }
+      return out;
     }
-    return false;
-  }
 
-  function __computeForwardRuleScopedSkipInfo(rule) {
-    let needsSnap = false;
-    let requiredLevel = 0;
+    // Make rules visible to introspection builtins
+    backRules.__allForwardRules = forwardRules;
+    backRules.__allBackwardRules = backRules;
 
-    for (let i = 0; i < rule.premise.length; i++) {
-      const tr = rule.premise[i];
-      if (!(tr && tr.p instanceof Iri)) continue;
-      const pv = tr.p.value;
+    // Closure level counter used by log:collectAllIn/log:forAllIn priority gating.
+    // Level 0 means "no frozen snapshot" (during Phase A of each outer iteration).
+    let scopedClosureLevel = 0;
 
-      if (pv === LOG_NS + 'collectAllIn' || pv === LOG_NS + 'forAllIn') {
-        if (tr.o instanceof GraphTerm) continue; // explicit scope
-        // If scope term is a Var that appears elsewhere, it might be bound to a GraphTerm.
-        // Be conservative and do not skip in that case.
-        if (tr.o instanceof Var) {
-          if (__varOccursElsewhereInPremise(rule.premise, tr.o.name, i, 'o')) return null;
-          needsSnap = true;
-          requiredLevel = Math.max(requiredLevel, 1);
-        } else {
-          needsSnap = true;
-          let prio = 1;
+    // Scan known rules for the maximum requested closure priority in
+    // log:collectAllIn / log:forAllIn goals.
+    function __logNaturalPriorityFromTerm(t) {
+      // Parse a 'naturalPriority' used by log:* scoped-closure builtins (e.g., log:collectAllIn).
+      // Accept non-negative integral numeric literals; return null if not parseable.
+      if (!(t instanceof Literal)) return null;
+      const info = parseNumericLiteralInfo(t);
+      if (!info) return null;
+      if (info.kind === 'integer') {
+        const bi = info.value; // BigInt
+        if (bi < 0n) return null;
+        // clamp to MAX_SAFE_INTEGER (priorities are expected to be small)
+        const max = BigInt(Number.MAX_SAFE_INTEGER);
+        return Number(bi > max ? max : bi);
+      }
+      if (info.kind === 'decimal') {
+        const n = info.value; // number
+        if (!Number.isFinite(n)) return null;
+        if (Math.floor(n) !== n) return null;
+        if (n < 0) return null;
+        return n;
+      }
+      return null;
+    }
+
+    function computeMaxScopedClosurePriorityNeeded() {
+      let maxP = 0;
+      function scanTriple(tr) {
+        if (!(tr && tr.p instanceof Iri)) return;
+        const pv = tr.p.value;
+
+        // log:collectAllIn / log:forAllIn use the object position for the priority.
+        if (pv === LOG_NS + 'collectAllIn' || pv === LOG_NS + 'forAllIn') {
+          // Explicit scope graphs are immediate and do not require a closure.
+          if (tr.o instanceof GraphTerm) return;
+          // Variable or non-numeric object => default priority 1 (if used).
+          if (tr.o instanceof Var) {
+            if (maxP < 1) maxP = 1;
+            return;
+          }
           const p0 = __logNaturalPriorityFromTerm(tr.o);
-          if (p0 !== null) prio = p0;
-          requiredLevel = Math.max(requiredLevel, prio);
+          if (p0 !== null) {
+            if (p0 > maxP) maxP = p0;
+          } else {
+            if (maxP < 1) maxP = 1;
+          }
+          return;
         }
-        continue;
+
+        // log:includes / log:notIncludes use the subject position for the priority.
+        if (pv === LOG_NS + 'includes' || pv === LOG_NS + 'notIncludes') {
+          // Explicit scope graphs are immediate and do not require a closure.
+          if (tr.s instanceof GraphTerm) return;
+          // Variable or non-numeric subject => default priority 1 (if used).
+          if (tr.s instanceof Var) {
+            if (maxP < 1) maxP = 1;
+            return;
+          }
+          const p0 = __logNaturalPriorityFromTerm(tr.s);
+          if (p0 !== null) {
+            if (p0 > maxP) maxP = p0;
+          } else {
+            if (maxP < 1) maxP = 1;
+          }
+        }
       }
 
-      if (pv === LOG_NS + 'includes' || pv === LOG_NS + 'notIncludes') {
-        if (tr.s instanceof GraphTerm) continue; // explicit scope
-        if (tr.s instanceof Var) {
-          if (__varOccursElsewhereInPremise(rule.premise, tr.s.name, i, 's')) return null;
-          needsSnap = true;
-          requiredLevel = Math.max(requiredLevel, 1);
-        } else {
-          needsSnap = true;
-          let prio = 1;
-          const p0 = __logNaturalPriorityFromTerm(tr.s);
-          if (p0 !== null) prio = p0;
-          requiredLevel = Math.max(requiredLevel, prio);
+      for (const r of forwardRules) {
+        for (const tr of r.premise) scanTriple(tr);
+      }
+      for (const r of backRules) {
+        for (const tr of r.premise) scanTriple(tr);
+      }
+      return maxP;
+    }
+
+    let maxScopedClosurePriorityNeeded = computeMaxScopedClosurePriorityNeeded();
+
+    // Conservative fast-skip for forward rules that cannot possibly succeed
+    // until a scoped snapshot exists (or a given closure level is reached).
+    // This avoids expensive work (e.g. deep backward chaining) in Phase A.
+    function __termContainsVarName(t, name) {
+      if (t instanceof Var) return t.name === name;
+      if (t instanceof ListTerm) return t.elems.some((e) => __termContainsVarName(e, name));
+      if (t instanceof OpenListTerm) return t.tailVar === name || t.prefix.some((e) => __termContainsVarName(e, name));
+      if (t instanceof GraphTerm)
+        return t.triples.some(
+          (tr) =>
+            __termContainsVarName(tr.s, name) || __termContainsVarName(tr.p, name) || __termContainsVarName(tr.o, name),
+        );
+      return false;
+    }
+
+    function __varOccursElsewhereInPremise(premise, name, idx, field) {
+      for (let i = 0; i < premise.length; i++) {
+        const tr = premise[i];
+        if (!(tr && tr.s && tr.p && tr.o)) continue;
+
+        // Skip the specific scope/priority occurrence we are analyzing.
+        if (!(i === idx && field === 's') && __termContainsVarName(tr.s, name)) return true;
+        if (!(i === idx && field === 'p') && __termContainsVarName(tr.p, name)) return true;
+        if (!(i === idx && field === 'o') && __termContainsVarName(tr.o, name)) return true;
+      }
+      return false;
+    }
+
+    function __computeForwardRuleScopedSkipInfo(rule) {
+      let needsSnap = false;
+      let requiredLevel = 0;
+
+      for (let i = 0; i < rule.premise.length; i++) {
+        const tr = rule.premise[i];
+        if (!(tr && tr.p instanceof Iri)) continue;
+        const pv = tr.p.value;
+
+        if (pv === LOG_NS + 'collectAllIn' || pv === LOG_NS + 'forAllIn') {
+          if (tr.o instanceof GraphTerm) continue; // explicit scope
+          // If scope term is a Var that appears elsewhere, it might be bound to a GraphTerm.
+          // Be conservative and do not skip in that case.
+          if (tr.o instanceof Var) {
+            if (__varOccursElsewhereInPremise(rule.premise, tr.o.name, i, 'o')) return null;
+            needsSnap = true;
+            requiredLevel = Math.max(requiredLevel, 1);
+          } else {
+            needsSnap = true;
+            let prio = 1;
+            const p0 = __logNaturalPriorityFromTerm(tr.o);
+            if (p0 !== null) prio = p0;
+            requiredLevel = Math.max(requiredLevel, prio);
+          }
+          continue;
         }
+
+        if (pv === LOG_NS + 'includes' || pv === LOG_NS + 'notIncludes') {
+          if (tr.s instanceof GraphTerm) continue; // explicit scope
+          if (tr.s instanceof Var) {
+            if (__varOccursElsewhereInPremise(rule.premise, tr.s.name, i, 's')) return null;
+            needsSnap = true;
+            requiredLevel = Math.max(requiredLevel, 1);
+          } else {
+            needsSnap = true;
+            let prio = 1;
+            const p0 = __logNaturalPriorityFromTerm(tr.s);
+            if (p0 !== null) prio = p0;
+            requiredLevel = Math.max(requiredLevel, prio);
+          }
+        }
+      }
+
+      if (!needsSnap) return { needsSnap: false, requiredLevel: 0 };
+      return { needsSnap: true, requiredLevel };
+    }
+
+    function setScopedSnapshot(snap, level) {
+      if (!Object.prototype.hasOwnProperty.call(facts, '__scopedSnapshot')) {
+        Object.defineProperty(facts, '__scopedSnapshot', {
+          value: snap,
+          enumerable: false,
+          writable: true,
+          configurable: true,
+        });
+      } else {
+        facts.__scopedSnapshot = snap;
+      }
+
+      if (!Object.prototype.hasOwnProperty.call(facts, '__scopedClosureLevel')) {
+        Object.defineProperty(facts, '__scopedClosureLevel', {
+          value: level,
+          enumerable: false,
+          writable: true,
+          configurable: true,
+        });
+      } else {
+        facts.__scopedClosureLevel = level;
       }
     }
 
-    if (!needsSnap) return { needsSnap: false, requiredLevel: 0 };
-    return { needsSnap: true, requiredLevel };
-  }
-
-  function setScopedSnapshot(snap, level) {
-    if (!Object.prototype.hasOwnProperty.call(facts, '__scopedSnapshot')) {
-      Object.defineProperty(facts, '__scopedSnapshot', {
+    function makeScopedSnapshot() {
+      const snap = facts.slice();
+      ensureFactIndexes(snap);
+      Object.defineProperty(snap, '__scopedSnapshot', {
         value: snap,
         enumerable: false,
         writable: true,
         configurable: true,
       });
-    } else {
-      facts.__scopedSnapshot = snap;
-    }
-
-    if (!Object.prototype.hasOwnProperty.call(facts, '__scopedClosureLevel')) {
-      Object.defineProperty(facts, '__scopedClosureLevel', {
-        value: level,
+      // Propagate closure level so nested scoped builtins can see it.
+      Object.defineProperty(snap, '__scopedClosureLevel', {
+        value: scopedClosureLevel,
         enumerable: false,
         writable: true,
         configurable: true,
       });
-    } else {
-      facts.__scopedClosureLevel = level;
+      return snap;
     }
-  }
 
-  function makeScopedSnapshot() {
-    const snap = facts.slice();
-    ensureFactIndexes(snap);
-    Object.defineProperty(snap, '__scopedSnapshot', {
-      value: snap,
-      enumerable: false,
-      writable: true,
-      configurable: true,
-    });
-    // Propagate closure level so nested scoped builtins can see it.
-    Object.defineProperty(snap, '__scopedClosureLevel', {
-      value: scopedClosureLevel,
-      enumerable: false,
-      writable: true,
-      configurable: true,
-    });
-    return snap;
-  }
+    function runFixpoint() {
+      let anyChange = false;
 
-  function runFixpoint() {
-    let anyChange = false;
+      while (true) {
+        let changed = false;
 
-    while (true) {
-      let changed = false;
+        for (let i = 0; i < forwardRules.length; i++) {
+          const r = forwardRules[i];
 
-      for (let i = 0; i < forwardRules.length; i++) {
-        const r = forwardRules[i];
-
-        // Skip forward rules that are guaranteed to "delay" due to scoped
-        // builtins (log:collectAllIn / log:forAllIn / log:includes / log:notIncludes)
-        // until a snapshot exists (and a certain closure level is reached).
-        // This prevents expensive proofs that will definitely fail in Phase A
-        // and in early closure levels.
-        if (!Object.prototype.hasOwnProperty.call(r, '__scopedSkipInfo')) {
-          const info = __computeForwardRuleScopedSkipInfo(r);
-          Object.defineProperty(r, '__scopedSkipInfo', {
-            value: info,
-            enumerable: false,
-            writable: false,
-            configurable: true,
-          });
-        }
-        const info = r.__scopedSkipInfo;
-        if (info && info.needsSnap) {
-          const snapHere = facts.__scopedSnapshot || null;
-          const lvlHere = (facts && typeof facts.__scopedClosureLevel === 'number' && facts.__scopedClosureLevel) || 0;
-          if (!snapHere) continue;
-          if (lvlHere < info.requiredLevel) continue;
-        }
-
-        const empty = {};
-        const visited = [];
-        // Optimization: if the rule head is **structurally ground** (no vars anywhere, even inside
-        // quoted formulas) and has no head blanks, then the head does not depend on which body
-        // solution we pick. In that case, we only need *one* proof of the body, and once all head
-        // triples are already known we can skip proving the body entirely.
-        function isStrictGroundTerm(t) {
-          if (t instanceof Var) return false;
-          if (t instanceof Blank) return false;
-          if (t instanceof OpenListTerm) return false;
-          if (t instanceof ListTerm) return t.elems.every(isStrictGroundTerm);
-          if (t instanceof GraphTerm) return t.triples.every(isStrictGroundTriple);
-          return true; // Iri/Literal and any other atomic terms
-        }
-        function isStrictGroundTriple(tr) {
-          return isStrictGroundTerm(tr.s) && isStrictGroundTerm(tr.p) && isStrictGroundTerm(tr.o);
-        }
-
-        const headIsStrictGround =
-          !r.isFuse && (!r.headBlankLabels || r.headBlankLabels.size === 0) && r.conclusion.every(isStrictGroundTriple);
-
-        if (headIsStrictGround) {
-          let allKnown = true;
-          for (const tr of r.conclusion) {
-            if (!hasFactIndexed(facts, tr)) {
-              allKnown = false;
-              break;
-            }
+          // Skip forward rules that are guaranteed to "delay" due to scoped
+          // builtins (log:collectAllIn / log:forAllIn / log:includes / log:notIncludes)
+          // until a snapshot exists (and a certain closure level is reached).
+          // This prevents expensive proofs that will definitely fail in Phase A
+          // and in early closure levels.
+          if (!Object.prototype.hasOwnProperty.call(r, '__scopedSkipInfo')) {
+            const info = __computeForwardRuleScopedSkipInfo(r);
+            Object.defineProperty(r, '__scopedSkipInfo', {
+              value: info,
+              enumerable: false,
+              writable: false,
+              configurable: true,
+            });
           }
-          if (allKnown) continue;
-        }
+          const info = r.__scopedSkipInfo;
+          if (info && info.needsSnap) {
+            const snapHere = facts.__scopedSnapshot || null;
+            const lvlHere =
+              (facts && typeof facts.__scopedClosureLevel === 'number' && facts.__scopedClosureLevel) || 0;
+            if (!snapHere) continue;
+            if (lvlHere < info.requiredLevel) continue;
+          }
 
-        const maxSols = r.isFuse || headIsStrictGround ? 1 : undefined;
-        // Enable builtin deferral / goal reordering for forward rules only.
-        // This keeps forward-chaining conjunctions order-insensitive while
-        // preserving left-to-right evaluation inside backward rules (<=),
-        // which is important for termination on some programs (e.g., dijkstra).
-        const sols = proveGoals(r.premise.slice(), empty, facts, backRules, 0, visited, varGen, maxSols, {
-          deferBuiltins: true,
-        });
+          const empty = {};
+          const visited = [];
+          // Optimization: if the rule head is **structurally ground** (no vars anywhere, even inside
+          // quoted formulas) and has no head blanks, then the head does not depend on which body
+          // solution we pick. In that case, we only need *one* proof of the body, and once all head
+          // triples are already known we can skip proving the body entirely.
+          function isStrictGroundTerm(t) {
+            if (t instanceof Var) return false;
+            if (t instanceof Blank) return false;
+            if (t instanceof OpenListTerm) return false;
+            if (t instanceof ListTerm) return t.elems.every(isStrictGroundTerm);
+            if (t instanceof GraphTerm) return t.triples.every(isStrictGroundTriple);
+            return true; // Iri/Literal and any other atomic terms
+          }
+          function isStrictGroundTriple(tr) {
+            return isStrictGroundTerm(tr.s) && isStrictGroundTerm(tr.p) && isStrictGroundTerm(tr.o);
+          }
 
-        // Inference fuse
-        if (r.isFuse && sols.length) {
-          console.log('# Inference fuse triggered: a { ... } => false. rule fired.');
-          process.exit(2);
-        }
+          const headIsStrictGround =
+            !r.isFuse &&
+            (!r.headBlankLabels || r.headBlankLabels.size === 0) &&
+            r.conclusion.every(isStrictGroundTriple);
 
-        for (const s of sols) {
-          // IMPORTANT: one skolem map per *rule firing*
-          const skMap = {};
-          const instantiatedPremises = r.premise.map((b) => applySubstTriple(b, s));
-          const fireKey = firingKey(i, instantiatedPremises);
-
-          for (const cpat of r.conclusion) {
-            const instantiated = applySubstTriple(cpat, s);
-
-            const isFwRuleTriple =
-              isLogImplies(instantiated.p) &&
-              ((instantiated.s instanceof GraphTerm && instantiated.o instanceof GraphTerm) ||
-                (instantiated.s instanceof Literal &&
-                  instantiated.s.value === 'true' &&
-                  instantiated.o instanceof GraphTerm) ||
-                (instantiated.s instanceof GraphTerm &&
-                  instantiated.o instanceof Literal &&
-                  instantiated.o.value === 'true'));
-
-            const isBwRuleTriple =
-              isLogImpliedBy(instantiated.p) &&
-              ((instantiated.s instanceof GraphTerm && instantiated.o instanceof GraphTerm) ||
-                (instantiated.s instanceof GraphTerm &&
-                  instantiated.o instanceof Literal &&
-                  instantiated.o.value === 'true') ||
-                (instantiated.s instanceof Literal &&
-                  instantiated.s.value === 'true' &&
-                  instantiated.o instanceof GraphTerm));
-
-            if (isFwRuleTriple || isBwRuleTriple) {
-              if (!hasFactIndexed(facts, instantiated)) {
-                factList.push(instantiated);
-                pushFactIndexed(facts, instantiated);
-                const df = new DerivedFact(instantiated, r, instantiatedPremises.slice(), { ...s });
-                derivedForward.push(df);
-                if (typeof onDerived === 'function') onDerived(df);
-
-                changed = true;
+          if (headIsStrictGround) {
+            let allKnown = true;
+            for (const tr of r.conclusion) {
+              if (!hasFactIndexed(facts, tr)) {
+                allKnown = false;
+                break;
               }
+            }
+            if (allKnown) continue;
+          }
 
-              // Promote rule-producing triples to live rules, treating literal true as {}.
-              const left =
-                instantiated.s instanceof GraphTerm
-                  ? instantiated.s.triples
-                  : instantiated.s instanceof Literal && instantiated.s.value === 'true'
-                    ? []
-                    : null;
+          const maxSols = r.isFuse || headIsStrictGround ? 1 : undefined;
+          // Enable builtin deferral / goal reordering for forward rules only.
+          // This keeps forward-chaining conjunctions order-insensitive while
+          // preserving left-to-right evaluation inside backward rules (<=),
+          // which is important for termination on some programs (e.g., dijkstra).
+          const sols = proveGoals(r.premise.slice(), empty, facts, backRules, 0, visited, varGen, maxSols, {
+            deferBuiltins: true,
+          });
 
-              const right =
-                instantiated.o instanceof GraphTerm
-                  ? instantiated.o.triples
-                  : instantiated.o instanceof Literal && instantiated.o.value === 'true'
-                    ? []
-                    : null;
+          // Inference fuse
+          if (r.isFuse && sols.length) {
+            console.log('# Inference fuse triggered: a { ... } => false. rule fired.');
+            process.exit(2);
+          }
 
-              if (left !== null && right !== null) {
-                if (isFwRuleTriple) {
-                  const [premise, conclusion] = liftBlankRuleVars(left, right);
-                  const headBlankLabels = collectBlankLabelsInTriples(conclusion);
-                  const newRule = new Rule(premise, conclusion, true, false, headBlankLabels);
+          for (const s of sols) {
+            // IMPORTANT: one skolem map per *rule firing*
+            const skMap = {};
+            const instantiatedPremises = r.premise.map((b) => applySubstTriple(b, s));
+            const fireKey = firingKey(i, instantiatedPremises);
 
-                  const key = __ruleKey(newRule.isForward, newRule.isFuse, newRule.premise, newRule.conclusion);
-                  if (!forwardRules.__ruleKeySet.has(key)) {
-                    forwardRules.__ruleKeySet.add(key);
-                    forwardRules.push(newRule);
-                  }
-                } else if (isBwRuleTriple) {
-                  const [premise, conclusion] = liftBlankRuleVars(right, left);
-                  const headBlankLabels = collectBlankLabelsInTriples(conclusion);
-                  const newRule = new Rule(premise, conclusion, false, false, headBlankLabels);
+            for (const cpat of r.conclusion) {
+              const instantiated = applySubstTriple(cpat, s);
 
-                  const key = __ruleKey(newRule.isForward, newRule.isFuse, newRule.premise, newRule.conclusion);
-                  if (!backRules.__ruleKeySet.has(key)) {
-                    backRules.__ruleKeySet.add(key);
-                    backRules.push(newRule);
-                    indexBackRule(backRules, newRule);
+              const isFwRuleTriple =
+                isLogImplies(instantiated.p) &&
+                ((instantiated.s instanceof GraphTerm && instantiated.o instanceof GraphTerm) ||
+                  (instantiated.s instanceof Literal &&
+                    instantiated.s.value === 'true' &&
+                    instantiated.o instanceof GraphTerm) ||
+                  (instantiated.s instanceof GraphTerm &&
+                    instantiated.o instanceof Literal &&
+                    instantiated.o.value === 'true'));
+
+              const isBwRuleTriple =
+                isLogImpliedBy(instantiated.p) &&
+                ((instantiated.s instanceof GraphTerm && instantiated.o instanceof GraphTerm) ||
+                  (instantiated.s instanceof GraphTerm &&
+                    instantiated.o instanceof Literal &&
+                    instantiated.o.value === 'true') ||
+                  (instantiated.s instanceof Literal &&
+                    instantiated.s.value === 'true' &&
+                    instantiated.o instanceof GraphTerm));
+
+              if (isFwRuleTriple || isBwRuleTriple) {
+                if (!hasFactIndexed(facts, instantiated)) {
+                  factList.push(instantiated);
+                  pushFactIndexed(facts, instantiated);
+                  const df = new DerivedFact(instantiated, r, instantiatedPremises.slice(), { ...s });
+                  derivedForward.push(df);
+                  if (typeof onDerived === 'function') onDerived(df);
+
+                  changed = true;
+                }
+
+                // Promote rule-producing triples to live rules, treating literal true as {}.
+                const left =
+                  instantiated.s instanceof GraphTerm
+                    ? instantiated.s.triples
+                    : instantiated.s instanceof Literal && instantiated.s.value === 'true'
+                      ? []
+                      : null;
+
+                const right =
+                  instantiated.o instanceof GraphTerm
+                    ? instantiated.o.triples
+                    : instantiated.o instanceof Literal && instantiated.o.value === 'true'
+                      ? []
+                      : null;
+
+                if (left !== null && right !== null) {
+                  if (isFwRuleTriple) {
+                    const [premise, conclusion] = liftBlankRuleVars(left, right);
+                    const headBlankLabels = collectBlankLabelsInTriples(conclusion);
+                    const newRule = new Rule(premise, conclusion, true, false, headBlankLabels);
+
+                    const key = __ruleKey(newRule.isForward, newRule.isFuse, newRule.premise, newRule.conclusion);
+                    if (!forwardRules.__ruleKeySet.has(key)) {
+                      forwardRules.__ruleKeySet.add(key);
+                      forwardRules.push(newRule);
+                    }
+                  } else if (isBwRuleTriple) {
+                    const [premise, conclusion] = liftBlankRuleVars(right, left);
+                    const headBlankLabels = collectBlankLabelsInTriples(conclusion);
+                    const newRule = new Rule(premise, conclusion, false, false, headBlankLabels);
+
+                    const key = __ruleKey(newRule.isForward, newRule.isFuse, newRule.premise, newRule.conclusion);
+                    if (!backRules.__ruleKeySet.has(key)) {
+                      backRules.__ruleKeySet.add(key);
+                      backRules.push(newRule);
+                      indexBackRule(backRules, newRule);
+                    }
                   }
                 }
+
+                continue; // skip normal fact handling
               }
 
-              continue; // skip normal fact handling
+              // Only skolemize blank nodes that occur explicitly in the rule head
+              const inst = skolemizeTripleForHeadBlanks(
+                instantiated,
+                r.headBlankLabels,
+                skMap,
+                skCounter,
+                fireKey,
+                headSkolemCache,
+              );
+
+              if (!isGroundTriple(inst)) continue;
+              if (hasFactIndexed(facts, inst)) continue;
+
+              factList.push(inst);
+              pushFactIndexed(facts, inst);
+              const df = new DerivedFact(inst, r, instantiatedPremises.slice(), {
+                ...s,
+              });
+              derivedForward.push(df);
+              if (typeof onDerived === 'function') onDerived(df);
+
+              changed = true;
             }
-
-            // Only skolemize blank nodes that occur explicitly in the rule head
-            const inst = skolemizeTripleForHeadBlanks(
-              instantiated,
-              r.headBlankLabels,
-              skMap,
-              skCounter,
-              fireKey,
-              headSkolemCache,
-            );
-
-            if (!isGroundTriple(inst)) continue;
-            if (hasFactIndexed(facts, inst)) continue;
-
-            factList.push(inst);
-            pushFactIndexed(facts, inst);
-            const df = new DerivedFact(inst, r, instantiatedPremises.slice(), {
-              ...s,
-            });
-            derivedForward.push(df);
-            if (typeof onDerived === 'function') onDerived(df);
-
-            changed = true;
           }
         }
+
+        if (!changed) break;
+        anyChange = true;
       }
 
-      if (!changed) break;
-      anyChange = true;
+      return anyChange;
     }
 
-    return anyChange;
-  }
+    while (true) {
+      // Phase A: scoped builtins disabled => they “delay” (fail) during saturation
+      setScopedSnapshot(null, 0);
+      const changedA = runFixpoint();
 
-  while (true) {
-    // Phase A: scoped builtins disabled => they “delay” (fail) during saturation
+      // Freeze saturated scope
+      scopedClosureLevel += 1;
+      const snap = makeScopedSnapshot();
+
+      // Phase B: scoped builtins enabled, but they query only `snap`
+      setScopedSnapshot(snap, scopedClosureLevel);
+      const changedB = runFixpoint();
+
+      // Rules may have been added dynamically (rule-producing triples), possibly
+      // introducing higher closure priorities. Keep iterating until we have
+      // reached the maximum requested priority and no further changes occur.
+      maxScopedClosurePriorityNeeded = Math.max(
+        maxScopedClosurePriorityNeeded,
+        computeMaxScopedClosurePriorityNeeded(),
+      );
+
+      if (!changedA && !changedB && scopedClosureLevel >= maxScopedClosurePriorityNeeded) break;
+    }
+
     setScopedSnapshot(null, 0);
-    const changedA = runFixpoint();
 
-    // Freeze saturated scope
-    scopedClosureLevel += 1;
-    const snap = makeScopedSnapshot();
-
-    // Phase B: scoped builtins enabled, but they query only `snap`
-    setScopedSnapshot(snap, scopedClosureLevel);
-    const changedB = runFixpoint();
-
-    // Rules may have been added dynamically (rule-producing triples), possibly
-    // introducing higher closure priorities. Keep iterating until we have
-    // reached the maximum requested priority and no further changes occur.
-    maxScopedClosurePriorityNeeded = Math.max(maxScopedClosurePriorityNeeded, computeMaxScopedClosurePriorityNeeded());
-
-    if (!changedA && !changedB && scopedClosureLevel >= maxScopedClosurePriorityNeeded) break;
-  }
-
-  setScopedSnapshot(null, 0);
-
-  return derivedForward;
+    return derivedForward;
   } finally {
     __exitReasoningRun();
   }
 }
-
 
 // (proof printing + log:outputString moved to lib/explain.js)
 
@@ -6428,8 +6364,7 @@ function reasonStream(n3Text, opts = {}) {
   const parser = new Parser(toks);
   if (baseIri) parser.prefixes.setBase(baseIri);
 
-  let prefixes, triples, frules, brules;
-  [prefixes, triples, frules, brules] = parser.parseDocument();
+  const [prefixes, triples, frules, brules] = parser.parseDocument();
   // Make the parsed prefixes available to log:trace output
   trace.setTracePrefixes(prefixes);
 
@@ -6581,15 +6516,7 @@ module.exports = {
  */
 'use strict';
 
-const {
-  LOG_NS,
-  Literal,
-  Iri,
-  Blank,
-  Var,
-  varsInRule,
-  literalParts,
-} = require('./prelude');
+const { LOG_NS, Literal, Iri, Blank, Var, varsInRule, literalParts } = require('./prelude');
 
 const { termToN3, tripleToN3 } = require('./printing');
 const { parseNumericLiteralInfo, termToJsString } = require('./builtins');
@@ -6694,7 +6621,6 @@ function makeExplain(deps) {
     console.log('# ----------------------------------------------------------------------\n');
   }
 
-
   // ===========================================================================
   // CLI entry point
   // ===========================================================================
@@ -6788,7 +6714,6 @@ function makeExplain(deps) {
     return pairs.map((p) => p.text).join('');
   }
 
-
   return { printExplanation, collectOutputStringsFromFacts };
 }
 
@@ -6866,7 +6791,26 @@ function isPnChars(c) {
 
 // PN_LOCAL_ESC from the N3/Turtle grammar.
 const PN_LOCAL_ESC_SET = new Set([
-  '_', '~', '.', '-', '!', '$', '&', "'", '(', ')', '*', '+', ',', ';', '=', '/', '?', '#', '@', '%',
+  '_',
+  '~',
+  '.',
+  '-',
+  '!',
+  '$',
+  '&',
+  "'",
+  '(',
+  ')',
+  '*',
+  '+',
+  ',',
+  ';',
+  '=',
+  '/',
+  '?',
+  '#',
+  '@',
+  '%',
 ]);
 
 function isIdentChar(c) {
@@ -7047,7 +6991,7 @@ function lex(inputText) {
   }
 
   while (i < n) {
-    let c = peek();
+    const c = peek();
     if (c === null) break;
 
     // 1) Whitespace
@@ -7199,7 +7143,7 @@ function lex(inputText) {
       i++; // consume opening "
       const sChars = [];
       while (i < n) {
-        let cc = chars[i];
+        const cc = chars[i];
         i++;
         if (cc === '\\') {
           if (i < n) {
@@ -7279,7 +7223,7 @@ function lex(inputText) {
       i++; // consume opening '
       const sChars = [];
       while (i < n) {
-        let cc = chars[i];
+        const cc = chars[i];
         i++;
         if (cc === '\\') {
           if (i < n) {
@@ -7429,9 +7373,7 @@ function lex(inputText) {
   return tokens;
 }
 
-
 module.exports = { Token, N3SyntaxError, lex, decodeN3StringEscapes };
-
 
   };
   __modules["lib/parser.js"] = function(require, module, exports){
@@ -8386,11 +8328,9 @@ function isLogImpliedBy(p) {
   return p instanceof Iri && p.value === LOG_NS + 'impliedBy';
 }
 
-
 // ===========================================================================
 // PREFIX ENVIRONMENT
 // ===========================================================================
-
 
 // Conservative check for whether a candidate local part can be safely serialized as a prefixed name.
 // If false, we fall back to <IRI> to guarantee syntactically valid N3/Turtle output.
@@ -8736,14 +8676,7 @@ module.exports = { termToN3, tripleToN3 };
 
 'use strict';
 
-const {
-  Var,
-  Blank,
-  ListTerm,
-  OpenListTerm,
-  GraphTerm,
-  Triple,
-} = require('./prelude');
+const { Var, Blank, ListTerm, OpenListTerm, GraphTerm, Triple } = require('./prelude');
 
 function liftBlankRuleVars(premise, conclusion) {
   function convertTerm(t, mapping, counter) {
@@ -8835,21 +8768,11 @@ function deterministicSkolemIdFromKey(key) {
     h4 = (h4 * 0x01000193) >>> 0;
   }
 
-  const hex = [h1, h2, h3, h4]
-    .map((h) => h.toString(16).padStart(8, '0'))
-    .join(''); // 32 hex chars
+  const hex = [h1, h2, h3, h4].map((h) => h.toString(16).padStart(8, '0')).join(''); // 32 hex chars
 
   // Format like a UUID: 8-4-4-4-12
   return (
-    hex.slice(0, 8) +
-    '-' +
-    hex.slice(8, 12) +
-    '-' +
-    hex.slice(12, 16) +
-    '-' +
-    hex.slice(16, 20) +
-    '-' +
-    hex.slice(20)
+    hex.slice(0, 8) + '-' + hex.slice(8, 12) + '-' + hex.slice(12, 16) + '-' + hex.slice(16, 20) + '-' + hex.slice(20)
   );
 }
 

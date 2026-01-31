@@ -348,7 +348,7 @@ function lex(inputText) {
   }
 
   while (i < n) {
-    let c = peek();
+    const c = peek();
     if (c === null) break;
 
     // 1) whitespace
@@ -512,7 +512,7 @@ function lex(inputText) {
       i++;
       const sChars = [];
       while (i < n) {
-        let cc = chars[i];
+        const cc = chars[i];
         i++;
         if (cc === '\\') {
           if (i < n) {
@@ -575,7 +575,7 @@ function lex(inputText) {
       i++;
       const sChars = [];
       while (i < n) {
-        let cc = chars[i];
+        const cc = chars[i];
         i++;
         if (cc === '\\') {
           if (i < n) {

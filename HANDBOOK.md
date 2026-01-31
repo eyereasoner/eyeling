@@ -553,21 +553,12 @@ That “standardize apart” step is essential. Without it, reusing a rule multi
 **Implementation note (performance):** `standardizeRule` is called for every backward-rule candidate during proof search.  
 To reduce allocation pressure, Eyeling reuses a single fresh `Var(...)` object per *original* variable name within one standardization pass (all occurrences of `?x` in the rule become the same fresh `?x__N` object). This is semantics-preserving — it still “separates” invocations — but it avoids creating many duplicate Var objects when a variable appears repeatedly in a rule body.
 
-### 8.6 Substitution compaction: keeping DFS fast on deep proofs
+### 8.6 Substitution size on deep proofs
 
 The trail-based substitution store removes the biggest accidental quadratic cost (copying a growing substitution object at every step).  
-But substitutions can still grow large in deep/branchy searches, and long variable chains make `applySubstTerm` work harder.
+In deep and branchy searches, the substitution trail still grows, and long variable-to-variable chains increase the work done by `applySubstTerm`.
 
-Eyeling therefore still uses `maybeCompactSubst` when emitting answers (and occasionally during deep search): it keeps only bindings relevant to the remaining goals and the original “answer variables”, trimming dead bindings and shortening chains.
-
-
-* if depth is high or substitution is large, it keeps only bindings relevant to:
-
-  * the remaining goals
-  * variables from the original goal list (“answer variables”)
-  * plus variables transitively referenced inside kept bindings
-
-This is semantics-preserving for the ongoing proof search, but dramatically improves performance on deep recursive proofs.
+Eyeling currently keeps the full trail as-is during search and when emitting answers; it does not run a substitution compaction pass, and it does not perform explicit substitution composition.
 
 ---
 

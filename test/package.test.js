@@ -162,74 +162,75 @@ function main() {
     runChecked(bin, ['-v'], { cwd: tmp, stdio: 'inherit' });
     ok('CLI works');
 
+    info('Examples smoke test (installed package)');
+    const pkgRoot = path.join(tmp, 'node_modules', 'eyeling');
+    const examplesDir = path.join(pkgRoot, 'examples');
+    const outputDir = path.join(examplesDir, 'output');
+    const eyelingJsPath = path.join(pkgRoot, 'eyeling.js');
 
-info('Examples smoke test (installed package)');
-const pkgRoot = path.join(tmp, 'node_modules', 'eyeling');
-const examplesDir = path.join(pkgRoot, 'examples');
-const outputDir = path.join(examplesDir, 'output');
-const eyelingJsPath = path.join(pkgRoot, 'eyeling.js');
+    if (!fs.existsSync(examplesDir)) throw new Error(`Missing examples directory in installed package: ${examplesDir}`);
+    if (!fs.existsSync(outputDir))
+      throw new Error(`Missing examples/output directory in installed package: ${outputDir}`);
+    if (!fs.existsSync(eyelingJsPath)) throw new Error(`Missing eyeling.js in installed package: ${eyelingJsPath}`);
 
-if (!fs.existsSync(examplesDir)) throw new Error(`Missing examples directory in installed package: ${examplesDir}`);
-if (!fs.existsSync(outputDir)) throw new Error(`Missing examples/output directory in installed package: ${outputDir}`);
-if (!fs.existsSync(eyelingJsPath)) throw new Error(`Missing eyeling.js in installed package: ${eyelingJsPath}`);
+    // Keep this fast: package.test.js is a smoke test. The full matrix is covered by test/examples.test.js in-repo.
+    const SMOKE_EXAMPLES = ['age.n3', 'basic-monadic.n3', 'collection.n3', 'family-cousins.n3', 'backward.n3'];
 
-// Keep this fast: package.test.js is a smoke test. The full matrix is covered by test/examples.test.js in-repo.
-const SMOKE_EXAMPLES = [
-  'age.n3',
-  'basic-monadic.n3',
-  'collection.n3',
-  'family-cousins.n3',
-  'backward.n3',
-];
+    const tmpExamplesOut = fs.mkdtempSync(path.join(os.tmpdir(), 'eyeling-pkg-examples-'));
+    let smokeIdx = 1;
+    const smokePad2 = (n) => String(n).padStart(2, '0');
+    const smokeOk = (n, msg) => console.log(`${C.g}OK${C.n}  ${smokePad2(n)} ${msg}`);
+    try {
+      for (const file of SMOKE_EXAMPLES) {
+        const inputPath = path.join(examplesDir, file);
+        const expectedPath = path.join(outputDir, file);
 
-const tmpExamplesOut = fs.mkdtempSync(path.join(os.tmpdir(), 'eyeling-pkg-examples-'));
-let smokeIdx = 1;
-const smokePad2 = (n) => String(n).padStart(2, '0');
-const smokeOk = (n, msg) => console.log(`${C.g}OK${C.n}  ${smokePad2(n)} ${msg}`);
-try {
-  for (const file of SMOKE_EXAMPLES) {
-    const inputPath = path.join(examplesDir, file);
-    const expectedPath = path.join(outputDir, file);
+        if (!fs.existsSync(inputPath)) throw new Error(`Missing example in installed package: ${inputPath}`);
+        if (!fs.existsSync(expectedPath))
+          throw new Error(`Missing golden output in installed package: ${expectedPath}`);
 
-    if (!fs.existsSync(inputPath)) throw new Error(`Missing example in installed package: ${inputPath}`);
-    if (!fs.existsSync(expectedPath)) throw new Error(`Missing golden output in installed package: ${expectedPath}`);
+        const n3Text = fs.readFileSync(inputPath, 'utf8');
+        const expectedRc = expectedExitCode(n3Text);
 
-    const n3Text = fs.readFileSync(inputPath, 'utf8');
-    const expectedRc = expectedExitCode(n3Text);
+        const r = cp.spawnSync(process.execPath, [eyelingJsPath, '-d', file], {
+          cwd: examplesDir,
+          stdio: ['ignore', 'pipe', 'pipe'],
+          maxBuffer: 200 * 1024 * 1024,
+          encoding: 'utf8',
+        });
 
-    const r = cp.spawnSync(process.execPath, [eyelingJsPath, '-d', file], {
-      cwd: examplesDir,
-      stdio: ['ignore', 'pipe', 'pipe'],
-      maxBuffer: 200 * 1024 * 1024,
-      encoding: 'utf8',
-    });
+        const rc = r.status == null ? 1 : r.status;
+        if (rc !== expectedRc) {
+          const stderr = (r.stderr || '').trim();
+          throw new Error(
+            `Example ${file}: exit ${rc}, expected ${expectedRc}${
+              stderr
+                ? `
+${stderr}`
+                : ''
+            }`,
+          );
+        }
 
-    const rc = r.status == null ? 1 : r.status;
-    if (rc !== expectedRc) {
-      const stderr = (r.stderr || '').trim();
-      throw new Error(`Example ${file}: exit ${rc}, expected ${expectedRc}${stderr ? `
-${stderr}` : ''}`);
-    }
+        // Normalize newlines so this is stable across platforms.
+        const got = normalizeNewlines(r.stdout || '');
+        const exp = normalizeNewlines(fs.readFileSync(expectedPath, 'utf8'));
 
-    // Normalize newlines so this is stable across platforms.
-    const got = normalizeNewlines(r.stdout || '');
-    const exp = normalizeNewlines(fs.readFileSync(expectedPath, 'utf8'));
-
-    if (got !== exp) {
-      const genPath = path.join(tmpExamplesOut, file);
-      fs.writeFileSync(genPath, got, 'utf8');
-      console.error(`
+        if (got !== exp) {
+          const genPath = path.join(tmpExamplesOut, file);
+          fs.writeFileSync(genPath, got, 'utf8');
+          console.error(`
 Output differs for ${file}:`);
-      showDiff(expectedPath, genPath);
-      throw new Error(`Example ${file}: output differs from golden`);
-    }
+          showDiff(expectedPath, genPath);
+          throw new Error(`Example ${file}: output differs from golden`);
+        }
 
-    smokeOk(smokeIdx++, `Example smoke: ${file}`);
-  }
-} finally {
-  rmrf(tmpExamplesOut);
-}
-smokeOk(smokeIdx++, 'Installed examples smoke test passed');
+        smokeOk(smokeIdx++, `Example smoke: ${file}`);
+      }
+    } finally {
+      rmrf(tmpExamplesOut);
+    }
+    smokeOk(smokeIdx++, 'Installed examples smoke test passed');
 
     const suiteMs = Date.now() - suiteStart;
     console.log('');

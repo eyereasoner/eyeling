@@ -834,7 +834,10 @@ res:CITY_Chañaral rdfs:label "Chañaral".
 `,
     check(out) {
       const v = JSON.parse(String(out));
-      assert.ok(Array.isArray(v) && v.length === 4, 'AST output should be a JSON array [prefixes, triples, frules, brules]');
+      assert.ok(
+        Array.isArray(v) && v.length === 4,
+        'AST output should be a JSON array [prefixes, triples, frules, brules]',
+      );
       const triples = v[1];
       assert.ok(Array.isArray(triples), 'AST[1] (triples) should be an array');
       const sIris = triples.map((t) => t.s && t.s.value);
@@ -933,11 +936,8 @@ ex:a p:trig ex:b.
       /:result\s+:query2\s+\(:path1-nok\s+0\s+:a\)\s*\./,
       /:result\s+:query2\s+\(:path1-nok\s+1\s+:b\)\s*\./,
     ],
-    notExpect: [
-      /:result\s+:query1\s+\(\(:a\s+:b\)\s+:a\)/,
-    ],
-  }
-  ,
+    notExpect: [/:result\s+:query1\s+\(\(:a\s+:b\)\s+:a\)/],
+  },
   {
     name: '56 issue #6: duplicate rdf:first/rest statements should not break list:* builtins',
     opt: {},
@@ -983,7 +983,7 @@ ex:a p:trig ex:b.
       /:result\s+:query3\s+\(:path1\s+0\s+:a\)\s*\./,
       /:result\s+:query3\s+\(:path1\s+1\s+:b\)\s*\./,
     ],
-  }
+  },
 ];
 
 let passed = 0;
