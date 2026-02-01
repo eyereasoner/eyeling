@@ -1,0 +1,140 @@
+# ==========================================================
+# Matiyasevich (1985): π from Fibonacci numbers
+#
+# Illustrates the identity:
+#   π = 4 * Σ_{n≥1} atan( 1 / F_{2n+1} )
+# where F_k is the k-th Fibonacci number.
+#
+# This N3 program computes a finite partial sum using the list
+# of n values in :run :ns, and compares it with π = 4*atan(1).
+#
+# Notes:
+# - To keep reasoners terminating, Fibonacci computation is gated:
+#   only indices reachable from the required {2n+1} set are derived.
+# ==========================================================
+
+@prefix :     <http://example.org/matiyasevich#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix list: <http://www.w3.org/2000/10/swap/list#>.
+@prefix log:  <http://www.w3.org/2000/10/swap/log#>.
+
+:run :ns (1 2 3 4 5 6 7 8 9 10 11 12 13 14 15).
+
+# --- Determine which Fibonacci indices are needed: k = 2n+1 ----------
+{
+  :run :ns ?Ns0.
+  ?Ns0 list:iterate (?i0 ?n0).
+
+  (2 ?n0) math:product ?twoN0.
+  (?twoN0 1) math:sum ?k0.
+}
+=>
+{
+  :need :fibIndex ?k0.
+}.
+
+# --- Close the needed set downward: if we need n, we also need n-1 and n-2 ----
+{
+  :need :fibIndex ?nN.
+  ?nN math:greaterThan 1.
+
+  (?nN 1) math:difference ?n1N.
+  (?nN 2) math:difference ?n2N.
+}
+=>
+{
+  :need :fibIndex ?n1N.
+  :need :fibIndex ?n2N.
+}.
+
+# --- Fibonacci facts, computed only for indices requested via :need :fibIndex ----
+{
+  :need :fibIndex 0.
+}
+=>
+{
+  0 :fib 0.
+}.
+
+{
+  :need :fibIndex 1.
+}
+=>
+{
+  1 :fib 1.
+}.
+
+{
+  :need :fibIndex ?nF.
+  ?nF math:greaterThan 1.
+
+  (?nF 1) math:difference ?n1F.
+  (?nF 2) math:difference ?n2F.
+
+  ?n1F :fib ?f1F.
+  ?n2F :fib ?f2F.
+  (?f1F ?f2F) math:sum ?fnF.
+}
+=>
+{
+  ?nF :fib ?fnF.
+}.
+
+# --- Final: collect terms, sum angles, approximate pi, and compute error ----
+{
+  :run :ns ?Ns.
+
+  # Rows: (n k F_k theta_n) with theta_n = atan(1/F_k)
+  ( (?n ?k ?F ?theta)
+    {
+      :run :ns ?Ns.
+      ?Ns list:iterate (?i ?n).
+
+      (2 ?n) math:product ?twoN.
+      (?twoN 1) math:sum ?k.
+
+      ?k :fib ?F.
+      (1 ?F) math:quotient ?inv.
+      ?inv math:atan ?theta.
+    }
+    ?rows
+  ) log:collectAllIn _:rowsScope.
+
+  # Angles only, to sum
+  ( ?theta2
+    {
+      :run :ns ?Ns.
+      ?Ns list:iterate (?i2 ?n2).
+
+      (2 ?n2) math:product ?twoN2.
+      (?twoN2 1) math:sum ?k2.
+
+      ?k2 :fib ?F2.
+      (1 ?F2) math:quotient ?inv2.
+      ?inv2 math:atan ?theta2.
+    }
+    ?thetas
+  ) log:collectAllIn _:thetaScope.
+
+  # A small “grounding” guard: list:length requires the list input be present.
+  ?thetas list:length ?len.
+
+  ?thetas math:sum ?sumAngles.
+  (4 ?sumAngles) math:product ?piFromFibs.
+
+  # Reference value: atan(1) = pi/4  =>  pi = 4*atan(1)
+  1 math:atan ?atan1.
+  (4 ?atan1) math:product ?piRef.
+
+  (?piFromFibs ?piRef) math:difference ?delta.
+  ?delta math:absoluteValue ?absError.
+}
+=>
+{
+  :result
+    :rows       ?rows;
+    :piFromFibs ?piFromFibs;
+    :piRef      ?piRef;
+    :absError   ?absError.
+}.
+
