@@ -2223,7 +2223,7 @@ const batch = [];
           let base;
           try {
             const u = new URL(fetchedUrl);
-            u.hash = '';                 // base is the document IRI, no fragment
+            u.hash = ''; // base is the document IRI, no fragment
             base = u.toString();
           } catch {
             base = fetchedUrl;

@@ -160,8 +160,8 @@ function normalizeLiteralForFastKey(lit) {
 // Fast-key helpers (used for cheap dedup/indexing)
 // ---------------------------------------------------------------------------
 // Note: the engine also has a richer termFastKey for indexing facts. Builtins
-// use these local helpers for purely syntactic fast-paths (e.g., dedup in
-// log:conjunction) and should remain robust even if the engine changes.
+// Use these local helpers for purely syntactic fast-paths (e.g., dedup in log:conjunction)
+// and keep them robust even if the engine changes.
 
 function __termFastKeyLocal(t) {
   if (t instanceof Iri) return `I:${t.value}`;

@@ -3,10 +3,10 @@ name: Publish to npm (OIDC)
 on:
   push:
     tags:
-      - "v*"
+      - 'v*'
 
 permissions:
-  id-token: write   # nodig voor OIDC naar npm
+  id-token: write # nodig voor OIDC naar npm
   contents: read
 
 jobs:
@@ -17,12 +17,11 @@ jobs:
 
       - uses: actions/setup-node@v5
         with:
-          node-version: "20"
-          registry-url: "https://registry.npmjs.org"
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
 
       # npm docs: zorg voor npm 11.5.1+ voor trusted publishing
       - name: Update npm
         run: npm install -g npm@latest
 
       - run: npm publish
-

@@ -50,7 +50,7 @@ npx eyeling --help
 CommonJS:
 
 ```js
-const { reason } = require("eyeling");
+const { reason } = require('eyeling');
 
 const input = `
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
@@ -68,7 +68,7 @@ console.log(reason({ proofComments: false }, input));
 ESM:
 
 ```js
-import eyeling from "eyeling";
+import eyeling from 'eyeling';
 console.log(eyeling.reason({ proofComments: false }, input));
 ```
 
@@ -85,8 +85,7 @@ const { closureN3 } = eyeling.reasonStream(input, {
 
 ## Builtins
 
-Builtins are defined in [eyeling-builtins.ttl](https://github.com/eyereasoner/eyeling/blob/main/eyeling-builtins.ttl)
-and described in the [HANDBOOK](https://eyereasoner.github.io/eyeling/HANDBOOK#ch11).
+Builtins are defined in [eyeling-builtins.ttl](https://github.com/eyereasoner/eyeling/blob/main/eyeling-builtins.ttl) and described in the [HANDBOOK](https://eyereasoner.github.io/eyeling/HANDBOOK#ch11).
 
 ## Testing (repo checkout)
 

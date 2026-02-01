@@ -438,7 +438,7 @@ async function main() {
         { ct: 'text/css', body: '/* stub */\n' },
       ],
 
-      // GitHub raw references used for "latest" version display
+      // GitHub raw references used by demo.html for the "latest version" display.
       [
         'https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/package.json',
         { ct: 'application/json', body: localPkg },

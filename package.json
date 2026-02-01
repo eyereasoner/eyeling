@@ -36,6 +36,7 @@
     "node": ">=18"
   },
   "scripts": {
+    "prebuild": "prettier -w . && eslint . --fix",
     "build": "node tools/bundle.js",
     "test:packlist": "node test/packlist.test.js",
     "test:api": "node test/api.test.js",

@@ -4,8 +4,8 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const ROOT = path.resolve(__dirname, '..');
-// Direct eyeling.js API (in-process) for testing reasonStream/onDerived.
-// This is the "latest eyeling.js" surface and is used by the browser demo.
+// Direct eyeling.js bundle API (in-process) for testing reasonStream/onDerived.
+// This is the API surface used by demo.html (browser/worker).
 const { reasonStream } = require('../eyeling.js');
 
 // Run reason() in a subprocess with stderr captured, so expected parse errors

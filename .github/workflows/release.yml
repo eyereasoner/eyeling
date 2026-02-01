@@ -2,7 +2,7 @@ name: Release
 on:
   push:
     tags:
-      - "v*"
+      - 'v*'
 
 permissions:
   contents: write
@@ -28,4 +28,3 @@ jobs:
             --title "${{ github.ref_name }} — ${{ steps.msg.outputs.short }}" \
             --generate-notes \
             --notes "${{ steps.msg.outputs.short }}"
-
