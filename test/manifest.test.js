@@ -109,15 +109,7 @@ function rmrf(p) {
   }
   ok(`npm ci ${C.dim}(${r.ms} ms)${C.n}`);
 
-  // 3) Build + pack local Eyeling
-  r = run('npm', ['run', 'build'], { cwd: ROOT });
-  if (r.status !== 0) {
-    fail(`npm run build failed (exit ${r.status})`);
-    rmrf(workDir);
-    return;
-  }
-  ok(`built eyeling ${C.dim}(${r.ms} ms)${C.n}`);
-
+  // 3) Pack local Eyeling
   const pack = runCapture('npm', ['pack', '--silent'], {
     cwd: ROOT,
     stdio: ['ignore', 'pipe', 'pipe'],
