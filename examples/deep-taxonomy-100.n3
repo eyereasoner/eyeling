@@ -9,7 +9,6 @@
 :ind a :N0.
 
 # rules
-
 {:ind a :A2} => {:test :is true}.
 
 {?X a :N0} => {?X a :N1, :I1, :J1}.
