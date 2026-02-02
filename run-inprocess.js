@@ -1,11 +1,11 @@
 // run-inprocess.js
-"use strict";
+'use strict';
 
-const fs = require("node:fs");
-const path = require("node:path");
+const fs = require('node:fs');
+const path = require('node:path');
 
 // Local repo engine (in-process)
-const engine = require("./lib/engine.js");
+const engine = require('./lib/engine.js');
 
 const argv = process.argv.slice(2);
 
@@ -13,7 +13,7 @@ let overall = 0; // 0 ok, 1 error, 2 contradiction/fuse seen
 
 function prefixLabel(pfx) {
   // N3/Turtle syntax requires the trailing ':'
-  return pfx === "" ? ":" : `${pfx}:`;
+  return pfx === '' ? ':' : `${pfx}:`;
 }
 
 function printPrefixes(prefixes, derivedTriples) {
@@ -49,7 +49,7 @@ function runOne(file) {
 
   let n3;
   try {
-    n3 = fs.readFileSync(file, "utf8");
+    n3 = fs.readFileSync(file, 'utf8');
   } catch (e) {
     console.error(`# ${file} failed (read error: ${e.code || e.message}). Continuing…`);
     return 1;
@@ -65,7 +65,7 @@ function runOne(file) {
 
   try {
     const res = engine.reasonStream(n3, {
-      baseIri: "file://" + path.resolve(file),
+      baseIri: 'file://' + path.resolve(file),
       proof: false,
       includeInputFactsInClosure: true,
     });
@@ -86,7 +86,7 @@ function runOne(file) {
       console.error(`# ${path.basename(file)} failed (exit 2: contradiction/fuse). Continuing…`);
       return 2;
     }
-    console.error(`# ${file} failed (${e && (e.stack || e.message) ? (e.stack || e.message) : String(e)}). Continuing…`);
+    console.error(`# ${file} failed (${e && (e.stack || e.message) ? e.stack || e.message : String(e)}). Continuing…`);
     return 1;
   } finally {
     process.exit = origExit;
@@ -100,4 +100,3 @@ for (const f of argv) {
 
 // Preserve a useful overall exit status for CI
 process.exitCode = overall;
-
