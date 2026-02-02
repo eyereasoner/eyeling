@@ -28,6 +28,7 @@
     "eyeling.js",
     "index.d.ts",
     "index.js",
+    "run-inprocess.js",
     "lib",
     "test",
     "tools"
