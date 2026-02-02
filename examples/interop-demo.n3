@@ -1,0 +1,74 @@
+# =================================================================
+# Interop demo
+# - Syntax: one common N3 representation
+# - Semantics: mappings from AppA/AppB vocabularies -> shared model
+# - Pragmatics: rule derives an actionable conclusion
+# =================================================================
+
+@prefix :     <https://example.org/demo#>.
+@prefix a:    <https://example.org/appA#>.
+@prefix b:    <https://example.org/appB#>.
+@prefix ex:   <https://example.org/common#>.
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix log:  <http://www.w3.org/2000/10/swap/log#>.
+
+# -------------------------------------------
+# 1) Two independent apps (different schemas)
+# -------------------------------------------
+
+# App A calls them a:Buyer and stores a:spentEur
+:aliceA a a:Buyer;
+        a:email "alice@example.com";
+        a:spentEur "1200"^^xsd:decimal.
+
+# App B calls them b:Client and stores b:totalSpent + an invoice
+:aliceB a b:Client;
+        b:email "alice@example.com";
+        b:totalSpent "1200.00"^^xsd:decimal.
+
+:invoice42 a b:Invoice;
+           b:forClient :aliceB;
+           b:amountDue "200"^^xsd:decimal.
+
+
+# -------------------------------------------------------------
+# 2) Cross-app semantic interop (mappings -> shared vocabulary)
+# -------------------------------------------------------------
+
+# Map App A -> shared model
+{ ?p a a:Buyer. ?p a:email ?e. }  => { ?p a ex:Customer. ?p ex:email ?e. }.
+{ ?p a:spentEur ?s. }            => { ?p ex:lifetimeSpendEur ?s. }.
+
+# Map App B -> shared model
+{ ?p a b:Client. ?p b:email ?e. }     => { ?p a ex:Customer. ?p ex:email ?e. }.
+{ ?p b:totalSpent ?s. }              => { ?p ex:lifetimeSpendEur ?s. }.
+{ ?i a b:Invoice. ?i b:forClient ?p. } => { ?p ex:hasOpenInvoice ?i. }.
+
+# Bridge identity across apps using a shared key (email)
+{ ?x a ex:Customer. ?x ex:email ?e.
+  ?y a ex:Customer. ?y ex:email ?e. } => { ?x ex:sameCustomerAs ?y. }.
+
+# Pick App A's identifier as "canonical" and pull App B facts onto it
+{ ?x a a:Buyer. ?x ex:sameCustomerAs ?y. ?y ex:hasOpenInvoice ?i. } => { ?x ex:hasOpenInvoice ?i. }.
+{ ?x a a:Buyer. ?x ex:sameCustomerAs ?y. ?y ex:lifetimeSpendEur ?s. } => { ?x ex:lifetimeSpendEur ?s. }.
+
+
+# ------------------------------------------------------
+# 3) Pragmatic interop (derive an actionable conclusion)
+# ------------------------------------------------------
+
+{ ?c a ex:Customer;
+     ex:lifetimeSpendEur ?s;
+     ex:hasOpenInvoice ?inv.
+  ?s math:greaterThan "1000"^^xsd:decimal.
+}
+=>
+{
+  ?c ex:eligibleFor ex:GoldDiscount.
+  ?c ex:recommendedAction ex:ApplyGoldDiscountAndSendInvoiceReminder.
+
+  # Optional: produce human-readable output (ordered by key)
+  "001" log:outputString "ACTION: apply GoldDiscount and send invoice reminder.".
+}.
+

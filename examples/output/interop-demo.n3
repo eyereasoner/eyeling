@@ -1,0 +1,23 @@
+@prefix : <https://example.org/demo#> .
+@prefix ex: <https://example.org/common#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:aliceA a ex:Customer .
+:aliceA ex:email "alice@example.com" .
+:aliceA ex:lifetimeSpendEur "1200"^^xsd:decimal .
+:aliceB a ex:Customer .
+:aliceB ex:email "alice@example.com" .
+:aliceB ex:lifetimeSpendEur "1200.00"^^xsd:decimal .
+:aliceB ex:hasOpenInvoice :invoice42 .
+:aliceA ex:sameCustomerAs :aliceA .
+:aliceA ex:sameCustomerAs :aliceB .
+:aliceB ex:sameCustomerAs :aliceA .
+:aliceB ex:sameCustomerAs :aliceB .
+:aliceA ex:hasOpenInvoice :invoice42 .
+:aliceA ex:lifetimeSpendEur "1200.00"^^xsd:decimal .
+:aliceA ex:eligibleFor ex:GoldDiscount .
+:aliceA ex:recommendedAction ex:ApplyGoldDiscountAndSendInvoiceReminder .
+"001" log:outputString "ACTION: apply GoldDiscount and send invoice reminder." .
+:aliceB ex:eligibleFor ex:GoldDiscount .
+:aliceB ex:recommendedAction ex:ApplyGoldDiscountAndSendInvoiceReminder .
