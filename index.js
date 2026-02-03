@@ -5,6 +5,12 @@ const os = require('node:os');
 const path = require('node:path');
 const cp = require('node:child_process');
 
+/**
+ * Synchronously run Eyeling on an N3 input string (spawns the CLI).
+ * Writes input to a temp file, returns stdout, forwards stderr, and throws on non-zero exit.
+ *
+ * opt may be { args, proofComments/noProofComments, maxBuffer } or an args array.
+ */
 function reason(opt = {}, n3_input = '') {
   if (n3_input == null) n3_input = '';
   if (typeof n3_input !== 'string') {
@@ -69,8 +75,6 @@ function reason(opt = {}, n3_input = '') {
 
 /**
  * Run eyeling in-process over a list of files.
- *
- * This mirrors the behavior of run-inprocess.js:
  * - skips directories / non-regular files
  * - continues after a contradiction/fuse (exit code 2) and after errors
  * - prints derived triples (plus the required @prefix headers) to stdout

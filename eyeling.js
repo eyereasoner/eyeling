@@ -4532,6 +4532,31 @@ function setDeterministicSkolemEnabled(v) {
 }
 
 // -----------------------------------------------------------------------------
+// Structural checks
+// -----------------------------------------------------------------------------
+// "Strict ground" means the term contains no variables *anywhere*, even inside
+// quoted formulas. This can be used to cache rule properties safely.
+function __isStrictGroundTerm(t) {
+  if (t instanceof Var) return false;
+  if (t instanceof Blank) return false;
+  if (t instanceof OpenListTerm) return false;
+
+  if (t instanceof ListTerm) {
+    for (const e of t.elems) if (!__isStrictGroundTerm(e)) return false;
+    return true;
+  }
+  if (t instanceof GraphTerm) {
+    for (const tr of t.triples) if (!__isStrictGroundTriple(tr)) return false;
+    return true;
+  }
+  return true; // Iri/Literal and any other atomic terms
+}
+
+function __isStrictGroundTriple(tr) {
+  return __isStrictGroundTerm(tr.s) && __isStrictGroundTerm(tr.p) && __isStrictGroundTerm(tr.o);
+}
+
+// -----------------------------------------------------------------------------
 // log:conclusion cache
 // -----------------------------------------------------------------------------
 // Cache deductive closure for log:conclusion
@@ -4556,23 +4581,10 @@ function __makeRuleFromTerms(left, right, isForward) {
     }
   }
 
-  let rawPremise;
-  if (premiseTerm instanceof GraphTerm) {
-    rawPremise = premiseTerm.triples;
-  } else if (premiseTerm instanceof Literal && premiseTerm.value === 'true') {
-    rawPremise = [];
-  } else {
-    rawPremise = [];
-  }
-
-  let rawConclusion;
-  if (conclTerm instanceof GraphTerm) {
-    rawConclusion = conclTerm.triples;
-  } else if (conclTerm instanceof Literal && conclTerm.value === 'false') {
-    rawConclusion = [];
-  } else {
-    rawConclusion = [];
-  }
+  // Premise/conclusion terms must be formulas ({ ... }) to contribute triples.
+  // true/false in either position simply means “no triples”.
+  const rawPremise = premiseTerm instanceof GraphTerm ? premiseTerm.triples : [];
+  const rawConclusion = conclTerm instanceof GraphTerm ? conclTerm.triples : [];
 
   const headBlankLabels = collectBlankLabelsInTriples(rawConclusion);
   const [premise, conclusion] = liftBlankRuleVars(rawPremise, rawConclusion);
@@ -6288,22 +6300,28 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
           // quoted formulas) and has no head blanks, then the head does not depend on which body
           // solution we pick. In that case, we only need *one* proof of the body, and once all head
           // triples are already known we can skip proving the body entirely.
-          function isStrictGroundTerm(t) {
-            if (t instanceof Var) return false;
-            if (t instanceof Blank) return false;
-            if (t instanceof OpenListTerm) return false;
-            if (t instanceof ListTerm) return t.elems.every(isStrictGroundTerm);
-            if (t instanceof GraphTerm) return t.triples.every(isStrictGroundTriple);
-            return true; // Iri/Literal and any other atomic terms
-          }
-          function isStrictGroundTriple(tr) {
-            return isStrictGroundTerm(tr.s) && isStrictGroundTerm(tr.p) && isStrictGroundTerm(tr.o);
+          if (!Object.prototype.hasOwnProperty.call(r, '__headIsStrictGround')) {
+            let strict = true;
+            if (r.isFuse) strict = false;
+            else if (r.headBlankLabels && r.headBlankLabels.size) strict = false;
+            else {
+              for (const tr of r.conclusion) {
+                if (!__isStrictGroundTriple(tr)) {
+                  strict = false;
+                  break;
+                }
+              }
+            }
+
+            Object.defineProperty(r, '__headIsStrictGround', {
+              value: strict,
+              enumerable: false,
+              writable: false,
+              configurable: true,
+            });
           }
 
-          const headIsStrictGround =
-            !r.isFuse &&
-            (!r.headBlankLabels || r.headBlankLabels.size === 0) &&
-            r.conclusion.every(isStrictGroundTriple);
+          const headIsStrictGround = r.__headIsStrictGround;
 
           if (headIsStrictGround) {
             let allKnown = true;
@@ -8823,49 +8841,33 @@ module.exports = { termToN3, tripleToN3 };
 const { Var, Blank, ListTerm, OpenListTerm, GraphTerm, Triple } = require('./prelude');
 
 function liftBlankRuleVars(premise, conclusion) {
-  function convertTerm(t, mapping, counter) {
-    if (t instanceof Blank) {
-      const label = t.label;
-      if (!Object.prototype.hasOwnProperty.call(mapping, label)) {
-        counter[0] += 1;
-        mapping[label] = `_b${counter[0]}`;
-      }
-      return new Var(mapping[label]);
+  // Map blank labels to stable rule-local variable names.
+  // This runs at rule construction time; keep it simple and allocation-light.
+  const mapping = Object.create(null);
+  let counter = 0;
+
+  function blankToVar(label) {
+    let name = mapping[label];
+    if (name === undefined) {
+      counter += 1;
+      name = `_b${counter}`;
+      mapping[label] = name;
     }
-    if (t instanceof ListTerm) {
-      return new ListTerm(t.elems.map((e) => convertTerm(e, mapping, counter)));
-    }
-    if (t instanceof OpenListTerm) {
-      return new OpenListTerm(
-        t.prefix.map((e) => convertTerm(e, mapping, counter)),
-        t.tailVar,
-      );
-    }
+    return new Var(name);
+  }
+
+  function convertTerm(t) {
+    if (t instanceof Blank) return blankToVar(t.label);
+    if (t instanceof ListTerm) return new ListTerm(t.elems.map(convertTerm));
+    if (t instanceof OpenListTerm) return new OpenListTerm(t.prefix.map(convertTerm), t.tailVar);
     if (t instanceof GraphTerm) {
-      const triples = t.triples.map(
-        (tr) =>
-          new Triple(
-            convertTerm(tr.s, mapping, counter),
-            convertTerm(tr.p, mapping, counter),
-            convertTerm(tr.o, mapping, counter),
-          ),
-      );
+      const triples = t.triples.map((tr) => new Triple(convertTerm(tr.s), convertTerm(tr.p), convertTerm(tr.o)));
       return new GraphTerm(triples);
     }
     return t;
   }
 
-  function convertTriple(tr, mapping, counter) {
-    return new Triple(
-      convertTerm(tr.s, mapping, counter),
-      convertTerm(tr.p, mapping, counter),
-      convertTerm(tr.o, mapping, counter),
-    );
-  }
-
-  const mapping = {};
-  const counter = [0];
-  const newPremise = premise.map((tr) => convertTriple(tr, mapping, counter));
+  const newPremise = premise.map((tr) => new Triple(convertTerm(tr.s), convertTerm(tr.p), convertTerm(tr.o)));
   return [newPremise, conclusion];
 }
 
