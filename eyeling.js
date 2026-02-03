@@ -4437,6 +4437,8 @@ const { deterministicSkolemIdFromKey } = require('./skolem');
 
 const deref = require('./deref');
 
+const hasOwn = Object.prototype.hasOwnProperty;
+
 let version = 'dev';
 try {
   // Node: keep package.json version if available
@@ -4554,6 +4556,191 @@ function __isStrictGroundTerm(t) {
 
 function __isStrictGroundTriple(tr) {
   return __isStrictGroundTerm(tr.s) && __isStrictGroundTerm(tr.p) && __isStrictGroundTerm(tr.o);
+}
+
+// -----------------------------------------------------------------------------
+// Rule identity / firing keys
+// -----------------------------------------------------------------------------
+// Used to maintain O(1) membership sets for dynamically promoted rules, and to
+// memoize per-firing head-blank skolemization.
+function __ruleKey(isForward, isFuse, premise, conclusion) {
+  let out = (isForward ? 'F' : 'B') + (isFuse ? '!' : '') + '|P|';
+  for (let i = 0; i < premise.length; i++) {
+    const tr = premise[i];
+    if (i) out += '\n';
+    out += skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
+  }
+  out += '|C|';
+  for (let i = 0; i < conclusion.length; i++) {
+    const tr = conclusion[i];
+    if (i) out += '\n';
+    out += skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
+  }
+  return out;
+}
+
+function __firingKey(ruleIndex, instantiatedPremises) {
+  // Deterministic key derived from the instantiated body (ground per substitution).
+  let out = `R${ruleIndex}|`;
+  for (let i = 0; i < instantiatedPremises.length; i++) {
+    const tr = instantiatedPremises[i];
+    if (i) out += '\n';
+    out += skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
+  }
+  return out;
+}
+
+// -----------------------------------------------------------------------------
+// Scoped-closure helpers (log:* builtins)
+// -----------------------------------------------------------------------------
+// Parse a 'naturalPriority' used by log:* scoped-closure builtins (e.g., log:collectAllIn).
+// Accept non-negative integral numeric literals; return null if not parseable.
+function __logNaturalPriorityFromTerm(t) {
+  if (!(t instanceof Literal)) return null;
+  const info = parseNumericLiteralInfo(t);
+  if (!info) return null;
+
+  if (info.kind === 'integer') {
+    const bi = info.value; // BigInt
+    if (bi < 0n) return null;
+    // clamp to MAX_SAFE_INTEGER (priorities are expected to be small)
+    const max = BigInt(Number.MAX_SAFE_INTEGER);
+    return Number(bi > max ? max : bi);
+  }
+
+  if (info.kind === 'decimal') {
+    const n = info.value; // number
+    if (!Number.isFinite(n)) return null;
+    if (Math.floor(n) !== n) return null;
+    if (n < 0) return null;
+    return n;
+  }
+
+  return null;
+}
+
+function __computeMaxScopedClosurePriorityNeeded(forwardRules, backRules) {
+  let maxP = 0;
+
+  function scanTriple(tr) {
+    if (!(tr && tr.p instanceof Iri)) return;
+    const pv = tr.p.value;
+
+    // log:collectAllIn / log:forAllIn use the object position for the priority.
+    if (pv === LOG_NS + 'collectAllIn' || pv === LOG_NS + 'forAllIn') {
+      // Explicit scope graphs are immediate and do not require a closure.
+      if (tr.o instanceof GraphTerm) return;
+      // Variable or non-numeric object => default priority 1 (if used).
+      if (tr.o instanceof Var) {
+        if (maxP < 1) maxP = 1;
+        return;
+      }
+      const p0 = __logNaturalPriorityFromTerm(tr.o);
+      if (p0 !== null) {
+        if (p0 > maxP) maxP = p0;
+      } else {
+        if (maxP < 1) maxP = 1;
+      }
+      return;
+    }
+
+    // log:includes / log:notIncludes use the subject position for the priority.
+    if (pv === LOG_NS + 'includes' || pv === LOG_NS + 'notIncludes') {
+      // Explicit scope graphs are immediate and do not require a closure.
+      if (tr.s instanceof GraphTerm) return;
+      // Variable or non-numeric subject => default priority 1 (if used).
+      if (tr.s instanceof Var) {
+        if (maxP < 1) maxP = 1;
+        return;
+      }
+      const p0 = __logNaturalPriorityFromTerm(tr.s);
+      if (p0 !== null) {
+        if (p0 > maxP) maxP = p0;
+      } else {
+        if (maxP < 1) maxP = 1;
+      }
+    }
+  }
+
+  for (const r of forwardRules) {
+    for (const tr of r.premise) scanTriple(tr);
+  }
+  for (const r of backRules) {
+    for (const tr of r.premise) scanTriple(tr);
+  }
+  return maxP;
+}
+
+function __termContainsVarName(t, name) {
+  if (t instanceof Var) return t.name === name;
+  if (t instanceof ListTerm) return t.elems.some((e) => __termContainsVarName(e, name));
+  if (t instanceof OpenListTerm) return t.tailVar === name || t.prefix.some((e) => __termContainsVarName(e, name));
+  if (t instanceof GraphTerm)
+    return t.triples.some(
+      (tr) =>
+        __termContainsVarName(tr.s, name) || __termContainsVarName(tr.p, name) || __termContainsVarName(tr.o, name),
+    );
+  return false;
+}
+
+function __varOccursElsewhereInPremise(premise, name, idx, field) {
+  for (let i = 0; i < premise.length; i++) {
+    const tr = premise[i];
+    if (!(tr && tr.s && tr.p && tr.o)) continue;
+
+    // Skip the specific scope/priority occurrence we are analyzing.
+    if (!(i === idx && field === 's') && __termContainsVarName(tr.s, name)) return true;
+    if (!(i === idx && field === 'p') && __termContainsVarName(tr.p, name)) return true;
+    if (!(i === idx && field === 'o') && __termContainsVarName(tr.o, name)) return true;
+  }
+  return false;
+}
+
+function __computeForwardRuleScopedSkipInfo(rule) {
+  let needsSnap = false;
+  let requiredLevel = 0;
+
+  for (let i = 0; i < rule.premise.length; i++) {
+    const tr = rule.premise[i];
+    if (!(tr && tr.p instanceof Iri)) continue;
+    const pv = tr.p.value;
+
+    if (pv === LOG_NS + 'collectAllIn' || pv === LOG_NS + 'forAllIn') {
+      if (tr.o instanceof GraphTerm) continue; // explicit scope
+      // If scope term is a Var that appears elsewhere, it might be bound to a GraphTerm.
+      // Be conservative and do not skip in that case.
+      if (tr.o instanceof Var) {
+        if (__varOccursElsewhereInPremise(rule.premise, tr.o.name, i, 'o')) return null;
+        needsSnap = true;
+        requiredLevel = Math.max(requiredLevel, 1);
+      } else {
+        needsSnap = true;
+        let prio = 1;
+        const p0 = __logNaturalPriorityFromTerm(tr.o);
+        if (p0 !== null) prio = p0;
+        requiredLevel = Math.max(requiredLevel, prio);
+      }
+      continue;
+    }
+
+    if (pv === LOG_NS + 'includes' || pv === LOG_NS + 'notIncludes') {
+      if (tr.s instanceof GraphTerm) continue; // explicit scope
+      if (tr.s instanceof Var) {
+        if (__varOccursElsewhereInPremise(rule.premise, tr.s.name, i, 's')) return null;
+        needsSnap = true;
+        requiredLevel = Math.max(requiredLevel, 1);
+      } else {
+        needsSnap = true;
+        let prio = 1;
+        const p0 = __logNaturalPriorityFromTerm(tr.s);
+        if (p0 !== null) prio = p0;
+        requiredLevel = Math.max(requiredLevel, prio);
+      }
+    }
+  }
+
+  if (!needsSnap) return { needsSnap: false, requiredLevel: 0 };
+  return { needsSnap: true, requiredLevel };
 }
 
 // -----------------------------------------------------------------------------
@@ -6008,23 +6195,8 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
 
     // Speed up dynamic rule promotion by maintaining O(1) membership sets.
     // (Some workloads derive many rule-producing triples.)
-    function __ruleKey(isForward, isFuse, premise, conclusion) {
-      let out = (isForward ? 'F' : 'B') + (isFuse ? '!' : '') + '|P|';
-      for (let i = 0; i < premise.length; i++) {
-        const tr = premise[i];
-        if (i) out += '\n';
-        out += skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
-      }
-      out += '|C|';
-      for (let i = 0; i < conclusion.length; i++) {
-        const tr = conclusion[i];
-        if (i) out += '\n';
-        out += skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
-      }
-      return out;
-    }
 
-    if (!Object.prototype.hasOwnProperty.call(forwardRules, '__ruleKeySet')) {
+    if (!hasOwn.call(forwardRules, '__ruleKeySet')) {
       Object.defineProperty(forwardRules, '__ruleKeySet', {
         value: new Set(forwardRules.map((r) => __ruleKey(r.isForward, r.isFuse, r.premise, r.conclusion))),
         enumerable: false,
@@ -6032,7 +6204,7 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
         configurable: true,
       });
     }
-    if (!Object.prototype.hasOwnProperty.call(backRules, '__ruleKeySet')) {
+    if (!hasOwn.call(backRules, '__ruleKeySet')) {
       Object.defineProperty(backRules, '__ruleKeySet', {
         value: new Set(backRules.map((r) => __ruleKey(r.isForward, r.isFuse, r.premise, r.conclusion))),
         enumerable: false,
@@ -6046,18 +6218,6 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
     // rule+substitution instance across outer fixpoint iterations.
     const headSkolemCache = new Map();
 
-    function firingKey(ruleIndex, instantiatedPremises) {
-      // Deterministic key derived from the instantiated body (ground per substitution).
-      // Avoid repeated JSON.stringify of arrays-of-strings (hot path).
-      let out = `R${ruleIndex}|`;
-      for (let i = 0; i < instantiatedPremises.length; i++) {
-        const tr = instantiatedPremises[i];
-        if (i) out += '\n';
-        out += skolemKeyFromTerm(tr.s) + '	' + skolemKeyFromTerm(tr.p) + '	' + skolemKeyFromTerm(tr.o);
-      }
-      return out;
-    }
-
     // Make rules visible to introspection builtins
     backRules.__allForwardRules = forwardRules;
     backRules.__allBackwardRules = backRules;
@@ -6066,161 +6226,14 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
     // Level 0 means "no frozen snapshot" (during Phase A of each outer iteration).
     let scopedClosureLevel = 0;
 
-    // Scan known rules for the maximum requested closure priority in
-    // log:collectAllIn / log:forAllIn goals.
-    function __logNaturalPriorityFromTerm(t) {
-      // Parse a 'naturalPriority' used by log:* scoped-closure builtins (e.g., log:collectAllIn).
-      // Accept non-negative integral numeric literals; return null if not parseable.
-      if (!(t instanceof Literal)) return null;
-      const info = parseNumericLiteralInfo(t);
-      if (!info) return null;
-      if (info.kind === 'integer') {
-        const bi = info.value; // BigInt
-        if (bi < 0n) return null;
-        // clamp to MAX_SAFE_INTEGER (priorities are expected to be small)
-        const max = BigInt(Number.MAX_SAFE_INTEGER);
-        return Number(bi > max ? max : bi);
-      }
-      if (info.kind === 'decimal') {
-        const n = info.value; // number
-        if (!Number.isFinite(n)) return null;
-        if (Math.floor(n) !== n) return null;
-        if (n < 0) return null;
-        return n;
-      }
-      return null;
-    }
-
-    function computeMaxScopedClosurePriorityNeeded() {
-      let maxP = 0;
-      function scanTriple(tr) {
-        if (!(tr && tr.p instanceof Iri)) return;
-        const pv = tr.p.value;
-
-        // log:collectAllIn / log:forAllIn use the object position for the priority.
-        if (pv === LOG_NS + 'collectAllIn' || pv === LOG_NS + 'forAllIn') {
-          // Explicit scope graphs are immediate and do not require a closure.
-          if (tr.o instanceof GraphTerm) return;
-          // Variable or non-numeric object => default priority 1 (if used).
-          if (tr.o instanceof Var) {
-            if (maxP < 1) maxP = 1;
-            return;
-          }
-          const p0 = __logNaturalPriorityFromTerm(tr.o);
-          if (p0 !== null) {
-            if (p0 > maxP) maxP = p0;
-          } else {
-            if (maxP < 1) maxP = 1;
-          }
-          return;
-        }
-
-        // log:includes / log:notIncludes use the subject position for the priority.
-        if (pv === LOG_NS + 'includes' || pv === LOG_NS + 'notIncludes') {
-          // Explicit scope graphs are immediate and do not require a closure.
-          if (tr.s instanceof GraphTerm) return;
-          // Variable or non-numeric subject => default priority 1 (if used).
-          if (tr.s instanceof Var) {
-            if (maxP < 1) maxP = 1;
-            return;
-          }
-          const p0 = __logNaturalPriorityFromTerm(tr.s);
-          if (p0 !== null) {
-            if (p0 > maxP) maxP = p0;
-          } else {
-            if (maxP < 1) maxP = 1;
-          }
-        }
-      }
-
-      for (const r of forwardRules) {
-        for (const tr of r.premise) scanTriple(tr);
-      }
-      for (const r of backRules) {
-        for (const tr of r.premise) scanTriple(tr);
-      }
-      return maxP;
-    }
-
-    let maxScopedClosurePriorityNeeded = computeMaxScopedClosurePriorityNeeded();
+    // Scan known rules for the maximum requested closure priority in scoped log:* goals.
+    let maxScopedClosurePriorityNeeded = __computeMaxScopedClosurePriorityNeeded(forwardRules, backRules);
 
     // Conservative fast-skip for forward rules that cannot possibly succeed
     // until a scoped snapshot exists (or a given closure level is reached).
-    // This avoids expensive work (e.g. deep backward chaining) in Phase A.
-    function __termContainsVarName(t, name) {
-      if (t instanceof Var) return t.name === name;
-      if (t instanceof ListTerm) return t.elems.some((e) => __termContainsVarName(e, name));
-      if (t instanceof OpenListTerm) return t.tailVar === name || t.prefix.some((e) => __termContainsVarName(e, name));
-      if (t instanceof GraphTerm)
-        return t.triples.some(
-          (tr) =>
-            __termContainsVarName(tr.s, name) || __termContainsVarName(tr.p, name) || __termContainsVarName(tr.o, name),
-        );
-      return false;
-    }
-
-    function __varOccursElsewhereInPremise(premise, name, idx, field) {
-      for (let i = 0; i < premise.length; i++) {
-        const tr = premise[i];
-        if (!(tr && tr.s && tr.p && tr.o)) continue;
-
-        // Skip the specific scope/priority occurrence we are analyzing.
-        if (!(i === idx && field === 's') && __termContainsVarName(tr.s, name)) return true;
-        if (!(i === idx && field === 'p') && __termContainsVarName(tr.p, name)) return true;
-        if (!(i === idx && field === 'o') && __termContainsVarName(tr.o, name)) return true;
-      }
-      return false;
-    }
-
-    function __computeForwardRuleScopedSkipInfo(rule) {
-      let needsSnap = false;
-      let requiredLevel = 0;
-
-      for (let i = 0; i < rule.premise.length; i++) {
-        const tr = rule.premise[i];
-        if (!(tr && tr.p instanceof Iri)) continue;
-        const pv = tr.p.value;
-
-        if (pv === LOG_NS + 'collectAllIn' || pv === LOG_NS + 'forAllIn') {
-          if (tr.o instanceof GraphTerm) continue; // explicit scope
-          // If scope term is a Var that appears elsewhere, it might be bound to a GraphTerm.
-          // Be conservative and do not skip in that case.
-          if (tr.o instanceof Var) {
-            if (__varOccursElsewhereInPremise(rule.premise, tr.o.name, i, 'o')) return null;
-            needsSnap = true;
-            requiredLevel = Math.max(requiredLevel, 1);
-          } else {
-            needsSnap = true;
-            let prio = 1;
-            const p0 = __logNaturalPriorityFromTerm(tr.o);
-            if (p0 !== null) prio = p0;
-            requiredLevel = Math.max(requiredLevel, prio);
-          }
-          continue;
-        }
-
-        if (pv === LOG_NS + 'includes' || pv === LOG_NS + 'notIncludes') {
-          if (tr.s instanceof GraphTerm) continue; // explicit scope
-          if (tr.s instanceof Var) {
-            if (__varOccursElsewhereInPremise(rule.premise, tr.s.name, i, 's')) return null;
-            needsSnap = true;
-            requiredLevel = Math.max(requiredLevel, 1);
-          } else {
-            needsSnap = true;
-            let prio = 1;
-            const p0 = __logNaturalPriorityFromTerm(tr.s);
-            if (p0 !== null) prio = p0;
-            requiredLevel = Math.max(requiredLevel, prio);
-          }
-        }
-      }
-
-      if (!needsSnap) return { needsSnap: false, requiredLevel: 0 };
-      return { needsSnap: true, requiredLevel };
-    }
-
+    // Helper functions are module-scoped: __computeForwardRuleScopedSkipInfo, etc.
     function setScopedSnapshot(snap, level) {
-      if (!Object.prototype.hasOwnProperty.call(facts, '__scopedSnapshot')) {
+      if (!hasOwn.call(facts, '__scopedSnapshot')) {
         Object.defineProperty(facts, '__scopedSnapshot', {
           value: snap,
           enumerable: false,
@@ -6231,7 +6244,7 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
         facts.__scopedSnapshot = snap;
       }
 
-      if (!Object.prototype.hasOwnProperty.call(facts, '__scopedClosureLevel')) {
+      if (!hasOwn.call(facts, '__scopedClosureLevel')) {
         Object.defineProperty(facts, '__scopedClosureLevel', {
           value: level,
           enumerable: false,
@@ -6276,7 +6289,7 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
           // until a snapshot exists (and a certain closure level is reached).
           // This prevents expensive proofs that will definitely fail in Phase A
           // and in early closure levels.
-          if (!Object.prototype.hasOwnProperty.call(r, '__scopedSkipInfo')) {
+          if (!hasOwn.call(r, '__scopedSkipInfo')) {
             const info = __computeForwardRuleScopedSkipInfo(r);
             Object.defineProperty(r, '__scopedSkipInfo', {
               value: info,
@@ -6300,7 +6313,7 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
           // quoted formulas) and has no head blanks, then the head does not depend on which body
           // solution we pick. In that case, we only need *one* proof of the body, and once all head
           // triples are already known we can skip proving the body entirely.
-          if (!Object.prototype.hasOwnProperty.call(r, '__headIsStrictGround')) {
+          if (!hasOwn.call(r, '__headIsStrictGround')) {
             let strict = true;
             if (r.isFuse) strict = false;
             else if (r.headBlankLabels && r.headBlankLabels.size) strict = false;
@@ -6353,7 +6366,7 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
             // IMPORTANT: one skolem map per *rule firing*
             const skMap = {};
             const instantiatedPremises = r.premise.map((b) => applySubstTriple(b, s));
-            const fireKey = firingKey(i, instantiatedPremises);
+            const fireKey = __firingKey(i, instantiatedPremises);
 
             for (const cpat of r.conclusion) {
               const instantiated = applySubstTriple(cpat, s);
@@ -6474,7 +6487,7 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
       // introducing scoped builtins and/or higher closure priorities.
       maxScopedClosurePriorityNeeded = Math.max(
         maxScopedClosurePriorityNeeded,
-        computeMaxScopedClosurePriorityNeeded(),
+        __computeMaxScopedClosurePriorityNeeded(forwardRules, backRules),
       );
 
       // If there are no scoped builtins in the entire program, Phase B is pure
@@ -6493,7 +6506,7 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
       // Phase B can also derive rule-producing triples.
       maxScopedClosurePriorityNeeded = Math.max(
         maxScopedClosurePriorityNeeded,
-        computeMaxScopedClosurePriorityNeeded(),
+        __computeMaxScopedClosurePriorityNeeded(forwardRules, backRules),
       );
 
       if (!changedA && !changedB && scopedClosureLevel >= maxScopedClosurePriorityNeeded) break;
