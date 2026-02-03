@@ -4591,6 +4591,54 @@ function __firingKey(ruleIndex, instantiatedPremises) {
 }
 
 // -----------------------------------------------------------------------------
+// Rule metadata helpers
+// -----------------------------------------------------------------------------
+function __ensureRuleKeySet(rules) {
+  if (!hasOwn.call(rules, '__ruleKeySet')) {
+    Object.defineProperty(rules, '__ruleKeySet', {
+      value: new Set(rules.map((r) => __ruleKey(r.isForward, r.isFuse, r.premise, r.conclusion))),
+      enumerable: false,
+      writable: false,
+      configurable: true,
+    });
+  }
+  return rules.__ruleKeySet;
+}
+
+function __computeHeadIsStrictGround(r) {
+  if (r.isFuse) return false;
+  if (r.headBlankLabels && r.headBlankLabels.size) return false;
+  for (const tr of r.conclusion) if (!__isStrictGroundTriple(tr)) return false;
+  return true;
+}
+
+function __prepareForwardRule(r) {
+  if (!hasOwn.call(r, '__scopedSkipInfo')) {
+    const info = __computeForwardRuleScopedSkipInfo(r);
+    Object.defineProperty(r, '__scopedSkipInfo', {
+      value: info,
+      enumerable: false,
+      writable: false,
+      configurable: true,
+    });
+  }
+  if (!hasOwn.call(r, '__headIsStrictGround')) {
+    Object.defineProperty(r, '__headIsStrictGround', {
+      value: __computeHeadIsStrictGround(r),
+      enumerable: false,
+      writable: false,
+      configurable: true,
+    });
+  }
+}
+
+function __graphTriplesOrTrue(term) {
+  if (term instanceof GraphTerm) return term.triples;
+  if (term instanceof Literal && term.value === 'true') return [];
+  return null;
+}
+
+// -----------------------------------------------------------------------------
 // Scoped-closure helpers (log:* builtins)
 // -----------------------------------------------------------------------------
 // Parse a 'naturalPriority' used by log:* scoped-closure builtins (e.g., log:collectAllIn).
@@ -6196,27 +6244,16 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
     // Speed up dynamic rule promotion by maintaining O(1) membership sets.
     // (Some workloads derive many rule-producing triples.)
 
-    if (!hasOwn.call(forwardRules, '__ruleKeySet')) {
-      Object.defineProperty(forwardRules, '__ruleKeySet', {
-        value: new Set(forwardRules.map((r) => __ruleKey(r.isForward, r.isFuse, r.premise, r.conclusion))),
-        enumerable: false,
-        writable: false,
-        configurable: true,
-      });
-    }
-    if (!hasOwn.call(backRules, '__ruleKeySet')) {
-      Object.defineProperty(backRules, '__ruleKeySet', {
-        value: new Set(backRules.map((r) => __ruleKey(r.isForward, r.isFuse, r.premise, r.conclusion))),
-        enumerable: false,
-        writable: false,
-        configurable: true,
-      });
-    }
+    __ensureRuleKeySet(forwardRules);
+    __ensureRuleKeySet(backRules);
 
     // Cache head blank-node skolemization per (rule firing, head blank label).
     // This prevents repeatedly generating fresh _:sk_N blanks for the *same*
     // rule+substitution instance across outer fixpoint iterations.
     const headSkolemCache = new Map();
+
+    // Pre-compute per-rule metadata once (new forward rules are prepared on insertion).
+    for (let i = 0; i < forwardRules.length; i++) __prepareForwardRule(forwardRules[i]);
 
     // Make rules visible to introspection builtins
     backRules.__allForwardRules = forwardRules;
@@ -6289,15 +6326,6 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
           // until a snapshot exists (and a certain closure level is reached).
           // This prevents expensive proofs that will definitely fail in Phase A
           // and in early closure levels.
-          if (!hasOwn.call(r, '__scopedSkipInfo')) {
-            const info = __computeForwardRuleScopedSkipInfo(r);
-            Object.defineProperty(r, '__scopedSkipInfo', {
-              value: info,
-              enumerable: false,
-              writable: false,
-              configurable: true,
-            });
-          }
           const info = r.__scopedSkipInfo;
           if (info && info.needsSnap) {
             const snapHere = facts.__scopedSnapshot || null;
@@ -6313,27 +6341,6 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
           // quoted formulas) and has no head blanks, then the head does not depend on which body
           // solution we pick. In that case, we only need *one* proof of the body, and once all head
           // triples are already known we can skip proving the body entirely.
-          if (!hasOwn.call(r, '__headIsStrictGround')) {
-            let strict = true;
-            if (r.isFuse) strict = false;
-            else if (r.headBlankLabels && r.headBlankLabels.size) strict = false;
-            else {
-              for (const tr of r.conclusion) {
-                if (!__isStrictGroundTriple(tr)) {
-                  strict = false;
-                  break;
-                }
-              }
-            }
-
-            Object.defineProperty(r, '__headIsStrictGround', {
-              value: strict,
-              enumerable: false,
-              writable: false,
-              configurable: true,
-            });
-          }
-
           const headIsStrictGround = r.__headIsStrictGround;
 
           if (headIsStrictGround) {
@@ -6371,25 +6378,21 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
             for (const cpat of r.conclusion) {
               const instantiated = applySubstTriple(cpat, s);
 
+              const subj = instantiated.s;
+              const obj = instantiated.o;
+
+              const subjIsGraph = subj instanceof GraphTerm;
+              const objIsGraph = obj instanceof GraphTerm;
+              const subjIsTrue = subj instanceof Literal && subj.value === 'true';
+              const objIsTrue = obj instanceof Literal && obj.value === 'true';
+
               const isFwRuleTriple =
                 isLogImplies(instantiated.p) &&
-                ((instantiated.s instanceof GraphTerm && instantiated.o instanceof GraphTerm) ||
-                  (instantiated.s instanceof Literal &&
-                    instantiated.s.value === 'true' &&
-                    instantiated.o instanceof GraphTerm) ||
-                  (instantiated.s instanceof GraphTerm &&
-                    instantiated.o instanceof Literal &&
-                    instantiated.o.value === 'true'));
+                ((subjIsGraph && objIsGraph) || (subjIsTrue && objIsGraph) || (subjIsGraph && objIsTrue));
 
               const isBwRuleTriple =
                 isLogImpliedBy(instantiated.p) &&
-                ((instantiated.s instanceof GraphTerm && instantiated.o instanceof GraphTerm) ||
-                  (instantiated.s instanceof GraphTerm &&
-                    instantiated.o instanceof Literal &&
-                    instantiated.o.value === 'true') ||
-                  (instantiated.s instanceof Literal &&
-                    instantiated.s.value === 'true' &&
-                    instantiated.o instanceof GraphTerm));
+                ((subjIsGraph && objIsGraph) || (subjIsGraph && objIsTrue) || (subjIsTrue && objIsGraph));
 
               if (isFwRuleTriple || isBwRuleTriple) {
                 if (!hasFactIndexed(facts, instantiated)) {
@@ -6403,25 +6406,15 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
                 }
 
                 // Promote rule-producing triples to live rules, treating literal true as {}.
-                const left =
-                  instantiated.s instanceof GraphTerm
-                    ? instantiated.s.triples
-                    : instantiated.s instanceof Literal && instantiated.s.value === 'true'
-                      ? []
-                      : null;
-
-                const right =
-                  instantiated.o instanceof GraphTerm
-                    ? instantiated.o.triples
-                    : instantiated.o instanceof Literal && instantiated.o.value === 'true'
-                      ? []
-                      : null;
+                const left = __graphTriplesOrTrue(subj);
+                const right = __graphTriplesOrTrue(obj);
 
                 if (left !== null && right !== null) {
                   if (isFwRuleTriple) {
                     const [premise, conclusion] = liftBlankRuleVars(left, right);
                     const headBlankLabels = collectBlankLabelsInTriples(conclusion);
                     const newRule = new Rule(premise, conclusion, true, false, headBlankLabels);
+                    __prepareForwardRule(newRule);
 
                     const key = __ruleKey(newRule.isForward, newRule.isFuse, newRule.premise, newRule.conclusion);
                     if (!forwardRules.__ruleKeySet.has(key)) {
