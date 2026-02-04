@@ -26,6 +26,7 @@
 - [Chapter 16 — Extending Eyeling (without breaking it)](#ch16)
 - [Epilogue](#epilogue)
 - [Appendix A — Eyeling user notes](#app-a)
+- [Appendix B — Notation 3: when facts can carry their own logic](#app-b)
 
 ---
 
@@ -871,7 +872,8 @@ These are “function-like” relations where the subject is usually a list and 
 
 **Shape:** `( $x1 $x2 ... ) math:sum $total`
 
-- Subject must be a list of **at least two** numeric terms.
+- Subject must be a list of numeric terms (the list may be empty or a singleton).
+- Empty list sums to **0**.
 - Computes the numeric sum.
 - Chooses an output datatype based on the “widest” numeric datatype seen among inputs and (optionally) the object position; integers stay integers unless the result is non-integer.
 
@@ -879,7 +881,9 @@ These are “function-like” relations where the subject is usually a list and 
 
 **Shape:** `( $x1 $x2 ... ) math:product $total`
 
-- Same conventions as `math:sum`, but multiplies.
+- Subject must be a list of numeric terms (the list may be empty or a singleton).
+- Empty list product is **1**.
+- Same datatype conventions as `math:sum`, but multiplies.
 
 #### `math:difference`
 
@@ -1910,3 +1914,31 @@ Logic & reasoning background (Wikipedia):
 - [https://en.wikipedia.org/wiki/Prolog](https://en.wikipedia.org/wiki/Prolog)
 - [https://en.wikipedia.org/wiki/Datalog](https://en.wikipedia.org/wiki/Datalog)
 - [https://en.wikipedia.org/wiki/Skolem_normal_form](https://en.wikipedia.org/wiki/Skolem_normal_form)
+
+---
+
+<a id="app-b"></a>
+
+## Appendix B — Notation 3: when facts can carry their own logic
+
+RDF succeeded by making a radical constraint feel natural: reduce meaning to small, uniform statements—triples—that can be published, merged, and queried across boundaries. A triple does not presume a database schema, a programming language, or a particular application. It presumes only that names (IRIs) can be shared, and that graphs can be combined.
+
+That strength also marks RDF’s limit. The moment a graph is expected to *do* something—normalize values, reconcile vocabularies, derive implied relationships, enforce a policy, compute a small transformation—logic tends to migrate into code. The graph becomes an inert substrate while the decisive semantics hide in scripts, services, ETL pipelines, or bespoke rule engines. What remains portable is the data; what often becomes non-portable is the meaning.
+
+Notation 3 (N3) sits precisely at that seam. It remains a readable way to write RDF, but it also treats *graphs themselves* as objects that can be described, matched, and related. The N3 Community Group’s specification presents N3 as an assertion and logic language that extends RDF rather than replacing it: [https://w3c.github.io/N3/spec/](https://w3c.github.io/N3/spec/).
+
+The essential move is quotation: writing a graph inside braces as a thing that can be discussed. Once graphs can be quoted, rules become graph-to-graph transformations. The familiar implication form, `{ … } => { … } .`, reads as a piece of prose: whenever the antecedent pattern holds, the consequent pattern follows. Tim Berners-Lee’s design note frames this as a web-friendly logic with variables and nested graphs: [https://www.w3.org/DesignIssues/Notation3.html](https://www.w3.org/DesignIssues/Notation3.html).
+
+This style of rule-writing is more than syntactic sugar. It keeps the unit of exchange stable. Inputs are RDF graphs; outputs are RDF graphs. Inference produces new triples rather than hidden internal state. Rule sets can be versioned alongside data, reviewed as text, and executed by different engines that implement the same semantics. That portability theme runs back to the original W3C Team Submission: [https://www.w3.org/TeamSubmission/n3/](https://www.w3.org/TeamSubmission/n3/).
+
+Practical reasoning also depends on computation: lists, strings, math, comparisons, and the other “small operations” that integration work demands. N3 addresses this by standardizing built-ins—predicates with predefined behavior that can be used inside rule bodies while preserving the declarative, graph-shaped idiom. The built-ins report is here: [https://w3c.github.io/N3/reports/20230703/builtins.html](https://w3c.github.io/N3/reports/20230703/builtins.html).
+
+Testing is where rule languages either converge or fragment. Different implementations can drift on scoping, blank nodes, quantification, and built-in behavior. N3’s recent direction has been toward explicit, testable semantics, documented separately as model-theoretic foundations: [https://w3c.github.io/N3/reports/20230703/semantics.html](https://w3c.github.io/N3/reports/20230703/semantics.html).
+
+In that context, public conformance suites become more than scoreboards: they are the mechanism by which interoperability becomes measurable. The community test suite lives at [https://codeberg.org/phochste/notation3tests/](https://codeberg.org/phochste/notation3tests/), with comparative results published in its report: [https://codeberg.org/phochste/notation3tests/src/branch/main/reports/report.md](https://codeberg.org/phochste/notation3tests/src/branch/main/reports/report.md).
+
+The comparison with older tools is historically instructive. Cwm (Closed World Machine) was an early, influential RDF data processor and forward-chaining reasoner—part of the lineage that treated RDF (often written in N3) as something executable: [https://www.w3.org/2000/10/swap/doc/cwm](https://www.w3.org/2000/10/swap/doc/cwm).
+
+What motivates Notation 3, in the end, is architectural restraint. It refuses to let “logic” become merely a private feature of an application stack. It keeps meaning close to the graph: rules are expressed as graph patterns; results are expressed as triples; computation is pulled in through well-defined built-ins rather than arbitrary code. This produces a style of working where integration and inference are not sidecar scripts, but publishable artifacts—documents that can be inspected, shared, tested, and reused.
+
+In that sense, N3 is less a bid to make the web “smarter” than a bid to make meaning *portable*: not only facts that travel, but also the explicit steps by which facts can be connected, extended, and made actionable—without abandoning the simplicity that made triples travel in the first place.
