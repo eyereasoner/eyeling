@@ -101,7 +101,10 @@ function rmrf(p) {
   ok(`cloned notation3tests ${C.dim}(${r.ms} ms)${C.n}`);
 
   // 2) Install suite dependencies
-  r = run('npm', ['ci'], { cwd: suiteDir });
+  // Notation3tests can carry vulnerabilities in its transient dependency tree.
+  // These are outside Eyeling's control, and npm's audit summary can be noisy in logs.
+  // Disable audit/funding output for this integration test install.
+  r = run('npm', ['ci', '--audit=false', '--fund=false'], { cwd: suiteDir });
   if (r.status !== 0) {
     fail(`npm ci failed (exit ${r.status})`);
     rmrf(workDir);
@@ -131,7 +134,8 @@ function rmrf(p) {
   ok(`packed ${tgzName} ${C.dim}(${pack.ms} ms)${C.n}`);
 
   // 4) Install local tarball into suite
-  r = run('npm', ['install', '--no-save', tgzPath], { cwd: suiteDir });
+  // Keep the install output focused on the actual test run.
+  r = run('npm', ['install', '--no-save', '--audit=false', '--fund=false', tgzPath], { cwd: suiteDir });
   if (r.status !== 0) {
     fail(`npm install eyeling tarball failed (exit ${r.status})`);
     rmrf(tgzPath);

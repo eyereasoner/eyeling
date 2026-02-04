@@ -1,0 +1,6 @@
+@prefix dqc: <https://eyereasoner.github.io/eye/reasoning/dqc#> .
+
+1 dqc:superdense-coding 1 .
+3 dqc:superdense-coding 3 .
+0 dqc:superdense-coding 0 .
+2 dqc:superdense-coding 2 .
