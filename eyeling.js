@@ -5867,6 +5867,36 @@ function gcCompactForGoals(subst, goals, answerVars) {
   return out;
 }
 
+// Helpers used by proveGoals() when deferring builtins.
+// Pure checks are kept at module scope to avoid per-call allocations.
+function __termHasVarOrBlank(t) {
+  if (t instanceof Var || t instanceof Blank) return true;
+  if (t instanceof ListTerm) return t.elems.some(__termHasVarOrBlank);
+  if (t instanceof OpenListTerm) return true;
+  if (t instanceof GraphTerm) return t.triples.some(__tripleHasVarOrBlank);
+  return false;
+}
+
+function __tripleHasVarOrBlank(tr) {
+  return __termHasVarOrBlank(tr.s) || __termHasVarOrBlank(tr.p) || __termHasVarOrBlank(tr.o);
+}
+
+function __builtinIsSatisfiableWhenFullyUnbound(pIriVal) {
+  return (
+    pIriVal === MATH_NS + 'sin' ||
+    pIriVal === MATH_NS + 'cos' ||
+    pIriVal === MATH_NS + 'tan' ||
+    pIriVal === MATH_NS + 'asin' ||
+    pIriVal === MATH_NS + 'acos' ||
+    pIriVal === MATH_NS + 'atan' ||
+    pIriVal === MATH_NS + 'sinh' ||
+    pIriVal === MATH_NS + 'cosh' ||
+    pIriVal === MATH_NS + 'tanh' ||
+    pIriVal === MATH_NS + 'degrees' ||
+    pIriVal === MATH_NS + 'negation'
+  );
+}
+
 function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxResults, opts) {
   // Depth-first search with a single mutable substitution and a trail.
   // This avoids cloning the whole substitution object at each unification step
@@ -5877,34 +5907,6 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
   // IMPORTANT: Goal reordering / deferral is only enabled when explicitly
   // requested by the caller (used for forward rules).
   const __allowDeferBuiltins = !!(opts && opts.deferBuiltins);
-
-  function termHasVarOrBlank(t) {
-    if (t instanceof Var || t instanceof Blank) return true;
-    if (t instanceof ListTerm) return t.elems.some(termHasVarOrBlank);
-    if (t instanceof OpenListTerm) return true;
-    if (t instanceof GraphTerm) return t.triples.some(tripleHasVarOrBlank);
-    return false;
-  }
-
-  function tripleHasVarOrBlank(tr) {
-    return termHasVarOrBlank(tr.s) || termHasVarOrBlank(tr.p) || termHasVarOrBlank(tr.o);
-  }
-
-  function isSatisfiableWhenFullyUnbound(pIriVal) {
-    return (
-      pIriVal === MATH_NS + 'sin' ||
-      pIriVal === MATH_NS + 'cos' ||
-      pIriVal === MATH_NS + 'tan' ||
-      pIriVal === MATH_NS + 'asin' ||
-      pIriVal === MATH_NS + 'acos' ||
-      pIriVal === MATH_NS + 'atan' ||
-      pIriVal === MATH_NS + 'sinh' ||
-      pIriVal === MATH_NS + 'cosh' ||
-      pIriVal === MATH_NS + 'tanh' ||
-      pIriVal === MATH_NS + 'degrees' ||
-      pIriVal === MATH_NS + 'negation'
-    );
-  }
 
   const initialGoals = Array.isArray(goals) ? goals.slice() : [];
   const substMut = subst ? { ...subst } : {};
@@ -6105,7 +6107,7 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
         canDeferBuiltins &&
         (!deltas.length || __vacuous) &&
         restGoals.length &&
-        tripleHasVarOrBlank(goal0) &&
+        __tripleHasVarOrBlank(goal0) &&
         dc < goalsNow.length
       ) {
         // Rotate this goal to the end and try others first.
@@ -6118,7 +6120,7 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
       if (
         canDeferBuiltins &&
         !deltas.length &&
-        isSatisfiableWhenFullyUnbound(__pv0) &&
+        __builtinIsSatisfiableWhenFullyUnbound(__pv0) &&
         __fullyUnboundSO &&
         (!restGoals.length || dc >= goalsNow.length)
       ) {
@@ -6335,8 +6337,6 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
             if (lvlHere < info.requiredLevel) continue;
           }
 
-          const empty = {};
-          const visited = [];
           // Optimization: if the rule head is **structurally ground** (no vars anywhere, even inside
           // quoted formulas) and has no head blanks, then the head does not depend on which body
           // solution we pick. In that case, we only need *one* proof of the body, and once all head
@@ -6359,7 +6359,7 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
           // This keeps forward-chaining conjunctions order-insensitive while
           // preserving left-to-right evaluation inside backward rules (<=),
           // which is important for termination on some programs (e.g., dijkstra).
-          const sols = proveGoals(r.premise.slice(), empty, facts, backRules, 0, visited, varGen, maxSols, {
+          const sols = proveGoals(r.premise, null, facts, backRules, 0, null, varGen, maxSols, {
             deferBuiltins: true,
           });
 
@@ -8368,7 +8368,10 @@ class Iri extends Term {
   constructor(value) {
     super();
     this.value = value;
-    Object.defineProperty(this, '__tid', { value: __getTid('I:' + value), enumerable: false });
+    Object.defineProperty(this, '__tid', {
+      value: __getTid('I:' + value),
+      enumerable: false,
+    });
   }
 }
 
@@ -8376,7 +8379,10 @@ class Literal extends Term {
   constructor(value) {
     super();
     this.value = value; // raw lexical form, e.g. "foo", 12, true, or "\"1944-08-21\"^^..."
-    Object.defineProperty(this, '__tid', { value: __getTid('L:' + normalizeLiteralForTid(value)), enumerable: false });
+    Object.defineProperty(this, '__tid', {
+      value: __getTid('L:' + normalizeLiteralForTid(value)),
+      enumerable: false,
+    });
   }
 }
 
@@ -8391,7 +8397,10 @@ class Blank extends Term {
   constructor(label) {
     super();
     this.label = label; // _:b1, etc.
-    Object.defineProperty(this, '__tid', { value: __getTid('B:' + label), enumerable: false });
+    Object.defineProperty(this, '__tid', {
+      value: __getTid('B:' + label),
+      enumerable: false,
+    });
   }
 }
 

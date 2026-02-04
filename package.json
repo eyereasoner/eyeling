@@ -26,8 +26,8 @@
     "examples",
     "eyeling-builtins.ttl",
     "eyeling.js",
-    "index.d.ts",
     "index.js",
+    "index.d.ts",
     "lib",
     "test",
     "tools"
