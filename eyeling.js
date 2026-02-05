@@ -3572,9 +3572,6 @@ function listHasTriple(list, tr) {
   return list.some((t) => triplesEqual(t, tr));
 }
 
-// ===========================================================================
-// Substitution compaction (to avoid O(depth^2) in deep backward chains)
-
 module.exports = {
   makeBuiltins,
   // shared helpers used by engine/explain
@@ -4895,7 +4892,6 @@ const { printExplanation, collectOutputStringsFromFacts } = makeExplain({
   skolemKeyFromTerm,
 });
 
-// ===========================================================================
 function skolemizeTermForHeadBlanks(t, headBlankLabels, mapping, skCounter, firingKey, globalMap) {
   if (t instanceof Blank) {
     const label = t.label;
@@ -8204,8 +8200,6 @@ class Parser {
     return new Rule(premise, conclusion, isForward, isFuse, headBlankLabels);
   }
 }
-
-// ===========================================================================
 
 module.exports = { Parser };
 

@@ -1,0 +1,89 @@
+# ==================
+# Ackermann function
+# ==================
+#
+# See https://en.wikipedia.org/wiki/Ackermann_function
+
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix : <https://eyereasoner.github.io/ns#>.
+
+# ackermann(x, y)
+{
+    (?X ?Y) :ackermann ?A.
+} <= {
+    (?Y 3) math:sum ?B.
+    (?X ?B 2) :ackermann ?C.
+    (?C 3) math:difference ?A.
+}.
+
+# ackermann(x, y, z)
+# succ (x=0)
+{
+    (0 ?Y ?Z) :ackermann ?A.
+} <= {
+    (?Y 1) math:sum ?A.
+}.
+
+# sum (x=1)
+{
+    (1 ?Y ?Z) :ackermann ?A.
+} <= {
+    (?Y ?Z) math:sum ?A.
+}.
+
+# product (x=2)
+{
+    (2 ?Y ?Z) :ackermann ?A.
+} <= {
+    (?Y ?Z) math:product ?A.
+}.
+
+# exponentiation (x=3), tetration (x=4), pentation (x=5), hexation (x=6), etc
+{
+    (?X 0 ?Z) :ackermann 1.
+} <= {
+    ?X math:greaterThan 2.
+}.
+
+{
+    (?X ?Y ?Z) :ackermann ?A.
+} <= {
+    ?X math:greaterThan 2.
+    ?Y math:notEqualTo 0.
+    (?Y 1) math:difference ?B.
+    (?X ?B ?Z) :ackermann ?C.
+    (?X 1) math:difference ?D.
+    (?D ?C ?Z) :ackermann ?A.
+}.
+
+# test
+{
+    (0 0) :ackermann ?A0.
+    (0 6) :ackermann ?A1.
+    (1 2) :ackermann ?A2.
+    (1 7) :ackermann ?A3.
+    (2 2) :ackermann ?A4.
+    (2 9) :ackermann ?A5.
+    (3 4) :ackermann ?A6.
+    (3 14) :ackermann ?A7.
+    (4 0) :ackermann ?A8.
+    (4 1) :ackermann ?A9.
+    (4 2) :ackermann ?A10.
+    (5 0) :ackermann ?A11.
+} => {
+    :test :is {
+        (0 0) :ackermann ?A0.
+        (0 6) :ackermann ?A1.
+        (1 2) :ackermann ?A2.
+        (1 7) :ackermann ?A3.
+        (2 2) :ackermann ?A4.
+        (2 9) :ackermann ?A5.
+        (3 4) :ackermann ?A6.
+        (3 14) :ackermann ?A7.
+        (4 0) :ackermann ?A8.
+        (4 1) :ackermann ?A9.
+        (4 2) :ackermann ?A10.
+        (5 0) :ackermann ?A11.
+    }.
+}.
