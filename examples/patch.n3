@@ -1,0 +1,55 @@
+# ===================================================================
+# N3 graph patch example
+# - Removes every triple from :source that is also present in :delete
+# - Then adds all triples from :insert
+# Uses only N3 builtins from the W3C spec:
+#   log:collectAllIn, log:conjunction, log:notIncludes
+# ===================================================================
+
+@prefix :    <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+:patch1
+  :source {
+    :alice a :Person ;
+           :age 30 ;
+           :status :OldStatus ;
+           :email "alice@example.org" .
+    :bob   a :Person .
+  } ;
+  :delete {
+    :alice :age 30 ;
+           :status :OldStatus ;
+           :email "alice@example.org" .
+  } ;
+  :insert {
+    :alice :age 31 ;
+           :status :ActiveStatus ;
+           :verified true .
+  } .
+
+{
+  :patch1 :source ?G ;
+          :delete ?Del ;
+          :insert ?Ins .
+
+  # Collect exactly the triples from ?G that are NOT included in the delete graph term ?Del
+  ( { ?S ?P ?O . }
+    {
+      ?S ?P ?O .
+      ?Del log:notIncludes { ?S ?P ?O . } .
+    }
+    ?keptTriples
+  ) log:collectAllIn ?G .
+
+  # Merge kept graph terms back into a single graph term
+  ?keptTriples log:conjunction ?keptGraph .
+
+  # Add the insert graph term
+  ( ?keptGraph ?Ins ) log:conjunction ?patched .
+}
+=>
+{
+  :patch1 :result ?patched .
+} .
+
