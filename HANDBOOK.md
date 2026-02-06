@@ -541,13 +541,14 @@ That second case matters for “satisfiable but non-enumerating” builtins (e.g
 
 ### 8.4 Loop prevention: visited multiset with backtracking
 
-Eyeling avoids obvious infinite recursion by recording each (substituted) goal it is currently trying in a per-branch *visited* structure. If the same goal is encountered again on the same proof branch, Eyeling skips it.
+Eyeling avoids obvious infinite recursion by recording each (substituted) goal it is currently trying in a per-branch _visited_ structure. If the same goal is encountered again on the same proof branch, Eyeling skips it.
 
 Implementation notes:
 
-- The visited structure is a `Map` from *goal key* to a reference count, plus a trail array. This makes it cheap to check (`O(1)` average) and cheap to roll back on backtracking (just like the substitution trail).
-- Keys are *structural*. Atoms use stable IDs; lists use element keys; variables use their identity (so two different variables are **not** conflated). This keeps the cycle check conservative and avoids accidental pruning.
+- The visited structure is a `Map` from _goal key_ to a reference count, plus a trail array. This makes it cheap to check (`O(1)` average) and cheap to roll back on backtracking (just like the substitution trail).
+- Keys are _structural_. Atoms use stable IDs; lists use element keys; variables use their identity (so two different variables are **not** conflated). This keeps the cycle check conservative and avoids accidental pruning.
 - This is not full tabling: it does not memoize answers, it only guards against immediate cycles (the common “A depends on A” loops).
+
 ### 8.5 Backward rules: indexed by head predicate
 
 Backward rules are indexed in `backRules.__byHeadPred`. When proving a goal with IRI predicate `p`, Eyeling retrieves:

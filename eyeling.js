@@ -60,7 +60,7 @@ const __parseNumCache = new Map(); // lit string -> number|null
 const __parseIntCache = new Map(); // lit string -> bigint|null
 const __parseNumericInfoCache = new Map(); // lit string -> info|null
 
-// Avoid caching extremely large numeric literals (e.g., huge intermediates from Ackermann).
+// Avoid caching extremely large numeric literals.
 // Caching them retains giant strings/BigInts in global Maps and can cause OOM.
 const MAX_NUMERIC_CACHE_KEY_LEN = 1024;
 
@@ -9108,8 +9108,6 @@ function liftBlankRuleVars(premise, conclusion) {
   const newPremise = premise.map((tr) => new Triple(convertTerm(tr.s), convertTerm(tr.p), convertTerm(tr.o)));
   return [newPremise, conclusion];
 }
-
-// ===========================================================================
 
 module.exports = {
   liftBlankRuleVars,
