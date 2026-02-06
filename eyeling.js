@@ -60,6 +60,14 @@ const __parseNumCache = new Map(); // lit string -> number|null
 const __parseIntCache = new Map(); // lit string -> bigint|null
 const __parseNumericInfoCache = new Map(); // lit string -> info|null
 
+// Avoid caching extremely large numeric literals (e.g., huge intermediates from Ackermann).
+// Caching them retains giant strings/BigInts in global Maps and can cause OOM.
+const MAX_NUMERIC_CACHE_KEY_LEN = 1024;
+
+function __useNumericCacheKey(key) {
+  return typeof key === 'string' && key.length <= MAX_NUMERIC_CACHE_KEY_LEN;
+}
+
 //
 // Engine hooks (injected once by makeBuiltins)
 //
@@ -450,14 +458,15 @@ function parseNum(t) {
   if (!(t instanceof Literal)) return null;
 
   const key = t.value;
-  if (__parseNumCache.has(key)) return __parseNumCache.get(key);
+  const useCache = __useNumericCacheKey(key);
+  if (useCache && __parseNumCache.has(key)) return __parseNumCache.get(key);
 
   const [lex, dt] = literalParts(key);
 
   // Typed literals: must be xsd numeric.
   if (dt !== null) {
     if (!isXsdNumericDatatype(dt)) {
-      __parseNumCache.set(key, null);
+      if (useCache) __parseNumCache.set(key, null);
       return null;
     }
     const val = stripQuotes(lex);
@@ -466,39 +475,39 @@ function parseNum(t) {
     if (dt === XSD_FLOAT_DT || dt === XSD_DOUBLE_DT) {
       const sp = parseXsdFloatSpecialLex(val);
       if (sp !== null) {
-        __parseNumCache.set(key, sp);
+        if (useCache) __parseNumCache.set(key, sp);
         return sp;
       }
       const n = Number(val);
       if (Number.isNaN(n)) {
-        __parseNumCache.set(key, null);
+        if (useCache) __parseNumCache.set(key, null);
         return null;
       }
-      __parseNumCache.set(key, n);
+      if (useCache) __parseNumCache.set(key, n);
       return n; // may be finite, +/-Infinity
     }
 
     // decimal/integer-derived: keep strict finite parsing
     const n = Number(val);
     if (!Number.isFinite(n)) {
-      __parseNumCache.set(key, null);
+      if (useCache) __parseNumCache.set(key, null);
       return null;
     }
-    __parseNumCache.set(key, n);
+    if (useCache) __parseNumCache.set(key, n);
     return n;
   }
 
   // Untyped literals: accept only unquoted numeric tokens.
   if (!looksLikeUntypedNumericTokenLex(lex)) {
-    __parseNumCache.set(key, null);
+    if (useCache) __parseNumCache.set(key, null);
     return null;
   }
   const n = Number(lex);
   if (!Number.isFinite(n)) {
-    __parseNumCache.set(key, null);
+    if (useCache) __parseNumCache.set(key, null);
     return null;
   }
-  __parseNumCache.set(key, n);
+  if (useCache) __parseNumCache.set(key, n);
   return n;
 }
 
@@ -508,45 +517,46 @@ function parseIntLiteral(t) {
   if (!(t instanceof Literal)) return null;
 
   const key = t.value;
-  if (__parseIntCache.has(key)) return __parseIntCache.get(key);
+  const useCache = __useNumericCacheKey(key);
+  if (useCache && __parseIntCache.has(key)) return __parseIntCache.get(key);
 
   const [lex, dt] = literalParts(key);
 
   if (dt !== null) {
     if (!isXsdIntegerDatatype(dt)) {
-      __parseIntCache.set(key, null);
+      if (useCache) __parseIntCache.set(key, null);
       return null;
     }
     const val = stripQuotes(lex);
     if (!/^[+-]?\d+$/.test(val)) {
-      __parseIntCache.set(key, null);
+      if (useCache) __parseIntCache.set(key, null);
       return null;
     }
     try {
       const out = BigInt(val);
-      __parseIntCache.set(key, out);
+      if (useCache) __parseIntCache.set(key, out);
       return out;
     } catch {
-      __parseIntCache.set(key, null);
+      if (useCache) __parseIntCache.set(key, null);
       return null;
     }
   }
 
   // Untyped: only accept unquoted integer tokens.
   if (isQuotedLexical(lex)) {
-    __parseIntCache.set(key, null);
+    if (useCache) __parseIntCache.set(key, null);
     return null;
   }
   if (!/^[+-]?\d+$/.test(lex)) {
-    __parseIntCache.set(key, null);
+    if (useCache) __parseIntCache.set(key, null);
     return null;
   }
   try {
     const out = BigInt(lex);
-    __parseIntCache.set(key, out);
+    if (useCache) __parseIntCache.set(key, out);
     return out;
   } catch {
-    __parseIntCache.set(key, null);
+    if (useCache) __parseIntCache.set(key, null);
     return null;
   }
 }
@@ -806,7 +816,8 @@ function parseNumericLiteralInfo(t) {
   if (!(t instanceof Literal)) return null;
 
   const key = t.value;
-  if (__parseNumericInfoCache.has(key)) return __parseNumericInfoCache.get(key);
+  const useCache = __useNumericCacheKey(key);
+  if (useCache && __parseNumericInfoCache.has(key)) return __parseNumericInfoCache.get(key);
 
   const v = key;
   const [lex, dt] = literalParts(v);
@@ -817,7 +828,7 @@ function parseNumericLiteralInfo(t) {
   if (dt2 !== null) {
     // Accept all xsd numeric datatypes; normalize integer-derived to xsd:integer.
     if (!isXsdNumericDatatype(dt2)) {
-      __parseNumericInfoCache.set(key, null);
+      if (useCache) __parseNumericInfoCache.set(key, null);
       return null;
     }
     if (isXsdIntegerDatatype(dt2)) dt2 = XSD_INTEGER_DT;
@@ -825,15 +836,15 @@ function parseNumericLiteralInfo(t) {
   } else {
     // Untyped numeric token (N3/Turtle numeric literal)
     if (typeof v !== 'string') {
-      __parseNumericInfoCache.set(key, null);
+      if (useCache) __parseNumericInfoCache.set(key, null);
       return null;
     }
     if (v.startsWith('"')) {
-      __parseNumericInfoCache.set(key, null);
+      if (useCache) __parseNumericInfoCache.set(key, null);
       return null; // exclude quoted strings
     }
     if (!/^[+-]?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][+-]?\d+)?$/.test(v)) {
-      __parseNumericInfoCache.set(key, null);
+      if (useCache) __parseNumericInfoCache.set(key, null);
       return null;
     }
 
@@ -844,10 +855,10 @@ function parseNumericLiteralInfo(t) {
   if (dt2 === XSD_INTEGER_DT) {
     try {
       const info = { dt: dt2, kind: 'bigint', value: BigInt(lexStr), lexStr };
-      __parseNumericInfoCache.set(key, info);
+      if (useCache) __parseNumericInfoCache.set(key, info);
       return info;
     } catch {
-      __parseNumericInfoCache.set(key, null);
+      if (useCache) __parseNumericInfoCache.set(key, null);
       return null;
     }
   }
@@ -857,25 +868,25 @@ function parseNumericLiteralInfo(t) {
     const sp = parseXsdFloatSpecialLex(lexStr);
     if (sp !== null) {
       const info = { dt: dt2, kind: 'number', value: sp, lexStr };
-      __parseNumericInfoCache.set(key, info);
+      if (useCache) __parseNumericInfoCache.set(key, info);
       return info;
     }
   }
 
   const num = Number(lexStr);
   if (Number.isNaN(num)) {
-    __parseNumericInfoCache.set(key, null);
+    if (useCache) __parseNumericInfoCache.set(key, null);
     return null;
   }
 
   // allow +/-Infinity for float/double
   if (dt2 === XSD_DECIMAL_DT && !Number.isFinite(num)) {
-    __parseNumericInfoCache.set(key, null);
+    if (useCache) __parseNumericInfoCache.set(key, null);
     return null;
   }
 
   const info = { dt: dt2, kind: 'number', value: num, lexStr };
-  __parseNumericInfoCache.set(key, info);
+  if (useCache) __parseNumericInfoCache.set(key, info);
   return info;
 }
 
@@ -4424,7 +4435,6 @@ const {
   materializeRdfLists,
   // used by backward chaining
   standardizeRule,
-  listHasTriple,
 } = require('./builtins');
 
 const { makeExplain } = require('./explain');
@@ -5899,6 +5909,10 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
   // Depth-first search with a single mutable substitution and a trail.
   // This avoids cloning the whole substitution object at each unification step
   // (Prolog-style: bind + trail, then undo on backtrack).
+  //
+  // IMPORTANT: This implementation is fully iterative (no JS recursion), so
+  // extremely deep backward proofs (e.g. examples/ackermann.n3) do not overflow
+  // the JavaScript call stack.
   const results = [];
   const max = typeof maxResults === 'number' && maxResults > 0 ? maxResults : Infinity;
 
@@ -5944,12 +5958,97 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
     trail.length = mark;
   }
 
+  // ---------------------------------------------------------------------------
+  // Visited set (loop check) implemented as a trail-backed multiset
+  // ---------------------------------------------------------------------------
+  // The previous implementation used an array + concat at each step:
+  //   visitedForRules = visitedNow.concat([goal0]);
+  // which becomes O(n^2) for very deep proofs. Here we use a Map-backed multiset
+  // with backtracking support (like the substitution trail).
+  const visitedCounts = new Map(); // key -> count
+  const visitedTrail = []; // stack of keys in insertion order
+
+  const __termKeyCache = typeof WeakMap === 'function' ? new WeakMap() : null;
+
+  function __termKeyForVisited(t) {
+    if (t instanceof Iri && t.value === RDF_NIL_IRI) return '()';
+    if (t instanceof ListTerm && t.elems.length === 0) return '()';
+
+    if (__termKeyCache && t && typeof t === 'object') {
+      const cached = __termKeyCache.get(t);
+      if (cached) return cached;
+    }
+
+    let out;
+    if (t instanceof Var) {
+      out = 'V:' + t.name;
+    } else if (t instanceof Literal) {
+      // Match termsEqual() semantics for booleans and numerics where possible.
+      const bi = parseBooleanLiteralInfo(t);
+      if (bi) {
+        out = 'LB:' + (bi.value ? '1' : '0');
+      } else {
+        const ni = parseNumericLiteralInfo(t);
+        if (ni) {
+          if (ni.kind === 'bigint') {
+            out = 'LN:' + ni.dt + ':' + ni.value.toString();
+          } else if (typeof ni.value === 'number' && Number.isNaN(ni.value)) {
+            // NaN is never equal to NaN under termsEqual numeric comparison.
+            out = 'L#' + (t.__tid || String(t.value));
+          } else {
+            out = 'LN:' + ni.dt + ':' + String(ni.value);
+          }
+        } else {
+          out = 'L#' + (t.__tid || String(t.value));
+        }
+      }
+    } else if (t && t.__tid) {
+      // Iri / Blank and other atomic interned terms
+      out = 'T' + t.__tid;
+    } else if (t instanceof ListTerm) {
+      out = '[' + t.elems.map(__termKeyForVisited).join(',') + ']';
+    } else if (t instanceof OpenListTerm) {
+      out = '[open:' + t.prefix.map(__termKeyForVisited).join(',') + '|tail:' + t.tailVar + ']';
+    } else if (t instanceof GraphTerm) {
+      out =
+        '{' +
+        t.triples
+          .map((tr) => __termKeyForVisited(tr.s) + ' ' + __termKeyForVisited(tr.p) + ' ' + __termKeyForVisited(tr.o))
+          .join(';') +
+        '}';
+    } else {
+      // Fallback (rare)
+      out = skolemKeyFromTerm(t);
+    }
+
+    if (__termKeyCache && t && typeof t === 'object') __termKeyCache.set(t, out);
+    return out;
+  }
+
+  function __tripleKeyForVisited(tr) {
+    return __termKeyForVisited(tr.s) + '\t' + __termKeyForVisited(tr.p) + '\t' + __termKeyForVisited(tr.o);
+  }
+
+  function __pushVisited(key) {
+    visitedTrail.push(key);
+    visitedCounts.set(key, (visitedCounts.get(key) || 0) + 1);
+  }
+
+  function __undoVisitedTo(mark) {
+    for (let i = visitedTrail.length - 1; i >= mark; i--) {
+      const k = visitedTrail[i];
+      const c = visitedCounts.get(k);
+      if (c === 1) visitedCounts.delete(k);
+      else visitedCounts.set(k, c - 1);
+    }
+    visitedTrail.length = mark;
+  }
+
+  for (const tr of initialVisited) __pushVisited(__tripleKeyForVisited(tr));
+
+  // ---------------------------------------------------------------------------
   // In-place unification into the mutable substitution + trail.
-  // This avoids allocating short-lived "delta" substitution objects on the hot path
-  // (facts and backward-rule head matching).
-  //
-  // Semantics: identical to unifyTriple/unifyTerm (bool-value equivalence enabled,
-  // integer<->decimal exact equivalence disabled).
+  // ---------------------------------------------------------------------------
   function bindVarTrail(varName, t) {
     // t is assumed already substitution-applied (or at least safe to bind).
     if (Object.prototype.hasOwnProperty.call(substMut, varName)) {
@@ -6073,11 +6172,144 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
     return true;
   }
 
-  function dfs(goalsNow, curDepth, visitedNow, canDeferBuiltins, deferCount) {
-    if (results.length >= max) return;
+  // ---------------------------------------------------------------------------
+  // Iterative DFS execution
+  // ---------------------------------------------------------------------------
+  // Frame kinds:
+  //  - node: process a goal list
+  //  - undo: backtrack to a prior (subst trail mark, visited mark)
+  //  - ruleIter: iterate candidate backward rules for one goal
+  //  - factIter: iterate candidate facts for one goal
+  //  - deltaIter: iterate builtin deltas for one goal
+  const stack = [];
+  stack.push({
+    kind: 'node',
+    goalsNow: initialGoals,
+    curDepth: depth || 0,
+    canDeferBuiltins: __allowDeferBuiltins,
+    deferCount: 0,
+  });
+
+  while (stack.length && results.length < max) {
+    const frame = stack.pop();
+
+    if (frame.kind === 'undo') {
+      undoTo(frame.substMark);
+      __undoVisitedTo(frame.visitedMark);
+      continue;
+    }
+
+    if (frame.kind === 'deltaIter') {
+      const deltas = frame.deltas;
+      while (frame.idx < deltas.length && results.length < max) {
+        const delta = deltas[frame.idx++];
+        const mark = trail.length;
+        if (!applyDeltaToSubst(delta)) {
+          undoTo(mark);
+          continue;
+        }
+
+        if (!frame.restGoals.length) {
+          results.push(gcCompactForGoals(substMut, [], answerVars));
+          undoTo(mark);
+          if (results.length >= max) return results;
+          continue;
+        }
+
+        // Continue with remaining goals under this delta, then backtrack, then resume delta iteration.
+        stack.push(frame);
+        stack.push({ kind: 'undo', substMark: mark, visitedMark: visitedTrail.length });
+        stack.push({
+          kind: 'node',
+          goalsNow: frame.restGoals,
+          curDepth: frame.curDepth + 1,
+          canDeferBuiltins: frame.canDeferBuiltins,
+          deferCount: 0,
+        });
+        break;
+      }
+      continue;
+    }
+
+    if (frame.kind === 'ruleIter') {
+      const rules = frame.rules;
+      while (frame.idx < rules.length && results.length < max) {
+        const r = rules[frame.idx++];
+        if (r.conclusion.length !== 1) continue;
+        const rawHead = r.conclusion[0];
+        if (rawHead.p instanceof Iri && rawHead.p.__tid !== frame.goalPtid) continue;
+
+        const rStd = standardizeRule(r, varGen);
+        const head = rStd.conclusion[0];
+
+        const mark = trail.length;
+        if (!unifyTripleTrail(head, frame.goal0)) {
+          undoTo(mark);
+          continue;
+        }
+
+        const newGoals = rStd.premise.concat(frame.restGoals);
+
+        const vMark = visitedTrail.length;
+        __pushVisited(frame.goalKey);
+
+        // Explore the rule body; then undo; then resume trying further rules.
+        stack.push(frame);
+        stack.push({ kind: 'undo', substMark: mark, visitedMark: vMark });
+        stack.push({
+          kind: 'node',
+          goalsNow: newGoals,
+          curDepth: frame.curDepth + 1,
+          canDeferBuiltins: false,
+          deferCount: 0,
+        });
+        break;
+      }
+      continue;
+    }
+
+    if (frame.kind === 'factIter') {
+      const factsList = frame.factsList;
+      const candidates = frame.candidates;
+      const isIndexed = !!candidates;
+
+      while (frame.idx < (isIndexed ? candidates.length : factsList.length) && results.length < max) {
+        const f = isIndexed ? factsList[candidates[frame.idx++]] : factsList[frame.idx++];
+
+        const mark = trail.length;
+        if (!unifyTripleTrail(frame.goal0, f)) {
+          undoTo(mark);
+          continue;
+        }
+
+        if (!frame.restGoals.length) {
+          results.push(gcCompactForGoals(substMut, [], answerVars));
+          undoTo(mark);
+          if (results.length >= max) return results;
+          continue;
+        }
+
+        // Explore remaining goals; then undo; then resume trying further facts.
+        stack.push(frame);
+        stack.push({ kind: 'undo', substMark: mark, visitedMark: visitedTrail.length });
+        stack.push({
+          kind: 'node',
+          goalsNow: frame.restGoals,
+          curDepth: frame.curDepth + 1,
+          canDeferBuiltins: frame.canDeferBuiltins,
+          deferCount: 0,
+        });
+        break;
+      }
+
+      continue;
+    }
+
+    // frame.kind === 'node'
+    const goalsNow = frame.goalsNow;
     if (!goalsNow.length) {
       results.push(gcCompactForGoals(substMut, [], answerVars));
-      return;
+      continue;
     }
 
     const rawGoal = goalsNow[0];
@@ -6093,30 +6325,37 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
 
     if (__treatBuiltin) {
       const remaining = max - results.length;
-      if (remaining <= 0) return;
+      if (remaining <= 0) continue;
       const builtinMax = Number.isFinite(remaining) && !restGoals.length ? remaining : undefined;
 
-      let deltas = evalBuiltin(goal0, {}, facts, backRules, curDepth, varGen, builtinMax);
+      let deltas = evalBuiltin(goal0, {}, facts, backRules, frame.curDepth, varGen, builtinMax);
 
-      const dc = typeof deferCount === 'number' ? deferCount : 0;
+      const dc = typeof frame.deferCount === 'number' ? frame.deferCount : 0;
       const __vacuous = deltas.length > 0 && deltas.every((d) => Object.keys(d).length === 0);
 
       if (
-        canDeferBuiltins &&
+        frame.canDeferBuiltins &&
         (!deltas.length || __vacuous) &&
         restGoals.length &&
         __tripleHasVarOrBlank(goal0) &&
         dc < goalsNow.length
       ) {
         // Rotate this goal to the end and try others first.
-        dfs(restGoals.concat([rawGoal]), curDepth, visitedNow, canDeferBuiltins, dc + 1);
-        return;
+        stack.push({
+          kind: 'node',
+          goalsNow: restGoals.concat([rawGoal]),
+          curDepth: frame.curDepth,
+          canDeferBuiltins: frame.canDeferBuiltins,
+          deferCount: dc + 1,
+        });
+        continue;
       }
 
       const __fullyUnboundSO =
         (goal0.s instanceof Var || goal0.s instanceof Blank) && (goal0.o instanceof Var || goal0.o instanceof Blank);
+
       if (
-        canDeferBuiltins &&
+        frame.canDeferBuiltins &&
         !deltas.length &&
         __builtinIsSatisfiableWhenFullyUnbound(__pv0) &&
         __fullyUnboundSO &&
@@ -6125,104 +6364,69 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
         deltas = [{}];
       }
 
-      for (const delta of deltas) {
-        const mark = trail.length;
-        if (!applyDeltaToSubst(delta)) {
-          undoTo(mark);
-          continue;
-        }
-
-        if (!restGoals.length) {
-          results.push(gcCompactForGoals(substMut, [], answerVars));
-          undoTo(mark);
-          if (results.length >= max) return;
-        } else {
-          dfs(restGoals, curDepth + 1, visitedNow, canDeferBuiltins, 0);
-          undoTo(mark);
-          if (results.length >= max) return;
-        }
+      if (deltas.length) {
+        stack.push({
+          kind: 'deltaIter',
+          deltas,
+          idx: 0,
+          restGoals,
+          curDepth: frame.curDepth,
+          canDeferBuiltins: frame.canDeferBuiltins,
+        });
       }
-      return;
+      continue;
     }
 
     // 2) Loop check for backward reasoning
-    if (listHasTriple(visitedNow, goal0)) return;
-    const visitedForRules = visitedNow.concat([goal0]);
+    const goalKey = __tripleKeyForVisited(goal0);
+    if (visitedCounts.has(goalKey)) continue;
 
     // 3) Backward rules (indexed by head predicate) — explored first
     if (goal0.p instanceof Iri) {
       ensureBackRuleIndexes(backRules);
       const candRules = (backRules.__byHeadPred.get(goal0.p.__tid) || []).concat(backRules.__wildHeadPred);
 
-      for (const r of candRules) {
-        if (r.conclusion.length !== 1) continue;
-        const rawHead = r.conclusion[0];
-        if (rawHead.p instanceof Iri && rawHead.p.__tid !== goal0.p.__tid) continue;
-
-        const rStd = standardizeRule(r, varGen);
-        const head = rStd.conclusion[0];
-        const mark = trail.length;
-        if (!unifyTripleTrail(head, goal0)) {
-          undoTo(mark);
-          continue;
-        }
-
-        // No need to eagerly apply the head unifier to the body: dfs() will apply
-        // the current substMut to each goal as it is selected.
-        const newGoals = rStd.premise.concat(restGoals);
-
-        // When we enter a backward rule body, preserve the original
-        // (left-to-right) evaluation order to avoid non-termination.
-        dfs(newGoals, curDepth + 1, visitedForRules, false, 0);
-
-        undoTo(mark);
-        if (results.length >= max) return;
-      }
-    }
-
-    // 4) Try to satisfy the goal from known facts
-    if (goal0.p instanceof Iri) {
+      // facts should be tried *after* rules; push fact iterator first (below rules on the stack)
       const candidates = candidateFacts(facts, goal0);
-      for (const idx of candidates) {
-        const f = facts[idx];
-        const mark = trail.length;
-        if (!unifyTripleTrail(goal0, f)) {
-          undoTo(mark);
-          continue;
-        }
+      stack.push({
+        kind: 'factIter',
+        factsList: facts,
+        candidates,
+        idx: 0,
+        goal0,
+        restGoals,
+        curDepth: frame.curDepth,
+        canDeferBuiltins: frame.canDeferBuiltins,
+      });
 
-        if (!restGoals.length) {
-          results.push(gcCompactForGoals(substMut, [], answerVars));
-          undoTo(mark);
-          if (results.length >= max) return;
-        } else {
-          dfs(restGoals, curDepth + 1, visitedNow, canDeferBuiltins, 0);
-          undoTo(mark);
-          if (results.length >= max) return;
-        }
+      // Then push rule iterator
+      if (candRules.length) {
+        stack.push({
+          kind: 'ruleIter',
+          rules: candRules,
+          idx: 0,
+          goal0,
+          restGoals,
+          curDepth: frame.curDepth,
+          goalKey,
+          goalPtid: goal0.p.__tid,
+        });
       }
     } else {
-      for (const f of facts) {
-        const mark = trail.length;
-        if (!unifyTripleTrail(goal0, f)) {
-          undoTo(mark);
-          continue;
-        }
-
-        if (!restGoals.length) {
-          results.push(gcCompactForGoals(substMut, [], answerVars));
-          undoTo(mark);
-          if (results.length >= max) return;
-        } else {
-          dfs(restGoals, curDepth + 1, visitedNow, canDeferBuiltins, 0);
-          undoTo(mark);
-          if (results.length >= max) return;
-        }
-      }
+      // No IRI predicate: rule indexing doesn't apply; only try all facts.
+      stack.push({
+        kind: 'factIter',
+        factsList: facts,
+        candidates: null,
+        idx: 0,
+        goal0,
+        restGoals,
+        curDepth: frame.curDepth,
+        canDeferBuiltins: frame.canDeferBuiltins,
+      });
     }
   }
 
-  dfs(initialGoals, depth || 0, initialVisited, __allowDeferBuiltins, 0);
   return results;
 }
 
@@ -8246,11 +8450,19 @@ function resolveIriRef(ref, base) {
 // -----------------------------------------------------------------------------
 
 // Hot cache used by literalParts().
+const MAX_LITERAL_PARTS_CACHE_LEN = 1024;
+
 const __literalPartsCache = new Map(); // lit string -> [lex, dt]
 
 function literalParts(lit) {
-  const cached = __literalPartsCache.get(lit);
-  if (cached) return cached;
+  // Avoid caching extremely large literals (notably huge numeric intermediates)
+  // to prevent unbounded memory growth.
+  const useCache = typeof lit === 'string' && lit.length <= MAX_LITERAL_PARTS_CACHE_LEN;
+
+  if (useCache) {
+    const cached = __literalPartsCache.get(lit);
+    if (cached) return cached;
+  }
 
   // Split a literal into lexical form and datatype IRI (if any).
   // Also strip an optional language tag from the lexical form:
@@ -8280,7 +8492,7 @@ function literalParts(lit) {
   }
 
   const res = [lex, dt];
-  __literalPartsCache.set(lit, res);
+  if (useCache) __literalPartsCache.set(lit, res);
   return res;
 }
 
@@ -8293,6 +8505,10 @@ function literalParts(lit) {
 
 let __nextTid = 1;
 const __tidIntern = new Map(); // string key -> number
+
+// Avoid storing extremely large literal keys in the global term-id intern map.
+// For huge literals we still assign a unique __tid, but we do not intern the key.
+const MAX_LITERAL_TID_LEN = 1024;
 
 function __getTid(key) {
   let id = __tidIntern.get(key);
@@ -8375,8 +8591,11 @@ class Literal extends Term {
   constructor(value) {
     super();
     this.value = value; // raw lexical form, e.g. "foo", 12, true, or "\"1944-08-21\"^^..."
+    const norm = normalizeLiteralForTid(value);
+    const useIntern = typeof norm === 'string' && norm.length <= MAX_LITERAL_TID_LEN;
+    const tid = useIntern ? __getTid('L:' + norm) : __nextTid++;
     Object.defineProperty(this, '__tid', {
-      value: __getTid('L:' + normalizeLiteralForTid(value)),
+      value: tid,
       enumerable: false,
     });
   }
@@ -8461,6 +8680,10 @@ class DerivedFact {
 const __iriIntern = new Map();
 const __literalIntern = new Map();
 
+// Do not intern extremely large literal strings (e.g., huge numeric intermediates).
+// Interning them creates global strong references that prevent GC.
+const MAX_LITERAL_INTERN_LEN = 1024;
+
 /** @param {string} value */
 function internIri(value) {
   let t = __iriIntern.get(value);
@@ -8473,6 +8696,10 @@ function internIri(value) {
 
 /** @param {string} value */
 function internLiteral(value) {
+  if (typeof value === 'string' && value.length > MAX_LITERAL_INTERN_LEN) {
+    // Skip global interning for huge literals to avoid retaining them forever.
+    return new Literal(value);
+  }
   let t = __literalIntern.get(value);
   if (!t) {
     t = new Literal(value);

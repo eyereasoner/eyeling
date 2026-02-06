@@ -124,7 +124,7 @@ If you want to follow the code in the same order Eyeling “thinks”, read:
    - deterministic Skolem IDs (head existentials + `log:skolem`) (`lib/skolem.js`)
 6. `lib/builtins.js` — builtin predicate evaluation plus shared literal/number/string/list helpers:
    - `makeBuiltins(deps)` dependency-injects engine hooks (unification, proving, deref, …)
-   - exports `evalBuiltin(...)` and `isBuiltinPred(...)` back to the engine
+   - and returns `{ evalBuiltin, isBuiltinPred }` back to the engine
    - includes `materializeRdfLists(...)`, a small pre-pass that rewrites _anonymous_ `rdf:first`/`rdf:rest` linked lists into concrete N3 list terms so `list:*` builtins can work uniformly
 7. `lib/explain.js` — proof comments + `log:outputString` aggregation (fact ordering and pretty output).
 8. `lib/deref.js` — synchronous dereferencing for `log:content` / `log:semantics` (used by builtins and engine).
@@ -504,10 +504,10 @@ At each step:
    - apply the current substitution to it
    - attempt to satisfy it in three ways:
      1. built-ins
-     2. facts
-     3. backward rules
+     2. backward rules
+     3. facts
 
-Eyeling’s order is intentional: built-ins often bind variables cheaply; rules expand search trees.
+Eyeling’s order is intentional: built-ins often bind variables cheaply; backward rules expand the search tree (and enable recursion); facts are tried last as cheap terminal matches.
 
 ### 8.3 Built-ins: return _deltas_, not full substitutions
 
@@ -539,10 +539,15 @@ Conjunction in N3 is order-insensitive, but many builtins are only useful once s
 
 That second case matters for “satisfiable but non-enumerating” builtins (e.g., some `log:` helpers) where early vacuous success would otherwise prevent later goals from ever binding the variables the builtin needs.
 
-### 8.4 Loop prevention: a simple visited list
+### 8.4 Loop prevention: visited multiset with backtracking
 
-Eyeling prevents obvious infinite recursion by skipping a goal if it is already in the `visited` list. This is a pragmatic check; it doesn’t implement full tabling, but it avoids the most common “A depends on A” loops.
+Eyeling avoids obvious infinite recursion by recording each (substituted) goal it is currently trying in a per-branch *visited* structure. If the same goal is encountered again on the same proof branch, Eyeling skips it.
 
+Implementation notes:
+
+- The visited structure is a `Map` from *goal key* to a reference count, plus a trail array. This makes it cheap to check (`O(1)` average) and cheap to roll back on backtracking (just like the substitution trail).
+- Keys are *structural*. Atoms use stable IDs; lists use element keys; variables use their identity (so two different variables are **not** conflated). This keeps the cycle check conservative and avoids accidental pruning.
+- This is not full tabling: it does not memoize answers, it only guards against immediate cycles (the common “A depends on A” loops).
 ### 8.5 Backward rules: indexed by head predicate
 
 Backward rules are indexed in `backRules.__byHeadPred`. When proving a goal with IRI predicate `p`, Eyeling retrieves:
@@ -566,7 +571,7 @@ To reduce allocation pressure, Eyeling reuses a single fresh `Var(...)` object p
 The trail-based substitution store removes the biggest accidental quadratic cost (copying a growing substitution object at every step).  
 In deep and branchy searches, the substitution trail still grows, and long variable-to-variable chains increase the work done by `applySubstTerm`.
 
-Eyeling currently keeps the full trail as-is during search and when emitting answers; it does not run a substitution compaction pass, and it does not perform explicit substitution composition.
+Eyeling currently keeps the full trail as-is during search. When emitting a solution, it runs a lightweight compaction pass (via `gcCollectVarsInGoals(...)` / `gcCompactForGoals(...)`) so only bindings reachable from the answer variables and remaining goals are kept. It still does not perform general substitution composition/normalization during search.
 
 ---
 
