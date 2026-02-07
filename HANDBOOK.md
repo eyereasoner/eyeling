@@ -26,7 +26,7 @@
 - [Chapter 16 — Extending Eyeling (without breaking it)](#ch16)
 - [Epilogue](#epilogue)
 - [Appendix A — Eyeling user notes](#app-a)
-- [Appendix B — Notation 3: when facts can carry their own logic](#app-b)
+- [Appendix B — Notation3: when facts can carry their own logic](#app-b)
 - [Appendix C — N3 beyond Prolog: logic that survives the open web](#app-c)
 
 ---
@@ -1926,13 +1926,13 @@ Logic & reasoning background (Wikipedia):
 
 <a id="app-b"></a>
 
-## Appendix B — Notation 3: when facts can carry their own logic
+## Appendix B — Notation3: when facts can carry their own logic
 
 RDF succeeded by making a radical constraint feel natural: reduce meaning to small, uniform statements—triples—that can be published, merged, and queried across boundaries. A triple does not presume a database schema, a programming language, or a particular application. It presumes only that names (IRIs) can be shared, and that graphs can be combined.
 
 That strength also marks RDF’s limit. The moment a graph is expected to _do_ something—normalize values, reconcile vocabularies, derive implied relationships, enforce a policy, compute a small transformation—logic tends to migrate into code. The graph becomes an inert substrate while the decisive semantics hide in scripts, services, ETL pipelines, or bespoke rule engines. What remains portable is the data; what often becomes non-portable is the meaning.
 
-Notation 3 (N3) sits precisely at that seam. It remains a readable way to write RDF, but it also treats _graphs themselves_ as objects that can be described, matched, and related. The N3 Community Group’s specification presents N3 as an assertion and logic language that extends RDF rather than replacing it: [https://w3c.github.io/N3/spec/](https://w3c.github.io/N3/spec/).
+Notation3 (N3) sits precisely at that seam. It remains a readable way to write RDF, but it also treats _graphs themselves_ as objects that can be described, matched, and related. The N3 Community Group’s specification presents N3 as an assertion and logic language that extends RDF rather than replacing it: [https://w3c.github.io/N3/spec/](https://w3c.github.io/N3/spec/).
 
 The essential move is quotation: writing a graph inside braces as a thing that can be discussed. Once graphs can be quoted, rules become graph-to-graph transformations. The familiar implication form, `{ … } => { … } .`, reads as a piece of prose: whenever the antecedent pattern holds, the consequent pattern follows. Tim Berners-Lee’s design note frames this as a web-friendly logic with variables and nested graphs: [https://www.w3.org/DesignIssues/Notation3.html](https://www.w3.org/DesignIssues/Notation3.html).
 
@@ -1946,25 +1946,26 @@ In that context, public conformance suites become more than scoreboards: they ar
 
 The comparison with older tools is historically instructive. Cwm (Closed World Machine) was an early, influential RDF data processor and forward-chaining reasoner—part of the lineage that treated RDF (often written in N3) as something executable: [https://www.w3.org/2000/10/swap/doc/cwm](https://www.w3.org/2000/10/swap/doc/cwm).
 
-What motivates Notation 3, in the end, is architectural restraint. It refuses to let “logic” become merely a private feature of an application stack. It keeps meaning close to the graph: rules are expressed as graph patterns; results are expressed as triples; computation is pulled in through well-defined built-ins rather than arbitrary code. This produces a style of working where integration and inference are not sidecar scripts, but publishable artifacts—documents that can be inspected, shared, tested, and reused.
+What motivates Notation3, in the end, is architectural restraint. It refuses to let “logic” become merely a private feature of an application stack. It keeps meaning close to the graph: rules are expressed as graph patterns; results are expressed as triples; computation is pulled in through well-defined built-ins rather than arbitrary code. This produces a style of working where integration and inference are not sidecar scripts, but publishable artifacts—documents that can be inspected, shared, tested, and reused.
 
 In that sense, N3 is less a bid to make the web “smarter” than a bid to make meaning _portable_: not only facts that travel, but also the explicit steps by which facts can be connected, extended, and made actionable—without abandoning the simplicity that made triples travel in the first place.
 
----  
+---
+
+<a id="app-c"></a>
 
 ## Appendix C — N3 beyond Prolog: logic that survives the open web
 
 At first glance, an N3 rule set can feel familiar if you’ve used Prolog: variables, unification, and rules that read like “if this pattern holds, then that pattern follows.” But N3 is not just “logic programming with a different syntax.” It is logic shaped for a different environment: not a single program with a single database, but a world of distributed graphs that can be published, merged, and cited across boundaries.
 
-That change of environment forces a change in what “beyond Prolog” even means. It is less about being more powerful in the abstract, and more about being *more portable as meaning* — logic that stays connected when it moves between documents, vocabularies, and authors.
+That change of environment forces a change in what “beyond Prolog” even means. It is less about being more powerful in the abstract, and more about being _more portable as meaning_ — logic that stays connected when it moves between documents, vocabularies, and authors.
 
 Several design moves push N3 into that web-native space:
 
 - **Global identity is the default.** Names are IRIs. A rule does not merely compute with local symbols; it operates over identifiers meant to be shared across datasets.
 - **Graphs are the unit of exchange.** The input is a graph; the output is a graph. Inference produces new triples rather than hidden internal state, so results can travel the same way the facts do.
-- **Statements can be treated as data.** Quoted graphs let you talk *about* assertions: claims, policies, provenance, “this source says …,” “this formula implies …,” and other meta-level structure that is awkward in a plain predicate database.
+- **Statements can be treated as data.** Quoted graphs let you talk _about_ assertions: claims, policies, provenance, “this source says …,” “this formula implies …,” and other meta-level structure that is awkward in a plain predicate database.
 - **Rules can be publishable artifacts.** Rules can live alongside data as text, be versioned, reviewed, and reused — the “meaning” is not forced back into an external codebase.
 - **Web-like computation can be pulled into rule bodies.** Built-ins make room for the small computations that real integration needs (strings, lists, comparisons), and some N3 workflows even treat IRIs as pointers to more knowledge.
 
-In that sense, Prolog is a superb engine for proving things *inside* a chosen world. N3 is a way to write rules so they keep working *across* worlds: across documents, across graph boundaries, and across the open-ended growth of linked data. When an engine like Eyeling solves rule bodies with a Prolog-like prover but still saturates forward consequences, it’s exactly this bridge: Prolog-style execution serving a web-scale, graph-first notion of meaning.
-
+In that sense, Prolog is a superb engine for proving things _inside_ a chosen world. N3 is a way to write rules so they keep working _across_ worlds: across documents, across graph boundaries, and across the open-ended growth of linked data. When an engine like Eyeling solves rule bodies with a Prolog-like prover but still saturates forward consequences, it’s exactly this bridge: Prolog-style execution serving a web-scale, graph-first notion of meaning.
