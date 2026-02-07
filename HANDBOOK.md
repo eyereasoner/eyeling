@@ -113,7 +113,7 @@ If you want to follow the code in the same order Eyeling “thinks”, read:
 1. `lib/prelude.js` — the AST (terms, triples, rules), namespaces, prefix handling.
 2. `lib/lexer.js` — N3/Turtle-ish tokenization.
 3. `lib/parser.js` — parsing tokens into triples, formulas, and rules.
-4. `lib/rules.js` — small rule “compiler passes” (blank lifting, constraint delaying).
+4. `lib/rules.js` — small rule helpers (rule-local blank lifting and rule utilities).
 5. `lib/engine.js` — the core inference engine:
    - equality + alpha equivalence for formulas
    - unification + substitutions
@@ -281,7 +281,7 @@ Internally:
 
 ## Chapter 5 — Rule normalization: “compile-time” semantics (`lib/rules.js`)
 
-Before rules hit the engine, Eyeling performs two lightweight transformations.
+Before rules hit the engine, Eyeling performs one lightweight transformation. A second “make it work” trick—deferring built-ins that can’t run yet—happens later inside the goal prover.
 
 ### 5.1 Lifting blank nodes in rule bodies into variables
 
@@ -303,19 +303,28 @@ This avoids the “existential in the body” trap and matches how most rule aut
 
 Blanks in the **conclusion** are _not_ lifted — they remain blanks and later become existentials (Chapter 9).
 
-### 5.2 Delaying constraints
+### 5.2 Builtin deferral in forward-rule bodies
 
-Some built-ins don’t generate bindings; they only test conditions:
+In a depth-first proof, the order of goals matters. Many built-ins only become informative once parts of the triple are **already instantiated** (for example comparisons, pattern tests, and other built-ins that don’t normally create bindings).
 
-- `math:greaterThan`, `math:lessThan`, `math:equalTo`, …
-- `string:matches`, `string:contains`, …
-- `log:notIncludes`, `log:forAllIn`, `log:outputString`, …
+If such a builtin runs while its subject/object still contain variables or blanks, it may return **no solutions** (because it can’t decide yet) or only the **empty delta** (`{}`), even though it would succeed (or fail) once other goals have bound the needed values.
 
-Eyeling treats these as “constraints” and moves them to the _end_ of a forward rule premise. This is a Prolog-style heuristic:
+Eyeling supports a runtime deferral mechanism inside `proveGoals(...)`, enabled only when proving the bodies of forward rules.
 
-> Bind variables first; only then run pure checks.
+What happens when `proveGoals(..., { deferBuiltins: true })` sees a builtin goal:
 
-It’s not logically necessary, but it improves the chance that constraints run with variables already grounded, reducing wasted search.
+- Eyeling evaluates the builtin once.
+- If the builtin yields **no deltas**, or only **empty deltas** (`[{}]`), and:
+  - there are still other goals remaining, and
+  - the builtin goal still contains variables/blanks, and
+  - the goal list hasn’t already been rotated too many times,
+- then Eyeling **rotates that builtin goal to the end** of the current goal list and continues with the next goal first.
+
+A small counter (`deferCount`) caps how many rotations can happen (at most the length of the current goal list), so the prover can’t loop forever by endlessly “trying later”.
+
+There is one extra guard for a small whitelist of built-ins that are considered satisfiable even when both subject and object are completely unbound (see `__builtinIsSatisfiableWhenFullyUnbound`). For these, if evaluation yields no deltas and there is nothing left to bind (either it is the last goal, or deferral has already been exhausted), Eyeling treats the builtin as a vacuous success (`[{}]`) so it doesn’t block the proof.
+
+This is intentionally enabled for **forward-chaining rule bodies only**. Backward rules keep their normal left-to-right goal order, which can be important for termination on some programs.
 
 ### 5.3 Materializing anonymous RDF collections into N3 list terms
 
@@ -640,7 +649,7 @@ A rule whose conclusion is `false` is treated as a hard failure. During forward 
 - Eyeling proves the premise (it only needs one solution)
 - if the premise is provable, it prints a message and exits with status code 2
 
-This is Eyeling’s way to express constraints and detect inconsistencies.
+This is Eyeling’s way to express hard consistency checks and detect inconsistencies.
 
 ### 9.5 Rule-producing rules (meta-rules)
 
@@ -776,7 +785,6 @@ That one sentence explains a lot of “why does it behave like _that_?”:
 - Builtins are evaluated **during backward proof** (goal solving), just like facts and backward rules.
 - A builtin may produce **zero solutions** (fail), **one solution** (deterministic succeed), or **many solutions** (a generator).
 - Most builtins behave like relations, not like functions: they can sometimes run “backwards” (bind the subject from the object) if the implementation supports it.
-- Some builtins are **pure tests** (constraints): they never introduce new bindings; they only succeed or fail. Eyeling recognizes a subset of these and tends to schedule them _late_ in forward-rule premises so they run after other goals have had a chance to bind variables.
 
 ### 11.3.0 Reading builtin “signatures” in this handbook
 
@@ -825,13 +833,13 @@ These builtins hash a string and return a lowercase hex digest as a plain string
 
 Eyeling’s `math:` builtins fall into three broad categories:
 
-1. **Comparisons**: constraint-style predicates (`>`, `<`, `=`, …).
+1. **Comparisons**: test-style predicates (`>`, `<`, `=`, …).
 2. **Arithmetic on numbers**: sums, products, division, rounding, etc.
 3. **Unary analytic functions**: trig/hyperbolic functions and a few helpers.
 
 A key design choice: Eyeling parses numeric terms fairly strictly, but comparisons accept a wider “numeric-like” domain including durations and date/time values in some cases.
 
-### 11.3.2.1 Numeric comparisons (constraints)
+### 11.3.2.1 Numeric comparisons
 
 These builtins succeed or fail; they do not introduce new bindings.
 
@@ -1158,9 +1166,9 @@ It does not enumerate arbitrary reversals; it’s a deterministic transform once
 
 Removes all occurrences of an item from a list.
 
-Important constraint: the item to remove must be **ground** (fully known) before the builtin will run.
+Important requirement: the item to remove must be **ground** (fully known) before the builtin will run.
 
-#### `list:notMember` (constraint)
+#### `list:notMember` (test)
 
 **Shape:** `(a b c) list:notMember x`
 
@@ -1225,7 +1233,7 @@ The `log:` family is where N3 stops being “RDF with rules” and becomes a _me
 
 This is simply **term unification**: it succeeds if the two terms can be unified and returns any bindings that result.
 
-#### `log:notEqualTo` (constraint)
+#### `log:notEqualTo` (test)
 
 Succeeds iff the terms **cannot** be unified. No new bindings.
 
@@ -1362,7 +1370,7 @@ Also supported:
 
 - The object may be the literal `true`, meaning the empty formula, which is always included (subject to the priority gating above).
 
-#### `log:notIncludes` (constraint)
+#### `log:notIncludes` (test)
 
 Negation-as-failure version: it succeeds iff `log:includes` would yield no solutions (under the same scoping rules).
 
@@ -1377,7 +1385,7 @@ Negation-as-failure version: it succeeds iff `log:includes` would yield no solut
 
 This is essentially a list-producing “findall”.
 
-#### `log:forAllIn` (constraint)
+#### `log:forAllIn` (test)
 
 **Shape:** `( WhereFormula ThenFormula ) log:forAllIn Scope`
 
@@ -1455,7 +1463,7 @@ A tiny `sprintf` subset:
 - Any other specifier (`%d`, `%f`, …) causes the builtin to fail.
 - Missing arguments are treated as empty strings.
 
-### Containment and prefix/suffix tests (constraints)
+### Containment and prefix/suffix tests
 
 - `string:contains`
 - `string:containsIgnoringCase`
@@ -1464,12 +1472,12 @@ A tiny `sprintf` subset:
 
 All are pure tests: they succeed or fail.
 
-### Case-insensitive equality tests (constraints)
+### Case-insensitive equality tests
 
 - `string:equalIgnoringCase`
 - `string:notEqualIgnoringCase`
 
-### Lexicographic comparisons (constraints)
+### Lexicographic comparisons
 
 - `string:greaterThan`
 - `string:lessThan`
@@ -1485,7 +1493,7 @@ Eyeling compiles patterns using JavaScript `RegExp`, with a small compatibility 
 - If the pattern uses Unicode property escapes (like `\p{L}`) or code point escapes (`\u{...}`), Eyeling enables the `/u` flag.
 - In Unicode mode, some “identity escapes” that would be SyntaxErrors in JS are sanitized in a conservative way.
 
-#### `string:matches` / `string:notMatches` (constraints)
+#### `string:matches` / `string:notMatches` (tests)
 
 **Shape:** `data string:matches pattern`
 
@@ -1512,7 +1520,7 @@ From a logic-programming point of view, printing is awkward: if you print _durin
 The predicate `log:outputString` is the only officially supported “side-effect channel”, and even it is handled in two phases:
 
 1. **During reasoning (declarative phase):**  
-   `log:outputString` behaves like a constraint-style builtin (implemented in `lib/builtins.js`): it succeeds when its arguments are well-formed and sufficiently bound (notably, when the object is a string literal that can be emitted). Importantly, it does _not_ print anything at this time. If a rule derives a triple like:
+   `log:outputString` behaves like a pure test builtin (implemented in `lib/builtins.js`): it succeeds when its arguments are well-formed and sufficiently bound (notably, when the object is a string literal that can be emitted). Importantly, it does _not_ print anything at this time. If a rule derives a triple like:
 
    ```n3
    :k log:outputString "Hello\n".
@@ -1928,7 +1936,7 @@ Logic & reasoning background (Wikipedia):
 
 ## Appendix B — Notation3: when facts can carry their own logic
 
-RDF succeeded by making a radical constraint feel natural: reduce meaning to small, uniform statements—triples—that can be published, merged, and queried across boundaries. A triple does not presume a database schema, a programming language, or a particular application. It presumes only that names (IRIs) can be shared, and that graphs can be combined.
+RDF succeeded by making a radical design choice feel natural: reduce meaning to small, uniform statements—triples—that can be published, merged, and queried across boundaries. A triple does not presume a database schema, a programming language, or a particular application. It presumes only that names (IRIs) can be shared, and that graphs can be combined.
 
 That strength also marks RDF’s limit. The moment a graph is expected to _do_ something—normalize values, reconcile vocabularies, derive implied relationships, enforce a policy, compute a small transformation—logic tends to migrate into code. The graph becomes an inert substrate while the decisive semantics hide in scripts, services, ETL pipelines, or bespoke rule engines. What remains portable is the data; what often becomes non-portable is the meaning.
 

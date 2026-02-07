@@ -54,7 +54,7 @@ crypto:sha256 a ex:Builtin ; ex:kind ex:Function ;
 crypto:sha512 a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Hash builtin (SHA-512). Computes digest over the subject (string-ish) and unifies/binds the object with the digest." .
 
-# --- math: comparisons (constraint/test) -----------------------------
+# --- math: comparisons (tests) -----------------------------
 
 math:equalTo a ex:Builtin ; ex:kind ex:Test;
   rdfs:comment "Numeric comparison (=). No bindings; succeeds iff subject and object are numerically equal (supports XSD numeric literals, including special float/double lexicals)." .
@@ -201,7 +201,7 @@ list:length a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Length of a list as an integer token. Strict when object is ground (no integer<->decimal equality)." .
 
 list:notMember a ex:Builtin ; ex:kind ex:Test;
-  rdfs:comment "Constraint/test: succeeds iff object does not unify with any element of the subject list. No new bindings." .
+  rdfs:comment "Test: succeeds iff object does not unify with any element of the subject list. No new bindings." .
 
 list:reverse a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Reverses a list. Supports either direction when one side is a ListTerm." .
@@ -221,7 +221,7 @@ log:equalTo a ex:Builtin ; ex:kind ex:Relation ;
   rdfs:comment "Unification: succeeds iff subject and object unify; may bind variables." .
 
 log:notEqualTo a ex:Builtin ; ex:kind ex:Test;
-  rdfs:comment "Constraint/test: succeeds iff subject and object do NOT unify (implemented as: if unification succeeds, builtin fails). No new bindings returned." .
+  rdfs:comment "Test: succeeds iff subject and object do NOT unify (implemented as: if unification succeeds, builtin fails). No new bindings returned." .
 
 log:conjunction a ex:Builtin ; ex:kind ex:Meta ;
   rdfs:comment "Merges a list of formulas into one formula; removes duplicate triples; accepts 'true' as empty formula." .
@@ -260,13 +260,13 @@ log:includes a ex:Builtin ; ex:kind ex:Generator ;
   rdfs:comment "Proves the object formula in the (possibly scoped) facts/rules; returns the set of proof substitutions (may bind variables)." .
 
 log:notIncludes a ex:Builtin ; ex:kind ex:Test;
-  rdfs:comment "Constraint/test: succeeds iff proving the object formula yields no solutions. No new bindings." .
+  rdfs:comment "Test: succeeds iff proving the object formula yields no solutions. No new bindings." .
 
 log:collectAllIn a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Scoped collector: given (valueTemplate whereClause outList) and a scope formula, collects all solutions of whereClause and binds/unifies outList with the list of instantiated valueTemplate results." .
 
 log:forAllIn a ex:Builtin ; ex:kind ex:Test;
-  rdfs:comment "Constraint/test: for all solutions of whereClause, thenClause must have at least one solution in the same scope. No new bindings." .
+  rdfs:comment "Test: for all solutions of whereClause, thenClause must have at least one solution in the same scope. No new bindings." .
 
 log:skolem a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Deterministically maps a ground subject term to a Skolem IRI under https://eyereasoner.github.io/.well-known/genid/ and binds/unifies object to it." .
@@ -286,40 +286,40 @@ string:concatenation a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Concatenates a list of string-ish terms; binds/unifies object with the resulting string literal." .
 
 string:contains a ex:Builtin ; ex:kind ex:Test;
-  rdfs:comment "Constraint/test: subject contains object (substring). No bindings." .
+  rdfs:comment "Test: subject contains object (substring). No bindings." .
 
 string:containsIgnoringCase a ex:Builtin ; ex:kind ex:Test;
-  rdfs:comment "Constraint/test: case-insensitive contains. No bindings." .
+  rdfs:comment "Test: case-insensitive contains. No bindings." .
 
 string:endsWith a ex:Builtin ; ex:kind ex:Test;
-  rdfs:comment "Constraint/test: subject ends with object. No bindings." .
+  rdfs:comment "Test: subject ends with object. No bindings." .
 
 string:startsWith a ex:Builtin ; ex:kind ex:Test;
-  rdfs:comment "Constraint/test: subject starts with object. No bindings." .
+  rdfs:comment "Test: subject starts with object. No bindings." .
 
 string:equalIgnoringCase a ex:Builtin ; ex:kind ex:Test;
-  rdfs:comment "Constraint/test: case-insensitive equality. No bindings." .
+  rdfs:comment "Test: case-insensitive equality. No bindings." .
 
 string:notEqualIgnoringCase a ex:Builtin ; ex:kind ex:Test;
-  rdfs:comment "Constraint/test: case-insensitive inequality. No bindings." .
+  rdfs:comment "Test: case-insensitive inequality. No bindings." .
 
 string:greaterThan a ex:Builtin ; ex:kind ex:Test;
-  rdfs:comment "Constraint/test: Unicode codepoint order (>) on decoded strings. No bindings." .
+  rdfs:comment "Test: Unicode codepoint order (>) on decoded strings. No bindings." .
 
 string:lessThan a ex:Builtin ; ex:kind ex:Test;
-  rdfs:comment "Constraint/test: Unicode codepoint order (<) on decoded strings. No bindings." .
+  rdfs:comment "Test: Unicode codepoint order (<) on decoded strings. No bindings." .
 
 string:notGreaterThan a ex:Builtin ; ex:kind ex:Test;
-  rdfs:comment "Constraint/test: Unicode codepoint order (<=). No bindings." .
+  rdfs:comment "Test: Unicode codepoint order (<=). No bindings." .
 
 string:notLessThan a ex:Builtin ; ex:kind ex:Test;
-  rdfs:comment "Constraint/test: Unicode codepoint order (>=). No bindings." .
+  rdfs:comment "Test: Unicode codepoint order (>=). No bindings." .
 
 string:matches a ex:Builtin ; ex:kind ex:Test;
-  rdfs:comment "Constraint/test: regex match. Pattern is compiled with swap-style escaping helper. No bindings." .
+  rdfs:comment "Test: regex match. Pattern is compiled with swap-style escaping helper. No bindings." .
 
 string:notMatches a ex:Builtin ; ex:kind ex:Test;
-  rdfs:comment "Constraint/test: negated regex match. No bindings." .
+  rdfs:comment "Test: negated regex match. No bindings." .
 
 string:replace a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Regex replace: subject list (data pattern replacement) -> output string literal." .
