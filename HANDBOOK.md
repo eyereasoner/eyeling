@@ -28,6 +28,7 @@
 - [Appendix A — Eyeling user notes](#app-a)
 - [Appendix B — Notation3: when facts can carry their own logic](#app-b)
 - [Appendix C — N3 beyond Prolog: logic that survives the open web](#app-c)
+- [Appendix D — Turning Dialogue into Durable Logic Artifacts](#app-d)
 
 ---
 
@@ -1977,3 +1978,28 @@ Several design moves push N3 into that web-native space:
 - **Web-like computation can be pulled into rule bodies.** Built-ins make room for the small computations that real integration needs (strings, lists, comparisons), and some N3 workflows even treat IRIs as pointers to more knowledge.
 
 In that sense, Prolog is a superb engine for proving things _inside_ a chosen world. N3 is a way to write rules so they keep working _across_ worlds: across documents, across graph boundaries, and across the open-ended growth of linked data. When an engine like Eyeling solves rule bodies with a Prolog-like prover but still saturates forward consequences, it’s exactly this bridge: Prolog-style execution serving a web-scale, graph-first notion of meaning.
+
+---
+
+<a id="app-d"></a>
+
+## Appendix D — Turning Dialogue into Durable Logic Artifacts
+
+**Natural language → N3 (portable logic program)**
+A user speaks in goals, stories, partial facts, and exceptions. An LLM acts like a *semantic compiler*: it translates that mess into a small, explicit N3 artifact—facts, rules, scoped assumptions, and “unknown/missing” placeholders instead of guesses. Because it’s N3, it can be stored, versioned, reviewed, and exchanged as a first-class web object.
+
+**N3 → N3 (deterministic reasoning by Eyeling)**
+Eyeling then becomes the *meaning engine*. It takes the N3 program and deterministically derives what follows: closures, consequences, policy decisions, implied relationships, conflicts, and rule-driven enrichments. Crucially, the output is again N3—so results are not trapped in an opaque runtime, but remain portable data that can be shared, cached, or re-run elsewhere.
+
+**Derived N3 → insights (explainable natural language)**
+Raw closure is rarely what humans want. An LLM reads the derived graph (and any trace/proof annotations) and turns it into usable insight: “what changed”, “what is now implied”, “why this conclusion holds”, and “which parts depend on defaults (scoped NAF) versus explicit assertions.” It can also produce counterfactuals: “this would flip if you add X” or “this depends on the scope being closed for predicate P.”
+
+**Insights → improved N3 (the refinement loop)**
+The loop is where it gets powerful. Explanations reveal gaps and over-general rules; the LLM (or a human) edits the N3 artifact—tightens premises, adds exceptions, clarifies scopes, marks closed-world islands, or requests missing facts—and Eyeling re-runs. Over time you don’t just get answers, you get a *better program*: a reusable, inspectable logic model of the domain.
+
+So the pipeline isn’t “LLM → answer”. It’s:
+
+**natural language → portable meaning (N3) → deterministic closure (Eyeling) → explainable meaning (LLM) → portable meaning (N3) → …**
+
+…turning one-off conversation into a durable, web-native artifact that can be reasoned over, audited, and evolved.
+
