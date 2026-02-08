@@ -145,8 +145,11 @@ function main() {
   let passed = 0;
   let failed = 0;
 
+  // Pretty, stable numbering (e.g., 001..100 when running 100 tests)
+  const idxWidth = String(files.length).length;
+
   for (let i = 0; i < files.length; i++) {
-    const idx = String(i + 1).padStart(2, '0');
+    const idx = String(i + 1).padStart(idxWidth, '0');
     const file = files[i];
 
     const start = Date.now();
