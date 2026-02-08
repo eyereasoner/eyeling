@@ -41,14 +41,28 @@ function inGitWorktree(cwd) {
   return r.status === 0 && String(r.stdout).trim() === 'true';
 }
 
-// Expectation logic:
+// Normalize output for comparison.
+// Eyeling (and other N3 tools) may emit the same closure with different
+// triple ordering. Examples tests should verify content, not presentation.
+function normalizeForCompare(n3Text) {
+  return String(n3Text)
+    .split(/\r?\n/)
+    .map((l) => l.replace(/[\t ]+$/g, '')) // trim trailing whitespace
+    .filter((l) => l.length > 0)
+    .sort((a, b) => a.localeCompare(b))
+    .join('\n');
+}
+
+// Expectation logic (robust, long-term):
 // 1) If file contains:  # expect-exit: N  -> use N
-// 2) Else, if it contains "=> false" -> expect exit 2
-// 3) Else -> expect exit 0
+// 2) Else -> expect exit 0
+//
+// Rationale: Some examples include inference fuses ("=> false") as *guards*.
+// Those guards should not imply an expected non-zero exit unless they actually
+// fire. Tests that want a non-zero exit should declare it explicitly.
 function expectedExitCode(n3Text) {
   const m = n3Text.match(/^[ \t]*#[: ]*expect-exit:[ \t]*([0-9]+)\b/m);
   if (m) return parseInt(m[1], 10);
-  if (/=>\s*false\b/.test(n3Text)) return 2;
   return 0;
 }
 
@@ -154,6 +168,18 @@ function main() {
 
     const expectedRc = expectedExitCode(n3Text);
 
+    // Snapshot expected output before we potentially overwrite it in git worktree mode.
+    // This lets us compare content ignoring ordering, while still allowing the script
+    // to regenerate output/ files in-place when working from a repo checkout.
+    let expectedBeforeText = null;
+    if (IN_GIT && fs.existsSync(expectedPath)) {
+      try {
+        expectedBeforeText = fs.readFileSync(expectedPath, 'utf8');
+      } catch {
+        expectedBeforeText = null;
+      }
+    }
+
     // Decide where generated output goes
     let tmpDir = null;
     let generatedPath = expectedPath;
@@ -187,19 +213,15 @@ function main() {
 
     const ms = Date.now() - start;
 
-    // Compare output
+    // Compare output (order-insensitive)
     let diffOk = false;
-    if (IN_GIT) {
-      const d = run('git', ['diff', '--quiet', '--', relExpectedPosix], { cwd: examplesDir });
-      diffOk = d.status === 0;
-    } else {
-      if (hasGit()) {
-        const d = run('git', ['diff', '--no-index', '--quiet', expectedPath, generatedPath], { cwd: examplesDir });
-        diffOk = d.status === 0;
-      } else {
-        const d = run('diff', ['-u', expectedPath, generatedPath], { cwd: examplesDir });
-        diffOk = d.status === 0;
-      }
+    try {
+      const expectedText = IN_GIT ? expectedBeforeText : fs.readFileSync(expectedPath, 'utf8');
+      const generatedText = fs.readFileSync(generatedPath, 'utf8');
+      if (expectedText == null) throw new Error('missing expected output');
+      diffOk = normalizeForCompare(expectedText) === normalizeForCompare(generatedText);
+    } catch {
+      diffOk = false;
     }
 
     const rcOk = rc === expectedRc;
