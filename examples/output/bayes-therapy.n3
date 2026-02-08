@@ -1,0 +1,26 @@
+@prefix : <https://example.org/diag#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:Case :scores ("0.009281999999999999"^^xsd:decimal "0.008208000000000002"^^xsd:decimal "0.00012824999999999997"^^xsd:decimal "0.00156408"^^xsd:decimal) .
+:Case :evidenceTotal "0.019182329999999997"^^xsd:decimal .
+:Case :posteriors ("0.48388282341092037"^^xsd:decimal "0.4278937960091398"^^xsd:decimal "0.006685840562642807"^^xsd:decimal "0.08153754001729718"^^xsd:decimal) .
+:COVID19 :posterior "0.48388282341092037"^^xsd:decimal .
+:Influenza :posterior "0.4278937960091398"^^xsd:decimal .
+:AllergicRhinitis :posterior "0.006685840562642807"^^xsd:decimal .
+:BacterialPneumonia :posterior "0.08153754001729718"^^xsd:decimal .
+:Paxlovid :expectedSuccess "0.388517401170765"^^xsd:decimal .
+:Paxlovid :expectedAdverse 0.10 .
+:Paxlovid :utility "3.5851740117076503"^^xsd:decimal .
+:Oseltamivir :expectedSuccess "0.28514101258814756"^^xsd:decimal .
+:Oseltamivir :expectedAdverse 0.08 .
+:Oseltamivir :utility "2.6114101258814753"^^xsd:decimal .
+:Antihistamine :expectedSuccess "0.10026891936485298"^^xsd:decimal .
+:Antihistamine :expectedAdverse 0.03 .
+:Antihistamine :utility "0.9126891936485299"^^xsd:decimal .
+:Antibiotic :expectedSuccess "0.1109525797960936"^^xsd:decimal .
+:Antibiotic :expectedAdverse 0.07 .
+:Antibiotic :utility "0.8995257979609361"^^xsd:decimal .
+:SupportiveCare :expectedSuccess "0.2915119539701382"^^xsd:decimal .
+:SupportiveCare :expectedAdverse 0.01 .
+:SupportiveCare :utility "2.8851195397013822"^^xsd:decimal .
+:Case :recommendedTherapy :Paxlovid .

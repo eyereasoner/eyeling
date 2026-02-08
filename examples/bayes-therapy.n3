@@ -1,0 +1,264 @@
+# ============================================================================
+# Bayes Therapy Decision Support
+#
+# This example extends a tiny Bayesian diagnostic model (Disease -> Symptoms)
+# with a decision layer that scores therapies by expected utility.
+#
+# NOTE: All probabilities and weights are illustrative and not medical advice.
+# ============================================================================
+
+@prefix :     <https://example.org/diag#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+
+# -------------------------------------------
+# 1) MODEL: Disease -> Symptoms (Naive Bayes)
+# -------------------------------------------
+
+:COVID19            a :Disease; :prior 0.05 .
+:Influenza          a :Disease; :prior 0.03 .
+:AllergicRhinitis   a :Disease; :prior 0.10 .
+:BacterialPneumonia a :Disease; :prior 0.01 .
+
+# Conditional probabilities P(symptom | disease)
+:COVID19 :pGiven [ :symptom :Fever;        :p 0.70 ] .
+:COVID19 :pGiven [ :symptom :DryCough;     :p 0.65 ] .
+:COVID19 :pGiven [ :symptom :LossOfSmell;  :p 0.40 ] .
+:COVID19 :pGiven [ :symptom :Sneezing;     :p 0.15 ] .
+:COVID19 :pGiven [ :symptom :ShortBreath;  :p 0.20 ] .
+
+:Influenza :pGiven [ :symptom :Fever;        :p 0.80 ] .
+:Influenza :pGiven [ :symptom :DryCough;     :p 0.50 ] .
+:Influenza :pGiven [ :symptom :LossOfSmell;  :p 0.05 ] .
+:Influenza :pGiven [ :symptom :Sneezing;     :p 0.20 ] .
+:Influenza :pGiven [ :symptom :ShortBreath;  :p 0.10 ] .
+
+:AllergicRhinitis :pGiven [ :symptom :Fever;        :p 0.05 ] .
+:AllergicRhinitis :pGiven [ :symptom :DryCough;     :p 0.15 ] .
+:AllergicRhinitis :pGiven [ :symptom :LossOfSmell;  :p 0.10 ] .
+:AllergicRhinitis :pGiven [ :symptom :Sneezing;     :p 0.80 ] .
+:AllergicRhinitis :pGiven [ :symptom :ShortBreath;  :p 0.05 ] .
+
+:BacterialPneumonia :pGiven [ :symptom :Fever;        :p 0.70 ] .
+:BacterialPneumonia :pGiven [ :symptom :DryCough;     :p 0.60 ] .
+:BacterialPneumonia :pGiven [ :symptom :LossOfSmell;  :p 0.02 ] .
+:BacterialPneumonia :pGiven [ :symptom :Sneezing;     :p 0.05 ] .
+:BacterialPneumonia :pGiven [ :symptom :ShortBreath;  :p 0.60 ] .
+
+# ----------------------------------------------------------------------
+# 2) THERAPY MODEL: P(improve | disease, therapy) + P(adverse | therapy)
+# ----------------------------------------------------------------------
+
+:Paxlovid a :Therapy;
+  # aligned with :Case :diseases order
+  :successByDisease ( 0.75 0.05 0.02 0.05 );
+  :adverse 0.10 .
+
+:Oseltamivir a :Therapy;
+  :successByDisease ( 0.05 0.60 0.02 0.05 );
+  :adverse 0.08 .
+
+:Antihistamine a :Therapy;
+  :successByDisease ( 0.10 0.10 0.75 0.05 );
+  :adverse 0.03 .
+
+:Antibiotic a :Therapy;
+  :successByDisease ( 0.05 0.05 0.02 0.80 );
+  :adverse 0.07 .
+
+:SupportiveCare a :Therapy;
+  :successByDisease ( 0.30 0.30 0.25 0.20 );
+  :adverse 0.01 .
+
+:Model :benefitWeight 10; :harmWeight 3 .
+
+# -------------------------------------------
+# 3) CASE: evidence (symptoms present/absent)
+# -------------------------------------------
+
+:Case a :PatientCase;
+  :diseases ( :COVID19 :Influenza :AllergicRhinitis :BacterialPneumonia );
+  :therapies ( :Paxlovid :Oseltamivir :SupportiveCare :Antibiotic :Antihistamine );
+  :evidence (
+    [ :symptom :Fever;       :present true  ]
+    [ :symptom :DryCough;    :present true  ]
+    [ :symptom :LossOfSmell; :present false ]
+    [ :symptom :Sneezing;    :present false ]
+    [ :symptom :ShortBreath; :present false ]
+  ).
+
+# -----------------------------------------------------------
+# 4) GUARDS (inference fuses): probabilities must be in [0,1]
+# -----------------------------------------------------------
+
+{ ?d :prior ?p. ?p math:lessThan 0. }     => false.
+{ ?d :prior ?p. ?p math:greaterThan 1. }  => false.
+
+{ ?d :pGiven [ :p ?p ]. ?p math:lessThan 0. }     => false.
+{ ?d :pGiven [ :p ?p ]. ?p math:greaterThan 1. }  => false.
+
+{ ?t a :Therapy. ?t :adverse ?p. ?p math:lessThan 0. }     => false.
+{ ?t a :Therapy. ?t :adverse ?p. ?p math:greaterThan 1. }  => false.
+
+{ ?t a :Therapy. ?t :successByDisease ?ps.
+  ?ps list:iterate ( ?i ?p ).
+  ?p math:lessThan 0.
+} => false.
+
+{ ?t a :Therapy. ?t :successByDisease ?ps.
+  ?ps list:iterate ( ?i ?p ).
+  ?p math:greaterThan 1.
+} => false.
+
+# ------------------------------------------
+# 5) HELPERS (all written as backward rules)
+# ------------------------------------------
+
+# pairList(d, (x1 x2 ...)) -> ((d x1) (d x2) ...)
+{ ( ?d () ) :pairList () } <= true.
+
+{ ( ?d ?xs ) :pairList ?pairs } <= {
+  ?xs list:firstRest ( ?x ?rest ).
+  ( ?d ?rest ) :pairList ?tailPairs.
+  ?pairs list:firstRest ( ( ?d ?x ) ?tailPairs ).
+}.
+
+# factor(d, evidenceItem) -> probability factor for that symptom
+{ ( ?d ?ev ) :factor ?p } <= {
+  ?ev :symptom ?s.
+  ?ev :present true.
+  ?d :pGiven [ :symptom ?s; :p ?p ].
+}.
+
+{ ( ?d ?ev ) :factor ?q } <= {
+  ?ev :symptom ?s.
+  ?ev :present false.
+  ?d :pGiven [ :symptom ?s; :p ?p ].
+  ( 1 ?p ) math:difference ?q.
+}.
+
+# pairWithConst((x1 x2 ...), c) -> ((x1 c) (x2 c) ...)
+{ ( () ?c ) :pairWithConst () } <= true.
+
+{ ( ?xs ?c ) :pairWithConst ?pairs } <= {
+  ?xs list:firstRest ( ?x ?rest ).
+  ( ?rest ?c ) :pairWithConst ?tailPairs.
+  ?pairs list:firstRest ( ( ?x ?c ) ?tailPairs ).
+}.
+
+# zip((a1 a2 ...), (b1 b2 ...)) -> ((a1 b1) (a2 b2) ...)
+{ ( () () ) :zip () } <= true.
+
+{ ( ?as ?bs ) :zip ?pairs } <= {
+  ?as list:firstRest ( ?a ?arest ).
+  ?bs list:firstRest ( ?b ?brest ).
+  ( ?arest ?brest ) :zip ?tailPairs.
+  ?pairs list:firstRest ( ( ?a ?b ) ?tailPairs ).
+}.
+
+# Helpers for list:map
+{ ?pair :mul ?p }  <= { ?pair math:product ?p }.
+{ ?pair :quot2 ?q } <= { ?pair math:quotient ?q }.
+
+# ---------------------------------------------------------
+# 6) DIAGNOSIS: unnormalized scores + normalized posteriors
+# ---------------------------------------------------------
+
+# score(d) = prior(d) * Π_e factor(d,e)
+{ ?d :scoreFor ?score } <= {
+  ?d :prior ?prior.
+  :Case :evidence ?evs.
+  ( ?d ?evs ) :pairList ?pairs.
+  ( ?pairs :factor ) list:map ?factors.
+  ?factors math:product ?likelihood.
+  ( ?prior ?likelihood ) math:product ?score.
+}.
+
+# Compute the score list, total evidence, and posterior list once.
+{
+  :Case :diseases ?ds.
+  ( ?ds :scoreFor ) list:map ?scores.
+  ?scores math:sum ?total.
+
+  ( ?scores ?total ) :pairWithConst ?scorePairs.
+  ( ?scorePairs :quot2 ) list:map ?posteriors.
+} => {
+  :Case :scores ?scores;
+        :evidenceTotal ?total;
+        :posteriors ?posteriors.
+}.
+
+# Attach each disease posterior to the disease term (no blank nodes in output)
+{
+  :Case :diseases ?ds.
+  :Case :posteriors ?posts.
+
+  ?ds list:iterate ( ?i ?d ).
+  ( ?posts ?i ) list:memberAt ?p.
+} => {
+  ?d :posterior ?p.
+}.
+
+# -------------------------------------------------------
+# 7) THERAPY SCORING: expected success + expected utility
+# -------------------------------------------------------
+
+# expectedSuccess(t) = Σ_i post[i] * successByDisease[i]
+{
+  :Case :posteriors ?posts.
+  ?t a :Therapy.
+  ?t :successByDisease ?succ.
+
+  ( ?posts ?succ ) :zip ?pairs.
+  ( ?pairs :mul ) list:map ?terms.
+  ?terms math:sum ?expectedSuccess.
+
+  ?t :adverse ?adverse.
+  :Model :benefitWeight ?bw.
+  :Model :harmWeight ?hw.
+
+  ( ?bw ?expectedSuccess ) math:product ?benefit.
+  ( ?hw ?adverse ) math:product ?harmCost.
+  ( ?benefit ?harmCost ) math:difference ?utility.
+} => {
+  ?t :expectedSuccess ?expectedSuccess;
+     :expectedAdverse ?adverse;
+     :utility ?utility.
+}.
+
+# --------------------------------------------------------------
+# 8) RECOMMENDATION: pick max-utility therapy from the case list
+# --------------------------------------------------------------
+
+# betterOf(t1,t2) chooses t1 if utility(t1) >= utility(t2), else t2.
+{ ( ?t1 ?t2 ) :betterOf ?t1 } <= {
+  ?t1 :utility ?u1.
+  ?t2 :utility ?u2.
+  ?u1 math:notLessThan ?u2.
+}.
+{ ( ?t1 ?t2 ) :betterOf ?t2 } <= {
+  ?t1 :utility ?u1.
+  ?t2 :utility ?u2.
+  ?u1 math:lessThan ?u2.
+}.
+
+# bestTherapy((t)) = t
+{ ( ?ts ) :bestTherapy ?t } <= {
+  ?ts list:firstRest ( ?t () ).
+}.
+
+# bestTherapy((head rest...)) = betterOf(head, bestTherapy(rest))
+{ ( ?ts ) :bestTherapy ?best } <= {
+  ?ts list:firstRest ( ?head ?rest ).
+  ?rest list:firstRest ( ?_ ?__ ).  # ensure rest is non-empty
+  ( ?rest ) :bestTherapy ?bestRest.
+  ( ?head ?bestRest ) :betterOf ?best.
+}.
+
+# Emit a single recommendation for this case.
+{
+  :Case :therapies ?ts.
+  ( ?ts ) :bestTherapy ?best.
+} => {
+  :Case :recommendedTherapy ?best.
+}.
