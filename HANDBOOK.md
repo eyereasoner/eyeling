@@ -28,7 +28,7 @@
 - [Appendix A — Eyeling user notes](#app-a)
 - [Appendix B — Notation3: when facts can carry their own logic](#app-b)
 - [Appendix C — N3 beyond Prolog: logic that survives the open web](#app-c)
-- [Appendix D — Turning Dialogue into Durable Logic Artifacts](#app-d)
+- [Appendix D — LLM + Eyeling: A Repeatable Logic Toolchain](#app-d)
 
 ---
 
@@ -1983,23 +1983,91 @@ In that sense, Prolog is a superb engine for proving things _inside_ a chosen wo
 
 <a id="app-d"></a>
 
-## Appendix D — Turning Dialogue into Durable Logic Artifacts
+## Appendix D — LLM + Eyeling: A Repeatable Logic Toolchain
 
-**Natural language → N3 (portable logic program)**
-A user speaks in goals, stories, partial facts, and exceptions. An LLM acts like a *semantic compiler*: it translates that mess into a small, explicit N3 artifact—facts, rules, scoped assumptions, and “unknown/missing” placeholders instead of guesses. Because it’s N3, it can be stored, versioned, reviewed, and exchanged as a first-class web object.
+Eyeling is a deterministic N3 engine: given facts and rules, it derives consequences to a fixpoint using forward rules proved by a backward engine.
+That makes it a good “meaning boundary” for LLM-assisted workflows: the LLM can draft and refactor N3, but **Eyeling is what decides what follows**.
 
-**N3 → N3 (deterministic reasoning by Eyeling)**
-Eyeling then becomes the *meaning engine*. It takes the N3 program and deterministically derives what follows: closures, consequences, policy decisions, implied relationships, conflicts, and rule-driven enrichments. Crucially, the output is again N3—so results are not trapped in an opaque runtime, but remain portable data that can be shared, cached, or re-run elsewhere.
+A practical pattern is to treat the LLM as a **syntax-and-structure generator** and Eyeling as the **semantic validator**.
 
-**Derived N3 → insights (explainable natural language)**
-Raw closure is rarely what humans want. An LLM reads the derived graph (and any trace/proof annotations) and turns it into usable insight: “what changed”, “what is now implied”, “why this conclusion holds”, and “which parts depend on defaults (scoped NAF) versus explicit assertions.” It can also produce counterfactuals: “this would flip if you add X” or “this depends on the scope being closed for predicate P.”
+### 1) Constrain the LLM to output compilable N3
 
-**Insights → improved N3 (the refinement loop)**
-The loop is where it gets powerful. Explanations reveal gaps and over-general rules; the LLM (or a human) edits the N3 artifact—tightens premises, adds exceptions, clarifies scopes, marks closed-world islands, or requests missing facts—and Eyeling re-runs. Over time you don’t just get answers, you get a *better program*: a reusable, inspectable logic model of the domain.
+If the LLM is allowed to emit prose or “almost N3”, you’ll spend your time cleaning up. Instead, require:
 
-So the pipeline isn’t “LLM → answer”. It’s:
+* **Only N3** (no explanations in the artifact).
+* A fixed prefix set (or a required `@base`).
+* One artifact per file (facts + rules), optionally with a separate test file.
+* “No invention” rules for IRIs: new symbols must be declared or use a designated namespace.
 
-**natural language → portable meaning (N3) → deterministic closure (Eyeling) → explainable meaning (LLM) → portable meaning (N3) → …**
+This is less about prompt craft and more about creating a stable interface between a text generator and a compiler-like consumer.
 
-…turning one-off conversation into a durable, web-native artifact that can be reasoned over, audited, and evolved.
+### 2) Use Eyeling as the compile check and the semantic check
+
+Run Eyeling immediately after generation:
+
+* **Parse failures** → feed the error back to the LLM and request a corrected N3 file (same vocabulary, minimal diff).
+* **Runtime failures / fuses** → treat as a spec violation, not “the model being creative”.
+
+Eyeling explicitly supports **inference fuses**: a forward rule with head `false` is a hard failure.
+This is extremely useful as a guardrail when you want “never allow X” constraints to stop the run.
+
+Example fuse:
+
+```n3
+@prefix : <http://example/> .
+
+{ ?u :role :Admin.
+  ?u :disabled true.
+} => false.
+```
+
+If you don’t want “stop the world”, derive a `:Violation` fact instead, and keep going.
+
+### 3) Make the workflow test-driven (golden closures)
+
+The most robust way to keep LLM-generated logic plausible is to make it live under tests:
+
+* Keep tiny **fixtures** (facts) alongside the rules.
+* Run Eyeling to produce the **derived closure** (Eyeling can emit only newly derived forward facts, and can optionally include compact proof comments).
+* Compare against an expected output (“golden file”) in CI.
+
+This turns rule edits into a normal change-management loop: diffs are explicit, reviewable, and reproducible.
+
+### 4) Use proofs/traces as the input to the LLM, not the other way around
+
+If you want a natural-language explanation, don’t ask the model to “explain the rules from memory”. Instead:
+
+1. Run Eyeling with proof/trace enabled (Eyeling has explicit tracing hooks and proof-comment support in its output pipeline).
+2. Give the LLM the **derived triples + proof comments** and ask it to summarize:
+
+   * what was derived,
+   * which rule(s) fired,
+   * which premises mattered.
+
+This keeps explanations anchored to what Eyeling actually derived.
+
+### 5) The refinement loop: edits are N3 diffs, not “better prompting”
+
+When output looks wrong, the fix should be a change in the artifact:
+
+* tighten a premise,
+* split one rule into two,
+* add an exception rule,
+* introduce a new predicate to separate concepts,
+* add a fuse or a `:Violation` derivation,
+* add a test case that locks in the intended behavior.
+
+Then regenerate/rewrite **only the N3**, rerun Eyeling, and review the diff.
+
+### A prompt shape that tends to behave well
+
+A simple structure that keeps the LLM honest:
+
+* “Output **only** N3.”
+* “Use exactly these prefixes.”
+* “Do not introduce new IRIs outside `<base>#*`.”
+* “Include at least N minimal tests as facts in a separate block/file.”
+* “If something is unknown, emit a placeholder fact (`:needsFact`) rather than guessing.”
+
+The point isn’t that the LLM is “right”; it’s that **Eyeling makes the result checkable**, and the artifact becomes a maintainable program rather than a one-off generation.
 
