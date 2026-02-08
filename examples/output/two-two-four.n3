@@ -1,5 +1,6 @@
 @prefix : <http://example.org/#> .
 
+:puzzle :solution _:sk_0 .
 _:sk_0 :T 7 .
 _:sk_0 :W 3 .
 _:sk_0 :O 4 .
@@ -11,7 +12,7 @@ _:sk_0 :C2 0 .
 _:sk_0 :C3 1 .
 _:sk_0 :TWO 734 .
 _:sk_0 :FOUR 1468 .
-:puzzle :solution _:sk_0 .
+:puzzle :solution _:sk_1 .
 _:sk_1 :T 7 .
 _:sk_1 :W 6 .
 _:sk_1 :O 5 .
@@ -23,7 +24,7 @@ _:sk_1 :C2 1 .
 _:sk_1 :C3 1 .
 _:sk_1 :TWO 765 .
 _:sk_1 :FOUR 1530 .
-:puzzle :solution _:sk_1 .
+:puzzle :solution _:sk_2 .
 _:sk_2 :T 8 .
 _:sk_2 :W 3 .
 _:sk_2 :O 6 .
@@ -35,7 +36,7 @@ _:sk_2 :C2 0 .
 _:sk_2 :C3 1 .
 _:sk_2 :TWO 836 .
 _:sk_2 :FOUR 1672 .
-:puzzle :solution _:sk_2 .
+:puzzle :solution _:sk_3 .
 _:sk_3 :T 8 .
 _:sk_3 :W 4 .
 _:sk_3 :O 6 .
@@ -47,7 +48,7 @@ _:sk_3 :C2 0 .
 _:sk_3 :C3 1 .
 _:sk_3 :TWO 846 .
 _:sk_3 :FOUR 1692 .
-:puzzle :solution _:sk_3 .
+:puzzle :solution _:sk_4 .
 _:sk_4 :T 8 .
 _:sk_4 :W 6 .
 _:sk_4 :O 7 .
@@ -59,7 +60,7 @@ _:sk_4 :C2 1 .
 _:sk_4 :C3 1 .
 _:sk_4 :TWO 867 .
 _:sk_4 :FOUR 1734 .
-:puzzle :solution _:sk_4 .
+:puzzle :solution _:sk_5 .
 _:sk_5 :T 9 .
 _:sk_5 :W 2 .
 _:sk_5 :O 8 .
@@ -71,7 +72,7 @@ _:sk_5 :C2 0 .
 _:sk_5 :C3 1 .
 _:sk_5 :TWO 928 .
 _:sk_5 :FOUR 1856 .
-:puzzle :solution _:sk_5 .
+:puzzle :solution _:sk_6 .
 _:sk_6 :T 9 .
 _:sk_6 :W 3 .
 _:sk_6 :O 8 .
@@ -83,4 +84,3 @@ _:sk_6 :C2 0 .
 _:sk_6 :C3 1 .
 _:sk_6 :TWO 938 .
 _:sk_6 :FOUR 1876 .
-:puzzle :solution _:sk_6 .

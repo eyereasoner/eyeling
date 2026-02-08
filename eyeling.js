@@ -7785,7 +7785,15 @@ class Parser {
     this.pos = 0;
     this.prefixes = PrefixEnv.newDefault();
     this.blankCounter = 0;
+    // Helper triples that must be emitted *before* the triple that consumes them.
+    // Used primarily for N3 path expansion (e.g. :a :p/:q :b .).
     this.pendingTriples = [];
+
+    // Helper triples that should be emitted *after* the triple that references
+    // the described term (used for [...] blank-node / IRI property lists). This
+    // makes derived output read naturally, e.g. ':s :p _:b.' preceding
+    // '_:b :q :r.'
+    this.pendingTriplesAfter = [];
   }
 
   peek() {
@@ -7869,8 +7877,12 @@ class Parser {
             // we emit those; otherwise this statement contributes no triples.
             more = [];
             if (this.pendingTriples.length > 0) {
-              more = this.pendingTriples;
+              more.push(...this.pendingTriples);
               this.pendingTriples = [];
+            }
+            if (this.pendingTriplesAfter.length > 0) {
+              more.push(...this.pendingTriplesAfter);
+              this.pendingTriplesAfter = [];
             }
             this.next(); // consume '.'
           } else {
@@ -8108,6 +8120,7 @@ class Parser {
       }
 
       const subj = iriTerm;
+      const localTriples = [];
       while (true) {
         let pred;
         let invert = false;
@@ -8122,14 +8135,34 @@ class Parser {
           pred = this.parseTerm();
         }
 
-        const objs = [this.parseTerm()];
-        while (this.peek().typ === 'Comma') {
-          this.next();
-          objs.push(this.parseTerm());
+        // If a pathological predicate term produced post-triples, don't let them leak.
+        if (this.pendingTriplesAfter.length > 0) {
+          localTriples.push(...this.pendingTriplesAfter);
+          this.pendingTriplesAfter = [];
         }
 
-        for (const o of objs) {
-          this.pendingTriples.push(invert ? new Triple(o, pred, subj) : new Triple(subj, pred, o));
+        // Object list: o1, o2, ...  (capture post-triples per object)
+        const objs = [];
+        const readObj = () => {
+          const o = this.parseTerm();
+          const post = this.pendingTriplesAfter;
+          this.pendingTriplesAfter = [];
+          objs.push({ term: o, postTriples: post });
+        };
+        readObj();
+        while (this.peek().typ === 'Comma') {
+          this.next();
+          readObj();
+        }
+
+        for (const { term: o, postTriples } of objs) {
+          // Path helper triples must come before the triple that consumes the path result.
+          if (this.pendingTriples.length > 0) {
+            localTriples.push(...this.pendingTriples);
+            this.pendingTriples = [];
+          }
+          localTriples.push(invert ? new Triple(o, pred, subj) : new Triple(subj, pred, o));
+          if (postTriples && postTriples.length) localTriples.push(...postTriples);
         }
 
         if (this.peek().typ === 'Semicolon') {
@@ -8144,6 +8177,9 @@ class Parser {
         this.fail(`Expected ']' at end of IRI property list, got ${this.peek().toString()}`);
       }
       this.next();
+
+      // Defer the embedded description until after the triple that references the IRI.
+      if (localTriples.length) this.pendingTriplesAfter.push(...localTriples);
       return iriTerm;
     }
 
@@ -8151,6 +8187,8 @@ class Parser {
     this.blankCounter += 1;
     const id = `_:b${this.blankCounter}`;
     const subj = new Blank(id);
+
+    const localTriples = [];
 
     while (true) {
       // Verb (can also be 'a')
@@ -8167,15 +8205,34 @@ class Parser {
         pred = this.parseTerm();
       }
 
-      // Object list: o1, o2, ...
-      const objs = [this.parseTerm()];
-      while (this.peek().typ === 'Comma') {
-        this.next();
-        objs.push(this.parseTerm());
+      // If a pathological predicate term produced post-triples, don't let them leak.
+      if (this.pendingTriplesAfter.length > 0) {
+        localTriples.push(...this.pendingTriplesAfter);
+        this.pendingTriplesAfter = [];
       }
 
-      for (const o of objs) {
-        this.pendingTriples.push(invert ? new Triple(o, pred, subj) : new Triple(subj, pred, o));
+      // Object list: o1, o2, ...  (capture post-triples per object)
+      const objs = [];
+      const readObj = () => {
+        const o = this.parseTerm();
+        const post = this.pendingTriplesAfter;
+        this.pendingTriplesAfter = [];
+        objs.push({ term: o, postTriples: post });
+      };
+      readObj();
+      while (this.peek().typ === 'Comma') {
+        this.next();
+        readObj();
+      }
+
+      for (const { term: o, postTriples } of objs) {
+        // Path helper triples must come before the triple that consumes the path result.
+        if (this.pendingTriples.length > 0) {
+          localTriples.push(...this.pendingTriples);
+          this.pendingTriples = [];
+        }
+        localTriples.push(invert ? new Triple(o, pred, subj) : new Triple(subj, pred, o));
+        if (postTriples && postTriples.length) localTriples.push(...postTriples);
       }
 
       if (this.peek().typ === 'Semicolon') {
@@ -8192,6 +8249,8 @@ class Parser {
       this.fail(`Expected ']' at end of blank node property list, got ${this.peek().toString()}`);
     }
 
+    // Defer the blank-node description until after the triple that references it.
+    if (localTriples.length) this.pendingTriplesAfter.push(...localTriples);
     return new Blank(id);
   }
 
@@ -8269,6 +8328,10 @@ class Parser {
             triples.push(...this.pendingTriples);
             this.pendingTriples = [];
           }
+          if (this.pendingTriplesAfter.length > 0) {
+            triples.push(...this.pendingTriplesAfter);
+            this.pendingTriplesAfter = [];
+          }
           if (this.peek().typ === 'Dot') this.next();
           continue;
         }
@@ -8289,10 +8352,14 @@ class Parser {
   parsePredicateObjectList(subject) {
     const out = [];
 
-    // If the SUBJECT was a path, emit its helper triples first
+    // If the SUBJECT was a path or property-list, emit its helper triples first.
     if (this.pendingTriples.length > 0) {
       out.push(...this.pendingTriples);
       this.pendingTriples = [];
+    }
+    if (this.pendingTriplesAfter.length > 0) {
+      out.push(...this.pendingTriplesAfter);
+      this.pendingTriplesAfter = [];
     }
 
     while (true) {
@@ -8332,8 +8399,15 @@ class Parser {
         this.pendingTriples = [];
       }
 
-      for (const o of objects) {
+      // If VERB produced a property list (rare), don't let it leak.
+      if (this.pendingTriplesAfter.length > 0) {
+        out.push(...this.pendingTriplesAfter);
+        this.pendingTriplesAfter = [];
+      }
+
+      for (const { term: o, postTriples } of objects) {
         out.push(new Triple(invert ? o : subject, verb, invert ? subject : o));
+        if (postTriples && postTriples.length) out.push(...postTriples);
       }
 
       if (this.peek().typ === 'Semicolon') {
@@ -8348,10 +8422,22 @@ class Parser {
   }
 
   parseObjectList() {
-    const objs = [this.parseTerm()];
+    // Capture any trailing property-list triples produced while parsing each
+    // object term so we can emit them *after* the triple that references the
+    // term. (See pendingTriplesAfter in the constructor.)
+
+    const objs = [];
+    const readObj = () => {
+      const o = this.parseTerm();
+      const post = this.pendingTriplesAfter;
+      this.pendingTriplesAfter = [];
+      objs.push({ term: o, postTriples: post });
+    };
+
+    readObj();
     while (this.peek().typ === 'Comma') {
       this.next();
-      objs.push(this.parseTerm());
+      readObj();
     }
     return objs;
   }

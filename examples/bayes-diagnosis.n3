@@ -1,0 +1,143 @@
+# =================================================================================
+# Bayes Diagnosis
+#
+# This N3 program encodes a small Bayesian diagnostic model and computes posteriors
+# using Eyeling’s deterministic inference + builtins (lists + arithmetic).
+#
+# NOTE: Probability values here are illustrative only and not medical advice.
+# =================================================================================
+
+@prefix :     <https://example.org/diag#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+
+# -------------------------------------------
+# 1) MODEL (a simple BN: Disease -> Symptoms)
+# -------------------------------------------
+
+:COVID19            a :Disease; :prior 0.05 .
+:Influenza          a :Disease; :prior 0.03 .
+:AllergicRhinitis   a :Disease; :prior 0.10 .
+:BacterialPneumonia a :Disease; :prior 0.01 .
+
+# Conditional probabilities P(symptom | disease)
+# Stored as:  :Disease :pGiven [ :symptom :S ; :p 0.xx ] .
+
+:COVID19 :pGiven [ :symptom :Fever;        :p 0.70 ] .
+:COVID19 :pGiven [ :symptom :DryCough;     :p 0.65 ] .
+:COVID19 :pGiven [ :symptom :LossOfSmell;  :p 0.40 ] .
+:COVID19 :pGiven [ :symptom :Sneezing;     :p 0.15 ] .
+:COVID19 :pGiven [ :symptom :ShortBreath;  :p 0.20 ] .
+
+:Influenza :pGiven [ :symptom :Fever;        :p 0.80 ] .
+:Influenza :pGiven [ :symptom :DryCough;     :p 0.50 ] .
+:Influenza :pGiven [ :symptom :LossOfSmell;  :p 0.05 ] .
+:Influenza :pGiven [ :symptom :Sneezing;     :p 0.20 ] .
+:Influenza :pGiven [ :symptom :ShortBreath;  :p 0.10 ] .
+
+:AllergicRhinitis :pGiven [ :symptom :Fever;        :p 0.05 ] .
+:AllergicRhinitis :pGiven [ :symptom :DryCough;     :p 0.15 ] .
+:AllergicRhinitis :pGiven [ :symptom :LossOfSmell;  :p 0.10 ] .
+:AllergicRhinitis :pGiven [ :symptom :Sneezing;     :p 0.80 ] .
+:AllergicRhinitis :pGiven [ :symptom :ShortBreath;  :p 0.05 ] .
+
+:BacterialPneumonia :pGiven [ :symptom :Fever;        :p 0.70 ] .
+:BacterialPneumonia :pGiven [ :symptom :DryCough;     :p 0.60 ] .
+:BacterialPneumonia :pGiven [ :symptom :LossOfSmell;  :p 0.02 ] .
+:BacterialPneumonia :pGiven [ :symptom :Sneezing;     :p 0.05 ] .
+:BacterialPneumonia :pGiven [ :symptom :ShortBreath;  :p 0.60 ] .
+
+# ----------------------------------------------
+# 2) CASE (symptom evidence: present true/false)
+# ----------------------------------------------
+
+:Case a :PatientCase;
+  :diseases ( :COVID19 :Influenza :AllergicRhinitis :BacterialPneumonia );
+  :evidence (
+    [ :symptom :Fever;       :present true  ]
+    [ :symptom :DryCough;    :present true  ]
+    [ :symptom :LossOfSmell; :present true  ]
+    [ :symptom :Sneezing;    :present false ]
+    [ :symptom :ShortBreath; :present true  ]
+  ).
+
+# -------------------------------------------------------------
+# 3) GUARDS (inference fuses) — fail hard if probs out of [0,1]
+# -------------------------------------------------------------
+
+{ ?d :prior ?p. ?p math:lessThan 0. }     => false.
+{ ?d :prior ?p. ?p math:greaterThan 1. }  => false.
+
+{ ?d :pGiven [ :p ?p ]. ?p math:lessThan 0. }     => false.
+{ ?d :pGiven [ :p ?p ]. ?p math:greaterThan 1. }  => false.
+
+# ----------
+# 4) HELPERS
+# ----------
+
+# pairList(d, (x1 x2 ...)) -> ((d x1) (d x2) ...)
+{ ( ?d () ) :pairList () } <= true.
+
+{ ( ?d ?xs ) :pairList ?pairs } <= {
+  ?xs list:firstRest ( ?x ?rest ).
+  ( ?d ?rest ) :pairList ?tailPairs.
+  ?pairs list:firstRest ( ( ?d ?x ) ?tailPairs ).
+}.
+
+# factor for one evidence item:
+#   if present  -> P(symptom | disease)
+#   if absent   -> 1 - P(symptom | disease)
+{ ( ?d ?ev ) :factor ?p } <= {
+  ?ev :symptom ?s.
+  ?ev :present true.
+  ?d :pGiven [ :symptom ?s; :p ?p ].
+}.
+
+{ ( ?d ?ev ) :factor ?q } <= {
+  ?ev :symptom ?s.
+  ?ev :present false.
+  ?d :pGiven [ :symptom ?s; :p ?p ].
+  ( 1 ?p ) math:difference ?q.
+}.
+
+# unnormalized score(d) = prior(d) * Π_e factor(d,e)
+{ ?d :scoreFor ?score } <= {
+  ?d :prior ?prior.
+  :Case :evidence ?evs.
+  ( ?d ?evs ) :pairList ?pairs.
+  ( ?pairs :factor ) list:map ?factors.
+  ?factors math:product ?likelihood.
+  ( ?prior ?likelihood ) math:product ?score.
+}.
+
+# --------------------------------------------------------
+# 5) POSTERIOR: normalize across diseases in the case list
+# --------------------------------------------------------
+
+# Compute the score list and total once.
+{
+  :Case :diseases ?ds.
+  ( ?ds :scoreFor ) list:map ?scores.
+  ?scores math:sum ?total.
+} => {
+  :Case :scores ?scores;
+        :evidenceTotal ?total.
+}.
+
+# Emit one result node per disease: posterior = score / total
+{
+  :Case :diseases ?ds.
+  :Case :scores ?scores.
+  :Case :evidenceTotal ?total.
+
+  ?ds list:iterate ( ?i ?d ).
+  ( ?scores ?i ) list:memberAt ?score.
+  ( ?score ?total ) math:quotient ?post.
+} => {
+  :Case :result [
+    :disease ?d;
+    :unnormalized ?score;
+    :posterior ?post
+  ].
+}.
+

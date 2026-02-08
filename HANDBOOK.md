@@ -1985,8 +1985,7 @@ In that sense, Prolog is a superb engine for proving things _inside_ a chosen wo
 
 ## Appendix D — LLM + Eyeling: A Repeatable Logic Toolchain
 
-Eyeling is a deterministic N3 engine: given facts and rules, it derives consequences to a fixpoint using forward rules proved by a backward engine.
-That makes it a good “meaning boundary” for LLM-assisted workflows: the LLM can draft and refactor N3, but **Eyeling is what decides what follows**.
+Eyeling is a deterministic N3 engine: given facts and rules, it derives consequences to a fixpoint using forward rules proved by a backward engine. That makes it a good “meaning boundary” for LLM-assisted workflows: the LLM can draft and refactor N3, but **Eyeling is what decides what follows**.
 
 A practical pattern is to treat the LLM as a **syntax-and-structure generator** and Eyeling as the **semantic validator**.
 
@@ -1994,10 +1993,10 @@ A practical pattern is to treat the LLM as a **syntax-and-structure generator** 
 
 If the LLM is allowed to emit prose or “almost N3”, you’ll spend your time cleaning up. Instead, require:
 
-* **Only N3** (no explanations in the artifact).
-* A fixed prefix set (or a required `@base`).
-* One artifact per file (facts + rules), optionally with a separate test file.
-* “No invention” rules for IRIs: new symbols must be declared or use a designated namespace.
+- **Only N3** (no explanations in the artifact).
+- A fixed prefix set (or a required `@base`).
+- One artifact per file (facts + rules), optionally with a separate test file.
+- “No invention” rules for IRIs: new symbols must be declared or use a designated namespace.
 
 This is less about prompt craft and more about creating a stable interface between a text generator and a compiler-like consumer.
 
@@ -2005,11 +2004,10 @@ This is less about prompt craft and more about creating a stable interface betwe
 
 Run Eyeling immediately after generation:
 
-* **Parse failures** → feed the error back to the LLM and request a corrected N3 file (same vocabulary, minimal diff).
-* **Runtime failures / fuses** → treat as a spec violation, not “the model being creative”.
+- **Parse failures** → feed the error back to the LLM and request a corrected N3 file (same vocabulary, minimal diff).
+- **Runtime failures / fuses** → treat as a spec violation, not “the model being creative”.
 
-Eyeling explicitly supports **inference fuses**: a forward rule with head `false` is a hard failure.
-This is extremely useful as a guardrail when you want “never allow X” constraints to stop the run.
+Eyeling explicitly supports **inference fuses**: a forward rule with head `false` is a hard failure. This is extremely useful as a guardrail when you want “never allow X” constraints to stop the run.
 
 Example fuse:
 
@@ -2027,9 +2025,9 @@ If you don’t want “stop the world”, derive a `:Violation` fact instead, an
 
 The most robust way to keep LLM-generated logic plausible is to make it live under tests:
 
-* Keep tiny **fixtures** (facts) alongside the rules.
-* Run Eyeling to produce the **derived closure** (Eyeling can emit only newly derived forward facts, and can optionally include compact proof comments).
-* Compare against an expected output (“golden file”) in CI.
+- Keep tiny **fixtures** (facts) alongside the rules.
+- Run Eyeling to produce the **derived closure** (Eyeling can emit only newly derived forward facts, and can optionally include compact proof comments).
+- Compare against an expected output (“golden file”) in CI.
 
 This turns rule edits into a normal change-management loop: diffs are explicit, reviewable, and reproducible.
 
@@ -2039,10 +2037,9 @@ If you want a natural-language explanation, don’t ask the model to “explain 
 
 1. Run Eyeling with proof/trace enabled (Eyeling has explicit tracing hooks and proof-comment support in its output pipeline).
 2. Give the LLM the **derived triples + proof comments** and ask it to summarize:
-
-   * what was derived,
-   * which rule(s) fired,
-   * which premises mattered.
+   - what was derived,
+   - which rule(s) fired,
+   - which premises mattered.
 
 This keeps explanations anchored to what Eyeling actually derived.
 
@@ -2050,12 +2047,12 @@ This keeps explanations anchored to what Eyeling actually derived.
 
 When output looks wrong, the fix should be a change in the artifact:
 
-* tighten a premise,
-* split one rule into two,
-* add an exception rule,
-* introduce a new predicate to separate concepts,
-* add a fuse or a `:Violation` derivation,
-* add a test case that locks in the intended behavior.
+- tighten a premise,
+- split one rule into two,
+- add an exception rule,
+- introduce a new predicate to separate concepts,
+- add a fuse or a `:Violation` derivation,
+- add a test case that locks in the intended behavior.
 
 Then regenerate/rewrite **only the N3**, rerun Eyeling, and review the diff.
 
@@ -2063,11 +2060,10 @@ Then regenerate/rewrite **only the N3**, rerun Eyeling, and review the diff.
 
 A simple structure that keeps the LLM honest:
 
-* “Output **only** N3.”
-* “Use exactly these prefixes.”
-* “Do not introduce new IRIs outside `<base>#*`.”
-* “Include at least N minimal tests as facts in a separate block/file.”
-* “If something is unknown, emit a placeholder fact (`:needsFact`) rather than guessing.”
+- “Output **only** N3.”
+- “Use exactly these prefixes.”
+- “Do not introduce new IRIs outside `<base>#*`.”
+- “Include at least N minimal tests as facts in a separate block/file.”
+- “If something is unknown, emit a placeholder fact (`:needsFact`) rather than guessing.”
 
 The point isn’t that the LLM is “right”; it’s that **Eyeling makes the result checkable**, and the artifact becomes a maintainable program rather than a one-off generation.
-

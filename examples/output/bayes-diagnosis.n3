@@ -1,0 +1,21 @@
+@prefix : <https://example.org/diag#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:Case :scores ("0.0015470000000000002"^^xsd:decimal "0.000048000000000000015"^^xsd:decimal "7.499999999999999e-7"^^xsd:decimal "0.000047879999999999996"^^xsd:decimal) .
+:Case :evidenceTotal "0.0016436300000000003"^^xsd:decimal .
+:Case :result _:sk_0 .
+_:sk_0 :disease :COVID19 .
+_:sk_0 :unnormalized "0.0015470000000000002"^^xsd:decimal .
+_:sk_0 :posterior "0.9412093962753174"^^xsd:decimal .
+:Case :result _:sk_1 .
+_:sk_1 :disease :Influenza .
+_:sk_1 :unnormalized "0.000048000000000000015"^^xsd:decimal .
+_:sk_1 :posterior "0.029203652890249024"^^xsd:decimal .
+:Case :result _:sk_2 .
+_:sk_2 :disease :AllergicRhinitis .
+_:sk_2 :unnormalized "7.499999999999999e-7"^^xsd:decimal .
+_:sk_2 :posterior "0.00045630707641014084"^^xsd:decimal .
+:Case :result _:sk_3 .
+_:sk_3 :disease :BacterialPneumonia .
+_:sk_3 :unnormalized "0.000047879999999999996"^^xsd:decimal .
+_:sk_3 :posterior "0.029130643758023392"^^xsd:decimal .
