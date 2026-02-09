@@ -1,0 +1,117 @@
+# ==================
+# Collatz conjecture
+# ==================
+#
+# Collatz iteration:
+#   - if n is even: n ↦ n/2
+#   - if n is odd : n ↦ 3n + 1
+#
+# The conjecture states that starting from any positive integer n,
+# repeated application of the rule eventually reaches 1.
+#
+# This N3 program:
+#   1) enumerates test inputs N = 1000, 999, ..., 1 via a backward :repeat relation
+#   2) computes the full Collatz trajectory for each N as an RDF list
+#   3) materializes only the final results as  :collatzTrajectory  triples
+#
+# See https://en.wikipedia.org/wiki/Collatz_conjecture
+
+@prefix :     <http://example.org/collatz#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+
+# -----------------------------------------
+# Query / materialization of the test suite
+# -----------------------------------------
+#
+# Generate N in {1000..1} and ask the backward-defined :collatz predicate
+# for the full trajectory list ?M.
+#
+# Note: we derive N as (1000 - N0) so that N0 ranges over 0..999.
+# This keeps :repeat as a generic “0..N-1” generator.
+#
+# Output predicate is renamed to :collatzTrajectory to keep results separate
+# from the intensional (backward) definition of :collatz.
+{
+  1000 :repeat ?N0 .
+  (1000 ?N0) math:difference ?N .
+  ?N :collatz ?M .
+}
+=>
+{
+  ?N :collatzTrajectory ?M .
+} .
+
+# ------------------------
+# Backward range generator
+# ------------------------
+#
+# ?N :repeat ?I  enumerates all integers I in the half-open interval:
+#   I ∈ [0 .. N-1]
+
+# Base case: repeat(1) = {0}
+{ ?N :repeat 0 }
+<=
+{ ?N math:equalTo 1. } .
+
+# For N>1, also include the last value (N-1)
+{ ?N :repeat ?I }
+<=
+{
+  ?N math:greaterThan 1.
+  (?N 1) math:difference ?I.     # I = N - 1
+} .
+
+# And for N>1, inherit everything from repeat(N-1)
+# (this is the recursive “rest of the range”)
+{ ?N :repeat ?I }
+<=
+{
+  ?N math:greaterThan 1.
+  (?N 1) math:difference ?N1.    # N1 = N - 1
+  ?N1 :repeat ?I.
+} .
+
+# -------------------------
+# Backward Collatz relation
+# -------------------------
+#
+# ?N0 :collatz ?M  relates a start value ?N0 to its full Collatz trajectory ?M.
+# The trajectory is represented as an RDF list:
+#   - for N0=1: (1)
+#   - for N0>1: (N0 ... 1)
+#
+# The recursion is guarded with “N0 > 1” so the base case terminates cleanly.
+
+# Base case: 1 terminates immediately
+{ ?N0 :collatz (1) }
+<=
+{ ?N0 math:equalTo 1. } .
+
+# Even step: N0 > 1 and N0 mod 2 = 0  =>  N1 = N0/2
+# The resulting list is constructed as: (N0) :: collatz(N1)
+{ ?N0 :collatz ?M }
+<=
+{
+  ?N0 math:greaterThan 1.
+  (?N0 2) math:remainder 0.
+  (?N0 2) math:integerQuotient ?N1.   # N1 = floor(N0/2) (safe because even)
+
+  ?N1 :collatz ?J.
+  ?M list:firstRest (?N0 ?J).         # M = [N0 | J]
+} .
+
+# Odd step: N0 > 1 and N0 mod 2 = 1  =>  N1 = 3*N0 + 1
+# Again: (N0) :: collatz(N1)
+{ ?N0 :collatz ?M }
+<=
+{
+  ?N0 math:greaterThan 1.
+  (?N0 2) math:remainder 1.
+  (3 ?N0) math:product ?T.
+  (?T 1) math:sum ?N1.                # N1 = 3*N0 + 1
+
+  ?N1 :collatz ?J.
+  ?M list:firstRest (?N0 ?J).         # M = [N0 | J]
+} .
+
