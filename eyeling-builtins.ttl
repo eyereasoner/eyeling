@@ -77,13 +77,13 @@ math:notGreaterThan a ex:Builtin ; ex:kind ex:Test;
 # --- math: arithmetic / numeric functions ----------------------------
 
 math:sum a ex:Builtin ; ex:kind ex:Function ;
-  rdfs:comment "Sum of a list of 2+ numeric terms. Binds/unifies object with the total (integer mode uses BigInt when possible)." .
+  rdfs:comment "Sum of a list of numeric terms. Binds/unifies object with the total (integer mode uses BigInt when possible). Also supports 2-element timestamp arithmetic: (xsd:dateTime xsd:duration) or (xsd:dateTime seconds) (and the commuted forms) -> xsd:dateTime." .
 
 math:product a ex:Builtin ; ex:kind ex:Function ;
-  rdfs:comment "Product of a list of 2+ numeric terms. Binds/unifies object with the product (integer mode uses BigInt when possible)." .
+  rdfs:comment "Product of a list of numeric terms. Binds/unifies object with the product (integer mode uses BigInt when possible)." .
 
 math:difference a ex:Builtin ; ex:kind ex:Function ;
-  rdfs:comment "Difference of a 2-element list (a b). Supports datetime-datetime -> duration; datetime-duration -> datetime; integer BigInt; otherwise numeric a-b." .
+  rdfs:comment "Difference of a 2-element list (a b). Supports xsd:dateTime-xsd:dateTime -> xsd:duration (normalized to PT...S); xsd:dateTime-(xsd:duration|seconds) -> xsd:dateTime; integer BigInt; otherwise numeric a-b." .
 
 math:quotient a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Quotient of a 2-element list (a b). Binds/unifies object with a/b (guards division by zero and non-finite results)." .

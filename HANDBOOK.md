@@ -893,6 +893,12 @@ These are “function-like” relations where the subject is usually a list and 
 - Computes the numeric sum.
 - Chooses an output datatype based on the “widest” numeric datatype seen among inputs and (optionally) the object position; integers stay integers unless the result is non-integer.
 
+Eyeling also supports a small, EYE-style convenience for timestamp arithmetic:
+
+- **DateTime plus duration/seconds**: `(dateTime durationOrSeconds) math:sum dateTime`
+  - `xsd:duration` is interpreted as seconds (same model as `math:difference`).
+  - Output is a normalized `xsd:dateTime` in UTC lexical form (`...Z`).
+
 #### `math:product`
 
 **Shape:** `( $x1 $x2 ... ) math:product $total`
@@ -911,9 +917,10 @@ Eyeling supports:
 
 1. **Numeric subtraction**: `c = a - b`.
 2. **DateTime difference**: `(dateTime1 dateTime2) math:difference duration`
-   - Produces an `xsd:duration` in whole days (internally computed via seconds then formatted).
+   - Produces an **`xsd:duration`** in a seconds-only lexical form such as `"PT900S"^^xsd:duration`.
+   - This avoids ambiguity around month/year day-length and still plays well with `math:lessThan`, `math:greaterThan`, etc. because Eyeling's numeric comparison builtins treat `xsd:duration` as seconds.
 
-3. **DateTime minus duration**: `(dateTime duration) math:difference dateTime`
+3. **DateTime minus duration**: `(dateTime durationOrSeconds) math:difference dateTime`
    - Subtracts a duration from a dateTime and yields a new dateTime.
 
 If the types don’t fit any supported case, the builtin fails.
@@ -1963,21 +1970,19 @@ In that sense, N3 is less a bid to make the web “smarter” than a bid to make
 
 <a id="app-c"></a>
 
-## Appendix C — N3 beyond Prolog: logic that survives the open web
+## Appendix C — N3 beyond Prolog: logic for RDF-style graphs
 
-At first glance, an N3 rule set can feel familiar if you’ve used Prolog: variables, unification, and rules that read like “if this pattern holds, then that pattern follows.” But N3 is not just “logic programming with a different syntax.” It is logic shaped for a different environment: not a single program with a single database, but a world of distributed graphs that can be published, merged, and cited across boundaries.
+Notation3 (N3) rule sets often look similar to Prolog at the surface: they use variables, unification, and implication-style rules (“if these patterns match, then these patterns follow”). N3 is typically used in a different setting, though: instead of a single program operating over a single local database, N3 rules and data are commonly written as documents that can be published, shared, merged, and referenced across systems.
 
-That change of environment forces a change in what “beyond Prolog” even means. It is less about being more powerful in the abstract, and more about being _more portable as meaning_ — logic that stays connected when it moves between documents, vocabularies, and authors.
+In practice, that setting is reflected in several common features of N3-style rule writing:
 
-Several design moves push N3 into that web-native space:
+- **Identifiers are IRIs.** Terms are usually global identifiers rather than local symbols, which supports linking across datasets.
+- **Input and output are graphs.** Rules consume graph patterns and produce additional triples, so the result of inference can be represented in the same form as the input data.
+- **Quoted graphs allow statements-as-data.** N3 can treat a graph (a set of triples) as a term, which makes it possible to represent and reason about assertions (e.g., “this source says …” or “this formula implies …”) as data.
+- **Rules can be distributed as text artifacts.** Rules can live alongside data, be versioned, and be reused without requiring an external host language to “carry” the meaning.
+- **Built-ins cover common computations.** Many N3 workflows rely on built-ins for operations such as string handling, list processing, comparisons, and related utilities; some workflows also use IRIs as pointers to retrievable content.
 
-- **Global identity is the default.** Names are IRIs. A rule does not merely compute with local symbols; it operates over identifiers meant to be shared across datasets.
-- **Graphs are the unit of exchange.** The input is a graph; the output is a graph. Inference produces new triples rather than hidden internal state, so results can travel the same way the facts do.
-- **Statements can be treated as data.** Quoted graphs let you talk _about_ assertions: claims, policies, provenance, “this source says …,” “this formula implies …,” and other meta-level structure that is awkward in a plain predicate database.
-- **Rules can be publishable artifacts.** Rules can live alongside data as text, be versioned, reviewed, and reused — the “meaning” is not forced back into an external codebase.
-- **Web-like computation can be pulled into rule bodies.** Built-ins make room for the small computations that real integration needs (strings, lists, comparisons), and some N3 workflows even treat IRIs as pointers to more knowledge.
-
-In that sense, Prolog is a superb engine for proving things _inside_ a chosen world. N3 is a way to write rules so they keep working _across_ worlds: across documents, across graph boundaries, and across the open-ended growth of linked data. When an engine like Eyeling solves rule bodies with a Prolog-like prover but still saturates forward consequences, it’s exactly this bridge: Prolog-style execution serving a web-scale, graph-first notion of meaning.
+Engines can combine execution styles in different ways. One common pattern is to use a Prolog-like backward-chaining prover to satisfy rule bodies, while still using forward chaining to add the instantiated conclusions to the fact set until no new facts are produced.
 
 ---
 
