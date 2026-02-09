@@ -1972,7 +1972,7 @@ In that sense, N3 is less a bid to make the web “smarter” than a bid to make
 
 ## Appendix C — N3 beyond Prolog: logic for RDF-style graphs
 
-Notation3 (N3) rule sets often look similar to Prolog at the surface: they use variables, unification, and implication-style rules (“if these patterns match, then these patterns follow”). N3 is typically used in a different setting, though: instead of a single program operating over a single local database, N3 rules and data are commonly written as documents that can be published, shared, merged, and referenced across systems.
+Notation3 (N3) rule sets often look similar to Prolog at the surface: they use variables, unification, and implication-style rules (“if these patterns match, then these patterns follow”). N3 is typically used in a different setting: instead of a single program operating over a single local database, N3 rules and data are commonly written as documents that can be published, shared, merged, and referenced across systems.
 
 In practice, that setting is reflected in several common features of N3-style rule writing:
 
