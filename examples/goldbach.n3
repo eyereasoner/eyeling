@@ -1,0 +1,117 @@
+# ======================================
+# Goldbach conjecture (bounded checker)
+# ======================================
+# Strong (even) Goldbach:
+#   Every even integer E > 2 can be written as E = P + Q with P,Q prime.
+#
+# Performance notes (Eyeling):
+#   - Avoid forward "successor" rules that generate 0..N step-by-step across many
+#     saturation passes. Eyeling re-runs forward rules until fixpoint.
+#   - Use a backward range predicate (:repeat) so enumeration happens inside one
+#     backward proof search.
+#   - Cache primes as facts (:isPrime true) once; then Goldbach checking is cheap.
+
+@prefix :      <http://example.org/goldbach#> .
+@prefix math:  <http://www.w3.org/2000/10/swap/math#> .
+@prefix log:   <http://www.w3.org/2000/10/swap/log#> .
+@prefix string:<http://www.w3.org/2000/10/swap/string#> .
+
+:cfg :maxEven 1000 .
+
+# -------------------------------------------------
+# Backward range: ?N :repeat ?I gives I in [0..N-1]
+# -------------------------------------------------
+
+{ ?N :repeat 0 }
+<=
+{ ?N math:equalTo 1 } .
+
+{ ?N :repeat ?I }
+<=
+{
+  ?N math:greaterThan 1.
+  (?N 1) math:difference ?N1.
+  ?N1 :repeat ?I.
+} .
+
+{ ?N :repeat ?I }
+<=
+{
+  ?N math:greaterThan 1.
+  (?N 1) math:difference ?I.
+} .
+
+# --------------------------------------------
+# Backward primality (trial division by odd D)
+# --------------------------------------------
+
+{ 2 :prime true } <= { true } .
+
+{ ?N :prime true }
+<=
+{
+  ?N math:greaterThan 2.
+  (?N 2) math:remainder 1.
+  (?N 3) :primeTrial true.
+} .
+
+{ (?N ?D) :primeTrial true }
+<=
+{
+  (?D ?D) math:product ?DD.
+  ?DD math:greaterThan ?N.
+} .
+
+{ (?N ?D) :primeTrial true }
+<=
+{
+  (?D ?D) math:product ?DD.
+  ?DD math:notGreaterThan ?N.
+
+  (?N ?D) math:remainder ?R.
+  ?R math:notEqualTo 0.
+
+  (?D 2) math:sum ?D2.
+  (?N ?D2) :primeTrial true.
+} .
+
+# ------------------------------------------------------
+# 1) Cache primes up to maxEven (enumerated via :repeat)
+# ------------------------------------------------------
+
+{
+  :cfg :maxEven ?Max.
+  (?Max 1) math:difference ?R.     # R = Max-1
+  ?R :repeat ?I.                   # I in [0..Max-2]
+  (?I 2) math:sum ?N.              # N in [2..Max]
+  ?N :prime true.
+}
+=>
+{
+  ?N :isPrime true.
+} .
+
+# ---------------------------------------------
+# 2) Goldbach OK for all even E in [4..maxEven]
+#    Enumerate E by K in [2..Max/2] then E=2*K
+# ---------------------------------------------
+
+{
+  :cfg :maxEven ?Max.
+  (?Max 2) math:integerQuotient ?MaxK.   # MaxK = Max/2
+  (?MaxK 1) math:difference ?RK.         # RK = MaxK-1
+  ?RK :repeat ?I.                        # I in [0..MaxK-2]
+  (?I 2) math:sum ?K.                    # K in [2..MaxK]
+  (?K 2) math:product ?E.                # E = 2*K (even, >=4)
+
+  (?E 2) math:integerQuotient ?Half.     # Half = E/2
+  ?P :isPrime true.
+  ?P math:notGreaterThan ?Half.
+  (?E ?P) math:difference ?Q.
+  ?Q :isPrime true.
+}
+=>
+{
+  ?E :goldbachOk true.
+} .
+
