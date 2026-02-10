@@ -1,0 +1,316 @@
+# ==============================
+# Digital Product Passport (DPP)
+# ==============================
+#
+# This file mixes:
+#   (A) DPP "facts" (the passport itself)
+#   (B) A few N3 rules that derive computed indicators and a summary string
+#
+# Units
+#   - Mass is in grams (integers)
+#   - Footprint values are in gCO2e (integers)
+
+@prefix :       <http://example.org/dpp#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix math:   <http://www.w3.org/2000/10/swap/math#> .
+@prefix list:   <http://www.w3.org/2000/10/swap/list#> .
+@prefix log:    <http://www.w3.org/2000/10/swap/log#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+
+# --------------------
+# 1) Actors and places
+# --------------------
+
+:AcmeElectronics
+  a :Organization;
+  :legalName "Acme Electronics NV";
+  :vatId "BE0123456789";
+  :country "BE".
+
+:FactoryBE01
+  a :Site;
+  :siteName "Acme Assembly Plant BE-01";
+  :country "BE".
+
+:RepairShop1
+  a :Organization;
+  :legalName "FixFast Repairs";
+  :country "BE".
+
+# --------------------------
+# 2) Product + Passport root
+# --------------------------
+
+:Passport-ACME-X1000-SN123
+  a :DigitalProductPassport;
+  :describesProduct :ACME-X1000-SN123;
+  :passportVersion "1.0";
+  :issuedAt "2026-02-10"^^xsd:date;
+  :publicEndpoint <https://example.org/dpp/ACME-X1000-SN123>;
+  :accessPolicy :Policy-ACME-DPP.
+
+:Policy-ACME-DPP
+  a :AccessPolicy;
+  :hasSection :Section-Public, :Section-Restricted.
+
+:Section-Public
+  a :PassportSection;
+  :accessLevel :public.
+
+:Section-Restricted
+  a :PassportSection;
+  :accessLevel :restricted;
+  :intendedAudience "authorities, auditors, service partners".
+
+# ----------------------------------
+# 3) Product identity & traceability
+# ----------------------------------
+
+:ACME-X1000-SN123
+  a :ProductInstance;
+  :model "ACME X1000";
+  :serialNumber "SN123";
+  :batchId "BATCH-2026-01";
+  :madeBy :AcmeElectronics;
+  :madeAtSite :FactoryBE01;
+  :manufactureDate "2026-01-15"^^xsd:date;
+  :category :Smartphone;
+  :dpp :Passport-ACME-X1000-SN123;
+  :digitalLink "https://example.org/dpp/ACME-X1000-SN123".
+
+# ------------------------------
+# 4) Composition (bill of parts)
+# ------------------------------
+
+:ACME-X1000-SN123
+  :hasComponent :BatteryPack-01, :Chassis-01, :Mainboard-01;
+  :componentList ( :BatteryPack-01 :Chassis-01 :Mainboard-01 ).
+
+:BatteryPack-01
+  a :Component;
+  :componentType :Battery;
+  :massG 48;
+  :recycledMassG 0;
+  :replaceable true;
+  :containsMaterial :Lithium, :Cobalt, :Nickel.
+
+:Chassis-01
+  a :Component;
+  :componentType :Housing;
+  :massG 32;
+  :recycledMassG 12;
+  :containsMaterial :Aluminium.
+
+:Mainboard-01
+  a :Component;
+  :componentType :Electronics;
+  :massG 25;
+  :recycledMassG 2;
+  :containsMaterial :Copper, :GoldTrace.
+
+# Materials (toy taxonomy)
+:Lithium    a :Material; :criticalRawMaterial true.
+:Cobalt     a :Material; :criticalRawMaterial true.
+:Nickel     a :Material; :criticalRawMaterial false.
+:Aluminium  a :Material; :criticalRawMaterial false.
+:Copper     a :Material; :criticalRawMaterial false.
+:GoldTrace  a :Material; :criticalRawMaterial false.
+
+# -----------------------------------------------------
+# 5) Documents / claims (public vs restricted sections)
+# -----------------------------------------------------
+
+:Passport-ACME-X1000-SN123
+  :inSection :Section-Public;
+  :hasDocument :Doc-UserManual, :Doc-RepairGuide, :Doc-SpareParts.
+
+:Doc-UserManual
+  a :Document;
+  :docType :UserManual;
+  :url <https://example.org/docs/acme-x1000/user-manual.pdf>.
+
+:Doc-RepairGuide
+  a :Document;
+  :docType :RepairGuide;
+  :url <https://example.org/docs/acme-x1000/repair-guide.pdf>;
+  :declares :BatteryReplacementSupported.
+
+:BatteryReplacementSupported
+  a :Claim;
+  :claimText "Battery is user-replaceable with standard tools.".
+
+:Doc-SpareParts
+  a :Document;
+  :docType :SparePartsCatalog;
+  :url <https://example.org/spares/acme-x1000>.
+
+:Passport-ACME-X1000-SN123
+  :inSection :Section-Restricted;
+  :hasDocument :Doc-DoC-CE, :Doc-SubstanceDeclaration.
+
+:Doc-DoC-CE
+  a :Document;
+  :docType :DeclarationOfConformity;
+  :url <https://example.org/docs/acme-x1000/ce-doc.pdf>.
+
+:Doc-SubstanceDeclaration
+  a :Document;
+  :docType :SubstanceDeclaration;
+  :url <https://example.org/docs/acme-x1000/substances.json>.
+
+# --------------------------------
+# 6) Lifecycle events (provenance)
+# --------------------------------
+
+:Event-Mfg-01
+  a :ManufacturingEvent;
+  :forProduct :ACME-X1000-SN123;
+  :performedBy :AcmeElectronics;
+  :atSite :FactoryBE01;
+  :onDate "2026-01-15"^^xsd:date.
+
+:Event-Sale-01
+  a :SaleEvent;
+  :forProduct :ACME-X1000-SN123;
+  :onDate "2026-01-25"^^xsd:date;
+  :country "BE".
+
+:Event-Repair-01
+  a :RepairEvent;
+  :forProduct :ACME-X1000-SN123;
+  :performedBy :RepairShop1;
+  :onDate "2026-02-05"^^xsd:date;
+  :replacedComponent :BatteryPack-01;
+  :inSection :Section-Restricted.
+
+# ---------------------------------
+# 7) Environmental footprint inputs
+# ---------------------------------
+
+:ACME-X1000-SN123
+  :mfgFootprint_gCO2e 32000;
+  :transportFootprint_gCO2e 2500;
+  :usePhaseFootprint_gCO2e 18000.
+
+# ------------------------------------------
+# 8) Rules: derive indicators + summary line
+# ------------------------------------------
+
+# 8.1 Fold over the explicit component list to compute total mass and recycled mass.
+#
+# List-level totals are attached to the list node itself:
+#   ?L :sumMassG ?m.
+#   ?L :sumRecycledG ?r.
+#
+# Then we attach them to the product that owns the list.
+
+# Empty list totals
+{ () :sumMassG 0. } <= { true. } .
+{ () :sumRecycledG 0. } <= { true. } .
+
+# Non-empty list: sum(list) = head + sum(tail)
+{ ?L :sumMassG ?mTot. }
+<=
+{
+  ?L list:firstRest (?C ?Rest).
+
+  ?C :massG ?m.
+
+  ?Rest :sumMassG ?mRest.
+  (?m ?mRest) math:sum ?mTot.
+} .
+
+{ ?L :sumRecycledG ?rTot. }
+<=
+{
+  ?L list:firstRest (?C ?Rest).
+
+  ?C :recycledMassG ?r.
+
+  ?Rest :sumRecycledG ?rRest.
+  (?r ?rRest) math:sum ?rTot.
+} .
+
+# Attach totals to the product
+{
+  ?P :componentList ?L.
+  ?L :sumMassG ?mTot.
+  ?L :sumRecycledG ?rTot.
+}
+=>
+{
+  ?P :totalMassG ?mTot.
+  ?P :recycledMassG ?rTot.
+} .
+
+# 8.2 Recycled content percentage (integer % floor)
+# pct = floor( recycledMassG * 100 / totalMassG )
+{
+  ?P :totalMassG ?mTot.
+  ?P :recycledMassG ?rTot.
+  (?rTot 100) math:product ?r100.
+  (?r100 ?mTot) math:integerQuotient ?pct.
+}
+=>
+{
+  ?P :recycledContentPct ?pct.
+} .
+
+# 8.3 Lifecycle footprint total (gCO2e)
+{
+  ?P :mfgFootprint_gCO2e ?a.
+  ?P :transportFootprint_gCO2e ?b.
+  ?P :usePhaseFootprint_gCO2e ?c.
+  (?a ?b) math:sum ?ab.
+  (?ab ?c) math:sum ?tot.
+}
+=>
+{
+  ?P :lifecycleFootprint_gCO2e ?tot.
+} .
+
+# 8.4 Simple "circularity hint": battery replaceable + spare parts catalog exists
+{
+  ?P :hasComponent ?B.
+  ?B :componentType :Battery.
+  ?B :replaceable true.
+
+  ?Passport :describesProduct ?P.
+  ?Passport :hasDocument ?Doc.
+  ?Doc :docType :SparePartsCatalog.
+}
+=>
+{
+  ?P :circularityHint :repairFriendly.
+} .
+
+# 8.5 Flag: contains a critical raw material
+{
+  ?P :hasComponent ?C.
+  ?C :containsMaterial ?M.
+  ?M :criticalRawMaterial true.
+}
+=>
+{
+  ?P :containsCriticalRawMaterial true.
+} .
+
+# 8.6 Optional compact summary line (one per product)
+#
+# Example:
+#   ACME X1000 SN123 | recycled=13% | lifecycle=52500 gCO2e | CRM=true | hint=repairFriendly
+{
+  ?P :model ?model.
+  ?P :serialNumber ?sn.
+  ?P :recycledContentPct ?pct.
+  ?P :lifecycleFootprint_gCO2e ?co2.
+  ?P :containsCriticalRawMaterial ?crm.
+  ?P :circularityHint ?hint.
+
+  ("%s %s | recycled=%s%% | lifecycle=%s gCO2e | CRM=%s | hint=%s\n"
+    ?model ?sn ?pct ?co2 ?crm ?hint) string:format ?line.
+}
+=>
+{
+  ?P log:outputString ?line.
+} .

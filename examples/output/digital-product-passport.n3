@@ -1,0 +1,10 @@
+@prefix : <http://example.org/dpp#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+:ACME-X1000-SN123 :totalMassG 105 .
+:ACME-X1000-SN123 :recycledMassG 14 .
+:ACME-X1000-SN123 :recycledContentPct 13 .
+:ACME-X1000-SN123 :lifecycleFootprint_gCO2e 52500 .
+:ACME-X1000-SN123 :circularityHint :repairFriendly .
+:ACME-X1000-SN123 :containsCriticalRawMaterial true .
+:ACME-X1000-SN123 log:outputString "ACME X1000 SN123 | recycled=13% | lifecycle=52500 gCO2e | CRM=true | hint=http://example.org/dpp#repairFriendly\n" .
