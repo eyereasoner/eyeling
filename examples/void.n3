@@ -1,0 +1,160 @@
+# ==============================================================
+# A tiny RDF(+rules) knowledge base about:
+# "Void: The Strange Physics of Nothing" — James Owen Weatherall
+# ==============================================================
+
+@prefix ex:     <http://example.org/void/> .
+@prefix schema: <http://schema.org/> .
+@prefix dct:    <http://purl.org/dc/terms/> .
+@prefix bibo:   <http://purl.org/ontology/bibo/> .
+@prefix foaf:   <http://xmlns.com/foaf/0.1/> .
+@prefix skos:   <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+
+# -----
+# Facts
+# -----
+
+ex:book2016
+  a schema:Book, bibo:Book ;
+  dct:title "Void: The Strange Physics of Nothing"@en ;
+  schema:name "Void: The Strange Physics of Nothing"@en ;
+  schema:author ex:jamesWeatherall ;
+  schema:publisher ex:yaleUniversityPress, ex:templetonPress ;
+  dct:issued "2016"^^xsd:gYear ;
+  schema:inLanguage "en" ;
+  schema:numberOfPages 196 ;
+  schema:bookSeries ex:foundationalQuestionsInScience ;
+  bibo:isbn10 "0300209983" ;
+  bibo:isbn13 "9780300209983" ;
+  # commonly listed (paperback) ISBNs for other editions:
+  bibo:isbn10 "0300230737" ;
+  bibo:isbn13 "9780300230734" ;
+  bibo:oclcnum "945946572" ;
+  schema:about
+    ex:vacuum,
+    ex:spaceTime,
+    ex:quantumFieldTheory,
+    ex:generalRelativity,
+    ex:cosmologicalConstant,
+    ex:casimirEffect,
+    ex:isaacNewton,
+    ex:albertEinstein ;
+  schema:genre "popular science", "physics", "philosophy of physics" ;
+  schema:description
+    "An exploration of what modern physics says about 'nothing'—empty space, vacuum structure, and why the void is physically rich."@en .
+
+ex:jamesWeatherall
+  a foaf:Person, schema:Person ;
+  foaf:name "James Owen Weatherall" .
+
+ex:yaleUniversityPress
+  a schema:Organization ;
+  schema:name "Yale University Press" ;
+  schema:location "New Haven" .
+
+ex:templetonPress
+  a schema:Organization ;
+  schema:name "Templeton Press" .
+
+ex:foundationalQuestionsInScience
+  a schema:Series ;
+  schema:name "Foundational Questions in Science" .
+
+# --------------------------
+# People mentioned (minimal)
+# --------------------------
+
+ex:isaacNewton
+  a foaf:Person, schema:Person ;
+  foaf:name "Isaac Newton" .
+
+ex:albertEinstein
+  a foaf:Person, schema:Person ;
+  foaf:name "Albert Einstein" .
+
+# ----------------------------
+# Topic concepts (simple SKOS)
+# ----------------------------
+
+ex:vacuum
+  a skos:Concept ;
+  skos:prefLabel "Vacuum (the physical void)"@en ;
+  skos:broader ex:philosophyOfPhysics .
+
+ex:spaceTime
+  a skos:Concept ;
+  skos:prefLabel "Spacetime"@en ;
+  skos:broader ex:relativity .
+
+ex:generalRelativity
+  a skos:Concept ;
+  skos:prefLabel "General relativity"@en ;
+  skos:broader ex:relativity .
+
+ex:quantumFieldTheory
+  a skos:Concept ;
+  skos:prefLabel "Quantum field theory"@en ;
+  skos:broader ex:quantumTheory .
+
+ex:cosmologicalConstant
+  a skos:Concept ;
+  skos:prefLabel "Cosmological constant"@en ;
+  skos:broader ex:cosmology .
+
+ex:darkEnergy
+  a skos:Concept ;
+  skos:prefLabel "Dark energy"@en ;
+  skos:broader ex:cosmology .
+
+ex:casimirEffect
+  a skos:Concept ;
+  skos:prefLabel "Casimir effect"@en ;
+  skos:broader ex:quantumTheory .
+
+ex:quantumTheory
+  a skos:Concept ;
+  skos:prefLabel "Quantum theory"@en .
+
+ex:relativity
+  a skos:Concept ;
+  skos:prefLabel "Relativity"@en .
+
+ex:cosmology
+  a skos:Concept ;
+  skos:prefLabel "Cosmology"@en .
+
+ex:philosophyOfPhysics
+  a skos:Concept ;
+  skos:prefLabel "Philosophy of physics"@en .
+
+# -----------------------
+# Rules (N3 implications)
+# -----------------------
+
+# 1) Invert author -> made
+{ ?book schema:author ?person . }
+  => { ?person foaf:made ?book . } .
+
+# 2) If a book is about a person, infer reverse subjectOf
+{ ?book schema:about ?person .
+  ?person a foaf:Person . }
+  => { ?person schema:subjectOf ?book . } .
+
+# 3) If the book is about QFT, tag it as quantum theory
+{ ?book schema:about ex:quantumFieldTheory . }
+  => { ?book dct:subject ex:quantumTheory . } .
+
+# 4) If a book discusses the cosmological constant, relate it to dark energy (simple concept link)
+{ ?book schema:about ex:cosmologicalConstant . }
+  => { ?book schema:about ex:darkEnergy . } .
+
+# 5) Tiny “recommendation” rule (demo of deriving new facts)
+{ ?book dct:subject ex:quantumTheory ;
+        schema:inLanguage "en" . }
+  => { ?book ex:recommendedFor ex:curiousPhysicsReaderEn . } .
+
+ex:curiousPhysicsReaderEn
+  a skos:Concept ;
+  skos:prefLabel "English-reading curious physics reader"@en .
+

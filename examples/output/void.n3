@@ -1,0 +1,11 @@
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix ex: <http://example.org/void/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix schema: <http://schema.org/> .
+
+ex:jamesWeatherall foaf:made ex:book2016 .
+ex:isaacNewton schema:subjectOf ex:book2016 .
+ex:albertEinstein schema:subjectOf ex:book2016 .
+ex:book2016 dct:subject ex:quantumTheory .
+ex:book2016 schema:about ex:darkEnergy .
+ex:book2016 ex:recommendedFor ex:curiousPhysicsReaderEn .

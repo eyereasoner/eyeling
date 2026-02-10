@@ -1,0 +1,107 @@
+# ===================================================================================
+# A tiny RDF(+rules) knowledge base about:
+# "Incompleteness: The Proof and Paradox of Kurt Gödel" — Rebecca Newberger Goldstein
+# ===================================================================================
+
+@prefix ex:     <http://example.org/incompleteness/> .
+@prefix schema: <http://schema.org/> .
+@prefix dct:    <http://purl.org/dc/terms/> .
+@prefix bibo:   <http://purl.org/ontology/bibo/> .
+@prefix foaf:   <http://xmlns.com/foaf/0.1/> .
+@prefix skos:   <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+
+# -----
+# Facts
+# -----
+
+ex:book2005
+  a schema:Book, bibo:Book ;
+  dct:title "Incompleteness: The Proof and Paradox of Kurt Gödel"@en ;
+  schema:name "Incompleteness: The Proof and Paradox of Kurt Gödel"@en ;
+  schema:author ex:rebeccaGoldstein ;
+  schema:publisher ex:wwNorton ;
+  dct:issued "2005"^^xsd:gYear ;
+  schema:inLanguage "en" ;
+  schema:numberOfPages 296 ;
+  bibo:isbn10 "0393051692" ;
+  bibo:isbn13 "9780393051698" ;
+  bibo:oclcnum "860568768" ;
+  schema:about ex:kurtGodel,
+               ex:godelIncompletenessTheorems,
+               ex:hilbertsProgram,
+               ex:platonismInMath ;
+  schema:genre "biography", "mathematics", "philosophy of mathematics" ;
+  schema:description
+    "A biographical and intellectual portrait of Gödel, explaining the incompleteness theorems and their philosophical context."@en .
+
+ex:rebeccaGoldstein
+  a foaf:Person, schema:Person ;
+  foaf:name "Rebecca Newberger Goldstein" .
+
+ex:kurtGodel
+  a foaf:Person, schema:Person ;
+  foaf:name "Kurt Gödel" .
+
+ex:wwNorton
+  a schema:Organization ;
+  schema:name "W. W. Norton & Company" ;
+  schema:location "New York" .
+
+# ----------------------------
+# Topic concepts (simple SKOS)
+# ----------------------------
+
+ex:godelIncompletenessTheorems
+  a skos:Concept ;
+  skos:prefLabel "Gödel's incompleteness theorems"@en ;
+  skos:broader ex:mathematicalLogic .
+
+ex:hilbertsProgram
+  a skos:Concept ;
+  skos:prefLabel "Hilbert's program"@en ;
+  skos:broader ex:foundationsOfMathematics .
+
+ex:platonismInMath
+  a skos:Concept ;
+  skos:prefLabel "Platonism in mathematics"@en ;
+  skos:broader ex:philosophyOfMathematics .
+
+ex:mathematicalLogic
+  a skos:Concept ;
+  skos:prefLabel "Mathematical logic"@en .
+
+ex:foundationsOfMathematics
+  a skos:Concept ;
+  skos:prefLabel "Foundations of mathematics"@en .
+
+ex:philosophyOfMathematics
+  a skos:Concept ;
+  skos:prefLabel "Philosophy of mathematics"@en .
+
+# -----------------------
+# Rules (N3 implications)
+# -----------------------
+
+# 1) Invert author → made
+{ ?book schema:author ?person . }
+  => { ?person foaf:made ?book . } .
+
+# 2) If a book is about a person, infer reverse subjectOf
+{ ?book schema:about ?person .
+  ?person a foaf:Person . }
+  => { ?person schema:subjectOf ?book . } .
+
+# 3) If it’s about incompleteness theorems, tag it as mathematical logic
+{ ?book schema:about ex:godelIncompletenessTheorems . }
+  => { ?book dct:subject ex:mathematicalLogic . } .
+
+# 4) Tiny “recommendation” rule (demo of deriving new facts)
+{ ?book dct:subject ex:mathematicalLogic ;
+        schema:inLanguage "en" . }
+  => { ?book ex:recommendedFor ex:logicLearnerEn . } .
+
+ex:logicLearnerEn
+  a skos:Concept ;
+  skos:prefLabel "English-reading logic learner"@en .
+

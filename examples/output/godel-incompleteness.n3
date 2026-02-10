@@ -1,0 +1,9 @@
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix ex: <http://example.org/incompleteness/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix schema: <http://schema.org/> .
+
+ex:rebeccaGoldstein foaf:made ex:book2005 .
+ex:kurtGodel schema:subjectOf ex:book2005 .
+ex:book2005 dct:subject ex:mathematicalLogic .
+ex:book2005 ex:recommendedFor ex:logicLearnerEn .
