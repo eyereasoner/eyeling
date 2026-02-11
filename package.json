@@ -50,6 +50,6 @@
     "test": "npm run test:all",
     "posttest": "npm run test:package",
     "preversion": "npm test",
-    "postversion": "git push origin main --follow-tags"
+    "postversion": "git push origin HEAD --follow-tags"
   }
 }

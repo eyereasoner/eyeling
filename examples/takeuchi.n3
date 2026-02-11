@@ -10,73 +10,20 @@
 @prefix math: <http://www.w3.org/2000/10/swap/math#>.
 @prefix : <https://eyereasoner.github.io/eye/reasoning#>.
 
-# Forward/tabling style: compute only what’s reachable from :needTak.
-
-# Seed: only the call we want
-(8 4 2) :needTak true .
-
-# If a call is needed and X>Y, mark the three direct subcalls as needed
-{
-  (?X ?Y ?Z) :needTak true.
-  ?X math:greaterThan ?Y.
-  (?X 1) math:difference ?X1.
-  (?Y 1) math:difference ?Y1.
-  (?Z 1) math:difference ?Z1.
-}
-=>
-{
-  (?X1 ?Y ?Z) :needTak true.
-  (?Y1 ?Z ?X) :needTak true.
-  (?Z1 ?X ?Y) :needTak true.
+{(?X ?Y ?Z) :tak ?Z} <= {
+    ?X math:notGreaterThan ?Y.
 }.
 
-# Base case: if X<=Y then result is Z
-{
-  (?X ?Y ?Z) :needTak true.
-  ?X math:notGreaterThan ?Y.
-}
-=>
-{
-  (?X ?Y ?Z) :tak ?Z.
+{(?X ?Y ?Z) :tak ?A} <= {
+    ?X math:greaterThan ?Y.     # guard makes this clause disjoint from the base case
+    (?X 1) math:difference ?X1.
+    (?X1 ?Y ?Z) :tak ?A1.
+    (?Y 1) math:difference ?Y1.
+    (?Y1 ?Z ?X) :tak ?A2.
+    (?Z 1) math:difference ?Z1.
+    (?Z1 ?X ?Y) :tak ?A3.
+    (?A1 ?A2 ?A3) :tak ?A.
 }.
 
-# Once the three direct subcalls have results, we also need the “final call” tak(A1,A2,A3)
-{
-  (?X ?Y ?Z) :needTak true.
-  ?X math:greaterThan ?Y.
-
-  (?X 1) math:difference ?X1.
-  (?X1 ?Y ?Z) :tak ?A1.
-
-  (?Y 1) math:difference ?Y1.
-  (?Y1 ?Z ?X) :tak ?A2.
-
-  (?Z 1) math:difference ?Z1.
-  (?Z1 ?X ?Y) :tak ?A3.
-}
-=>
-{
-  (?A1 ?A2 ?A3) :needTak true.
-}.
-
-# Recursive case: if everything is known, tak(X,Y,Z) is tak(A1,A2,A3)
-{
-  (?X ?Y ?Z) :needTak true.
-  ?X math:greaterThan ?Y.
-
-  (?X 1) math:difference ?X1.
-  (?X1 ?Y ?Z) :tak ?A1.
-
-  (?Y 1) math:difference ?Y1.
-  (?Y1 ?Z ?X) :tak ?A2.
-
-  (?Z 1) math:difference ?Z1.
-  (?Z1 ?X ?Y) :tak ?A3.
-
-  (?A1 ?A2 ?A3) :tak ?A.
-}
-=>
-{
-  (?X ?Y ?Z) :tak ?A.
-}.
-
+# test
+{(8 4 2) :tak ?A} => {(8 4 2) :takeuchi ?A}.
