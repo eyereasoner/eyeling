@@ -1,0 +1,36 @@
+# ==========================
+# Quoted head unquote select
+# ==========================
+#
+# Activate a quoted rule via metadata selection (class → rule → formula),
+# then unquote it by using a term RHS (=> ?F). This should derive :test :is true.
+
+@prefix : <http://example.org/ns#> .
+
+# Two rules stored as data
+:ruleCat :formula {
+  { ?X a :Cat } => { ?X a :Animal } .
+} .
+
+:ruleDog :formula {
+  { ?X a :Dog } => { ?X a :Pet } .
+} .
+
+# Metadata chooses which stored rule applies for a given class
+:Cat :activates :ruleCat .
+:Dog :activates :ruleDog .
+
+# Different pattern: pick the rule based on the instance's class, then unquote it
+{
+  ?X a ?Class .
+  ?Class :activates ?Rule .
+  ?Rule :formula ?F .
+}
+=> ?F .
+
+# Data
+:c a :Cat .
+
+# Check
+{ :c a :Animal } => { :test :is true } .
+
