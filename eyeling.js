@@ -4627,7 +4627,7 @@ function __isStrictGroundTriple(tr) {
 // -----------------------------------------------------------------------------
 // Used to maintain O(1) membership sets for dynamically promoted rules, and to
 // memoize per-firing head-blank skolemization.
-function __ruleKey(isForward, isFuse, premise, conclusion) {
+function __ruleKey(isForward, isFuse, premise, conclusion, dynamicConclusionTerm /* optional */) {
   let out = (isForward ? 'F' : 'B') + (isFuse ? '!' : '') + '|P|';
   for (let i = 0; i < premise.length; i++) {
     const tr = premise[i];
@@ -4639,6 +4639,9 @@ function __ruleKey(isForward, isFuse, premise, conclusion) {
     const tr = conclusion[i];
     if (i) out += '\n';
     out += skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
+  }
+  if (dynamicConclusionTerm) {
+    out += '|T|' + skolemKeyFromTerm(dynamicConclusionTerm);
   }
   return out;
 }
@@ -4660,7 +4663,9 @@ function __firingKey(ruleIndex, instantiatedPremises) {
 function __ensureRuleKeySet(rules) {
   if (!hasOwn.call(rules, '__ruleKeySet')) {
     Object.defineProperty(rules, '__ruleKeySet', {
-      value: new Set(rules.map((r) => __ruleKey(r.isForward, r.isFuse, r.premise, r.conclusion))),
+      value: new Set(
+        rules.map((r) => __ruleKey(r.isForward, r.isFuse, r.premise, r.conclusion, r.__dynamicConclusionTerm || null)),
+      ),
       enumerable: false,
       writable: false,
       configurable: true,
@@ -4671,6 +4676,8 @@ function __ensureRuleKeySet(rules) {
 
 function __computeHeadIsStrictGround(r) {
   if (r.isFuse) return false;
+  // Dynamic heads depend on runtime bindings; treat as non-ground.
+  if (r.__dynamicConclusionTerm) return false;
   if (r.headBlankLabels && r.headBlankLabels.size) return false;
   for (const tr of r.conclusion) if (!__isStrictGroundTriple(tr)) return false;
   return true;
@@ -6632,7 +6639,38 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
             const instantiatedPremises = r.premise.map((b) => applySubstTriple(b, s));
             const fireKey = __firingKey(i, instantiatedPremises);
 
-            for (const cpat of r.conclusion) {
+            // Support "dynamic" rule heads where the consequent is a term that
+            // (after substitution) evaluates to a quoted formula.
+            // Example: { :a :b ?C } => ?C.
+            let dynamicHeadTriples = null;
+            let headBlankLabelsHere = r.headBlankLabels;
+            if (r.__dynamicConclusionTerm) {
+              const dynTerm = applySubstTerm(r.__dynamicConclusionTerm, s);
+
+              // Allow dynamic fuses: ... => ?X. where ?X becomes false
+              if (dynTerm instanceof Literal && dynTerm.value === 'false') {
+                console.log('# Inference fuse triggered: dynamic head resolved to false.');
+                process.exit(2);
+              }
+
+              const dynTriples = __graphTriplesOrTrue(dynTerm);
+              dynamicHeadTriples = dynTriples !== null ? dynTriples : [];
+
+              // If the dynamic head contains explicit blank nodes, treat them as
+              // head blanks for skolemization.
+              const dynHeadBlankLabels =
+                dynamicHeadTriples && dynamicHeadTriples.length
+                  ? collectBlankLabelsInTriples(dynamicHeadTriples)
+                  : null;
+              if (dynHeadBlankLabels && dynHeadBlankLabels.size) {
+                headBlankLabelsHere = new Set([...headBlankLabelsHere, ...dynHeadBlankLabels]);
+              }
+            }
+
+            const headPatterns =
+              dynamicHeadTriples && dynamicHeadTriples.length ? r.conclusion.concat(dynamicHeadTriples) : r.conclusion;
+
+            for (const cpat of headPatterns) {
               const instantiated = applySubstTriple(cpat, s);
 
               const subj = instantiated.s;
@@ -6673,7 +6711,13 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
                     const newRule = new Rule(premise, conclusion, true, false, headBlankLabels);
                     __prepareForwardRule(newRule);
 
-                    const key = __ruleKey(newRule.isForward, newRule.isFuse, newRule.premise, newRule.conclusion);
+                    const key = __ruleKey(
+                      newRule.isForward,
+                      newRule.isFuse,
+                      newRule.premise,
+                      newRule.conclusion,
+                      newRule.__dynamicConclusionTerm || null,
+                    );
                     if (!forwardRules.__ruleKeySet.has(key)) {
                       forwardRules.__ruleKeySet.add(key);
                       forwardRules.push(newRule);
@@ -6683,7 +6727,13 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
                     const headBlankLabels = collectBlankLabelsInTriples(conclusion);
                     const newRule = new Rule(premise, conclusion, false, false, headBlankLabels);
 
-                    const key = __ruleKey(newRule.isForward, newRule.isFuse, newRule.premise, newRule.conclusion);
+                    const key = __ruleKey(
+                      newRule.isForward,
+                      newRule.isFuse,
+                      newRule.premise,
+                      newRule.conclusion,
+                      newRule.__dynamicConclusionTerm || null,
+                    );
                     if (!backRules.__ruleKeySet.has(key)) {
                       backRules.__ruleKeySet.add(key);
                       backRules.push(newRule);
@@ -6698,7 +6748,7 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
               // Only skolemize blank nodes that occur explicitly in the rule head
               const inst = skolemizeTripleForHeadBlanks(
                 instantiated,
-                r.headBlankLabels,
+                headBlankLabelsHere,
                 skMap,
                 skCounter,
                 fireKey,
@@ -8524,13 +8574,32 @@ class Parser {
       rawPremise = [];
     }
 
+    // In standard N3, the right-hand side of a rule is a formula term.
+    // Eyeling primarily supports an explicit quoted formula `{ ... }` (GraphTerm)
+    // or the special literals true/false.
+    //
+    // However, some programs use a *variable* in rule head position to mean:
+    // "prove the body, bind ?C to a quoted formula, and then assert that formula".
+    // Example:
+    //   { :a :b ?C } => ?C.
+    //
+    // To support this, we allow a forward rule to carry a dynamic head term.
+    // The engine will resolve it per-solution and, if it becomes a GraphTerm,
+    // will emit its triples as the instantiated head.
     let rawConclusion;
+    let dynamicConclusionTerm = null;
     if (conclTerm instanceof GraphTerm) {
       rawConclusion = conclTerm.triples;
     } else if (conclTerm instanceof Literal && conclTerm.value === 'false') {
       rawConclusion = [];
+    } else if (conclTerm instanceof Literal && conclTerm.value === 'true') {
+      // `=> true.` is a no-op (empty head)
+      rawConclusion = [];
     } else {
       rawConclusion = [];
+      // Only forward rules can meaningfully "emit" a dynamic head.
+      // Backward rules with dynamic heads are not supported.
+      if (isForward && conclTerm) dynamicConclusionTerm = conclTerm;
     }
 
     // Blank nodes that occur explicitly in the head (conclusion)
@@ -8542,7 +8611,19 @@ class Parser {
     // forward rules when they cannot yet run due to unbound variables.
     const premise = premise0;
 
-    return new Rule(premise, conclusion, isForward, isFuse, headBlankLabels);
+    const r = new Rule(premise, conclusion, isForward, isFuse, headBlankLabels);
+
+    if (dynamicConclusionTerm) {
+      // Non-enumerable to keep AST output stable unless explicitly requested.
+      Object.defineProperty(r, '__dynamicConclusionTerm', {
+        value: dynamicConclusionTerm,
+        enumerable: false,
+        writable: false,
+        configurable: true,
+      });
+    }
+
+    return r;
   }
 }
 
