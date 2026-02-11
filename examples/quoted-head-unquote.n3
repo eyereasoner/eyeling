@@ -1,0 +1,21 @@
+# ===================
+# Quoted head unquote
+# ===================
+#
+# Allow RHS of => to be a term (e.g., ?C) that resolves to a quoted formula.
+
+@prefix : <http://example.org/ns#> .
+
+:a :b {
+  { ?X a :Cat } => { ?X a :Animal }.
+}.
+
+{
+  :a :b ?C.
+}
+=> ?C.
+
+:c a :Cat .
+
+{ :c a :Animal } => { :test :is true }.
+
