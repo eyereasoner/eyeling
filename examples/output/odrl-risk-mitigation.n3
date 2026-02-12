@@ -1,0 +1,207 @@
+@prefix : <https://example.org/odrl-mitigation-demo#> .
+@prefix genid: <https://eyereasoner.github.io/.well-known/genid/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix odrl: <http://www.w3.org/ns/odrl/2/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+genid:3f3359e8-5625-adf0-e2cd-874038dc706c a :Risk .
+genid:3f3359e8-5625-adf0-e2cd-874038dc706c :aboutAgreement :Agreement3 .
+genid:3f3359e8-5625-adf0-e2cd-874038dc706c :forProfile :ConsumerCarol .
+genid:3f3359e8-5625-adf0-e2cd-874038dc706c :aboutClause :ClauseD1 .
+genid:3f3359e8-5625-adf0-e2cd-874038dc706c :clauseId "D1" .
+genid:3f3359e8-5625-adf0-e2cd-874038dc706c :issue :NoticeTooShort .
+genid:3f3359e8-5625-adf0-e2cd-874038dc706c :baseScore 70 .
+genid:3f3359e8-5625-adf0-e2cd-874038dc706c :needWeight 15 .
+genid:3f3359e8-5625-adf0-e2cd-874038dc706c :rawScore 85 .
+genid:3f3359e8-5625-adf0-e2cd-874038dc706c :title "Notice period too short" .
+genid:3f3359e8-5625-adf0-e2cd-874038dc706c :explanation "This clause is risky because the notice period (3 days) is below the consumer requirement (14 days). Clause D1: We may change these terms with notice. Notice may be as short as 3 days." .
+genid:3f3359e8-5625-adf0-e2cd-874038dc706c :violatesNeed :Need_ChangeOnlyWithPriorNotice .
+genid:d48f3244-c9ff-62e2-46d1-44d4c6a9c3d8 a :Risk .
+genid:d48f3244-c9ff-62e2-46d1-44d4c6a9c3d8 :aboutAgreement :Agreement3 .
+genid:d48f3244-c9ff-62e2-46d1-44d4c6a9c3d8 :forProfile :ConsumerCarol .
+genid:d48f3244-c9ff-62e2-46d1-44d4c6a9c3d8 :aboutClause :ClauseD2 .
+genid:d48f3244-c9ff-62e2-46d1-44d4c6a9c3d8 :clauseId "D2" .
+genid:d48f3244-c9ff-62e2-46d1-44d4c6a9c3d8 :issue :AutoRenewNoReminder .
+genid:d48f3244-c9ff-62e2-46d1-44d4c6a9c3d8 :baseScore 75 .
+genid:d48f3244-c9ff-62e2-46d1-44d4c6a9c3d8 :needWeight 10 .
+genid:d48f3244-c9ff-62e2-46d1-44d4c6a9c3d8 :rawScore 85 .
+genid:d48f3244-c9ff-62e2-46d1-44d4c6a9c3d8 :title "Auto-renewal without reminder" .
+genid:d48f3244-c9ff-62e2-46d1-44d4c6a9c3d8 :explanation "This clause is risky because it allows auto-renewal without a reminder. Consumer needs at least 7 days reminder. Clause D2: Your subscription renews automatically unless you cancel." .
+genid:d48f3244-c9ff-62e2-46d1-44d4c6a9c3d8 :violatesNeed :Need_ReminderBeforeAutoRenew .
+genid:3a9b6398-3d57-879a-90e6-498980eeaf08 a :Risk .
+genid:3a9b6398-3d57-879a-90e6-498980eeaf08 :aboutAgreement :Agreement3 .
+genid:3a9b6398-3d57-879a-90e6-498980eeaf08 :forProfile :ConsumerCarol .
+genid:3a9b6398-3d57-879a-90e6-498980eeaf08 :aboutClause :ClauseD3 .
+genid:3a9b6398-3d57-879a-90e6-498980eeaf08 :clauseId "D3" .
+genid:3a9b6398-3d57-879a-90e6-498980eeaf08 :issue :NonRefundableFee .
+genid:3a9b6398-3d57-879a-90e6-498980eeaf08 :baseScore 70 .
+genid:3a9b6398-3d57-879a-90e6-498980eeaf08 :needWeight 9 .
+genid:3a9b6398-3d57-879a-90e6-498980eeaf08 :rawScore 79 .
+genid:3a9b6398-3d57-879a-90e6-498980eeaf08 :title "Non-refundable fees" .
+genid:3a9b6398-3d57-879a-90e6-498980eeaf08 :explanation "This clause is risky because it declares fees non-refundable, conflicting with a refund/cooling-off expectation (>= 14 days). Clause D3: All fees are non-refundable." .
+genid:3a9b6398-3d57-879a-90e6-498980eeaf08 :violatesNeed :Need_RefundRequired .
+genid:8468c67c-e2dd-8af8-fa31-006485a75788 a :Risk .
+genid:8468c67c-e2dd-8af8-fa31-006485a75788 :aboutAgreement :Agreement3 .
+genid:8468c67c-e2dd-8af8-fa31-006485a75788 :forProfile :ConsumerCarol .
+genid:8468c67c-e2dd-8af8-fa31-006485a75788 :aboutClause :ClauseD4 .
+genid:8468c67c-e2dd-8af8-fa31-006485a75788 :clauseId "D4" .
+genid:8468c67c-e2dd-8af8-fa31-006485a75788 :issue :TrackingNoOptIn .
+genid:8468c67c-e2dd-8af8-fa31-006485a75788 :baseScore 80 .
+genid:8468c67c-e2dd-8af8-fa31-006485a75788 :needWeight 9 .
+genid:8468c67c-e2dd-8af8-fa31-006485a75788 :rawScore 89 .
+genid:8468c67c-e2dd-8af8-fa31-006485a75788 :title "Tracking without opt-in" .
+genid:8468c67c-e2dd-8af8-fa31-006485a75788 :explanation "This clause is risky because it permits tracking without explicit opt-in consent. Clause D4: We may track your activity to improve services." .
+genid:8468c67c-e2dd-8af8-fa31-006485a75788 :violatesNeed :Need_NoTrackingWithoutOptIn .
+genid:e1830d38-0c5f-d24e-add5-a27d9cf99088 a :Risk .
+genid:e1830d38-0c5f-d24e-add5-a27d9cf99088 :aboutAgreement :Agreement3 .
+genid:e1830d38-0c5f-d24e-add5-a27d9cf99088 :forProfile :ConsumerCarol .
+genid:e1830d38-0c5f-d24e-add5-a27d9cf99088 :aboutClause :ClauseD5 .
+genid:e1830d38-0c5f-d24e-add5-a27d9cf99088 :clauseId "D5" .
+genid:e1830d38-0c5f-d24e-add5-a27d9cf99088 :issue :NoDataExport .
+genid:e1830d38-0c5f-d24e-add5-a27d9cf99088 :baseScore 85 .
+genid:e1830d38-0c5f-d24e-add5-a27d9cf99088 :needWeight 8 .
+genid:e1830d38-0c5f-d24e-add5-a27d9cf99088 :rawScore 93 .
+genid:e1830d38-0c5f-d24e-add5-a27d9cf99088 :title "No data export / portability" .
+genid:e1830d38-0c5f-d24e-add5-a27d9cf99088 :explanation "This clause is risky because it prohibits exporting data, undermining portability. Clause D5: You may not export or download your data from the service." .
+genid:e1830d38-0c5f-d24e-add5-a27d9cf99088 :violatesNeed :Need_DataPortability .
+genid:c5c6e14a-6858-7d40-10ca-c460597f1ae8 a :Risk .
+genid:c5c6e14a-6858-7d40-10ca-c460597f1ae8 :aboutAgreement :Agreement3 .
+genid:c5c6e14a-6858-7d40-10ca-c460597f1ae8 :forProfile :ConsumerCarol .
+genid:c5c6e14a-6858-7d40-10ca-c460597f1ae8 :aboutClause :ClauseD6 .
+genid:c5c6e14a-6858-7d40-10ca-c460597f1ae8 :clauseId "D6" .
+genid:c5c6e14a-6858-7d40-10ca-c460597f1ae8 :issue :ProviderMayDeleteData .
+genid:c5c6e14a-6858-7d40-10ca-c460597f1ae8 :baseScore 90 .
+genid:c5c6e14a-6858-7d40-10ca-c460597f1ae8 :needWeight 12 .
+genid:c5c6e14a-6858-7d40-10ca-c460597f1ae8 :rawScore 102 .
+genid:c5c6e14a-6858-7d40-10ca-c460597f1ae8 :title "Provider can delete user data" .
+genid:c5c6e14a-6858-7d40-10ca-c460597f1ae8 :explanation "This clause is risky because it allows the provider to delete the consumer’s data. Clause D6: We may delete your data at our discretion." .
+genid:c5c6e14a-6858-7d40-10ca-c460597f1ae8 :violatesNeed :Need_DataNotRemoved .
+genid:9bdfab08-d724-d5c8-ba20-5e23053c80f4 a :Risk .
+genid:9bdfab08-d724-d5c8-ba20-5e23053c80f4 :aboutAgreement :Agreement3 .
+genid:9bdfab08-d724-d5c8-ba20-5e23053c80f4 :forProfile :ConsumerCarol .
+genid:9bdfab08-d724-d5c8-ba20-5e23053c80f4 :aboutClause :ClauseD2 .
+genid:9bdfab08-d724-d5c8-ba20-5e23053c80f4 :clauseId "D2" .
+genid:9bdfab08-d724-d5c8-ba20-5e23053c80f4 :issue :LiabilityCapTooLow .
+genid:9bdfab08-d724-d5c8-ba20-5e23053c80f4 :baseScore 65 .
+genid:9bdfab08-d724-d5c8-ba20-5e23053c80f4 :needWeight 8 .
+genid:9bdfab08-d724-d5c8-ba20-5e23053c80f4 :rawScore 73 .
+genid:9bdfab08-d724-d5c8-ba20-5e23053c80f4 :title "Liability cap too low" .
+genid:9bdfab08-d724-d5c8-ba20-5e23053c80f4 :explanation "This clause is risky because the liability cap (20 EUR) is below the consumer minimum (200 EUR). Clause D2: Your subscription renews automatically unless you cancel." .
+genid:9bdfab08-d724-d5c8-ba20-5e23053c80f4 :violatesNeed :Need_MinLiabilityCap .
+genid:3f3359e8-5625-adf0-e2cd-874038dc706c :hasMitigation genid:b3e644a0-842d-779a-8ba9-1dc01addf40c .
+genid:b3e644a0-842d-779a-8ba9-1dc01addf40c a :Mitigation .
+genid:b3e644a0-842d-779a-8ba9-1dc01addf40c :forRisk genid:3f3359e8-5625-adf0-e2cd-874038dc706c .
+genid:b3e644a0-842d-779a-8ba9-1dc01addf40c :fixText "Suggested fix: ensure prior-notice duty specifies noticeDays >= 14." .
+genid:b3e644a0-842d-779a-8ba9-1dc01addf40c :suggestAdd {
+    :PermChangeTerms odrl:duty _:sk_0 .
+    _:sk_0 a odrl:Duty .
+    _:sk_0 odrl:action :notifyPriorNotice .
+    _:sk_0 odrl:constraint _:sk_1 .
+    _:sk_1 a odrl:Constraint .
+    _:sk_1 odrl:leftOperand :noticeDays .
+    _:sk_1 odrl:operator odrl:gteq .
+    _:sk_1 odrl:rightOperand 14 .
+} .
+genid:d48f3244-c9ff-62e2-46d1-44d4c6a9c3d8 :hasMitigation genid:53e75400-cf4d-9998-7ed7-3eeae4d6be7c .
+genid:53e75400-cf4d-9998-7ed7-3eeae4d6be7c a :Mitigation .
+genid:53e75400-cf4d-9998-7ed7-3eeae4d6be7c :forRisk genid:d48f3244-c9ff-62e2-46d1-44d4c6a9c3d8 .
+genid:53e75400-cf4d-9998-7ed7-3eeae4d6be7c :fixText "Suggested fix: add a reminder duty for auto-renewal with reminderDays >= 7." .
+genid:53e75400-cf4d-9998-7ed7-3eeae4d6be7c :suggestAdd {
+    :PermAutoRenew odrl:duty _:sk_2 .
+    _:sk_2 a odrl:Duty .
+    _:sk_2 odrl:action :sendRenewalReminder .
+    _:sk_2 odrl:constraint _:sk_3 .
+    _:sk_3 a odrl:Constraint .
+    _:sk_3 odrl:leftOperand :reminderDays .
+    _:sk_3 odrl:operator odrl:gteq .
+    _:sk_3 odrl:rightOperand 7 .
+} .
+genid:3a9b6398-3d57-879a-90e6-498980eeaf08 :hasMitigation genid:585ce30c-2b91-8280-fe57-6f28f39a3ed8 .
+genid:585ce30c-2b91-8280-fe57-6f28f39a3ed8 a :Mitigation .
+genid:585ce30c-2b91-8280-fe57-6f28f39a3ed8 :forRisk genid:3a9b6398-3d57-879a-90e6-498980eeaf08 .
+genid:585ce30c-2b91-8280-fe57-6f28f39a3ed8 :fixText "Suggested fix: allow refunds (e.g., refundAllowed=true) or define a cooling-off period >= 14 days." .
+genid:585ce30c-2b91-8280-fe57-6f28f39a3ed8 :suggestAdd {
+    :PermChargeFee odrl:constraint _:sk_4 .
+    _:sk_4 a odrl:Constraint .
+    _:sk_4 odrl:leftOperand :refundAllowed .
+    _:sk_4 odrl:operator odrl:eq .
+    _:sk_4 odrl:rightOperand true .
+    :PermChargeFee odrl:constraint _:sk_5 .
+    _:sk_5 a odrl:Constraint .
+    _:sk_5 odrl:leftOperand :coolingOffDays .
+    _:sk_5 odrl:operator odrl:gteq .
+    _:sk_5 odrl:rightOperand 14 .
+} .
+genid:8468c67c-e2dd-8af8-fa31-006485a75788 :hasMitigation genid:622a8baf-e258-fe50-fb3b-81463784ae40 .
+genid:622a8baf-e258-fe50-fb3b-81463784ae40 a :Mitigation .
+genid:622a8baf-e258-fe50-fb3b-81463784ae40 :forRisk genid:8468c67c-e2dd-8af8-fa31-006485a75788 .
+genid:622a8baf-e258-fe50-fb3b-81463784ae40 :fixText "Suggested fix: require opt-in consent for tracking (optInConsent=true)." .
+genid:622a8baf-e258-fe50-fb3b-81463784ae40 :suggestAdd {
+    :PermTrackUser odrl:constraint _:sk_6 .
+    _:sk_6 a odrl:Constraint .
+    _:sk_6 odrl:leftOperand :optInConsent .
+    _:sk_6 odrl:operator odrl:eq .
+    _:sk_6 odrl:rightOperand true .
+} .
+genid:e1830d38-0c5f-d24e-add5-a27d9cf99088 :hasMitigation genid:4728cce8-e55c-33a6-ff43-0284c37b050c .
+genid:4728cce8-e55c-33a6-ff43-0284c37b050c a :Mitigation .
+genid:4728cce8-e55c-33a6-ff43-0284c37b050c :forRisk genid:e1830d38-0c5f-d24e-add5-a27d9cf99088 .
+genid:4728cce8-e55c-33a6-ff43-0284c37b050c :fixText "Suggested fix: add a permission to export/download user data (data portability)." .
+genid:4728cce8-e55c-33a6-ff43-0284c37b050c :suggestAdd {
+    :Policy3 odrl:permission _:sk_7 .
+    _:sk_7 a odrl:Permission .
+    _:sk_7 odrl:action :exportData .
+    _:sk_7 odrl:target :UserData .
+} .
+genid:c5c6e14a-6858-7d40-10ca-c460597f1ae8 :hasMitigation genid:33f8e7b9-1987-7832-0892-a8ec90448424 .
+genid:33f8e7b9-1987-7832-0892-a8ec90448424 a :Mitigation .
+genid:33f8e7b9-1987-7832-0892-a8ec90448424 :forRisk genid:c5c6e14a-6858-7d40-10ca-c460597f1ae8 .
+genid:33f8e7b9-1987-7832-0892-a8ec90448424 :fixText "Suggested fix: remove provider discretion to delete data; allow deletion only on consumer request or legal obligation." .
+genid:33f8e7b9-1987-7832-0892-a8ec90448424 :suggestAdd {
+    :PermDeleteUserData odrl:constraint _:sk_8 .
+    _:sk_8 a odrl:Constraint .
+    _:sk_8 odrl:leftOperand :deletionGround .
+    _:sk_8 odrl:operator odrl:isAnyOf .
+    _:sk_8 odrl:rightOperand (:consumerRequest :legalObligation) .
+} .
+genid:9bdfab08-d724-d5c8-ba20-5e23053c80f4 :hasMitigation genid:478eac18-8c36-6188-b439-dda12b98fac8 .
+genid:478eac18-8c36-6188-b439-dda12b98fac8 a :Mitigation .
+genid:478eac18-8c36-6188-b439-dda12b98fac8 :forRisk genid:9bdfab08-d724-d5c8-ba20-5e23053c80f4 .
+genid:478eac18-8c36-6188-b439-dda12b98fac8 :fixText "Suggested fix: raise liabilityCapEuro so it is >= 200 EUR (or remove the cap where inappropriate)." .
+genid:478eac18-8c36-6188-b439-dda12b98fac8 :suggestAdd {
+    :PermAutoRenew odrl:constraint _:sk_9 .
+    _:sk_9 a odrl:Constraint .
+    _:sk_9 odrl:leftOperand :liabilityCapEuro .
+    _:sk_9 odrl:operator odrl:gteq .
+    _:sk_9 odrl:rightOperand 200 .
+} .
+genid:c5c6e14a-6858-7d40-10ca-c460597f1ae8 :score 100 .
+genid:3f3359e8-5625-adf0-e2cd-874038dc706c :score 85 .
+genid:d48f3244-c9ff-62e2-46d1-44d4c6a9c3d8 :score 85 .
+genid:3a9b6398-3d57-879a-90e6-498980eeaf08 :score 79 .
+genid:8468c67c-e2dd-8af8-fa31-006485a75788 :score 89 .
+genid:e1830d38-0c5f-d24e-add5-a27d9cf99088 :score 93 .
+genid:9bdfab08-d724-d5c8-ba20-5e23053c80f4 :score 73 .
+genid:3f3359e8-5625-adf0-e2cd-874038dc706c :severity :High .
+genid:d48f3244-c9ff-62e2-46d1-44d4c6a9c3d8 :severity :High .
+genid:8468c67c-e2dd-8af8-fa31-006485a75788 :severity :High .
+genid:e1830d38-0c5f-d24e-add5-a27d9cf99088 :severity :High .
+genid:c5c6e14a-6858-7d40-10ca-c460597f1ae8 :severity :High .
+genid:3a9b6398-3d57-879a-90e6-498980eeaf08 :severity :Medium .
+genid:9bdfab08-d724-d5c8-ba20-5e23053c80f4 :severity :Medium .
+(:Agreement3 :ConsumerCarol 0) log:outputString "\n=== Risk report for Example Platform Agreement (with fixes) (profile: Carol (example consumer)) ===\n" .
+(:Agreement3 :ConsumerCarol 999) log:outputString "\n--- Suggested mitigations (highest risk first) ---\n" .
+(:Agreement3 :ConsumerCarol 1) log:outputString "1) score=100 (https://example.org/odrl-mitigation-demo#High), clause D6 — Provider can delete user data. This clause is risky because it allows the provider to delete the consumer’s data. Clause D6: We may delete your data at our discretion.\n" .
+(:Agreement3 :ConsumerCarol 2) log:outputString "2) score=93 (https://example.org/odrl-mitigation-demo#High), clause D5 — No data export / portability. This clause is risky because it prohibits exporting data, undermining portability. Clause D5: You may not export or download your data from the service.\n" .
+(:Agreement3 :ConsumerCarol 3) log:outputString "3) score=89 (https://example.org/odrl-mitigation-demo#High), clause D4 — Tracking without opt-in. This clause is risky because it permits tracking without explicit opt-in consent. Clause D4: We may track your activity to improve services.\n" .
+(:Agreement3 :ConsumerCarol 4) log:outputString "4) score=85 (https://example.org/odrl-mitigation-demo#High), clause D2 — Auto-renewal without reminder. This clause is risky because it allows auto-renewal without a reminder. Consumer needs at least 7 days reminder. Clause D2: Your subscription renews automatically unless you cancel.\n" .
+(:Agreement3 :ConsumerCarol 5) log:outputString "5) score=85 (https://example.org/odrl-mitigation-demo#High), clause D1 — Notice period too short. This clause is risky because the notice period (3 days) is below the consumer requirement (14 days). Clause D1: We may change these terms with notice. Notice may be as short as 3 days.\n" .
+(:Agreement3 :ConsumerCarol 6) log:outputString "6) score=79 (https://example.org/odrl-mitigation-demo#Medium), clause D3 — Non-refundable fees. This clause is risky because it declares fees non-refundable, conflicting with a refund/cooling-off expectation (>= 14 days). Clause D3: All fees are non-refundable.\n" .
+(:Agreement3 :ConsumerCarol 7) log:outputString "7) score=73 (https://example.org/odrl-mitigation-demo#Medium), clause D2 — Liability cap too low. This clause is risky because the liability cap (20 EUR) is below the consumer minimum (200 EUR). Clause D2: Your subscription renews automatically unless you cancel.\n" .
+(:Agreement3 :ConsumerCarol (1000 1)) log:outputString "1) clause D6 — Provider can delete user data (score=100). Suggested fix: remove provider discretion to delete data; allow deletion only on consumer request or legal obligation.\n" .
+(:Agreement3 :ConsumerCarol (1000 2)) log:outputString "2) clause D5 — No data export / portability (score=93). Suggested fix: add a permission to export/download user data (data portability).\n" .
+(:Agreement3 :ConsumerCarol (1000 3)) log:outputString "3) clause D4 — Tracking without opt-in (score=89). Suggested fix: require opt-in consent for tracking (optInConsent=true).\n" .
+(:Agreement3 :ConsumerCarol (1000 4)) log:outputString "4) clause D2 — Auto-renewal without reminder (score=85). Suggested fix: add a reminder duty for auto-renewal with reminderDays >= 7.\n" .
+(:Agreement3 :ConsumerCarol (1000 5)) log:outputString "5) clause D1 — Notice period too short (score=85). Suggested fix: ensure prior-notice duty specifies noticeDays >= 14.\n" .
+(:Agreement3 :ConsumerCarol (1000 6)) log:outputString "6) clause D3 — Non-refundable fees (score=79). Suggested fix: allow refunds (e.g., refundAllowed=true) or define a cooling-off period >= 14 days.\n" .
+(:Agreement3 :ConsumerCarol (1000 7)) log:outputString "7) clause D2 — Liability cap too low (score=73). Suggested fix: raise liabilityCapEuro so it is >= 200 EUR (or remove the cap where inappropriate).\n" .

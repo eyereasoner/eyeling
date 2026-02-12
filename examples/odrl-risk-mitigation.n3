@@ -1,0 +1,870 @@
+# =====================================================================================
+# Notation3 (N3) + ODRL Risk Assessment + Mitigation Demo
+#
+# Purpose
+# - Represent an agreement as an ODRL policy graph (odrl:Policy with
+#   odrl:permission / odrl:prohibition / odrl:duty / odrl:constraint).
+# - Detect potentially unfair or risky terms using N3 rules (antecedent => consequent).
+# - Infer risk triples (:Risk instances) with:
+#   * :score / :severity
+#   * :aboutClause / :issue
+#   * :explanation (human-readable justification)
+# - Attach mitigations (:Mitigation instances) with:
+#   * :fixText (human-readable fix)
+#   * :suggestAdd { ... } (quoted N3 graph showing suggested additions)
+# - Rank risks highest->lowest and print an explainable report via log:outputString.
+# - Print a mitigation plan (highest risk first).
+#
+# Data Shape
+#   :Agreement
+#     :policyGraph { ...ODRL triples... }   # quoted formula (N3 graph term)
+#
+# Rules
+# - Use log:includes / log:notIncludes to pattern-match inside the quoted policyGraph.
+# - Generate stable IRIs with log:skolem.
+# - Compute scores using math:* builtins; format strings with string:format.
+#
+# Ranking / Reporting
+# - Collect (score risk) or (score risk fixText) tuples with log:collectAllIn.
+# - Sort with list:sort, reverse with list:reverse, iterate with list:iterate.
+# - Emit lines with log:outputString (run Eyeling in strings-output mode).
+#
+# Notes
+# - Heuristic compliance/risk checker for demo purposes (not legal advice).
+# - Extend by adding more unfair-term rules, more needs, and more mitigations.
+#
+# References
+# - N3 specification: https://w3c.github.io/N3/spec/
+# - Eyeling builtins handbook: https://eyereasoner.github.io/eyeling/HANDBOOK#ch11
+# - ODRL model/vocabulary: https://www.w3.org/TR/odrl-model/
+# =====================================================================================
+
+@prefix :      <https://example.org/odrl-mitigation-demo#>.
+@prefix odrl:  <http://www.w3.org/ns/odrl/2/> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#>.
+@prefix log:   <http://www.w3.org/2000/10/swap/log#>.
+@prefix list:  <http://www.w3.org/2000/10/swap/list#>.
+@prefix math:  <http://www.w3.org/2000/10/swap/math#>.
+@prefix string:<http://www.w3.org/2000/10/swap/string#>.
+
+# -------------------------------------------------------------
+# 1) Consumer profile (needs) — tweak these to drive assessment
+# -------------------------------------------------------------
+
+:ConsumerCarol a :ConsumerProfile;
+  :label "Carol (example consumer)";
+  :hasNeed :Need_ChangeOnlyWithPriorNotice,
+           :Need_ReminderBeforeAutoRenew,
+           :Need_MinLiabilityCap,
+           :Need_DataPortability,
+           :Need_DataNotRemoved,
+           :Need_RefundRequired,
+           :Need_NoTrackingWithoutOptIn.
+
+:Need_ChangeOnlyWithPriorNotice a :Need;
+  :label "Agreement may change only with prior notice";
+  :importance 15;
+  :minNoticeDays 14.
+
+:Need_ReminderBeforeAutoRenew a :Need;
+  :label "Auto-renew only with prior reminder";
+  :importance 10;
+  :minReminderDays 7.
+
+:Need_MinLiabilityCap a :Need;
+  :label "Liability cap must not be too low";
+  :importance 8;
+  :minLiabilityCapEuro 200.
+
+:Need_DataPortability a :Need;
+  :label "Must be able to export my data";
+  :importance 8.
+
+:Need_DataNotRemoved a :Need;
+  :label "Provider must not remove my data";
+  :importance 12.
+
+:Need_RefundRequired a :Need;
+  :label "Fees should be refundable (at least within a cooling-off window)";
+  :importance 9;
+  :minCoolingOffDays 14.
+
+:Need_NoTrackingWithoutOptIn a :Need;
+  :label "No tracking unless I opt in";
+  :importance 9.
+
+# -------------------------------------------------------------
+# 2) Agreement model in ODRL (quoted formula as the “document”)
+# -------------------------------------------------------------
+
+:Agreement3 a :Agreement;
+  :label "Example Platform Agreement (with fixes)";
+  :policyGraph {
+    :Policy3 a odrl:Policy;
+      odrl:permission :PermChangeTerms,
+                      :PermAutoRenew,
+                      :PermChargeFee,
+                      :PermTrackUser,
+                      :PermDeleteUserData;
+      odrl:prohibition :ProhibitExportData.
+
+    # Clause D1: change terms WITH notice duty, but notice is only 3 days (too short vs need 14)
+    :PermChangeTerms a odrl:Permission;
+      odrl:action :changeTerms;
+      odrl:target :AgreementText;
+      odrl:duty :DutyNotify;
+      :clause :ClauseD1.
+
+    :DutyNotify a odrl:Duty;
+      odrl:action :notifyPriorNotice;
+      odrl:constraint :C_noticeDays.
+
+    :C_noticeDays a odrl:Constraint;
+      odrl:leftOperand :noticeDays;
+      odrl:operator odrl:gteq;
+      odrl:rightOperand 3.
+
+    :ClauseD1 a :Clause;
+      :clauseId "D1";
+      :text "We may change these terms with notice. Notice may be as short as 3 days.".
+
+    # Clause D2: auto-renewal, but NO reminder duty
+    :PermAutoRenew a odrl:Permission;
+      odrl:action :autoRenewSubscription;
+      odrl:target :Subscription;
+      :clause :ClauseD2.
+
+    :ClauseD2 a :Clause;
+      :clauseId "D2";
+      :text "Your subscription renews automatically unless you cancel.".
+
+    # Clause D3: fees are non-refundable
+    :PermChargeFee a odrl:Permission;
+      odrl:action :chargeFee;
+      odrl:target :SubscriptionFee;
+      odrl:constraint :C_nonRefundable;
+      :clause :ClauseD3.
+
+    :C_nonRefundable a odrl:Constraint;
+      odrl:leftOperand :refundAllowed;
+      odrl:operator odrl:eq;
+      odrl:rightOperand false.
+
+    :ClauseD3 a :Clause;
+      :clauseId "D3";
+      :text "All fees are non-refundable.".
+
+    # Clause D4: provider may track user, without opt-in
+    :PermTrackUser a odrl:Permission;
+      odrl:action :trackUser;
+      odrl:target :User;
+      :clause :ClauseD4.
+
+    :ClauseD4 a :Clause;
+      :clauseId "D4";
+      :text "We may track your activity to improve services.".
+
+    # Clause D5: prohibits exporting data (no portability)
+    :ProhibitExportData a odrl:Prohibition;
+      odrl:action :exportData;
+      odrl:target :UserData;
+      :clause :ClauseD5.
+
+    :ClauseD5 a :Clause;
+      :clauseId "D5";
+      :text "You may not export or download your data from the service.".
+
+    # Clause D6: provider may delete user data
+    :PermDeleteUserData a odrl:Permission;
+      odrl:action :deleteUserData;
+      odrl:target :UserData;
+      :clause :ClauseD6.
+
+    :ClauseD6 a :Clause;
+      :clauseId "D6";
+      :text "We may delete your data at our discretion.".
+
+    # Clause D7: very low liability cap (20 EUR)
+    :PermAutoRenew odrl:constraint :C_liabilityCap.
+    :C_liabilityCap a odrl:Constraint;
+      odrl:leftOperand :liabilityCapEuro;
+      odrl:operator odrl:eq;
+      odrl:rightOperand 20.
+  }.
+
+# ------------------------------------------------------------------
+# 3) Risk inference rules (unfair-term heuristics + needs-aware)
+#
+# Output model:
+#   ?risk a :Risk ;
+#     :aboutAgreement, :forProfile, :aboutClause, :issue, :rawScore,
+#     :score, :severity, :explanation, ...
+# ------------------------------------------------------------------
+
+# Helper: deterministic risk IRIs
+#   (groundTerm) log:skolem ?iri
+
+# ---------------------------------------------------------
+# R1 — Notice period too short for changes to the agreement
+# ---------------------------------------------------------
+{
+  ?profile a :ConsumerProfile; :hasNeed :Need_ChangeOnlyWithPriorNotice.
+  :Need_ChangeOnlyWithPriorNotice :importance ?w; :minNoticeDays ?minDays.
+
+  ?agreement a :Agreement; :policyGraph ?G.
+  ?G log:includes {
+    ?P a odrl:Policy.
+    ?P odrl:permission ?perm.
+    ?perm odrl:action :changeTerms.
+    ?perm :clause ?clause.
+    ?clause :clauseId ?cid; :text ?txt.
+
+    ?perm odrl:duty ?d.
+    ?d odrl:action :notifyPriorNotice.
+    ?d odrl:constraint ?c.
+    ?c odrl:leftOperand :noticeDays;
+       odrl:operator odrl:gteq;
+       odrl:rightOperand ?days.
+  }.
+
+  ?days math:lessThan ?minDays.
+
+  (70 ?w) math:sum ?raw.
+  ( ?agreement ?profile :NoticeTooShort ?clause ) log:skolem ?risk.
+
+  ( "This clause is risky because the notice period (%s days) is below the consumer requirement (%s days). Clause %s: %s"
+    ?days ?minDays ?cid ?txt
+  ) string:format ?why.
+}
+=>
+{
+  ?risk a :Risk;
+    :aboutAgreement ?agreement;
+    :forProfile ?profile;
+    :aboutClause ?clause;
+    :clauseId ?cid;
+    :issue :NoticeTooShort;
+    :baseScore 70;
+    :needWeight ?w;
+    :rawScore ?raw;
+    :title "Notice period too short";
+    :explanation ?why;
+    :violatesNeed :Need_ChangeOnlyWithPriorNotice.
+}.
+
+# ---------------------------------------
+# R2 — Auto-renewal without reminder duty
+# ---------------------------------------
+{
+  ?profile a :ConsumerProfile; :hasNeed :Need_ReminderBeforeAutoRenew.
+  :Need_ReminderBeforeAutoRenew :importance ?w; :minReminderDays ?minDays.
+
+  ?agreement a :Agreement; :policyGraph ?G.
+  ?G log:includes {
+    ?P a odrl:Policy.
+    ?P odrl:permission ?perm.
+    ?perm odrl:action :autoRenewSubscription.
+    ?perm :clause ?clause.
+    ?clause :clauseId ?cid; :text ?txt.
+  }.
+
+  ?G log:notIncludes {
+    ?perm odrl:duty ?d.
+    ?d odrl:action :sendRenewalReminder.
+  }.
+
+  (75 ?w) math:sum ?raw.
+  ( ?agreement ?profile :AutoRenewNoReminder ?clause ) log:skolem ?risk.
+
+  ( "This clause is risky because it allows auto-renewal without a reminder. Consumer needs at least %s days reminder. Clause %s: %s"
+    ?minDays ?cid ?txt
+  ) string:format ?why.
+}
+=>
+{
+  ?risk a :Risk;
+    :aboutAgreement ?agreement;
+    :forProfile ?profile;
+    :aboutClause ?clause;
+    :clauseId ?cid;
+    :issue :AutoRenewNoReminder;
+    :baseScore 75;
+    :needWeight ?w;
+    :rawScore ?raw;
+    :title "Auto-renewal without reminder";
+    :explanation ?why;
+    :violatesNeed :Need_ReminderBeforeAutoRenew.
+}.
+
+# ------------------------
+# R3 — Non-refundable fees
+# ------------------------
+{
+  ?profile a :ConsumerProfile; :hasNeed :Need_RefundRequired.
+  :Need_RefundRequired :importance ?w; :minCoolingOffDays ?minDays.
+
+  ?agreement a :Agreement; :policyGraph ?G.
+  ?G log:includes {
+    ?P a odrl:Policy.
+    ?P odrl:permission ?perm.
+    ?perm odrl:action :chargeFee.
+    ?perm odrl:constraint ?c.
+    ?c odrl:leftOperand :refundAllowed;
+       odrl:operator odrl:eq;
+       odrl:rightOperand false.
+    ?perm :clause ?clause.
+    ?clause :clauseId ?cid; :text ?txt.
+  }.
+
+  (70 ?w) math:sum ?raw.
+  ( ?agreement ?profile :NonRefundableFee ?clause ) log:skolem ?risk.
+
+  ( "This clause is risky because it declares fees non-refundable, conflicting with a refund/cooling-off expectation (>= %s days). Clause %s: %s"
+    ?minDays ?cid ?txt
+  ) string:format ?why.
+}
+=>
+{
+  ?risk a :Risk;
+    :aboutAgreement ?agreement;
+    :forProfile ?profile;
+    :aboutClause ?clause;
+    :clauseId ?cid;
+    :issue :NonRefundableFee;
+    :baseScore 70;
+    :needWeight ?w;
+    :rawScore ?raw;
+    :title "Non-refundable fees";
+    :explanation ?why;
+    :violatesNeed :Need_RefundRequired.
+}.
+
+# ------------------------------------
+# R4 — Tracking without opt-in consent
+# ------------------------------------
+{
+  ?profile a :ConsumerProfile; :hasNeed :Need_NoTrackingWithoutOptIn.
+  :Need_NoTrackingWithoutOptIn :importance ?w.
+
+  ?agreement a :Agreement; :policyGraph ?G.
+  ?G log:includes {
+    ?P a odrl:Policy.
+    ?P odrl:permission ?perm.
+    ?perm odrl:action :trackUser.
+    ?perm :clause ?clause.
+    ?clause :clauseId ?cid; :text ?txt.
+  }.
+
+  ?G log:notIncludes {
+    ?perm odrl:constraint ?c.
+    ?c odrl:leftOperand :optInConsent;
+       odrl:operator odrl:eq;
+       odrl:rightOperand true.
+  }.
+
+  (80 ?w) math:sum ?raw.
+  ( ?agreement ?profile :TrackingNoOptIn ?clause ) log:skolem ?risk.
+
+  ( "This clause is risky because it permits tracking without explicit opt-in consent. Clause %s: %s"
+    ?cid ?txt
+  ) string:format ?why.
+}
+=>
+{
+  ?risk a :Risk;
+    :aboutAgreement ?agreement;
+    :forProfile ?profile;
+    :aboutClause ?clause;
+    :clauseId ?cid;
+    :issue :TrackingNoOptIn;
+    :baseScore 80;
+    :needWeight ?w;
+    :rawScore ?raw;
+    :title "Tracking without opt-in";
+    :explanation ?why;
+    :violatesNeed :Need_NoTrackingWithoutOptIn.
+}.
+
+# ------------------------------------------------
+# R5 — Prohibition of data export (no portability)
+# ------------------------------------------------
+{
+  ?profile a :ConsumerProfile; :hasNeed :Need_DataPortability.
+  :Need_DataPortability :importance ?w.
+
+  ?agreement a :Agreement; :policyGraph ?G.
+  ?G log:includes {
+    ?P a odrl:Policy.
+    ?P odrl:prohibition ?proh.
+    ?proh odrl:action :exportData.
+    ?proh :clause ?clause.
+    ?clause :clauseId ?cid; :text ?txt.
+  }.
+
+  (85 ?w) math:sum ?raw.
+  ( ?agreement ?profile :NoDataExport ?clause ) log:skolem ?risk.
+
+  ( "This clause is risky because it prohibits exporting data, undermining portability. Clause %s: %s"
+    ?cid ?txt
+  ) string:format ?why.
+}
+=>
+{
+  ?risk a :Risk;
+    :aboutAgreement ?agreement;
+    :forProfile ?profile;
+    :aboutClause ?clause;
+    :clauseId ?cid;
+    :issue :NoDataExport;
+    :baseScore 85;
+    :needWeight ?w;
+    :rawScore ?raw;
+    :title "No data export / portability";
+    :explanation ?why;
+    :violatesNeed :Need_DataPortability.
+}.
+
+# ----------------------------------
+# R6 — Provider may delete user data
+# ----------------------------------
+{
+  ?profile a :ConsumerProfile; :hasNeed :Need_DataNotRemoved.
+  :Need_DataNotRemoved :importance ?w.
+
+  ?agreement a :Agreement; :policyGraph ?G.
+  ?G log:includes {
+    ?P a odrl:Policy.
+    ?P odrl:permission ?perm.
+    ?perm odrl:action :deleteUserData.
+    ?perm :clause ?clause.
+    ?clause :clauseId ?cid; :text ?txt.
+  }.
+
+  (90 ?w) math:sum ?raw.
+  ( ?agreement ?profile :ProviderMayDeleteData ?clause ) log:skolem ?risk.
+
+  ( "This clause is risky because it allows the provider to delete the consumer’s data. Clause %s: %s"
+    ?cid ?txt
+  ) string:format ?why.
+}
+=>
+{
+  ?risk a :Risk;
+    :aboutAgreement ?agreement;
+    :forProfile ?profile;
+    :aboutClause ?clause;
+    :clauseId ?cid;
+    :issue :ProviderMayDeleteData;
+    :baseScore 90;
+    :needWeight ?w;
+    :rawScore ?raw;
+    :title "Provider can delete user data";
+    :explanation ?why;
+    :violatesNeed :Need_DataNotRemoved.
+}.
+
+# --------------------------
+# R7 — Liability cap too low
+# --------------------------
+{
+  ?profile a :ConsumerProfile; :hasNeed :Need_MinLiabilityCap.
+  :Need_MinLiabilityCap :importance ?w; :minLiabilityCapEuro ?minCap.
+
+  ?agreement a :Agreement; :policyGraph ?G.
+  ?G log:includes {
+    ?P a odrl:Policy.
+    ?P odrl:permission ?perm.
+    ?perm odrl:action :autoRenewSubscription.
+    ?perm odrl:constraint ?c.
+    ?c odrl:leftOperand :liabilityCapEuro;
+       odrl:operator odrl:eq;
+       odrl:rightOperand ?cap.
+    ?perm :clause ?clause.
+    ?clause :clauseId ?cid; :text ?txt.
+  }.
+
+  ?cap math:lessThan ?minCap.
+
+  (65 ?w) math:sum ?raw.
+  ( ?agreement ?profile :LiabilityCapTooLow ?clause ) log:skolem ?risk.
+
+  ( "This clause is risky because the liability cap (%s EUR) is below the consumer minimum (%s EUR). Clause %s: %s"
+    ?cap ?minCap ?cid ?txt
+  ) string:format ?why.
+}
+=>
+{
+  ?risk a :Risk;
+    :aboutAgreement ?agreement;
+    :forProfile ?profile;
+    :aboutClause ?clause;
+    :clauseId ?cid;
+    :issue :LiabilityCapTooLow;
+    :baseScore 65;
+    :needWeight ?w;
+    :rawScore ?raw;
+    :title "Liability cap too low";
+    :explanation ?why;
+    :violatesNeed :Need_MinLiabilityCap.
+}.
+
+# --------------------------------------------------------
+# 4) Mitigation inference rules (attach recommended fixes)
+# --------------------------------------------------------
+
+# Fix for :NoticeTooShort — raise notice days to meet requirement
+{
+  ?risk a :Risk;
+    :issue :NoticeTooShort;
+    :aboutAgreement ?agreement;
+    :forProfile ?profile.
+
+  :Need_ChangeOnlyWithPriorNotice :minNoticeDays ?minDays.
+
+  ?agreement :policyGraph ?G.
+  ?G log:includes {
+    ?perm odrl:action :changeTerms.
+  }.
+
+  ( ?risk :Mitigation ) log:skolem ?fix.
+
+  ( "Suggested fix: ensure prior-notice duty specifies noticeDays >= %s."
+    ?minDays
+  ) string:format ?fixText.
+}
+=>
+{
+  ?risk :hasMitigation ?fix.
+  ?fix a :Mitigation;
+    :forRisk ?risk;
+    :fixText ?fixText;
+    :suggestAdd {
+      ?perm odrl:duty [
+        a odrl:Duty;
+        odrl:action :notifyPriorNotice;
+        odrl:constraint [
+          a odrl:Constraint;
+          odrl:leftOperand :noticeDays;
+          odrl:operator odrl:gteq;
+          odrl:rightOperand ?minDays
+        ]
+      ].
+    }.
+}.
+
+# Fix for :AutoRenewNoReminder — add renewal reminder duty
+{
+  ?risk a :Risk;
+    :issue :AutoRenewNoReminder;
+    :aboutAgreement ?agreement;
+    :forProfile ?profile.
+
+  :Need_ReminderBeforeAutoRenew :minReminderDays ?minDays.
+
+  ?agreement :policyGraph ?G.
+  ?G log:includes { ?perm odrl:action :autoRenewSubscription. }.
+
+  ( ?risk :Mitigation ) log:skolem ?fix.
+
+  ( "Suggested fix: add a reminder duty for auto-renewal with reminderDays >= %s."
+    ?minDays
+  ) string:format ?fixText.
+}
+=>
+{
+  ?risk :hasMitigation ?fix.
+  ?fix a :Mitigation;
+    :forRisk ?risk;
+    :fixText ?fixText;
+    :suggestAdd {
+      ?perm odrl:duty [
+        a odrl:Duty;
+        odrl:action :sendRenewalReminder;
+        odrl:constraint [
+          a odrl:Constraint;
+          odrl:leftOperand :reminderDays;
+          odrl:operator odrl:gteq;
+          odrl:rightOperand ?minDays
+        ]
+      ].
+    }.
+}.
+
+# Fix for :NonRefundableFee — allow refund (or add cooling-off window)
+{
+  ?risk a :Risk;
+    :issue :NonRefundableFee;
+    :aboutAgreement ?agreement;
+    :forProfile ?profile.
+
+  :Need_RefundRequired :minCoolingOffDays ?minDays.
+
+  ?agreement :policyGraph ?G.
+  ?G log:includes { ?perm odrl:action :chargeFee. }.
+
+  ( ?risk :Mitigation ) log:skolem ?fix.
+
+  ( "Suggested fix: allow refunds (e.g., refundAllowed=true) or define a cooling-off period >= %s days."
+    ?minDays
+  ) string:format ?fixText.
+}
+=>
+{
+  ?risk :hasMitigation ?fix.
+  ?fix a :Mitigation;
+    :forRisk ?risk;
+    :fixText ?fixText;
+    :suggestAdd {
+      ?perm odrl:constraint [
+        a odrl:Constraint;
+        odrl:leftOperand :refundAllowed;
+        odrl:operator odrl:eq;
+        odrl:rightOperand true
+      ].
+      ?perm odrl:constraint [
+        a odrl:Constraint;
+        odrl:leftOperand :coolingOffDays;
+        odrl:operator odrl:gteq;
+        odrl:rightOperand ?minDays
+      ].
+    }.
+}.
+
+# Fix for :TrackingNoOptIn — require explicit opt-in consent constraint
+{
+  ?risk a :Risk;
+    :issue :TrackingNoOptIn;
+    :aboutAgreement ?agreement;
+    :forProfile ?profile.
+
+  ?agreement :policyGraph ?G.
+  ?G log:includes { ?perm odrl:action :trackUser. }.
+
+  ( ?risk :Mitigation ) log:skolem ?fix.
+
+  "Suggested fix: require opt-in consent for tracking (optInConsent=true)." log:equalTo ?fixText.
+}
+=>
+{
+  ?risk :hasMitigation ?fix.
+  ?fix a :Mitigation;
+    :forRisk ?risk;
+    :fixText ?fixText;
+    :suggestAdd {
+      ?perm odrl:constraint [
+        a odrl:Constraint;
+        odrl:leftOperand :optInConsent;
+        odrl:operator odrl:eq;
+        odrl:rightOperand true
+      ].
+    }.
+}.
+
+# Fix for :NoDataExport — permit data export / portability
+{
+  ?risk a :Risk;
+    :issue :NoDataExport;
+    :aboutAgreement ?agreement;
+    :forProfile ?profile.
+
+  ?agreement :policyGraph ?G.
+
+  ( ?risk :Mitigation ) log:skolem ?fix.
+
+  "Suggested fix: add a permission to export/download user data (data portability)." log:equalTo ?fixText.
+}
+=>
+{
+  ?risk :hasMitigation ?fix.
+  ?fix a :Mitigation;
+    :forRisk ?risk;
+    :fixText ?fixText;
+    :suggestAdd {
+      :Policy3 odrl:permission [
+        a odrl:Permission;
+        odrl:action :exportData;
+        odrl:target :UserData
+      ].
+    }.
+}.
+
+# Fix for :ProviderMayDeleteData — prohibit deletion or constrain to lawful/consumer-requested cases
+{
+  ?risk a :Risk;
+    :issue :ProviderMayDeleteData;
+    :aboutAgreement ?agreement;
+    :forProfile ?profile.
+
+  ?agreement :policyGraph ?G.
+  ?G log:includes { ?perm odrl:action :deleteUserData. }.
+
+  ( ?risk :Mitigation ) log:skolem ?fix.
+
+  "Suggested fix: remove provider discretion to delete data; allow deletion only on consumer request or legal obligation." log:equalTo ?fixText.
+}
+=>
+{
+  ?risk :hasMitigation ?fix.
+  ?fix a :Mitigation;
+    :forRisk ?risk;
+    :fixText ?fixText;
+    :suggestAdd {
+      ?perm odrl:constraint [
+        a odrl:Constraint;
+        odrl:leftOperand :deletionGround;
+        odrl:operator odrl:isAnyOf;
+        odrl:rightOperand ( :consumerRequest :legalObligation )
+      ].
+    }.
+}.
+
+# Fix for :LiabilityCapTooLow — raise cap to meet minimum
+{
+  ?risk a :Risk;
+    :issue :LiabilityCapTooLow;
+    :aboutAgreement ?agreement;
+    :forProfile ?profile.
+
+  :Need_MinLiabilityCap :minLiabilityCapEuro ?minCap.
+
+  ?agreement :policyGraph ?G.
+  ?G log:includes { ?perm odrl:action :autoRenewSubscription. }.
+
+  ( ?risk :Mitigation ) log:skolem ?fix.
+
+  ( "Suggested fix: raise liabilityCapEuro so it is >= %s EUR (or remove the cap where inappropriate)."
+    ?minCap
+  ) string:format ?fixText.
+}
+=>
+{
+  ?risk :hasMitigation ?fix.
+  ?fix a :Mitigation;
+    :forRisk ?risk;
+    :fixText ?fixText;
+    :suggestAdd {
+      ?perm odrl:constraint [
+        a odrl:Constraint;
+        odrl:leftOperand :liabilityCapEuro;
+        odrl:operator odrl:gteq;
+        odrl:rightOperand ?minCap
+      ].
+    }.
+}.
+
+# ---------------------------------------------------
+# 5) Normalize score (clamp at 100) + severity labels
+# ---------------------------------------------------
+
+{ ?r a :Risk; :rawScore ?raw. ?raw math:greaterThan 100. } => { ?r :score 100. }.
+{ ?r a :Risk; :rawScore ?raw. 100 math:greaterThan ?raw. } => { ?r :score ?raw. }.
+{ ?r a :Risk; :rawScore ?raw. ?raw math:equalTo 100. } => { ?r :score 100. }.
+
+{ ?r a :Risk; :score ?s. ?s math:notLessThan 80. } => { ?r :severity :High. }.
+{ ?r a :Risk; :score ?s. ?s math:lessThan 80. ?s math:notLessThan 50. } => { ?r :severity :Medium. }.
+{ ?r a :Risk; :score ?s. ?s math:lessThan 50. } => { ?r :severity :Low. }.
+
+# ----------------------------------------------------------------------------
+# 6) Ranked risk list (highest->lowest) + explainable report + mitigation plan
+# ----------------------------------------------------------------------------
+
+# Header line
+{
+  ?agreement a :Agreement; :label ?alabel.
+  ?profile a :ConsumerProfile; :label ?plabel.
+  ( "\n=== Risk report for %s (profile: %s) ===\n" ?alabel ?plabel ) string:format ?hdr.
+}
+=>
+{
+  ( ?agreement ?profile 0 ) log:outputString ?hdr.
+}.
+
+# Produce ranked risk lines
+{
+  ?agreement a :Agreement.
+  ?profile a :ConsumerProfile.
+
+  ( ( ?score ?risk )
+    { ?risk a :Risk;
+            :aboutAgreement ?agreement;
+            :forProfile ?profile;
+            :score ?score. }
+    ?pairs
+  ) log:collectAllIn 1.
+
+  ?pairs list:sort ?sortedAsc.
+  ?sortedAsc list:reverse ?sortedDesc.
+
+  ?sortedDesc list:iterate ( ?i ?pair ).
+  ( ?i 1 ) math:sum ?rank.
+
+  ( ?pair 0 ) list:memberAt ?score.
+  ( ?pair 1 ) list:memberAt ?risk.
+
+  ?risk :severity ?sev;
+        :clauseId ?cid;
+        :title ?title;
+        :explanation ?why.
+
+  ( "%s) score=%s (%s), clause %s — %s. %s\n"
+    ?rank ?score ?sev ?cid ?title ?why
+  ) string:format ?line.
+}
+=>
+{
+  ( ?agreement ?profile ?rank ) log:outputString ?line.
+}.
+
+# Mitigation header
+{
+  ?agreement a :Agreement.
+  ?profile a :ConsumerProfile.
+  "\n--- Suggested mitigations (highest risk first) ---\n" log:equalTo ?hdr2.
+}
+=>
+{
+  ( ?agreement ?profile 999 ) log:outputString ?hdr2.
+}.
+
+# Produce ranked mitigation lines (aligned with risk ranking by score)
+{
+  ?agreement a :Agreement.
+  ?profile a :ConsumerProfile.
+
+  ( ( ?score ?risk ?fixText )
+    {
+      ?risk a :Risk;
+            :aboutAgreement ?agreement;
+            :forProfile ?profile;
+            :score ?score;
+            :clauseId ?cid;
+            :title ?title;
+            :hasMitigation ?fix.
+      ?fix :fixText ?fixText.
+    }
+    ?triples
+  ) log:collectAllIn 1.
+
+  ?triples list:sort ?sortedAsc.
+  ?sortedAsc list:reverse ?sortedDesc.
+
+  ?sortedDesc list:iterate ( ?i ?t ).
+  ( ?i 1 ) math:sum ?rank.
+
+  ( ?t 0 ) list:memberAt ?score.
+  ( ?t 1 ) list:memberAt ?risk.
+  ( ?t 2 ) list:memberAt ?fixText.
+
+  ?risk :clauseId ?cid;
+        :title ?title.
+
+  ( "%s) clause %s — %s (score=%s). %s\n"
+    ?rank ?cid ?title ?score ?fixText
+  ) string:format ?line.
+}
+=>
+{
+  ( ?agreement ?profile (1000 ?rank) ) log:outputString ?line.
+}.
+
