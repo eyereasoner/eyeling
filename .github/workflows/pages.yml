@@ -2,7 +2,7 @@ name: Deploy Pages
 
 on:
   push:
-    branches: ["main"]
+    branches: ['main']
     # optional: also deploy on tags
     # tags: ["v*"]
   workflow_dispatch:
@@ -13,7 +13,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: 'pages'
   cancel-in-progress: true
 
 jobs:
@@ -34,4 +34,3 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
-

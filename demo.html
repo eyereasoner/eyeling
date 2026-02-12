@@ -853,9 +853,7 @@
                 Enforce HTTPS for dereferencing (--enforce-https)
               </label>
 
-              <label
-                class="toggle"
-                title="Print log:outputString strings (ordered by key) instead of N3 output.">
+              <label class="toggle" title="Print log:outputString strings (ordered by key) instead of N3 output.">
                 <input id="strings-output" type="checkbox" />
                 Print output strings (-r, --strings)
               </label>
@@ -1962,8 +1960,8 @@ const batch = [];
                   'eyeling.js',
                   ...(proofCheckbox.checked ? ['-p'] : []),
                   ...(enforceHttpsCheckbox.checked ? ['--enforce-https'] : []),
-              ...(stringsCheckbox && stringsCheckbox.checked ? ['-r'] : []),
-              'input.n3',
+                  ...(stringsCheckbox && stringsCheckbox.checked ? ['-r'] : []),
+                  'input.n3',
                 ],
                 exit: (code) => {
                   throw { __eyelingExit: true, code };
