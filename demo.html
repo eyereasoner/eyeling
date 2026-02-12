@@ -1709,6 +1709,49 @@ const batch = [];
                   ...(strings ? ["-r"] : []),
                   "input.n3",
                 ],
+
+                stdout: {
+                  write: (chunk, encoding, cb) => {
+                    try {
+                      if (typeof encoding === "function") {
+                        cb = encoding;
+                        encoding = undefined;
+                      }
+                      if (chunk instanceof Uint8Array) {
+                        chunk = new TextDecoder().decode(chunk);
+                      }
+                      lines.push(String(chunk));
+                    } catch (_) {
+                      lines.push(String(chunk));
+                    }
+                    if (typeof cb === "function") {
+                      try { cb(); } catch (_) {}
+                    }
+                    return true;
+                  },
+                  isTTY: false,
+                },
+                stderr: {
+                  write: (chunk, encoding, cb) => {
+                    try {
+                      if (typeof encoding === "function") {
+                        cb = encoding;
+                        encoding = undefined;
+                      }
+                      if (chunk instanceof Uint8Array) {
+                        chunk = new TextDecoder().decode(chunk);
+                      }
+                      lines.push(String(chunk));
+                    } catch (_) {
+                      lines.push(String(chunk));
+                    }
+                    if (typeof cb === "function") {
+                      try { cb(); } catch (_) {}
+                    }
+                    return true;
+                  },
+                  isTTY: false,
+                },
                 exit: (code) => {
                   throw { __eyelingExit: true, code };
                 },
@@ -1963,6 +2006,49 @@ const batch = [];
                   ...(stringsCheckbox && stringsCheckbox.checked ? ['-r'] : []),
                   'input.n3',
                 ],
+
+                stdout: {
+                  write: (chunk, encoding, cb) => {
+                    try {
+                      if (typeof encoding === 'function') {
+                        cb = encoding;
+                        encoding = undefined;
+                      }
+                      if (chunk instanceof Uint8Array) {
+                        chunk = new TextDecoder().decode(chunk);
+                      }
+                      lines.push(String(chunk));
+                    } catch (_) {
+                      lines.push(String(chunk));
+                    }
+                    if (typeof cb === 'function') {
+                      try { cb(); } catch (_) {}
+                    }
+                    return true;
+                  },
+                  isTTY: false,
+                },
+                stderr: {
+                  write: (chunk, encoding, cb) => {
+                    try {
+                      if (typeof encoding === 'function') {
+                        cb = encoding;
+                        encoding = undefined;
+                      }
+                      if (chunk instanceof Uint8Array) {
+                        chunk = new TextDecoder().decode(chunk);
+                      }
+                      lines.push(String(chunk));
+                    } catch (_) {
+                      lines.push(String(chunk));
+                    }
+                    if (typeof cb === 'function') {
+                      try { cb(); } catch (_) {}
+                    }
+                    return true;
+                  },
+                  isTTY: false,
+                },
                 exit: (code) => {
                   throw { __eyelingExit: true, code };
                 },
