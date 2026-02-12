@@ -1,0 +1,490 @@
+@prefix :      <https://example.org/odrl-risk#>.
+@prefix odrl:  <http://www.w3.org/ns/odrl/2/>.
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#>.
+
+@prefix log:   <http://www.w3.org/2000/10/swap/log#>.
+@prefix math:  <http://www.w3.org/2000/10/swap/math#>.
+@prefix list:  <http://www.w3.org/2000/10/swap/list#>.
+@prefix string:<http://www.w3.org/2000/10/swap/string#>.
+
+# =========================================================
+# Vocabulary (minimal; extend as needed)
+# =========================================================
+
+:RiskAssessment a rdf:Class.
+:Issue          a rdf:Class.
+:Risk           a rdf:Class.
+:RiskCategory   a rdf:Class.
+:Requirement    a rdf:Class.
+:Violation      a rdf:Class.
+
+:forAgreement     a rdf:Property.
+:forConsumer      a rdf:Property.
+
+:hasIssue         a rdf:Property.     # Agreement -> Issue
+:issueCategory    a rdf:Property.     # Issue -> RiskCategory
+:forClause        a rdf:Property.     # Issue/Risk -> ODRL Rule (Permission etc.)
+
+:hasRisk          a rdf:Property.     # Assessment -> Risk
+:inAssessment     a rdf:Property.     # Risk -> Assessment
+:riskCategory     a rdf:Property.
+:riskScore        a rdf:Property.
+:riskLevel        a rdf:Property.
+:riskReason       a rdf:Property.
+:riskRank         a rdf:Property.
+:rankedRiskItems  a rdf:Property.     # Assessment -> rdf:List of items
+
+:hasRequirement   a rdf:Property.     # ConsumerProfile -> Requirement
+:reqText          a rdf:Property.
+
+:inAssessmentV    a rdf:Property.     # Violation -> Assessment
+:requirement      a rdf:Property.     # Violation -> Requirement
+
+# Requirements
+:prohibitsAction            a rdf:Property.  # e.g., :DeleteData
+:requiresNoticeBeforeAction a rdf:Property.  # e.g., :ChangeTerms
+:minNotice                  a rdf:Property.  # xsd:duration
+
+# Extracted helpers
+:noticeDelay a rdf:Property.  # xsd:duration extracted from odrl:delayPeriod constraint
+
+# =========================================================
+# ODRL Profile Terms (extendable actions/assets)
+# =========================================================
+
+:ChangeTerms       a odrl:Action.
+:Notify            a odrl:Action.
+:DeleteData        a odrl:Action.
+:ShareForMarketing a odrl:Action.
+
+:AgreementText a odrl:Asset.
+:UserData      a odrl:Asset.
+
+# =========================================================
+# Risk categories (scores + human explanations)
+# =========================================================
+
+:ChangeNoNotice a :RiskCategory;
+  :baseScore 90;
+  :why "This clause allows unilateral changes without a prior-notice obligation.".
+
+:DeleteDataAllowed a :RiskCategory;
+  :baseScore 85;
+  :why "This clause allows deletion of consumer data.".
+
+:ThirdPartyShare a :RiskCategory;
+  :baseScore 60;
+  :why "This clause allows sharing personal data for marketing without a clear consent/opt-out duty.".
+
+:NoticeTooShort a :RiskCategory;
+  :baseScore 70;
+  :why "This clause allows changes with insufficient prior notice for the consumer's requirement.".
+
+:NoticeUnspecified a :RiskCategory;
+  :baseScore 80;
+  :why "This clause mentions notification, but does not specify a prior-notice period.".
+
+:baseScore a rdf:Property.
+:why      a rdf:Property.
+
+# =========================================================
+# Example Agreement in ODRL (replace with your real data)
+# =========================================================
+
+:Provider a odrl:Party.
+:Consumer a odrl:Party.
+
+:Agreement1 a odrl:Agreement;
+  odrl:uid <urn:agreement:1>;
+  odrl:permission :pChange, :pDelete, :pShare.
+
+# Change terms at any time, no notice duty
+:pChange a odrl:Permission;
+  odrl:assigner :Provider;
+  odrl:assignee :Consumer;
+  odrl:target   :AgreementText;
+  odrl:action   :ChangeTerms.
+
+# Delete data at any time
+:pDelete a odrl:Permission;
+  odrl:assigner :Provider;
+  odrl:assignee :Consumer;
+  odrl:target   :UserData;
+  odrl:action   :DeleteData.
+
+# Share data for marketing (simplified)
+:pShare a odrl:Permission;
+  odrl:assigner :Provider;
+  odrl:assignee :Consumer;
+  odrl:target   :UserData;
+  odrl:action   :ShareForMarketing.
+
+# =========================================================
+# Example consumer needs (replace/extend)
+# =========================================================
+
+:ConsumerProfile a rdf:Class.
+
+:Alice a :ConsumerProfile;
+  :hasRequirement :ReqNoDelete, :ReqNotice14D.
+
+:ReqNoDelete a :Requirement;
+  :prohibitsAction :DeleteData;
+  :reqText "My data cannot be removed.".
+
+:ReqNotice14D a :Requirement;
+  :requiresNoticeBeforeAction :ChangeTerms;
+  :minNotice "P14D"^^xsd:duration;
+  :reqText "The agreement may change only with at least 14 days prior notice.".
+
+# =========================================================
+# Assessment request
+# =========================================================
+
+:Assessment1 a :RiskAssessment;
+  :forAgreement :Agreement1;
+  :forConsumer  :Alice.
+
+# =========================================================
+# 1) Extract features from ODRL (notice delay from a Notify duty)
+#    ODRL's delayPeriod is an xsd:duration leftOperand. (We accept any operator.) 
+# =========================================================
+
+{
+  ?perm a odrl:Permission;
+        odrl:action :ChangeTerms;
+        odrl:duty ?duty.
+  ?duty odrl:action :Notify;
+        odrl:constraint ?c.
+  ?c odrl:leftOperand odrl:delayPeriod;
+     odrl:rightOperand ?delay.
+}
+=>
+{
+  ?perm :noticeDelay ?delay.
+}.
+
+# =========================================================
+# 2) Detect (agreement-level) issues = "unfair term patterns"
+# =========================================================
+
+# Change with no notify duty (scoped negation-as-failure)
+{
+  ?agr a odrl:Agreement; odrl:permission ?perm.
+  ?perm odrl:action :ChangeTerms.
+  1 log:notIncludes { ?perm odrl:duty [ odrl:action :Notify ]. }.
+
+  ( ?perm :ChangeNoNotice ) log:skolem ?issue.
+}
+=>
+{
+  ?issue a :Issue;
+         :forClause ?perm;
+         :issueCategory :ChangeNoNotice.
+  ?agr :hasIssue ?issue.
+}.
+
+# Data deletion allowed
+{
+  ?agr a odrl:Agreement; odrl:permission ?perm.
+  ?perm odrl:action :DeleteData; odrl:target :UserData.
+
+  ( ?perm :DeleteDataAllowed ) log:skolem ?issue.
+}
+=>
+{
+  ?issue a :Issue;
+         :forClause ?perm;
+         :issueCategory :DeleteDataAllowed.
+  ?agr :hasIssue ?issue.
+}.
+
+# Third-party share (marketing)
+{
+  ?agr a odrl:Agreement; odrl:permission ?perm.
+  ?perm odrl:action :ShareForMarketing; odrl:target :UserData.
+
+  ( ?perm :ThirdPartyShare ) log:skolem ?issue.
+}
+=>
+{
+  ?issue a :Issue;
+         :forClause ?perm;
+         :issueCategory :ThirdPartyShare.
+  ?agr :hasIssue ?issue.
+}.
+
+# =========================================================
+# 3) Consumer-needs-aware violations (per assessment)
+# =========================================================
+
+# Violation: consumer prohibits DeleteData, and clause permits it
+{
+  ?assess a :RiskAssessment; :forAgreement ?agr; :forConsumer ?c.
+  ?c :hasRequirement ?req.
+  ?req :prohibitsAction :DeleteData.
+
+  ?agr odrl:permission ?clause.
+  ?clause odrl:action :DeleteData; odrl:target :UserData.
+
+  ( ?assess ?clause ?req ) log:skolem ?v.
+}
+=>
+{
+  ?v a :Violation;
+     :inAssessmentV ?assess;
+     :forClause ?clause;
+     :requirement ?req.
+}.
+
+# Violation: consumer requires notice before ChangeTerms, but there is no notify duty at all
+{
+  ?assess a :RiskAssessment; :forAgreement ?agr; :forConsumer ?c.
+  ?c :hasRequirement ?req.
+  ?req :requiresNoticeBeforeAction :ChangeTerms.
+
+  ?agr odrl:permission ?clause.
+  ?clause odrl:action :ChangeTerms.
+
+  1 log:notIncludes { ?clause odrl:duty [ odrl:action :Notify ]. }.
+
+  ( ?assess ?clause ?req ) log:skolem ?v.
+}
+=>
+{
+  ?v a :Violation;
+     :inAssessmentV ?assess;
+     :forClause ?clause;
+     :requirement ?req.
+}.
+
+# Violation: consumer requires notice with minNotice, but delay is present and too short
+{
+  ?assess a :RiskAssessment; :forAgreement ?agr; :forConsumer ?c.
+  ?c :hasRequirement ?req.
+  ?req :requiresNoticeBeforeAction :ChangeTerms; :minNotice ?min.
+
+  ?agr odrl:permission ?clause.
+  ?clause odrl:action :ChangeTerms; :noticeDelay ?delay.
+
+  ?delay math:lessThan ?min.
+
+  ( ?assess ?clause ?req ) log:skolem ?v.
+}
+=>
+{
+  ?v a :Violation;
+     :inAssessmentV ?assess;
+     :forClause ?clause;
+     :requirement ?req.
+}.
+
+# Violation: notify duty exists but no delayPeriod constraint is specified (so "prior notice" is not guaranteed)
+{
+  ?assess a :RiskAssessment; :forAgreement ?agr; :forConsumer ?c.
+  ?c :hasRequirement ?req.
+  ?req :requiresNoticeBeforeAction :ChangeTerms.
+
+  ?agr odrl:permission ?clause.
+  ?clause odrl:action :ChangeTerms;
+          odrl:duty [ odrl:action :Notify ].
+
+  1 log:notIncludes { ?clause :noticeDelay ?anyDelay. }.
+
+  ( ?assess ?clause ?req ) log:skolem ?v.
+}
+=>
+{
+  ?v a :Violation;
+     :inAssessmentV ?assess;
+     :forClause ?clause;
+     :requirement ?req.
+}.
+
+# =========================================================
+# 4) Build assessment risks (scoring + explanations)
+# =========================================================
+
+# 4a) Base risks from agreement-level issues (no consumer bonus)
+{
+  ?assess a :RiskAssessment; :forAgreement ?agr.
+  ?agr :hasIssue ?issue.
+  ?issue :forClause ?clause; :issueCategory ?cat.
+  ?cat :baseScore ?base; :why ?why.
+
+  # Guard: only if there is no violation for this clause in this assessment
+  1 log:notIncludes { ?v a :Violation; :inAssessmentV ?assess; :forClause ?clause. }.
+
+  ( ?assess ?clause ?cat ) log:skolem ?r.
+}
+=>
+{
+  ?r a :Risk;
+     :inAssessment ?assess;
+     :forClause ?clause;
+     :riskCategory ?cat;
+     :riskScore ?base;
+     :riskReason ?why.
+  ?assess :hasRisk ?r.
+}.
+
+# 4b) If a violation exists for that clause, add +15 and include the consumer requirement text
+{
+  ?assess a :RiskAssessment; :forAgreement ?agr; :forConsumer ?c.
+  ?agr :hasIssue ?issue.
+  ?issue :forClause ?clause; :issueCategory ?cat.
+  ?cat :baseScore ?base; :why ?why.
+
+  ?v a :Violation; :inAssessmentV ?assess; :forClause ?clause; :requirement ?req.
+  ?req :reqText ?reqText.
+
+  ( ?base 15 ) math:sum ?score.
+  ( "%s (violates consumer need: %s)" ?why ?reqText ) string:format ?why2.
+
+  ( ?assess ?clause ?cat ) log:skolem ?r.
+}
+=>
+{
+  ?r a :Risk;
+     :inAssessment ?assess;
+     :forClause ?clause;
+     :riskCategory ?cat;
+     :riskScore ?score;
+     :riskReason ?why2.
+  ?assess :hasRisk ?r.
+}.
+
+# 4c) Consumer-specific extra risks for notice mismatch:
+#     - If noticeDelay exists but is too short => :NoticeTooShort
+{
+  ?assess a :RiskAssessment; :forAgreement ?agr; :forConsumer ?c.
+  ?c :hasRequirement ?req.
+  ?req :requiresNoticeBeforeAction :ChangeTerms; :minNotice ?min; :reqText ?reqText.
+
+  ?agr odrl:permission ?clause.
+  ?clause odrl:action :ChangeTerms; :noticeDelay ?delay.
+  ?delay math:lessThan ?min.
+
+  :NoticeTooShort :baseScore ?base; :why ?why.
+  ( ?base 15 ) math:sum ?score.
+  ( "%s Required: %s, provided: %s. (%s)" ?why ?min ?delay ?reqText ) string:format ?why2.
+
+  ( ?assess ?clause :NoticeTooShort ) log:skolem ?r2.
+}
+=>
+{
+  ?r2 a :Risk;
+      :inAssessment ?assess;
+      :forClause ?clause;
+      :riskCategory :NoticeTooShort;
+      :riskScore ?score;
+      :riskReason ?why2.
+  ?assess :hasRisk ?r2.
+}.
+
+#     - If notify exists but delay period unspecified => :NoticeUnspecified
+{
+  ?assess a :RiskAssessment; :forAgreement ?agr; :forConsumer ?c.
+  ?c :hasRequirement ?req.
+  ?req :requiresNoticeBeforeAction :ChangeTerms; :reqText ?reqText.
+
+  ?agr odrl:permission ?clause.
+  ?clause odrl:action :ChangeTerms;
+          odrl:duty [ odrl:action :Notify ].
+
+  1 log:notIncludes { ?clause :noticeDelay ?anyDelay. }.
+
+  :NoticeUnspecified :baseScore ?base; :why ?why.
+  ( ?base 15 ) math:sum ?score.
+  ( "%s (%s)" ?why ?reqText ) string:format ?why2.
+
+  ( ?assess ?clause :NoticeUnspecified ) log:skolem ?r3.
+}
+=>
+{
+  ?r3 a :Risk;
+      :inAssessment ?assess;
+      :forClause ?clause;
+      :riskCategory :NoticeUnspecified;
+      :riskScore ?score;
+      :riskReason ?why2.
+  ?assess :hasRisk ?r3.
+}.
+
+# =========================================================
+# 5) Risk levels + ranking (highest -> lowest) with explanations
+# =========================================================
+
+{
+  ?r a :Risk; :riskScore ?s.  ?s math:notLessThan 80.
+} => { ?r :riskLevel :High. }.
+
+{
+  ?r a :Risk; :riskScore ?s.
+  ?s math:notLessThan 50.  ?s math:lessThan 80.
+} => { ?r :riskLevel :Medium. }.
+
+{
+  ?r a :Risk; :riskScore ?s.  ?s math:lessThan 50.
+} => { ?r :riskLevel :Low. }.
+
+# Collect risk "items" for an assessment:
+# item = (negScore score risk clause category level reason)
+# Use negScore so list:sort puts highest scores first.
+{
+  ?assess a :RiskAssessment.
+
+  (
+    ( ?neg ?score ?risk ?clause ?category ?level ?reason )
+    {
+      ?risk a :Risk;
+            :inAssessment ?assess;
+            :riskScore ?score;
+            :forClause ?clause;
+            :riskCategory ?category;
+            :riskLevel ?level;
+            :riskReason ?reason.
+      ?score math:negation ?neg.
+    }
+    ?items
+  ) log:collectAllIn 1.
+
+  ?items list:sort ?sorted.
+}
+=>
+{
+  ?assess :rankedRiskItems ?sorted.
+}.
+
+# Assign ranks and emit an explainable, ranked report as strings (for --strings / -r).
+{
+  ?assess :rankedRiskItems ?sorted.
+  ?sorted list:iterate ?pair.
+
+  ( ?pair 0 ) list:memberAt ?i0.
+  ( ?pair 1 ) list:memberAt ?item.
+
+  ( ?i0 1 ) math:sum ?rank.
+
+  ( ?item 1 ) list:memberAt ?score.
+  ( ?item 2 ) list:memberAt ?risk.
+  ( ?item 3 ) list:memberAt ?clause.
+  ( ?item 4 ) list:memberAt ?category.
+  ( ?item 5 ) list:memberAt ?level.
+  ( ?item 6 ) list:memberAt ?reason.
+
+  (10000 ?rank) math:sum ?keyNum.
+  ("urn:rank:" ?keyNum) string:concatenation ?keyTxt.
+  ?keyIri log:uri ?keyTxt.
+
+  ("#%s | score=%s | level=%s | clause=%s | category=%s | %s\n"
+     ?rank ?score ?level ?clause ?category ?reason
+  ) string:format ?line.
+}
+=>
+{
+  ?risk :riskRank ?rank.
+  ?keyIri log:outputString ?line.
+}.
+

@@ -1,0 +1,64 @@
+@prefix : <https://example.org/agreement#> .
+@prefix genid: <https://eyereasoner.github.io/.well-known/genid/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+genid:ad8895ec-3fa5-77d6-45ba-b6a849bcc5d4 a :Risk .
+genid:ad8895ec-3fa5-77d6-45ba-b6a849bcc5d4 :aboutAgreement :Agreement1 .
+genid:ad8895ec-3fa5-77d6-45ba-b6a849bcc5d4 :forProfile :ConsumerAlice .
+genid:ad8895ec-3fa5-77d6-45ba-b6a849bcc5d4 :aboutClause :ClauseC1 .
+genid:ad8895ec-3fa5-77d6-45ba-b6a849bcc5d4 :clauseId "C1" .
+genid:ad8895ec-3fa5-77d6-45ba-b6a849bcc5d4 :issue :UnilateralChangeNoNotice .
+genid:ad8895ec-3fa5-77d6-45ba-b6a849bcc5d4 :baseScore 80 .
+genid:ad8895ec-3fa5-77d6-45ba-b6a849bcc5d4 :needWeight 15 .
+genid:ad8895ec-3fa5-77d6-45ba-b6a849bcc5d4 :rawScore 95 .
+genid:ad8895ec-3fa5-77d6-45ba-b6a849bcc5d4 :title "Unilateral change without notice" .
+genid:ad8895ec-3fa5-77d6-45ba-b6a849bcc5d4 :explanation "This clause is risky because it allows unilateral changes without any prior notice. Clause C1: We may change these terms at any time. Continued use means acceptance." .
+genid:ad8895ec-3fa5-77d6-45ba-b6a849bcc5d4 :violatesNeed :Need_ChangeOnlyWithPriorNotice .
+genid:34253590-0e87-3462-644e-ba2855403f18 a :Risk .
+genid:34253590-0e87-3462-644e-ba2855403f18 :aboutAgreement :Agreement1 .
+genid:34253590-0e87-3462-644e-ba2855403f18 :forProfile :ConsumerAlice .
+genid:34253590-0e87-3462-644e-ba2855403f18 :aboutClause :ClauseC2 .
+genid:34253590-0e87-3462-644e-ba2855403f18 :clauseId "C2" .
+genid:34253590-0e87-3462-644e-ba2855403f18 :issue :ProviderMayDeleteData .
+genid:34253590-0e87-3462-644e-ba2855403f18 :baseScore 90 .
+genid:34253590-0e87-3462-644e-ba2855403f18 :needWeight 20 .
+genid:34253590-0e87-3462-644e-ba2855403f18 :rawScore 110 .
+genid:34253590-0e87-3462-644e-ba2855403f18 :title "Provider can delete user data" .
+genid:34253590-0e87-3462-644e-ba2855403f18 :explanation "This clause is risky because it allows the provider to remove (delete) the consumer’s data. Clause C2: We may delete your data at our discretion, with or without notice." .
+genid:34253590-0e87-3462-644e-ba2855403f18 :violatesNeed :Need_DataNotRemoved .
+genid:8dab0b68-0018-e9b2-fbd1-68dce3834c4c a :Risk .
+genid:8dab0b68-0018-e9b2-fbd1-68dce3834c4c :aboutAgreement :Agreement1 .
+genid:8dab0b68-0018-e9b2-fbd1-68dce3834c4c :forProfile :ConsumerAlice .
+genid:8dab0b68-0018-e9b2-fbd1-68dce3834c4c :aboutClause :ClauseC3 .
+genid:8dab0b68-0018-e9b2-fbd1-68dce3834c4c :clauseId "C3" .
+genid:8dab0b68-0018-e9b2-fbd1-68dce3834c4c :issue :ShareDataNoConsent .
+genid:8dab0b68-0018-e9b2-fbd1-68dce3834c4c :baseScore 85 .
+genid:8dab0b68-0018-e9b2-fbd1-68dce3834c4c :needWeight 10 .
+genid:8dab0b68-0018-e9b2-fbd1-68dce3834c4c :rawScore 95 .
+genid:8dab0b68-0018-e9b2-fbd1-68dce3834c4c :title "Data sharing without consent" .
+genid:8dab0b68-0018-e9b2-fbd1-68dce3834c4c :explanation "This clause is risky because it permits data sharing without an explicit consent requirement. Clause C3: We may share your data with partners for any purpose." .
+genid:8dab0b68-0018-e9b2-fbd1-68dce3834c4c :violatesNeed :Need_NoDataSharingWithoutConsent .
+genid:289911f0-f9ff-b21e-40f1-ae91ae99deec a :Risk .
+genid:289911f0-f9ff-b21e-40f1-ae91ae99deec :aboutAgreement :Agreement1 .
+genid:289911f0-f9ff-b21e-40f1-ae91ae99deec :forProfile :ConsumerAlice .
+genid:289911f0-f9ff-b21e-40f1-ae91ae99deec :aboutClause :ClauseC4 .
+genid:289911f0-f9ff-b21e-40f1-ae91ae99deec :clauseId "C4" .
+genid:289911f0-f9ff-b21e-40f1-ae91ae99deec :issue :CourtAccessWaiver .
+genid:289911f0-f9ff-b21e-40f1-ae91ae99deec :baseScore 60 .
+genid:289911f0-f9ff-b21e-40f1-ae91ae99deec :needWeight 0 .
+genid:289911f0-f9ff-b21e-40f1-ae91ae99deec :rawScore 60 .
+genid:289911f0-f9ff-b21e-40f1-ae91ae99deec :title "Court access waiver / mandatory arbitration" .
+genid:289911f0-f9ff-b21e-40f1-ae91ae99deec :explanation "This clause is risky because it restricts access to court (mandatory arbitration / waiver). Clause C4: You waive your right to go to court; disputes must be arbitrated." .
+genid:34253590-0e87-3462-644e-ba2855403f18 :score 100 .
+genid:ad8895ec-3fa5-77d6-45ba-b6a849bcc5d4 :score 95 .
+genid:8dab0b68-0018-e9b2-fbd1-68dce3834c4c :score 95 .
+genid:289911f0-f9ff-b21e-40f1-ae91ae99deec :score 60 .
+genid:ad8895ec-3fa5-77d6-45ba-b6a849bcc5d4 :severity :High .
+genid:34253590-0e87-3462-644e-ba2855403f18 :severity :High .
+genid:8dab0b68-0018-e9b2-fbd1-68dce3834c4c :severity :High .
+genid:289911f0-f9ff-b21e-40f1-ae91ae99deec :severity :Medium .
+(:Agreement1 :ConsumerAlice 0) log:outputString "\n=== Risk report for Example SaaS Agreement (profile: Alice (example consumer)) ===\n" .
+(:Agreement1 :ConsumerAlice 1) log:outputString "1) score=100 (https://example.org/agreement#High), clause C2 — Provider can delete user data. This clause is risky because it allows the provider to remove (delete) the consumer’s data. Clause C2: We may delete your data at our discretion, with or without notice.\n" .
+(:Agreement1 :ConsumerAlice 2) log:outputString "2) score=95 (https://example.org/agreement#High), clause C1 — Unilateral change without notice. This clause is risky because it allows unilateral changes without any prior notice. Clause C1: We may change these terms at any time. Continued use means acceptance.\n" .
+(:Agreement1 :ConsumerAlice 3) log:outputString "3) score=95 (https://example.org/agreement#High), clause C3 — Data sharing without consent. This clause is risky because it permits data sharing without an explicit consent requirement. Clause C3: We may share your data with partners for any purpose.\n" .
+(:Agreement1 :ConsumerAlice 4) log:outputString "4) score=60 (https://example.org/agreement#Medium), clause C4 — Court access waiver / mandatory arbitration. This clause is risky because it restricts access to court (mandatory arbitration / waiver). Clause C4: You waive your right to go to court; disputes must be arbitrated.\n" .

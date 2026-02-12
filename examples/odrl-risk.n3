@@ -1,0 +1,439 @@
+# =======================================================================================
+# Notation3 (N3) + ODRL Risk Assessment Demo
+#
+# Purpose
+#   - Represent an agreement as an ODRL policy graph (odrl:Policy with
+#     odrl:permission / odrl:prohibition / odrl:duty / odrl:constraint).
+#   - Detect potentially unfair or risky terms using N3 rules (antecedent => consequent).
+#   - Infer risk triples (:Risk instances) with:
+#       * :score / :severity
+#       * :aboutClause / :issue
+#       * :explanation (human-readable justification)
+#   - Rank risks highest->lowest and print an explainable report via log:outputString.
+#   - Make scoring needs-aware (consumer profile requirements raise/lower scores).
+#
+# Data Shape
+#   :Agreement
+#     :policyGraph { ...ODRL triples... }   # quoted formula (N3 graph term)
+#
+# Rules
+#   - Use log:includes / log:notIncludes to pattern-match inside the quoted policyGraph.
+#   - Generate stable risk IRIs using log:skolem.
+#   - Compute scores using math:* builtins; format explanations with string:format.
+#
+# Ranking / Reporting
+#   - Collect (score risk) pairs with log:collectAllIn.
+#   - Sort with list:sort, reverse with list:reverse, iterate with list:iterate.
+#   - Emit lines with log:outputString (run Eyeling in strings-output mode).
+#
+# Notes
+#   - This is a heuristic compliance/risk checker, not legal advice.
+#   - Extend by adding more unfair-term rules and more consumer needs.
+#
+# References
+#   - N3 specification: https://w3c.github.io/N3/spec/
+#   - Eyeling builtins handbook: https://eyereasoner.github.io/eyeling/HANDBOOK#ch11
+#   - ODRL model/vocabulary: https://www.w3.org/TR/odrl-model/
+# =======================================================================================
+
+@prefix :      <https://example.org/agreement#>.
+@prefix odrl:  <http://www.w3.org/ns/odrl/2/> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#>.
+@prefix log:   <http://www.w3.org/2000/10/swap/log#>.
+@prefix list:  <http://www.w3.org/2000/10/swap/list#>.
+@prefix math:  <http://www.w3.org/2000/10/swap/math#>.
+@prefix string:<http://www.w3.org/2000/10/swap/string#>.
+
+# -------------------------------------------------------------
+# 1) Consumer profile (needs) — tweak these to drive assessment
+# -------------------------------------------------------------
+
+:ConsumerAlice a :ConsumerProfile;
+  :label "Alice (example consumer)";
+  :hasNeed :Need_DataNotRemoved,
+           :Need_ChangeOnlyWithPriorNotice,
+           :Need_NoDataSharingWithoutConsent.
+
+:Need_DataNotRemoved a :Need;
+  :label "Provider must not remove my data";
+  :importance 20.
+
+:Need_ChangeOnlyWithPriorNotice a :Need;
+  :label "Agreement may change only with prior notice";
+  :importance 15;
+  :minNoticeDays 30.
+
+:Need_NoDataSharingWithoutConsent a :Need;
+  :label "No data sharing without consent";
+  :importance 10.
+
+# -------------------------------------------------------------
+# 2) Agreement model in ODRL (quoted formula as the “document”)
+# -------------------------------------------------------------
+
+:Agreement1 a :Agreement;
+  :label "Example SaaS Agreement";
+  :policyGraph {
+    :Policy1 a odrl:Policy;
+      odrl:permission :PermChangeTerms,
+                      :PermDeleteUserData,
+                      :PermShareUserData;
+      odrl:prohibition :ProhibitCourtAccess.
+
+    # Clause C1: change terms, but NO prior notice duty (risky vs Need_ChangeOnlyWithPriorNotice)
+    :PermChangeTerms a odrl:Permission;
+      odrl:action :changeTerms;
+      odrl:target :AgreementText;
+      :clause :ClauseC1.
+
+    :ClauseC1 a :Clause;
+      :clauseId "C1";
+      :text "We may change these terms at any time. Continued use means acceptance.".
+
+    # Clause C2: provider may delete user data (risky vs Need_DataNotRemoved)
+    :PermDeleteUserData a odrl:Permission;
+      odrl:action :deleteUserData;
+      odrl:target :UserData;
+      :clause :ClauseC2.
+
+    :ClauseC2 a :Clause;
+      :clauseId "C2";
+      :text "We may delete your data at our discretion, with or without notice.".
+
+    # Clause C3: provider may share user data, no consent constraint (risky vs Need_NoDataSharingWithoutConsent)
+    :PermShareUserData a odrl:Permission;
+      odrl:action :shareUserData;
+      odrl:target :UserData;
+      :clause :ClauseC3.
+
+    :ClauseC3 a :Clause;
+      :clauseId "C3";
+      :text "We may share your data with partners for any purpose.".
+
+    # Clause C4: prohibits going to court (mandatory arbitration / waiver) — general risk example
+    :ProhibitCourtAccess a odrl:Prohibition;
+      odrl:action :goToCourt;
+      odrl:target :Dispute;
+      :clause :ClauseC4.
+
+    :ClauseC4 a :Clause;
+      :clauseId "C4";
+      :text "You waive your right to go to court; disputes must be arbitrated.".
+  }.
+
+# ------------------------------------------------------------------
+# 3) Risk inference rules (unfair-term heuristics + needs-aware)
+#
+# Output model:
+#   ?risk a :Risk ;
+#     :aboutAgreement, :forProfile, :aboutClause, :issue, :rawScore,
+#     :score, :severity, :explanation, ...
+# ------------------------------------------------------------------
+
+# Helper: create deterministic risk IDs (so ranking works nicely)
+#   (groundTerm) log:skolem ?iri
+# Eyeling supports log:skolem :contentReference[oaicite:3]{index=3}.
+
+# -------------------------------------------
+# R1 — Unilateral change WITHOUT prior notice
+# -------------------------------------------
+{
+  ?profile a :ConsumerProfile; :hasNeed :Need_ChangeOnlyWithPriorNotice.
+  :Need_ChangeOnlyWithPriorNotice :importance ?w.
+
+  ?agreement a :Agreement; :policyGraph ?G.
+
+  ?G log:includes {
+    ?P a odrl:Policy.
+    ?P odrl:permission ?perm.
+    ?perm odrl:action :changeTerms.
+    ?perm :clause ?clause.
+    ?clause :clauseId ?cid; :text ?txt.
+  }.
+
+  # Closed-world-ish check inside the agreement graph:
+  ?G log:notIncludes {
+    ?perm odrl:duty ?d.
+    ?d odrl:action :notifyPriorNotice.
+  }.
+
+  # score = base + need-weight
+  (80 ?w) math:sum ?raw.
+  ( ?agreement ?profile :UnilateralChangeNoNotice ?clause ) log:skolem ?risk.
+
+  ( "This clause is risky because it allows unilateral changes without any prior notice. Clause %s: %s"
+    ?cid ?txt
+  ) string:format ?why.
+}
+=>
+{
+  ?risk a :Risk;
+    :aboutAgreement ?agreement;
+    :forProfile ?profile;
+    :aboutClause ?clause;
+    :clauseId ?cid;
+    :issue :UnilateralChangeNoNotice;
+    :baseScore 80;
+    :needWeight ?w;
+    :rawScore ?raw;
+    :title "Unilateral change without notice";
+    :explanation ?why;
+    :violatesNeed :Need_ChangeOnlyWithPriorNotice.
+}.
+
+# ---------------------------------------------------------
+# R2 — Changes WITH notice duty but notice period too short
+#      (uses Need_ChangeOnlyWithPriorNotice :minNoticeDays)
+# ---------------------------------------------------------
+{
+  ?profile a :ConsumerProfile; :hasNeed :Need_ChangeOnlyWithPriorNotice.
+  :Need_ChangeOnlyWithPriorNotice :importance ?w; :minNoticeDays ?minDays.
+
+  ?agreement a :Agreement; :policyGraph ?G.
+
+  ?G log:includes {
+    ?P a odrl:Policy.
+    ?P odrl:permission ?perm.
+    ?perm odrl:action :changeTerms.
+    ?perm :clause ?clause.
+    ?clause :clauseId ?cid; :text ?txt.
+
+    ?perm odrl:duty ?d.
+    ?d odrl:action :notifyPriorNotice.
+    ?d odrl:constraint ?c.
+    ?c odrl:leftOperand :noticeDays;
+       odrl:operator odrl:gteq;
+       odrl:rightOperand ?days.
+  }.
+
+  # If stated noticeDays is less than what the consumer needs, flag risk.
+  ?days math:lessThan ?minDays.
+
+  (70 ?w) math:sum ?raw.
+  ( ?agreement ?profile :NoticeTooShort ?clause ) log:skolem ?risk.
+
+  ( "This clause is risky because the notice period (%s days) is below the consumer requirement (%s days). Clause %s: %s"
+    ?days ?minDays ?cid ?txt
+  ) string:format ?why.
+}
+=>
+{
+  ?risk a :Risk;
+    :aboutAgreement ?agreement;
+    :forProfile ?profile;
+    :aboutClause ?clause;
+    :clauseId ?cid;
+    :issue :NoticeTooShort;
+    :baseScore 70;
+    :needWeight ?w;
+    :rawScore ?raw;
+    :title "Notice period too short";
+    :explanation ?why;
+    :violatesNeed :Need_ChangeOnlyWithPriorNotice.
+}.
+
+# ----------------------------------
+# R3 — Provider may delete user data
+# ----------------------------------
+{
+  ?profile a :ConsumerProfile; :hasNeed :Need_DataNotRemoved.
+  :Need_DataNotRemoved :importance ?w.
+
+  ?agreement a :Agreement; :policyGraph ?G.
+
+  ?G log:includes {
+    ?P a odrl:Policy.
+    ?P odrl:permission ?perm.
+    ?perm odrl:action :deleteUserData.
+    ?perm :clause ?clause.
+    ?clause :clauseId ?cid; :text ?txt.
+  }.
+
+  (90 ?w) math:sum ?raw.
+  ( ?agreement ?profile :ProviderMayDeleteData ?clause ) log:skolem ?risk.
+
+  ( "This clause is risky because it allows the provider to remove (delete) the consumer’s data. Clause %s: %s"
+    ?cid ?txt
+  ) string:format ?why.
+}
+=>
+{
+  ?risk a :Risk;
+    :aboutAgreement ?agreement;
+    :forProfile ?profile;
+    :aboutClause ?clause;
+    :clauseId ?cid;
+    :issue :ProviderMayDeleteData;
+    :baseScore 90;
+    :needWeight ?w;
+    :rawScore ?raw;
+    :title "Provider can delete user data";
+    :explanation ?why;
+    :violatesNeed :Need_DataNotRemoved.
+}.
+
+# ------------------------------------------
+# R4 — Share data without consent constraint
+# ------------------------------------------
+{
+  ?profile a :ConsumerProfile; :hasNeed :Need_NoDataSharingWithoutConsent.
+  :Need_NoDataSharingWithoutConsent :importance ?w.
+
+  ?agreement a :Agreement; :policyGraph ?G.
+
+  ?G log:includes {
+    ?P a odrl:Policy.
+    ?P odrl:permission ?perm.
+    ?perm odrl:action :shareUserData.
+    ?perm :clause ?clause.
+    ?clause :clauseId ?cid; :text ?txt.
+  }.
+
+  # Missing consent constraint inside the agreement graph:
+  ?G log:notIncludes {
+    ?perm odrl:constraint ?c.
+    ?c odrl:leftOperand :consent;
+       odrl:operator odrl:eq;
+       odrl:rightOperand true.
+  }.
+
+  (85 ?w) math:sum ?raw.
+  ( ?agreement ?profile :ShareDataNoConsent ?clause ) log:skolem ?risk.
+
+  ( "This clause is risky because it permits data sharing without an explicit consent requirement. Clause %s: %s"
+    ?cid ?txt
+  ) string:format ?why.
+}
+=>
+{
+  ?risk a :Risk;
+    :aboutAgreement ?agreement;
+    :forProfile ?profile;
+    :aboutClause ?clause;
+    :clauseId ?cid;
+    :issue :ShareDataNoConsent;
+    :baseScore 85;
+    :needWeight ?w;
+    :rawScore ?raw;
+    :title "Data sharing without consent";
+    :explanation ?why;
+    :violatesNeed :Need_NoDataSharingWithoutConsent.
+}.
+
+# ----------------------------------------------------
+# R5 — Waiver of going to court (general risk example)
+# (Not tied to a specific consumer need here.)
+# ----------------------------------------------------
+{
+  ?profile a :ConsumerProfile.
+  ?agreement a :Agreement; :policyGraph ?G.
+
+  ?G log:includes {
+    ?P a odrl:Policy.
+    ?P odrl:prohibition ?proh.
+    ?proh odrl:action :goToCourt.
+    ?proh :clause ?clause.
+    ?clause :clauseId ?cid; :text ?txt.
+  }.
+
+  60 log:equalTo ?base.
+  ( ?agreement ?profile :CourtAccessWaiver ?clause ) log:skolem ?risk.
+
+  ( "This clause is risky because it restricts access to court (mandatory arbitration / waiver). Clause %s: %s"
+    ?cid ?txt
+  ) string:format ?why.
+}
+=>
+{
+  ?risk a :Risk;
+    :aboutAgreement ?agreement;
+    :forProfile ?profile;
+    :aboutClause ?clause;
+    :clauseId ?cid;
+    :issue :CourtAccessWaiver;
+    :baseScore 60;
+    :needWeight 0;
+    :rawScore 60;
+    :title "Court access waiver / mandatory arbitration";
+    :explanation ?why.
+}.
+
+# ---------------------------------------------------
+# 4) Normalize score (clamp at 100) + severity labels
+# ---------------------------------------------------
+
+{ ?r a :Risk; :rawScore ?raw. ?raw math:greaterThan 100. }
+=> { ?r :score 100. }.
+
+{ ?r a :Risk; :rawScore ?raw. 100 math:greaterThan ?raw. }
+=> { ?r :score ?raw. }.
+
+{ ?r a :Risk; :rawScore ?raw. ?raw math:equalTo 100. }
+=> { ?r :score 100. }.
+
+# Severity from score
+{ ?r a :Risk; :score ?s. ?s math:notLessThan 80. } => { ?r :severity :High. }.
+{ ?r a :Risk; :score ?s. ?s math:lessThan 80. ?s math:notLessThan 50. } => { ?r :severity :Medium. }.
+{ ?r a :Risk; :score ?s. ?s math:lessThan 50. } => { ?r :severity :Low. }.
+
+# -------------------------------------------------------------------------------------
+# 5) Ranked risk list (highest->lowest) + explainable report
+#
+# Uses Eyeling:
+#   log:collectAllIn  (findall-like list builder) :contentReference[oaicite:4]{index=4}
+#   list:sort / list:reverse / list:iterate      :contentReference[oaicite:5]{index=5}
+#   log:outputString for printing in --strings   :contentReference[oaicite:6]{index=6}
+# -------------------------------------------------------------------------------------
+
+# Header line
+{
+  ?agreement a :Agreement; :label ?alabel.
+  ?profile a :ConsumerProfile; :label ?plabel.
+
+  ( "\n=== Risk report for %s (profile: %s) ===\n" ?alabel ?plabel ) string:format ?hdr.
+}
+=>
+{
+  ( ?agreement ?profile 0 ) log:outputString ?hdr.
+}.
+
+# Produce ranked lines
+{
+  ?agreement a :Agreement.
+  ?profile a :ConsumerProfile.
+
+  # Collect (score risk) pairs from the global snapshot at priority 1
+  ( ( ?score ?risk )
+    { ?risk a :Risk;
+            :aboutAgreement ?agreement;
+            :forProfile ?profile;
+            :score ?score. }
+    ?pairs
+  ) log:collectAllIn 1.
+
+  ?pairs list:sort ?sortedAsc.
+  ?sortedAsc list:reverse ?sortedDesc.
+
+  # Iterate over sorted pairs
+  ?sortedDesc list:iterate ( ?i ?pair ).
+  ( ?i 1 ) math:sum ?rank.
+
+  # Extract pair elements
+  ( ?pair 0 ) list:memberAt ?score.
+  ( ?pair 1 ) list:memberAt ?risk.
+
+  ?risk :severity ?sev;
+        :clauseId ?cid;
+        :title ?title;
+        :explanation ?why.
+
+  ( "%s) score=%s (%s), clause %s — %s. %s\n"
+    ?rank ?score ?sev ?cid ?title ?why
+  ) string:format ?line.
+}
+=>
+{
+  ( ?agreement ?profile ?rank ) log:outputString ?line.
+}.
+

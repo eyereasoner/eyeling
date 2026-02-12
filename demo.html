@@ -853,6 +853,13 @@
                 Enforce HTTPS for dereferencing (--enforce-https)
               </label>
 
+              <label
+                class="toggle"
+                title="Print log:outputString strings (ordered by key) instead of N3 output.">
+                <input id="strings-output" type="checkbox" />
+                Print output strings (-r, --strings)
+              </label>
+
               <span class="status" id="status">Idle.</span>
             </div>
           </section>
@@ -1003,6 +1010,7 @@
         const loadUriBtn = document.getElementById('load-uri-btn');
         const proofCheckbox = document.getElementById('proof-comments');
         const enforceHttpsCheckbox = document.getElementById('enforce-https');
+        const stringsCheckbox = document.getElementById('strings-output');
         const versionEl = document.getElementById('eyeling-version');
 
         // Persist "enforce https" toggle (default ON)
@@ -1682,7 +1690,7 @@ const batch = [];
               return initPromise;
             }
 
-            function runOnce(n3Input, proof, enforceHttps, versionOverride) {
+            function runOnce(n3Input, proof, enforceHttps, strings, versionOverride) {
               const lines = [];
 
               const consoleShim = {
@@ -1700,6 +1708,7 @@ const batch = [];
                   "eyeling.js",
                   ...(proof ? ["-p"] : []),
                   ...(enforceHttps ? ["--enforce-https"] : []),
+                  ...(strings ? ["-r"] : []),
                   "input.n3",
                 ],
                 exit: (code) => {
@@ -1786,6 +1795,7 @@ const batch = [];
                     msg.n3Input || "",
                     !!msg.proof,
                     !!msg.enforceHttps,
+                    !!msg.strings,
                     msg.version || baseVersion
                   );
                   const t1 = self.performance && performance.now ? performance.now() : Date.now();
@@ -1897,6 +1907,7 @@ const batch = [];
                 const id = nextId++;
                 const proof = !!(opts && opts.proof);
                 const enforceHttps = !!(opts && opts.enforceHttps);
+                const strings = !!(opts && opts.strings);
 
                 return new Promise((resolve, reject) => {
                   pending.set(id, { resolve, reject });
@@ -1906,6 +1917,7 @@ const batch = [];
                     n3Input: String(n3Input || ''),
                     proof,
                     enforceHttps,
+                    strings,
                     version: eyelingVersion || 'unknown',
                   });
                 });
@@ -1950,7 +1962,8 @@ const batch = [];
                   'eyeling.js',
                   ...(proofCheckbox.checked ? ['-p'] : []),
                   ...(enforceHttpsCheckbox.checked ? ['--enforce-https'] : []),
-                  'input.n3',
+              ...(stringsCheckbox && stringsCheckbox.checked ? ['-r'] : []),
+              'input.n3',
                 ],
                 exit: (code) => {
                   throw { __eyelingExit: true, code };
@@ -2100,6 +2113,75 @@ const batch = [];
         }
 
         async function runReasoner() {
+          // If "strings" mode is enabled, run Eyeling in CLI mode (-r/--strings)
+          // and show only log:outputString text (ordered by key).
+          if (stringsCheckbox && stringsCheckbox.checked) {
+            // Cancel any prior streaming run.
+            try {
+              if (activePlayCancel) activePlayCancel();
+            } catch (_) {}
+            activePlayCancel = null;
+            activePlayAppender = null;
+            setPlayPaused(false);
+            playPausedBuffer = [];
+            enablePlayControls(false);
+
+            clearErrorHighlight();
+
+            runBtn.disabled = true;
+            statusEl.textContent = 'Reasoning (-r/--strings)…';
+
+            // Clear output immediately.
+            {
+              const mh = currentMaxHeights();
+              outputEl.setValue('');
+              autoResizeCodeMirror(outputEl, 80, mh.output);
+            }
+
+            // Keep URL in sync if the user has started editing.
+            if (hashSyncEnabled) updateShareUrl();
+
+            // Let the browser paint before we start.
+            await new Promise(requestAnimationFrame);
+
+            try {
+              const workerRunner = await getEyelingWorkerRunner();
+              let resultText = '';
+              let durationMs = 0;
+
+              if (workerRunner) {
+                const r = await workerRunner.run(editor.getValue(), {
+                  proof: proofCheckbox.checked,
+                  enforceHttps: enforceHttpsCheckbox.checked,
+                  strings: true,
+                });
+                resultText = r && typeof r.result === 'string' ? r.result : '';
+                durationMs = r && typeof r.durationMs === 'number' ? r.durationMs : 0;
+              } else {
+                const runOnce = await getEyelingRunner();
+                const t0 = performance.now();
+                resultText = String(runOnce(editor.getValue()) || '');
+                durationMs = Math.max(0, performance.now() - t0);
+              }
+
+              const mh = currentMaxHeights();
+              outputEl.setValue(resultText || '(no output)');
+              autoResizeCodeMirror(outputEl, 80, mh.output);
+
+              statusEl.textContent = 'Done (-r/--strings). (' + (Math.max(0, durationMs) / 1000).toFixed(2) + 's)';
+            } catch (e) {
+              const mh = currentMaxHeights();
+              const msg = e && e.message ? e.message : String(e);
+              outputEl.setValue('Reasoning error: ' + msg);
+              autoResizeCodeMirror(outputEl, 80, mh.output);
+              statusEl.textContent = 'Error.';
+              highlightErrorFromOutput('Reasoning error: ' + msg);
+            } finally {
+              runBtn.disabled = false;
+            }
+            return;
+          }
+
           runBtn.disabled = true;
           setPlayPaused(false);
           playPausedBuffer = [];
