@@ -3,6 +3,9 @@
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 
 :a :name "Alice" .
-:t rdf:reifies { :a :name "Alice" . } .
+:t a rdf:Statement .
+:t rdf:subject :a .
+:t rdf:predicate :name .
+:t rdf:object "Alice" .
 :t :statedBy :bob .
 :t :recorded "2021-07-07"^^xsd:date .

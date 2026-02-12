@@ -1,4 +1,4 @@
-@prefix rdfg: <http://www.w3.org/2009/rdfg#> .
+@prefix rdfg: <http://www.w3.org/2004/03/trix/rdfg-1/> .
 @prefix : <http://example.org/#> .
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix sec: <https://w3id.org/security#> .

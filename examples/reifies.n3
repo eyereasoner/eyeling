@@ -4,5 +4,8 @@
 _:b rdf:reifies { :Socrates a :Human . } .
 _:b :is true .
 :employee38 :familyName "Smith" .
-_:id rdf:reifies { :employee38 :jobTitle "Assistant Designer" . } .
+_:id a rdf:Statement .
+_:id rdf:subject :employee38 .
+_:id rdf:predicate :jobTitle .
+_:id rdf:object "Assistant Designer" .
 _:id :accordingTo :employee22 .

@@ -14,11 +14,18 @@
  *   N3:   <graphName> rdfg:isGraph { ...triples... } .
  *
  *
- * RDF 1.2 Turtle-star / TriG-star
- *   - triple terms:    rdf:reifies <<( s p o )>>
- *   - sugar form:      << s p o >> :is true .
- *   triple terms are emitted as singleton graph terms in N3:
- *     rdf:reifies { s p o . } .
+ * RDF 1.2 quoted triples + annotations (Turtle-star / TriG-star)
+ *   - quoted triple terms: << s p o >>   (also accepts legacy <<( s p o )>>)
+ *   - triple annotations:  :s :p :o {| :ann 1 |} .
+ *
+ * Quoted triples are serialized as singleton graph terms in N3:
+ *   { s p o . }
+ *
+ * Annotations without an explicit reifier attach directly to that graph term:
+ *   { s p o . } :ann 1 .
+ *
+ * If an explicit reifier is provided with "~ r", we emit classic RDF reification:
+ *   r a rdf:Statement; rdf:subject s; rdf:predicate p; rdf:object o .
  *
  * ----------------------------------------------------------------------------
  * Usage
@@ -93,7 +100,7 @@ function _pnLocalSafe(s) {
 
 // Use the W3C rdfg: vocabulary to represent TriG named graphs as N3 graph terms:
 //   <g> rdfg:isGraph { ... } .
-const RDFG_NS = 'http://www.w3.org/2009/rdfg#';
+const RDFG_NS = 'http://www.w3.org/2004/03/trix/rdfg-1/';
 const rdfg = {
   isGraph: `${RDFG_NS}isGraph`,
 };
@@ -782,8 +789,7 @@ class TurtleParser {
     this.prefixes = PrefixEnv.newDefault();
     this.blankCounter = 0;
     this.pendingTriples = [];
-    this.reifierCounter = 0;
-    this._reifiesEmitted = new Set();
+    this._reificationEmitted = new Set();
   }
 
   peek() {
@@ -802,12 +808,6 @@ class TurtleParser {
     return tok;
   }
 
-  // Generate a fresh blank node used for RDF 1.2 reifiedTriple sugar (<< s p o >>)
-  freshReifier() {
-    this.reifierCounter += 1;
-    return new Blank(`_:n3r${this.reifierCounter}`);
-  }
-
   _termKey(t) {
     if (t == null) return '[]';
     if (t instanceof Iri) return `I:${t.value}`;
@@ -824,14 +824,28 @@ class TurtleParser {
     return `X:${String(t)}`;
   }
 
-  // Emit the implicit (or explicit) reifier triple required by RDF 1.2 reifiedTriple sugar:
-  //   reifier rdf:reifies tripleTerm .
-  // We represent tripleTerm in N3 as a quoted graph term: { s p o . }
-  emitReifies(reifier, tripleGraph) {
-    const key = `${this._termKey(reifier)}|${this._termKey(tripleGraph)}`;
-    if (this._reifiesEmitted.has(key)) return;
-    this._reifiesEmitted.add(key);
-    this.pendingTriples.push(new Triple(reifier, internIri(RDF_NS + 'reifies'), tripleGraph));
+  // When a Turtle/TriG "reifier" is explicitly provided (using "~ r"), we avoid
+  // rdf:reifies (which expects an RDF 1.2 quoted triple term) and instead emit
+  // classic RDF reification:
+  //   r a rdf:Statement;
+  //     rdf:subject s;
+  //     rdf:predicate p;
+  //     rdf:object o .
+  emitClassicReification(reifier, s, p, o) {
+    const key = `${this._termKey(reifier)}|${this._termKey(s)}|${this._termKey(p)}|${this._termKey(o)}`;
+    if (this._reificationEmitted.has(key)) return;
+    this._reificationEmitted.add(key);
+
+    const rdfType = internIri(RDF_NS + 'type');
+    const rdfStatement = internIri(RDF_NS + 'Statement');
+    const rdfSubject = internIri(RDF_NS + 'subject');
+    const rdfPredicate = internIri(RDF_NS + 'predicate');
+    const rdfObject = internIri(RDF_NS + 'object');
+
+    this.pendingTriples.push(new Triple(reifier, rdfType, rdfStatement));
+    this.pendingTriples.push(new Triple(reifier, rdfSubject, s));
+    this.pendingTriples.push(new Triple(reifier, rdfPredicate, p));
+    this.pendingTriples.push(new Triple(reifier, rdfObject, o));
   }
 
   // Accept '.' OR (when inside {...}) accept '}' as implicit terminator for last triple
@@ -1036,11 +1050,18 @@ class TurtleParser {
   }
 
   parseStarTerm() {
-    // RDF 1.2 Turtle-star / TriG-star:
-    // - tripleTerm: <<( s p o )>>
-    // - reifiedTriple (syntactic sugar): << s p o [~ reifier] >>
+    // RDF 1.2 quoted triples (Turtle-star / TriG-star).
+    //
+    // We accept:
+    //   - legacy form: <<( s p o )>>   (kept for compatibility)
+    //   - RDF 1.2 form: << s p o >>
+    //
+    // Both are represented in N3 output as a singleton graph term: { s p o . }.
+    //
+    // If an explicit reifier is provided using "~ r", we return that reifier and
+    // emit classic RDF reification (rdf:Statement / rdf:subject / rdf:predicate / rdf:object).
     if (this.peek().typ === 'LParen') {
-      // tripleTerm
+      // legacy tripleTerm
       this.next(); // '('
       const s = this.parseTerm();
       const p = this.parseTerm();
@@ -1050,24 +1071,25 @@ class TurtleParser {
       return new GraphTerm([new Triple(s, p, o)]);
     }
 
-    // reifiedTriple sugar -> expand to a reifier node that rdf:reifies a tripleTerm
+    // RDF 1.2 quoted triple term
     const s = this.parseTerm();
     const p = this.parseTerm();
     const o = this.parseTerm();
 
-    let reifier;
+    let reifier = null;
     if (this.peek().typ === 'Tilde') {
       this.next();
       reifier = this.parseTerm();
-    } else {
-      reifier = this.freshReifier();
     }
 
     this.expect('StarClose');
 
-    const tripleTerm = new GraphTerm([new Triple(s, p, o)]);
-    this.emitReifies(reifier, tripleTerm);
-    return reifier;
+    if (reifier) {
+      this.emitClassicReification(reifier, s, p, o);
+      return reifier;
+    }
+
+    return new GraphTerm([new Triple(s, p, o)]);
   }
 
   parseList() {
@@ -1200,13 +1222,18 @@ class TurtleParser {
     return objs;
   }
 
-  // RDF 1.2 Turtle/TriG: triple annotations and reifiers
+  // RDF 1.2 Turtle/TriG: triple annotations and optional explicit reifiers.
+  //
   // After an object, Turtle 1.2 allows optional:
   //   ~ <reifier>
-  //   {| <predicateObjectList> |}
-  // We convert these into eyeling-friendly N3 by emitting:
-  //   <reifier> rdf:reifies { <s> <p> <o> . } .
-  //   <reifier> <annP> <annO> .
+  //   {| <predicateObjectList> |}   (one or more blocks)
+  //
+  // We avoid emitting rdf:reifies (which would require an RDF 1.2 quoted-triple term).
+  // Instead:
+  //   - without an explicit reifier, annotations attach to the quoted triple term itself:
+  //       { s p o . } <annP> <annO> .
+  //   - with an explicit reifier (~ r), we emit classic RDF reification for r and attach
+  //     annotation triples to r.
 
   parseAnnotationBlock(reifier) {
     this.expect('AnnOpen');
@@ -1238,33 +1265,37 @@ class TurtleParser {
     // asserted triple
     out.push(new Triple(s, verb, o));
 
-    // optional reifier and/or annotation blocks
-    let reifier = null;
-
+    // Optional explicit reifier (~ r). Also allow "~ {| ... |}" (no explicit term).
+    let explicitReifier = null;
     if (this.peek().typ === 'Tilde') {
       this.next();
-      // Allow empty reifier: ~ {| ... |} (fresh blank node)
-      if (this.peek().typ === 'AnnOpen') reifier = this.freshReifier();
-      else reifier = this.parseTerm();
+      if (this.peek().typ !== 'AnnOpen') explicitReifier = this.parseTerm();
     }
 
-    // If there is an annotation block without an explicit reifier, allocate one
-    if (!reifier && this.peek().typ === 'AnnOpen') {
-      reifier = this.freshReifier();
+    const hasAnnotations = this.peek().typ === 'AnnOpen';
+
+    // If there is no explicit reifier, annotations attach directly to the quoted triple term.
+    // If there is an explicit reifier, we emit classic RDF reification for it and attach
+    // annotations to the reifier resource.
+    let annSubject = null;
+    if (explicitReifier) {
+      this.emitClassicReification(explicitReifier, s, verb, o);
+      annSubject = explicitReifier;
+    } else if (hasAnnotations) {
+      annSubject = new GraphTerm([new Triple(s, verb, o)]);
     }
 
-    if (reifier) {
-      const tripleTerm = new GraphTerm([new Triple(s, verb, o)]);
-      this.emitReifies(reifier, tripleTerm);
-      if (this.pendingTriples.length) {
-        out.push(...this.pendingTriples);
-        this.pendingTriples = [];
-      }
-
-      // zero or more annotation blocks
+    // zero or more annotation blocks
+    if (annSubject) {
       while (this.peek().typ === 'AnnOpen') {
-        out.push(...this.parseAnnotationBlock(reifier));
+        out.push(...this.parseAnnotationBlock(annSubject));
       }
+    }
+
+    // Include any triples generated by nested blank node property lists / reification.
+    if (this.pendingTriples.length) {
+      out.push(...this.pendingTriples);
+      this.pendingTriples = [];
     }
 
     return out;
