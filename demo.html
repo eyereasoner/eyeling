@@ -2022,7 +2022,9 @@ const batch = [];
                       lines.push(String(chunk));
                     }
                     if (typeof cb === 'function') {
-                      try { cb(); } catch (_) {}
+                      try {
+                        cb();
+                      } catch (_) {}
                     }
                     return true;
                   },
@@ -2043,7 +2045,9 @@ const batch = [];
                       lines.push(String(chunk));
                     }
                     if (typeof cb === 'function') {
-                      try { cb(); } catch (_) {}
+                      try {
+                        cb();
+                      } catch (_) {}
                     }
                     return true;
                   },
