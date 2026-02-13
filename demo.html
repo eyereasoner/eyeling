@@ -1236,20 +1236,47 @@ const batch = [];
 
                   const toks = lex(program);
                   const parser = new Parser(toks);
-                  let prefixes, triples, frules, brules;
-                  [prefixes, triples, frules, brules] = parser.parseDocument();
+                  let prefixes, triples, frules, brules, qrules;
+                  [prefixes, triples, frules, brules, qrules] = parser.parseDocument();
 
                   // Make parsed prefixes available to log:trace output.
                   try { if (typeof __tracePrefixes !== "undefined") __tracePrefixes = prefixes; } catch (_) {}
 
                   // Build rdf:List internal terms from rdf:first/rdf:rest.
                   if (typeof materializeRdfLists === "function") {
-                    materializeRdfLists(triples, frules, brules);
+                    materializeRdfLists(triples, frules.concat(qrules || []), brules);
                   }
 
                   const facts = triples.filter((tr) => (typeof isGroundTriple === "function") ? isGroundTriple(tr) : true);
 
-                  forwardChain(facts, frules, brules, (df) => {
+                  const hasQueries = Array.isArray(qrules) && qrules.length;
+                  if (hasQueries) {
+                    // Query-selection mode: cannot stream during saturation.
+                    if (!self.eyeling || typeof self.eyeling.reasonStream !== "function") {
+                      throw new Error("Eyeling API not available (eyeling.reasonStream missing).");
+                    }
+                    const res = self.eyeling.reasonStream(program, { enforceHttps, proof });
+                    const pfx = res && res.prefixes ? res.prefixes : prefixes;
+                    const qdfs = (res && Array.isArray(res.queryDerived)) ? res.queryDerived : [];
+                    for (const qdf of qdfs) {
+                      try {
+                        if (proof && typeof printExplanation === "function") {
+                          printExplanation(qdf, pfx);
+                        }
+                      } catch (_) {}
+
+                      let t = "";
+                      try {
+                        if (typeof tripleToN3 === "function") t = tripleToN3(qdf.fact, pfx);
+                        else if (qdf && qdf.fact && qdf.fact.toString) t = String(qdf.fact);
+                      } catch (_) {}
+                      if (t) {
+                        batch.push(t);
+                        flush(!!proof);
+                      }
+                    }
+                  } else {
+                    forwardChain(facts, frules, brules, (df) => {
                     try {
                       if (proof && typeof printExplanation === "function") {
                         // Prints via console.log (forwarded to main thread as stdout).
@@ -1270,7 +1297,8 @@ const batch = [];
                       // derived triple follows the proof block closely.
                       flush(!!proof);
                     }
-                  });
+                    });
+                  }
                 } finally {
                   try { if (typeof enforceHttpsEnabled !== "undefined") enforceHttpsEnabled = __oldEnforce; } catch (_) {}
                   try { if (typeof proofCommentsEnabled !== "undefined") proofCommentsEnabled = __oldProof; } catch (_) {}

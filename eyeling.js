@@ -3798,11 +3798,11 @@ function main() {
   }
 
   let toks;
-  let prefixes, triples, frules, brules;
+  let prefixes, triples, frules, brules, qrules;
   try {
     toks = engine.lex(text);
     const parser = new engine.Parser(toks);
-    [prefixes, triples, frules, brules] = parser.parseDocument();
+    [prefixes, triples, frules, brules, qrules] = parser.parseDocument();
     // Make the parsed prefixes available to log:trace output (CLI path)
     engine.setTracePrefixes(prefixes);
   } catch (e) {
@@ -3822,13 +3822,17 @@ function main() {
       }
       return value;
     }
+    // For backwards compatibility, --ast prints exactly four top-level elements:
+    //   [prefixes, triples, forwardRules, backwardRules]
+    // log:query directives are output-selection statements and are not included
+    // in the legacy AST contract expected by test suites and downstream tools.
     console.log(JSON.stringify([prefixes, triples, frules, brules], astReplacer, 2));
     process.exit(0);
   }
 
   // Materialize anonymous rdf:first/rdf:rest collections into list terms.
   // Named list nodes keep identity; list:* builtins can traverse them.
-  engine.materializeRdfLists(triples, frules, brules);
+  engine.materializeRdfLists(triples, frules.concat(qrules || []), brules);
 
   const facts = triples.filter((tr) => engine.isGroundTriple(tr));
 
@@ -3924,7 +3928,9 @@ function main() {
   }
 
   // Streaming mode: print (input) prefixes first, then print derived triples as soon as they are found.
-  if (streamMode) {
+  // Note: when log:query directives are present, we cannot stream output because
+  // the selected results depend on the saturated closure.
+  if (streamMode && !(Array.isArray(qrules) && qrules.length)) {
     const usedInInput = prefixesUsedInInputTokens(toks, prefixes);
     const outPrefixes = restrictPrefixEnv(prefixes, usedInInput);
 
@@ -3953,18 +3959,36 @@ function main() {
     return;
   }
 
-  // Default (non-streaming): derive everything first, then print only the newly derived facts.
-  const derived = engine.forwardChain(facts, frules, brules);
-  const derivedTriples = derived.map((df) => df.fact);
-  const usedPrefixes = prefixes.prefixesUsedForOutput(derivedTriples);
+  const hasQueries = Array.isArray(qrules) && qrules.length;
+
+  // Default (non-streaming):
+  // - without log:query: derive everything first, then print only newly derived facts
+  // - with log:query: derive everything first, then print only unique instantiated
+  //   conclusion triples from the log:query directives.
+  let derived = [];
+  let outTriples = [];
+  let outDerived = [];
+
+  if (hasQueries) {
+    const res = engine.forwardChainAndCollectLogQueryConclusions(facts, frules, brules, qrules);
+    derived = res.derived;
+    outTriples = res.queryTriples;
+    outDerived = res.queryDerived;
+  } else {
+    derived = engine.forwardChain(facts, frules, brules);
+    outDerived = derived;
+    outTriples = derived.map((df) => df.fact);
+  }
+
+  const usedPrefixes = prefixes.prefixesUsedForOutput(outTriples);
 
   for (const [pfx, base] of usedPrefixes) {
     if (pfx === '') console.log(`@prefix : <${base}> .`);
     else console.log(`@prefix ${pfx}: <${base}> .`);
   }
-  if (derived.length && usedPrefixes.length) console.log();
+  if (outTriples.length && usedPrefixes.length) console.log();
 
-  for (const df of derived) {
+  for (const df of outDerived) {
     if (engine.getProofCommentsEnabled()) {
       engine.printExplanation(df, prefixes);
       console.log(engine.tripleToN3(df.fact, prefixes));
@@ -6820,6 +6844,159 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
   }
 }
 
+// ---------------------------------------------------------------------------
+// log:query output selection
+// ---------------------------------------------------------------------------
+// A top-level directive of the form:
+//   { premise } log:query { conclusion }.
+// does not add facts to the closure. Instead, when one or more such directives
+// are present in the input, eyeling outputs only the **unique instantiated**
+// conclusion triples for each solution of the premise (similar to a forward
+// rule head projection).
+
+function __tripleKeyForOutput(tr) {
+  // Use a canonical structural encoding (covers lists and quoted graphs).
+  // Note: this is used only for de-duplication of output triples.
+  return skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
+}
+
+function __withScopedSnapshotForQueries(facts, fn) {
+  // Some scoped log:* builtins "delay" unless a frozen snapshot exists.
+  // After forwardChain completes, we create a snapshot of the saturated
+  // closure so query premises can use scoped builtins reliably.
+  const oldSnap = hasOwn.call(facts, '__scopedSnapshot') ? facts.__scopedSnapshot : undefined;
+  const oldLvl = hasOwn.call(facts, '__scopedClosureLevel') ? facts.__scopedClosureLevel : undefined;
+
+  // Create a frozen snapshot of the saturated closure.
+  const snap = facts.slice();
+  ensureFactIndexes(snap);
+  Object.defineProperty(snap, '__scopedSnapshot', {
+    value: snap,
+    enumerable: false,
+    writable: true,
+    configurable: true,
+  });
+  Object.defineProperty(snap, '__scopedClosureLevel', {
+    value: Number.MAX_SAFE_INTEGER,
+    enumerable: false,
+    writable: true,
+    configurable: true,
+  });
+
+  // Ensure the live facts array exposes the snapshot/level for builtins.
+  if (!hasOwn.call(facts, '__scopedSnapshot')) {
+    Object.defineProperty(facts, '__scopedSnapshot', {
+      value: null,
+      enumerable: false,
+      writable: true,
+      configurable: true,
+    });
+  }
+  if (!hasOwn.call(facts, '__scopedClosureLevel')) {
+    Object.defineProperty(facts, '__scopedClosureLevel', {
+      value: 0,
+      enumerable: false,
+      writable: true,
+      configurable: true,
+    });
+  }
+
+  facts.__scopedSnapshot = snap;
+  facts.__scopedClosureLevel = Number.MAX_SAFE_INTEGER;
+
+  try {
+    return fn();
+  } finally {
+    facts.__scopedSnapshot = oldSnap === undefined ? null : oldSnap;
+    facts.__scopedClosureLevel = oldLvl === undefined ? 0 : oldLvl;
+  }
+}
+
+function collectLogQueryConclusions(logQueryRules, facts, backRules) {
+  const queryTriples = [];
+  const queryDerived = [];
+  const seen = new Set();
+
+  if (!Array.isArray(logQueryRules) || logQueryRules.length === 0) {
+    return { queryTriples, queryDerived };
+  }
+
+  ensureFactIndexes(facts);
+  ensureBackRuleIndexes(backRules);
+
+  // Shared state across all query firings (mirrors forwardChain()).
+  const varGen = [0];
+  const skCounter = [0];
+  const headSkolemCache = new Map();
+
+  return __withScopedSnapshotForQueries(facts, () => {
+    for (let qi = 0; qi < logQueryRules.length; qi++) {
+      const r = logQueryRules[qi];
+      if (!r || !Array.isArray(r.premise) || !Array.isArray(r.conclusion)) continue;
+
+      const sols = proveGoals(r.premise, null, facts, backRules, 0, null, varGen, undefined, {
+        deferBuiltins: true,
+      });
+
+      for (const s of sols) {
+        const skMap = {};
+        const instantiatedPremises = r.premise.map((b) => applySubstTriple(b, s));
+        const fireKey = __firingKey(1000000 + qi, instantiatedPremises);
+
+        // Support dynamic heads (same semantics as forwardChain).
+        let dynamicHeadTriples = null;
+        let headBlankLabelsHere = r.headBlankLabels;
+        if (r.__dynamicConclusionTerm) {
+          const dynTerm = applySubstTerm(r.__dynamicConclusionTerm, s);
+          const dynTriples = __graphTriplesOrTrue(dynTerm);
+          dynamicHeadTriples = dynTriples !== null ? dynTriples : [];
+          const dynHeadBlankLabels =
+            dynamicHeadTriples && dynamicHeadTriples.length ? collectBlankLabelsInTriples(dynamicHeadTriples) : null;
+          if (dynHeadBlankLabels && dynHeadBlankLabels.size) {
+            headBlankLabelsHere = new Set([...headBlankLabelsHere, ...dynHeadBlankLabels]);
+          }
+        }
+
+        const headPatterns =
+          dynamicHeadTriples && dynamicHeadTriples.length ? r.conclusion.concat(dynamicHeadTriples) : r.conclusion;
+
+        for (const cpat of headPatterns) {
+          const instantiated = applySubstTriple(cpat, s);
+          const inst = skolemizeTripleForHeadBlanks(
+            instantiated,
+            headBlankLabelsHere,
+            skMap,
+            skCounter,
+            fireKey,
+            headSkolemCache,
+          );
+          if (!isGroundTriple(inst)) continue;
+          const k = __tripleKeyForOutput(inst);
+          if (seen.has(k)) continue;
+          seen.add(k);
+          queryTriples.push(inst);
+          queryDerived.push(new DerivedFact(inst, r, instantiatedPremises.slice(), { ...s }));
+        }
+      }
+    }
+
+    return { queryTriples, queryDerived };
+  });
+}
+
+function forwardChainAndCollectLogQueryConclusions(facts, forwardRules, backRules, logQueryRules, onDerived) {
+  __enterReasoningRun();
+  try {
+    // Forward chain first (saturates `facts`).
+    const derived = forwardChain(facts, forwardRules, backRules, onDerived);
+    // Then collect query conclusions against the saturated closure.
+    const { queryTriples, queryDerived } = collectLogQueryConclusions(logQueryRules, facts, backRules);
+    return { derived, queryTriples, queryDerived };
+  } finally {
+    __exitReasoningRun();
+  }
+}
+
 // (proof printing + log:outputString moved to lib/explain.js)
 
 function reasonStream(n3Text, opts = {}) {
@@ -6839,32 +7016,62 @@ function reasonStream(n3Text, opts = {}) {
   const parser = new Parser(toks);
   if (baseIri) parser.prefixes.setBase(baseIri);
 
-  const [prefixes, triples, frules, brules] = parser.parseDocument();
+  const [prefixes, triples, frules, brules, logQueryRules] = parser.parseDocument();
   // Make the parsed prefixes available to log:trace output
   trace.setTracePrefixes(prefixes);
 
   // Materialize anonymous rdf:first/rdf:rest collections into list terms.
   // Named list nodes keep identity; list:* builtins can traverse them.
-  materializeRdfLists(triples, frules, brules);
+  materializeRdfLists(triples, frules.concat(logQueryRules || []), brules);
 
   // facts becomes the saturated closure because pushFactIndexed(...) appends into it
   const facts = triples.filter((tr) => isGroundTriple(tr));
 
-  const derived = forwardChain(facts, frules, brules, (df) => {
-    if (typeof onDerived === 'function') {
-      onDerived({
-        triple: tripleToN3(df.fact, prefixes),
-        df,
-      });
-    }
-  });
+  let derived = [];
+  let queryTriples = [];
+  let queryDerived = [];
 
-  const closureTriples = includeInputFactsInClosure ? facts : derived.map((d) => d.fact);
+  if (Array.isArray(logQueryRules) && logQueryRules.length) {
+    // Query-selection mode: derive full closure, then output only the unique
+    // instantiated conclusion triples of the log:query directives.
+    const res = forwardChainAndCollectLogQueryConclusions(facts, frules, brules, logQueryRules);
+    derived = res.derived;
+    queryTriples = res.queryTriples;
+    queryDerived = res.queryDerived;
+
+    // For compatibility with the streaming callback signature, we emit the
+    // query-selected triples (not all derived facts).
+    if (typeof onDerived === 'function') {
+      for (const qdf of queryDerived) {
+        onDerived({ triple: tripleToN3(qdf.fact, prefixes), df: qdf });
+      }
+    }
+  } else {
+    // Default mode: output only newly derived forward facts.
+    derived = forwardChain(facts, frules, brules, (df) => {
+      if (typeof onDerived === 'function') {
+        onDerived({
+          triple: tripleToN3(df.fact, prefixes),
+          df,
+        });
+      }
+    });
+  }
+
+  const closureTriples =
+    Array.isArray(logQueryRules) && logQueryRules.length
+      ? queryTriples
+      : includeInputFactsInClosure
+        ? facts
+        : derived.map((d) => d.fact);
 
   const __out = {
     prefixes,
     facts, // saturated closure (Triple[])
     derived, // DerivedFact[]
+    queryMode: Array.isArray(logQueryRules) && logQueryRules.length ? true : false,
+    queryTriples,
+    queryDerived,
     closureN3: closureTriples.map((t) => tripleToN3(t, prefixes)).join('\n'),
   };
   deref.setEnforceHttpsEnabled(__oldEnforceHttps);
@@ -6917,6 +7124,8 @@ function setTracePrefixes(v) {
 
 module.exports = {
   reasonStream,
+  collectLogQueryConclusions,
+  forwardChainAndCollectLogQueryConclusions,
   collectOutputStringsFromFacts,
   main,
   version,
@@ -6969,6 +7178,8 @@ module.exports = {
   lex: engine.lex,
   Parser: engine.Parser,
   forwardChain: engine.forwardChain,
+  collectLogQueryConclusions: engine.collectLogQueryConclusions,
+  forwardChainAndCollectLogQueryConclusions: engine.forwardChainAndCollectLogQueryConclusions,
   materializeRdfLists: engine.materializeRdfLists,
   isGroundTriple: engine.isGroundTriple,
   printExplanation: engine.printExplanation,
@@ -7879,6 +8090,7 @@ const {
   collectBlankLabelsInTriples,
   isLogImplies,
   isLogImpliedBy,
+  isLogQuery,
 } = require('./prelude');
 
 const { N3SyntaxError } = require('./lexer');
@@ -7927,6 +8139,7 @@ class Parser {
     const triples = [];
     const forwardRules = [];
     const backwardRules = [];
+    const logQueries = [];
 
     while (this.peek().typ !== 'EOF') {
       if (this.peek().typ === 'AtPrefix') {
@@ -8001,6 +8214,11 @@ class Parser {
               forwardRules.push(this.makeRule(tr.s, tr.o, true));
             } else if (isLogImpliedBy(tr.p) && tr.s instanceof GraphTerm && tr.o instanceof GraphTerm) {
               backwardRules.push(this.makeRule(tr.s, tr.o, false));
+            } else if (isLogQuery(tr.p) && tr.s instanceof GraphTerm && tr.o instanceof GraphTerm) {
+              // Output-selection directive: { premise } log:query { conclusion }.
+              // When present at top-level, eyeling prints only the instantiated conclusion
+              // triples (unique) instead of all newly derived facts.
+              logQueries.push(this.makeRule(tr.s, tr.o, true));
             } else {
               triples.push(tr);
             }
@@ -8009,7 +8227,7 @@ class Parser {
       }
     }
 
-    return [this.prefixes, triples, forwardRules, backwardRules];
+    return [this.prefixes, triples, forwardRules, backwardRules, logQueries];
   }
 
   parsePrefixDirective() {
@@ -8950,6 +9168,10 @@ function isLogImpliedBy(p) {
   return p instanceof Iri && p.value === LOG_NS + 'impliedBy';
 }
 
+function isLogQuery(p) {
+  return p instanceof Iri && p.value === LOG_NS + 'query';
+}
+
 // ===========================================================================
 // PREFIX ENVIRONMENT
 // ===========================================================================
@@ -9161,6 +9383,7 @@ module.exports = {
   isOwlSameAsPred,
   isLogImplies,
   isLogImpliedBy,
+  isLogQuery,
   PrefixEnv,
   collectIrisInTerm,
   varsInRule,

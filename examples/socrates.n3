@@ -3,6 +3,7 @@
 # ==================
 
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
 @prefix : <http://example.org/socrates#>.
 
 # facts
@@ -17,3 +18,5 @@
     ?S a ?B.
 }.
 
+# query
+{ ?S a ?C } log:query { ?S a ?C }.

@@ -256,6 +256,9 @@ log:implies a ex:Builtin ; ex:kind ex:Relation ;
 log:impliedBy a ex:Builtin ; ex:kind ex:Relation ;
   rdfs:comment "Rule/formula relation used for <=." .
 
+log:query a ex:Builtin ; ex:kind ex:Meta ;
+  rdfs:comment "Output-selection directive: a top-level triple {premise} log:query {conclusion}. does not add facts, but selects the unique instantiated conclusion triples as Eyeling's output." .
+
 log:includes a ex:Builtin ; ex:kind ex:Generator ;
   rdfs:comment "Proves the object formula in the (possibly scoped) facts/rules; returns the set of proof substitutions (may bind variables)." .
 

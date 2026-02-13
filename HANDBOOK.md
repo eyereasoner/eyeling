@@ -761,6 +761,9 @@ A predicate is treated as builtin if:
 
 Super restricted mode exists to let you treat all other predicates as ordinary facts/rules without any built-in evaluation.
 
+**Note on `log:query`:** Eyeling also recognizes a special *top-level* directive of the form `{...} log:query {...}.` to **select which results to print**. This is **not** a builtin predicate (it is not evaluated as part of goal solving); it is handled by the parser/CLI/output layer. See §11.3.5 below and Chapter 13 for details.
+
+
 ### 11.2 Built-ins return multiple solutions
 
 Every builtin returns a list of substitution _deltas_.
@@ -1353,6 +1356,50 @@ As _builtins_, `log:implies` and `log:impliedBy` let you **inspect the currently
 
 Each enumerated rule is standardized apart (fresh variable names) before unification so you can safely query over it.
 
+
+
+### Top-level directive: `log:query` (output selection)
+
+**Shape (top level only):**
+
+```n3
+{ ...premise... } log:query { ...conclusion... }.
+```
+
+`log:query` is best understood as an **output projection**, not as a rule and not as a normal builtin:
+
+- Eyeling still computes the saturated forward closure (facts + rules, including backward-rule proofs where needed).
+- It then proves the **premise formula** as a goal (as if it were fed to `log:includes` in the global scope).
+- For every solution, it instantiates the **conclusion formula** and collects the resulting triples.
+- The final output is the **set of unique ground triples** from those instantiated conclusions.
+
+This is “forward-rule-like” in spirit (premise ⇒ conclusion), but the instantiated conclusion triples are **not added back into the fact store**; they are just what Eyeling prints.
+
+**Important details:**
+
+- Only **top-level** `{...} log:query {...}.` directives are recognized. Inside quoted formulas (or inside rule bodies/heads) it is just an ordinary triple.
+- Query-mode output depends on the saturated closure, so it cannot be streamed; `--stream` has no effect when any `log:query` directives are present.
+- If you want *logical* querying inside a rule/proof, use `log:includes` (and optionally `log:conclusion`) instead.
+
+**Example (project a result set):**
+
+```n3
+@prefix : <urn:ex:>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+
+{ :a :p ?x } => { :a :q ?x }.
+:a :p :b.
+
+{ :a :q ?x } log:query { :result :x ?x }.
+```
+
+Output (only):
+
+```n3
+:result :x :b .
+```
+
+
 ### Scoped proof inside formulas: `log:includes` and friends
 
 #### `log:includes`
@@ -1809,6 +1856,14 @@ See also: [Chapter 14 — Entry points: CLI, bundle exports, and npm API](#ch14)
 
 By default, Eyeling prints **newly derived forward facts** (the heads of fired `=>` rules), serialized as N3. It does **not** reprint your input facts.
 
+If the input contains one or more **top-level** `log:query` directives:
+
+```n3
+{ ...premise... } log:query { ...conclusion... }.
+```
+
+Eyeling still computes the saturated forward closure, but it prints only the **unique instantiated conclusion triples** of those `log:query` directives (instead of all newly derived facts). This is useful when you want a forward-rule-like projection of results.
+
 For proof/explanation output and output modes, see:
 
 - [Chapter 13 — Printing, proofs, and the user-facing output](#ch13)
@@ -1834,6 +1889,8 @@ Options:
   -t, --stream                 Stream derived triples as soon as they are derived.
   -v, --version                Print version and exit.
 ```
+
+Note: when `log:query` directives are present, Eyeling cannot stream output (the selected results depend on the saturated closure), so `--stream` has no effect in that mode.
 
 See also:
 
@@ -2031,7 +2088,7 @@ If you don’t want “stop the world”, derive a `:Violation` fact instead, an
 The most robust way to keep LLM-generated logic plausible is to make it live under tests:
 
 - Keep tiny **fixtures** (facts) alongside the rules.
-- Run Eyeling to produce the **derived closure** (Eyeling can emit only newly derived forward facts, and can optionally include compact proof comments).
+- Run Eyeling to produce the **derived closure** (Eyeling emits only newly derived forward facts by default, can optionally include compact proof comments, and can also use `log:query` directives to project a specific result set).
 - Compare against an expected output (“golden file”) in CI.
 
 This turns rule edits into a normal change-management loop: diffs are explicit, reviewable, and reproducible.
