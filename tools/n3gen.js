@@ -11,21 +11,14 @@
  * *
  * TriG → N3 mapping (named graphs)
  *   TriG: <graphName> { ...triples... }
- *   N3:   <graphName> rdfg:isGraph { ...triples... } .
+ *   N3:   <graphName> log:nameOf { ...triples... } .
  *
  *
- * RDF 1.2 quoted triples + annotations (Turtle-star / TriG-star)
- *   - quoted triple terms: << s p o >>   (also accepts legacy <<( s p o )>>)
- *   - triple annotations:  :s :p :o {| :ann 1 |} .
- *
- * Quoted triples are serialized as singleton graph terms in N3:
- *   { s p o . }
- *
- * Annotations without an explicit reifier attach directly to that graph term:
- *   { s p o . } :ann 1 .
- *
- * If an explicit reifier is provided with "~ r", we emit classic RDF reification:
- *   r a rdf:Statement; rdf:subject s; rdf:predicate p; rdf:object o .
+ * RDF 1.2 Turtle-star / TriG-star
+ *   - triple terms:    log:nameOf <<( s p o )>>
+ *   - sugar form:      << s p o >> :is true .
+ *   triple terms are emitted as singleton graph terms in N3:
+ *     log:nameOf { s p o . } .
  *
  * ----------------------------------------------------------------------------
  * Usage
@@ -98,12 +91,16 @@ function _pnLocalSafe(s) {
 // Mapping namespace
 // ---------------------------------------------------------------------------
 
-// Use the W3C rdfg: vocabulary to represent TriG named graphs as N3 graph terms:
-//   <g> rdfg:isGraph { ... } .
-const RDFG_NS = 'http://www.w3.org/2004/03/trix/rdfg-1/';
-const rdfg = {
-  isGraph: `${RDFG_NS}isGraph`,
+// Use the W3C log: vocabulary to represent:
+//   - TriG named graphs as N3 graph terms:
+//       <g> log:nameOf { ... } .
+//   - RDF 1.2 Turtle-star / TriG-star reified triples:
+//       <reifier> log:nameOf { <s> <p> <o> . } .
+const LOG_NS = 'http://www.w3.org/2000/10/swap/log#';
+const log = {
+  nameOf: `${LOG_NS}nameOf`,
 };
+
 
 // ---------------------------------------------------------------------------
 // Minimal Turtle/N3 model + lexer + parser
@@ -789,7 +786,8 @@ class TurtleParser {
     this.prefixes = PrefixEnv.newDefault();
     this.blankCounter = 0;
     this.pendingTriples = [];
-    this._reificationEmitted = new Set();
+    this.reifierCounter = 0;
+    this._reifiesEmitted = new Set();
   }
 
   peek() {
@@ -808,6 +806,12 @@ class TurtleParser {
     return tok;
   }
 
+  // Generate a fresh blank node used for RDF 1.2 reifiedTriple sugar (<< s p o >>)
+  freshReifier() {
+    this.reifierCounter += 1;
+    return new Blank(`_:n3r${this.reifierCounter}`);
+  }
+
   _termKey(t) {
     if (t == null) return '[]';
     if (t instanceof Iri) return `I:${t.value}`;
@@ -824,28 +828,14 @@ class TurtleParser {
     return `X:${String(t)}`;
   }
 
-  // When a Turtle/TriG "reifier" is explicitly provided (using "~ r"), we avoid
-  // rdf:reifies (which expects an RDF 1.2 quoted triple term) and instead emit
-  // classic RDF reification:
-  //   r a rdf:Statement;
-  //     rdf:subject s;
-  //     rdf:predicate p;
-  //     rdf:object o .
-  emitClassicReification(reifier, s, p, o) {
-    const key = `${this._termKey(reifier)}|${this._termKey(s)}|${this._termKey(p)}|${this._termKey(o)}`;
-    if (this._reificationEmitted.has(key)) return;
-    this._reificationEmitted.add(key);
-
-    const rdfType = internIri(RDF_NS + 'type');
-    const rdfStatement = internIri(RDF_NS + 'Statement');
-    const rdfSubject = internIri(RDF_NS + 'subject');
-    const rdfPredicate = internIri(RDF_NS + 'predicate');
-    const rdfObject = internIri(RDF_NS + 'object');
-
-    this.pendingTriples.push(new Triple(reifier, rdfType, rdfStatement));
-    this.pendingTriples.push(new Triple(reifier, rdfSubject, s));
-    this.pendingTriples.push(new Triple(reifier, rdfPredicate, p));
-    this.pendingTriples.push(new Triple(reifier, rdfObject, o));
+  // Emit the implicit (or explicit) reifier triple required by RDF 1.2 reifiedTriple sugar:
+  //   reifier log:nameOf tripleTerm .
+  // We represent tripleTerm in N3 as a quoted graph term: { s p o . }
+  emitReifies(reifier, tripleGraph) {
+    const key = `${this._termKey(reifier)}|${this._termKey(tripleGraph)}`;
+    if (this._reifiesEmitted.has(key)) return;
+    this._reifiesEmitted.add(key);
+    this.pendingTriples.push(new Triple(reifier, internIri(LOG_NS + 'nameOf'), tripleGraph));
   }
 
   // Accept '.' OR (when inside {...}) accept '}' as implicit terminator for last triple
@@ -1050,18 +1040,11 @@ class TurtleParser {
   }
 
   parseStarTerm() {
-    // RDF 1.2 quoted triples (Turtle-star / TriG-star).
-    //
-    // We accept:
-    //   - legacy form: <<( s p o )>>   (kept for compatibility)
-    //   - RDF 1.2 form: << s p o >>
-    //
-    // Both are represented in N3 output as a singleton graph term: { s p o . }.
-    //
-    // If an explicit reifier is provided using "~ r", we return that reifier and
-    // emit classic RDF reification (rdf:Statement / rdf:subject / rdf:predicate / rdf:object).
+    // RDF 1.2 Turtle-star / TriG-star:
+    // - tripleTerm: <<( s p o )>>
+    // - reifiedTriple (syntactic sugar): << s p o [~ reifier] >>
     if (this.peek().typ === 'LParen') {
-      // legacy tripleTerm
+      // tripleTerm
       this.next(); // '('
       const s = this.parseTerm();
       const p = this.parseTerm();
@@ -1071,25 +1054,24 @@ class TurtleParser {
       return new GraphTerm([new Triple(s, p, o)]);
     }
 
-    // RDF 1.2 quoted triple term
+    // reifiedTriple sugar -> expand to a reifier node that log:nameOf a tripleTerm
     const s = this.parseTerm();
     const p = this.parseTerm();
     const o = this.parseTerm();
 
-    let reifier = null;
+    let reifier;
     if (this.peek().typ === 'Tilde') {
       this.next();
       reifier = this.parseTerm();
+    } else {
+      reifier = this.freshReifier();
     }
 
     this.expect('StarClose');
 
-    if (reifier) {
-      this.emitClassicReification(reifier, s, p, o);
-      return reifier;
-    }
-
-    return new GraphTerm([new Triple(s, p, o)]);
+    const tripleTerm = new GraphTerm([new Triple(s, p, o)]);
+    this.emitReifies(reifier, tripleTerm);
+    return reifier;
   }
 
   parseList() {
@@ -1222,18 +1204,13 @@ class TurtleParser {
     return objs;
   }
 
-  // RDF 1.2 Turtle/TriG: triple annotations and optional explicit reifiers.
-  //
+  // RDF 1.2 Turtle/TriG: triple annotations and reifiers
   // After an object, Turtle 1.2 allows optional:
   //   ~ <reifier>
-  //   {| <predicateObjectList> |}   (one or more blocks)
-  //
-  // We avoid emitting rdf:reifies (which would require an RDF 1.2 quoted-triple term).
-  // Instead:
-  //   - without an explicit reifier, annotations attach to the quoted triple term itself:
-  //       { s p o . } <annP> <annO> .
-  //   - with an explicit reifier (~ r), we emit classic RDF reification for r and attach
-  //     annotation triples to r.
+  //   {| <predicateObjectList> |}
+  // We convert these into eyeling-friendly N3 by emitting:
+  //   <reifier> log:nameOf { <s> <p> <o> . } .
+  //   <reifier> <annP> <annO> .
 
   parseAnnotationBlock(reifier) {
     this.expect('AnnOpen');
@@ -1265,37 +1242,33 @@ class TurtleParser {
     // asserted triple
     out.push(new Triple(s, verb, o));
 
-    // Optional explicit reifier (~ r). Also allow "~ {| ... |}" (no explicit term).
-    let explicitReifier = null;
+    // optional reifier and/or annotation blocks
+    let reifier = null;
+
     if (this.peek().typ === 'Tilde') {
       this.next();
-      if (this.peek().typ !== 'AnnOpen') explicitReifier = this.parseTerm();
+      // Allow empty reifier: ~ {| ... |} (fresh blank node)
+      if (this.peek().typ === 'AnnOpen') reifier = this.freshReifier();
+      else reifier = this.parseTerm();
     }
 
-    const hasAnnotations = this.peek().typ === 'AnnOpen';
-
-    // If there is no explicit reifier, annotations attach directly to the quoted triple term.
-    // If there is an explicit reifier, we emit classic RDF reification for it and attach
-    // annotations to the reifier resource.
-    let annSubject = null;
-    if (explicitReifier) {
-      this.emitClassicReification(explicitReifier, s, verb, o);
-      annSubject = explicitReifier;
-    } else if (hasAnnotations) {
-      annSubject = new GraphTerm([new Triple(s, verb, o)]);
+    // If there is an annotation block without an explicit reifier, allocate one
+    if (!reifier && this.peek().typ === 'AnnOpen') {
+      reifier = this.freshReifier();
     }
 
-    // zero or more annotation blocks
-    if (annSubject) {
-      while (this.peek().typ === 'AnnOpen') {
-        out.push(...this.parseAnnotationBlock(annSubject));
+    if (reifier) {
+      const tripleTerm = new GraphTerm([new Triple(s, verb, o)]);
+      this.emitReifies(reifier, tripleTerm);
+      if (this.pendingTriples.length) {
+        out.push(...this.pendingTriples);
+        this.pendingTriples = [];
       }
-    }
 
-    // Include any triples generated by nested blank node property lists / reification.
-    if (this.pendingTriples.length) {
-      out.push(...this.pendingTriples);
-      this.pendingTriples = [];
+      // zero or more annotation blocks
+      while (this.peek().typ === 'AnnOpen') {
+        out.push(...this.parseAnnotationBlock(reifier));
+      }
     }
 
     return out;
@@ -1800,16 +1773,14 @@ function isIri(t, iri) {
   return t instanceof Iri && t.value === iri;
 }
 
-function renderPrefixPrologue(prefixes, { includeRdfg = false } = {}) {
+function renderPrefixPrologue(prefixes) {
   const out = [];
-  if (includeRdfg) out.push(`@prefix rdfg: <${RDFG_NS}> .`);
 
   if (prefixes && prefixes.baseIri) out.push(`@base <${prefixes.baseIri}> .`);
 
   if (prefixes && prefixes.map) {
     for (const [pfx, iri] of Object.entries(prefixes.map)) {
       if (!iri) continue;
-      if (includeRdfg && pfx === 'rdfg') continue;
       const label = pfx === '' ? ':' : `${pfx}:`;
       out.push(`@prefix ${label} <${iri}> .`);
     }
@@ -1825,6 +1796,57 @@ function ensureSkolemPrefix(prefixes, skolemMap) {
 
   const baseMap = prefixes && prefixes.map ? prefixes.map : {};
   const newMap = { ...baseMap, [SKOLEM_PREFIX]: SKOLEM_PREFIX_IRI };
+  const baseIri = prefixes ? prefixes.baseIri : '';
+  return new PrefixEnv(newMap, baseIri);
+}
+
+// Ensure log: prefix is available whenever we emit log:nameOf (or any other log:* IRI).
+function usesLogNamespace(triples) {
+  let used = false;
+
+  function visitTerm(t) {
+    if (!t || used) return;
+
+    if (t instanceof Iri) {
+      if (t.value.startsWith(LOG_NS)) used = true;
+      return;
+    }
+
+    if (t instanceof Literal) {
+      // Detect log: use in typed literal tokens, or explicit IRI datatypes in LOG_NS.
+      if (t.value.includes('^^log:') || t.value.includes(`^^<${LOG_NS}`)) used = true;
+      return;
+    }
+
+    if (t instanceof ListTerm) {
+      for (const e of t.elems) visitTerm(e);
+      return;
+    }
+
+    if (t instanceof GraphTerm) {
+      for (const tr of t.triples) {
+        visitTerm(tr.s);
+        visitTerm(tr.p);
+        visitTerm(tr.o);
+      }
+    }
+  }
+
+  for (const tr of triples || []) {
+    // triples may be instances of Triple or plain objects with {s,p,o}
+    visitTerm(tr.s);
+    visitTerm(tr.p);
+    visitTerm(tr.o);
+    if (used) break;
+  }
+  return used;
+}
+
+function ensureLogPrefixIfUsed(prefixes, triples) {
+  if (!usesLogNamespace(triples)) return prefixes;
+
+  const baseMap = prefixes && prefixes.map ? prefixes.map : {};
+  const newMap = { ...baseMap, log: LOG_NS }; // overwrite any existing log: mapping
   const baseIri = prefixes ? prefixes.baseIri : '';
   return new PrefixEnv(newMap, baseIri);
 }
@@ -1953,17 +1975,17 @@ function groupQuadsByGraph(quads) {
   return m;
 }
 
-function writeN3RdfgIsGraph({ datasetQuads, prefixes }) {
+function writeN3LogNameOf({ datasetQuads, prefixes }) {
   const blocks = [];
   const grouped = groupQuadsByGraph(datasetQuads);
 
   // For prefix pruning + Skolemization we build a synthetic triple stream that
   // matches the *output* structure:
   //   - default graph triples are “outside” any GraphTerm
-  //   - each named graph is wrapped as: gTerm rdfg:isGraph { ... }
+  //   - each named graph is wrapped as: gTerm log:nameOf { ... }
   // This allows us to detect blank nodes that must corefer across graphs.
   const pseudoTriplesForUse = [];
-  const rdfgIsGraphIri = new Iri(rdfg.isGraph);
+  const logNameOfIri = new Iri(log.nameOf);
 
   if (grouped.has('DEFAULT')) {
     const { triples } = grouped.get('DEFAULT');
@@ -1973,19 +1995,19 @@ function writeN3RdfgIsGraph({ datasetQuads, prefixes }) {
   for (const [k, { gTerm, triples }] of grouped.entries()) {
     if (k === 'DEFAULT') continue;
     const folded = foldRdfLists(triples);
-    pseudoTriplesForUse.push({ s: gTerm, p: rdfgIsGraphIri, o: new GraphTerm(folded) });
+    pseudoTriplesForUse.push({ s: gTerm, p: logNameOfIri, o: new GraphTerm(folded) });
   }
 
   const prunedPrefixes = pruneUnusedPrefixes(prefixes, pseudoTriplesForUse);
   const skolemMap = buildSkolemMapForBnodesThatCrossScopes(pseudoTriplesForUse);
   const outPrefixes = ensureRdfPrefixIfUsed(
-    ensureXsdPrefixIfUsed(ensureSkolemPrefix(prunedPrefixes, skolemMap), pseudoTriplesForUse),
+    ensureXsdPrefixIfUsed(ensureLogPrefixIfUsed(ensureSkolemPrefix(prunedPrefixes, skolemMap), pseudoTriplesForUse), pseudoTriplesForUse),
     pseudoTriplesForUse,
   );
-  const pro = renderPrefixPrologue(outPrefixes, { includeRdfg: true }).trim();
+  const pro = renderPrefixPrologue(outPrefixes).trim();
   if (pro) blocks.push(pro, '');
 
-  // default graph: emit triples at top-level (no rdfg:isGraph wrapper)
+  // default graph: emit triples at top-level (no log:nameOf wrapper)
   if (grouped.has('DEFAULT')) {
     const { triples } = grouped.get('DEFAULT');
     const folded = foldRdfLists(triples);
@@ -2000,7 +2022,7 @@ function writeN3RdfgIsGraph({ datasetQuads, prefixes }) {
   const named = [...grouped.entries()].filter(([k]) => k !== 'DEFAULT');
   named.sort((a, b) => a[0].localeCompare(b[0]));
   for (const [, { gTerm, triples }] of named) {
-    blocks.push(`${termToText(gTerm, outPrefixes, skolemMap)} rdfg:isGraph {`);
+    blocks.push(`${termToText(gTerm, outPrefixes, skolemMap)} log:nameOf {`);
     const folded = foldRdfLists(triples);
     if (folded.length) {
       blocks.push(
@@ -2019,7 +2041,7 @@ function writeN3RdfgIsGraph({ datasetQuads, prefixes }) {
 }
 
 // ---------------------------------------------------------------------------
-// Roundtrip: TriG <-> N3 (rdfg:isGraph mapping)
+// Roundtrip: TriG <-> N3 (log:nameOf mapping)
 // ---------------------------------------------------------------------------
 
 function parseTriG(text) {
@@ -2037,11 +2059,11 @@ function writeN3Triples({ triples, prefixes }) {
   const prunedPrefixes = pruneUnusedPrefixes(prefixes, foldedTriples);
   const skolemMap = buildSkolemMapForBnodesThatCrossScopes(foldedTriples);
   const outPrefixes = ensureRdfPrefixIfUsed(
-    ensureXsdPrefixIfUsed(ensureSkolemPrefix(prunedPrefixes, skolemMap), foldedTriples),
+    ensureXsdPrefixIfUsed(ensureLogPrefixIfUsed(ensureSkolemPrefix(prunedPrefixes, skolemMap), foldedTriples), foldedTriples),
     foldedTriples,
   );
   const blocks = [];
-  const pro = renderPrefixPrologue(outPrefixes, { includeRdfg: false }).trim();
+  const pro = renderPrefixPrologue(outPrefixes).trim();
   if (pro) blocks.push(pro, '');
   for (const tr of foldedTriples) {
     blocks.push(
@@ -2058,7 +2080,7 @@ function turtleToN3(ttlText) {
 
 function trigToN3(trigText) {
   const { quads, prefixes } = parseTriG(trigText);
-  return writeN3RdfgIsGraph({ datasetQuads: quads, prefixes });
+  return writeN3LogNameOf({ datasetQuads: quads, prefixes });
 }
 
 function printHelp() {

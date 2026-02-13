@@ -1,11 +1,8 @@
 @prefix : <http://example.com/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 
 :a :name "Alice" .
-:t a rdf:Statement .
-:t rdf:subject :a .
-:t rdf:predicate :name .
-:t rdf:object "Alice" .
+:t log:nameOf { :a :name "Alice" . } .
 :t :statedBy :bob .
 :t :recorded "2021-07-07"^^xsd:date .

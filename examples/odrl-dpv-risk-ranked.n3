@@ -1,0 +1,479 @@
+# ===========================================================================================
+# ODRL + DPV/DPV-RISK risk assessment with ranked, explainable output.
+#
+# What this file does
+# - Models an agreement as an ODRL policy (odrl:Policy) containing permissions,
+#   prohibitions, duties, and constraints. ODRL is expressive enough to encode the
+#   normative “may/must/must-not” structure of TOS clauses as RDF.
+# - Links each ODRL rule to a clause resource (:Clause) to keep human-readable text
+#   while preserving machine-readable structure for reasoning.
+# - Uses N3 rules with log:includes / log:notIncludes to detect missing safeguards
+#   (e.g., missing notice constraints, missing inform duties, missing consent constraints).
+# - Generates DPV risks (dpv:Risk) and classifies them using DPV-RISK concepts:
+#   risk:hasRiskSource, dpv:hasConsequence, dpv:hasImpact, dpv:hasSeverity, dpv:hasRiskLevel.
+# - Produces mitigations as dpv:RiskMitigationMeasure resources and attaches them
+#   to risks with dpv:isMitigatedByMeasure.
+# - Computes a numeric score for each risk and prints a ranked, explainable report.
+#
+# Ranking / output
+# - Output strings are emitted as log:outputString triples.
+# - When running with Eyeling “strings” mode (-r), strings are printed in deterministic
+#   order based on their subject key. The program encodes ranking via an “inverse score”
+#   key (e.g., 1000 - score) so higher-risk items appear first.
+#
+# References
+# - N3 spec:          https://w3c.github.io/N3/spec/
+# - Eyeling builtins: https://eyereasoner.github.io/eyeling/HANDBOOK#ch11
+# - ODRL vocab:       https://www.w3.org/TR/odrl-vocab/
+# - DPV risk module:  https://w3c.github.io/dpv/2.0/dpv/modules/risk.html
+# - DPV-RISK:         https://w3id.org/dpv/risk
+# ===========================================================================================
+
+@prefix :      <https://example.org/odrl-dpv-risk-ranked#> .
+@prefix odrl:  <http://www.w3.org/ns/odrl/2/> .
+@prefix dpv:   <https://w3id.org/dpv#> .
+@prefix risk:  <https://w3id.org/dpv/risk#> .
+@prefix dct:   <http://purl.org/dc/terms/> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix log:   <http://www.w3.org/2000/10/swap/log#> .
+@prefix math:  <http://www.w3.org/2000/10/swap/math#> .
+@prefix string:<http://www.w3.org/2000/10/swap/string#> .
+@prefix tosl:  <https://example.org/tosl-profile#> .
+
+# ---------------------------
+# 1) Consumer profile (needs)
+# ---------------------------
+
+:ConsumerExample a :ConsumerProfile ;
+  dct:title "Example consumer profile" ;
+  :hasNeed :Need_DataCannotBeRemoved,
+           :Need_ChangeOnlyWithPriorNotice,
+           :Need_NoSharingWithoutConsent,
+           :Need_DataPortability .
+
+:Need_DataCannotBeRemoved a :Need ;
+  :importance "20"^^xsd:integer ;
+  dct:description "Provider must not remove the consumer account/data." .
+
+:Need_ChangeOnlyWithPriorNotice a :Need ;
+  :importance "15"^^xsd:integer ;
+  :minNoticeDays "14"^^xsd:integer ;
+  dct:description "Agreement may change only with prior notice (>= 14 days)." .
+
+:Need_NoSharingWithoutConsent a :Need ;
+  :importance "12"^^xsd:integer ;
+  dct:description "No data sharing without explicit consent." .
+
+:Need_DataPortability a :Need ;
+  :importance "10"^^xsd:integer ;
+  dct:description "Consumer must be able to export their data." .
+
+# ------------------------------------------
+# 2) Agreement (ODRL policy graph + clauses)
+# ------------------------------------------
+
+:Agreement1 a :Agreement ;
+  dct:title "Example Agreement" ;
+  :policyGraph {
+    :Policy1 a odrl:Policy ;
+      odrl:permission :PermDeleteAccount,
+                      :PermChangeTerms,
+                      :PermShareData ;
+      odrl:prohibition :ProhibitExportData .
+
+    # Clause C1: remove account/data without safeguards
+    :PermDeleteAccount a odrl:Permission ;
+      odrl:assigner :Provider ;
+      odrl:assignee odrl:consumer ;
+      odrl:action tosl:removeAccount ;
+      odrl:target :UserAccount ;
+      :clause :ClauseC1 .
+
+    # Clause C2: change terms with noticeDays >= 3 (may be too short for the consumer)
+    :PermChangeTerms a odrl:Permission ;
+      odrl:assigner :Provider ;
+      odrl:assignee odrl:consumer ;
+      odrl:action tosl:changeTerms ;
+      odrl:target :AgreementText ;
+      odrl:duty [
+        a odrl:Duty ;
+        odrl:action odrl:inform ;
+        odrl:constraint [
+          a odrl:Constraint ;
+          odrl:leftOperand tosl:noticeDays ;
+          odrl:operator odrl:gteq ;
+          odrl:rightOperand "3"^^xsd:integer
+        ]
+      ] ;
+      :clause :ClauseC2 .
+
+    # Clause C3: share data without explicit consent safeguard
+    :PermShareData a odrl:Permission ;
+      odrl:assigner :Provider ;
+      odrl:assignee odrl:consumer ;
+      odrl:action tosl:shareData ;
+      odrl:target :UserData ;
+      :clause :ClauseC3 .
+
+    # Clause C4: prohibit export (hurts portability)
+    :ProhibitExportData a odrl:Prohibition ;
+      odrl:assigner :Provider ;
+      odrl:assignee odrl:consumer ;
+      odrl:action tosl:exportData ;
+      odrl:target :UserData ;
+      :clause :ClauseC4 .
+  } .
+
+:ClauseC1 a :Clause ; :clauseId "C1" ; :text "Provider may remove the user account (and associated data) at its discretion." .
+:ClauseC2 a :Clause ; :clauseId "C2" ; :text "Provider may change terms by informing users at least 3 days in advance." .
+:ClauseC3 a :Clause ; :clauseId "C3" ; :text "Provider may share user data with partners for business purposes." .
+:ClauseC4 a :Clause ; :clauseId "C4" ; :text "Users are not permitted to export their data." .
+
+:ProcessContext1 a dpv:Process ;
+  dct:source :Agreement1 ;
+  dct:title "Service operation under Agreement1" .
+
+# ------------------------------------------------------------------------------------
+# 3) Risk rules (ODRL -> DPV/DPV-RISK) + mitigations
+#    IMPORTANT: only match ODRL structure inside log:includes; clause text is outside.
+# ------------------------------------------------------------------------------------
+
+# R1: remove account/data WITHOUT notice constraint AND WITHOUT inform duty
+{
+  :Agreement1 :policyGraph ?G .
+  :ConsumerExample :hasNeed :Need_DataCannotBeRemoved .
+  :Need_DataCannotBeRemoved :importance ?w .
+
+  ?G log:includes {
+    :PermDeleteAccount a odrl:Permission ;
+      odrl:action tosl:removeAccount ;
+      :clause ?clause .
+  }.
+
+  ?G log:notIncludes {
+    :PermDeleteAccount odrl:constraint [
+      odrl:leftOperand tosl:noticeDays
+    ] .
+  }.
+
+  ?G log:notIncludes {
+    :PermDeleteAccount odrl:duty [
+      odrl:action odrl:inform
+    ] .
+  }.
+
+  ?clause :clauseId ?cid ; :text ?txt .
+
+  (90 ?w) math:sum ?raw .
+  ( :Agreement1 :ConsumerExample :DeleteAccountNoSafeguards ?cid ) log:skolem ?risk .
+  ( :Agreement1 :ConsumerExample :DeleteAccountNoSafeguardsSource ?cid ) log:skolem ?src .
+
+  ( "Risk: account/data removal is permitted without notice safeguards (no notice constraint and no duty to inform). Clause %s: %s"
+    ?cid ?txt ) string:format ?why .
+}
+=>
+{
+  ?src a risk:RiskSource, risk:LegalComplianceRisk ;
+    dct:source :PermDeleteAccount ;
+    dct:description "Account removal permitted without notice safeguards." .
+
+  ?risk a dpv:Risk, risk:UnwantedDataDeletion, risk:DataUnavailable, risk:DataErasureError, risk:DataLoss ;
+    dct:source :PermDeleteAccount ;
+    risk:hasRiskSource ?src ;
+    dpv:hasConsequence risk:DataLoss, risk:DataUnavailable, risk:CustomerConfidenceLoss ;
+    dpv:hasImpact risk:FinancialLoss, risk:NonMaterialDamage ;
+    :aboutClause ?clause ;
+    :scoreRaw ?raw ;
+    :violatesNeed :Need_DataCannotBeRemoved ;
+    dct:description ?why .
+
+  :ProcessContext1 dpv:hasRisk ?risk .
+
+  ( ?risk :M1 ) log:skolem ?m1 .
+  ( ?risk :M2 ) log:skolem ?m2 .
+
+  ?m1 a dpv:RiskMitigationMeasure ;
+    dct:description "Add a notice constraint (minimum noticeDays) before account removal." ;
+    dpv:mitigatesRisk ?risk ;
+    :suggestAdd {
+      :PermDeleteAccount odrl:constraint [
+        a odrl:Constraint ;
+        odrl:leftOperand tosl:noticeDays ;
+        odrl:operator odrl:gteq ;
+        odrl:rightOperand "14"^^xsd:integer
+      ] .
+    } .
+
+  ?m2 a dpv:RiskMitigationMeasure ;
+    dct:description "Add a duty to inform the consumer prior to account removal." ;
+    dpv:mitigatesRisk ?risk ;
+    :suggestAdd {
+      :PermDeleteAccount odrl:duty [
+        a odrl:Duty ;
+        odrl:action odrl:inform
+      ] .
+    } .
+
+  ?risk dpv:isMitigatedByMeasure ?m1, ?m2 .
+} .
+
+# R2: change terms noticeDays is below consumer requirement
+{
+  :Agreement1 :policyGraph ?G .
+  :ConsumerExample :hasNeed :Need_ChangeOnlyWithPriorNotice .
+  :Need_ChangeOnlyWithPriorNotice :importance ?w ; :minNoticeDays ?req .
+
+  ?G log:includes {
+    :PermChangeTerms a odrl:Permission ;
+      odrl:action tosl:changeTerms ;
+      :clause ?clause ;
+      odrl:duty [
+        odrl:action odrl:inform ;
+        odrl:constraint [
+          odrl:leftOperand tosl:noticeDays ;
+          odrl:rightOperand ?days
+        ]
+      ] .
+  }.
+
+  ?days math:lessThan ?req .
+  ?clause :clauseId ?cid ; :text ?txt .
+
+  (70 ?w) math:sum ?raw .
+  ( :Agreement1 :ConsumerExample :NoticeTooShort ?cid ) log:skolem ?risk .
+  ( :Agreement1 :ConsumerExample :NoticeTooShortSource ?cid ) log:skolem ?src .
+
+  ( "Risk: terms may change with notice (%s days) below consumer requirement (%s days). Clause %s: %s"
+    ?days ?req ?cid ?txt ) string:format ?why .
+}
+=>
+{
+  ?src a risk:RiskSource, risk:PolicyRisk ;
+    dct:source :PermChangeTerms ;
+    dct:description "Notice for changing terms is shorter than consumer requirement." .
+
+  ?risk a dpv:Risk, risk:PolicyRisk, risk:CustomerConfidenceLoss ;
+    dct:source :PermChangeTerms ;
+    risk:hasRiskSource ?src ;
+    dpv:hasConsequence risk:CustomerConfidenceLoss ;
+    dpv:hasImpact risk:NonMaterialDamage ;
+    :aboutClause ?clause ;
+    :scoreRaw ?raw ;
+    :violatesNeed :Need_ChangeOnlyWithPriorNotice ;
+    dct:description ?why .
+
+  :ProcessContext1 dpv:hasRisk ?risk .
+
+  ( ?risk :M1 ) log:skolem ?m1 .
+  ?m1 a dpv:RiskMitigationMeasure ;
+    dct:description "Increase minimum noticeDays in the inform duty to meet the consumer requirement." ;
+    dpv:mitigatesRisk ?risk ;
+    :suggestAdd {
+      :PermChangeTerms odrl:duty [
+        a odrl:Duty ;
+        odrl:action odrl:inform ;
+        odrl:constraint [
+          a odrl:Constraint ;
+          odrl:leftOperand tosl:noticeDays ;
+          odrl:operator odrl:gteq ;
+          odrl:rightOperand "14"^^xsd:integer
+        ]
+      ] .
+    } .
+
+  ?risk dpv:isMitigatedByMeasure ?m1 .
+} .
+
+# R3: share data WITHOUT explicit consent constraint
+{
+  :Agreement1 :policyGraph ?G .
+  :ConsumerExample :hasNeed :Need_NoSharingWithoutConsent .
+  :Need_NoSharingWithoutConsent :importance ?w .
+
+  ?G log:includes {
+    :PermShareData a odrl:Permission ;
+      odrl:action tosl:shareData ;
+      :clause ?clause .
+  }.
+
+  ?G log:notIncludes {
+    :PermShareData odrl:constraint [
+      odrl:leftOperand tosl:consent ;
+      odrl:operator odrl:eq ;
+      odrl:rightOperand true
+    ] .
+  }.
+
+  ?clause :clauseId ?cid ; :text ?txt .
+
+  (85 ?w) math:sum ?raw .
+  ( :Agreement1 :ConsumerExample :ShareNoConsent ?cid ) log:skolem ?risk .
+  ( :Agreement1 :ConsumerExample :ShareNoConsentSource ?cid ) log:skolem ?src .
+
+  ( "Risk: user data sharing is permitted without an explicit consent constraint. Clause %s: %s"
+    ?cid ?txt ) string:format ?why .
+}
+=>
+{
+  ?src a risk:RiskSource, risk:PolicyRisk ;
+    dct:source :PermShareData ;
+    dct:description "Data sharing permitted without explicit consent constraint." .
+
+  ?risk a dpv:Risk, risk:UnwantedDisclosureData, risk:CustomerConfidenceLoss ;
+    dct:source :PermShareData ;
+    risk:hasRiskSource ?src ;
+    dpv:hasConsequence risk:CustomerConfidenceLoss ;
+    dpv:hasImpact risk:NonMaterialDamage, risk:FinancialLoss ;
+    :aboutClause ?clause ;
+    :scoreRaw ?raw ;
+    :violatesNeed :Need_NoSharingWithoutConsent ;
+    dct:description ?why .
+
+  :ProcessContext1 dpv:hasRisk ?risk .
+
+  ( ?risk :M1 ) log:skolem ?m1 .
+  ?m1 a dpv:RiskMitigationMeasure ;
+    dct:description "Add an explicit consent constraint before data sharing." ;
+    dpv:mitigatesRisk ?risk ;
+    :suggestAdd {
+      :PermShareData odrl:constraint [
+        a odrl:Constraint ;
+        odrl:leftOperand tosl:consent ;
+        odrl:operator odrl:eq ;
+        odrl:rightOperand true
+      ] .
+    } .
+
+  ?risk dpv:isMitigatedByMeasure ?m1 .
+} .
+
+# R4: prohibit export (no portability)
+{
+  :Agreement1 :policyGraph ?G .
+  :ConsumerExample :hasNeed :Need_DataPortability .
+  :Need_DataPortability :importance ?w .
+
+  ?G log:includes {
+    :ProhibitExportData a odrl:Prohibition ;
+      odrl:action tosl:exportData ;
+      :clause ?clause .
+  }.
+
+  ?clause :clauseId ?cid ; :text ?txt .
+
+  (60 ?w) math:sum ?raw .
+  ( :Agreement1 :ConsumerExample :NoPortability ?cid ) log:skolem ?risk .
+  ( :Agreement1 :ConsumerExample :NoPortabilitySource ?cid ) log:skolem ?src .
+
+  ( "Risk: portability is restricted because exporting user data is prohibited. Clause %s: %s"
+    ?cid ?txt ) string:format ?why .
+}
+=>
+{
+  ?src a risk:RiskSource, risk:PolicyRisk ;
+    dct:source :ProhibitExportData ;
+    dct:description "Data export is prohibited, reducing portability." .
+
+  ?risk a dpv:Risk, risk:PolicyRisk, risk:CustomerConfidenceLoss ;
+    dct:source :ProhibitExportData ;
+    risk:hasRiskSource ?src ;
+    dpv:hasConsequence risk:CustomerConfidenceLoss ;
+    dpv:hasImpact risk:NonMaterialDamage ;
+    :aboutClause ?clause ;
+    :scoreRaw ?raw ;
+    :violatesNeed :Need_DataPortability ;
+    dct:description ?why .
+
+  :ProcessContext1 dpv:hasRisk ?risk .
+
+  ( ?risk :M1 ) log:skolem ?m1 .
+  ?m1 a dpv:RiskMitigationMeasure ;
+    dct:description "Add a permission allowing data export (or remove the prohibition) to support portability." ;
+    dpv:mitigatesRisk ?risk ;
+    :suggestAdd {
+      :Policy1 odrl:permission [
+        a odrl:Permission ;
+        odrl:assigner :Provider ;
+        odrl:assignee odrl:consumer ;
+        odrl:action tosl:exportData ;
+        odrl:target :UserData
+      ] .
+    } .
+
+  ?risk dpv:isMitigatedByMeasure ?m1 .
+} .
+
+# ------------------------------------------------
+# 4) Score normalization + DPV-RISK severity/level
+# ------------------------------------------------
+
+{ ?r a dpv:Risk ; :scoreRaw ?raw . ?raw math:greaterThan "100"^^xsd:integer . }
+=> { ?r :score "100"^^xsd:integer . } .
+
+{ ?r a dpv:Risk ; :scoreRaw ?raw . "100"^^xsd:integer math:notLessThan ?raw . }
+=> { ?r :score ?raw . } .
+
+{ ?r a dpv:Risk ; :score ?s . ?s math:greaterThan "79"^^xsd:integer . }
+=> { ?r dpv:hasSeverity risk:HighSeverity ; dpv:hasRiskLevel risk:HighRisk . } .
+
+{ ?r a dpv:Risk ; :score ?s . ?s math:lessThan "80"^^xsd:integer . ?s math:greaterThan "49"^^xsd:integer . }
+=> { ?r dpv:hasSeverity risk:ModerateSeverity ; dpv:hasRiskLevel risk:ModerateRisk . } .
+
+{ ?r a dpv:Risk ; :score ?s . ?s math:lessThan "50"^^xsd:integer . }
+=> { ?r dpv:hasSeverity risk:LowSeverity ; dpv:hasRiskLevel risk:LowRisk . } .
+
+# ------------------------------------------------------------------------------
+# 5) Ranked explainable output (Eyeling -r prints these in key order)
+# ------------------------------------------------------------------------------
+
+# Header
+{
+  :Agreement1 dct:title ?alabel .
+  :ConsumerExample dct:title ?plabel .
+  ( "\n=== Ranked DPV Risk Report ===\nAgreement: %s\nProfile: %s\n\n"
+    ?alabel ?plabel ) string:format ?hdr .
+}
+=>
+{
+  ( :Agreement1 :ConsumerExample 0 ) log:outputString ?hdr .
+} .
+
+# Risk lines (key includes inverse score = 1000 - score)
+{
+  ?r a dpv:Risk ;
+     :score ?score ;
+     dpv:hasRiskLevel ?lvl ;
+     dpv:hasSeverity ?sev ;
+     :aboutClause ?clause ;
+     dct:description ?why .
+  ?clause :clauseId ?cid .
+
+  ( "1000"^^xsd:integer ?score ) math:difference ?inv .
+
+  ( "score=%s (%s, %s)  clause %s\n  %s\n\n"
+    ?score ?lvl ?sev ?cid ?why ) string:format ?line .
+}
+=>
+{
+  ( :Agreement1 :ConsumerExample 1 ?inv ?r ) log:outputString ?line .
+} .
+
+# Mitigation lines (same ordering as their risk)
+{
+  ?r a dpv:Risk ;
+     :score ?score ;
+     dpv:isMitigatedByMeasure ?m ;
+     :aboutClause ?clause .
+  ?clause :clauseId ?cid .
+  ?m dct:description ?md .
+
+  ( "1000"^^xsd:integer ?score ) math:difference ?inv .
+
+  ( "  - mitigation for clause %s: %s\n"
+    ?cid ?md ) string:format ?mline .
+}
+=>
+{
+  ( :Agreement1 :ConsumerExample 2 ?inv ?r ) log:outputString ?mline .
+} .
+

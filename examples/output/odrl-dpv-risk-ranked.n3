@@ -1,0 +1,95 @@
+@prefix : <https://example.org/odrl-dpv-risk-ranked#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix dpv: <https://w3id.org/dpv#> .
+@prefix genid: <https://eyereasoner.github.io/.well-known/genid/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix risk: <https://w3id.org/dpv/risk#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+genid:1c780f80-9b90-f310-2ce9-2d829e5616d8 a risk:RiskSource .
+genid:1c780f80-9b90-f310-2ce9-2d829e5616d8 a risk:LegalComplianceRisk .
+genid:1c780f80-9b90-f310-2ce9-2d829e5616d8 dct:source :PermDeleteAccount .
+genid:1c780f80-9b90-f310-2ce9-2d829e5616d8 dct:description "Account removal permitted without notice safeguards." .
+genid:59bf9d7c-6868-401e-bb47-667826cd85bc a dpv:Risk .
+genid:59bf9d7c-6868-401e-bb47-667826cd85bc a risk:UnwantedDataDeletion .
+genid:59bf9d7c-6868-401e-bb47-667826cd85bc a risk:DataUnavailable .
+genid:59bf9d7c-6868-401e-bb47-667826cd85bc a risk:DataErasureError .
+genid:59bf9d7c-6868-401e-bb47-667826cd85bc a risk:DataLoss .
+genid:59bf9d7c-6868-401e-bb47-667826cd85bc dct:source :PermDeleteAccount .
+genid:59bf9d7c-6868-401e-bb47-667826cd85bc risk:hasRiskSource genid:1c780f80-9b90-f310-2ce9-2d829e5616d8 .
+genid:59bf9d7c-6868-401e-bb47-667826cd85bc dpv:hasConsequence risk:DataLoss .
+genid:59bf9d7c-6868-401e-bb47-667826cd85bc dpv:hasConsequence risk:DataUnavailable .
+genid:59bf9d7c-6868-401e-bb47-667826cd85bc dpv:hasConsequence risk:CustomerConfidenceLoss .
+genid:59bf9d7c-6868-401e-bb47-667826cd85bc dpv:hasImpact risk:FinancialLoss .
+genid:59bf9d7c-6868-401e-bb47-667826cd85bc dpv:hasImpact risk:NonMaterialDamage .
+genid:59bf9d7c-6868-401e-bb47-667826cd85bc :aboutClause :ClauseC1 .
+genid:59bf9d7c-6868-401e-bb47-667826cd85bc :scoreRaw 110 .
+genid:59bf9d7c-6868-401e-bb47-667826cd85bc :violatesNeed :Need_DataCannotBeRemoved .
+genid:59bf9d7c-6868-401e-bb47-667826cd85bc dct:description "Risk: account/data removal is permitted without notice safeguards (no notice constraint and no duty to inform). Clause C1: Provider may remove the user account (and associated data) at its discretion." .
+:ProcessContext1 dpv:hasRisk genid:59bf9d7c-6868-401e-bb47-667826cd85bc .
+genid:b00dbc9c-519f-4664-518c-32853c2cfabc a risk:RiskSource .
+genid:b00dbc9c-519f-4664-518c-32853c2cfabc a risk:PolicyRisk .
+genid:b00dbc9c-519f-4664-518c-32853c2cfabc dct:source :PermChangeTerms .
+genid:b00dbc9c-519f-4664-518c-32853c2cfabc dct:description "Notice for changing terms is shorter than consumer requirement." .
+genid:423c1420-b028-620c-fcd2-78f08f0da0ca a dpv:Risk .
+genid:423c1420-b028-620c-fcd2-78f08f0da0ca a risk:PolicyRisk .
+genid:423c1420-b028-620c-fcd2-78f08f0da0ca a risk:CustomerConfidenceLoss .
+genid:423c1420-b028-620c-fcd2-78f08f0da0ca dct:source :PermChangeTerms .
+genid:423c1420-b028-620c-fcd2-78f08f0da0ca risk:hasRiskSource genid:b00dbc9c-519f-4664-518c-32853c2cfabc .
+genid:423c1420-b028-620c-fcd2-78f08f0da0ca dpv:hasConsequence risk:CustomerConfidenceLoss .
+genid:423c1420-b028-620c-fcd2-78f08f0da0ca dpv:hasImpact risk:NonMaterialDamage .
+genid:423c1420-b028-620c-fcd2-78f08f0da0ca :aboutClause :ClauseC2 .
+genid:423c1420-b028-620c-fcd2-78f08f0da0ca :scoreRaw 85 .
+genid:423c1420-b028-620c-fcd2-78f08f0da0ca :violatesNeed :Need_ChangeOnlyWithPriorNotice .
+genid:423c1420-b028-620c-fcd2-78f08f0da0ca dct:description "Risk: terms may change with notice (3 days) below consumer requirement (14 days). Clause C2: Provider may change terms by informing users at least 3 days in advance." .
+:ProcessContext1 dpv:hasRisk genid:423c1420-b028-620c-fcd2-78f08f0da0ca .
+genid:e4304204-5fbc-1dc2-cb50-da7597604550 a risk:RiskSource .
+genid:e4304204-5fbc-1dc2-cb50-da7597604550 a risk:PolicyRisk .
+genid:e4304204-5fbc-1dc2-cb50-da7597604550 dct:source :PermShareData .
+genid:e4304204-5fbc-1dc2-cb50-da7597604550 dct:description "Data sharing permitted without explicit consent constraint." .
+genid:dbffbd20-c09d-995c-7973-d378be8f6d4c a dpv:Risk .
+genid:dbffbd20-c09d-995c-7973-d378be8f6d4c a risk:UnwantedDisclosureData .
+genid:dbffbd20-c09d-995c-7973-d378be8f6d4c a risk:CustomerConfidenceLoss .
+genid:dbffbd20-c09d-995c-7973-d378be8f6d4c dct:source :PermShareData .
+genid:dbffbd20-c09d-995c-7973-d378be8f6d4c risk:hasRiskSource genid:e4304204-5fbc-1dc2-cb50-da7597604550 .
+genid:dbffbd20-c09d-995c-7973-d378be8f6d4c dpv:hasConsequence risk:CustomerConfidenceLoss .
+genid:dbffbd20-c09d-995c-7973-d378be8f6d4c dpv:hasImpact risk:NonMaterialDamage .
+genid:dbffbd20-c09d-995c-7973-d378be8f6d4c dpv:hasImpact risk:FinancialLoss .
+genid:dbffbd20-c09d-995c-7973-d378be8f6d4c :aboutClause :ClauseC3 .
+genid:dbffbd20-c09d-995c-7973-d378be8f6d4c :scoreRaw 97 .
+genid:dbffbd20-c09d-995c-7973-d378be8f6d4c :violatesNeed :Need_NoSharingWithoutConsent .
+genid:dbffbd20-c09d-995c-7973-d378be8f6d4c dct:description "Risk: user data sharing is permitted without an explicit consent constraint. Clause C3: Provider may share user data with partners for business purposes." .
+:ProcessContext1 dpv:hasRisk genid:dbffbd20-c09d-995c-7973-d378be8f6d4c .
+genid:f83f5ee8-215f-977e-4e89-f9812cda0c04 a risk:RiskSource .
+genid:f83f5ee8-215f-977e-4e89-f9812cda0c04 a risk:PolicyRisk .
+genid:f83f5ee8-215f-977e-4e89-f9812cda0c04 dct:source :ProhibitExportData .
+genid:f83f5ee8-215f-977e-4e89-f9812cda0c04 dct:description "Data export is prohibited, reducing portability." .
+genid:ee944cc3-a770-063a-274c-98e4f8af162c a dpv:Risk .
+genid:ee944cc3-a770-063a-274c-98e4f8af162c a risk:PolicyRisk .
+genid:ee944cc3-a770-063a-274c-98e4f8af162c a risk:CustomerConfidenceLoss .
+genid:ee944cc3-a770-063a-274c-98e4f8af162c dct:source :ProhibitExportData .
+genid:ee944cc3-a770-063a-274c-98e4f8af162c risk:hasRiskSource genid:f83f5ee8-215f-977e-4e89-f9812cda0c04 .
+genid:ee944cc3-a770-063a-274c-98e4f8af162c dpv:hasConsequence risk:CustomerConfidenceLoss .
+genid:ee944cc3-a770-063a-274c-98e4f8af162c dpv:hasImpact risk:NonMaterialDamage .
+genid:ee944cc3-a770-063a-274c-98e4f8af162c :aboutClause :ClauseC4 .
+genid:ee944cc3-a770-063a-274c-98e4f8af162c :scoreRaw 70 .
+genid:ee944cc3-a770-063a-274c-98e4f8af162c :violatesNeed :Need_DataPortability .
+genid:ee944cc3-a770-063a-274c-98e4f8af162c dct:description "Risk: portability is restricted because exporting user data is prohibited. Clause C4: Users are not permitted to export their data." .
+:ProcessContext1 dpv:hasRisk genid:ee944cc3-a770-063a-274c-98e4f8af162c .
+genid:59bf9d7c-6868-401e-bb47-667826cd85bc :score "100"^^xsd:integer .
+genid:423c1420-b028-620c-fcd2-78f08f0da0ca :score 85 .
+genid:dbffbd20-c09d-995c-7973-d378be8f6d4c :score 97 .
+genid:ee944cc3-a770-063a-274c-98e4f8af162c :score 70 .
+genid:59bf9d7c-6868-401e-bb47-667826cd85bc dpv:hasSeverity risk:HighSeverity .
+genid:59bf9d7c-6868-401e-bb47-667826cd85bc dpv:hasRiskLevel risk:HighRisk .
+genid:423c1420-b028-620c-fcd2-78f08f0da0ca dpv:hasSeverity risk:HighSeverity .
+genid:423c1420-b028-620c-fcd2-78f08f0da0ca dpv:hasRiskLevel risk:HighRisk .
+genid:dbffbd20-c09d-995c-7973-d378be8f6d4c dpv:hasSeverity risk:HighSeverity .
+genid:dbffbd20-c09d-995c-7973-d378be8f6d4c dpv:hasRiskLevel risk:HighRisk .
+genid:ee944cc3-a770-063a-274c-98e4f8af162c dpv:hasSeverity risk:ModerateSeverity .
+genid:ee944cc3-a770-063a-274c-98e4f8af162c dpv:hasRiskLevel risk:ModerateRisk .
+(:Agreement1 :ConsumerExample 0) log:outputString "\n=== Ranked DPV Risk Report ===\nAgreement: Example Agreement\nProfile: Example consumer profile\n\n" .
+(:Agreement1 :ConsumerExample 1 900 genid:59bf9d7c-6868-401e-bb47-667826cd85bc) log:outputString "score=100 (https://w3id.org/dpv/risk#HighRisk, https://w3id.org/dpv/risk#HighSeverity)  clause C1\n  Risk: account/data removal is permitted without notice safeguards (no notice constraint and no duty to inform). Clause C1: Provider may remove the user account (and associated data) at its discretion.\n\n" .
+(:Agreement1 :ConsumerExample 1 915 genid:423c1420-b028-620c-fcd2-78f08f0da0ca) log:outputString "score=85 (https://w3id.org/dpv/risk#HighRisk, https://w3id.org/dpv/risk#HighSeverity)  clause C2\n  Risk: terms may change with notice (3 days) below consumer requirement (14 days). Clause C2: Provider may change terms by informing users at least 3 days in advance.\n\n" .
+(:Agreement1 :ConsumerExample 1 903 genid:dbffbd20-c09d-995c-7973-d378be8f6d4c) log:outputString "score=97 (https://w3id.org/dpv/risk#HighRisk, https://w3id.org/dpv/risk#HighSeverity)  clause C3\n  Risk: user data sharing is permitted without an explicit consent constraint. Clause C3: Provider may share user data with partners for business purposes.\n\n" .
+(:Agreement1 :ConsumerExample 1 930 genid:ee944cc3-a770-063a-274c-98e4f8af162c) log:outputString "score=70 (https://w3id.org/dpv/risk#ModerateRisk, https://w3id.org/dpv/risk#ModerateSeverity)  clause C4\n  Risk: portability is restricted because exporting user data is prohibited. Clause C4: Users are not permitted to export their data.\n\n" .
