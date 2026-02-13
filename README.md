@@ -5,8 +5,7 @@ A compact [Notation3 (N3)](https://notation3.org/) reasoner in **JavaScript**.
 - Single self-contained bundle (`eyeling.js`), no external runtime deps
 - Forward (`=>`) + backward (`<=`) chaining over Horn-style rules
 - Outputs only **newly derived** forward facts by default (optionally with compact proof comments)
-- If the input contains one or more top-level `{ ... } log:query { ... }.` directives, the output becomes the
-  **unique instantiated conclusion triples** of those queries (a forward-rule-like projection)
+- If the input contains one or more top-level `{ ... } log:query { ... }.` directives, the output becomes the **unique instantiated conclusion triples** of those queries (a forward-rule-like projection)
 - Works in Node.js and fully client-side (browser/worker)
 
 ## Links
@@ -55,9 +54,7 @@ If your input contains one or more **top-level** directives of the form:
 { ?x a :Human. } log:query { ?x a :Mortal. }.
 ```
 
-Eyeling will still compute the saturated forward closure, but it will **print only** the
-**unique instantiated conclusion triples** of those `log:query` directives (instead of printing
-all newly derived forward facts).
+Eyeling will still compute the saturated forward closure, but it will **print only** the **unique instantiated conclusion triples** of those `log:query` directives (instead of printing all newly derived forward facts).
 
 ### JavaScript API
 
