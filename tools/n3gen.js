@@ -101,7 +101,6 @@ const log = {
   nameOf: `${LOG_NS}nameOf`,
 };
 
-
 // ---------------------------------------------------------------------------
 // Minimal Turtle/N3 model + lexer + parser
 // ---------------------------------------------------------------------------
@@ -2001,7 +2000,10 @@ function writeN3LogNameOf({ datasetQuads, prefixes }) {
   const prunedPrefixes = pruneUnusedPrefixes(prefixes, pseudoTriplesForUse);
   const skolemMap = buildSkolemMapForBnodesThatCrossScopes(pseudoTriplesForUse);
   const outPrefixes = ensureRdfPrefixIfUsed(
-    ensureXsdPrefixIfUsed(ensureLogPrefixIfUsed(ensureSkolemPrefix(prunedPrefixes, skolemMap), pseudoTriplesForUse), pseudoTriplesForUse),
+    ensureXsdPrefixIfUsed(
+      ensureLogPrefixIfUsed(ensureSkolemPrefix(prunedPrefixes, skolemMap), pseudoTriplesForUse),
+      pseudoTriplesForUse,
+    ),
     pseudoTriplesForUse,
   );
   const pro = renderPrefixPrologue(outPrefixes).trim();
@@ -2059,7 +2061,10 @@ function writeN3Triples({ triples, prefixes }) {
   const prunedPrefixes = pruneUnusedPrefixes(prefixes, foldedTriples);
   const skolemMap = buildSkolemMapForBnodesThatCrossScopes(foldedTriples);
   const outPrefixes = ensureRdfPrefixIfUsed(
-    ensureXsdPrefixIfUsed(ensureLogPrefixIfUsed(ensureSkolemPrefix(prunedPrefixes, skolemMap), foldedTriples), foldedTriples),
+    ensureXsdPrefixIfUsed(
+      ensureLogPrefixIfUsed(ensureSkolemPrefix(prunedPrefixes, skolemMap), foldedTriples),
+      foldedTriples,
+    ),
     foldedTriples,
   );
   const blocks = [];

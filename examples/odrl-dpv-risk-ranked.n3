@@ -1,5 +1,5 @@
 # ===========================================================================================
-# ODRL + DPV/DPV-RISK risk assessment with ranked, explainable output.
+# ODRL + DPV risk assessment with ranked, explainable output.
 #
 # What this file does
 # - Models an agreement as an ODRL policy (odrl:Policy) containing permissions,
