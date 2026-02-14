@@ -1,7 +1,7 @@
 @prefix : <http://www.example.org/> .
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix skolem: <https://eyereasoner.github.io/.well-known/genid/f327f7b5-4499-5c8b-9520-eab7551cbf00#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
 
 skolem:e38 :familyName "Smith" .
-_:anno rdf:reifies { skolem:e38 :jobTitle "Designer" . } .
+_:anno log:nameOf { skolem:e38 :jobTitle "Designer" . } .
 _:anno :accordingTo _:e22 .

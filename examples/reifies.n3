@@ -1,8 +1,7 @@
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix : <http://www.example.org/> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 
-_:b rdf:reifies { :Socrates a :Human . } .
+_:b log:nameOf { :Socrates a :Human . } .
 _:b :is true .
 :employee38 :familyName "Smith" .
 _:id log:nameOf { :employee38 :jobTitle "Assistant Designer" . } .

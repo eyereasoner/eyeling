@@ -1032,7 +1032,7 @@ class TurtleParser {
     if (typ === 'Var') return new Var(val || '');
     if (typ === 'LParen') return this.parseList();
     if (typ === 'LBracket') return this.parseBlank();
-    if (typ === 'LBrace') return this.parseGraph(); // N3 graph term
+    if (typ === 'LBrace') throw new Error('N3 graph terms { ... } are not supported in Turtle/TriG input');
     if (typ === 'StarOpen') return this.parseStarTerm();
 
     throw new Error(`Unexpected term token: ${tok.toString()}`);
@@ -1239,7 +1239,18 @@ class TurtleParser {
     const o = invert ? subject : obj;
 
     // asserted triple
-    out.push(new Triple(s, verb, o));
+    // Special-case RDF 1.2 explicit triple reification:
+    //   _:r rdf:reifies <<( s p o )>> .
+    // Emit as:
+    //   _:r log:nameOf { s p o . } .
+    // This matches the mapping we already use for reifiedTriple sugar and annotations.
+    let assertedVerb = verb;
+    let assertedObj = o;
+    if (!invert && verb instanceof Iri && verb.value === RDF_NS + 'reifies' && obj instanceof GraphTerm) {
+      assertedVerb = internIri(log.nameOf);
+      assertedObj = obj;
+    }
+    out.push(new Triple(s, assertedVerb, assertedObj));
 
     // optional reifier and/or annotation blocks
     let reifier = null;
@@ -1257,7 +1268,7 @@ class TurtleParser {
     }
 
     if (reifier) {
-      const tripleTerm = new GraphTerm([new Triple(s, verb, o)]);
+      const tripleTerm = new GraphTerm([new Triple(s, assertedVerb, assertedObj)]);
       this.emitReifies(reifier, tripleTerm);
       if (this.pendingTriples.length) {
         out.push(...this.pendingTriples);
@@ -2043,7 +2054,7 @@ function writeN3LogNameOf({ datasetQuads, prefixes }) {
 }
 
 // ---------------------------------------------------------------------------
-// Roundtrip: TriG <-> N3 (log:nameOf mapping)
+// Parsing + N3 output (Turtle/TriG -> N3)
 // ---------------------------------------------------------------------------
 
 function parseTriG(text) {
