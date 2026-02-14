@@ -984,6 +984,34 @@ ex:a p:trig ex:b.
       /:result\s+:query3\s+\(:path1\s+1\s+:b\)\s*\./,
     ],
   },
+
+  {
+    name: '57 issue #9: backward cycle with extra type guard should still derive label',
+    opt: { proofComments: false },
+    input: `@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix ex: <http://example.org/ns#> .
+
+ex:w a ex:Woman .
+
+{
+  ?s a ex:Woman .
+  ?s ex:label ?label .
+} => {
+  ?s rdfs:label ?label .
+} .
+
+{ ?s a ex:Human } <= { ?s a ex:Woman } .
+{ ?s a ex:Animal } <= { ?s a ex:Human } .
+
+{ ?s ex:label "human being" } <= {
+  ?s a ex:Human .
+  ?s a ex:Animal .
+} .
+`,
+    expect: [
+      /(?:ex:w|<http:\/\/example\.org\/ns#w>)\s+(?:rdfs:label|<http:\/\/www\.w3\.org\/2000\/01\/rdf-schema#label>)\s+"human being"\s*\./,
+    ],
+  },
 ];
 
 let passed = 0;
