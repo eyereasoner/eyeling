@@ -5306,8 +5306,50 @@ function alphaEqGraphTriples(xs, ys) {
 //   - __byHeadPred:   Map<headPredicateId, Rule[]>
 //   - __wildHeadPred: Rule[] (non-IRI head predicate)
 
+// Compound-term fast-key interning.
+// Used to index strict-ground list literals without relying on object identity.
+//
+// This is a major performance win for N3 programs that use compound terms
+// (especially lists) as subjects/objects, e.g. tabling-style encodings.
+const __compoundKeyToTid = new Map();
+// Use a negative id space so we never collide with __tid (which is positive).
+let __nextCompoundTid = -1;
+
+function __internCompoundTid(key) {
+  const hit = __compoundKeyToTid.get(key);
+  if (hit !== undefined) return hit;
+  const id = __nextCompoundTid--;
+  __compoundKeyToTid.set(key, id);
+  return id;
+}
+
 function termFastKey(t) {
+  // Atomic terms that already have a stable id.
   if (t instanceof Iri || t instanceof Blank || t instanceof Literal) return t.__tid;
+
+  // Structural fast key for strict-ground list terms.
+  // We only index when every element has a fast key; otherwise return null.
+  if (t instanceof ListTerm) {
+    const cached = t.__ftid;
+    if (cached !== undefined) return cached;
+
+    const xs = t.elems;
+    const parts = new Array(xs.length);
+    for (let i = 0; i < xs.length; i++) {
+      const k = termFastKey(xs[i]);
+      if (k === null) return null;
+      parts[i] = k;
+    }
+
+    // Use a compact separator; include length to avoid edge-case collisions.
+    const key = 'L' + xs.length + '\u0001' + parts.join('\u0001');
+    const id = __internCompoundTid(key);
+
+    // Cache on the list object itself (lists are immutable in Eyeling).
+    Object.defineProperty(t, '__ftid', { value: id, enumerable: false });
+    return id;
+  }
+
   return null;
 }
 
@@ -6334,6 +6376,26 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
           continue;
         }
 
+        // If this goal is already on the ancestor chain, avoid picking rules
+        // whose premises would immediately re-enter any already-visited goal.
+        // This cheap guard restores completeness for cases like issue #9 while
+        // still preventing trivial non-termination in mutually recursive rule
+        // cycles.
+        if (frame.goalWasVisited && rStd.premise && rStd.premise.length) {
+          let __cycle = false;
+          for (let i = 0; i < rStd.premise.length; i++) {
+            const premKey = __tripleKeyForVisited(applySubstTriple(rStd.premise[i], substMut));
+            if (visitedCounts.has(premKey)) {
+              __cycle = true;
+              break;
+            }
+          }
+          if (__cycle) {
+            undoTo(mark);
+            continue;
+          }
+        }
+
         const newGoals = rStd.premise.concat(frame.restGoals);
 
         const vMark = visitedTrail.length;
@@ -6464,8 +6526,23 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
     }
 
     // 2) Loop check for backward reasoning
+    //
+    // A strict ancestor loop check ("if visited then fail") is fast but
+    // incomplete. It breaks common Horn patterns where a goal appears again in
+    // a sibling branch and can still succeed via a different (non-cyclic) rule.
+    //
+    // Example (issue #9):
+    //   Human <= Woman.
+    //   Animal <= Human.
+    //   label <= Human, Animal.
+    // While proving Animal we need to re-prove Human, even though Human is an
+    // ancestor goal. EYE succeeds; a strict loop check prunes it.
+    //
+    // We therefore *allow* re-entering a visited goal, but when a goal is
+    // already visited we avoid applying backward rules whose premises would
+    // immediately re-enter any visited goal again (a cheap cycle guard).
     const goalKey = __tripleKeyForVisited(goal0);
-    if (visitedCounts.has(goalKey)) continue;
+    const goalWasVisited = visitedCounts.has(goalKey);
 
     // 3) Backward rules (indexed by head predicate) — explored first
     if (goal0.p instanceof Iri) {
@@ -6496,6 +6573,7 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
           curDepth: frame.curDepth,
           goalKey,
           goalPtid: goal0.p.__tid,
+          goalWasVisited,
         });
       }
     } else {
