@@ -1,0 +1,205 @@
+# =========================================================================
+# Kaprekar’s routine for 4-digit numbers
+#
+# What it does
+#   Enumerates all 4-digit numbers 0000..9999 (leading zeros allowed),
+#   applies the Kaprekar step:
+#       - take the 4 digits of n
+#       - sort digits descending to form D, ascending to form A
+#       - next = D − A
+#   and emits triples of the form:
+#       3524 :kaprekar (3087 8352 6174) .
+#
+# Output convention
+#   The list contains the successive results starting from the *first* step
+#   and ends at 6174 (Kaprekar’s constant).
+#
+# Skipping the repdigit → 0000 basin
+#   Starts that eventually reach 0000 (e.g., 1111, 2222, … and anything
+#   that falls into that basin) can be omitted by adding constraints that
+#   require the chain to end in 6174.
+#
+# Performance notes
+#   - The step computation can be sped up by using the identity:
+#         next = 999*(a3-a0) + 90*(a2-a1)
+#     where a0<=a1<=a2<=a3 are the digits sorted ascending.
+#     This avoids explicitly constructing D and A as 4-digit numbers.
+#   - For 4-digit Kaprekar, the maximum number of steps to reach 6174 is 7,
+#     so the path rules can be unrolled to a fixed bound (no recursion),
+#     which improves termination and speed.
+#
+# Predicates used (typical)
+#   :kaprekar   — final output predicate: start -> (sequence ... 6174)
+#   kap:step    — internal: n -> next for one Kaprekar step
+# =========================================================================
+
+@prefix :     <http://example.org/#>.
+@prefix kap:  <http://example.org/kaprekar#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix list: <http://www.w3.org/2000/10/swap/list#>.
+@prefix log:  <http://www.w3.org/2000/10/swap/log#>.
+
+# Define the digit list ONCE (avoid repeating a list literal 4 times)
+:digitList :items (0 1 2 3 4 5 6 7 8 9).
+
+# Output: only :kaprekar triples
+{ ?n :kaprekar ?seq. } log:query { ?n :kaprekar ?seq. }.
+
+# -------------------------------------------------------
+# Precompute kap:step for all 0000..9999.
+# Uses identity: if sorted digits are a0<=a1<=a2<=a3 then
+#   desc-asc = 999*(a3-a0) + 90*(a2-a1)
+# -------------------------------------------------------
+
+{
+  :digitList :items ?L.
+
+  ?L list:member ?d1.
+  ?L list:member ?d2.
+  ?L list:member ?d3.
+  ?L list:member ?d4.
+
+  # build n = 1000*d1 + 100*d2 + 10*d3 + d4
+  (?d1 1000) math:product ?p1.
+  (?d2 100)  math:product ?p2.
+  (?d3 10)   math:product ?p3.
+  (?d4 1)    math:product ?p4.
+  (?p1 ?p2 ?p3 ?p4) math:sum ?n.
+
+  # sort digits once
+  (?d1 ?d2 ?d3 ?d4) list:sort ?asc.
+
+  # unpack a0 a1 a2 a3
+  ?asc  list:firstRest (?a0 ?r0).
+  ?r0   list:firstRest (?a1 ?r1).
+  ?r1   list:firstRest (?a2 ?r2).
+  ?r2   list:firstRest (?a3 ()).
+
+  # next = 999*(a3-a0) + 90*(a2-a1)
+  (?a3 ?a0) math:difference ?x.
+  (?a2 ?a1) math:difference ?y.
+  (?x 999)  math:product ?px.
+  (?y 90)   math:product ?py.
+  (?px ?py) math:sum ?next.
+} => {
+  ?n kap:step ?next.
+}.
+
+# ------------------------------------------------------------------
+# Emit only chains that end in 6174 (skip the repdigit->0 basin)
+# Maximum steps to 6174 is 7, so we unroll 1..7.
+#
+# Convention: output list includes each intermediate INCLUDING 6174.
+# Example: 3524 -> (3087 8352 6174)
+# ------------------------------------------------------------------
+
+# n = 6174 itself (optional; keep if you want it in output)
+6174 :kaprekar (6174).
+
+# 1 step
+{
+  ?n log:notEqualTo 6174.
+  ?n kap:step 6174.
+  # exclude repdigits/0 basin:
+  ?n log:notEqualTo 0.
+} => {
+  ?n :kaprekar (6174).
+}.
+
+# 2 steps
+{
+  ?n log:notEqualTo 6174.
+  ?n log:notEqualTo 0.
+  ?n kap:step ?s1.
+  ?s1 log:notEqualTo 0.
+  ?s1 log:notEqualTo 6174.
+  ?s1 kap:step 6174.
+} => {
+  ?n :kaprekar (?s1 6174).
+}.
+
+# 3 steps
+{
+  ?n log:notEqualTo 6174.
+  ?n log:notEqualTo 0.
+  ?n kap:step ?s1.
+  ?s1 log:notEqualTo 0.  ?s1 log:notEqualTo 6174.
+  ?s1 kap:step ?s2.
+  ?s2 log:notEqualTo 0.  ?s2 log:notEqualTo 6174.
+  ?s2 kap:step 6174.
+} => {
+  ?n :kaprekar (?s1 ?s2 6174).
+}.
+
+# 4 steps
+{
+  ?n log:notEqualTo 6174.
+  ?n log:notEqualTo 0.
+  ?n kap:step ?s1.
+  ?s1 log:notEqualTo 0.  ?s1 log:notEqualTo 6174.
+  ?s1 kap:step ?s2.
+  ?s2 log:notEqualTo 0.  ?s2 log:notEqualTo 6174.
+  ?s2 kap:step ?s3.
+  ?s3 log:notEqualTo 0.  ?s3 log:notEqualTo 6174.
+  ?s3 kap:step 6174.
+} => {
+  ?n :kaprekar (?s1 ?s2 ?s3 6174).
+}.
+
+# 5 steps
+{
+  ?n log:notEqualTo 6174.
+  ?n log:notEqualTo 0.
+  ?n kap:step ?s1.
+  ?s1 log:notEqualTo 0.  ?s1 log:notEqualTo 6174.
+  ?s1 kap:step ?s2.
+  ?s2 log:notEqualTo 0.  ?s2 log:notEqualTo 6174.
+  ?s2 kap:step ?s3.
+  ?s3 log:notEqualTo 0.  ?s3 log:notEqualTo 6174.
+  ?s3 kap:step ?s4.
+  ?s4 log:notEqualTo 0.  ?s4 log:notEqualTo 6174.
+  ?s4 kap:step 6174.
+} => {
+  ?n :kaprekar (?s1 ?s2 ?s3 ?s4 6174).
+}.
+
+# 6 steps
+{
+  ?n log:notEqualTo 6174.
+  ?n log:notEqualTo 0.
+  ?n kap:step ?s1.
+  ?s1 log:notEqualTo 0.  ?s1 log:notEqualTo 6174.
+  ?s1 kap:step ?s2.
+  ?s2 log:notEqualTo 0.  ?s2 log:notEqualTo 6174.
+  ?s2 kap:step ?s3.
+  ?s3 log:notEqualTo 0.  ?s3 log:notEqualTo 6174.
+  ?s3 kap:step ?s4.
+  ?s4 log:notEqualTo 0.  ?s4 log:notEqualTo 6174.
+  ?s4 kap:step ?s5.
+  ?s5 log:notEqualTo 0.  ?s5 log:notEqualTo 6174.
+  ?s5 kap:step 6174.
+} => {
+  ?n :kaprekar (?s1 ?s2 ?s3 ?s4 ?s5 6174).
+}.
+
+# 7 steps (max)
+{
+  ?n log:notEqualTo 6174.
+  ?n log:notEqualTo 0.
+  ?n kap:step ?s1.
+  ?s1 log:notEqualTo 0.  ?s1 log:notEqualTo 6174.
+  ?s1 kap:step ?s2.
+  ?s2 log:notEqualTo 0.  ?s2 log:notEqualTo 6174.
+  ?s2 kap:step ?s3.
+  ?s3 log:notEqualTo 0.  ?s3 log:notEqualTo 6174.
+  ?s3 kap:step ?s4.
+  ?s4 log:notEqualTo 0.  ?s4 log:notEqualTo 6174.
+  ?s4 kap:step ?s5.
+  ?s5 log:notEqualTo 0.  ?s5 log:notEqualTo 6174.
+  ?s5 kap:step ?s6.
+  ?s6 log:notEqualTo 0.  ?s6 log:notEqualTo 6174.
+  ?s6 kap:step 6174.
+} => {
+  ?n :kaprekar (?s1 ?s2 ?s3 ?s4 ?s5 ?s6 6174).
+}.
+
