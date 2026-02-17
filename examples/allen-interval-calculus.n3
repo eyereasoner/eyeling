@@ -1,0 +1,180 @@
+# ======================================================================
+# Allen Interval Calculus
+#
+# This file illustrates the full set of 13 base relations of Allen's
+# interval algebra, encoded as forward-chaining N3 rules.
+#
+# Data model:
+#   - Any resource with :start and :end denotes a closed-open interval
+#     [start, end) over time.
+#   - :start and :end are xsd:dateTime typed literals.
+#   - Optionally, an interval may have :duration (xsd:duration).
+#
+# Built-ins (EYE / Eyeling style):
+#   - math:lessThan and math:equalTo can compare xsd:dateTime (via epoch
+#     seconds) and xsd:duration (treated as seconds).
+#   - Timestamp arithmetic uses:
+#       (dateTime duration) math:sum dateTime
+#       (dateTime1 dateTime2) math:difference duration
+#       (dateTime duration) math:difference dateTime
+#     where xsd:duration uses a simplified seconds model.
+# ======================================================================
+
+@prefix :     <http://example.org/allen#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#>.
+
+# -------------------------------------------------------------
+# Optional interval completion rules (derive missing endpoints)
+# -------------------------------------------------------------
+
+# If start + duration given, derive end.
+{
+  ?I :start ?s; :duration ?d.
+  ( ?s ?d ) math:sum ?e.
+} => { ?I :end ?e. }.
+
+# If end + duration given, derive start.
+{
+  ?I :end ?e; :duration ?d.
+  ( ?e ?d ) math:difference ?s.
+} => { ?I :start ?s. }.
+
+# If start + end given, derive duration (seconds-only lexical output).
+{
+  ?I :start ?s; :end ?e.
+  ( ?e ?s ) math:difference ?d.
+} => { ?I :duration ?d. }.
+
+# ----------------------------------------------------
+# 7 "forward" base relations (the rest are converses)
+# ----------------------------------------------------
+
+# before(I,J) <=> end(I) < start(J)
+{
+  ?I :end ?eI.
+  ?J :start ?sJ.
+  ?eI math:lessThan ?sJ.
+} => { ?I :before ?J. }.
+
+# meets(I,J) <=> end(I) = start(J)
+{
+  ?I :end ?eI.
+  ?J :start ?sJ.
+  ?eI math:equalTo ?sJ.
+} => { ?I :meets ?J. }.
+
+# overlaps(I,J) <=> start(I) < start(J) < end(I) < end(J)
+{
+  ?I :start ?sI; :end ?eI.
+  ?J :start ?sJ; :end ?eJ.
+  ?sI math:lessThan ?sJ.
+  ?sJ math:lessThan ?eI.
+  ?eI math:lessThan ?eJ.
+} => { ?I :overlaps ?J. }.
+
+# starts(I,J) <=> start(I)=start(J) AND end(I) < end(J)
+{
+  ?I :start ?s;  :end ?eI.
+  ?J :start ?s;  :end ?eJ.
+  ?eI math:lessThan ?eJ.
+} => { ?I :starts ?J. }.
+
+# during(I,J) <=> start(J) < start(I) AND end(I) < end(J)
+{
+  ?I :start ?sI; :end ?eI.
+  ?J :start ?sJ; :end ?eJ.
+  ?sJ math:lessThan ?sI.
+  ?eI math:lessThan ?eJ.
+} => { ?I :during ?J. }.
+
+# finishes(I,J) <=> end(I)=end(J) AND start(J) < start(I)
+{
+  ?I :start ?sI; :end ?e.
+  ?J :start ?sJ; :end ?e.
+  ?sJ math:lessThan ?sI.
+} => { ?I :finishes ?J. }.
+
+# equals(I,J) <=> start(I)=start(J) AND end(I)=end(J)
+{
+  ?I :start ?s; :end ?e.
+  ?J :start ?s; :end ?e.
+} => { ?I :equals ?J. }.
+
+# ------------------------------------------------------
+# 6 converse relations to complete the 13 base relations
+# ------------------------------------------------------
+
+{ ?I :before ?J. }    => { ?J :after ?I. }.
+{ ?I :meets ?J. }     => { ?J :metBy ?I. }.
+{ ?I :overlaps ?J. }  => { ?J :overlappedBy ?I. }.
+{ ?I :starts ?J. }    => { ?J :startedBy ?I. }.
+{ ?I :during ?J. }    => { ?J :contains ?I. }.
+{ ?I :finishes ?J. }  => { ?J :finishedBy ?I. }.
+
+# -------------------------------------------------------
+# Sanity check: flag invalid intervals where start >= end
+# -------------------------------------------------------
+
+{
+  ?I :start ?s; :end ?e.
+  ?e math:lessThan ?s.
+} => { ?I :invalidInterval true. }.
+
+{
+  ?I :start ?s; :end ?e.
+  ?s math:equalTo ?e.
+} => { ?I :invalidInterval true. }.
+
+# ------------------------------------------
+# Example intervals (xsd:dateTime endpoints)
+# ------------------------------------------
+
+# A canonical set to demonstrate multiple relations
+:A :start "2026-02-18T10:00:00Z"^^xsd:dateTime;
+   :end   "2026-02-18T12:00:00Z"^^xsd:dateTime.
+
+:B :start "2026-02-18T13:00:00Z"^^xsd:dateTime;
+   :end   "2026-02-18T15:00:00Z"^^xsd:dateTime.
+
+# :A meets :C (A ends at 12:00; C starts at 12:00)
+:C :start "2026-02-18T12:00:00Z"^^xsd:dateTime;
+   :end   "2026-02-18T14:00:00Z"^^xsd:dateTime.
+
+# :A overlaps :D (10:00 < 11:00 < 12:00 < 13:00)
+# and :D meets :B (D ends at 13:00; B starts at 13:00)
+:D :start "2026-02-18T11:00:00Z"^^xsd:dateTime;
+   :end   "2026-02-18T13:00:00Z"^^xsd:dateTime.
+
+# :A equals :E
+:E :start "2026-02-18T10:00:00Z"^^xsd:dateTime;
+   :end   "2026-02-18T12:00:00Z"^^xsd:dateTime.
+
+# :F starts :A
+:F :start "2026-02-18T10:00:00Z"^^xsd:dateTime;
+   :end   "2026-02-18T11:00:00Z"^^xsd:dateTime.
+
+# :G finishes :A
+:G :start "2026-02-18T11:00:00Z"^^xsd:dateTime;
+   :end   "2026-02-18T12:00:00Z"^^xsd:dateTime.
+
+# :A during :H (and thus :H contains :A)
+:H :start "2026-02-18T09:00:00Z"^^xsd:dateTime;
+   :end   "2026-02-18T16:00:00Z"^^xsd:dateTime.
+
+# -----------------------------------------------
+# Examples using xsd:duration + derived endpoints
+# -----------------------------------------------
+
+# :I is given as start + duration; :end will be derived via math:sum
+:I :start    "2026-02-18T16:00:00Z"^^xsd:dateTime;
+   :duration "PT2H"^^xsd:duration.
+
+# :J meets :I once :I's end is derived (J ends at 16:00; I starts at 16:00)
+:J :start "2026-02-18T15:00:00Z"^^xsd:dateTime;
+   :end   "2026-02-18T16:00:00Z"^^xsd:dateTime.
+
+# :K is given as start + duration; it will derive end=14:00 and thus finishes :C
+:K :start    "2026-02-18T13:30:00Z"^^xsd:dateTime;
+   :duration "PT30M"^^xsd:duration.
+
