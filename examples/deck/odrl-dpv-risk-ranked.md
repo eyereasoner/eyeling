@@ -2,7 +2,7 @@
 
 ## Ranked, explainable output from machine-readable “Terms of Service”
 
-This deck explains the logic behind `odrl-dpv-risk-ranked.n3`: how an agreement is modeled in **ODRL**, how risks are expressed in **DPV**, and how **N3 rules** connect the two into a ranked report. ([GitHub][1])
+This deck explains the logic behind `odrl-dpv-risk-ranked.n3`: how an agreement is modeled in **ODRL**, how risks are expressed in **DPV**, and how **N3 rules** connect the two into a ranked report. ([Playground][1])
 
 ---
 
@@ -16,7 +16,7 @@ We want ToS / policy clauses that are:
 * **Actionable** (what mitigations to add)
 * **Prioritized** (ranked by score)
 
-This example does that by combining **ODRL** (policy structure) + **DPV** (risk vocabulary) + **N3 rules** (logic). ([GitHub][1])
+This example does that by combining **ODRL** (policy structure) + **DPV** (risk vocabulary) + **N3 rules** (logic). ([Playground][1])
 
 ---
 
@@ -29,7 +29,7 @@ ODRL is used to encode the *normative* structure of agreements:
 * **Duty**: something must be done (e.g., inform)
 * **Constraint**: conditions like “noticeDays ≥ 14”
 
-This turns ToS clauses into a structured “policy graph” you can reason over. ([W3C][2])
+This turns ToS clauses into a structured “policy graph” you can reason over. ([ODRL Vocabulary & Expression 2.2][2])
 
 ---
 
@@ -53,7 +53,7 @@ So the output isn’t just “something seems bad”, but *typed, interoperable 
 4. **Score + severity/level** classification
 5. **Ranked explainable output** strings
 
-All in one Notation3 (N3) program. ([GitHub][1])
+All in one Notation3 (N3) program. ([Playground][1])
 
 ---
 
@@ -68,7 +68,7 @@ The example profile defines four “needs”, each with an importance weight:
 | No sharing without consent | explicit consent required              |         12 |
 | Data portability           | must allow export                      |         10 |
 
-These weights later boost the risk score when a need is violated. ([GitHub][1])
+These weights later boost the risk score when a need is violated. ([Playground][1])
 
 ---
 
@@ -81,7 +81,7 @@ Inside a quoted graph (`:policyGraph { ... }`) the policy defines:
 * **C3** Permission to share user data (no consent safeguard)
 * **C4** Prohibition to export data (blocks portability)
 
-Each ODRL rule links to a `:Clause` resource that stores the human text. ([GitHub][1])
+Each ODRL rule links to a `:Clause` resource that stores the human text. ([Playground][1])
 
 ---
 
@@ -96,7 +96,7 @@ A typical ODRL rule here looks like:
 * optional **duty** (e.g., inform)
 * optional **constraint** (e.g., noticeDays threshold)
 
-That structure is what the logic rules match on. ([GitHub][1])
+That structure is what the logic rules match on. ([Playground][1])
 
 ---
 
@@ -112,9 +112,9 @@ Each risk rule follows the same recipe:
 
 Key N3 tools you’ll see:
 
-* `log:includes` / `log:notIncludes` for scoped graph checks ([w3c.github.io][4])
-* `log:skolem` to mint stable identifiers for risks/measures ([GitHub][1])
-* `string:format`, `math:sum`, `math:difference`, comparisons, etc. ([GitHub][1])
+* `log:includes` / `log:notIncludes` for scoped graph checks ([Notation3 Language][4])
+* `log:skolem` to mint stable identifiers for risks/measures ([Playground][1])
+* `string:format`, `math:sum`, `math:difference`, comparisons, etc. ([Playground][1])
 
 ---
 
@@ -124,7 +124,7 @@ Key N3 tools you’ll see:
 
 > If the agreement permits sharing user data, and the consumer requires “no sharing without explicit consent”, and the policy graph does **not** contain a consent constraint for that sharing permission, then generate a DPV risk “unwanted disclosure”, explain it, score it, and suggest adding a consent constraint.
 
-This is exactly what `log:includes` + `log:notIncludes` is doing. ([GitHub][1])
+This is exactly what `log:includes` + `log:notIncludes` is doing. ([Playground][1])
 
 ---
 
@@ -139,7 +139,7 @@ This is exactly what `log:includes` + `log:notIncludes` is doing. ([GitHub][1])
 ] . } .
 ```
 
-Result: create `dpv:Risk` + add mitigation “Add explicit consent constraint before data sharing.” ([GitHub][1])
+Result: create `dpv:Risk` + add mitigation “Add explicit consent constraint before data sharing.” ([Playground][1])
 
 ---
 
@@ -158,7 +158,7 @@ Each rule computes:
 * **50–79** → Moderate
 * **0–49** → Low
 
-This gives a consistent DPV-style classification (`dpv:hasSeverity`, `dpv:hasRiskLevel`). ([GitHub][1])
+This gives a consistent DPV-style classification (`dpv:hasSeverity`, `dpv:hasRiskLevel`). ([Playground][1])
 
 ---
 
@@ -175,7 +175,7 @@ From the file’s constants + importance weights:
 4. **C4 export prohibited (no portability)**
    base 60 + 10 = **70** (Moderate)
 
-So the “worst” risks appear first. ([GitHub][1])
+So the “worst” risks appear first. ([Playground][1])
 
 ---
 
@@ -185,14 +185,14 @@ Instead of “printing during reasoning”, the program emits facts like:
 
 * `log:outputString "..."`
 
-Then Eyeling’s `--strings` / `-r` mode collects and sorts them deterministically. ([GitHub][5])
+Then Eyeling’s `--strings` / `-r` mode collects and sorts them deterministically. ([Handbook Inside Eyeling][5])
 
 To force ranking, it uses an **inverse score key**:
 
 * `inv = 1000 - score`
 * smaller `inv` → higher score → printed first
 
-That’s why high-risk items appear at the top. ([GitHub][1])
+That’s why high-risk items appear at the top. ([Playground][1])
 
 ---
 
@@ -205,7 +205,7 @@ Every risk carries:
 * A human explanation string (`dct:description`, built with `string:format`)
 * Suggested **mitigations**, each with a description and even a “patch-like” triple snippet (`:suggestAdd { ... }`)
 
-So you can show a ranked report *and* justify every item. ([GitHub][1])
+So you can show a ranked report *and* justify every item. ([Playground][1])
 
 ---
 
@@ -219,7 +219,7 @@ So you can show a ranked report *and* justify every item. ([GitHub][1])
   * easy to extend
   * deterministic to run
 
-This is a practical path from “legal-ish text” → “structured policy” → “ranked risk insights”. ([W3C][2])
+This is a practical path from “legal-ish text” → “structured policy” → “ranked risk insights”. ([ODRL Vocabulary & Expression 2.2][2])
 
 ---
 
@@ -237,7 +237,7 @@ This is a practical path from “legal-ish text” → “structured policy” �
    * different bases per risk category
    * incorporate likelihood, data sensitivity, etc.
 
-This stays explainable because it remains rule-based. ([GitHub][1])
+This stays explainable because it remains rule-based. ([Playground][1])
 
 ---
 
