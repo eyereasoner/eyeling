@@ -1,0 +1,383 @@
+# ================================================================================
+# Dining Philosophers — Chandy–Misra (dirty/clean forks + requests)
+#
+# What this file demonstrates:
+#   A concrete distributed-style run (9 rounds) where each of 5 philosophers
+#   eats exactly 3 times (15 meals total), using the classic Chandy–Misra idea:
+#
+#     - Forks are shared resources held by exactly one endpoint at a time.
+#     - Each fork is either Dirty or Clean.
+#     - Hungry philosophers request any adjacent fork they do not hold.
+#     - A holder transfers a fork ONLY if it is Dirty (the "dirty fork" rule).
+#     - Upon transfer, the receiver has it Clean.
+#     - After eating, forks become Dirty again (in this trace, that makes all
+#       forks Dirty at the end of each round).
+#
+# About the "trace construction" in N3:
+#   N3 reasoning is monotonic and does not have a built-in closed-world "else".
+#   To build a deterministic next state without negation, the trace includes
+#   explicit dp:KeepFork facts for forks that are not transferred in that round.
+#   Transfers themselves are NOT asserted: they are derived from Requests + Dirty.
+#
+# What you can query in a reasoner:
+#   - Meals:      ?m a dp:Meal .
+#   - Requests:   ?r a dp:Request .
+#   - Transfers:  ?t a dp:SendFork .
+#
+# Derived meals match the "realistic schedule" pattern:
+#   Round 1/4/7: P1 and P3 eat
+#   Round 2/5/8: P2 and P4 eat
+#   Round 3/6/9: P5 eats
+# ================================================================================
+
+@prefix dp:  <http://example.org/dp#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+# ------------------
+# Minimal vocabulary
+# ------------------
+
+dp:Philosopher a dp:Class .
+dp:Fork        a dp:Class .
+dp:Slot        a dp:Class .
+dp:Config      a dp:Class .
+
+dp:ForkState   a dp:Class .
+dp:Request     a dp:Class .
+dp:SendFork    a dp:Class .
+dp:KeepFork    a dp:Class .
+dp:Meal        a dp:Class .
+dp:MealHandle  a dp:Class .
+
+dp:Dirty a dp:Cleanliness .
+dp:Clean a dp:Cleanliness .
+dp:Cleanliness a dp:Class .
+
+dp:end1 a dp:Property .
+dp:end2 a dp:Property .
+
+dp:leftFork  a dp:Property .
+dp:rightFork a dp:Property .
+
+dp:in         a dp:Property .     # state/action/message -> Config
+dp:fork       a dp:Property .
+dp:holder     a dp:Property .
+dp:cleanliness a dp:Property .
+
+dp:from a dp:Property .
+dp:to   a dp:Property .
+
+dp:afterSends a dp:Property .     # start-of-round Config -> after-transfer Config
+dp:afterEat   a dp:Property .     # after-transfer Config -> end-of-round Config
+
+dp:slot      a dp:Property .      # start-of-round Config -> Slot
+dp:cycle     a dp:Property .      # start-of-round Config -> integer (meal number)
+dp:hungry    a dp:Property .      # start-of-round Config -> Philosopher
+
+dp:slotIndex a dp:Property .      # Slot -> integer
+
+dp:philosopher a dp:Property .    # Meal -> Philosopher
+dp:mealNo      a dp:Property .    # Meal -> integer
+dp:inSlot      a dp:Property .    # Meal -> Slot
+dp:usesFork    a dp:Property .    # Meal -> Fork
+
+dp:meal a dp:Property .           # MealHandle -> Meal
+
+dp:ateTimes a dp:Property .
+dp:Trace1 a dp:Thing .
+dp:everyoneAteTimes3 a dp:Property .
+
+# -------------------------------------------
+# Topology: 5 philosophers, 5 forks in a ring
+# -------------------------------------------
+
+dp:P1 a dp:Philosopher .
+dp:P2 a dp:Philosopher .
+dp:P3 a dp:Philosopher .
+dp:P4 a dp:Philosopher .
+dp:P5 a dp:Philosopher .
+
+dp:F12 a dp:Fork .
+dp:F23 a dp:Fork .
+dp:F34 a dp:Fork .
+dp:F45 a dp:Fork .
+dp:F51 a dp:Fork .
+
+# Fork endpoints (ring)
+dp:F12 dp:end1 dp:P1 ; dp:end2 dp:P2 .
+dp:F23 dp:end1 dp:P2 ; dp:end2 dp:P3 .
+dp:F34 dp:end1 dp:P3 ; dp:end2 dp:P4 .
+dp:F45 dp:end1 dp:P4 ; dp:end2 dp:P5 .
+dp:F51 dp:end1 dp:P5 ; dp:end2 dp:P1 .
+
+# Choose a left/right convention around the ring
+dp:P1 dp:leftFork dp:F51 ; dp:rightFork dp:F12 .
+dp:P2 dp:leftFork dp:F12 ; dp:rightFork dp:F23 .
+dp:P3 dp:leftFork dp:F23 ; dp:rightFork dp:F34 .
+dp:P4 dp:leftFork dp:F34 ; dp:rightFork dp:F45 .
+dp:P5 dp:leftFork dp:F45 ; dp:rightFork dp:F51 .
+
+# ----------------
+# Slots (9 rounds)
+# ----------------
+
+dp:s1 a dp:Slot ; dp:slotIndex 1 .
+dp:s2 a dp:Slot ; dp:slotIndex 2 .
+dp:s3 a dp:Slot ; dp:slotIndex 3 .
+dp:s4 a dp:Slot ; dp:slotIndex 4 .
+dp:s5 a dp:Slot ; dp:slotIndex 5 .
+dp:s6 a dp:Slot ; dp:slotIndex 6 .
+dp:s7 a dp:Slot ; dp:slotIndex 7 .
+dp:s8 a dp:Slot ; dp:slotIndex 8 .
+dp:s9 a dp:Slot ; dp:slotIndex 9 .
+
+# ----------------------------------------------
+# MealHandle mapping (stable URIs like dp:mP1_1)
+# ----------------------------------------------
+
+# P1
+dp:hP1_1 a dp:MealHandle ; dp:philosopher dp:P1 ; dp:mealNo 1 ; dp:meal dp:mP1_1 .
+dp:hP1_2 a dp:MealHandle ; dp:philosopher dp:P1 ; dp:mealNo 2 ; dp:meal dp:mP1_2 .
+dp:hP1_3 a dp:MealHandle ; dp:philosopher dp:P1 ; dp:mealNo 3 ; dp:meal dp:mP1_3 .
+
+# P2
+dp:hP2_1 a dp:MealHandle ; dp:philosopher dp:P2 ; dp:mealNo 1 ; dp:meal dp:mP2_1 .
+dp:hP2_2 a dp:MealHandle ; dp:philosopher dp:P2 ; dp:mealNo 2 ; dp:meal dp:mP2_2 .
+dp:hP2_3 a dp:MealHandle ; dp:philosopher dp:P2 ; dp:mealNo 3 ; dp:meal dp:mP2_3 .
+
+# P3
+dp:hP3_1 a dp:MealHandle ; dp:philosopher dp:P3 ; dp:mealNo 1 ; dp:meal dp:mP3_1 .
+dp:hP3_2 a dp:MealHandle ; dp:philosopher dp:P3 ; dp:mealNo 2 ; dp:meal dp:mP3_2 .
+dp:hP3_3 a dp:MealHandle ; dp:philosopher dp:P3 ; dp:mealNo 3 ; dp:meal dp:mP3_3 .
+
+# P4
+dp:hP4_1 a dp:MealHandle ; dp:philosopher dp:P4 ; dp:mealNo 1 ; dp:meal dp:mP4_1 .
+dp:hP4_2 a dp:MealHandle ; dp:philosopher dp:P4 ; dp:mealNo 2 ; dp:meal dp:mP4_2 .
+dp:hP4_3 a dp:MealHandle ; dp:philosopher dp:P4 ; dp:mealNo 3 ; dp:meal dp:mP4_3 .
+
+# P5
+dp:hP5_1 a dp:MealHandle ; dp:philosopher dp:P5 ; dp:mealNo 1 ; dp:meal dp:mP5_1 .
+dp:hP5_2 a dp:MealHandle ; dp:philosopher dp:P5 ; dp:mealNo 2 ; dp:meal dp:mP5_2 .
+dp:hP5_3 a dp:MealHandle ; dp:philosopher dp:P5 ; dp:mealNo 3 ; dp:meal dp:mP5_3 .
+
+# -------------------------------------------------------------------
+# The 9-round hunger schedule (environment input)
+#
+# Start-of-round configs are: C0, C2, C4, C6, C8, C10, C12, C14, C16
+# After-transfer configs are: C1, C3, C5, C7, C9, C11, C13, C15, C17
+# End-of-round configs are:   C2, C4, C6, C8, C10, C12, C14, C16, C18
+# -------------------------------------------------------------------
+
+dp:C0  a dp:Config ; dp:slot dp:s1 ; dp:cycle 1 ; dp:hungry dp:P1, dp:P3 ; dp:afterSends dp:C1 .
+dp:C1  a dp:Config ; dp:afterEat dp:C2 .
+dp:C2  a dp:Config ; dp:slot dp:s2 ; dp:cycle 1 ; dp:hungry dp:P2, dp:P4 ; dp:afterSends dp:C3 .
+dp:C3  a dp:Config ; dp:afterEat dp:C4 .
+dp:C4  a dp:Config ; dp:slot dp:s3 ; dp:cycle 1 ; dp:hungry dp:P5 ;       dp:afterSends dp:C5 .
+dp:C5  a dp:Config ; dp:afterEat dp:C6 .
+dp:C6  a dp:Config ; dp:slot dp:s4 ; dp:cycle 2 ; dp:hungry dp:P1, dp:P3 ; dp:afterSends dp:C7 .
+dp:C7  a dp:Config ; dp:afterEat dp:C8 .
+dp:C8  a dp:Config ; dp:slot dp:s5 ; dp:cycle 2 ; dp:hungry dp:P2, dp:P4 ; dp:afterSends dp:C9 .
+dp:C9  a dp:Config ; dp:afterEat dp:C10 .
+dp:C10 a dp:Config ; dp:slot dp:s6 ; dp:cycle 2 ; dp:hungry dp:P5 ;        dp:afterSends dp:C11 .
+dp:C11 a dp:Config ; dp:afterEat dp:C12 .
+dp:C12 a dp:Config ; dp:slot dp:s7 ; dp:cycle 3 ; dp:hungry dp:P1, dp:P3 ; dp:afterSends dp:C13 .
+dp:C13 a dp:Config ; dp:afterEat dp:C14 .
+dp:C14 a dp:Config ; dp:slot dp:s8 ; dp:cycle 3 ; dp:hungry dp:P2, dp:P4 ; dp:afterSends dp:C15 .
+dp:C15 a dp:Config ; dp:afterEat dp:C16 .
+dp:C16 a dp:Config ; dp:slot dp:s9 ; dp:cycle 3 ; dp:hungry dp:P5 ;        dp:afterSends dp:C17 .
+dp:C17 a dp:Config ; dp:afterEat dp:C18 .
+dp:C18 a dp:Config .
+
+# ---------------------------------------------------------------------
+# Initial fork ownership (C0) — all forks Dirty
+# Orientation breaks symmetry (one endpoint initially holds each fork).
+# ---------------------------------------------------------------------
+
+[ a dp:ForkState ; dp:in dp:C0 ; dp:fork dp:F12 ; dp:holder dp:P1 ; dp:cleanliness dp:Dirty ] .
+[ a dp:ForkState ; dp:in dp:C0 ; dp:fork dp:F23 ; dp:holder dp:P2 ; dp:cleanliness dp:Dirty ] .
+[ a dp:ForkState ; dp:in dp:C0 ; dp:fork dp:F34 ; dp:holder dp:P3 ; dp:cleanliness dp:Dirty ] .
+[ a dp:ForkState ; dp:in dp:C0 ; dp:fork dp:F45 ; dp:holder dp:P4 ; dp:cleanliness dp:Dirty ] .
+[ a dp:ForkState ; dp:in dp:C0 ; dp:fork dp:F51 ; dp:holder dp:P1 ; dp:cleanliness dp:Dirty ] .
+
+# -------------------------------------------------------------------------------
+# KeepFork facts (the "no transfer for this fork in this round" part)
+# Only listed for forks that are NOT transferred; transfers are derived by rules.
+# -------------------------------------------------------------------------------
+
+# Round 1 (C0): only F23 transfers -> keep F12,F34,F45,F51
+[ a dp:KeepFork ; dp:in dp:C0 ; dp:fork dp:F12 ] .
+[ a dp:KeepFork ; dp:in dp:C0 ; dp:fork dp:F34 ] .
+[ a dp:KeepFork ; dp:in dp:C0 ; dp:fork dp:F45 ] .
+[ a dp:KeepFork ; dp:in dp:C0 ; dp:fork dp:F51 ] .
+
+# Round 2 (C2): transfers F12,F23,F34 -> keep F45,F51
+[ a dp:KeepFork ; dp:in dp:C2 ; dp:fork dp:F45 ] .
+[ a dp:KeepFork ; dp:in dp:C2 ; dp:fork dp:F51 ] .
+
+# Round 3 (C4): transfers F45,F51 -> keep F12,F23,F34
+[ a dp:KeepFork ; dp:in dp:C4 ; dp:fork dp:F12 ] .
+[ a dp:KeepFork ; dp:in dp:C4 ; dp:fork dp:F23 ] .
+[ a dp:KeepFork ; dp:in dp:C4 ; dp:fork dp:F34 ] .
+
+# Round 4 (C6): transfers F51,F12,F23,F34 -> keep F45
+[ a dp:KeepFork ; dp:in dp:C6 ; dp:fork dp:F45 ] .
+
+# Round 5 (C8): transfers F12,F23,F34,F45 -> keep F51
+[ a dp:KeepFork ; dp:in dp:C8 ; dp:fork dp:F51 ] .
+
+# Round 6 (C10): transfers F45,F51 -> keep F12,F23,F34
+[ a dp:KeepFork ; dp:in dp:C10 ; dp:fork dp:F12 ] .
+[ a dp:KeepFork ; dp:in dp:C10 ; dp:fork dp:F23 ] .
+[ a dp:KeepFork ; dp:in dp:C10 ; dp:fork dp:F34 ] .
+
+# Round 7 (C12): transfers F51,F12,F23,F34 -> keep F45
+[ a dp:KeepFork ; dp:in dp:C12 ; dp:fork dp:F45 ] .
+
+# Round 8 (C14): transfers F12,F23,F34,F45 -> keep F51
+[ a dp:KeepFork ; dp:in dp:C14 ; dp:fork dp:F51 ] .
+
+# Round 9 (C16): transfers F45,F51 -> keep F12,F23,F34
+[ a dp:KeepFork ; dp:in dp:C16 ; dp:fork dp:F12 ] .
+[ a dp:KeepFork ; dp:in dp:C16 ; dp:fork dp:F23 ] .
+[ a dp:KeepFork ; dp:in dp:C16 ; dp:fork dp:F34 ] .
+
+# ------------------
+# Chandy–Misra rules
+# ------------------
+
+# R1: Hungry philosophers request any adjacent fork they do not hold.
+# (We do left and right separately for clarity.)
+
+{
+  ?C a dp:Config .
+  ?C dp:hungry ?P .
+  ?P dp:leftFork ?F .
+  [ a dp:ForkState ; dp:in ?C ; dp:fork ?F ; dp:holder ?Q ] .
+  ?Q log:notEqualTo ?P .
+}
+=>
+{
+  [ a dp:Request ; dp:in ?C ; dp:from ?P ; dp:to ?Q ; dp:fork ?F ] .
+} .
+
+{
+  ?C a dp:Config .
+  ?C dp:hungry ?P .
+  ?P dp:rightFork ?F .
+  [ a dp:ForkState ; dp:in ?C ; dp:fork ?F ; dp:holder ?Q ] .
+  ?Q log:notEqualTo ?P .
+}
+=>
+{
+  [ a dp:Request ; dp:in ?C ; dp:from ?P ; dp:to ?Q ; dp:fork ?F ] .
+} .
+
+# R2: Dirty-fork rule: if a fork is Dirty and requested, it is sent.
+# (In the classic algorithm, the holder does not send while actually eating.
+#  This trace models sends happening in the "start-of-round" config, before meals.)
+
+{
+  [ a dp:Request ; dp:in ?C ; dp:from ?P ; dp:to ?Q ; dp:fork ?F ] .
+  [ a dp:ForkState ; dp:in ?C ; dp:fork ?F ; dp:holder ?Q ; dp:cleanliness dp:Dirty ] .
+}
+=>
+{
+  [ a dp:SendFork ; dp:in ?C ; dp:from ?Q ; dp:to ?P ; dp:fork ?F ] .
+} .
+
+# ----------------------------------------------
+# State update: start-of-round -> after-transfer
+# ----------------------------------------------
+
+# U1: Apply transfers: after-transfer holder is the receiver; the fork becomes Clean.
+{
+  ?C dp:afterSends ?CS .
+  [ a dp:SendFork ; dp:in ?C ; dp:fork ?F ; dp:to ?P ] .
+}
+=>
+{
+  [ a dp:ForkState ; dp:in ?CS ; dp:fork ?F ; dp:holder ?P ; dp:cleanliness dp:Clean ] .
+} .
+
+# U2: Apply keeps: if we declare KeepFork for a fork in a round, copy its state forward.
+{
+  ?C dp:afterSends ?CS .
+  [ a dp:KeepFork ; dp:in ?C ; dp:fork ?F ] .
+  [ a dp:ForkState ; dp:in ?C ; dp:fork ?F ; dp:holder ?H ; dp:cleanliness ?CL ] .
+}
+=>
+{
+  [ a dp:ForkState ; dp:in ?CS ; dp:fork ?F ; dp:holder ?H ; dp:cleanliness ?CL ] .
+} .
+
+# ----------------------------------------------------------------------
+# Meals: after-transfer, a hungry philosopher who holds both forks eats.
+# ----------------------------------------------------------------------
+
+{
+  ?C dp:afterSends ?CS .
+  ?C dp:slot ?S ; dp:cycle ?N .
+  ?C dp:hungry ?P .
+
+  ?H a dp:MealHandle ; dp:philosopher ?P ; dp:mealNo ?N ; dp:meal ?M .
+
+  ?P dp:leftFork ?LF ; dp:rightFork ?RF .
+
+  [ a dp:ForkState ; dp:in ?CS ; dp:fork ?LF ; dp:holder ?P ] .
+  [ a dp:ForkState ; dp:in ?CS ; dp:fork ?RF ; dp:holder ?P ] .
+}
+=>
+{
+  ?M a dp:Meal ;
+     dp:philosopher ?P ;
+     dp:mealNo ?N ;
+     dp:inSlot ?S ;
+     dp:usesFork ?LF, ?RF .
+} .
+
+# ----------------------------------------------------------------------------
+# State update: after-transfer -> end-of-round
+#
+# In this particular 9-round trace, every transferred fork is immediately used
+# by an eater in that round, and kept forks were already Dirty.
+# So at end-of-round, all forks are Dirty again.
+# ----------------------------------------------------------------------------
+
+# U3: End-of-round holders are the same as after-transfer holders.
+#     (Forks stay with whoever has them until requested in a later round.)
+{
+  ?CS dp:afterEat ?CE .
+  [ a dp:ForkState ; dp:in ?CS ; dp:fork ?F ; dp:holder ?H ] .
+}
+=>
+{
+  [ a dp:ForkState ; dp:in ?CE ; dp:fork ?F ; dp:holder ?H ; dp:cleanliness dp:Dirty ] .
+} .
+
+# -------------------------------------------------
+# Derived summaries: "each philosopher ate 3 times"
+# -------------------------------------------------
+
+{
+  ?P a dp:Philosopher .
+  ?M1 a dp:Meal ; dp:philosopher ?P ; dp:mealNo 1 .
+  ?M2 a dp:Meal ; dp:philosopher ?P ; dp:mealNo 2 .
+  ?M3 a dp:Meal ; dp:philosopher ?P ; dp:mealNo 3 .
+}
+=>
+{
+  ?P dp:ateTimes 3 .
+} .
+
+{
+  dp:P1 dp:ateTimes 3 .
+  dp:P2 dp:ateTimes 3 .
+  dp:P3 dp:ateTimes 3 .
+  dp:P4 dp:ateTimes 3 .
+  dp:P5 dp:ateTimes 3 .
+}
+=>
+{
+  dp:Trace1 dp:everyoneAteTimes3 true .
+} .
+
