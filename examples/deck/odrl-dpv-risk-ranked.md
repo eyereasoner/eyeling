@@ -1,11 +1,3 @@
----
-
-marp: true
-size: 16:9
-paginate: true
-title: "ODRL + DPV: Ranked, Explainable Risk Assessment"
---------------------------------------------------------
-
 # ODRL + DPV Risk Assessment
 
 ## Ranked, explainable output from machine-readable “Terms of Service”
@@ -258,9 +250,9 @@ This file is a compact demo of:
 * N3 reasoning as the **transparent logic** connecting them
 * A ranked report that’s **deterministic** and **explainable**
 
-[1]: https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/odrl-dpv-risk-ranked.n3 "raw.githubusercontent.com"
-[2]: https://www.w3.org/TR/odrl-vocab/?utm_source=chatgpt.com "ODRL Vocabulary & Expression 2.2"
-[3]: https://w3c.github.io/dpv/2.0/dpv/modules/risk.html?utm_source=chatgpt.com "Risk and Impact Assessment"
-[4]: https://w3c.github.io/N3/spec/?utm_source=chatgpt.com "Notation3 Language"
-[5]: https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/HANDBOOK.md "raw.githubusercontent.com"
+[1]: https://eyereasoner.github.io/eyeling/demo?url=https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/odrl-dpv-risk-ranked.n3 "Playground"
+[2]: https://www.w3.org/TR/odrl-vocab/ "ODRL Vocabulary & Expression 2.2"
+[3]: https://w3c.github.io/dpv/2.0/dpv/modules/risk.html "Risk and Impact Assessment"
+[4]: https://w3c.github.io/N3/spec/ "Notation3 Language"
+[5]: https://eyereasoner.github.io/eyeling/HANDBOOK "Handbook Inside Eyeling"
 
