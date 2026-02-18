@@ -1801,8 +1801,23 @@ function renderPrefixPrologue(prefixes) {
 function ensureSkolemPrefix(prefixes, skolemMap) {
   if (!skolemMap || skolemMap.size === 0) return prefixes;
 
-  // If initSkolemForInput() was not called (library usage), fall back to a fresh UUID.
-  if (!SKOLEM_PREFIX_IRI) SKOLEM_PREFIX_IRI = `${SKOLEM_ROOT}${crypto.randomUUID()}#`;
+  // Make skolem: prefix IRI deterministic.
+  //
+  // Preferred: initSkolemForInput(text) sets SKOLEM_UUID / SKOLEM_PREFIX_IRI
+  // deterministically from the input text (CLI and turtleToN3/trigToN3).
+  //
+  // Fallback (library/advanced usage): derive a stable UUID from the *set of
+  // blank-node labels that actually require skolemization* (plus @base if any).
+  // This removes the last source of non-determinism (crypto.randomUUID()).
+  if (!SKOLEM_UUID) {
+    const base = prefixes ? (prefixes.baseIri || '') : '';
+    const labels = [...skolemMap.keys()].sort().join('\n');
+    const seed = ['n3gen-skolem', SKOLEM_ROOT, base, labels, ''].join('\n');
+    const uuid = _deterministicUuidFromText(seed);
+    SKOLEM_PREFIX_IRI = `${SKOLEM_ROOT}${uuid}#`;
+  } else if (!SKOLEM_PREFIX_IRI) {
+    SKOLEM_PREFIX_IRI = `${SKOLEM_ROOT}${SKOLEM_UUID}#`;
+  }
 
   const baseMap = prefixes && prefixes.map ? prefixes.map : {};
   const newMap = { ...baseMap, [SKOLEM_PREFIX]: SKOLEM_PREFIX_IRI };
@@ -2090,11 +2105,15 @@ function writeN3Triples({ triples, prefixes }) {
 }
 
 function turtleToN3(ttlText) {
+  // Ensure deterministic per-input Skolem prefix IRI even when used as a library.
+  initSkolemForInput(ttlText);
   const { triples, prefixes } = parseTurtle(ttlText);
   return writeN3Triples({ triples, prefixes });
 }
 
 function trigToN3(trigText) {
+  // Ensure deterministic per-input Skolem prefix IRI even when used as a library.
+  initSkolemForInput(trigText);
   const { quads, prefixes } = parseTriG(trigText);
   return writeN3LogNameOf({ datasetQuads: quads, prefixes });
 }
@@ -2128,7 +2147,6 @@ async function main() {
   const ext = path.extname(inputFile).toLowerCase();
 
   const text = await fs.readFile(inputFile, 'utf8');
-  initSkolemForInput(text);
 
   if (ext === '.ttl') {
     process.stdout.write(turtleToN3(text));

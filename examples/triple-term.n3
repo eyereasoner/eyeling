@@ -1,5 +1,5 @@
 @prefix : <http://www.example.org/> .
-@prefix skolem: <https://eyereasoner.github.io/.well-known/genid/f327f7b5-4499-5c8b-9520-eab7551cbf00#> .
+@prefix skolem: <https://eyereasoner.github.io/.well-known/genid/3ce038d5-ea5f-5c1e-8635-dcdabec19d5f#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 
 skolem:e38 :familyName "Smith" .
