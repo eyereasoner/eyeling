@@ -41,7 +41,7 @@ DPV provides shared terms to describe privacy-related concepts, including:
 * consequences / impacts
 * severity & risk level (via the DPV Risk extension)
 
-So the output isn’t just “something seems bad”, but *typed, interoperable risks* that other systems can understand. ([w3c.github.io][3])
+So the output isn’t just “something seems bad”, but *typed, interoperable risks* that other systems can understand. ([DPV Risk & Impact Assessment][3])
 
 ---
 
@@ -252,7 +252,7 @@ This file is a compact demo of:
 
 [1]: https://eyereasoner.github.io/eyeling/demo?url=https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/odrl-dpv-risk-ranked.n3 "Playground"
 [2]: https://www.w3.org/TR/odrl-vocab/ "ODRL Vocabulary & Expression 2.2"
-[3]: https://w3c.github.io/dpv/2.0/dpv/modules/risk.html "Risk and Impact Assessment"
+[3]: https://dev.dpvcg.org/dpv/modules/risk "Risk and Impact Assessment"
 [4]: https://w3c.github.io/N3/spec/ "Notation3 Language"
 [5]: https://eyereasoner.github.io/eyeling/HANDBOOK "Handbook Inside Eyeling"
 

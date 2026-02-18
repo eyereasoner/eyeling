@@ -25,7 +25,7 @@
 # - N3 spec:          https://w3c.github.io/N3/spec/
 # - Eyeling builtins: https://eyereasoner.github.io/eyeling/HANDBOOK#ch11
 # - ODRL vocab:       https://www.w3.org/TR/odrl-vocab/
-# - DPV risk module:  https://w3c.github.io/dpv/2.0/dpv/modules/risk.html
+# - DPV risk module:  https://dev.dpvcg.org/dpv/modules/risk
 # - DPV-RISK:         https://w3id.org/dpv/risk
 # ===========================================================================================
 
