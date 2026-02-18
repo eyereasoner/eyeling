@@ -219,7 +219,7 @@ So you can show a ranked report *and* justify every item. ([Playground][1])
   * easy to extend
   * deterministic to run
 
-This is a practical path from “legal-ish text” → “structured policy” → “ranked risk insights”. ([ODRL Vocabulary & Expression 2.2][2])
+This is a practical path from “legal-ish text” → “structured policy” → “ranked risk insights”.
 
 ---
 
