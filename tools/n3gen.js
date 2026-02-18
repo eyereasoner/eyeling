@@ -1810,7 +1810,7 @@ function ensureSkolemPrefix(prefixes, skolemMap) {
   // blank-node labels that actually require skolemization* (plus @base if any).
   // This removes the last source of non-determinism (crypto.randomUUID()).
   if (!SKOLEM_UUID) {
-    const base = prefixes ? (prefixes.baseIri || '') : '';
+    const base = prefixes ? prefixes.baseIri || '' : '';
     const labels = [...skolemMap.keys()].sort().join('\n');
     const seed = ['n3gen-skolem', SKOLEM_ROOT, base, labels, ''].join('\n');
     const uuid = _deterministicUuidFromText(seed);
