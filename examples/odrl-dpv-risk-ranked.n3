@@ -34,7 +34,6 @@
 @prefix dpv:   <https://w3id.org/dpv#> .
 @prefix risk:  <https://w3id.org/dpv/risk#> .
 @prefix dct:   <http://purl.org/dc/terms/> .
-@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
 @prefix log:   <http://www.w3.org/2000/10/swap/log#> .
 @prefix math:  <http://www.w3.org/2000/10/swap/math#> .
 @prefix string:<http://www.w3.org/2000/10/swap/string#> .
@@ -52,20 +51,20 @@
            :Need_DataPortability .
 
 :Need_DataCannotBeRemoved a :Need ;
-  :importance "20"^^xsd:integer ;
+  :importance 20 ;
   dct:description "Provider must not remove the consumer account/data." .
 
 :Need_ChangeOnlyWithPriorNotice a :Need ;
-  :importance "15"^^xsd:integer ;
-  :minNoticeDays "14"^^xsd:integer ;
+  :importance 15 ;
+  :minNoticeDays 14 ;
   dct:description "Agreement may change only with prior notice (>= 14 days)." .
 
 :Need_NoSharingWithoutConsent a :Need ;
-  :importance "12"^^xsd:integer ;
+  :importance 12 ;
   dct:description "No data sharing without explicit consent." .
 
 :Need_DataPortability a :Need ;
-  :importance "10"^^xsd:integer ;
+  :importance 10 ;
   dct:description "Consumer must be able to export their data." .
 
 # ------------------------------------------
@@ -102,7 +101,7 @@
           a odrl:Constraint ;
           odrl:leftOperand tosl:noticeDays ;
           odrl:operator odrl:gteq ;
-          odrl:rightOperand "3"^^xsd:integer
+          odrl:rightOperand 3
         ]
       ] ;
       :clause :ClauseC2 .
@@ -200,7 +199,7 @@
         a odrl:Constraint ;
         odrl:leftOperand tosl:noticeDays ;
         odrl:operator odrl:gteq ;
-        odrl:rightOperand "14"^^xsd:integer
+        odrl:rightOperand 14
       ] .
     } .
 
@@ -276,7 +275,7 @@
           a odrl:Constraint ;
           odrl:leftOperand tosl:noticeDays ;
           odrl:operator odrl:gteq ;
-          odrl:rightOperand "14"^^xsd:integer
+          odrl:rightOperand 14
         ]
       ] .
     } .
@@ -407,19 +406,19 @@
 # 4) Score normalization + DPV-RISK severity/level
 # ------------------------------------------------
 
-{ ?r a dpv:Risk ; :scoreRaw ?raw . ?raw math:greaterThan "100"^^xsd:integer . }
-=> { ?r :score "100"^^xsd:integer . } .
+{ ?r a dpv:Risk ; :scoreRaw ?raw . ?raw math:greaterThan 100 . }
+=> { ?r :score 100 . } .
 
-{ ?r a dpv:Risk ; :scoreRaw ?raw . "100"^^xsd:integer math:notLessThan ?raw . }
+{ ?r a dpv:Risk ; :scoreRaw ?raw . 100 math:notLessThan ?raw . }
 => { ?r :score ?raw . } .
 
-{ ?r a dpv:Risk ; :score ?s . ?s math:greaterThan "79"^^xsd:integer . }
+{ ?r a dpv:Risk ; :score ?s . ?s math:greaterThan 79 . }
 => { ?r dpv:hasSeverity risk:HighSeverity ; dpv:hasRiskLevel risk:HighRisk . } .
 
-{ ?r a dpv:Risk ; :score ?s . ?s math:lessThan "80"^^xsd:integer . ?s math:greaterThan "49"^^xsd:integer . }
+{ ?r a dpv:Risk ; :score ?s . ?s math:lessThan 80 . ?s math:greaterThan 49 . }
 => { ?r dpv:hasSeverity risk:ModerateSeverity ; dpv:hasRiskLevel risk:ModerateRisk . } .
 
-{ ?r a dpv:Risk ; :score ?s . ?s math:lessThan "50"^^xsd:integer . }
+{ ?r a dpv:Risk ; :score ?s . ?s math:lessThan 50 . }
 => { ?r dpv:hasSeverity risk:LowSeverity ; dpv:hasRiskLevel risk:LowRisk . } .
 
 # ------------------------------------------------------------------------------
@@ -448,7 +447,7 @@
      dct:description ?why .
   ?clause :clauseId ?cid .
 
-  ( "1000"^^xsd:integer ?score ) math:difference ?inv .
+  ( 1000 ?score ) math:difference ?inv .
 
   ( "score=%s (%s, %s)  clause %s\n  %s\n\n"
     ?score ?lvl ?sev ?cid ?why ) string:format ?line .
@@ -467,7 +466,7 @@
   ?clause :clauseId ?cid .
   ?m dct:description ?md .
 
-  ( "1000"^^xsd:integer ?score ) math:difference ?inv .
+  ( 1000 ?score ) math:difference ?inv .
 
   ( "  - mitigation for clause %s: %s\n"
     ?cid ?md ) string:format ?mline .

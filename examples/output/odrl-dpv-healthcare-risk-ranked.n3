@@ -1,0 +1,153 @@
+@prefix : <https://example.org/odrl-dpv-healthcare-risk-ranked#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix dpv: <https://w3id.org/dpv#> .
+@prefix genid: <https://eyereasoner.github.io/.well-known/genid/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix odrl: <http://www.w3.org/ns/odrl/2/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix risk: <https://w3id.org/dpv/risk#> .
+
+genid:499c8c88-3ef3-7ae0-932f-c74cf4fb20f4 a risk:RiskSource .
+genid:499c8c88-3ef3-7ae0-932f-c74cf4fb20f4 a risk:LegalComplianceRisk .
+genid:499c8c88-3ef3-7ae0-932f-c74cf4fb20f4 dct:source :PermResearchUse .
+genid:499c8c88-3ef3-7ae0-932f-c74cf4fb20f4 dct:description "Research use permitted without explicit consent constraint." .
+genid:6e6083d0-be14-5284-ce15-b2f04cc273c8 a dpv:Risk .
+genid:6e6083d0-be14-5284-ce15-b2f04cc273c8 a risk:PolicyRisk .
+genid:6e6083d0-be14-5284-ce15-b2f04cc273c8 a risk:CustomerConfidenceLoss .
+genid:6e6083d0-be14-5284-ce15-b2f04cc273c8 dct:source :PermResearchUse .
+genid:6e6083d0-be14-5284-ce15-b2f04cc273c8 risk:hasRiskSource genid:499c8c88-3ef3-7ae0-932f-c74cf4fb20f4 .
+genid:6e6083d0-be14-5284-ce15-b2f04cc273c8 dpv:hasConsequence risk:CustomerConfidenceLoss .
+genid:6e6083d0-be14-5284-ce15-b2f04cc273c8 dpv:hasImpact risk:NonMaterialDamage .
+genid:6e6083d0-be14-5284-ce15-b2f04cc273c8 dpv:hasImpact risk:FinancialLoss .
+genid:6e6083d0-be14-5284-ce15-b2f04cc273c8 :aboutClause :ClauseH1 .
+genid:6e6083d0-be14-5284-ce15-b2f04cc273c8 :scoreRaw 120 .
+genid:6e6083d0-be14-5284-ce15-b2f04cc273c8 :violatesNeed :Need_ConsentForResearch .
+genid:6e6083d0-be14-5284-ce15-b2f04cc273c8 dct:description "Risk: health/genomic data may be used for research without explicit opt-in consent. Clause H1: Hospital may use EHR and genomic data for internal clinical research and publication." .
+:ProcessContextHC1 dpv:hasRisk genid:6e6083d0-be14-5284-ce15-b2f04cc273c8 .
+genid:d8249b0c-66d8-73a8-c1d0-8c7c5256b338 a dpv:RiskMitigationMeasure .
+genid:d8249b0c-66d8-73a8-c1d0-8c7c5256b338 dct:description "Add an explicit consent constraint for secondary research use." .
+genid:d8249b0c-66d8-73a8-c1d0-8c7c5256b338 dpv:mitigatesRisk genid:6e6083d0-be14-5284-ce15-b2f04cc273c8 .
+genid:d8249b0c-66d8-73a8-c1d0-8c7c5256b338 :suggestAdd {
+    :PermResearchUse odrl:constraint _:sk_0 .
+    _:sk_0 a odrl:Constraint .
+    _:sk_0 odrl:leftOperand :explicitConsent .
+    _:sk_0 odrl:operator odrl:eq .
+    _:sk_0 odrl:rightOperand true .
+} .
+genid:6e6083d0-be14-5284-ce15-b2f04cc273c8 dpv:isMitigatedByMeasure genid:d8249b0c-66d8-73a8-c1d0-8c7c5256b338 .
+genid:3c85dd80-8e33-c0fa-8b1c-89f4c16ca4cc a risk:RiskSource .
+genid:3c85dd80-8e33-c0fa-8b1c-89f4c16ca4cc a risk:LegalComplianceRisk .
+genid:3c85dd80-8e33-c0fa-8b1c-89f4c16ca4cc dct:source :PermShareWithPharma .
+genid:3c85dd80-8e33-c0fa-8b1c-89f4c16ca4cc dct:description "External sharing permitted without de-identification/pseudonymisation requirement." .
+genid:b9e2eab8-2d4b-c4a4-50ea-6468777be280 a dpv:Risk .
+genid:b9e2eab8-2d4b-c4a4-50ea-6468777be280 a risk:UnwantedDisclosureData .
+genid:b9e2eab8-2d4b-c4a4-50ea-6468777be280 a risk:ReputationalRisk .
+genid:b9e2eab8-2d4b-c4a4-50ea-6468777be280 dct:source :PermShareWithPharma .
+genid:b9e2eab8-2d4b-c4a4-50ea-6468777be280 risk:hasRiskSource genid:3c85dd80-8e33-c0fa-8b1c-89f4c16ca4cc .
+genid:b9e2eab8-2d4b-c4a4-50ea-6468777be280 dpv:hasConsequence risk:CustomerConfidenceLoss .
+genid:b9e2eab8-2d4b-c4a4-50ea-6468777be280 dpv:hasImpact risk:NonMaterialDamage .
+genid:b9e2eab8-2d4b-c4a4-50ea-6468777be280 dpv:hasImpact risk:FinancialLoss .
+genid:b9e2eab8-2d4b-c4a4-50ea-6468777be280 dpv:hasImpact risk:Discrimination .
+genid:b9e2eab8-2d4b-c4a4-50ea-6468777be280 :aboutClause :ClauseH2 .
+genid:b9e2eab8-2d4b-c4a4-50ea-6468777be280 :scoreRaw 125 .
+genid:b9e2eab8-2d4b-c4a4-50ea-6468777be280 :violatesNeed :Need_DeIdentifyBeforeSharing .
+genid:b9e2eab8-2d4b-c4a4-50ea-6468777be280 dct:description "Risk: genomic data may be shared with external pharma partners without a de-identification/pseudonymisation requirement. Clause H2: Hospital may share genomic data with pharmaceutical partners for drug discovery and R&D." .
+:ProcessContextHC1 dpv:hasRisk genid:b9e2eab8-2d4b-c4a4-50ea-6468777be280 .
+genid:be734cc0-bf89-eac8-fa57-8bfba350cb64 a dpv:RiskMitigationMeasure .
+genid:be734cc0-bf89-eac8-fa57-8bfba350cb64 dct:description "Require de-identification/pseudonymisation before external sharing of genomic data." .
+genid:be734cc0-bf89-eac8-fa57-8bfba350cb64 dpv:mitigatesRisk genid:b9e2eab8-2d4b-c4a4-50ea-6468777be280 .
+genid:be734cc0-bf89-eac8-fa57-8bfba350cb64 :suggestAdd {
+    :PermShareWithPharma odrl:constraint _:sk_1 .
+    _:sk_1 a odrl:Constraint .
+    _:sk_1 odrl:leftOperand :deIdentified .
+    _:sk_1 odrl:operator odrl:eq .
+    _:sk_1 odrl:rightOperand true .
+    :PermShareWithPharma odrl:duty _:sk_2 .
+    _:sk_2 a odrl:Duty .
+    _:sk_2 odrl:action :deIdentify .
+    _:sk_2 odrl:constraint _:sk_3 .
+    _:sk_3 a odrl:Constraint .
+    _:sk_3 odrl:leftOperand :deIdentificationStandard .
+    _:sk_3 odrl:operator odrl:eq .
+    _:sk_3 odrl:rightOperand :StateOfTheArt .
+} .
+genid:b9e2eab8-2d4b-c4a4-50ea-6468777be280 dpv:isMitigatedByMeasure genid:be734cc0-bf89-eac8-fa57-8bfba350cb64 .
+genid:656a0800-88df-ad68-d8df-f24478251168 a risk:RiskSource .
+genid:656a0800-88df-ad68-d8df-f24478251168 a risk:PolicyRisk .
+genid:656a0800-88df-ad68-d8df-f24478251168 dct:source :PermAutomatedTriage .
+genid:656a0800-88df-ad68-d8df-f24478251168 dct:description "Automated triage permitted without a human review/override duty." .
+genid:6709475e-da69-fd96-ae15-aa49219c20a0 a dpv:Risk .
+genid:6709475e-da69-fd96-ae15-aa49219c20a0 a risk:QualityRisk .
+genid:6709475e-da69-fd96-ae15-aa49219c20a0 a risk:InabilityToProvideHealthCare .
+genid:6709475e-da69-fd96-ae15-aa49219c20a0 dct:source :PermAutomatedTriage .
+genid:6709475e-da69-fd96-ae15-aa49219c20a0 risk:hasRiskSource genid:656a0800-88df-ad68-d8df-f24478251168 .
+genid:6709475e-da69-fd96-ae15-aa49219c20a0 dpv:hasConsequence risk:InabilityToProvideHealthCare .
+genid:6709475e-da69-fd96-ae15-aa49219c20a0 dpv:hasImpact risk:PhysicalHarm .
+genid:6709475e-da69-fd96-ae15-aa49219c20a0 dpv:hasImpact risk:NonMaterialDamage .
+genid:6709475e-da69-fd96-ae15-aa49219c20a0 :aboutClause :ClauseH3 .
+genid:6709475e-da69-fd96-ae15-aa49219c20a0 :scoreRaw 105 .
+genid:6709475e-da69-fd96-ae15-aa49219c20a0 :violatesNeed :Need_HumanReviewForAutomatedTriage .
+genid:6709475e-da69-fd96-ae15-aa49219c20a0 dct:description "Risk: automated triage may affect care pathways without a human review/override safeguard. Clause H3: Hospital may use automated triage and prioritisation systems using EHR data." .
+:ProcessContextHC1 dpv:hasRisk genid:6709475e-da69-fd96-ae15-aa49219c20a0 .
+genid:8bcddd56-e42e-5d94-57c3-9afd4fc1126c a dpv:RiskMitigationMeasure .
+genid:8bcddd56-e42e-5d94-57c3-9afd4fc1126c dct:description "Add a duty requiring human review/override for triage decisions (human-in-the-loop)." .
+genid:8bcddd56-e42e-5d94-57c3-9afd4fc1126c dpv:mitigatesRisk genid:6709475e-da69-fd96-ae15-aa49219c20a0 .
+genid:8bcddd56-e42e-5d94-57c3-9afd4fc1126c :suggestAdd {
+    :PermAutomatedTriage odrl:duty _:sk_4 .
+    _:sk_4 a odrl:Duty .
+    _:sk_4 odrl:action :humanReview .
+    _:sk_4 odrl:constraint _:sk_5 .
+    _:sk_5 a odrl:Constraint .
+    _:sk_5 odrl:leftOperand :reviewBeforeDecision .
+    _:sk_5 odrl:operator odrl:eq .
+    _:sk_5 odrl:rightOperand true .
+} .
+genid:6709475e-da69-fd96-ae15-aa49219c20a0 dpv:isMitigatedByMeasure genid:8bcddd56-e42e-5d94-57c3-9afd4fc1126c .
+genid:fc8b3e87-761e-e430-a338-09d827d7d764 a risk:RiskSource .
+genid:fc8b3e87-761e-e430-a338-09d827d7d764 a risk:PolicyRisk .
+genid:fc8b3e87-761e-e430-a338-09d827d7d764 dct:source :PermRetention10y .
+genid:fc8b3e87-761e-e430-a338-09d827d7d764 dct:description "Retention period exceeds patient preference." .
+genid:e333f4ec-b543-e01c-ae40-fce8760f4fec a dpv:Risk .
+genid:e333f4ec-b543-e01c-ae40-fce8760f4fec a risk:PolicyRisk .
+genid:e333f4ec-b543-e01c-ae40-fce8760f4fec a risk:CustomerConfidenceLoss .
+genid:e333f4ec-b543-e01c-ae40-fce8760f4fec dct:source :PermRetention10y .
+genid:e333f4ec-b543-e01c-ae40-fce8760f4fec risk:hasRiskSource genid:fc8b3e87-761e-e430-a338-09d827d7d764 .
+genid:e333f4ec-b543-e01c-ae40-fce8760f4fec dpv:hasConsequence risk:CustomerConfidenceLoss .
+genid:e333f4ec-b543-e01c-ae40-fce8760f4fec dpv:hasImpact risk:NonMaterialDamage .
+genid:e333f4ec-b543-e01c-ae40-fce8760f4fec :aboutClause :ClauseH4 .
+genid:e333f4ec-b543-e01c-ae40-fce8760f4fec :scoreRaw 70 .
+genid:e333f4ec-b543-e01c-ae40-fce8760f4fec :violatesNeed :Need_RetentionLimit3y .
+genid:e333f4ec-b543-e01c-ae40-fce8760f4fec dct:description "Risk: retention (3650 days) exceeds patient preference (1095 days). Clause H4: Hospital retains patient health records for 10 years." .
+:ProcessContextHC1 dpv:hasRisk genid:e333f4ec-b543-e01c-ae40-fce8760f4fec .
+genid:4576211e-2495-d7a8-ebb0-5eb4707c9ce4 a dpv:RiskMitigationMeasure .
+genid:4576211e-2495-d7a8-ebb0-5eb4707c9ce4 dct:description "Limit retention to 3 years (or document the legal obligation requiring longer retention)." .
+genid:4576211e-2495-d7a8-ebb0-5eb4707c9ce4 dpv:mitigatesRisk genid:e333f4ec-b543-e01c-ae40-fce8760f4fec .
+genid:4576211e-2495-d7a8-ebb0-5eb4707c9ce4 :suggestAdd {
+    :PermRetention10y odrl:constraint _:sk_6 .
+    _:sk_6 a odrl:Constraint .
+    _:sk_6 odrl:leftOperand :retentionDays .
+    _:sk_6 odrl:operator odrl:lteq .
+    _:sk_6 odrl:rightOperand 1095 .
+} .
+genid:e333f4ec-b543-e01c-ae40-fce8760f4fec dpv:isMitigatedByMeasure genid:4576211e-2495-d7a8-ebb0-5eb4707c9ce4 .
+genid:6e6083d0-be14-5284-ce15-b2f04cc273c8 :score 100 .
+genid:b9e2eab8-2d4b-c4a4-50ea-6468777be280 :score 100 .
+genid:6709475e-da69-fd96-ae15-aa49219c20a0 :score 100 .
+genid:e333f4ec-b543-e01c-ae40-fce8760f4fec :score 70 .
+genid:6e6083d0-be14-5284-ce15-b2f04cc273c8 dpv:hasSeverity risk:HighSeverity .
+genid:6e6083d0-be14-5284-ce15-b2f04cc273c8 dpv:hasRiskLevel risk:HighRisk .
+genid:b9e2eab8-2d4b-c4a4-50ea-6468777be280 dpv:hasSeverity risk:HighSeverity .
+genid:b9e2eab8-2d4b-c4a4-50ea-6468777be280 dpv:hasRiskLevel risk:HighRisk .
+genid:6709475e-da69-fd96-ae15-aa49219c20a0 dpv:hasSeverity risk:HighSeverity .
+genid:6709475e-da69-fd96-ae15-aa49219c20a0 dpv:hasRiskLevel risk:HighRisk .
+genid:e333f4ec-b543-e01c-ae40-fce8760f4fec dpv:hasSeverity risk:ModerateSeverity .
+genid:e333f4ec-b543-e01c-ae40-fce8760f4fec dpv:hasRiskLevel risk:ModerateRisk .
+(:AgreementHC1 :PatientExample 0) log:outputString "\n=== Ranked DPV Risk Report (Healthcare & Life Sciences) ===\nAgreement: Example Healthcare & Life-Sciences Data Use Agreement\nProfile: Example patient profile\n\n" .
+(:AgreementHC1 :PatientExample 1 900 0 genid:6e6083d0-be14-5284-ce15-b2f04cc273c8) log:outputString "score=100 (https://w3id.org/dpv/risk#HighRisk, https://w3id.org/dpv/risk#HighSeverity)  clause H1\n  Risk: health/genomic data may be used for research without explicit opt-in consent. Clause H1: Hospital may use EHR and genomic data for internal clinical research and publication.\n\n" .
+(:AgreementHC1 :PatientExample 1 900 0 genid:b9e2eab8-2d4b-c4a4-50ea-6468777be280) log:outputString "score=100 (https://w3id.org/dpv/risk#HighRisk, https://w3id.org/dpv/risk#HighSeverity)  clause H2\n  Risk: genomic data may be shared with external pharma partners without a de-identification/pseudonymisation requirement. Clause H2: Hospital may share genomic data with pharmaceutical partners for drug discovery and R&D.\n\n" .
+(:AgreementHC1 :PatientExample 1 900 0 genid:6709475e-da69-fd96-ae15-aa49219c20a0) log:outputString "score=100 (https://w3id.org/dpv/risk#HighRisk, https://w3id.org/dpv/risk#HighSeverity)  clause H3\n  Risk: automated triage may affect care pathways without a human review/override safeguard. Clause H3: Hospital may use automated triage and prioritisation systems using EHR data.\n\n" .
+(:AgreementHC1 :PatientExample 1 930 0 genid:e333f4ec-b543-e01c-ae40-fce8760f4fec) log:outputString "score=70 (https://w3id.org/dpv/risk#ModerateRisk, https://w3id.org/dpv/risk#ModerateSeverity)  clause H4\n  Risk: retention (3650 days) exceeds patient preference (1095 days). Clause H4: Hospital retains patient health records for 10 years.\n\n" .
+(:AgreementHC1 :PatientExample 1 900 1 genid:6e6083d0-be14-5284-ce15-b2f04cc273c8 genid:d8249b0c-66d8-73a8-c1d0-8c7c5256b338) log:outputString "  - mitigation for clause H1: Add an explicit consent constraint for secondary research use.\n" .
+(:AgreementHC1 :PatientExample 1 900 1 genid:b9e2eab8-2d4b-c4a4-50ea-6468777be280 genid:be734cc0-bf89-eac8-fa57-8bfba350cb64) log:outputString "  - mitigation for clause H2: Require de-identification/pseudonymisation before external sharing of genomic data.\n" .
+(:AgreementHC1 :PatientExample 1 900 1 genid:6709475e-da69-fd96-ae15-aa49219c20a0 genid:8bcddd56-e42e-5d94-57c3-9afd4fc1126c) log:outputString "  - mitigation for clause H3: Add a duty requiring human review/override for triage decisions (human-in-the-loop).\n" .
+(:AgreementHC1 :PatientExample 1 930 1 genid:e333f4ec-b543-e01c-ae40-fce8760f4fec genid:4576211e-2495-d7a8-ebb0-5eb4707c9ce4) log:outputString "  - mitigation for clause H4: Limit retention to 3 years (or document the legal obligation requiring longer retention).\n" .

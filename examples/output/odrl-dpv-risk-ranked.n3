@@ -7,7 +7,6 @@
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix risk: <https://w3id.org/dpv/risk#> .
 @prefix tosl: <https://example.org/tosl-profile#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 genid:1c780f80-9b90-f310-2ce9-2d829e5616d8 a risk:RiskSource .
 genid:1c780f80-9b90-f310-2ce9-2d829e5616d8 a risk:LegalComplianceRisk .
@@ -38,7 +37,7 @@ genid:f2f8e420-4979-6bb4-9d7a-724cdbeeeef4 :suggestAdd {
     _:sk_0 a odrl:Constraint .
     _:sk_0 odrl:leftOperand tosl:noticeDays .
     _:sk_0 odrl:operator odrl:gteq .
-    _:sk_0 odrl:rightOperand "14"^^xsd:integer .
+    _:sk_0 odrl:rightOperand 14 .
 } .
 genid:4d551ac7-50e7-79bc-bbc6-d35022c24650 a dpv:RiskMitigationMeasure .
 genid:4d551ac7-50e7-79bc-bbc6-d35022c24650 dct:description "Add a duty to inform the consumer prior to account removal." .
@@ -77,7 +76,7 @@ genid:6eda9020-28eb-8740-c9c2-4d0139e1499c :suggestAdd {
     _:sk_3 a odrl:Constraint .
     _:sk_3 odrl:leftOperand tosl:noticeDays .
     _:sk_3 odrl:operator odrl:gteq .
-    _:sk_3 odrl:rightOperand "14"^^xsd:integer .
+    _:sk_3 odrl:rightOperand 14 .
 } .
 genid:423c1420-b028-620c-fcd2-78f08f0da0ca dpv:isMitigatedByMeasure genid:6eda9020-28eb-8740-c9c2-4d0139e1499c .
 genid:e4304204-5fbc-1dc2-cb50-da7597604550 a risk:RiskSource .
@@ -136,7 +135,7 @@ genid:0e1f48a8-1550-a59e-0559-5f70ca9b3ac4 :suggestAdd {
     _:sk_5 odrl:target :UserData .
 } .
 genid:ee944cc3-a770-063a-274c-98e4f8af162c dpv:isMitigatedByMeasure genid:0e1f48a8-1550-a59e-0559-5f70ca9b3ac4 .
-genid:59bf9d7c-6868-401e-bb47-667826cd85bc :score "100"^^xsd:integer .
+genid:59bf9d7c-6868-401e-bb47-667826cd85bc :score 100 .
 genid:423c1420-b028-620c-fcd2-78f08f0da0ca :score 85 .
 genid:dbffbd20-c09d-995c-7973-d378be8f6d4c :score 97 .
 genid:ee944cc3-a770-063a-274c-98e4f8af162c :score 70 .
