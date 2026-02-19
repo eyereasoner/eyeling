@@ -44,7 +44,7 @@
 # 1) Consumer profile (needs)
 # ---------------------------
 
-:ConsumerExample a :ConsumerProfile ;
+:ConsumerExample a :ConsumerProfile, odrl:Party ;
   dct:title "Example consumer profile" ;
   :hasNeed :Need_DataCannotBeRemoved,
            :Need_ChangeOnlyWithPriorNotice,
@@ -84,7 +84,7 @@
     # Clause C1: remove account/data without safeguards
     :PermDeleteAccount a odrl:Permission ;
       odrl:assigner :Provider ;
-      odrl:assignee odrl:consumer ;
+      odrl:assignee :ConsumerExample ;
       odrl:action tosl:removeAccount ;
       odrl:target :UserAccount ;
       :clause :ClauseC1 .
@@ -92,7 +92,7 @@
     # Clause C2: change terms with noticeDays >= 3 (may be too short for the consumer)
     :PermChangeTerms a odrl:Permission ;
       odrl:assigner :Provider ;
-      odrl:assignee odrl:consumer ;
+      odrl:assignee :ConsumerExample ;
       odrl:action tosl:changeTerms ;
       odrl:target :AgreementText ;
       odrl:duty [
@@ -110,7 +110,7 @@
     # Clause C3: share data without explicit consent safeguard
     :PermShareData a odrl:Permission ;
       odrl:assigner :Provider ;
-      odrl:assignee odrl:consumer ;
+      odrl:assignee :ConsumerExample ;
       odrl:action tosl:shareData ;
       odrl:target :UserData ;
       :clause :ClauseC3 .
@@ -118,7 +118,7 @@
     # Clause C4: prohibit export (hurts portability)
     :ProhibitExportData a odrl:Prohibition ;
       odrl:assigner :Provider ;
-      odrl:assignee odrl:consumer ;
+      odrl:assignee :ConsumerExample ;
       odrl:action tosl:exportData ;
       odrl:target :UserData ;
       :clause :ClauseC4 .
@@ -167,6 +167,8 @@
   (90 ?w) math:sum ?raw .
   ( :Agreement1 :ConsumerExample :DeleteAccountNoSafeguards ?cid ) log:skolem ?risk .
   ( :Agreement1 :ConsumerExample :DeleteAccountNoSafeguardsSource ?cid ) log:skolem ?src .
+  ( ?risk :M1 ) log:skolem ?m1 .
+  ( ?risk :M2 ) log:skolem ?m2 .
 
   ( "Risk: account/data removal is permitted without notice safeguards (no notice constraint and no duty to inform). Clause %s: %s"
     ?cid ?txt ) string:format ?why .
@@ -189,8 +191,6 @@
 
   :ProcessContext1 dpv:hasRisk ?risk .
 
-  ( ?risk :M1 ) log:skolem ?m1 .
-  ( ?risk :M2 ) log:skolem ?m2 .
 
   ?m1 a dpv:RiskMitigationMeasure ;
     dct:description "Add a notice constraint (minimum noticeDays) before account removal." ;
@@ -242,6 +242,7 @@
   (70 ?w) math:sum ?raw .
   ( :Agreement1 :ConsumerExample :NoticeTooShort ?cid ) log:skolem ?risk .
   ( :Agreement1 :ConsumerExample :NoticeTooShortSource ?cid ) log:skolem ?src .
+  ( ?risk :M1 ) log:skolem ?m1 .
 
   ( "Risk: terms may change with notice (%s days) below consumer requirement (%s days). Clause %s: %s"
     ?days ?req ?cid ?txt ) string:format ?why .
@@ -264,7 +265,6 @@
 
   :ProcessContext1 dpv:hasRisk ?risk .
 
-  ( ?risk :M1 ) log:skolem ?m1 .
   ?m1 a dpv:RiskMitigationMeasure ;
     dct:description "Increase minimum noticeDays in the inform duty to meet the consumer requirement." ;
     dpv:mitigatesRisk ?risk ;
@@ -309,6 +309,7 @@
   (85 ?w) math:sum ?raw .
   ( :Agreement1 :ConsumerExample :ShareNoConsent ?cid ) log:skolem ?risk .
   ( :Agreement1 :ConsumerExample :ShareNoConsentSource ?cid ) log:skolem ?src .
+  ( ?risk :M1 ) log:skolem ?m1 .
 
   ( "Risk: user data sharing is permitted without an explicit consent constraint. Clause %s: %s"
     ?cid ?txt ) string:format ?why .
@@ -331,7 +332,6 @@
 
   :ProcessContext1 dpv:hasRisk ?risk .
 
-  ( ?risk :M1 ) log:skolem ?m1 .
   ?m1 a dpv:RiskMitigationMeasure ;
     dct:description "Add an explicit consent constraint before data sharing." ;
     dpv:mitigatesRisk ?risk ;
@@ -364,6 +364,7 @@
   (60 ?w) math:sum ?raw .
   ( :Agreement1 :ConsumerExample :NoPortability ?cid ) log:skolem ?risk .
   ( :Agreement1 :ConsumerExample :NoPortabilitySource ?cid ) log:skolem ?src .
+  ( ?risk :M1 ) log:skolem ?m1 .
 
   ( "Risk: portability is restricted because exporting user data is prohibited. Clause %s: %s"
     ?cid ?txt ) string:format ?why .
@@ -386,7 +387,6 @@
 
   :ProcessContext1 dpv:hasRisk ?risk .
 
-  ( ?risk :M1 ) log:skolem ?m1 .
   ?m1 a dpv:RiskMitigationMeasure ;
     dct:description "Add a permission allowing data export (or remove the prohibition) to support portability." ;
     dpv:mitigatesRisk ?risk ;
@@ -394,7 +394,7 @@
       :Policy1 odrl:permission [
         a odrl:Permission ;
         odrl:assigner :Provider ;
-        odrl:assignee odrl:consumer ;
+        odrl:assignee :ConsumerExample ;
         odrl:action tosl:exportData ;
         odrl:target :UserData
       ] .
@@ -455,7 +455,7 @@
 }
 =>
 {
-  ( :Agreement1 :ConsumerExample 1 ?inv ?r ) log:outputString ?line .
+  ( :Agreement1 :ConsumerExample 1 ?inv 0 ?r ) log:outputString ?line .
 } .
 
 # Mitigation lines (same ordering as their risk)
@@ -474,6 +474,6 @@
 }
 =>
 {
-  ( :Agreement1 :ConsumerExample 2 ?inv ?r ) log:outputString ?mline .
+  ( :Agreement1 :ConsumerExample 1 ?inv 1 ?r ?m ) log:outputString ?mline .
 } .
 
