@@ -54,6 +54,35 @@
 @prefix log:   <http://www.w3.org/2000/10/swap/log#> .
 @prefix math:  <http://www.w3.org/2000/10/swap/math#> .
 @prefix string:<http://www.w3.org/2000/10/swap/string#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix duo:  <http://purl.obolibrary.org/obo/DUO_> .
+@prefix hl7ca:<http://terminology.hl7.org/CodeSystem/consentaction#> .
+
+# ---------------------------------------------------
+# Domain vocabularies used (healthcare/life-sciences)
+# ---------------------------------------------------
+# - GA4GH Data Use Ontology (DUO): https://obofoundry.org/ontology/duo.html
+#   We use DUO codes as values for odrl:purpose constraints (via odrl:rightOperandReference).
+#     * duo:0000006 (HMB) health/medical/biomedical research
+#     * duo:0000042 (GRU) general research use
+#     * duo:0000043 (CC)  clinical care use
+#
+# - HL7 Consent Action Codes: http://terminology.hl7.org/CodeSystem/consentaction
+#   We mint code IRIs using a fragment (#code) purely for convenience in this example:
+#     * hl7ca:use, hl7ca:disclose, hl7ca:collect
+#
+
+:PurposeHMB a skos:Concept ;
+  skos:prefLabel "DUO HMB: Health/Medical/Biomedical Research" ;
+  skos:exactMatch duo:0000006 .
+
+:PurposeGRU a skos:Concept ;
+  skos:prefLabel "DUO GRU: General Research Use" ;
+  skos:exactMatch duo:0000042 .
+
+:PurposeCC a skos:Concept ;
+  skos:prefLabel "DUO CC: Clinical Care Use" ;
+  skos:exactMatch duo:0000043 .
 
 # ----------------------------------------------
 # 1) Parties, data assets, and "process context"
@@ -133,29 +162,50 @@
     :PermResearchUse a odrl:Permission ;
       odrl:assigner :Hospital ;
       odrl:assignee :ResearchUnit ;
-      odrl:action :useForClinicalResearch ;
+      odrl:action hl7ca:use ;
       odrl:target :HealthRecordData, :GenomicData ;
+      odrl:constraint [
+  a odrl:Constraint ;
+  odrl:leftOperand odrl:purpose ;
+  odrl:operator odrl:eq ;
+  odrl:rightOperandReference :PurposeHMB
+] ;
+
       :clause :ClauseH1 .
 
     # Permission: share genomic data with pharma (NO de-identification constraint -> should trigger R2)
     :PermShareWithPharma a odrl:Permission ;
       odrl:assigner :Hospital ;
       odrl:assignee :PharmaPartner ;
-      odrl:action :shareForDrugDiscovery ;
+      odrl:action hl7ca:disclose ;
       odrl:target :GenomicData ;
+      odrl:constraint [
+  a odrl:Constraint ;
+  odrl:leftOperand odrl:purpose ;
+  odrl:operator odrl:eq ;
+  odrl:rightOperandReference :PurposeHMB
+] ;
+
       :clause :ClauseH2 .
 
     # Permission: automated triage (NO human-review duty -> should trigger R3)
     :PermAutomatedTriage a odrl:Permission ;
       odrl:assigner :Hospital ;
       odrl:assignee :ClinicalAIService ;
-      odrl:action :automatedTriage ;
+      odrl:action hl7ca:use ;
       odrl:target :HealthRecordData ;
+      odrl:constraint [
+  a odrl:Constraint ;
+  odrl:leftOperand odrl:purpose ;
+  odrl:operator odrl:eq ;
+  odrl:rightOperandReference :PurposeCC
+] ;
+
       :clause :ClauseH3 ;
       odrl:duty [
         a odrl:Duty ;
-        odrl:action :applySecurityControls ;
-        odrl:constraint [
+        odrl:action :humanReview ;
+      odrl:constraint [
           a odrl:Constraint ;
           odrl:leftOperand :encryptionAtRest ;
           odrl:operator odrl:eq ;
@@ -167,8 +217,15 @@
     :PermRetention10y a odrl:Permission ;
       odrl:assigner :Hospital ;
       odrl:assignee :Hospital ;
-      odrl:action :retain ;
+      odrl:action hl7ca:collect ;
       odrl:target :HealthRecordData ;
+      odrl:constraint [
+  a odrl:Constraint ;
+  odrl:leftOperand odrl:purpose ;
+  odrl:operator odrl:eq ;
+  odrl:rightOperandReference :PurposeCC
+] ;
+
       :clause :ClauseH4 ;
       odrl:constraint [
         a odrl:Constraint ;
@@ -306,7 +363,7 @@
       odrl:duty [
         a odrl:Duty ;
         odrl:action :deIdentify ;
-        odrl:constraint [
+      odrl:constraint [
           a odrl:Constraint ;
           odrl:leftOperand :deIdentificationStandard ;
           odrl:operator odrl:eq ;
@@ -371,7 +428,7 @@
       :PermAutomatedTriage odrl:duty [
         a odrl:Duty ;
         odrl:action :humanReview ;
-        odrl:constraint [
+      odrl:constraint [
           a odrl:Constraint ;
           odrl:leftOperand :reviewBeforeDecision ;
           odrl:operator odrl:eq ;
