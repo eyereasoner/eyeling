@@ -3,7 +3,10 @@
 @prefix dpv: <https://w3id.org/dpv#> .
 @prefix genid: <https://eyereasoner.github.io/.well-known/genid/> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix odrl: <http://www.w3.org/ns/odrl/2/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix risk: <https://w3id.org/dpv/risk#> .
+@prefix tosl: <https://example.org/tosl-profile#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 genid:1c780f80-9b90-f310-2ce9-2d829e5616d8 a risk:RiskSource .
@@ -27,6 +30,26 @@ genid:59bf9d7c-6868-401e-bb47-667826cd85bc :scoreRaw 110 .
 genid:59bf9d7c-6868-401e-bb47-667826cd85bc :violatesNeed :Need_DataCannotBeRemoved .
 genid:59bf9d7c-6868-401e-bb47-667826cd85bc dct:description "Risk: account/data removal is permitted without notice safeguards (no notice constraint and no duty to inform). Clause C1: Provider may remove the user account (and associated data) at its discretion." .
 :ProcessContext1 dpv:hasRisk genid:59bf9d7c-6868-401e-bb47-667826cd85bc .
+genid:f2f8e420-4979-6bb4-9d7a-724cdbeeeef4 a dpv:RiskMitigationMeasure .
+genid:f2f8e420-4979-6bb4-9d7a-724cdbeeeef4 dct:description "Add a notice constraint (minimum noticeDays) before account removal." .
+genid:f2f8e420-4979-6bb4-9d7a-724cdbeeeef4 dpv:mitigatesRisk genid:59bf9d7c-6868-401e-bb47-667826cd85bc .
+genid:f2f8e420-4979-6bb4-9d7a-724cdbeeeef4 :suggestAdd {
+    :PermDeleteAccount odrl:constraint _:sk_0 .
+    _:sk_0 a odrl:Constraint .
+    _:sk_0 odrl:leftOperand tosl:noticeDays .
+    _:sk_0 odrl:operator odrl:gteq .
+    _:sk_0 odrl:rightOperand "14"^^xsd:integer .
+} .
+genid:4d551ac7-50e7-79bc-bbc6-d35022c24650 a dpv:RiskMitigationMeasure .
+genid:4d551ac7-50e7-79bc-bbc6-d35022c24650 dct:description "Add a duty to inform the consumer prior to account removal." .
+genid:4d551ac7-50e7-79bc-bbc6-d35022c24650 dpv:mitigatesRisk genid:59bf9d7c-6868-401e-bb47-667826cd85bc .
+genid:4d551ac7-50e7-79bc-bbc6-d35022c24650 :suggestAdd {
+    :PermDeleteAccount odrl:duty _:sk_1 .
+    _:sk_1 a odrl:Duty .
+    _:sk_1 odrl:action odrl:inform .
+} .
+genid:59bf9d7c-6868-401e-bb47-667826cd85bc dpv:isMitigatedByMeasure genid:f2f8e420-4979-6bb4-9d7a-724cdbeeeef4 .
+genid:59bf9d7c-6868-401e-bb47-667826cd85bc dpv:isMitigatedByMeasure genid:4d551ac7-50e7-79bc-bbc6-d35022c24650 .
 genid:b00dbc9c-519f-4664-518c-32853c2cfabc a risk:RiskSource .
 genid:b00dbc9c-519f-4664-518c-32853c2cfabc a risk:PolicyRisk .
 genid:b00dbc9c-519f-4664-518c-32853c2cfabc dct:source :PermChangeTerms .
@@ -43,6 +66,20 @@ genid:423c1420-b028-620c-fcd2-78f08f0da0ca :scoreRaw 85 .
 genid:423c1420-b028-620c-fcd2-78f08f0da0ca :violatesNeed :Need_ChangeOnlyWithPriorNotice .
 genid:423c1420-b028-620c-fcd2-78f08f0da0ca dct:description "Risk: terms may change with notice (3 days) below consumer requirement (14 days). Clause C2: Provider may change terms by informing users at least 3 days in advance." .
 :ProcessContext1 dpv:hasRisk genid:423c1420-b028-620c-fcd2-78f08f0da0ca .
+genid:6eda9020-28eb-8740-c9c2-4d0139e1499c a dpv:RiskMitigationMeasure .
+genid:6eda9020-28eb-8740-c9c2-4d0139e1499c dct:description "Increase minimum noticeDays in the inform duty to meet the consumer requirement." .
+genid:6eda9020-28eb-8740-c9c2-4d0139e1499c dpv:mitigatesRisk genid:423c1420-b028-620c-fcd2-78f08f0da0ca .
+genid:6eda9020-28eb-8740-c9c2-4d0139e1499c :suggestAdd {
+    :PermChangeTerms odrl:duty _:sk_2 .
+    _:sk_2 a odrl:Duty .
+    _:sk_2 odrl:action odrl:inform .
+    _:sk_2 odrl:constraint _:sk_3 .
+    _:sk_3 a odrl:Constraint .
+    _:sk_3 odrl:leftOperand tosl:noticeDays .
+    _:sk_3 odrl:operator odrl:gteq .
+    _:sk_3 odrl:rightOperand "14"^^xsd:integer .
+} .
+genid:423c1420-b028-620c-fcd2-78f08f0da0ca dpv:isMitigatedByMeasure genid:6eda9020-28eb-8740-c9c2-4d0139e1499c .
 genid:e4304204-5fbc-1dc2-cb50-da7597604550 a risk:RiskSource .
 genid:e4304204-5fbc-1dc2-cb50-da7597604550 a risk:PolicyRisk .
 genid:e4304204-5fbc-1dc2-cb50-da7597604550 dct:source :PermShareData .
@@ -60,6 +97,17 @@ genid:dbffbd20-c09d-995c-7973-d378be8f6d4c :scoreRaw 97 .
 genid:dbffbd20-c09d-995c-7973-d378be8f6d4c :violatesNeed :Need_NoSharingWithoutConsent .
 genid:dbffbd20-c09d-995c-7973-d378be8f6d4c dct:description "Risk: user data sharing is permitted without an explicit consent constraint. Clause C3: Provider may share user data with partners for business purposes." .
 :ProcessContext1 dpv:hasRisk genid:dbffbd20-c09d-995c-7973-d378be8f6d4c .
+genid:1beecfb8-c205-dae0-e5f6-2f2aa3dc178c a dpv:RiskMitigationMeasure .
+genid:1beecfb8-c205-dae0-e5f6-2f2aa3dc178c dct:description "Add an explicit consent constraint before data sharing." .
+genid:1beecfb8-c205-dae0-e5f6-2f2aa3dc178c dpv:mitigatesRisk genid:dbffbd20-c09d-995c-7973-d378be8f6d4c .
+genid:1beecfb8-c205-dae0-e5f6-2f2aa3dc178c :suggestAdd {
+    :PermShareData odrl:constraint _:sk_4 .
+    _:sk_4 a odrl:Constraint .
+    _:sk_4 odrl:leftOperand tosl:consent .
+    _:sk_4 odrl:operator odrl:eq .
+    _:sk_4 odrl:rightOperand true .
+} .
+genid:dbffbd20-c09d-995c-7973-d378be8f6d4c dpv:isMitigatedByMeasure genid:1beecfb8-c205-dae0-e5f6-2f2aa3dc178c .
 genid:f83f5ee8-215f-977e-4e89-f9812cda0c04 a risk:RiskSource .
 genid:f83f5ee8-215f-977e-4e89-f9812cda0c04 a risk:PolicyRisk .
 genid:f83f5ee8-215f-977e-4e89-f9812cda0c04 dct:source :ProhibitExportData .
@@ -76,6 +124,18 @@ genid:ee944cc3-a770-063a-274c-98e4f8af162c :scoreRaw 70 .
 genid:ee944cc3-a770-063a-274c-98e4f8af162c :violatesNeed :Need_DataPortability .
 genid:ee944cc3-a770-063a-274c-98e4f8af162c dct:description "Risk: portability is restricted because exporting user data is prohibited. Clause C4: Users are not permitted to export their data." .
 :ProcessContext1 dpv:hasRisk genid:ee944cc3-a770-063a-274c-98e4f8af162c .
+genid:0e1f48a8-1550-a59e-0559-5f70ca9b3ac4 a dpv:RiskMitigationMeasure .
+genid:0e1f48a8-1550-a59e-0559-5f70ca9b3ac4 dct:description "Add a permission allowing data export (or remove the prohibition) to support portability." .
+genid:0e1f48a8-1550-a59e-0559-5f70ca9b3ac4 dpv:mitigatesRisk genid:ee944cc3-a770-063a-274c-98e4f8af162c .
+genid:0e1f48a8-1550-a59e-0559-5f70ca9b3ac4 :suggestAdd {
+    :Policy1 odrl:permission _:sk_5 .
+    _:sk_5 a odrl:Permission .
+    _:sk_5 odrl:assigner :Provider .
+    _:sk_5 odrl:assignee :ConsumerExample .
+    _:sk_5 odrl:action tosl:exportData .
+    _:sk_5 odrl:target :UserData .
+} .
+genid:ee944cc3-a770-063a-274c-98e4f8af162c dpv:isMitigatedByMeasure genid:0e1f48a8-1550-a59e-0559-5f70ca9b3ac4 .
 genid:59bf9d7c-6868-401e-bb47-667826cd85bc :score "100"^^xsd:integer .
 genid:423c1420-b028-620c-fcd2-78f08f0da0ca :score 85 .
 genid:dbffbd20-c09d-995c-7973-d378be8f6d4c :score 97 .
@@ -89,7 +149,12 @@ genid:dbffbd20-c09d-995c-7973-d378be8f6d4c dpv:hasRiskLevel risk:HighRisk .
 genid:ee944cc3-a770-063a-274c-98e4f8af162c dpv:hasSeverity risk:ModerateSeverity .
 genid:ee944cc3-a770-063a-274c-98e4f8af162c dpv:hasRiskLevel risk:ModerateRisk .
 (:Agreement1 :ConsumerExample 0) log:outputString "\n=== Ranked DPV Risk Report ===\nAgreement: Example Agreement\nProfile: Example consumer profile\n\n" .
-(:Agreement1 :ConsumerExample 1 900 genid:59bf9d7c-6868-401e-bb47-667826cd85bc) log:outputString "score=100 (https://w3id.org/dpv/risk#HighRisk, https://w3id.org/dpv/risk#HighSeverity)  clause C1\n  Risk: account/data removal is permitted without notice safeguards (no notice constraint and no duty to inform). Clause C1: Provider may remove the user account (and associated data) at its discretion.\n\n" .
-(:Agreement1 :ConsumerExample 1 915 genid:423c1420-b028-620c-fcd2-78f08f0da0ca) log:outputString "score=85 (https://w3id.org/dpv/risk#HighRisk, https://w3id.org/dpv/risk#HighSeverity)  clause C2\n  Risk: terms may change with notice (3 days) below consumer requirement (14 days). Clause C2: Provider may change terms by informing users at least 3 days in advance.\n\n" .
-(:Agreement1 :ConsumerExample 1 903 genid:dbffbd20-c09d-995c-7973-d378be8f6d4c) log:outputString "score=97 (https://w3id.org/dpv/risk#HighRisk, https://w3id.org/dpv/risk#HighSeverity)  clause C3\n  Risk: user data sharing is permitted without an explicit consent constraint. Clause C3: Provider may share user data with partners for business purposes.\n\n" .
-(:Agreement1 :ConsumerExample 1 930 genid:ee944cc3-a770-063a-274c-98e4f8af162c) log:outputString "score=70 (https://w3id.org/dpv/risk#ModerateRisk, https://w3id.org/dpv/risk#ModerateSeverity)  clause C4\n  Risk: portability is restricted because exporting user data is prohibited. Clause C4: Users are not permitted to export their data.\n\n" .
+(:Agreement1 :ConsumerExample 1 900 0 genid:59bf9d7c-6868-401e-bb47-667826cd85bc) log:outputString "score=100 (https://w3id.org/dpv/risk#HighRisk, https://w3id.org/dpv/risk#HighSeverity)  clause C1\n  Risk: account/data removal is permitted without notice safeguards (no notice constraint and no duty to inform). Clause C1: Provider may remove the user account (and associated data) at its discretion.\n\n" .
+(:Agreement1 :ConsumerExample 1 915 0 genid:423c1420-b028-620c-fcd2-78f08f0da0ca) log:outputString "score=85 (https://w3id.org/dpv/risk#HighRisk, https://w3id.org/dpv/risk#HighSeverity)  clause C2\n  Risk: terms may change with notice (3 days) below consumer requirement (14 days). Clause C2: Provider may change terms by informing users at least 3 days in advance.\n\n" .
+(:Agreement1 :ConsumerExample 1 903 0 genid:dbffbd20-c09d-995c-7973-d378be8f6d4c) log:outputString "score=97 (https://w3id.org/dpv/risk#HighRisk, https://w3id.org/dpv/risk#HighSeverity)  clause C3\n  Risk: user data sharing is permitted without an explicit consent constraint. Clause C3: Provider may share user data with partners for business purposes.\n\n" .
+(:Agreement1 :ConsumerExample 1 930 0 genid:ee944cc3-a770-063a-274c-98e4f8af162c) log:outputString "score=70 (https://w3id.org/dpv/risk#ModerateRisk, https://w3id.org/dpv/risk#ModerateSeverity)  clause C4\n  Risk: portability is restricted because exporting user data is prohibited. Clause C4: Users are not permitted to export their data.\n\n" .
+(:Agreement1 :ConsumerExample 1 900 1 genid:59bf9d7c-6868-401e-bb47-667826cd85bc genid:f2f8e420-4979-6bb4-9d7a-724cdbeeeef4) log:outputString "  - mitigation for clause C1: Add a notice constraint (minimum noticeDays) before account removal.\n" .
+(:Agreement1 :ConsumerExample 1 900 1 genid:59bf9d7c-6868-401e-bb47-667826cd85bc genid:4d551ac7-50e7-79bc-bbc6-d35022c24650) log:outputString "  - mitigation for clause C1: Add a duty to inform the consumer prior to account removal.\n" .
+(:Agreement1 :ConsumerExample 1 915 1 genid:423c1420-b028-620c-fcd2-78f08f0da0ca genid:6eda9020-28eb-8740-c9c2-4d0139e1499c) log:outputString "  - mitigation for clause C2: Increase minimum noticeDays in the inform duty to meet the consumer requirement.\n" .
+(:Agreement1 :ConsumerExample 1 903 1 genid:dbffbd20-c09d-995c-7973-d378be8f6d4c genid:1beecfb8-c205-dae0-e5f6-2f2aa3dc178c) log:outputString "  - mitigation for clause C3: Add an explicit consent constraint before data sharing.\n" .
+(:Agreement1 :ConsumerExample 1 930 1 genid:ee944cc3-a770-063a-274c-98e4f8af162c genid:0e1f48a8-1550-a59e-0559-5f70ca9b3ac4) log:outputString "  - mitigation for clause C4: Add a permission allowing data export (or remove the prohibition) to support portability.\n" .
