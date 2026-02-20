@@ -1,14 +1,13 @@
 @prefix : <https://example.org/odrl-dpv-ehds-risk-ranked#> .
 @prefix dct: <http://purl.org/dc/terms/> .
 @prefix dpv: <https://w3id.org/dpv#> .
-@prefix eu_dga: <https://w3id.org/dpv/legal/eu/dga#> .
-@prefix eu_ehds: <https://w3id.org/dpv/legal/eu/ehds#> .
+@prefix eu-dga: <https://w3id.org/dpv/legal/eu/dga#> .
+@prefix eu-ehds: <https://w3id.org/dpv/legal/eu/ehds#> .
 @prefix genid: <https://eyereasoner.github.io/.well-known/genid/> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 @prefix odrl: <http://www.w3.org/ns/odrl/2/> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix risk: <https://w3id.org/dpv/risk#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 genid:b4170cf8-6d12-05e6-0d62-0f4c42cbb77c a risk:RiskSource .
 genid:b4170cf8-6d12-05e6-0d62-0f4c42cbb77c a risk:LegalComplianceRisk .
@@ -35,7 +34,7 @@ genid:89664258-fefa-8d30-6eb9-72e87d93d99c :suggestAdd {
     _:sk_0 odrl:leftOperand :hasDataPermit .
     _:sk_0 odrl:operator odrl:eq .
     _:sk_0 odrl:rightOperand true .
-    :PermitExample a eu_ehds:DataPermit .
+    :PermitExample a eu-ehds:DataPermit .
     :PermitExample dct:description "Example placeholder for an issued data permit." .
 } .
 genid:8b6d63fe-3aba-fc8c-d435-107b8d2d437c dpv:isMitigatedByMeasure genid:89664258-fefa-8d30-6eb9-72e87d93d99c .
@@ -92,7 +91,7 @@ genid:c516de60-83e5-b4b8-2de8-c5b4edf763b0 :suggestAdd {
     :ProhibitDownloadLocalCopy odrl:action :download .
     :ProhibitDownloadLocalCopy odrl:target :Dataset1 .
     :ProhibitDownloadLocalCopy :clause :ClauseH3 .
-    :ProcessContext1 dpv:hasTechnicalOrganisationalMeasure eu_dga:SecureProcessingEnvironment .
+    :ProcessContext1 dpv:hasTechnicalOrganisationalMeasure eu-dga:SecureProcessingEnvironment .
 } .
 genid:8d3275f0-67e6-28c8-79c4-9e8012d185f4 dpv:isMitigatedByMeasure genid:c516de60-83e5-b4b8-2de8-c5b4edf763b0 .
 genid:d31b6ae0-cb02-39e0-1fa0-86946b7e44c0 a risk:RiskSource .
@@ -119,7 +118,7 @@ genid:09f44e28-35fe-53c0-2b73-d8f51a1d4f24 :suggestAdd {
     _:sk_2 odrl:leftOperand :statisticallyAnonymised .
     _:sk_2 odrl:operator odrl:eq .
     _:sk_2 odrl:rightOperand true .
-    :ProcessContext1 dpv:hasOrganisationalMeasure eu_ehds:HealthDataRequest .
+    :ProcessContext1 dpv:hasOrganisationalMeasure eu-ehds:HealthDataRequest .
 } .
 genid:315f48bc-4e89-b706-ef07-dc88e29c5050 dpv:isMitigatedByMeasure genid:09f44e28-35fe-53c0-2b73-d8f51a1d4f24 .
 genid:8b6d63fe-3aba-fc8c-d435-107b8d2d437c :score 100 .

@@ -1,4 +1,4 @@
-# =============================================================================================
+# ============================================================================================
 # ODRL + DPV risk assessment example aligned with the DPV EU-EHDS extension.
 #
 # Scenario (EHDS secondary use)
@@ -13,17 +13,16 @@
 # - DPV-RISK uses:   https://w3id.org/dpv/risk#
 # - EU-EHDS draft uses (suggested prefix “eu-ehds”): https://w3id.org/dpv/legal/eu/ehds#
 # - EU-DGA uses (suggested prefix “eu-dga”):         https://w3id.org/dpv/legal/eu/dga#
-# =============================================================================================
+# ============================================================================================
 
 @prefix :        <https://example.org/odrl-dpv-ehds-risk-ranked#> .
 @prefix odrl:    <http://www.w3.org/ns/odrl/2/> .
 @prefix dpv:     <https://w3id.org/dpv#> .
 @prefix risk:    <https://w3id.org/dpv/risk#> .
-@prefix eu_ehds: <https://w3id.org/dpv/legal/eu/ehds#> .
-@prefix eu_dga:  <https://w3id.org/dpv/legal/eu/dga#> .
+@prefix eu-ehds: <https://w3id.org/dpv/legal/eu/ehds#> .
+@prefix eu-dga: <https://w3id.org/dpv/legal/eu/dga#> .
 @prefix dct:     <http://purl.org/dc/terms/> .
 @prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
 @prefix log:     <http://www.w3.org/2000/10/swap/log#> .
 @prefix math:    <http://www.w3.org/2000/10/swap/math#> .
 @prefix string:  <http://www.w3.org/2000/10/swap/string#> .
@@ -40,34 +39,34 @@
            :Need_StatisticallyAnonymisedSecondaryUse .
 
 :Need_RequireDataPermit a :Need ;
-  :importance "20"^^xsd:integer ;
+  :importance 20 ;
   dct:description "Secondary use should be authorised via an EHDS Data Permit issued by a Health Data Access Body." .
 
 :Need_RespectOptOutSecondaryUse a :Need ;
-  :importance "25"^^xsd:integer ;
-  :relatedRight eu_ehds:A71 ;
+  :importance 25 ;
+  :relatedRight eu-ehds:A71 ;
   dct:description "Respect the EHDS right to opt out from secondary use." .
 
 :Need_SecureProcessingEnvironment a :Need ;
-  :importance "18"^^xsd:integer ;
-  :relatedRight eu_ehds:A68-11 ;
+  :importance 18 ;
+  :relatedRight eu-ehds:A68-11 ;
   dct:description "Secondary-use processing must occur within a secure processing environment (and not via local downloads)." .
 
 :Need_StatisticallyAnonymisedSecondaryUse a :Need ;
-  :importance "15"^^xsd:integer ;
+  :importance 15 ;
   dct:description "Secondary use should use statistically anonymised electronic health data (e.g., via an EHDS Health Data Request)." .
 
 # -----------------------------------------------------------------
 # 2) Parties, datasets, and agreement (ODRL policy graph + clauses)
 # -----------------------------------------------------------------
 
-:HospitalA a odrl:Party, eu_ehds:HealthDataHolder ;
+:HospitalA a odrl:Party, eu-ehds:HealthDataHolder ;
   dct:title "St. Example Hospital (Health Data Holder)" .
 
-:AccessBodyBE a odrl:Party, eu_ehds:HealthDataAccessBody ;
+:AccessBodyBE a odrl:Party, eu-ehds:HealthDataAccessBody ;
   dct:title "Example Health Data Access Body (BE)" .
 
-:UniLab a odrl:Party, eu_ehds:HealthDataUser ;
+:UniLab a odrl:Party, eu-ehds:HealthDataUser ;
   dct:title "Example University Lab (Health Data User)" .
 
 :EHDSRegulation a dpv:Law ;
@@ -81,7 +80,7 @@
 
 :Dataset1 a odrl:Asset ;
   dct:title "Combined dataset (EHR + genomics + clinical trials data)" ;
-  dpv:hasPersonalData eu_ehds:EHRData, eu_ehds:GenomicData, eu_ehds:ClinicalTrialsData .
+  dpv:hasPersonalData eu-ehds:EHRData, eu-ehds:GenomicData, eu-ehds:ClinicalTrialsData .
 
 :AgreementEHDS1 a odrl:Agreement ;
   dct:title "EHDS Secondary Use Agreement (example)" ;
@@ -102,7 +101,7 @@
         a odrl:Constraint ;
         odrl:leftOperand odrl:purpose ;
         odrl:operator odrl:eq ;
-        odrl:rightOperandReference eu_ehds:HealthcareScientificResearch
+        odrl:rightOperandReference eu-ehds:HealthcareScientificResearch
       ] ;
       :clause :ClauseH1 .
 
@@ -116,7 +115,7 @@
         a odrl:Constraint ;
         odrl:leftOperand odrl:purpose ;
         odrl:operator odrl:eq ;
-        odrl:rightOperandReference eu_ehds:TrainTestAndEvaluateHealthAlgorithms
+        odrl:rightOperandReference eu-ehds:TrainTestAndEvaluateHealthAlgorithms
       ] ;
       :clause :ClauseH2 .
 
@@ -205,9 +204,9 @@
         a odrl:Constraint ;
         odrl:leftOperand :hasDataPermit ;
         odrl:operator odrl:eq ;
-        odrl:rightOperand "true"^^xsd:boolean
+        odrl:rightOperand true
       ] .
-      :PermitExample a eu_ehds:DataPermit ;
+      :PermitExample a eu-ehds:DataPermit ;
         dct:description "Example placeholder for an issued data permit." .
     } .
 
@@ -268,7 +267,7 @@
         a odrl:Constraint ;
         odrl:leftOperand :respectOptOutSecondaryUse ;
         odrl:operator odrl:eq ;
-        odrl:rightOperand "true"^^xsd:boolean
+        odrl:rightOperand true
       ] .
     } .
 
@@ -331,7 +330,7 @@
         odrl:action :download ;
         odrl:target :Dataset1 ;
         :clause :ClauseH3 .
-      :ProcessContext1 dpv:hasTechnicalOrganisationalMeasure eu_dga:SecureProcessingEnvironment .
+      :ProcessContext1 dpv:hasTechnicalOrganisationalMeasure eu-dga:SecureProcessingEnvironment .
     } .
 
   ?risk dpv:isMitigatedByMeasure ?m1 .
@@ -391,9 +390,9 @@
         a odrl:Constraint ;
         odrl:leftOperand :statisticallyAnonymised ;
         odrl:operator odrl:eq ;
-        odrl:rightOperand "true"^^xsd:boolean
+        odrl:rightOperand true
       ] .
-      :ProcessContext1 dpv:hasOrganisationalMeasure eu_ehds:HealthDataRequest .
+      :ProcessContext1 dpv:hasOrganisationalMeasure eu-ehds:HealthDataRequest .
     } .
 
   ?risk dpv:isMitigatedByMeasure ?m1 .
@@ -403,19 +402,19 @@
 # 4) Score normalization + DPV-RISK severity/level
 # ------------------------------------------------
 
-{ ?r a dpv:Risk ; :scoreRaw ?raw . ?raw math:greaterThan "100"^^xsd:integer . }
-=> { ?r :score "100"^^xsd:integer . } .
+{ ?r a dpv:Risk ; :scoreRaw ?raw . ?raw math:greaterThan 100 . }
+=> { ?r :score 100 . } .
 
-{ ?r a dpv:Risk ; :scoreRaw ?raw . "100"^^xsd:integer math:notLessThan ?raw . }
+{ ?r a dpv:Risk ; :scoreRaw ?raw . 100 math:notLessThan ?raw . }
 => { ?r :score ?raw . } .
 
-{ ?r a dpv:Risk ; :score ?s . ?s math:greaterThan "79"^^xsd:integer . }
+{ ?r a dpv:Risk ; :score ?s . ?s math:greaterThan 79 . }
 => { ?r dpv:hasSeverity risk:HighSeverity ; dpv:hasRiskLevel risk:HighRisk . } .
 
-{ ?r a dpv:Risk ; :score ?s . ?s math:lessThan "80"^^xsd:integer . ?s math:greaterThan "49"^^xsd:integer . }
+{ ?r a dpv:Risk ; :score ?s . ?s math:lessThan 80 . ?s math:greaterThan 49 . }
 => { ?r dpv:hasSeverity risk:ModerateSeverity ; dpv:hasRiskLevel risk:ModerateRisk . } .
 
-{ ?r a dpv:Risk ; :score ?s . ?s math:lessThan "50"^^xsd:integer . }
+{ ?r a dpv:Risk ; :score ?s . ?s math:lessThan 50 . }
 => { ?r dpv:hasSeverity risk:LowSeverity ; dpv:hasRiskLevel risk:LowRisk . } .
 
 # -------------------------------------------------------------------
@@ -444,7 +443,7 @@
      dct:description ?why .
   ?clause :clauseId ?cid .
 
-  ( "1000"^^xsd:integer ?score ) math:difference ?inv .
+  ( 1000 ?score ) math:difference ?inv .
 
   ( "score=%s (%s, %s)  clause %s\n  %s\n\n"
     ?score ?lvl ?sev ?cid ?why ) string:format ?line .
@@ -463,7 +462,7 @@
   ?clause :clauseId ?cid .
   ?m dct:description ?md .
 
-  ( "1000"^^xsd:integer ?score ) math:difference ?inv .
+  ( 1000 ?score ) math:difference ?inv .
 
   ( "  - mitigation for clause %s: %s\n"
     ?cid ?md ) string:format ?mline .
