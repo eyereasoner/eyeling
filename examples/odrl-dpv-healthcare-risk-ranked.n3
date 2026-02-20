@@ -54,9 +54,9 @@
 @prefix log:   <http://www.w3.org/2000/10/swap/log#> .
 @prefix math:  <http://www.w3.org/2000/10/swap/math#> .
 @prefix string:<http://www.w3.org/2000/10/swap/string#> .
-@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
-@prefix duo:  <http://purl.obolibrary.org/obo/DUO_> .
-@prefix hl7ca:<http://terminology.hl7.org/CodeSystem/consentaction#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+@prefix duo:   <http://purl.obolibrary.org/obo/DUO_> .
+@prefix hl7ca: <http://terminology.hl7.org/CodeSystem/consentaction#> .
 
 # ---------------------------------------------------
 # Domain vocabularies used (healthcare/life-sciences)

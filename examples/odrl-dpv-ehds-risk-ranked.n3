@@ -1,0 +1,474 @@
+# =============================================================================================
+# ODRL + DPV risk assessment example aligned with the DPV EU-EHDS extension.
+#
+# Scenario (EHDS secondary use)
+# - A hospital (Health Data Holder) makes electronic health data available to a university lab
+#   (Health Data User) for secondary use (research / training health-related algorithms).
+# - The agreement is intentionally missing EHDS-aligned safeguards so risks can be detected,
+#   scored, ranked, and explained.
+#
+# Notes on vocabularies used
+# - ODRL terms use:   http://www.w3.org/ns/odrl/2/
+# - DPV core uses:   https://w3id.org/dpv#
+# - DPV-RISK uses:   https://w3id.org/dpv/risk#
+# - EU-EHDS draft uses (suggested prefix “eu-ehds”): https://w3id.org/dpv/legal/eu/ehds#
+# - EU-DGA uses (suggested prefix “eu-dga”):         https://w3id.org/dpv/legal/eu/dga#
+# =============================================================================================
+
+@prefix :        <https://example.org/odrl-dpv-ehds-risk-ranked#> .
+@prefix odrl:    <http://www.w3.org/ns/odrl/2/> .
+@prefix dpv:     <https://w3id.org/dpv#> .
+@prefix risk:    <https://w3id.org/dpv/risk#> .
+@prefix eu_ehds: <https://w3id.org/dpv/legal/eu/ehds#> .
+@prefix eu_dga:  <https://w3id.org/dpv/legal/eu/dga#> .
+@prefix dct:     <http://purl.org/dc/terms/> .
+@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
+@prefix log:     <http://www.w3.org/2000/10/swap/log#> .
+@prefix math:    <http://www.w3.org/2000/10/swap/math#> .
+@prefix string:  <http://www.w3.org/2000/10/swap/string#> .
+
+# ----------------------------------------------------------------------------
+# 1) A “patient expectations” profile expressed as needs (weights for scoring)
+# ----------------------------------------------------------------------------
+
+:PatientProfileExample a :PatientProfile, odrl:Party ;
+  dct:title "Example patient profile (EHDS rights expectations)" ;
+  :hasNeed :Need_RequireDataPermit,
+           :Need_RespectOptOutSecondaryUse,
+           :Need_SecureProcessingEnvironment,
+           :Need_StatisticallyAnonymisedSecondaryUse .
+
+:Need_RequireDataPermit a :Need ;
+  :importance "20"^^xsd:integer ;
+  dct:description "Secondary use should be authorised via an EHDS Data Permit issued by a Health Data Access Body." .
+
+:Need_RespectOptOutSecondaryUse a :Need ;
+  :importance "25"^^xsd:integer ;
+  :relatedRight eu_ehds:A71 ;
+  dct:description "Respect the EHDS right to opt out from secondary use." .
+
+:Need_SecureProcessingEnvironment a :Need ;
+  :importance "18"^^xsd:integer ;
+  :relatedRight eu_ehds:A68-11 ;
+  dct:description "Secondary-use processing must occur within a secure processing environment (and not via local downloads)." .
+
+:Need_StatisticallyAnonymisedSecondaryUse a :Need ;
+  :importance "15"^^xsd:integer ;
+  dct:description "Secondary use should use statistically anonymised electronic health data (e.g., via an EHDS Health Data Request)." .
+
+# -----------------------------------------------------------------
+# 2) Parties, datasets, and agreement (ODRL policy graph + clauses)
+# -----------------------------------------------------------------
+
+:HospitalA a odrl:Party, eu_ehds:HealthDataHolder ;
+  dct:title "St. Example Hospital (Health Data Holder)" .
+
+:AccessBodyBE a odrl:Party, eu_ehds:HealthDataAccessBody ;
+  dct:title "Example Health Data Access Body (BE)" .
+
+:UniLab a odrl:Party, eu_ehds:HealthDataUser ;
+  dct:title "Example University Lab (Health Data User)" .
+
+:EHDSRegulation a dpv:Law ;
+  dct:title "EU European Health Data Space (EHDS) regulation (draft vocabulary alignment)" ;
+  rdfs:seeAlso <https://w3id.org/dpv/legal/eu/ehds> .
+
+:ProcessContext1 a dpv:Process ;
+  dct:source :AgreementEHDS1 ;
+  dct:title "Secondary use under AgreementEHDS1" ;
+  dpv:hasApplicableLaw :EHDSRegulation .
+
+:Dataset1 a odrl:Asset ;
+  dct:title "Combined dataset (EHR + genomics + clinical trials data)" ;
+  dpv:hasPersonalData eu_ehds:EHRData, eu_ehds:GenomicData, eu_ehds:ClinicalTrialsData .
+
+:AgreementEHDS1 a odrl:Agreement ;
+  dct:title "EHDS Secondary Use Agreement (example)" ;
+  :policyGraph {
+    :PolicyEHDS1 a odrl:Policy ;
+      odrl:permission :PermSecondaryUseDUA,
+                      :PermSecondaryUseAllPatients,
+                      :PermDownloadLocalCopy,
+                      :PermProvidePseudonymisedData .
+
+    # Clause H1: Secondary use permitted based on a bilateral DUA only (no EHDS data permit)
+    :PermSecondaryUseDUA a odrl:Permission ;
+      odrl:assigner :HospitalA ;
+      odrl:assignee :UniLab ;
+      odrl:action :provideSecondaryUseData ;
+      odrl:target :Dataset1 ;
+      odrl:constraint [
+        a odrl:Constraint ;
+        odrl:leftOperand odrl:purpose ;
+        odrl:operator odrl:eq ;
+        odrl:rightOperandReference eu_ehds:HealthcareScientificResearch
+      ] ;
+      :clause :ClauseH1 .
+
+    # Clause H2: Secondary use covers all patients (no explicit opt-out safeguard)
+    :PermSecondaryUseAllPatients a odrl:Permission ;
+      odrl:assigner :HospitalA ;
+      odrl:assignee :UniLab ;
+      odrl:action :provideSecondaryUseData ;
+      odrl:target :Dataset1 ;
+      odrl:constraint [
+        a odrl:Constraint ;
+        odrl:leftOperand odrl:purpose ;
+        odrl:operator odrl:eq ;
+        odrl:rightOperandReference eu_ehds:TrainTestAndEvaluateHealthAlgorithms
+      ] ;
+      :clause :ClauseH2 .
+
+    # Clause H3: Lab may download a full local copy (conflicts with secure processing environment expectation)
+    :PermDownloadLocalCopy a odrl:Permission ;
+      odrl:assigner :HospitalA ;
+      odrl:assignee :UniLab ;
+      odrl:action :download ;
+      odrl:target :Dataset1 ;
+      :clause :ClauseH3 .
+
+    # Clause H4: Data provided only “pseudonymised” (no constraint requiring statistically anonymised secondary use)
+    :PermProvidePseudonymisedData a odrl:Permission ;
+      odrl:assigner :HospitalA ;
+      odrl:assignee :UniLab ;
+      odrl:action :provideSecondaryUseData ;
+      odrl:target :Dataset1 ;
+      odrl:duty [
+        a odrl:Duty ;
+        odrl:action :removeDirectIdentifiers
+      ] ;
+      :clause :ClauseH4 .
+  } .
+
+:ClauseH1 a :Clause ; :clauseId "H1" ; :text "Hospital may provide electronic health data for secondary use based on a bilateral data use agreement with the applicant." .
+:ClauseH2 a :Clause ; :clauseId "H2" ; :text "Secondary use may include all patient records for training and evaluating health-related algorithms." .
+:ClauseH3 a :Clause ; :clauseId "H3" ; :text "The applicant may download a complete local copy of the dataset to its own infrastructure for analysis." .
+:ClauseH4 a :Clause ; :clauseId "H4" ; :text "The dataset will be provided in pseudonymised form by removing direct identifiers." .
+
+# ---------------------------------------------------------------------
+# 3) Risk rules (ODRL -> DPV/DPV-RISK) + mitigations
+#    (Only match ODRL structure inside log:includes / log:notIncludes.)
+# ---------------------------------------------------------------------
+
+# R1 (H1): Secondary use allowed WITHOUT an EHDS Data Permit constraint
+{
+  :AgreementEHDS1 :policyGraph ?G .
+  :PatientProfileExample :hasNeed :Need_RequireDataPermit .
+  :Need_RequireDataPermit :importance ?w .
+
+  ?G log:includes {
+    :PermSecondaryUseDUA a odrl:Permission ;
+      odrl:action :provideSecondaryUseData ;
+      :clause ?clause .
+  } .
+
+  ?G log:notIncludes {
+    :PermSecondaryUseDUA odrl:constraint [
+      odrl:leftOperand :hasDataPermit
+    ] .
+  } .
+
+  ?clause :clauseId ?cid ; :text ?txt .
+
+  (80 ?w) math:sum ?raw .
+  ( :AgreementEHDS1 :PatientProfileExample :MissingDataPermit ?cid ) log:skolem ?risk .
+  ( :AgreementEHDS1 :PatientProfileExample :MissingDataPermitSource ?cid ) log:skolem ?src .
+  ( ?risk :M1 ) log:skolem ?m1 .
+
+  ( "Risk: secondary use is permitted without an EHDS Data Permit safeguard. Clause %s: %s"
+    ?cid ?txt ) string:format ?why .
+}
+=>
+{
+  ?src a risk:RiskSource, risk:LegalComplianceRisk ;
+    dct:source :PermSecondaryUseDUA ;
+    dct:description "Secondary use permitted without EHDS Data Permit." .
+
+  ?risk a dpv:Risk, risk:PolicyRisk ;
+    dct:source :PermSecondaryUseDUA ;
+    risk:hasRiskSource ?src ;
+    dpv:hasConsequence risk:CustomerConfidenceLoss ;
+    dpv:hasImpact risk:FinancialLoss, risk:NonMaterialDamage ;
+    :aboutClause ?clause ;
+    :scoreRaw ?raw ;
+    :violatesNeed :Need_RequireDataPermit ;
+    dct:description ?why .
+
+  :ProcessContext1 dpv:hasRisk ?risk .
+
+  ?m1 a dpv:RiskMitigationMeasure ;
+    dct:description "Require an EHDS Data Permit (eu-ehds:DataPermit) issued by a Health Data Access Body prior to secondary use." ;
+    dpv:mitigatesRisk ?risk ;
+    :suggestAdd {
+      :PermSecondaryUseDUA odrl:constraint [
+        a odrl:Constraint ;
+        odrl:leftOperand :hasDataPermit ;
+        odrl:operator odrl:eq ;
+        odrl:rightOperand "true"^^xsd:boolean
+      ] .
+      :PermitExample a eu_ehds:DataPermit ;
+        dct:description "Example placeholder for an issued data permit." .
+    } .
+
+  ?risk dpv:isMitigatedByMeasure ?m1 .
+} .
+
+# R2 (H2): Secondary use allowed WITHOUT an explicit opt-out safeguard (EHDS Art.71 right A71)
+{
+  :AgreementEHDS1 :policyGraph ?G .
+  :PatientProfileExample :hasNeed :Need_RespectOptOutSecondaryUse .
+  :Need_RespectOptOutSecondaryUse :importance ?w .
+
+  ?G log:includes {
+    :PermSecondaryUseAllPatients a odrl:Permission ;
+      odrl:action :provideSecondaryUseData ;
+      :clause ?clause .
+  } .
+
+  ?G log:notIncludes {
+    :PermSecondaryUseAllPatients odrl:constraint [
+      odrl:leftOperand :respectOptOutSecondaryUse
+    ] .
+  } .
+
+  ?clause :clauseId ?cid ; :text ?txt .
+
+  (75 ?w) math:sum ?raw .
+  ( :AgreementEHDS1 :PatientProfileExample :MissingOptOutSafeguard ?cid ) log:skolem ?risk .
+  ( :AgreementEHDS1 :PatientProfileExample :MissingOptOutSafeguardSource ?cid ) log:skolem ?src .
+  ( ?risk :M1 ) log:skolem ?m1 .
+
+  ( "Risk: secondary use may include patients who opted out (EHDS A71). Clause %s: %s"
+    ?cid ?txt ) string:format ?why .
+}
+=>
+{
+  ?src a risk:RiskSource, risk:LegalComplianceRisk ;
+    dct:source :PermSecondaryUseAllPatients ;
+    dct:description "Opt-out from secondary use not explicitly respected." .
+
+  ?risk a dpv:Risk, risk:PolicyRisk, risk:UnwantedDisclosureData ;
+    dct:source :PermSecondaryUseAllPatients ;
+    risk:hasRiskSource ?src ;
+    dpv:hasConsequence risk:CustomerConfidenceLoss ;
+    dpv:hasImpact risk:NonMaterialDamage ;
+    :aboutClause ?clause ;
+    :scoreRaw ?raw ;
+    :violatesNeed :Need_RespectOptOutSecondaryUse ;
+    dct:description ?why .
+
+  :ProcessContext1 dpv:hasRisk ?risk .
+
+  ?m1 a dpv:RiskMitigationMeasure ;
+    dct:description "Add an explicit safeguard to exclude records of persons who exercised the EHDS opt-out from secondary use (A71)." ;
+    dpv:mitigatesRisk ?risk ;
+    :suggestAdd {
+      :PermSecondaryUseAllPatients odrl:constraint [
+        a odrl:Constraint ;
+        odrl:leftOperand :respectOptOutSecondaryUse ;
+        odrl:operator odrl:eq ;
+        odrl:rightOperand "true"^^xsd:boolean
+      ] .
+    } .
+
+  ?risk dpv:isMitigatedByMeasure ?m1 .
+} .
+
+# R3 (H3): Local download permitted (no secure processing environment safeguard)
+{
+  :AgreementEHDS1 :policyGraph ?G .
+  :PatientProfileExample :hasNeed :Need_SecureProcessingEnvironment .
+  :Need_SecureProcessingEnvironment :importance ?w .
+
+  ?G log:includes {
+    :PermDownloadLocalCopy a odrl:Permission ;
+      odrl:action :download ;
+      :clause ?clause .
+  } .
+
+  ?G log:notIncludes {
+    :PermDownloadLocalCopy odrl:duty [
+      odrl:action :processOnlyInSecureEnvironment
+    ] .
+  } .
+
+  ?clause :clauseId ?cid ; :text ?txt .
+
+  (70 ?w) math:sum ?raw .
+  ( :AgreementEHDS1 :PatientProfileExample :InsecureProcessing ?cid ) log:skolem ?risk .
+  ( :AgreementEHDS1 :PatientProfileExample :InsecureProcessingSource ?cid ) log:skolem ?src .
+  ( ?risk :M1 ) log:skolem ?m1 .
+
+  ( "Risk: the agreement permits local downloads rather than processing within a secure processing environment. Clause %s: %s"
+    ?cid ?txt ) string:format ?why .
+}
+=>
+{
+  ?src a risk:RiskSource, risk:PolicyRisk ;
+    dct:source :PermDownloadLocalCopy ;
+    dct:description "Local download permitted; secure processing environment not required." .
+
+  ?risk a dpv:Risk, risk:UnwantedDisclosureData ;
+    dct:source :PermDownloadLocalCopy ;
+    risk:hasRiskSource ?src ;
+    dpv:hasConsequence risk:CustomerConfidenceLoss ;
+    dpv:hasImpact risk:FinancialLoss, risk:NonMaterialDamage ;
+    :aboutClause ?clause ;
+    :scoreRaw ?raw ;
+    :violatesNeed :Need_SecureProcessingEnvironment ;
+    dct:description ?why .
+
+  :ProcessContext1 dpv:hasRisk ?risk .
+
+  ?m1 a dpv:RiskMitigationMeasure ;
+    dct:description "Require processing only within a secure processing environment (e.g., eu-dga:SecureProcessingEnvironment), and prohibit local downloads of raw datasets." ;
+    dpv:mitigatesRisk ?risk ;
+    :suggestAdd {
+      :ProhibitDownloadLocalCopy a odrl:Prohibition ;
+        odrl:assigner :HospitalA ;
+        odrl:assignee :UniLab ;
+        odrl:action :download ;
+        odrl:target :Dataset1 ;
+        :clause :ClauseH3 .
+      :ProcessContext1 dpv:hasTechnicalOrganisationalMeasure eu_dga:SecureProcessingEnvironment .
+    } .
+
+  ?risk dpv:isMitigatedByMeasure ?m1 .
+} .
+
+# R4 (H4): Secondary use provided without requiring statistically anonymised data (EHDS HealthDataRequest)
+{
+  :AgreementEHDS1 :policyGraph ?G .
+  :PatientProfileExample :hasNeed :Need_StatisticallyAnonymisedSecondaryUse .
+  :Need_StatisticallyAnonymisedSecondaryUse :importance ?w .
+
+  ?G log:includes {
+    :PermProvidePseudonymisedData a odrl:Permission ;
+      odrl:action :provideSecondaryUseData ;
+      :clause ?clause .
+  } .
+
+  ?G log:notIncludes {
+    :PermProvidePseudonymisedData odrl:constraint [
+      odrl:leftOperand :statisticallyAnonymised
+    ] .
+  } .
+
+  ?clause :clauseId ?cid ; :text ?txt .
+
+  (65 ?w) math:sum ?raw .
+  ( :AgreementEHDS1 :PatientProfileExample :NotStatisticallyAnonymised ?cid ) log:skolem ?risk .
+  ( :AgreementEHDS1 :PatientProfileExample :NotStatisticallyAnonymisedSource ?cid ) log:skolem ?src .
+  ( ?risk :M1 ) log:skolem ?m1 .
+
+  ( "Risk: secondary-use dataset is only described as pseudonymised, without a safeguard requiring statistically anonymised data for secondary use. Clause %s: %s"
+    ?cid ?txt ) string:format ?why .
+}
+=>
+{
+  ?src a risk:RiskSource, risk:PolicyRisk ;
+    dct:source :PermProvidePseudonymisedData ;
+    dct:description "Statistical anonymisation safeguard missing for secondary use." .
+
+  ?risk a dpv:Risk, risk:UnwantedDisclosureData ;
+    dct:source :PermProvidePseudonymisedData ;
+    risk:hasRiskSource ?src ;
+    dpv:hasConsequence risk:CustomerConfidenceLoss ;
+    dpv:hasImpact risk:NonMaterialDamage ;
+    :aboutClause ?clause ;
+    :scoreRaw ?raw ;
+    :violatesNeed :Need_StatisticallyAnonymisedSecondaryUse ;
+    dct:description ?why .
+
+  :ProcessContext1 dpv:hasRisk ?risk .
+
+  ?m1 a dpv:RiskMitigationMeasure ;
+    dct:description "Require an EHDS Health Data Request for statistically anonymised data (eu-ehds:HealthDataRequest), and add a constraint that secondary-use data must be statistically anonymised." ;
+    dpv:mitigatesRisk ?risk ;
+    :suggestAdd {
+      :PermProvidePseudonymisedData odrl:constraint [
+        a odrl:Constraint ;
+        odrl:leftOperand :statisticallyAnonymised ;
+        odrl:operator odrl:eq ;
+        odrl:rightOperand "true"^^xsd:boolean
+      ] .
+      :ProcessContext1 dpv:hasOrganisationalMeasure eu_ehds:HealthDataRequest .
+    } .
+
+  ?risk dpv:isMitigatedByMeasure ?m1 .
+} .
+
+# ------------------------------------------------
+# 4) Score normalization + DPV-RISK severity/level
+# ------------------------------------------------
+
+{ ?r a dpv:Risk ; :scoreRaw ?raw . ?raw math:greaterThan "100"^^xsd:integer . }
+=> { ?r :score "100"^^xsd:integer . } .
+
+{ ?r a dpv:Risk ; :scoreRaw ?raw . "100"^^xsd:integer math:notLessThan ?raw . }
+=> { ?r :score ?raw . } .
+
+{ ?r a dpv:Risk ; :score ?s . ?s math:greaterThan "79"^^xsd:integer . }
+=> { ?r dpv:hasSeverity risk:HighSeverity ; dpv:hasRiskLevel risk:HighRisk . } .
+
+{ ?r a dpv:Risk ; :score ?s . ?s math:lessThan "80"^^xsd:integer . ?s math:greaterThan "49"^^xsd:integer . }
+=> { ?r dpv:hasSeverity risk:ModerateSeverity ; dpv:hasRiskLevel risk:ModerateRisk . } .
+
+{ ?r a dpv:Risk ; :score ?s . ?s math:lessThan "50"^^xsd:integer . }
+=> { ?r dpv:hasSeverity risk:LowSeverity ; dpv:hasRiskLevel risk:LowRisk . } .
+
+# -------------------------------------------------------------------
+# 5) Ranked explainable output (Eyeling -r prints these in key order)
+# -------------------------------------------------------------------
+
+# Header
+{
+  :AgreementEHDS1 dct:title ?alabel .
+  :PatientProfileExample dct:title ?plabel .
+  ( "\n=== Ranked DPV Risk Report (EHDS-aligned) ===\nAgreement: %s\nProfile: %s\n\n"
+    ?alabel ?plabel ) string:format ?hdr .
+}
+=>
+{
+  ( :AgreementEHDS1 :PatientProfileExample 0 ) log:outputString ?hdr .
+} .
+
+# Risk lines (key includes inverse score = 1000 - score)
+{
+  ?r a dpv:Risk ;
+     :score ?score ;
+     dpv:hasRiskLevel ?lvl ;
+     dpv:hasSeverity ?sev ;
+     :aboutClause ?clause ;
+     dct:description ?why .
+  ?clause :clauseId ?cid .
+
+  ( "1000"^^xsd:integer ?score ) math:difference ?inv .
+
+  ( "score=%s (%s, %s)  clause %s\n  %s\n\n"
+    ?score ?lvl ?sev ?cid ?why ) string:format ?line .
+}
+=>
+{
+  ( :AgreementEHDS1 :PatientProfileExample 1 ?inv 0 ?r ) log:outputString ?line .
+} .
+
+# Mitigation lines (same ordering as their risk)
+{
+  ?r a dpv:Risk ;
+     :score ?score ;
+     dpv:isMitigatedByMeasure ?m ;
+     :aboutClause ?clause .
+  ?clause :clauseId ?cid .
+  ?m dct:description ?md .
+
+  ( "1000"^^xsd:integer ?score ) math:difference ?inv .
+
+  ( "  - mitigation for clause %s: %s\n"
+    ?cid ?md ) string:format ?mline .
+}
+=>
+{
+  ( :AgreementEHDS1 :PatientProfileExample 1 ?inv 1 ?r ?m ) log:outputString ?mline .
+} .

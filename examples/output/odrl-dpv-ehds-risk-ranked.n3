@@ -1,0 +1,145 @@
+@prefix : <https://example.org/odrl-dpv-ehds-risk-ranked#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix dpv: <https://w3id.org/dpv#> .
+@prefix eu_dga: <https://w3id.org/dpv/legal/eu/dga#> .
+@prefix eu_ehds: <https://w3id.org/dpv/legal/eu/ehds#> .
+@prefix genid: <https://eyereasoner.github.io/.well-known/genid/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix odrl: <http://www.w3.org/ns/odrl/2/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix risk: <https://w3id.org/dpv/risk#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+genid:b4170cf8-6d12-05e6-0d62-0f4c42cbb77c a risk:RiskSource .
+genid:b4170cf8-6d12-05e6-0d62-0f4c42cbb77c a risk:LegalComplianceRisk .
+genid:b4170cf8-6d12-05e6-0d62-0f4c42cbb77c dct:source :PermSecondaryUseDUA .
+genid:b4170cf8-6d12-05e6-0d62-0f4c42cbb77c dct:description "Secondary use permitted without EHDS Data Permit." .
+genid:8b6d63fe-3aba-fc8c-d435-107b8d2d437c a dpv:Risk .
+genid:8b6d63fe-3aba-fc8c-d435-107b8d2d437c a risk:PolicyRisk .
+genid:8b6d63fe-3aba-fc8c-d435-107b8d2d437c dct:source :PermSecondaryUseDUA .
+genid:8b6d63fe-3aba-fc8c-d435-107b8d2d437c risk:hasRiskSource genid:b4170cf8-6d12-05e6-0d62-0f4c42cbb77c .
+genid:8b6d63fe-3aba-fc8c-d435-107b8d2d437c dpv:hasConsequence risk:CustomerConfidenceLoss .
+genid:8b6d63fe-3aba-fc8c-d435-107b8d2d437c dpv:hasImpact risk:FinancialLoss .
+genid:8b6d63fe-3aba-fc8c-d435-107b8d2d437c dpv:hasImpact risk:NonMaterialDamage .
+genid:8b6d63fe-3aba-fc8c-d435-107b8d2d437c :aboutClause :ClauseH1 .
+genid:8b6d63fe-3aba-fc8c-d435-107b8d2d437c :scoreRaw 100 .
+genid:8b6d63fe-3aba-fc8c-d435-107b8d2d437c :violatesNeed :Need_RequireDataPermit .
+genid:8b6d63fe-3aba-fc8c-d435-107b8d2d437c dct:description "Risk: secondary use is permitted without an EHDS Data Permit safeguard. Clause H1: Hospital may provide electronic health data for secondary use based on a bilateral data use agreement with the applicant." .
+:ProcessContext1 dpv:hasRisk genid:8b6d63fe-3aba-fc8c-d435-107b8d2d437c .
+genid:89664258-fefa-8d30-6eb9-72e87d93d99c a dpv:RiskMitigationMeasure .
+genid:89664258-fefa-8d30-6eb9-72e87d93d99c dct:description "Require an EHDS Data Permit (eu-ehds:DataPermit) issued by a Health Data Access Body prior to secondary use." .
+genid:89664258-fefa-8d30-6eb9-72e87d93d99c dpv:mitigatesRisk genid:8b6d63fe-3aba-fc8c-d435-107b8d2d437c .
+genid:89664258-fefa-8d30-6eb9-72e87d93d99c :suggestAdd {
+    :PermSecondaryUseDUA odrl:constraint _:sk_0 .
+    _:sk_0 a odrl:Constraint .
+    _:sk_0 odrl:leftOperand :hasDataPermit .
+    _:sk_0 odrl:operator odrl:eq .
+    _:sk_0 odrl:rightOperand true .
+    :PermitExample a eu_ehds:DataPermit .
+    :PermitExample dct:description "Example placeholder for an issued data permit." .
+} .
+genid:8b6d63fe-3aba-fc8c-d435-107b8d2d437c dpv:isMitigatedByMeasure genid:89664258-fefa-8d30-6eb9-72e87d93d99c .
+genid:884e4487-8c4b-8810-90c0-17a495889b30 a risk:RiskSource .
+genid:884e4487-8c4b-8810-90c0-17a495889b30 a risk:LegalComplianceRisk .
+genid:884e4487-8c4b-8810-90c0-17a495889b30 dct:source :PermSecondaryUseAllPatients .
+genid:884e4487-8c4b-8810-90c0-17a495889b30 dct:description "Opt-out from secondary use not explicitly respected." .
+genid:e8c966b0-9c81-ff94-18b1-21d486bac44c a dpv:Risk .
+genid:e8c966b0-9c81-ff94-18b1-21d486bac44c a risk:PolicyRisk .
+genid:e8c966b0-9c81-ff94-18b1-21d486bac44c a risk:UnwantedDisclosureData .
+genid:e8c966b0-9c81-ff94-18b1-21d486bac44c dct:source :PermSecondaryUseAllPatients .
+genid:e8c966b0-9c81-ff94-18b1-21d486bac44c risk:hasRiskSource genid:884e4487-8c4b-8810-90c0-17a495889b30 .
+genid:e8c966b0-9c81-ff94-18b1-21d486bac44c dpv:hasConsequence risk:CustomerConfidenceLoss .
+genid:e8c966b0-9c81-ff94-18b1-21d486bac44c dpv:hasImpact risk:NonMaterialDamage .
+genid:e8c966b0-9c81-ff94-18b1-21d486bac44c :aboutClause :ClauseH2 .
+genid:e8c966b0-9c81-ff94-18b1-21d486bac44c :scoreRaw 100 .
+genid:e8c966b0-9c81-ff94-18b1-21d486bac44c :violatesNeed :Need_RespectOptOutSecondaryUse .
+genid:e8c966b0-9c81-ff94-18b1-21d486bac44c dct:description "Risk: secondary use may include patients who opted out (EHDS A71). Clause H2: Secondary use may include all patient records for training and evaluating health-related algorithms." .
+:ProcessContext1 dpv:hasRisk genid:e8c966b0-9c81-ff94-18b1-21d486bac44c .
+genid:3679a190-523c-9332-6005-4e14ea5e6e88 a dpv:RiskMitigationMeasure .
+genid:3679a190-523c-9332-6005-4e14ea5e6e88 dct:description "Add an explicit safeguard to exclude records of persons who exercised the EHDS opt-out from secondary use (A71)." .
+genid:3679a190-523c-9332-6005-4e14ea5e6e88 dpv:mitigatesRisk genid:e8c966b0-9c81-ff94-18b1-21d486bac44c .
+genid:3679a190-523c-9332-6005-4e14ea5e6e88 :suggestAdd {
+    :PermSecondaryUseAllPatients odrl:constraint _:sk_1 .
+    _:sk_1 a odrl:Constraint .
+    _:sk_1 odrl:leftOperand :respectOptOutSecondaryUse .
+    _:sk_1 odrl:operator odrl:eq .
+    _:sk_1 odrl:rightOperand true .
+} .
+genid:e8c966b0-9c81-ff94-18b1-21d486bac44c dpv:isMitigatedByMeasure genid:3679a190-523c-9332-6005-4e14ea5e6e88 .
+genid:72ae1018-4dcd-392a-9bbf-c080b5d038b0 a risk:RiskSource .
+genid:72ae1018-4dcd-392a-9bbf-c080b5d038b0 a risk:PolicyRisk .
+genid:72ae1018-4dcd-392a-9bbf-c080b5d038b0 dct:source :PermDownloadLocalCopy .
+genid:72ae1018-4dcd-392a-9bbf-c080b5d038b0 dct:description "Local download permitted; secure processing environment not required." .
+genid:8d3275f0-67e6-28c8-79c4-9e8012d185f4 a dpv:Risk .
+genid:8d3275f0-67e6-28c8-79c4-9e8012d185f4 a risk:UnwantedDisclosureData .
+genid:8d3275f0-67e6-28c8-79c4-9e8012d185f4 dct:source :PermDownloadLocalCopy .
+genid:8d3275f0-67e6-28c8-79c4-9e8012d185f4 risk:hasRiskSource genid:72ae1018-4dcd-392a-9bbf-c080b5d038b0 .
+genid:8d3275f0-67e6-28c8-79c4-9e8012d185f4 dpv:hasConsequence risk:CustomerConfidenceLoss .
+genid:8d3275f0-67e6-28c8-79c4-9e8012d185f4 dpv:hasImpact risk:FinancialLoss .
+genid:8d3275f0-67e6-28c8-79c4-9e8012d185f4 dpv:hasImpact risk:NonMaterialDamage .
+genid:8d3275f0-67e6-28c8-79c4-9e8012d185f4 :aboutClause :ClauseH3 .
+genid:8d3275f0-67e6-28c8-79c4-9e8012d185f4 :scoreRaw 88 .
+genid:8d3275f0-67e6-28c8-79c4-9e8012d185f4 :violatesNeed :Need_SecureProcessingEnvironment .
+genid:8d3275f0-67e6-28c8-79c4-9e8012d185f4 dct:description "Risk: the agreement permits local downloads rather than processing within a secure processing environment. Clause H3: The applicant may download a complete local copy of the dataset to its own infrastructure for analysis." .
+:ProcessContext1 dpv:hasRisk genid:8d3275f0-67e6-28c8-79c4-9e8012d185f4 .
+genid:c516de60-83e5-b4b8-2de8-c5b4edf763b0 a dpv:RiskMitigationMeasure .
+genid:c516de60-83e5-b4b8-2de8-c5b4edf763b0 dct:description "Require processing only within a secure processing environment (e.g., eu-dga:SecureProcessingEnvironment), and prohibit local downloads of raw datasets." .
+genid:c516de60-83e5-b4b8-2de8-c5b4edf763b0 dpv:mitigatesRisk genid:8d3275f0-67e6-28c8-79c4-9e8012d185f4 .
+genid:c516de60-83e5-b4b8-2de8-c5b4edf763b0 :suggestAdd {
+    :ProhibitDownloadLocalCopy a odrl:Prohibition .
+    :ProhibitDownloadLocalCopy odrl:assigner :HospitalA .
+    :ProhibitDownloadLocalCopy odrl:assignee :UniLab .
+    :ProhibitDownloadLocalCopy odrl:action :download .
+    :ProhibitDownloadLocalCopy odrl:target :Dataset1 .
+    :ProhibitDownloadLocalCopy :clause :ClauseH3 .
+    :ProcessContext1 dpv:hasTechnicalOrganisationalMeasure eu_dga:SecureProcessingEnvironment .
+} .
+genid:8d3275f0-67e6-28c8-79c4-9e8012d185f4 dpv:isMitigatedByMeasure genid:c516de60-83e5-b4b8-2de8-c5b4edf763b0 .
+genid:d31b6ae0-cb02-39e0-1fa0-86946b7e44c0 a risk:RiskSource .
+genid:d31b6ae0-cb02-39e0-1fa0-86946b7e44c0 a risk:PolicyRisk .
+genid:d31b6ae0-cb02-39e0-1fa0-86946b7e44c0 dct:source :PermProvidePseudonymisedData .
+genid:d31b6ae0-cb02-39e0-1fa0-86946b7e44c0 dct:description "Statistical anonymisation safeguard missing for secondary use." .
+genid:315f48bc-4e89-b706-ef07-dc88e29c5050 a dpv:Risk .
+genid:315f48bc-4e89-b706-ef07-dc88e29c5050 a risk:UnwantedDisclosureData .
+genid:315f48bc-4e89-b706-ef07-dc88e29c5050 dct:source :PermProvidePseudonymisedData .
+genid:315f48bc-4e89-b706-ef07-dc88e29c5050 risk:hasRiskSource genid:d31b6ae0-cb02-39e0-1fa0-86946b7e44c0 .
+genid:315f48bc-4e89-b706-ef07-dc88e29c5050 dpv:hasConsequence risk:CustomerConfidenceLoss .
+genid:315f48bc-4e89-b706-ef07-dc88e29c5050 dpv:hasImpact risk:NonMaterialDamage .
+genid:315f48bc-4e89-b706-ef07-dc88e29c5050 :aboutClause :ClauseH4 .
+genid:315f48bc-4e89-b706-ef07-dc88e29c5050 :scoreRaw 80 .
+genid:315f48bc-4e89-b706-ef07-dc88e29c5050 :violatesNeed :Need_StatisticallyAnonymisedSecondaryUse .
+genid:315f48bc-4e89-b706-ef07-dc88e29c5050 dct:description "Risk: secondary-use dataset is only described as pseudonymised, without a safeguard requiring statistically anonymised data for secondary use. Clause H4: The dataset will be provided in pseudonymised form by removing direct identifiers." .
+:ProcessContext1 dpv:hasRisk genid:315f48bc-4e89-b706-ef07-dc88e29c5050 .
+genid:09f44e28-35fe-53c0-2b73-d8f51a1d4f24 a dpv:RiskMitigationMeasure .
+genid:09f44e28-35fe-53c0-2b73-d8f51a1d4f24 dct:description "Require an EHDS Health Data Request for statistically anonymised data (eu-ehds:HealthDataRequest), and add a constraint that secondary-use data must be statistically anonymised." .
+genid:09f44e28-35fe-53c0-2b73-d8f51a1d4f24 dpv:mitigatesRisk genid:315f48bc-4e89-b706-ef07-dc88e29c5050 .
+genid:09f44e28-35fe-53c0-2b73-d8f51a1d4f24 :suggestAdd {
+    :PermProvidePseudonymisedData odrl:constraint _:sk_2 .
+    _:sk_2 a odrl:Constraint .
+    _:sk_2 odrl:leftOperand :statisticallyAnonymised .
+    _:sk_2 odrl:operator odrl:eq .
+    _:sk_2 odrl:rightOperand true .
+    :ProcessContext1 dpv:hasOrganisationalMeasure eu_ehds:HealthDataRequest .
+} .
+genid:315f48bc-4e89-b706-ef07-dc88e29c5050 dpv:isMitigatedByMeasure genid:09f44e28-35fe-53c0-2b73-d8f51a1d4f24 .
+genid:8b6d63fe-3aba-fc8c-d435-107b8d2d437c :score 100 .
+genid:e8c966b0-9c81-ff94-18b1-21d486bac44c :score 100 .
+genid:8d3275f0-67e6-28c8-79c4-9e8012d185f4 :score 88 .
+genid:315f48bc-4e89-b706-ef07-dc88e29c5050 :score 80 .
+genid:8b6d63fe-3aba-fc8c-d435-107b8d2d437c dpv:hasSeverity risk:HighSeverity .
+genid:8b6d63fe-3aba-fc8c-d435-107b8d2d437c dpv:hasRiskLevel risk:HighRisk .
+genid:e8c966b0-9c81-ff94-18b1-21d486bac44c dpv:hasSeverity risk:HighSeverity .
+genid:e8c966b0-9c81-ff94-18b1-21d486bac44c dpv:hasRiskLevel risk:HighRisk .
+genid:8d3275f0-67e6-28c8-79c4-9e8012d185f4 dpv:hasSeverity risk:HighSeverity .
+genid:8d3275f0-67e6-28c8-79c4-9e8012d185f4 dpv:hasRiskLevel risk:HighRisk .
+genid:315f48bc-4e89-b706-ef07-dc88e29c5050 dpv:hasSeverity risk:HighSeverity .
+genid:315f48bc-4e89-b706-ef07-dc88e29c5050 dpv:hasRiskLevel risk:HighRisk .
+(:AgreementEHDS1 :PatientProfileExample 0) log:outputString "\n=== Ranked DPV Risk Report (EHDS-aligned) ===\nAgreement: EHDS Secondary Use Agreement (example)\nProfile: Example patient profile (EHDS rights expectations)\n\n" .
+(:AgreementEHDS1 :PatientProfileExample 1 900 0 genid:8b6d63fe-3aba-fc8c-d435-107b8d2d437c) log:outputString "score=100 (https://w3id.org/dpv/risk#HighRisk, https://w3id.org/dpv/risk#HighSeverity)  clause H1\n  Risk: secondary use is permitted without an EHDS Data Permit safeguard. Clause H1: Hospital may provide electronic health data for secondary use based on a bilateral data use agreement with the applicant.\n\n" .
+(:AgreementEHDS1 :PatientProfileExample 1 900 0 genid:e8c966b0-9c81-ff94-18b1-21d486bac44c) log:outputString "score=100 (https://w3id.org/dpv/risk#HighRisk, https://w3id.org/dpv/risk#HighSeverity)  clause H2\n  Risk: secondary use may include patients who opted out (EHDS A71). Clause H2: Secondary use may include all patient records for training and evaluating health-related algorithms.\n\n" .
+(:AgreementEHDS1 :PatientProfileExample 1 912 0 genid:8d3275f0-67e6-28c8-79c4-9e8012d185f4) log:outputString "score=88 (https://w3id.org/dpv/risk#HighRisk, https://w3id.org/dpv/risk#HighSeverity)  clause H3\n  Risk: the agreement permits local downloads rather than processing within a secure processing environment. Clause H3: The applicant may download a complete local copy of the dataset to its own infrastructure for analysis.\n\n" .
+(:AgreementEHDS1 :PatientProfileExample 1 920 0 genid:315f48bc-4e89-b706-ef07-dc88e29c5050) log:outputString "score=80 (https://w3id.org/dpv/risk#HighRisk, https://w3id.org/dpv/risk#HighSeverity)  clause H4\n  Risk: secondary-use dataset is only described as pseudonymised, without a safeguard requiring statistically anonymised data for secondary use. Clause H4: The dataset will be provided in pseudonymised form by removing direct identifiers.\n\n" .
+(:AgreementEHDS1 :PatientProfileExample 1 900 1 genid:8b6d63fe-3aba-fc8c-d435-107b8d2d437c genid:89664258-fefa-8d30-6eb9-72e87d93d99c) log:outputString "  - mitigation for clause H1: Require an EHDS Data Permit (eu-ehds:DataPermit) issued by a Health Data Access Body prior to secondary use.\n" .
+(:AgreementEHDS1 :PatientProfileExample 1 900 1 genid:e8c966b0-9c81-ff94-18b1-21d486bac44c genid:3679a190-523c-9332-6005-4e14ea5e6e88) log:outputString "  - mitigation for clause H2: Add an explicit safeguard to exclude records of persons who exercised the EHDS opt-out from secondary use (A71).\n" .
+(:AgreementEHDS1 :PatientProfileExample 1 912 1 genid:8d3275f0-67e6-28c8-79c4-9e8012d185f4 genid:c516de60-83e5-b4b8-2de8-c5b4edf763b0) log:outputString "  - mitigation for clause H3: Require processing only within a secure processing environment (e.g., eu-dga:SecureProcessingEnvironment), and prohibit local downloads of raw datasets.\n" .
+(:AgreementEHDS1 :PatientProfileExample 1 920 1 genid:315f48bc-4e89-b706-ef07-dc88e29c5050 genid:09f44e28-35fe-53c0-2b73-d8f51a1d4f24) log:outputString "  - mitigation for clause H4: Require an EHDS Health Data Request for statistically anonymised data (eu-ehds:HealthDataRequest), and add a constraint that secondary-use data must be statistically anonymised.\n" .
