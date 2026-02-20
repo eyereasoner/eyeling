@@ -8,11 +8,11 @@
 #   scored, ranked, and explained.
 #
 # Notes on vocabularies used
-# - ODRL terms use:   http://www.w3.org/ns/odrl/2/
-# - DPV core uses:   https://w3id.org/dpv#
-# - DPV-RISK uses:   https://w3id.org/dpv/risk#
-# - EU-EHDS draft uses (suggested prefix “eu-ehds”): https://w3id.org/dpv/legal/eu/ehds#
-# - EU-DGA uses (suggested prefix “eu-dga”):         https://w3id.org/dpv/legal/eu/dga#
+# - ODRL terms use:     http://www.w3.org/ns/odrl/2/
+# - DPV core uses:      https://w3id.org/dpv#
+# - DPV-RISK uses:      https://w3id.org/dpv/risk#
+# - EU-EHDS draft uses: https://w3id.org/dpv/legal/eu/ehds#
+# - EU-DGA uses:        https://w3id.org/dpv/legal/eu/dga#
 # ============================================================================================
 
 @prefix :        <https://example.org/odrl-dpv-ehds-risk-ranked#> .
@@ -20,7 +20,7 @@
 @prefix dpv:     <https://w3id.org/dpv#> .
 @prefix risk:    <https://w3id.org/dpv/risk#> .
 @prefix eu-ehds: <https://w3id.org/dpv/legal/eu/ehds#> .
-@prefix eu-dga: <https://w3id.org/dpv/legal/eu/dga#> .
+@prefix eu-dga:  <https://w3id.org/dpv/legal/eu/dga#> .
 @prefix dct:     <http://purl.org/dc/terms/> .
 @prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix log:     <http://www.w3.org/2000/10/swap/log#> .
