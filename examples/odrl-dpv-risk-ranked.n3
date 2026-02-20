@@ -454,7 +454,7 @@
 }
 =>
 {
-  ( :Agreement1 :ConsumerExample 1 ?inv 0 ?r ) log:outputString ?line .
+  ( :Agreement1 :ConsumerExample 1 ?inv ?cid 0 ?r ) log:outputString ?line .
 } .
 
 # Mitigation lines (same ordering as their risk)
@@ -473,6 +473,6 @@
 }
 =>
 {
-  ( :Agreement1 :ConsumerExample 1 ?inv 1 ?r ?m ) log:outputString ?mline .
+  ( :Agreement1 :ConsumerExample 1 ?inv ?cid 1 ?r ?m ) log:outputString ?mline .
 } .
 

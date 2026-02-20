@@ -450,7 +450,7 @@
 }
 =>
 {
-  ( :AgreementEHDS1 :PatientProfileExample 1 ?inv 0 ?r ) log:outputString ?line .
+  ( :AgreementEHDS1 :PatientProfileExample 1 ?inv ?cid 0 ?r ) log:outputString ?line .
 } .
 
 # Mitigation lines (same ordering as their risk)
@@ -469,5 +469,5 @@
 }
 =>
 {
-  ( :AgreementEHDS1 :PatientProfileExample 1 ?inv 1 ?r ?m ) log:outputString ?mline .
+  ( :AgreementEHDS1 :PatientProfileExample 1 ?inv ?cid 1 ?r ?m ) log:outputString ?mline .
 } .

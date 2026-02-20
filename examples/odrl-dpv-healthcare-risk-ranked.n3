@@ -552,7 +552,7 @@
 }
 =>
 {
-  ( :AgreementHC1 :PatientExample 1 ?inv 0 ?r ) log:outputString ?line .
+  ( :AgreementHC1 :PatientExample 1 ?inv ?cid 0 ?r ) log:outputString ?line .
 } .
 
 # Mitigation lines (same ordering as their risk)
@@ -571,5 +571,5 @@
 }
 =>
 {
-  ( :AgreementHC1 :PatientExample 1 ?inv 1 ?r ?m ) log:outputString ?mline .
+  ( :AgreementHC1 :PatientExample 1 ?inv ?cid 1 ?r ?m ) log:outputString ?mline .
 } .
