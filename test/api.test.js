@@ -1012,6 +1012,17 @@ ex:w a ex:Woman .
       /(?:ex:w|<http:\/\/example\.org\/ns#w>)\s+(?:rdfs:label|<http:\/\/www\.w3\.org\/2000\/01\/rdf-schema#label>)\s+"human being"\s*\./,
     ],
   },
+  {
+    name: '58 regression: top-level variable fact can satisfy a ground forward-rule premise',
+    opt: { proofComments: false },
+    input: `@prefix : <http://example.org/#>.
+
+?X :p :o.
+
+{ :s :p :o } => { :test :is true }.
+`,
+    expect: [/:(?:test)\s+:(?:is)\s+true\s*\./],
+  },
 ];
 
 let passed = 0;

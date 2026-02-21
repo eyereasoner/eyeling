@@ -3834,7 +3834,10 @@ function main() {
   // Named list nodes keep identity; list:* builtins can traverse them.
   engine.materializeRdfLists(triples, frules.concat(qrules || []), brules);
 
-  const facts = triples.filter((tr) => engine.isGroundTriple(tr));
+  // Keep non-ground top-level facts too (e.g., universally quantified N3 vars)
+  // so they can participate in rule matching. Derived/output facts remain
+  // ground-gated in the engine.
+  const facts = triples.slice();
 
   // If requested, print log:outputString values (ordered by subject key) and exit.
   // Note: log:outputString values may depend on derived facts, so we must saturate first.
@@ -7103,7 +7106,9 @@ function reasonStream(n3Text, opts = {}) {
   materializeRdfLists(triples, frules.concat(logQueryRules || []), brules);
 
   // facts becomes the saturated closure because pushFactIndexed(...) appends into it
-  const facts = triples.filter((tr) => isGroundTriple(tr));
+  // Keep non-ground top-level facts (e.g., universally-quantified N3 variables)
+  // so they can participate in rule matching. Derived/output facts remain ground-gated elsewhere.
+  const facts = triples.slice();
 
   let derived = [];
   let queryTriples = [];

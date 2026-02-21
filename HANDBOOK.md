@@ -614,6 +614,8 @@ repeat
 until not changed
 ```
 
+Top-level input triples are kept as parsed (including non-ground triples such as ?X :p :o.). Groundness is enforced when adding derived facts during forward chaining, and when selecting printed/query output triples.
+
 ### 9.2 Strict-ground head optimization
 
 There is a nice micro-compiler optimization in `runFixpoint()`:
