@@ -2,9 +2,9 @@
 
 A compact [Notation3 (N3)](https://notation3.org/) reasoner in **JavaScript**.
 
-- Single self-contained bundle (`eyeling.js`), no external runtime deps
-- Forward (`=>`) + backward (`<=`) chaining over Horn-style rules
-- **CLI / npm `reason()` output is mode-dependent by default**: **newly derived forward facts** in normal mode, or — when top-level `{ ... } log:query { ... }.` directives are present — the **unique instantiated conclusion triples** of those queries (a forward-rule-like projection), optionally with compact proof comments
+- Single self-contained bundle (`eyeling.js`), no external runtime dependencies
+- Forward (`=>`) and backward (`<=`) chaining over Horn-style rules
+- **CLI / npm `reason()` output is mode-dependent by default**: it prints **newly derived forward facts** in normal mode, or (when top-level `{ ... } log:query { ... }.` directives are present) the **unique instantiated conclusion triples** of those queries, optionally with compact proof comments
 - Works in Node.js and fully client-side (browser/worker)
 
 ## Links
@@ -15,9 +15,7 @@ A compact [Notation3 (N3)](https://notation3.org/) reasoner in **JavaScript**.
 - **Notation3 test suite:** [https://codeberg.org/phochste/notation3tests](https://codeberg.org/phochste/notation3tests)
 - **Eyeling conformance report:** [https://codeberg.org/phochste/notation3tests/src/branch/main/reports/report.md](https://codeberg.org/phochste/notation3tests/src/branch/main/reports/report.md)
 
-Eyeling is regularly checked against the community Notation3 test suite; the report above tracks current pass/fail results.
-
-If you want to understand how the parser, unifier, proof search, skolemization, scoped closure, and builtins are implemented, start with the handbook.
+Eyeling is regularly checked against the community Notation3 test suite. If you want implementation details (parser, unifier, proof search, skolemization, scoped closure, builtins), start with the handbook.
 
 ## Quick start
 
@@ -31,7 +29,7 @@ If you want to understand how the parser, unifier, proof search, skolemization, 
 npm i eyeling
 ```
 
-### CLI
+## CLI usage
 
 Run on a file:
 
@@ -39,23 +37,33 @@ Run on a file:
 npx eyeling examples/socrates.n3
 ```
 
-See all options:
+Show all options:
 
 ```bash
 npx eyeling --help
 ```
 
-### log:query output selection
+Useful flags include `--proof-comments`, `--stream`, `--strings`, and `--enforce-https`.
 
-If your input contains one or more **top-level** directives of the form:
+## What gets printed?
+
+### Normal mode (default)
+
+Without top-level `log:query` directives, Eyeling prints **newly derived forward facts** by default.
+
+### `log:query` mode (output selection)
+
+If the input contains one or more **top-level** directives of the form:
 
 ```n3
 { ?x a :Human. } log:query { ?x a :Mortal. }.
 ```
 
-Eyeling will still compute the saturated forward closure, but it will **print only** the **unique instantiated conclusion triples** of those `log:query` directives (instead of printing all newly derived forward facts).
+Eyeling still computes the saturated forward closure, but it **prints only** the **unique instantiated conclusion triples** of those `log:query` directives (instead of all newly derived forward facts).
 
-### JavaScript API
+## JavaScript API
+
+### npm helper: `reason()`
 
 CommonJS:
 
@@ -69,7 +77,7 @@ const input = `
 :Socrates a :Human.
 :Human rdfs:subClassOf :Mortal.
 
-{ ?S a ?A. ?A rdfs:subClassOf ?B } => { ?S a ?B }.
+{ ?s a ?A. ?A rdfs:subClassOf ?B. } => { ?s a ?B. }.
 `;
 
 console.log(reason({ proofComments: false }, input));
@@ -79,37 +87,57 @@ ESM:
 
 ```js
 import eyeling from 'eyeling';
+
 console.log(eyeling.reason({ proofComments: false }, input));
 ```
 
-Streaming / in-process reasoning (browser/worker, direct `eyeling.js`):
+Notes:
+
+- `reason()` returns the same textual output you would get from the CLI for the same input/options.
+- By default, the npm helper keeps output machine-friendly (`proofComments: false`).
+- The npm helper shells out to the bundled `eyeling.js` CLI for simplicity and robustness.
+
+### Direct bundle / browser-worker API: `reasonStream()`
+
+For in-process reasoning (browser, worker, or direct use of `eyeling.js`):
 
 ```js
-const { closureN3 } = eyeling.reasonStream(input, {
+const result = eyeling.reasonStream(input, {
   proof: false,
   onDerived: ({ triple }) => console.log(triple),
+  // includeInputFactsInClosure: false,
 });
 
-// `closureN3` is also mode-dependent:
-// - normal forward mode: closure (input facts + derived facts) by default
-// - `log:query` mode: the query-selected triples
-// To exclude input facts from the normal-mode closure, pass:
-//   includeInputFactsInClosure: false
-// The return value also includes `queryMode`, `queryTriples`, and `queryDerived`.
+console.log(result.closureN3);
 ```
 
-> Note: the npm `reason()` helper shells out to the bundled `eyeling.js` CLI for simplicity and robustness.
+#### `reasonStream()` output behavior
+
+`closureN3` is also mode-dependent:
+
+- **Normal mode:** by default, `closureN3` is the closure (**input facts + derived facts**)
+- **`log:query` mode:** `closureN3` is the **query-selected triples**
+
+To exclude input facts from the normal-mode closure, pass:
+
+```js
+includeInputFactsInClosure: false;
+```
+
+The returned object also includes `queryMode`, `queryTriples`, and `queryDerived` (and in normal mode, `onDerived` fires for newly derived facts; in `log:query` mode it fires for the query-selected derived triples).
 
 ## Builtins
 
-Builtins are defined in [eyeling-builtins.ttl](https://github.com/eyereasoner/eyeling/blob/main/eyeling-builtins.ttl) and described in the [HANDBOOK](https://eyereasoner.github.io/eyeling/HANDBOOK#ch11).
+Builtins are defined in [eyeling-builtins.ttl](https://github.com/eyereasoner/eyeling/blob/main/eyeling-builtins.ttl) and described in the [Handbook (Chapter 11)](https://eyereasoner.github.io/eyeling/HANDBOOK#ch11).
 
-## Testing (repo checkout)
+## Development and testing (repo checkout)
 
 ```bash
 npm test
 ```
 
+You can also inspect the `examples/` directory for many small and large N3 programs.
+
 ## License
 
-MIT (see [LICENSE](https://github.com/eyereasoner/eyeling/blob/main/LICENSE.md)).
+MIT — see [LICENSE.md](https://github.com/eyereasoner/eyeling/blob/main/LICENSE.md).
