@@ -1,0 +1,83 @@
+# =========================================================================================
+# Self-contained N3 meta-wrapper (Eyeling-like demo):
+# - computes closure of a quoted source program
+# - emits closure triples (excluding :answer triples) as :derived
+# - keeps eyeling-style {..} log:query {..}. directives as annotations
+# - emits query answers via a compiled query rule (without :answerMarker)
+#
+# Run contract:
+#   ?Run :source { ...facts + rules + optional log:query directives... } .
+#
+# Outputs:
+#   ?Run :closure ?ClosureFormula
+#   ?Run :derived { s p o. }      # closure triples except :answer triples
+#   ?Run :answer  ?AnswerFormula
+#
+# Notes:
+# - Pure N3 cannot directly project bindings from log:query; the demo uses a compiled query
+#   rule in :source that writes answers into the closure as ex:run :answer {...}.
+# - The compiled query rule below is demo-specific because it targets ex:run explicitly.
+# =========================================================================================
+
+@prefix :     <urn:eyeling-meta#>.
+@prefix ex:   <urn:demo#>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix log:  <http://www.w3.org/2000/10/swap/log#>.
+
+# ------------
+# META WRAPPER
+# ------------
+
+# 1) Compute closure of quoted source.
+{
+  ?Run :source ?Source.
+  ?Source log:conclusion ?Closure.
+}
+=>
+{
+  ?Run :closure ?Closure.
+}.
+
+# 2) Emit newly derived triples only (closure minus source).
+{
+  ?Run :source ?Source;
+       :closure ?Closure.
+  ?Closure log:includes    { ?S ?P ?O. }.
+  ?Source  log:notIncludes { ?S ?P ?O. }.
+  ?P log:notEqualTo :answer.
+}
+=>
+{
+  ?Run :derived { ?S ?P ?O. }.
+}.
+
+# 3) Harvest query answers written into the closure as ?Run :answer ?Ans.
+{
+  ?Run :closure ?Closure.
+  ?Closure log:includes { ?Run :answer ?Ans. }.
+}
+=>
+{
+  ?Run :answer ?Ans.
+}.
+
+# ------------------------
+# EXAMPLE INPUT (Socrates)
+# ------------------------
+
+ex:run
+  :source {
+    # Facts
+    ex:Socrates a ex:Human.
+    ex:Human rdfs:subClassOf ex:Mortal.
+
+    # Inference rule
+    { ?S a ?A. ?A rdfs:subClassOf ?B. } => { ?S a ?B. }.
+
+    # Eyeling-style query directive (annotation only in this wrapper)
+    { ?x a ex:Human. } log:query { ?x a ex:Mortal. }.
+
+    # Compiled query rule (demo-specific: writes answers for ex:run directly)
+    { ?x a ex:Human. } => { ex:run :answer { ?x a ex:Mortal. }. }.
+  }.
+
