@@ -4,7 +4,7 @@ A compact [Notation3 (N3)](https://notation3.org/) reasoner in **JavaScript**.
 
 - Single self-contained bundle (`eyeling.js`), no external runtime deps
 - Forward (`=>`) + backward (`<=`) chaining over Horn-style rules
-- Outputs only **newly derived** forward facts by default (optionally with compact proof comments)
+- CLI / npm `reason()` output is mode-dependent by default: **newly derived** forward facts in normal forward mode, or (when top-level `log:query` directives are present) the **unique instantiated conclusion triples** of those queries (optionally with compact proof comments)
 - If the input contains one or more top-level `{ ... } log:query { ... }.` directives, the output becomes the **unique instantiated conclusion triples** of those queries (a forward-rule-like projection)
 - Works in Node.js and fully client-side (browser/worker)
 
@@ -91,6 +91,9 @@ const { closureN3 } = eyeling.reasonStream(input, {
   onDerived: ({ triple }) => console.log(triple),
 });
 
+// By default, closureN3 includes input facts + derived facts.
+// To get only newly derived facts in closureN3, pass:
+//   includeInputFactsInClosure: false
 // With log:query directives present, closureN3 contains the query-selected triples.
 // The return value also includes `queryMode`, `queryTriples`, and `queryDerived`.
 ```
