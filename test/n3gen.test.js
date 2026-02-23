@@ -134,9 +134,8 @@ function main() {
     }
 
     // Compare output (always compare expected vs generated temp file)
-    let diffOk;
     const d = run('diff', ['-u', expectedPath, generatedPath], { cwd: examplesDir });
-    diffOk = d.status === 0;
+    const diffOk = d.status === 0;
 
     if (diffOk) {
       ok(`${idx} ${inFile} -> ${outFile} (${ms} ms)`);

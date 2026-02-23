@@ -110,7 +110,6 @@ function main() {
     process.exit(0);
   }
 
-
   let passed = 0;
   let failed = 0;
 
@@ -150,8 +149,8 @@ function main() {
       continue;
     }
 
-    let tmpDir = mkTmpDir();
-    let generatedPath = path.join(tmpDir, 'generated.n3');
+    const tmpDir = mkTmpDir();
+    const generatedPath = path.join(tmpDir, 'generated.n3');
 
     // Run eyeling on this file (cwd examplesDir so relative behavior matches old script)
     const outFd = fs.openSync(generatedPath, 'w');
