@@ -1,0 +1,147 @@
+# ==========================================================================================
+# odrl-policy-audit.n3
+#
+# A "reasoning about reasoning" example using ODRL policies.
+#
+# What this demonstrates
+# ----------------------
+# 1) Object-level reasoning (inside a quoted ODRL policy theory):
+#    - ODRL permissions (assignee/target/action) are translated into effective access facts
+#
+# 2) Meta-level reasoning (outside that quoted theory):
+#    - compute the closure of the quoted policy theory
+#    - inspect what the policy theory entails
+#    - derive an audit decision based on entailed consequences
+#
+# Why this is "reasoning about reasoning"
+# ---------------------------------------
+# The audit decision is not derived directly from the asserted ODRL policy statements.
+# It is derived from statements ABOUT what the quoted ODRL policy theory entails
+# (i.e., from the closure of that quoted theory).
+# ==========================================================================================
+
+@prefix :     <http://example.org/#>.
+@prefix ey:   <https://eyereasoner.github.io/ns#>.
+@prefix odrl: <http://www.w3.org/ns/odrl/2/>.
+@prefix log:  <http://www.w3.org/2000/10/swap/log#>.
+
+# ----------------------------------
+# OBJECT THEORY (QUOTED ODRL POLICY)
+# ----------------------------------
+
+# The ODRL policy and object-level translation rules live inside a quoted formula so that
+# the surrounding (meta-level) rules can reason about its semantics (its closure) as data.
+:case :policyTheory {
+  # ---- Context / request (asserted input within the quoted theory)
+  :ticket-42 :request :PublishPolicySnapshot.
+
+  # ---- ODRL policy statements
+  #
+  # This policy grants Alice permission to read two assets:
+  # - a general handbook (benign)
+  # - the payroll ledger (sensitive for publication audits)
+  :policy-1 a odrl:Set;
+    odrl:permission [
+      odrl:assignee :alice;
+      odrl:target :EmployeeHandbook;
+      odrl:action odrl:read
+    ];
+    odrl:permission [
+      odrl:assignee :alice;
+      odrl:target :PayrollLedger;
+      odrl:action odrl:read
+    ].
+
+  # ---- Domain classification
+  :PayrollLedger a :SensitiveAsset.
+  :PayrollLedger a :PayrollAsset.
+  :EmployeeHandbook a :PublicAsset.
+
+  # ---- Object-level reasoning rules over ODRL permissions
+  #
+  # Translate a simple ODRL permission statement into an effective access fact.
+  # (This is a minimal pedagogical mapping, not a complete ODRL evaluator.)
+  {
+    ?Policy odrl:permission [
+      odrl:assignee ?User;
+      odrl:target ?Asset;
+      odrl:action odrl:read
+    ].
+  }
+  =>
+  {
+    ?User :canRead ?Asset.
+  }.
+
+  # Normalize "canRead" into a generic access predicate used by the audit layer.
+  {
+    ?User :canRead ?Asset.
+  }
+  =>
+  {
+    ?User :canAccess ?Asset.
+  }.
+}.
+
+# --------------------------
+# META-LEVEL POLICY ANALYSIS
+# --------------------------
+
+# 1) Compute the closure of the quoted ODRL policy theory.
+{
+  :case :policyTheory ?PolicyTheory.
+  ?PolicyTheory log:conclusion ?PolicyClosure.
+}
+=>
+{
+  :case :policyClosure ?PolicyClosure.
+}.
+
+# 2) Record a witness if the quoted policy theory entails access to the payroll ledger.
+#    This is a statement ABOUT what the policy theory entails.
+{
+  :case :policyClosure ?C.
+  ?C log:includes { ?User :canAccess :PayrollLedger. }.
+}
+=>
+{
+  :case :entails { ?User :canAccess :PayrollLedger. }.
+  :case :risk :SensitiveAccessEntailed.
+}.
+
+# 3) If a publication request is present in the quoted theory AND sensitive access is
+#    entailed by the quoted theory, require manual review.
+{
+  :case :policyTheory ?PolicyTheory.
+  ?PolicyTheory log:includes { :ticket-42 :request :PublishPolicySnapshot. }.
+  :case :risk :SensitiveAccessEntailed.
+}
+=>
+{
+  :case :decision :ManualReviewRequired.
+}.
+
+# 4) Otherwise, if the publication request is present but NO payroll-ledger access is
+#    entailed by the policy closure, the case can be auto-approved.
+#
+#    Important: log:notIncludes applies to FORMULAS, so we test absence on ?C (the closure),
+#    not on a regular resource like :case.
+{
+  :case :policyTheory ?PolicyTheory.
+  ?PolicyTheory log:includes { :ticket-42 :request :PublishPolicySnapshot. }.
+  :case :policyClosure ?C.
+  ?C log:notIncludes { _:user :canAccess :PayrollLedger. }.
+}
+=>
+{
+  :case :decision :AutoApprove.
+}.
+
+# ------------
+# QUERY INTENT
+# ------------
+
+# These top-level log:query statements describe the intended outputs.
+{ :case :decision ?Decision. } log:query { :case :decision ?Decision. }.
+{ :case :entails ?Witness. }  log:query { :case :entails ?Witness. }.
+

@@ -1,0 +1,6 @@
+@prefix : <http://example.org/#> .
+
+:case :decision :ManualReviewRequired .
+:case :entails {
+    :alice :canAccess :PayrollLedger .
+} .
