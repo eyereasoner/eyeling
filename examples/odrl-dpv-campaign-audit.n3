@@ -1,0 +1,195 @@
+# ===================================================================================
+# odrl-dpv-campaign-audit.n3
+#
+# A "reasoning about reasoning" example using both ODRL and DPV.
+#
+# What this demonstrates
+# ----------------------
+# 1) Object-level reasoning inside a quoted policy theory:
+#    - ODRL permissions specify who may read which dataset
+#    - DPV annotations specify policy purpose and data category
+#    - local rules translate ODRL + DPV metadata into effective access summaries
+#
+# 2) Meta-level reasoning outside that quoted theory:
+#    - compute the closure of the quoted policy theory
+#    - inspect what the policy theory entails
+#    - derive an audit decision based on those entailed consequences
+#
+# Why this is "reasoning about reasoning"
+# ---------------------------------------
+# The final audit decision is derived from statements ABOUT the closure of the quoted
+# policy theory (what the policy entails), not directly from the raw asserted policy.
+#
+# Modeling note
+# -------------
+# This is a pedagogical example:
+# - ODRL is used for policy structure (permission/assignee/target/action)
+# - DPV is used for privacy semantics (purpose, personal data categories)
+# - local rules map the combination into audit-friendly facts
+# ===================================================================================
+
+@prefix :     <http://example.org/#>.
+@prefix ey:   <https://eyereasoner.github.io/ns#>.
+@prefix odrl: <http://www.w3.org/ns/odrl/2/>.
+@prefix dpv:  <http://www.w3.org/ns/dpv#>.
+@prefix log:  <http://www.w3.org/2000/10/swap/log#>.
+
+# -----------------------------------------------
+# OBJECT THEORY (QUOTED ODRL + DPV POLICY THEORY)
+# -----------------------------------------------
+
+:case :policyTheory {
+  # ---- Request context (inside the quoted theory)
+  :ticket-99 :request :PublishCampaignAccessSummary.
+
+  # ---- Recipients (local classification for audit decisions)
+  :adVendor a :ExternalRecipient.
+  :marketingTeam a :InternalRecipient.
+
+  # ---- Datasets (annotated with DPV data category)
+  :AudienceList dpv:hasPersonalData dpv:PersonalData.
+  :ProductCatalog a :NonPersonalDataset.
+
+  # ---- ODRL policy A (benign-ish): internal team reads product catalog for service provision
+  :policy-internal a odrl:Set;
+    dpv:hasPurpose dpv:ServiceProvision;
+    odrl:permission [
+      odrl:assignee :marketingTeam;
+      odrl:target :ProductCatalog;
+      odrl:action odrl:read
+    ].
+
+  # ---- ODRL policy B (risky for publication): external vendor reads audience list for marketing
+  :policy-external a odrl:Set;
+    dpv:hasPurpose dpv:Marketing;
+    odrl:permission [
+      odrl:assignee :adVendor;
+      odrl:target :AudienceList;
+      odrl:action odrl:read
+    ].
+
+  # --------------------------------------------------------------------
+  # Object-level translation / normalization rules (pedagogical mapping)
+  # --------------------------------------------------------------------
+
+  # ODRL read permission -> effective read access
+  {
+    ?Policy odrl:permission [
+      odrl:assignee ?Recipient;
+      odrl:target ?Dataset;
+      odrl:action odrl:read
+    ].
+  }
+  =>
+  {
+    ?Recipient :canRead ?Dataset.
+  }.
+
+  # Lift policy purpose to the recipient (summary view used by the audit layer)
+  {
+    ?Policy dpv:hasPurpose ?Purpose.
+    ?Policy odrl:permission [
+      odrl:assignee ?Recipient;
+      odrl:target ?Dataset;
+      odrl:action odrl:read
+    ].
+  }
+  =>
+  {
+    ?Recipient :authorisedPurpose ?Purpose.
+  }.
+
+  # Combine ODRL permission target with DPV data-category annotation on the dataset
+  {
+    ?Policy odrl:permission [
+      odrl:assignee ?Recipient;
+      odrl:target ?Dataset;
+      odrl:action odrl:read
+    ].
+    ?Dataset dpv:hasPersonalData ?Category.
+  }
+  =>
+  {
+    ?Recipient :authorisedReadCategory ?Category.
+  }.
+}.
+
+# --------------------------
+# META-LEVEL POLICY ANALYSIS
+# --------------------------
+
+# 1) Compute the closure of the quoted ODRL+DPV policy theory.
+{
+  :case :policyTheory ?PolicyTheory.
+  ?PolicyTheory log:conclusion ?PolicyClosure.
+}
+=>
+{
+  :case :policyClosure ?PolicyClosure.
+}.
+
+# 2) Record a witness if the policy closure entails:
+#    external recipient + marketing purpose + personal-data access.
+#
+#    This is a statement ABOUT what the quoted theory entails.
+{
+  :case :policyClosure ?C.
+  ?C log:includes {
+    ?Recipient a :ExternalRecipient.
+    ?Recipient :authorisedPurpose dpv:Marketing.
+    ?Recipient :authorisedReadCategory dpv:PersonalData.
+  }.
+}
+=>
+{
+  :case :entails {
+    ?Recipient a :ExternalRecipient.
+    ?Recipient :authorisedPurpose dpv:Marketing.
+    ?Recipient :authorisedReadCategory dpv:PersonalData.
+  }.
+  :case :risk :ThirdPartyMarketingPersonalDataAccessEntailed.
+}.
+
+# 3) If the request is to publish the campaign access summary and the closure entails the
+#    risky pattern above, require manual review.
+{
+  :case :policyTheory ?PolicyTheory.
+  ?PolicyTheory log:includes {
+    :ticket-99 :request :PublishCampaignAccessSummary.
+  }.
+  :case :risk :ThirdPartyMarketingPersonalDataAccessEntailed.
+}
+=>
+{
+  :case :decision :ManualReviewRequired.
+}.
+
+# 4) Otherwise, if the same request is present but the closure does NOT entail any external
+#    recipient with marketing-purpose personal-data access, auto-approve.
+#
+#    Important: log:notIncludes applies to FORMULAS, so it is applied to ?C (the closure).
+{
+  :case :policyTheory ?PolicyTheory.
+  ?PolicyTheory log:includes {
+    :ticket-99 :request :PublishCampaignAccessSummary.
+  }.
+  :case :policyClosure ?C.
+  ?C log:notIncludes {
+    [] a :ExternalRecipient.
+    [] :authorisedPurpose dpv:Marketing.
+    [] :authorisedReadCategory dpv:PersonalData.
+  }.
+}
+=>
+{
+  :case :decision :AutoApprove.
+}.
+
+# ------------
+# QUERY INTENT
+# ------------
+
+# These top-level log:query directives define the query-projected outputs.
+{ :case :decision ?Decision. } log:query { :case :decision ?Decision. }.
+{ :case :entails ?Witness. }  log:query { :case :entails ?Witness. }.
+

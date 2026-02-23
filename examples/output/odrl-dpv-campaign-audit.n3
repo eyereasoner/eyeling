@@ -1,0 +1,10 @@
+@prefix : <http://example.org/#> .
+@prefix dpv: <http://www.w3.org/ns/dpv#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+:case :decision :ManualReviewRequired .
+:case :entails {
+    :adVendor a :ExternalRecipient .
+    :adVendor :authorisedPurpose dpv:Marketing .
+    :adVendor :authorisedReadCategory dpv:PersonalData .
+} .
