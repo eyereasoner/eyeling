@@ -2,14 +2,9 @@
 'use strict';
 
 // Convert examples/input/*.{ttl,trig} -> examples/*.n3 using n3gen.js
-// Designed to work both in a git checkout (maintainer mode) and in an npm-installed package.
 //
-// In git mode:
-//   - overwrites examples/<name>.n3
-//   - uses `git diff` to validate + show diffs
-// In non-git mode:
-//   - writes to a temp dir
-//   - compares against packaged examples/<name>.n3 without modifying it
+// For reproducibility and to avoid mutating tracked files during tests, generated output
+// is always written to a temporary file and compared against examples/<name>.n3.
 
 const fs = require('node:fs');
 const os = require('node:os');
@@ -39,23 +34,6 @@ function run(cmd, args, opts = {}) {
   });
 }
 
-function hasGit() {
-  const r = run('git', ['--version']);
-  return r.status === 0;
-}
-
-function inGitWorktree(cwd) {
-  if (!hasGit()) return false;
-  const r = run('git', ['rev-parse', '--is-inside-work-tree'], { cwd });
-  return r.status === 0 && String(r.stdout).trim() === 'true';
-}
-
-function isTracked(cwd, relPathPosix) {
-  if (!hasGit()) return false;
-  const r = run('git', ['ls-files', '--error-unmatch', relPathPosix], { cwd });
-  return r.status === 0;
-}
-
 function mkTmpDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'eyeling-n3-'));
 }
@@ -66,29 +44,10 @@ function rmrf(p) {
   } catch {}
 }
 
-function showDiff({ IN_GIT, examplesDir, expectedPath, generatedPath, relExpectedPosix }) {
-  if (hasGit()) {
-    if (IN_GIT) {
-      // If tracked: show repo diff; if untracked: show addition via no-index diff against /dev/null.
-      if (isTracked(examplesDir, relExpectedPosix)) {
-        const d = run('git', ['diff', '--', relExpectedPosix], { cwd: examplesDir });
-        if (d.stdout) process.stdout.write(d.stdout);
-        if (d.stderr) process.stderr.write(d.stderr);
-      } else {
-        const d = run('git', ['diff', '--no-index', '--', '/dev/null', expectedPath], { cwd: examplesDir });
-        if (d.stdout) process.stdout.write(String(d.stdout).replaceAll(expectedPath, relExpectedPosix));
-        if (d.stderr) process.stderr.write(String(d.stderr).replaceAll(expectedPath, relExpectedPosix));
-      }
-    } else {
-      const d = run('git', ['diff', '--no-index', expectedPath, generatedPath], { cwd: examplesDir });
-      if (d.stdout) process.stdout.write(String(d.stdout).replaceAll(generatedPath, 'generated'));
-      if (d.stderr) process.stderr.write(String(d.stderr).replaceAll(generatedPath, 'generated'));
-    }
-  } else {
-    const d = run('diff', ['-u', expectedPath, generatedPath], { cwd: examplesDir });
-    if (d.stdout) process.stdout.write(d.stdout);
-    if (d.stderr) process.stderr.write(d.stderr);
-  }
+function showDiff({ examplesDir, expectedPath, generatedPath }) {
+  const d = run('diff', ['-u', expectedPath, generatedPath], { cwd: examplesDir });
+  if (d.stdout) process.stdout.write(d.stdout);
+  if (d.stderr) process.stderr.write(d.stderr);
 }
 
 function main() {
@@ -114,14 +73,12 @@ function main() {
     process.exit(1);
   }
 
-  const IN_GIT = inGitWorktree(root);
-
   const inputs = fs
     .readdirSync(inputDir)
     .filter((f) => /\.(ttl|trig)$/i.test(f))
     .sort((a, b) => a.localeCompare(b));
 
-  info(`Running n3 conversions for ${inputs.length} inputs (${IN_GIT ? 'git worktree mode' : 'npm-installed mode'})`);
+  info(`Running n3 conversions for ${inputs.length} inputs`);
   console.log(`${C.dim}node ${process.version}${C.n}`);
 
   if (inputs.length === 0) {
@@ -142,22 +99,17 @@ function main() {
     const outFile = `${base}.n3`;
 
     const expectedPath = path.join(examplesDir, outFile);
-    const relExpectedPosix = outFile; // relative to examplesDir
 
-    let tmpDir = null;
-    let generatedPath = expectedPath;
-
-    if (!IN_GIT) {
-      if (!fs.existsSync(expectedPath)) {
-        const ms = Date.now() - start;
-        fail(`${idx} ${inFile} -> ${outFile} (${ms} ms)`);
-        fail(`Missing expected examples/${outFile}`);
-        failed++;
-        continue;
-      }
-      tmpDir = mkTmpDir();
-      generatedPath = path.join(tmpDir, outFile);
+    if (!fs.existsSync(expectedPath)) {
+      const ms = Date.now() - start;
+      fail(`${idx} ${inFile} -> ${outFile} (${ms} ms)`);
+      fail(`Missing expected examples/${outFile}`);
+      failed++;
+      continue;
     }
+
+    const tmpDir = mkTmpDir();
+    const generatedPath = path.join(tmpDir, outFile);
 
     // Run converter (stdout -> file; stderr captured)
     const outFd = fs.openSync(generatedPath, 'w');
@@ -177,29 +129,14 @@ function main() {
       fail(`Converter exit code ${rc}`);
       if (r.stderr) process.stderr.write(String(r.stderr));
       failed++;
-      if (tmpDir) rmrf(tmpDir);
+      rmrf(tmpDir);
       continue;
     }
 
-    // Compare output
-    let diffOk = false;
-    if (IN_GIT) {
-      if (isTracked(examplesDir, relExpectedPosix)) {
-        const d = run('git', ['diff', '--quiet', '--', relExpectedPosix], { cwd: examplesDir });
-        diffOk = d.status === 0;
-      } else {
-        // Untracked file counts as a diff (work to do)
-        diffOk = false;
-      }
-    } else {
-      if (hasGit()) {
-        const d = run('git', ['diff', '--no-index', '--quiet', expectedPath, generatedPath], { cwd: examplesDir });
-        diffOk = d.status === 0;
-      } else {
-        const d = run('diff', ['-u', expectedPath, generatedPath], { cwd: examplesDir });
-        diffOk = d.status === 0;
-      }
-    }
+    // Compare output (always compare expected vs generated temp file)
+    let diffOk;
+    const d = run('diff', ['-u', expectedPath, generatedPath], { cwd: examplesDir });
+    diffOk = d.status === 0;
 
     if (diffOk) {
       ok(`${idx} ${inFile} -> ${outFile} (${ms} ms)`);
@@ -207,11 +144,11 @@ function main() {
     } else {
       fail(`${idx} ${inFile} -> ${outFile} (${ms} ms)`);
       fail('Output differs');
-      showDiff({ IN_GIT, examplesDir, expectedPath, generatedPath, relExpectedPosix });
+      showDiff({ examplesDir, expectedPath, generatedPath });
       failed++;
     }
 
-    if (tmpDir) rmrf(tmpDir);
+    rmrf(tmpDir);
   }
 
   console.log('');

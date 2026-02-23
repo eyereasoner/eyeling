@@ -30,17 +30,6 @@ function run(cmd, args, opts = {}) {
   });
 }
 
-function hasGit() {
-  const r = run('git', ['--version']);
-  return r.status === 0;
-}
-
-function inGitWorktree(cwd) {
-  if (!hasGit()) return false;
-  const r = run('git', ['rev-parse', '--is-inside-work-tree'], { cwd });
-  return r.status === 0 && String(r.stdout).trim() === 'true';
-}
-
 // Normalize output for comparison.
 // Eyeling (and other N3 tools) may emit the same closure with different
 // triple ordering. Examples tests should verify content, not presentation.
@@ -83,26 +72,10 @@ function rmrf(p) {
   } catch {}
 }
 
-function showDiff({ IN_GIT, examplesDir, expectedPath, generatedPath, relExpectedPosix }) {
-  if (hasGit()) {
-    if (IN_GIT) {
-      // Show repo diff for the overwritten golden file
-      const d = run('git', ['diff', '--', relExpectedPosix], { cwd: examplesDir });
-      if (d.stdout) process.stdout.write(d.stdout);
-      if (d.stderr) process.stderr.write(d.stderr);
-    } else {
-      // Show no-index diff between packaged golden and generated tmp
-      const d = run('git', ['diff', '--no-index', expectedPath, generatedPath], { cwd: examplesDir });
-      // Replace tmp path in output (nice UX)
-      if (d.stdout) process.stdout.write(String(d.stdout).replaceAll(generatedPath, 'generated'));
-      if (d.stderr) process.stderr.write(String(d.stderr).replaceAll(generatedPath, 'generated'));
-    }
-  } else {
-    // Fallback: diff -u
-    const d = run('diff', ['-u', expectedPath, generatedPath], { cwd: examplesDir });
-    if (d.stdout) process.stdout.write(d.stdout);
-    if (d.stderr) process.stderr.write(d.stderr);
-  }
+function showDiff({ examplesDir, expectedPath, generatedPath }) {
+  const d = run('diff', ['-u', expectedPath, generatedPath], { cwd: examplesDir });
+  if (d.stdout) process.stdout.write(d.stdout);
+  if (d.stderr) process.stderr.write(d.stderr);
 }
 
 function main() {
@@ -124,14 +97,12 @@ function main() {
     process.exit(1);
   }
 
-  const IN_GIT = inGitWorktree(root);
-
   const files = fs
     .readdirSync(examplesDir)
     .filter((f) => f.endsWith('.n3'))
     .sort((a, b) => a.localeCompare(b));
 
-  info(`Running ${files.length} examples tests (${IN_GIT ? 'git worktree mode' : 'npm-installed mode'})`);
+  info(`Running ${files.length} examples tests`);
   console.log(`${C.dim}${getEyelingVersion(nodePath, eyelingJsPath, root)}; node ${process.version}${C.n}`);
 
   if (files.length === 0) {
@@ -139,8 +110,6 @@ function main() {
     process.exit(0);
   }
 
-  // In maintainer mode we overwrite tracked goldens in examples/output/
-  if (IN_GIT) fs.mkdirSync(outputDir, { recursive: true });
 
   let passed = 0;
   let failed = 0;
@@ -156,7 +125,6 @@ function main() {
 
     const filePath = path.join(examplesDir, file);
     const expectedPath = path.join(outputDir, file);
-    const relExpectedPosix = path.posix.join('output', file); // for git diff inside examplesDir
 
     let n3Text;
     try {
@@ -171,34 +139,19 @@ function main() {
 
     const expectedRc = expectedExitCode(n3Text);
 
-    // Snapshot expected output before we potentially overwrite it in git worktree mode.
-    // This lets us compare content ignoring ordering, while still allowing the script
-    // to regenerate output/ files in-place when working from a repo checkout.
-    let expectedBeforeText = null;
-    if (IN_GIT && fs.existsSync(expectedPath)) {
-      try {
-        expectedBeforeText = fs.readFileSync(expectedPath, 'utf8');
-      } catch {
-        expectedBeforeText = null;
-      }
+    // Always write generated output to a temp file. This avoids mutating tracked
+    // examples/output/* during normal test runs and makes timing behavior more
+    // comparable across environments.
+    if (!fs.existsSync(expectedPath)) {
+      const ms = Date.now() - start;
+      fail(`${idx} ${file} ${msTag(ms)}`);
+      fail(`Missing expected output/${file}`);
+      failed++;
+      continue;
     }
 
-    // Decide where generated output goes
-    let tmpDir = null;
-    let generatedPath = expectedPath;
-
-    if (!IN_GIT) {
-      // npm-installed / no .git: never modify output/ in node_modules
-      if (!fs.existsSync(expectedPath)) {
-        const ms = Date.now() - start;
-        fail(`${idx} ${file} ${msTag(ms)}`);
-        fail(`Missing expected output/${file}`);
-        failed++;
-        continue;
-      }
-      tmpDir = mkTmpDir();
-      generatedPath = path.join(tmpDir, 'generated.n3');
-    }
+    let tmpDir = mkTmpDir();
+    let generatedPath = path.join(tmpDir, 'generated.n3');
 
     // Run eyeling on this file (cwd examplesDir so relative behavior matches old script)
     const outFd = fs.openSync(generatedPath, 'w');
@@ -219,7 +172,7 @@ function main() {
     // Compare output (order-insensitive)
     let diffOk = false;
     try {
-      const expectedText = IN_GIT ? expectedBeforeText : fs.readFileSync(expectedPath, 'utf8');
+      const expectedText = fs.readFileSync(expectedPath, 'utf8');
       const generatedText = fs.readFileSync(generatedPath, 'utf8');
       if (expectedText == null) throw new Error('missing expected output');
       diffOk = normalizeForCompare(expectedText) === normalizeForCompare(generatedText);
@@ -245,13 +198,11 @@ function main() {
         fail('Output differs');
       }
 
-      // Show diffs (both modes), because this is a test runner
+      // Show diffs, because this is a test runner
       showDiff({
-        IN_GIT,
         examplesDir,
         expectedPath,
         generatedPath,
-        relExpectedPosix,
       });
 
       failed++;
