@@ -1551,6 +1551,12 @@ If `i` is out of range, `out` is the original string.
 
 Returns the number of differing positions between `a` and `b`. Fails if the two strings have different lengths.
 
+#### `string:mutateSelectBest`
+
+**Shape:** `( samples current target mutProb seedState ) string:mutateSelectBest ( best bestScore seedState2 )`
+
+Generates `samples` mutated variants of `current` (mutating each character with probability `mutProb` percent), scores each candidate against `target` (Hamming distance), and returns the best candidate (lowest score). RNG is a deterministic 31-bit LCG, threaded via `seedState` → `seedState2`, so runs are reproducible.
+
 ### Containment and prefix/suffix tests
 
 - `string:contains`
@@ -1975,24 +1981,6 @@ References:
 - The shipped builtin catalogue: `eyeling-builtins.ttl` (in this repo)
 
 If you are running untrusted inputs, consider `--super-restricted` to disable all builtins except implication.
-
-### Eyeling fast-path builtins
-
-Eyeling ships one optional fast-path builtins builtin e.g. used by the genetic-algorithm example:
-
-#### `urn:eyeling:ga:solveString`
-
-**Shape:** `( target mutationProbability samples seed traceEvery maxGenerations ) urn:eyeling:ga:solveString ( generation score value seed )`
-
-- `target` and `value` are `xsd:string` literals.
-- `mutationProbability` is interpreted as a percentage per character (0–100).
-- `traceEvery` controls debug tracing:
-  - `0` disables tracing,
-  - `1` traces every generation,
-  - `N` traces every `N` generations.
-- `maxGenerations` is a safety cap:
-  - `0` means unlimited,
-  - otherwise the builtin stops once `generation >= maxGenerations` (even if not solved).
 
 ### A.6 Skolemization and `log:skolem`
 

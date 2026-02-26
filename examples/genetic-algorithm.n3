@@ -10,46 +10,158 @@
 # This is a simple hill-climbing GA (selection + mutation, no crossover), using a seeded RNG
 # so runs are reproducible.
 #
-# Uses Eyeling's builtin:
-#   urn:eyeling:ga:solveString
+# The GA is still expressed as backward rules (<=) for the outer evolution loop,
+# but the expensive inner loop ("take N mutated samples and keep the best") is
+# handled by a single string builtin to avoid huge proof trees and OOM.
 #
-# Configure:
-#   :mutationProbability 5   # percent per character
-#   :samples 80
-#   :seed 100
-#   :traceEvery 0            # 0=off, 1=every generation, 100=every 100 generations
-#   :maxGenerations 0        # 0=unlimited
 # ==========================================================================================
 
-@prefix :       <http://example.org/ga-solve#>.
-@prefix ega:    <urn:eyeling:ga:>.
+@prefix :       <urn:ga:>.
 @prefix log:    <http://www.w3.org/2000/10/swap/log#>.
+@prefix math:   <http://www.w3.org/2000/10/swap/math#>.
+@prefix list:   <http://www.w3.org/2000/10/swap/list#>.
 @prefix string: <http://www.w3.org/2000/10/swap/string#>.
 
 :cfg
   :mutationProbability 5;
   :samples 80;
   :seed 100;
-  :traceEvery 1;
-  :maxGenerations 0.
 
-# solveResult(TargetString) = (generation score value seed)
-{ ?TargetString :solveResult ( ?Gen ?Score ?Value ?Seed ) } <= {
+  # Debug knobs:
+  :traceEvery 1;        # 0 disables; 1 traces every generation
+  :maxGenerations 0;    # 0 means unlimited
+
+  :alphabet (" " "A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M"
+             "N" "O" "P" "Q" "R" "S" "T" "U" "V" "W" "X" "Y" "Z").
+
+# ------------------------
+# Small arithmetic helpers
+# ------------------------
+
+{ ( ?N 1 ) :dec ?N1 } <= { ( ?N 1 ) math:difference ?N1 }.
+{ ( ?N 1 ) :inc ?N1 } <= { ( ?N 1 ) math:sum ?N1 }.
+
+# ----------------------------------------------
+# Seeded RNG (LCG) and JS Math.round(rnd() * N)
+# (Used only for the initial random chromosome.)
+# ----------------------------------------------
+
+{ ?S0 :lcgNext ?S1 } <= {
+  ( ?S0 1103515245 ) math:product ?P .
+  ( ?P 12345 ) math:sum ?T .
+  ( ?T 2147483648 ) math:remainder ?S1
+}.
+
+{ ( ?S0 ?N ) :randRound ( ?R ?S1 ) } <= {
+  ?S0 :lcgNext ?S1 .
+  ( ?S1 ?N ) math:product ?A .
+  ( ?A ?A ) math:sum ?TwoA .
+  ( ?TwoA 2147483648 ) math:sum ?Num .
+  ( 2147483648 2 ) math:product ?Den .
+  ( ?Num ?Den ) math:integerQuotient ?R
+}.
+
+{ ?S0 :randomAlpha ( ?Ch ?S1 ) } <= {
+  :cfg :alphabet ?Alphabet .
+  ( ?S0 26 ) :randRound ( ?Idx ?S1 ) .
+  ( ?Alphabet ?Idx ) list:memberAt ?Ch
+}.
+
+{ ( 0 ?S0 ) :randomText ( "" ?S0 ) } <= true.
+
+{ ( ?Len ?S0 ) :randomText ( ?Out ?S2 ) } <= {
+  ?Len math:greaterThan 0 .
+  ( ?Len 1 ) :dec ?Len1 .
+  ?S0 :randomAlpha ( ?Ch ?S1 ) .
+  ( ?Len1 ?S1 ) :randomText ( ?Rest ?S2 ) .
+  ( "%s%s" ?Ch ?Rest ) string:format ?Out
+}.
+
+# -------------------------
+# tracing helper (optional)
+# -------------------------
+
+{ ( 0 ?Gen ?Score ?Value ) :traceMaybe true } <= true.
+
+{ ( ?Every ?Gen ?Score ?Value ) :traceMaybe true } <= {
+  ?Every math:greaterThan 0 .
+  ( ?Gen ?Every ) math:remainder ?R .
+  ?R math:equalTo 0 .
+  ?Gen log:trace ( ?Score ?Value )
+}.
+
+# --------------
+# evolution loop
+# --------------
+
+# Stop when score == 0
+{ ( ?Current 0 ?Target ?MutProb ?Samples ?Gen ?S0 ?MaxGen ?TraceEvery )
+    :evolve ( ?Current ?Gen ?S0 ) } <= true.
+
+# Stop when generation cap is reached (only if MaxGen > 0)
+{ ( ?Current ?Score ?Target ?MutProb ?Samples ?Gen ?S0 ?MaxGen ?TraceEvery )
+    :evolve ( ?Current ?Gen ?S0 ) } <= {
+  ?Score math:notEqualTo 0 .
+  ?MaxGen math:greaterThan 0 .
+  ?Gen math:equalTo ?MaxGen
+}.
+
+# Unlimited run (MaxGen == 0): keep evolving
+{ ( ?Current ?Score ?Target ?MutProb ?Samples ?Gen ?S0 0 ?TraceEvery )
+    :evolve ( ?Final ?FinalGen ?S2 ) } <= {
+  ?Score math:notEqualTo 0 .
+  ( ?Samples ?Current ?Target ?MutProb ?S0 )
+    string:mutateSelectBest
+  ( ?Best ?BestScore ?S1 ) .
+  ( ?Gen 1 ) :inc ?Gen1 .
+  ( ?TraceEvery ?Gen1 ?BestScore ?Best ) :traceMaybe true .
+  ( ?Best ?BestScore ?Target ?MutProb ?Samples ?Gen1 ?S1 0 ?TraceEvery )
+    :evolve ( ?Final ?FinalGen ?S2 )
+}.
+
+# Bounded run (MaxGen > 0): keep evolving while Gen < MaxGen
+{ ( ?Current ?Score ?Target ?MutProb ?Samples ?Gen ?S0 ?MaxGen ?TraceEvery )
+    :evolve ( ?Final ?FinalGen ?S2 ) } <= {
+  ?Score math:notEqualTo 0 .
+  ?MaxGen math:greaterThan 0 .
+  ?Gen math:lessThan ?MaxGen .
+  ( ?Samples ?Current ?Target ?MutProb ?S0 )
+    string:mutateSelectBest
+  ( ?Best ?BestScore ?S1 ) .
+  ( ?Gen 1 ) :inc ?Gen1 .
+  ( ?TraceEvery ?Gen1 ?BestScore ?Best ) :traceMaybe true .
+  ( ?Best ?BestScore ?Target ?MutProb ?Samples ?Gen1 ?S1 ?MaxGen ?TraceEvery )
+    :evolve ( ?Final ?FinalGen ?S2 )
+}.
+
+# ----------------------------------
+# Public solver wrapper (string API)
+# ----------------------------------
+
+{ ?TargetString :solveResult ( ?Gen 0 ?Value ?Seed ) } <= {
   :cfg :mutationProbability ?MutProb;
        :samples ?Samples;
        :seed ?Seed;
        :traceEvery ?TraceEvery;
-       :maxGenerations ?MaxG.
+       :maxGenerations ?MaxGen.
 
-  ( ?TargetString ?MutProb ?Samples ?Seed ?TraceEvery ?MaxG )
-    ega:solveString
-  ( ?Gen ?Score ?Value ?SeedOut ) .
+  ?TargetString string:length ?Len .
 
-  # By design, the 4th output is the (input) seed.
-  ?SeedOut log:equalTo ?Seed
+  ( ?Len ?Seed ) :randomText ( ?Current0 ?S1 ) .
+
+  # initial score using string:hammingDistance
+  ( ?Current0 ?TargetString ) string:hammingDistance ?Score0 .
+
+  ( ?Current0 ?Score0 ?TargetString ?MutProb ?Samples 0 ?S1 ?MaxGen ?TraceEvery )
+    :evolve
+  ( ?Value ?Gen ?S2 ) .
+
+  # Succeeds only when solved:
+  ( ?Value ?TargetString ) string:hammingDistance 0 .
+  ?Value log:equalTo ?TargetString .
+  ?S2 log:equalTo ?_FinalSeedState
 }.
 
-# Boolean-ish API for querying success
 { ?TargetString :solved true } <= {
   ?TargetString :solveResult ( ?Gen 0 ?TargetString ?Seed )
 }.
@@ -60,4 +172,6 @@
 
 { "METHINKS IT IS LIKE A WEASEL" :solved true .
   ( "solve('%s').\n" "METHINKS IT IS LIKE A WEASEL" ) string:format ?Line
-} => { 1 log:outputString ?Line }.
+}
+log:query
+{ 1 log:outputString ?Line }.
