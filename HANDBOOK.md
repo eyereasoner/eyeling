@@ -1516,6 +1516,41 @@ A tiny `sprintf` subset:
 - Any other specifier (`%d`, `%f`, …) causes the builtin to fail.
 - Missing arguments are treated as empty strings.
 
+### Length and character utilities (Eyeling extensions)
+
+Eyeling also implements a few **non-standard** `string:` helpers that are handy for string-based algorithms. These are **not** part of the SWAP builtin set, so treat them as Eyeling extensions.
+
+#### `string:length`
+
+**Shape:** `s string:length n`
+
+Casts `s` to a string and returns its length as an integer literal token.
+
+#### `string:charAt`
+
+**Shape:** `( s i ) string:charAt ch`
+
+- `i` is a numeric term, truncated to an integer.
+- Indexing is **0-based** (like JavaScript).
+- If `i` is out of range, `ch` is the empty string `""`.
+
+#### `string:setCharAt`
+
+**Shape:** `( s i ch ) string:setCharAt out`
+
+Returns a copy of `s` with the character at index `i` (0-based) replaced by:
+
+- the **first character** of `ch` if `ch` is non-empty, otherwise
+- the empty string.
+
+If `i` is out of range, `out` is the original string.
+
+#### `string:hammingDistance`
+
+**Shape:** `( a b ) string:hammingDistance d`
+
+Returns the number of differing positions between `a` and `b`. Fails if the two strings have different lengths.
+
 ### Containment and prefix/suffix tests
 
 - `string:contains`
@@ -1940,6 +1975,24 @@ References:
 - The shipped builtin catalogue: `eyeling-builtins.ttl` (in this repo)
 
 If you are running untrusted inputs, consider `--super-restricted` to disable all builtins except implication.
+
+### Eyeling fast-path builtins
+
+Eyeling ships one optional fast-path builtins builtin e.g. used by the genetic-algorithm example:
+
+#### `urn:eyeling:ga:solveString`
+
+**Shape:** `( target mutationProbability samples seed traceEvery maxGenerations ) urn:eyeling:ga:solveString ( generation score value seed )`
+
+- `target` and `value` are `xsd:string` literals.
+- `mutationProbability` is interpreted as a percentage per character (0–100).
+- `traceEvery` controls debug tracing:
+  - `0` disables tracing,
+  - `1` traces every generation,
+  - `N` traces every `N` generations.
+- `maxGenerations` is a safety cap:
+  - `0` means unlimited,
+  - otherwise the builtin stops once `generation >= maxGenerations` (even if not solved).
 
 ### A.6 Skolemization and `log:skolem`
 

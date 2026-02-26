@@ -5,6 +5,7 @@
 @prefix list: <http://www.w3.org/2000/10/swap/list#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 @prefix string: <http://www.w3.org/2000/10/swap/string#> .
+@prefix ega: <urn:eyeling:ga:> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -333,3 +334,19 @@ string:scrape a ex:Builtin ; ex:kind ex:Function ;
 string:format a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Simple formatter: (fmt arg1 ... argN) -> output string. Only %s and %% are supported; other specifiers fail." .
 
+string:length a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Function: binds/unifies object with the character length of the subject after string-casting. Output is an integer literal token." .
+
+string:charAt a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Function: subject is a 2-item list (string idx). Binds/unifies object with the 1-character string at 0-based idx; out-of-range yields the empty string." .
+
+string:setCharAt a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Function: subject is a 3-item list (string idx ch). Returns a copy of the string with position idx (0-based) replaced by the first character of ch; out-of-range returns the original string." .
+
+string:hammingDistance a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Function: subject is a 2-item list (a b). Binds/unifies object with the number of differing positions (Hamming distance). Fails if lengths differ." .
+
+# --- eyeling fast path builtins ------------------------------
+
+ega:solveString a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Eyeling extension: GA solver on strings. Subject list: (target mutationProbability samples seed traceEvery maxGenerations). Object list: (generation score value seed). traceEvery=0 disables tracing; maxGenerations=0 means unlimited." .

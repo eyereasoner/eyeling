@@ -3463,6 +3463,209 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     return sStr.startsWith(oStr) ? [{ ...subst }] : [];
   }
 
+  // -----------------------------------------------------------------
+  // 4.6.1 extended string: builtins (Eyeling extensions)
+  // -----------------------------------------------------------------
+
+  // string:length
+  // Schema: $s+ string:length $o?
+  // $o is an integer literal (untyped numeric token).
+  if (pv === STRING_NS + 'length') {
+    const sStr = termToJsString(g.s);
+    if (sStr === null) return [];
+    const lit = internLiteral(String(sStr.length));
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = lit;
+      return [s2];
+    }
+    const s2 = unifyTerm(g.o, lit, subst);
+    return s2 !== null ? [s2] : [];
+  }
+
+  // string:charAt
+  // Schema: ( $str $idx ) string:charAt $ch
+  // $ch is a (possibly empty) string literal.
+  if (pv === STRING_NS + 'charAt') {
+    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
+    const sStr = termToJsString(g.s.elems[0]);
+    const idxNum = parseNum(g.s.elems[1]);
+    if (sStr === null || idxNum === null) return [];
+    const idx = Math.trunc(idxNum);
+    const ch = idx < 0 || idx >= sStr.length ? '' : sStr.charAt(idx);
+    const lit = makeStringLiteral(ch);
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = lit;
+      return [s2];
+    }
+    const s2 = unifyTerm(g.o, lit, subst);
+    return s2 !== null ? [s2] : [];
+  }
+
+  // string:setCharAt
+  // Schema: ( $str $idx $ch ) string:setCharAt $out
+  // If idx out of range, returns the original string.
+  if (pv === STRING_NS + 'setCharAt') {
+    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 3) return [];
+    const sStr = termToJsString(g.s.elems[0]);
+    const idxNum = parseNum(g.s.elems[1]);
+    const chStr = termToJsString(g.s.elems[2]);
+    if (sStr === null || idxNum === null || chStr === null) return [];
+    const idx = Math.trunc(idxNum);
+    const rep = chStr.length ? chStr[0] : '';
+    let out = sStr;
+    if (idx >= 0 && idx < sStr.length) out = sStr.slice(0, idx) + rep + sStr.slice(idx + 1);
+    const lit = makeStringLiteral(out);
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = lit;
+      return [s2];
+    }
+    const s2 = unifyTerm(g.o, lit, subst);
+    return s2 !== null ? [s2] : [];
+  }
+
+  // string:hammingDistance
+  // Schema: ( $a $b ) string:hammingDistance $d
+  // Fails if strings have different length.
+  if (pv === STRING_NS + 'hammingDistance') {
+    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
+    const a = termToJsString(g.s.elems[0]);
+    const b = termToJsString(g.s.elems[1]);
+    if (a === null || b === null) return [];
+    if (a.length !== b.length) return [];
+    let diffs = 0;
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) diffs++;
+    const lit = internLiteral(String(diffs));
+    if (g.o instanceof Var) {
+      const s2 = { ...subst };
+      s2[g.o.name] = lit;
+      return [s2];
+    }
+    const s2 = unifyTerm(g.o, lit, subst);
+    return s2 !== null ? [s2] : [];
+  }
+
+  // -----------------------------------------------------------------
+  // 4.6.2 urn:eyeling:ga: builtins (fast GA on *strings*)
+  // -----------------------------------------------------------------
+
+  // urn:eyeling:ga:solveString
+  // Schema: ( $target $mutProb $samples $seed $traceEvery $maxGenerations ) :solveString ( $gen $score $value $seed )
+  // Side effect: if traceEvery > 0, prints: <gen> TRACE (<score> "<value>")
+  if (pv === 'urn:eyeling:ga:solveString') {
+    if (!(g.s instanceof ListTerm) || g.s.elems.length != 6) return [];
+
+    const target = termToJsXsdStringNoLang(g.s.elems[0]);
+    const mutProbNum = parseNum(g.s.elems[1]);
+    const samplesNum = parseNum(g.s.elems[2]);
+    const seedNum = parseNum(g.s.elems[3]);
+    const traceEveryNum = parseNum(g.s.elems[4]);
+    const maxGenNum = parseNum(g.s.elems[5]);
+
+    if (target === null || mutProbNum === null || samplesNum === null || seedNum === null) return [];
+    if (traceEveryNum === null || maxGenNum === null) return [];
+
+    const mutProb = Math.max(0, Math.trunc(mutProbNum));
+    const samples = Math.max(1, Math.trunc(samplesNum));
+    const seed0 = Math.trunc(seedNum);
+
+    const traceEvery = Math.max(0, Math.trunc(traceEveryNum));
+    const maxGenerations = Math.max(0, Math.trunc(maxGenNum));
+
+    // Deterministic 31-bit LCG using BigInt arithmetic (matches the N3 version)
+    let state = BigInt(seed0);
+    const MOD = 2147483648n; // 2^31
+    const A = 1103515245n;
+    const C = 12345n;
+
+    function rnd() {
+      state = (A * state + C) % MOD;
+      return Number(state) / 2147483648;
+    }
+
+    function randRound(N) {
+      return Math.round(rnd() * N);
+    }
+
+    function randomAlpha() {
+      const p = randRound(26);
+      return p === 0 ? ' ' : String.fromCharCode(64 + p);
+    }
+
+    function randomText(len) {
+      let out = '';
+      for (let i = 0; i < len; i++) out += randomAlpha();
+      return out;
+    }
+
+    function mutate(str) {
+      let out = '';
+      for (let i = 0; i < str.length; i++) {
+        const p = randRound(100);
+        if (p > mutProb) out += str[i];
+        else out += randomAlpha();
+      }
+      return out;
+    }
+
+    function score(str) {
+      let diffs = 0;
+      for (let i = 0; i < target.length; i++) if (str[i] !== target[i]) diffs++;
+      return diffs;
+    }
+
+    const pref = trace.getTracePrefixes() || PrefixEnv.newDefault();
+    function doTrace(gen, sc, val) {
+      const genLit = internLiteral(String(gen));
+      const scLit = internLiteral(String(sc));
+      const valLit = makeStringLiteral(val);
+      const obj = new ListTerm([scLit, valLit]);
+      const xStr = termToN3(genLit, pref);
+      const yStr = termToN3(obj, pref);
+      trace.writeTraceLine(`${xStr} TRACE ${yStr}`);
+    }
+
+    let generation = 0;
+    let current = randomText(target.length);
+    let currentScore = score(current);
+
+    if (traceEvery > 0 && generation % traceEvery === 0) doTrace(generation, currentScore, current);
+
+    while (currentScore !== 0) {
+      if (maxGenerations > 0 && generation >= maxGenerations) break;
+
+      let best = '';
+      let bestScore = Infinity;
+
+      for (let i = 0; i < samples; i++) {
+        const cand = mutate(current);
+        const candScore = score(cand);
+        if (candScore < bestScore) {
+          best = cand;
+          bestScore = candScore;
+        }
+      }
+
+      generation += 1;
+      current = best;
+      currentScore = bestScore;
+
+      if (traceEvery > 0 && generation % traceEvery === 0) doTrace(generation, currentScore, current);
+    }
+
+    const outList = new ListTerm([
+      internLiteral(String(generation)),
+      internLiteral(String(currentScore)),
+      makeStringLiteral(current),
+      internLiteral(String(seed0)),
+    ]);
+
+    const s2 = unifyTerm(g.o, outList, subst);
+    return s2 !== null ? [s2] : [];
+  }
+
   // Unknown builtin
   return [];
 }
@@ -3480,6 +3683,11 @@ function isBuiltinPred(p) {
 
   // Treat RDF Collections as list-term builtins too.
   if (v === RDF_NS + 'first' || v === RDF_NS + 'rest') {
+    return true;
+  }
+
+  // Eyeling extension: GA demo builtins
+  if (v === 'urn:eyeling:ga:solveString') {
     return true;
   }
 

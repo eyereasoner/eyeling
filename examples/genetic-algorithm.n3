@@ -1,412 +1,63 @@
-# =======================================================================
-# Genetic algorithm
+# ==========================================================================================
+# Genetic algorithm demo
 #
-# This is a compact, bounded genetic algorithm example in N3.
+# Genetic algorithm (GA) in a nutshell:
+# - Start with a random candidate string of the same length as the target.
+# - Repeatedly create a batch of “children” by copying the current best string and randomly
+#   mutating each character with a small probability.
+# - Score each child by how many positions differ from the target (Hamming distance).
+# - Keep the best-scoring child as the new current string and iterate until the score is 0.
+# This is a simple hill-climbing GA (selection + mutation, no crossover), using a seeded RNG
+# so runs are reproducible.
 #
-# It evolves a population of short strings toward a target string using:
-#   - random initialization
-#   - tournament selection (size 2)
-#   - uniform crossover
-#   - per-character mutation
-#   - elitist replacement (best individual survives)
+# Uses Eyeling's builtin:
+#   urn:eyeling:ga:solveString
 #
-# The score is Hamming distance to the target (lower is better).
-# Score 0 means solved.
-#
-# The example is intentionally small so it finishes quickly:
-#   target = "CAT"
-#   populationSize = 16
-#   bounded generations
-#
-# Main derived state:
-#   :run :state (?Generation ?BestScore ?BestGenome ?Population ?SeedOut)
-#
-# Human-readable output lines are also derived:
-#   generation(<g>, bestScore=<s>, best='<text>').
-# =======================================================================
+# Configure:
+#   :mutationProbability 5   # percent per character
+#   :samples 80
+#   :seed 100
+#   :traceEvery 0            # 0=off, 1=every generation, 100=every 100 generations
+#   :maxGenerations 0        # 0=unlimited
+# ==========================================================================================
 
-@prefix :       <http://example.org/ga-demo#> .
-@prefix log:    <http://www.w3.org/2000/10/swap/log#> .
-@prefix math:   <http://www.w3.org/2000/10/swap/math#> .
-@prefix list:   <http://www.w3.org/2000/10/swap/list#> .
-@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+@prefix :       <http://example.org/ga-solve#>.
+@prefix ega:    <urn:eyeling:ga:>.
+@prefix log:    <http://www.w3.org/2000/10/swap/log#>.
+@prefix string: <http://www.w3.org/2000/10/swap/string#>.
 
-# -------------
-# Configuration
-# -------------
+:cfg
+  :mutationProbability 5;
+  :samples 80;
+  :seed 100;
+  :traceEvery 1;
+  :maxGenerations 0.
 
-:seed0 :is 100 .
-:populationSize :is 24 .
-:maxGenerations :is 60 .
-:scoreGoal :is 0 .
-:mutationProbability :is 10 .
+# solveResult(TargetString) = (generation score value seed)
+{ ?TargetString :solveResult ( ?Gen ?Score ?Value ?Seed ) } <= {
+  :cfg :mutationProbability ?MutProb;
+       :samples ?Samples;
+       :seed ?Seed;
+       :traceEvery ?TraceEvery;
+       :maxGenerations ?MaxG.
 
-:printEveryGeneration :is false .
-:printImprovementsOnly :is true .
+  ( ?TargetString ?MutProb ?Samples ?Seed ?TraceEvery ?MaxG )
+    ega:solveString
+  ( ?Gen ?Score ?Value ?SeedOut ) .
 
-:targetGenome :is ("C" "A" "T") .
+  # By design, the 4th output is the (input) seed.
+  ?SeedOut log:equalTo ?Seed
+}.
 
-:alphabet :is (
-  " "
-  "A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M"
-  "N" "O" "P" "Q" "R" "S" "T" "U" "V" "W" "X" "Y" "Z"
-) .
+# Boolean-ish API for querying success
+{ ?TargetString :solved true } <= {
+  ?TargetString :solveResult ( ?Gen 0 ?TargetString ?Seed )
+}.
 
-# -----------------------
-# RNG (deterministic LCG)
-# -----------------------
+# --------------------------------------------------------
+# Requested output: solve('METHINKS IT IS LIKE A WEASEL').
+# --------------------------------------------------------
 
-{
-  (?SEED ?A ?C ?M) :random ?R.
-}
-<=
-{
-  (?SEED ?A) math:product ?R1.
-  (?R1 ?C) math:sum ?R2.
-  (?R2 ?M) math:remainder ?R.
-} .
-
-{
-  (?SeedIn) :nextRand ?SeedOut.
-}
-<=
-{
-  (?SeedIn 1103515245 12345 2147483648) :random ?SeedOut.
-} .
-
-{
-  (?N ?SeedIn) :randBelow (?SeedOut ?K).
-}
-<=
-{
-  (?SeedIn) :nextRand ?SeedOut.
-  (?SeedOut ?N) math:remainder ?K.
-} .
-
-# ------------------------------------------
-# Helpers: random characters and random text
-# ------------------------------------------
-
-{
-  (?SeedIn) :randomAlpha (?SeedOut ?Ch).
-}
-<=
-{
-  :alphabet :is ?A.
-  (27 ?SeedIn) :randBelow (?SeedOut ?I).
-  (?A ?I) list:memberAt ?Ch.
-} .
-
-{
-  (0 ?SeedIn) :randomText (?SeedIn ()).
-}
-<=
-{
-} .
-
-{
-  (?Len ?SeedIn) :randomText (?SeedOut ?Txt).
-}
-<=
-{
-  ?Len math:greaterThan 0.
-  (?Len 1) math:difference ?Len1.
-  (?SeedIn) :randomAlpha (?Seed1 ?Ch).
-  (?Len1 ?Seed1) :randomText (?SeedOut ?Rest).
-  ?Txt list:firstRest (?Ch ?Rest).
-} .
-
-# -----------------------------------------------------------
-# Problem hooks: randomGenome, crossover, mutate, score, show
-# -----------------------------------------------------------
-
-{
-  (?SeedIn) :randomGenome (?SeedOut ?Genome).
-}
-<=
-{
-  :targetGenome :is ?Target.
-  ?Target list:length ?Len.
-  (?Len ?SeedIn) :randomText (?SeedOut ?Genome).
-} .
-
-{
-  (() () ?SeedIn) :uniformCrossover (?SeedIn ()).
-}
-<=
-{
-} .
-
-{
-  (?P1 ?P2 ?SeedIn) :uniformCrossover (?SeedOut ?Child).
-}
-<=
-{
-  (2 ?SeedIn) :randBelow (?Seed1 ?Coin).
-  ?Coin math:lessThan 1.
-  ?P1 list:firstRest (?H1 ?T1).
-  ?P2 list:firstRest (?H2 ?T2).
-  (?T1 ?T2 ?Seed1) :uniformCrossover (?SeedOut ?Rest).
-  ?Child list:firstRest (?H1 ?Rest).
-} .
-
-{
-  (?P1 ?P2 ?SeedIn) :uniformCrossover (?SeedOut ?Child).
-}
-<=
-{
-  (2 ?SeedIn) :randBelow (?Seed1 ?Coin).
-  ?Coin math:notLessThan 1.
-  ?P1 list:firstRest (?H1 ?T1).
-  ?P2 list:firstRest (?H2 ?T2).
-  (?T1 ?T2 ?Seed1) :uniformCrossover (?SeedOut ?Rest).
-  ?Child list:firstRest (?H2 ?Rest).
-} .
-
-{
-  (?P1 ?P2 ?SeedIn) :crossover (?SeedOut ?Child).
-}
-<=
-{
-  (?P1 ?P2 ?SeedIn) :uniformCrossover (?SeedOut ?Child).
-} .
-
-{
-  (() ?SeedIn) :mutate (?SeedIn ()).
-}
-<=
-{
-} .
-
-{
-  (?Genome ?SeedIn) :mutate (?SeedOut ?Out).
-}
-<=
-{
-  (100 ?SeedIn) :randBelow (?Seed1 ?P).
-  :mutationProbability :is ?Prob.
-  ?P math:notLessThan ?Prob.
-  ?Genome list:firstRest (?H ?Tail).
-  (?Tail ?Seed1) :mutate (?SeedOut ?OutTail).
-  ?Out list:firstRest (?H ?OutTail).
-} .
-
-{
-  (?Genome ?SeedIn) :mutate (?SeedOut ?Out).
-}
-<=
-{
-  (100 ?SeedIn) :randBelow (?Seed1 ?P).
-  :mutationProbability :is ?Prob.
-  ?P math:lessThan ?Prob.
-  (?Seed1) :randomAlpha (?Seed2 ?M).
-  ?Genome list:firstRest (?_H ?Tail).
-  (?Tail ?Seed2) :mutate (?SeedOut ?OutTail).
-  ?Out list:firstRest (?M ?OutTail).
-} .
-
-{
-  (() ()) :hamming 0.
-}
-<=
-{
-} .
-
-{
-  (?Target ?Genome) :hamming ?Score.
-}
-<=
-{
-  ?Target list:firstRest (?T ?Ttail).
-  ?Genome list:firstRest (?G ?Gtail).
-  ?T log:equalTo ?G.
-  (?Ttail ?Gtail) :hamming ?Score.
-} .
-
-{
-  (?Target ?Genome) :hamming ?Score.
-}
-<=
-{
-  ?Target list:firstRest (?T ?Ttail).
-  ?Genome list:firstRest (?G ?Gtail).
-  ?T log:notEqualTo ?G.
-  (?Ttail ?Gtail) :hamming ?Prev.
-  (?Prev 1) math:sum ?Score.
-} .
-
-{
-  (?Genome) :score ?Score.
-}
-<=
-{
-  :targetGenome :is ?Target.
-  (?Target ?Genome) :hamming ?Score.
-} .
-
-{
-  (?Genome) :show ?Text.
-}
-<=
-{
-  ?Genome string:concatenation ?Text.
-} .
-
-# --------------------
-# Generic GA internals
-# --------------------
-
-{
-  (0 ?SeedIn) :initPopulation (?SeedIn ()).
-}
-<=
-{
-} .
-
-{
-  (?N ?SeedIn) :initPopulation (?SeedOut ?Pop).
-}
-<=
-{
-  ?N math:greaterThan 0.
-  (?N 1) math:difference ?N1.
-  (?SeedIn) :randomGenome (?Seed1 ?Genome).
-  (?N1 ?Seed1) :initPopulation (?SeedOut ?Rest).
-  ?Pop list:firstRest (?Genome ?Rest).
-} .
-
-{
-  (()) :scorePopulation ().
-}
-<=
-{
-} .
-
-{
-  (?Pop) :scorePopulation ?ScoredPop.
-}
-<=
-{
-  ?Pop list:firstRest (?G ?Gs).
-  (?G) :score ?S.
-  (?Gs) :scorePopulation ?RestScored.
-  ?ScoredPop list:firstRest ((?S ?G) ?RestScored).
-} .
-
-{
-  (?S1 ?G1 ?S2 ?G2) :betterPair (?S1 ?G1).
-}
-<=
-{
-  ?S1 math:lessThan ?S2.
-} .
-
-{
-  (?S1 ?G1 ?S2 ?G2) :betterPair (?S2 ?G2).
-}
-<=
-{
-  ?S1 math:notLessThan ?S2.
-} .
-
-{
-  (((?S ?G))) :bestScored (?S ?G).
-}
-<=
-{
-} .
-
-
-{
-  (?Scored) :bestScored (?BestS ?BestG).
-}
-<=
-{
-  ?Scored list:firstRest ((?S ?G) ?Tail).
-  ?Tail list:length ?L.
-  ?L math:greaterThan 0.
-  (?Tail) :bestScored (?TailS ?TailG).
-  (?S ?G ?TailS ?TailG) :betterPair (?BestS ?BestG).
-} .
-
-{
-  (?Scored ?SeedIn) :tournament2 (?SeedOut ?Gsel).
-}
-<=
-{
-  ?Scored list:length ?Len.
-  ?Len math:greaterThan 0.
-  (?Len ?SeedIn) :randBelow (?Seed1 ?I).
-  (?Scored ?I) list:memberAt (?S1 ?G1).
-  (?Len ?Seed1) :randBelow (?SeedOut ?J).
-  (?Scored ?J) list:memberAt (?S2 ?G2).
-  (?S1 ?G1 ?S2 ?G2) :betterPair (?_Sb ?Gsel).
-} .
-
-{
-  (0 ?Scored ?SeedIn) :childrenN (?SeedIn ()).
-}
-<=
-{
-} .
-
-{
-  (?N ?Scored ?SeedIn) :childrenN (?SeedOut ?Children).
-}
-<=
-{
-  ?N math:greaterThan 0.
-  (?N 1) math:difference ?N1.
-  (?Scored ?SeedIn) :tournament2 (?Seed1 ?P1).
-  (?Scored ?Seed1) :tournament2 (?Seed2 ?P2).
-  (?P1 ?P2 ?Seed2) :crossover (?Seed3 ?Child0).
-  (?Child0 ?Seed3) :mutate (?Seed4 ?Child).
-  (?N1 ?Scored ?Seed4) :childrenN (?SeedOut ?Rest).
-  ?Children list:firstRest (?Child ?Rest).
-} .
-
-{
-  (?Pop ?SeedIn) :stepPopulation (?SeedOut ?NextPop ?BestS ?BestG).
-}
-<=
-{
-  (?Pop) :scorePopulation ?Scored.
-  (?Scored) :bestScored (?BestS ?BestG).
-  :populationSize :is ?PopN.
-  (?PopN 1) math:difference ?ChildN.
-  (?ChildN ?Scored ?SeedIn) :childrenN (?SeedOut ?Children).
-  ?NextPop list:firstRest (?BestG ?Children).
-} .
-
-# ---------------------------------
-# Forward generation loop (bounded)
-# ---------------------------------
-
-{
-  :seed0 :is ?Seed0.
-  :populationSize :is ?N.
-  (?N ?Seed0) :initPopulation (?Seed1 ?Pop0).
-  (?Pop0) :scorePopulation ?Scored0.
-  (?Scored0) :bestScored (?BestS0 ?BestG0).
-}
-=>
-{
-  :run :state (0 ?BestS0 ?BestG0 ?Pop0 ?Seed1).
-} .
-
-{
-  :run :state (?Gen ?BestS ?BestG ?Pop ?SeedIn).
-  :scoreGoal :is ?Goal.
-  ?BestS math:greaterThan ?Goal.
-  :maxGenerations :is ?Max.
-  ?Gen math:lessThan ?Max.
-  (?Pop ?SeedIn) :stepPopulation (?SeedOut ?PopNext ?_PrevBestS ?_PrevBestG).
-  (?PopNext) :scorePopulation ?ScoredNext.
-  (?ScoredNext) :bestScored (?BestSNext ?BestGNext).
-  (?Gen 1) math:sum ?NextGen.
-}
-=>
-{
-  :run :state (?NextGen ?BestSNext ?BestGNext ?PopNext ?SeedOut).
-} .
-
+{ "METHINKS IT IS LIKE A WEASEL" :solved true .
+  ( "solve('%s').\n" "METHINKS IT IS LIKE A WEASEL" ) string:format ?Line
+} => { 1 log:outputString ?Line }.
