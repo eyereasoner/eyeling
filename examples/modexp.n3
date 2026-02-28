@@ -1,0 +1,87 @@
+# ==========================================
+# Fast modular exponentiation (repeated squaring)
+# ==========================================
+
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix :     <https://eyereasoner.github.io/ns#>.
+
+# (a * b) mod m
+{
+    (?A ?B ?M) :modMul ?R.
+} <= {
+    (?A ?B) math:product ?P.
+    (?P ?M) math:remainder ?R.
+}.
+
+# modPow(b, 0, m) = 1 mod m
+{
+    (?B 0 ?M) :modPow ?R.
+} <= {
+    ?M math:greaterThan 0.
+    (1 ?M) math:remainder ?R.
+}.
+
+# modPow(b, 1, m) = b mod m
+{
+    (?B 1 ?M) :modPow ?R.
+} <= {
+    ?M math:greaterThan 0.
+    (?B ?M) math:remainder ?R.
+}.
+
+# even exponent: modPow(b, e, m) = modPow((b*b mod m), e/2, m)
+{
+    (?B ?E ?M) :modPow ?R.
+} <= {
+    ?M math:greaterThan 0.
+    ?E math:greaterThan 1.
+    (?E 2) math:remainder 0.
+
+    (?B ?B ?M) :modMul ?B2.
+    (?E 2) math:integerQuotient ?Half.
+    (?B2 ?Half ?M) :modPow ?R.
+}.
+
+# odd exponent: modPow(b, e, m) = (b * modPow((b*b mod m), (e-1)/2, m)) mod m
+{
+    (?B ?E ?M) :modPow ?R.
+} <= {
+    ?M math:greaterThan 0.
+    ?E math:greaterThan 1.
+    (?E 2) math:remainder 1.
+
+    (?B ?B ?M) :modMul ?B2.
+    (?E 1) math:difference ?E1.
+    (?E1 2) math:integerQuotient ?Half.
+
+    (?B2 ?Half ?M) :modPow ?T.
+    (?B ?T ?M) :modMul ?R.
+}.
+
+# ----------------
+# tests / showcases
+# ----------------
+{
+    # sanity check against a small naive computation:
+    (7 13) math:exponentiation ?PowSmall.
+    (?PowSmall 97) math:remainder ?NaiveSmall.
+    (7 13 97) :modPow ?FastSmall.
+
+    # “impressive” case: 7^1,000,000,000 mod 1,000,000,007
+    (7 1000000000 1000000007) :modPow ?R1.
+
+    # exponent itself computed via exponentiation: 2^25 = 33,554,432
+    (2 25) math:exponentiation ?E25.
+    (3 ?E25 1000000007) :modPow ?R2.
+
+    # last 12 digits of 2^(2^20)
+    (2 20) math:exponentiation ?E20.
+    (2 ?E20 1000000000000) :modPow ?Last12.
+}
+=>
+{
+    :test :smallCheck [ :naive ?NaiveSmall; :fast ?FastSmall ].
+    :test :sevenPow1e9Mod1e9p7 ?R1.
+    :test :threePow2Pow25Mod1e9p7 ?R2.
+    :test :last12DigitsOf2Pow2Pow20 ?Last12.
+}.

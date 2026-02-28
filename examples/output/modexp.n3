@@ -1,0 +1,8 @@
+@prefix : <https://eyereasoner.github.io/ns#> .
+
+:test :smallCheck _:sk_0 .
+_:sk_0 :naive 38 .
+_:sk_0 :fast 38 .
+:test :sevenPow1e9Mod1e9p7 312556845 .
+:test :threePow2Pow25Mod1e9p7 849572438 .
+:test :last12DigitsOf2Pow2Pow20 940335579136 .

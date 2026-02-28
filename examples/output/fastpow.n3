@@ -1,0 +1,10 @@
+@prefix : <http://example.org/fastpow#> .
+
+:test :is {
+    (2 10) :pow 1024 .
+    (2 10) :powSlow 1024 .
+    (2 10000) :powMod1e6 709376 .
+    (3 10000) :powMod1e6 200001 .
+    (2 4) :tower 65536 .
+    (2 5) :towerMod1e6 156736 .
+} .

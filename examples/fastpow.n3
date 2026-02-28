@@ -1,0 +1,111 @@
+# ========================
+# Fast exponentiation demo
+# ========================
+#
+# Shows why using math:exponentiation (BigInt-capable) matters.
+# The naive :powSlow definition uses repeated multiplication and should
+# only be used for small exponents.
+
+@prefix :     <http://example.org/fastpow#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix log:  <http://www.w3.org/2000/10/swap/log#>.
+
+# ----------------------
+# Fast power via builtin
+# ----------------------
+# pow(base, exp) = base^exp
+{
+  (?B ?E) :pow ?R.
+} <= {
+  (?B ?E) math:exponentiation ?R.
+}.
+
+# --------------------------------
+# Slow power via repeated multiply
+# --------------------------------
+# powSlow(base, 0) = 1
+{
+  (?B 0) :powSlow 1.
+} <= {
+  0 math:equalTo 0.
+}.
+
+# powSlow(base, E>0) = powSlow(base, E-1) * base
+{
+  (?B ?E) :powSlow ?R.
+} <= {
+  ?E math:greaterThan 0.
+  (?E 1) math:difference ?E1.
+  (?B ?E1) :powSlow ?Prev.
+  (?Prev ?B) math:product ?R.
+}.
+
+# ----------------------------------
+# Power tower (tetration) using :pow
+# ----------------------------------
+# tower(base, 0) = 1
+{
+  (?B 0) :tower 1.
+} <= {
+  0 math:equalTo 0.
+}.
+
+# tower(base, H>0) = base ^ tower(base, H-1)
+{
+  (?B ?H) :tower ?R.
+} <= {
+  ?H math:greaterThan 0.
+  (?H 1) math:difference ?H1.
+  (?B ?H1) :tower ?Prev.
+  (?B ?Prev) math:exponentiation ?R.
+}.
+
+# -----------------------------------------
+# “Projection” helpers to keep output small
+# -----------------------------------------
+# powMod1e6(base, exp) = (base^exp) mod 1,000,000
+{
+  (?B ?E) :powMod1e6 ?M.
+} <= {
+  (?B ?E) :pow ?R.
+  (?R 1000000) math:remainder ?M.
+}.
+
+# towerMod1e6(base, height) = tower(base,height) mod 1,000,000
+{
+  (?B ?H) :towerMod1e6 ?M.
+} <= {
+  (?B ?H) :tower ?R.
+  (?R 1000000) math:remainder ?M.
+}.
+
+# ----
+# test
+# ----
+{
+  # small sanity: fast and slow should agree
+  (2 10) :pow ?P10.
+  (2 10) :powSlow ?S10.
+
+  # big exponent, but only output mod 1e6 (so results stay short)
+  (2 10000) :powMod1e6 ?M1.
+  (3 10000) :powMod1e6 ?M2.
+
+  # power tower (2 ↑↑ 4 = 65536), and a slightly larger one modulo 1e6
+  (2 4) :tower ?T4.
+  (2 5) :towerMod1e6 ?TM5.
+
+  # WARNING: uncommenting this will be slow / memory-hungry (repeat multiply)
+  # (2 10000) :powSlow ?Boom.
+}
+=>
+{
+  :test :is {
+    (2 10) :pow ?P10.
+    (2 10) :powSlow ?S10.
+    (2 10000) :powMod1e6 ?M1.
+    (3 10000) :powMod1e6 ?M2.
+    (2 4) :tower ?T4.
+    (2 5) :towerMod1e6 ?TM5.
+  }.
+}.
