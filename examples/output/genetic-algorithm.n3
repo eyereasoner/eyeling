@@ -1,3 +1,3 @@
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 
-1 log:outputString "solve('METHINKS IT IS LIKE A WEASEL').\n" .
+1 log:outputString "GA evolved 11111101010 -> 2026 in 8 generations.\n" .

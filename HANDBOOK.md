@@ -1555,12 +1555,6 @@ If `i` is out of range, `out` is the original string.
 
 Returns the number of differing positions between `a` and `b`. Fails if the two strings have different lengths.
 
-#### `string:mutateSelectBest`
-
-**Shape:** `( samples current target mutProb seedState ) string:mutateSelectBest ( best bestScore seedState2 )`
-
-Generates `samples` mutated variants of `current` (mutating each character with probability `mutProb` percent), scores each candidate against `target` (Hamming distance), and returns the best candidate (lowest score). RNG is a deterministic 31-bit LCG, threaded via `seedState` → `seedState2`, so runs are reproducible.
-
 ### Containment and prefix/suffix tests
 
 - `string:contains`

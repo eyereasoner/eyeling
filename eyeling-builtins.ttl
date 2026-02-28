@@ -346,5 +346,3 @@ string:setCharAt a ex:Builtin ; ex:kind ex:Function ;
 string:hammingDistance a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Function: subject is a 2-item list (a b). Binds/unifies object with the number of differing positions (Hamming distance). Fails if lengths differ." .
 
-string:mutateSelectBest a ex:Builtin ; ex:kind ex:Function ;
-  rdfs:comment "Shape: (samples current target mutProb seedState) string:mutateSelectBest (best bestScore seedState2). Generates samples mutated variants of current (mutating each character with probability mutProb percent), scores each candidate against target (Hamming distance), and returns the best candidate (lowest score). RNG is a deterministic 31-bit LCG, threaded via seedState → seedState2, so runs are reproducible." .

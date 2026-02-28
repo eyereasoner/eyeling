@@ -1,19 +1,17 @@
 # ==========================================================================================
 # Genetic algorithm demo
 #
-# Genetic algorithm (GA) in a nutshell:
-# - Start with a random candidate string of the same length as the target.
-# - Repeatedly create a batch of “children” by copying the current best string and randomly
-#   mutating each character with a small probability.
-# - Score each child by how many positions differ from the target (Hamming distance).
-# - Keep the best-scoring child as the new current string and iterate until the score is 0.
-# This is a simple hill-climbing GA (selection + mutation, no crossover), using a seeded RNG
-# so runs are reproducible.
+# We "evolve" a genome (a bitstring) that encodes a target integer.
 #
-# The GA is still expressed as backward rules (<=) for the outer evolution loop,
-# but the expensive inner loop ("take N mutated samples and keep the best") is
-# handled by a single string builtin to avoid huge proof trees and OOM.
+# - Genome: a string of '0'/'1' bits (same length as :weights).
+# - Phenotype: sum of selected weights where the genome bit is '1'.
+# - Fitness: remaining distance to the target, with a heavy penalty for overshoot:
+#     if sum <= target: fitness = target - sum
+#     if sum >  target: fitness = 1_000_000 + (sum - target)
+# - Variation: single-point mutation (flip one bit).
+# - Selection: pick the candidate with the lowest fitness (ties keep the earlier candidate).
 #
+# With powers-of-two weights, this deterministic hill-climbing GA converges quickly.
 # ==========================================================================================
 
 @prefix :       <urn:ga:>.
@@ -23,155 +21,200 @@
 @prefix string: <http://www.w3.org/2000/10/swap/string#>.
 
 :cfg
-  :mutationProbability 5;
-  :samples 80;
-  :seed 100;
+  :target 2026;
+  :maxGenerations 64;
 
-  # Debug knobs:
-  :traceEvery 1;        # 0 disables; 1 traces every generation
-  :maxGenerations 0;    # 0 means unlimited
+  # weights align with bit positions (index 0 is the left-most bit):
+  # genome = b0 b1 ... b10
+  # value  = b0*1024 + b1*512 + ... + b10*1
+  :weights (1024 512 256 128 64 32 16 8 4 2 1).
 
-  :alphabet (" " "A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M"
-             "N" "O" "P" "Q" "R" "S" "T" "U" "V" "W" "X" "Y" "Z").
+# -------------
+# small helpers
+# -------------
 
-# ------------------------
-# Small arithmetic helpers
-# ------------------------
-
-{ ( ?N 1 ) :dec ?N1 } <= { ( ?N 1 ) math:difference ?N1 }.
 { ( ?N 1 ) :inc ?N1 } <= { ( ?N 1 ) math:sum ?N1 }.
 
-# ----------------------------------------------
-# Seeded RNG (LCG) and JS Math.round(rnd() * N)
-# (Used only for the initial random chromosome.)
-# ----------------------------------------------
+# build a string of N zeros
+{ ( 0 ) :zeros "" } <= true.
 
-{ ?S0 :lcgNext ?S1 } <= {
-  ( ?S0 1103515245 ) math:product ?P .
-  ( ?P 12345 ) math:sum ?T .
-  ( ?T 2147483648 ) math:remainder ?S1
+{ ( ?N ) :zeros ?S } <= {
+  ?N math:greaterThan 0 .
+  ( ?N 1 ) math:difference ?N1 .
+  ( ?N1 ) :zeros ?Rest .
+  ( "%s%s" "0" ?Rest ) string:format ?S
 }.
 
-{ ( ?S0 ?N ) :randRound ( ?R ?S1 ) } <= {
-  ?S0 :lcgNext ?S1 .
-  ( ?S1 ?N ) math:product ?A .
-  ( ?A ?A ) math:sum ?TwoA .
-  ( ?TwoA 2147483648 ) math:sum ?Num .
-  ( 2147483648 2 ) math:product ?Den .
-  ( ?Num ?Den ) math:integerQuotient ?R
+# flip a bit at index i in a 0/1 string
+{ ( ?S ?I ) :flipBit ?Out } <= {
+  ( ?S ?I ) string:charAt "0" .
+  ( ?S ?I "1" ) string:setCharAt ?Out
 }.
 
-{ ?S0 :randomAlpha ( ?Ch ?S1 ) } <= {
-  :cfg :alphabet ?Alphabet .
-  ( ?S0 26 ) :randRound ( ?Idx ?S1 ) .
-  ( ?Alphabet ?Idx ) list:memberAt ?Ch
+{ ( ?S ?I ) :flipBit ?Out } <= {
+  ( ?S ?I ) string:charAt "1" .
+  ( ?S ?I "0" ) string:setCharAt ?Out
 }.
 
-{ ( 0 ?S0 ) :randomText ( "" ?S0 ) } <= true.
+# generate all single-bit mutants of S: [flip(0), flip(1), ..., flip(len-1)]
+{ ( ?S ?Len ) :mutants ?Out } <= {
+  ( ?S 0 ?Len ) :mutantsFrom ?Out
+}.
 
-{ ( ?Len ?S0 ) :randomText ( ?Out ?S2 ) } <= {
-  ?Len math:greaterThan 0 .
-  ( ?Len 1 ) :dec ?Len1 .
-  ?S0 :randomAlpha ( ?Ch ?S1 ) .
-  ( ?Len1 ?S1 ) :randomText ( ?Rest ?S2 ) .
-  ( "%s%s" ?Ch ?Rest ) string:format ?Out
+{ ( ?S ?I ?Len ) :mutantsFrom () } <= {
+  ?I math:equalTo ?Len
+}.
+
+{ ( ?S ?I ?Len ) :mutantsFrom ?Out } <= {
+  ?I math:lessThan ?Len .
+  ( ?S ?I ) :flipBit ?Cand .
+  ( ?I 1 ) :inc ?I1 .
+  ( ?S ?I1 ?Len ) :mutantsFrom ?Rest .
+  ( ( ?Cand ) ?Rest ) list:append ?Out
+}.
+
+# ------------------------
+# decode genome -> integer
+# ------------------------
+
+{ ( ?Bits ?Weights ) :value ?Sum } <= {
+  ?Bits string:length ?Len .
+  ( ?Bits ?Weights 0 ?Len 0 ) :valueAcc ?Sum
+}.
+
+{ ( ?Bits ?Weights ?I ?Len ?Acc ) :valueAcc ?Acc } <= {
+  ?I math:equalTo ?Len
+}.
+
+{ ( ?Bits ?Weights ?I ?Len ?Acc ) :valueAcc ?Sum } <= {
+  ?I math:lessThan ?Len .
+  ( ?Weights ?I ) list:memberAt ?W .
+
+  ( ?Bits ?I ) string:charAt "1" .
+  ( ?Acc ?W ) math:sum ?Acc1 .
+  ( ?I 1 ) :inc ?I1 .
+  ( ?Bits ?Weights ?I1 ?Len ?Acc1 ) :valueAcc ?Sum
+}.
+
+{ ( ?Bits ?Weights ?I ?Len ?Acc ) :valueAcc ?Sum } <= {
+  ?I math:lessThan ?Len .
+  ( ?Weights ?I ) list:memberAt ?W .
+
+  ( ?Bits ?I ) string:charAt "0" .
+  ( ?I 1 ) :inc ?I1 .
+  ( ?Bits ?Weights ?I1 ?Len ?Acc ) :valueAcc ?Sum
 }.
 
 # -------------------------
-# tracing helper (optional)
+# fitness (lower is better)
 # -------------------------
 
-{ ( 0 ?Gen ?Score ?Value ) :traceMaybe true } <= true.
+{ ( ?Sum ?Target ) :fitness ?F } <= {
+  ?Sum math:notGreaterThan ?Target .
+  ( ?Target ?Sum ) math:difference ?F
+}.
 
-{ ( ?Every ?Gen ?Score ?Value ) :traceMaybe true } <= {
-  ?Every math:greaterThan 0 .
-  ( ?Gen ?Every ) math:remainder ?R .
-  ?R math:equalTo 0 .
-  ?Gen log:trace ( ?Score ?Value )
+{ ( ?Sum ?Target ) :fitness ?F } <= {
+  ?Sum math:greaterThan ?Target .
+  ( ?Sum ?Target ) math:difference ?Over .
+  ( 1000000 ?Over ) math:sum ?F
+}.
+
+{ ( ?Bits ?Target ?Weights ) :candidateScore ( ?Fit ?Sum ) } <= {
+  ( ?Bits ?Weights ) :value ?Sum .
+  ( ?Sum ?Target ) :fitness ?Fit
+}.
+
+# pick best of two candidates by fitness (ties keep the left candidate)
+{ ( ?C1 ?S1 ?Sum1 ?C2 ?S2 ?Sum2 ) :pickBest ( ?C1 ?S1 ?Sum1 ) } <= {
+  ?S1 math:notGreaterThan ?S2
+}.
+
+{ ( ?C1 ?S1 ?Sum1 ?C2 ?S2 ?Sum2 ) :pickBest ( ?C2 ?S2 ?Sum2 ) } <= {
+  ?S1 math:greaterThan ?S2
+}.
+
+# best candidate from a list
+{ ( ?Target ?Weights ?L ) :bestMutant ( ?Best ?BestScore ?BestSum ) } <= {
+  ?L list:length 1 .
+  ?L list:first ?Best .
+  ( ?Best ?Target ?Weights ) :candidateScore ( ?BestScore ?BestSum )
+}.
+
+{ ( ?Target ?Weights ?L ) :bestMutant ( ?Best ?BestScore ?BestSum ) } <= {
+  ?L list:length ?N .
+  ?N math:greaterThan 1 .
+
+  ?L list:first ?H .
+  ?L list:rest ?T .
+
+  ( ?Target ?Weights ?T ) :bestMutant ( ?B2 ?S2 ?Sum2 ) .
+  ( ?H ?Target ?Weights ) :candidateScore ( ?S1 ?Sum1 ) .
+
+  ( ?H ?S1 ?Sum1 ?B2 ?S2 ?Sum2 ) :pickBest ( ?Best ?BestScore ?BestSum )
 }.
 
 # --------------
 # evolution loop
 # --------------
 
-# Stop when score == 0
-{ ( ?Current 0 ?Target ?MutProb ?Samples ?Gen ?S0 ?MaxGen ?TraceEvery )
-    :evolve ( ?Current ?Gen ?S0 ) } <= true.
+# solved
+{ ( ?Bits ?Target ?Weights ?Gen ?MaxGen ) :evolve ( ?Bits ?Gen ) } <= {
+  ( ?Bits ?Target ?Weights ) :candidateScore ( 0 ?Sum )
+}.
 
-# Stop when generation cap is reached (only if MaxGen > 0)
-{ ( ?Current ?Score ?Target ?MutProb ?Samples ?Gen ?S0 ?MaxGen ?TraceEvery )
-    :evolve ( ?Current ?Gen ?S0 ) } <= {
-  ?Score math:notEqualTo 0 .
-  ?MaxGen math:greaterThan 0 .
+# generation cap (safety)
+{ ( ?Bits ?Target ?Weights ?Gen ?MaxGen ) :evolve ( ?Bits ?Gen ) } <= {
   ?Gen math:equalTo ?MaxGen
 }.
 
-# Unlimited run (MaxGen == 0): keep evolving
-{ ( ?Current ?Score ?Target ?MutProb ?Samples ?Gen ?S0 0 ?TraceEvery )
-    :evolve ( ?Final ?FinalGen ?S2 ) } <= {
-  ?Score math:notEqualTo 0 .
-  ( ?Samples ?Current ?Target ?MutProb ?S0 )
-    string:mutateSelectBest
-  ( ?Best ?BestScore ?S1 ) .
-  ( ?Gen 1 ) :inc ?Gen1 .
-  ( ?TraceEvery ?Gen1 ?BestScore ?Best ) :traceMaybe true .
-  ( ?Best ?BestScore ?Target ?MutProb ?Samples ?Gen1 ?S1 0 ?TraceEvery )
-    :evolve ( ?Final ?FinalGen ?S2 )
-}.
-
-# Bounded run (MaxGen > 0): keep evolving while Gen < MaxGen
-{ ( ?Current ?Score ?Target ?MutProb ?Samples ?Gen ?S0 ?MaxGen ?TraceEvery )
-    :evolve ( ?Final ?FinalGen ?S2 ) } <= {
-  ?Score math:notEqualTo 0 .
-  ?MaxGen math:greaterThan 0 .
+# stop if best doesn't improve
+{ ( ?Bits ?Target ?Weights ?Gen ?MaxGen ) :evolve ( ?Bits ?Gen ) } <= {
   ?Gen math:lessThan ?MaxGen .
-  ( ?Samples ?Current ?Target ?MutProb ?S0 )
-    string:mutateSelectBest
-  ( ?Best ?BestScore ?S1 ) .
+  ( ?Bits ?Target ?Weights ) :candidateScore ( ?Score ?Sum ) .
+
+  ?Bits string:length ?Len .
+  ( ?Bits ?Len ) :mutants ?Ms .
+  ( ( ?Bits ) ?Ms ) list:append ?Candidates .
+
+  ( ?Target ?Weights ?Candidates ) :bestMutant ( ?Best ?BestScore ?BestSum ) .
+  ?BestScore math:equalTo ?Score
+}.
+
+# keep evolving while improvement exists
+{ ( ?Bits ?Target ?Weights ?Gen ?MaxGen ) :evolve ( ?Final ?FinalGen ) } <= {
+  ?Gen math:lessThan ?MaxGen .
+  ( ?Bits ?Target ?Weights ) :candidateScore ( ?Score ?Sum ) .
+
+  ?Bits string:length ?Len .
+  ( ?Bits ?Len ) :mutants ?Ms .
+  ( ( ?Bits ) ?Ms ) list:append ?Candidates .
+
+  ( ?Target ?Weights ?Candidates ) :bestMutant ( ?Best ?BestScore ?BestSum ) .
+  ?BestScore math:notEqualTo ?Score .
+
   ( ?Gen 1 ) :inc ?Gen1 .
-  ( ?TraceEvery ?Gen1 ?BestScore ?Best ) :traceMaybe true .
-  ( ?Best ?BestScore ?Target ?MutProb ?Samples ?Gen1 ?S1 ?MaxGen ?TraceEvery )
-    :evolve ( ?Final ?FinalGen ?S2 )
+  ( ?Best ?Target ?Weights ?Gen1 ?MaxGen ) :evolve ( ?Final ?FinalGen )
 }.
 
-# ----------------------------------
-# Public solver wrapper (string API)
-# ----------------------------------
+# --------------
+# query / output
+# --------------
 
-{ ?TargetString :solveResult ( ?Gen 0 ?Value ?Seed ) } <= {
-  :cfg :mutationProbability ?MutProb;
-       :samples ?Samples;
-       :seed ?Seed;
-       :traceEvery ?TraceEvery;
-       :maxGenerations ?MaxGen.
+{
+  :cfg :target ?T;
+       :maxGenerations ?Max;
+       :weights ?W.
 
-  ?TargetString string:length ?Len .
+  ?W list:length ?Len .
+  ( ?Len ) :zeros ?Start .
 
-  ( ?Len ?Seed ) :randomText ( ?Current0 ?S1 ) .
+  ( ?Start ?T ?W 0 ?Max ) :evolve ( ?Best ?Gen ) .
+  ( ?Best ?W ) :value ?Sum .
+  ?Sum math:equalTo ?T .
 
-  # initial score using string:hammingDistance
-  ( ?Current0 ?TargetString ) string:hammingDistance ?Score0 .
-
-  ( ?Current0 ?Score0 ?TargetString ?MutProb ?Samples 0 ?S1 ?MaxGen ?TraceEvery )
-    :evolve
-  ( ?Value ?Gen ?S2 ) .
-
-  # Succeeds only when solved:
-  ( ?Value ?TargetString ) string:hammingDistance 0 .
-  ?Value log:equalTo ?TargetString .
-  ?S2 log:equalTo ?_FinalSeedState
-}.
-
-{ ?TargetString :solved true } <= {
-  ?TargetString :solveResult ( ?Gen 0 ?TargetString ?Seed )
-}.
-
-# --------------------------------------------------------
-# Requested output: solve('METHINKS IT IS LIKE A WEASEL').
-# --------------------------------------------------------
-
-{ "METHINKS IT IS LIKE A WEASEL" :solved true .
-  ( "solve('%s').\n" "METHINKS IT IS LIKE A WEASEL" ) string:format ?Line
+  ( "GA evolved %s -> %s in %s generations.\n" ?Best ?Sum ?Gen )
+    string:format ?Line
 }
 log:query
 { 1 log:outputString ?Line }.

@@ -3610,89 +3610,6 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     return s2 !== null ? [s2] : [];
   }
 
-  // string:mutateSelectBest
-  // Schema:
-  //   ( $samples $current $target $mutProb $seedState )
-  //     string:mutateSelectBest
-  //   ( $best $bestScore $seedState2 )
-  //
-  // Deterministic 31-bit LCG (same as the GA demo):
-  //   state = (1103515245 * state + 12345) % 2^31
-  // and randRound(N) = Math.round((state/2^31) * N) with state advanced once per draw.
-  if (pv === STRING_NS + 'mutateSelectBest') {
-    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 5) return [];
-
-    const samplesNum = parseNum(g.s.elems[0]);
-    const current = termToJsXsdStringNoLang(g.s.elems[1]);
-    const target = termToJsXsdStringNoLang(g.s.elems[2]);
-    const mutProbNum = parseNum(g.s.elems[3]);
-    const seedNum = parseNum(g.s.elems[4]);
-
-    if (samplesNum === null || current === null || target === null || mutProbNum === null || seedNum === null)
-      return [];
-    if (current.length !== target.length) return [];
-
-    const samples = Math.max(1, Math.trunc(samplesNum));
-    const mutProb = Math.max(0, Math.trunc(mutProbNum));
-    const seed0 = Math.trunc(seedNum);
-
-    let state = BigInt(seed0);
-    const MOD = 2147483648n; // 2^31
-    const A = 1103515245n;
-    const C = 12345n;
-
-    function rnd() {
-      state = (A * state + C) % MOD;
-      return Number(state) / 2147483648;
-    }
-
-    function randRound(N) {
-      return Math.round(rnd() * N);
-    }
-
-    function randomAlpha() {
-      const p = randRound(26);
-      return p === 0 ? ' ' : String.fromCharCode(64 + p);
-    }
-
-    function mutate(str) {
-      let out = '';
-      for (let i = 0; i < str.length; i++) {
-        const p = randRound(100);
-        if (p > mutProb) out += str[i];
-        else out += randomAlpha();
-      }
-      return out;
-    }
-
-    function score(str) {
-      let diffs = 0;
-      for (let i = 0; i < target.length; i++) if (str[i] !== target[i]) diffs++;
-      return diffs;
-    }
-
-    let best = '';
-    let bestScore = Infinity;
-
-    for (let i = 0; i < samples; i++) {
-      const cand = mutate(current);
-      const candScore = score(cand);
-      if (candScore < bestScore) {
-        best = cand;
-        bestScore = candScore;
-      }
-    }
-
-    const outList = new ListTerm([
-      makeStringLiteral(best),
-      internLiteral(String(bestScore)),
-      internLiteral(state.toString()),
-    ]);
-
-    const s2 = unifyTerm(g.o, outList, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
   // Unknown builtin
   return [];
 }
@@ -3962,7 +3879,7 @@ function main() {
       `  -e, --enforce-https          Rewrite http:// IRIs to https:// for log dereferencing builtins.\n` +
       `  -h, --help                   Show this help and exit.\n` +
       `  -p, --proof-comments         Enable proof explanations.\n` +
-      `  -r, --strings                Print log:outputString strings (ordered by key) instead of N3 output.\n` +
+      `  -r, --strings                Print log:outputString strings (ordered by key), including via log:query.\n` +
       `  -s, --super-restricted       Disable all builtins except => and <=.\n` +
       `  -t, --stream                 Stream derived triples as soon as they are derived.\n` +
       `  -v, --version                Print version and exit.\n`;
@@ -4072,8 +3989,21 @@ function main() {
   // If requested, print log:outputString values (ordered by subject key) and exit.
   // Note: log:outputString values may depend on derived facts, so we must saturate first.
   if (outputStringsMode) {
-    engine.forwardChain(facts, frules, brules);
-    const out = engine.collectOutputStringsFromFacts(facts, prefixes);
+    const hasQueries = Array.isArray(qrules) && qrules.length;
+
+    // If log:query directives are present, the intended output may not be part of the
+    // saturated fact store (queries are output-selection statements). In that case,
+    // collect log:outputString triples from the instantiated query conclusions.
+    let outTriples;
+    if (hasQueries) {
+      const res = engine.forwardChainAndCollectLogQueryConclusions(facts, frules, brules, qrules);
+      outTriples = res.queryTriples;
+    } else {
+      engine.forwardChain(facts, frules, brules);
+      outTriples = facts;
+    }
+
+    const out = engine.collectOutputStringsFromFacts(outTriples, prefixes);
     if (out) process.stdout.write(out);
     process.exit(0);
   }
