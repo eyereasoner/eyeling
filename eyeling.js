@@ -64,6 +64,11 @@ const __parseNumericInfoCache = new Map(); // lit string -> info|null
 // Caching them retains giant strings/BigInts in global Maps and can cause OOM.
 const MAX_NUMERIC_CACHE_KEY_LEN = 1024;
 
+// Safety cap for BigInt exponentiation results.
+// Prevents accidental creation of enormous integers that would OOM the process.
+// (Ackermann(4,2) is ~65k bits, so well below this.)
+const MAX_BIGINT_POW_RESULT_BITS = 2_000_000n;
+
 function __useNumericCacheKey(key) {
   return typeof key === 'string' && key.length <= MAX_NUMERIC_CACHE_KEY_LEN;
 }
@@ -601,6 +606,31 @@ function parseXsdDecimalToBigIntScale(s) {
 
 function pow10n(k) {
   return 10n ** BigInt(k);
+}
+
+function absBigInt(x) {
+  return x < 0n ? -x : x;
+}
+
+function bigintBitLength(x) {
+  // Returns the bit length of |x| as a BigInt (0 for 0).
+  const a = absBigInt(x);
+  if (a === 0n) return 0n;
+  // toString(2) is fine here: we only use this as a conservative size guard.
+  return BigInt(a.toString(2).length);
+}
+
+function estimatePowResultBits(base, exp) {
+  // Conservative estimate of bit length for |base| ** exp (exp >= 0).
+  // For |base| in {0,1} this is tiny; otherwise ~ exp * log2(|base|).
+  if (exp === 0n) return 1n;
+  const a = absBigInt(base);
+  if (a === 0n) return 1n; // 0**k (k>0) => 0
+  if (a === 1n) return 1n;
+  const bl = bigintBitLength(a);
+  // If bl is the bit length, then 2^(bl-1) <= a < 2^bl.
+  // So a^exp has < bl*exp bits and >= (bl-1)*exp+1 bits.
+  return (bl - 1n) * exp + 1n;
 }
 
 // ===========================================================================
@@ -1762,50 +1792,87 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   }
 
   // math:exponentiation
-  if (pv === MATH_NS + 'exponentiation') {
-    if (g.s instanceof ListTerm && g.s.elems.length === 2) {
-      const baseTerm = g.s.elems[0];
-      const expTerm = g.s.elems[1];
+  // math:bigExponentiation (exact-integer BigInt-only variant)
+  if (pv === MATH_NS + 'exponentiation' || pv === MATH_NS + 'bigExponentiation') {
+    const onlyBigInt = pv === MATH_NS + 'bigExponentiation';
 
-      const a = parseNum(baseTerm);
-      let b = null;
-      if (a !== null) b = parseNum(expTerm);
+    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
+    const baseTerm = g.s.elems[0];
+    const expTerm = g.s.elems[1];
 
-      // Forward mode: base and exponent are numeric
-      if (a !== null && b !== null) {
-        const cVal = a ** b;
-        if (!Number.isFinite(cVal)) return [];
+    // 1) Exact integer mode (BigInt): (base exponent) -> result
+    //    This avoids huge intermediate derivations for things like Ackermann(4,2).
+    const baseI = parseIntLiteral(baseTerm);
+    const expI = parseIntLiteral(expTerm);
+    if (baseI !== null && expI !== null && expI >= 0n) {
+      // Size guard: refuse powers that would almost certainly OOM.
+      const estBits = estimatePowResultBits(baseI, expI);
+      if (estBits > MAX_BIGINT_POW_RESULT_BITS) return [];
 
-        let dtOut = commonNumericDatatype([baseTerm, expTerm], g.o);
-        if (dtOut === XSD_INTEGER_DT && !Number.isInteger(cVal)) dtOut = XSD_DECIMAL_DT;
-        const lit = makeNumericOutputLiteral(cVal, dtOut);
-
-        if (g.o instanceof Var) {
-          const s2 = { ...subst };
-          s2[g.o.name] = lit;
-          return [s2];
-        }
-        if (g.o instanceof Blank) return [{ ...subst }];
-        if (numEqualTerm(g.o, cVal)) return [{ ...subst }];
+      let out;
+      try {
+        out = baseI ** expI;
+      } catch {
+        return [];
       }
 
-      // Inverse mode: solve exponent
-      const c = parseNum(g.o);
-      if (a !== null && expTerm instanceof Var && c !== null) {
-        if (a > 0.0 && a !== 1.0 && c > 0.0) {
-          const bVal = Math.log(c) / Math.log(a);
-          if (!Number.isFinite(bVal)) return [];
+      const lit = makeNumericOutputLiteral(out, XSD_INTEGER_DT);
 
-          let dtB = commonNumericDatatype([baseTerm, g.o], expTerm);
-          if (dtB === XSD_INTEGER_DT && !Number.isInteger(bVal)) dtB = XSD_DECIMAL_DT;
-
-          const s2 = { ...subst };
-          s2[expTerm.name] = makeNumericOutputLiteral(bVal, dtB);
-          return [s2];
-        }
+      if (g.o instanceof Var) {
+        const s2 = { ...subst };
+        s2[g.o.name] = lit;
+        return [s2];
       }
-      return [];
+      if (g.o instanceof Blank) return [{ ...subst }];
+
+      const oi = parseIntLiteral(g.o);
+      if (oi !== null && oi === out) return [{ ...subst }];
+
+      const s2 = unifyTerm(g.o, lit, subst);
+      return s2 !== null ? [s2] : [];
     }
+
+    // bigExponentiation is intentionally strict.
+    if (onlyBigInt) return [];
+
+    // 2) Numeric mode (Number): forward + limited inverse
+    const a = parseNum(baseTerm);
+    const b = a !== null ? parseNum(expTerm) : null;
+
+    // Forward
+    if (a !== null && b !== null) {
+      const cVal = a ** b;
+      if (!Number.isFinite(cVal)) return [];
+
+      let dtOut = commonNumericDatatype([baseTerm, expTerm], g.o);
+      if (dtOut === XSD_INTEGER_DT && !Number.isInteger(cVal)) dtOut = XSD_DECIMAL_DT;
+      const lit = makeNumericOutputLiteral(cVal, dtOut);
+
+      if (g.o instanceof Var) {
+        const s2 = { ...subst };
+        s2[g.o.name] = lit;
+        return [s2];
+      }
+      if (g.o instanceof Blank) return [{ ...subst }];
+      if (numEqualTerm(g.o, cVal)) return [{ ...subst }];
+    }
+
+    // Inverse: solve exponent using logs (Number mode only)
+    const c = parseNum(g.o);
+    if (a !== null && expTerm instanceof Var && c !== null) {
+      if (a > 0.0 && a !== 1.0 && c > 0.0) {
+        const bVal = Math.log(c) / Math.log(a);
+        if (!Number.isFinite(bVal)) return [];
+
+        let dtB = commonNumericDatatype([baseTerm, g.o], expTerm);
+        if (dtB === XSD_INTEGER_DT && !Number.isInteger(bVal)) dtB = XSD_DECIMAL_DT;
+
+        const s2 = { ...subst };
+        s2[expTerm.name] = makeNumericOutputLiteral(bVal, dtB);
+        return [s2];
+      }
+    }
+    return [];
   }
 
   // math:absoluteValue
@@ -3556,9 +3623,6 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   // Deterministic 31-bit LCG (same as the GA demo):
   //   state = (1103515245 * state + 12345) % 2^31
   // and randRound(N) = Math.round((state/2^31) * N) with state advanced once per draw.
-  //
-  // This builtin exists to keep GA-style "many samples × many characters" loops out of
-  // the proof search (dramatically reducing memory use).
   if (pv === STRING_NS + 'mutateSelectBest') {
     if (!(g.s instanceof ListTerm) || g.s.elems.length !== 5) return [];
 

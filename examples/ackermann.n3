@@ -39,17 +39,24 @@
     (?Y ?Z) math:product ?A.
 }.
 
+# exponentiation (x=3) — use BigInt exponentiation builtin to avoid blow-up
+{
+    (3 ?Y ?Z) :ackermann ?A.
+} <= {
+    (?Z ?Y) math:bigExponentiation ?A.
+}.
+
 # exponentiation (x=3), tetration (x=4), pentation (x=5), hexation (x=6), etc
 {
     (?X 0 ?Z) :ackermann 1.
 } <= {
-    ?X math:greaterThan 2.
+    ?X math:greaterThan 3.
 }.
 
 {
     (?X ?Y ?Z) :ackermann ?A.
 } <= {
-    ?X math:greaterThan 2.
+    ?X math:greaterThan 3.
     ?Y math:notEqualTo 0.
     (?Y 1) math:difference ?B.
     (?X ?B ?Z) :ackermann ?C.
@@ -69,7 +76,7 @@
     (3 1000) :ackermann ?A7.
     (4 0) :ackermann ?A8.
     (4 1) :ackermann ?A9.
-    #(4 2) :ackermann ?A10.
+    (4 2) :ackermann ?A10.
     (5 0) :ackermann ?A11.
 } => {
     :test :is {
@@ -83,7 +90,7 @@
         (3 1000) :ackermann ?A7.
         (4 0) :ackermann ?A8.
         (4 1) :ackermann ?A9.
-        #(4 2) :ackermann ?A10.
+        (4 2) :ackermann ?A10.
         (5 0) :ackermann ?A11.
     }.
 }.

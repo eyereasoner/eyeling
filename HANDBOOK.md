@@ -969,13 +969,25 @@ If the types don’t fit any supported case, the builtin fails.
 
 **Shape:** `( $base $exp ) math:exponentiation $result`
 
-- Forward direction: if base and exponent are numeric, computes `base ** exp`.
+- Forward direction supports two modes:
+  - **Exact integer mode (BigInt):** if `$base` and `$exp` are integer literals and `$exp >= 0`, Eyeling computes the exact integer power using BigInt (with a safety cap on the estimated result size to avoid OOM).
+  - **Numeric mode (Number):** otherwise, if base and exponent parse as finite Numbers, computes `base ** exp`.
 - Reverse direction (limited): Eyeling can sometimes solve for the exponent if:
   - base and result are numeric, finite, and **positive**
   - base is not 1
   - exponent is unbound In that case it uses logarithms: `exp = log(result) / log(base)`.
 
 This is a pragmatic inversion, not a full algebra system.
+
+#### `math:bigExponentiation`
+
+**Shape:** `( $base $exp ) math:bigExponentiation $result`
+
+- Exact integer exponentiation only.
+- Requires integer `$base` and non-negative integer `$exp`.
+- Fails if the estimated output size exceeds Eyeling’s built-in safety cap.
+
+This builtin exists to avoid rule-level “repeat multiply” derivations that can explode memory for large exponents (e.g., the Ackermann example).
 
 #### Unary “math relations” (often invertible)
 
