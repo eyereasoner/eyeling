@@ -343,6 +343,3 @@ string:charAt a ex:Builtin ; ex:kind ex:Function ;
 string:setCharAt a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Function: subject is a 3-item list (string idx ch). Returns a copy of the string with position idx (0-based) replaced by the first character of ch; out-of-range returns the original string." .
 
-string:hammingDistance a ex:Builtin ; ex:kind ex:Function ;
-  rdfs:comment "Function: subject is a 2-item list (a b). Binds/unifies object with the number of differing positions (Hamming distance). Fails if lengths differ." .
-

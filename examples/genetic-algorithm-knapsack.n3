@@ -1,0 +1,260 @@
+# ================================================================================
+# Genetic Algorithm demo: 0/1 Knapsack via mutation + selection
+#
+# Goal
+# ----
+# Evolve a bitstring genome that selects a subset of items to maximize total VALUE
+# while staying within a WEIGHT capacity.
+#
+# Representation
+# --------------
+# - Items: list of pairs (weight value)
+# - Genome: a string of '0'/'1' of the same length as the item list
+#   - bit i = '1'  => item i is included
+#   - bit i = '0'  => item i is excluded
+#
+# Fitness (lower is better)
+# -------------------------
+# We want: feasible solutions (weight <= capacity) with high value.
+#
+#   If weight <= capacity:
+#       fitness = 1_000_000 - value        (so higher value => lower fitness)
+#   If overweight:
+#       fitness = 2_000_000 + (weight - capacity)
+#       (overweight candidates are always worse than any feasible candidate)
+#
+# Variation (mutation)
+# --------------------
+# Single-bit flip: generate all "neighbors" of the current genome by flipping
+# exactly one position. This is deterministic (no randomness), but it still
+# demonstrates the core GA pattern of mutation + selection.
+#
+# Selection
+# ---------
+# Compare parent + all mutants, keep the candidate with the lowest fitness.
+# This is essentially a (1 + λ) evolutionary strategy / hill-climber.
+#
+# Stopping criteria
+# -----------------
+# Stop when either:
+# - maxGenerations is reached, or
+# - no mutant improves fitness (local optimum under 1-bit flips)
+# ================================================================================
+
+@prefix :       <urn:ga:>.
+@prefix log:    <http://www.w3.org/2000/10/swap/log#>.
+@prefix math:   <http://www.w3.org/2000/10/swap/math#>.
+@prefix list:   <http://www.w3.org/2000/10/swap/list#>.
+@prefix string: <http://www.w3.org/2000/10/swap/string#>.
+
+:cfg
+  :capacity 50;
+  :maxGenerations 64;
+
+  # Each item is (weight value). Genome bits select items by index.
+  :items (
+    (12  24)
+    (7   13)
+    (11  23)
+    (8   15)
+    (9   16)
+    (6   12)
+    (10  21)
+    (4   9)
+    (5   11)
+    (14  28)
+    (3   7)
+    (13  26)
+  ).
+
+# -------------
+# small helpers
+# -------------
+
+{ ( ?N 1 ) :inc ?N1 } <= { ( ?N 1 ) math:sum ?N1 }.
+
+# build a string of N zeros
+{ ( 0 ) :zeros "" } <= true.
+
+{ ( ?N ) :zeros ?S } <= {
+  ?N math:greaterThan 0 .
+  ( ?N 1 ) math:difference ?N1 .
+  ( ?N1 ) :zeros ?Rest .
+  ( "%s%s" "0" ?Rest ) string:format ?S
+}.
+
+# flip a bit at index i in a 0/1 string
+{ ( ?S ?I ) :flipBit ?Out } <= {
+  ( ?S ?I ) string:charAt "0" .
+  ( ?S ?I "1" ) string:setCharAt ?Out
+}.
+
+{ ( ?S ?I ) :flipBit ?Out } <= {
+  ( ?S ?I ) string:charAt "1" .
+  ( ?S ?I "0" ) string:setCharAt ?Out
+}.
+
+# generate all single-bit mutants of S
+{ ( ?S ?Len ) :mutants ?Out } <= {
+  ( ?S 0 ?Len ) :mutantsFrom ?Out
+}.
+
+{ ( ?S ?I ?Len ) :mutantsFrom () } <= {
+  ?I math:equalTo ?Len
+}.
+
+{ ( ?S ?I ?Len ) :mutantsFrom ?Out } <= {
+  ?I math:lessThan ?Len .
+  ( ?S ?I ) :flipBit ?Cand .
+  ( ?I 1 ) :inc ?I1 .
+  ( ?S ?I1 ?Len ) :mutantsFrom ?Rest .
+  ( ( ?Cand ) ?Rest ) list:append ?Out
+}.
+
+# -----------------------------------------
+# decode genome -> (totalWeight totalValue)
+# -----------------------------------------
+
+{ ( ?Bits ?Items ) :totals ( ?Wsum ?Vsum ) } <= {
+  ?Bits string:length ?Len .
+  ( ?Bits ?Items 0 ?Len 0 0 ) :totalsAcc ( ?Wsum ?Vsum )
+}.
+
+{ ( ?Bits ?Items ?I ?Len ?AccW ?AccV ) :totalsAcc ( ?AccW ?AccV ) } <= {
+  ?I math:equalTo ?Len
+}.
+
+{ ( ?Bits ?Items ?I ?Len ?AccW ?AccV ) :totalsAcc ( ?Wsum ?Vsum ) } <= {
+  ?I math:lessThan ?Len .
+  ( ?Bits ?I ) string:charAt "1" .
+
+  ( ?Items ?I ) list:memberAt ?Pair .
+  ( ?Pair 0 ) list:memberAt ?W .
+  ( ?Pair 1 ) list:memberAt ?V .
+
+  ( ?AccW ?W ) math:sum ?AccW1 .
+  ( ?AccV ?V ) math:sum ?AccV1 .
+
+  ( ?I 1 ) :inc ?I1 .
+  ( ?Bits ?Items ?I1 ?Len ?AccW1 ?AccV1 ) :totalsAcc ( ?Wsum ?Vsum )
+}.
+
+{ ( ?Bits ?Items ?I ?Len ?AccW ?AccV ) :totalsAcc ( ?Wsum ?Vsum ) } <= {
+  ?I math:lessThan ?Len .
+  ( ?Bits ?I ) string:charAt "0" .
+
+  ( ?I 1 ) :inc ?I1 .
+  ( ?Bits ?Items ?I1 ?Len ?AccW ?AccV ) :totalsAcc ( ?Wsum ?Vsum )
+}.
+
+# -------------------------
+# fitness (lower is better)
+# -------------------------
+
+{ ( ?W ?V ?Cap ) :fitness ?F } <= {
+  ?W math:notGreaterThan ?Cap .
+  ( 1000000 ?V ) math:difference ?F
+}.
+
+{ ( ?W ?V ?Cap ) :fitness ?F } <= {
+  ?W math:greaterThan ?Cap .
+  ( ?W ?Cap ) math:difference ?Over .
+  ( 2000000 ?Over ) math:sum ?F
+}.
+
+{ ( ?W ?Cap ) :feasible "true" } <= { ?W math:notGreaterThan ?Cap }.
+{ ( ?W ?Cap ) :feasible "false" } <= { ?W math:greaterThan ?Cap }.
+
+{ ( ?Bits ?Cap ?Items ) :candidateScore ( ?Fit ?Wsum ?Vsum ) } <= {
+  ( ?Bits ?Items ) :totals ( ?Wsum ?Vsum ) .
+  ( ?Wsum ?Vsum ?Cap ) :fitness ?Fit
+}.
+
+# pick best of two candidates by fitness (ties keep the left candidate)
+{ ( ?C1 ?S1 ?W1 ?V1  ?C2 ?S2 ?W2 ?V2 ) :pickBest ( ?C1 ?S1 ?W1 ?V1 ) } <= {
+  ?S1 math:notGreaterThan ?S2
+}.
+
+{ ( ?C1 ?S1 ?W1 ?V1  ?C2 ?S2 ?W2 ?V2 ) :pickBest ( ?C2 ?S2 ?W2 ?V2 ) } <= {
+  ?S1 math:greaterThan ?S2
+}.
+
+# best candidate from a list
+{ ( ?Cap ?Items ?L ) :bestMutant ( ?Best ?BestScore ?BestW ?BestV ) } <= {
+  ?L list:length 1 .
+  ?L list:first ?Best .
+  ( ?Best ?Cap ?Items ) :candidateScore ( ?BestScore ?BestW ?BestV )
+}.
+
+{ ( ?Cap ?Items ?L ) :bestMutant ( ?Best ?BestScore ?BestW ?BestV ) } <= {
+  ?L list:length ?N .
+  ?N math:greaterThan 1 .
+
+  ?L list:first ?H .
+  ?L list:rest ?T .
+
+  ( ?Cap ?Items ?T ) :bestMutant ( ?B2 ?S2 ?W2 ?V2 ) .
+  ( ?H ?Cap ?Items ) :candidateScore ( ?S1 ?W1 ?V1 ) .
+
+  ( ?H ?S1 ?W1 ?V1  ?B2 ?S2 ?W2 ?V2 ) :pickBest ( ?Best ?BestScore ?BestW ?BestV )
+}.
+
+# --------------
+# evolution loop
+# --------------
+
+# generation cap
+{ ( ?Bits ?Cap ?Items ?Gen ?MaxGen ) :evolve ( ?Bits ?Gen ) } <= {
+  ?Gen math:equalTo ?MaxGen
+}.
+
+# stop if best doesn't improve
+{ ( ?Bits ?Cap ?Items ?Gen ?MaxGen ) :evolve ( ?Bits ?Gen ) } <= {
+  ?Gen math:lessThan ?MaxGen .
+  ( ?Bits ?Cap ?Items ) :candidateScore ( ?Score ?W ?V ) .
+
+  ?Bits string:length ?Len .
+  ( ?Bits ?Len ) :mutants ?Ms .
+  ( ( ?Bits ) ?Ms ) list:append ?Candidates .
+
+  ( ?Cap ?Items ?Candidates ) :bestMutant ( ?Best ?BestScore ?BW ?BV ) .
+  ?BestScore math:equalTo ?Score
+}.
+
+# keep evolving while improvement exists
+{ ( ?Bits ?Cap ?Items ?Gen ?MaxGen ) :evolve ( ?Final ?FinalGen ) } <= {
+  ?Gen math:lessThan ?MaxGen .
+  ( ?Bits ?Cap ?Items ) :candidateScore ( ?Score ?W ?V ) .
+
+  ?Bits string:length ?Len .
+  ( ?Bits ?Len ) :mutants ?Ms .
+  ( ( ?Bits ) ?Ms ) list:append ?Candidates .
+
+  ( ?Cap ?Items ?Candidates ) :bestMutant ( ?Best ?BestScore ?BW ?BV ) .
+  ?BestScore math:notEqualTo ?Score .
+
+  ( ?Gen 1 ) :inc ?Gen1 .
+  ( ?Best ?Cap ?Items ?Gen1 ?MaxGen ) :evolve ( ?Final ?FinalGen )
+}.
+
+# --------------
+# query / output
+# --------------
+
+{
+  :cfg :capacity ?Cap;
+       :maxGenerations ?Max;
+       :items ?Items.
+
+  ?Items list:length ?Len .
+  ( ?Len ) :zeros ?Start .
+
+  ( ?Start ?Cap ?Items 0 ?Max ) :evolve ( ?Best ?Gen ) .
+  ( ?Best ?Cap ?Items ) :candidateScore ( ?Fit ?W ?V ) .
+  ( ?W ?Cap ) :feasible ?Ok .
+
+  ( "Knapsack GA best genome %s (feasible=%s): weight=%s value=%s after %s generations.\n"
+    ?Best ?Ok ?W ?V ?Gen ) string:format ?Line
+}
+log:query
+{ 1 log:outputString ?Line }.

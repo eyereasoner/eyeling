@@ -1549,12 +1549,6 @@ Returns a copy of `s` with the character at index `i` (0-based) replaced by:
 
 If `i` is out of range, `out` is the original string.
 
-#### `string:hammingDistance`
-
-**Shape:** `( a b ) string:hammingDistance d`
-
-Returns the number of differing positions between `a` and `b`. Fails if the two strings have different lengths.
-
 ### Containment and prefix/suffix tests
 
 - `string:contains`
