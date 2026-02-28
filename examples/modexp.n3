@@ -1,6 +1,6 @@
-# ==========================================
+# ===============================================
 # Fast modular exponentiation (repeated squaring)
-# ==========================================
+# ===============================================
 
 @prefix math: <http://www.w3.org/2000/10/swap/math#>.
 @prefix :     <https://eyereasoner.github.io/ns#>.
@@ -58,9 +58,9 @@
     (?B ?T ?M) :modMul ?R.
 }.
 
-# ----------------
+# -----------------
 # tests / showcases
-# ----------------
+# -----------------
 {
     # sanity check against a small naive computation:
     (7 13) math:exponentiation ?PowSmall.
