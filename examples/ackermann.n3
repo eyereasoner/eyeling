@@ -39,11 +39,11 @@
     (?Y ?Z) math:product ?A.
 }.
 
-# exponentiation (x=3) — use BigInt exponentiation builtin to avoid blow-up
+# exponentiation (x=3) — use BigInt-capable math:exponentiation to avoid blow-up
 {
     (3 ?Y ?Z) :ackermann ?A.
 } <= {
-    (?Z ?Y) math:bigExponentiation ?A.
+    (?Z ?Y) math:exponentiation ?A.
 }.
 
 # exponentiation (x=3), tetration (x=4), pentation (x=5), hexation (x=6), etc

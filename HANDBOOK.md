@@ -979,15 +979,7 @@ If the types don’t fit any supported case, the builtin fails.
 
 This is a pragmatic inversion, not a full algebra system.
 
-#### `math:bigExponentiation`
-
-**Shape:** `( $base $exp ) math:bigExponentiation $result`
-
-- Exact integer exponentiation only.
-- Requires integer `$base` and non-negative integer `$exp`.
-- Fails if the estimated output size exceeds Eyeling’s built-in safety cap.
-
-This builtin exists to avoid rule-level “repeat multiply” derivations that can explode memory for large exponents (e.g., the Ackermann example).
+The **BigInt exact-integer mode** exists specifically to avoid rule-level “repeat multiply” derivations that can explode memory for large exponents (e.g., the Ackermann example).
 
 #### Unary “math relations” (often invertible)
 

@@ -101,9 +101,6 @@ math:rounded a ex:Builtin ; ex:kind ex:Function ;
 math:exponentiation a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Exponentiation. Forward: (base exponent) -> result. If both arguments are integer literals and exponent is non-negative, Eyeling uses exact BigInt exponentiation (with a safety cap on result size). Otherwise it falls back to Number exponentiation. Limited inverse: if base is numeric and exponent is a variable, may solve exponent via logs for positive base != 1 and positive result (Number mode only)." .
 
-math:bigExponentiation a ex:Builtin ; ex:kind ex:Function ;
-  rdfs:comment "Exact integer exponentiation (BigInt-only). Shape: (base exponent) math:bigExponentiation result. Requires integer base and non-negative integer exponent; fails if the estimated result size exceeds Eyeling's safety cap." .
-
 math:absoluteValue a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Absolute value. Computes |s| and unifies/binds object; output datatype follows common numeric datatype selection." .
 

@@ -1792,10 +1792,9 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   }
 
   // math:exponentiation
-  // math:bigExponentiation (exact-integer BigInt-only variant)
-  if (pv === MATH_NS + 'exponentiation' || pv === MATH_NS + 'bigExponentiation') {
-    const onlyBigInt = pv === MATH_NS + 'bigExponentiation';
-
+  // Schema: ( $base $exp ) math:exponentiation $result
+  // Supports exact integer exponentiation via BigInt when both inputs are integers and exp >= 0.
+  if (pv === MATH_NS + 'exponentiation') {
     if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
     const baseTerm = g.s.elems[0];
     const expTerm = g.s.elems[1];
@@ -1831,9 +1830,6 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       const s2 = unifyTerm(g.o, lit, subst);
       return s2 !== null ? [s2] : [];
     }
-
-    // bigExponentiation is intentionally strict.
-    if (onlyBigInt) return [];
 
     // 2) Numeric mode (Number): forward + limited inverse
     const a = parseNum(baseTerm);
