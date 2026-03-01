@@ -1,0 +1,153 @@
+# ====================================================================
+# N3 LINKS POLICY, PROVENANCE, AND INFERENCE
+#
+# Another “speaks for itself” case:
+#   Delegation-based trust + distributed authorization.
+#
+# What it shows (in one syntax):
+#   - Quoted claims from multiple web documents
+#   - A tiny trust policy that can *delegate* trust to other documents
+#   - Importing only trusted statements into the fact set
+#   - Reasoning across imported facts to derive permissions
+#   - Provenance output using singleton graph terms (formulas),
+#     and *not stored* as derived facts.
+#
+# Run:
+#   eyeling examples/n3-delegation-access.n3
+#
+# Output:
+#   - :report :trusts <doc>
+#   - :report :entails { <user> :canRead <resource>. }
+#   - { ... } :assertedBy <doc>    (singleton graph provenance)
+# ====================================================================
+
+@prefix :     <https://example.org/n3-delegation#>.
+@prefix id:   <https://example.org/id/>.
+@prefix foaf: <http://xmlns.com/foaf/0.1/>.
+@prefix log:  <http://www.w3.org/2000/10/swap/log#>.
+
+# ----------
+# Trust root
+# ----------
+
+:policy :trusts <https://root.example/policy.n3>.
+
+# ------------------------------
+# The Web "says" (quoted graphs)
+# ------------------------------
+
+# Root policy delegates trust outward.
+<https://root.example/policy.n3> :says {
+  :policy :delegatesTo <https://hr.example/policy.n3>.
+  :policy :delegatesTo <https://team.example/members.n3>.
+}.
+
+# HR publishes what groups may read what.
+<https://hr.example/policy.n3> :says {
+  :eng :mayRead :buildReport.
+  :eng :mayRead :roadmap.
+}.
+
+# Team publishes membership, and delegates further.
+<https://team.example/members.n3> :says {
+  id:alice foaf:name "Alice".
+  id:alice :memberOf :eng.
+
+  :policy :delegatesTo <https://interns.example/members.n3>.
+}.
+
+# Intern list becomes trusted only because Team delegated to it.
+<https://interns.example/members.n3> :says {
+  id:eve foaf:name "Eve".
+  id:eve :memberOf :eng.
+}.
+
+# Untrusted rumor: present as quoted data, but will not be imported.
+<http://shady.example/rumor.n3> :says {
+  id:mallory foaf:name "Mallory".
+  id:mallory :memberOf :eng.
+  :eng :mayRead :secrets.
+}.
+
+# --------------------------------
+# Trust can be delegated (forward)
+# --------------------------------
+
+{
+  :policy :trusts ?Doc.
+  ?Doc :says ?F.
+  ?F log:includes { :policy :delegatesTo ?Other. }.
+}
+=>
+{
+  :policy :trusts ?Other.
+}.
+
+# ----------------------------------
+# Import only trusted quoted triples
+# ----------------------------------
+{
+  :policy :trusts ?Doc.
+  ?Doc :says ?F.
+  ?F log:includes { ?S ?P ?O. }.
+}
+=>
+{
+  ?S ?P ?O.
+}.
+
+# ------------------------------------------------
+# Local meaning: membership + policy => permission
+# ------------------------------------------------
+{
+  ?U :memberOf ?G.
+  ?G :mayRead ?R.
+}
+=>
+{
+  ?U :canRead ?R.
+}.
+
+# ------
+# REPORT
+# ------
+
+# Which documents ended up trusted (root + delegated)
+{
+  :policy :trusts ?Doc.
+}
+log:query
+{
+  :report :trusts ?Doc.
+}.
+
+# What the system entails
+{
+  ?U :canRead ?R.
+}
+log:query
+{
+  :report :entails { ?U :canRead ?R. }.
+}.
+
+# Why (provenance), using singleton graph terms:
+# show the two supporting asserted statements and where they came from.
+{
+  ?U :canRead ?R.
+
+  ?U :memberOf ?G.
+  ?G :mayRead ?R.
+
+  :policy :trusts ?DocM.
+  ?DocM :says ?FM.
+  ?FM log:includes { ?U :memberOf ?G. }.
+
+  :policy :trusts ?DocP.
+  ?DocP :says ?FP.
+  ?FP log:includes { ?G :mayRead ?R. }.
+}
+log:query
+{
+  { ?U :memberOf ?G. } :assertedBy ?DocM.
+  { ?G :mayRead ?R. }  :assertedBy ?DocP.
+}.
