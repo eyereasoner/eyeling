@@ -3589,27 +3589,6 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     return s2 !== null ? [s2] : [];
   }
 
-  // string:hammingDistance
-  // Schema: ( $a $b ) string:hammingDistance $d
-  // Fails if strings have different length.
-  if (pv === STRING_NS + 'hammingDistance') {
-    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
-    const a = termToJsString(g.s.elems[0]);
-    const b = termToJsString(g.s.elems[1]);
-    if (a === null || b === null) return [];
-    if (a.length !== b.length) return [];
-    let diffs = 0;
-    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) diffs++;
-    const lit = internLiteral(String(diffs));
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = lit;
-      return [s2];
-    }
-    const s2 = unifyTerm(g.o, lit, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
   // Unknown builtin
   return [];
 }

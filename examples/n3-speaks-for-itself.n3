@@ -1,0 +1,118 @@
+# ==========================================================
+# N3 SPEAKS FOR ITSELF
+#
+# One syntax does it all:
+#   - Names (URIs)
+#   - Claims (triples)
+#   - Quoted claims (formulas as data)
+#   - Policy (trust)
+#   - Reasoning (closure over links)
+#   - Provenance without reification (singleton graph terms)
+#
+# Run:
+#   eyeling examples/n3-speaks-for-itself.n3
+#
+# Output is just a few :report triples (no log:outputString).
+# ==========================================================
+
+@prefix :     <https://example.org/n3-speaks#>.
+@prefix id:   <https://example.org/id/>.
+@prefix foaf: <http://xmlns.com/foaf/0.1/>.
+@prefix log:  <http://www.w3.org/2000/10/swap/log#>.
+
+# --------------------------------
+# Policy: which documents we trust
+# --------------------------------
+
+:policy :trusts <https://alice.example/profile.n3>.
+:policy :trusts <https://bob.example/profile.n3>.
+:policy :trusts <https://carol.example/profile.n3>.
+
+# -------------------------------------
+# The Web "says" things (quoted graphs)
+# -------------------------------------
+
+<https://alice.example/profile.n3> :says {
+  id:alice foaf:name  "Alice".
+  id:alice foaf:knows id:bob.
+}.
+
+<https://bob.example/profile.n3> :says {
+  id:bob   foaf:name  "Bob".
+  id:bob   foaf:knows id:carol.
+}.
+
+<https://carol.example/profile.n3> :says {
+  id:carol foaf:name  "Carol".
+  id:carol foaf:knows id:dave.
+  id:dave  foaf:name  "Dave".
+}.
+
+# Untrusted rumor: present as quoted data, but policy won’t import it.
+<http://shady.example/rumor.n3> :says {
+  id:alice   foaf:knows id:mallory.
+  id:mallory foaf:name  "Mallory".
+}.
+
+# ----------------------------------------------------------------------------------
+# Import rule: trusted quotes become facts
+#
+# IMPORTANT:
+#   Do NOT derive provenance facts that *store* formula terms (like {..} :from ?Doc)
+#   in the forward-chaining store, because formula terms in rule heads may be
+#   generated as fresh nodes each time and can prevent fixpoint termination.
+#
+# We still *output* provenance later via log:query, computed directly from quotes.
+# ----------------------------------------------------------------------------------
+
+{
+  :policy :trusts ?Doc.
+  ?Doc :says ?F.
+  ?F log:includes { ?S ?P ?O. }.
+}
+=>
+{
+  ?S ?P ?O.
+}.
+
+# ----------------------------------------------------------
+# Meaning: knowsPlus is the transitive closure of foaf:knows
+# ----------------------------------------------------------
+
+{ ?A foaf:knows ?B. } => { ?A :knowsPlus ?B. }.
+{ ?A :knowsPlus ?B. ?B foaf:knows ?C. } => { ?A :knowsPlus ?C. }.
+
+# ---------------------------------------
+# REPORT: select only the “story” triples
+# ---------------------------------------
+
+# What we trust
+{
+  :policy :trusts ?Doc.
+}
+log:query
+{
+  :report :trusts ?Doc.
+}.
+
+# What we believed, and where it came from
+# (provenance emitted as singleton graph term, but not stored as derived facts)
+{
+  :policy :trusts ?Doc.
+  ?Doc :says ?F.
+  ?F log:includes { ?S ?P ?O. }.
+}
+log:query
+{
+  :report :believes { ?S ?P ?O. }.
+  { ?S ?P ?O. } :believedFromDoc ?Doc.
+}.
+
+# What logic adds: who Alice can reach by following links
+{
+  id:alice :knowsPlus ?Who.
+}
+log:query
+{
+  :report :aliceReaches ?Who.
+}.
