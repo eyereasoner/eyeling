@@ -1,0 +1,305 @@
+# ====================================================================================
+# TRANSCENDENTAL NUMBERS, STRETCHED FURTHER
+#
+# This N3 program turns a few classical theorems + “closure facts” into
+# a little symbolic engine that classifies many *derived expressions*.
+#
+# What it does:
+#   1) Encodes two deep theorems as rules:
+#        - Lindemann–Weierstrass (friendly slogan form):
+#            exp(algebraic nonzero) is transcendental
+#        - Gelfond–Schneider:
+#            a^b is transcendental for algebraic a != 0,1 and algebraic non-rational b
+#
+#   2) Adds safe closure rules (pure logic, no analysis):
+#        - transcendental + algebraic  => transcendental
+#        - transcendental * algebraic (nonzero) => transcendental
+#        - transcendental / algebraic (nonzero) => transcendental
+#        - transcendental => irrational
+#        - transcendental => not straightedge/compass constructible
+#
+#   3) Leaves famous “unknown combos” explicitly Unknown (e+pi, e*pi, pi^e).
+#
+# Output:
+#   Only :report triples (no log:outputString).
+#   Proof links are emitted as singleton graph terms in query output:
+#      :report :proof { <expr> :provedBy <theoremOrRule>. }.
+#
+# Run:
+#   eyeling examples/transcendental-numbers-stretched.n3
+# ====================================================================================
+
+@prefix :     <https://example.org/transcendental#>.
+@prefix log:  <http://www.w3.org/2000/10/swap/log#>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix foaf: <http://xmlns.com/foaf/0.1/>.
+
+# ------------
+# Kinds / tags
+# ------------
+
+:Algebraic a :Kind.
+:Transcendental a :Kind.
+:Irrational a :Kind.
+:NonZero a :Kind.
+:NotZeroOrOne a :Kind.
+:NonRational a :Kind.
+:Unknown a :Kind.
+:NotStraightedgeCompassConstructible a :Kind.
+
+# -------------------------------
+# Theorems / rule names (as URIs)
+# -------------------------------
+
+:LindemannWeierstrass a :Theorem; rdfs:label "Lindemann–Weierstrass (slogan exp(algebraic≠0) ⇒ transcendental)".
+:GelfondSchneider     a :Theorem; rdfs:label "Gelfond–Schneider (a^b transcendental for algebraic a!=0,1 and algebraic non-rational b)".
+
+:TransPlusAlg  a :Rule; rdfs:label "If x transcendental and a algebraic then x+a transcendental".
+:TransTimesAlg a :Rule; rdfs:label "If x transcendental and a algebraic nonzero then x*a transcendental".
+:TransDivAlg   a :Rule; rdfs:label "If x transcendental and a algebraic nonzero then x/a transcendental".
+
+:TransImpliesIrrational a :Rule; rdfs:label "Transcendental ⇒ irrational".
+:TransImpliesNotConstructible a :Rule; rdfs:label "Transcendental ⇒ not straightedge/compass constructible".
+
+# --------------
+# Base constants
+# --------------
+
+:zero rdfs:label "0"; :kind :Algebraic.
+:one  rdfs:label "1"; :kind :Algebraic, :NonZero.
+:two  rdfs:label "2"; :kind :Algebraic, :NonZero, :NotZeroOrOne.
+:half rdfs:label "1/2"; :kind :Algebraic, :NonZero.
+
+:minusOne rdfs:label "-1"; :kind :Algebraic, :NonZero, :NotZeroOrOne.
+
+:sqrt2 rdfs:label "sqrt(2)"; :kind :Algebraic, :NonZero, :NonRational.
+:i     rdfs:label "i";       :kind :Algebraic, :NonZero, :NotZeroOrOne, :NonRational.
+:minusI rdfs:label "-i";     :kind :Algebraic, :NonZero, :NotZeroOrOne, :NonRational.
+
+:e  rdfs:label "e";  :kind :Transcendental; :provedBy :Hermite1873.
+:pi rdfs:label "pi"; :kind :Transcendental; :provedBy :Lindemann1882.
+
+:Hermite1873 a :Theorem;   rdfs:label "Hermite (1873): e is transcendental".
+:Lindemann1882 a :Theorem; rdfs:label "Lindemann (1882): pi is transcendental".
+
+# ------------------------------------
+# Expression language (structure only)
+# ------------------------------------
+
+# exp(x)
+:exp_sqrt2 rdfs:label "e^(sqrt(2))"; :expArg :sqrt2.
+
+# pow(a,b)
+:pow_2_sqrt2     rdfs:label "2^(sqrt(2))";   :powBase :two;      :powExp :sqrt2.
+:pow_i_i         rdfs:label "i^i";           :powBase :i;        :powExp :i.
+:pow_minus1_minusI rdfs:label "(-1)^(-i)";   :powBase :minusOne; :powExp :minusI.
+
+# sameAs bridges (so one theorem can “explain” multiple faces)
+:pow_e_pi rdfs:label "e^pi"; :powBase :e; :powExp :pi; :sameAs :pow_minus1_minusI.
+:exp_minus_pi_over_2 rdfs:label "e^(-pi/2)"; :sameAs :pow_i_i.
+
+# add(x,y)
+:e_plus_1   rdfs:label "e + 1";          :plusLeft :e;          :plusRight :one.
+:pi_plus_1  rdfs:label "pi + 1";         :plusLeft :pi;         :plusRight :one.
+:e_plus_2   rdfs:label "e + 2";          :plusLeft :e;          :plusRight :two.
+:pi_plus_sqrt2 rdfs:label "pi + sqrt(2)"; :plusLeft :pi;        :plusRight :sqrt2.
+:pow2sqrt2_plus_1 rdfs:label "2^(sqrt(2)) + 1"; :plusLeft :pow_2_sqrt2; :plusRight :one.
+
+# mul(x,y)
+:two_times_pi   rdfs:label "2*pi";           :timesLeft :two; :timesRight :pi.
+:half_times_pi  rdfs:label "(1/2)*pi";       :timesLeft :half; :timesRight :pi.
+:two_times_e    rdfs:label "2*e";            :timesLeft :two; :timesRight :e.
+:half_times_e   rdfs:label "(1/2)*e";        :timesLeft :half; :timesRight :e.
+:two_times_pow2sqrt2 rdfs:label "2*2^(sqrt(2))"; :timesLeft :two; :timesRight :pow_2_sqrt2.
+
+# div(x,a)
+:e_div_2     rdfs:label "e/2";   :divNum :e;   :divDen :two.
+:pi_div_2    rdfs:label "pi/2";  :divNum :pi;  :divDen :two.
+:pow2sqrt2_div_2 rdfs:label "2^(sqrt(2))/2"; :divNum :pow_2_sqrt2; :divDen :two.
+
+# Famous “unknown” combos (kept explicit)
+:sum_e_pi  rdfs:label "e + pi"; :kind :Unknown.
+:prod_e_pi rdfs:label "e * pi"; :kind :Unknown.
+:pow_pi_e  rdfs:label "pi^e";   :kind :Unknown.
+
+# A headline meta-fact (doesn’t pick a side)
+:quadraticTrick rdfs:label "At least one of (e+pi) and (e*pi) is transcendental";
+  :concerns :sum_e_pi, :prod_e_pi.
+
+# -----------------
+# Theorems as rules
+# -----------------
+
+# Lindemann–Weierstrass (slogan): exp(algebraic nonzero) is transcendental
+{
+  ?X :expArg ?A.
+  ?A :kind :Algebraic.
+  ?A :kind :NonZero.
+}
+=>
+{
+  ?X :kind :Transcendental.
+  ?X :provedBy :LindemannWeierstrass.
+}.
+
+# Gelfond–Schneider: a^b is transcendental (algebraic a!=0,1; algebraic non-rational b)
+{
+  ?X :powBase ?A.
+  ?X :powExp  ?B.
+  ?A :kind :Algebraic.
+  ?A :kind :NotZeroOrOne.
+  ?B :kind :Algebraic.
+  ?B :kind :NonRational.
+}
+=>
+{
+  ?X :kind :Transcendental.
+  ?X :provedBy :GelfondSchneider.
+}.
+
+# Equality transport (one-direction, to avoid cycles)
+{ ?X :sameAs ?Y. ?Y :kind :Transcendental. } => { ?X :kind :Transcendental. }.
+{ ?X :sameAs ?Y. ?Y :provedBy ?T. }         => { ?X :provedBy ?T. }.
+
+# -----------------------------------------------
+# Safe closure rules (algebraic ↔ transcendental)
+# -----------------------------------------------
+
+# x transcendental, a algebraic => x+a transcendental (both argument orders)
+{
+  ?X :plusLeft ?T.
+  ?X :plusRight ?A.
+  ?T :kind :Transcendental.
+  ?A :kind :Algebraic.
+}
+=>
+{
+  ?X :kind :Transcendental.
+  ?X :provedBy :TransPlusAlg.
+}.
+
+{
+  ?X :plusLeft ?A.
+  ?X :plusRight ?T.
+  ?T :kind :Transcendental.
+  ?A :kind :Algebraic.
+}
+=>
+{
+  ?X :kind :Transcendental.
+  ?X :provedBy :TransPlusAlg.
+}.
+
+# x transcendental, a algebraic nonzero => x*a transcendental (both argument orders)
+{
+  ?X :timesLeft ?T.
+  ?X :timesRight ?A.
+  ?T :kind :Transcendental.
+  ?A :kind :Algebraic.
+  ?A :kind :NonZero.
+}
+=>
+{
+  ?X :kind :Transcendental.
+  ?X :provedBy :TransTimesAlg.
+}.
+
+{
+  ?X :timesLeft ?A.
+  ?X :timesRight ?T.
+  ?T :kind :Transcendental.
+  ?A :kind :Algebraic.
+  ?A :kind :NonZero.
+}
+=>
+{
+  ?X :kind :Transcendental.
+  ?X :provedBy :TransTimesAlg.
+}.
+
+# x transcendental, a algebraic nonzero => x/a transcendental
+{
+  ?X :divNum ?T.
+  ?X :divDen ?A.
+  ?T :kind :Transcendental.
+  ?A :kind :Algebraic.
+  ?A :kind :NonZero.
+}
+=>
+{
+  ?X :kind :Transcendental.
+  ?X :provedBy :TransDivAlg.
+}.
+
+# Transcendental implies irrational and non-constructible
+{
+  ?X :kind :Transcendental.
+}
+=>
+{
+  ?X :kind :Irrational.
+  ?X :provedBy :TransImpliesIrrational.
+
+  ?X :kind :NotStraightedgeCompassConstructible.
+  ?X :provedBy :TransImpliesNotConstructible.
+}.
+
+# ------
+# REPORT
+# ------Q
+
+# Everything concluded transcendental
+{
+  ?X :kind :Transcendental.
+}
+log:query
+{
+  :report :transcendental ?X.
+}.
+
+# Corollaries: irrational + not constructible
+{
+  ?X :kind :Irrational.
+}
+log:query
+{
+  :report :irrational ?X.
+}.
+
+{
+  ?X :kind :NotStraightedgeCompassConstructible.
+}
+log:query
+{
+  :report :notConstructible ?X.
+}.
+
+# Proof links as singleton graph terms (emitted by query, not stored)
+{
+  ?X :kind :Transcendental.
+  ?X :provedBy ?T.
+}
+log:query
+{
+  :report :proof { ?X :provedBy ?T. }.
+}.
+
+# The “unknown” frontier (explicitly marked)
+{
+  ?X :kind :Unknown.
+}
+log:query
+{
+  :report :unknown ?X.
+}.
+
+# The “at least one” headline claim (kept as a single web fact)
+{
+  :quadraticTrick :concerns ?A, ?B.
+}
+log:query
+{
+  :report :headline :quadraticTrick.
+  :report :concerns ?A.
+  :report :concerns ?B.
+}.
