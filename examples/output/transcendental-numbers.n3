@@ -1,0 +1,44 @@
+@prefix : <https://example.org/transcendental#> .
+
+:report :transcendental :e .
+:report :transcendental :pi .
+:report :transcendental :liouvilleL .
+:report :transcendental :exp_sqrt2 .
+:report :transcendental :pow_2_sqrt2 .
+:report :transcendental :pow_i_i .
+:report :transcendental :pow_minus1_minusI .
+:report :transcendental :pow_e_pi .
+:report :transcendental :exp_minus_pi_over_2 .
+:report :proof {
+    :e :provedBy :Hermite1873 .
+} .
+:report :proof {
+    :pi :provedBy :Lindemann1882 .
+} .
+:report :proof {
+    :liouvilleL :provedBy :Liouville1844 .
+} .
+:report :proof {
+    :exp_sqrt2 :provedBy :LindemannWeierstrass .
+} .
+:report :proof {
+    :pow_2_sqrt2 :provedBy :GelfondSchneider .
+} .
+:report :proof {
+    :pow_i_i :provedBy :GelfondSchneider .
+} .
+:report :proof {
+    :pow_minus1_minusI :provedBy :GelfondSchneider .
+} .
+:report :proof {
+    :pow_e_pi :provedBy :GelfondSchneider .
+} .
+:report :proof {
+    :exp_minus_pi_over_2 :provedBy :GelfondSchneider .
+} .
+:report :unknown :sum_e_pi .
+:report :unknown :prod_e_pi .
+:report :unknown :pow_pi_e .
+:report :headline :quadraticTrick .
+:report :concerns :sum_e_pi .
+:report :concerns :prod_e_pi .

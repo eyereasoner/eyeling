@@ -1,0 +1,186 @@
+# =============================================================================
+# TRANSCENDENTAL NUMBERS, AS WEB LOGIC
+#
+# This program encodes (in tiny, usable form):
+#   - Lindemann–Weierstrass (friendly slogan):
+#       if a != 0 is algebraic, then exp(a) is transcendental
+#   - Gelfond–Schneider:
+#       if a is algebraic, a not in {0,1}, and b is algebraic but non-rational,
+#       then a^b is transcendental
+#   - Some famous constants + a small "status table"
+#
+# Run:
+#   eyeling examples/transcendental-numbers.n3
+#
+# Output:
+#   :report triples only.
+#   Proof links are emitted as singleton graph terms:
+#     :report :proof { <thing> :provedBy <theorem>. }.
+# =============================================================================
+
+@prefix :     <https://example.org/transcendental#>.
+@prefix log:  <http://www.w3.org/2000/10/swap/log#>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+
+# -------------------
+# A link to the essay
+# -------------------
+
+:source a :WebPage;
+  rdfs:label "Transcendental Numbers: When a Number Refuses to Be “the Solution of an Equation”";
+  :url <https://josd.github.io/temp/transcendental-numbers/> .
+
+# ------------
+# Kinds / tags
+# ------------
+
+:Algebraic a :Kind.
+:Transcendental a :Kind.
+:NonZero a :Kind.
+:NotZeroOrOne a :Kind.
+:NonRational a :Kind.
+:Unknown a :Kind.
+:NotStraightedgeCompassConstructible a :Kind.
+
+# ---------------
+# Named constants
+# ---------------
+
+:e   rdfs:label "e";   :kind :Transcendental; :provedBy :Hermite1873.
+:pi  rdfs:label "pi";  :kind :Transcendental; :provedBy :Lindemann1882.
+
+:two      rdfs:label "2";    :kind :Algebraic, :NonZero, :NotZeroOrOne.
+:minusOne rdfs:label "-1";   :kind :Algebraic, :NonZero, :NotZeroOrOne.
+
+:sqrt2 rdfs:label "sqrt(2)"; :kind :Algebraic, :NonZero, :NonRational.
+
+:i      rdfs:label "i";   :kind :Algebraic, :NonZero, :NotZeroOrOne, :NonRational.
+:minusI rdfs:label "-i";  :kind :Algebraic, :NonZero, :NotZeroOrOne, :NonRational.
+
+:liouvilleL rdfs:label "Liouville's constant L";
+  :kind :Transcendental; :provedBy :Liouville1844.
+
+# -------------------------------------------------
+# Expression nodes (structure only; no reification)
+# -------------------------------------------------
+
+:exp_sqrt2 rdfs:label "e^(sqrt(2))"; :expArg :sqrt2.
+:pow_2_sqrt2 rdfs:label "2^(sqrt(2))"; :powBase :two; :powExp :sqrt2.
+
+:pow_i_i rdfs:label "i^i"; :powBase :i; :powExp :i.
+:pow_minus1_minusI rdfs:label "(-1)^(-i)"; :powBase :minusOne; :powExp :minusI.
+
+:pow_e_pi rdfs:label "e^pi";
+  :powBase :e; :powExp :pi;
+  :sameAs  :pow_minus1_minusI.
+
+:exp_minus_pi_over_2 rdfs:label "e^(-pi/2)";
+  :sameAs :pow_i_i.
+
+:sum_e_pi  rdfs:label "e + pi"; :kind :Unknown.
+:prod_e_pi rdfs:label "e * pi"; :kind :Unknown.
+:pow_pi_e  rdfs:label "pi^e";   :kind :Unknown.
+
+# The “quadratic trick” claim, as a single named fact:
+:quadraticTrick rdfs:label "At least one of (e+pi) and (e*pi) is transcendental";
+  :concerns :sum_e_pi, :prod_e_pi;
+  :provedBy :QuadraticArgument.
+
+# -----------------------------------------------
+# Theorems (just names; used for provenance tags)
+# -----------------------------------------------
+
+:Hermite1873 a :Theorem; rdfs:label "Hermite (1873): e is transcendental"; :statedIn :source.
+:Lindemann1882 a :Theorem; rdfs:label "Lindemann (1882): pi is transcendental"; :statedIn :source.
+:Liouville1844 a :Theorem; rdfs:label "Liouville (1840s): explicit transcendental numbers"; :statedIn :source.
+
+:LindemannWeierstrass a :Theorem;
+  rdfs:label "Lindemann–Weierstrass (slogan): exp(algebraic nonzero) is transcendental";
+  :statedIn :source.
+
+:GelfondSchneider a :Theorem;
+  rdfs:label "Gelfond–Schneider (1934): a^b is transcendental (algebraic a!=0,1; algebraic non-rational b)";
+  :statedIn :source.
+
+:QuadraticArgument a :Argument; rdfs:label "Quadratic argument about e+pi and e*pi"; :statedIn :source.
+
+# ---------------
+# Inference rules
+# ---------------
+
+# Lindemann–Weierstrass (friendly slogan form)
+{
+  ?X :expArg ?A.
+  ?A :kind :Algebraic.
+  ?A :kind :NonZero.
+}
+=>
+{
+  ?X :kind :Transcendental.
+  ?X :provedBy :LindemannWeierstrass.
+}.
+
+# Gelfond–Schneider
+{
+  ?X :powBase ?A.
+  ?X :powExp  ?B.
+  ?A :kind :Algebraic.
+  ?A :kind :NotZeroOrOne.
+  ?B :kind :Algebraic.
+  ?B :kind :NonRational.
+}
+=>
+{
+  ?X :kind :Transcendental.
+  ?X :provedBy :GelfondSchneider.
+}.
+
+# Equality transport (so e^pi inherits proof via (-1)^(-i), etc.)
+{ ?X :sameAs ?Y. ?Y :kind :Transcendental. } => { ?X :kind :Transcendental. }.
+{ ?X :sameAs ?Y. ?Y :provedBy ?T. } => { ?X :provedBy ?T. }.
+
+# “Squaring the circle” style corollary: transcendental => not straightedge+compass constructible
+{ ?X :kind :Transcendental. } => { ?X :kind :NotStraightedgeCompassConstructible. }.
+
+# ------
+# REPORT
+# ------
+
+# All things concluded transcendental
+{
+  ?X :kind :Transcendental.
+}
+log:query
+{
+  :report :transcendental ?X.
+}.
+
+# Proof links, emitted as singleton graph terms (not stored as derived facts)
+{
+  ?X :kind :Transcendental.
+  ?X :provedBy ?T.
+}
+log:query
+{
+  :report :proof { ?X :provedBy ?T. }.
+}.
+
+# Unknown-status expressions (mirrors the “still unknown” part)
+{
+  ?X :kind :Unknown.
+}
+log:query
+{
+  :report :unknown ?X.
+}.
+
+# The “quadratic trick” headline claim
+{
+  :quadraticTrick :concerns ?A, ?B.
+}
+log:query
+{
+  :report :headline :quadraticTrick.
+  :report :concerns ?A.
+  :report :concerns ?B.
+}.
