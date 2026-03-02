@@ -61,6 +61,7 @@ General shape:
 {  # THEN you may add these triples...
   ...new triples...
 }.
+```
 
 This is sometimes called **forward-chaining**: you start with data you have, and rules *derive* additional data.
 
