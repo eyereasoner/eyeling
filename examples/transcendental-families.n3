@@ -1,0 +1,309 @@
+# =======================================================================================
+# TRANSCENDENTAL FAMILIES
+#
+# This one doesn’t just say “transcendental / unknown”.
+# It classifies *families* of transcendentals, with a tiny taxonomy.
+#
+# Families illustrated (tangible + mechanical):
+#   - Liouville numbers  ⊂  Mahler U-numbers
+#   - LW-exp numbers:        exp(algebraic ≠ 0)            (Lindemann–Weierstrass slogan)
+#   - Gelfond–Schneider:     a^b (a algebraic !=0,1; b algebraic irrational)
+#   - Algebraic-closure:     t + a, t*a, t/a  (t transcendental, a algebraic)
+#   - Computable transcendentals (tagged)
+#
+# It also keeps a small “Unknown frontier” (e+pi, e*pi, pi^e) explicitly Unknown.
+#
+# Run:
+#   eyeling examples/transcendental-families.n3
+#
+# Output:
+#   Only :report triples (no log:outputString).
+#   Proof pointers are emitted as singleton formula terms in query output:
+#     :report :proof { <expr> :provedBy <theoremOrRule>. }.
+# =======================================================================================
+
+@prefix :     <https://example.org/trans-families#>.
+@prefix log:  <http://www.w3.org/2000/10/swap/log#>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+
+# ------------
+# Kinds / tags
+# ------------
+
+:Algebraic a :Kind.
+:Transcendental a :Kind.
+:Unknown a :Kind.
+
+:NonZero a :Kind.
+:NotZeroOrOne a :Kind.
+:NonRational a :Kind.
+
+:Computable a :Tag.
+:NotStraightedgeCompassConstructible a :Kind.
+:Irrational a :Kind.
+
+# -----------------------------------------------
+# Family taxonomy (URIs are the “names of ideas”)
+# -----------------------------------------------
+
+:Family a rdfs:Class.
+
+:AllTranscendentals a :Family; rdfs:label "All transcendental numbers".
+:MahlerUNumbers     a :Family; rdfs:label "Mahler U-numbers (extremely well approximable)".
+:LiouvilleNumbers   a :Family; rdfs:label "Liouville numbers (explicit U-numbers)".
+:LWExpNumbers       a :Family; rdfs:label "exp(algebraic ≠ 0) (LW slogan)".
+:GelfondSchneiderNumbers a :Family; rdfs:label "a^b with algebraic a!=0,1 and algebraic irrational b".
+:AlgebraicClosureFamily  a :Family; rdfs:label "Algebraic closure around a transcendental (t±a, t*a, t/a)".
+:ComputableTranscendentals a :Family; rdfs:label "Computable transcendentals (tagged examples)".
+
+# Subfamily relations
+:LiouvilleNumbers :subFamilyOf :MahlerUNumbers.
+:MahlerUNumbers   :subFamilyOf :AllTranscendentals.
+:LWExpNumbers     :subFamilyOf :AllTranscendentals.
+:GelfondSchneiderNumbers :subFamilyOf :AllTranscendentals.
+:AlgebraicClosureFamily  :subFamilyOf :AllTranscendentals.
+:ComputableTranscendentals :subFamilyOf :AllTranscendentals.
+
+# -------------------------------------
+# “Theorem / rule names” for provenance
+# -------------------------------------
+
+:Hermite1873 a :Theorem; rdfs:label "Hermite: e is transcendental".
+:Lindemann1882 a :Theorem; rdfs:label "Lindemann: pi is transcendental".
+:Liouville1844 a :Theorem; rdfs:label "Liouville: explicit transcendentals exist".
+
+:LindemannWeierstrass a :Theorem; rdfs:label "LW (slogan): exp(algebraic≠0) is transcendental".
+:GelfondSchneider     a :Theorem; rdfs:label "Gelfond–Schneider: a^b transcendental under conditions".
+
+:TransPlusAlg  a :Rule; rdfs:label "If t transcendental and a algebraic then t+a transcendental".
+:TransTimesAlg a :Rule; rdfs:label "If t transcendental and a algebraic nonzero then t*a transcendental".
+:TransDivAlg   a :Rule; rdfs:label "If t transcendental and a algebraic nonzero then t/a transcendental".
+
+:TransImpliesIrrational a :Rule; rdfs:label "Transcendental ⇒ irrational".
+:TransImpliesNotConstructible a :Rule; rdfs:label "Transcendental ⇒ not straightedge/compass constructible".
+
+# --------------
+# Base constants
+# --------------
+
+:0      rdfs:label "0";   :kind :Algebraic.
+:1      rdfs:label "1";   :kind :Algebraic, :NonZero.
+:2      rdfs:label "2";   :kind :Algebraic, :NonZero, :NotZeroOrOne.
+:minus1 rdfs:label "-1";  :kind :Algebraic, :NonZero, :NotZeroOrOne.
+
+:sqrt2  rdfs:label "sqrt(2)"; :kind :Algebraic, :NonZero, :NonRational.
+:i      rdfs:label "i";       :kind :Algebraic, :NonZero, :NotZeroOrOne, :NonRational.
+:minusi rdfs:label "-i";      :kind :Algebraic, :NonZero, :NotZeroOrOne, :NonRational.
+
+:e  rdfs:label "e";  :kind :Transcendental; :provedBy :Hermite1873; :tag :Computable.
+:pi rdfs:label "pi"; :kind :Transcendental; :provedBy :Lindemann1882; :tag :Computable.
+
+# A classic explicit transcendental (Liouville)
+:LiouvilleL rdfs:label "Liouville's constant L";
+  :kind :Transcendental; :provedBy :Liouville1844; :tag :Computable;
+  :inFamily :LiouvilleNumbers.
+
+# ------------------------------------
+# Expression language (structure only)
+# ------------------------------------
+
+# exp(x)  means e^x
+:exp_sqrt2 rdfs:label "e^(sqrt(2))"; :expArg :sqrt2.
+
+# pow(a,b) means a^b
+:pow_2_sqrt2 rdfs:label "2^(sqrt(2))"; :powBase :2;  :powExp :sqrt2.
+:pow_i_i     rdfs:label "i^i";         :powBase :i;  :powExp :i.
+:pow_minus1_minusI rdfs:label "(-1)^(-i)"; :powBase :minus1; :powExp :minusi.
+
+# plus(t,a), times(t,a), div(t,a)  (binary constructors)
+:e_plus_1 rdfs:label "e+1"; :plusLeft :e; :plusRight :1.
+:pi_plus_sqrt2 rdfs:label "pi+sqrt(2)"; :plusLeft :pi; :plusRight :sqrt2.
+:two_times_pi rdfs:label "2*pi"; :timesLeft :2; :timesRight :pi.
+:pi_div_2 rdfs:label "pi/2"; :divNum :pi; :divDen :2.
+:pow_2_sqrt2_plus_1 rdfs:label "2^(sqrt(2))+1"; :plusLeft :pow_2_sqrt2; :plusRight :1.
+
+# Famous “unknown frontier” (declared, not inferred)
+:sum_e_pi  rdfs:label "e+pi"; :kind :Unknown.
+:prod_e_pi rdfs:label "e*pi"; :kind :Unknown.
+:pow_pi_e  rdfs:label "pi^e"; :kind :Unknown.
+
+# -----------------------------
+# Family propagation (taxonomy)
+# -----------------------------
+
+{ ?X :inFamily ?F. ?F :subFamilyOf ?G. } => { ?X :inFamily ?G. }.
+
+# If you’re in a subfamily of AllTranscendentals, you are transcendental.
+{ ?X :inFamily :AllTranscendentals. } => { ?X :kind :Transcendental. }.
+
+# ---------------------------------------------
+# Theorem rules that *create family membership*
+# ---------------------------------------------
+
+# Lindemann–Weierstrass (slogan): exp(algebraic nonzero) is transcendental
+{
+  ?X :expArg ?A.
+  ?A :kind :Algebraic.
+  ?A :kind :NonZero.
+}
+=>
+{
+  ?X :inFamily :LWExpNumbers.
+  ?X :provedBy :LindemannWeierstrass.
+}.
+
+# Gelfond–Schneider: a^b transcendental (algebraic a!=0,1; algebraic irrational b)
+{
+  ?X :powBase ?A.
+  ?X :powExp  ?B.
+  ?A :kind :Algebraic.
+  ?A :kind :NotZeroOrOne.
+  ?B :kind :Algebraic.
+  ?B :kind :NonRational.
+}
+=>
+{
+  ?X :inFamily :GelfondSchneiderNumbers.
+  ?X :provedBy :GelfondSchneider.
+}.
+
+# -------------------------------------------------------
+# Closure families: build more transcendentals “for free”
+# -------------------------------------------------------
+
+# t + a  (both orders)
+{
+  ?X :plusLeft ?T.
+  ?X :plusRight ?A.
+  ?T :kind :Transcendental.
+  ?A :kind :Algebraic.
+}
+=>
+{
+  ?X :inFamily :AlgebraicClosureFamily.
+  ?X :provedBy :TransPlusAlg.
+}.
+
+{
+  ?X :plusLeft ?A.
+  ?X :plusRight ?T.
+  ?T :kind :Transcendental.
+  ?A :kind :Algebraic.
+}
+=>
+{
+  ?X :inFamily :AlgebraicClosureFamily.
+  ?X :provedBy :TransPlusAlg.
+}.
+
+# t * a  (both orders), require a != 0
+{
+  ?X :timesLeft ?T.
+  ?X :timesRight ?A.
+  ?T :kind :Transcendental.
+  ?A :kind :Algebraic.
+  ?A :kind :NonZero.
+}
+=>
+{
+  ?X :inFamily :AlgebraicClosureFamily.
+  ?X :provedBy :TransTimesAlg.
+}.
+
+{
+  ?X :timesLeft ?A.
+  ?X :timesRight ?T.
+  ?T :kind :Transcendental.
+  ?A :kind :Algebraic.
+  ?A :kind :NonZero.
+}
+=>
+{
+  ?X :inFamily :AlgebraicClosureFamily.
+  ?X :provedBy :TransTimesAlg.
+}.
+
+# t / a, require a != 0
+{
+  ?X :divNum ?T.
+  ?X :divDen ?A.
+  ?T :kind :Transcendental.
+  ?A :kind :Algebraic.
+  ?A :kind :NonZero.
+}
+=>
+{
+  ?X :inFamily :AlgebraicClosureFamily.
+  ?X :provedBy :TransDivAlg.
+}.
+
+# Computable transcendentals (tag-based family)
+{
+  ?X :kind :Transcendental.
+  ?X :tag :Computable.
+}
+=>
+{
+  ?X :inFamily :ComputableTranscendentals.
+}.
+
+# Corollaries
+{ ?X :kind :Transcendental. }
+=>
+{
+  ?X :kind :Irrational.
+  ?X :provedBy :TransImpliesIrrational.
+
+  ?X :kind :NotStraightedgeCompassConstructible.
+  ?X :provedBy :TransImpliesNotConstructible.
+}.
+
+# ------
+# REPORT
+# ------
+
+# Families we used
+{
+  ?F a :Family.
+}
+log:query
+{
+  :report :family ?F.
+}.
+
+# Family membership pairs
+{
+  ?X :inFamily ?F.
+}
+log:query
+{
+  :report :member [ :x ?X; :family ?F ].
+}.
+
+# Which expressions are (provably) transcendental
+{
+  ?X :kind :Transcendental.
+}
+log:query
+{
+  :report :transcendental ?X.
+}.
+
+# Proof pointers as singleton graph terms (emitted by query, not stored)
+{
+  ?X :kind :Transcendental.
+  ?X :provedBy ?T.
+}
+log:query
+{
+  :report :proof { ?X :provedBy ?T. }.
+}.
+
+# Unknown frontier
+{
+  ?X :kind :Unknown.
+}
+log:query
+{
+  :report :unknown ?X.
+}.

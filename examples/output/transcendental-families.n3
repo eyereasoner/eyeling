@@ -1,0 +1,210 @@
+@prefix : <https://example.org/trans-families#> .
+
+:report :family :AllTranscendentals .
+:report :family :MahlerUNumbers .
+:report :family :LiouvilleNumbers .
+:report :family :LWExpNumbers .
+:report :family :GelfondSchneiderNumbers .
+:report :family :AlgebraicClosureFamily .
+:report :family :ComputableTranscendentals .
+:report :member _:sk_0 .
+_:sk_0 :x :LiouvilleL .
+_:sk_0 :family :LiouvilleNumbers .
+:report :member _:sk_1 .
+_:sk_1 :x :LiouvilleL .
+_:sk_1 :family :MahlerUNumbers .
+:report :member _:sk_2 .
+_:sk_2 :x :exp_sqrt2 .
+_:sk_2 :family :LWExpNumbers .
+:report :member _:sk_3 .
+_:sk_3 :x :pow_2_sqrt2 .
+_:sk_3 :family :GelfondSchneiderNumbers .
+:report :member _:sk_4 .
+_:sk_4 :x :pow_i_i .
+_:sk_4 :family :GelfondSchneiderNumbers .
+:report :member _:sk_5 .
+_:sk_5 :x :pow_minus1_minusI .
+_:sk_5 :family :GelfondSchneiderNumbers .
+:report :member _:sk_6 .
+_:sk_6 :x :e_plus_1 .
+_:sk_6 :family :AlgebraicClosureFamily .
+:report :member _:sk_7 .
+_:sk_7 :x :pi_plus_sqrt2 .
+_:sk_7 :family :AlgebraicClosureFamily .
+:report :member _:sk_8 .
+_:sk_8 :x :two_times_pi .
+_:sk_8 :family :AlgebraicClosureFamily .
+:report :member _:sk_9 .
+_:sk_9 :x :pi_div_2 .
+_:sk_9 :family :AlgebraicClosureFamily .
+:report :member _:sk_10 .
+_:sk_10 :x :e .
+_:sk_10 :family :ComputableTranscendentals .
+:report :member _:sk_11 .
+_:sk_11 :x :pi .
+_:sk_11 :family :ComputableTranscendentals .
+:report :member _:sk_12 .
+_:sk_12 :x :LiouvilleL .
+_:sk_12 :family :ComputableTranscendentals .
+:report :member _:sk_13 .
+_:sk_13 :x :LiouvilleL .
+_:sk_13 :family :AllTranscendentals .
+:report :member _:sk_14 .
+_:sk_14 :x :exp_sqrt2 .
+_:sk_14 :family :AllTranscendentals .
+:report :member _:sk_15 .
+_:sk_15 :x :pow_2_sqrt2 .
+_:sk_15 :family :AllTranscendentals .
+:report :member _:sk_16 .
+_:sk_16 :x :pow_i_i .
+_:sk_16 :family :AllTranscendentals .
+:report :member _:sk_17 .
+_:sk_17 :x :pow_minus1_minusI .
+_:sk_17 :family :AllTranscendentals .
+:report :member _:sk_18 .
+_:sk_18 :x :e_plus_1 .
+_:sk_18 :family :AllTranscendentals .
+:report :member _:sk_19 .
+_:sk_19 :x :pi_plus_sqrt2 .
+_:sk_19 :family :AllTranscendentals .
+:report :member _:sk_20 .
+_:sk_20 :x :two_times_pi .
+_:sk_20 :family :AllTranscendentals .
+:report :member _:sk_21 .
+_:sk_21 :x :pi_div_2 .
+_:sk_21 :family :AllTranscendentals .
+:report :member _:sk_22 .
+_:sk_22 :x :e .
+_:sk_22 :family :AllTranscendentals .
+:report :member _:sk_23 .
+_:sk_23 :x :pi .
+_:sk_23 :family :AllTranscendentals .
+:report :member _:sk_24 .
+_:sk_24 :x :pow_2_sqrt2_plus_1 .
+_:sk_24 :family :AlgebraicClosureFamily .
+:report :member _:sk_25 .
+_:sk_25 :x :pow_2_sqrt2_plus_1 .
+_:sk_25 :family :AllTranscendentals .
+:report :transcendental :e .
+:report :transcendental :pi .
+:report :transcendental :LiouvilleL .
+:report :transcendental :exp_sqrt2 .
+:report :transcendental :pow_2_sqrt2 .
+:report :transcendental :pow_i_i .
+:report :transcendental :pow_minus1_minusI .
+:report :transcendental :e_plus_1 .
+:report :transcendental :pi_plus_sqrt2 .
+:report :transcendental :two_times_pi .
+:report :transcendental :pi_div_2 .
+:report :transcendental :pow_2_sqrt2_plus_1 .
+:report :proof {
+    :e :provedBy :Hermite1873 .
+} .
+:report :proof {
+    :e :provedBy :TransImpliesIrrational .
+} .
+:report :proof {
+    :e :provedBy :TransImpliesNotConstructible .
+} .
+:report :proof {
+    :pi :provedBy :Lindemann1882 .
+} .
+:report :proof {
+    :pi :provedBy :TransImpliesIrrational .
+} .
+:report :proof {
+    :pi :provedBy :TransImpliesNotConstructible .
+} .
+:report :proof {
+    :LiouvilleL :provedBy :Liouville1844 .
+} .
+:report :proof {
+    :LiouvilleL :provedBy :TransImpliesIrrational .
+} .
+:report :proof {
+    :LiouvilleL :provedBy :TransImpliesNotConstructible .
+} .
+:report :proof {
+    :exp_sqrt2 :provedBy :LindemannWeierstrass .
+} .
+:report :proof {
+    :exp_sqrt2 :provedBy :TransImpliesIrrational .
+} .
+:report :proof {
+    :exp_sqrt2 :provedBy :TransImpliesNotConstructible .
+} .
+:report :proof {
+    :pow_2_sqrt2 :provedBy :GelfondSchneider .
+} .
+:report :proof {
+    :pow_2_sqrt2 :provedBy :TransImpliesIrrational .
+} .
+:report :proof {
+    :pow_2_sqrt2 :provedBy :TransImpliesNotConstructible .
+} .
+:report :proof {
+    :pow_i_i :provedBy :GelfondSchneider .
+} .
+:report :proof {
+    :pow_i_i :provedBy :TransImpliesIrrational .
+} .
+:report :proof {
+    :pow_i_i :provedBy :TransImpliesNotConstructible .
+} .
+:report :proof {
+    :pow_minus1_minusI :provedBy :GelfondSchneider .
+} .
+:report :proof {
+    :pow_minus1_minusI :provedBy :TransImpliesIrrational .
+} .
+:report :proof {
+    :pow_minus1_minusI :provedBy :TransImpliesNotConstructible .
+} .
+:report :proof {
+    :e_plus_1 :provedBy :TransPlusAlg .
+} .
+:report :proof {
+    :e_plus_1 :provedBy :TransImpliesIrrational .
+} .
+:report :proof {
+    :e_plus_1 :provedBy :TransImpliesNotConstructible .
+} .
+:report :proof {
+    :pi_plus_sqrt2 :provedBy :TransPlusAlg .
+} .
+:report :proof {
+    :pi_plus_sqrt2 :provedBy :TransImpliesIrrational .
+} .
+:report :proof {
+    :pi_plus_sqrt2 :provedBy :TransImpliesNotConstructible .
+} .
+:report :proof {
+    :two_times_pi :provedBy :TransTimesAlg .
+} .
+:report :proof {
+    :two_times_pi :provedBy :TransImpliesIrrational .
+} .
+:report :proof {
+    :two_times_pi :provedBy :TransImpliesNotConstructible .
+} .
+:report :proof {
+    :pi_div_2 :provedBy :TransDivAlg .
+} .
+:report :proof {
+    :pi_div_2 :provedBy :TransImpliesIrrational .
+} .
+:report :proof {
+    :pi_div_2 :provedBy :TransImpliesNotConstructible .
+} .
+:report :proof {
+    :pow_2_sqrt2_plus_1 :provedBy :TransPlusAlg .
+} .
+:report :proof {
+    :pow_2_sqrt2_plus_1 :provedBy :TransImpliesIrrational .
+} .
+:report :proof {
+    :pow_2_sqrt2_plus_1 :provedBy :TransImpliesNotConstructible .
+} .
+:report :unknown :sum_e_pi .
+:report :unknown :prod_e_pi .
+:report :unknown :pow_pi_e .
