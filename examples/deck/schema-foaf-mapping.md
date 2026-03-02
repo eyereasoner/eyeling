@@ -55,7 +55,7 @@ A rule looks like:
 
 General shape:
 
-```sparql
+```n3
 {  # IF you find these triples...
   ...patterns...
 }
@@ -95,7 +95,7 @@ This says:
 
 Now we write rules that _derive_ FOAF triples.
 
-```sparql
+```n3
 @prefix schema: <https://schema.org/> .
 @prefix foaf:   <http://xmlns.com/foaf/0.1/> .
 
