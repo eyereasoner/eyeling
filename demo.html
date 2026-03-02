@@ -8,6 +8,7 @@
     <title>Eyeling N3 Playground</title>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.min.css" />
 
     <style>
       * {
@@ -451,6 +452,56 @@
         }
         .uri-input-row input[type='text']:focus {
           background: #0f1620;
+        }
+
+        /* Make the tab UI + secondary buttons readable in dark mode */
+        .tabs .tab-btn {
+          background: rgba(15, 22, 32, 0.9);
+          color: #e7eaf0;
+          border-color: rgba(148, 163, 184, 0.25);
+        }
+        .tabs .tab-btn:hover {
+          border-color: rgba(148, 163, 184, 0.45);
+        }
+        button.secondary {
+          background: #1f2a37;
+          color: #e7eaf0;
+          box-shadow: none;
+        }
+        button.secondary:hover:not(:disabled) {
+          box-shadow: 0 10px 15px rgba(0, 0, 0, 0.25);
+        }
+
+        /* Stream demo: switch to a dark palette (kept scoped and higher-specificity). */
+        body #streamApp {
+          --s-bg: #0b0f14;
+          --s-panel: #0f1620;
+          --s-text: #e7eaf0;
+          --s-muted: #a7b0bf;
+          --s-line: #1f2a37;
+          --s-btn: #2563eb;
+          --s-btn2: #1f2a37;
+          --s-codebg: #0b0f14;
+        }
+        body #streamApp .stream-topbar,
+        body #streamApp .modalHeader {
+          background: var(--s-panel);
+          border-bottom-color: var(--s-line);
+        }
+        body #streamApp .stream-topbar input {
+          background: var(--s-bg);
+          border-color: var(--s-line);
+          color: var(--s-text);
+        }
+        body #streamApp .badge,
+        body #streamApp .item,
+        body #streamApp .modal {
+          background: var(--s-panel);
+          border-color: var(--s-line);
+          color: var(--s-text);
+        }
+        body #streamApp .out {
+          color: var(--s-text);
         }
 
         @media (max-width: 640px) {
@@ -1502,8 +1553,13 @@ const batch = [];
         const initialN3 = paramProgram !== null ? paramProgram : defaultN3;
 
         // CodeMirror editors (syntax-highlighted)
+        // Use a real dark CodeMirror theme when the OS/browser is in dark mode.
+        const colorSchemeMql = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+        const pickCmTheme = () => (colorSchemeMql && colorSchemeMql.matches ? 'material-darker' : 'default');
+
         const editor = CodeMirror.fromTextArea(inputTextArea, {
           mode: { name: 'sparql' },
+          theme: pickCmTheme(),
           lineNumbers: true,
           lineWrapping: true,
           viewportMargin: Infinity,
@@ -1511,6 +1567,7 @@ const batch = [];
 
         const outputEl = CodeMirror.fromTextArea(outputTextArea, {
           mode: { name: 'sparql' },
+          theme: pickCmTheme(),
           lineNumbers: true,
           lineWrapping: true,
           readOnly: true,
@@ -1519,6 +1576,20 @@ const batch = [];
 
         // Slightly smaller font for output
         outputEl.getWrapperElement().classList.add('cm-output');
+
+        // Keep CodeMirror in sync if the user changes OS theme while this page is open.
+        function applyCodeMirrorTheme() {
+          const t = pickCmTheme();
+          editor.setOption('theme', t);
+          outputEl.setOption('theme', t);
+        }
+        if (colorSchemeMql) {
+          if (typeof colorSchemeMql.addEventListener === 'function') {
+            colorSchemeMql.addEventListener('change', applyCodeMirrorTheme);
+          } else if (typeof colorSchemeMql.addListener === 'function') {
+            colorSchemeMql.addListener(applyCodeMirrorTheme);
+          }
+        }
 
         // --- N3 SYNTAX ERROR HIGHLIGHTING ---
         let errorLineHandle = null;
