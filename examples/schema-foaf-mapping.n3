@@ -1,0 +1,52 @@
+# ==========================================================================
+# schema-foaf-mapping.n3
+#
+# A small beginner-friendly mapping from schema.org to FOAF using N3 rules.
+# Load this alongside your schema.org RDF data in an N3-capable rule engine.
+# ==========================================================================
+
+@prefix schema: <https://schema.org/> .
+@prefix foaf:   <http://xmlns.com/foaf/0.1/> .
+@prefix ex:     <https://example.org/> .
+
+# sample data
+ex:alice a schema:Person ;
+  schema:name "Alice Example" ;
+  schema:givenName "Alice" ;
+  schema:familyName "Example" .
+
+# Rule 1: If something is a schema:Person, also treat it as a foaf:Person
+{
+  ?p a schema:Person .
+}
+=>
+{
+  ?p a foaf:Person .
+}.
+
+# Rule 2: Map schema:name to foaf:name
+{
+  ?p schema:name ?name .
+}
+=>
+{
+  ?p foaf:name ?name .
+}.
+
+# Rule 3: Map schema:givenName to foaf:givenName
+{
+  ?p schema:givenName ?given .
+}
+=>
+{
+  ?p foaf:givenName ?given .
+}.
+
+# Rule 4: Map schema:familyName to foaf:familyName
+{
+  ?p schema:familyName ?family .
+}
+=>
+{
+  ?p foaf:familyName ?family .
+}.
