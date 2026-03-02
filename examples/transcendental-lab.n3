@@ -1,5 +1,5 @@
 # =====================================================================
-# TRANSCENDENTAL LAB (N3): a tiny “discovery engine”
+# TRANSCENDENTAL LAB: a tiny “discovery engine”
 #
 # Add more expression nodes at the bottom and rerun.
 # The rules classify what’s provably transcendental (or still Unknown),

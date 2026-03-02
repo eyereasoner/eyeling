@@ -1,0 +1,263 @@
+# =============================================================
+# NAMED TRANSCENDENTAL NUMBERS + FAMILIES
+#
+# A tiny “catalog” that:
+#   - Names several famous constants,
+#   - classifies them into *families* of transcendentals,
+#   - derives some transcendence results from theorem-schemata,
+#   - keeps a clear :Unknown frontier.
+#
+# Output is only :report triples.
+#
+# Run:
+#   eyeling examples/transcendental-names-and-families.n3
+# =============================================================
+
+@prefix :     <https://example.org/named-transcendentals#>.
+@prefix log:  <http://www.w3.org/2000/10/swap/log#>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+
+# ------------
+# Kinds / tags
+# ------------
+
+:Algebraic a :Kind.
+:Transcendental a :Kind.
+:Unknown a :Kind.
+
+:NonZero a :Kind.
+:NotZeroOrOne a :Kind.
+:NonRational a :Kind.
+
+:Computable a :Tag.
+:NonComputable a :Tag.
+
+# ---------------
+# Family taxonomy
+# ---------------
+
+:Family a rdfs:Class.
+
+:AllTranscendentals a :Family; rdfs:label "All transcendental numbers".
+
+:LWExpNumbers a :Family; rdfs:label "LW-exp family: exp(algebraic ≠ 0)".
+:GelfondSchneiderNumbers a :Family; rdfs:label "Gelfond–Schneider family: a^b with algebraic a!=0,1 and algebraic irrational b".
+:LiouvilleNumbers a :Family; rdfs:label "Liouville numbers".
+:DigitExpansionTranscendentals a :Family; rdfs:label "Digit-expansion / constructive decimal/binary transcendentals".
+:AlgorithmicRandomNumbers a :Family; rdfs:label "Algorithmic randomness / noncomputability-derived transcendentals".
+:EllipticPeriodConstants a :Family; rdfs:label "Elliptic period constants (classical named periods)".
+
+:LWExpNumbers :subFamilyOf :AllTranscendentals.
+:GelfondSchneiderNumbers :subFamilyOf :AllTranscendentals.
+:LiouvilleNumbers :subFamilyOf :AllTranscendentals.
+:DigitExpansionTranscendentals :subFamilyOf :AllTranscendentals.
+:AlgorithmicRandomNumbers :subFamilyOf :AllTranscendentals.
+:EllipticPeriodConstants :subFamilyOf :AllTranscendentals.
+
+# Subfamily closure
+{ ?X :inFamily ?F. ?F :subFamilyOf ?G. } => { ?X :inFamily ?G. }.
+
+# Being in the big family implies transcendental
+{ ?X :inFamily :AllTranscendentals. } => { ?X :kind :Transcendental. }.
+
+# Non-computable reals cannot be algebraic, so they are transcendental
+# (algebraic numbers are computable).
+{
+  ?X :tag :NonComputable.
+}
+=>
+{
+  ?X :inFamily :AlgorithmicRandomNumbers.
+  ?X :provedBy :NoncomputableImpliesTranscendental.
+}.
+
+# --------------------
+# Theorem / rule names
+# --------------------
+
+:Hermite1873 a :Theorem; rdfs:label "Hermite: e is transcendental".
+:Lindemann1882 a :Theorem; rdfs:label "Lindemann: pi is transcendental".
+:Liouville1844 a :Theorem; rdfs:label "Liouville: explicit transcendentals exist".
+:Kempner1916 a :Theorem; rdfs:label "Kempner: the Kempner number is transcendental".
+:Mahler1937 a :Theorem; rdfs:label "Mahler: Champernowne's constant is transcendental".
+:Schneider a :Theorem; rdfs:label "Schneider-type transcendence for elliptic periods (named example)".
+
+:LindemannWeierstrass a :Theorem; rdfs:label "LW (slogan): exp(algebraic≠0) is transcendental".
+:GelfondSchneider a :Theorem; rdfs:label "Gelfond–Schneider: a^b transcendental under conditions".
+:NoncomputableImpliesTranscendental a :Argument; rdfs:label "Noncomputable => not algebraic => transcendental".
+
+# ----------------------------------
+# Base constants and algebraic seeds
+# ----------------------------------
+
+:0 rdfs:label "0"; :kind :Algebraic.
+:1 rdfs:label "1"; :kind :Algebraic, :NonZero.
+:2 rdfs:label "2"; :kind :Algebraic, :NonZero, :NotZeroOrOne.
+
+:minus1 rdfs:label "-1"; :kind :Algebraic, :NonZero, :NotZeroOrOne.
+
+:sqrt2 rdfs:label "sqrt(2)"; :kind :Algebraic, :NonZero, :NonRational.
+:i     rdfs:label "i";       :kind :Algebraic, :NonZero, :NotZeroOrOne, :NonRational.
+:minusi rdfs:label "-i";     :kind :Algebraic, :NonZero, :NotZeroOrOne, :NonRational.
+
+:e  rdfs:label "e";  :kind :Transcendental; :provedBy :Hermite1873; :tag :Computable.
+:pi rdfs:label "pi"; :kind :Transcendental; :provedBy :Lindemann1882; :tag :Computable.
+
+# --------------------------------------
+# Expression vocabulary (structure only)
+# --------------------------------------
+
+# exp(x) means e^x
+:exp_sqrt2 rdfs:label "e^(sqrt(2))"; :expArg :sqrt2.
+
+# pow(a,b) means a^b
+:pow_2_sqrt2 rdfs:label "2^(sqrt(2))"; :powBase :2; :powExp :sqrt2.
+:pow_minus1_minusi rdfs:label "(-1)^(-i)"; :powBase :minus1; :powExp :minusi.
+
+# A named face of the same GS number (Euler identity style)
+:gelfondsConstant rdfs:label "Gelfond's constant e^pi"; :sameAs :pow_minus1_minusi.
+
+# ------------------------------------------------------
+# “Digit-expansion / construction” named transcendentals
+# ------------------------------------------------------
+
+:liouvillesConstant rdfs:label "Liouville's constant L";
+  :inFamily :LiouvilleNumbers, :DigitExpansionTranscendentals;
+  :provedBy :Liouville1844;
+  :tag :Computable.
+
+:kempnerNumber rdfs:label "Kempner number (binary series)";
+  :inFamily :DigitExpansionTranscendentals;
+  :provedBy :Kempner1916;
+  :tag :Computable.
+
+:champernowneC10 rdfs:label "Champernowne constant C_10";
+  :inFamily :DigitExpansionTranscendentals;
+  :provedBy :Mahler1937;
+  :tag :Computable.
+
+# -------------------------------------------------------------
+# Algorithmic randomness / named but machine-dependent constant
+# -------------------------------------------------------------
+
+:chaitinsOmega rdfs:label "Chaitin's Omega (for a fixed universal machine)";
+  :tag :NonComputable.
+
+# -------------------------------
+# Elliptic period (named example)
+# -------------------------------
+
+:lemniscateConstant rdfs:label "Lemniscate constant (varpi)";
+  :inFamily :EllipticPeriodConstants;
+  :provedBy :Schneider.
+
+# -------------------------------------
+# Unknown frontier (famous open combos)
+# -------------------------------------
+
+:ePlusPi  rdfs:label "e + pi"; :kind :Unknown.
+:eTimesPi rdfs:label "e*pi";   :kind :Unknown.
+:piPowE   rdfs:label "pi^e";   :kind :Unknown.
+
+:eulerMascheroniGamma rdfs:label "Euler–Mascheroni constant gamma"; :kind :Unknown.
+:aperyZeta3            rdfs:label "Apery's constant zeta(3)";       :kind :Unknown.
+:catalanG              rdfs:label "Catalan's constant G";           :kind :Unknown.
+
+# -------------------------------------------
+# Theorem schemata (derive family membership)
+# -------------------------------------------
+
+# LW slogan: exp(algebraic nonzero) => transcendental, put into LWExpNumbers
+{
+  ?X :expArg ?A.
+  ?A :kind :Algebraic.
+  ?A :kind :NonZero.
+}
+=>
+{
+  ?X :inFamily :LWExpNumbers.
+  ?X :provedBy :LindemannWeierstrass.
+}.
+
+# Gelfond–Schneider: a^b => transcendental, put into GelfondSchneiderNumbers
+{
+  ?X :powBase ?A.
+  ?X :powExp  ?B.
+  ?A :kind :Algebraic.
+  ?A :kind :NotZeroOrOne.
+  ?B :kind :Algebraic.
+  ?B :kind :NonRational.
+}
+=>
+{
+  ?X :inFamily :GelfondSchneiderNumbers.
+  ?X :provedBy :GelfondSchneider.
+}.
+
+# sameAs transport (one direction, to avoid cycles)
+{ ?X :sameAs ?Y. ?Y :inFamily ?F. } => { ?X :inFamily ?F. }.
+{ ?X :sameAs ?Y. ?Y :provedBy ?T. } => { ?X :provedBy ?T. }.
+
+# Make e and pi “members” of the global family too (so they appear in the family report)
+{ ?X :kind :Transcendental. } => { ?X :inFamily :AllTranscendentals. }.
+
+# ------
+# REPORT
+# ------
+
+# List families + their taxonomy edges
+{
+  ?F a :Family.
+}
+log:query
+{
+  :report :family ?F.
+}.
+
+{
+  ?F :subFamilyOf ?G.
+}
+log:query
+{
+  :report :subFamily [ :child ?F; :parent ?G ].
+}.
+
+# Named transcendentals (anything provably transcendental that has a label)
+{
+  ?X :kind :Transcendental.
+  ?X rdfs:label ?L.
+}
+log:query
+{
+  :report :namedTranscendental ?X.
+}.
+
+# Family membership facts
+{
+  ?X :inFamily ?F.
+  ?X rdfs:label ?L.
+}
+log:query
+{
+  :report :member [ :x ?X; :family ?F ].
+}.
+
+# Proof pointers as singleton graph terms (emitted by query, not stored)
+{
+  ?X :kind :Transcendental.
+  ?X :provedBy ?T.
+}
+log:query
+{
+  :report :proof { ?X :provedBy ?T. }.
+}.
+
+# Unknown frontier (explicit)
+{
+  ?X :kind :Unknown.
+}
+log:query
+{
+  :report :unknown ?X.
+}.
+
