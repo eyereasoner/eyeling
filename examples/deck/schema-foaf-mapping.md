@@ -16,6 +16,7 @@ Even if two vocabularies describe similar things, they may use **different names
 - **FOAF (Friend of a Friend)** is common for describing people, names, online accounts, and social relationships.
 
 Mapping lets you:
+
 - reuse tools built for another vocabulary,
 - integrate datasets that use different terms,
 - keep your original data but still answer queries in the target vocabulary.
@@ -32,6 +33,7 @@ Example concept:
 Those two classes can represent the same real-world thing (a person), just in different vocabularies.
 
 Similarly for properties:
+
 - `schema:name` ≈ `foaf:name`
 - `schema:givenName` ≈ `foaf:givenName`
 - `schema:familyName` ≈ `foaf:familyName`
@@ -48,12 +50,12 @@ A mapping is just a **set of rules** that says:
 
 A rule looks like:
 
-- **Left side (condition):** patterns you look for in your data  
-- **Right side (conclusion):** triples you can *generate* when the condition matches
+- **Left side (condition):** patterns you look for in your data
+- **Right side (conclusion):** triples you can _generate_ when the condition matches
 
 General shape:
 
-```n3
+```sparql
 {  # IF you find these triples...
   ...patterns...
 }
@@ -63,7 +65,7 @@ General shape:
 }.
 ```
 
-This is sometimes called **forward-chaining**: you start with data you have, and rules *derive* additional data.
+This is sometimes called **forward-chaining**: you start with data you have, and rules _derive_ additional data.
 
 ---
 
@@ -83,17 +85,17 @@ ex:alice a schema:Person ;
 
 This says:
 
-* `ex:alice` is a `schema:Person`
-* her full name is `"Alice Example"`
-* her given and family names are included too
+- `ex:alice` is a `schema:Person`
+- her full name is `"Alice Example"`
+- her given and family names are included too
 
 ---
 
 ## Mapping to FOAF using N3 rules
 
-Now we write rules that *derive* FOAF triples.
+Now we write rules that _derive_ FOAF triples.
 
-```n3
+```sparql
 @prefix schema: <https://schema.org/> .
 @prefix foaf:   <http://xmlns.com/foaf/0.1/> .
 
@@ -136,15 +138,13 @@ Now we write rules that *derive* FOAF triples.
 
 Read Rule 2 in plain English:
 
-> If a person `?p` has a `schema:name` value `?name`,
-> then we can also say `?p` has a `foaf:name` value `?name`.
+> If a person `?p` has a `schema:name` value `?name`, then we can also say `?p` has a `foaf:name` value `?name`.
 
 ---
 
 ## What output do you get?
 
-After applying the rules, you still have your original schema.org data,
-**plus** extra FOAF triples like:
+After applying the rules, you still have your original schema.org data, **plus** extra FOAF triples like:
 
 ```turtle
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .
@@ -162,12 +162,12 @@ So now FOAF-based tools or queries can work, even though your “source of truth
 
 ## Important beginner notes
 
-### 1) Mapping usually *adds* data (it doesn’t delete or replace)
+### 1) Mapping usually _adds_ data (it doesn’t delete or replace)
 
 Most rule-based mappings are “non-destructive”:
 
-* Keep the original triples
-* Derive additional triples in the target vocabulary
+- Keep the original triples
+- Derive additional triples in the target vocabulary
 
 ### 2) 1-to-1 mappings are the easy case
 
@@ -175,13 +175,12 @@ Most rule-based mappings are “non-destructive”:
 
 But sometimes:
 
-* one term in schema.org maps to **multiple** terms in FOAF, or
-* the target expects a different structure (blank nodes, split names, etc.)
+- one term in schema.org maps to **multiple** terms in FOAF, or
+- the target expects a different structure (blank nodes, split names, etc.)
 
 ### 3) “Same meaning” is a judgment call
 
-Two properties might be *similar* but not truly identical in all contexts.
-Mapping works best when you understand the intended meaning of each term.
+Two properties might be _similar_ but not truly identical in all contexts. Mapping works best when you understand the intended meaning of each term.
 
 ---
 
@@ -190,23 +189,23 @@ Mapping works best when you understand the intended meaning of each term.
 1. **List the things** you have (classes + properties in schema.org)
 2. **Decide what you want** to support (FOAF terms you need)
 3. For each target term, ask:
+   - “Where can I get this information from in the source?”
 
-   * “Where can I get this information from in the source?”
 4. Write rules:
+   - **conditions** match the source triples
+   - **conclusions** emit the target triples
 
-   * **conditions** match the source triples
-   * **conclusions** emit the target triples
 5. Run a reasoner/rule engine and test with a few example resources
 
 ---
 
 ## Next step ideas (optional)
 
-* Map online profiles:
+- Map online profiles:
+  - `schema:sameAs` could help populate `foaf:page` or related links (careful: semantics differ).
 
-  * `schema:sameAs` could help populate `foaf:page` or related links (careful: semantics differ).
-* Add type rules beyond `Person`
-* Write rules that create structured nodes (more advanced)
+- Add type rules beyond `Person`
+- Write rules that create structured nodes (more advanced)
 
 ---
 
@@ -214,8 +213,7 @@ Mapping works best when you understand the intended meaning of each term.
 
 Mapping two models is about **translating meaning across vocabularies**.
 
-* You start with data described in **schema.org**
-* You write **N3 rules** that recognize schema.org patterns
-* You **derive FOAF triples**
-* The result is data that can be consumed as if it were FOAF, without rewriting your original dataset
-
+- You start with data described in **schema.org**
+- You write **N3 rules** that recognize schema.org patterns
+- You **derive FOAF triples**
+- The result is data that can be consumed as if it were FOAF, without rewriting your original dataset
