@@ -164,23 +164,18 @@
   ?clause :clauseId ?cid ; :text ?txt .
 
   (90 ?w) math:sum ?raw .
-  ( :Agreement1 :ConsumerExample :DeleteAccountNoSafeguards ?cid ) log:skolem ?risk .
-  ( :Agreement1 :ConsumerExample :DeleteAccountNoSafeguardsSource ?cid ) log:skolem ?src .
-  ( ?risk :M1 ) log:skolem ?m1 .
-  ( ?risk :M2 ) log:skolem ?m2 .
-
   ( "Risk: account/data removal is permitted without notice safeguards (no notice constraint and no duty to inform). Clause %s: %s"
     ?cid ?txt ) string:format ?why .
 }
 =>
 {
-  ?src a risk:RiskSource, risk:LegalComplianceRisk ;
+  _:src1 a risk:RiskSource, risk:LegalComplianceRisk ;
     dct:source :PermDeleteAccount ;
     dct:description "Account removal permitted without notice safeguards." .
 
-  ?risk a dpv:Risk, risk:UnwantedDataDeletion, risk:DataUnavailable, risk:DataErasureError, risk:DataLoss ;
+  _:risk1 a dpv:Risk, risk:UnwantedDataDeletion, risk:DataUnavailable, risk:DataErasureError, risk:DataLoss ;
     dct:source :PermDeleteAccount ;
-    risk:hasRiskSource ?src ;
+    risk:hasRiskSource _:src1 ;
     dpv:hasConsequence risk:DataLoss, risk:DataUnavailable, risk:CustomerConfidenceLoss ;
     dpv:hasImpact risk:FinancialLoss, risk:NonMaterialDamage ;
     :aboutClause ?clause ;
@@ -188,12 +183,12 @@
     :violatesNeed :Need_DataCannotBeRemoved ;
     dct:description ?why .
 
-  :ProcessContext1 dpv:hasRisk ?risk .
+  :ProcessContext1 dpv:hasRisk _:risk1 .
 
 
-  ?m1 a dpv:RiskMitigationMeasure ;
+  _:m11 a dpv:RiskMitigationMeasure ;
     dct:description "Add a notice constraint (minimum noticeDays) before account removal." ;
-    dpv:mitigatesRisk ?risk ;
+    dpv:mitigatesRisk _:risk1 ;
     :suggestAdd {
       :PermDeleteAccount odrl:constraint [
         a odrl:Constraint ;
@@ -203,9 +198,9 @@
       ] .
     } .
 
-  ?m2 a dpv:RiskMitigationMeasure ;
+  _:m21 a dpv:RiskMitigationMeasure ;
     dct:description "Add a duty to inform the consumer prior to account removal." ;
-    dpv:mitigatesRisk ?risk ;
+    dpv:mitigatesRisk _:risk1 ;
     :suggestAdd {
       :PermDeleteAccount odrl:duty [
         a odrl:Duty ;
@@ -213,7 +208,7 @@
       ] .
     } .
 
-  ?risk dpv:isMitigatedByMeasure ?m1, ?m2 .
+  _:risk1 dpv:isMitigatedByMeasure _:m11, _:m21 .
 } .
 
 # R2: change terms noticeDays is below consumer requirement
@@ -239,22 +234,18 @@
   ?clause :clauseId ?cid ; :text ?txt .
 
   (70 ?w) math:sum ?raw .
-  ( :Agreement1 :ConsumerExample :NoticeTooShort ?cid ) log:skolem ?risk .
-  ( :Agreement1 :ConsumerExample :NoticeTooShortSource ?cid ) log:skolem ?src .
-  ( ?risk :M1 ) log:skolem ?m1 .
-
   ( "Risk: terms may change with notice (%s days) below consumer requirement (%s days). Clause %s: %s"
     ?days ?req ?cid ?txt ) string:format ?why .
 }
 =>
 {
-  ?src a risk:RiskSource, risk:PolicyRisk ;
+  _:src2 a risk:RiskSource, risk:PolicyRisk ;
     dct:source :PermChangeTerms ;
     dct:description "Notice for changing terms is shorter than consumer requirement." .
 
-  ?risk a dpv:Risk, risk:PolicyRisk, risk:CustomerConfidenceLoss ;
+  _:risk2 a dpv:Risk, risk:PolicyRisk, risk:CustomerConfidenceLoss ;
     dct:source :PermChangeTerms ;
-    risk:hasRiskSource ?src ;
+    risk:hasRiskSource _:src2 ;
     dpv:hasConsequence risk:CustomerConfidenceLoss ;
     dpv:hasImpact risk:NonMaterialDamage ;
     :aboutClause ?clause ;
@@ -262,11 +253,11 @@
     :violatesNeed :Need_ChangeOnlyWithPriorNotice ;
     dct:description ?why .
 
-  :ProcessContext1 dpv:hasRisk ?risk .
+  :ProcessContext1 dpv:hasRisk _:risk2 .
 
-  ?m1 a dpv:RiskMitigationMeasure ;
+  _:m12 a dpv:RiskMitigationMeasure ;
     dct:description "Increase minimum noticeDays in the inform duty to meet the consumer requirement." ;
-    dpv:mitigatesRisk ?risk ;
+    dpv:mitigatesRisk _:risk2 ;
     :suggestAdd {
       :PermChangeTerms odrl:duty [
         a odrl:Duty ;
@@ -280,7 +271,7 @@
       ] .
     } .
 
-  ?risk dpv:isMitigatedByMeasure ?m1 .
+  _:risk2 dpv:isMitigatedByMeasure _:m12 .
 } .
 
 # R3: share data WITHOUT explicit consent constraint
@@ -306,22 +297,18 @@
   ?clause :clauseId ?cid ; :text ?txt .
 
   (85 ?w) math:sum ?raw .
-  ( :Agreement1 :ConsumerExample :ShareNoConsent ?cid ) log:skolem ?risk .
-  ( :Agreement1 :ConsumerExample :ShareNoConsentSource ?cid ) log:skolem ?src .
-  ( ?risk :M1 ) log:skolem ?m1 .
-
   ( "Risk: user data sharing is permitted without an explicit consent constraint. Clause %s: %s"
     ?cid ?txt ) string:format ?why .
 }
 =>
 {
-  ?src a risk:RiskSource, risk:PolicyRisk ;
+  _:src3 a risk:RiskSource, risk:PolicyRisk ;
     dct:source :PermShareData ;
     dct:description "Data sharing permitted without explicit consent constraint." .
 
-  ?risk a dpv:Risk, risk:UnwantedDisclosureData, risk:CustomerConfidenceLoss ;
+  _:risk3 a dpv:Risk, risk:UnwantedDisclosureData, risk:CustomerConfidenceLoss ;
     dct:source :PermShareData ;
-    risk:hasRiskSource ?src ;
+    risk:hasRiskSource _:src3 ;
     dpv:hasConsequence risk:CustomerConfidenceLoss ;
     dpv:hasImpact risk:NonMaterialDamage, risk:FinancialLoss ;
     :aboutClause ?clause ;
@@ -329,11 +316,11 @@
     :violatesNeed :Need_NoSharingWithoutConsent ;
     dct:description ?why .
 
-  :ProcessContext1 dpv:hasRisk ?risk .
+  :ProcessContext1 dpv:hasRisk _:risk3 .
 
-  ?m1 a dpv:RiskMitigationMeasure ;
+  _:m13 a dpv:RiskMitigationMeasure ;
     dct:description "Add an explicit consent constraint before data sharing." ;
-    dpv:mitigatesRisk ?risk ;
+    dpv:mitigatesRisk _:risk3 ;
     :suggestAdd {
       :PermShareData odrl:constraint [
         a odrl:Constraint ;
@@ -343,7 +330,7 @@
       ] .
     } .
 
-  ?risk dpv:isMitigatedByMeasure ?m1 .
+  _:risk3 dpv:isMitigatedByMeasure _:m13 .
 } .
 
 # R4: prohibit export (no portability)
@@ -361,22 +348,18 @@
   ?clause :clauseId ?cid ; :text ?txt .
 
   (60 ?w) math:sum ?raw .
-  ( :Agreement1 :ConsumerExample :NoPortability ?cid ) log:skolem ?risk .
-  ( :Agreement1 :ConsumerExample :NoPortabilitySource ?cid ) log:skolem ?src .
-  ( ?risk :M1 ) log:skolem ?m1 .
-
   ( "Risk: portability is restricted because exporting user data is prohibited. Clause %s: %s"
     ?cid ?txt ) string:format ?why .
 }
 =>
 {
-  ?src a risk:RiskSource, risk:PolicyRisk ;
+  _:src4 a risk:RiskSource, risk:PolicyRisk ;
     dct:source :ProhibitExportData ;
     dct:description "Data export is prohibited, reducing portability." .
 
-  ?risk a dpv:Risk, risk:PolicyRisk, risk:CustomerConfidenceLoss ;
+  _:risk4 a dpv:Risk, risk:PolicyRisk, risk:CustomerConfidenceLoss ;
     dct:source :ProhibitExportData ;
-    risk:hasRiskSource ?src ;
+    risk:hasRiskSource _:src4 ;
     dpv:hasConsequence risk:CustomerConfidenceLoss ;
     dpv:hasImpact risk:NonMaterialDamage ;
     :aboutClause ?clause ;
@@ -384,11 +367,11 @@
     :violatesNeed :Need_DataPortability ;
     dct:description ?why .
 
-  :ProcessContext1 dpv:hasRisk ?risk .
+  :ProcessContext1 dpv:hasRisk _:risk4 .
 
-  ?m1 a dpv:RiskMitigationMeasure ;
+  _:m14 a dpv:RiskMitigationMeasure ;
     dct:description "Add a permission allowing data export (or remove the prohibition) to support portability." ;
-    dpv:mitigatesRisk ?risk ;
+    dpv:mitigatesRisk _:risk4 ;
     :suggestAdd {
       :Policy1 odrl:permission [
         a odrl:Permission ;
@@ -399,7 +382,7 @@
       ] .
     } .
 
-  ?risk dpv:isMitigatedByMeasure ?m1 .
+  _:risk4 dpv:isMitigatedByMeasure _:m14 .
 } .
 
 # ------------------------------------------------
@@ -422,7 +405,7 @@
 => { ?r dpv:hasSeverity risk:LowSeverity ; dpv:hasRiskLevel risk:LowRisk . } .
 
 # ------------------------------------------------------------------------------
-# 5) Ranked explainable output (Eyeling -r prints these in key order)
+# 5) Ranked explainable output via log:query (Eyeling -r prints these in key order)
 # ------------------------------------------------------------------------------
 
 # Header
@@ -432,10 +415,10 @@
   ( "\n=== Ranked DPV Risk Report ===\nAgreement: %s\nProfile: %s\n\n"
     ?alabel ?plabel ) string:format ?hdr .
 }
-=>
+log:query
 {
   ( :Agreement1 :ConsumerExample 0 ) log:outputString ?hdr .
-} .
+}.
 
 # Risk lines (key includes inverse score = 1000 - score)
 {
@@ -452,10 +435,10 @@
   ( "score=%s (%s, %s)  clause %s\n  %s\n\n"
     ?score ?lvl ?sev ?cid ?why ) string:format ?line .
 }
-=>
+log:query
 {
   ( :Agreement1 :ConsumerExample 1 ?inv ?cid 0 ?r ) log:outputString ?line .
-} .
+}.
 
 # Mitigation lines (same ordering as their risk)
 {
@@ -471,8 +454,7 @@
   ( "  - mitigation for clause %s: %s\n"
     ?cid ?md ) string:format ?mline .
 }
-=>
+log:query
 {
   ( :Agreement1 :ConsumerExample 1 ?inv ?cid 1 ?r ?m ) log:outputString ?mline .
-} .
-
+}.

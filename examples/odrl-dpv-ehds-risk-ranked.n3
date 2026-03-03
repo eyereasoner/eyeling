@@ -171,22 +171,18 @@
   ?clause :clauseId ?cid ; :text ?txt .
 
   (80 ?w) math:sum ?raw .
-  ( :AgreementEHDS1 :PatientProfileExample :MissingDataPermit ?cid ) log:skolem ?risk .
-  ( :AgreementEHDS1 :PatientProfileExample :MissingDataPermitSource ?cid ) log:skolem ?src .
-  ( ?risk :M1 ) log:skolem ?m1 .
-
   ( "Risk: secondary use is permitted without an EHDS Data Permit safeguard. Clause %s: %s"
     ?cid ?txt ) string:format ?why .
 }
 =>
 {
-  ?src a risk:RiskSource, risk:LegalComplianceRisk ;
+  _:srcH1 a risk:RiskSource, risk:LegalComplianceRisk ;
     dct:source :PermSecondaryUseDUA ;
     dct:description "Secondary use permitted without EHDS Data Permit." .
 
-  ?risk a dpv:Risk, risk:PolicyRisk ;
+  _:riskH1 a dpv:Risk, risk:PolicyRisk ;
     dct:source :PermSecondaryUseDUA ;
-    risk:hasRiskSource ?src ;
+    risk:hasRiskSource _:srcH1 ;
     dpv:hasConsequence risk:CustomerConfidenceLoss ;
     dpv:hasImpact risk:FinancialLoss, risk:NonMaterialDamage ;
     :aboutClause ?clause ;
@@ -194,11 +190,11 @@
     :violatesNeed :Need_RequireDataPermit ;
     dct:description ?why .
 
-  :ProcessContext1 dpv:hasRisk ?risk .
+  :ProcessContext1 dpv:hasRisk _:riskH1 .
 
-  ?m1 a dpv:RiskMitigationMeasure ;
+  _:mH1_1 a dpv:RiskMitigationMeasure ;
     dct:description "Require an EHDS Data Permit (eu-ehds:DataPermit) issued by a Health Data Access Body prior to secondary use." ;
-    dpv:mitigatesRisk ?risk ;
+    dpv:mitigatesRisk _:riskH1 ;
     :suggestAdd {
       :PermSecondaryUseDUA odrl:constraint [
         a odrl:Constraint ;
@@ -210,7 +206,7 @@
         dct:description "Example placeholder for an issued data permit." .
     } .
 
-  ?risk dpv:isMitigatedByMeasure ?m1 .
+  _:riskH1 dpv:isMitigatedByMeasure _:mH1_1 .
 } .
 
 # R2 (H2): Secondary use allowed WITHOUT an explicit opt-out safeguard (EHDS Art.71 right A71)
@@ -234,22 +230,18 @@
   ?clause :clauseId ?cid ; :text ?txt .
 
   (75 ?w) math:sum ?raw .
-  ( :AgreementEHDS1 :PatientProfileExample :MissingOptOutSafeguard ?cid ) log:skolem ?risk .
-  ( :AgreementEHDS1 :PatientProfileExample :MissingOptOutSafeguardSource ?cid ) log:skolem ?src .
-  ( ?risk :M1 ) log:skolem ?m1 .
-
   ( "Risk: secondary use may include patients who opted out (EHDS A71). Clause %s: %s"
     ?cid ?txt ) string:format ?why .
 }
 =>
 {
-  ?src a risk:RiskSource, risk:LegalComplianceRisk ;
+  _:srcH2 a risk:RiskSource, risk:LegalComplianceRisk ;
     dct:source :PermSecondaryUseAllPatients ;
     dct:description "Opt-out from secondary use not explicitly respected." .
 
-  ?risk a dpv:Risk, risk:PolicyRisk, risk:UnwantedDisclosureData ;
+  _:riskH2 a dpv:Risk, risk:PolicyRisk, risk:UnwantedDisclosureData ;
     dct:source :PermSecondaryUseAllPatients ;
-    risk:hasRiskSource ?src ;
+    risk:hasRiskSource _:srcH2 ;
     dpv:hasConsequence risk:CustomerConfidenceLoss ;
     dpv:hasImpact risk:NonMaterialDamage ;
     :aboutClause ?clause ;
@@ -257,11 +249,11 @@
     :violatesNeed :Need_RespectOptOutSecondaryUse ;
     dct:description ?why .
 
-  :ProcessContext1 dpv:hasRisk ?risk .
+  :ProcessContext1 dpv:hasRisk _:riskH2 .
 
-  ?m1 a dpv:RiskMitigationMeasure ;
+  _:mH2_1 a dpv:RiskMitigationMeasure ;
     dct:description "Add an explicit safeguard to exclude records of persons who exercised the EHDS opt-out from secondary use (A71)." ;
-    dpv:mitigatesRisk ?risk ;
+    dpv:mitigatesRisk _:riskH2 ;
     :suggestAdd {
       :PermSecondaryUseAllPatients odrl:constraint [
         a odrl:Constraint ;
@@ -271,7 +263,7 @@
       ] .
     } .
 
-  ?risk dpv:isMitigatedByMeasure ?m1 .
+  _:riskH2 dpv:isMitigatedByMeasure _:mH2_1 .
 } .
 
 # R3 (H3): Local download permitted (no secure processing environment safeguard)
@@ -295,22 +287,18 @@
   ?clause :clauseId ?cid ; :text ?txt .
 
   (70 ?w) math:sum ?raw .
-  ( :AgreementEHDS1 :PatientProfileExample :InsecureProcessing ?cid ) log:skolem ?risk .
-  ( :AgreementEHDS1 :PatientProfileExample :InsecureProcessingSource ?cid ) log:skolem ?src .
-  ( ?risk :M1 ) log:skolem ?m1 .
-
   ( "Risk: the agreement permits local downloads rather than processing within a secure processing environment. Clause %s: %s"
     ?cid ?txt ) string:format ?why .
 }
 =>
 {
-  ?src a risk:RiskSource, risk:PolicyRisk ;
+  _:srcH3 a risk:RiskSource, risk:PolicyRisk ;
     dct:source :PermDownloadLocalCopy ;
     dct:description "Local download permitted; secure processing environment not required." .
 
-  ?risk a dpv:Risk, risk:UnwantedDisclosureData ;
+  _:riskH3 a dpv:Risk, risk:UnwantedDisclosureData ;
     dct:source :PermDownloadLocalCopy ;
-    risk:hasRiskSource ?src ;
+    risk:hasRiskSource _:srcH3 ;
     dpv:hasConsequence risk:CustomerConfidenceLoss ;
     dpv:hasImpact risk:FinancialLoss, risk:NonMaterialDamage ;
     :aboutClause ?clause ;
@@ -318,11 +306,11 @@
     :violatesNeed :Need_SecureProcessingEnvironment ;
     dct:description ?why .
 
-  :ProcessContext1 dpv:hasRisk ?risk .
+  :ProcessContext1 dpv:hasRisk _:riskH3 .
 
-  ?m1 a dpv:RiskMitigationMeasure ;
+  _:mH3_1 a dpv:RiskMitigationMeasure ;
     dct:description "Require processing only within a secure processing environment (e.g., eu-dga:SecureProcessingEnvironment), and prohibit local downloads of raw datasets." ;
-    dpv:mitigatesRisk ?risk ;
+    dpv:mitigatesRisk _:riskH3 ;
     :suggestAdd {
       :ProhibitDownloadLocalCopy a odrl:Prohibition ;
         odrl:assigner :HospitalA ;
@@ -333,7 +321,7 @@
       :ProcessContext1 dpv:hasTechnicalOrganisationalMeasure eu-dga:SecureProcessingEnvironment .
     } .
 
-  ?risk dpv:isMitigatedByMeasure ?m1 .
+  _:riskH3 dpv:isMitigatedByMeasure _:mH3_1 .
 } .
 
 # R4 (H4): Secondary use provided without requiring statistically anonymised data (EHDS HealthDataRequest)
@@ -357,22 +345,18 @@
   ?clause :clauseId ?cid ; :text ?txt .
 
   (65 ?w) math:sum ?raw .
-  ( :AgreementEHDS1 :PatientProfileExample :NotStatisticallyAnonymised ?cid ) log:skolem ?risk .
-  ( :AgreementEHDS1 :PatientProfileExample :NotStatisticallyAnonymisedSource ?cid ) log:skolem ?src .
-  ( ?risk :M1 ) log:skolem ?m1 .
-
   ( "Risk: secondary-use dataset is only described as pseudonymised, without a safeguard requiring statistically anonymised data for secondary use. Clause %s: %s"
     ?cid ?txt ) string:format ?why .
 }
 =>
 {
-  ?src a risk:RiskSource, risk:PolicyRisk ;
+  _:srcH4 a risk:RiskSource, risk:PolicyRisk ;
     dct:source :PermProvidePseudonymisedData ;
     dct:description "Statistical anonymisation safeguard missing for secondary use." .
 
-  ?risk a dpv:Risk, risk:UnwantedDisclosureData ;
+  _:riskH4 a dpv:Risk, risk:UnwantedDisclosureData ;
     dct:source :PermProvidePseudonymisedData ;
-    risk:hasRiskSource ?src ;
+    risk:hasRiskSource _:srcH4 ;
     dpv:hasConsequence risk:CustomerConfidenceLoss ;
     dpv:hasImpact risk:NonMaterialDamage ;
     :aboutClause ?clause ;
@@ -380,11 +364,11 @@
     :violatesNeed :Need_StatisticallyAnonymisedSecondaryUse ;
     dct:description ?why .
 
-  :ProcessContext1 dpv:hasRisk ?risk .
+  :ProcessContext1 dpv:hasRisk _:riskH4 .
 
-  ?m1 a dpv:RiskMitigationMeasure ;
+  _:mH4_1 a dpv:RiskMitigationMeasure ;
     dct:description "Require an EHDS Health Data Request for statistically anonymised data (eu-ehds:HealthDataRequest), and add a constraint that secondary-use data must be statistically anonymised." ;
-    dpv:mitigatesRisk ?risk ;
+    dpv:mitigatesRisk _:riskH4 ;
     :suggestAdd {
       :PermProvidePseudonymisedData odrl:constraint [
         a odrl:Constraint ;
@@ -395,7 +379,7 @@
       :ProcessContext1 dpv:hasOrganisationalMeasure eu-ehds:HealthDataRequest .
     } .
 
-  ?risk dpv:isMitigatedByMeasure ?m1 .
+  _:riskH4 dpv:isMitigatedByMeasure _:mH4_1 .
 } .
 
 # ------------------------------------------------
@@ -418,7 +402,8 @@
 => { ?r dpv:hasSeverity risk:LowSeverity ; dpv:hasRiskLevel risk:LowRisk . } .
 
 # -------------------------------------------------------------------
-# 5) Ranked explainable output (Eyeling -r prints these in key order)
+# 5) Ranked explainable output via log:query (output selection)
+#    - Use `npx eyeling -r` (or `--strings`) to print the strings in key order.
 # -------------------------------------------------------------------
 
 # Header
@@ -428,10 +413,10 @@
   ( "\n=== Ranked DPV Risk Report (EHDS-aligned) ===\nAgreement: %s\nProfile: %s\n\n"
     ?alabel ?plabel ) string:format ?hdr .
 }
-=>
+log:query
 {
   ( :AgreementEHDS1 :PatientProfileExample 0 ) log:outputString ?hdr .
-} .
+}.
 
 # Risk lines (key includes inverse score = 1000 - score)
 {
@@ -442,16 +427,14 @@
      :aboutClause ?clause ;
      dct:description ?why .
   ?clause :clauseId ?cid .
-
   ( 1000 ?score ) math:difference ?inv .
-
-  ( "score=%s (%s, %s)  clause %s\n  %s\n\n"
+  ( "score=%s (%s, %s) clause %s\n %s\n\n"
     ?score ?lvl ?sev ?cid ?why ) string:format ?line .
 }
-=>
+log:query
 {
   ( :AgreementEHDS1 :PatientProfileExample 1 ?inv ?cid 0 ?r ) log:outputString ?line .
-} .
+}.
 
 # Mitigation lines (same ordering as their risk)
 {
@@ -461,13 +444,10 @@
      :aboutClause ?clause .
   ?clause :clauseId ?cid .
   ?m dct:description ?md .
-
   ( 1000 ?score ) math:difference ?inv .
-
-  ( "  - mitigation for clause %s: %s\n"
-    ?cid ?md ) string:format ?mline .
+  ( " - mitigation for clause %s: %s\n" ?cid ?md ) string:format ?mline .
 }
-=>
+log:query
 {
   ( :AgreementEHDS1 :PatientProfileExample 1 ?inv ?cid 1 ?r ?m ) log:outputString ?mline .
-} .
+}.
