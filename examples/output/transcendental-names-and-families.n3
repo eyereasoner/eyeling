@@ -1,127 +1,124 @@
 @prefix : <https://example.org/named-transcendentals#> .
 
-:report :family :AllTranscendentals .
-:report :family :LWExpNumbers .
-:report :family :GelfondSchneiderNumbers .
-:report :family :LiouvilleNumbers .
-:report :family :DigitExpansionTranscendentals .
-:report :family :AlgorithmicRandomNumbers .
-:report :family :EllipticPeriodConstants .
-:report :subFamily _:sk_0 .
 _:sk_0 :child :LWExpNumbers .
 _:sk_0 :parent :AllTranscendentals .
-:report :subFamily _:sk_1 .
 _:sk_1 :child :GelfondSchneiderNumbers .
 _:sk_1 :parent :AllTranscendentals .
-:report :subFamily _:sk_2 .
+_:sk_10 :family :EllipticPeriodConstants .
+_:sk_10 :x :lemniscateConstant .
+_:sk_11 :family :AllTranscendentals .
+_:sk_11 :x :liouvillesConstant .
+_:sk_12 :family :AllTranscendentals .
+_:sk_12 :x :kempnerNumber .
+_:sk_13 :family :AllTranscendentals .
+_:sk_13 :x :champernowneC10 .
+_:sk_14 :family :AllTranscendentals .
+_:sk_14 :x :lemniscateConstant .
+_:sk_15 :family :AlgorithmicRandomNumbers .
+_:sk_15 :x :chaitinsOmega .
+_:sk_16 :family :LWExpNumbers .
+_:sk_16 :x :exp_sqrt2 .
+_:sk_17 :family :GelfondSchneiderNumbers .
+_:sk_17 :x :pow_2_sqrt2 .
+_:sk_18 :family :GelfondSchneiderNumbers .
+_:sk_18 :x :pow_minus1_minusi .
+_:sk_19 :family :GelfondSchneiderNumbers .
+_:sk_19 :x :gelfondsConstant .
 _:sk_2 :child :LiouvilleNumbers .
 _:sk_2 :parent :AllTranscendentals .
-:report :subFamily _:sk_3 .
+_:sk_20 :family :AllTranscendentals .
+_:sk_20 :x :e .
+_:sk_21 :family :AllTranscendentals .
+_:sk_21 :x :pi .
+_:sk_22 :family :AllTranscendentals .
+_:sk_22 :x :chaitinsOmega .
+_:sk_23 :family :AllTranscendentals .
+_:sk_23 :x :exp_sqrt2 .
+_:sk_24 :family :AllTranscendentals .
+_:sk_24 :x :pow_2_sqrt2 .
+_:sk_25 :family :AllTranscendentals .
+_:sk_25 :x :pow_minus1_minusi .
+_:sk_26 :family :AllTranscendentals .
+_:sk_26 :x :gelfondsConstant .
 _:sk_3 :child :DigitExpansionTranscendentals .
 _:sk_3 :parent :AllTranscendentals .
-:report :subFamily _:sk_4 .
 _:sk_4 :child :AlgorithmicRandomNumbers .
 _:sk_4 :parent :AllTranscendentals .
-:report :subFamily _:sk_5 .
 _:sk_5 :child :EllipticPeriodConstants .
 _:sk_5 :parent :AllTranscendentals .
-:report :namedTranscendental :e .
-:report :namedTranscendental :pi .
-:report :namedTranscendental :liouvillesConstant .
-:report :namedTranscendental :kempnerNumber .
-:report :namedTranscendental :champernowneC10 .
-:report :namedTranscendental :lemniscateConstant .
+_:sk_6 :family :LiouvilleNumbers .
+_:sk_6 :x :liouvillesConstant .
+_:sk_7 :family :DigitExpansionTranscendentals .
+_:sk_7 :x :liouvillesConstant .
+_:sk_8 :family :DigitExpansionTranscendentals .
+_:sk_8 :x :kempnerNumber .
+_:sk_9 :family :DigitExpansionTranscendentals .
+_:sk_9 :x :champernowneC10 .
+:report :family :AlgorithmicRandomNumbers .
+:report :family :AllTranscendentals .
+:report :family :DigitExpansionTranscendentals .
+:report :family :EllipticPeriodConstants .
+:report :family :GelfondSchneiderNumbers .
+:report :family :LiouvilleNumbers .
+:report :family :LWExpNumbers .
+:report :member _:sk_10 .
+:report :member _:sk_11 .
+:report :member _:sk_12 .
+:report :member _:sk_13 .
+:report :member _:sk_14 .
+:report :member _:sk_15 .
+:report :member _:sk_16 .
+:report :member _:sk_17 .
+:report :member _:sk_18 .
+:report :member _:sk_19 .
+:report :member _:sk_20 .
+:report :member _:sk_21 .
+:report :member _:sk_22 .
+:report :member _:sk_23 .
+:report :member _:sk_24 .
+:report :member _:sk_25 .
+:report :member _:sk_26 .
+:report :member _:sk_6 .
+:report :member _:sk_7 .
+:report :member _:sk_8 .
+:report :member _:sk_9 .
 :report :namedTranscendental :chaitinsOmega .
+:report :namedTranscendental :champernowneC10 .
+:report :namedTranscendental :e .
 :report :namedTranscendental :exp_sqrt2 .
+:report :namedTranscendental :gelfondsConstant .
+:report :namedTranscendental :kempnerNumber .
+:report :namedTranscendental :lemniscateConstant .
+:report :namedTranscendental :liouvillesConstant .
+:report :namedTranscendental :pi .
 :report :namedTranscendental :pow_2_sqrt2 .
 :report :namedTranscendental :pow_minus1_minusi .
-:report :namedTranscendental :gelfondsConstant .
-:report :member _:sk_6 .
-_:sk_6 :x :liouvillesConstant .
-_:sk_6 :family :LiouvilleNumbers .
-:report :member _:sk_7 .
-_:sk_7 :x :liouvillesConstant .
-_:sk_7 :family :DigitExpansionTranscendentals .
-:report :member _:sk_8 .
-_:sk_8 :x :kempnerNumber .
-_:sk_8 :family :DigitExpansionTranscendentals .
-:report :member _:sk_9 .
-_:sk_9 :x :champernowneC10 .
-_:sk_9 :family :DigitExpansionTranscendentals .
-:report :member _:sk_10 .
-_:sk_10 :x :lemniscateConstant .
-_:sk_10 :family :EllipticPeriodConstants .
-:report :member _:sk_11 .
-_:sk_11 :x :liouvillesConstant .
-_:sk_11 :family :AllTranscendentals .
-:report :member _:sk_12 .
-_:sk_12 :x :kempnerNumber .
-_:sk_12 :family :AllTranscendentals .
-:report :member _:sk_13 .
-_:sk_13 :x :champernowneC10 .
-_:sk_13 :family :AllTranscendentals .
-:report :member _:sk_14 .
-_:sk_14 :x :lemniscateConstant .
-_:sk_14 :family :AllTranscendentals .
-:report :member _:sk_15 .
-_:sk_15 :x :chaitinsOmega .
-_:sk_15 :family :AlgorithmicRandomNumbers .
-:report :member _:sk_16 .
-_:sk_16 :x :exp_sqrt2 .
-_:sk_16 :family :LWExpNumbers .
-:report :member _:sk_17 .
-_:sk_17 :x :pow_2_sqrt2 .
-_:sk_17 :family :GelfondSchneiderNumbers .
-:report :member _:sk_18 .
-_:sk_18 :x :pow_minus1_minusi .
-_:sk_18 :family :GelfondSchneiderNumbers .
-:report :member _:sk_19 .
-_:sk_19 :x :gelfondsConstant .
-_:sk_19 :family :GelfondSchneiderNumbers .
-:report :member _:sk_20 .
-_:sk_20 :x :e .
-_:sk_20 :family :AllTranscendentals .
-:report :member _:sk_21 .
-_:sk_21 :x :pi .
-_:sk_21 :family :AllTranscendentals .
-:report :member _:sk_22 .
-_:sk_22 :x :chaitinsOmega .
-_:sk_22 :family :AllTranscendentals .
-:report :member _:sk_23 .
-_:sk_23 :x :exp_sqrt2 .
-_:sk_23 :family :AllTranscendentals .
-:report :member _:sk_24 .
-_:sk_24 :x :pow_2_sqrt2 .
-_:sk_24 :family :AllTranscendentals .
-:report :member _:sk_25 .
-_:sk_25 :x :pow_minus1_minusi .
-_:sk_25 :family :AllTranscendentals .
-:report :member _:sk_26 .
-_:sk_26 :x :gelfondsConstant .
-_:sk_26 :family :AllTranscendentals .
 :report :proof {
-    :e :provedBy :Hermite1873 .
-} .
-:report :proof {
-    :pi :provedBy :Lindemann1882 .
-} .
-:report :proof {
-    :liouvillesConstant :provedBy :Liouville1844 .
-} .
-:report :proof {
-    :kempnerNumber :provedBy :Kempner1916 .
+    :chaitinsOmega :provedBy :NoncomputableImpliesTranscendental .
 } .
 :report :proof {
     :champernowneC10 :provedBy :Mahler1937 .
 } .
 :report :proof {
-    :lemniscateConstant :provedBy :Schneider .
-} .
-:report :proof {
-    :chaitinsOmega :provedBy :NoncomputableImpliesTranscendental .
+    :e :provedBy :Hermite1873 .
 } .
 :report :proof {
     :exp_sqrt2 :provedBy :LindemannWeierstrass .
+} .
+:report :proof {
+    :gelfondsConstant :provedBy :GelfondSchneider .
+} .
+:report :proof {
+    :kempnerNumber :provedBy :Kempner1916 .
+} .
+:report :proof {
+    :lemniscateConstant :provedBy :Schneider .
+} .
+:report :proof {
+    :liouvillesConstant :provedBy :Liouville1844 .
+} .
+:report :proof {
+    :pi :provedBy :Lindemann1882 .
 } .
 :report :proof {
     :pow_2_sqrt2 :provedBy :GelfondSchneider .
@@ -129,12 +126,15 @@ _:sk_26 :family :AllTranscendentals .
 :report :proof {
     :pow_minus1_minusi :provedBy :GelfondSchneider .
 } .
-:report :proof {
-    :gelfondsConstant :provedBy :GelfondSchneider .
-} .
-:report :unknown :ePlusPi .
-:report :unknown :eTimesPi .
-:report :unknown :piPowE .
-:report :unknown :eulerMascheroniGamma .
+:report :subFamily _:sk_0 .
+:report :subFamily _:sk_1 .
+:report :subFamily _:sk_2 .
+:report :subFamily _:sk_3 .
+:report :subFamily _:sk_4 .
+:report :subFamily _:sk_5 .
 :report :unknown :aperyZeta3 .
 :report :unknown :catalanG .
+:report :unknown :ePlusPi .
+:report :unknown :eTimesPi .
+:report :unknown :eulerMascheroniGamma .
+:report :unknown :piPowE .

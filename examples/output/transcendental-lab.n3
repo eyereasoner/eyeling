@@ -1,14 +1,23 @@
 @prefix : <https://example.org/trans-lab#> .
 
-:report :transcendental :e .
-:report :transcendental :pi .
-:report :transcendental :exp_sqrt2 .
-:report :transcendental :pow_2_sqrt2 .
-:report :transcendental :pow_2_sqrt2_plus_1 .
-:report :transcendental :e_plus_2 .
-:report :transcendental :two_times_pi .
-:report :transcendental :pi_div_2 .
-:report :transcendental :e_div_2 .
+:report :irrational :e .
+:report :irrational :e_div_2 .
+:report :irrational :e_plus_2 .
+:report :irrational :exp_sqrt2 .
+:report :irrational :pi .
+:report :irrational :pi_div_2 .
+:report :irrational :pow_2_sqrt2 .
+:report :irrational :pow_2_sqrt2_plus_1 .
+:report :irrational :two_times_pi .
+:report :notConstructible :e .
+:report :notConstructible :e_div_2 .
+:report :notConstructible :e_plus_2 .
+:report :notConstructible :exp_sqrt2 .
+:report :notConstructible :pi .
+:report :notConstructible :pi_div_2 .
+:report :notConstructible :pow_2_sqrt2 .
+:report :notConstructible :pow_2_sqrt2_plus_1 .
+:report :notConstructible :two_times_pi .
 :report :proof {
     :e :provedBy :Hermite1873 .
 } .
@@ -19,13 +28,22 @@
     :e :provedBy :TransImpliesNotConstructible .
 } .
 :report :proof {
-    :pi :provedBy :Lindemann1882 .
+    :e_div_2 :provedBy :TransDivAlgNZ .
 } .
 :report :proof {
-    :pi :provedBy :TransImpliesIrrational .
+    :e_div_2 :provedBy :TransImpliesIrrational .
 } .
 :report :proof {
-    :pi :provedBy :TransImpliesNotConstructible .
+    :e_div_2 :provedBy :TransImpliesNotConstructible .
+} .
+:report :proof {
+    :e_plus_2 :provedBy :TransImpliesIrrational .
+} .
+:report :proof {
+    :e_plus_2 :provedBy :TransImpliesNotConstructible .
+} .
+:report :proof {
+    :e_plus_2 :provedBy :TransPlusAlg .
 } .
 :report :proof {
     :exp_sqrt2 :provedBy :LindemannWeierstrass .
@@ -37,40 +55,13 @@
     :exp_sqrt2 :provedBy :TransImpliesNotConstructible .
 } .
 :report :proof {
-    :pow_2_sqrt2 :provedBy :GelfondSchneider .
+    :pi :provedBy :Lindemann1882 .
 } .
 :report :proof {
-    :pow_2_sqrt2 :provedBy :TransImpliesIrrational .
+    :pi :provedBy :TransImpliesIrrational .
 } .
 :report :proof {
-    :pow_2_sqrt2 :provedBy :TransImpliesNotConstructible .
-} .
-:report :proof {
-    :pow_2_sqrt2_plus_1 :provedBy :TransPlusAlg .
-} .
-:report :proof {
-    :pow_2_sqrt2_plus_1 :provedBy :TransImpliesIrrational .
-} .
-:report :proof {
-    :pow_2_sqrt2_plus_1 :provedBy :TransImpliesNotConstructible .
-} .
-:report :proof {
-    :e_plus_2 :provedBy :TransPlusAlg .
-} .
-:report :proof {
-    :e_plus_2 :provedBy :TransImpliesIrrational .
-} .
-:report :proof {
-    :e_plus_2 :provedBy :TransImpliesNotConstructible .
-} .
-:report :proof {
-    :two_times_pi :provedBy :TransTimesAlgNZ .
-} .
-:report :proof {
-    :two_times_pi :provedBy :TransImpliesIrrational .
-} .
-:report :proof {
-    :two_times_pi :provedBy :TransImpliesNotConstructible .
+    :pi :provedBy :TransImpliesNotConstructible .
 } .
 :report :proof {
     :pi_div_2 :provedBy :TransDivAlgNZ .
@@ -82,32 +73,41 @@
     :pi_div_2 :provedBy :TransImpliesNotConstructible .
 } .
 :report :proof {
-    :e_div_2 :provedBy :TransDivAlgNZ .
+    :pow_2_sqrt2 :provedBy :GelfondSchneider .
 } .
 :report :proof {
-    :e_div_2 :provedBy :TransImpliesIrrational .
+    :pow_2_sqrt2 :provedBy :TransImpliesIrrational .
 } .
 :report :proof {
-    :e_div_2 :provedBy :TransImpliesNotConstructible .
+    :pow_2_sqrt2 :provedBy :TransImpliesNotConstructible .
 } .
-:report :irrational :e .
-:report :irrational :pi .
-:report :irrational :exp_sqrt2 .
-:report :irrational :pow_2_sqrt2 .
-:report :irrational :pow_2_sqrt2_plus_1 .
-:report :irrational :e_plus_2 .
-:report :irrational :two_times_pi .
-:report :irrational :pi_div_2 .
-:report :irrational :e_div_2 .
-:report :notConstructible :e .
-:report :notConstructible :pi .
-:report :notConstructible :exp_sqrt2 .
-:report :notConstructible :pow_2_sqrt2 .
-:report :notConstructible :pow_2_sqrt2_plus_1 .
-:report :notConstructible :e_plus_2 .
-:report :notConstructible :two_times_pi .
-:report :notConstructible :pi_div_2 .
-:report :notConstructible :e_div_2 .
-:report :unknown :sum_e_pi .
-:report :unknown :prod_e_pi .
+:report :proof {
+    :pow_2_sqrt2_plus_1 :provedBy :TransImpliesIrrational .
+} .
+:report :proof {
+    :pow_2_sqrt2_plus_1 :provedBy :TransImpliesNotConstructible .
+} .
+:report :proof {
+    :pow_2_sqrt2_plus_1 :provedBy :TransPlusAlg .
+} .
+:report :proof {
+    :two_times_pi :provedBy :TransImpliesIrrational .
+} .
+:report :proof {
+    :two_times_pi :provedBy :TransImpliesNotConstructible .
+} .
+:report :proof {
+    :two_times_pi :provedBy :TransTimesAlgNZ .
+} .
+:report :transcendental :e .
+:report :transcendental :e_div_2 .
+:report :transcendental :e_plus_2 .
+:report :transcendental :exp_sqrt2 .
+:report :transcendental :pi .
+:report :transcendental :pi_div_2 .
+:report :transcendental :pow_2_sqrt2 .
+:report :transcendental :pow_2_sqrt2_plus_1 .
+:report :transcendental :two_times_pi .
 :report :unknown :pow_pi_e .
+:report :unknown :prod_e_pi .
+:report :unknown :sum_e_pi .

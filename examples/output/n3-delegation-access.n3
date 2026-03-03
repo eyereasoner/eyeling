@@ -1,10 +1,6 @@
 @prefix : <https://example.org/n3-delegation#> .
 @prefix id: <https://example.org/id/> .
 
-:report :trusts <https://root.example/policy.n3> .
-:report :trusts <https://hr.example/policy.n3> .
-:report :trusts <https://team.example/members.n3> .
-:report :trusts <https://interns.example/members.n3> .
 :report :entails {
     id:alice :canRead :buildReport .
 } .
@@ -17,15 +13,19 @@
 :report :entails {
     id:eve :canRead :roadmap .
 } .
-{
-    id:alice :memberOf :eng .
-} :assertedBy <https://team.example/members.n3> .
+:report :trusts <https://hr.example/policy.n3> .
+:report :trusts <https://interns.example/members.n3> .
+:report :trusts <https://root.example/policy.n3> .
+:report :trusts <https://team.example/members.n3> .
 {
     :eng :mayRead :buildReport .
 } :assertedBy <https://hr.example/policy.n3> .
 {
     :eng :mayRead :roadmap .
 } :assertedBy <https://hr.example/policy.n3> .
+{
+    id:alice :memberOf :eng .
+} :assertedBy <https://team.example/members.n3> .
 {
     id:eve :memberOf :eng .
 } :assertedBy <https://interns.example/members.n3> .

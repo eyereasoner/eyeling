@@ -4130,6 +4130,14 @@ function main() {
   }
   if (outTriples.length && usedPrefixes.length) console.log();
 
+  // In log:query mode, when proof comments are disabled, pretty-print blank-node
+  // shaped outputs as Turtle property lists ("[ ... ] .") for readability.
+  if (hasQueries && !engine.getProofCommentsEnabled()) {
+    const s = engine.prettyPrintQueryTriples(outTriples, prefixes);
+    if (s) process.stdout.write(String(s).replace(/\s*$/g, '') + '\n');
+    return;
+  }
+
   for (const df of outDerived) {
     if (engine.getProofCommentsEnabled()) {
       engine.printExplanation(df, prefixes);
@@ -4660,7 +4668,7 @@ const {
 
 const { makeExplain } = require('./explain');
 
-const { tripleToN3 } = require('./printing');
+const { tripleToN3, prettyPrintQueryTriples } = require('./printing');
 
 const trace = require('./trace');
 const { deterministicSkolemIdFromKey } = require('./skolem');
@@ -7287,6 +7295,11 @@ function reasonStream(n3Text, opts = {}) {
         ? facts
         : derived.map((d) => d.fact);
 
+  const closureN3 =
+    Array.isArray(logQueryRules) && logQueryRules.length && !proof
+      ? prettyPrintQueryTriples(closureTriples, prefixes)
+      : closureTriples.map((t) => tripleToN3(t, prefixes)).join('\n');
+
   const __out = {
     prefixes,
     facts, // saturated closure (Triple[])
@@ -7294,7 +7307,7 @@ function reasonStream(n3Text, opts = {}) {
     queryMode: Array.isArray(logQueryRules) && logQueryRules.length ? true : false,
     queryTriples,
     queryDerived,
-    closureN3: closureTriples.map((t) => tripleToN3(t, prefixes)).join('\n'),
+    closureN3,
   };
   deref.setEnforceHttpsEnabled(__oldEnforceHttps);
   return __out;
@@ -7361,6 +7374,8 @@ module.exports = {
   printExplanation,
   // used by demo worker to stringify derived triples with prefixes
   tripleToN3,
+  // pretty log:query output (when proof comments are disabled)
+  prettyPrintQueryTriples,
   getEnforceHttpsEnabled,
   setEnforceHttpsEnabled,
   getProofCommentsEnabled,
@@ -9730,7 +9745,196 @@ function tripleToN3(tr, prefixes) {
   return `${s} ${p} ${o} .`;
 }
 
-module.exports = { termToN3, tripleToN3 };
+// ---------------------------------------------------------------------------
+// log:query output pretty-printing (blank node property lists)
+// ---------------------------------------------------------------------------
+
+function isBNodeTerm(t) {
+  // Blank() terms, or IRI terms that encode a blank node label like "_:b0".
+  if (t instanceof Blank) return true;
+  if (t instanceof Iri && typeof t.value === 'string' && t.value.startsWith('_:')) return true;
+  return false;
+}
+
+function termId(t) {
+  // Stable-ish key used only for internal maps.
+  if (t instanceof Iri) return `I:${t.value}`;
+  if (t instanceof Blank) return `B:${t.label}`;
+  if (t instanceof Literal) return `L:${t.value}`;
+  if (t instanceof Var) return `V:${t.name}`;
+  if (t instanceof ListTerm) return `LIST:${t.elems.map(termId).join(' ')}`;
+  if (t instanceof OpenListTerm) return `OLIST:${t.prefix.map(termId).join(' ')}|?${t.tailVar}`;
+  if (t instanceof GraphTerm)
+    return `G:{${t.triples.map((tr) => `${termId(tr.s)} ${termId(tr.p)} ${termId(tr.o)}`).join('|')}}`;
+  return `T:${String(t)}`;
+}
+
+function predToN3(p, prefixes) {
+  return isRdfTypePred(p) ? 'a' : isOwlSameAsPred(p) ? '=' : termToN3(p, prefixes);
+}
+
+/**
+ * Pretty-print a set of (ground) query-selected triples, collapsing eligible blank node
+ * subjects into Turtle-style property lists ("[ ... ] .") and inlining singly-referenced
+ * blank node objects as nested "[ ... ]" blocks.
+ *
+ * Intended for log:query output when proof comments are disabled.
+ */
+function prettyPrintQueryTriples(triples, prefixes) {
+  const indentStep = '  ';
+
+  // Index by subject (only for blank node subjects).
+  const bySubj = new Map(); // id -> { term, triples: [] }
+  const bnodeRef = new Map(); // bnodeId -> count as object
+
+  for (const tr of triples) {
+    // object ref count
+    if (isBNodeTerm(tr.o)) {
+      const oid = termId(tr.o);
+      bnodeRef.set(oid, (bnodeRef.get(oid) || 0) + 1);
+    }
+    // subject index
+    if (isBNodeTerm(tr.s)) {
+      const sid = termId(tr.s);
+      let rec = bySubj.get(sid);
+      if (!rec) {
+        rec = { term: tr.s, triples: [] };
+        bySubj.set(sid, rec);
+      }
+      rec.triples.push(tr);
+    }
+  }
+
+  const inlineable = new Set();
+  for (const [bid, n] of bnodeRef.entries()) {
+    if (n === 1 && bySubj.has(bid)) inlineable.add(bid);
+  }
+
+  const consumedBNodes = new Set();
+
+  function groupByPredicate(bid) {
+    const rec = bySubj.get(bid);
+    if (!rec) return [];
+    const m = new Map();
+    for (const tr of rec.triples) {
+      const ps = predToN3(tr.p, prefixes);
+      let g = m.get(ps);
+      if (!g) {
+        g = { predStr: ps, objs: [] };
+        m.set(ps, g);
+      }
+      g.objs.push(tr.o);
+    }
+    const groups = Array.from(m.values());
+    groups.sort((a, b) => a.predStr.localeCompare(b.predStr));
+    for (const g of groups) {
+      g.objs.sort((x, y) => termToN3(x, prefixes).localeCompare(termToN3(y, prefixes)));
+    }
+    return groups;
+  }
+
+  function renderBNodePredicateObjects(bid, level, visiting) {
+    const lines = [];
+    const groups = groupByPredicate(bid);
+    const indent = indentStep.repeat(level);
+
+    for (let i = 0; i < groups.length; i++) {
+      const g = groups[i];
+      const isLastPred = i === groups.length - 1;
+
+      // Inline a child blank node only when it's the sole object for that predicate.
+      if (g.objs.length === 1 && isBNodeTerm(g.objs[0])) {
+        const childId = termId(g.objs[0]);
+        const canInline = inlineable.has(childId) && !visiting.has(childId);
+
+        if (canInline) {
+          visiting.add(childId);
+          consumedBNodes.add(childId);
+
+          lines.push(`${indent}${g.predStr} [`);
+          lines.push(...renderBNodePredicateObjects(childId, level + 1, visiting));
+          lines.push(`${indent}]${isLastPred ? '' : ';'}`);
+
+          visiting.delete(childId);
+          continue;
+        }
+      }
+
+      const objs = g.objs.map((o) => termToN3(o, prefixes)).join(', ');
+      lines.push(`${indent}${g.predStr} ${objs}${isLastPred ? '' : ';'}`);
+    }
+
+    return lines;
+  }
+
+  function renderRootBNode(bid) {
+    const visiting = new Set([bid]);
+    const lines = ['['];
+    lines.push(...renderBNodePredicateObjects(bid, 1, visiting));
+    lines.push('] .');
+    return lines.join('\n');
+  }
+
+  function renderInlineBNodeObjectTriple(tr, bid) {
+    // Render: S P [ ... ] .   (multi-line)
+    const s = termToN3(tr.s, prefixes);
+
+    // Respect => / <= sugar for log:* if it ever appears here.
+    if (isLogImplies(tr.p)) return tripleToN3(tr, prefixes);
+    if (isLogImpliedBy(tr.p)) return tripleToN3(tr, prefixes);
+
+    const p = predToN3(tr.p, prefixes);
+
+    const visiting = new Set([bid]);
+    const lines = [`${s} ${p} [`];
+    lines.push(...renderBNodePredicateObjects(bid, 1, visiting));
+    lines.push('] .');
+    return lines.join('\n');
+  }
+
+  // Root blank nodes: blank node subjects that are never referenced as an object.
+  const rootBNodes = [];
+  for (const [bid, rec] of bySubj.entries()) {
+    const refs = bnodeRef.get(bid) || 0;
+    if (refs === 0) rootBNodes.push({ bid, term: rec.term });
+  }
+  rootBNodes.sort((a, b) => termToN3(a.term, prefixes).localeCompare(termToN3(b.term, prefixes)));
+
+  const blocks = [];
+  for (const r of rootBNodes) {
+    consumedBNodes.add(r.bid);
+    blocks.push(renderRootBNode(r.bid));
+  }
+
+  // Remaining triples: keep the traditional one-triple-per-line format.
+  const remaining = [];
+  for (const tr of triples) {
+    const sid = isBNodeTerm(tr.s) ? termId(tr.s) : null;
+    // Skip subject-triples for bnodes that will be inlined at their single reference.
+    if (sid && (consumedBNodes.has(sid) || inlineable.has(sid))) continue;
+    remaining.push(tr);
+  }
+
+  // Deterministic order: sort by the fallback single-line serialization.
+  remaining.sort((a, b) => tripleToN3(a, prefixes).localeCompare(tripleToN3(b, prefixes)));
+
+  for (const tr of remaining) {
+    // Inline blank node *objects* when the bnode is defined and referenced exactly once.
+    if (isBNodeTerm(tr.o)) {
+      const oid = termId(tr.o);
+      if (inlineable.has(oid) && !consumedBNodes.has(oid)) {
+        consumedBNodes.add(oid);
+        blocks.push(renderInlineBNodeObjectTriple(tr, oid));
+        continue;
+      }
+    }
+    blocks.push(tripleToN3(tr, prefixes));
+  }
+
+  return blocks.join('\n');
+}
+
+module.exports = { termToN3, tripleToN3, prettyPrintQueryTriples };
 
   };
   __modules["lib/rules.js"] = function(require, module, exports){
