@@ -1,5 +1,5 @@
 # ===============================================================================
-# Kronecker-Friendly N3 Demo (Horn/Datalog core + safe add-ons)
+# Kronecker-Friendly Demo (Horn/Datalog core + safe add-ons)
 #
 # Purpose:
 #   Illustrate a “constructive / compute-by-rules” style of reasoning in N3:
@@ -8,9 +8,7 @@
 #
 # Design notes:
 #   - The core rules avoid creating new individuals.
-#   - Where we *do* introduce helper nodes (reasons, auto-managers, supervisors),
-#     we use log:skolem to mint DETERMINISTIC IRIs so re-firing rules does not
-#     keep generating fresh blank nodes (a common cause of non-termination).
+#   - Where we *do* introduce helper nodes (reasons, auto-managers, supervisors).
 #   - No “manager-of-manager-of-...” recursive existential chains are used.
 #
 # Expected outcomes (high level):
@@ -18,12 +16,6 @@
 #   - Ancestor closure derives: Alice -> Bob -> Carol, so Alice ancestor Carol.
 #   - Membership propagates from TeamA to OrgX, enabling canRead permissions.
 #   - Proj2 gets a deterministic AutoManager and (optionally) a Supervisor.
-#
-# How to use:
-#   Load this file into an N3 reasoner that supports:
-#     - log:skolem
-#     - math:greaterThan
-#   Then compute the forward-chaining closure (or query for derived triples).
 # ===============================================================================
 
 @prefix ex:   <https://example.org/ns#> .
@@ -80,20 +72,17 @@ ex:Proj2  a ex:Project ; ex:ownedBy ex:OrgX ; ex:needsManager true .
 =>
 { ?p ex:canRead ?proj } .
 
-# A5) Explanation breadcrumb (NO fresh blank nodes)
-#     Use log:skolem to mint a stable node for the explanation.
+# A5) Explanation breadcrumb
 { ?p ex:canRead ?proj .
   ?proj ex:ownedBy ?org .
   ?p ex:memberOf ?org .
-
-  # Make a deterministic IRI for this (person, project) reason node:
-  (?p ?proj "reason") log:skolem ?reasonNode .
 }
 =>
-{ ?p ex:reason ?reasonNode .
-  ?reasonNode a ex:Reason ;
-              ex:for ?proj ;
-              ex:because "memberOf(org) & ownedBy(org)" .
+{ ?p ex:reason [
+    a ex:Reason ;
+    ex:for ?proj ;
+    ex:because "memberOf(org) & ownedBy(org)"
+  ] .
 } .
 
 # ----------------------------------------------------
@@ -102,30 +91,28 @@ ex:Proj2  a ex:Project ; ex:ownedBy ex:OrgX ; ex:needsManager true .
 
 # B1) Auto-manager creation (terminating)
 #     If a project needs a manager, assign a deterministic "AutoManager" IRI.
-#     Re-firing adds no new facts (same skolem IRI each run).
 { ?proj a ex:Project ;
         ex:needsManager true .
-
-  # Deterministic manager IRI for this project:
-  (?proj "AutoManager") log:skolem ?m .
 }
 =>
-{ ?proj ex:hasManager ?m .
-  ?m a ex:Person ;
-     ex:role "AutoManager" .
+{ ?proj ex:hasManager [
+    a ex:Person ;
+    ex:role "AutoManager"
+  ] .
 } .
 
 # B2) Supervisor (safe, depth-1, still terminating)
 #     Create at most one supervisor per manager, and DO NOT make the supervisor
 #     itself a manager (so no infinite chain).
 { ?proj ex:hasManager ?m .
-
-  # Deterministic supervisor IRI for this manager:
-  (?m "Supervisor") log:skolem ?s .
 }
 =>
-{ ?m ex:hasSupervisor ?s .
-  ?s a ex:Person ;
-     ex:role "Supervisor" ;
-     ex:supervises ?m .
+{ ?m ex:hasSupervisor [
+    a ex:Person ;
+    ex:role "Supervisor" ;
+    ex:supervises ?m
+  ] .
 } .
+
+# query
+{ ?S ?P ?O } log:query { ?S ?P ?O }.

@@ -1,0 +1,215 @@
+# ========================================================================================
+# kronecker-godel.n3
+#
+# Goal (from Kronecker to Gödel):
+#
+#   (K) Kronecker-friendly part:
+#       - Proofs are finite objects.
+#       - Reasoning is mechanical (forward chaining).
+#       - We stay inside a finite universe of naturals Z0..Z6.
+#
+#   (G) Gödel-flavored part (toy analogue, not a full self-referential Gödel sentence):
+#       - We build a finite ARITHMETIC MODEL of addition (truth in the model).
+#       - We also define a tiny effective THEORY T of "provability" (axioms + one rule).
+#       - Then we show an arithmetic fact that is TRUE in the model but NOT PROVABLE in T.
+#       - Finally, we show that saying “NOT provable” needs meta-level reflection
+#         (scope + log:notIncludes), i.e., it’s not purely inside the Horn core.
+#
+# What you should see (queries at the bottom):
+#   - (Z2 Z2 Z4) trueInModel true            # 2+2=4 is true in the model
+#   - (Z2 Z2 Z4) notProvableIn T             # but not provable in our tiny T
+#   - (Z3 Z1 Z4) provableIn T                # 3+1=4 IS provable in T
+#   - a proof object exists for provable equations (Kronecker-style witness)
+# ========================================================================================
+
+@prefix ex:  <https://example.org/ns#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+# -----------------------------------------------------------------------
+# SECTION 0 — The Base Knowledge (quoted graph)
+#
+# We keep everything "object-level" inside one quoted formula { ... }.
+# Then we compute its deductive closure using log:conclusion outside.
+# This makes meta-reasoning (includes / notIncludes) explicit and scoped.
+# -----------------------------------------------------------------------
+
+{
+  # -------------------------------------------------------------------
+  # 0A) Finite naturals: Z0..Z6 (Kronecker: finite domain, finite work)
+  # -------------------------------------------------------------------
+
+  ex:Z0 a ex:Nat .
+  ex:Z1 a ex:Nat .
+  ex:Z2 a ex:Nat .
+  ex:Z3 a ex:Nat .
+  ex:Z4 a ex:Nat .
+  ex:Z5 a ex:Nat .
+  ex:Z6 a ex:Nat .
+
+  ex:Z0 ex:succ ex:Z1 .
+  ex:Z1 ex:succ ex:Z2 .
+  ex:Z2 ex:succ ex:Z3 .
+  ex:Z3 ex:succ ex:Z4 .
+  ex:Z4 ex:succ ex:Z5 .
+  ex:Z5 ex:succ ex:Z6 .
+
+  # ----------------------------------------------------------
+  # 0B) MODEL of addition (truth):
+  #
+  # Encode x + y = z as a triple:
+  #   x ex:plus (y z).
+  #
+  # Rules:
+  #   (M1) 0 + y = y
+  #   (M2) if x+y=z and succ(x)=sx and succ(z)=sz then sx+y=sz
+  #
+  # Since the Nat domain is finite, the closure is finite.
+  # ----------------------------------------------------------
+
+  { ?y a ex:Nat }
+  =>
+  { ex:Z0 ex:plus (?y ?y) } .
+
+  { ?x ex:plus (?y ?z) .
+    ?x ex:succ ?sx .
+    ?z ex:succ ?sz
+  }
+  =>
+  { ?sx ex:plus (?y ?sz) } .
+
+  # ------------------------------------------------------
+  # 0C) Arithmetic statements (equations) we care about:
+  #
+  # We represent an equation x+y=z as an RDF list (x y z).
+  # ------------------------------------------------------
+
+  (ex:Z2 ex:Z2 ex:Z4) a ex:Equation ; ex:label "2+2=4" .
+  (ex:Z3 ex:Z1 ex:Z4) a ex:Equation ; ex:label "3+1=4" .
+  (ex:Z5 ex:Z0 ex:Z5) a ex:Equation ; ex:label "5+0=5" .
+
+  # Link equations to MODEL truth:
+  { (?x ?y ?z) a ex:Equation .
+    ?x ex:plus (?y ?z)
+  }
+  =>
+  { (?x ?y ?z) ex:trueInModel true } .
+
+  # -------------------------------------------------------------------
+  # 0D) THEORY T of provability (effective axioms + a single rule)
+  #
+  # T is intentionally too weak: it can prove x+0 and x+1, but not x+2.
+  #
+  # Axioms:
+  #   0+0=0
+  #   0+1=1
+  #
+  # Rule (P-succ):
+  #   if x+y=z is provable, then succ(x)+y=succ(z) is provable
+  # -------------------------------------------------------------------
+
+  ex:T a ex:Theory ;
+       ex:name "Toy T: axioms for y=0 and y=1; succ-step on x only" .
+
+  (ex:Z0 ex:Z0 ex:Z0) ex:axiomIn ex:T .
+  (ex:Z0 ex:Z1 ex:Z1) ex:axiomIn ex:T .
+
+  { ?E ex:axiomIn ex:T }
+  =>
+  { ?E ex:provableIn ex:T ;
+       ex:provedBy [ a ex:Proof ; ex:rule "axiom" ] } .
+
+  # Proof step (P-succ), with a proof witness:
+  # We mint a deterministic proof node for the derived equation.
+  # This keeps things terminating (no endless "fresh" blank nodes).
+  { (?x ?y ?z) ex:provableIn ex:T .
+    (?x ?y ?z) ex:provedBy ?P .
+    ?x ex:succ ?sx .
+    ?z ex:succ ?sz .
+
+    # Deterministically name the derived equation and proof object:
+    (?sx ?y ?sz "Eq")     log:skolem ?E2 .
+    (?E2 "ProofInT")      log:skolem ?P2 .
+  }
+  =>
+  { ?E2 a ex:Equation ;
+       ex:provableIn ex:T ;
+       ex:derivedFrom (?x ?y ?z) ;
+       ex:provedBy ?P2 .
+
+    ?P2 a ex:Proof ;
+        ex:rule "succ-step" ;
+        ex:fromProof ?P .
+  } .
+
+} a ex:BaseKB .
+
+# ---------------------------------------------------------------------
+# SECTION 1 — Compute closure of the BaseKB (still constructive)
+#
+# This is still “Kronecker-like”: we compute what follows mechanically.
+# ---------------------------------------------------------------------
+
+{ ?KB a ex:BaseKB .
+  ?KB log:conclusion ?C .
+  ?C log:includes { ?E ex:trueInModel true }
+}
+=>
+{ ?E ex:trueInModel true } .
+
+{ ?KB a ex:BaseKB .
+  ?KB log:conclusion ?C .
+  ?C log:includes { ?E ex:provableIn ex:T }
+}
+=>
+{ ?E ex:provableIn ex:T } .
+
+{ ?KB a ex:BaseKB .
+  ?KB log:conclusion ?C .
+  ?C log:includes { ?E ex:provedBy ?P }
+}
+=>
+{ ?E ex:provedBy ?P } .
+
+# -------------------------------------------------------------------
+# SECTION 2 — Gödel-flavored “gap” (toy analogue)
+#
+# We now compare:
+#   - truth in the arithmetic model
+#   - provability in the effective theory T
+#
+# The key move uses log:notIncludes (meta-level, scope-sensitive):
+#   “E is true in the model, but not provable in T (within this KB).”
+#
+# This is where we explicitly step beyond pure Horn monotonicity.
+# -------------------------------------------------------------------
+
+{ ?KB a ex:BaseKB .
+  ?KB log:conclusion ?C .
+
+  # 2+2=4 is TRUE in the model:
+  ?C log:includes    { (ex:Z2 ex:Z2 ex:Z4) ex:trueInModel true } .
+
+  # ...but NOT provable in our tiny T:
+  ?C log:notIncludes { (ex:Z2 ex:Z2 ex:Z4) ex:provableIn ex:T } .
+}
+=>
+{ (ex:Z2 ex:Z2 ex:Z4) ex:notProvableIn ex:T ;
+                    ex:note "Toy Gödel gap: true in model, not provable in T (in this KB scope)" } .
+
+# Another sanity check: 3+1=4 SHOULD be provable in T (since y=1 is axiom and succ-step raises x)
+{ ?KB a ex:BaseKB .
+  ?KB log:conclusion ?C .
+  ?C log:includes { (ex:Z3 ex:Z1 ex:Z4) ex:provableIn ex:T } .
+}
+=>
+{ (ex:Z3 ex:Z1 ex:Z4) ex:provableIn ex:T } .
+
+# -----------------------------------------------
+# SECTION 3 — output selection (explicit queries)
+# -----------------------------------------------
+
+{ } log:query { (ex:Z2 ex:Z2 ex:Z4) ex:trueInModel true } .
+{ } log:query { (ex:Z2 ex:Z2 ex:Z4) ex:notProvableIn ex:T } .
+{ } log:query { (ex:Z3 ex:Z1 ex:Z4) ex:provableIn ex:T } .
+{ } log:query { (ex:Z5 ex:Z0 ex:Z5) ex:provableIn ex:T } .
+{ } log:query { (ex:Z3 ex:Z1 ex:Z4) ex:provedBy ?P } .

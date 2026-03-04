@@ -1,52 +1,80 @@
 @prefix ex: <https://example.org/ns#> .
-@prefix genid: <https://eyereasoner.github.io/.well-known/genid/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
+_:sk_6 a ex:Person .
+_:sk_6 ex:hasSupervisor [
+  a ex:Person;
+  ex:role "Supervisor";
+  ex:supervises _:sk_6
+] .
+_:sk_6 ex:role "AutoManager" .
 ex:Alice a ex:Adult .
-ex:Bob a ex:Adult .
-ex:Carol a ex:Adult .
+ex:Alice a ex:Person .
+ex:Alice ex:age "29"^^xsd:integer .
 ex:Alice ex:ancestor ex:Bob .
-ex:Bob ex:ancestor ex:Carol .
 ex:Alice ex:ancestor ex:Carol .
-ex:Alice ex:memberOf ex:OrgX .
-ex:Bob ex:memberOf ex:OrgX .
-ex:Carol ex:canRead ex:Proj1 .
-ex:Carol ex:canRead ex:Proj2 .
 ex:Alice ex:canRead ex:Proj1 .
 ex:Alice ex:canRead ex:Proj2 .
+ex:Alice ex:memberOf ex:OrgX .
+ex:Alice ex:memberOf ex:TeamA .
+ex:Alice ex:parent ex:Bob .
+ex:Alice ex:reason [
+  a ex:Reason;
+  ex:because "memberOf(org) & ownedBy(org)";
+  ex:for ex:Proj1
+] .
+ex:Alice ex:reason [
+  a ex:Reason;
+  ex:because "memberOf(org) & ownedBy(org)";
+  ex:for ex:Proj2
+] .
+ex:Bob a ex:Adult .
+ex:Bob a ex:Person .
+ex:Bob ex:age "54"^^xsd:integer .
+ex:Bob ex:ancestor ex:Carol .
 ex:Bob ex:canRead ex:Proj1 .
 ex:Bob ex:canRead ex:Proj2 .
-ex:Carol ex:reason genid:e8d469df-c0ca-664a-83ed-8c718c601ee0 .
-genid:e8d469df-c0ca-664a-83ed-8c718c601ee0 a ex:Reason .
-genid:e8d469df-c0ca-664a-83ed-8c718c601ee0 ex:for ex:Proj1 .
-genid:e8d469df-c0ca-664a-83ed-8c718c601ee0 ex:because "memberOf(org) & ownedBy(org)" .
-ex:Carol ex:reason genid:d4d9c728-451d-9710-e418-de00d4d14840 .
-genid:d4d9c728-451d-9710-e418-de00d4d14840 a ex:Reason .
-genid:d4d9c728-451d-9710-e418-de00d4d14840 ex:for ex:Proj2 .
-genid:d4d9c728-451d-9710-e418-de00d4d14840 ex:because "memberOf(org) & ownedBy(org)" .
-ex:Alice ex:reason genid:468596f1-4221-f982-0e3d-2e0cd67d4ff8 .
-genid:468596f1-4221-f982-0e3d-2e0cd67d4ff8 a ex:Reason .
-genid:468596f1-4221-f982-0e3d-2e0cd67d4ff8 ex:for ex:Proj1 .
-genid:468596f1-4221-f982-0e3d-2e0cd67d4ff8 ex:because "memberOf(org) & ownedBy(org)" .
-ex:Alice ex:reason genid:5c28e63f-3b97-d258-418b-76180a1e0734 .
-genid:5c28e63f-3b97-d258-418b-76180a1e0734 a ex:Reason .
-genid:5c28e63f-3b97-d258-418b-76180a1e0734 ex:for ex:Proj2 .
-genid:5c28e63f-3b97-d258-418b-76180a1e0734 ex:because "memberOf(org) & ownedBy(org)" .
-ex:Bob ex:reason genid:ba0bd88e-cfc6-9690-e2b7-576ca891e640 .
-genid:ba0bd88e-cfc6-9690-e2b7-576ca891e640 a ex:Reason .
-genid:ba0bd88e-cfc6-9690-e2b7-576ca891e640 ex:for ex:Proj1 .
-genid:ba0bd88e-cfc6-9690-e2b7-576ca891e640 ex:because "memberOf(org) & ownedBy(org)" .
-ex:Bob ex:reason genid:5304cd67-7924-2cea-3f18-e4b82fe44314 .
-genid:5304cd67-7924-2cea-3f18-e4b82fe44314 a ex:Reason .
-genid:5304cd67-7924-2cea-3f18-e4b82fe44314 ex:for ex:Proj2 .
-genid:5304cd67-7924-2cea-3f18-e4b82fe44314 ex:because "memberOf(org) & ownedBy(org)" .
-ex:Proj2 ex:hasManager genid:ecffd01c-964b-59a4-86f1-399cc834264c .
-genid:ecffd01c-964b-59a4-86f1-399cc834264c a ex:Person .
-genid:ecffd01c-964b-59a4-86f1-399cc834264c ex:role "AutoManager" .
-ex:Bob ex:hasSupervisor genid:5800d5de-e4a0-bed2-c8e9-97bc1ce759c0 .
-genid:5800d5de-e4a0-bed2-c8e9-97bc1ce759c0 a ex:Person .
-genid:5800d5de-e4a0-bed2-c8e9-97bc1ce759c0 ex:role "Supervisor" .
-genid:5800d5de-e4a0-bed2-c8e9-97bc1ce759c0 ex:supervises ex:Bob .
-genid:ecffd01c-964b-59a4-86f1-399cc834264c ex:hasSupervisor genid:6b66b587-cf14-6348-33a3-420561eddd14 .
-genid:6b66b587-cf14-6348-33a3-420561eddd14 a ex:Person .
-genid:6b66b587-cf14-6348-33a3-420561eddd14 ex:role "Supervisor" .
-genid:6b66b587-cf14-6348-33a3-420561eddd14 ex:supervises genid:ecffd01c-964b-59a4-86f1-399cc834264c .
+ex:Bob ex:hasSupervisor [
+  a ex:Person;
+  ex:role "Supervisor";
+  ex:supervises ex:Bob
+] .
+ex:Bob ex:memberOf ex:OrgX .
+ex:Bob ex:memberOf ex:TeamA .
+ex:Bob ex:parent ex:Carol .
+ex:Bob ex:reason [
+  a ex:Reason;
+  ex:because "memberOf(org) & ownedBy(org)";
+  ex:for ex:Proj1
+] .
+ex:Bob ex:reason [
+  a ex:Reason;
+  ex:because "memberOf(org) & ownedBy(org)";
+  ex:for ex:Proj2
+] .
+ex:Carol a ex:Adult .
+ex:Carol a ex:Person .
+ex:Carol ex:age "78"^^xsd:integer .
+ex:Carol ex:canRead ex:Proj1 .
+ex:Carol ex:canRead ex:Proj2 .
+ex:Carol ex:memberOf ex:OrgX .
+ex:Carol ex:reason [
+  a ex:Reason;
+  ex:because "memberOf(org) & ownedBy(org)";
+  ex:for ex:Proj1
+] .
+ex:Carol ex:reason [
+  a ex:Reason;
+  ex:because "memberOf(org) & ownedBy(org)";
+  ex:for ex:Proj2
+] .
+ex:OrgX a ex:Org .
+ex:Proj1 a ex:Project .
+ex:Proj1 ex:hasManager ex:Bob .
+ex:Proj1 ex:ownedBy ex:OrgX .
+ex:Proj2 a ex:Project .
+ex:Proj2 ex:hasManager _:sk_6 .
+ex:Proj2 ex:needsManager true .
+ex:Proj2 ex:ownedBy ex:OrgX .
+ex:TeamA a ex:Team .
+ex:TeamA ex:partOf ex:OrgX .

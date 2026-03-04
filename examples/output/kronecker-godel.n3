@@ -1,0 +1,6 @@
+@prefix ex: <https://example.org/ns#> .
+
+(ex:Z2 ex:Z2 ex:Z4) ex:notProvableIn ex:T .
+(ex:Z2 ex:Z2 ex:Z4) ex:trueInModel true .
+(ex:Z3 ex:Z1 ex:Z4) ex:provableIn ex:T .
+(ex:Z5 ex:Z0 ex:Z5) ex:provableIn ex:T .
