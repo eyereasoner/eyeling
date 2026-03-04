@@ -1923,6 +1923,11 @@ const batch = [];
               outputEl.setValue(resultText || '(no output)');
               autoResizeCodeMirror(outputEl, 80, mh.output);
 
+              // If the run returned a syntax error message, highlight the offending line in the input editor.
+              try {
+                highlightErrorFromOutput(resultText);
+              } catch (_) {}
+
               statusEl.textContent = 'Done (-r/--strings). (' + (Math.max(0, durationMs) / 1000).toFixed(2) + 's)';
             } catch (e) {
               const mh = currentMaxHeights();
@@ -1995,6 +2000,11 @@ const batch = [];
               const mh = currentMaxHeights();
               outputEl.setValue(resultText || '(no output)');
               autoResizeCodeMirror(outputEl, 80, mh.output);
+
+              // If the run returned a syntax error message, highlight the offending line in the input editor.
+              try {
+                highlightErrorFromOutput(resultText);
+              } catch (_) {}
               statusEl.textContent = 'Done (log:query). (' + (Math.max(0, durationMs) / 1000).toFixed(2) + 's)';
             } catch (e) {
               const mh = currentMaxHeights();
