@@ -1,0 +1,52 @@
+@prefix ex: <https://example.org/ns#> .
+@prefix genid: <https://eyereasoner.github.io/.well-known/genid/> .
+
+ex:Alice a ex:Adult .
+ex:Bob a ex:Adult .
+ex:Carol a ex:Adult .
+ex:Alice ex:ancestor ex:Bob .
+ex:Bob ex:ancestor ex:Carol .
+ex:Alice ex:ancestor ex:Carol .
+ex:Alice ex:memberOf ex:OrgX .
+ex:Bob ex:memberOf ex:OrgX .
+ex:Carol ex:canRead ex:Proj1 .
+ex:Carol ex:canRead ex:Proj2 .
+ex:Alice ex:canRead ex:Proj1 .
+ex:Alice ex:canRead ex:Proj2 .
+ex:Bob ex:canRead ex:Proj1 .
+ex:Bob ex:canRead ex:Proj2 .
+ex:Carol ex:reason genid:bb872d90-06ba-a1fe-e32f-c940cf4ff2e0 .
+genid:bb872d90-06ba-a1fe-e32f-c940cf4ff2e0 a ex:Reason .
+genid:bb872d90-06ba-a1fe-e32f-c940cf4ff2e0 ex:for ex:Proj1 .
+genid:bb872d90-06ba-a1fe-e32f-c940cf4ff2e0 ex:because "memberOf(org) & ownedBy(org)" .
+ex:Carol ex:reason genid:1f8b4318-5902-6424-e1bf-05112812f214 .
+genid:1f8b4318-5902-6424-e1bf-05112812f214 a ex:Reason .
+genid:1f8b4318-5902-6424-e1bf-05112812f214 ex:for ex:Proj2 .
+genid:1f8b4318-5902-6424-e1bf-05112812f214 ex:because "memberOf(org) & ownedBy(org)" .
+ex:Alice ex:reason genid:f6cc4ea8-f3ba-011e-6b29-645c2deaebc8 .
+genid:f6cc4ea8-f3ba-011e-6b29-645c2deaebc8 a ex:Reason .
+genid:f6cc4ea8-f3ba-011e-6b29-645c2deaebc8 ex:for ex:Proj1 .
+genid:f6cc4ea8-f3ba-011e-6b29-645c2deaebc8 ex:because "memberOf(org) & ownedBy(org)" .
+ex:Alice ex:reason genid:8c5422b8-f629-ee64-7a75-64bc5783f128 .
+genid:8c5422b8-f629-ee64-7a75-64bc5783f128 a ex:Reason .
+genid:8c5422b8-f629-ee64-7a75-64bc5783f128 ex:for ex:Proj2 .
+genid:8c5422b8-f629-ee64-7a75-64bc5783f128 ex:because "memberOf(org) & ownedBy(org)" .
+ex:Bob ex:reason genid:01247470-20f2-01fe-140b-38bc7b4fd5cc .
+genid:01247470-20f2-01fe-140b-38bc7b4fd5cc a ex:Reason .
+genid:01247470-20f2-01fe-140b-38bc7b4fd5cc ex:for ex:Proj1 .
+genid:01247470-20f2-01fe-140b-38bc7b4fd5cc ex:because "memberOf(org) & ownedBy(org)" .
+ex:Bob ex:reason genid:1829bb1e-44ce-3d20-241b-939554688d20 .
+genid:1829bb1e-44ce-3d20-241b-939554688d20 a ex:Reason .
+genid:1829bb1e-44ce-3d20-241b-939554688d20 ex:for ex:Proj2 .
+genid:1829bb1e-44ce-3d20-241b-939554688d20 ex:because "memberOf(org) & ownedBy(org)" .
+ex:Proj2 ex:hasManager genid:c7703360-b4fd-c42e-e421-f8640d4303f0 .
+genid:c7703360-b4fd-c42e-e421-f8640d4303f0 a ex:Person .
+genid:c7703360-b4fd-c42e-e421-f8640d4303f0 ex:role "AutoManager" .
+ex:Bob ex:hasSupervisor genid:d17199b0-300e-0f10-d706-5280c4e4e32c .
+genid:d17199b0-300e-0f10-d706-5280c4e4e32c a ex:Person .
+genid:d17199b0-300e-0f10-d706-5280c4e4e32c ex:role "Supervisor" .
+genid:d17199b0-300e-0f10-d706-5280c4e4e32c ex:supervises ex:Bob .
+genid:c7703360-b4fd-c42e-e421-f8640d4303f0 ex:hasSupervisor genid:4b9d5378-977e-6998-7b22-cfcef9c5f650 .
+genid:4b9d5378-977e-6998-7b22-cfcef9c5f650 a ex:Person .
+genid:4b9d5378-977e-6998-7b22-cfcef9c5f650 ex:role "Supervisor" .
+genid:4b9d5378-977e-6998-7b22-cfcef9c5f650 ex:supervises genid:c7703360-b4fd-c42e-e421-f8640d4303f0 .

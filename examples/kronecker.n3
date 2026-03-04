@@ -1,0 +1,131 @@
+# ===============================================================================
+# Kronecker-Friendly N3 Demo (Horn/Datalog core + safe add-ons)
+#
+# Purpose:
+#   Illustrate a “constructive / compute-by-rules” style of reasoning in N3:
+#     - SECTION A is a finite, Horn-ish core (Datalog-like on finite input).
+#     - SECTION B adds practical “engineering” rules, written to TERMINATE.
+#
+# Design notes:
+#   - The core rules avoid creating new individuals.
+#   - Where we *do* introduce helper nodes (reasons, auto-managers, supervisors),
+#     we use log:skolem to mint DETERMINISTIC IRIs so re-firing rules does not
+#     keep generating fresh blank nodes (a common cause of non-termination).
+#   - No “manager-of-manager-of-...” recursive existential chains are used.
+#
+# Expected outcomes (high level):
+#   - ex:Alice becomes an ex:Adult.
+#   - Ancestor closure derives: Alice -> Bob -> Carol, so Alice ancestor Carol.
+#   - Membership propagates from TeamA to OrgX, enabling canRead permissions.
+#   - Proj2 gets a deterministic AutoManager and (optionally) a Supervisor.
+#
+# How to use:
+#   Load this file into an N3 reasoner that supports:
+#     - log:skolem
+#     - math:greaterThan
+#   Then compute the forward-chaining closure (or query for derived triples).
+# ===============================================================================
+
+@prefix ex:   <https://example.org/ns#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix log:  <http://www.w3.org/2000/10/swap/log#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+
+# --------------------------
+# DATA (finite ground facts)
+# --------------------------
+
+ex:Alice  a ex:Person ; ex:age  "29"^^xsd:integer ; ex:memberOf ex:TeamA ; ex:parent ex:Bob .
+ex:Bob    a ex:Person ; ex:age  "54"^^xsd:integer ; ex:memberOf ex:TeamA ; ex:parent ex:Carol .
+ex:Carol  a ex:Person ; ex:age  "78"^^xsd:integer ; ex:memberOf ex:OrgX .
+
+ex:TeamA  a ex:Team ; ex:partOf ex:OrgX .
+ex:OrgX   a ex:Org .
+
+ex:Proj1  a ex:Project ; ex:ownedBy ex:OrgX ; ex:hasManager ex:Bob .
+ex:Proj2  a ex:Project ; ex:ownedBy ex:OrgX ; ex:needsManager true .
+
+# -------------------------------------------
+# SECTION A — "Kronecker-friendly" core rules
+# -------------------------------------------
+
+# A1) Adult classification (computable, witness-free)
+{ ?p ex:age ?n .
+  ?n math:greaterThan "17"^^xsd:integer
+}
+=>
+{ ?p a ex:Adult . } .
+
+# A2) Ancestor closure (finite on finite parent facts)
+{ ?x ex:parent ?y } => { ?x ex:ancestor ?y } .
+
+{ ?x ex:parent ?y .
+  ?y ex:ancestor ?z
+}
+=>
+{ ?x ex:ancestor ?z } .
+
+# A3) Membership propagates up the org tree
+{ ?p ex:memberOf ?team .
+  ?team ex:partOf ?org
+}
+=>
+{ ?p ex:memberOf ?org } .
+
+# A4) Authorization: Org members can read Org-owned projects
+{ ?p ex:memberOf ?org .
+  ?proj a ex:Project ;
+        ex:ownedBy ?org
+}
+=>
+{ ?p ex:canRead ?proj } .
+
+# A5) Explanation breadcrumb (NO fresh blank nodes)
+#     Use log:skolem to mint a stable node for the explanation.
+{ ?p ex:canRead ?proj .
+  ?proj ex:ownedBy ?org .
+  ?p ex:memberOf ?org .
+
+  # Make a deterministic IRI for this (person, project) reason node:
+  (?p ?proj "reason") log:skolem ?reasonNode .
+}
+=>
+{ ?p ex:reason ?reasonNode .
+  ?reasonNode a ex:Reason ;
+              ex:for ?proj ;
+              ex:because "memberOf(org) & ownedBy(org)" .
+} .
+
+# ----------------------------------------------------
+# SECTION B — Engineering add-ons (safe / terminating)
+# ----------------------------------------------------
+
+# B1) Auto-manager creation (terminating)
+#     If a project needs a manager, assign a deterministic "AutoManager" IRI.
+#     Re-firing adds no new facts (same skolem IRI each run).
+{ ?proj a ex:Project ;
+        ex:needsManager true .
+
+  # Deterministic manager IRI for this project:
+  (?proj "AutoManager") log:skolem ?m .
+}
+=>
+{ ?proj ex:hasManager ?m .
+  ?m a ex:Person ;
+     ex:role "AutoManager" .
+} .
+
+# B2) Supervisor (safe, depth-1, still terminating)
+#     Create at most one supervisor per manager, and DO NOT make the supervisor
+#     itself a manager (so no infinite chain).
+{ ?proj ex:hasManager ?m .
+
+  # Deterministic supervisor IRI for this manager:
+  (?m "Supervisor") log:skolem ?s .
+}
+=>
+{ ?m ex:hasSupervisor ?s .
+  ?s a ex:Person ;
+     ex:role "Supervisor" ;
+     ex:supervises ?m .
+} .
