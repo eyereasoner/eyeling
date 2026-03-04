@@ -748,12 +748,43 @@
             const eyelingUrlEsc = eyelingUrl.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 
             const workerSrc = `
-            importScripts("${eyelingUrlEsc}");
+            const __EYELING_URL = "${eyelingUrlEsc}";
+            let __eyelingLoadPromise = null;
+
+            function __stripShebang(src) {
+              // NOTE: this worker source is embedded inside a template literal on the main thread.
+              // We must escape newlines as \\n so the worker sees the backslash-n sequence.
+              return String(src || "").replace(/^#![^\\n]*\\n/, "");
+            }
+
+            async function __ensureEyelingLoaded() {
+              if (__eyelingLoadPromise) return __eyelingLoadPromise;
+              __eyelingLoadPromise = (async () => {
+                // Fast path: importScripts (works in environments that support hashbang comments).
+                try {
+                  importScripts(__EYELING_URL);
+                  return;
+                } catch (_) {
+                  // Fallback: fetch + strip shebang + eval (avoids worker parse issues in older engines).
+                }
+
+                const resp = await fetch(__EYELING_URL);
+                if (!resp.ok) throw new Error("Failed to load eyeling.js (" + resp.status + ")");
+                const raw = await resp.text();
+                const cleaned = __stripShebang(raw);
+                // Execute in the global scope of the worker.
+                (0, eval)(cleaned);
+              })();
+              return __eyelingLoadPromise;
+            }
+
             const now = () => (self.performance && performance.now) ? performance.now() : Date.now();
 
-            self.onmessage = (ev) => {
+            self.onmessage = async (ev) => {
               const msg = ev && ev.data ? ev.data : {};
               if (msg.type !== "run") return;
+
+              await __ensureEyelingLoaded();
 
               const runId = msg.runId;
               const program = String(msg.program || "");
@@ -778,13 +809,17 @@ const batch = [];
               const BATCH_MAX = 10;          // small batches = more "real-time"
               const MAX_LATENCY_MS = 15;     // try to post at least every ~15ms
               let lastFlush = now();
+              let countTriplesNext = null;
 
               function flush(force) {
                 const t = now();
                 if (!batch.length) return;
                 if (force || batch.length >= BATCH_MAX || (t - lastFlush) >= MAX_LATENCY_MS) {
                   // Copy the array so the main thread can process immediately.
-                  self.postMessage({ type: "derived_batch", runId, triples: batch.splice(0) });
+                  const payload = { type: "derived_batch", runId, triples: batch.splice(0) };
+                  if (typeof countTriplesNext === "number") payload.countTriples = countTriplesNext;
+                  countTriplesNext = null;
+                  self.postMessage(payload);
                   lastFlush = t;
                 }
               }
@@ -830,21 +865,33 @@ const batch = [];
                     const res = self.eyeling.reasonStream(program, { enforceHttps, proof });
                     const pfx = res && res.prefixes ? res.prefixes : prefixes;
                     const qdfs = (res && Array.isArray(res.queryDerived)) ? res.queryDerived : [];
-                    for (const qdf of qdfs) {
-                      try {
-                        if (proof && typeof printExplanation === "function") {
-                          printExplanation(qdf, pfx);
-                        }
-                      } catch (_) {}
+                    if (!proof) {
+                      // Query mode can't stream during saturation; emit a single pretty block.
+                      let txt = "";
+                      try { txt = (res && res.closureN3 != null) ? String(res.closureN3) : ""; } catch (_) {}
+                      if (txt) {
+                        const lines = txt.split(/\\r?\\n/);
+                        for (const ln of lines) batch.push(ln);
+                        countTriplesNext = qdfs.length;
+                        flush(true);
+                      }
+                    } else {
+                      for (const qdf of qdfs) {
+                        try {
+                          if (proof && typeof printExplanation === "function") {
+                            printExplanation(qdf, pfx);
+                          }
+                        } catch (_) {}
 
-                      let t = "";
-                      try {
-                        if (typeof tripleToN3 === "function") t = tripleToN3(qdf.fact, pfx);
-                        else if (qdf && qdf.fact && qdf.fact.toString) t = String(qdf.fact);
-                      } catch (_) {}
-                      if (t) {
-                        batch.push(t);
-                        flush(!!proof);
+                        let t = "";
+                        try {
+                          if (typeof tripleToN3 === "function") t = tripleToN3(qdf.fact, pfx);
+                          else if (qdf && qdf.fact && qdf.fact.toString) t = String(qdf.fact);
+                        } catch (_) {}
+                        if (t) {
+                          batch.push(t);
+                          flush(true);
+                        }
                       }
                     }
                   } else {
@@ -931,7 +978,7 @@ const batch = [];
               if (msg.runId !== runId) return;
 
               if (msg.type === 'derived_batch') {
-                onBatch && onBatch(msg.triples || []);
+                onBatch && onBatch(msg.triples || [], msg.countTriples);
               } else if (msg.type === 'stdout') {
                 const t = msg.text == null ? '' : String(msg.text);
                 if (t) onStdout && onStdout(t);
@@ -1890,6 +1937,78 @@ const batch = [];
             return;
           }
 
+          // --- log:query mode ---
+          // People typically expect log:query output to be a compact, pretty Turtle block
+          // (e.g., blank node property lists). That format is produced by the CLI output.
+          // The streaming engine emits individual instantiated triples, which can look
+          // noisy (skolem triples). So, when we detect log:query *and* proof comments are
+          // OFF, we run the same CLI output path (in a worker when possible) and display
+          // the final result (non-streaming), matching the command-line tool.
+          const programText = editor.getValue();
+          const isLogQuery = /(^|[^A-Za-z0-9_:-])log:query([^A-Za-z0-9_:-]|$)/m.test(programText);
+          if (isLogQuery && !proofCheckbox.checked) {
+            // Cancel any prior streaming run.
+            try {
+              if (activePlayCancel) activePlayCancel();
+            } catch (_) {}
+            activePlayCancel = null;
+            activePlayAppender = null;
+            setPlayPaused(false);
+            playPausedBuffer = [];
+            enablePlayControls(false);
+
+            clearErrorHighlight();
+
+            runBtn.disabled = true;
+            statusEl.textContent = 'Reasoning (log:query)…';
+
+            // Clear output immediately.
+            {
+              const mh = currentMaxHeights();
+              outputEl.setValue('');
+              autoResizeCodeMirror(outputEl, 80, mh.output);
+            }
+
+            if (hashSyncEnabled) updateShareUrl();
+            await new Promise(requestAnimationFrame);
+
+            try {
+              const workerRunner = await getEyelingWorkerRunner();
+              let resultText = '';
+              let durationMs = 0;
+
+              if (workerRunner) {
+                const r = await workerRunner.run(programText, {
+                  proof: false,
+                  enforceHttps: enforceHttpsCheckbox.checked,
+                  strings: false,
+                });
+                resultText = r && typeof r.result === 'string' ? r.result : '';
+                durationMs = r && typeof r.durationMs === 'number' ? r.durationMs : 0;
+              } else {
+                const runOnce = await getEyelingRunner();
+                const t0 = performance.now();
+                resultText = String(runOnce(programText) || '');
+                durationMs = Math.max(0, performance.now() - t0);
+              }
+
+              const mh = currentMaxHeights();
+              outputEl.setValue(resultText || '(no output)');
+              autoResizeCodeMirror(outputEl, 80, mh.output);
+              statusEl.textContent = 'Done (log:query). (' + (Math.max(0, durationMs) / 1000).toFixed(2) + 's)';
+            } catch (e) {
+              const mh = currentMaxHeights();
+              const msg = e && e.message ? e.message : String(e);
+              outputEl.setValue('Reasoning error: ' + msg);
+              autoResizeCodeMirror(outputEl, 80, mh.output);
+              statusEl.textContent = 'Error.';
+              highlightErrorFromOutput('Reasoning error: ' + msg);
+            } finally {
+              runBtn.disabled = false;
+            }
+            return;
+          }
+
           runBtn.disabled = true;
           setPlayPaused(false);
           playPausedBuffer = [];
@@ -1956,9 +2075,9 @@ const batch = [];
               if (playPaused) playPausedBuffer.push(out);
               else appender.append(out);
             },
-            onBatch: (triples) => {
+            onBatch: (triples, countTriples) => {
               if (!triples || !triples.length) return;
-              derivedCount += triples.length;
+              derivedCount += countTriples != null ? countTriples : triples.length;
               if (playPaused) {
                 playPausedBuffer.push(triples.join('\n') + '\n');
               } else {
