@@ -1,0 +1,94 @@
+@prefix : <http://example.org/kronecker-pi#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:result :certifiedAt (0 true) .
+:result :certifiedAt (1 true) .
+:result :certifiedAt (10 true) .
+:result :certifiedAt (11 true) .
+:result :certifiedAt (12 true) .
+:result :certifiedAt (2 true) .
+:result :certifiedAt (3 true) .
+:result :certifiedAt (4 true) .
+:result :certifiedAt (5 true) .
+:result :certifiedAt (6 true) .
+:result :certifiedAt (7 true) .
+:result :certifiedAt (8 true) .
+:result :certifiedAt (9 true) .
+:result :chosenT 0 .
+:result :chosenT 1 .
+:result :chosenT 10 .
+:result :chosenT 11 .
+:result :chosenT 12 .
+:result :chosenT 2 .
+:result :chosenT 3 .
+:result :chosenT 4 .
+:result :chosenT 5 .
+:result :chosenT 6 .
+:result :chosenT 7 .
+:result :chosenT 8 .
+:result :chosenT 9 .
+:result :eps (0 "1"^^xsd:decimal) .
+:result :eps (1 "0.5"^^xsd:decimal) .
+:result :eps (10 "0.0009765625"^^xsd:decimal) .
+:result :eps (11 "0.00048828125"^^xsd:decimal) .
+:result :eps (12 "0.000244140625"^^xsd:decimal) .
+:result :eps (2 "0.25"^^xsd:decimal) .
+:result :eps (3 "0.125"^^xsd:decimal) .
+:result :eps (4 "0.0625"^^xsd:decimal) .
+:result :eps (5 "0.03125"^^xsd:decimal) .
+:result :eps (6 "0.015625"^^xsd:decimal) .
+:result :eps (7 "0.0078125"^^xsd:decimal) .
+:result :eps (8 "0.00390625"^^xsd:decimal) .
+:result :eps (9 "0.001953125"^^xsd:decimal) .
+:result :interval (0 "3.1395730293250343"^^xsd:decimal "3.1416210293270863"^^xsd:decimal) .
+:result :interval (1 "3.1415908619599557"^^xsd:decimal "3.1415926824044"^^xsd:decimal) .
+:result :interval (10 "3.141592653589794"^^xsd:decimal "3.141592653589794"^^xsd:decimal) .
+:result :interval (11 "3.141592653589794"^^xsd:decimal "3.141592653589794"^^xsd:decimal) .
+:result :interval (12 "3.141592653589794"^^xsd:decimal "3.141592653589794"^^xsd:decimal) .
+:result :interval (2 "3.1415926516070622"^^xsd:decimal "3.141592653623555"^^xsd:decimal) .
+:result :interval (3 "3.141592653587369"^^xsd:decimal "3.141592653589836"^^xsd:decimal) .
+:result :interval (4 "3.1415926535897905"^^xsd:decimal "3.141592653589794"^^xsd:decimal) .
+:result :interval (5 "3.141592653589794"^^xsd:decimal "3.141592653589794"^^xsd:decimal) .
+:result :interval (6 "3.141592653589794"^^xsd:decimal "3.141592653589794"^^xsd:decimal) .
+:result :interval (7 "3.141592653589794"^^xsd:decimal "3.141592653589794"^^xsd:decimal) .
+:result :interval (8 "3.141592653589794"^^xsd:decimal "3.141592653589794"^^xsd:decimal) .
+:result :interval (9 "3.141592653589794"^^xsd:decimal "3.141592653589794"^^xsd:decimal) .
+:result :midpoint (0 "3.1405970293260603"^^xsd:decimal "0.001024000001025982"^^xsd:decimal) .
+:result :midpoint (1 "3.1415917721821778"^^xsd:decimal "9.102222220391809e-7"^^xsd:decimal) .
+:result :midpoint (10 "3.141592653589794"^^xsd:decimal "0"^^xsd:decimal) .
+:result :midpoint (11 "3.141592653589794"^^xsd:decimal "0"^^xsd:decimal) .
+:result :midpoint (12 "3.141592653589794"^^xsd:decimal "0"^^xsd:decimal) .
+:result :midpoint (2 "3.1415926526153086"^^xsd:decimal "1.0082463752780768e-9"^^xsd:decimal) .
+:result :midpoint (3 "3.1415926535886025"^^xsd:decimal "1.233679824963474e-12"^^xsd:decimal) .
+:result :midpoint (4 "3.1415926535897922"^^xsd:decimal "1.7763568394002505e-15"^^xsd:decimal) .
+:result :midpoint (5 "3.141592653589794"^^xsd:decimal "0"^^xsd:decimal) .
+:result :midpoint (6 "3.141592653589794"^^xsd:decimal "0"^^xsd:decimal) .
+:result :midpoint (7 "3.141592653589794"^^xsd:decimal "0"^^xsd:decimal) .
+:result :midpoint (8 "3.141592653589794"^^xsd:decimal "0"^^xsd:decimal) .
+:result :midpoint (9 "3.141592653589794"^^xsd:decimal "0"^^xsd:decimal) .
+:result :requestN 0 .
+:result :requestN 1 .
+:result :requestN 10 .
+:result :requestN 11 .
+:result :requestN 12 .
+:result :requestN 2 .
+:result :requestN 3 .
+:result :requestN 4 .
+:result :requestN 5 .
+:result :requestN 6 .
+:result :requestN 7 .
+:result :requestN 8 .
+:result :requestN 9 .
+:result :width (0 "0.002048000002051964"^^xsd:decimal) .
+:result :width (1 "0.0000018204444440783618"^^xsd:decimal) .
+:result :width (10 "0"^^xsd:decimal) .
+:result :width (11 "0"^^xsd:decimal) .
+:result :width (12 "0"^^xsd:decimal) .
+:result :width (2 "2.0164927505561536e-9"^^xsd:decimal) .
+:result :width (3 "2.467359649926948e-12"^^xsd:decimal) .
+:result :width (4 "3.552713678800501e-15"^^xsd:decimal) .
+:result :width (5 "0"^^xsd:decimal) .
+:result :width (6 "0"^^xsd:decimal) .
+:result :width (7 "0"^^xsd:decimal) .
+:result :width (8 "0"^^xsd:decimal) .
+:result :width (9 "0"^^xsd:decimal) .

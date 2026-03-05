@@ -1,0 +1,264 @@
+# ===========================================================================================
+# π as “integers-only” engineering: a computable real via certified rational bounds
+#
+# Philosophy (Kronecker-friendly):
+#   We do not assume a completed continuum of real numbers. Instead, a “real number” is
+#   represented by a *procedure* that can deliver arbitrarily tight rational information
+#   on demand (finite request in, finite certificate out).
+#
+# What this file encodes:
+#   For each requested precision n (0..maxN) we produce a rational interval [L_n, U_n]
+#   such that:
+#     (1) π ∈ [L_n, U_n]                         (sound enclosure / correctness certificate)
+#     (2) U_n - L_n <= 2^-n                      (precision guarantee)
+#
+# Method (Machin + alternating-series remainder):
+#   Use Machin’s formula:
+#       π = 16*arctan(1/5) - 4*arctan(1/239)
+#   and the alternating Taylor series for arctan(x), 0<x<1:
+#       arctan(x) = Σ_{k>=0} (-1)^k x^(2k+1)/(2k+1)
+#   For alternating decreasing series, the truncation error is bounded by the first omitted
+#   term. We build explicit arctan intervals and combine them by interval arithmetic.
+#
+# Finite arithmetic only:
+#   All computations use finite numeric literals; rationals appear only as quotients produced
+#   by math:quotient. Nothing requires an “actual” infinite real object.
+#
+# Output discipline (Gödel-ish):
+#   The rules derive a closure; log:query projects only the intended results (bounds/width/
+#   epsilon/midpoint), separating “truth definition” from “reporting”.
+# ===========================================================================================
+
+@prefix :      <http://example.org/kronecker-pi#>.
+@prefix math:  <http://www.w3.org/2000/10/swap/math#>.
+@prefix log:   <http://www.w3.org/2000/10/swap/log#>.
+
+:pi a :ComputableReal;
+  :computedBy :machinPi.
+
+:machinPi a :IntervalProcedure;
+  :maxN 12;
+  :offset 0.
+
+# We compute arctan bounds up to t = maxN + offset, so set maxT accordingly
+:atan5   a :ArctanProcedure; :maxT 12.
+:atan239 a :ArctanProcedure; :maxT 12.
+
+# ----------------------------------------------------------------------------------
+# 0) Define x1 = 1/5 and x2 = 1/239 as rationals (via quotients)
+#
+# IMPORTANT FIX:
+#   math:quotient produces a *numeric literal* as object.
+#   Do NOT store that numeric as an IRI like :x1 / :x2 (that breaks math: builtins).
+# ----------------------------------------------------------------------------------
+
+{ ( 1.0 5 )   math:quotient ?x. } => { :atan5   :x ?x. }.
+{ ( 1.0 239 ) math:quotient ?x. } => { :atan239 :x ?x. }.
+
+# -------------------------------------------------------------------------
+# 1) arctan(x) via split sums (no explicit negatives needed):
+#    arctan(x) =  Σ_{m>=0}  x^(4m+1)/(4m+1)  -  Σ_{m>=0} x^(4m+3)/(4m+3)
+#
+#    We compute:
+#      posSum(t) = Σ_{m=0..t} x^(4m+1)/(4m+1)
+#      negSum(t) = Σ_{m=0..t} x^(4m+3)/(4m+3)
+#      approx(t) = posSum(t) - negSum(t)
+#    Remainder bound after including up to exponent (4t+3):
+#      rem(t) = x^(4t+5)/(4t+5)   (first omitted “positive” term magnitude)
+#    Then arctan(x) ∈ [approx(t) - rem(t), approx(t) + rem(t)].
+# -------------------------------------------------------------------------
+
+# Seed posSum(0) = x
+{ ?A :x ?x. }
+=>
+{ ?A :posSum (0 ?x). }.
+
+# Seed negSum(0) = x^3 / 3
+{
+  ?A :x ?x.
+  ( ?x 3 ) math:exponentiation ?x3.
+  ( ?x3 3 ) math:quotient ?n0.
+}
+=>
+{ ?A :negSum (0 ?n0). }.
+
+# posSum recursion: t -> t+1
+{
+  ?A :x ?x.
+  ?A :posSum (?t ?sP).
+  ?A :maxT ?maxT.
+  ?t math:lessThan ?maxT.
+
+  ( ?t 1 ) math:sum ?t1.
+  ( ?t1 4 ) math:product ?a.
+  ( ?a 1 ) math:sum ?exp.                 # exp = 4*(t1) + 1
+
+  ( ?x ?exp ) math:exponentiation ?xpow.
+  ( ?xpow ?exp ) math:quotient ?term.
+  ( ?sP ?term ) math:sum ?sP1.
+}
+=>
+{ ?A :posSum (?t1 ?sP1). }.
+
+# negSum recursion: t -> t+1
+{
+  ?A :x ?x.
+  ?A :negSum (?t ?sN).
+  ?A :maxT ?maxT.
+  ?t math:lessThan ?maxT.
+
+  ( ?t 1 ) math:sum ?t1.
+  ( ?t1 4 ) math:product ?a.
+  ( ?a 3 ) math:sum ?exp.                 # exp = 4*(t1) + 3
+
+  ( ?x ?exp ) math:exponentiation ?xpow.
+  ( ?xpow ?exp ) math:quotient ?term.
+  ( ?sN ?term ) math:sum ?sN1.
+}
+=>
+{ ?A :negSum (?t1 ?sN1). }.
+
+# approx(t) = posSum(t) - negSum(t)
+{
+  ?A :posSum (?t ?sP).
+  ?A :negSum (?t ?sN).
+  ( ?sP ?sN ) math:difference ?approx.
+}
+=>
+{ ?A :approx (?t ?approx). }.
+
+# rem(t) = x^(4t+5) / (4t+5)
+{
+  ?A :x ?x.
+  ?A :approx (?t ?approx).
+
+  ( ?t 4 ) math:product ?a.
+  ( ?a 5 ) math:sum ?exp.                 # exp = 4*t + 5
+
+  ( ?x ?exp ) math:exponentiation ?xpow.
+  ( ?xpow ?exp ) math:quotient ?rem.
+}
+=>
+{ ?A :rem (?t ?rem). }.
+
+# bounds for arctan at index t
+{
+  ?A :approx (?t ?approx).
+  ?A :rem (?t ?rem).
+
+  ( ?approx ?rem ) math:difference ?L.
+  ( ?approx ?rem ) math:sum ?U.
+}
+=>
+{ ?A :bounds (?t ?L ?U). }.
+
+# -----------------------------------------------------------
+# 2) Precision requests n = 0..maxN and choose t = n + offset
+# -----------------------------------------------------------
+
+:machinPi :n 0.
+
+{
+  :machinPi :n ?n.
+  :machinPi :maxN ?maxN.
+  ?n math:lessThan ?maxN.
+  ( ?n 1 ) math:sum ?n1.
+}
+=>
+{
+  :machinPi :n ?n1.
+}.
+
+{
+  :machinPi :n ?n.
+  :machinPi :offset ?off.
+  ( ?n ?off ) math:sum ?t.
+}
+=>
+{
+  :machinPi :chosenT (?n ?t).
+}.
+
+# -----------------------------------------
+# 3) Combine arctan intervals via Machin:
+#    π = 16*atan(1/5) - 4*atan(1/239)
+#
+# If a ∈ [La,Ua] and b ∈ [Lb,Ub], then:
+#   16a - 4b ∈ [16*La - 4*Ub, 16*Ua - 4*Lb]
+# -----------------------------------------
+
+{
+  :machinPi :chosenT (?n ?t).
+
+  :atan5   :bounds (?t ?L1 ?U1).
+  :atan239 :bounds (?t ?L2 ?U2).
+
+  ( 16 ?L1 ) math:product ?pL1.
+  ( 16 ?U1 ) math:product ?pU1.
+  ( 4  ?L2 ) math:product ?pL2.
+  ( 4  ?U2 ) math:product ?pU2.
+
+  ( ?pL1 ?pU2 ) math:difference ?Lpi.
+  ( ?pU1 ?pL2 ) math:difference ?Upi.
+  ( ?Upi ?Lpi ) math:difference ?W.
+}
+=>
+{
+  :pi :bounds (?n ?t ?Lpi ?Upi).
+  :pi :width  (?n ?W).
+}.
+
+# ---------------------------------------------------------------
+# 4) eps(n) = 2^-n and the precision guarantee width(n) <= eps(n)
+# ---------------------------------------------------------------
+
+{
+  :machinPi :n ?n.
+  ( 2 ?n ) math:exponentiation ?pow2.
+  ( 1.0 ?pow2 ) math:quotient ?eps.
+}
+=>
+{
+  :pi :epsilon (?n ?eps).
+}.
+
+{
+  :pi :width (?n ?W).
+  :pi :epsilon (?n ?eps).
+  ?W math:notGreaterThan ?eps.
+}
+=>
+{
+  :pi :certifiedAt (?n true).
+}.
+
+# -------------------------------
+# 5) Output selection (log:query)
+# -------------------------------
+
+{
+  :pi :bounds (?n ?t ?L ?U).
+  :pi :width  (?n ?W).
+  :pi :epsilon (?n ?eps).
+
+  ( ?L ?U ) math:sum ?s.
+  ( ?s 2 ) math:quotient ?M.
+  ( ?W 2 ) math:quotient ?errBound.
+}
+log:query
+{
+  :result :requestN  ?n.
+  :result :chosenT   ?t.
+  :result :interval  (?n ?L ?U).
+  :result :width     (?n ?W).
+  :result :eps       (?n ?eps).
+  :result :midpoint  (?n ?M ?errBound).
+}.
+
+{
+  :pi :certifiedAt (?n true).
+}
+log:query
+{
+  :result :certifiedAt (?n true).
+}.

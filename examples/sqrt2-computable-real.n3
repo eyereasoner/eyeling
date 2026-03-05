@@ -1,0 +1,204 @@
+# =============================================================================================
+# √2 as “integers-only” engineering: a computable real via nested rational bounds
+#
+# Philosophy (Kronecker-friendly):
+#   We do not assume a completed continuum of real numbers. Instead, a “real number” is
+#   represented by a *procedure* that can deliver arbitrarily tight rational information
+#   on demand (finite data in, finite data out).
+#
+# What this file encodes:
+#   For each requested precision n (0..maxN) we construct a rational interval [L_n, U_n]
+#   such that:
+#     (1) L_n^2 < 2 <= U_n^2        (sound enclosure: √2 is guaranteed to lie inside)
+#     (2) U_n - L_n <= 2^-n         (precision guarantee: interval width shrinks exponentially)
+#     (3) [L_{n+1}, U_{n+1}] ⊆ [L_n, U_n]   (nestedness / monotone refinement, optional check)
+#
+# Method:
+#   A bisection algorithm starting from [1,2]. At each step we compute the midpoint M and
+#   keep the half-interval that still brackets √2 (tested via M^2 < 2).
+#
+# Finite arithmetic only:
+#   All computations are performed with finite numeric literals; rationals appear only as
+#   quotients produced by math:quotient. Nothing requires an “actual” infinite real object.
+#
+# Output discipline (Gödel-ish):
+#   The rules derive a closure; log:query is used to project only the intended results
+#   (bounds, widths, epsilons, midpoints), separating “truth definition” from “reporting”.
+# =============================================================================================
+
+@prefix :      <http://example.org/kronecker#>.
+@prefix math:  <http://www.w3.org/2000/10/swap/math#>.
+@prefix log:   <http://www.w3.org/2000/10/swap/log#>.
+
+:sqrt2 a :ComputableReal;
+  :computedBy :bisectSqrt2.
+
+:bisectSqrt2 a :IntervalProcedure;
+  :maxN 12.
+
+# Base interval: √2 is between 1 and 2.
+:bisectSqrt2 :interval (0 1.0 2.0).
+
+# -------------------------------------------------------
+# 1) Bisection step:
+#    Given interval(n, L, U), midpoint M = (L+U)/2.
+#    If M^2 < 2 then next is [M, U], else next is [L, M].
+# -------------------------------------------------------
+
+# Case A: M^2 < 2  => raise lower bound
+{
+  :bisectSqrt2 :interval (?n ?L ?U).
+  :bisectSqrt2 :maxN ?N.
+  ?n math:lessThan ?N.
+
+  ( ?n 1 ) math:sum ?n1.
+  ( ?L ?U ) math:sum ?s.
+  ( ?s 2 ) math:quotient ?M.
+  ( ?M ?M ) math:product ?M2.
+  ?M2 math:lessThan 2.
+}
+=>
+{
+  :bisectSqrt2 :interval (?n1 ?M ?U).
+}.
+
+# Case B: M^2 >= 2 => lower upper bound
+{
+  :bisectSqrt2 :interval (?n ?L ?U).
+  :bisectSqrt2 :maxN ?N.
+  ?n math:lessThan ?N.
+
+  ( ?n 1 ) math:sum ?n1.
+  ( ?L ?U ) math:sum ?s.
+  ( ?s 2 ) math:quotient ?M.
+  ( ?M ?M ) math:product ?M2.
+  ?M2 math:notLessThan 2.
+}
+=>
+{
+  :bisectSqrt2 :interval (?n1 ?L ?M).
+}.
+
+# ---------------------------
+# 2) Compute width(n) = U - L
+# ---------------------------
+
+{
+  :bisectSqrt2 :interval (?n ?L ?U).
+  ( ?U ?L ) math:difference ?W.
+}
+=>
+{
+  :bisectSqrt2 :width (?n ?W).
+}.
+
+# ------------------------------------
+# 3) Compute eps(n) = 2^-n = 1 / (2^n)
+# ------------------------------------
+
+{
+  :bisectSqrt2 :interval (?n ?L ?U).
+  ( 2 ?n ) math:exponentiation ?pow2.
+  ( 1.0 ?pow2 ) math:quotient ?eps.
+}
+=>
+{
+  :bisectSqrt2 :epsilon (?n ?eps).
+}.
+
+# ------------------------------------------
+# 4) Precision guarantee: width(n) <= eps(n)
+# ------------------------------------------
+
+{
+  :bisectSqrt2 :width (?n ?W).
+  :bisectSqrt2 :epsilon (?n ?eps).
+  ?W math:notGreaterThan ?eps.
+}
+=>
+{
+  :sqrt2 :approxInterval (?n :L :U).   # “tag” for queries (see below)
+  :sqrt2 :guaranteeWidthLe2PowNegN (?n true).
+}.
+
+# Store the actual L and U per n in a machine-friendly predicate
+{
+  :bisectSqrt2 :interval (?n ?L ?U).
+}
+=>
+{
+  :sqrt2 :bounds (?n ?L ?U).
+}.
+
+# ----------------------------------------
+# 5) Containment guarantee: L^2 < 2 <= U^2
+# ----------------------------------------
+
+{
+  :sqrt2 :bounds (?n ?L ?U).
+  ( ?L ?L ) math:product ?L2.
+  ?L2 math:lessThan 2.
+}
+=>
+{
+  :sqrt2 :lowerOk (?n true).
+}.
+
+{
+  :sqrt2 :bounds (?n ?L ?U).
+  ( ?U ?U ) math:product ?U2.
+  ?U2 math:notLessThan 2.
+}
+=>
+{
+  :sqrt2 :upperOk (?n true).
+}.
+
+# -----------------------------------------------------------------------
+# 6) Nestedness (optional sanity property): [L_{n+1},U_{n+1}] ⊆ [L_n,U_n]
+# -----------------------------------------------------------------------
+
+{
+  :sqrt2 :bounds (?n ?L ?U).
+  ( ?n 1 ) math:sum ?n1.
+  :sqrt2 :bounds (?n1 ?L1 ?U1).
+  ?L1 math:notLessThan ?L.
+  ?U1 math:notGreaterThan ?U.
+}
+=>
+{
+  :sqrt2 :nested (?n1 true).
+}.
+
+# -----------------------------------------------------------------
+# 7) Output selection via log:query
+#    Eyeling will print ONLY these instantiated conclusion triples.
+# -----------------------------------------------------------------
+
+# Main result table: n, L_n, U_n, width, eps, and a midpoint approximation
+{
+  :sqrt2 :bounds (?n ?L ?U).
+  :bisectSqrt2 :width (?n ?W).
+  :bisectSqrt2 :epsilon (?n ?eps).
+
+  ( ?L ?U ) math:sum ?s.
+  ( ?s 2 ) math:quotient ?M.
+  ( ?W 2 ) math:quotient ?errBound.   # distance from M to either endpoint
+}
+log:query
+{
+  :result :interval (?n ?L ?U).
+  :result :width    (?n ?W).
+  :result :eps      (?n ?eps).
+  :result :midpoint (?n ?M ?errBound).
+}.
+
+# Also expose which n satisfy the logical “contains √2” checks
+{
+  :sqrt2 :lowerOk (?n true).
+  :sqrt2 :upperOk (?n true).
+}
+log:query
+{
+  :result :containsSqrt2 (?n true).
+}.

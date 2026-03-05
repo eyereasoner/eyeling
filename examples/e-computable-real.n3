@@ -1,0 +1,197 @@
+# =========================================================================================
+# e as “integers-only” engineering: a computable real via factorial-series bounds
+#
+# Philosophy (Kronecker-friendly):
+#   We do not assume a completed continuum of real numbers. Instead, a “real number” is
+#   represented by a *procedure* that can deliver arbitrarily tight rational information
+#   on demand (finite request in, finite certificate out).
+#
+# What this file encodes:
+#   We represent e = exp(1) using the classical series:
+#       e = Σ_{k=0..∞} 1/k!
+#   For each requested precision n (0..maxN) we compute an index m = n + offset and produce
+#   a rational interval [L_n, U_n] where:
+#     L_n = Σ_{k=0..m} 1/k!                    (partial sum; lower bound)
+#     U_n = L_n + R_m                          (upper bound using a remainder estimate)
+#
+# Guarantees produced (machine-checkable inequalities):
+#   (1) width(n) = U_n - L_n = R_m
+#   (2) width(n) <= 2^-n                         (precision guarantee)
+#   (3) optional sanity: intervals are nested as n increases
+#
+# Finite arithmetic only:
+#   All computations are performed with finite numeric literals; rationals appear only as
+#   quotients produced by math:quotient (no “actual” infinite real object is required).
+#
+# Output discipline (Gödel-ish):
+#   The rules derive a closure; log:query is used to project only the intended results
+#   (bounds, widths, epsilons, midpoints), separating “truth definition” from “reporting”.
+# =========================================================================================
+
+@prefix :      <http://example.org/kronecker-e#>.
+@prefix math:  <http://www.w3.org/2000/10/swap/math#>.
+@prefix log:   <http://www.w3.org/2000/10/swap/log#>.
+
+:e a :ComputableReal;
+  :computedBy :seriesE.
+
+:seriesE a :IntervalProcedure;
+  :maxN 12;
+  :offset 6;
+  :maxK 18.     # must be >= maxN + offset
+
+# ------------------------------------
+# 1) Generate factorials: fact(k) = k!
+# ------------------------------------
+
+:seriesE :fact (0 1.0).
+
+{
+  :seriesE :fact (?k ?f).
+  :seriesE :maxK ?maxK.
+  ?k math:lessThan ?maxK.
+
+  ( ?k 1 ) math:sum ?k1.
+  ( ?f ?k1 ) math:product ?f1.
+}
+=>
+{
+  :seriesE :fact (?k1 ?f1).
+}.
+
+# --------------------------------------------------
+# 2) Generate partial sums: sum(k) = Σ_{i=0..k} 1/i!
+# --------------------------------------------------
+
+:seriesE :sum (0 1.0).
+
+{
+  :seriesE :sum (?k ?s).
+  :seriesE :maxK ?maxK.
+  ?k math:lessThan ?maxK.
+
+  ( ?k 1 ) math:sum ?k1.
+  :seriesE :fact (?k1 ?f1).
+
+  ( 1.0 ?f1 ) math:quotient ?term.
+  ( ?s ?term ) math:sum ?s1.
+}
+=>
+{
+  :seriesE :sum (?k1 ?s1).
+}.
+
+# ------------------------------------------
+# 3) Generate precision requests n = 0..maxN
+# ------------------------------------------
+
+:seriesE :n 0.
+
+{
+  :seriesE :n ?n.
+  :seriesE :maxN ?maxN.
+  ?n math:lessThan ?maxN.
+  ( ?n 1 ) math:sum ?n1.
+}
+=>
+{
+  :seriesE :n ?n1.
+}.
+
+# ------------------------------------------------------------------
+# 4) For each n, choose m = n + offset and compute bounds [L_n, U_n]
+#    Remainder estimate used here:
+#        R_m = 1 / (m * m!)
+#    (a standard upper bound for the tail of Σ 1/k! for m >= 1)
+# ------------------------------------------------------------------
+
+{
+  :seriesE :n ?n.
+  :seriesE :offset ?off.
+  ( ?n ?off ) math:sum ?m.
+
+  :seriesE :sum  (?m ?L).
+  :seriesE :fact (?m ?mf).
+
+  ( ?m ?mf ) math:product ?den.        # den = m * m!
+  ( 1.0 ?den ) math:quotient ?R.       # R = 1 / (m*m!)
+  ( ?L ?R ) math:sum ?U.               # U = L + R
+}
+=>
+{
+  :e :bounds (?n ?m ?L ?U).
+  :e :width  (?n ?R).
+}.
+
+# ---------------------------------------------------------------
+# 5) eps(n) = 2^-n and the precision guarantee width(n) <= eps(n)
+# ---------------------------------------------------------------
+
+{
+  :seriesE :n ?n.
+  ( 2 ?n ) math:exponentiation ?pow2.
+  ( 1.0 ?pow2 ) math:quotient ?eps.
+}
+=>
+{
+  :e :epsilon (?n ?eps).
+}.
+
+{
+  :e :width (?n ?W).
+  :e :epsilon (?n ?eps).
+  ?W math:notGreaterThan ?eps.
+}
+=>
+{
+  :e :guaranteeWidthLe2PowNegN (?n true).
+}.
+
+# ----------------------------------------------------------
+# 6) Optional sanity: nestedness of intervals as n increases
+# ----------------------------------------------------------
+
+{
+  :e :bounds (?n ?m ?L ?U).
+  ( ?n 1 ) math:sum ?n1.
+  :e :bounds (?n1 ?m1 ?L1 ?U1).
+
+  ?L1 math:notLessThan ?L.
+  ?U1 math:notGreaterThan ?U.
+}
+=>
+{
+  :e :nested (?n1 true).
+}.
+
+# -------------------------------
+# 7) Output selection (log:query)
+# -------------------------------
+
+{
+  :e :bounds (?n ?m ?L ?U).
+  :e :width  (?n ?W).
+  :e :epsilon (?n ?eps).
+  :e :guaranteeWidthLe2PowNegN (?n true).
+
+  ( ?L ?U ) math:sum ?s.
+  ( ?s 2 ) math:quotient ?M.
+  ( ?W 2 ) math:quotient ?errBound.
+}
+log:query
+{
+  :result :requestN  ?n.
+  :result :chosenM   ?m.
+  :result :interval  (?n ?L ?U).
+  :result :width     (?n ?W).
+  :result :eps       (?n ?eps).
+  :result :midpoint  (?n ?M ?errBound).
+}.
+
+{
+  :e :nested (?n true).
+}
+log:query
+{
+  :result :nestedAt (?n true).
+}.
