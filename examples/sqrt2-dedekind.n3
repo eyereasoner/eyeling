@@ -1,0 +1,271 @@
+# ==============================================
+# A finite, executable Dedekind-cut demo for √2:
+#   L = { q in Q | q < 0  OR  q*q < 2 }
+# ==============================================
+
+@prefix :       <http://example.org/dedekind#>.
+@prefix math:   <http://www.w3.org/2000/10/swap/math#>.
+@prefix list:   <http://www.w3.org/2000/10/swap/list#>.
+@prefix log:    <http://www.w3.org/2000/10/swap/log#>.
+@prefix string: <http://www.w3.org/2000/10/swap/string#>.
+
+# -----------------------------------------------------------------
+# Data: a finite sample of rationals (decimal tokens are rationals)
+# -----------------------------------------------------------------
+
+:QSample a :RationalSample;
+  :values ( -2 -1 -0.5 -0.1 0 0.5 1 1.3 1.4 1.41 1.414 1.4142 1.4143 1.42 1.5 2 ).
+
+:sqrt2Cut a :DedekindCut;
+  :over :QSample;
+  :name "sqrt2".
+
+# --------------------------------------------------------------
+# Helper: compute squares for sample values (for printing/tests)
+# --------------------------------------------------------------
+
+{
+  :QSample :values ?qs.
+  ?q list:in ?qs.
+  ( ?q ?q ) math:product ?q2.
+}
+=>
+{
+  :QSample :square (?q ?q2).
+}.
+
+# --------------------------------------------------
+# Definition of the √2 Dedekind cut (on the sample):
+#   q is in LEFT iff q < 0 OR q*q < 2
+#   otherwise q is in RIGHT
+# --------------------------------------------------
+
+# Case 1: q < 0  ==> left
+{
+  :QSample :values ?qs.
+  ?q list:in ?qs.
+  ?q math:lessThan 0.
+}
+=>
+{
+  :sqrt2Cut :seedLeft ?q.
+}.
+
+# Case 2: q >= 0 and q*q < 2  ==> left
+{
+  :QSample :values ?qs.
+  ?q list:in ?qs.
+  ?q math:notLessThan 0.
+
+  :QSample :square (?q ?q2).
+  ?q2 math:lessThan 2.
+}
+=>
+{
+  :sqrt2Cut :seedLeft ?q.
+}.
+
+# Case 3: q >= 0 and q*q >= 2  ==> right
+{
+  :QSample :values ?qs.
+  ?q list:in ?qs.
+  ?q math:notLessThan 0.
+
+  :QSample :square (?q ?q2).
+  ?q2 math:notLessThan 2.
+}
+=>
+{
+  :sqrt2Cut :seedRight ?q.
+}.
+
+# ---------------------------------------------------------------------------
+# “No maximal element” witness (finite + constructive):
+# For each LEFT seed q, construct a strictly larger q' that is still in LEFT.
+#
+# If q < 0:
+#   q' = q/2 (still negative, hence in cut, and q' > q)
+#
+# If q >= 0 and q^2 < 2:
+#   let t = 2 - q^2   (positive)
+#   let delta = t / (q + 2)
+#   q' = q + delta
+# Then q' > q and (provably) (q')^2 < 2, hence q' is still in the cut.
+# ---------------------------------------------------------------------------
+
+# Successor for negative q
+{
+  :sqrt2Cut :seedLeft ?q.
+  ?q math:lessThan 0.
+
+  ( ?q 2 ) math:quotient ?s.
+  ?q math:lessThan ?s.
+  ?s math:lessThan 0.
+}
+=>
+{
+  :sqrt2Cut :successor ( ?q ?s ).
+  :sqrt2Cut :constructedLeft ?s.
+}.
+
+# Successor for non-negative q (with q^2 < 2)
+{
+  :sqrt2Cut :seedLeft ?q.
+  ?q math:notLessThan 0.
+
+  :QSample :square (?q ?q2).
+  ?q2 math:lessThan 2.
+
+  ( 2 ?q2 ) math:difference ?t.      # t = 2 - q^2
+  ( ?q 2 ) math:sum ?den.            # den = q + 2
+  ( ?t ?den ) math:quotient ?delta.  # delta = t/(q+2)
+  ( ?q ?delta ) math:sum ?s.         # s = q + delta
+  ?q math:lessThan ?s.
+
+  ( ?s ?s ) math:product ?s2.
+  ?s2 math:lessThan 2.
+}
+=>
+{
+  :sqrt2Cut :successor ( ?q ?s ).
+  :sqrt2Cut :constructedLeft ?s.
+}.
+
+# Mark that each seedLeft has a successor (for a “no-max-on-seeds” test)
+{
+  :sqrt2Cut :successor ( ?q ?s ).
+}
+=>
+{
+  :sqrt2Cut :hasSuccessor ?q.
+}.
+
+# ------------------------------------
+# Finite checks (over the sample list)
+# ------------------------------------
+
+# Properness (on the finite sample): at least one left and one right
+{
+  :sqrt2Cut :seedLeft ?x.
+}
+=>
+{
+  :sqrt2Cut :hasLeftWitness true.
+}.
+
+{
+  :sqrt2Cut :seedRight ?x.
+}
+=>
+{
+  :sqrt2Cut :hasRightWitness true.
+}.
+
+{
+  :sqrt2Cut :hasLeftWitness true.
+  :sqrt2Cut :hasRightWitness true.
+}
+=>
+{
+  :sqrt2Cut :properOnSample true.
+}.
+
+# Downward-closed (on the finite sample):
+# For all a,b in sample with a < b:
+#   if b is in LEFT then a is in LEFT
+{
+  :QSample :values ?qs.
+
+  ( { ?a list:in ?qs.
+      ?b list:in ?qs.
+      ?a math:lessThan ?b.
+      :sqrt2Cut :seedLeft ?b.
+    }
+    { :sqrt2Cut :seedLeft ?a. }
+  ) log:forAllIn 1.
+}
+=>
+{
+  :sqrt2Cut :downwardClosedOnSample true.
+}.
+
+# “No maximal element” (on the finite seed set):
+# For all seedLeft q, we derived :hasSuccessor q
+{
+  :QSample :values ?qs.
+
+  ( { ?q list:in ?qs.
+      :sqrt2Cut :seedLeft ?q.
+    }
+    { :sqrt2Cut :hasSuccessor ?q. }
+  ) log:forAllIn 1.
+}
+=>
+{
+  :sqrt2Cut :noMaxElementWitnessedForSeeds true.
+}.
+
+# ----------------------
+# Output (use --strings)
+# ----------------------
+
+# Print each sample q classified as LEFT
+{
+  :sqrt2Cut :seedLeft ?q.
+  :QSample :square (?q ?q2).
+  ( "q=%s  q^2=%s  => LEFT (q<0 OR q^2<2)\n" ?q ?q2 ) string:format ?line.
+}
+=>
+{
+  :sqrt2Cut log:outputString ?line.
+}.
+
+# Print each sample q classified as RIGHT
+{
+  :sqrt2Cut :seedRight ?q.
+  :QSample :square (?q ?q2).
+  ( "q=%s  q^2=%s  => RIGHT (q>=0 AND q^2>=2)\n" ?q ?q2 ) string:format ?line.
+}
+=>
+{
+  :sqrt2Cut log:outputString ?line.
+}.
+
+# Print successors (constructed witnesses for “no maximal element”)
+{
+  :sqrt2Cut :successor ( ?q ?s ).
+  ( ?s ?s ) math:product ?s2.
+  ( "successor: from %s to %s   (s^2=%s)\n" ?q ?s ?s2 ) string:format ?line.
+}
+=>
+{
+  :sqrt2Cut log:outputString ?line.
+}.
+
+# Print summary flags
+{
+  :sqrt2Cut :properOnSample true.
+  ( "Check: cut is proper on the sample (has LEFT and RIGHT witnesses)\n" ) string:format ?m.
+}
+=>
+{
+  :sqrt2Cut log:outputString ?m.
+}.
+
+{
+  :sqrt2Cut :downwardClosedOnSample true.
+  ( "Check: downward-closed on the sample (finite for-all test)\n" ) string:format ?m.
+}
+=>
+{
+  :sqrt2Cut log:outputString ?m.
+}.
+
+{
+  :sqrt2Cut :noMaxElementWitnessedForSeeds true.
+  ( "Check: no maximal element witnessed for all LEFT seed members (constructive successors)\n" ) string:format ?m.
+}
+=>
+{
+  :sqrt2Cut log:outputString ?m.
+}.

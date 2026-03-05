@@ -1,0 +1,57 @@
+@prefix : <http://example.org/reals#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:sqrt2Seq :term (1 "1.5"^^xsd:decimal) .
+:sqrt2Seq :error (0 "1"^^xsd:decimal) .
+:sqrt2Seq :error (1 "0.25"^^xsd:decimal) .
+:sqrt2Seq :delta (1 "0.5"^^xsd:decimal) .
+:sqrt2Seq log:outputString "n=0  x=1.0  delta=seed  err=1\n" .
+:sqrt2Seq log:outputString "n=1  x=1.5  delta=0.5  err=0.25\n" .
+:sqrt2Seq :term (2 "1.4166666666666665"^^xsd:decimal) .
+:sqrt2Seq :error (2 "0.006944444444444198"^^xsd:decimal) .
+:sqrt2Seq :delta (2 "0.08333333333333348"^^xsd:decimal) .
+:sqrt2Seq log:outputString "n=2  x=1.4166666666666665  delta=0.08333333333333348  err=0.006944444444444198\n" .
+:sqrt2Seq :term (3 "1.4142156862745097"^^xsd:decimal) .
+:sqrt2Seq :error (3 "0.000006007304882427178"^^xsd:decimal) .
+:sqrt2Seq :delta (3 "0.002450980392156854"^^xsd:decimal) .
+:sqrt2Seq log:outputString "n=3  x=1.4142156862745097  delta=0.002450980392156854  err=0.000006007304882427178\n" .
+:sqrt2Seq :term (4 "1.4142135623746899"^^xsd:decimal) .
+:sqrt2Seq :error (4 "4.510614104447086e-12"^^xsd:decimal) .
+:sqrt2Seq :delta (4 "0.0000021238998197947723"^^xsd:decimal) .
+:sqrt2Seq :cauchyStep (4 true) .
+:sqrt2Seq log:outputString "n=4  x=1.4142135623746899  delta=0.0000021238998197947723  err=4.510614104447086e-12\n" .
+:sqrt2Seq :term (5 "1.414213562373095"^^xsd:decimal) .
+:sqrt2Seq :error (5 "4.440892098500626e-16"^^xsd:decimal) .
+:sqrt2Seq :delta (5 "1.5949463971764999e-12"^^xsd:decimal) .
+:sqrt2Seq :cauchyStep (5 true) .
+:sqrt2Seq log:outputString "n=5  x=1.414213562373095  delta=1.5949463971764999e-12  err=4.440892098500626e-16\n" .
+:sqrt2Seq :term (6 "1.414213562373095"^^xsd:decimal) .
+:sqrt2Seq :error (6 "4.440892098500626e-16"^^xsd:decimal) .
+:sqrt2Seq :delta (6 "0"^^xsd:decimal) .
+:sqrt2Seq :cauchyStep (6 true) .
+:sqrt2Seq log:outputString "n=6  x=1.414213562373095  delta=0  err=4.440892098500626e-16\n" .
+:sqrt2Seq :term (7 "1.414213562373095"^^xsd:decimal) .
+:sqrt2Seq :error (7 "4.440892098500626e-16"^^xsd:decimal) .
+:sqrt2Seq :delta (7 "0"^^xsd:decimal) .
+:sqrt2Seq :cauchyStep (7 true) .
+:sqrt2Seq log:outputString "n=7  x=1.414213562373095  delta=0  err=4.440892098500626e-16\n" .
+:sqrt2Seq :term (8 "1.414213562373095"^^xsd:decimal) .
+:sqrt2Seq :error (8 "4.440892098500626e-16"^^xsd:decimal) .
+:sqrt2Seq :delta (8 "0"^^xsd:decimal) .
+:sqrt2Seq :cauchyStep (8 true) .
+:sqrt2Seq log:outputString "n=8  x=1.414213562373095  delta=0  err=4.440892098500626e-16\n" .
+:sqrt2Seq :term (9 "1.414213562373095"^^xsd:decimal) .
+:sqrt2Seq :error (9 "4.440892098500626e-16"^^xsd:decimal) .
+:sqrt2Seq :delta (9 "0"^^xsd:decimal) .
+:sqrt2Seq :cauchyStep (9 true) .
+:sqrt2Seq log:outputString "n=9  x=1.414213562373095  delta=0  err=4.440892098500626e-16\n" .
+:sqrt2Seq :term (10 "1.414213562373095"^^xsd:decimal) .
+:sqrt2Seq :error (10 "4.440892098500626e-16"^^xsd:decimal) .
+:sqrt2Seq :delta (10 "0"^^xsd:decimal) .
+:sqrt2Seq :cauchyStep (10 true) .
+:sqrt2Real :approx "1.414213562373095"^^xsd:decimal .
+:sqrt2Seq log:outputString "n=10  x=1.414213562373095  delta=0  err=4.440892098500626e-16\n" .
+:sqrt2Real log:outputString "Approximation (at limit): sqrt2 ≈ 1.414213562373095\n" .
+:sqrt2Seq :boundedCauchyTail true .
+:sqrt2Seq log:outputString "Tail check: for i,j in (4..10), all |x_i - x_j| < 0.0001 (finite check)\n" .

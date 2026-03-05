@@ -1,0 +1,108 @@
+@prefix : <http://example.org/dedekind#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:QSample :square (-2 4) .
+:QSample :square (-1 1) .
+:QSample :square (-0.5 "0.25"^^xsd:decimal) .
+:QSample :square (-0.1 "0.010000000000000002"^^xsd:decimal) .
+:QSample :square (0 0) .
+:QSample :square (0.5 "0.25"^^xsd:decimal) .
+:QSample :square (1 1) .
+:QSample :square (1.3 "1.6900000000000002"^^xsd:decimal) .
+:QSample :square (1.4 "1.9599999999999997"^^xsd:decimal) .
+:QSample :square (1.41 "1.9880999999999998"^^xsd:decimal) .
+:QSample :square (1.414 "1.9993959999999997"^^xsd:decimal) .
+:QSample :square (1.4142 "1.9999616399999998"^^xsd:decimal) .
+:QSample :square (1.4143 "2.0002444899999996"^^xsd:decimal) .
+:QSample :square (1.42 "2.0164"^^xsd:decimal) .
+:QSample :square (1.5 "2.25"^^xsd:decimal) .
+:QSample :square (2 4) .
+:sqrt2Cut :seedLeft -2 .
+:sqrt2Cut :seedLeft -1 .
+:sqrt2Cut :seedLeft -0.5 .
+:sqrt2Cut :seedLeft -0.1 .
+:sqrt2Cut :seedLeft 0 .
+:sqrt2Cut :seedLeft 0.5 .
+:sqrt2Cut :seedLeft 1 .
+:sqrt2Cut :seedLeft 1.3 .
+:sqrt2Cut :seedLeft 1.4 .
+:sqrt2Cut :seedLeft 1.41 .
+:sqrt2Cut :seedLeft 1.414 .
+:sqrt2Cut :seedLeft 1.4142 .
+:sqrt2Cut :seedRight 1.4143 .
+:sqrt2Cut :seedRight 1.42 .
+:sqrt2Cut :seedRight 1.5 .
+:sqrt2Cut :seedRight 2 .
+:sqrt2Cut :successor (-2 -1) .
+:sqrt2Cut :constructedLeft -1 .
+:sqrt2Cut :successor (-1 "-0.5"^^xsd:decimal) .
+:sqrt2Cut :constructedLeft "-0.5"^^xsd:decimal .
+:sqrt2Cut :successor (-0.5 "-0.25"^^xsd:decimal) .
+:sqrt2Cut :constructedLeft "-0.25"^^xsd:decimal .
+:sqrt2Cut :successor (-0.1 "-0.05"^^xsd:decimal) .
+:sqrt2Cut :constructedLeft "-0.05"^^xsd:decimal .
+:sqrt2Cut :successor (0 1) .
+:sqrt2Cut :constructedLeft 1 .
+:sqrt2Cut :successor (0.5 "1.2"^^xsd:decimal) .
+:sqrt2Cut :constructedLeft "1.2"^^xsd:decimal .
+:sqrt2Cut :successor (1 "1.3333333333333333"^^xsd:decimal) .
+:sqrt2Cut :constructedLeft "1.3333333333333333"^^xsd:decimal .
+:sqrt2Cut :successor (1.3 "1.393939393939394"^^xsd:decimal) .
+:sqrt2Cut :constructedLeft "1.393939393939394"^^xsd:decimal .
+:sqrt2Cut :successor (1.4 "1.411764705882353"^^xsd:decimal) .
+:sqrt2Cut :constructedLeft "1.411764705882353"^^xsd:decimal .
+:sqrt2Cut :successor (1.41 "1.4134897360703813"^^xsd:decimal) .
+:sqrt2Cut :constructedLeft "1.4134897360703813"^^xsd:decimal .
+:sqrt2Cut :successor (1.414 "1.4141769185705917"^^xsd:decimal) .
+:sqrt2Cut :constructedLeft "1.4141769185705917"^^xsd:decimal .
+:sqrt2Cut :successor (1.4142 "1.4142112354285044"^^xsd:decimal) .
+:sqrt2Cut :constructedLeft "1.4142112354285044"^^xsd:decimal .
+:sqrt2Cut :hasSuccessor -2 .
+:sqrt2Cut :hasSuccessor -1 .
+:sqrt2Cut :hasSuccessor -0.5 .
+:sqrt2Cut :hasSuccessor -0.1 .
+:sqrt2Cut :hasSuccessor 0 .
+:sqrt2Cut :hasSuccessor 0.5 .
+:sqrt2Cut :hasSuccessor 1 .
+:sqrt2Cut :hasSuccessor 1.3 .
+:sqrt2Cut :hasSuccessor 1.4 .
+:sqrt2Cut :hasSuccessor 1.41 .
+:sqrt2Cut :hasSuccessor 1.414 .
+:sqrt2Cut :hasSuccessor 1.4142 .
+:sqrt2Cut :hasLeftWitness true .
+:sqrt2Cut :hasRightWitness true .
+:sqrt2Cut :properOnSample true .
+:sqrt2Cut log:outputString "q=-2  q^2=4  => LEFT (q<0 OR q^2<2)\n" .
+:sqrt2Cut log:outputString "q=-1  q^2=1  => LEFT (q<0 OR q^2<2)\n" .
+:sqrt2Cut log:outputString "q=-0.5  q^2=0.25  => LEFT (q<0 OR q^2<2)\n" .
+:sqrt2Cut log:outputString "q=-0.1  q^2=0.010000000000000002  => LEFT (q<0 OR q^2<2)\n" .
+:sqrt2Cut log:outputString "q=0  q^2=0  => LEFT (q<0 OR q^2<2)\n" .
+:sqrt2Cut log:outputString "q=0.5  q^2=0.25  => LEFT (q<0 OR q^2<2)\n" .
+:sqrt2Cut log:outputString "q=1  q^2=1  => LEFT (q<0 OR q^2<2)\n" .
+:sqrt2Cut log:outputString "q=1.3  q^2=1.6900000000000002  => LEFT (q<0 OR q^2<2)\n" .
+:sqrt2Cut log:outputString "q=1.4  q^2=1.9599999999999997  => LEFT (q<0 OR q^2<2)\n" .
+:sqrt2Cut log:outputString "q=1.41  q^2=1.9880999999999998  => LEFT (q<0 OR q^2<2)\n" .
+:sqrt2Cut log:outputString "q=1.414  q^2=1.9993959999999997  => LEFT (q<0 OR q^2<2)\n" .
+:sqrt2Cut log:outputString "q=1.4142  q^2=1.9999616399999998  => LEFT (q<0 OR q^2<2)\n" .
+:sqrt2Cut log:outputString "q=1.4143  q^2=2.0002444899999996  => RIGHT (q>=0 AND q^2>=2)\n" .
+:sqrt2Cut log:outputString "q=1.42  q^2=2.0164  => RIGHT (q>=0 AND q^2>=2)\n" .
+:sqrt2Cut log:outputString "q=1.5  q^2=2.25  => RIGHT (q>=0 AND q^2>=2)\n" .
+:sqrt2Cut log:outputString "q=2  q^2=4  => RIGHT (q>=0 AND q^2>=2)\n" .
+:sqrt2Cut log:outputString "successor: from -2 to -1   (s^2=1)\n" .
+:sqrt2Cut log:outputString "successor: from -1 to -0.5   (s^2=0.25)\n" .
+:sqrt2Cut log:outputString "successor: from -0.5 to -0.25   (s^2=0.0625)\n" .
+:sqrt2Cut log:outputString "successor: from -0.1 to -0.05   (s^2=0.0025000000000000005)\n" .
+:sqrt2Cut log:outputString "successor: from 0 to 1   (s^2=1)\n" .
+:sqrt2Cut log:outputString "successor: from 0.5 to 1.2   (s^2=1.44)\n" .
+:sqrt2Cut log:outputString "successor: from 1 to 1.3333333333333333   (s^2=1.7777777777777777)\n" .
+:sqrt2Cut log:outputString "successor: from 1.3 to 1.393939393939394   (s^2=1.9430670339761251)\n" .
+:sqrt2Cut log:outputString "successor: from 1.4 to 1.411764705882353   (s^2=1.9930795847750868)\n" .
+:sqrt2Cut log:outputString "successor: from 1.41 to 1.4134897360703813   (s^2=1.9979532339763162)\n" .
+:sqrt2Cut log:outputString "successor: from 1.414 to 1.4141769185705917   (s^2=1.9998963570178139)\n" .
+:sqrt2Cut log:outputString "successor: from 1.4142 to 1.4142112354285044   (s^2=1.9999934184122166)\n" .
+:sqrt2Cut log:outputString "Check: cut is proper on the sample (has LEFT and RIGHT witnesses)\n" .
+:sqrt2Cut :downwardClosedOnSample true .
+:sqrt2Cut :noMaxElementWitnessedForSeeds true .
+:sqrt2Cut log:outputString "Check: downward-closed on the sample (finite for-all test)\n" .
+:sqrt2Cut log:outputString "Check: no maximal element witnessed for all LEFT seed members (constructive successors)\n" .

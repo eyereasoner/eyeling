@@ -1,0 +1,182 @@
+# ============================================================
+# A "Real" represented by a Cauchy sequence (finite demo):
+#   - we construct terms x_n (as decimals) by Newton iteration
+#   - we compute error(n) = |x_n^2 - 2|
+#   - we compute delta(n) = |x_n - x_{n-1}|
+#   - we mark steps where delta(n) < epsilon
+#   - we (optionally) check bounded-Cauchy on a finite tail
+# ============================================================
+
+@prefix :      <http://example.org/reals#>.
+@prefix math:  <http://www.w3.org/2000/10/swap/math#>.
+@prefix list:  <http://www.w3.org/2000/10/swap/list#>.
+@prefix log:   <http://www.w3.org/2000/10/swap/log#>.
+@prefix string:<http://www.w3.org/2000/10/swap/string#>.
+
+:sqrt2Real a :Real;
+  :representedBy :sqrt2Seq.
+
+:sqrt2Seq a :CauchySequence;
+  :limit 10;          # compute x_0 .. x_10
+  :epsilon 0.0001;    # "Cauchy step" threshold for successive deltas
+  :tailIndices (4 5 6 7 8 9 10).  # tail used for a finite "for all i,j" check
+
+# Seed x_0 = 1.0
+:sqrt2Seq :term (0 1.0).
+
+# ---------------------------------------------------------
+# 1) Generate the sequence terms: x_{n+1} = (x_n + 2/x_n)/2
+# ---------------------------------------------------------
+
+{
+  :sqrt2Seq :term (?n ?x).
+  :sqrt2Seq :limit ?limit.
+  ?n math:lessThan ?limit.
+
+  ( ?n 1 ) math:sum ?n1.
+
+  ( 2 ?x ) math:quotient ?twoOverX.
+  ( ?x ?twoOverX ) math:sum ?sum.
+  ( ?sum 2 ) math:quotient ?x1.
+}
+=>
+{
+  :sqrt2Seq :term (?n1 ?x1).
+}.
+
+# -------------------------
+# 2) error(n) = |x_n^2 - 2|
+# -------------------------
+
+{
+  :sqrt2Seq :term (?n ?x).
+  ( ?x ?x ) math:product ?x2.
+  ( ?x2 2 ) math:difference ?d.
+  ?d math:absoluteValue ?err.
+}
+=>
+{
+  :sqrt2Seq :error (?n ?err).
+}.
+
+# ------------------------------------------
+# 3) delta(n) = |x_n - x_{n-1}|  (for n > 0)
+# ------------------------------------------
+
+{
+  :sqrt2Seq :term (?n ?x).
+  ?n math:greaterThan 0.
+
+  ( ?n 1 ) math:difference ?n0.
+  :sqrt2Seq :term (?n0 ?x0).
+
+  ( ?x ?x0 ) math:difference ?d.
+  ?d math:absoluteValue ?delta.
+}
+=>
+{
+  :sqrt2Seq :delta (?n ?delta).
+}.
+
+# ------------------------------------------
+# 4) Mark "Cauchy steps": delta(n) < epsilon
+# ------------------------------------------
+
+{
+  :sqrt2Seq :delta (?n ?delta).
+  :sqrt2Seq :epsilon ?eps.
+  ?delta math:lessThan ?eps.
+}
+=>
+{
+  :sqrt2Seq :cauchyStep (?n true).
+}.
+
+# -----------------------------------
+# 5) Final approximation at n = limit
+# -----------------------------------
+
+{
+  :sqrt2Seq :limit ?n.
+  :sqrt2Seq :term (?n ?x).
+}
+=>
+{
+  :sqrt2Real :approx ?x.
+}.
+
+# -----------------------------------------------------------
+# 6) (Optional) "bounded Cauchy on a finite tail":
+#    For all i,j in tailIndices: |x_i - x_j| < epsilon
+#
+#    This is NOT the full (infinite) Cauchy definition—just a
+#    finite "for all" check over a chosen tail list.
+# -----------------------------------------------------------
+
+{
+  :sqrt2Seq :tailIndices ?tail.
+  :sqrt2Seq :epsilon ?eps.
+
+  ( { ?i list:in ?tail. ?j list:in ?tail. }
+    { :sqrt2Seq :term (?i ?xi).
+      :sqrt2Seq :term (?j ?xj).
+      ( ?xi ?xj ) math:difference ?d.
+      ?d math:absoluteValue ?ad.
+      ?ad math:lessThan ?eps.
+    }
+  ) log:forAllIn 1.
+}
+=>
+{
+  :sqrt2Seq :boundedCauchyTail true.
+}.
+
+# ----------------------------------------------------------
+# 7) Human-readable output (run Eyeling with -r / --strings)
+# ----------------------------------------------------------
+
+# Print each term (n, x_n, err, delta if available)
+{
+  :sqrt2Seq :term (?n ?x).
+  :sqrt2Seq :error (?n ?err).
+
+  # For n=0, delta is not defined; print a placeholder
+  ?n math:equalTo 0.
+  ( "n=%s  x=%s  delta=seed  err=%s\n" ?n ?x ?err ) string:format ?line.
+}
+=>
+{
+  :sqrt2Seq log:outputString ?line.
+}.
+
+{
+  :sqrt2Seq :term (?n ?x).
+  :sqrt2Seq :error (?n ?err).
+  :sqrt2Seq :delta (?n ?delta).
+  ?n math:greaterThan 0.
+  ( "n=%s  x=%s  delta=%s  err=%s\n" ?n ?x ?delta ?err ) string:format ?line.
+}
+=>
+{
+  :sqrt2Seq log:outputString ?line.
+}.
+
+# Print the final approximation and the bounded-tail result (if derived)
+{
+  :sqrt2Real :approx ?x.
+  ( "Approximation (at limit): sqrt2 ≈ %s\n" ?x ) string:format ?msg.
+}
+=>
+{
+  :sqrt2Real log:outputString ?msg.
+}.
+
+{
+  :sqrt2Seq :boundedCauchyTail true.
+  :sqrt2Seq :epsilon ?eps.
+  ( "Tail check: for i,j in (4..10), all |x_i - x_j| < %s (finite check)\n" ?eps ) string:format ?msg.
+}
+=>
+{
+  :sqrt2Seq log:outputString ?msg.
+}.
