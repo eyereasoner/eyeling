@@ -8,87 +8,87 @@
 :report :family :LiouvilleNumbers .
 :report :family :LWExpNumbers .
 :report :member [
-  :family :EllipticPeriodConstants;
+  :family :EllipticPeriodConstants ;
   :x :lemniscateConstant
 ] .
 :report :member [
-  :family :AllTranscendentals;
+  :family :AllTranscendentals ;
   :x :liouvillesConstant
 ] .
 :report :member [
-  :family :AllTranscendentals;
+  :family :AllTranscendentals ;
   :x :kempnerNumber
 ] .
 :report :member [
-  :family :AllTranscendentals;
+  :family :AllTranscendentals ;
   :x :champernowneC10
 ] .
 :report :member [
-  :family :AllTranscendentals;
+  :family :AllTranscendentals ;
   :x :lemniscateConstant
 ] .
 :report :member [
-  :family :AlgorithmicRandomNumbers;
+  :family :AlgorithmicRandomNumbers ;
   :x :chaitinsOmega
 ] .
 :report :member [
-  :family :LWExpNumbers;
+  :family :LWExpNumbers ;
   :x :exp_sqrt2
 ] .
 :report :member [
-  :family :GelfondSchneiderNumbers;
+  :family :GelfondSchneiderNumbers ;
   :x :pow_2_sqrt2
 ] .
 :report :member [
-  :family :GelfondSchneiderNumbers;
+  :family :GelfondSchneiderNumbers ;
   :x :pow_minus1_minusi
 ] .
 :report :member [
-  :family :GelfondSchneiderNumbers;
+  :family :GelfondSchneiderNumbers ;
   :x :gelfondsConstant
 ] .
 :report :member [
-  :family :AllTranscendentals;
+  :family :AllTranscendentals ;
   :x :e
 ] .
 :report :member [
-  :family :AllTranscendentals;
+  :family :AllTranscendentals ;
   :x :pi
 ] .
 :report :member [
-  :family :AllTranscendentals;
+  :family :AllTranscendentals ;
   :x :chaitinsOmega
 ] .
 :report :member [
-  :family :AllTranscendentals;
+  :family :AllTranscendentals ;
   :x :exp_sqrt2
 ] .
 :report :member [
-  :family :AllTranscendentals;
+  :family :AllTranscendentals ;
   :x :pow_2_sqrt2
 ] .
 :report :member [
-  :family :AllTranscendentals;
+  :family :AllTranscendentals ;
   :x :pow_minus1_minusi
 ] .
 :report :member [
-  :family :AllTranscendentals;
+  :family :AllTranscendentals ;
   :x :gelfondsConstant
 ] .
 :report :member [
-  :family :LiouvilleNumbers;
+  :family :LiouvilleNumbers ;
   :x :liouvillesConstant
 ] .
 :report :member [
-  :family :DigitExpansionTranscendentals;
+  :family :DigitExpansionTranscendentals ;
   :x :liouvillesConstant
 ] .
 :report :member [
-  :family :DigitExpansionTranscendentals;
+  :family :DigitExpansionTranscendentals ;
   :x :kempnerNumber
 ] .
 :report :member [
-  :family :DigitExpansionTranscendentals;
+  :family :DigitExpansionTranscendentals ;
   :x :champernowneC10
 ] .
 :report :namedTranscendental :chaitinsOmega .
@@ -136,27 +136,27 @@
     :pow_minus1_minusi :provedBy :GelfondSchneider .
 } .
 :report :subFamily [
-  :child :LWExpNumbers;
+  :child :LWExpNumbers ;
   :parent :AllTranscendentals
 ] .
 :report :subFamily [
-  :child :GelfondSchneiderNumbers;
+  :child :GelfondSchneiderNumbers ;
   :parent :AllTranscendentals
 ] .
 :report :subFamily [
-  :child :LiouvilleNumbers;
+  :child :LiouvilleNumbers ;
   :parent :AllTranscendentals
 ] .
 :report :subFamily [
-  :child :DigitExpansionTranscendentals;
+  :child :DigitExpansionTranscendentals ;
   :parent :AllTranscendentals
 ] .
 :report :subFamily [
-  :child :AlgorithmicRandomNumbers;
+  :child :AlgorithmicRandomNumbers ;
   :parent :AllTranscendentals
 ] .
 :report :subFamily [
-  :child :EllipticPeriodConstants;
+  :child :EllipticPeriodConstants ;
   :parent :AllTranscendentals
 ] .
 :report :unknown :aperyZeta3 .

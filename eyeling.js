@@ -9724,6 +9724,28 @@ function termToN3(t, pref) {
   return JSON.stringify(t);
 }
 
+// Query-mode variant: pretty-print blank nodes *inside* graph terms, too.
+// This is intentionally used only by prettyPrintQueryTriples (i.e., log:query output
+// when proof comments are disabled). It should not affect normal closure/proof output.
+function termToN3Query(t, pref) {
+  if (t instanceof GraphTerm) {
+    const indent = '    ';
+    const indentBlock = (str) =>
+      str
+        .split(/\r?\n/)
+        .map((ln) => (ln.length ? indent + ln : ln))
+        .join('\n');
+
+    let s = '{\n';
+    const inner = prettyPrintQueryTriples(t.triples, pref);
+    if (inner.trim().length) s += indentBlock(inner.trimEnd()) + '\n';
+    s += '}';
+    return s;
+  }
+  // Everything else delegates to the normal printer.
+  return termToN3(t, pref);
+}
+
 function tripleToN3(tr, prefixes) {
   // log:implies / log:impliedBy as => / <= syntactic sugar everywhere
   if (isLogImplies(tr.p)) {
@@ -9742,6 +9764,26 @@ function tripleToN3(tr, prefixes) {
   const p = isRdfTypePred(tr.p) ? 'a' : isOwlSameAsPred(tr.p) ? '=' : termToN3(tr.p, prefixes);
   const o = termToN3(tr.o, prefixes);
 
+  return `${s} ${p} ${o} .`;
+}
+
+// Query-mode variant: uses termToN3Query so graph terms get pretty-printed too.
+function tripleToN3Query(tr, prefixes) {
+  if (isLogImplies(tr.p)) {
+    const s = termToN3Query(tr.s, prefixes);
+    const o = termToN3Query(tr.o, prefixes);
+    return `${s} => ${o} .`;
+  }
+
+  if (isLogImpliedBy(tr.p)) {
+    const s = termToN3Query(tr.s, prefixes);
+    const o = termToN3Query(tr.o, prefixes);
+    return `${s} <= ${o} .`;
+  }
+
+  const s = termToN3Query(tr.s, prefixes);
+  const p = isRdfTypePred(tr.p) ? 'a' : isOwlSameAsPred(tr.p) ? '=' : termToN3Query(tr.p, prefixes);
+  const o = termToN3Query(tr.o, prefixes);
   return `${s} ${p} ${o} .`;
 }
 
@@ -9828,7 +9870,7 @@ function prettyPrintQueryTriples(triples, prefixes) {
     const groups = Array.from(m.values());
     groups.sort((a, b) => a.predStr.localeCompare(b.predStr));
     for (const g of groups) {
-      g.objs.sort((x, y) => termToN3(x, prefixes).localeCompare(termToN3(y, prefixes)));
+      g.objs.sort((x, y) => termToN3Query(x, prefixes).localeCompare(termToN3Query(y, prefixes)));
     }
     return groups;
   }
@@ -9853,15 +9895,15 @@ function prettyPrintQueryTriples(triples, prefixes) {
 
           lines.push(`${indent}${g.predStr} [`);
           lines.push(...renderBNodePredicateObjects(childId, level + 1, visiting));
-          lines.push(`${indent}]${isLastPred ? '' : ';'}`);
+          lines.push(`${indent}]${isLastPred ? '' : ' ;'}`);
 
           visiting.delete(childId);
           continue;
         }
       }
 
-      const objs = g.objs.map((o) => termToN3(o, prefixes)).join(', ');
-      lines.push(`${indent}${g.predStr} ${objs}${isLastPred ? '' : ';'}`);
+      const objs = g.objs.map((o) => termToN3Query(o, prefixes)).join(', ');
+      lines.push(`${indent}${g.predStr} ${objs}${isLastPred ? '' : ' ;'}`);
     }
 
     return lines;
@@ -9877,11 +9919,10 @@ function prettyPrintQueryTriples(triples, prefixes) {
 
   function renderInlineBNodeObjectTriple(tr, bid) {
     // Render: S P [ ... ] .   (multi-line)
-    const s = termToN3(tr.s, prefixes);
+    const s = termToN3Query(tr.s, prefixes);
 
     // Respect => / <= sugar for log:* if it ever appears here.
-    if (isLogImplies(tr.p)) return tripleToN3(tr, prefixes);
-    if (isLogImpliedBy(tr.p)) return tripleToN3(tr, prefixes);
+    if (isLogImplies(tr.p) || isLogImpliedBy(tr.p)) return tripleToN3Query(tr, prefixes);
 
     const p = predToN3(tr.p, prefixes);
 
@@ -9916,7 +9957,7 @@ function prettyPrintQueryTriples(triples, prefixes) {
   }
 
   // Deterministic order: sort by the fallback single-line serialization.
-  remaining.sort((a, b) => tripleToN3(a, prefixes).localeCompare(tripleToN3(b, prefixes)));
+  remaining.sort((a, b) => tripleToN3Query(a, prefixes).localeCompare(tripleToN3Query(b, prefixes)));
 
   for (const tr of remaining) {
     // Inline blank node *objects* when the bnode is defined and referenced exactly once.
@@ -9928,7 +9969,7 @@ function prettyPrintQueryTriples(triples, prefixes) {
         continue;
       }
     }
-    blocks.push(tripleToN3(tr, prefixes));
+    blocks.push(tripleToN3Query(tr, prefixes));
   }
 
   return blocks.join('\n');

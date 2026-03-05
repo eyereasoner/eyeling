@@ -3,8 +3,8 @@
 
 _:sk_6 a ex:Person .
 _:sk_6 ex:hasSupervisor [
-  a ex:Person;
-  ex:role "Supervisor";
+  a ex:Person ;
+  ex:role "Supervisor" ;
   ex:supervises _:sk_6
 ] .
 _:sk_6 ex:role "AutoManager" .
@@ -19,13 +19,13 @@ ex:Alice ex:memberOf ex:OrgX .
 ex:Alice ex:memberOf ex:TeamA .
 ex:Alice ex:parent ex:Bob .
 ex:Alice ex:reason [
-  a ex:Reason;
-  ex:because "memberOf(org) & ownedBy(org)";
+  a ex:Reason ;
+  ex:because "memberOf(org) & ownedBy(org)" ;
   ex:for ex:Proj1
 ] .
 ex:Alice ex:reason [
-  a ex:Reason;
-  ex:because "memberOf(org) & ownedBy(org)";
+  a ex:Reason ;
+  ex:because "memberOf(org) & ownedBy(org)" ;
   ex:for ex:Proj2
 ] .
 ex:Bob a ex:Adult .
@@ -35,21 +35,21 @@ ex:Bob ex:ancestor ex:Carol .
 ex:Bob ex:canRead ex:Proj1 .
 ex:Bob ex:canRead ex:Proj2 .
 ex:Bob ex:hasSupervisor [
-  a ex:Person;
-  ex:role "Supervisor";
+  a ex:Person ;
+  ex:role "Supervisor" ;
   ex:supervises ex:Bob
 ] .
 ex:Bob ex:memberOf ex:OrgX .
 ex:Bob ex:memberOf ex:TeamA .
 ex:Bob ex:parent ex:Carol .
 ex:Bob ex:reason [
-  a ex:Reason;
-  ex:because "memberOf(org) & ownedBy(org)";
+  a ex:Reason ;
+  ex:because "memberOf(org) & ownedBy(org)" ;
   ex:for ex:Proj1
 ] .
 ex:Bob ex:reason [
-  a ex:Reason;
-  ex:because "memberOf(org) & ownedBy(org)";
+  a ex:Reason ;
+  ex:because "memberOf(org) & ownedBy(org)" ;
   ex:for ex:Proj2
 ] .
 ex:Carol a ex:Adult .
@@ -59,13 +59,13 @@ ex:Carol ex:canRead ex:Proj1 .
 ex:Carol ex:canRead ex:Proj2 .
 ex:Carol ex:memberOf ex:OrgX .
 ex:Carol ex:reason [
-  a ex:Reason;
-  ex:because "memberOf(org) & ownedBy(org)";
+  a ex:Reason ;
+  ex:because "memberOf(org) & ownedBy(org)" ;
   ex:for ex:Proj1
 ] .
 ex:Carol ex:reason [
-  a ex:Reason;
-  ex:because "memberOf(org) & ownedBy(org)";
+  a ex:Reason ;
+  ex:because "memberOf(org) & ownedBy(org)" ;
   ex:for ex:Proj2
 ] .
 ex:OrgX a ex:Org .

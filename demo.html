@@ -592,8 +592,8 @@
           });
         } catch (_) {}
 
-        const EYELING_JS_URL = 'https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/eyeling.js';
-        const EYELING_PKG_URL = 'https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/package.json';
+        const EYELING_JS_URL = new URL('eyeling.js', window.location.href).toString();
+        const EYELING_PKG_URL = new URL('package.json', window.location.href).toString();
 
         let eyelingVersion = 'unknown';
         let versionPromise = null;
@@ -1923,11 +1923,6 @@ const batch = [];
               outputEl.setValue(resultText || '(no output)');
               autoResizeCodeMirror(outputEl, 80, mh.output);
 
-              // If the run returned a syntax error message, highlight the offending line in the input editor.
-              try {
-                highlightErrorFromOutput(resultText);
-              } catch (_) {}
-
               statusEl.textContent = 'Done (-r/--strings). (' + (Math.max(0, durationMs) / 1000).toFixed(2) + 's)';
             } catch (e) {
               const mh = currentMaxHeights();
@@ -1942,81 +1937,80 @@ const batch = [];
             return;
           }
 
-          // --- log:query mode ---
-          // People typically expect log:query output to be a compact, pretty Turtle block
-          // (e.g., blank node property lists). That format is produced by the CLI output.
-          // The streaming engine emits individual instantiated triples, which can look
-          // noisy (skolem triples). So, when we detect log:query *and* proof comments are
-          // OFF, we run the same CLI output path (in a worker when possible) and display
-          // the final result (non-streaming), matching the command-line tool.
-          const programText = editor.getValue();
-          const isLogQuery = /(^|[^A-Za-z0-9_:-])log:query([^A-Za-z0-9_:-]|$)/m.test(programText);
-          if (isLogQuery && !proofCheckbox.checked) {
-            // Cancel any prior streaming run.
-            try {
-              if (activePlayCancel) activePlayCancel();
-            } catch (_) {}
-            activePlayCancel = null;
-            activePlayAppender = null;
-            setPlayPaused(false);
-            playPausedBuffer = [];
-            enablePlayControls(false);
+          // log:query mode: use the CLI runner (non-streaming) when proof comments are OFF.
+          // Streaming emits skolemized triples; the CLI output is the canonical pretty-printed form.
+          {
+            const programText = editor.getValue();
+            const isLogQuery = /log:query/.test(programText) || /swap\/log#query/.test(programText);
 
-            clearErrorHighlight();
+            if (isLogQuery && !proofCheckbox.checked) {
+              // Cancel any prior streaming run.
+              try {
+                if (activePlayCancel) activePlayCancel();
+              } catch (_) {}
+              activePlayCancel = null;
+              activePlayAppender = null;
+              setPlayPaused(false);
+              playPausedBuffer = [];
+              enablePlayControls(false);
 
-            runBtn.disabled = true;
-            statusEl.textContent = 'Reasoning (log:query)…';
+              clearErrorHighlight();
 
-            // Clear output immediately.
-            {
-              const mh = currentMaxHeights();
-              outputEl.setValue('');
-              autoResizeCodeMirror(outputEl, 80, mh.output);
-            }
+              runBtn.disabled = true;
+              statusEl.textContent = 'Reasoning (log:query)…';
 
-            if (hashSyncEnabled) updateShareUrl();
-            await new Promise(requestAnimationFrame);
-
-            try {
-              const workerRunner = await getEyelingWorkerRunner();
-              let resultText = '';
-              let durationMs = 0;
-
-              if (workerRunner) {
-                const r = await workerRunner.run(programText, {
-                  proof: false,
-                  enforceHttps: enforceHttpsCheckbox.checked,
-                  strings: false,
-                });
-                resultText = r && typeof r.result === 'string' ? r.result : '';
-                durationMs = r && typeof r.durationMs === 'number' ? r.durationMs : 0;
-              } else {
-                const runOnce = await getEyelingRunner();
-                const t0 = performance.now();
-                resultText = String(runOnce(programText) || '');
-                durationMs = Math.max(0, performance.now() - t0);
+              // Clear output immediately.
+              {
+                const mh = currentMaxHeights();
+                outputEl.setValue('');
+                autoResizeCodeMirror(outputEl, 80, mh.output);
               }
 
-              const mh = currentMaxHeights();
-              outputEl.setValue(resultText || '(no output)');
-              autoResizeCodeMirror(outputEl, 80, mh.output);
+              if (hashSyncEnabled) updateShareUrl();
 
-              // If the run returned a syntax error message, highlight the offending line in the input editor.
+              // Let the browser paint before we start.
+              await new Promise(requestAnimationFrame);
+
               try {
-                highlightErrorFromOutput(resultText);
-              } catch (_) {}
-              statusEl.textContent = 'Done (log:query). (' + (Math.max(0, durationMs) / 1000).toFixed(2) + 's)';
-            } catch (e) {
-              const mh = currentMaxHeights();
-              const msg = e && e.message ? e.message : String(e);
-              outputEl.setValue('Reasoning error: ' + msg);
-              autoResizeCodeMirror(outputEl, 80, mh.output);
-              statusEl.textContent = 'Error.';
-              highlightErrorFromOutput('Reasoning error: ' + msg);
-            } finally {
-              runBtn.disabled = false;
+                const workerRunner = await getEyelingWorkerRunner();
+                let resultText = '';
+                let durationMs = 0;
+
+                if (workerRunner) {
+                  const r = await workerRunner.run(programText, {
+                    proof: false,
+                    enforceHttps: enforceHttpsCheckbox.checked,
+                    strings: false,
+                  });
+                  resultText = r && typeof r.result === 'string' ? r.result : '';
+                  durationMs = r && typeof r.durationMs === 'number' ? r.durationMs : 0;
+                } else {
+                  const runOnce = await getEyelingRunner();
+                  const t0 = performance.now();
+                  resultText = String(runOnce(programText) || '');
+                  durationMs = Math.max(0, performance.now() - t0);
+                }
+
+                const mh = currentMaxHeights();
+                outputEl.setValue(resultText || '(no output)');
+                autoResizeCodeMirror(outputEl, 80, mh.output);
+
+                statusEl.textContent = 'Done (log:query). (' + (Math.max(0, durationMs) / 1000).toFixed(2) + 's)';
+
+                // Highlight syntax errors back in the program editor (red line background)
+                highlightErrorFromOutput(resultText || '');
+              } catch (e) {
+                const mh = currentMaxHeights();
+                const msg = e && e.message ? e.message : String(e);
+                outputEl.setValue('Reasoning error: ' + msg);
+                autoResizeCodeMirror(outputEl, 80, mh.output);
+                statusEl.textContent = 'Error.';
+                highlightErrorFromOutput('Reasoning error: ' + msg);
+              } finally {
+                runBtn.disabled = false;
+              }
+              return;
             }
-            return;
           }
 
           runBtn.disabled = true;
