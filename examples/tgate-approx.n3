@@ -1,0 +1,276 @@
+# ==========================================================================================
+# Quantum gate approximation (Kronecker-friendly): the T gate via integer-certified bounds
+#
+# Philosophy:
+#   We do not treat complex amplitudes as primitive “completed” reals. Instead, a gate entry
+#   is represented by finite *certificates*: rational/interval data derived from integer
+#   computations, with explicit error bounds.
+#
+# Target gate:
+#   T = [[1, 0],
+#        [0, exp(i*pi/4)]]
+#   where exp(i*pi/4) = cos(pi/4) + i sin(pi/4) = (1/sqrt2) + i(1/sqrt2).
+#
+# Method:
+#   1) Compute sqrt2 bounds using *exact dyadic bisection* in integer arithmetic:
+#        interval_n = [l_n/2^n, u_n/2^n]
+#      with update decision based on comparing midpoint^2 with 2 using integers only.
+#   2) Invert the positive interval to bound 1/sqrt2:
+#        if sqrt2 ∈ [L,U] then 1/sqrt2 ∈ [1/U, 1/L]
+#      (here done as dyadic-derived rationals denom/u and denom/l).
+#   3) Build the complex rectangle for exp(i*pi/4):
+#        Re ∈ [sL,sU], Im ∈ [sL,sU]
+#   4) Unitarity sanity check for the phase (|w|=1):
+#        |w|^2 = Re^2 + Im^2 = 2*s^2
+#      We compute bounds for |w|^2 and *certify* that 1 lies inside via integer
+#      cross-multiplication (no floating assumptions).
+#   5) Approximation error for a *chosen point*:
+#        choose midpoint phase w~ = m + i m (m midpoint of s interval)
+#        then |w - w~| <= (sU - sL)  (L1 bound, avoids sqrt)
+#      For diagonal T, operator-norm distance to ideal T is |w - w~|.
+#
+# Output discipline (Gödel-ish):
+#   log:query projects only the intended results (intervals / midpoints / certificates).
+# ==========================================================================================
+
+@prefix :      <http://example.org/kronecker-qc#>.
+@prefix math:  <http://www.w3.org/2000/10/swap/math#>.
+@prefix log:   <http://www.w3.org/2000/10/swap/log#>.
+
+# ----------
+# Parameters
+# ----------
+
+:sqrt2Proc a :DyadicBisection ;
+  :maxN 20.
+
+:TGate a :SingleQubitGate ;
+  :name "T" ;
+  :usesPhase :phasePiOver4.
+
+:phasePiOver4 a :ComplexPhase ; :definedAs "1/sqrt2 + i*(1/sqrt2)".
+
+# -----------------------------------------------------------
+# 1) Dyadic bisection for sqrt(2) with integers only
+#
+# State is :state (n l u) meaning interval_n = [l/2^n, u/2^n]
+# -----------------------------------------------------------
+
+# Base: sqrt(2) ∈ [1,2]
+:sqrt2Proc :state (0 1 2).
+
+# midpoint = (l+u)/2^(n+1), compare midpoint^2 < 2 using integers:
+#   midpoint^2 < 2  <=>  (l+u)^2 < 2^(2n+3)
+#
+# If true -> new [mid, U]  => (n+1, midNum, 2u)
+# Else    -> new [L, mid]  => (n+1, 2l, midNum)
+
+# Case A: midpoint^2 < 2
+{
+  :sqrt2Proc :state (?n ?l ?u).
+  :sqrt2Proc :maxN ?maxN.
+  ?n math:lessThan ?maxN.
+
+  ( ?n 1 ) math:sum ?n1.
+  ( ?l ?u ) math:sum ?midNum.
+  ( ?midNum ?midNum ) math:product ?midSq.
+
+  ( ?n 2 ) math:product ?twoN.
+  ( ?twoN 3 ) math:sum ?exp.                 # exp = 2n + 3
+  ( 2 ?exp ) math:exponentiation ?pow.        # pow = 2^(2n+3)
+
+  ?midSq math:lessThan ?pow.
+
+  ( 2 ?u ) math:product ?uScaled.
+}
+=>
+{
+  :sqrt2Proc :state (?n1 ?midNum ?uScaled).
+}.
+
+# Case B: midpoint^2 >= 2
+{
+  :sqrt2Proc :state (?n ?l ?u).
+  :sqrt2Proc :maxN ?maxN.
+  ?n math:lessThan ?maxN.
+
+  ( ?n 1 ) math:sum ?n1.
+  ( ?l ?u ) math:sum ?midNum.
+  ( ?midNum ?midNum ) math:product ?midSq.
+
+  ( ?n 2 ) math:product ?twoN.
+  ( ?twoN 3 ) math:sum ?exp.
+  ( 2 ?exp ) math:exponentiation ?pow.
+
+  ?midSq math:notLessThan ?pow.
+
+  ( 2 ?l ) math:product ?lScaled.
+}
+=>
+{
+  :sqrt2Proc :state (?n1 ?lScaled ?midNum).
+}.
+
+# ---------------------------------------------------------------
+# 2) Derive readable numeric bounds for sqrt2 and for s = 1/sqrt2
+# ---------------------------------------------------------------
+
+# denom = 2^n, endpoints L = l/denom, U = u/denom
+{
+  :sqrt2Proc :state (?n ?l ?u).
+  ( 2 ?n ) math:exponentiation ?denom.
+
+  ( ?l ?denom ) math:quotient ?L.
+  ( ?u ?denom ) math:quotient ?U.
+}
+=>
+{
+  :sqrt2Proc :dyadic (?n ?l ?u ?denom).
+  :sqrt2Proc :bounds (?n ?L ?U).
+}.
+
+# Invert: sqrt2 in [l/denom, u/denom] => 1/sqrt2 in [denom/u, denom/l]
+{
+  :sqrt2Proc :dyadic (?n ?l ?u ?denom).
+  ( ?denom ?u ) math:quotient ?invL.
+  ( ?denom ?l ) math:quotient ?invU.
+}
+=>
+{
+  :sqrt2Proc :invBounds (?n ?invL ?invU).
+  :phasePiOver4 :sBounds (?n ?invL ?invU).      # s = 1/sqrt2 bounds
+}.
+
+# --------------------------------------------------------
+# 3) Build the complex rectangle for exp(i*pi/4) = s + i s
+# --------------------------------------------------------
+
+{
+  :phasePiOver4 :sBounds (?n ?sL ?sU).
+}
+=>
+{
+  :phasePiOver4 :complexRect (?n ?sL ?sU ?sL ?sU). # (reL reU imL imU)
+
+  :TGate :entry ( ?n 0 0 1.0 1.0 0.0 0.0 ).
+  :TGate :entry ( ?n 0 1 0.0 0.0 0.0 0.0 ).
+  :TGate :entry ( ?n 1 0 0.0 0.0 0.0 0.0 ).
+  :TGate :entry ( ?n 1 1 ?sL ?sU ?sL ?sU ).
+}.
+
+# --------------------------------------------------------------
+# 4) Certify |w|^2 contains 1 using integer inequalities (exact)
+#
+# w = s + i s, so |w|^2 = 2*s^2
+# With s in [denom/u, denom/l]:
+#   lower = 2*(denom^2)/(u^2)
+#   upper = 2*(denom^2)/(l^2)
+#
+# Check lower <= 1 <= upper via:
+#   2*denom^2 <= u^2   and   2*denom^2 >= l^2
+# --------------------------------------------------------------
+
+{
+  :sqrt2Proc :dyadic (?n ?l ?u ?denom).
+
+  ( ?denom ?denom ) math:product ?denom2.
+  ( 2 ?denom2 ) math:product ?modNum.      # 2*denom^2
+
+  ( ?l ?l ) math:product ?l2.
+  ( ?u ?u ) math:product ?u2.
+
+  ?modNum math:notGreaterThan ?u2.         # lower <= 1
+  ?modNum math:notLessThan ?l2.            # upper >= 1
+
+  ( ?modNum ?u2 ) math:quotient ?modL.
+  ( ?modNum ?l2 ) math:quotient ?modU.
+  ( ?modU ?modL ) math:difference ?modW.
+}
+=>
+{
+  :phasePiOver4 :modSqBounds (?n ?modL ?modU).
+  :phasePiOver4 :modSqWidth  (?n ?modW).
+  :phasePiOver4 :modSqContains1 (?n true).
+}.
+
+# ------------------------------------------------------------------------------
+# 5) Midpoint approximation + certified error bounds for the phase
+#
+# Let s ∈ [sL,sU], choose m = (sL+sU)/2 and w~ = m + i m.
+# Componentwise: |Re(w)-m| <= (sU-sL)/2, same for Im.
+# Hence: |w - w~| <= |Re-m| + |Im-m| <= (sU-sL).  (L1 bound)
+#
+# For the diagonal T gate, operator norm distance to the ideal gate is |w - w~|.
+# ------------------------------------------------------------------------------
+
+{
+  :phasePiOver4 :sBounds (?n ?sL ?sU).
+
+  ( ?sU ?sL ) math:difference ?sW.
+  ( ?sW 2 ) math:quotient ?compErr.
+
+  ( ?sL ?sU ) math:sum ?sSum.
+  ( ?sSum 2 ) math:quotient ?m.
+}
+=>
+{
+  :phasePiOver4 :sWidth (?n ?sW).
+  :phasePiOver4 :componentErrBound (?n ?compErr).
+  :phasePiOver4 :phaseMidpoint (?n ?m).
+
+  :phasePiOver4 :absErrBoundL1 (?n ?sW).
+  :TGate :opNormErrBoundMidpoint (?n ?sW).
+}.
+
+# -------------------------------
+# 6) Output selection (log:query)
+# -------------------------------
+
+{
+  :sqrt2Proc :dyadic (?n ?l ?u ?denom).
+  :sqrt2Proc :bounds (?n ?L ?U).
+
+  :phasePiOver4 :sBounds (?n ?sL ?sU).
+  :phasePiOver4 :sWidth (?n ?sW).
+  :phasePiOver4 :componentErrBound (?n ?cE).
+  :phasePiOver4 :phaseMidpoint (?n ?m).
+
+  :phasePiOver4 :modSqBounds (?n ?mL ?mU).
+  :phasePiOver4 :modSqWidth  (?n ?mW).
+
+  :TGate :opNormErrBoundMidpoint (?n ?opE).
+}
+log:query
+{
+  :result :n ?n.
+
+  :result :sqrt2Dyadic (?n ?l ?u ?denom).
+  :result :sqrt2Bounds (?n ?L ?U).
+
+  :result :sBounds     (?n ?sL ?sU).
+  :result :sWidth      (?n ?sW).
+  :result :phaseMid    (?n ?m ?m).                 # chosen point: re=im=m
+  :result :phaseCompErrBound (?n ?cE).             # |Re-m|,|Im-m| <= cE
+  :result :phaseAbsErrBoundL1 (?n ?sW).            # |w-w~| <= sW  (conservative)
+
+  :result :gateOpNormErrBound (?n ?opE).           # ||T - T~||_op <= opE
+
+  :result :modSqBounds (?n ?mL ?mU).
+  :result :modSqWidth  (?n ?mW).
+}.
+
+{
+  :phasePiOver4 :modSqContains1 (?n true).
+}
+log:query
+{
+  :result :modSqContains1 (?n true).
+}.
+
+{
+  :TGate :entry (?n ?r ?c ?reL ?reU ?imL ?imU).
+}
+log:query
+{
+  :result :TEntry (?n ?r ?c ?reL ?reU ?imL ?imU).
+}.

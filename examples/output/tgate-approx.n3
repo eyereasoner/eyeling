@@ -1,0 +1,339 @@
+@prefix : <http://example.org/kronecker-qc#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:result :gateOpNormErrBound (0 "0.5"^^xsd:decimal) .
+:result :gateOpNormErrBound (1 "0.33333333333333337"^^xsd:decimal) .
+:result :gateOpNormErrBound (10 "0.00048804853032569095"^^xsd:decimal) .
+:result :gateOpNormErrBound (11 "0.0002441084985992381"^^xsd:decimal) .
+:result :gateOpNormErrBound (12 "0.0001220753185641188"^^xsd:decimal) .
+:result :gateOpNormErrBound (13 "0.00006103239060195609"^^xsd:decimal) .
+:result :gateOpNormErrBound (14 "0.00003051751230043198"^^xsd:decimal) .
+:result :gateOpNormErrBound (15 "0.00001525908542143739"^^xsd:decimal) .
+:result :gateOpNormErrBound (16 "0.000007629460390234932"^^xsd:decimal) .
+:result :gateOpNormErrBound (17 "0.000003814709615412859"^^xsd:decimal) .
+:result :gateOpNormErrBound (18 "0.0000019073496627664"^^xsd:decimal) .
+:result :gateOpNormErrBound (19 "9.536735451343148e-7"^^xsd:decimal) .
+:result :gateOpNormErrBound (2 "0.13333333333333341"^^xsd:decimal) .
+:result :gateOpNormErrBound (20 "4.768370941432565e-7"^^xsd:decimal) .
+:result :gateOpNormErrBound (3 "0.06060606060606066"^^xsd:decimal) .
+:result :gateOpNormErrBound (4 "0.031620553359683834"^^xsd:decimal) .
+:result :gateOpNormErrBound (5 "0.01545893719806768"^^xsd:decimal) .
+:result :gateOpNormErrBound (6 "0.007814407814407787"^^xsd:decimal) .
+:result :gateOpNormErrBound (7 "0.0038856171452855692"^^xsd:decimal) .
+:result :gateOpNormErrBound (8 "0.0019481606623745762"^^xsd:decimal) .
+:result :gateOpNormErrBound (9 "0.0009754238902648371"^^xsd:decimal) .
+:result :modSqBounds (0 "0.5"^^xsd:decimal 2) .
+:result :modSqBounds (1 "0.8888888888888888"^^xsd:decimal 2) .
+:result :modSqBounds (10 "0.9988335879055116"^^xsd:decimal "1.0002136686914318"^^xsd:decimal) .
+:result :modSqBounds (11 "0.999523271011434"^^xsd:decimal "1.0002136686914318"^^xsd:decimal) .
+:result :modSqBounds (12 "0.9998683804679952"^^xsd:decimal "1.0002136686914318"^^xsd:decimal) .
+:result :modSqBounds (13 "0.9998683804679952"^^xsd:decimal "1.0000410022261386"^^xsd:decimal) .
+:result :modSqBounds (14 "0.9999546857596378"^^xsd:decimal "1.0000410022261386"^^xsd:decimal) .
+:result :modSqBounds (15 "0.9999978425959103"^^xsd:decimal "1.0000410022261386"^^xsd:decimal) .
+:result :modSqBounds (16 "0.9999978425959103"^^xsd:decimal "1.0000194220617649"^^xsd:decimal) .
+:result :modSqBounds (17 "0.9999978425959103"^^xsd:decimal "1.0000086322415247"^^xsd:decimal) .
+:result :modSqBounds (18 "0.9999978425959103"^^xsd:decimal "1.0000032373968895"^^xsd:decimal) .
+:result :modSqBounds (19 "0.9999978425959103"^^xsd:decimal "1.0000005399909428"^^xsd:decimal) .
+:result :modSqBounds (2 "0.8888888888888888"^^xsd:decimal "1.28"^^xsd:decimal) .
+:result :modSqBounds (20 "0.9999991912920624"^^xsd:decimal "1.0000005399909428"^^xsd:decimal) .
+:result :modSqBounds (3 "0.8888888888888888"^^xsd:decimal "1.0578512396694215"^^xsd:decimal) .
+:result :modSqBounds (4 "0.9678638941398866"^^xsd:decimal "1.0578512396694215"^^xsd:decimal) .
+:result :modSqBounds (5 "0.9678638941398866"^^xsd:decimal "1.011358024691358"^^xsd:decimal) .
+:result :modSqBounds (6 "0.9892525057360222"^^xsd:decimal "1.011358024691358"^^xsd:decimal) .
+:result :modSqBounds (7 "0.9892525057360222"^^xsd:decimal "1.0002136686914318"^^xsd:decimal) .
+:result :modSqBounds (8 "0.9947104402401171"^^xsd:decimal "1.0002136686914318"^^xsd:decimal) .
+:result :modSqBounds (9 "0.9974563614744352"^^xsd:decimal "1.0002136686914318"^^xsd:decimal) .
+:result :modSqContains1 (0 true) .
+:result :modSqContains1 (1 true) .
+:result :modSqContains1 (10 true) .
+:result :modSqContains1 (11 true) .
+:result :modSqContains1 (12 true) .
+:result :modSqContains1 (13 true) .
+:result :modSqContains1 (14 true) .
+:result :modSqContains1 (15 true) .
+:result :modSqContains1 (16 true) .
+:result :modSqContains1 (17 true) .
+:result :modSqContains1 (18 true) .
+:result :modSqContains1 (19 true) .
+:result :modSqContains1 (2 true) .
+:result :modSqContains1 (20 true) .
+:result :modSqContains1 (3 true) .
+:result :modSqContains1 (4 true) .
+:result :modSqContains1 (5 true) .
+:result :modSqContains1 (6 true) .
+:result :modSqContains1 (7 true) .
+:result :modSqContains1 (8 true) .
+:result :modSqContains1 (9 true) .
+:result :modSqWidth (0 "1.5"^^xsd:decimal) .
+:result :modSqWidth (1 "1.1111111111111112"^^xsd:decimal) .
+:result :modSqWidth (10 "0.0013800807859202235"^^xsd:decimal) .
+:result :modSqWidth (11 "0.0006903976799977896"^^xsd:decimal) .
+:result :modSqWidth (12 "0.0003452882234366017"^^xsd:decimal) .
+:result :modSqWidth (13 "0.00017262175814336533"^^xsd:decimal) .
+:result :modSqWidth (14 "0.00008631646650081315"^^xsd:decimal) .
+:result :modSqWidth (15 "0.000043159630228273294"^^xsd:decimal) .
+:result :modSqWidth (16 "0.000021579465854570934"^^xsd:decimal) .
+:result :modSqWidth (17 "0.000010789645614406318"^^xsd:decimal) .
+:result :modSqWidth (18 "0.000005394800979163783"^^xsd:decimal) .
+:result :modSqWidth (19 "0.0000026973950325581697"^^xsd:decimal) .
+:result :modSqWidth (2 "0.3911111111111112"^^xsd:decimal) .
+:result :modSqWidth (20 "0.0000013486988804656264"^^xsd:decimal) .
+:result :modSqWidth (3 "0.16896235078053268"^^xsd:decimal) .
+:result :modSqWidth (4 "0.08998734552953491"^^xsd:decimal) .
+:result :modSqWidth (5 "0.043494130551471444"^^xsd:decimal) .
+:result :modSqWidth (6 "0.022105518955335857"^^xsd:decimal) .
+:result :modSqWidth (7 "0.010961162955409609"^^xsd:decimal) .
+:result :modSqWidth (8 "0.005503228451314679"^^xsd:decimal) .
+:result :modSqWidth (9 "0.0027573072169966295"^^xsd:decimal) .
+:result :n 0 .
+:result :n 1 .
+:result :n 10 .
+:result :n 11 .
+:result :n 12 .
+:result :n 13 .
+:result :n 14 .
+:result :n 15 .
+:result :n 16 .
+:result :n 17 .
+:result :n 18 .
+:result :n 19 .
+:result :n 2 .
+:result :n 20 .
+:result :n 3 .
+:result :n 4 .
+:result :n 5 .
+:result :n 6 .
+:result :n 7 .
+:result :n 8 .
+:result :n 9 .
+:result :phaseAbsErrBoundL1 (0 "0.5"^^xsd:decimal) .
+:result :phaseAbsErrBoundL1 (1 "0.33333333333333337"^^xsd:decimal) .
+:result :phaseAbsErrBoundL1 (10 "0.00048804853032569095"^^xsd:decimal) .
+:result :phaseAbsErrBoundL1 (11 "0.0002441084985992381"^^xsd:decimal) .
+:result :phaseAbsErrBoundL1 (12 "0.0001220753185641188"^^xsd:decimal) .
+:result :phaseAbsErrBoundL1 (13 "0.00006103239060195609"^^xsd:decimal) .
+:result :phaseAbsErrBoundL1 (14 "0.00003051751230043198"^^xsd:decimal) .
+:result :phaseAbsErrBoundL1 (15 "0.00001525908542143739"^^xsd:decimal) .
+:result :phaseAbsErrBoundL1 (16 "0.000007629460390234932"^^xsd:decimal) .
+:result :phaseAbsErrBoundL1 (17 "0.000003814709615412859"^^xsd:decimal) .
+:result :phaseAbsErrBoundL1 (18 "0.0000019073496627664"^^xsd:decimal) .
+:result :phaseAbsErrBoundL1 (19 "9.536735451343148e-7"^^xsd:decimal) .
+:result :phaseAbsErrBoundL1 (2 "0.13333333333333341"^^xsd:decimal) .
+:result :phaseAbsErrBoundL1 (20 "4.768370941432565e-7"^^xsd:decimal) .
+:result :phaseAbsErrBoundL1 (3 "0.06060606060606066"^^xsd:decimal) .
+:result :phaseAbsErrBoundL1 (4 "0.031620553359683834"^^xsd:decimal) .
+:result :phaseAbsErrBoundL1 (5 "0.01545893719806768"^^xsd:decimal) .
+:result :phaseAbsErrBoundL1 (6 "0.007814407814407787"^^xsd:decimal) .
+:result :phaseAbsErrBoundL1 (7 "0.0038856171452855692"^^xsd:decimal) .
+:result :phaseAbsErrBoundL1 (8 "0.0019481606623745762"^^xsd:decimal) .
+:result :phaseAbsErrBoundL1 (9 "0.0009754238902648371"^^xsd:decimal) .
+:result :phaseCompErrBound (0 "0.25"^^xsd:decimal) .
+:result :phaseCompErrBound (1 "0.16666666666666669"^^xsd:decimal) .
+:result :phaseCompErrBound (10 "0.00024402426516284548"^^xsd:decimal) .
+:result :phaseCompErrBound (11 "0.00012205424929961906"^^xsd:decimal) .
+:result :phaseCompErrBound (12 "0.0000610376592820594"^^xsd:decimal) .
+:result :phaseCompErrBound (13 "0.000030516195300978044"^^xsd:decimal) .
+:result :phaseCompErrBound (14 "0.00001525875615021599"^^xsd:decimal) .
+:result :phaseCompErrBound (15 "0.000007629542710718695"^^xsd:decimal) .
+:result :phaseCompErrBound (16 "0.000003814730195117466"^^xsd:decimal) .
+:result :phaseCompErrBound (17 "0.0000019073548077064295"^^xsd:decimal) .
+:result :phaseCompErrBound (18 "9.536748313832e-7"^^xsd:decimal) .
+:result :phaseCompErrBound (19 "4.768367725671574e-7"^^xsd:decimal) .
+:result :phaseCompErrBound (2 "0.06666666666666671"^^xsd:decimal) .
+:result :phaseCompErrBound (20 "2.3841854707162824e-7"^^xsd:decimal) .
+:result :phaseCompErrBound (3 "0.03030303030303033"^^xsd:decimal) .
+:result :phaseCompErrBound (4 "0.015810276679841917"^^xsd:decimal) .
+:result :phaseCompErrBound (5 "0.00772946859903384"^^xsd:decimal) .
+:result :phaseCompErrBound (6 "0.003907203907203893"^^xsd:decimal) .
+:result :phaseCompErrBound (7 "0.0019428085726427846"^^xsd:decimal) .
+:result :phaseCompErrBound (8 "0.0009740803311872881"^^xsd:decimal) .
+:result :phaseCompErrBound (9 "0.00048771194513241856"^^xsd:decimal) .
+:result :phaseMid (0 "0.75"^^xsd:decimal "0.75"^^xsd:decimal) .
+:result :phaseMid (1 "0.8333333333333333"^^xsd:decimal "0.8333333333333333"^^xsd:decimal) .
+:result :phaseMid (10 "0.706938296176826"^^xsd:decimal "0.706938296176826"^^xsd:decimal) .
+:result :phaseMid (11 "0.7070602661926892"^^xsd:decimal "0.7070602661926892"^^xsd:decimal) .
+:result :phaseMid (12 "0.7071212827827069"^^xsd:decimal "0.7071212827827069"^^xsd:decimal) .
+:result :phaseMid (13 "0.7070907613187258"^^xsd:decimal "0.7070907613187258"^^xsd:decimal) .
+:result :phaseMid (14 "0.7071060187578766"^^xsd:decimal "0.7071060187578766"^^xsd:decimal) .
+:result :phaseMid (15 "0.707113647971316"^^xsd:decimal "0.707113647971316"^^xsd:decimal) .
+:result :phaseMid (16 "0.7071098331588004"^^xsd:decimal "0.7071098331588004"^^xsd:decimal) .
+:result :phaseMid (17 "0.707107925783413"^^xsd:decimal "0.707107925783413"^^xsd:decimal) .
+:result :phaseMid (18 "0.7071069721034366"^^xsd:decimal "0.7071069721034366"^^xsd:decimal) .
+:result :phaseMid (19 "0.7071064952653778"^^xsd:decimal "0.7071064952653778"^^xsd:decimal) .
+:result :phaseMid (2 "0.7333333333333334"^^xsd:decimal "0.7333333333333334"^^xsd:decimal) .
+:result :phaseMid (20 "0.7071067336836034"^^xsd:decimal "0.7071067336836034"^^xsd:decimal) .
+:result :phaseMid (3 "0.696969696969697"^^xsd:decimal "0.696969696969697"^^xsd:decimal) .
+:result :phaseMid (4 "0.7114624505928854"^^xsd:decimal "0.7114624505928854"^^xsd:decimal) .
+:result :phaseMid (5 "0.7033816425120774"^^xsd:decimal "0.7033816425120774"^^xsd:decimal) .
+:result :phaseMid (6 "0.7072039072039072"^^xsd:decimal "0.7072039072039072"^^xsd:decimal) .
+:result :phaseMid (7 "0.7052395118693462"^^xsd:decimal "0.7052395118693462"^^xsd:decimal) .
+:result :phaseMid (8 "0.7062082401108016"^^xsd:decimal "0.7062082401108016"^^xsd:decimal) .
+:result :phaseMid (9 "0.7066946084968565"^^xsd:decimal "0.7066946084968565"^^xsd:decimal) .
+:result :sBounds (0 "0.5"^^xsd:decimal 1) .
+:result :sBounds (1 "0.6666666666666666"^^xsd:decimal 1) .
+:result :sBounds (10 "0.7066942719116632"^^xsd:decimal "0.7071823204419889"^^xsd:decimal) .
+:result :sBounds (11 "0.7069382119433897"^^xsd:decimal "0.7071823204419889"^^xsd:decimal) .
+:result :sBounds (12 "0.7070602451234248"^^xsd:decimal "0.7071823204419889"^^xsd:decimal) .
+:result :sBounds (13 "0.7070602451234248"^^xsd:decimal "0.7071212775140268"^^xsd:decimal) .
+:result :sBounds (14 "0.7070907600017263"^^xsd:decimal "0.7071212775140268"^^xsd:decimal) .
+:result :sBounds (15 "0.7071060184286053"^^xsd:decimal "0.7071212775140268"^^xsd:decimal) .
+:result :sBounds (16 "0.7071060184286053"^^xsd:decimal "0.7071136478889956"^^xsd:decimal) .
+:result :sBounds (17 "0.7071060184286053"^^xsd:decimal "0.7071098331382207"^^xsd:decimal) .
+:result :sBounds (18 "0.7071060184286053"^^xsd:decimal "0.7071079257782681"^^xsd:decimal) .
+:result :sBounds (19 "0.7071060184286053"^^xsd:decimal "0.7071069721021505"^^xsd:decimal) .
+:result :sBounds (2 "0.6666666666666666"^^xsd:decimal "0.8"^^xsd:decimal) .
+:result :sBounds (20 "0.7071064952650563"^^xsd:decimal "0.7071069721021505"^^xsd:decimal) .
+:result :sBounds (3 "0.6666666666666666"^^xsd:decimal "0.7272727272727273"^^xsd:decimal) .
+:result :sBounds (4 "0.6956521739130435"^^xsd:decimal "0.7272727272727273"^^xsd:decimal) .
+:result :sBounds (5 "0.6956521739130435"^^xsd:decimal "0.7111111111111111"^^xsd:decimal) .
+:result :sBounds (6 "0.7032967032967034"^^xsd:decimal "0.7111111111111111"^^xsd:decimal) .
+:result :sBounds (7 "0.7032967032967034"^^xsd:decimal "0.7071823204419889"^^xsd:decimal) .
+:result :sBounds (8 "0.7052341597796143"^^xsd:decimal "0.7071823204419889"^^xsd:decimal) .
+:result :sBounds (9 "0.7062068965517241"^^xsd:decimal "0.7071823204419889"^^xsd:decimal) .
+:result :sqrt2Bounds (0 1 2) .
+:result :sqrt2Bounds (1 1 "1.5"^^xsd:decimal) .
+:result :sqrt2Bounds (10 "1.4140625"^^xsd:decimal "1.4150390625"^^xsd:decimal) .
+:result :sqrt2Bounds (11 "1.4140625"^^xsd:decimal "1.41455078125"^^xsd:decimal) .
+:result :sqrt2Bounds (12 "1.4140625"^^xsd:decimal "1.414306640625"^^xsd:decimal) .
+:result :sqrt2Bounds (13 "1.4141845703125"^^xsd:decimal "1.414306640625"^^xsd:decimal) .
+:result :sqrt2Bounds (14 "1.4141845703125"^^xsd:decimal "1.41424560546875"^^xsd:decimal) .
+:result :sqrt2Bounds (15 "1.4141845703125"^^xsd:decimal "1.414215087890625"^^xsd:decimal) .
+:result :sqrt2Bounds (16 "1.4141998291015625"^^xsd:decimal "1.414215087890625"^^xsd:decimal) .
+:result :sqrt2Bounds (17 "1.4142074584960938"^^xsd:decimal "1.414215087890625"^^xsd:decimal) .
+:result :sqrt2Bounds (18 "1.4142112731933594"^^xsd:decimal "1.414215087890625"^^xsd:decimal) .
+:result :sqrt2Bounds (19 "1.4142131805419922"^^xsd:decimal "1.414215087890625"^^xsd:decimal) .
+:result :sqrt2Bounds (2 "1.25"^^xsd:decimal "1.5"^^xsd:decimal) .
+:result :sqrt2Bounds (20 "1.4142131805419922"^^xsd:decimal "1.4142141342163086"^^xsd:decimal) .
+:result :sqrt2Bounds (3 "1.375"^^xsd:decimal "1.5"^^xsd:decimal) .
+:result :sqrt2Bounds (4 "1.375"^^xsd:decimal "1.4375"^^xsd:decimal) .
+:result :sqrt2Bounds (5 "1.40625"^^xsd:decimal "1.4375"^^xsd:decimal) .
+:result :sqrt2Bounds (6 "1.40625"^^xsd:decimal "1.421875"^^xsd:decimal) .
+:result :sqrt2Bounds (7 "1.4140625"^^xsd:decimal "1.421875"^^xsd:decimal) .
+:result :sqrt2Bounds (8 "1.4140625"^^xsd:decimal "1.41796875"^^xsd:decimal) .
+:result :sqrt2Bounds (9 "1.4140625"^^xsd:decimal "1.416015625"^^xsd:decimal) .
+:result :sqrt2Dyadic (0 1 2 1) .
+:result :sqrt2Dyadic (1 2 3 2) .
+:result :sqrt2Dyadic (10 1448 1449 1024) .
+:result :sqrt2Dyadic (11 2896 2897 2048) .
+:result :sqrt2Dyadic (12 5792 5793 4096) .
+:result :sqrt2Dyadic (13 11585 11586 8192) .
+:result :sqrt2Dyadic (14 23170 23171 16384) .
+:result :sqrt2Dyadic (15 46340 46341 32768) .
+:result :sqrt2Dyadic (16 92681 92682 65536) .
+:result :sqrt2Dyadic (17 185363 185364 131072) .
+:result :sqrt2Dyadic (18 370727 370728 262144) .
+:result :sqrt2Dyadic (19 741455 741456 524288) .
+:result :sqrt2Dyadic (2 5 6 4) .
+:result :sqrt2Dyadic (20 1482910 1482911 1048576) .
+:result :sqrt2Dyadic (3 11 12 8) .
+:result :sqrt2Dyadic (4 22 23 16) .
+:result :sqrt2Dyadic (5 45 46 32) .
+:result :sqrt2Dyadic (6 90 91 64) .
+:result :sqrt2Dyadic (7 181 182 128) .
+:result :sqrt2Dyadic (8 362 363 256) .
+:result :sqrt2Dyadic (9 724 725 512) .
+:result :sWidth (0 "0.5"^^xsd:decimal) .
+:result :sWidth (1 "0.33333333333333337"^^xsd:decimal) .
+:result :sWidth (10 "0.00048804853032569095"^^xsd:decimal) .
+:result :sWidth (11 "0.0002441084985992381"^^xsd:decimal) .
+:result :sWidth (12 "0.0001220753185641188"^^xsd:decimal) .
+:result :sWidth (13 "0.00006103239060195609"^^xsd:decimal) .
+:result :sWidth (14 "0.00003051751230043198"^^xsd:decimal) .
+:result :sWidth (15 "0.00001525908542143739"^^xsd:decimal) .
+:result :sWidth (16 "0.000007629460390234932"^^xsd:decimal) .
+:result :sWidth (17 "0.000003814709615412859"^^xsd:decimal) .
+:result :sWidth (18 "0.0000019073496627664"^^xsd:decimal) .
+:result :sWidth (19 "9.536735451343148e-7"^^xsd:decimal) .
+:result :sWidth (2 "0.13333333333333341"^^xsd:decimal) .
+:result :sWidth (20 "4.768370941432565e-7"^^xsd:decimal) .
+:result :sWidth (3 "0.06060606060606066"^^xsd:decimal) .
+:result :sWidth (4 "0.031620553359683834"^^xsd:decimal) .
+:result :sWidth (5 "0.01545893719806768"^^xsd:decimal) .
+:result :sWidth (6 "0.007814407814407787"^^xsd:decimal) .
+:result :sWidth (7 "0.0038856171452855692"^^xsd:decimal) .
+:result :sWidth (8 "0.0019481606623745762"^^xsd:decimal) .
+:result :sWidth (9 "0.0009754238902648371"^^xsd:decimal) .
+:result :TEntry (0 0 0 1.0 1.0 0.0 0.0) .
+:result :TEntry (0 0 1 0.0 0.0 0.0 0.0) .
+:result :TEntry (0 1 0 0.0 0.0 0.0 0.0) .
+:result :TEntry (0 1 1 "0.5"^^xsd:decimal 1 "0.5"^^xsd:decimal 1) .
+:result :TEntry (1 0 0 1.0 1.0 0.0 0.0) .
+:result :TEntry (1 0 1 0.0 0.0 0.0 0.0) .
+:result :TEntry (1 1 0 0.0 0.0 0.0 0.0) .
+:result :TEntry (1 1 1 "0.6666666666666666"^^xsd:decimal 1 "0.6666666666666666"^^xsd:decimal 1) .
+:result :TEntry (10 0 0 1.0 1.0 0.0 0.0) .
+:result :TEntry (10 0 1 0.0 0.0 0.0 0.0) .
+:result :TEntry (10 1 0 0.0 0.0 0.0 0.0) .
+:result :TEntry (10 1 1 "0.7066942719116632"^^xsd:decimal "0.7071823204419889"^^xsd:decimal "0.7066942719116632"^^xsd:decimal "0.7071823204419889"^^xsd:decimal) .
+:result :TEntry (11 0 0 1.0 1.0 0.0 0.0) .
+:result :TEntry (11 0 1 0.0 0.0 0.0 0.0) .
+:result :TEntry (11 1 0 0.0 0.0 0.0 0.0) .
+:result :TEntry (11 1 1 "0.7069382119433897"^^xsd:decimal "0.7071823204419889"^^xsd:decimal "0.7069382119433897"^^xsd:decimal "0.7071823204419889"^^xsd:decimal) .
+:result :TEntry (12 0 0 1.0 1.0 0.0 0.0) .
+:result :TEntry (12 0 1 0.0 0.0 0.0 0.0) .
+:result :TEntry (12 1 0 0.0 0.0 0.0 0.0) .
+:result :TEntry (12 1 1 "0.7070602451234248"^^xsd:decimal "0.7071823204419889"^^xsd:decimal "0.7070602451234248"^^xsd:decimal "0.7071823204419889"^^xsd:decimal) .
+:result :TEntry (13 0 0 1.0 1.0 0.0 0.0) .
+:result :TEntry (13 0 1 0.0 0.0 0.0 0.0) .
+:result :TEntry (13 1 0 0.0 0.0 0.0 0.0) .
+:result :TEntry (13 1 1 "0.7070602451234248"^^xsd:decimal "0.7071212775140268"^^xsd:decimal "0.7070602451234248"^^xsd:decimal "0.7071212775140268"^^xsd:decimal) .
+:result :TEntry (14 0 0 1.0 1.0 0.0 0.0) .
+:result :TEntry (14 0 1 0.0 0.0 0.0 0.0) .
+:result :TEntry (14 1 0 0.0 0.0 0.0 0.0) .
+:result :TEntry (14 1 1 "0.7070907600017263"^^xsd:decimal "0.7071212775140268"^^xsd:decimal "0.7070907600017263"^^xsd:decimal "0.7071212775140268"^^xsd:decimal) .
+:result :TEntry (15 0 0 1.0 1.0 0.0 0.0) .
+:result :TEntry (15 0 1 0.0 0.0 0.0 0.0) .
+:result :TEntry (15 1 0 0.0 0.0 0.0 0.0) .
+:result :TEntry (15 1 1 "0.7071060184286053"^^xsd:decimal "0.7071212775140268"^^xsd:decimal "0.7071060184286053"^^xsd:decimal "0.7071212775140268"^^xsd:decimal) .
+:result :TEntry (16 0 0 1.0 1.0 0.0 0.0) .
+:result :TEntry (16 0 1 0.0 0.0 0.0 0.0) .
+:result :TEntry (16 1 0 0.0 0.0 0.0 0.0) .
+:result :TEntry (16 1 1 "0.7071060184286053"^^xsd:decimal "0.7071136478889956"^^xsd:decimal "0.7071060184286053"^^xsd:decimal "0.7071136478889956"^^xsd:decimal) .
+:result :TEntry (17 0 0 1.0 1.0 0.0 0.0) .
+:result :TEntry (17 0 1 0.0 0.0 0.0 0.0) .
+:result :TEntry (17 1 0 0.0 0.0 0.0 0.0) .
+:result :TEntry (17 1 1 "0.7071060184286053"^^xsd:decimal "0.7071098331382207"^^xsd:decimal "0.7071060184286053"^^xsd:decimal "0.7071098331382207"^^xsd:decimal) .
+:result :TEntry (18 0 0 1.0 1.0 0.0 0.0) .
+:result :TEntry (18 0 1 0.0 0.0 0.0 0.0) .
+:result :TEntry (18 1 0 0.0 0.0 0.0 0.0) .
+:result :TEntry (18 1 1 "0.7071060184286053"^^xsd:decimal "0.7071079257782681"^^xsd:decimal "0.7071060184286053"^^xsd:decimal "0.7071079257782681"^^xsd:decimal) .
+:result :TEntry (19 0 0 1.0 1.0 0.0 0.0) .
+:result :TEntry (19 0 1 0.0 0.0 0.0 0.0) .
+:result :TEntry (19 1 0 0.0 0.0 0.0 0.0) .
+:result :TEntry (19 1 1 "0.7071060184286053"^^xsd:decimal "0.7071069721021505"^^xsd:decimal "0.7071060184286053"^^xsd:decimal "0.7071069721021505"^^xsd:decimal) .
+:result :TEntry (2 0 0 1.0 1.0 0.0 0.0) .
+:result :TEntry (2 0 1 0.0 0.0 0.0 0.0) .
+:result :TEntry (2 1 0 0.0 0.0 0.0 0.0) .
+:result :TEntry (2 1 1 "0.6666666666666666"^^xsd:decimal "0.8"^^xsd:decimal "0.6666666666666666"^^xsd:decimal "0.8"^^xsd:decimal) .
+:result :TEntry (20 0 0 1.0 1.0 0.0 0.0) .
+:result :TEntry (20 0 1 0.0 0.0 0.0 0.0) .
+:result :TEntry (20 1 0 0.0 0.0 0.0 0.0) .
+:result :TEntry (20 1 1 "0.7071064952650563"^^xsd:decimal "0.7071069721021505"^^xsd:decimal "0.7071064952650563"^^xsd:decimal "0.7071069721021505"^^xsd:decimal) .
+:result :TEntry (3 0 0 1.0 1.0 0.0 0.0) .
+:result :TEntry (3 0 1 0.0 0.0 0.0 0.0) .
+:result :TEntry (3 1 0 0.0 0.0 0.0 0.0) .
+:result :TEntry (3 1 1 "0.6666666666666666"^^xsd:decimal "0.7272727272727273"^^xsd:decimal "0.6666666666666666"^^xsd:decimal "0.7272727272727273"^^xsd:decimal) .
+:result :TEntry (4 0 0 1.0 1.0 0.0 0.0) .
+:result :TEntry (4 0 1 0.0 0.0 0.0 0.0) .
+:result :TEntry (4 1 0 0.0 0.0 0.0 0.0) .
+:result :TEntry (4 1 1 "0.6956521739130435"^^xsd:decimal "0.7272727272727273"^^xsd:decimal "0.6956521739130435"^^xsd:decimal "0.7272727272727273"^^xsd:decimal) .
+:result :TEntry (5 0 0 1.0 1.0 0.0 0.0) .
+:result :TEntry (5 0 1 0.0 0.0 0.0 0.0) .
+:result :TEntry (5 1 0 0.0 0.0 0.0 0.0) .
+:result :TEntry (5 1 1 "0.6956521739130435"^^xsd:decimal "0.7111111111111111"^^xsd:decimal "0.6956521739130435"^^xsd:decimal "0.7111111111111111"^^xsd:decimal) .
+:result :TEntry (6 0 0 1.0 1.0 0.0 0.0) .
+:result :TEntry (6 0 1 0.0 0.0 0.0 0.0) .
+:result :TEntry (6 1 0 0.0 0.0 0.0 0.0) .
+:result :TEntry (6 1 1 "0.7032967032967034"^^xsd:decimal "0.7111111111111111"^^xsd:decimal "0.7032967032967034"^^xsd:decimal "0.7111111111111111"^^xsd:decimal) .
+:result :TEntry (7 0 0 1.0 1.0 0.0 0.0) .
+:result :TEntry (7 0 1 0.0 0.0 0.0 0.0) .
+:result :TEntry (7 1 0 0.0 0.0 0.0 0.0) .
+:result :TEntry (7 1 1 "0.7032967032967034"^^xsd:decimal "0.7071823204419889"^^xsd:decimal "0.7032967032967034"^^xsd:decimal "0.7071823204419889"^^xsd:decimal) .
+:result :TEntry (8 0 0 1.0 1.0 0.0 0.0) .
+:result :TEntry (8 0 1 0.0 0.0 0.0 0.0) .
+:result :TEntry (8 1 0 0.0 0.0 0.0 0.0) .
+:result :TEntry (8 1 1 "0.7052341597796143"^^xsd:decimal "0.7071823204419889"^^xsd:decimal "0.7052341597796143"^^xsd:decimal "0.7071823204419889"^^xsd:decimal) .
+:result :TEntry (9 0 0 1.0 1.0 0.0 0.0) .
+:result :TEntry (9 0 1 0.0 0.0 0.0 0.0) .
+:result :TEntry (9 1 0 0.0 0.0 0.0 0.0) .
+:result :TEntry (9 1 1 "0.7062068965517241"^^xsd:decimal "0.7071823204419889"^^xsd:decimal "0.7062068965517241"^^xsd:decimal "0.7071823204419889"^^xsd:decimal) .
