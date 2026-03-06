@@ -1,0 +1,283 @@
+# =========================================================================================
+# A simple gradient descent step with certified rational bounds (integers-first style)
+#
+# Philosophy (Kronecker-friendly):
+#   We do not assume “true” real numbers as primitives. Instead, we represent quantities by
+#   finite rational/decimal literals and *certified interval bounds* derived by arithmetic.
+#
+# Objective (1D toy problem):
+#   f(x) = (x - a)^2      (convex quadratic with minimizer at x = a)
+#   ∇f(x) = 2 (x - a)
+#
+# Gradient descent update:
+#   x_{k+1} = x_k - η ∇f(x_k) = x_k - η * 2 (x_k - a)
+#
+# What is certified here:
+#   Given an interval x_k ∈ [L_k, U_k] and a step size η ≥ 0, we derive an interval
+#   x_{k+1} ∈ [L_{k+1}, U_{k+1}] by sound interval arithmetic:
+#     g ∈ [2(L_k-a), 2(U_k-a)]
+#     p = η g ∈ [η g_L, η g_U]
+#     x_{k+1} = x_k - p ∈ [L_k - p_U, U_k - p_L]
+#
+# Additionally (when η ≤ 1/2):
+#   the update map is monotone increasing (1 - 2η ≥ 0), and the interval width contracts:
+#     width_{k+1} ≤ width_k
+#
+# Output discipline (Gödel-ish):
+#   log:query projects only the intended results (bounds, midpoints, certificates).
+# =========================================================================================
+
+@prefix :      <http://example.org/kronecker-gd#>.
+@prefix math:  <http://www.w3.org/2000/10/swap/math#>.
+@prefix log:   <http://www.w3.org/2000/10/swap/log#>.
+
+# ----------
+# Parameters
+# ----------
+
+:gd a :GradientDescentProcedure ;
+  :maxK 10 ;
+  :a 1.0 .
+
+# Step size η = 1/5
+{ ( 1.0 5 ) math:quotient ?eta. } => { :gd :eta ?eta. }.
+
+# Initial uncertainty: x0 ∈ [0, 2]
+:gd :xBounds (0 0.0 2.0).
+
+# ----------------------------
+# Generate indices k = 0..maxK
+# ----------------------------
+
+:gd :k 0.
+
+{
+  :gd :k ?k.
+  :gd :maxK ?maxK.
+  ?k math:lessThan ?maxK.
+  ( ?k 1 ) math:sum ?k1.
+}
+=>
+{
+  :gd :k ?k1.
+}.
+
+# ---------------------------------------
+# A) Gradient bounds g ∈ [2(L-a), 2(U-a)]
+# ---------------------------------------
+
+{
+  :gd :a ?a.
+  :gd :xBounds (?k ?L ?U).
+
+  ( ?L ?a ) math:difference ?dL.
+  ( ?U ?a ) math:difference ?dU.
+
+  ( 2 ?dL ) math:product ?gL.
+  ( 2 ?dU ) math:product ?gU.
+}
+=>
+{
+  :gd :gBounds (?k ?gL ?gU).
+}.
+
+# -----------------------------------------
+# B) Step interval p = η g  (η ≥ 0 assumed)
+# -----------------------------------------
+
+{
+  :gd :eta ?eta.
+  :gd :gBounds (?k ?gL ?gU).
+
+  ( ?eta ?gL ) math:product ?pL.
+  ( ?eta ?gU ) math:product ?pU.
+}
+=>
+{
+  :gd :pBounds (?k ?pL ?pU).
+}.
+
+# --------------------------------------------
+# C) Update bounds: x_{k+1} ∈ [L - pU, U - pL]
+# --------------------------------------------
+
+{
+  :gd :xBounds (?k ?L ?U).
+  :gd :pBounds (?k ?pL ?pU).
+  :gd :maxK ?maxK.
+  ?k math:lessThan ?maxK.
+
+  ( ?k 1 ) math:sum ?k1.
+
+  ( ?L ?pU ) math:difference ?L1.
+  ( ?U ?pL ) math:difference ?U1.
+}
+=>
+{
+  :gd :xBounds (?k1 ?L1 ?U1).
+}.
+
+# -----------------------------
+# D) Width + midpoint summaries
+# -----------------------------
+
+{
+  :gd :xBounds (?k ?L ?U).
+
+  ( ?U ?L ) math:difference ?W.
+  ( ?W 2 ) math:quotient ?halfW.
+
+  ( ?L ?U ) math:sum ?s.
+  ( ?s 2 ) math:quotient ?M.
+}
+=>
+{
+  :gd :width    (?k ?W).
+  :gd :midpoint (?k ?M ?halfW).
+}.
+
+# --------------------------------
+# E) Optional certificate: η ≤ 1/2
+# --------------------------------
+
+{
+  :gd :eta ?eta.
+  ( 1.0 2 ) math:quotient ?half.
+  ?eta math:notGreaterThan ?half.
+}
+=>
+{
+  :gd :etaLeHalf true.
+}.
+
+# width_{k+1} ≤ width_k when η ≤ 1/2 (checked from derived intervals)
+{
+  :gd :etaLeHalf true.
+  :gd :width (?k ?W).
+  ( ?k 1 ) math:sum ?k1.
+  :gd :width (?k1 ?W1).
+  ?W1 math:notGreaterThan ?W.
+}
+=>
+{
+  :gd :widthContractsAt (?k1 true).
+}.
+
+# ----------------------------------------------------------------
+# F) Certified bounds on objective value f(x) = (x-a)^2 over [L,U]
+# ----------------------------------------------------------------
+
+# compute endpoint squares (L-a)^2 and (U-a)^2
+{
+  :gd :a ?a.
+  :gd :xBounds (?k ?L ?U).
+
+  ( ?L ?a ) math:difference ?dL.
+  ( ?U ?a ) math:difference ?dU.
+
+  ( ?dL ?dL ) math:product ?sL.
+  ( ?dU ?dU ) math:product ?sU.
+}
+=>
+{
+  :gd :endSquares (?k ?sL ?sU).
+}.
+
+# upper bound fU = max(sL,sU)
+{
+  :gd :endSquares (?k ?sL ?sU).
+  ( ?sL ?sU ) :max ?fU.
+}
+=>
+{
+  :gd :fUpper (?k ?fU).
+}.
+
+# lower bound:
+# if a ∈ [L,U] then fLower = 0
+{
+  :gd :a ?a.
+  :gd :xBounds (?k ?L ?U).
+  ?L math:notGreaterThan ?a.
+  ?a math:notGreaterThan ?U.
+}
+=>
+{
+  :gd :fLower (?k 0.0).
+}.
+
+# else if interval is entirely left of a (U < a): fLower = min(sL,sU)
+{
+  :gd :a ?a.
+  :gd :xBounds (?k ?L ?U).
+  ?U math:lessThan ?a.
+  :gd :endSquares (?k ?sL ?sU).
+  ( ?sL ?sU ) :min ?fL.
+}
+=>
+{
+  :gd :fLower (?k ?fL).
+}.
+
+# else if interval is entirely right of a (a < L): fLower = min(sL,sU)
+{
+  :gd :a ?a.
+  :gd :xBounds (?k ?L ?U).
+  ?a math:lessThan ?L.
+  :gd :endSquares (?k ?sL ?sU).
+  ( ?sL ?sU ) :min ?fL.
+}
+=>
+{
+  :gd :fLower (?k ?fL).
+}.
+
+# -------------------------------------------------------------------
+# User-defined max/min
+#
+# These are written as backward rules (<=), so they behave like
+# “user-defined built-ins” when you use (a b) :max ?m in a rule body.
+# -------------------------------------------------------------------
+
+{ ( ?a ?b ) :max ?a. } <= { ?a math:notLessThan ?b. }.  # a >= b
+{ ( ?a ?b ) :max ?b. } <= { ?a math:lessThan ?b. }.     # a <  b
+
+{ ( ?a ?b ) :min ?a. } <= { ?a math:notGreaterThan ?b. }. # a <= b
+{ ( ?a ?b ) :min ?b. } <= { ?a math:greaterThan ?b. }.    # a >  b
+
+# ----------------------------
+# Output selection (log:query)
+# ----------------------------
+
+{
+  :gd :k ?k.
+  :gd :xBounds (?k ?L ?U).
+  :gd :width   (?k ?W).
+  :gd :midpoint (?k ?M ?halfW).
+  :gd :gBounds (?k ?gL ?gU).
+  :gd :pBounds (?k ?pL ?pU).
+  :gd :fLower (?k ?fL).
+  :gd :fUpper (?k ?fU).
+}
+log:query
+{
+  :result :k ?k.
+  :result :xBounds (?k ?L ?U).
+  :result :midpoint (?k ?M ?halfW).
+  :result :width (?k ?W).
+  :result :gBounds (?k ?gL ?gU).
+  :result :pBounds (?k ?pL ?pU).
+  :result :fBounds (?k ?fL ?fU).
+}.
+
+{ :gd :eta ?eta. }
+log:query
+{ :result :eta ?eta. }.
+
+{ :gd :etaLeHalf true. }
+log:query
+{ :result :etaLeHalf true. }.
+
+{ :gd :widthContractsAt (?k true). }
+log:query
+{ :result :widthContractsAt (?k true). }.

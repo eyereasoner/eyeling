@@ -1,0 +1,82 @@
+@prefix : <http://example.org/kronecker-gd#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:result :eta "0.2"^^xsd:decimal .
+:result :etaLeHalf true .
+:result :fBounds (0 0.0 "1"^^xsd:decimal) .
+:result :fBounds (1 0.0 "1.9599999999999997"^^xsd:decimal) .
+:result :fBounds (10 0.0 "836.682554252848"^^xsd:decimal) .
+:result :fBounds (2 0.0 "3.8415999999999997"^^xsd:decimal) .
+:result :fBounds (3 0.0 "7.5295359999999985"^^xsd:decimal) .
+:result :fBounds (4 0.0 "14.757890559999998"^^xsd:decimal) .
+:result :fBounds (5 0.0 "28.925465497599998"^^xsd:decimal) .
+:result :fBounds (6 0.0 "56.693912375296"^^xsd:decimal) .
+:result :fBounds (7 0.0 "111.12006825558018"^^xsd:decimal) .
+:result :fBounds (8 0.0 "217.7953337809371"^^xsd:decimal) .
+:result :fBounds (9 0.0 "426.87885421063675"^^xsd:decimal) .
+:result :gBounds (0 "-2"^^xsd:decimal "2"^^xsd:decimal) .
+:result :gBounds (1 "-2.8"^^xsd:decimal "2.8"^^xsd:decimal) .
+:result :gBounds (10 "-57.8509309952"^^xsd:decimal "57.8509309952"^^xsd:decimal) .
+:result :gBounds (2 "-3.92"^^xsd:decimal "3.92"^^xsd:decimal) .
+:result :gBounds (3 "-5.4879999999999995"^^xsd:decimal "5.4879999999999995"^^xsd:decimal) .
+:result :gBounds (4 "-7.683199999999999"^^xsd:decimal "7.683199999999999"^^xsd:decimal) .
+:result :gBounds (5 "-10.75648"^^xsd:decimal "10.75648"^^xsd:decimal) .
+:result :gBounds (6 "-15.059072"^^xsd:decimal "15.059072"^^xsd:decimal) .
+:result :gBounds (7 "-21.0827008"^^xsd:decimal "21.0827008"^^xsd:decimal) .
+:result :gBounds (8 "-29.51578112"^^xsd:decimal "29.51578112"^^xsd:decimal) .
+:result :gBounds (9 "-41.322093568"^^xsd:decimal "41.322093568"^^xsd:decimal) .
+:result :k 0 .
+:result :k 1 .
+:result :k 10 .
+:result :k 2 .
+:result :k 3 .
+:result :k 4 .
+:result :k 5 .
+:result :k 6 .
+:result :k 7 .
+:result :k 8 .
+:result :k 9 .
+:result :midpoint (0 "1"^^xsd:decimal "1"^^xsd:decimal) .
+:result :midpoint (1 "1"^^xsd:decimal "1.4"^^xsd:decimal) .
+:result :midpoint (10 "1"^^xsd:decimal "28.9254654976"^^xsd:decimal) .
+:result :midpoint (2 "1"^^xsd:decimal "1.96"^^xsd:decimal) .
+:result :midpoint (3 "0.9999999999999999"^^xsd:decimal "2.7439999999999998"^^xsd:decimal) .
+:result :midpoint (4 "1"^^xsd:decimal "3.8415999999999997"^^xsd:decimal) .
+:result :midpoint (5 "1"^^xsd:decimal "5.37824"^^xsd:decimal) .
+:result :midpoint (6 "1"^^xsd:decimal "7.529536"^^xsd:decimal) .
+:result :midpoint (7 "1"^^xsd:decimal "10.5413504"^^xsd:decimal) .
+:result :midpoint (8 "1"^^xsd:decimal "14.75789056"^^xsd:decimal) .
+:result :midpoint (9 "1"^^xsd:decimal "20.661046784"^^xsd:decimal) .
+:result :pBounds (0 "-0.4"^^xsd:decimal "0.4"^^xsd:decimal) .
+:result :pBounds (1 "-0.5599999999999999"^^xsd:decimal "0.5599999999999999"^^xsd:decimal) .
+:result :pBounds (10 "-11.570186199040002"^^xsd:decimal "11.570186199040002"^^xsd:decimal) .
+:result :pBounds (2 "-0.784"^^xsd:decimal "0.784"^^xsd:decimal) .
+:result :pBounds (3 "-1.0976"^^xsd:decimal "1.0976"^^xsd:decimal) .
+:result :pBounds (4 "-1.53664"^^xsd:decimal "1.53664"^^xsd:decimal) .
+:result :pBounds (5 "-2.151296"^^xsd:decimal "2.151296"^^xsd:decimal) .
+:result :pBounds (6 "-3.0118144000000004"^^xsd:decimal "3.0118144000000004"^^xsd:decimal) .
+:result :pBounds (7 "-4.21654016"^^xsd:decimal "4.21654016"^^xsd:decimal) .
+:result :pBounds (8 "-5.903156224"^^xsd:decimal "5.903156224"^^xsd:decimal) .
+:result :pBounds (9 "-8.2644187136"^^xsd:decimal "8.2644187136"^^xsd:decimal) .
+:result :width (0 "2"^^xsd:decimal) .
+:result :width (1 "2.8"^^xsd:decimal) .
+:result :width (10 "57.8509309952"^^xsd:decimal) .
+:result :width (2 "3.92"^^xsd:decimal) .
+:result :width (3 "5.4879999999999995"^^xsd:decimal) .
+:result :width (4 "7.683199999999999"^^xsd:decimal) .
+:result :width (5 "10.75648"^^xsd:decimal) .
+:result :width (6 "15.059072"^^xsd:decimal) .
+:result :width (7 "21.0827008"^^xsd:decimal) .
+:result :width (8 "29.51578112"^^xsd:decimal) .
+:result :width (9 "41.322093568"^^xsd:decimal) .
+:result :xBounds (0 0.0 2.0) .
+:result :xBounds (1 "-0.4"^^xsd:decimal "2.4"^^xsd:decimal) .
+:result :xBounds (10 "-27.9254654976"^^xsd:decimal "29.9254654976"^^xsd:decimal) .
+:result :xBounds (2 "-0.96"^^xsd:decimal "2.96"^^xsd:decimal) .
+:result :xBounds (3 "-1.744"^^xsd:decimal "3.7439999999999998"^^xsd:decimal) .
+:result :xBounds (4 "-2.8415999999999997"^^xsd:decimal "4.8416"^^xsd:decimal) .
+:result :xBounds (5 "-4.37824"^^xsd:decimal "6.37824"^^xsd:decimal) .
+:result :xBounds (6 "-6.529536"^^xsd:decimal "8.529536"^^xsd:decimal) .
+:result :xBounds (7 "-9.5413504"^^xsd:decimal "11.5413504"^^xsd:decimal) .
+:result :xBounds (8 "-13.75789056"^^xsd:decimal "15.75789056"^^xsd:decimal) .
+:result :xBounds (9 "-19.661046784"^^xsd:decimal "21.661046784"^^xsd:decimal) .
