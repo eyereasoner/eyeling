@@ -1,0 +1,287 @@
+# ===========================================================================================
+# Hadamard gate approximation (Kronecker-friendly): H via integer-certified bounds
+#
+# Philosophy:
+# We do not treat amplitudes as primitive completed reals.
+# Instead, every nontrivial entry is certified by finite interval data derived from
+# integer computations only.
+#
+# Target gate:
+#   H = (1/sqrt2) * [[ 1,  1],
+#                    [ 1, -1]]
+#
+# Method:
+# 1) Compute sqrt(2) bounds by exact dyadic bisection in integer arithmetic.
+# 2) Invert those bounds to obtain certified bounds for s = 1/sqrt2.
+# 3) Assemble the four H entries from +s and -s.
+# 4) Certify that each row norm squared contains 1 using integer cross-multiplication.
+# 5) Choose a rational midpoint matrix H~ and certify its row orthogonality exactly.
+# 6) Project only the intended results with top-level log:query directives.
+#
+# Result (for n = maxN):
+# :result :sqrt2Dyadic (20 1482910 1482911 1048576).
+# :result :invSqrt2Bounds (20 ... ...).
+# :result :midpointScale (20 ...).
+# :result :rowNormSqContains1 (20 true).
+# :result :midpointRowsOrthogonal (20 true).
+# :result :HMidpointEntry (20 0 0 ... 0).
+# :result :HMidpointEntry (20 0 1 ... 0).
+# :result :HMidpointEntry (20 1 0 ... 0).
+# :result :HMidpointEntry (20 1 1 ... 0).
+#
+# The core certificate is the dyadic integer trap for sqrt(2), and everything else —
+# 1/sqrt(2), the Hadamard entries, and the gate sanity checks — is engineered on top of that.
+# ===========================================================================================
+
+@prefix : <http://example.org/hadamard-approx#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+
+# ----------
+# Parameters
+# ----------
+
+:sqrt2Proc a :DyadicBisection;
+  :maxN 20.
+
+:HGate a :SingleQubitGate;
+  :name "H";
+  :usesScale :invSqrt2.
+
+:invSqrt2 a :PositiveRealApprox;
+  :definedAs "1/sqrt2".
+
+# --------------------------------------------------
+# 1) Dyadic bisection for sqrt(2) with integers only
+#
+# State is :state (n l u), meaning:
+#   interval_n = [ l / 2^n , u / 2^n ]
+# --------------------------------------------------
+
+# Base: sqrt(2) in [1, 2]
+:sqrt2Proc :state (0 1 2).
+
+# midpoint = (l + u) / 2^(n+1)
+# midpoint^2 < 2  <=>  (l + u)^2 < 2^(2n+3)
+
+# Case A: midpoint^2 < 2  =>  new interval [mid, U]
+{
+  :sqrt2Proc :state (?n ?l ?u).
+  :sqrt2Proc :maxN ?maxN.
+  ?n math:lessThan ?maxN.
+
+  (?n 1) math:sum ?n1.
+  (?l ?u) math:sum ?midNum.
+  (?midNum ?midNum) math:product ?midSq.
+  (?n 2) math:product ?twoN.
+  (?twoN 3) math:sum ?exp.
+  (2 ?exp) math:exponentiation ?pow.
+
+  ?midSq math:lessThan ?pow.
+  (2 ?u) math:product ?uScaled.
+} => {
+  :sqrt2Proc :state (?n1 ?midNum ?uScaled).
+}.
+
+# Case B: midpoint^2 >= 2  =>  new interval [L, mid]
+{
+  :sqrt2Proc :state (?n ?l ?u).
+  :sqrt2Proc :maxN ?maxN.
+  ?n math:lessThan ?maxN.
+
+  (?n 1) math:sum ?n1.
+  (?l ?u) math:sum ?midNum.
+  (?midNum ?midNum) math:product ?midSq.
+  (?n 2) math:product ?twoN.
+  (?twoN 3) math:sum ?exp.
+  (2 ?exp) math:exponentiation ?pow.
+
+  ?midSq math:notLessThan ?pow.
+  (2 ?l) math:product ?lScaled.
+} => {
+  :sqrt2Proc :state (?n1 ?lScaled ?midNum).
+}.
+
+# --------------------------------------------------------------
+# 2) Readable bounds for sqrt(2), then invert to get s = 1/sqrt2
+# --------------------------------------------------------------
+
+# denom = 2^n, so interval_n = [l/denom, u/denom]
+{
+  :sqrt2Proc :state (?n ?l ?u).
+  (2 ?n) math:exponentiation ?denom.
+  (?l ?denom) math:quotient ?L.
+  (?u ?denom) math:quotient ?U.
+} => {
+  :sqrt2Proc :dyadic (?n ?l ?u ?denom).
+  :sqrt2Proc :bounds (?n ?L ?U).
+}.
+
+# Invert:
+# if sqrt(2) in [l/denom, u/denom], then 1/sqrt2 in [denom/u, denom/l]
+{
+  :sqrt2Proc :dyadic (?n ?l ?u ?denom).
+  (?denom ?u) math:quotient ?sL.
+  (?denom ?l) math:quotient ?sU.
+} => {
+  :invSqrt2 :bounds (?n ?sL ?sU).
+}.
+
+# Width, midpoint, and negative bounds/midpoint
+{
+  :invSqrt2 :bounds (?n ?sL ?sU).
+
+  (?sU ?sL) math:difference ?sW.
+  (?sW 2) math:quotient ?compErr.
+
+  (?sL ?sU) math:sum ?sSum.
+  (?sSum 2) math:quotient ?m.
+
+  (0 ?sU) math:difference ?negL.
+  (0 ?sL) math:difference ?negU.
+  (0 ?m)  math:difference ?negM.
+} => {
+  :invSqrt2 :width (?n ?sW).
+  :invSqrt2 :componentErrBound (?n ?compErr).
+  :invSqrt2 :midpoint (?n ?m).
+  :invSqrt2 :negBounds (?n ?negL ?negU).
+  :invSqrt2 :negMidpoint (?n ?negM).
+}.
+
+# ---------------------------------------------
+# 3) Assemble interval-certified H-gate entries
+# ---------------------------------------------
+
+# Entry record:
+#   (n row col reL reU imL imU)
+{
+  :invSqrt2 :bounds (?n ?sL ?sU).
+  :invSqrt2 :negBounds (?n ?negL ?negU).
+} => {
+  :HGate :entry (?n 0 0 ?sL   ?sU   0 0).
+  :HGate :entry (?n 0 1 ?sL   ?sU   0 0).
+  :HGate :entry (?n 1 0 ?sL   ?sU   0 0).
+  :HGate :entry (?n 1 1 ?negL ?negU 0 0).
+}.
+
+# Chosen rational midpoint matrix H~
+# Midpoint entry record:
+#   (n row col re im)
+{
+  :invSqrt2 :midpoint (?n ?m).
+  :invSqrt2 :negMidpoint (?n ?negM).
+} => {
+  :HGate :midpointEntry (?n 0 0 ?m    0).
+  :HGate :midpointEntry (?n 0 1 ?m    0).
+  :HGate :midpointEntry (?n 1 0 ?m    0).
+  :HGate :midpointEntry (?n 1 1 ?negM 0).
+}.
+
+# -----------------------------------------------------------------
+# 4) Certify row norm squared contains 1 using integer inequalities
+#
+# For a row of H, norm^2 = s^2 + s^2 = 2*s^2.
+# Since s in [denom/u, denom/l]:
+#   norm^2 in [ 2*denom^2/u^2 , 2*denom^2/l^2 ]
+#
+# To certify that 1 lies inside, it is enough to check:
+#   2*denom^2 <= u^2
+#   2*denom^2 >= l^2
+# -----------------------------------------------------------------
+
+{
+  :sqrt2Proc :dyadic (?n ?l ?u ?denom).
+
+  (?denom ?denom) math:product ?denom2.
+  (2 ?denom2) math:product ?normNum.
+
+  (?l ?l) math:product ?l2.
+  (?u ?u) math:product ?u2.
+
+  ?normNum math:notGreaterThan ?u2.
+  ?normNum math:notLessThan ?l2.
+
+  (?normNum ?u2) math:quotient ?normL.
+  (?normNum ?l2) math:quotient ?normU.
+  (?normU ?normL) math:difference ?normW.
+} => {
+  :HGate :rowNormSqBounds (?n 0 ?normL ?normU).
+  :HGate :rowNormSqBounds (?n 1 ?normL ?normU).
+  :HGate :rowNormSqWidth (?n ?normW).
+  :HGate :rowNormSqContains1 (?n true).
+}.
+
+# -------------------------------------------
+# 5) Midpoint structural sanity check:
+#    row0 dot row1 = m*m + m*(-m) = 0 exactly
+# -------------------------------------------
+
+{
+  :invSqrt2 :midpoint (?n ?m).
+  :invSqrt2 :negMidpoint (?n ?negM).
+
+  (?m ?m) math:product ?m2.
+  (?m ?negM) math:product ?mn.
+  (?m2 ?mn) math:sum ?dot.
+
+  ?dot math:equalTo 0.
+} => {
+  :HGate :midpointRowsOrthogonal (?n true).
+}.
+
+# ---------------------------------------------------------
+# 6) Midpoint entrywise and rowwise conservative error data
+# ---------------------------------------------------------
+
+{
+  :invSqrt2 :componentErrBound (?n ?compErr).
+  (2 ?compErr) math:product ?rowErr.
+} => {
+  :HGate :entryAbsErrBoundMidpoint (?n ?compErr).
+  :HGate :rowAbsErrBoundMidpoint (?n ?rowErr).
+}.
+
+# -------------------------------
+# 7) Output selection (log:query)
+# -------------------------------
+
+{
+  :sqrt2Proc :dyadic (?n ?l ?u ?denom).
+  :sqrt2Proc :bounds (?n ?L ?U).
+  :invSqrt2 :bounds (?n ?sL ?sU).
+  :invSqrt2 :width (?n ?sW).
+  :invSqrt2 :midpoint (?n ?m).
+  :invSqrt2 :negMidpoint (?n ?negM).
+  :HGate :entryAbsErrBoundMidpoint (?n ?cE).
+  :HGate :rowAbsErrBoundMidpoint (?n ?rE).
+  :HGate :rowNormSqBounds (?n 0 ?rnL ?rnU).
+  :HGate :rowNormSqWidth (?n ?rnW).
+  :HGate :rowNormSqContains1 (?n ?okNorm).
+  :HGate :midpointRowsOrthogonal (?n ?okDot).
+} log:query {
+  :result :n ?n.
+  :result :sqrt2Dyadic (?n ?l ?u ?denom).
+  :result :sqrt2Bounds (?n ?L ?U).
+  :result :invSqrt2Bounds (?n ?sL ?sU).
+  :result :invSqrt2Width (?n ?sW).
+  :result :midpointScale (?n ?m).
+  :result :midpointNegScale (?n ?negM).
+  :result :entryAbsErrBoundMidpoint (?n ?cE).
+  :result :rowAbsErrBoundMidpoint (?n ?rE).
+  :result :rowNormSqBounds (?n ?rnL ?rnU).
+  :result :rowNormSqWidth (?n ?rnW).
+  :result :rowNormSqContains1 (?n ?okNorm).
+  :result :midpointRowsOrthogonal (?n ?okDot).
+}.
+
+{
+  :HGate :entry (?n ?r ?c ?reL ?reU ?imL ?imU).
+} log:query {
+  :result :HEntry (?n ?r ?c ?reL ?reU ?imL ?imU).
+}.
+
+{
+  :HGate :midpointEntry (?n ?r ?c ?re ?im).
+} log:query {
+  :result :HMidpointEntry (?n ?r ?c ?re ?im).
+}.
