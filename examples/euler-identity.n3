@@ -1,0 +1,113 @@
+# =========================================================================================
+# Euler identity (exact, certificate-friendly):
+#   exp(i*pi) + 1 = 0
+#
+# Philosophy:
+# Unlike the T-gate example, this phase needs no approximation.  exp(i*pi) lands exactly at
+# (-1,0) = cos(pi) + i sin(pi), so the identity can be certified using integer arithmetic
+# alone.
+#
+# Method:
+# 1) Construct -1 as 0 - 1.
+# 2) Represent exp(i*pi) exactly as (-1, 0).
+# 3) Add 1 componentwise to obtain (0, 0).
+# 4) Sanity-check the phase modulus: |-1 + 0i|^2 = 1.
+# 5) Project only the intended certificates via log:query.
+# =========================================================================================
+
+@prefix :     <http://example.org/euler-identity#>.
+@prefix log:  <http://www.w3.org/2000/10/swap/log#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+
+# ----------
+# Parameters
+# ----------
+
+:EulerIdentity a :ExactComplexEquation;
+  :name "Euler identity";
+  :formula "exp(i*pi) + 1 = 0";
+  :usesPhase :phasePi.
+
+:one a :ComplexNumber;
+  :exact (1 0).
+
+:zero a :ComplexNumber;
+  :exact (0 0).
+
+:phasePi a :ComplexPhase;
+  :definedAs "cos(pi) + i sin(pi)".
+
+# -----------------------------------------
+# 1) Construct exp(i*pi) exactly as (-1, 0)
+# -----------------------------------------
+
+{
+  (0 1) math:difference ?minusOne.
+} => {
+  :phasePi :exact (?minusOne 0).
+}.
+
+# -----------------------------------------------------
+# 2) Add 1 componentwise: (-1 + 0i) + (1 + 0i) = 0 + 0i
+# -----------------------------------------------------
+
+{
+  :phasePi :exact (?re ?im).
+  :one :exact (?oneRe ?oneIm).
+  (?re ?oneRe) math:sum ?sumRe.
+  (?im ?oneIm) math:sum ?sumIm.
+} => {
+  :EulerIdentity :lhsExact (?sumRe ?sumIm).
+  :EulerIdentity :rhsExact (0 0).
+}.
+
+# --------------------------------------------------
+# 3) Certify that the left-hand side is exactly zero
+# --------------------------------------------------
+
+{
+  :EulerIdentity :lhsExact (?sumRe ?sumIm).
+  :zero :exact (?sumRe ?sumIm).
+} => {
+  :EulerIdentity :holds true.
+}.
+
+# -------------------------------------------------
+# 4) Sanity check: |exp(i*pi)|^2 = (-1)^2 + 0^2 = 1
+# -------------------------------------------------
+
+{
+  :phasePi :exact (?re ?im).
+  (?re ?re) math:product ?re2.
+  (?im ?im) math:product ?im2.
+  (?re2 ?im2) math:sum ?modSq.
+} => {
+  :phasePi :modSq ?modSq.
+}.
+
+{
+  :phasePi :modSq ?modSq.
+  ?modSq math:equalTo 1.
+} => {
+  :phasePi :modSqIsOne true.
+}.
+
+# -------------------------------
+# 5) Output selection (log:query)
+# -------------------------------
+
+{
+  :phasePi :exact (?re ?im).
+  :EulerIdentity :lhsExact (?sumRe ?sumIm).
+  :EulerIdentity :rhsExact (?rhsRe ?rhsIm).
+  :phasePi :modSq ?modSq.
+  :phasePi :modSqIsOne ?modOk.
+  :EulerIdentity :holds ?ok.
+} log:query {
+  :result :phasePi (?re ?im).
+  :result :lhsPlusOne (?sumRe ?sumIm).
+  :result :rhsZero (?rhsRe ?rhsIm).
+  :result :phaseModSq ?modSq.
+  :result :phaseModSqIsOne ?modOk.
+  :result :identityHolds ?ok.
+}.

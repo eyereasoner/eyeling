@@ -1,0 +1,8 @@
+@prefix : <http://example.org/euler-identity#> .
+
+:result :identityHolds true .
+:result :lhsPlusOne (0 0) .
+:result :phaseModSq 1 .
+:result :phaseModSqIsOne true .
+:result :phasePi (-1 0) .
+:result :rhsZero (0 0) .
