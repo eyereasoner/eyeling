@@ -380,6 +380,131 @@ ${U('a')} ${U('p')} ${U('b')}.
     expectError: true,
   },
   {
+    name: '12b invalid syntax: prefix names cannot end with a dot',
+    opt: { proofComments: false },
+    input: `
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix bad.: <http://bad-example.org/> .
+
+bad.:example a bad.:Person.
+
+{
+    ?X a <http://bad-example.org/Person>.
+}
+=>
+{
+    :result :has :crash-syntax-1.
+}.
+
+{} => {
+    :test :contains :crash-syntax-1.
+}.
+
+{
+    :result :has :crash-syntax-1.
+}
+=>
+{
+    :test :is false.
+}.
+`,
+    expectError: true,
+  },
+  {
+    name: '12c invalid syntax: unpaired high surrogate in string literal should throw',
+    opt: { proofComments: false },
+    input: String.raw`
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:subject :predicate "\uD800" .
+
+{
+    :subject :predicate ?X.
+}
+=>
+{
+    :result :has :crash-syntax-2.
+}.
+
+{} => {
+    :test :contains :crash-syntax-2.
+}.
+
+{
+    :result :has :crash-syntax-2.
+}
+=>
+{
+    :test :is false.
+}.
+`,
+    expectError: true,
+  },
+  {
+    name: '12d invalid syntax: unpaired low surrogate in string literal should throw',
+    opt: { proofComments: false },
+    input: String.raw`
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:subject :predicate "\uDFFF" .
+
+{
+    :subject :predicate ?X.
+}
+=>
+{
+    :result :has :crash-syntax-3.
+}.
+
+{} => {
+    :test :contains :crash-syntax-3.
+}.
+
+{
+    :result :has :crash-syntax-3.
+}
+=>
+{
+    :test :is false.
+}.
+`,
+    expectError: true,
+  },
+  {
+    name: '12e invalid syntax: NUL in string literal should throw',
+    opt: { proofComments: false },
+    input: String.raw`
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:subject :predicate "hello\u0000world".
+
+{
+    :subject :predicate ?X.
+}
+=>
+{
+    :result :has :crash-syntax-4.
+}.
+
+{} => {
+    :test :contains :crash-syntax-4.
+}.
+
+{
+    :result :has :crash-syntax-4.
+}
+=>
+{
+    :test :is false.
+}.
+`,
+    expectError: true,
+  },
+  {
     name: '13 heavier recursion: ancestor closure over 15 links',
     opt: { proofComments: false, maxBuffer: 200 * 1024 * 1024 },
     input: parentChainN3(15),

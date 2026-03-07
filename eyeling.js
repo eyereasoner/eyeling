@@ -7821,6 +7821,31 @@ function decodeN3StringEscapes(s) {
   return out;
 }
 
+function assertValidStringLiteralValue(s, offset = null) {
+  for (let i = 0; i < s.length; i++) {
+    const cu = s.charCodeAt(i);
+
+    if (cu === 0x0000) {
+      throw new N3SyntaxError('Invalid string literal: U+0000 is not allowed', offset);
+    }
+
+    // Reject lone UTF-16 surrogates. Valid astral characters appear as a
+    // well-formed high+low surrogate pair and are accepted.
+    if (cu >= 0xd800 && cu <= 0xdbff) {
+      const next = i + 1 < s.length ? s.charCodeAt(i + 1) : -1;
+      if (!(next >= 0xdc00 && next <= 0xdfff)) {
+        throw new N3SyntaxError('Invalid string literal: unpaired high surrogate is not allowed', offset);
+      }
+      i += 1;
+      continue;
+    }
+
+    if (cu >= 0xdc00 && cu <= 0xdfff) {
+      throw new N3SyntaxError('Invalid string literal: unpaired low surrogate is not allowed', offset);
+    }
+  }
+}
+
 // In the monolithic build, stripQuotes() is defined later in the file and
 // function-hoisting makes it available to lex(). In the modular build the
 // lexer must provide it locally.
@@ -8057,6 +8082,7 @@ function lex(inputText) {
         if (!closed) throw new N3SyntaxError('Unterminated long string literal """..."""', start);
         const raw = '"""' + sChars.join('') + '"""';
         const decoded = decodeN3StringEscapes(stripQuotes(raw));
+        assertValidStringLiteralValue(decoded, start);
         const s = JSON.stringify(decoded); // canonical short quoted form
         tokens.push(new Token('Literal', s, start));
         continue;
@@ -8082,6 +8108,7 @@ function lex(inputText) {
       }
       const raw = '"' + sChars.join('') + '"';
       const decoded = decodeN3StringEscapes(stripQuotes(raw));
+      assertValidStringLiteralValue(decoded, start);
       const s = JSON.stringify(decoded); // canonical short quoted form
       tokens.push(new Token('Literal', s, start));
       continue;
@@ -8137,6 +8164,7 @@ function lex(inputText) {
         if (!closed) throw new N3SyntaxError("Unterminated long string literal '''...'''", start);
         const raw = "'''" + sChars.join('') + "'''";
         const decoded = decodeN3StringEscapes(stripQuotes(raw));
+        assertValidStringLiteralValue(decoded, start);
         const s = JSON.stringify(decoded); // canonical short quoted form
         tokens.push(new Token('Literal', s, start));
         continue;
@@ -8162,6 +8190,7 @@ function lex(inputText) {
       }
       const raw = "'" + sChars.join('') + "'";
       const decoded = decodeN3StringEscapes(stripQuotes(raw));
+      assertValidStringLiteralValue(decoded, start);
       const s = JSON.stringify(decoded); // canonical short quoted form
       tokens.push(new Token('Literal', s, start));
       continue;
@@ -8333,6 +8362,12 @@ const {
 const { N3SyntaxError } = require('./lexer');
 const { liftBlankRuleVars } = require('./rules');
 
+function assertValidQNamePrefix(prefixName, fail, tok, context = 'prefixed name') {
+  if (typeof prefixName === 'string' && prefixName.endsWith('.')) {
+    fail(`Invalid ${context}: prefix names cannot end with '.'`, tok);
+  }
+}
+
 class Parser {
   constructor(tokens) {
     this.toks = tokens;
@@ -8473,7 +8508,11 @@ class Parser {
       this.fail(`Expected prefix name, got ${tok.toString()}`, tok);
     }
     const pref = tok.value || '';
+    if (!pref.endsWith(':')) {
+      this.fail("Invalid @prefix directive: prefix name must end with ':'", tok);
+    }
     const prefName = pref.endsWith(':') ? pref.slice(0, -1) : pref;
+    assertValidQNamePrefix(prefName, this.fail.bind(this), tok, '@prefix directive');
 
     if (this.peek().typ === 'Dot') {
       this.next();
@@ -8517,7 +8556,11 @@ class Parser {
       this.fail(`Expected prefix name after PREFIX, got ${tok.toString()}`, tok);
     }
     const pref = tok.value || '';
+    if (!pref.endsWith(':')) {
+      this.fail("Invalid PREFIX directive: prefix name must end with ':'", tok);
+    }
     const prefName = pref.endsWith(':') ? pref.slice(0, -1) : pref;
+    assertValidQNamePrefix(prefName, this.fail.bind(this), tok, 'PREFIX directive');
 
     const tok2 = this.next();
     let iri;
@@ -8591,6 +8634,7 @@ class Parser {
       } else if (name.startsWith('_:')) {
         return new Blank(name);
       } else if (name.includes(':')) {
+        assertValidQNamePrefix(name.split(':', 1)[0], this.fail.bind(this), tok);
         return internIri(this.prefixes.expandQName(name));
       } else {
         return internIri(name);
@@ -8624,8 +8668,10 @@ class Parser {
           dtIri = dtTok.value || '';
         } else if (dtTok.typ === 'Ident') {
           const qn = dtTok.value || '';
-          if (qn.includes(':')) dtIri = this.prefixes.expandQName(qn);
-          else dtIri = qn;
+          if (qn.includes(':')) {
+            assertValidQNamePrefix(qn.split(':', 1)[0], this.fail.bind(this), dtTok, 'datatype prefixed name');
+            dtIri = this.prefixes.expandQName(qn);
+          } else dtIri = qn;
         } else {
           this.fail(`Expected datatype after ^^, got ${dtTok.toString()}`, dtTok);
         }
