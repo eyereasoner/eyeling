@@ -505,6 +505,69 @@ bad.:example a bad.:Person.
     expectError: true,
   },
   {
+    name: '12f invalid syntax: surrogate pair encoded as two \\u escapes should throw',
+    opt: { proofComments: false },
+    input: String.raw`
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:subject :predicate "\uD800\uDC00" .
+
+{
+    :subject :predicate ?X.
+}
+=>
+{
+    :result :has :crash-syntax-5.
+}.
+
+{} => {
+    :test :contains :crash-syntax-5.
+}.
+
+{
+    :result :has :crash-syntax-5.
+}
+=>
+{
+    :test :is false.
+}.
+`,
+    expectError: true,
+  },
+  {
+    name: '12g invalid syntax: XML-forbidden noncharacters in string literal should throw',
+    opt: { proofComments: false },
+    input: String.raw`
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:subject :predicate "\uFFFF" .
+:subject :predicate "\uFFFE" .
+
+{
+    :subject :predicate ?X.
+}
+=>
+{
+    :result :has :crash-syntax-6.
+}.
+
+{} => {
+    :test :contains :crash-syntax-6.
+}.
+
+{
+    :result :has :crash-syntax-6.
+}
+=>
+{
+    :test :is false.
+}.
+`,
+    expectError: true,
+  },
+  {
     name: '13 heavier recursion: ancestor closure over 15 links',
     opt: { proofComments: false, maxBuffer: 200 * 1024 * 1024 },
     input: parentChainN3(15),
