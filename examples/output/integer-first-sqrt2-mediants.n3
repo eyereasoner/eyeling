@@ -1,0 +1,57 @@
+@prefix : <http://example.org/integer-first#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:result :boundsQ (0 1 1 2 1) .
+:result :boundsQ (1 1 1 3 2) .
+:result :boundsQ (2 4 3 3 2) .
+:result :boundsQ (3 7 5 3 2) .
+:result :boundsQ (4 7 5 10 7) .
+:result :boundsQ (5 7 5 17 12) .
+:result :boundsQ (6 24 17 17 12) .
+:result :boundsQ (7 41 29 17 12) .
+:result :boundsQ (8 41 29 58 41) .
+:result :decimalBounds (0 1 2) .
+:result :decimalBounds (1 1 "1.5"^^xsd:decimal) .
+:result :decimalBounds (2 "1.3333333333333333"^^xsd:decimal "1.5"^^xsd:decimal) .
+:result :decimalBounds (3 "1.4"^^xsd:decimal "1.5"^^xsd:decimal) .
+:result :decimalBounds (4 "1.4"^^xsd:decimal "1.4285714285714286"^^xsd:decimal) .
+:result :decimalBounds (5 "1.4"^^xsd:decimal "1.4166666666666667"^^xsd:decimal) .
+:result :decimalBounds (6 "1.411764705882353"^^xsd:decimal "1.4166666666666667"^^xsd:decimal) .
+:result :decimalBounds (7 "1.4137931034482758"^^xsd:decimal "1.4166666666666667"^^xsd:decimal) .
+:result :decimalBounds (8 "1.4137931034482758"^^xsd:decimal "1.4146341463414633"^^xsd:decimal) .
+:result :fareyAdjacent (0 true) .
+:result :fareyAdjacent (1 true) .
+:result :fareyAdjacent (2 true) .
+:result :fareyAdjacent (3 true) .
+:result :fareyAdjacent (4 true) .
+:result :fareyAdjacent (5 true) .
+:result :fareyAdjacent (6 true) .
+:result :fareyAdjacent (7 true) .
+:result :fareyAdjacent (8 true) .
+:result :gapTo2 (0 1 2) .
+:result :gapTo2 (1 1 1) .
+:result :gapTo2 (2 2 1) .
+:result :gapTo2 (3 1 1) .
+:result :gapTo2 (4 1 2) .
+:result :gapTo2 (5 1 1) .
+:result :gapTo2 (6 2 1) .
+:result :gapTo2 (7 1 1) .
+:result :gapTo2 (8 1 2) .
+:result :midpoint (0 "1.5"^^xsd:decimal) .
+:result :midpoint (1 "1.25"^^xsd:decimal) .
+:result :midpoint (2 "1.4166666666666665"^^xsd:decimal) .
+:result :midpoint (3 "1.45"^^xsd:decimal) .
+:result :midpoint (4 "1.4142857142857141"^^xsd:decimal) .
+:result :midpoint (5 "1.4083333333333332"^^xsd:decimal) .
+:result :midpoint (6 "1.4142156862745099"^^xsd:decimal) .
+:result :midpoint (7 "1.4152298850574714"^^xsd:decimal) .
+:result :midpoint (8 "1.4142136248948696"^^xsd:decimal) .
+:result :widthQ (0 1 1) .
+:result :widthQ (1 1 2) .
+:result :widthQ (2 1 6) .
+:result :widthQ (3 1 10) .
+:result :widthQ (4 1 35) .
+:result :widthQ (5 1 60) .
+:result :widthQ (6 1 204) .
+:result :widthQ (7 1 348) .
+:result :widthQ (8 1 1189) .

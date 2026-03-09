@@ -1,0 +1,170 @@
+# =======================================================================================
+# Integer-first √2 bracketing via Stern-Brocot mediants
+#
+# Why this example exists:
+#   It illustrates the “integer thesis” in a very direct way. We do not start from a
+#   completed real number object. We start from finite integer data and refine it using a
+#   finite, checkable procedure.
+#
+# Idea:
+#   Keep two rational bounds L = pL/qL and U = pU/qU with
+#     pL^2 < 2 qL^2     and     2 qU^2 < pU^2 .
+#   Their mediant M = (pL+pU)/(qL+qU) still lies between them. We test M using only the
+#   integer comparison M^2 ? 2 and keep the half-interval that still brackets √2.
+#
+# What is certified:
+#   * exact integer lower/upper witnesses around √2
+#   * exact residual gaps to 2
+#   * Farey adjacency (cross-difference = 1), hence exact width = 1/(qL*qU)
+#   * readable decimal views are derived only at the end
+#
+# This is “integer-first” because the proof-carrying part is entirely discrete.
+# =======================================================================================
+
+@prefix :     <http://example.org/integer-first#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix log:  <http://www.w3.org/2000/10/swap/log#>.
+
+:sqrt2 a :Target;
+  :computedBy :mediantRefiner.
+
+:mediantRefiner a :SternBrocotProcedure;
+  :maxStep 8.
+
+# Step 0: 1 < √2 < 2
+:mediantRefiner :bounds (0 1 1 2 1).
+
+# ------------------------------------------------------------------------
+# Refinement: replace one endpoint by the mediant according to the sign of
+# p^2 - 2 q^2, checked with integer arithmetic only.
+# ------------------------------------------------------------------------
+
+# If mediant^2 < 2 then it becomes the new lower bound.
+{
+  :mediantRefiner :bounds (?n ?pL ?qL ?pU ?qU).
+  :mediantRefiner :maxStep ?max.
+  ?n math:lessThan ?max.
+
+  ( ?n ?max ) :successor ?n1.
+  ( ?pL ?pU ) math:sum ?pM.
+  ( ?qL ?qU ) math:sum ?qM.
+  ( ?pM ?pM ) math:product ?pM2.
+  ( ?qM ?qM ) math:product ?qM2.
+  ( 2 ?qM2 ) math:product ?twoQM2.
+  ?pM2 math:lessThan ?twoQM2.
+}
+=>
+{
+  :mediantRefiner :bounds (?n1 ?pM ?qM ?pU ?qU).
+}.
+
+# If mediant^2 > 2 then it becomes the new upper bound.
+{
+  :mediantRefiner :bounds (?n ?pL ?qL ?pU ?qU).
+  :mediantRefiner :maxStep ?max.
+  ?n math:lessThan ?max.
+
+  ( ?n ?max ) :successor ?n1.
+  ( ?pL ?pU ) math:sum ?pM.
+  ( ?qL ?qU ) math:sum ?qM.
+  ( ?pM ?pM ) math:product ?pM2.
+  ( ?qM ?qM ) math:product ?qM2.
+  ( 2 ?qM2 ) math:product ?twoQM2.
+  ?pM2 math:greaterThan ?twoQM2.
+}
+=>
+{
+  :mediantRefiner :bounds (?n1 ?pL ?qL ?pM ?qM).
+}.
+
+# -----------------------------------------
+# Exact integer certificates for each stage
+# -----------------------------------------
+
+{
+  :mediantRefiner :bounds (?n ?pL ?qL ?pU ?qU).
+
+  ( ?pL ?pL ) math:product ?pL2.
+  ( ?qL ?qL ) math:product ?qL2.
+  ( 2 ?qL2 ) math:product ?twoQL2.
+  ( ?twoQL2 ?pL2 ) math:difference ?lowerGap.
+  ?lowerGap math:greaterThan 0.
+
+  ( ?pU ?pU ) math:product ?pU2.
+  ( ?qU ?qU ) math:product ?qU2.
+  ( 2 ?qU2 ) math:product ?twoQU2.
+  ( ?pU2 ?twoQU2 ) math:difference ?upperGap.
+  ?upperGap math:greaterThan 0.
+}
+=>
+{
+  :sqrt2 :integerCertificate (?n ?lowerGap ?upperGap).
+}.
+
+# Farey adjacency: pU*qL - pL*qU = 1, so width = 1/(qL*qU) exactly.
+{
+  :mediantRefiner :bounds (?n ?pL ?qL ?pU ?qU).
+  ( ?pU ?qL ) math:product ?left.
+  ( ?pL ?qU ) math:product ?right.
+  ( ?left ?right ) math:difference ?det.
+  ?det math:equalTo 1.
+
+  ( ?qL ?qU ) math:product ?widthDen.
+}
+=>
+{
+  :sqrt2 :fareyAdjacent (?n true).
+  :sqrt2 :widthExact (?n 1 ?widthDen).
+}.
+
+# ------------------------------
+# Readable decimal views (query)
+# ------------------------------
+
+{
+  :mediantRefiner :bounds (?n ?pL ?qL ?pU ?qU).
+  ( ?pL ?qL ) math:quotient ?L.
+  ( ?pU ?qU ) math:quotient ?U.
+  ( ?L ?U ) math:sum ?sum.
+  ( ?sum 2 ) math:quotient ?mid.
+}
+=>
+{
+  :sqrt2 :decimalBounds (?n ?L ?U ?mid).
+}.
+
+# ---------------
+# Helper relation
+# ---------------
+
+{ ( ?n ?max ) :successor ?n1. } <= {
+  ?n math:lessThan ?max.
+  ( ?n 1 ) math:sum ?n1.
+}.
+
+# ----------------
+# Output selection
+# ----------------
+
+{
+  :mediantRefiner :bounds (?n ?pL ?qL ?pU ?qU).
+  :sqrt2 :integerCertificate (?n ?lowerGap ?upperGap).
+  :sqrt2 :widthExact (?n ?widthNum ?widthDen).
+  :sqrt2 :fareyAdjacent (?n true).
+}
+log:query
+{
+  :result :boundsQ (?n ?pL ?qL ?pU ?qU).
+  :result :gapTo2 (?n ?lowerGap ?upperGap).
+  :result :widthQ (?n ?widthNum ?widthDen).
+  :result :fareyAdjacent (?n true).
+}.
+
+{
+  :sqrt2 :decimalBounds (?n ?L ?U ?mid).
+}
+log:query
+{
+  :result :decimalBounds (?n ?L ?U).
+  :result :midpoint (?n ?mid).
+}.
