@@ -118,8 +118,7 @@ Examples:
 - `0.5988792348`
 - `0.002`
 
-These are not “approximate because the computer happened to use binary floating point.”
-They are **explicit decimal facts** inside the RDF/N3 world.
+These are not “approximate because the computer happened to use binary floating point.” They are **explicit decimal facts** inside the RDF/N3 world.
 
 That makes them easier to inspect, easier to serialize, and easier to certify.
 
@@ -194,8 +193,7 @@ So the approximation affects **performance**, not **truth**.
 
 ## Why the decimal interval is the essence of the example
 
-Many systems are comfortable with exact integers.
-Fewer are comfortable with real analysis.
+Many systems are comfortable with exact integers. Fewer are comfortable with real analysis.
 
 This example shows a practical middle path:
 
@@ -280,8 +278,7 @@ If all checks pass, the artifact is accepted.
 
 ## Why the hardening matters
 
-This is not just a technical patch.
-It illustrates a broader lesson for formal engineering.
+This is not just a technical patch. It illustrates a broader lesson for formal engineering.
 
 When people first write down a proof-oriented model, they often focus on the intended path:
 
@@ -289,7 +286,7 @@ When people first write down a proof-oriented model, they often focus on the int
 - compare it with a threshold,
 - derive a conclusion.
 
-But in real high-trust work, you also need to think about the *bad path*:
+But in real high-trust work, you also need to think about the _bad path_:
 
 - What if the parameters are malformed?
 - What if a certificate is unrelated to the current instance?
