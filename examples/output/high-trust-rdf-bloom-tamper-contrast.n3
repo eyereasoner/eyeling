@@ -1,6 +1,16 @@
 @prefix : <http://example.org/high-trust-rdf#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
+:result :decision [
+  :artifact :trustedArtifact ;
+  :hardened :AcceptForHighTrustUse ;
+  :weak :AcceptUnderWeakBudgetOnlyRules
+] .
+:result :decision [
+  :artifact :tamperedArtifact ;
+  :hardened :RejectForHighTrustUse ;
+  :weak :AcceptUnderWeakBudgetOnlyRules
+] .
 :result :rejectReason [
   :artifact :tamperedArtifact ;
   :why :NonPositiveBloomBits

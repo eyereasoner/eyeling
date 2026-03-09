@@ -1,4 +1,4 @@
-# ==============================================================================
+# =============================================================================
 # High-trust RDF Bloom filter hardening: trusted artifact vs tampered artifact
 #
 # Why this example exists:
@@ -19,16 +19,16 @@
 #   * :trustedArtifact is accepted under both the weak and hardened rules
 #   * :tamperedArtifact can pass the weak budget-only path
 #   * :tamperedArtifact is rejected by the hardened path, with explicit reasons
-# ==============================================================================
+# =============================================================================
 
 @prefix :     <http://example.org/high-trust-rdf#>.
 @prefix math: <http://www.w3.org/2000/10/swap/math#>.
 @prefix log:  <http://www.w3.org/2000/10/swap/log#>.
 @prefix xsd:  <http://www.w3.org/2001/XMLSchema#>.
 
-# ----------------
+# -----------------
 # Trusted artifact
-# ----------------
+# -----------------
 
 :trustedArtifact a :HighTrustRdfArtifact;
   :canonicalTripleCount 1200;
@@ -45,9 +45,9 @@
   :maybePositivePolicy :ConfirmAgainstCanonicalGraph;
   :definiteNegativePolicy :ReturnAbsent.
 
-# -----------------
+# ------------------
 # Tampered artifact
-# -----------------
+# ------------------
 
 :tamperedArtifact a :HighTrustRdfArtifact;
   :canonicalTripleCount 1200;
@@ -94,12 +94,11 @@
   ?a :lambda ?lambda.
 }.
 
-# ----------------------------------------------------------------------------
+# ==========================
 # Weak path (pre-hardening)
-#
+# ==========================
 # This path deliberately computes a budget envelope from whatever numbers were
 # supplied, without first proving that they form a sane certificate.
-# ----------------------------------------------------------------------------
 
 {
   ?a :hashFunctions ?k;
@@ -158,9 +157,9 @@
   ?a :weakDecision :AcceptUnderWeakBudgetOnlyRules.
 }.
 
-# ------------------------------
+# ==============================
 # Hardened path (current design)
-# ------------------------------
+# ==============================
 
 # Parameter sanity is explicit and required.
 {
@@ -263,11 +262,10 @@
   ?a :hardenedDecision :AcceptForHighTrustUse.
 }.
 
-# -------------------------------------------------
+# ======================================
 # Explicit tamper evidence / reject path
-#
+# ======================================
 # These rules make hardening visible in the output.
-# -------------------------------------------------
 
 {
   ?a :bloomBits ?m.
@@ -322,6 +320,42 @@
 =>
 {
   ?a :hardenedDecision :RejectForHighTrustUse.
+}.
+
+
+# ---------------------------------
+# Explicit contrast for wide readers
+# ---------------------------------
+
+{
+  :trustedArtifact :weakDecision :AcceptUnderWeakBudgetOnlyRules;
+                   :hardenedDecision :AcceptForHighTrustUse.
+}
+=>
+{
+  :result :trustedArtifactBehavesAsExpected true.
+}.
+
+{
+  :tamperedArtifact :weakDecision :AcceptUnderWeakBudgetOnlyRules;
+                    :hardenedDecision :RejectForHighTrustUse.
+}
+=>
+{
+  :result :tamperedArtifactShowsWhyHardeningMatters true.
+}.
+
+{
+  ?a :weakDecision ?weak;
+     :hardenedDecision ?hard.
+}
+log:query
+{
+  :result :decision [
+    :artifact ?a;
+    :weak ?weak;
+    :hardened ?hard
+  ].
 }.
 
 # ---------------
