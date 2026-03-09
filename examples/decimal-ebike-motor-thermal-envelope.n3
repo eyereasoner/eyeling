@@ -1,0 +1,286 @@
+# ===============================================================================
+# Decimal transcendental motor-thermal envelope for an e-bike climb
+#
+# Why this example exists:
+#   It shows how xsd:decimal can carry a machine-checkable certificate in an
+#   e-biking setting where a transcendental quantity naturally appears.
+#
+# Physical story:
+#   During a climb, an e-bike motor heats up from rider-selected assist modes,
+#   while also cooling toward ambient temperature.
+#
+#   A simple sampled model for the motor temperature excess over ambient is
+#
+#       e(k+1) = a * e(k) + g(mode(k))
+#
+#   where
+#       a = exp(-Ts/tau)
+#
+#   is the exact cooling factor, Ts is the sample period, tau is the thermal
+#   time constant, and g(mode) is the per-sample heat injection for the chosen
+#   assist mode.
+#
+# The transcendental part:
+#   For Ts = 5 s and tau = 20 s we get
+#
+#       a = exp(-1/4)
+#
+#   which is transcendental. We therefore do not pretend to store the exact real.
+#   Instead we keep a certified xsd:decimal interval
+#
+#       0.7788007830 <= exp(-1/4) <= 0.7788007831
+#
+#   and propagate an exact decimal envelope for the motor temperature.
+#
+# Ride plan:
+#   * samples 0..2  : Turbo assist
+#   * samples 3..4  : Tour assist
+#   * samples 5..7  : Eco assist
+#   * samples 8..11 : Coast (no drive heat)
+#
+# What is certified:
+#   * the cooling interval is well-formed and contractive
+#   * the motor stays below the hard limit during the whole sampled ride plan
+#   * after the climb, the upper temperature envelope drops below the warning
+#     threshold again at sample 8, i.e. after 40 s
+# ===============================================================================
+
+@prefix :     <http://example.org/ebike-thermal#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix log:  <http://www.w3.org/2000/10/swap/log#>.
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#>.
+
+# ----------
+# Parameters
+# ----------
+
+:ride a :EBikeThermalAssessment;
+  :samplePeriod "5.0"^^xsd:decimal;
+  :thermalTimeConstant "20.0"^^xsd:decimal;
+  :exactCoolingSymbol "exp(-1/4)";
+  :coolingLower "0.7788007830"^^xsd:decimal;
+  :coolingUpper "0.7788007831"^^xsd:decimal;
+  :ambient "25.0"^^xsd:decimal;
+  :initialMotorTemperature "33.0"^^xsd:decimal;
+  :warningLimit "35.0"^^xsd:decimal;
+  :hardLimit "45.0"^^xsd:decimal;
+  :maxStep 12.
+
+:Turbo :heatingLower "4.8"^^xsd:decimal; :heatingUpper "4.8"^^xsd:decimal.
+:Tour  :heatingLower "2.4"^^xsd:decimal; :heatingUpper "2.4"^^xsd:decimal.
+:Eco   :heatingLower "1.2"^^xsd:decimal; :heatingUpper "1.2"^^xsd:decimal.
+:Coast :heatingLower "0.0"^^xsd:decimal; :heatingUpper "0.0"^^xsd:decimal.
+
+:ride :assistAt (0 :Turbo).
+:ride :assistAt (1 :Turbo).
+:ride :assistAt (2 :Turbo).
+:ride :assistAt (3 :Tour).
+:ride :assistAt (4 :Tour).
+:ride :assistAt (5 :Eco).
+:ride :assistAt (6 :Eco).
+:ride :assistAt (7 :Eco).
+:ride :assistAt (8 :Coast).
+:ride :assistAt (9 :Coast).
+:ride :assistAt (10 :Coast).
+:ride :assistAt (11 :Coast).
+
+# ----------------------------------------------------------
+# The decimal interval is a finite certificate for exp(-1/4)
+# ----------------------------------------------------------
+
+{
+  :ride :coolingLower ?lo; :coolingUpper ?hi.
+  ?lo math:lessThan ?hi.
+  ?lo math:greaterThan 0.
+  ?hi math:lessThan 1.
+}
+=>
+{
+  :ride :coolingCertificate :CertifiedDecimalInterval.
+  :ride :contractiveCooling true.
+}.
+
+# ----------------
+# Initial envelope
+# ----------------
+
+{
+  :ride :ambient ?amb; :initialMotorTemperature ?t0.
+  ( ?t0 ?amb ) math:difference ?e0.
+}
+=>
+{
+  :ride :excessEnvelopeAt (0 ?e0 ?e0).
+}.
+
+# --------------------------------------------------------------------------
+# Envelope propagation
+#   excessLower(k+1) = coolingLower * excessLower(k) + heatingLower(mode(k))
+#   excessUpper(k+1) = coolingUpper * excessUpper(k) + heatingUpper(mode(k))
+# --------------------------------------------------------------------------
+
+{
+  :ride :coolingLower ?aLo;
+        :coolingUpper ?aHi;
+        :maxStep ?max.
+  :ride :assistAt (?k ?mode).
+  ?mode :heatingLower ?gLo; :heatingUpper ?gHi.
+  :ride :excessEnvelopeAt (?k ?lo ?hi).
+  ?k math:lessThan ?max.
+  ( ?k 1 ) math:sum ?k1.
+  ( ?aLo ?lo ) math:product ?decayedLo.
+  ( ?aHi ?hi ) math:product ?decayedHi.
+  ( ?decayedLo ?gLo ) math:sum ?lo1.
+  ( ?decayedHi ?gHi ) math:sum ?hi1.
+}
+=>
+{
+  :ride :excessEnvelopeAt (?k1 ?lo1 ?hi1).
+}.
+
+# ---------------------------------------------
+# Convert excess-over-ambient to absolute motor
+# temperature envelopes for each sample.
+# ---------------------------------------------
+
+{
+  :ride :ambient ?amb.
+  :ride :excessEnvelopeAt (?k ?lo ?hi).
+  ( ?amb ?lo ) math:sum ?tLo.
+  ( ?amb ?hi ) math:sum ?tHi.
+}
+=>
+{
+  :ride :motorTemperatureEnvelopeAt (?k ?tLo ?tHi).
+}.
+
+# ------------------------
+# Threshold certifications
+# ------------------------
+
+{
+  :ride :motorTemperatureEnvelopeAt (?k ?tLo ?tHi).
+  :ride :hardLimit ?lim.
+  ?tHi math:lessThan ?lim.
+}
+=>
+{
+  :ride :belowHardLimitAt ?k.
+}.
+
+{
+  :ride :motorTemperatureEnvelopeAt (?k ?tLo ?tHi).
+  :ride :warningLimit ?lim.
+  ?tHi math:lessThan ?lim.
+}
+=>
+{
+  :ride :belowWarningAt ?k.
+}.
+
+# ---------------------------------------------------
+# Detect where the upper temperature envelope starts
+# moving downward again after the harder climb phase.
+# ---------------------------------------------------
+
+{
+  :ride :motorTemperatureEnvelopeAt (?k ?tLo ?tHi).
+  ( ?k 1 ) math:sum ?k1.
+  :ride :motorTemperatureEnvelopeAt (?k1 ?tLo1 ?tHi1).
+  ?tHi1 math:lessThan ?tHi.
+}
+=>
+{
+  :ride :upperEnvelopeDecreasesAt ?k.
+}.
+
+# --------------------------------------------------------
+# First return below the warning limit after being at/over
+# the warning limit in the previous sample.
+# --------------------------------------------------------
+
+{
+  :ride :belowWarningAt ?k.
+  ?k math:greaterThan 0.
+  ( ?k 1 ) math:difference ?km1.
+  :ride :motorTemperatureEnvelopeAt (?km1 ?prevLo ?prevHi).
+  :ride :warningLimit ?lim.
+  ?prevHi math:notLessThan ?lim.
+}
+=>
+{
+  :ride :firstRecoveredWarningAt ?k.
+}.
+
+{
+  :ride :firstRecoveredWarningAt ?k;
+        :samplePeriod ?ts.
+  ( ?k ?ts ) math:product ?t.
+}
+=>
+{
+  :ride :firstRecoveredWarningTime ?t.
+}.
+
+# ----------------------------------------------------------------------
+# Acceptance argument for this fixed ride plan:
+#   * samples 0..3 are individually below the hard limit
+#   * from sample 3 onward the upper envelope decreases at every step
+#   * therefore all later samples stay below the sample-3 upper envelope
+#   * the envelope returns below the warning limit at sample 8 = 40 s
+# ----------------------------------------------------------------------
+
+{
+  :ride :belowHardLimitAt 0, 1, 2, 3.
+  :ride :upperEnvelopeDecreasesAt 3, 4, 5, 6, 7, 8, 9, 10, 11.
+  :ride :firstRecoveredWarningAt 8.
+}
+=>
+{
+  :ride :rideDecision :ThermallySafeForThisAssistPlan.
+}.
+
+# ---------------
+# Readable output
+# ---------------
+
+{
+  :ride :exactCoolingSymbol ?sym;
+        :coolingLower ?aLo;
+        :coolingUpper ?aHi;
+        :warningLimit ?warn;
+        :hardLimit ?hard;
+        :firstRecoveredWarningAt ?k;
+        :firstRecoveredWarningTime ?t;
+        :rideDecision ?decision.
+}
+log:query
+{
+  :result :summary (
+    "cooling-symbol" ?sym
+    "cooling-lower" ?aLo
+    "cooling-upper" ?aHi
+    "warning-limit-C" ?warn
+    "hard-limit-C" ?hard
+    "warning-recovery-step" ?k
+    "warning-recovery-time-s" ?t
+    "decision" ?decision
+  ).
+}.
+
+{
+  :ride :assistAt (?k ?mode).
+  :ride :motorTemperatureEnvelopeAt (?k ?tLo ?tHi).
+}
+log:query
+{
+  :result :temperatureTrace (?k ?mode ?tLo ?tHi).
+}.
+
+{
+  :ride :upperEnvelopeDecreasesAt ?k.
+}
+log:query
+{
+  :result :coolingStep ?k.
+}.

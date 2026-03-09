@@ -1,0 +1,25 @@
+@prefix : <http://example.org/ebike-thermal#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:result :coolingStep 10 .
+:result :coolingStep 11 .
+:result :coolingStep 3 .
+:result :coolingStep 4 .
+:result :coolingStep 5 .
+:result :coolingStep 6 .
+:result :coolingStep 7 .
+:result :coolingStep 8 .
+:result :coolingStep 9 .
+:result :summary ("cooling-symbol" "exp(-1/4)" "cooling-lower" "0.7788007830"^^xsd:decimal "cooling-upper" "0.7788007831"^^xsd:decimal "warning-limit-C" "35.0"^^xsd:decimal "hard-limit-C" "45.0"^^xsd:decimal "warning-recovery-step" 8 "warning-recovery-time-s" "40"^^xsd:decimal "decision" :ThermallySafeForThisAssistPlan) .
+:result :temperatureTrace (0 :Turbo "33"^^xsd:decimal "33"^^xsd:decimal) .
+:result :temperatureTrace (1 :Turbo "36.030406264"^^xsd:decimal "36.0304062648"^^xsd:decimal) .
+:result :temperatureTrace (10 :Coast "30.605576433064357"^^xsd:decimal "30.605576437395232"^^xsd:decimal) .
+:result :temperatureTrace (11 :Coast "29.36562731523687"^^xsd:decimal "29.365627319170315"^^xsd:decimal) .
+:result :temperatureTrace (2 :Turbo "38.3904890352113"^^xsd:decimal "38.39048903693738"^^xsd:decimal) .
+:result :temperatureTrace (3 :Tour "40.22852334537548"^^xsd:decimal "40.2285233480588"^^xsd:decimal) .
+:result :temperatureTrace (4 :Tour "39.259985905312206"^^xsd:decimal "39.259985908924826"^^xsd:decimal) .
+:result :temperatureTrace (5 :Eco "38.50568818862611"^^xsd:decimal "38.50568819286562"^^xsd:decimal) .
+:result :temperatureTrace (6 :Eco "36.71824053625586"^^xsd:decimal "36.71824054090817"^^xsd:decimal) .
+:result :temperatureTrace (7 :Eco "35.326174905018405"^^xsd:decimal "35.326174909813446"^^xsd:decimal) .
+:result :temperatureTrace (8 :Coast "34.24203310142329"^^xsd:decimal "34.242033106190284"^^xsd:decimal) .
+:result :temperatureTrace (9 :Coast "32.197702615900376"^^xsd:decimal "32.19770262053712"^^xsd:decimal) .
