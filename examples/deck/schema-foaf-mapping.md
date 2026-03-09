@@ -4,7 +4,7 @@ When people say “map two data models,” they mean:
 
 > **Taking data described using one vocabulary (Model A) and expressing the same meaning using another vocabulary (Model B).**
 
-In the Semantic Web / Linked Data world, a “data model” is often a **set of RDF terms** (classes + properties) defined by an ontology or vocabulary—like **schema.org** or **FOAF**.
+In the Semantic Web / Linked Data world, a “data model” is often a **set of RDF terms** (classes + properties) defined by an ontology or vocabulary—like **schema.org** or **FOAF** ([Playground][1]).
 
 ---
 
@@ -217,3 +217,5 @@ Mapping two models is about **translating meaning across vocabularies**.
 - You write **N3 rules** that recognize schema.org patterns
 - You **derive FOAF triples**
 - The result is data that can be consumed as if it were FOAF, without rewriting your original dataset
+
+[1]: https://eyereasoner.github.io/eyeling/demo?url=https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/schema-foaf-mapping.n3 'Playground'

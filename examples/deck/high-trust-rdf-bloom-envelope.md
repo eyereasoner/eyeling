@@ -1,8 +1,6 @@
 # High-trust RDF graph lookup with a decimal certificate
 
-## A beginner-friendly explanation of a N3 example
-
-This deck explains the example `high-trust-rdf-bloom-envelope.n3`.
+This deck explains the example `high-trust-rdf-bloom-envelope.n3` ([Playground][1]).
 
 The goal is to show that **advanced engineering claims can be expressed and checked in N3**, even when the claim involves a **transcendental quantity** such as `exp(-k*n/m)`.
 
@@ -330,3 +328,5 @@ This example shows that a formally specified RDF graph component can make a stro
 That is exactly the kind of statement people care about in high-trust software.
 
 And the neat part is that the statement is not only written in prose—it is represented as data and rules that a reasoner can check.
+
+[1]: https://eyereasoner.github.io/eyeling/demo?url=https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/high-trust-rdf-bloom-envelope.n3 'Playground'
