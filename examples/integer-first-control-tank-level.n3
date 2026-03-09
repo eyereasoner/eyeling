@@ -1,0 +1,205 @@
+# =======================================================================================
+# Integer-first sampled tank-level control
+#
+# Why this example exists:
+#   It shows a control-engineering pattern in a genuinely integer-first style.
+#   The plant state is a water level in integer millimetres. The controller reads that
+#   level once per sample, chooses an integer valve opening, and the plant updates by an
+#   exact integer balance law.
+#
+# Plant and controller:
+#   level(k+1) = level(k) + valve(k) - outflow
+#   with outflow = 2 mm/sample and valve in {0,1,2,3,4}.
+#
+# Control law around setpoint 20 mm:
+#   level < 16          -> valve = 4   (net +2)
+#   16 <= level < 19    -> valve = 3   (net +1)
+#   19 <= level <= 21   -> valve = 2   (net  0)
+#   21 < level <= 24    -> valve = 1   (net -1)
+#   24 < level          -> valve = 0   (net -2)
+#
+# What is certified:
+#   * every closed-loop transition is exact integer arithmetic
+#   * the absolute error to the setpoint shrinks whenever it is still > 1
+#   * once the level enters the hold band [19,21], it stays there exactly
+#
+# This is “integer-first” because the certifying part of the reasoning uses only counts,
+# comparisons, sums, and differences. No floating point is needed to explain why the loop
+# behaves safely.
+# =======================================================================================
+
+@prefix :     <http://example.org/integer-control#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix log:  <http://www.w3.org/2000/10/swap/log#>.
+
+:controller a :SampledTankController;
+  :setpoint 20;
+  :outflow 2;
+  :maxStep 8.
+
+:trialLow a :ClosedLoopTrial; :initialLevel 12.
+:trialHigh a :ClosedLoopTrial; :initialLevel 28.
+:trialNominal a :ClosedLoopTrial; :initialLevel 20.
+
+# -----------------
+# Initial condition
+# -----------------
+
+{ ?trial a :ClosedLoopTrial; :initialLevel ?level0. }
+=>
+{ ?trial :levelAt (0 ?level0). }.
+
+# ------------------------------
+# Integer control law by regions
+# ------------------------------
+
+{ ?trial :levelAt (?k ?level). ?level math:lessThan 16. }
+=>
+{ ?trial :valveAt (?k 4). }.
+
+{
+  ?trial :levelAt (?k ?level).
+  ?level math:notLessThan 16.
+  ?level math:lessThan 19.
+}
+=>
+{ ?trial :valveAt (?k 3). }.
+
+{
+  ?trial :levelAt (?k ?level).
+  ?level math:notLessThan 19.
+  ?level math:notGreaterThan 21.
+}
+=>
+{ ?trial :valveAt (?k 2). }.
+
+{
+  ?trial :levelAt (?k ?level).
+  ?level math:greaterThan 21.
+  ?level math:notGreaterThan 24.
+}
+=>
+{ ?trial :valveAt (?k 1). }.
+
+{ ?trial :levelAt (?k ?level). ?level math:greaterThan 24. }
+=>
+{ ?trial :valveAt (?k 0). }.
+
+# -----------------------
+# Exact plant propagation
+# -----------------------
+
+{
+  :controller :maxStep ?max; :outflow ?outflow.
+  ?trial a :ClosedLoopTrial.
+  ?trial :levelAt (?k ?level).
+  ?trial :valveAt (?k ?valve).
+  ?k math:lessThan ?max.
+
+  ( ?k 1 ) math:sum ?k1.
+  ( ?level ?valve ) math:sum ?inflowed.
+  ( ?inflowed ?outflow ) math:difference ?nextLevel.
+}
+=>
+{ ?trial :levelAt (?k1 ?nextLevel). }.
+
+# ------------------------------------
+# Exact absolute error to the setpoint
+# ------------------------------------
+
+{
+  :controller :setpoint ?sp.
+  ?trial :levelAt (?k ?level).
+  ?level math:lessThan ?sp.
+  ( ?sp ?level ) math:difference ?error.
+}
+=>
+{
+  ?trial :errorAt (?k ?error).
+  ?trial :sideAt (?k :below).
+}.
+
+{
+  :controller :setpoint ?sp.
+  ?trial :levelAt (?k ?level).
+  ?level math:notLessThan ?sp.
+  ( ?level ?sp ) math:difference ?error.
+}
+=>
+{
+  ?trial :errorAt (?k ?error).
+  ?trial :sideAt (?k :aboveOrOn).
+}.
+
+# -----------------------------------------------------------
+# If the absolute error is still > 1, the next one is smaller
+# -----------------------------------------------------------
+
+{
+  ?trial :errorAt (?k ?error).
+  ?error math:greaterThan 1.
+  ( ?k 1 ) math:sum ?k1.
+  ?trial :errorAt (?k1 ?nextError).
+  ?nextError math:lessThan ?error.
+}
+=>
+{ ?trial :strictImprovementAt ?k. }.
+
+# -----------------------------------------------------------
+# In the hold band [19,21], valve = 2 and the level is fixed
+# -----------------------------------------------------------
+
+{
+  ?trial :levelAt (?k ?level).
+  ?trial :valveAt (?k 2).
+  ?level math:notLessThan 19.
+  ?level math:notGreaterThan 21.
+  ( ?k 1 ) math:sum ?k1.
+  ?trial :levelAt (?k1 ?nextLevel).
+  ?nextLevel math:equalTo ?level.
+}
+=>
+{
+  ?trial :holdBandAt ?k.
+  ?trial :invariantStepAt ?k.
+}.
+
+# ----------------
+# Compact queries
+# ----------------
+
+{
+  ?trial :levelAt (?k ?level).
+  ?trial :valveAt (?k ?valve).
+  ?trial :errorAt (?k ?error).
+}
+log:query
+{
+  :result :trace (?trial ?k ?level ?valve ?error).
+}.
+
+{
+  ?trial :strictImprovementAt ?k.
+}
+log:query
+{
+  :result :strictImprovement (?trial ?k true).
+}.
+
+{
+  ?trial :holdBandAt ?k.
+}
+log:query
+{
+  :result :holdBand (?trial ?k true).
+}.
+
+{
+  ?trial :levelAt (?k ?level).
+  ?level math:notLessThan 19.
+  ?level math:notGreaterThan 21.
+}
+log:query
+{
+  :result :insideBand (?trial ?k ?level).
+}.
