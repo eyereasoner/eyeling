@@ -7847,6 +7847,95 @@ function decodeN3StringEscapes(s, offset = null) {
   return out;
 }
 
+function formatCodePoint(cp) {
+  return cp
+    .toString(16)
+    .toUpperCase()
+    .padStart(cp <= 0xffff ? 4 : 6, '0');
+}
+
+function isForbiddenIriRefChar(c) {
+  return (
+    c === '<' || c === '>' || c === '"' || c === '{' || c === '}' || c === '|' || c === '^' || c === '`' || c === '\\'
+  );
+}
+
+function assertValidIriRefCodePoint(cp, offset = null) {
+  if (cp <= 0x20) {
+    throw new N3SyntaxError(`Invalid IRIREF: character U+${formatCodePoint(cp)} is not allowed inside <...>`, offset);
+  }
+
+  if (cp >= 0xd800 && cp <= 0xdfff) {
+    throw new N3SyntaxError(
+      `Invalid IRIREF: surrogate code point U+${formatCodePoint(cp)} is not allowed inside <...>`,
+      offset,
+    );
+  }
+
+  if (isForbiddenNoncharacterCodePoint(cp)) {
+    throw new N3SyntaxError(
+      `Invalid IRIREF: noncharacter U+${formatCodePoint(cp)} is not allowed inside <...>`,
+      offset,
+    );
+  }
+
+  const c = String.fromCodePoint(cp);
+  if (isForbiddenIriRefChar(c)) {
+    throw new N3SyntaxError(`Invalid IRIREF: character ${JSON.stringify(c)} is not allowed inside <...>`, offset);
+  }
+}
+
+function decodeIriRefEscapes(s, offset = null) {
+  let out = '';
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (c !== '\\') {
+      const cp = c.codePointAt(0);
+      assertValidIriRefCodePoint(cp, offset);
+      out += c;
+      continue;
+    }
+
+    if (i + 1 >= s.length) {
+      throw new N3SyntaxError('Invalid IRIREF: bare backslash is not allowed inside <...>', offset);
+    }
+
+    const e = s[++i];
+    if (e === 'u') {
+      const hex = s.slice(i + 1, i + 5);
+      if (!/^[0-9A-Fa-f]{4}$/.test(hex)) {
+        throw new N3SyntaxError('Invalid IRIREF: malformed \\u escape inside <...>', offset);
+      }
+      const cp = parseInt(hex, 16);
+      assertValidIriRefCodePoint(cp, offset);
+      out += String.fromCodePoint(cp);
+      i += 4;
+      continue;
+    }
+
+    if (e === 'U') {
+      const hex = s.slice(i + 1, i + 9);
+      if (!/^[0-9A-Fa-f]{8}$/.test(hex)) {
+        throw new N3SyntaxError('Invalid IRIREF: malformed \\U escape inside <...>', offset);
+      }
+      const cp = parseInt(hex, 16);
+      if (cp < 0 || cp > 0x10ffff) {
+        throw new N3SyntaxError(`Invalid IRIREF: code point U+${hex.toUpperCase()} is out of range`, offset);
+      }
+      assertValidIriRefCodePoint(cp, offset);
+      out += String.fromCodePoint(cp);
+      i += 8;
+      continue;
+    }
+
+    throw new N3SyntaxError(
+      `Invalid IRIREF: character ${JSON.stringify('\\' + e)} is not allowed inside <...>`,
+      offset,
+    );
+  }
+  return out;
+}
+
 function assertValidStringLiteralValue(s, offset = null) {
   for (let i = 0; i < s.length; i++) {
     const cu = s.charCodeAt(i);
@@ -8032,7 +8121,7 @@ function lex(inputText) {
         throw new N3SyntaxError('Unterminated IRI <...>', start);
       }
       i++; // skip '>'
-      const iri = iriChars.join('');
+      const iri = decodeIriRefEscapes(iriChars.join(''), start);
       tokens.push(new Token('IriRef', iri, start));
       continue;
     }

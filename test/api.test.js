@@ -568,6 +568,227 @@ bad.:example a bad.:Person.
     expectError: true,
   },
   {
+    name: '12h invalid syntax: space is not allowed inside IRIREF',
+    opt: { proofComments: false },
+    input: `
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<http://bad example.org/> a :BadExample.
+
+{
+    :subject :predicate ?X.
+}
+=>
+{
+    :result :has :crash-syntax-7.
+}.
+
+{} => {
+    :test :contains :crash-syntax-7.
+}.
+
+{
+    :result :has :crash-syntax-7.
+}
+=>
+{
+    :test :is false.
+}.
+`,
+    expectError: true,
+  },
+  {
+    name: '12i invalid syntax: UCHAR escape is not allowed inside IRIREF',
+    opt: { proofComments: false },
+    input: String.raw`
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<http://bad\u0020example.org/> a :BadExample.
+
+{
+    :subject :predicate ?X.
+}
+=>
+{
+    :result :has :crash-syntax-8.
+}.
+
+{} => {
+    :test :contains :crash-syntax-8.
+}.
+
+{
+    :result :has :crash-syntax-8.
+}
+=>
+{
+    :test :is false.
+}.
+`,
+    expectError: true,
+  },
+  {
+    name: '12j invalid syntax: control characters are not allowed inside IRIREF',
+    opt: { proofComments: false },
+    input: `
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<http://badexample.org> :foo <http://example.org/> .
+
+{
+    :subject :predicate ?X.
+}
+=>
+{
+    :result :has :crash-syntax-9.
+}.
+
+{} => {
+    :test :contains :crash-syntax-9.
+}.
+
+{
+    :result :has :crash-syntax-9.
+}
+=>
+{
+    :test :is false.
+}.
+`,
+    expectError: true,
+  },
+  {
+    name: '12k invalid syntax: control-character UCHAR is not allowed inside IRIREF',
+    opt: { proofComments: false },
+    input: String.raw`
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<http://bad\u0007example.org> :foo <http://example.org/> .
+
+{
+    :subject :predicate ?X.
+}
+=>
+{
+    :result :has :crash-syntax-10.
+}.
+
+{} => {
+    :test :contains :crash-syntax-10.
+}.
+
+{
+    :result :has :crash-syntax-10.
+}
+=>
+{
+    :test :is false.
+}.
+`,
+    expectError: true,
+  },
+  {
+    name: '12l regression: IRIREF \\u escape decodes before log:uri comparison (mismatch stays falsey)',
+    opt: { proofComments: false },
+    input: String.raw`
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@base <http://example.org/>.
+
+{
+    <http://example.org/\u0041> log:uri "http://example.org/\\u0041".
+}
+=>
+{
+    :result :has :fail-literal-1.
+}.
+
+{ } => {
+    :test :contains :fail-literal-1.
+}.
+`,
+    expect: [/:(?:test)\s+:(?:contains)\s+:(?:fail-literal-1)\s*\./],
+    notExpect: [/:(?:result)\s+:(?:has)\s+:(?:fail-literal-1)\s*\./, /:(?:test)\s+:(?:is)\s+true\s*\./],
+  },
+  {
+    name: '12m regression: IRIREF \\u escape matches plain-A literal via log:uri',
+    opt: { proofComments: false },
+    input: String.raw`
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@base <http://example.org/>.
+
+{
+    <http://example.org/\u0041> log:uri "http://example.org/A".
+}
+=>
+{
+    :result :has :success-literal-5.
+}.
+
+{ } => {
+    :test :contains :success-literal-5.
+}.
+
+{
+    :result :has :success-literal-5.
+}
+=>
+{
+    :test :is true.
+}.
+`,
+    expect: [
+      /:(?:result)\s+:(?:has)\s+:(?:success-literal-5)\s*\./,
+      /:(?:test)\s+:(?:contains)\s+:(?:success-literal-5)\s*\./,
+      /:(?:test)\s+:(?:is)\s+true\s*\./,
+    ],
+  },
+  {
+    name: '12n regression: IRIREF \\u escape matches decoded literal escape via log:uri',
+    opt: { proofComments: false },
+    input: String.raw`
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@base <http://example.org/>.
+
+{
+    <http://example.org/\u0041> log:uri "http://example.org/\u0041".
+}
+=>
+{
+    :result :has :success-literal-6.
+}.
+
+{ } => {
+    :test :contains :success-literal-6.
+}.
+
+{
+    :result :has :success-literal-6.
+}
+=>
+{
+    :test :is true.
+}.
+`,
+    expect: [
+      /:(?:result)\s+:(?:has)\s+:(?:success-literal-6)\s*\./,
+      /:(?:test)\s+:(?:contains)\s+:(?:success-literal-6)\s*\./,
+      /:(?:test)\s+:(?:is)\s+true\s*\./,
+    ],
+  },
+  {
     name: '13 heavier recursion: ancestor closure over 15 links',
     opt: { proofComments: false, maxBuffer: 200 * 1024 * 1024 },
     input: parentChainN3(15),
