@@ -1,0 +1,29 @@
+@prefix : <http://example.org/decimal-servo#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:result :contractionAt 0 .
+:result :contractionAt 1 .
+:result :contractionAt 10 .
+:result :contractionAt 11 .
+:result :contractionAt 2 .
+:result :contractionAt 3 .
+:result :contractionAt 4 .
+:result :contractionAt 5 .
+:result :contractionAt 6 .
+:result :contractionAt 7 .
+:result :contractionAt 8 .
+:result :contractionAt 9 .
+:result :envelope (0 "12.5"^^xsd:decimal "12.5"^^xsd:decimal) .
+:result :envelope (1 "8.95664138125"^^xsd:decimal "8.956641382499999"^^xsd:decimal) .
+:result :envelope (10 "0.4459249163814359"^^xsd:decimal "0.44592491700377423"^^xsd:decimal) .
+:result :envelope (11 "0.3195191647193932"^^xsd:decimal "0.3195191652099106"^^xsd:decimal) .
+:result :envelope (12 "0.22894548582625215"^^xsd:decimal "0.22894548620967514"^^xsd:decimal) .
+:result :envelope (2 "6.417713986585592"^^xsd:decimal "6.41771398837692"^^xsd:decimal) .
+:result :envelope (3 "4.598493013222353"^^xsd:decimal "4.5984930151476675"^^xsd:decimal) .
+:result :envelope (4 "3.2949642250893065"^^xsd:decimal "3.2949642269287036"^^xsd:decimal) .
+:result :envelope (5 "2.3609450342538576"^^xsd:decimal "2.3609450359013398"^^xsd:decimal) .
+:result :envelope (6 "1.6916910394123839"^^xsd:decimal "1.691691040828951"^^xsd:decimal) .
+:result :envelope (7 "1.2121495974312624"^^xsd:decimal "1.2121495986154462"^^xsd:decimal) .
+:result :envelope (8 "0.8685431395694698"^^xsd:decimal "0.8685431405391896"^^xsd:decimal) .
+:result :envelope (9 "0.6223383540214966"^^xsd:decimal "0.6223383548031854"^^xsd:decimal) .
+:result :summary ("exact-pole" "exp(-1/3)" "decimal-lower" "0.7165313105"^^xsd:decimal "decimal-upper" "0.7165313106"^^xsd:decimal "tolerance" "0.5"^^xsd:decimal "first-settled-step" 10 "first-settled-time-s" "0.2"^^xsd:decimal) .

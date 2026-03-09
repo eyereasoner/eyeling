@@ -1,0 +1,197 @@
+# =======================================================================================
+# Decimal transcendental servo envelope
+#
+# Why this example exists:
+#   It illustrates the “integer-first” idea in a setting where a genuinely transcendental
+#   constant appears in control engineering.
+#
+# Physical story:
+#   A sampled first-order servo has error dynamics
+#
+#       e(k+1) = a * e(k)
+#
+#   with exact discrete pole
+#
+#       a = exp(-Ts/tau) = exp(-1/3)
+#
+#   for Ts = 20 ms and tau = 60 ms.
+#
+#   The number exp(-1/3) is transcendental, so it is not available as a finite exact
+#   decimal. But for engineering we do not need mystical access to the exact real.
+#   We only need a finite certificate with controlled error.
+#
+# Integer-first / decimal-first move:
+#   We store a certified xsd:decimal interval
+#
+#       0.7165313105 <= exp(-1/3) <= 0.7165313106
+#
+#   and propagate an exact decimal error envelope. Because xsd:decimal is finite symbolic
+#   data (effectively an integer coefficient plus a base-10 scale), the whole certificate
+#   remains machine-checkable and reproducible.
+#
+# What is certified:
+#   * the interval is nonempty and contractive
+#   * the error envelope shrinks at every sample
+#   * from an initial error of 12.5, the loop is guaranteed inside ±0.5 by sample 10
+#   * with Ts = 0.020 s, that means guaranteed settling by 0.200 s
+# =======================================================================================
+
+@prefix :     <http://example.org/decimal-servo#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix log:  <http://www.w3.org/2000/10/swap/log#>.
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#>.
+
+# ----------
+# Parameters
+# ----------
+
+:servo a :SampledServoEnvelope;
+  :samplePeriod "0.020"^^xsd:decimal;
+  :timeConstant "0.060"^^xsd:decimal;
+  :exactPoleSymbol "exp(-1/3)";
+  :poleLower "0.7165313105"^^xsd:decimal;
+  :poleUpper "0.7165313106"^^xsd:decimal;
+  :initialAbsError "12.5"^^xsd:decimal;
+  :tolerance "0.5"^^xsd:decimal;
+  :maxStep 12.
+
+# -----------------------------------------------------------------
+# The decimal interval is a finite certificate for a transcendental
+# -----------------------------------------------------------------
+
+{
+  :servo :poleLower ?lo; :poleUpper ?hi.
+  ?lo math:lessThan ?hi.
+  ?hi math:lessThan 1.
+  ?lo math:greaterThan 0.
+}
+=>
+{
+  :servo :poleCertificate :CertifiedDecimalInterval.
+  :servo :contractivePole true.
+}.
+
+# ----------------
+# Initial envelope
+# ----------------
+
+{
+  :servo :initialAbsError ?e0.
+}
+=>
+{
+  :servo :errorEnvelopeAt (0 ?e0 ?e0).
+}.
+
+# -----------------------------------
+# Envelope propagation
+#   lower(k+1) = poleLower * lower(k)
+#   upper(k+1) = poleUpper * upper(k)
+# -----------------------------------
+
+{
+  :servo :maxStep ?max;
+         :poleLower ?aLo;
+         :poleUpper ?aHi.
+  :servo :errorEnvelopeAt (?k ?lo ?hi).
+  ?k math:lessThan ?max.
+  ( ?k 1 ) math:sum ?k1.
+  ( ?aLo ?lo ) math:product ?lo1.
+  ( ?aHi ?hi ) math:product ?hi1.
+}
+=>
+{
+  :servo :errorEnvelopeAt (?k1 ?lo1 ?hi1).
+}.
+
+# -----------------------------
+# The envelope shrinks strictly
+# -----------------------------
+
+{
+  :servo :errorEnvelopeAt (?k ?lo ?hi).
+  ( ?k 1 ) math:sum ?k1.
+  :servo :errorEnvelopeAt (?k1 ?lo1 ?hi1).
+  ?hi1 math:lessThan ?hi.
+}
+=>
+{
+  :servo :strictContractionAt ?k.
+}.
+
+# --------------------------------
+# Settlement in the tolerance band
+# --------------------------------
+
+{
+  :servo :errorEnvelopeAt (?k ?lo ?hi).
+  :servo :tolerance ?tol.
+  ?hi math:lessThan ?tol.
+}
+=>
+{
+  :servo :settledCandidate ?k.
+}.
+
+{
+  :servo :settledCandidate ?k.
+  ?k math:greaterThan 0.
+  ( ?k 1 ) math:difference ?km1.
+  :servo :errorEnvelopeAt (?km1 ?prevLo ?prevHi).
+  :servo :tolerance ?tol.
+  ?prevHi math:notLessThan ?tol.
+}
+=>
+{
+  :servo :firstSettledStep ?k.
+}.
+
+{
+  :servo :firstSettledStep ?k.
+  :servo :samplePeriod ?ts.
+  ( ?k ?ts ) math:product ?t.
+}
+=>
+{
+  :servo :firstSettledTime ?t.
+}.
+
+# --------------------------------------------------------
+# Readable engineering summary for the decimal certificate
+# --------------------------------------------------------
+
+{
+  :servo :firstSettledStep ?k;
+         :firstSettledTime ?t;
+         :tolerance ?tol;
+         :exactPoleSymbol ?sym;
+         :poleLower ?aLo;
+         :poleUpper ?aHi.
+}
+log:query
+{
+  :result :summary (
+    "exact-pole" ?sym
+    "decimal-lower" ?aLo
+    "decimal-upper" ?aHi
+    "tolerance" ?tol
+    "first-settled-step" ?k
+    "first-settled-time-s" ?t
+  ).
+}.
+
+{
+  :servo :errorEnvelopeAt (?k ?lo ?hi).
+}
+log:query
+{
+  :result :envelope (?k ?lo ?hi).
+}.
+
+{
+  :servo :strictContractionAt ?k.
+}
+log:query
+{
+  :result :contractionAt ?k.
+}.

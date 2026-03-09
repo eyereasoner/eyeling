@@ -32,6 +32,10 @@
 @prefix math: <http://www.w3.org/2000/10/swap/math#>.
 @prefix log:  <http://www.w3.org/2000/10/swap/log#>.
 
+# ----------
+# Parameters
+# ----------
+
 :controller a :SampledTankController;
   :setpoint 20;
   :outflow 2;

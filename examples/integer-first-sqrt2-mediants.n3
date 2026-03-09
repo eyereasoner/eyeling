@@ -25,6 +25,10 @@
 @prefix math: <http://www.w3.org/2000/10/swap/math#>.
 @prefix log:  <http://www.w3.org/2000/10/swap/log#>.
 
+# ----------
+# Parameters
+# ----------
+
 :sqrt2 a :Target;
   :computedBy :mediantRefiner.
 
