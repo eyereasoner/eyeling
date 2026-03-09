@@ -1,0 +1,6 @@
+@prefix : <https://eyereasoner.github.io/eye/reasoning#> .
+@prefix gps: <https://eyereasoner.github.io/eye/reasoning/gps/gps-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:i1 gps:path ((:drive_gent_brugge :drive_brugge_oostende) "2400"^^xsd:decimal "0.01"^^xsd:decimal "0.9408"^^xsd:decimal "0.99"^^xsd:decimal) .
+:i1 gps:path ((:drive_gent_kortrijk :drive_kortrijk_brugge :drive_brugge_oostende) "4100"^^xsd:decimal "0.018"^^xsd:decimal "0.903168"^^xsd:decimal "0.9801"^^xsd:decimal) .
