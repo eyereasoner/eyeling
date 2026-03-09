@@ -88,9 +88,9 @@ The expression uses **`exp`**, and values involving `exp(...)` are generally **n
 
 ---
 
-## The “decimal-first” idea
+## The decimal-first idea
 
-Instead of trying to represent the exact real number, the file stores a **certified decimal interval**:
+Instead of trying to represent the exact real number, the file stores a **trusted decimal interval certificate**:
 
 ```text
 0.5988792348 <= exp(-0.5126953125) <= 0.5988792349
@@ -137,7 +137,7 @@ The example uses these concrete values:
 From those, it derives:
 
 - the load factor `lambda = k*n/m = 0.5126953125`
-- a certified decimal interval for `exp(-lambda)`
+- a decimal interval certificate for `exp(-lambda)`
 - a lower and upper bound for the Bloom false-positive rate
 - an upper bound on the number of extra exact lookups
 
@@ -152,10 +152,12 @@ The file is not just doing arithmetic. It is expressing a **contract**.
 The contract says:
 
 1. the canonical graph and the SPO index must agree,
-2. the decimal interval for the transcendental term must be well-formed,
-3. the false-positive rate must stay below a specified budget,
-4. the expected number of extra exact confirmations must stay below another budget,
-5. and exact correctness must still come from the canonical graph.
+2. the basic operating parameters must be sane,
+3. the decimal interval for the transcendental term must be well-formed,
+4. that interval must match the computed load factor,
+5. the false-positive rate must stay below a specified budget,
+6. the expected number of extra exact confirmations must stay below another budget,
+7. and exact correctness must still come from the canonical graph.
 
 Only if all of those hold does the file conclude:
 
@@ -167,7 +169,7 @@ That is a nice example of **policy + math + data structure behavior** meeting in
 
 ---
 
-## Why this counts as “high-trust”
+## Why this counts as high-trust
 
 High-trust does **not** mean “no approximation anywhere.”
 
@@ -176,13 +178,15 @@ Instead, it means something closer to this:
 - approximations are clearly identified,
 - their effect is bounded,
 - their use is restricted,
+- malformed inputs do not accidentally pass,
 - and the final correctness claim does not depend on unjustified assumptions.
 
 In this example:
 
 - the Bloom filter may introduce extra work,
 - but it does not introduce wrong positive answers into the final result,
-- because maybe-positive cases are verified against the exact graph.
+- because maybe-positive cases are verified against the exact graph,
+- and the workload argument only goes through when the certificate and parameters are sane.
 
 So the approximation affects **performance**, not **truth**.
 
@@ -196,7 +200,7 @@ Fewer are comfortable with real analysis.
 This example shows a practical middle path:
 
 - keep the reasoning engine in a finite symbolic world,
-- represent a transcendental quantity by a certified decimal interval,
+- represent a transcendental quantity by a decimal interval certificate,
 - and propagate that interval through the rest of the computation.
 
 That is powerful because many engineering systems depend on quantities that are not naturally exact integers:
@@ -214,15 +218,23 @@ Using decimal envelopes lets you reason about them without pretending they are e
 
 ## What is happening rule by rule
 
-At a high level, the N3 file does five things.
+At a high level, the N3 file does six things.
 
-### 1. Check structural agreement
+### 1. Check parameter sanity
+
+It first checks that the operational inputs make sense at all.
+
+This includes positivity checks on counts, filter size, number of hash functions, batch size, and budgets.
+
+That prevents nonsense values from entering the proof path.
+
+### 2. Check structural agreement
 
 It verifies that the canonical graph and the SPO index report the same triple count.
 
 That gives confidence that the exact index structure is aligned with the exact data source.
 
-### 2. Compute the Bloom load factor
+### 3. Compute the Bloom load factor
 
 It computes:
 
@@ -232,16 +244,17 @@ lambda = k*n/m
 
 using exact arithmetic over finite numeric literals.
 
-### 3. Accept a decimal certificate for the transcendental term
+### 4. Certify the transcendental interval
 
 It checks that the stored lower and upper bounds for `exp(-lambda)` make sense:
 
 - lower < upper,
-- both are between 0 and 1.
+- both are between 0 and 1,
+- and the certificate is tied to the same `lambda` that was computed earlier.
 
-This is a simple but important certificate validity check.
+This is the key guard that stops unrelated or bogus certificates from being reused.
 
-### 4. Derive an envelope for the false-positive rate
+### 5. Derive an envelope for the false-positive rate
 
 Using monotonicity, the file turns bounds on `exp(-lambda)` into bounds on:
 
@@ -251,14 +264,38 @@ Using monotonicity, the file turns bounds on `exp(-lambda)` into bounds on:
 
 That produces a lower and upper bound for the false-positive rate.
 
-### 5. Compare against operational budgets
+The important point is that this step happens **only after** certificate validation.
+
+### 6. Compare against operational budgets
 
 Finally, it checks:
 
 - the false-positive rate is below the configured rate budget,
-- the expected number of extra exact lookups is below the configured workload budget.
+- the expected number of extra exact lookups is below the configured workload budget,
+- and those derived quantities are themselves sensible.
 
 If all checks pass, the artifact is accepted.
+
+---
+
+## Why the hardening matters
+
+This is not just a technical patch.
+It illustrates a broader lesson for formal engineering.
+
+When people first write down a proof-oriented model, they often focus on the intended path:
+
+- compute the quantity,
+- compare it with a threshold,
+- derive a conclusion.
+
+But in real high-trust work, you also need to think about the *bad path*:
+
+- What if the parameters are malformed?
+- What if a certificate is unrelated to the current instance?
+- What if an intermediate result has the right type but the wrong meaning?
+
+The hardened example shows how to make those concerns explicit inside the rules.
 
 ---
 
@@ -266,7 +303,7 @@ If all checks pass, the artifact is accepted.
 
 This example is really about something bigger:
 
-> Can an RDF/N3 specification describe not just data, but also quantified engineering guarantees?
+> Can an RDF/N3 specification describe not just data, but also quantified engineering guarantees with guards against misuse?
 
 Here the answer is yes.
 
@@ -292,7 +329,11 @@ You can think of the example like an airport security line:
 - the canonical graph is the careful manual check,
 - and the decimal certificate says how often the fast screen may send someone to manual inspection unnecessarily.
 
-The design is acceptable because the fast screen does not get the final say.
+The hardened version adds one more idea:
+
+- it also checks that the calibration sheet belongs to **this** scanner and not to some other machine.
+
+That is what the `certifiedLambda` tie-in is doing.
 
 ---
 
@@ -313,7 +354,8 @@ It combines:
 - exact graph invariants,
 - operational policy,
 - decimal arithmetic,
-- and a transcendental approximation certificate.
+- a transcendental approximation certificate,
+- and explicit guards against malformed inputs.
 
 So it is a good illustration of N3 as a language for **machine-readable engineering arguments**, not just for linked data publishing.
 
@@ -323,7 +365,7 @@ So it is a good illustration of N3 as a language for **machine-readable engineer
 
 This example shows that a formally specified RDF graph component can make a strong claim like:
 
-> “Our fast prefilter is approximate, but its approximation is explicitly bounded, and final correctness still comes from an exact graph.”
+> “Our fast prefilter is approximate, but its approximation is explicitly bounded, tied to the right operating point, and final correctness still comes from an exact graph.”
 
 That is exactly the kind of statement people care about in high-trust software.
 

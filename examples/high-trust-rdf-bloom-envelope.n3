@@ -3,7 +3,8 @@
 #
 # Why this example exists:
 #   It shows how xsd:decimal can carry a machine-checkable certificate for a
-#   transcendental quantity inside a formally specified RDF graph component.
+#   transcendental quantity inside a formally specified RDF graph component,
+#   while making acceptance depend on explicit sanity and certificate checks.
 #
 # Engineering story:
 #   We have one immutable RDF graph snapshot, one verified SPO index snapshot,
@@ -22,7 +23,7 @@
 #
 # Decimal-first move:
 #   We do not ask the engine to know the exact real exp(-lambda).
-#   We store a certified xsd:decimal interval
+#   We store a trusted xsd:decimal interval certificate
 #
 #       0.5988792348 <= exp(-0.5126953125) <= 0.5988792349
 #
@@ -58,10 +59,36 @@
   :fpRateBudget 0.002;
   :extraExactLookupsBudget 100.0;
   :exactTranscendentalSymbol "exp(-k*n/m)";
+  :certifiedLambda 0.5126953125;
   :expMinusLambdaLower 0.5988792348;
   :expMinusLambdaUpper 0.5988792349;
   :maybePositivePolicy :ConfirmAgainstCanonicalGraph;
   :definiteNegativePolicy :ReturnAbsent.
+
+# ----------------
+# Parameter sanity
+# ----------------
+
+{
+  :artifact :canonicalTripleCount ?n;
+            :spoIndexTripleCount ?s;
+            :bloomBits ?m;
+            :hashFunctions ?k;
+            :negativeLookupsPerBatch ?q;
+            :fpRateBudget ?r;
+            :extraExactLookupsBudget ?e.
+  ?n math:greaterThan 0.
+  ?s math:greaterThan 0.
+  ?m math:greaterThan 0.
+  ?k math:greaterThan 0.
+  ?q math:greaterThan 0.
+  ?r math:greaterThan 0.
+  ?e math:greaterThan 0.
+}
+=>
+{
+  :artifact :parameterSanity true.
+}.
 
 # -------------------------------------------------
 # Exact structural agreement of graph and SPO index
@@ -82,7 +109,8 @@
 # -------------------------------------------
 
 {
-  :artifact :tripleCount ?n;
+  :artifact :parameterSanity true;
+            :tripleCount ?n;
             :hashFunctions ?k;
             :bloomBits ?m.
   ( ?k ?n ) math:product ?kn.
@@ -99,8 +127,11 @@
 # -----------------------------------------------------------
 
 {
-  :artifact :expMinusLambdaLower ?lo;
+  :artifact :lambda ?lambda;
+            :certifiedLambda ?lambda;
+            :expMinusLambdaLower ?lo;
             :expMinusLambdaUpper ?hi.
+  ?lambda math:greaterThan 0.
   ?lo math:lessThan ?hi.
   ?lo math:greaterThan 0.
   ?hi math:lessThan 1.
@@ -120,7 +151,8 @@
 # --------------------------------
 
 {
-  :artifact :hashFunctions ?k;
+  :artifact :expIntervalCertificate :CertifiedDecimalInterval;
+            :hashFunctions ?k;
             :expMinusLambdaLower ?eLo;
             :expMinusLambdaUpper ?eHi.
   ( 1.0 ?eHi ) math:difference ?oneMinusLo.
@@ -141,6 +173,7 @@
 {
   :artifact :fpRateUpper ?fpHi;
             :fpRateBudget ?budget.
+  ?fpHi math:greaterThan 0.
   ?fpHi math:lessThan ?budget.
 }
 =>
@@ -161,6 +194,7 @@
 {
   :artifact :expectedExtraExactLookupsUpper ?extraHi;
             :extraExactLookupsBudget ?budget.
+  ?extraHi math:greaterThan 0.
   ?extraHi math:lessThan ?budget.
 }
 =>
@@ -168,14 +202,16 @@
   :artifact :withinExactLookupBudget true.
 }.
 
-# ------------------------------------------------------------------
+# -----------------------------------------------------------------
 # High-trust acceptability: exact answers come from the canonical
 # graph, while the decimal certificate keeps the prefilter workload
 # inside a specified budget.
-# -----------------------------------------------------------------
+# ----------------------------------------------------------------
 
 {
-  :artifact :indexAgreement true;
+  :artifact :parameterSanity true;
+            :indexAgreement true;
+            :expIntervalCertificate :CertifiedDecimalInterval;
             :withinFpRateBudget true;
             :withinExactLookupBudget true;
             :maybePositivePolicy :ConfirmAgainstCanonicalGraph;
@@ -191,7 +227,10 @@
 # ---------------
 
 {
-  :artifact :lambda ?lambda;
+  :artifact :parameterSanity ?sanity;
+            :indexAgreement ?agreement;
+            :lambda ?lambda;
+            :certifiedLambda ?certifiedLambda;
             :exactTranscendentalSymbol ?sym;
             :expMinusLambdaLower ?eLo;
             :expMinusLambdaUpper ?eHi;
@@ -203,8 +242,11 @@
 log:query
 {
   :result :summary (
+    "parameter-sanity" ?sanity
+    "index-agreement" ?agreement
     "transcendental" ?sym
     "lambda" ?lambda
+    "certified-lambda" ?certifiedLambda
     "exp-lower" ?eLo
     "exp-upper" ?eHi
     "fp-lower" ?fpLo
@@ -215,11 +257,11 @@ log:query
 }.
 
 {
-  :artifact :indexAgreement ?v.
+  :artifact :expIntervalCertificate ?v.
 }
 log:query
 {
-  :result :indexAgreement ?v.
+  :result :expIntervalCertificate ?v.
 }.
 
 {
