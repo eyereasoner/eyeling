@@ -1,0 +1,361 @@
+# ==============================================================================
+# High-trust RDF Bloom filter hardening: trusted artifact vs tampered artifact
+#
+# Why this example exists:
+#   It stresses why the hardening matters. The file contains two artifacts:
+#
+#     1) a trusted artifact with sane parameters and a matching decimal
+#        certificate for exp(-lambda)
+#     2) a tampered artifact with bogus numbers that can still look "cheap"
+#        under weak budget-only checks because a malformed upper bound becomes a
+#        large negative number
+#
+# Main lesson:
+#   Weak checks can be fooled by malformed intermediate values.
+#   Hardened checks make acceptance depend on explicit sanity conditions and on
+#   a certificate that is well-formed and tied to the computed lambda.
+#
+# What the file demonstrates:
+#   * :trustedArtifact is accepted under both the weak and hardened rules
+#   * :tamperedArtifact can pass the weak budget-only path
+#   * :tamperedArtifact is rejected by the hardened path, with explicit reasons
+# ==============================================================================
+
+@prefix :     <http://example.org/high-trust-rdf#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix log:  <http://www.w3.org/2000/10/swap/log#>.
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#>.
+
+# ----------------
+# Trusted artifact
+# ----------------
+
+:trustedArtifact a :HighTrustRdfArtifact;
+  :canonicalTripleCount 1200;
+  :spoIndexTripleCount 1200;
+  :bloomBits 16384;
+  :hashFunctions 7;
+  :negativeLookupsPerBatch 50000;
+  :fpRateBudget 0.002;
+  :extraExactLookupsBudget 100.0;
+  :exactTranscendentalSymbol "exp(-k*n/m)";
+  :certifiedLambda 0.5126953125;
+  :expMinusLambdaLower 0.5988792348;
+  :expMinusLambdaUpper 0.5988792349;
+  :maybePositivePolicy :ConfirmAgainstCanonicalGraph;
+  :definiteNegativePolicy :ReturnAbsent.
+
+# -----------------
+# Tampered artifact
+# -----------------
+
+:tamperedArtifact a :HighTrustRdfArtifact;
+  :canonicalTripleCount 1200;
+  :spoIndexTripleCount 1200;
+  :bloomBits -12;
+  :hashFunctions 7;
+  :negativeLookupsPerBatch 1;
+  :fpRateBudget 0.1;
+  :extraExactLookupsBudget 100.0;
+  :exactTranscendentalSymbol "whatever an attacker writes here";
+  :certifiedLambda 0.5126953125;
+  :expMinusLambdaLower 42;
+  :expMinusLambdaUpper -42;
+  :maybePositivePolicy :ConfirmAgainstCanonicalGraph;
+  :definiteNegativePolicy :ReturnAbsent.
+
+# -------------------------------------------------
+# Exact structural agreement of graph and SPO index
+# -------------------------------------------------
+
+{
+  ?a :canonicalTripleCount ?n;
+     :spoIndexTripleCount ?n.
+}
+=>
+{
+  ?a :indexAgreement true.
+  ?a :tripleCount ?n.
+}.
+
+# -------------------------------------------
+# Exact load factor lambda = k*n/m as decimal
+# -------------------------------------------
+
+{
+  ?a :tripleCount ?n;
+     :hashFunctions ?k;
+     :bloomBits ?m.
+  ( ?k ?n ) math:product ?kn.
+  ( ?kn ?m ) math:quotient ?lambda.
+}
+=>
+{
+  ?a :lambda ?lambda.
+}.
+
+# ----------------------------------------------------------------------------
+# Weak path (pre-hardening)
+#
+# This path deliberately computes a budget envelope from whatever numbers were
+# supplied, without first proving that they form a sane certificate.
+# ----------------------------------------------------------------------------
+
+{
+  ?a :hashFunctions ?k;
+     :expMinusLambdaLower ?eLo;
+     :expMinusLambdaUpper ?eHi.
+  ( 1.0 ?eHi ) math:difference ?oneMinusLo.
+  ( 1.0 ?eLo ) math:difference ?oneMinusHi.
+  ( ?oneMinusLo ?k ) math:exponentiation ?fpLo.
+  ( ?oneMinusHi ?k ) math:exponentiation ?fpHi.
+}
+=>
+{
+  ?a :weakFpRateLower ?fpLo;
+     :weakFpRateUpper ?fpHi.
+}.
+
+{
+  ?a :weakFpRateUpper ?fpHi;
+     :fpRateBudget ?budget.
+  ?fpHi math:lessThan ?budget.
+}
+=>
+{
+  ?a :weakWithinFpRateBudget true.
+}.
+
+{
+  ?a :negativeLookupsPerBatch ?q;
+     :weakFpRateUpper ?fpHi.
+  ( ?q ?fpHi ) math:product ?extraHi.
+}
+=>
+{
+  ?a :weakExpectedExtraExactLookupsUpper ?extraHi.
+}.
+
+{
+  ?a :weakExpectedExtraExactLookupsUpper ?extraHi;
+     :extraExactLookupsBudget ?budget.
+  ?extraHi math:lessThan ?budget.
+}
+=>
+{
+  ?a :weakWithinExactLookupBudget true.
+}.
+
+{
+  ?a :indexAgreement true;
+     :weakWithinFpRateBudget true;
+     :weakWithinExactLookupBudget true;
+     :maybePositivePolicy :ConfirmAgainstCanonicalGraph;
+     :definiteNegativePolicy :ReturnAbsent.
+}
+=>
+{
+  ?a :weakDecision :AcceptUnderWeakBudgetOnlyRules.
+}.
+
+# ------------------------------
+# Hardened path (current design)
+# ------------------------------
+
+# Parameter sanity is explicit and required.
+{
+  ?a :canonicalTripleCount ?n;
+     :spoIndexTripleCount ?s;
+     :bloomBits ?m;
+     :hashFunctions ?k;
+     :negativeLookupsPerBatch ?q;
+     :fpRateBudget ?r;
+     :extraExactLookupsBudget ?e.
+  ?n math:greaterThan 0.
+  ?s math:greaterThan 0.
+  ?m math:greaterThan 0.
+  ?k math:greaterThan 0.
+  ?q math:greaterThan 0.
+  ?r math:greaterThan 0.
+  ?e math:greaterThan 0.
+}
+=>
+{
+  ?a :parameterSanity true.
+}.
+
+# A matching and well-formed interval certificate is explicit and required.
+{
+  ?a :lambda ?lambda;
+     :certifiedLambda ?lambda;
+     :expMinusLambdaLower ?lo;
+     :expMinusLambdaUpper ?hi.
+  ?lambda math:greaterThan 0.
+  ?lo math:lessThan ?hi.
+  ?lo math:greaterThan 0.
+  ?hi math:lessThan 1.
+}
+=>
+{
+  ?a :expIntervalCertificate :CertifiedDecimalInterval.
+}.
+
+# Hardened envelope uses only a certified interval.
+{
+  ?a :expIntervalCertificate :CertifiedDecimalInterval;
+     :hashFunctions ?k;
+     :expMinusLambdaLower ?eLo;
+     :expMinusLambdaUpper ?eHi.
+  ( 1.0 ?eHi ) math:difference ?oneMinusLo.
+  ( 1.0 ?eLo ) math:difference ?oneMinusHi.
+  ( ?oneMinusLo ?k ) math:exponentiation ?fpLo.
+  ( ?oneMinusHi ?k ) math:exponentiation ?fpHi.
+}
+=>
+{
+  ?a :fpRateLower ?fpLo;
+     :fpRateUpper ?fpHi.
+}.
+
+{
+  ?a :fpRateUpper ?fpHi;
+     :fpRateBudget ?budget.
+  ?fpHi math:greaterThan 0.
+  ?fpHi math:lessThan ?budget.
+}
+=>
+{
+  ?a :withinFpRateBudget true.
+}.
+
+{
+  ?a :negativeLookupsPerBatch ?q;
+     :fpRateUpper ?fpHi.
+  ( ?q ?fpHi ) math:product ?extraHi.
+}
+=>
+{
+  ?a :expectedExtraExactLookupsUpper ?extraHi.
+}.
+
+{
+  ?a :expectedExtraExactLookupsUpper ?extraHi;
+     :extraExactLookupsBudget ?budget.
+  ?extraHi math:greaterThan 0.
+  ?extraHi math:lessThan ?budget.
+}
+=>
+{
+  ?a :withinExactLookupBudget true.
+}.
+
+{
+  ?a :parameterSanity true;
+     :indexAgreement true;
+     :expIntervalCertificate :CertifiedDecimalInterval;
+     :withinFpRateBudget true;
+     :withinExactLookupBudget true;
+     :maybePositivePolicy :ConfirmAgainstCanonicalGraph;
+     :definiteNegativePolicy :ReturnAbsent.
+}
+=>
+{
+  ?a :hardenedDecision :AcceptForHighTrustUse.
+}.
+
+# -------------------------------------------------
+# Explicit tamper evidence / reject path
+#
+# These rules make hardening visible in the output.
+# -------------------------------------------------
+
+{
+  ?a :bloomBits ?m.
+  ?m math:notGreaterThan 0.
+}
+=>
+{
+  ?a :rejectReason :NonPositiveBloomBits.
+}.
+
+{
+  ?a :lambda ?lambda;
+     :certifiedLambda ?certified.
+  ?certified math:notEqualTo ?lambda.
+}
+=>
+{
+  ?a :rejectReason :CertifiedLambdaMismatch.
+}.
+
+{
+  ?a :expMinusLambdaLower ?lo;
+     :expMinusLambdaUpper ?hi.
+  ?hi math:notGreaterThan ?lo.
+}
+=>
+{
+  ?a :rejectReason :MalformedIntervalOrdering.
+}.
+
+{
+  ?a :expMinusLambdaLower ?lo.
+  ?lo math:notGreaterThan 0.
+}
+=>
+{
+  ?a :rejectReason :NonPositiveIntervalLowerBound.
+}.
+
+{
+  ?a :expMinusLambdaUpper ?hi.
+  ?hi math:notLessThan 1.
+}
+=>
+{
+  ?a :rejectReason :IntervalUpperBoundNotBelowOne.
+}.
+
+{
+  ?a :rejectReason ?why.
+}
+=>
+{
+  ?a :hardenedDecision :RejectForHighTrustUse.
+}.
+
+# ---------------
+# Readable output
+# ---------------
+
+{
+  ?a :lambda ?lambda;
+     :certifiedLambda ?certifiedLambda;
+     :weakFpRateUpper ?weakFpHi;
+     :weakExpectedExtraExactLookupsUpper ?weakExtraHi;
+     :weakDecision ?weakDecision;
+     :hardenedDecision ?hardDecision.
+}
+log:query
+{
+  :result :summary (
+    ?a
+    "lambda" ?lambda
+    "certified-lambda" ?certifiedLambda
+    "weak-fp-upper" ?weakFpHi
+    "weak-extra-exact-upper" ?weakExtraHi
+    "weak-decision" ?weakDecision
+    "hardened-decision" ?hardDecision
+  ).
+}.
+
+{
+  ?a :rejectReason ?why.
+}
+log:query
+{
+  :result :rejectReason [
+    :artifact ?a;
+    :why ?why
+  ].
+}.

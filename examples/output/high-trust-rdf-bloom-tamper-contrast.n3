@@ -1,0 +1,17 @@
+@prefix : <http://example.org/high-trust-rdf#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:result :rejectReason [
+  :artifact :tamperedArtifact ;
+  :why :NonPositiveBloomBits
+] .
+:result :rejectReason [
+  :artifact :tamperedArtifact ;
+  :why :CertifiedLambdaMismatch
+] .
+:result :rejectReason [
+  :artifact :tamperedArtifact ;
+  :why :MalformedIntervalOrdering
+] .
+:result :summary (:tamperedArtifact "lambda" -700 "certified-lambda" 0.5126953125 "weak-fp-upper" "-194754273881"^^xsd:decimal "weak-extra-exact-upper" "-194754273881"^^xsd:decimal "weak-decision" :AcceptUnderWeakBudgetOnlyRules "hardened-decision" :RejectForHighTrustUse) .
+:result :summary (:trustedArtifact "lambda" "0.5126953125"^^xsd:decimal "certified-lambda" 0.5126953125 "weak-fp-upper" "0.0016708059596428394"^^xsd:decimal "weak-extra-exact-upper" "83.54029798214196"^^xsd:decimal "weak-decision" :AcceptUnderWeakBudgetOnlyRules "hardened-decision" :AcceptForHighTrustUse) .
