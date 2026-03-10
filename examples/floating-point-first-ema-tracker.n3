@@ -1,0 +1,193 @@
+# ====================================================================================
+# Floating-point-first EMA tracking envelope
+#
+# Why this example exists:
+#   It is another floating-point-first certificate in the same family as the servo,
+#   RC-discharge, and thermal-cooling examples, but now phrased as an exponential
+#   moving average (EMA) tracker.
+#
+# Physical story:
+#   Let e(k) be the absolute tracking error of an EMA estimator relative to a constant
+#   target. Then
+#
+#       e(k+1) = a * e(k)
+#
+#   where a is the complement of the EMA gain. In this example we choose
+#
+#       a = exp(-Ts/tau) = exp(-1/6)
+#
+#   with Ts = 0.5 s and tau = 3 s.
+#
+#   Since exp(-1/6) is transcendental, we certify it by a double interval:
+#
+#       8.464817248e-1 <= exp(-1/6) <= 8.464817249e-1
+#
+#   and propagate a floating-point envelope for the tracking error.
+#
+# What is certified:
+#   * the double interval is nonempty and strictly below 1
+#   * the tracking-error envelope shrinks at every sample
+#   * from an initial error of 8.0e0, the estimator is guaranteed within 2.5e-1
+#     by sample 21
+#   * with Ts = 5.0e-1 s, that means guaranteed settling by 1.05e1 s
+# ====================================================================================
+
+@prefix :     <http://example.org/floating-ema#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix log:  <http://www.w3.org/2000/10/swap/log#>.
+
+# ----------
+# Parameters
+# ----------
+
+:ema a :SampledEMAEnvelope;
+  :samplePeriod 5.0e-1;
+  :timeConstant 3.0e0;
+  :exactDecaySymbol "exp(-1/6)";
+  :decayLower 8.464817248e-1;
+  :decayUpper 8.464817249e-1;
+  :initialAbsTrackingError 8.0e0;
+  :tolerance 2.5e-1;
+  :maxStep 24.
+
+# ----------------------------------------------------------------
+# The double interval is a finite certificate for a transcendental
+# ----------------------------------------------------------------
+
+{
+  :ema :decayLower ?lo.
+  :ema :decayUpper ?hi.
+  ?lo math:lessThan ?hi.
+  ?hi math:lessThan 1.0e0.
+  ?lo math:greaterThan 0.0e0.
+}
+=>
+{
+  :ema :decayCertificate :CertifiedDoubleInterval.
+  :ema :contractiveDecay true.
+}.
+
+# ----------------
+# Initial envelope
+# ----------------
+
+{
+  :ema :initialAbsTrackingError ?e0.
+}
+=>
+{
+  :ema :trackingErrorEnvelopeAt (0 ?e0 ?e0).
+}.
+
+# -------------------------------------
+# Envelope propagation
+#   lower(k+1) = decayLower * lower(k)
+#   upper(k+1) = decayUpper * upper(k)
+# -------------------------------------
+
+{
+  :ema :maxStep ?max;
+       :decayLower ?aLo;
+       :decayUpper ?aHi.
+  :ema :trackingErrorEnvelopeAt (?k ?lo ?hi).
+  ?k math:lessThan ?max.
+  ( ?k 1 ) math:sum ?k1.
+  ( ?aLo ?lo ) math:product ?lo1.
+  ( ?aHi ?hi ) math:product ?hi1.
+}
+=>
+{
+  :ema :trackingErrorEnvelopeAt (?k1 ?lo1 ?hi1).
+}.
+
+# -----------------------------
+# The envelope shrinks strictly
+# -----------------------------
+
+{
+  :ema :trackingErrorEnvelopeAt (?k ?lo ?hi).
+  ( ?k 1 ) math:sum ?k1.
+  :ema :trackingErrorEnvelopeAt (?k1 ?lo1 ?hi1).
+  ?hi1 math:lessThan ?hi.
+}
+=>
+{
+  :ema :strictContractionAt ?k.
+}.
+
+# --------------------------------
+# Settlement in the tolerance band
+# --------------------------------
+
+{
+  :ema :trackingErrorEnvelopeAt (?k ?lo ?hi).
+  :ema :tolerance ?tol.
+  ?hi math:lessThan ?tol.
+}
+=>
+{
+  :ema :settledCandidate ?k.
+}.
+
+{
+  :ema :settledCandidate ?k.
+  ?k math:greaterThan 0.
+  ( ?k 1 ) math:difference ?km1.
+  :ema :trackingErrorEnvelopeAt (?km1 ?prevLo ?prevHi).
+  :ema :tolerance ?tol.
+  ?prevHi math:notLessThan ?tol.
+}
+=>
+{
+  :ema :firstSettledStep ?k.
+}.
+
+{
+  :ema :firstSettledStep ?k.
+  :ema :samplePeriod ?ts.
+  ( ?k ?ts ) math:product ?t.
+}
+=>
+{
+  :ema :firstSettledTime ?t.
+}.
+
+# -----------------------------------------------------------
+# Readable engineering summary for the floating-point witness
+# -----------------------------------------------------------
+
+{
+  :ema :firstSettledStep ?k;
+       :firstSettledTime ?t;
+       :tolerance ?tol;
+       :exactDecaySymbol ?sym;
+       :decayLower ?aLo;
+       :decayUpper ?aHi.
+}
+log:query
+{
+  :result :summary (
+    "exact-decay" ?sym
+    "double-lower" ?aLo
+    "double-upper" ?aHi
+    "tolerance" ?tol
+    "first-settled-step" ?k
+    "first-settled-time-s" ?t
+  ).
+}.
+
+{
+  :ema :trackingErrorEnvelopeAt (?k ?lo ?hi).
+}
+log:query
+{
+  :result :envelope (?k ?lo ?hi).
+}.
+
+{
+  :ema :strictContractionAt ?k.
+}
+log:query
+{
+  :result :contractionAt ?k.
+}.

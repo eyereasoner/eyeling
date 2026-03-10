@@ -1,0 +1,190 @@
+# ====================================================================================
+# Floating-point-first thermal cooling envelope
+#
+# Why this example exists:
+#   It is another floating-point-first certificate, parallel to the servo-envelope and
+#   RC-discharge examples, but phrased as sampled Newton cooling.
+#
+# Physical story:
+#   Let e(k) be the absolute temperature error to ambient at sample k. Then
+#
+#       e(k+1) = a * e(k)
+#
+#   with exact discrete decay factor
+#
+#       a = exp(-Ts/tau) = exp(-1/5)
+#
+#   for Ts = 1 s and tau = 5 s.
+#
+#   Since exp(-1/5) is transcendental, we certify it by a double interval:
+#
+#       8.187307530e-1 <= exp(-1/5) <= 8.187307531e-1
+#
+#   and propagate a floating-point envelope for the absolute thermal error.
+#
+# What is certified:
+#   * the double interval is nonempty and strictly contractive
+#   * the error envelope shrinks at every sample
+#   * from an initial error of 1.0e1 °C, the body is guaranteed within 5.0e-1 °C
+#     of ambient by sample 15
+#   * with Ts = 1.0e0 s, that means guaranteed settling by 1.5e1 s
+# ====================================================================================
+
+@prefix :     <http://example.org/floating-thermal#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix log:  <http://www.w3.org/2000/10/swap/log#>.
+
+# ----------
+# Parameters
+# ----------
+
+:cooling a :SampledThermalEnvelope;
+  :samplePeriod 1.0e0;
+  :timeConstant 5.0e0;
+  :exactDecaySymbol "exp(-1/5)";
+  :decayLower 8.187307530e-1;
+  :decayUpper 8.187307531e-1;
+  :initialAbsTemperatureError 1.0e1;
+  :tolerance 5.0e-1;
+  :maxStep 18.
+
+# ----------------------------------------------------------------
+# The double interval is a finite certificate for a transcendental
+# ----------------------------------------------------------------
+
+{
+  :cooling :decayLower ?lo; :decayUpper ?hi.
+  ?lo math:lessThan ?hi.
+  ?hi math:lessThan 1.0e0.
+  ?lo math:greaterThan 0.0e0.
+}
+=>
+{
+  :cooling :decayCertificate :CertifiedDoubleInterval.
+  :cooling :contractiveDecay true.
+}.
+
+# ----------------
+# Initial envelope
+# ----------------
+
+{
+  :cooling :initialAbsTemperatureError ?e0.
+}
+=>
+{
+  :cooling :temperatureErrorEnvelopeAt (0 ?e0 ?e0).
+}.
+
+# -------------------------------------
+# Envelope propagation
+#   lower(k+1) = decayLower * lower(k)
+#   upper(k+1) = decayUpper * upper(k)
+# -------------------------------------
+
+{
+  :cooling :maxStep ?max;
+           :decayLower ?aLo;
+           :decayUpper ?aHi.
+  :cooling :temperatureErrorEnvelopeAt (?k ?lo ?hi).
+  ?k math:lessThan ?max.
+  ( ?k 1 ) math:sum ?k1.
+  ( ?aLo ?lo ) math:product ?lo1.
+  ( ?aHi ?hi ) math:product ?hi1.
+}
+=>
+{
+  :cooling :temperatureErrorEnvelopeAt (?k1 ?lo1 ?hi1).
+}.
+
+# -----------------------------
+# The envelope shrinks strictly
+# -----------------------------
+
+{
+  :cooling :temperatureErrorEnvelopeAt (?k ?lo ?hi).
+  ( ?k 1 ) math:sum ?k1.
+  :cooling :temperatureErrorEnvelopeAt (?k1 ?lo1 ?hi1).
+  ?hi1 math:lessThan ?hi.
+}
+=>
+{
+  :cooling :strictContractionAt ?k.
+}.
+
+# --------------------------------
+# Settlement in the tolerance band
+# --------------------------------
+
+{
+  :cooling :temperatureErrorEnvelopeAt (?k ?lo ?hi).
+  :cooling :tolerance ?tol.
+  ?hi math:lessThan ?tol.
+}
+=>
+{
+  :cooling :settledCandidate ?k.
+}.
+
+{
+  :cooling :settledCandidate ?k.
+  ?k math:greaterThan 0.
+  ( ?k 1 ) math:difference ?km1.
+  :cooling :temperatureErrorEnvelopeAt (?km1 ?prevLo ?prevHi).
+  :cooling :tolerance ?tol.
+  ?prevHi math:notLessThan ?tol.
+}
+=>
+{
+  :cooling :firstSettledStep ?k.
+}.
+
+{
+  :cooling :firstSettledStep ?k.
+  :cooling :samplePeriod ?ts.
+  ( ?k ?ts ) math:product ?t.
+}
+=>
+{
+  :cooling :firstSettledTime ?t.
+}.
+
+# -----------------------------------------------------------
+# Readable engineering summary for the floating-point witness
+# -----------------------------------------------------------
+
+{
+  :cooling :firstSettledStep ?k;
+           :firstSettledTime ?t;
+           :tolerance ?tol;
+           :exactDecaySymbol ?sym;
+           :decayLower ?aLo;
+           :decayUpper ?aHi.
+}
+log:query
+{
+  :result :summary (
+    "exact-decay" ?sym
+    "double-lower" ?aLo
+    "double-upper" ?aHi
+    "tolerance-degC" ?tol
+    "first-settled-step" ?k
+    "first-settled-time-s" ?t
+  ).
+}.
+
+{
+  :cooling :temperatureErrorEnvelopeAt (?k ?lo ?hi).
+}
+log:query
+{
+  :result :envelope (?k ?lo ?hi).
+}.
+
+{
+  :cooling :strictContractionAt ?k.
+}
+log:query
+{
+  :result :contractionAt ?k.
+}.

@@ -1,0 +1,41 @@
+@prefix : <http://example.org/floating-thermal#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:result :contractionAt 0 .
+:result :contractionAt 1 .
+:result :contractionAt 10 .
+:result :contractionAt 11 .
+:result :contractionAt 12 .
+:result :contractionAt 13 .
+:result :contractionAt 14 .
+:result :contractionAt 15 .
+:result :contractionAt 16 .
+:result :contractionAt 17 .
+:result :contractionAt 2 .
+:result :contractionAt 3 .
+:result :contractionAt 4 .
+:result :contractionAt 5 .
+:result :contractionAt 6 .
+:result :contractionAt 7 .
+:result :contractionAt 8 .
+:result :contractionAt 9 .
+:result :envelope (0 1.0e1 1.0e1) .
+:result :envelope (1 "8.18730753"^^xsd:double "8.187307531"^^xsd:double) .
+:result :envelope (10 "1.353352831077095"^^xsd:double "1.353352832730084"^^xsd:double) .
+:result :envelope (11 "1.1080315824624318"^^xsd:double "1.1080315839511201"^^xsd:double) .
+:result :envelope (12 "0.9071795318572484"^^xsd:double "0.9071795331868864"^^xsd:double) .
+:result :envelope (13 "0.7427357812236725"^^xsd:double "0.7427357824030059"^^xsd:double) .
+:result :envelope (14 "0.6081006254413006"^^xsd:double "0.6081006264811307"^^xsd:double) .
+:result :envelope (15 "0.497870682967327"^^xsd:double "0.49787068387947797"^^xsd:double) .
+:result :envelope (16 "0.4076220391624639"^^xsd:double "0.40762203995905705"^^xsd:double) .
+:result :envelope (17 "0.33373269906287956"^^xsd:double "0.3337326997558371"^^xsd:double) .
+:result :envelope (18 "0.27323722400447376"^^xsd:double "0.2732372246051927"^^xsd:double) .
+:result :envelope (2 "6.70320045907947"^^xsd:double "6.703200460716932"^^xsd:double) .
+:result :envelope (3 "5.48811635937208"^^xsd:double "5.488116361383041"^^xsd:double) .
+:result :envelope (4 "4.493289639460322"^^xsd:double "4.4932896416555685"^^xsd:double) .
+:result :envelope (5 "3.678794409962448"^^xsd:double "3.6787944122090925"^^xsd:double) .
+:result :envelope (6 "3.0119421174007455"^^xsd:double "3.011942119608022"^^xsd:double) .
+:result :envelope (7 "2.4659696377719267"^^xsd:double "2.465969639880286"^^xsd:double) .
+:result :envelope (8 "2.0189651784081466"^^xsd:double "2.0189651803809223"^^xsd:double) .
+:result :envelope (9 "1.652988880798881"^^xsd:double "1.6529888826159498"^^xsd:double) .
+:result :summary ("exact-decay" "exp(-1/5)" "double-lower" 8.187307530e-1 "double-upper" 8.187307531e-1 "tolerance-degC" 5.0e-1 "first-settled-step" 15 "first-settled-time-s" "15"^^xsd:double) .

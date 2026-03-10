@@ -1,0 +1,190 @@
+# =======================================================================================
+# Floating-point-first RC discharge envelope
+#
+# Why this example exists:
+#   It is another floating-point-first certificate, parallel to the servo-envelope style,
+#   but framed as a passive RC discharge.
+#
+# Physical story:
+#   A sampled RC voltage obeys
+#
+#       v(k+1) = a * v(k)
+#
+#   with exact discrete decay factor
+#
+#       a = exp(-Ts/tau) = exp(-1/4)
+#
+#   for Ts = 25 ms and tau = 100 ms.
+#
+#   Because exp(-1/4) is transcendental, we certify it by a double interval:
+#
+#       7.788007830e-1 <= exp(-1/4) <= 7.788007831e-1
+#
+#   and propagate a floating-point envelope on the capacitor voltage.
+#
+# What is certified:
+#   * the double interval is nonempty and strictly below 1
+#   * the voltage envelope shrinks sample by sample
+#   * from an initial voltage of 2.40e1 V, the capacitor is guaranteed below 1.0e0 V
+#     by sample 15
+#   * with Ts = 2.5e-2 s, that means guaranteed settling by 3.75e-1 s
+# =======================================================================================
+
+@prefix :     <http://example.org/floating-rc#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix log:  <http://www.w3.org/2000/10/swap/log#>.
+
+# ----------
+# Parameters
+# ----------
+
+:rc a :SampledRCEnvelope;
+  :samplePeriod 2.5e-2;
+  :timeConstant 1.0e-1;
+  :exactDecaySymbol "exp(-1/4)";
+  :decayLower 7.788007830e-1;
+  :decayUpper 7.788007831e-1;
+  :initialVoltage 2.40e1;
+  :tolerance 1.0e0;
+  :maxStep 18.
+
+# ----------------------------------------------------------------
+# The double interval is a finite certificate for a transcendental
+# ----------------------------------------------------------------
+
+{
+  :rc :decayLower ?lo; :decayUpper ?hi.
+  ?lo math:lessThan ?hi.
+  ?hi math:lessThan 1.0e0.
+  ?lo math:greaterThan 0.0e0.
+}
+=>
+{
+  :rc :decayCertificate :CertifiedDoubleInterval.
+  :rc :contractiveDecay true.
+}.
+
+# ----------------
+# Initial envelope
+# ----------------
+
+{
+  :rc :initialVoltage ?v0.
+}
+=>
+{
+  :rc :voltageEnvelopeAt (0 ?v0 ?v0).
+}.
+
+# -------------------------------------
+# Envelope propagation
+#   lower(k+1) = decayLower * lower(k)
+#   upper(k+1) = decayUpper * upper(k)
+# -------------------------------------
+
+{
+  :rc :maxStep ?max;
+      :decayLower ?aLo;
+      :decayUpper ?aHi.
+  :rc :voltageEnvelopeAt (?k ?lo ?hi).
+  ?k math:lessThan ?max.
+  ( ?k 1 ) math:sum ?k1.
+  ( ?aLo ?lo ) math:product ?lo1.
+  ( ?aHi ?hi ) math:product ?hi1.
+}
+=>
+{
+  :rc :voltageEnvelopeAt (?k1 ?lo1 ?hi1).
+}.
+
+# -----------------------------
+# The envelope shrinks strictly
+# -----------------------------
+
+{
+  :rc :voltageEnvelopeAt (?k ?lo ?hi).
+  ( ?k 1 ) math:sum ?k1.
+  :rc :voltageEnvelopeAt (?k1 ?lo1 ?hi1).
+  ?hi1 math:lessThan ?hi.
+}
+=>
+{
+  :rc :strictContractionAt ?k.
+}.
+
+# --------------------------------
+# Settlement in the tolerance band
+# --------------------------------
+
+{
+  :rc :voltageEnvelopeAt (?k ?lo ?hi).
+  :rc :tolerance ?tol.
+  ?hi math:lessThan ?tol.
+}
+=>
+{
+  :rc :settledCandidate ?k.
+}.
+
+{
+  :rc :settledCandidate ?k.
+  ?k math:greaterThan 0.
+  ( ?k 1 ) math:difference ?km1.
+  :rc :voltageEnvelopeAt (?km1 ?prevLo ?prevHi).
+  :rc :tolerance ?tol.
+  ?prevHi math:notLessThan ?tol.
+}
+=>
+{
+  :rc :firstSettledStep ?k.
+}.
+
+{
+  :rc :firstSettledStep ?k.
+  :rc :samplePeriod ?ts.
+  ( ?k ?ts ) math:product ?t.
+}
+=>
+{
+  :rc :firstSettledTime ?t.
+}.
+
+# -----------------------------------------------------------
+# Readable engineering summary for the floating-point witness
+# -----------------------------------------------------------
+
+{
+  :rc :firstSettledStep ?k;
+      :firstSettledTime ?t;
+      :tolerance ?tol;
+      :exactDecaySymbol ?sym;
+      :decayLower ?aLo;
+      :decayUpper ?aHi.
+}
+log:query
+{
+  :result :summary (
+    "exact-decay" ?sym
+    "double-lower" ?aLo
+    "double-upper" ?aHi
+    "tolerance" ?tol
+    "first-settled-step" ?k
+    "first-settled-time-s" ?t
+  ).
+}.
+
+{
+  :rc :voltageEnvelopeAt (?k ?lo ?hi).
+}
+log:query
+{
+  :result :envelope (?k ?lo ?hi).
+}.
+
+{
+  :rc :strictContractionAt ?k.
+}
+log:query
+{
+  :result :contractionAt ?k.
+}.
