@@ -8,19 +8,19 @@ const cp = require('node:child_process');
 
 const C = process.stdout.isTTY
   ? {
-    red: '\x1b[31m',
-    green: '\x1b[32m',
-    yellow: '\x1b[33m',
-    dim: '\x1b[2m',
-    reset: '\x1b[0m',
-  }
+      red: '\x1b[31m',
+      green: '\x1b[32m',
+      yellow: '\x1b[33m',
+      dim: '\x1b[2m',
+      reset: '\x1b[0m',
+    }
   : {
-    red: '',
-    green: '',
-    yellow: '',
-    dim: '',
-    reset: '',
-  };
+      red: '',
+      green: '',
+      yellow: '',
+      dim: '',
+      reset: '',
+    };
 
 function ok(msg) {
   console.log(`${C.green}OK${C.reset} ${msg}`);
