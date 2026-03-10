@@ -8,19 +8,19 @@ const cp = require('node:child_process');
 
 const C = process.stdout.isTTY
   ? {
-      red: '\x1b[31m',
-      green: '\x1b[32m',
-      yellow: '\x1b[33m',
-      dim: '\x1b[2m',
-      reset: '\x1b[0m',
-    }
+    red: '\x1b[31m',
+    green: '\x1b[32m',
+    yellow: '\x1b[33m',
+    dim: '\x1b[2m',
+    reset: '\x1b[0m',
+  }
   : {
-      red: '',
-      green: '',
-      yellow: '',
-      dim: '',
-      reset: '',
-    };
+    red: '',
+    green: '',
+    yellow: '',
+    dim: '',
+    reset: '',
+  };
 
 function ok(msg) {
   console.log(`${C.green}OK${C.reset} ${msg}`);
@@ -114,10 +114,7 @@ function main() {
     const expectedPath = path.join(expectedDir, `${stem}.n3`);
     const generatedPath = path.join(generatedDir, `${stem}.n3`);
     const tmpDir = mkTmpDir();
-    const executablePath = path.join(
-      tmpDir,
-      stem + (process.platform === 'win32' ? '.exe' : '')
-    );
+    const executablePath = path.join(tmpDir, stem + (process.platform === 'win32' ? '.exe' : ''));
 
     let outFd = null;
 
@@ -141,9 +138,7 @@ function main() {
         throw new Error(`Cannot run compiler '${compiler}': ${compile.error.message}`);
       }
       if (compile.status !== 0) {
-        throw new Error(
-          `Compilation failed\n${(compile.stderr || compile.stdout || '').trim()}`
-        );
+        throw new Error(`Compilation failed\n${(compile.stderr || compile.stdout || '').trim()}`);
       }
 
       outFd = fs.openSync(generatedPath, 'w');
@@ -161,18 +156,13 @@ function main() {
         throw new Error(`Cannot run executable: ${execResult.error.message}`);
       }
       if (execResult.status !== 0) {
-        const why = execResult.signal
-          ? `signal ${execResult.signal}`
-          : `code ${execResult.status}`;
-        throw new Error(
-          `Executable exited with ${why}\n${(execResult.stderr || '').trim()}`
-        );
+        const why = execResult.signal ? `signal ${execResult.signal}` : `code ${execResult.status}`;
+        throw new Error(`Executable exited with ${why}\n${(execResult.stderr || '').trim()}`);
       }
 
       const expectedText = fs.readFileSync(expectedPath, 'utf8');
       const generatedText = fs.readFileSync(generatedPath, 'utf8');
-      const same =
-        normalizeForCompare(expectedText) === normalizeForCompare(generatedText);
+      const same = normalizeForCompare(expectedText) === normalizeForCompare(generatedText);
 
       const ms = Date.now() - start;
 
