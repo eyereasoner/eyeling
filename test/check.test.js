@@ -6,20 +6,36 @@ const os = require('node:os');
 const path = require('node:path');
 const cp = require('node:child_process');
 
-const TTY = process.stdout.isTTY;
-const C = TTY
-  ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', dim: '\x1b[2m', n: '\x1b[0m' }
-  : { g: '', r: '', y: '', dim: '', n: '' };
-const msTag = (ms) => `${C.dim}(${ms} ms)${C.n}`;
+const C = process.stdout.isTTY
+  ? {
+      red: '\x1b[31m',
+      green: '\x1b[32m',
+      yellow: '\x1b[33m',
+      dim: '\x1b[2m',
+      reset: '\x1b[0m',
+    }
+  : {
+      red: '',
+      green: '',
+      yellow: '',
+      dim: '',
+      reset: '',
+    };
 
 function ok(msg) {
-  console.log(`${C.g}OK${C.n}  ${msg}`);
+  console.log(`${C.green}OK${C.reset} ${msg}`);
 }
+
 function fail(msg) {
-  console.error(`${C.r}FAIL${C.n} ${msg}`);
+  console.log(`${C.red}FAIL${C.reset} ${msg}`);
 }
+
 function info(msg) {
-  console.log(`${C.y}==${C.n} ${msg}`);
+  console.log(`${C.yellow}==${C.reset} ${msg}`);
+}
+
+function msTag(ms) {
+  return `(${ms} ms)`;
 }
 
 function run(cmd, args, opts = {}) {
@@ -33,8 +49,8 @@ function run(cmd, args, opts = {}) {
 function normalizeForCompare(n3Text) {
   return String(n3Text)
     .split(/\r?\n/)
-    .map((l) => l.replace(/[\t ]+$/g, ''))
-    .filter((l) => l.length > 0)
+    .map((line) => line.replace(/[ \t]+$/g, ''))
+    .filter((line) => line.length > 0)
     .sort((a, b) => a.localeCompare(b))
     .join('\n');
 }
@@ -77,7 +93,7 @@ function main() {
     .sort((a, b) => a.localeCompare(b));
 
   info(`Running ${files.length} C check tests`);
-  console.log(`${C.dim}compiler ${compiler}; node ${process.version}${C.n}`);
+  console.log(`${C.dim}compiler ${compiler}; node ${process.version}${C.reset}`);
 
   if (files.length === 0) {
     ok('No .c files found in examples/check/input/');
@@ -98,7 +114,12 @@ function main() {
     const expectedPath = path.join(expectedDir, `${stem}.n3`);
     const generatedPath = path.join(generatedDir, `${stem}.n3`);
     const tmpDir = mkTmpDir();
-    const executablePath = path.join(tmpDir, stem + (process.platform === 'win32' ? '.exe' : ''));
+    const executablePath = path.join(
+      tmpDir,
+      stem + (process.platform === 'win32' ? '.exe' : '')
+    );
+
+    let outFd = null;
 
     try {
       if (!fs.existsSync(expectedPath)) {
@@ -120,23 +141,39 @@ function main() {
         throw new Error(`Cannot run compiler '${compiler}': ${compile.error.message}`);
       }
       if (compile.status !== 0) {
-        throw new Error(`Compilation failed\n${compile.stderr || compile.stdout || ''}`.trim());
+        throw new Error(
+          `Compilation failed\n${(compile.stderr || compile.stdout || '').trim()}`
+        );
       }
 
-      const execResult = run(executablePath, [], { cwd: root });
+      outFd = fs.openSync(generatedPath, 'w');
+
+      const execResult = cp.spawnSync(executablePath, [], {
+        cwd: root,
+        stdio: ['ignore', outFd, 'pipe'],
+        encoding: 'utf8',
+      });
+
+      fs.closeSync(outFd);
+      outFd = null;
+
       if (execResult.error) {
         throw new Error(`Cannot run executable: ${execResult.error.message}`);
       }
-
-      fs.writeFileSync(generatedPath, execResult.stdout || '', 'utf8');
-
       if (execResult.status !== 0) {
-        throw new Error(`Executable exited with ${execResult.status}\n${execResult.stderr || ''}`.trim());
+        const why = execResult.signal
+          ? `signal ${execResult.signal}`
+          : `code ${execResult.status}`;
+        throw new Error(
+          `Executable exited with ${why}\n${(execResult.stderr || '').trim()}`
+        );
       }
 
       const expectedText = fs.readFileSync(expectedPath, 'utf8');
       const generatedText = fs.readFileSync(generatedPath, 'utf8');
-      const same = normalizeForCompare(expectedText) === normalizeForCompare(generatedText);
+      const same =
+        normalizeForCompare(expectedText) === normalizeForCompare(generatedText);
+
       const ms = Date.now() - start;
 
       if (same) {
@@ -151,9 +188,14 @@ function main() {
     } catch (err) {
       const ms = Date.now() - start;
       fail(`${idx} ${file} ${msTag(ms)}`);
-      fail(err.message);
+      fail(err && err.message ? err.message : String(err));
       failed++;
     } finally {
+      if (outFd !== null) {
+        try {
+          fs.closeSync(outFd);
+        } catch {}
+      }
       rmrf(tmpDir);
     }
   }
