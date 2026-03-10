@@ -2170,7 +2170,7 @@ The point isn’t that the LLM is “right”; it’s that **Eyeling makes the r
 
 ### E.1 The goal
 
-Eyeling does not treat `notation3tests` as a side check.
+Eyeling does not treat [notation3tests](https://codeberg.org/phochste/notation3tests/) as a side check.
 
 It treats the suite as an **external semantic contract**.
 
@@ -2187,7 +2187,7 @@ That means:
 
 The workflow is simple and strict:
 
-- clone the external `notation3tests` suite
+- clone the external [notation3tests](https://codeberg.org/phochste/notation3tests/) suite
 - package the current Eyeling tree
 - install that package into the suite
 - run the suite’s Eyeling target
@@ -2197,7 +2197,38 @@ This keeps the suite honest and keeps Eyeling honest.
 
 ---
 
-### E.3 The core idea
+### E.3 The prompt packet
+
+A typical conformance-fix prompt is not open-ended.
+
+It usually includes a small, repeatable packet:
+
+- the Eyeling source as an attached zip  
+  `https://github.com/eyereasoner/eyeling/archive/refs/heads/main.zip`
+- pointers to the failing tests
+- the exact failing output, or the exact command needed to reproduce it
+- a pointer to the N3 spec  
+  `https://w3c.github.io/N3/spec/`
+- a pointer to the builtin definitions  
+  `https://w3c.github.io/N3/spec/builtins.html`
+- a direct request to fix the issue in the engine
+- a direct request to update `HANDBOOK.md`
+
+The request is usually phrased in a narrow way:
+
+- fix this specific failing conformance case
+- preserve existing passing behavior
+- make the smallest coherent patch
+- add or update a regression test if needed
+- update the handbook so the semantic rule is documented, not just implemented
+
+The model is not asked to “improve the reasoner” in general.
+
+It is asked to repair one semantic gap against: the code, the failing test, the spec, and the handbook.
+
+---
+
+### E.4 The core idea
 
 Eyeling reaches 100% by making the engine match the semantics that the suite exercises.
 
@@ -2216,7 +2247,7 @@ The result is semantic alignment.
 
 ---
 
-### E.4 One rule core, many surfaces
+### E.5 One rule core, many surfaces
 
 The suite uses different surface forms for the same logical ideas.
 
@@ -2231,7 +2262,7 @@ That matters because conformance depends on recognizing equivalence across synta
 
 ---
 
-### E.5 Normalize first, reason second
+### E.6 Normalize first, reason second
 
 A large share of conformance work happens **before** execution.
 
@@ -2246,7 +2277,7 @@ This removes ambiguity before the engine starts proving anything.
 
 ---
 
-### E.6 Body blanks vs. head blanks
+### E.7 Body blanks vs. head blanks
 
 This is one of the decisive details.
 
@@ -2266,7 +2297,7 @@ Without it:
 
 ---
 
-### E.7 Builtins must behave like relations
+### E.8 Builtins must behave like relations
 
 Eyeling does not treat builtins as one-way helper functions.
 
@@ -2283,7 +2314,7 @@ This is critical for the suite, because many builtin cases are really tests of s
 
 ---
 
-### E.8 Delay builtins when needed
+### E.9 Delay builtins when needed
 
 Some builtins only become useful after neighboring goals bind enough variables.
 
@@ -2299,7 +2330,7 @@ This preserves logical behavior while staying operationally efficient.
 
 ---
 
-### E.9 Formulas are first-class terms
+### E.10 Formulas are first-class terms
 
 Quoted formulas are not treated as strings.
 
@@ -2317,7 +2348,7 @@ This is a major reason the higher-level N3 tests pass cleanly.
 
 ---
 
-### E.10 Alpha-equivalence matters
+### E.11 Alpha-equivalence matters
 
 Two formulas that differ only in internal names must still count as the same formula when their structure matches.
 
@@ -2332,7 +2363,7 @@ That removes a common source of false mismatches in:
 
 ---
 
-### E.11 Lists must have one meaning
+### E.12 Lists must have one meaning
 
 The suite exercises list behavior in more than one spelling.
 
@@ -2347,7 +2378,7 @@ That keeps list reasoning consistent across the whole suite.
 
 ---
 
-### E.12 Existentials must be stable
+### E.13 Existentials must be stable
 
 A rule head with blanks must not generate endless fresh variants of the same logical result.
 
@@ -2363,7 +2394,7 @@ This is what lets closure reach a real fixpoint.
 
 ---
 
-### E.13 Duplicate suppression is semantic, not cosmetic
+### E.14 Duplicate suppression is semantic, not cosmetic
 
 The engine does not merely try to avoid repeated printing.
 
@@ -2380,7 +2411,7 @@ Without that, a reasoner can look busy forever and still fail conformance.
 
 ---
 
-### E.14 Closure must really close
+### E.15 Closure must really close
 
 Full conformance depends on real saturation behavior.
 
@@ -2395,7 +2426,7 @@ This is what turns the engine from a parser plus demos into a conformance-grade 
 
 ---
 
-### E.15 Performance choices support correctness
+### E.16 Performance choices support correctness
 
 Several implementation choices are operational, but they directly protect conformance:
 
@@ -2409,11 +2440,11 @@ These choices reduce accidental nontermination and prevent operational noise fro
 
 ---
 
-### E.16 The suite stays external
+### E.17 The suite stays external
 
 This is a key discipline.
 
-Eyeling does not define success by a private in-repo imitation of `notation3tests`.
+Eyeling does not define success by a private in-repo imitation of [notation3tests](https://codeberg.org/phochste/notation3tests/).
 
 It runs against the external suite.
 
@@ -2427,7 +2458,7 @@ A green run says something real.
 
 ---
 
-### E.17 Every failure becomes an invariant
+### E.18 Every failure becomes an invariant
 
 Eyeling reaches 100% because failures are not patched superficially.
 
@@ -2445,7 +2476,7 @@ That is how the suite shapes the engine.
 
 ---
 
-### E.18 Why 100% happens
+### E.19 Why 100% happens
 
 Eyeling gets to 100% because all the key layers line up:
 
@@ -2461,9 +2492,9 @@ Once those pieces are in place, 100% is the visible result of a coherent design.
 
 ---
 
-### E.19 Final takeaway
+### E.20 Final takeaway
 
-Eyeling reaches full `notation3tests` conformance by making “pass the suite” and “implement N3 correctly enough to interoperate” the same task.
+Eyeling reaches full [notation3tests](https://codeberg.org/phochste/notation3tests/) conformance by making “pass the suite” and “implement N3 correctly enough to interoperate” the same task.
 
 That is the method:
 
