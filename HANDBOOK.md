@@ -29,6 +29,7 @@
 - [Appendix B — Notation3: when facts can carry their own logic](#app-b)
 - [Appendix C — N3 beyond Prolog: logic that survives the open web](#app-c)
 - [Appendix D — LLM + Eyeling: A Repeatable Logic Toolchain](#app-d)
+- [Appendix E — How Eyeling reaches 100% on `notation3tests`](#app-e)
 
 ---
 
@@ -2160,3 +2161,318 @@ A simple structure that keeps the LLM honest:
 - “If something is unknown, emit a placeholder fact (`:needsFact`) rather than guessing.”
 
 The point isn’t that the LLM is “right”; it’s that **Eyeling makes the result checkable**, and the artifact becomes a maintainable program rather than a one-off generation.
+
+---
+
+<a id="app-e"></a>
+
+## Appendix E — How Eyeling reaches 100% on `notation3tests`
+
+### E.1 The goal
+
+Eyeling does not treat `notation3tests` as a side check.
+
+It treats the suite as an **external semantic contract**.
+
+That means:
+
+- the target is public
+- the target is reproducible
+- the target is outside the local codebase
+- success means interoperability, not self-consistency
+
+---
+
+### E.2 The test loop
+
+The workflow is simple and strict:
+
+- clone the external `notation3tests` suite
+- package the current Eyeling tree
+- install that package into the suite
+- run the suite’s Eyeling target
+- fix semantics, not cosmetics
+
+This keeps the suite honest and keeps Eyeling honest.
+
+---
+
+### E.3 The core idea
+
+Eyeling reaches 100% by making the engine match the semantics that the suite exercises.
+
+That means getting these right:
+
+- N3 syntax
+- rule forms
+- quoted formulas
+- variable and blank-node behavior
+- builtin relations
+- closure and duplicate control
+
+The result is not “test gaming.”
+
+The result is semantic alignment.
+
+---
+
+### E.4 One rule core, many surfaces
+
+The suite uses different surface forms for the same logical ideas.
+
+Eyeling accepts and normalizes them into one internal rule model:
+
+- `{ P } => { C } .`
+- `{ H } <= { B } .`
+- top-level `log:implies`
+- top-level `log:impliedBy`
+
+That matters because conformance depends on recognizing equivalence across syntax, not just parsing one preferred style.
+
+---
+
+### E.5 Normalize first, reason second
+
+A large share of conformance work happens **before** execution.
+
+Eyeling normalizes the tricky parts early:
+
+- body blanks become variables
+- head blanks stay existential
+- RDF collection encodings become list terms
+- rule syntax variants become one rule representation
+
+This removes ambiguity before the engine starts proving anything.
+
+---
+
+### E.6 Body blanks vs. head blanks
+
+This is one of the decisive details.
+
+In Eyeling:
+
+- blanks in rule bodies act like placeholders
+- blanks in rule heads act like fresh existentials
+
+That split is essential.
+
+Without it:
+
+- rule matching goes wrong
+- proofs become unstable
+- existential output becomes noisy
+- conformance drops
+
+---
+
+### E.7 Builtins must behave like relations
+
+Eyeling does not treat builtins as one-way helper functions.
+
+It treats them as **relations inside proof search**.
+
+That means a builtin can:
+
+- succeed
+- fail
+- bind variables
+- stay satisfiable without yet binding anything
+
+This is critical for the suite, because many builtin cases are really tests of search behavior, not just value computation.
+
+---
+
+### E.8 Delay builtins when needed
+
+Some builtins only become useful after neighboring goals bind enough variables.
+
+Eyeling handles that by deferring non-informative builtins inside conjunctions.
+
+So instead of failing too early, the engine:
+
+- rotates the builtin later
+- keeps proving the remaining goals
+- retries once more information exists
+
+This preserves logical behavior while staying operationally efficient.
+
+---
+
+### E.9 Formulas are first-class terms
+
+Quoted formulas are not treated as strings.
+
+They are treated as structured logical objects.
+
+That gives Eyeling the machinery it needs for:
+
+- formula matching
+- nested reasoning
+- `log:includes`
+- `log:conclusion`
+- formula comparison by alpha-equivalence
+
+This is a major reason the higher-level N3 tests pass cleanly.
+
+---
+
+### E.10 Alpha-equivalence matters
+
+Two formulas that differ only in internal names must still count as the same formula when their structure matches.
+
+Eyeling therefore compares formulas by structure, not by accidental naming.
+
+That removes a common source of false mismatches in:
+
+- quoted formulas
+- nested graphs
+- rule introspection
+- scoped reasoning
+
+---
+
+### E.11 Lists must have one meaning
+
+The suite exercises list behavior in more than one spelling.
+
+Eyeling unifies them:
+
+- concrete N3 lists
+- RDF `first/rest` collection encodings
+
+By materializing anonymous RDF collections into list terms, Eyeling gives both forms one semantic path through the engine.
+
+That keeps list reasoning consistent across the whole suite.
+
+---
+
+### E.12 Existentials must be stable
+
+A rule head with blanks must not generate endless fresh variants of the same logical result.
+
+Eyeling stabilizes this by skolemizing head blanks per firing instance.
+
+So one logical firing yields:
+
+- one stable witness
+- one stable derived shape
+- one meaningful duplicate check
+
+This is what lets closure reach a real fixpoint.
+
+---
+
+### E.13 Duplicate suppression is semantic, not cosmetic
+
+The engine does not merely try to avoid repeated printing.
+
+It tries to avoid repeated derivation of the same fact.
+
+That requires:
+
+- stable term ids
+- indexed fact storage
+- reliable duplicate keys
+- stable existential handling
+
+Without that, a reasoner can look busy forever and still fail conformance.
+
+---
+
+### E.14 Closure must really close
+
+Full conformance depends on real saturation behavior.
+
+Eyeling therefore treats closure as:
+
+- repeated rule firing
+- repeated proof over indexed facts
+- duplicate-aware insertion
+- termination at fixpoint
+
+This is what turns the engine from a parser plus demos into a conformance-grade reasoner.
+
+---
+
+### E.15 Performance choices support correctness
+
+Several implementation choices are operational, but they directly protect conformance:
+
+- predicate-based indexing
+- subject/object refinement
+- smallest-bucket candidate selection
+- fast duplicate keys
+- skipping already-known ground heads
+
+These choices reduce accidental nontermination and prevent operational noise from becoming semantic failure.
+
+---
+
+### E.16 The suite stays external
+
+This is a key discipline.
+
+Eyeling does not define success by a private in-repo imitation of `notation3tests`.
+
+It runs against the external suite.
+
+That means:
+
+- the benchmark is shared
+- the contract is public
+- the result is independently meaningful
+
+A green run says something real.
+
+---
+
+### E.17 Every failure becomes an invariant
+
+Eyeling reaches 100% because failures are not patched superficially.
+
+Each failure is turned into an engine rule.
+
+Examples:
+
+- parser failure → broader syntax support
+- list failure → one unified list model
+- formula failure → alpha-equivalence discipline
+- builtin failure → relational evaluation
+- closure failure → stable existential handling
+
+That is how the suite shapes the engine.
+
+---
+
+### E.18 Why 100% happens
+
+Eyeling gets to 100% because all the key layers line up:
+
+- the parser accepts the full rule surface
+- normalization removes semantic ambiguity
+- formulas are real terms
+- builtins participate in proof search
+- existential output is stable
+- closure reaches a true fixpoint
+- the public suite remains the judge
+
+Once those pieces are in place, 100% is the visible result of a coherent design.
+
+---
+
+### E.19 Final takeaway
+
+Eyeling reaches full `notation3tests` conformance by making “pass the suite” and “implement N3 correctly enough to interoperate” the same task.
+
+That is the method:
+
+- external suite
+- one semantic core
+- early normalization
+- relational builtins
+- formula-aware reasoning
+- stable existential output
+- duplicate-safe fixpoint closure
+
+That is why the result is 100%.
