@@ -2203,14 +2203,11 @@ A typical conformance-fix prompt is not open-ended.
 
 It usually includes a small, repeatable packet:
 
-- the Eyeling source as an attached zip  
-  `https://github.com/eyereasoner/eyeling/archive/refs/heads/main.zip`
+- the Eyeling source as an attached zip `https://github.com/eyereasoner/eyeling/archive/refs/heads/main.zip`
 - pointers to the failing tests
 - the exact failing output, or the exact command needed to reproduce it
-- a pointer to the N3 spec  
-  `https://w3c.github.io/N3/spec/`
-- a pointer to the builtin definitions  
-  `https://w3c.github.io/N3/spec/builtins.html`
+- a pointer to the N3 spec `https://w3c.github.io/N3/spec/`
+- a pointer to the builtin definitions `https://w3c.github.io/N3/spec/builtins.html`
 - a direct request to fix the issue in the engine
 - a direct request to update `HANDBOOK.md`
 
@@ -2221,6 +2218,7 @@ The request is usually phrased in a narrow way:
 - make the smallest coherent patch
 - add or update a regression test if needed
 - update the handbook so the semantic rule is documented, not just implemented
+- do not stop at making the test green; align the implementation with the spec and explain the semantic reason in `HANDBOOK.md`
 
 The model is not asked to “improve the reasoner” in general.
 
