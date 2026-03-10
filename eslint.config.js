@@ -69,7 +69,7 @@ module.exports = [
       // light style
       semi: ['error', 'always'],
       quotes: ['error', 'single', { avoidEscape: true, allowTemplateLiterals: true }],
-      indent: ['error', 2, { SwitchCase: 1 }],
+      indent: 'off',
       'comma-dangle': ['error', 'always-multiline'],
       'object-curly-spacing': ['error', 'always'],
       'array-bracket-spacing': ['error', 'never'],
