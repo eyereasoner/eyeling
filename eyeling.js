@@ -8606,6 +8606,22 @@ function assertValidQNamePrefix(prefixName, fail, tok, context = 'prefixed name'
   }
 }
 
+function isKeywordLikeIdent(name) {
+  return (
+    name === 'a' ||
+    name === 'has' ||
+    name === 'is' ||
+    name === 'of' ||
+    name === 'true' ||
+    name === 'false' ||
+    name === 'id'
+  );
+}
+
+function failInvalidKeywordLikeIdent(fail, tok, name) {
+  fail(`invalid_keyword(${name})`, tok);
+}
+
 class Parser {
   constructor(tokens) {
     this.toks = tokens;
@@ -8795,7 +8811,10 @@ class Parser {
     if (tok2.typ === 'IriRef') {
       iri = resolveIriRef(tok2.value || '', this.prefixes.baseIri || '');
     } else if (tok2.typ === 'Ident') {
-      iri = this.prefixes.expandQName(tok2.value || '');
+      const qn = tok2.value || '';
+      if (!qn.includes(':')) failInvalidKeywordLikeIdent(this.fail.bind(this), tok2, qn);
+      assertValidQNamePrefix(qn.split(':', 1)[0], this.fail.bind(this), tok2, '@prefix directive IRI');
+      iri = this.prefixes.expandQName(qn);
     } else {
       this.fail(`Expected IRI after @prefix, got ${tok2.toString()}`, tok2);
     }
@@ -8809,7 +8828,10 @@ class Parser {
     if (tok.typ === 'IriRef') {
       iri = resolveIriRef(tok.value || '', this.prefixes.baseIri || '');
     } else if (tok.typ === 'Ident') {
-      iri = tok.value || '';
+      const qn = tok.value || '';
+      if (!qn.includes(':')) failInvalidKeywordLikeIdent(this.fail.bind(this), tok, qn);
+      assertValidQNamePrefix(qn.split(':', 1)[0], this.fail.bind(this), tok, '@base directive IRI');
+      iri = this.prefixes.expandQName(qn);
     } else {
       this.fail(`Expected IRI after @base, got ${tok.toString()}`, tok);
     }
@@ -8835,7 +8857,10 @@ class Parser {
     if (tok2.typ === 'IriRef') {
       iri = resolveIriRef(tok2.value || '', this.prefixes.baseIri || '');
     } else if (tok2.typ === 'Ident') {
-      iri = this.prefixes.expandQName(tok2.value || '');
+      const qn = tok2.value || '';
+      if (!qn.includes(':')) failInvalidKeywordLikeIdent(this.fail.bind(this), tok2, qn);
+      assertValidQNamePrefix(qn.split(':', 1)[0], this.fail.bind(this), tok2, '@prefix directive IRI');
+      iri = this.prefixes.expandQName(qn);
     } else {
       this.fail(`Expected IRI after PREFIX, got ${tok2.toString()}`, tok2);
     }
@@ -8853,7 +8878,10 @@ class Parser {
     if (tok.typ === 'IriRef') {
       iri = resolveIriRef(tok.value || '', this.prefixes.baseIri || '');
     } else if (tok.typ === 'Ident') {
-      iri = tok.value || '';
+      const qn = tok.value || '';
+      if (!qn.includes(':')) failInvalidKeywordLikeIdent(this.fail.bind(this), tok, qn);
+      assertValidQNamePrefix(qn.split(':', 1)[0], this.fail.bind(this), tok, 'BASE directive IRI');
+      iri = this.prefixes.expandQName(qn);
     } else {
       this.fail(`Expected IRI after BASE, got ${tok.toString()}`, tok);
     }
@@ -8905,7 +8933,7 @@ class Parser {
         assertValidQNamePrefix(name.split(':', 1)[0], this.fail.bind(this), tok);
         return internIri(this.prefixes.expandQName(name));
       } else {
-        return internIri(name);
+        failInvalidKeywordLikeIdent(this.fail.bind(this), tok, name);
       }
     }
 
@@ -8936,10 +8964,9 @@ class Parser {
           dtIri = dtTok.value || '';
         } else if (dtTok.typ === 'Ident') {
           const qn = dtTok.value || '';
-          if (qn.includes(':')) {
-            assertValidQNamePrefix(qn.split(':', 1)[0], this.fail.bind(this), dtTok, 'datatype prefixed name');
-            dtIri = this.prefixes.expandQName(qn);
-          } else dtIri = qn;
+          if (!qn.includes(':')) failInvalidKeywordLikeIdent(this.fail.bind(this), dtTok, qn);
+          assertValidQNamePrefix(qn.split(':', 1)[0], this.fail.bind(this), dtTok, 'datatype prefixed name');
+          dtIri = this.prefixes.expandQName(qn);
         } else {
           this.fail(`Expected datatype after ^^, got ${dtTok.toString()}`, dtTok);
         }
