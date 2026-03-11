@@ -5701,6 +5701,90 @@ function isLogImpliedBy(p) {
 }
 
 // ===========================================================================
+// Completed-goal answer tables (minimal tabling)
+// ===========================================================================
+//
+// This is intentionally conservative:
+//   - only *completed* answer sets are cached
+//   - pending goals are never exposed
+//   - cache entries are invalidated whenever facts, backward rules, or the
+//     scoped-snapshot context change
+//
+// So this improves reuse across repeated backward proofs without changing the
+// semantics of recursive goals.
+
+function __goalTableScopeVersion(facts, backRules) {
+  const factCount = Array.isArray(facts) ? facts.length : 0;
+  const backRuleCount = Array.isArray(backRules) ? backRules.length : 0;
+  const scopedLevel = facts && typeof facts.__scopedClosureLevel === 'number' ? facts.__scopedClosureLevel : 0;
+  const hasScopedSnapshot = facts && facts.__scopedSnapshot ? 1 : 0;
+  return `${factCount}|${backRuleCount}|${scopedLevel}|${hasScopedSnapshot}`;
+}
+
+function __makeGoalTable() {
+  return {
+    scopeVersion: null,
+    entries: new Map(),
+  };
+}
+
+function __attachGoalTable(scopeCarrier, goalTable) {
+  if (!scopeCarrier) return goalTable;
+  if (!hasOwn.call(scopeCarrier, '__goalTable')) {
+    Object.defineProperty(scopeCarrier, '__goalTable', {
+      value: goalTable,
+      enumerable: false,
+      writable: true,
+      configurable: true,
+    });
+  } else {
+    scopeCarrier.__goalTable = goalTable;
+  }
+  return goalTable;
+}
+
+function __ensureGoalTable(facts, backRules) {
+  let table = (facts && facts.__goalTable) || (backRules && backRules.__goalTable) || null;
+  if (!table) table = __makeGoalTable();
+  __attachGoalTable(facts, table);
+  __attachGoalTable(backRules, table);
+
+  const version = __goalTableScopeVersion(facts, backRules);
+  if (table.scopeVersion !== version) {
+    table.scopeVersion = version;
+    table.entries.clear();
+  }
+  return table;
+}
+
+function __goalMemoTripleKey(tr) {
+  return skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
+}
+
+function __goalMemoKey(goals, subst, facts, opts) {
+  const parts = new Array(goals.length);
+  for (let i = 0; i < goals.length; i++) parts[i] = __goalMemoTripleKey(applySubstTriple(goals[i], subst || {}));
+  const mode = opts && opts.deferBuiltins ? 'D1' : 'D0';
+  const scopedLevel = facts && typeof facts.__scopedClosureLevel === 'number' ? facts.__scopedClosureLevel : 0;
+  const scopedTag = facts && facts.__scopedSnapshot ? 'S' : 'N';
+  return `${mode}|${scopedTag}|${scopedLevel}|${parts.join('\n')}`;
+}
+
+function __cloneGoalSolutions(solutions) {
+  const out = new Array(solutions.length);
+  for (let i = 0; i < solutions.length; i++) out[i] = { ...solutions[i] };
+  return out;
+}
+
+function __canLookupGoalMemo(visited) {
+  return !visited || visited.length === 0;
+}
+
+function __canStoreGoalMemo(visited, maxResults) {
+  return (!visited || visited.length === 0) && !(typeof maxResults === 'number' && maxResults > 0);
+}
+
+// ===========================================================================
 // Unification + substitution
 // ===========================================================================
 
@@ -6184,6 +6268,16 @@ function __builtinIsSatisfiableWhenFullyUnbound(pIriVal) {
 }
 
 function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxResults, opts) {
+  const __goalTable = __canLookupGoalMemo(visited) ? __ensureGoalTable(facts, backRules) : null;
+  const __goalMemoKeyNow = __goalTable ? __goalMemoKey(goals, subst, facts, opts) : null;
+  if (__goalTable && __goalTable.entries.has(__goalMemoKeyNow)) {
+    const cached = __goalTable.entries.get(__goalMemoKeyNow) || [];
+    const cloned = __cloneGoalSolutions(cached);
+    if (typeof maxResults === 'number' && maxResults > 0 && cloned.length > maxResults)
+      return cloned.slice(0, maxResults);
+    return cloned;
+  }
+
   // Depth-first search with a single mutable substitution and a trail.
   // This avoids cloning the whole substitution object at each unification step
   // (Prolog-style: bind + trail, then undo on backtrack).
@@ -6208,6 +6302,9 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
 
   if (!initialGoals.length) {
     results.push(gcCompactForGoals(substMut, [], answerVars));
+    if (__goalTable && __canStoreGoalMemo(visited, maxResults)) {
+      __goalTable.entries.set(__goalMemoKeyNow, __cloneGoalSolutions(results));
+    }
     return results;
   }
 
@@ -6741,6 +6838,10 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
     }
   }
 
+  if (__goalTable && __canStoreGoalMemo(visited, maxResults)) {
+    __goalTable.entries.set(__goalMemoKeyNow, __cloneGoalSolutions(results));
+  }
+
   return results;
 }
 
@@ -6753,6 +6854,10 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */) 
   try {
     ensureFactIndexes(facts);
     ensureBackRuleIndexes(backRules);
+
+    const goalTable = __makeGoalTable();
+    __attachGoalTable(facts, goalTable);
+    __attachGoalTable(backRules, goalTable);
 
     const factList = facts.slice();
     const derivedForward = [];
@@ -7151,6 +7256,10 @@ function collectLogQueryConclusions(logQueryRules, facts, backRules) {
 
   ensureFactIndexes(facts);
   ensureBackRuleIndexes(backRules);
+
+  const goalTable = __makeGoalTable();
+  __attachGoalTable(facts, goalTable);
+  __attachGoalTable(backRules, goalTable);
 
   // Shared state across all query firings (mirrors forwardChain()).
   const varGen = [0];

@@ -561,6 +561,47 @@ Implementation notes:
 - Keys are _structural_. Atoms use stable IDs; lists use element keys; variables use their identity (so two different variables are **not** conflated). This keeps the cycle check conservative and avoids accidental pruning.
 - This is not full tabling: it does not memoize answers, it only guards against immediate cycles (the common “A depends on A” loops).
 
+### 8.4.1 Minimal completed-goal tabling
+
+Eyeling has a **very small, deliberately conservative answer table** for backward goals.
+
+What is cached:
+
+- only **completed** answer sets
+- keyed by the **fully substituted goal list**
+- only when the proof is entered from a “top-level” call shape (no active per-branch `visited` context)
+- only when the engine is not in a result-limiting mode such as `maxResults`
+
+What is **not** cached:
+
+- pending / in-progress goals
+- recursive dependency states
+- partial answer streams
+- branch-local states inside an active recursive proof
+
+This matters because exposing **pending** answers without dependency propagation would change the meaning of recursive programs. Eyeling therefore caches only results that are already complete and replays them only when the surrounding proof context is equivalent.
+
+The cache is invalidated whenever any of the following changes:
+
+- the number of known facts
+- the number of backward rules
+- the scoped-closure level
+- whether a frozen scoped snapshot is active
+
+So this is **not SLG tabling** and not a general recursion engine. It is best understood as a reuse optimization for repeated backward proofs in a stable proof environment.
+
+Typical win cases:
+
+- many repeated `log:query` directives with the **same premise**
+- repeated forward-rule body proofs that ask the same completed backward question
+- “query-like” workloads where the expensive part is a repeated backward proof and the fact store does not change between calls
+
+Typical non-win cases:
+
+- first-time proofs
+- recursive subgoals whose value depends on future answers
+- workloads where the fact set changes between almost every call
+
 ### 8.5 Backward rules: indexed by head predicate
 
 Backward rules are indexed in `backRules.__byHeadPred`. When proving a goal with IRI predicate `p`, Eyeling retrieves:
@@ -706,7 +747,7 @@ Forward chaining runs inside an _outer loop_ that alternates:
 
 This produces deterministic behavior for scoped operations: they observe a stable snapshot, not a moving target.
 
-**Implementation note (performance):** the two-phase scheme is only needed when the program actually uses scoped built-ins. If no rule contains `log:collectAllIn`, `log:forAllIn`, `log:includes`, or `log:notIncludes`, Eyeling now **skips Phase B entirely** and runs only a single saturation. This avoids re-running the forward fixpoint and can prevent a “query-like” forward rule (one whose body contains an expensive backward proof search) from being executed twice.
+**Implementation note (performance):** the two-phase scheme is only needed when the program actually uses scoped built-ins. If no rule contains `log:collectAllIn`, `log:forAllIn`, `log:includes`, or `log:notIncludes`, Eyeling **skips Phase B entirely** and runs only a single saturation. This avoids re-running the forward fixpoint and can prevent a “query-like” forward rule (one whose body contains an expensive backward proof search) from being executed twice.
 
 **Implementation note (performance):** in Phase A there is no snapshot, so scoped built-ins (and priority-gated scoped queries) are guaranteed to “delay” by failing.  
 Instead of proving the entire forward-rule body only to fail at the end, Eyeling precomputes whether a forward rule depends on scoped built-ins and skips it until a snapshot exists and the requested closure level is reached. This can avoid very expensive proof searches in programs that combine recursion with `log:*In` built-ins.
@@ -1378,6 +1419,8 @@ Each enumerated rule is standardized apart (fresh variable names) before unifica
 - The final output is the **set of unique ground triples** from those instantiated conclusions.
 
 This is “forward-rule-like” in spirit (premise ⇒ conclusion), but the instantiated conclusion triples are **not added back into the fact store**; they are just what Eyeling prints.
+
+**Implementation note (performance):** repeated top-level `log:query` directives with the **same premise formula** are a good fit for Eyeling’s minimal completed-goal tabling (§8.4.1). The first query still performs the full backward proof; later identical premises can reuse the completed answer set as long as the saturated closure and scoped-query context are unchanged.
 
 **Important details:**
 

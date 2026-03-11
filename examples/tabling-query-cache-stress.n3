@@ -1,0 +1,175 @@
+# ===========================================================================
+# Tabling-friendly cache stress test
+#
+# Why this stresses the minimal tabling patch:
+#   - The backward goal { :n0 :path ?x. } is expensive: it computes the whole
+#     transitive closure of a long chain by backward recursion.
+#   - The exact same top-level query premise is repeated many times via
+#     log:query directives with different constant conclusions.
+#   - During log:query collection the fact set is stable, so completed-answer
+#     memoization can be reused across all repeated queries.
+#
+# Expected effect:
+#   - without the patch: each log:query recomputes all reachable ?x answers
+#   - with the patch: the first query computes them, later identical queries
+#     reuse the cached completed answer set
+#
+# Note:
+#   ?x is intentionally not used in the query conclusions.
+#   That keeps the output tiny while still forcing the expensive proof.
+# ===========================================================================
+
+@prefix :    <http://example.org/tabling-stress#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+
+# Backward transitive closure
+{ ?x :path ?y. } <= { ?x :edge ?y. }.
+{ ?x :path ?z. } <= { ?x :edge ?y. ?y :path ?z. }.
+
+# A long linear chain
+:n0 :edge :n1.
+:n1 :edge :n2.
+:n2 :edge :n3.
+:n3 :edge :n4.
+:n4 :edge :n5.
+:n5 :edge :n6.
+:n6 :edge :n7.
+:n7 :edge :n8.
+:n8 :edge :n9.
+:n9 :edge :n10.
+:n10 :edge :n11.
+:n11 :edge :n12.
+:n12 :edge :n13.
+:n13 :edge :n14.
+:n14 :edge :n15.
+:n15 :edge :n16.
+:n16 :edge :n17.
+:n17 :edge :n18.
+:n18 :edge :n19.
+:n19 :edge :n20.
+:n20 :edge :n21.
+:n21 :edge :n22.
+:n22 :edge :n23.
+:n23 :edge :n24.
+:n24 :edge :n25.
+:n25 :edge :n26.
+:n26 :edge :n27.
+:n27 :edge :n28.
+:n28 :edge :n29.
+:n29 :edge :n30.
+:n30 :edge :n31.
+:n31 :edge :n32.
+:n32 :edge :n33.
+:n33 :edge :n34.
+:n34 :edge :n35.
+:n35 :edge :n36.
+:n36 :edge :n37.
+:n37 :edge :n38.
+:n38 :edge :n39.
+:n39 :edge :n40.
+:n40 :edge :n41.
+:n41 :edge :n42.
+:n42 :edge :n43.
+:n43 :edge :n44.
+:n44 :edge :n45.
+:n45 :edge :n46.
+:n46 :edge :n47.
+:n47 :edge :n48.
+:n48 :edge :n49.
+:n49 :edge :n50.
+:n50 :edge :n51.
+:n51 :edge :n52.
+:n52 :edge :n53.
+:n53 :edge :n54.
+:n54 :edge :n55.
+:n55 :edge :n56.
+:n56 :edge :n57.
+:n57 :edge :n58.
+:n58 :edge :n59.
+:n59 :edge :n60.
+:n60 :edge :n61.
+:n61 :edge :n62.
+:n62 :edge :n63.
+:n63 :edge :n64.
+:n64 :edge :n65.
+:n65 :edge :n66.
+:n66 :edge :n67.
+:n67 :edge :n68.
+:n68 :edge :n69.
+:n69 :edge :n70.
+:n70 :edge :n71.
+:n71 :edge :n72.
+:n72 :edge :n73.
+:n73 :edge :n74.
+:n74 :edge :n75.
+:n75 :edge :n76.
+:n76 :edge :n77.
+:n77 :edge :n78.
+:n78 :edge :n79.
+:n79 :edge :n80.
+:n80 :edge :n81.
+:n81 :edge :n82.
+:n82 :edge :n83.
+:n83 :edge :n84.
+:n84 :edge :n85.
+:n85 :edge :n86.
+:n86 :edge :n87.
+:n87 :edge :n88.
+:n88 :edge :n89.
+:n89 :edge :n90.
+:n90 :edge :n91.
+:n91 :edge :n92.
+:n92 :edge :n93.
+:n93 :edge :n94.
+:n94 :edge :n95.
+:n95 :edge :n96.
+:n96 :edge :n97.
+:n97 :edge :n98.
+:n98 :edge :n99.
+:n99 :edge :n100.
+:n100 :edge :n101.
+:n101 :edge :n102.
+:n102 :edge :n103.
+:n103 :edge :n104.
+:n104 :edge :n105.
+:n105 :edge :n106.
+:n106 :edge :n107.
+:n107 :edge :n108.
+:n108 :edge :n109.
+:n109 :edge :n110.
+:n110 :edge :n111.
+:n111 :edge :n112.
+:n112 :edge :n113.
+:n113 :edge :n114.
+:n114 :edge :n115.
+:n115 :edge :n116.
+:n116 :edge :n117.
+:n117 :edge :n118.
+:n118 :edge :n119.
+:n119 :edge :n120.
+
+# Repeated identical top-level queries
+{ :n0 :path ?x. } log:query { :bench :q01 :ok01. }.
+{ :n0 :path ?x. } log:query { :bench :q02 :ok02. }.
+{ :n0 :path ?x. } log:query { :bench :q03 :ok03. }.
+{ :n0 :path ?x. } log:query { :bench :q04 :ok04. }.
+{ :n0 :path ?x. } log:query { :bench :q05 :ok05. }.
+{ :n0 :path ?x. } log:query { :bench :q06 :ok06. }.
+{ :n0 :path ?x. } log:query { :bench :q07 :ok07. }.
+{ :n0 :path ?x. } log:query { :bench :q08 :ok08. }.
+{ :n0 :path ?x. } log:query { :bench :q09 :ok09. }.
+{ :n0 :path ?x. } log:query { :bench :q10 :ok10. }.
+{ :n0 :path ?x. } log:query { :bench :q11 :ok11. }.
+{ :n0 :path ?x. } log:query { :bench :q12 :ok12. }.
+{ :n0 :path ?x. } log:query { :bench :q13 :ok13. }.
+{ :n0 :path ?x. } log:query { :bench :q14 :ok14. }.
+{ :n0 :path ?x. } log:query { :bench :q15 :ok15. }.
+{ :n0 :path ?x. } log:query { :bench :q16 :ok16. }.
+{ :n0 :path ?x. } log:query { :bench :q17 :ok17. }.
+{ :n0 :path ?x. } log:query { :bench :q18 :ok18. }.
+{ :n0 :path ?x. } log:query { :bench :q19 :ok19. }.
+{ :n0 :path ?x. } log:query { :bench :q20 :ok20. }.
+{ :n0 :path ?x. } log:query { :bench :q21 :ok21. }.
+{ :n0 :path ?x. } log:query { :bench :q22 :ok22. }.
+{ :n0 :path ?x. } log:query { :bench :q23 :ok23. }.
+{ :n0 :path ?x. } log:query { :bench :q24 :ok24. }.
