@@ -1,0 +1,109 @@
+# ===================================================
+# Fast Fourier Transform (FFT)
+# Input sequence: (0 1 2 3 4 5 6 7)
+# Symbolic radix-2 FFT
+# Complex roots of unity are represented symbolically
+# ===================================================
+
+@prefix : <http://example.org/fft8#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+
+# -------------------------------------------------
+# Symbolic expression encoding
+#
+# sample i -> (:leaf i)
+# omega^p -> (:twiddle :omega p)
+# omega^p * expr -> (:mul (:twiddle :omega p) expr)
+# a + b -> (:add a b)
+# -------------------------------------------------
+
+# ---------
+# Base case
+# ---------
+
+# A list of length 1 is turned into a leaf node.
+{
+  ((?i) ?root ?p ?n) :fftExpr (:leaf ?i).
+} <= {}.
+
+# ------------------------------
+# FFT rule for lists of length 2
+# ------------------------------
+
+# FFT([a,b], p) =
+#   FFT([a], 2p mod n) + omega^p * FFT([b], 2p mod n)
+{
+  ((?i0 ?i1) ?root ?p ?n) :fftExpr
+    (:add ?lhs (:mul (:twiddle ?root ?p) ?rhs)).
+} <= {
+  (?p 2) math:product ?twiceP.
+  (?twiceP ?n) math:remainder ?childP.
+
+  ((?i0) ?root ?childP ?n) :fftExpr ?lhs.
+  ((?i1) ?root ?childP ?n) :fftExpr ?rhs.
+}.
+
+# ------------------------------
+# FFT rule for lists of length 4
+# ------------------------------
+
+# Split the input into even and odd positions.
+{
+  ((?i0 ?i1 ?i2 ?i3) ?root ?p ?n) :fftExpr
+    (:add ?lhs (:mul (:twiddle ?root ?p) ?rhs)).
+} <= {
+  (?p 2) math:product ?twiceP.
+  (?twiceP ?n) math:remainder ?childP.
+
+  ((?i0 ?i2) ?root ?childP ?n) :fftExpr ?lhs.
+  ((?i1 ?i3) ?root ?childP ?n) :fftExpr ?rhs.
+}.
+
+# ------------------------------
+# FFT rule for lists of length 8
+# ------------------------------
+
+# Split the input into even and odd positions.
+{
+  ((?i0 ?i1 ?i2 ?i3 ?i4 ?i5 ?i6 ?i7) ?root ?p ?n) :fftExpr
+    (:add ?lhs (:mul (:twiddle ?root ?p) ?rhs)).
+} <= {
+  (?p 2) math:product ?twiceP.
+  (?twiceP ?n) math:remainder ?childP.
+
+  ((?i0 ?i2 ?i4 ?i6) ?root ?childP ?n) :fftExpr ?lhs.
+  ((?i1 ?i3 ?i5 ?i7) ?root ?childP ?n) :fftExpr ?rhs.
+}.
+
+# ---------------------
+# Top-level 8-point FFT
+# ---------------------
+
+# Evaluate the symbolic FFT at p = 0..7.
+{
+  (?a0 ?a1 ?a2 ?a3 ?a4 ?a5 ?a6 ?a7) :fft8
+    (?x0 ?x1 ?x2 ?x3 ?x4 ?x5 ?x6 ?x7).
+} <= {
+  ((?a0 ?a1 ?a2 ?a3 ?a4 ?a5 ?a6 ?a7) :omega 0 8) :fftExpr ?x0.
+  ((?a0 ?a1 ?a2 ?a3 ?a4 ?a5 ?a6 ?a7) :omega 1 8) :fftExpr ?x1.
+  ((?a0 ?a1 ?a2 ?a3 ?a4 ?a5 ?a6 ?a7) :omega 2 8) :fftExpr ?x2.
+  ((?a0 ?a1 ?a2 ?a3 ?a4 ?a5 ?a6 ?a7) :omega 3 8) :fftExpr ?x3.
+  ((?a0 ?a1 ?a2 ?a3 ?a4 ?a5 ?a6 ?a7) :omega 4 8) :fftExpr ?x4.
+  ((?a0 ?a1 ?a2 ?a3 ?a4 ?a5 ?a6 ?a7) :omega 5 8) :fftExpr ?x5.
+  ((?a0 ?a1 ?a2 ?a3 ?a4 ?a5 ?a6 ?a7) :omega 6 8) :fftExpr ?x6.
+  ((?a0 ?a1 ?a2 ?a3 ?a4 ?a5 ?a6 ?a7) :omega 7 8) :fftExpr ?x7.
+}.
+
+# -----
+# Query
+# -----
+
+# Ask for the symbolic FFT of (0 1 2 3 4 5 6 7).
+{
+  (0 1 2 3 4 5 6 7) :fft8 ?out.
+}
+log:query
+{
+  :result :fft ?out.
+}.

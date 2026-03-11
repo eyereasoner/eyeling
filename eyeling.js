@@ -8606,18 +8606,6 @@ function assertValidQNamePrefix(prefixName, fail, tok, context = 'prefixed name'
   }
 }
 
-function isKeywordLikeIdent(name) {
-  return (
-    name === 'a' ||
-    name === 'has' ||
-    name === 'is' ||
-    name === 'of' ||
-    name === 'true' ||
-    name === 'false' ||
-    name === 'id'
-  );
-}
-
 function failInvalidKeywordLikeIdent(fail, tok, name) {
   fail(`invalid_keyword(${name})`, tok);
 }
