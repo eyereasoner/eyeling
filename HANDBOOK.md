@@ -2448,7 +2448,7 @@ It runs against the external suite.
 
 That means:
 
-- the benchmark is shared
+- the compliance test suite is shared
 - the contract is public
 - the result is independently meaningful
 
