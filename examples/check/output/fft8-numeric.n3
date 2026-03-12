@@ -1,4 +1,0 @@
-@prefix : <http://example.org/fft8#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-
-:result :fft (("28"^^xsd:decimal "0"^^xsd:decimal) ("-4"^^xsd:decimal "9.65685424949238"^^xsd:decimal) ("-4"^^xsd:decimal "4"^^xsd:decimal) ("-4"^^xsd:decimal "1.6568542494923806"^^xsd:decimal) ("-4"^^xsd:decimal "0"^^xsd:decimal) ("-4"^^xsd:decimal "-1.6568542494923806"^^xsd:decimal) ("-4"^^xsd:decimal "-4"^^xsd:decimal) ("-4"^^xsd:decimal "-9.65685424949238"^^xsd:decimal)) .

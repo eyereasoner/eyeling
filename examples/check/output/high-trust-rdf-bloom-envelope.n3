@@ -1,7 +1,0 @@
-@prefix : <http://example.org/high-trust-rdf#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-
-:result :expIntervalCertificate :CertifiedDecimalInterval .
-:result :summary ("parameter-sanity" true "index-agreement" true "transcendental" "exp(-k*n/m)" "lambda" "0.5126953125"^^xsd:decimal "certified-lambda" 0.5126953125 "exp-lower" 0.5988792348 "exp-upper" 0.5988792349 "fp-lower" "0.0016708059567271017"^^xsd:decimal "fp-upper" "0.0016708059596428394"^^xsd:decimal "expected-extra-exact-lookups-upper" "83.54029798214196"^^xsd:decimal "decision" :AcceptForHighTrustUse) .
-:result :withinExactLookupBudget true .
-:result :withinFpRateBudget true .
