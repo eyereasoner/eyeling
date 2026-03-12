@@ -3,8 +3,8 @@
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 :test :is {
-    ((-1 0) (0.5 0)) complex:exponentiation ("6.123233995736766e-17"^^xsd:decimal "1"^^xsd:decimal) .
-    ((2.718281828459045 0) (0 3.141592653589793)) complex:exponentiation ("-1"^^xsd:decimal "1.2246467991473532e-16"^^xsd:decimal) .
+    ((-1 0) (0.5 0)) complex:exponentiation ("6.123233995736766e-17"^^xsd:double "1"^^xsd:decimal) .
+    ((2.718281828459045 0) (0 3.141592653589793)) complex:exponentiation ("-1"^^xsd:decimal "1.2246467991473532e-16"^^xsd:double) .
     ((0 1) (0 1)) complex:exponentiation ("0.20787957635076193"^^xsd:decimal "0"^^xsd:decimal) .
     ((2.718281828459045 0) (-1.57079632679 0)) complex:exponentiation ("0.20787957635177984"^^xsd:decimal "0"^^xsd:decimal) .
     (2 0) complex:asin ("1.5707963267948966"^^xsd:decimal "1.3169578969248166"^^xsd:decimal) .

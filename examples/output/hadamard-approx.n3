@@ -11,10 +11,10 @@
 :result :entryAbsErrBoundMidpoint (15 "0.000007629542710718695"^^xsd:decimal) .
 :result :entryAbsErrBoundMidpoint (16 "0.000003814730195117466"^^xsd:decimal) .
 :result :entryAbsErrBoundMidpoint (17 "0.0000019073548077064295"^^xsd:decimal) .
-:result :entryAbsErrBoundMidpoint (18 "9.536748313832e-7"^^xsd:decimal) .
-:result :entryAbsErrBoundMidpoint (19 "4.768367725671574e-7"^^xsd:decimal) .
+:result :entryAbsErrBoundMidpoint (18 "9.536748313832e-7"^^xsd:double) .
+:result :entryAbsErrBoundMidpoint (19 "4.768367725671574e-7"^^xsd:double) .
 :result :entryAbsErrBoundMidpoint (2 "0.06666666666666671"^^xsd:decimal) .
-:result :entryAbsErrBoundMidpoint (20 "2.3841854707162824e-7"^^xsd:decimal) .
+:result :entryAbsErrBoundMidpoint (20 "2.3841854707162824e-7"^^xsd:double) .
 :result :entryAbsErrBoundMidpoint (3 "0.03030303030303033"^^xsd:decimal) .
 :result :entryAbsErrBoundMidpoint (4 "0.015810276679841917"^^xsd:decimal) .
 :result :entryAbsErrBoundMidpoint (5 "0.00772946859903384"^^xsd:decimal) .
@@ -222,9 +222,9 @@
 :result :invSqrt2Width (16 "0.000007629460390234932"^^xsd:decimal) .
 :result :invSqrt2Width (17 "0.000003814709615412859"^^xsd:decimal) .
 :result :invSqrt2Width (18 "0.0000019073496627664"^^xsd:decimal) .
-:result :invSqrt2Width (19 "9.536735451343148e-7"^^xsd:decimal) .
+:result :invSqrt2Width (19 "9.536735451343148e-7"^^xsd:double) .
 :result :invSqrt2Width (2 "0.13333333333333341"^^xsd:decimal) .
-:result :invSqrt2Width (20 "4.768370941432565e-7"^^xsd:decimal) .
+:result :invSqrt2Width (20 "4.768370941432565e-7"^^xsd:double) .
 :result :invSqrt2Width (3 "0.06060606060606066"^^xsd:decimal) .
 :result :invSqrt2Width (4 "0.031620553359683834"^^xsd:decimal) .
 :result :invSqrt2Width (5 "0.01545893719806768"^^xsd:decimal) .
@@ -327,9 +327,9 @@
 :result :rowAbsErrBoundMidpoint (16 "0.000007629460390234932"^^xsd:decimal) .
 :result :rowAbsErrBoundMidpoint (17 "0.000003814709615412859"^^xsd:decimal) .
 :result :rowAbsErrBoundMidpoint (18 "0.0000019073496627664"^^xsd:decimal) .
-:result :rowAbsErrBoundMidpoint (19 "9.536735451343148e-7"^^xsd:decimal) .
+:result :rowAbsErrBoundMidpoint (19 "9.536735451343148e-7"^^xsd:double) .
 :result :rowAbsErrBoundMidpoint (2 "0.13333333333333341"^^xsd:decimal) .
-:result :rowAbsErrBoundMidpoint (20 "4.768370941432565e-7"^^xsd:decimal) .
+:result :rowAbsErrBoundMidpoint (20 "4.768370941432565e-7"^^xsd:double) .
 :result :rowAbsErrBoundMidpoint (3 "0.06060606060606066"^^xsd:decimal) .
 :result :rowAbsErrBoundMidpoint (4 "0.031620553359683834"^^xsd:decimal) .
 :result :rowAbsErrBoundMidpoint (5 "0.01545893719806768"^^xsd:decimal) .

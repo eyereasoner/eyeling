@@ -42,17 +42,17 @@
 :result :interval (9 "2.718281828458995"^^xsd:decimal "2.718281828459046"^^xsd:decimal) .
 :result :midpoint (0 "2.7181712962962963"^^xsd:decimal "0.00011574074074074075"^^xsd:decimal) .
 :result :midpoint (1 "2.7182681405895694"^^xsd:decimal "0.00001417233560090703"^^xsd:decimal) .
-:result :midpoint (10 "2.7182818284590446"^^xsd:decimal "1.4935866663710579e-15"^^xsd:decimal) .
-:result :midpoint (11 "2.7182818284590455"^^xsd:decimal "8.268991924545649e-17"^^xsd:decimal) .
-:result :midpoint (12 "2.7182818284590455"^^xsd:decimal "4.338668602385063e-18"^^xsd:decimal) .
+:result :midpoint (10 "2.7182818284590446"^^xsd:decimal "1.4935866663710579e-15"^^xsd:double) .
+:result :midpoint (11 "2.7182818284590455"^^xsd:decimal "8.268991924545649e-17"^^xsd:double) .
+:result :midpoint (12 "2.7182818284590455"^^xsd:decimal "4.338668602385063e-18"^^xsd:double) .
 :result :midpoint (2 "2.7182803199404764"^^xsd:decimal "0.0000015500992063492063"^^xsd:decimal) .
-:result :midpoint (3 "2.71828167866941"^^xsd:decimal "1.5309621791103272e-7"^^xsd:decimal) .
-:result :midpoint (4 "2.718281814925044"^^xsd:decimal "1.3778659611992945e-8"^^xsd:decimal) .
-:result :midpoint (5 "2.718281827337225"^^xsd:decimal "1.13873219933826e-9"^^xsd:decimal) .
-:result :midpoint (6 "2.718281828373155"^^xsd:decimal "8.698648744945042e-11"^^xsd:decimal) .
-:result :midpoint (7 "2.7182818284529358"^^xsd:decimal "6.1765553218544674e-12"^^xsd:decimal) .
-:result :midpoint (8 "2.7182818284586396"^^xsd:decimal "4.0966948563320443e-13"^^xsd:decimal) .
-:result :midpoint (9 "2.7182818284590207"^^xsd:decimal "2.5490545772732723e-14"^^xsd:decimal) .
+:result :midpoint (3 "2.71828167866941"^^xsd:decimal "1.5309621791103272e-7"^^xsd:double) .
+:result :midpoint (4 "2.718281814925044"^^xsd:decimal "1.3778659611992945e-8"^^xsd:double) .
+:result :midpoint (5 "2.718281827337225"^^xsd:decimal "1.13873219933826e-9"^^xsd:double) .
+:result :midpoint (6 "2.718281828373155"^^xsd:decimal "8.698648744945042e-11"^^xsd:double) .
+:result :midpoint (7 "2.7182818284529358"^^xsd:decimal "6.1765553218544674e-12"^^xsd:double) .
+:result :midpoint (8 "2.7182818284586396"^^xsd:decimal "4.0966948563320443e-13"^^xsd:double) .
+:result :midpoint (9 "2.7182818284590207"^^xsd:decimal "2.5490545772732723e-14"^^xsd:double) .
 :result :nestedAt (1 true) .
 :result :nestedAt (10 true) .
 :result :nestedAt (11 true) .
@@ -80,14 +80,14 @@
 :result :requestN 9 .
 :result :width (0 "0.0002314814814814815"^^xsd:decimal) .
 :result :width (1 "0.00002834467120181406"^^xsd:decimal) .
-:result :width (10 "2.9871733327421158e-15"^^xsd:decimal) .
-:result :width (11 "1.6537983849091297e-16"^^xsd:decimal) .
-:result :width (12 "8.677337204770125e-18"^^xsd:decimal) .
+:result :width (10 "2.9871733327421158e-15"^^xsd:double) .
+:result :width (11 "1.6537983849091297e-16"^^xsd:double) .
+:result :width (12 "8.677337204770125e-18"^^xsd:double) .
 :result :width (2 "0.0000031001984126984127"^^xsd:decimal) .
-:result :width (3 "3.0619243582206544e-7"^^xsd:decimal) .
-:result :width (4 "2.755731922398589e-8"^^xsd:decimal) .
-:result :width (5 "2.27746439867652e-9"^^xsd:decimal) .
-:result :width (6 "1.7397297489890083e-10"^^xsd:decimal) .
-:result :width (7 "1.2353110643708935e-11"^^xsd:decimal) .
-:result :width (8 "8.193389712664089e-13"^^xsd:decimal) .
-:result :width (9 "5.0981091545465446e-14"^^xsd:decimal) .
+:result :width (3 "3.0619243582206544e-7"^^xsd:double) .
+:result :width (4 "2.755731922398589e-8"^^xsd:double) .
+:result :width (5 "2.27746439867652e-9"^^xsd:double) .
+:result :width (6 "1.7397297489890083e-10"^^xsd:double) .
+:result :width (7 "1.2353110643708935e-11"^^xsd:double) .
+:result :width (8 "8.193389712664089e-13"^^xsd:double) .
+:result :width (9 "5.0981091545465446e-14"^^xsd:double) .
