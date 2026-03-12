@@ -74,19 +74,15 @@
 (1 1 0 :left) :tape 1.
 (1 "#" 1 :stop) :tape :halt.
 
-@prefix : <http://example.org/#>.
-
 # query
 {
     (1 0 1 0 0 1) :compute ?A1.
     (1 0 1 1 1 1) :compute ?A2.
     (1 1 1 1 1 1) :compute ?A3.
     () :compute ?A4.
-} => {
-    :test :is {
-        (1 0 1 0 0 1) :compute ?A1.
-        (1 0 1 1 1 1) :compute ?A2.
-        (1 1 1 1 1 1) :compute ?A3.
-        () :compute ?A4.
-    }.
+} log:query {
+    (1 0 1 0 0 1) :compute ?A1.
+    (1 0 1 1 1 1) :compute ?A2.
+    (1 1 1 1 1 1) :compute ?A3.
+    () :compute ?A4.
 }.
