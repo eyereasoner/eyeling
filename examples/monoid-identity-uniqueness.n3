@@ -1,0 +1,182 @@
+# =============================================================
+# File: monoid-identity-uniqueness.n3
+#
+# Purpose
+# -------
+# This file expresses a small algebraic result in Notation3:
+#
+#   In a monoid, the identity element is unique.
+#
+# Core idea
+# ---------
+# We start from a framework with:
+#   - a binary operation :mul
+#   - a designated identity element :e
+#   - left and right identity laws
+#
+# Then we consider another element ?e2 that also behaves like
+# an identity. Once those assumptions are fixed, the conclusion
+# is forced:
+#
+#   ?e2 = :e
+#
+# So the point is:
+#   the framework is chosen,
+#   but the consequence is not optional.
+#
+# Representation
+# --------------
+# Instead of treating multiplication as a function, we use a
+# relation:
+#
+#   (?x ?y) :mul ?z
+#
+# meaning:
+#
+#   x * y = z
+#
+# This style fits rule-based reasoning.
+# =============================================================
+
+
+@prefix :    <http://example.org/#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+
+# ------------------
+# Carrier membership
+# ------------------
+# We use:
+#
+#   ?x :inG true.
+#
+# to indicate that ?x belongs to the underlying set G.
+
+
+# -------------
+# Monoid axioms
+# -------------
+
+# Associativity:
+# if
+#   (a * b) = ab
+#   (ab * c) = left
+#   (b * c) = bc
+#   (a * bc) = right
+# then
+#   left = right
+
+{
+  (?a ?b) :mul ?ab.
+  (?ab ?c) :mul ?left.
+  (?b ?c) :mul ?bc.
+  (?a ?bc) :mul ?right.
+}
+=>
+{
+  ?left log:equalTo ?right.
+}.
+
+# Left identity:
+# for every element a in G,
+#   e * a = a
+
+{
+  ?a :inG true.
+}
+=>
+{
+  (:e ?a) :mul ?a.
+}.
+
+# Right identity:
+# for every element a in G,
+#   a * e = a
+
+{
+  ?a :inG true.
+}
+=>
+{
+  (?a :e) :mul ?a.
+}.
+
+
+# --------------------------------------------
+# Assumption about a second candidate identity
+# --------------------------------------------
+# If ?e2 also acts as a left identity for every element of G,
+# then it is a candidate for being "another identity".
+#
+#   e2 * a = a
+
+{
+  ?e2 :candidateIdentity true.
+  ?a  :inG true.
+}
+=>
+{
+  (?e2 ?a) :mul ?a.
+}.
+
+# Optional stronger assumption:
+# if desired, we can also state that ?e2 acts as a right identity.
+# It is not needed for the uniqueness proof below, but it can make
+# the intended meaning more explicit.
+#
+# {
+#   ?e2 :candidateIdentity true.
+#   ?a  :inG true.
+# }
+# =>
+# {
+#   (?a ?e2) :mul ?a.
+# }.
+
+
+# ----------------------
+# Uniqueness of identity
+# ----------------------
+# Proof idea:
+#
+#   e2 = e2 * e     by the right identity law for e
+#      = e          because e2 acts as a left identity
+#
+# Therefore:
+#
+#   e2 = e
+#
+# In relational form we express the two needed multiplication facts:
+#
+#   (e2, e) :mul e2
+#   (e2, e) :mul e
+#
+# and conclude:
+#
+#   e2 log:equalTo e
+
+{
+  ?e2 :candidateIdentity true.
+  ?e2 :inG true.
+  :e  :inG true.
+
+  (?e2 :e) :mul ?e2.
+  (?e2 :e) :mul :e.
+}
+=>
+{
+  ?e2 log:equalTo :e.
+}.
+
+
+# --------------
+# Optional query
+# --------------
+# Ask for any candidate identity that must coincide with :e.
+
+{
+  ?e2 log:equalTo :e.
+}
+log:query
+{
+  :result :uniqueIdentity ?e2.
+}.

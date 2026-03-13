@@ -1,0 +1,174 @@
+# ===========================================================
+# File: group-inverse-uniqueness.n3
+#
+# Purpose
+# -------
+# This file expresses a small algebraic result in Notation3:
+#
+#   In a group, the inverse of an element is unique.
+#
+# Core idea
+# ---------
+# We choose a framework with:
+#   - a binary operation :mul
+#   - an identity element :e
+#   - associativity
+#   - left and right identity laws
+#   - inverse laws
+#
+# Then we assume that ?y and ?z are both inverses of the same
+# element ?x.
+#
+# The theorem is not added by convention. It is forced by the
+# framework:
+#
+#   ?y = ?z
+# ===========================================================
+
+@prefix :    <http://example.org/#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+
+# ------------------
+# Carrier membership
+# ------------------
+
+# We use:
+#
+#   ?x :inG true.
+#
+# to indicate that ?x belongs to the underlying set.
+
+
+# -------------------
+# Monoid / group laws
+# -------------------
+
+# Associativity:
+# if
+#   (a * b) = ab
+#   (ab * c) = left
+#   (b * c) = bc
+#   (a * bc) = right
+# then left and right are provably the same term.
+
+{
+  (?a ?b) :mul ?ab.
+  (?ab ?c) :mul ?left.
+  (?b ?c) :mul ?bc.
+  (?a ?bc) :mul ?right.
+}
+=>
+{
+  (?left ?right) :sameTerm true.
+}.
+
+# Symmetry of provable sameness
+
+{
+  (?a ?b) :sameTerm true.
+}
+=>
+{
+  (?b ?a) :sameTerm true.
+}.
+
+# Left identity:
+#   e * a = a
+
+{
+  ?a :inG true.
+}
+=>
+{
+  (:e ?a) :mul ?a.
+}.
+
+# Right identity:
+#   a * e = a
+
+{
+  ?a :inG true.
+}
+=>
+{
+  (?a :e) :mul ?a.
+}.
+
+# Inverse assumption:
+# if ?y is an inverse of ?x, then
+#   x * y = e
+#   y * x = e
+
+{
+  ?x :inG true.
+  ?y :inG true.
+  ?y :inverseOf ?x.
+}
+=>
+{
+  (?x ?y) :mul :e.
+  (?y ?x) :mul :e.
+}.
+
+
+# ---------------------
+# Uniqueness of inverse
+# ---------------------
+#
+# Proof idea:
+#
+#   y = y * e
+#     = y * (x * z)
+#     = (y * x) * z
+#     = e * z
+#     = z
+#
+# We do not encode that as a builtin equality in the head.
+# Instead, the earlier rules derive:
+#
+#   (?y ?z) :sameTerm true
+#
+# from associativity, identity, and inverse facts.
+#
+# Then we package the theorem as:
+#
+#   (?x ?y ?z) :sameInverse true
+#
+
+{
+  ?y :inverseOf ?x.
+  ?z :inverseOf ?x.
+  (?y ?z) :sameTerm true.
+}
+=>
+{
+  (?x ?y ?z) :sameInverse true.
+}.
+
+
+# -----------------
+# Tiny example data
+# -----------------
+
+:x :inG true.
+:i :inG true.
+:j :inG true.
+:e :inG true.
+
+:i :inverseOf :x.
+:j :inverseOf :x.
+
+
+# -----
+# Query
+# -----
+# Show only non-trivial cases.
+
+{
+  (?x ?y ?z) :sameInverse true.
+  ?y log:notEqualTo ?z.
+}
+log:query
+{
+  :result :sameInverse (?x ?y ?z).
+}.

@@ -1,0 +1,4 @@
+@prefix : <http://example.org/#> .
+
+:result :sameInverse (:x :i :j) .
+:result :sameInverse (:x :j :i) .
