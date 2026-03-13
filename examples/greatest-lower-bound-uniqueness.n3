@@ -1,0 +1,202 @@
+# ===========================================================
+# File: greatest-lower-bound-uniqueness.n3
+#
+# Purpose
+# -------
+# This file expresses a pure mathematical result:
+#
+#   In a partial order, a greatest lower bound is unique.
+#
+# Core idea
+# ---------
+# We choose a framework with a relation :leq and the usual
+# order-theoretic laws. Then we introduce the notion of a
+# greatest lower bound of two elements.
+#
+# Once those choices are fixed, the following is no longer
+# optional:
+#
+#   if ?m and ?n are both greatest lower bounds of ?a and ?b,
+#   then they must be the same.
+#
+# So again:
+#   the framework is chosen,
+#   but the consequence is forced.
+#
+# Representation
+# --------------
+#   ?x :leq ?y
+# means:
+#   x ≤ y
+#
+#   ?m :glbOf (?a ?b)
+# means:
+#   m is a greatest lower bound of a and b
+#
+#   (?x ?y) :sameTerm true
+# records provable sameness as an ordinary derived fact.
+# ===========================================================
+
+@prefix :    <http://example.org/#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+
+# ------------------
+# Carrier membership
+# ------------------
+
+# We use:
+#
+#   ?x :inP true.
+#
+# to indicate that ?x belongs to the underlying partially
+# ordered set.
+
+
+# -------------------------
+# Axioms of a partial order
+# -------------------------
+
+# Reflexive:
+# every element is ≤ itself
+
+{
+  ?x :inP true.
+}
+=>
+{
+  ?x :leq ?x.
+}.
+
+# Transitive:
+# if x ≤ y and y ≤ z then x ≤ z
+
+{
+  ?x :leq ?y.
+  ?y :leq ?z.
+}
+=>
+{
+  ?x :leq ?z.
+}.
+
+# Antisymmetric:
+# if x ≤ y and y ≤ x then x and y are the same
+
+{
+  ?x :leq ?y.
+  ?y :leq ?x.
+}
+=>
+{
+  (?x ?y) :sameTerm true.
+}.
+
+# Symmetry of provable sameness
+
+{
+  (?x ?y) :sameTerm true.
+}
+=>
+{
+  (?y ?x) :sameTerm true.
+}.
+
+
+# ------------
+# Lower bounds
+# ------------
+
+# If m is declared to be a greatest lower bound of a and b,
+# then m is in particular a lower bound of a and b.
+
+{
+  ?m :glbOf (?a ?b).
+}
+=>
+{
+  ?m :lowerBoundOf (?a ?b).
+  ?m :leq ?a.
+  ?m :leq ?b.
+}.
+
+# Greatestness:
+# if m is a greatest lower bound of a and b, and l is any
+# lower bound of a and b, then l ≤ m.
+
+{
+  ?m :glbOf (?a ?b).
+  ?l :lowerBoundOf (?a ?b).
+}
+=>
+{
+  ?l :leq ?m.
+}.
+
+
+# -------------------------------------------
+# Theorem: uniqueness of greatest lower bound
+# -------------------------------------------
+#
+# Proof idea:
+#
+#   Suppose m and n are both greatest lower bounds of a and b.
+#
+#   Since n is a lower bound, and m is greatest among all lower
+#   bounds, we get:
+#
+#     n ≤ m
+#
+#   Similarly:
+#
+#     m ≤ n
+#
+#   By antisymmetry:
+#
+#     m = n
+#
+# We record the result in two stages:
+#   1. derive :sameTerm
+#   2. package the theorem as :sameGlb
+
+{
+  ?m :glbOf (?a ?b).
+  ?n :glbOf (?a ?b).
+  (?m ?n) :sameTerm true.
+}
+=>
+{
+  (?a ?b ?m ?n) :sameGlb true.
+}.
+
+
+# -----------------
+# Tiny example data
+# -----------------
+# We declare two differently named candidates :g1 and :g2
+# as greatest lower bounds of the same pair (:a, :b).
+#
+# The theory should force them to coincide.
+
+:a  :inP true.
+:b  :inP true.
+:g1 :inP true.
+:g2 :inP true.
+
+:g1 :glbOf (:a :b).
+:g2 :glbOf (:a :b).
+
+
+# -----
+# Query
+# -----
+# Ask for non-trivial cases where two differently named
+# greatest lower bounds must coincide.
+
+{
+  (?a ?b ?m ?n) :sameGlb true.
+  ?m log:notEqualTo ?n.
+}
+log:query
+{
+  :result :sameGreatestLowerBound (?a ?b ?m ?n).
+}.

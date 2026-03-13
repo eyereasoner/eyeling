@@ -1,0 +1,183 @@
+# ===============================================================
+# File: equivalence-classes-overlap-implies-same-class.n3
+#
+# Purpose
+# -------
+# This file expresses a small result about equivalence relations:
+#
+#   If two equivalence classes share an element,
+#   then they are the same class.
+#
+# Core idea
+# ---------
+# We choose a framework with a relation :sim and the axioms:
+#   - reflexive
+#   - symmetric
+#   - transitive
+#
+# That is the creative step: we decide to study relations with
+# exactly these properties.
+#
+# Once that framework is fixed, a consequence follows:
+#
+#   if some element ?z belongs to both [x] and [y],
+#   then [x] and [y] are the same equivalence class.
+#
+# In this file:
+#
+#   ?u :inClassOf ?x
+#
+# means that ?u belongs to the equivalence class of ?x,
+# i.e. ?u is related to ?x by :sim.
+#
+# We record class equality using the ordinary relation:
+#
+#   (?x ?y) :sameClass true.
+# ===============================================================
+
+@prefix :    <http://example.org/#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+
+# ------------------
+# Carrier membership
+# ------------------
+# We use:
+#
+#   ?x :inX true.
+#
+# to indicate that ?x belongs to the underlying set X.
+
+# ---------------------------------
+# Axioms of an equivalence relation
+# ---------------------------------
+
+# Reflexive:
+# every element is related to itself
+
+{
+  ?x :inX true.
+}
+=>
+{
+  ?x :sim ?x.
+}.
+
+# Symmetric:
+# if x ~ y then y ~ x
+
+{
+  ?x :sim ?y.
+}
+=>
+{
+  ?y :sim ?x.
+}.
+
+# Transitive:
+# if x ~ y and y ~ z then x ~ z
+
+{
+  ?x :sim ?y.
+  ?y :sim ?z.
+}
+=>
+{
+  ?x :sim ?z.
+}.
+
+
+# -------------------
+# Equivalence classes
+# -------------------
+# Membership in the class of x is just another way to say
+# "is related to x".
+
+{
+  ?u :sim ?x.
+}
+=>
+{
+  ?u :inClassOf ?x.
+}.
+
+# If x ~ y, then x and y determine the same class.
+
+{
+  ?x :sim ?y.
+}
+=>
+{
+  (?x ?y) :sameClass true.
+}.
+
+# Symmetry of class equality
+
+{
+  (?x ?y) :sameClass true.
+}
+=>
+{
+  (?y ?x) :sameClass true.
+}.
+
+
+# -----------
+# The theorem
+# -----------
+# Proof idea:
+#
+#   if z is in [x] and z is in [y],
+#   then z ~ x and z ~ y
+#   so x ~ z          by symmetry
+#   and x ~ y         by transitivity
+#   hence [x] = [y]
+#
+# The actual class equality comes from the earlier rules.
+# This rule simply packages the result as an explicit theorem
+# instance with a witness ?z.
+
+{
+  ?z :inClassOf ?x.
+  ?z :inClassOf ?y.
+  (?x ?y) :sameClass true.
+}
+=>
+{
+  (?x ?y ?z) :sharedMemberShowsSameClass true.
+}.
+
+
+# -----------------
+# Tiny example data
+# -----------------
+# Here :b belongs to both the class of :a and the class of :c,
+# because we assert:
+#
+#   b ~ a
+#   b ~ c
+#
+# From the axioms, the reasoner should conclude that
+# the classes of :a and :c are the same.
+
+:a :inX true.
+:b :inX true.
+:c :inX true.
+
+:b :sim :a.
+:b :sim :c.
+
+
+# -----
+# Query
+# -----
+# Ask for non-trivial cases where a shared member forces
+# two classes to be the same.
+
+{
+  (?x ?y ?z) :sharedMemberShowsSameClass true.
+  ?x log:notEqualTo ?y.
+}
+log:query
+{
+  :result :sameClassBecauseOfSharedMember (?x ?y ?z).
+}.

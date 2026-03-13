@@ -1,0 +1,20 @@
+@prefix : <http://example.org/#> .
+
+:result :sameClassBecauseOfSharedMember (:a :b :a) .
+:result :sameClassBecauseOfSharedMember (:a :b :b) .
+:result :sameClassBecauseOfSharedMember (:a :b :c) .
+:result :sameClassBecauseOfSharedMember (:a :c :a) .
+:result :sameClassBecauseOfSharedMember (:a :c :b) .
+:result :sameClassBecauseOfSharedMember (:a :c :c) .
+:result :sameClassBecauseOfSharedMember (:b :a :a) .
+:result :sameClassBecauseOfSharedMember (:b :a :b) .
+:result :sameClassBecauseOfSharedMember (:b :a :c) .
+:result :sameClassBecauseOfSharedMember (:b :c :a) .
+:result :sameClassBecauseOfSharedMember (:b :c :b) .
+:result :sameClassBecauseOfSharedMember (:b :c :c) .
+:result :sameClassBecauseOfSharedMember (:c :a :a) .
+:result :sameClassBecauseOfSharedMember (:c :a :b) .
+:result :sameClassBecauseOfSharedMember (:c :a :c) .
+:result :sameClassBecauseOfSharedMember (:c :b :a) .
+:result :sameClassBecauseOfSharedMember (:c :b :b) .
+:result :sameClassBecauseOfSharedMember (:c :b :c) .

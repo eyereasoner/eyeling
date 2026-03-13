@@ -1,0 +1,4 @@
+@prefix : <http://example.org/#> .
+
+:result :sameGreatestLowerBound (:a :b :g1 :g2) .
+:result :sameGreatestLowerBound (:a :b :g2 :g1) .
