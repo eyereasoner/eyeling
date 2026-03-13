@@ -1,0 +1,4 @@
+@prefix : <http://examples.org/#> .
+
+:result :sameInputByCompositeInjectivity (:h :a :b) .
+:result :sameInputByCompositeInjectivity (:h :b :a) .

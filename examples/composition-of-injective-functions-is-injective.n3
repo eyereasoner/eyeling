@@ -1,0 +1,241 @@
+# ==========================================================
+# File: composition-of-injective-functions-is-injective.n3
+#
+# Purpose
+# -------
+# This file expresses a standard pure mathematical fact:
+#
+#   The composition of two injective functions is injective.
+#
+# Core idea
+# ---------
+# We choose a framework with:
+#   - functions represented by an application relation :app
+#   - a notion of injectivity
+#   - a notion of composition
+#
+# Once that framework is fixed, the theorem is forced:
+#
+#   if f and g are injective,
+#   then g ∘ f is injective.
+#
+# This fits the general theme:
+#   the framework is chosen,
+#   but the consequence is not optional.
+#
+# Representation
+# --------------
+#   (?f ?x) :app ?y
+# means:
+#   f(x) = y
+#
+#   ?h :compositeOf (?g ?f)
+# means:
+#   h = g ∘ f
+#
+#   (?x ?y) :sameTerm true
+# records provable sameness as an ordinary derived fact.
+# ==========================================================
+
+@prefix :    <http://examples.org/#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+
+# ------------------
+# Carrier membership
+# ------------------
+
+# We use:
+#
+#   ?x :inX true.
+#   ?y :inY true.
+#   ?z :inZ true.
+#
+# for the three sets involved.
+
+# -----------------------------------
+# Basic facts about provable sameness
+# -----------------------------------
+
+# Reflexivity on each carrier
+
+{
+  ?x :inX true.
+}
+=>
+{
+  (?x ?x) :sameTerm true.
+}.
+
+{
+  ?y :inY true.
+}
+=>
+{
+  (?y ?y) :sameTerm true.
+}.
+
+{
+  ?z :inZ true.
+}
+=>
+{
+  (?z ?z) :sameTerm true.
+}.
+
+# Symmetry
+
+{
+  (?a ?b) :sameTerm true.
+}
+=>
+{
+  (?b ?a) :sameTerm true.
+}.
+
+
+# ---------
+# Functions
+# ---------
+
+# Functionality:
+# if the same function sends the same input to two outputs,
+# then those outputs are the same.
+
+{
+  (?f ?x) :app ?u.
+  (?f ?x) :app ?v.
+}
+=>
+{
+  (?u ?v) :sameTerm true.
+}.
+
+# Injectivity:
+# if an injective function sends x and y to the same output,
+# then x and y are the same.
+
+{
+  ?f :injective true.
+  (?f ?x) :app ?u.
+  (?f ?y) :app ?v.
+  (?u ?v) :sameTerm true.
+}
+=>
+{
+  (?x ?y) :sameTerm true.
+}.
+
+
+# -----------
+# Composition
+# -----------
+
+# If h = g ∘ f, and f(x) = y, and g(y) = z,
+# then h(x) = z.
+
+{
+  ?h :compositeOf (?g ?f).
+  (?f ?x) :app ?y.
+  (?g ?y) :app ?z.
+}
+=>
+{
+  (?h ?x) :app ?z.
+}.
+
+
+# -----------
+# The theorem
+# -----------
+#
+# Proof idea:
+#
+#   suppose h = g ∘ f
+#   and h(x), h(y) are equal
+#
+#   then g(f(x)) = g(f(y))
+#   since g is injective:
+#       f(x) = f(y)
+#   since f is injective:
+#       x = y
+#
+# So the composition is injective.
+#
+# In this file we record theorem instances with:
+#
+#   (?h ?x ?y) :sameInputUnderEqualCompositeOutput true
+#
+
+{
+  ?h :compositeOf (?g ?f).
+  ?f :injective true.
+  ?g :injective true.
+
+  (?f ?x) :app ?fx.
+  (?f ?y) :app ?fy.
+
+  (?g ?fx) :app ?u.
+  (?g ?fy) :app ?v.
+
+  (?u ?v) :sameTerm true.
+  (?x ?y) :sameTerm true.
+}
+=>
+{
+  (?h ?x ?y) :sameInputUnderEqualCompositeOutput true.
+}.
+
+
+# -----------------
+# Tiny example data
+# -----------------
+# We declare two injective functions f and g, and their
+# composition h = g ∘ f.
+#
+# The data below says:
+#
+#   f(a) = p
+#   f(b) = q
+#   g(p) = r
+#   g(q) = r
+#
+# Since g is injective, p and q must be the same.
+# Since f is injective, a and b must be the same.
+#
+# So h sends a and b to the same value only because
+# the framework forces a = b.
+
+:a :inX true.
+:b :inX true.
+
+:p :inY true.
+:q :inY true.
+
+:r :inZ true.
+
+:f :injective true.
+:g :injective true.
+
+:h :compositeOf (:g :f).
+
+(:f :a) :app :p.
+(:f :b) :app :q.
+
+(:g :p) :app :r.
+(:g :q) :app :r.
+
+
+# -----
+# Query
+# -----
+# Ask for non-trivial cases where equal composite output forces
+# the inputs to be the same.
+
+{
+  (?h ?x ?y) :sameInputUnderEqualCompositeOutput true.
+  ?x log:notEqualTo ?y.
+}
+log:query
+{
+  :result :sameInputByCompositeInjectivity (?h ?x ?y).
+}.
