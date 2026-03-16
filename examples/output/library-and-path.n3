@@ -1,0 +1,33 @@
+@prefix ex: <https://example.org/library-path#> .
+
+ex:s1 ex:hasRecord ex:rec1 .
+ex:s2 ex:hasRecord ex:rec2 .
+ex:s3 ex:hasRecord ex:rec3 .
+ex:s4 ex:hasRecord ex:rec4 .
+ex:s1 ex:observedBy ex:observer .
+ex:s2 ex:observedBy ex:observer .
+ex:s3 ex:observedBy ex:observer .
+ex:s4 ex:observedBy ex:observer .
+ex:historyAlpha ex:supportsConstraint ex:rec1 .
+ex:historyBeta ex:supportsConstraint ex:rec1 .
+ex:historyGamma ex:supportsConstraint ex:rec1 .
+ex:historyDelta ex:supportsConstraint ex:rec1 .
+ex:historyAlpha ex:supportsConstraint ex:rec2 .
+ex:historyGamma ex:supportsConstraint ex:rec2 .
+ex:historyDelta ex:supportsConstraint ex:rec2 .
+ex:historyAlpha ex:supportsConstraint ex:rec3 .
+ex:historyDelta ex:supportsConstraint ex:rec3 .
+ex:historyAlpha ex:supportsConstraint ex:rec4 .
+ex:realizedPath ex:realizes ex:s1 .
+ex:realizedPath ex:realizes ex:s2 .
+ex:realizedPath ex:realizes ex:s3 .
+ex:realizedPath ex:realizes ex:s4 .
+ex:historyBeta ex:incompatibleWith ex:rec2 .
+ex:historyBeta ex:incompatibleWith ex:rec3 .
+ex:historyGamma ex:incompatibleWith ex:rec3 .
+ex:historyBeta ex:incompatibleWith ex:rec4 .
+ex:historyGamma ex:incompatibleWith ex:rec4 .
+ex:historyDelta ex:incompatibleWith ex:rec4 .
+ex:historyAlpha ex:compatibleWith ex:realizedPath .
+"Plain-language summary" ex:is "The Library contains many coherent alternatives. The Path is one realized sequence through them. Observation happens within the Path and leaves records. Those records narrow which candidate histories remain compatible with what is now observed." .
+"Where to look first" ex:is "Start with ex:theLibrary, ex:realizedPath, ex:observer, then read the states s0..s4, then the records rec1..rec4, then the candidate histories." .

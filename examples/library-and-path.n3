@@ -1,0 +1,499 @@
+# ==========================================================================
+# The Library and the Path
+#
+# Source essay:
+#   https://josd.github.io/the-library-and-the-path/
+#
+# What this file is trying to do
+# ------------------------------
+# The essay uses a philosophical image:
+#
+#   • The "Library" is the space of many possible, internally coherent ways
+#     things could be.
+#   • The "Path" is the one realized history we actually inhabit.
+#   • "Observership" is not a godlike view from outside the world. It is a
+#     process inside the Path: systems make observations, leave records, and
+#     those records constrain which earlier histories still make sense.
+#
+# This file translates that idea into semantic data and lightweight rules.
+# It is not a physics engine and not a proof of the essay. It is a readable,
+# machine-processable toy model inspired by the essay.
+#
+# Design choices
+# --------------
+# 1. The model uses five layers, echoing the essay's stacked descriptions:
+#      quantum, thermodynamic, biological, cognitive, social
+# 2. The Library contains multiple possible states and branches.
+# 3. The realized Path selects one sequence of states.
+# 4. Observations create records.
+# 5. Records act as constraints on candidate histories.
+# ==========================================================================
+
+@prefix ex:   <https://example.org/library-path#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix log:  <http://www.w3.org/2000/10/swap/log#> .
+
+# ----------
+# Vocabulary
+# ----------
+
+# These are the main kinds of things in the model.
+ex:Library             a rdfs:Class ; rdfs:label "Library" .
+ex:Layer               a rdfs:Class ; rdfs:label "Layer of description" .
+ex:State               a rdfs:Class ; rdfs:label "State" .
+ex:PossibleState       a rdfs:Class ; rdfs:subClassOf ex:State ; rdfs:label "Possible state" .
+ex:RealizedState       a rdfs:Class ; rdfs:subClassOf ex:State ; rdfs:label "Realized state" .
+ex:Path                a rdfs:Class ; rdfs:label "Path" .
+ex:Transition          a rdfs:Class ; rdfs:label "Transition" .
+ex:Observer            a rdfs:Class ; rdfs:label "Observer" .
+ex:Observation         a rdfs:Class ; rdfs:label "Observation" .
+ex:Record              a rdfs:Class ; rdfs:label "Record" .
+ex:Constraint          a rdfs:Class ; rdfs:label "Constraint" .
+ex:History             a rdfs:Class ; rdfs:label "Candidate history" .
+ex:Theme               a rdfs:Class ; rdfs:label "Theme" .
+ex:InterpretiveNote    a rdfs:Class ; rdfs:label "Interpretive note" .
+
+# Properties. Their names are chosen to read like plain English.
+ex:containsLayer       a rdf:Property .
+ex:containsState       a rdf:Property .
+ex:containsHistory     a rdf:Property .
+ex:throughLibrary      a rdf:Property .
+ex:hasState            a rdf:Property .
+ex:startsAt            a rdf:Property .
+ex:endsAt              a rdf:Property .
+ex:nextState           a rdf:Property .
+ex:branchesTo          a rdf:Property .
+ex:atLayer             a rdf:Property .
+ex:timeIndex           a rdf:Property .
+ex:describedByTheme    a rdf:Property .
+ex:hasTransition       a rdf:Property .
+ex:fromState           a rdf:Property .
+ex:toState             a rdf:Property .
+ex:transitionType      a rdf:Property .
+ex:observedBy          a rdf:Property .
+ex:makesObservation    a rdf:Property .
+ex:atState             a rdf:Property .
+ex:writesRecord        a rdf:Property .
+ex:aboutState          a rdf:Property .
+ex:hasRecord           a rdf:Property .
+ex:hasConstraint       a rdf:Property .
+ex:matchesRecord       a rdf:Property .
+ex:supportsConstraint  a rdf:Property .
+ex:compatibleWith      a rdf:Property .
+ex:incompatibleWith    a rdf:Property .
+ex:memberState         a rdf:Property .
+ex:realizes            a rdf:Property .
+ex:selectsFrom         a rdf:Property .
+ex:plainEnglish        a rdf:Property .
+ex:description         a rdf:Property .
+ex:glosses             a rdf:Property .
+ex:notes               a rdf:Property .
+ex:focusesOn           a rdf:Property .
+
+# -------------------
+# High-level concepts
+# -------------------
+
+ex:theLibrary a ex:Library ;
+    rdfs:label "The Library" ;
+    ex:description "The timeless space of structured possibilities." ;
+    ex:plainEnglish "Think of this as the set of coherent ways the world could be, not yet reduced to one lived history." ;
+    ex:containsLayer ex:quantum, ex:thermodynamic, ex:biological, ex:cognitive, ex:social .
+
+ex:realizedPath a ex:Path ;
+    rdfs:label "The realized Path" ;
+    ex:throughLibrary ex:theLibrary ;
+    ex:selectsFrom ex:theLibrary ;
+    ex:description "One actual history through the Library." ;
+    ex:plainEnglish "Out of many possibilities, this is the single unfolding sequence that becomes lived reality." .
+
+ex:observer a ex:Observer ;
+    rdfs:label "Observership" ;
+    ex:description "Perspective from within the Path that creates records." ;
+    ex:plainEnglish "The observer is not outside the universe. Observation happens inside the realized history and leaves traces behind." .
+
+# -----------------
+# Layers and themes
+# -----------------
+
+# Each layer is a way of describing the same broad reality at a different scale
+# or level of organization.
+ex:quantum a ex:Layer ;
+    rdfs:label "Quantum" ;
+    ex:plainEnglish "Microscopic possibilities and amplitudes." ;
+    ex:describedByTheme ex:themePossibility .
+
+ex:thermodynamic a ex:Layer ;
+    rdfs:label "Thermodynamic" ;
+    ex:plainEnglish "Flows, gradients, dissipation, and the arrow of time." ;
+    ex:describedByTheme ex:themeIrreversibility .
+
+ex:biological a ex:Layer ;
+    rdfs:label "Biological" ;
+    ex:plainEnglish "Living systems that preserve structure and memory across generations." ;
+    ex:describedByTheme ex:themePersistence .
+
+ex:cognitive a ex:Layer ;
+    rdfs:label "Cognitive" ;
+    ex:plainEnglish "Internal models, recall, anticipation, and interpretation." ;
+    ex:describedByTheme ex:themeModeling .
+
+ex:social a ex:Layer ;
+    rdfs:label "Social" ;
+    ex:plainEnglish "Language, institutions, archives, and public memory." ;
+    ex:describedByTheme ex:themeSharedRecord .
+
+ex:themePossibility a ex:Theme ;
+    rdfs:label "Possibility" ;
+    ex:glosses "Many coherent alternatives can exist in description before one history is lived." .
+
+ex:themeIrreversibility a ex:Theme ;
+    rdfs:label "Irreversibility" ;
+    ex:glosses "Records and gradients make the past different from the future." .
+
+ex:themePersistence a ex:Theme ;
+    rdfs:label "Persistence" ;
+    ex:glosses "Some structures endure and transmit form." .
+
+ex:themeModeling a ex:Theme ;
+    rdfs:label "Modeling" ;
+    ex:glosses "Minds encode and use internal representations." .
+
+ex:themeSharedRecord a ex:Theme ;
+    rdfs:label "Shared record" ;
+    ex:glosses "Groups stabilize memory in symbols, texts, norms, and institutions." .
+
+# ---------------------
+# States in the Library
+# ---------------------
+
+# A state is not meant to be a complete physical description of everything.
+# It is a compact marker for a stage in a possible history.
+
+# ---- Realized states ----
+ex:s0 a ex:PossibleState, ex:RealizedState ;
+    rdfs:label "s0" ;
+    ex:timeIndex 0 ;
+    ex:atLayer ex:quantum ;
+    ex:description "Initial low-information possibility." ;
+    ex:plainEnglish "A starting point containing many open possibilities." .
+
+ex:s1 a ex:PossibleState, ex:RealizedState ;
+    rdfs:label "s1" ;
+    ex:timeIndex 1 ;
+    ex:atLayer ex:thermodynamic ;
+    ex:description "Entropy gradient becomes a usable arrow." ;
+    ex:plainEnglish "A directionality appears: some traces can now accumulate rather than instantly disappear." .
+
+ex:s2 a ex:PossibleState, ex:RealizedState ;
+    rdfs:label "s2" ;
+    ex:timeIndex 2 ;
+    ex:atLayer ex:biological ;
+    ex:description "A living lineage persists and stores traces." ;
+    ex:plainEnglish "Something like heredity or durable adaptation now carries information forward." .
+
+ex:s3 a ex:PossibleState, ex:RealizedState ;
+    rdfs:label "s3" ;
+    ex:timeIndex 3 ;
+    ex:atLayer ex:cognitive ;
+    ex:description "A mind models the world and remembers." ;
+    ex:plainEnglish "Memory becomes explicit enough to support interpretation and anticipation." .
+
+ex:s4 a ex:PossibleState, ex:RealizedState ;
+    rdfs:label "s4" ;
+    ex:timeIndex 4 ;
+    ex:atLayer ex:social ;
+    ex:description "Shared language stabilizes public records." ;
+    ex:plainEnglish "Memory is no longer only private. It becomes collective and institutional." .
+
+# ---- Alternative states not taken on the realized Path ----
+ex:s1a a ex:PossibleState ;
+    rdfs:label "s1a" ;
+    ex:timeIndex 1 ;
+    ex:atLayer ex:thermodynamic ;
+    ex:description "Thermal structure dissipates too quickly." ;
+    ex:plainEnglish "The world remains too fleeting to support durable traces." .
+
+ex:s2a a ex:PossibleState ;
+    rdfs:label "s2a" ;
+    ex:timeIndex 2 ;
+    ex:atLayer ex:biological ;
+    ex:description "No robust biological memory emerges." ;
+    ex:plainEnglish "There are local structures, but nothing that preserves adaptive information well." .
+
+ex:s3a a ex:PossibleState ;
+    rdfs:label "s3a" ;
+    ex:timeIndex 3 ;
+    ex:atLayer ex:cognitive ;
+    ex:description "Local cognition forms, but no durable self-model." ;
+    ex:plainEnglish "Some processing happens, but not enough stable reflective memory to anchor a long narrative." .
+
+ex:s4a a ex:PossibleState ;
+    rdfs:label "s4a" ;
+    ex:timeIndex 4 ;
+    ex:atLayer ex:social ;
+    ex:description "Agents fail to coordinate stable communal archives." ;
+    ex:plainEnglish "There may be minds, but no lasting shared record of them." .
+
+ex:theLibrary
+    ex:containsState ex:s0, ex:s1, ex:s2, ex:s3, ex:s4,
+                     ex:s1a, ex:s2a, ex:s3a, ex:s4a .
+
+# -------------------
+# Branching structure
+# -------------------
+
+# The Library contains branches. The Path selects one branch.
+ex:s0  ex:branchesTo ex:s1, ex:s1a .
+ex:s1  ex:branchesTo ex:s2, ex:s2a .
+ex:s1a ex:branchesTo ex:s2a .
+ex:s2  ex:branchesTo ex:s3, ex:s3a .
+ex:s2a ex:branchesTo ex:s3a .
+ex:s3  ex:branchesTo ex:s4, ex:s4a .
+ex:s3a ex:branchesTo ex:s4a .
+
+# The single realized history.
+
+ex:realizedPath
+    ex:hasState ex:s0, ex:s1, ex:s2, ex:s3, ex:s4 ;
+    ex:startsAt ex:s0 ;
+    ex:endsAt ex:s4 ;
+    ex:notes "This is the one branch counted as lived reality in the model." .
+
+ex:s0 ex:nextState ex:s1 .
+ex:s1 ex:nextState ex:s2 .
+ex:s2 ex:nextState ex:s3 .
+ex:s3 ex:nextState ex:s4 .
+
+# -----------
+# Transitions
+# -----------
+
+# Transitions make the path easier to read for humans.
+ex:t01 a ex:Transition ;
+    ex:fromState ex:s0 ;
+    ex:toState ex:s1 ;
+    ex:transitionType "selection into durable asymmetry" ;
+    ex:description "A world with usable directional structure emerges." .
+
+ex:t12 a ex:Transition ;
+    ex:fromState ex:s1 ;
+    ex:toState ex:s2 ;
+    ex:transitionType "persistence into adaptation" ;
+    ex:description "Energy gradients support living systems that keep information." .
+
+ex:t23 a ex:Transition ;
+    ex:fromState ex:s2 ;
+    ex:toState ex:s3 ;
+    ex:transitionType "adaptation into modeling" ;
+    ex:description "Biological persistence develops into explicit internal world-models." .
+
+ex:t34 a ex:Transition ;
+    ex:fromState ex:s3 ;
+    ex:toState ex:s4 ;
+    ex:transitionType "private memory into public memory" ;
+    ex:description "Symbols and institutions stabilize records beyond individual minds." .
+
+ex:realizedPath ex:hasTransition ex:t01, ex:t12, ex:t23, ex:t34 .
+
+# ------------------------
+# Observations and records
+# ------------------------
+
+# In this model, observations produce records. Records are important because
+# they constrain which histories remain plausible from the current standpoint.
+ex:obs1 a ex:Observation ;
+    rdfs:label "Observation 1" ;
+    ex:atState ex:s1 ;
+    ex:writesRecord ex:rec1 ;
+    ex:description "A trace of an irreversible thermodynamic arrow is registered." .
+
+ex:obs2 a ex:Observation ;
+    rdfs:label "Observation 2" ;
+    ex:atState ex:s2 ;
+    ex:writesRecord ex:rec2 ;
+    ex:description "A lineage preserves information across generations." .
+
+ex:obs3 a ex:Observation ;
+    rdfs:label "Observation 3" ;
+    ex:atState ex:s3 ;
+    ex:writesRecord ex:rec3 ;
+    ex:description "A system forms a recall-capable internal model." .
+
+ex:obs4 a ex:Observation ;
+    rdfs:label "Observation 4" ;
+    ex:atState ex:s4 ;
+    ex:writesRecord ex:rec4 ;
+    ex:description "A social archive stores memory in a shared symbolic form." .
+
+ex:observer ex:makesObservation ex:obs1, ex:obs2, ex:obs3, ex:obs4 .
+
+# The records themselves are also constraints.
+ex:rec1 a ex:Record, ex:Constraint ;
+    rdfs:label "Record of thermodynamic arrow" ;
+    ex:aboutState ex:s1 ;
+    ex:description "There exists a stable thermodynamic arrow." ;
+    ex:plainEnglish "The present contains traces that imply irreversible structure in the past." .
+
+ex:rec2 a ex:Record, ex:Constraint ;
+    rdfs:label "Record of biological memory" ;
+    ex:aboutState ex:s2 ;
+    ex:description "There exists heritable biological memory." ;
+    ex:plainEnglish "Current life carries evidence of prior successful information storage." .
+
+ex:rec3 a ex:Record, ex:Constraint ;
+    rdfs:label "Record of cognitive memory" ;
+    ex:aboutState ex:s3 ;
+    ex:description "There exists an internal model with recall." ;
+    ex:plainEnglish "A remembering mind implies a history rich enough to support its memory traces." .
+
+ex:rec4 a ex:Record, ex:Constraint ;
+    rdfs:label "Record of social memory" ;
+    ex:aboutState ex:s4 ;
+    ex:description "There exists shared symbolic culture." ;
+    ex:plainEnglish "Texts, rituals, institutions, and archives act as public memory." .
+
+# The realized path is constrained by the records visible from within it.
+ex:realizedPath ex:hasConstraint ex:rec1, ex:rec2, ex:rec3, ex:rec4 .
+
+# -------------------
+# Candidate histories
+# -------------------
+
+# These are simplified rival histories the present might consider.
+# The key idea is that not all candidate pasts fit the records we now have.
+ex:historyAlpha a ex:History ;
+    rdfs:label "Alpha — realized history" ;
+    ex:memberState ex:s0, ex:s1, ex:s2, ex:s3, ex:s4 ;
+    ex:description "The full branch that supports all records in the model." ;
+    ex:matchesRecord ex:rec1, ex:rec2, ex:rec3, ex:rec4 .
+
+ex:historyBeta a ex:History ;
+    rdfs:label "Beta — dissipative branch" ;
+    ex:memberState ex:s0, ex:s1a, ex:s2a, ex:s3a, ex:s4a ;
+    ex:description "A branch where structure dissipates before rich memory can stabilize." ;
+    ex:matchesRecord ex:rec1 .
+
+ex:historyGamma a ex:History ;
+    rdfs:label "Gamma — biology without durable public memory" ;
+    ex:memberState ex:s0, ex:s1, ex:s2, ex:s3a, ex:s4a ;
+    ex:description "A branch with persistence and some adaptation, but no robust reflective or social archive." ;
+    ex:matchesRecord ex:rec1, ex:rec2 .
+
+ex:historyDelta a ex:History ;
+    rdfs:label "Delta — private minds without stable institutions" ;
+    ex:memberState ex:s0, ex:s1, ex:s2, ex:s3, ex:s4a ;
+    ex:description "A branch where memory reaches minds but does not stabilize socially." ;
+    ex:matchesRecord ex:rec1, ex:rec2, ex:rec3 .
+
+ex:theLibrary ex:containsHistory ex:historyAlpha, ex:historyBeta, ex:historyGamma, ex:historyDelta .
+
+# ------------------
+# Interpretive notes
+# ------------------
+
+# These are not required for reasoning, but they make the file more readable.
+ex:note1 a ex:InterpretiveNote ;
+    ex:focusesOn ex:theLibrary ;
+    ex:plainEnglish "The Library is not 'before time' in a literal physical sense here; it is a conceptual space of possibilities." .
+
+ex:note2 a ex:InterpretiveNote ;
+    ex:focusesOn ex:realizedPath ;
+    ex:plainEnglish "The Path is the one sequence that becomes concrete from the inside." .
+
+ex:note3 a ex:InterpretiveNote ;
+    ex:focusesOn ex:observer ;
+    ex:plainEnglish "Observership is modeled as record production, not as magical outside access to all possibilities." .
+
+ex:note4 a ex:InterpretiveNote ;
+    ex:focusesOn ex:rec1 ;
+    ex:plainEnglish "A record is evidence now that narrows what could reasonably count as the past." .
+
+# -----
+# Rules
+# -----
+
+# These rules are intentionally simple and didactic.
+
+# Rule 1
+# If an observation is at a state and writes a record,
+# then that state has that record.
+{ ?obs a ex:Observation ;
+       ex:atState ?s ;
+       ex:writesRecord ?r . }
+=>
+{ ?s ex:hasRecord ?r .
+  ?r a ex:Record . } .
+
+# Rule 2
+# If the observer makes an observation at a state that lies on the realized path,
+# then that state is observed by that observer.
+{ ?who ex:makesObservation ?obs .
+  ?obs ex:atState ?s .
+  ex:realizedPath ex:hasState ?s . }
+=>
+{ ?s ex:observedBy ?who . } .
+
+# Rule 3
+# If a history matches a record that is one of the realized path's constraints,
+# then the history supports that constraint.
+{ ex:realizedPath ex:hasConstraint ?r .
+  ?h a ex:History ;
+     ex:matchesRecord ?r . }
+=>
+{ ?h ex:supportsConstraint ?r . } .
+
+# Rule 4
+# Second-stage compatibility check.
+# Inspect closure gate 2, where record-level incompatibilities have already
+# been derived. A history is path-compatible only if no incompatibility is present.
+{
+  ?h a ex:History .
+  2 log:notIncludes { ?h ex:incompatibleWith ?any } .
+}
+=>
+{ ?h ex:compatibleWith ex:realizedPath . } .
+
+# Rule 5
+# First-stage record failure check.
+# Inspect closure gate 1 to see whether a history supports a realized-path
+# constraint. If it does not, derive incompatibility with that record.
+{
+  ex:realizedPath ex:hasConstraint ?r .
+  ?h a ex:History .
+  1 log:notIncludes { ?h ex:supportsConstraint ?r } .
+}
+=>
+{ ?h ex:incompatibleWith ?r . } .
+
+# Rule 6
+# If a state has a record and belongs to the realized path,
+# then the realized path realizes that record-bearing state.
+{ ex:realizedPath ex:hasState ?s .
+  ?s ex:hasRecord ?r . }
+=>
+{ ex:realizedPath ex:realizes ?s . } .
+
+# ----------------------------
+# Human-readable summary nodes
+# ----------------------------
+
+ex:summary a rdfs:Resource ;
+    rdfs:label "Plain-language summary" ;
+    ex:description "The Library contains many coherent alternatives. The Path is one realized sequence through them. Observation happens within the Path and leaves records. Those records narrow which candidate histories remain compatible with what is now observed." .
+
+ex:readingGuide a rdfs:Resource ;
+    rdfs:label "Where to look first" ;
+    ex:description "Start with ex:theLibrary, ex:realizedPath, ex:observer, then read the states s0..s4, then the records rec1..rec4, then the candidate histories." .
+
+{
+  3 log:includes {
+    ?s a rdfs:Resource ;
+      rdfs:label ?l ;
+      ex:description ?d .
+  }
+}
+=>
+{ ?l ex:is ?d . } .
+
