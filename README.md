@@ -1,5 +1,8 @@
 # eyeling
 
+[![npm version](https://img.shields.io/npm/v/eyereasoner.svg)](https://www.npmjs.com/package/eyereasoner)
+[![DOI](https://zenodo.org/badge/581706557.svg)](https://zenodo.org/records/19068087)
+
 A compact [Notation3 (N3)](https://notation3.org/) reasoner in **JavaScript**.
 
 - Single self-contained bundle (`eyeling.js`), no external runtime dependencies
