@@ -29,3 +29,5 @@
 # OWL rules
 {?P a owl:TransitiveProperty. ?S ?P ?X. ?X ?P ?O.} => {?S ?P ?O}.
 
+# query
+{?C :path :nantes} log:query {?C :path :nantes}.
