@@ -1,0 +1,3 @@
+@prefix ex: <https://example.org/#> .
+
+ex:test ex:is true .
