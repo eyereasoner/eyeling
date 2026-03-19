@@ -1,0 +1,8 @@
+@prefix ex: <https://example.org/#> .
+
+_:b1 ex:userName "Alice" .
+_:b1 ex:eligibleForReview true .
+_:b1 ex:profileTag "multilingual-dark-profile" .
+_:b1 ex:hasHighValueStarterOrder true .
+_:b1 ex:hasCouponlessFollowup true .
+ex:test ex:is true .

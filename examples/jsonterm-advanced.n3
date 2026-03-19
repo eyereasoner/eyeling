@@ -1,0 +1,92 @@
+# =================================================================
+# More advanced jsonterm example.
+#
+# Mapping used:
+# - JSON objects become anonymous node structures.
+# - JSON arrays become N3 lists.
+# - JSON null becomes a normal symbol here, j:null.
+# - JSON booleans become ordinary boolean literals: true and false.
+# =================================================================
+
+@prefix ex: <https://example.org/#> .
+@prefix j: <https://example.org/json#> .
+
+[
+  j:id "user-101";
+  j:profile [
+    j:name "Alice";
+    j:active true;
+    j:address [
+      j:city "Ghent";
+      j:country "BE"
+    ]
+  ];
+  j:roles ("admin" "editor");
+  j:preferences [
+    j:languages ("nl" "fr" "en");
+    j:theme "dark";
+    j:beta false
+  ];
+  j:orders (
+    [
+      j:id "ord-1";
+      j:total 125;
+      j:items ("book" "pen")
+    ]
+    [
+      j:id "ord-2";
+      j:total 45;
+      j:items ("notebook");
+      j:coupon j:null
+    ]
+  )
+] ex:kind j:UserDocument .
+
+{
+  ?Doc ex:kind j:UserDocument .
+  ?Doc j:profile [
+    j:name ?Name;
+    j:active true;
+    j:address [ j:country "BE" ]
+  ] .
+}
+=>
+{
+  ?Doc ex:userName ?Name .
+  ?Doc ex:eligibleForReview true .
+} .
+
+{
+  ?Doc j:preferences [
+    j:languages ("nl" "fr" "en");
+    j:theme "dark";
+    j:beta false
+  ] .
+}
+=>
+{
+  ?Doc ex:profileTag "multilingual-dark-profile" .
+} .
+
+{
+  ?Doc j:orders (
+    [ j:id ?FirstId; j:total 125; j:items ("book" "pen") ]
+    [ j:id ?SecondId; j:total 45; j:items ("notebook"); j:coupon j:null ]
+  ) .
+}
+=>
+{
+  ?Doc ex:hasHighValueStarterOrder true .
+  ?Doc ex:hasCouponlessFollowup true .
+} .
+
+{
+  ?Doc ex:eligibleForReview true .
+  ?Doc ex:profileTag "multilingual-dark-profile" .
+  ?Doc ex:hasHighValueStarterOrder true .
+  ?Doc ex:hasCouponlessFollowup true .
+}
+=>
+{
+  ex:test ex:is true .
+} .
