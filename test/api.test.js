@@ -1432,6 +1432,34 @@ ex:w a ex:Woman .
 `,
     expect: [/:(?:test)\s+:(?:is)\s+true\s*\./],
   },
+
+  {
+    name: '59 regression: quoted-formula alpha-equivalence must not rename blanks introduced by outer substitution',
+    opt: { proofComments: false },
+    input: `@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+
+_:x :hates { _:foo :making :mess }.
+
+{
+    ?A :hates { ?A :making :mess }.
+}
+=>
+{
+    ?A :hates :Himself.
+}.
+
+{
+    ?A :hates :Himself.
+}
+=>
+{
+    :test :is false.
+}.
+`,
+    notExpect: [/:(?:test)\s+:(?:is)\s+false\s*\./],
+  },
 ];
 
 let passed = 0;

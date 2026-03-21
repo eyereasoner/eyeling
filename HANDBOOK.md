@@ -376,6 +376,10 @@ That’s alpha-equivalence:
 
 Eyeling implements alpha-equivalence by checking whether there exists a consistent renaming mapping between the two formulas’ variables/blanks that makes the triples match.
 
+Important scope nuance: only blanks/variables that are local to the quoted formula participate in alpha-renaming. If a formula is being matched after an outer substitution has already instantiated part of it, those substituted terms are treated as fixed. In other words, alpha-equivalence may rename formula-local placeholders, but it must not rename names that came from the enclosing match. This prevents a substituted outer blank node from being confused with a local blank node inside the quoted formula.
+
+So `{ _:x :p :o }` obtained by substituting `?A = _:x` into `{ ?A :p :o }` must not alpha-match `{ _:b :p :o }` by renaming `_:x` to `_:b`.
+
 ### 6.2 Groundness: “variables inside formulas don’t leak”
 
 Eyeling makes a deliberate choice about _groundness_:
