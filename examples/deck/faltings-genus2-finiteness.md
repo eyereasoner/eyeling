@@ -63,7 +63,7 @@ Very roughly:
 - For genus 1: rational points can be infinite, but structured (elliptic curves)
 - For genus ≥ 2: rational points are **finite**
 
-Faltings proved (in 1983) the last bullet (formerly the Mordell conjecture). citeturn947042search7turn947042search5
+Faltings proved (in 1983) the last bullet (formerly the Mordell conjecture).
 
 ---
 
@@ -144,7 +144,7 @@ Here is the core rule (lightly formatted):
 } .
 ```
 
-That `math:notLessThan` is a standard N3 math builtin: it means “≥”. citeturn0view0
+That `math:notLessThan` is a standard N3 math builtin: it means “≥”.
 
 ---
 
@@ -206,13 +206,5 @@ Easy extensions:
 - Add rules that *classify* genus based on curve families (toy versions)
 - Connect this to a small “math knowledge base” of reusable lemmas
 - Use the same pattern for other theorems: “if conditions, then property”
-
----
-
-## References / links
-
-- The example file: `examples/faltings-genus2-finiteness.n3`
-- Abel Prize explainer PDF mentioning Faltings’ theorem and a genus‑2 curve example citeturn947042search7
-- Abel Prize page (background on the Mordell conjecture / Faltings’ theorem) citeturn947042search5
 
 [1]: https://eyereasoner.github.io/eyeling/demo?url=https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/faltings-genus2-finiteness.n3 'Playground'
