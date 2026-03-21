@@ -1,0 +1,69 @@
+# ==================================================================
+# File: faltings-genus2-finiteness.n3
+# Purpose:
+#   Encode a simple Notation3 example inspired by Faltings' theorem.
+#
+# Mathematical content:
+#   The curve
+#     y^2 = x(x+1)(x-2)(x+2)(x-3)
+#   is treated as a genus-2 curve over Q.
+#   By an N3 rule that emulates Faltings' theorem,
+#   any curve over a number field with genus >= 2
+#   is inferred to have only finitely many rational points.
+#
+# Notes:
+#   - This file is a logical emulation, not a formal proof.
+#   - Several explicit rational points are included as examples.
+# ==================================================================
+
+@prefix :     <http://example.org/faltings#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# --- the example curve ---
+:C
+    a :Curve ;
+    :equation "y^2 = x(x+1)(x-2)(x+2)(x-3)" ;
+    :definedOver :Q ;
+    :genus 2 ;
+    rdfs:label "Example genus-2 curve" .
+
+:Q a :NumberField ;
+   rdfs:label "the rationals" .
+
+:FaltingsTheorem
+    a :Theorem ;
+    rdfs:label "If a curve over a number field has genus >= 2, then it has finitely many rational points." .
+
+:Finite a :CardinalityClass .
+
+# --- some explicit rational points on the curve ---
+:P0  a :RationalPoint ; :onCurve :C ; :x  0 ; :y 0 .
+:P1  a :RationalPoint ; :onCurve :C ; :x -1 ; :y 0 .
+:P2  a :RationalPoint ; :onCurve :C ; :x  2 ; :y 0 .
+:P3  a :RationalPoint ; :onCurve :C ; :x -2 ; :y 0 .
+:P4  a :RationalPoint ; :onCurve :C ; :x  3 ; :y 0 .
+
+# --- emulation of Faltings' theorem ---
+{
+    ?curve a :Curve ;
+           :definedOver ?field ;
+           :genus ?g .
+    ?field a :NumberField .
+    ?g math:notLessThan 2 .
+}
+=>
+{
+    ?curve :coveredBy :FaltingsTheorem ;
+           :hasRationalPointsCardinality :Finite .
+} .
+
+# --- optional derived statement ---
+{
+    ?curve :hasRationalPointsCardinality :Finite .
+}
+=>
+{
+    ?curve :doesNotHaveInfinitelyManyRationalPoints true .
+} .

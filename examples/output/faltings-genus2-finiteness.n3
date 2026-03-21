@@ -1,0 +1,5 @@
+@prefix : <http://example.org/faltings#> .
+
+:C :coveredBy :FaltingsTheorem .
+:C :hasRationalPointsCardinality :Finite .
+:C :doesNotHaveInfinitelyManyRationalPoints true .
