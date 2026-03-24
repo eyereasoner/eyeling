@@ -1,0 +1,763 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Faltings' Theorem — ARC Mobile Explorer</title>
+  <meta name="description" content="A mobile-first ARC-style interactive page about Faltings' theorem, with Answer, Reason, and Check sections." />
+  <style>
+    :root{
+      --bg:#f7fafc;
+      --panel:#ffffff;
+      --panel-soft:#f1f5f9;
+      --text:#102133;
+      --muted:#5a6d80;
+      --border:#d9e2ec;
+      --accent:#0ea5e9;
+      --accent-2:#7c3aed;
+      --good:#0f766e;
+      --good-bg:#ecfdf5;
+      --warn:#b45309;
+      --warn-bg:#fff7ed;
+      --bad:#b91c1c;
+      --shadow:0 10px 28px rgba(15, 23, 42, .08);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font:16px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(900px 400px at 100% -10%, rgba(14,165,233,.10), transparent 60%),
+        radial-gradient(800px 400px at -10% 0%, rgba(124,58,237,.08), transparent 60%),
+        var(--bg);
+    }
+    .wrap{max-width:860px;margin:0 auto;padding:16px 14px 72px}
+    .card{
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:24px;
+      box-shadow:var(--shadow);
+    }
+    header.hero{padding:24px 18px;margin-top:8px}
+    .kicker{
+      display:inline-block;
+      padding:6px 10px;
+      border-radius:999px;
+      background:#e0f2fe;
+      border:1px solid #bae6fd;
+      color:#0369a1;
+      font-size:12px;
+      letter-spacing:.09em;
+      text-transform:uppercase;
+      font-weight:800;
+    }
+    h1{
+      margin:14px 0 10px;
+      font-size:clamp(30px, 7vw, 48px);
+      line-height:1.02;
+      letter-spacing:-.04em;
+    }
+    h2{
+      margin:0 0 8px;
+      font-size:clamp(24px, 5.2vw, 32px);
+      line-height:1.1;
+      letter-spacing:-.03em;
+    }
+    h3{
+      margin:0 0 8px;
+      font-size:20px;
+      letter-spacing:-.02em;
+    }
+    p{margin:0 0 12px}
+    .lead{font-size:18px;color:var(--muted);max-width:38ch}
+    .formula{
+      margin-top:16px;
+      padding:14px 16px;
+      border-radius:18px;
+      background:#f8fbff;
+      border:1px solid #dbeafe;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color:#0c4a6e;
+      overflow:auto;
+    }
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+    button{
+      appearance:none;border:none;cursor:pointer;
+      border-radius:14px;padding:12px 14px;
+      font:inherit;font-weight:800;
+      background:var(--accent);color:white;
+      box-shadow:0 10px 20px rgba(14,165,233,.18);
+    }
+    button.secondary{
+      background:white;color:var(--accent);
+      border:1px solid #cceaf9;box-shadow:none;
+    }
+    .section{margin-top:16px;padding:18px}
+    .section-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+    .badge{
+      flex:0 0 auto;
+      display:inline-flex;align-items:center;justify-content:center;
+      width:34px;height:34px;border-radius:50%;
+      font-weight:900;font-size:14px;
+      background:#e0f2fe;color:#0369a1;
+      border:1px solid #bae6fd;
+    }
+    .sub{color:var(--muted);font-size:14px}
+    .stack{display:grid;gap:12px}
+    .metrics{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+      margin-top:12px;
+    }
+    .metric{
+      background:var(--panel-soft);
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:12px 14px;
+    }
+    .metric .k{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+    .metric .v{font-size:21px;font-weight:900;margin-top:4px}
+    .pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:7px 10px;border-radius:999px;
+      font-size:13px;background:#eff6ff;border:1px solid #dbeafe;color:#1d4ed8;
+    }
+    .notice{
+      margin-top:14px;
+      padding:12px 14px;
+      border-radius:16px;
+      background:var(--warn-bg);
+      border:1px solid #fed7aa;
+      color:var(--warn);
+    }
+    .grid-1{display:grid;gap:12px}
+    canvas{
+      display:block;width:100%;
+      border-radius:18px;
+      border:1px solid var(--border);
+      background:linear-gradient(180deg,#ffffff,#f8fbff);
+    }
+    .control-grid{display:grid;gap:10px;margin-top:12px}
+    .control{
+      background:var(--panel-soft);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:12px 14px;
+    }
+    .control label{
+      display:block;
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:.07em;
+      color:var(--muted);
+      font-weight:800;
+      margin-bottom:8px;
+    }
+    .range-value{font-size:24px;font-weight:900}
+    input[type=range]{width:100%}
+    .mini{
+      font-size:13px;color:var(--muted)
+    }
+    .curve-card{
+      padding:14px;
+      border-radius:18px;
+      background:#fcfdff;
+      border:1px solid var(--border);
+    }
+    .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:8px}
+    .legend span::before{
+      content:"";display:inline-block;width:10px;height:10px;border-radius:50%;
+      margin-right:6px;vertical-align:middle
+    }
+    .legend .real::before{background:#06b6d4}
+    .legend .rat::before{background:#ec4899}
+    .legend .multi::before{background:#3b82f6}
+    .table-wrap{overflow:auto;margin-top:10px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:9px 8px;border-bottom:1px dashed var(--border);text-align:left;vertical-align:top}
+    th{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+    .code{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      word-break:break-word
+    }
+    .status{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:6px 10px;border-radius:999px;font-size:12px;font-weight:900
+    }
+    .pass{background:var(--good-bg);color:var(--good);border:1px solid #bbf7d0}
+    .fail{background:#fef2f2;color:var(--bad);border:1px solid #fecaca}
+    .footer-links{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .footer-links a{
+      text-decoration:none;color:#0369a1;
+      background:#f8fbff;border:1px solid #dbeafe;
+      padding:8px 10px;border-radius:999px
+    }
+    @media (min-width:740px){
+      .metrics{grid-template-columns:repeat(4,minmax(0,1fr))}
+      .control-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="card hero">
+      <span class="kicker">ARC layout · mobile first · interactive math</span>
+      <h1>Faltings' theorem</h1>
+      <p class="lead">
+        A compact browser-based explainer built around three ARC parts:
+        <strong>Answer</strong>, <strong>Reason</strong>, and <strong>Check</strong>.
+      </p>
+      <div class="formula">
+        Informal statement:<br>
+        If a smooth projective curve has genus g ≥ 2 and is defined over a number field,
+        then it has only finitely many rational points.
+      </div>
+      <div class="actions">
+        <button onclick="document.getElementById('answer').scrollIntoView({behavior:'smooth'})">Start</button>
+        <button class="secondary" onclick="runAll()">Recompute</button>
+      </div>
+    </header>
+
+    <section class="card section" id="answer">
+      <div class="section-head">
+        <span class="badge">1</span>
+        <div>
+          <h2>Answer</h2>
+          <div class="sub">What the page is claiming</div>
+        </div>
+      </div>
+
+      <p>
+        The curve
+        <span class="code">y² = x(x+1)(x−2)(x+2)(x−3)</span>
+        is a genus‑2 curve. In the setting of Faltings' theorem, that places it in the regime where
+        the set of rational points is <strong>finite</strong>.
+      </p>
+
+      <div class="metrics">
+        <div class="metric">
+          <div class="k">Example curve</div>
+          <div class="v code">genus 2</div>
+        </div>
+        <div class="metric">
+          <div class="k">Field in view</div>
+          <div class="v code">Q</div>
+        </div>
+        <div class="metric">
+          <div class="k">Theorem says</div>
+          <div class="v">finite</div>
+        </div>
+        <div class="metric">
+          <div class="k">Obvious rational points</div>
+          <div class="v" id="obviousCount">5</div>
+        </div>
+      </div>
+
+      <div class="pill-row">
+        <span class="pill">genus 0: often infinite once parameterised</span>
+        <span class="pill">genus 1: finite or infinite, with group law</span>
+        <span class="pill">genus 2+: finite by theorem</span>
+      </div>
+
+      <div class="notice">
+        This page uses computation to make the contrast believable, but the decisive conclusion in the genus‑2 case comes from the theorem itself, not from a finite search.
+      </div>
+    </section>
+
+    <section class="card section" id="reason">
+      <div class="section-head">
+        <span class="badge">2</span>
+        <div>
+          <h2>Reason</h2>
+          <div class="sub">Why the theorem feels plausible when you compare the three regimes</div>
+        </div>
+      </div>
+
+      <div class="control-grid">
+        <div class="control">
+          <label for="bound">Denominator bound</label>
+          <div class="range-value" id="boundValue">8</div>
+          <input id="bound" type="range" min="2" max="16" step="1" value="8">
+        </div>
+        <div class="control">
+          <label for="xwin">x-window for search</label>
+          <div class="range-value" id="xwinValue">12</div>
+          <input id="xwin" type="range" min="4" max="30" step="1" value="12">
+        </div>
+        <div class="control">
+          <label for="multiN">Multiples on genus 1</label>
+          <div class="range-value" id="multiValue">8</div>
+          <input id="multiN" type="range" min="2" max="14" step="1" value="8">
+        </div>
+      </div>
+
+      <div class="stack" style="margin-top:14px">
+        <div class="curve-card">
+          <h3>Genus 0 — the unit circle</h3>
+          <p class="mini">Curve: <span class="code">x² + y² = 1</span>. Once a rational point is known, there is a rational parametrisation.</p>
+          <canvas id="plot0" width="760" height="330"></canvas>
+          <div class="legend"><span class="real">real curve</span><span class="rat">rational points found</span></div>
+          <div class="metrics">
+            <div class="metric"><div class="k">Found at current bound</div><div class="v" id="count0">–</div></div>
+            <div class="metric"><div class="k">Typical behaviour</div><div class="v">many</div></div>
+          </div>
+          <div class="mini" id="sample0"></div>
+        </div>
+
+        <div class="curve-card">
+          <h3>Genus 1 — an elliptic curve</h3>
+          <p class="mini">Curve: <span class="code">y² = x³ − 16x + 16</span>. This sits in the elliptic-curve world, where rational points form a finitely generated abelian group.</p>
+          <canvas id="plot1" width="760" height="330"></canvas>
+          <div class="legend"><span class="real">real curve</span><span class="rat">rational points found</span><span class="multi">exact multiples of P=(0,4)</span></div>
+          <div class="metrics">
+            <div class="metric"><div class="k">Found at current bound</div><div class="v" id="count1">–</div></div>
+            <div class="metric"><div class="k">Exact multiples shown</div><div class="v" id="multiCount">–</div></div>
+          </div>
+          <div class="mini" id="sample1"></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>n</th><th>nP</th><th>Approximation</th></tr>
+              </thead>
+              <tbody id="multiTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="curve-card">
+          <h3>Genus 2 — the Faltings example</h3>
+          <p class="mini">Curve: <span class="code">y² = x(x+1)(x−2)(x+2)(x−3)</span>. This is the regime where Faltings' theorem applies.</p>
+          <canvas id="plot2" width="760" height="330"></canvas>
+          <div class="legend"><span class="real">real curve</span><span class="rat">rational points found</span></div>
+          <div class="metrics">
+            <div class="metric"><div class="k">Found at current bound</div><div class="v" id="count2">–</div></div>
+            <div class="metric"><div class="k">Theorem-level conclusion</div><div class="v">finite</div></div>
+          </div>
+          <div class="mini" id="sample2"></div>
+        </div>
+
+        <div class="curve-card">
+          <h3>Growth comparison</h3>
+          <p class="mini">This chart compares the number of rational points the browser finds as the denominator bound increases.</p>
+          <canvas id="growthChart" width="760" height="300"></canvas>
+          <div class="mini" id="growthCaption"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card section" id="check">
+      <div class="section-head">
+        <span class="badge">3</span>
+        <div>
+          <h2>Check</h2>
+          <div class="sub">Concrete browser-side verification</div>
+        </div>
+      </div>
+
+      <div class="stack">
+        <div class="curve-card">
+          <h3>Check A — do the obvious points satisfy the genus‑2 equation?</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Point</th><th>y²</th><th>x(x+1)(x−2)(x+2)(x−3)</th><th>Result</th></tr>
+              </thead>
+              <tbody id="checkTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="curve-card">
+          <h3>Check B — theorem premises in plain language</h3>
+          <div class="pill-row" id="premisePills"></div>
+        </div>
+
+        <div class="curve-card">
+          <h3>Check C — what the bounded search is and is not doing</h3>
+          <p id="checkSummary"></p>
+          <div class="notice">
+            The search box can support the story, but it cannot replace the theorem. A finite search never proves finiteness; it only checks sample behaviour inside a chosen window.
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-links">
+        <a href="https://abelprize.no/sites/default/files/2026-03/Faltings%E2%80%99%20theorem.pdf">Abel Prize explainer</a>
+        <a href="https://www.lmfdb.org/EllipticCurve/Q/37/a/1">LMFDB elliptic curve 37.a1</a>
+      </div>
+    </section>
+  </div>
+
+<script>
+"use strict";
+
+/* ---------- exact rational arithmetic ---------- */
+function bigAbs(n){ return n < 0n ? -n : n; }
+function bigGcd(a,b){
+  a = bigAbs(a); b = bigAbs(b);
+  while (b !== 0n){ const t = a % b; a = b; b = t; }
+  return a;
+}
+class Frac{
+  constructor(n,d=1n){
+    if (typeof n === "number") n = BigInt(n);
+    if (typeof d === "number") d = BigInt(d);
+    if (d === 0n) throw new Error("zero denominator");
+    if (d < 0n){ n = -n; d = -d; }
+    const g = bigGcd(n,d);
+    this.n = n / g;
+    this.d = d / g;
+  }
+  static fromInt(x){ return new Frac(BigInt(x),1n); }
+  add(o){ return new Frac(this.n*o.d + o.n*this.d, this.d*o.d); }
+  sub(o){ return new Frac(this.n*o.d - o.n*this.d, this.d*o.d); }
+  mul(o){ return new Frac(this.n*o.n, this.d*o.d); }
+  div(o){ return new Frac(this.n*o.d, this.d*o.n); }
+  neg(){ return new Frac(-this.n, this.d); }
+  eq(o){ return this.n === o.n && this.d === o.d; }
+  toNumber(){ return Number(this.n) / Number(this.d); }
+  toString(){ return this.d === 1n ? this.n.toString() : `${this.n}/${this.d}`; }
+}
+const A = new Frac(-16n), B = new Frac(16n);
+
+function pointInfinity(){ return {inf:true}; }
+function isInfinity(P){ return P && P.inf; }
+function makePoint(x,y){ return {x,y,inf:false}; }
+
+function addPoints(P,Q){
+  if (isInfinity(P)) return Q;
+  if (isInfinity(Q)) return P;
+  if (P.x.eq(Q.x) && P.y.eq(Q.y.neg())) return pointInfinity();
+
+  let m;
+  if (P.x.eq(Q.x) && P.y.eq(Q.y)){
+    if (P.y.n === 0n) return pointInfinity();
+    const num = P.x.mul(P.x).mul(Frac.fromInt(3)).add(A);
+    const den = P.y.mul(Frac.fromInt(2));
+    m = num.div(den);
+  } else {
+    m = Q.y.sub(P.y).div(Q.x.sub(P.x));
+  }
+  const xr = m.mul(m).sub(P.x).sub(Q.x);
+  const yr = m.mul(P.x.sub(xr)).sub(P.y);
+  return makePoint(xr, yr);
+}
+function multiplyPoint(P,n){
+  let k = BigInt(n);
+  let result = pointInfinity();
+  let base = P;
+  while (k > 0n){
+    if (k & 1n) result = addPoints(result, base);
+    base = addPoints(base, base);
+    k >>= 1n;
+  }
+  return result;
+}
+
+/* ---------- number helpers ---------- */
+function isqrt(n){
+  if (n < 0n) throw new Error("negative");
+  if (n < 2n) return n;
+  let x = n, y = (x + 1n) >> 1n;
+  while (y < x){ x = y; y = (x + n / x) >> 1n; }
+  return x;
+}
+function isPerfectSquare(n){
+  if (n < 0n) return false;
+  const r = isqrt(n);
+  return r*r === n;
+}
+function squareRootsFrac(f){
+  if (f.n < 0n) return null;
+  if (!isPerfectSquare(f.n) || !isPerfectSquare(f.d)) return null;
+  const rn = isqrt(f.n), rd = isqrt(f.d);
+  return [new Frac(rn, rd), new Frac(-rn, rd)];
+}
+function fracKey(f){ return `${f.n}/${f.d}`; }
+
+/* ---------- rational searches ---------- */
+function rhsCircle(x){
+  return new Frac(x.d*x.d - x.n*x.n, x.d*x.d);
+}
+function rhsElliptic(x){
+  return x.mul(x).mul(x).add(A.mul(x)).add(B);
+}
+function rhsGenus2(x){
+  return x.mul(x.add(Frac.fromInt(1))).mul(x.sub(Frac.fromInt(2))).mul(x.add(Frac.fromInt(2))).mul(x.sub(Frac.fromInt(3)));
+}
+function reducedRationals(bound, xWindow){
+  const out = [];
+  for (let q=1; q<=bound; q++){
+    const bq = BigInt(q);
+    for (let p=-xWindow*q; p<=xWindow*q; p++){
+      const bp = BigInt(p);
+      if (bigGcd(bigAbs(bp), bq) !== 1n) continue;
+      out.push(new Frac(bp, bq));
+    }
+  }
+  return out;
+}
+function searchRationalPoints(kind, bound, xWindow){
+  const xs = kind === "circle" ? reducedRationals(bound, 1) : reducedRationals(bound, xWindow);
+  const map = new Map();
+  const rhsFn = kind === "circle" ? rhsCircle : kind === "elliptic" ? rhsElliptic : rhsGenus2;
+  for (const x of xs){
+    const roots = squareRootsFrac(rhsFn(x));
+    if (!roots) continue;
+    for (const y of roots){
+      map.set(`${fracKey(x)}|${fracKey(y)}`, makePoint(x,y));
+    }
+  }
+  return Array.from(map.values()).sort((a,b)=>{
+    const ax = a.x.toNumber(), bx = b.x.toNumber();
+    if (ax !== bx) return ax - bx;
+    return a.y.toNumber() - b.y.toNumber();
+  });
+}
+
+/* ---------- plotting ---------- */
+function clearCanvas(ctx,w,h){
+  ctx.clearRect(0,0,w,h);
+  const g = ctx.createLinearGradient(0,0,0,h);
+  g.addColorStop(0, "#ffffff");
+  g.addColorStop(1, "#f8fbff");
+  ctx.fillStyle = g;
+  ctx.fillRect(0,0,w,h);
+}
+function makeMap(w,h,xmin,xmax,ymin,ymax){
+  const pad = 20;
+  return {
+    x:x => pad + (x - xmin) * (w - 2*pad) / (xmax - xmin),
+    y:y => h - pad - (y - ymin) * (h - 2*pad) / (ymax - ymin),
+    xmin,xmax,ymin,ymax,pad,w,h
+  };
+}
+function drawAxes(ctx,M){
+  ctx.save();
+  ctx.strokeStyle = "#dbe6ef";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  if (M.xmin <= 0 && 0 <= M.xmax){
+    const X = M.x(0); ctx.moveTo(X, M.pad); ctx.lineTo(X, M.h - M.pad);
+  }
+  if (M.ymin <= 0 && 0 <= M.ymax){
+    const Y = M.y(0); ctx.moveTo(M.pad, Y); ctx.lineTo(M.w - M.pad, Y);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+function drawCurveSamples(ctx, M, rhs, color){
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.2;
+  for (const s of [1,-1]){
+    let started = false;
+    ctx.beginPath();
+    for (let i=0;i<=M.w;i++){
+      const x = M.xmin + (M.xmax - M.xmin) * i / M.w;
+      const val = rhs(x);
+      if (!(val >= 0)){ started = false; continue; }
+      const y = s * Math.sqrt(val);
+      const X = M.x(x), Y = M.y(y);
+      if (!started){ ctx.moveTo(X,Y); started = true; }
+      else ctx.lineTo(X,Y);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawPoints(ctx, M, points, color, radius=4){
+  ctx.save();
+  ctx.fillStyle = color;
+  for (const P of points){
+    const x = P.x.toNumber(), y = P.y.toNumber();
+    if (x < M.xmin || x > M.xmax || y < M.ymin || y > M.ymax) continue;
+    ctx.beginPath();
+    ctx.arc(M.x(x), M.y(y), radius, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+function plotBasic(canvasId, kind, points, extraPoints=[]){
+  const c = document.getElementById(canvasId), ctx = c.getContext("2d");
+  const w = c.width, h = c.height;
+  clearCanvas(ctx,w,h);
+  let M, rhs;
+  if (kind === "circle"){
+    M = makeMap(w,h,-1.15,1.15,-1.15,1.15);
+    rhs = x => 1 - x*x;
+  } else if (kind === "elliptic"){
+    M = makeMap(w,h,-4.5,8.5,-20,20);
+    rhs = x => x*x*x - 16*x + 16;
+  } else {
+    M = makeMap(w,h,-3.6,3.6,-8.5,8.5);
+    rhs = x => x*(x+1)*(x-2)*(x+2)*(x-3);
+  }
+  drawAxes(ctx,M);
+  drawCurveSamples(ctx,M,rhs,"#06b6d4");
+  drawPoints(ctx,M,points,"#ec4899",4);
+  if (extraPoints.length) drawPoints(ctx,M,extraPoints,"#3b82f6",4.5);
+}
+function drawGrowthChart(maxB){
+  const xWindow = Number(document.getElementById("xwin").value);
+  const c = document.getElementById("growthChart"), ctx = c.getContext("2d");
+  const w = c.width, h = c.height;
+  clearCanvas(ctx,w,h);
+
+  const data0=[], data1=[], data2=[];
+  let ymax = 1;
+  for (let b=2;b<=maxB;b++){
+    const n0 = searchRationalPoints("circle", b, 1).length;
+    const n1 = searchRationalPoints("elliptic", b, xWindow).length;
+    const n2 = searchRationalPoints("genus2", b, xWindow).length;
+    data0.push([b,n0]); data1.push([b,n1]); data2.push([b,n2]);
+    ymax = Math.max(ymax, n0, n1, n2);
+  }
+  const M = makeMap(w,h,2,maxB,0,Math.max(6, ymax + 1));
+  drawAxes(ctx,M);
+
+  function line(data, color){
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.3;
+    ctx.beginPath();
+    data.forEach((pt,i)=>{
+      const X = M.x(pt[0]), Y = M.y(pt[1]);
+      if (i===0) ctx.moveTo(X,Y); else ctx.lineTo(X,Y);
+    });
+    ctx.stroke();
+    ctx.restore();
+    drawPoints(ctx, M, data.map(([x,y])=>({x:{toNumber:()=>x}, y:{toNumber:()=>y}})), color, 3.2);
+  }
+  line(data0, "#ec4899");
+  line(data1, "#3b82f6");
+  line(data2, "#10b981");
+
+  document.getElementById("growthCaption").innerHTML =
+    `<span style="color:#ec4899">circle</span>: ${data0.at(-1)[1]} &nbsp;·&nbsp; ` +
+    `<span style="color:#3b82f6">genus 1</span>: ${data1.at(-1)[1]} &nbsp;·&nbsp; ` +
+    `<span style="color:#10b981">genus 2</span>: ${data2.at(-1)[1]} &nbsp; at bound ${maxB}`;
+}
+
+/* ---------- UI rendering ---------- */
+function fmtPoint(P){ return `(${P.x.toString()}, ${P.y.toString()})`; }
+function fmtApprox(P){ return `(${P.x.toNumber().toFixed(6)}, ${P.y.toNumber().toFixed(6)})`; }
+function setText(id, txt){ document.getElementById(id).textContent = txt; }
+
+function renderReason(){
+  const bound = Number(document.getElementById("bound").value);
+  const xWindow = Number(document.getElementById("xwin").value);
+  const multiN = Number(document.getElementById("multiN").value);
+
+  const pts0 = searchRationalPoints("circle", bound, 1);
+  const pts1 = searchRationalPoints("elliptic", bound, xWindow);
+  const pts2 = searchRationalPoints("genus2", bound, xWindow);
+
+  const P = makePoint(new Frac(0n), new Frac(4n));
+  const mults = [];
+  for (let n=1;n<=multiN;n++) mults.push(multiplyPoint(P,n));
+
+  plotBasic("plot0", "circle", pts0);
+  plotBasic("plot1", "elliptic", pts1, mults);
+  plotBasic("plot2", "genus2", pts2);
+
+  setText("count0", String(pts0.length));
+  setText("count1", String(pts1.length));
+  setText("count2", String(pts2.length));
+  setText("multiCount", String(mults.length));
+
+  document.getElementById("sample0").textContent = "Examples: " + pts0.slice(0,8).map(fmtPoint).join(", ");
+  document.getElementById("sample1").textContent = "Examples: " + pts1.slice(0,8).map(fmtPoint).join(", ");
+  document.getElementById("sample2").textContent = "Examples: " + pts2.slice(0,8).map(fmtPoint).join(", ");
+
+  const tbody = document.getElementById("multiTable");
+  tbody.innerHTML = "";
+  mults.forEach((Q, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="code">${i+1}</td>
+      <td class="code">${fmtPoint(Q)}</td>
+      <td class="code">${fmtApprox(Q)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  drawGrowthChart(Math.max(4, Math.min(bound + 4, 16)));
+}
+
+function setPill(text, ok){
+  const span = document.createElement("span");
+  span.className = "pill";
+  span.innerHTML = `${text} <span class="status ${ok ? 'pass' : 'fail'}">${ok ? 'PASS' : 'FAIL'}</span>`;
+  return span;
+}
+function renderChecks(){
+  const obvious = [
+    {x:0, y:0},
+    {x:-1, y:0},
+    {x:2, y:0},
+    {x:-2, y:0},
+    {x:3, y:0}
+  ];
+  document.getElementById("obviousCount").textContent = String(obvious.length);
+
+  const tbody = document.getElementById("checkTable");
+  tbody.innerHTML = "";
+  obvious.forEach(p => {
+    const lhs = p.y * p.y;
+    const rhs = p.x * (p.x + 1) * (p.x - 2) * (p.x + 2) * (p.x - 3);
+    const ok = lhs === rhs;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="code">(${p.x}, ${p.y})</td>
+      <td class="code">${lhs}</td>
+      <td class="code">${rhs}</td>
+      <td><span class="status ${ok ? 'pass' : 'fail'}">${ok ? 'PASS' : 'FAIL'}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const pills = document.getElementById("premisePills");
+  pills.innerHTML = "";
+  pills.appendChild(setPill("curve is genus 2", true));
+  pills.appendChild(setPill("field is a number field", true));
+  pills.appendChild(setPill("genus ≥ 2 condition", true));
+  pills.appendChild(setPill("bounded search is only evidence", true));
+
+  const bound = Number(document.getElementById("bound").value);
+  const xWindow = Number(document.getElementById("xwin").value);
+  const genus2Found = searchRationalPoints("genus2", bound, xWindow).length;
+  const genus1Found = searchRationalPoints("elliptic", bound, xWindow).length;
+  const circleFound = searchRationalPoints("circle", bound, 1).length;
+
+  document.getElementById("checkSummary").innerHTML =
+    `At the current settings, the browser found <strong>${circleFound}</strong> rational points on the genus‑0 comparison curve, ` +
+    `<strong>${genus1Found}</strong> on the genus‑1 comparison curve, and <strong>${genus2Found}</strong> on the genus‑2 example inside the chosen search window. ` +
+    `That visual pattern supports the story, while the theorem is what supplies the rigorous finiteness conclusion in the genus‑2 case.`;
+}
+
+function runAll(){
+  setText("boundValue", document.getElementById("bound").value);
+  setText("xwinValue", document.getElementById("xwin").value);
+  setText("multiValue", document.getElementById("multiN").value);
+  renderReason();
+  renderChecks();
+}
+
+["bound","xwin","multiN"].forEach(id => {
+  document.getElementById(id).addEventListener("input", () => {
+    if (id === "bound") setText("boundValue", document.getElementById(id).value);
+    if (id === "xwin") setText("xwinValue", document.getElementById(id).value);
+    if (id === "multiN") setText("multiValue", document.getElementById(id).value);
+    runAll();
+  });
+});
+
+runAll();
+</script>
+</body>
+</html>

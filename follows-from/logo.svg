@@ -1,0 +1,12 @@
+<svg viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Follows From logo</title>
+  <desc id="desc">Three traces gather from the left into a pivot, and two broader consequences unfold to the right.</desc>
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20 30C34 30 42 36 52 50" stroke="#A8B6C8" stroke-width="8"/>
+    <path d="M18 64C34 64 42 64 52 64" stroke="#A8B6C8" stroke-width="8"/>
+    <path d="M20 98C34 98 42 92 52 78" stroke="#A8B6C8" stroke-width="8"/>
+    <path d="M56 64C72 62 84 54 96 40" stroke="#2563EB" stroke-width="11"/>
+    <path d="M56 64C80 64 98 70 110 86" stroke="#14B8A6" stroke-width="13"/>
+  </g>
+  <circle cx="56" cy="64" r="7" fill="#F59E0B"/>
+</svg>

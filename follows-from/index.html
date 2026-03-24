@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Follows From</title>
+  <meta name="description" content="Follows From — Questions backward, consequences forward." />
+  <style>
+    :root {
+      --bg:#f7fafc; --panel:#ffffff; --soft:#f3f8fc; --text:#102133; --muted:#5b7084;
+      --border:#d8e5ef; --accent:#0ea5e9; --accent2:#2563eb; --shadow:0 14px 36px rgba(15,23,42,.08); --r:24px;
+    }
+    * { box-sizing:border-box; }
+    body {
+      margin:0; font:16px/1.6 Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(900px 420px at 100% -10%, rgba(14,165,233,.09), transparent 60%),
+        radial-gradient(850px 420px at -10% 0%, rgba(37,99,235,.06), transparent 60%),
+        var(--bg);
+    }
+    .wrap { max-width:1100px; margin:0 auto; padding:18px 14px 80px; }
+    .card {
+      background:var(--panel); border:1px solid var(--border); border-radius:var(--r);
+      box-shadow:var(--shadow);
+    }
+    header { padding:28px 20px; margin-top:10px; }
+    .kicker {
+      display:inline-block; padding:7px 11px; border-radius:999px; background:#e0f2fe; border:1px solid #bae6fd;
+      color:#0369a1; font-size:12px; text-transform:uppercase; letter-spacing:.08em; font-weight:800;
+    }
+    h1 { margin:14px 0 10px; font-size:clamp(34px, 8vw, 58px); line-height:1.02; letter-spacing:-.04em; }
+    h2 { margin:0 0 8px; font-size:clamp(24px, 5vw, 34px); line-height:1.08; letter-spacing:-.03em; }
+    h3 { margin:0 0 8px; font-size:20px; letter-spacing:-.02em; }
+    p { margin:0 0 12px; color:var(--muted); }
+    .lead { font-size:18px; max-width:46ch; }
+    .formula {
+      margin-top:16px; padding:14px 16px; border-radius:18px; border:1px solid #dbeafe; background:#f8fbff;
+      color:#0c4a6e; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+    .actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:18px; }
+    .btn {
+      display:inline-block; text-decoration:none; border-radius:14px; padding:12px 14px; font-weight:800;
+      background:var(--accent); color:white; box-shadow:0 10px 20px rgba(14,165,233,.18);
+    }
+    .btn.secondary { background:white; color:var(--accent); border:1px solid #cceaf9; box-shadow:none; }
+    .section { margin-top:16px; padding:18px; }
+    .grid { display:grid; gap:12px; }
+    .doors { grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); }
+    .artifacts { grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); }
+    .door, .artifact, .note {
+      background:#fcfdff; border:1px solid var(--border); border-radius:18px; padding:14px;
+    }
+    .meta {
+      display:inline-block; margin-bottom:8px; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:800;
+      background:#eff6ff; border:1px solid #dbeafe; color:#1d4ed8;
+    }
+    a { color:#0369a1; text-decoration:none; font-weight:700; }
+    a:hover { text-decoration:underline; }
+
+    .hero-brand { display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:8px; }
+    .logo-wrap {
+      width:88px; height:88px; flex:0 0 auto; display:grid; place-items:center;
+      border-radius:24px; background:linear-gradient(180deg,#ffffff,#f6fbff);
+      border:1px solid #dbeafe; box-shadow:0 12px 28px rgba(14,165,233,.12);
+    }
+    .logo-mark { width:64px; height:64px; display:block; }
+    .brand-copy { min-width:240px; flex:1; }
+    .brand-copy h1 { margin:0 0 8px; }
+    @media (max-width:640px) {
+      .hero-brand { align-items:flex-start; }
+      .logo-wrap { width:78px; height:78px; border-radius:20px; }
+      .logo-mark { width:56px; height:56px; }
+    }
+    footer { margin-top:20px; color:var(--muted); text-align:center; font-size:14px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="card">
+      <div class="hero-brand">
+        <div class="logo-wrap">
+          <img class="logo-mark" src="logo.svg" alt="Follows From logo" />
+        </div>
+        <div class="brand-copy">
+          <h1>Follows From</h1>
+          <p class="lead">
+            Follows From is built around a single motion: questions move backward toward what would ground a trace, and consequences move forward from whatever model survives that question.
+          </p>
+        </div>
+      </div>
+      <div class="formula">Trace → Question → Model → Answer → Reason → Check</div>
+      <div class="actions">
+        <a class="btn secondary" href="manifesto">Read the manifesto</a>
+      </div>
+    </header>
+
+    <section class="card section">
+      <h2>The three doors</h2>
+      <div class="grid doors">
+        <div class="door">
+          <h3><a href="library/index">The Library</a></h3>
+          <p>The side of questions: traces, comparison, legibility, partial knowledge, and reading from within.</p>
+        </div>
+        <div class="door">
+          <h3><a href="path/index">The Path</a></h3>
+          <p>The side of unfolding: origin, evolution, dynamics, inheritance, consequence, and becoming.</p>
+        </div>
+        <div class="door">
+          <h3><a href="method/index">The Method</a></h3>
+          <p>The craft of turning questions into trustworthy artifacts built as Answer · Reason · Check.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card section">
+      <h2>Why this name</h2>
+      <div class="note">
+        <p>
+          <strong>Follows From</strong> names the standard the project cares about most: every claim should show what it follows from, and every artifact should make that line readable.
+        </p>
+        <p>
+          A trace invites a backward question — what would explain this? A model then moves forward — what follows from it? The name holds both directions in ordinary language without sounding ornamental.
+        </p>
+      </div>
+    </section>
+
+
+    <section class="card section">
+      <h2>Science</h2>
+      <div class="grid artifacts">
+
+        <div class="artifact">
+          <div class="meta">Science</div>
+          <h3><a href="artifacts/bmi.html">Body Mass Index</a></h3>
+          <p>Compute BMI categories with explainable thresholds and sanity checks.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Science</div>
+          <h3><a href="artifacts/earthquake-epicenter.html">Earthquake Epicenter</a></h3>
+          <p>Infer an earthquake’s epicenter from P- and S-wave arrivals and verify with distance and timing checks.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Science</div>
+          <h3><a href="artifacts/exoplanet-transit.html">Exoplanet Transit</a></h3>
+          <p>Infer a planet’s size and orbit from a transit light curve, with explainable formulas and consistency checks.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Science</div>
+          <h3><a href="artifacts/grass-molecular.html">Grass Seed Germination</a></h3>
+          <p>Model germination states and transitions with rule checks.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Science</div>
+          <h3><a href="artifacts/lldm.html">Leg Length Discrepancy Measurement</a></h3>
+          <p>Leg Length Discrepancy Measurement from four landmarks.</p>
+        </div>
+
+      </div>
+    </section>
+
+
+    <section class="card section">
+      <h2>Technology</h2>
+      <div class="grid artifacts">
+
+        <div class="artifact">
+          <div class="meta">Technology</div>
+          <h3><a href="artifacts/auroracare.html">Auroracare</a></h3>
+          <p>Purpose-based Medical Data Exchange.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Technology</div>
+          <h3><a href="artifacts/clinical-care.html">Clinical Care Planning</a></h3>
+          <p>Derive care plans from observations, guidelines, and policy constraints.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Technology</div>
+          <h3><a href="artifacts/delfour.html">Delfour</a></h3>
+          <p>Ruben Verborgh's "Inside the Insight Economy" case.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Technology</div>
+          <h3><a href="artifacts/gps-clinical-bench.html">GPS Clinical Bench</a></h3>
+          <p>Benchmark clinical decisions with transparent rules and audit trails.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Technology</div>
+          <h3><a href="artifacts/graph-french.html">Graph of French Cities</a></h3>
+          <p>Shortest paths and connectivity over a city graph with proofs.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Technology</div>
+          <h3><a href="artifacts/health-info.html">Health Information Processing</a></h3>
+          <p>Transform clinical payloads with typed rules and validation.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Technology</div>
+          <h3><a href="artifacts/linked-lists.html">Linked Lists</a></h3>
+          <p>Term logic example proved using Resolution.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Technology</div>
+          <h3><a href="artifacts/rest-path.html">REST-Path</a></h3>
+          <p>Explain link-following over REST resources; verify pre/post conditions.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Technology</div>
+          <h3><a href="artifacts/turing.html">Turing Machine</a></h3>
+          <p>Run tapes with explicit transitions; verify halting and tape contents.</p>
+        </div>
+
+      </div>
+    </section>
+
+
+    <section class="card section">
+      <h2>Engineering</h2>
+      <div class="grid artifacts">
+
+        <div class="artifact">
+          <div class="meta">Engineering</div>
+          <h3><a href="artifacts/bike-trip.html">Bike Trip Planning</a></h3>
+          <p>Route priorities from hazards, preferences, and declarative JSON rules.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Engineering</div>
+          <h3><a href="artifacts/building-performance.html">Building Performance</a></h3>
+          <p>Reason about energy/comfort metrics and verify rule-based outcomes.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Engineering</div>
+          <h3><a href="artifacts/control-system.html">Control System</a></h3>
+          <p>Model simple feedback loops and verify stability/response conditions.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Engineering</div>
+          <h3><a href="artifacts/eco-route.html">Eco-Route</a></h3>
+          <p>Pick lower-emission routes by fusing traffic, grade, and policy goals.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Engineering</div>
+          <h3><a href="artifacts/gps-bike.html">GPS Bike</a></h3>
+          <p>GPS for bike trip Gent → Maasmechelen.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Engineering</div>
+          <h3><a href="artifacts/lee.html">Lee</a></h3>
+          <p>Maze routing with Lee’s algorithm; trace optimal wavefront paths.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Engineering</div>
+          <h3><a href="artifacts/wind-turbines.html">Wind-Turbine Maintenance</a></h3>
+          <p>Plan maintenance from telemetry and policies with auditable outcomes.</p>
+        </div>
+
+      </div>
+    </section>
+
+
+    <section class="card section">
+      <h2>Mathematics</h2>
+      <div class="grid artifacts">
+
+        <div class="artifact">
+          <div class="meta">Mathematics</div>
+          <h3><a href="artifacts/ackermann.html">Ackermann</a></h3>
+          <p>Compute A₂ with exact hyper-ops; print small, expand huge safely.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Mathematics</div>
+          <h3><a href="artifacts/binomial-theorem.html">Binomial Theorem</a></h3>
+          <p>Sum of all binomial coefficients.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Mathematics</div>
+          <h3><a href="artifacts/collatz.html">Collatz</a></h3>
+          <p>Generate trajectories and check invariants for the Collatz map.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Mathematics</div>
+          <h3><a href="artifacts/complex.html">Complex Identities</a></h3>
+          <p>Symbolic steps for complex-number equalities with auditable reasoning.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Mathematics</div>
+          <h3><a href="artifacts/euclid-infinitude.html">Euclid’s Infinitude of Primes</a></h3>
+          <p>Restate the theorem, explain Euclid’s one-line proof, and run computational checks.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Mathematics</div>
+          <h3><a href="artifacts/euler-identity.html">Euler’s Identity</a></h3>
+          <p>The most beautiful equation in mathematics.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Mathematics</div>
+          <h3><a href="artifacts/faltings-theorem.html">Faltings' Theorem</a></h3>
+          <p>Explore genus 0, 1, and 2 curves, and see why genus ≥ 2 leads to only finitely many rational points.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Mathematics</div>
+          <h3><a href="artifacts/fibonacci.html">Fibonacci</a></h3>
+          <p>Compute big Fₙ with fast-doubling recurrences and proof-style checks.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Mathematics</div>
+          <h3><a href="artifacts/fundamental-theorem-arithmetic.html">Fundamental Theorem of Arithmetic</a></h3>
+          <p>Every integer factors as a product of primes.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Mathematics</div>
+          <h3><a href="artifacts/godel-numbering.html">Gödel Numbering</a></h3>
+          <p>A classic Gödel numbering demonstrator.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Mathematics</div>
+          <h3><a href="artifacts/group-theory.html">Group Theory</a></h3>
+          <p>Verify closure, identity, inverses, and associativity on examples.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Mathematics</div>
+          <h3><a href="artifacts/kaprekar-constant.html">Kaprekar’s Constant</a></h3>
+          <p>Exhaustive sweep of every 4-digit state in Kaprekar’s routine.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Mathematics</div>
+          <h3><a href="artifacts/matrix.html">Matrix Basics</a></h3>
+          <p>Add/multiply/invert with dimension/property checks.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Mathematics</div>
+          <h3><a href="artifacts/matrix-multiplication.html">Matrix Multiplication</a></h3>
+          <p>Not commutative (AB ≠ BA).</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Mathematics</div>
+          <h3><a href="artifacts/newton-raphson.html">Newton–Raphson</a></h3>
+          <p>Newton–Raphson method for root-finding.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Mathematics</div>
+          <h3><a href="artifacts/peano-factorial.html">Peano Factorial</a></h3>
+          <p>5! = 120 proved via Resolution.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Mathematics</div>
+          <h3><a href="artifacts/pi.html">Pi</a></h3>
+          <p>High-precision π via Chudnovsky series with error-bound checks.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Mathematics</div>
+          <h3><a href="artifacts/polynomial.html">Polynomial Roots</a></h3>
+          <p>Find all roots simultaneously; prove convergence on typical cases.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Mathematics</div>
+          <h3><a href="artifacts/prime.html">Primes</a></h3>
+          <p>Generate/test primes; log certs as checks.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Mathematics</div>
+          <h3><a href="artifacts/pythagorean-theorem.html">Pythagorean Theorem</a></h3>
+          <p>Compute legs/hypotenuse and confirm with algebraic or area proofs.</p>
+        </div>
+
+
+        <div class="artifact">
+          <div class="meta">Mathematics</div>
+          <h3><a href="artifacts/roots-of-unity.html">Roots of Unity</a></h3>
+          <p>Place complex n-th roots on the unit circle; check spacing and sums/products.</p>
+        </div>
+
+      </div>
+    </section>
+
+
+    <footer>
+      Follows From — ask backward, derive forward, check openly.
+    </footer>
+  </div>
+</body>
+</html>
