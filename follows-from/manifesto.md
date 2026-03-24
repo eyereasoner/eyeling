@@ -6,23 +6,15 @@ We do not stand outside it.
 We do not hold the whole in a single view.  
 We work from within.
 
-What we inherit are traces: measurements, marks, records, structures, memories, constraints, and signals.
-From these we ask questions.
-From questions we build models.
-From models we derive consequences.
-From consequences we test what survives.
+What we inherit are traces: measurements, marks, records, structures, memories, constraints, and signals. From these we ask questions. From questions we build models. From models we derive consequences. From consequences we test what survives.
 
 That is the ground of Follows From.
 
 This project joins three commitments.
 
-The first is the **library**: the side of traces, interpretation, and legibility from within.
-The second is the **path**: the side of unfolding, consequence, persistence, and change.
-The third is the **method**: the discipline of answer, reason, and check.
+The first is the **library**: the side of traces, interpretation, and legibility from within. The second is the **path**: the side of unfolding, consequence, persistence, and change. The third is the **method**: the discipline of answer, reason, and check.
 
-These are not separate compartments.
-They are three ways of naming one intellectual motion:
-to read the world from within, to reason openly, and to test what we claim.
+These are not separate compartments. They are three ways of naming one intellectual motion: to read the world from within, to reason openly, and to test what we claim.
 
 Its practical rule is simple:
 
@@ -36,16 +28,9 @@ Without the answer, there is nothing definite.
 Without the reason, there is no understanding.  
 Without the check, there is no trust.
 
-That is why Follows From values small, inspectable artifacts.
-A good page should not merely impress.
-It should be readable.
-It should show how it works.
-It should make rerunning and reconsideration possible.
+That is why Follows From values small, inspectable artifacts. A good page should not merely impress. It should be readable. It should show how it works. It should make rerunning and reconsideration possible.
 
-A question can move backward from a trace toward what would explain it.
-A model can then move forward from assumptions toward consequences.
-Every artifact therefore moves in both directions:
-reconstructive and generative, backward and forward, library and path.
+A question can move backward from a trace toward what would explain it. A model can then move forward from assumptions toward consequences. Every artifact therefore moves in both directions: reconstructive and generative, backward and forward, library and path.
 
 This project stands for a certain style of thought:
 
