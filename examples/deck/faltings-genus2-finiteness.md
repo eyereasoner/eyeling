@@ -2,7 +2,8 @@
 
 This deck explains the example `faltings-genus2-finiteness.n3` ([Playground][1]).
 
-The goal is to show—at a friendly, “wide audience” level—how an N3 file can *model* a famous mathematical implication:
+The goal is to show—at a friendly, “wide audience” level—how an N3 file can _model_ a famous mathematical implication:
+
 > “If a curve has genus ≥ 2, then it has only finitely many rational points.”
 
 ---
@@ -10,12 +11,12 @@ The goal is to show—at a friendly, “wide audience” level—how an N3 file 
 ## The problem in plain language
 
 People often ask:
+
 > “Which solutions can an equation have if you only allow fractions?”
 
 A **rational point** means a solution where the coordinates are rational numbers (fractions like 3/7).
 
-Some equations have **infinitely many** rational points.
-Others have **only finitely many**.
+Some equations have **infinitely many** rational points. Others have **only finitely many**.
 
 This example is about expressing the “only finitely many” conclusion as a machine-checkable **rule**.
 
@@ -25,9 +26,7 @@ This example is about expressing the “only finitely many” conclusion as a ma
 
 We model this curve:
 
-\[
-y^2 = x(x+1)(x-2)(x+2)(x-3)
-\]
+\[ y^2 = x(x+1)(x-2)(x+2)(x-3) \]
 
 You can spot some obvious rational solutions just by making the right-hand side zero:
 
@@ -50,7 +49,8 @@ A good mental model is:
 - **genus 2**: “two-hole donut”
 - **genus ≥ 2**: more complicated surfaces
 
-In algebraic geometry, *genus* is a deep invariant, but for this deck you only need:
+In algebraic geometry, _genus_ is a deep invariant, but for this deck you only need:
+
 > genus is a number that measures how “holey” a curve is.
 
 ---
@@ -67,7 +67,7 @@ Faltings proved (in 1983) the last bullet (formerly the Mordell conjecture).
 
 ---
 
-## What this N3 example *does*
+## What this N3 example _does_
 
 It does **not** re-prove the theorem.
 
@@ -84,10 +84,9 @@ That’s the kind of modeling you do when you want a reasoner to apply well-know
 
 ## Why this is useful (even though it’s an emulation)
 
-Think of it like a *library function*.
+Think of it like a _library function_.
 
-You may not re-derive calculus every time you compute a derivative;
-you rely on a trusted rule.
+You may not re-derive calculus every time you compute a derivative; you rely on a trusted rule.
 
 Similarly, you can:
 
@@ -172,7 +171,7 @@ There’s also a small follow-on rule that derives a friendlier Boolean:
 
 ---
 
-## Important: what it does *not* compute
+## Important: what it does _not_ compute
 
 This file does **not** find all rational points.
 
@@ -189,9 +188,11 @@ So the example’s job is:
 ## Try it
 
 ### In your browser
+
 Use the playground link at the top: [Playground][1].
 
 ### On the command line
+
 ```bash
 eyeling faltings-genus2-finiteness.n3
 ```
@@ -203,7 +204,7 @@ eyeling faltings-genus2-finiteness.n3
 Easy extensions:
 
 - Add more example curves with different genera
-- Add rules that *classify* genus based on curve families (toy versions)
+- Add rules that _classify_ genus based on curve families (toy versions)
 - Connect this to a small “math knowledge base” of reusable lemmas
 - Use the same pattern for other theorems: “if conditions, then property”
 

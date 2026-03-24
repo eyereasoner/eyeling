@@ -1460,6 +1460,45 @@ _:x :hates { _:foo :making :mess }.
 `,
     notExpect: [/:(?:test)\s+:(?:is)\s+false\s*\./],
   },
+
+  {
+    name: '60 regression: log:includes must match quoted triples with variable predicates',
+    opt: { proofComments: false },
+    input: `@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@base <http://example.org/>.
+
+{
+    { ?X ?Y ?Z. } log:includes { :a :b :c. }.
+}
+=>
+{
+    ?X ?Y ?Z.
+    {
+        :a :b :c.
+    }
+    =>
+    {
+        :result :has :success-literal-3.
+    }.
+}.
+
+{ } => {
+    :test :contains :success-literal-3.
+}.
+
+{
+    :result :has :success-literal-3.
+}
+=>
+{
+    :test :is true.
+}.
+`,
+    expect: [/:(?:test)\s+:(?:contains)\s+:(?:success-literal-3)\s*\./, /:(?:test)\s+:(?:is)\s+true\s*\./],
+  },
 ];
 
 let passed = 0;

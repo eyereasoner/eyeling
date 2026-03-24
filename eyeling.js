@@ -110,6 +110,35 @@ function makeBuiltins(deps) {
   return { evalBuiltin, isBuiltinPred };
 }
 
+function __builtinCollectVarsInTerm(t, out) {
+  if (t instanceof Var) {
+    out.add(t.name);
+    return;
+  }
+  if (t instanceof ListTerm) {
+    for (const e of t.elems) __builtinCollectVarsInTerm(e, out);
+    return;
+  }
+  if (t instanceof OpenListTerm) {
+    for (const e of t.prefix) __builtinCollectVarsInTerm(e, out);
+    out.add(t.tailVar);
+    return;
+  }
+  if (t instanceof GraphTerm) {
+    for (const tr of t.triples) __builtinCollectVarsInTriple(tr, out);
+  }
+}
+
+function __builtinCollectVarsInTriple(tr, out) {
+  __builtinCollectVarsInTerm(tr.s, out);
+  __builtinCollectVarsInTerm(tr.p, out);
+  __builtinCollectVarsInTerm(tr.o, out);
+}
+
+function __builtinCollectVarsInTriples(triples, out) {
+  for (const tr of triples) __builtinCollectVarsInTriple(tr, out);
+}
+
 function literalHasLangTag(lit) {
   // True iff the literal is a quoted string literal with a language tag suffix,
   // e.g. "hello"@en or """hello"""@en.
@@ -3040,6 +3069,8 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     if (!(g.o instanceof GraphTerm)) return [];
 
     const visited2 = [];
+    const keepVars = new Set();
+    if (g.s instanceof GraphTerm) __builtinCollectVarsInTriples(g.s.triples, keepVars);
     // Start from the incoming substitution so bindings flow outward.
     return proveGoals(
       Array.from(g.o.triples),
@@ -3050,6 +3081,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       visited2,
       varGen,
       maxResults,
+      keepVars.size ? { keepVars } : undefined,
     );
   }
 
@@ -5566,7 +5598,16 @@ function tripleFastKey(tr) {
 }
 
 function ensureFactIndexes(facts) {
-  if (facts.__byPred && facts.__byPS && facts.__byPO && facts.__keySet) return;
+  if (
+    facts.__byPred &&
+    facts.__byPS &&
+    facts.__byPO &&
+    facts.__wildPred &&
+    facts.__wildPS &&
+    facts.__wildPO &&
+    facts.__keySet
+  )
+    return;
 
   Object.defineProperty(facts, '__byPred', {
     value: new Map(),
@@ -5583,6 +5624,21 @@ function ensureFactIndexes(facts) {
     enumerable: false,
     writable: true,
   });
+  Object.defineProperty(facts, '__wildPred', {
+    value: [],
+    enumerable: false,
+    writable: true,
+  });
+  Object.defineProperty(facts, '__wildPS', {
+    value: new Map(),
+    enumerable: false,
+    writable: true,
+  });
+  Object.defineProperty(facts, '__wildPO', {
+    value: new Map(),
+    enumerable: false,
+    writable: true,
+  });
   Object.defineProperty(facts, '__keySet', {
     value: new Set(),
     enumerable: false,
@@ -5593,6 +5649,9 @@ function ensureFactIndexes(facts) {
 }
 
 function indexFact(facts, tr, idx) {
+  const sk = termFastKey(tr.s);
+  const ok = termFastKey(tr.o);
+
   if (tr.p instanceof Iri) {
     // Use predicate term id as the primary key to avoid hashing long IRI strings.
     const pk = tr.p.__tid;
@@ -5604,7 +5663,6 @@ function indexFact(facts, tr, idx) {
     }
     pb.push(idx);
 
-    const sk = termFastKey(tr.s);
     if (sk !== null) {
       let ps = facts.__byPS.get(pk);
       if (!ps) {
@@ -5619,7 +5677,6 @@ function indexFact(facts, tr, idx) {
       psb.push(idx);
     }
 
-    const ok = termFastKey(tr.o);
     if (ok !== null) {
       let po = facts.__byPO.get(pk);
       if (!po) {
@@ -5630,6 +5687,26 @@ function indexFact(facts, tr, idx) {
       if (!pob) {
         pob = [];
         po.set(ok, pob);
+      }
+      pob.push(idx);
+    }
+  } else {
+    facts.__wildPred.push(idx);
+
+    if (sk !== null) {
+      let psb = facts.__wildPS.get(sk);
+      if (!psb) {
+        psb = [];
+        facts.__wildPS.set(sk, psb);
+      }
+      psb.push(idx);
+    }
+
+    if (ok !== null) {
+      let pob = facts.__wildPO.get(ok);
+      if (!pob) {
+        pob = [];
+        facts.__wildPO.set(ok, pob);
       }
       pob.push(idx);
     }
@@ -5662,11 +5739,30 @@ function candidateFacts(facts, goal) {
       if (po) byPO = po.get(ok) || null;
     }
 
-    if (byPS && byPO) return byPS.length <= byPO.length ? byPS : byPO;
-    if (byPS) return byPS;
-    if (byPO) return byPO;
+    let exact = null;
+    if (byPS && byPO) exact = byPS.length <= byPO.length ? byPS : byPO;
+    else if (byPS) exact = byPS;
+    else if (byPO) exact = byPO;
+    else exact = facts.__byPred.get(pk) || null;
 
-    return facts.__byPred.get(pk) || [];
+    /** @type {number[] | null} */
+    let wildPS = null;
+    if (sk !== null) wildPS = facts.__wildPS.get(sk) || null;
+
+    /** @type {number[] | null} */
+    let wildPO = null;
+    if (ok !== null) wildPO = facts.__wildPO.get(ok) || null;
+
+    let wild = null;
+    if (wildPS && wildPO) wild = wildPS.length <= wildPO.length ? wildPS : wildPO;
+    else if (wildPS) wild = wildPS;
+    else if (wildPO) wild = wildPO;
+    else wild = facts.__wildPred.length ? facts.__wildPred : null;
+
+    if (exact && wild) return exact.concat(wild);
+    if (exact) return exact;
+    if (wild) return wild;
+    return [];
   }
 
   return null;
@@ -5821,7 +5917,13 @@ function __goalMemoKey(goals, subst, facts, opts) {
   const mode = opts && opts.deferBuiltins ? 'D1' : 'D0';
   const scopedLevel = facts && typeof facts.__scopedClosureLevel === 'number' ? facts.__scopedClosureLevel : 0;
   const scopedTag = facts && facts.__scopedSnapshot ? 'S' : 'N';
-  return `${mode}|${scopedTag}|${scopedLevel}|${parts.join('\n')}`;
+  let keepVarsTag = '';
+  if (opts && opts.keepVars) {
+    const keepVars = Array.isArray(opts.keepVars) ? opts.keepVars.slice() : Array.from(opts.keepVars);
+    keepVars.sort();
+    keepVarsTag = `|K:${keepVars.join(',')}`;
+  }
+  return `${mode}|${scopedTag}|${scopedLevel}${keepVarsTag}|${parts.join('\n')}`;
 }
 
 function __cloneGoalSolutions(solutions) {
@@ -6363,6 +6465,9 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
   // Variables from the original goal list (needed by the caller to instantiate conclusions)
   const answerVars = new Set();
   gcCollectVarsInGoals(initialGoals, answerVars);
+  if (opts && opts.keepVars) {
+    for (const v of opts.keepVars) answerVars.add(v);
+  }
 
   if (!initialGoals.length) {
     results.push(gcCompactForGoals(substMut, [], answerVars));
