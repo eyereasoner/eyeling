@@ -31,7 +31,7 @@
     "test",
     "tools",
     "examples",
-    "follows-from"
+    "arctifacts"
   ],
   "engines": {
     "node": ">=18"

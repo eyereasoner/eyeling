@@ -15,7 +15,7 @@ A compact [Notation3 (N3)](https://notation3.org/) reasoner in **JavaScript**.
 - **Semantics:** [https://eyereasoner.github.io/eyeling/SEMANTICS](https://eyereasoner.github.io/eyeling/SEMANTICS)
 - **Playground:** [https://eyereasoner.github.io/eyeling/demo](https://eyereasoner.github.io/eyeling/demo)
 - **Conformance report:** [https://codeberg.org/phochste/notation3tests/src/branch/main/reports/report.md](https://codeberg.org/phochste/notation3tests/src/branch/main/reports/report.md)
-- **Follows From:** [https://eyereasoner.github.io/eyeling/follows-from/](https://eyereasoner.github.io/eyeling/follows-from/)
+- **ARCtifacts:** [https://eyereasoner.github.io/eyeling/arctifacts/](https://eyereasoner.github.io/eyeling/arctifacts/)
 
 Eyeling is regularly checked against the community Notation3 test suite. If you want implementation details (parser, unifier, proof search, skolemization, scoped closure, builtins), start with the handbook.
 
