@@ -23,14 +23,15 @@
     "README.md",
     "HANDBOOK.md",
     "SEMANTICS.md",
-    "examples",
     "eyeling-builtins.ttl",
     "eyeling.js",
     "index.js",
     "index.d.ts",
     "lib",
     "test",
-    "tools"
+    "tools",
+    "examples",
+    "follows-from"
   ],
   "engines": {
     "node": ">=18"
