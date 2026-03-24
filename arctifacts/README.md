@@ -3,6 +3,7 @@
 ARCtifacts are trustworthy programs telling a concise story in three parts. First comes the **Answer** to a specific question. This is followed by the **Reason Why** that answer is correct, articulated in everyday language and supported by the relevant identities, rules, or ideas. Finally, every case includes a **Check**—a concrete test designed to fail loudly if an assumption doesn't hold or an edge case bites. The result is a computation with a complete, auditable trail: you can see precisely what was done, why it was valid, and how the page verifies its own work.
 
 ## Science
+
 - [**Body Mass Index**](https://eyereasoner.github.io/eyeling/arctifacts/bmi.html) — Compute BMI categories with explainable thresholds and sanity checks.
 - [**Earthquake Epicenter**](https://eyereasoner.github.io/eyeling/arctifacts/earthquake-epicenter.html) — Infer an earthquake’s epicenter from P- and S-wave arrivals and verify with distance and timing checks.
 - [**Exoplanet Transit**](https://eyereasoner.github.io/eyeling/arctifacts/exoplanet-transit.html) — Infer a planet’s size and orbit from a transit light curve, with explainable formulas and consistency checks.
@@ -10,6 +11,7 @@ ARCtifacts are trustworthy programs telling a concise story in three parts. Firs
 - [**Leg Length Discrepancy Measurement**](https://eyereasoner.github.io/eyeling/arctifacts/lldm.html) — Leg Length Discrepancy Measurement from four landmarks.
 
 ## Technology
+
 - [**Auroracare**](https://eyereasoner.github.io/eyeling/arctifacts/auroracare.html) — Purpose-based Medical Data Exchange.
 - [**Clinical Care Planning**](https://eyereasoner.github.io/eyeling/arctifacts/clinical-care.html) — Derive care plans from observations, guidelines, and policy constraints.
 - [**Delfour**](https://eyereasoner.github.io/eyeling/arctifacts/delfour.html) — Ruben Verborgh's "Inside the Insight Economy" case.
@@ -21,6 +23,7 @@ ARCtifacts are trustworthy programs telling a concise story in three parts. Firs
 - [**Turing Machine**](https://eyereasoner.github.io/eyeling/arctifacts/turing.html) — Run tapes with explicit transitions; verify halting and tape contents.
 
 ## Engineering
+
 - [**Bike Trip Planning**](https://eyereasoner.github.io/eyeling/arctifacts/bike-trip.html) — Route priorities from hazards, preferences, and declarative JSON rules.
 - [**Building Performance**](https://eyereasoner.github.io/eyeling/arctifacts/building-performance.html) — Reason about energy/comfort metrics and verify rule-based outcomes.
 - [**Control System**](https://eyereasoner.github.io/eyeling/arctifacts/control-system.html) — Model simple feedback loops and verify stability/response conditions.
@@ -30,6 +33,7 @@ ARCtifacts are trustworthy programs telling a concise story in three parts. Firs
 - [**Wind-Turbine Maintenance**](https://eyereasoner.github.io/eyeling/arctifacts/wind-turbines.html) — Plan maintenance from telemetry and policies with auditable outcomes.
 
 ## Mathematics
+
 - [**Ackermann**](https://eyereasoner.github.io/eyeling/arctifacts/ackermann.html) — Compute A₂ with exact hyper-ops; print small, expand huge safely.
 - [**Binomial Theorem**](https://eyereasoner.github.io/eyeling/arctifacts/binomial-theorem.html) — Sum of all binomial coefficients.
 - [**Collatz**](https://eyereasoner.github.io/eyeling/arctifacts/collatz.html) — Generate trajectories and check invariants for the Collatz map.
@@ -51,4 +55,3 @@ ARCtifacts are trustworthy programs telling a concise story in three parts. Firs
 - [**Primes**](https://eyereasoner.github.io/eyeling/arctifacts/prime.html) — Generate/test primes; log certs (trial factors or proofs) as checks.
 - [**Pythagorean Theorem**](https://eyereasoner.github.io/eyeling/arctifacts/pythagorean-theorem.html) — Compute legs/hypotenuse and confirm with algebraic or area proofs.
 - [**Roots of Unity**](https://eyereasoner.github.io/eyeling/arctifacts/roots-of-unity.html) — Place complex n-th roots on the unit circle; check spacing and sums/products.
-
