@@ -7,6 +7,7 @@ const ROOT = path.resolve(__dirname, '..');
 // Direct eyeling.js bundle API (in-process) for testing reasonStream/onDerived.
 // This is the API surface used by demo.html (browser/worker).
 const { reasonStream } = require('../eyeling.js');
+const { reason, reasonRdfJs, rdfjs } = require('../index.js');
 
 // Run reason() in a subprocess with stderr captured, so expected parse errors
 // don't spam the parent process' stderr (while still being available as e.stderr).
@@ -1498,6 +1499,268 @@ _:x :hates { _:foo :making :mess }.
 }.
 `,
     expect: [/:(?:test)\s+:(?:contains)\s+:(?:success-literal-3)\s*\./, /:(?:test)\s+:(?:is)\s+true\s*\./],
+  },
+
+  {
+    name: '61 RDF/JS input + rule objects: reason() accepts quads with rules',
+    run() {
+      const ex = 'http://example.org/';
+      const s = rdfjs.namedNode(ex + 's');
+      const p = rdfjs.namedNode(ex + 'p');
+      const o = rdfjs.namedNode(ex + 'o');
+      const out = reason(
+        { proofComments: false },
+        {
+          quads: [rdfjs.quad(s, p, o, rdfjs.defaultGraph())],
+          rules: [
+            {
+              _type: 'Rule',
+              premise: [
+                {
+                  _type: 'Triple',
+                  s: { _type: 'Iri', value: ex + 's' },
+                  p: { _type: 'Iri', value: ex + 'p' },
+                  o: { _type: 'Iri', value: ex + 'o' },
+                },
+              ],
+              conclusion: [
+                {
+                  _type: 'Triple',
+                  s: { _type: 'Iri', value: ex + 's' },
+                  p: { _type: 'Iri', value: ex + 'q' },
+                  o: { _type: 'Iri', value: ex + 'o' },
+                },
+              ],
+              isForward: true,
+              isFuse: false,
+              headBlankLabels: [],
+            },
+          ],
+        },
+      );
+      return out;
+    },
+    expect: [/http:\/\/example\.org\/q/m],
+  },
+  {
+    name: '62 RDF/JS output: reasonStream can emit quads and closureQuads from rule objects',
+    run() {
+      const ex = 'http://example.org/';
+      const s = rdfjs.namedNode(ex + 's');
+      const p = rdfjs.namedNode(ex + 'p');
+      const o = rdfjs.namedNode(ex + 'o');
+      const seen = [];
+      const result = reasonStream(
+        {
+          quads: [rdfjs.quad(s, p, o, rdfjs.defaultGraph())],
+          rules: [
+            {
+              _type: 'Rule',
+              premise: [
+                {
+                  _type: 'Triple',
+                  s: { _type: 'Var', name: 'x' },
+                  p: { _type: 'Iri', value: ex + 'p' },
+                  o: { _type: 'Var', name: 'y' },
+                },
+              ],
+              conclusion: [
+                {
+                  _type: 'Triple',
+                  s: { _type: 'Var', name: 'x' },
+                  p: { _type: 'Iri', value: ex + 'q' },
+                  o: { _type: 'Var', name: 'y' },
+                },
+              ],
+              isForward: true,
+              isFuse: false,
+              headBlankLabels: [],
+            },
+          ],
+        },
+        {
+          rdfjs: true,
+          includeInputFactsInClosure: false,
+          onDerived: ({ quad }) => seen.push(quad),
+        },
+      );
+      this._seen = seen;
+      this._result = result;
+      return result.closureN3;
+    },
+    expect: [/http:\/\/example\.org\/q/m],
+    notExpect: [/http:\/\/example\.org\/p/m],
+    check(_out, tc) {
+      assert.equal(tc._seen.length, 1, 'Expected one streamed RDF/JS quad');
+      assert.equal(tc._seen[0].termType, 'Quad');
+      assert.equal(tc._seen[0].predicate.value, 'http://example.org/q');
+      assert.ok(Array.isArray(tc._result.closureQuads), 'Expected closureQuads array');
+      assert.equal(tc._result.closureQuads.length, 1);
+      assert.equal(tc._result.closureQuads[0].object.value, 'http://example.org/o');
+    },
+  },
+  {
+    name: '63 RDF/JS async generator: reasonRdfJs yields derived quads from rule objects',
+    async run() {
+      const ex = 'http://example.org/';
+      const quads = [];
+      for await (const quad of reasonRdfJs({
+        quads: [rdfjs.quad(rdfjs.namedNode(ex + 'a'), rdfjs.namedNode(ex + 'p'), rdfjs.namedNode(ex + 'b'))],
+        rules: [
+          {
+            _type: 'Rule',
+            premise: [
+              {
+                _type: 'Triple',
+                s: { _type: 'Var', name: 'x' },
+                p: { _type: 'Iri', value: ex + 'p' },
+                o: { _type: 'Var', name: 'y' },
+              },
+            ],
+            conclusion: [
+              {
+                _type: 'Triple',
+                s: { _type: 'Var', name: 'x' },
+                p: { _type: 'Iri', value: ex + 'q' },
+                o: { _type: 'Var', name: 'y' },
+              },
+            ],
+            isForward: true,
+            isFuse: false,
+            headBlankLabels: [],
+          },
+        ],
+      })) {
+        quads.push(quad);
+      }
+      this._quads = quads;
+      return quads.map((q) => `${q.subject.value} ${q.predicate.value} ${q.object.value}`).join('\n');
+    },
+    expect: [/http:\/\/example\.org\/q/],
+    check(_out, tc) {
+      assert.equal(tc._quads.length, 1, 'Expected one yielded quad');
+      assert.equal(tc._quads[0].predicate.value, 'http://example.org/q');
+      assert.equal(tc._quads[0].graph.termType, 'DefaultGraph');
+    },
+  },
+  {
+    name: '64 RDF/JS validation: named-graph input quads are rejected clearly',
+    expectError: true,
+    run() {
+      const ex = 'http://example.org/';
+      return reason(
+        {},
+        {
+          quads: [
+            rdfjs.quad(
+              rdfjs.namedNode(ex + 's'),
+              rdfjs.namedNode(ex + 'p'),
+              rdfjs.namedNode(ex + 'o'),
+              rdfjs.namedNode(ex + 'g'),
+            ),
+          ],
+        },
+      );
+    },
+  },
+  {
+    name: '65 Eyeling rule objects: reasonStream accepts Rule-like JSON with RDF/JS quads',
+    run() {
+      const ex = 'http://example.org/';
+      const out = reasonStream(
+        {
+          quads: [
+            rdfjs.quad(rdfjs.namedNode(ex + 'alice'), rdfjs.namedNode(ex + 'parent'), rdfjs.namedNode(ex + 'bob')),
+          ],
+          rules: [
+            {
+              _type: 'Rule',
+              premise: [
+                {
+                  _type: 'Triple',
+                  s: { _type: 'Var', name: 'x' },
+                  p: { _type: 'Iri', value: ex + 'parent' },
+                  o: { _type: 'Var', name: 'y' },
+                },
+              ],
+              conclusion: [
+                {
+                  _type: 'Triple',
+                  s: { _type: 'Var', name: 'x' },
+                  p: { _type: 'Iri', value: ex + 'ancestor' },
+                  o: { _type: 'Var', name: 'y' },
+                },
+              ],
+              isForward: true,
+              isFuse: false,
+              headBlankLabels: [],
+            },
+          ],
+        },
+        { includeInputFactsInClosure: false },
+      );
+      return out.closureN3;
+    },
+    expect: [/http:\/\/example\.org\/ancestor/m],
+    notExpect: [/http:\/\/example\.org\/parent/m],
+  },
+  {
+    name: '66 Eyeling AST bundle: reason() accepts [prefixes, triples, frules, brules]',
+    run() {
+      const ex = 'http://example.org/';
+      return reason({ proofComments: false }, [
+        {
+          _type: 'PrefixEnv',
+          map: {
+            rdf: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+            rdfs: 'http://www.w3.org/2000/01/rdf-schema#',
+            xsd: 'http://www.w3.org/2001/XMLSchema#',
+            log: 'http://www.w3.org/2000/10/swap/log#',
+            math: 'http://www.w3.org/2000/10/swap/math#',
+            string: 'http://www.w3.org/2000/10/swap/string#',
+            list: 'http://www.w3.org/2000/10/swap/list#',
+            time: 'http://www.w3.org/2000/10/swap/time#',
+            genid: 'https://eyereasoner.github.io/.well-known/genid/',
+            '': '',
+          },
+          baseIri: '',
+        },
+        [
+          {
+            _type: 'Triple',
+            s: { _type: 'Iri', value: ex + 'alice' },
+            p: { _type: 'Iri', value: ex + 'parent' },
+            o: { _type: 'Iri', value: ex + 'bob' },
+          },
+        ],
+        [
+          {
+            _type: 'Rule',
+            premise: [
+              {
+                _type: 'Triple',
+                s: { _type: 'Var', name: 'x' },
+                p: { _type: 'Iri', value: ex + 'parent' },
+                o: { _type: 'Var', name: 'y' },
+              },
+            ],
+            conclusion: [
+              {
+                _type: 'Triple',
+                s: { _type: 'Var', name: 'x' },
+                p: { _type: 'Iri', value: ex + 'ancestor' },
+                o: { _type: 'Var', name: 'y' },
+              },
+            ],
+            isForward: true,
+            isFuse: false,
+            headBlankLabels: [],
+          },
+        ],
+        [],
+      ]);
+    },
+    expect: [/http:\/\/example\.org\/ancestor/m],
   },
 ];
 

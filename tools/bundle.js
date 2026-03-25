@@ -138,7 +138,7 @@ out.push('    return m.exports;');
 out.push('  }');
 
 out.push('  const __entry = __loadEntry();');
-out.push('  const __api = { reasonStream: __entry.reasonStream };');
+out.push('  const __api = { reasonStream: __entry.reasonStream, reasonRdfJs: __entry.reasonRdfJs };');
 out.push('');
 out.push('  try { if (__outerModule && __outerModule.exports) __outerModule.exports = __api; } catch (_e) {}');
 out.push('  try { if (__outerSelf) __outerSelf.eyeling = __api; } catch (_e) {}');

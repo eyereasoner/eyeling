@@ -99,6 +99,64 @@ Notes:
 - By default, the npm helper keeps output machine-friendly (`proofComments: false`).
 - The npm helper shells out to the bundled `eyeling.js` CLI for simplicity and robustness.
 
+### RDF/JS and Eyeling rule-object interop
+
+The JavaScript APIs now accept three input styles:
+
+1. plain N3 text
+2. RDF/JS facts (`quads`, `facts`, or `dataset`)
+3. Eyeling rule objects / AST bundles (the same shapes you get from `eyeling --ast`)
+
+If you want to use N3 source text, pass the whole input as a plain N3 string.
+
+For RDF/JS facts, the graph must be the default graph. Named-graph quads are rejected.
+
+For structured inputs, `rules` is supplied as current Eyeling rule objects:
+
+```js
+const { reason, rdfjs } = require('eyeling');
+
+const ex = 'http://example.org/';
+
+const rule = {
+  _type: 'Rule',
+  premise: [
+    {
+      _type: 'Triple',
+      s: { _type: 'Var', name: 'x' },
+      p: { _type: 'Iri', value: ex + 'parent' },
+      o: { _type: 'Var', name: 'y' },
+    },
+  ],
+  conclusion: [
+    {
+      _type: 'Triple',
+      s: { _type: 'Var', name: 'x' },
+      p: { _type: 'Iri', value: ex + 'ancestor' },
+      o: { _type: 'Var', name: 'y' },
+    },
+  ],
+  isForward: true,
+  isFuse: false,
+  headBlankLabels: [],
+};
+
+const out = reason(
+  { proofComments: false },
+  {
+    quads: [rdfjs.quad(rdfjs.namedNode(ex + 'alice'), rdfjs.namedNode(ex + 'parent'), rdfjs.namedNode(ex + 'bob'))],
+    rules: [rule],
+  },
+);
+```
+
+You can also pass a full AST bundle directly:
+
+```js
+const ast = [prefixes, triples, forwardRules, backwardRules];
+const out2 = reason({ proofComments: false }, ast);
+```
+
 ### Direct bundle / browser-worker API: `reasonStream()`
 
 For in-process reasoning (browser, worker, or direct use of `eyeling.js`):
@@ -113,6 +171,8 @@ const result = eyeling.reasonStream(input, {
 console.log(result.closureN3);
 ```
 
+`eyeling.js` now also exposes `eyeling.rdfjs` and `eyeling.reasonRdfJs(...)` for RDF/JS workflows.
+
 #### `reasonStream()` output behavior
 
 `closureN3` is also mode-dependent:
@@ -126,7 +186,24 @@ To exclude input facts from the normal-mode closure, pass:
 includeInputFactsInClosure: false;
 ```
 
+When `rdfjs: true` is passed, `onDerived` also receives a `quad` field and the result may include `closureQuads` / `queryQuads`.
+
 The returned object also includes `queryMode`, `queryTriples`, and `queryDerived` (and in normal mode, `onDerived` fires for newly derived facts; in `log:query` mode it fires for the query-selected derived triples).
+
+### `reasonRdfJs()`
+
+`reasonRdfJs(input, opts)` exposes derived results as an async iterable of RDF/JS quads as they are produced:
+
+```js
+const { reasonRdfJs, rdfjs } = require('eyeling');
+
+for await (const quad of reasonRdfJs({
+  quads: [rdfjs.quad(rdfjs.namedNode(ex + 'alice'), rdfjs.namedNode(ex + 'parent'), rdfjs.namedNode(ex + 'bob'))],
+  rules: [rule],
+})) {
+  console.log(quad.subject.value, quad.predicate.value, quad.object.value);
+}
+```
 
 ## Builtins
 

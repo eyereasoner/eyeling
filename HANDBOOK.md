@@ -1747,6 +1747,13 @@ The engine’s `reasonStream` API can accept an `onDerived` callback. Each time 
 
 This is especially useful in interactive demos (and is the basis of the playground streaming tab).
 
+The same API can now also emit RDF/JS output. When `rdfjs: true` is passed, every `onDerived(...)` payload includes both:
+
+- `triple` — Eyeling’s N3 string form
+- `quad` — the same fact as an RDF/JS default-graph quad
+
+For fully stream-oriented RDF/JS consumers there is also `reasonRdfJs(...)`, which exposes the derived facts as an async iterable of RDF/JS quads.
+
 ---
 
 <a id="ch14"></a>
@@ -1783,22 +1790,35 @@ The current CLI supports a small set of flags (see `lib/cli.js`):
 
 `lib/entry.js` exports:
 
-- public APIs: `reasonStream`, `main`, `version`
+- public APIs: `reasonStream`, `reasonRdfJs`, `rdfjs`, `main`, `version`
 - plus a curated set of internals used by the demo (`lex`, `Parser`, `forwardChain`, etc.)
+
+`rdfjs` is a small built-in RDF/JS `DataFactory`, so browser / worker code can construct quads without pulling in another package first.
 
 ### 14.3 `index.js`: the npm API wrapper
 
 The npm `reason(...)` function does something intentionally simple and robust:
 
-- write your N3 input to a temp file
+- normalize the JavaScript input into N3 text
+- write that N3 input to a temp file
 - spawn the bundled CLI (`node eyeling.js ... input.n3`)
 - return stdout (and forward stderr)
 
-This ensures the API matches the CLI perfectly and keeps the public surface small.
+This keeps the observable output identical to the CLI while still allowing richer JS-side inputs.
 
-One practical implication:
+In particular, the npm API now accepts:
 
-- if you want _in-process_ access to the engine objects (facts arrays, derived proof objects), use `reasonStream` from the bundle entry rather than the subprocess-based API.
+- raw N3 strings
+- RDF/JS fact inputs (`quads`, `facts`, or `dataset`)
+- Eyeling rule objects or full AST bundles like `[prefixes, triples, frules, brules]`
+
+For structured JavaScript input, rules are supplied as current Eyeling `Rule` / `Triple` object graphs or as JSON-serialized `--ast` output with `_type` markers.
+
+If you want to use N3 source text, pass the whole input as a plain N3 string.
+
+One practical implication remains:
+
+- if you want _in-process_ access to the engine objects (facts arrays, derived proof objects), use `reasonStream` / `reasonRdfJs` from the bundle entry rather than the subprocess-based API.
 
 ---
 

@@ -5,15 +5,20 @@ const os = require('node:os');
 const path = require('node:path');
 const cp = require('node:child_process');
 
-function reason(opt = {}, n3_input = '') {
-  if (n3_input == null) n3_input = '';
-  if (typeof n3_input !== 'string') {
-    throw new TypeError('reason(opt, n3_input): n3_input must be a string');
-  }
+const bundleApi = require('./eyeling.js');
+const { dataFactory, normalizeReasonerInputSync } = require('./lib/rdfjs');
+
+function reason(opt = {}, input = '') {
+  if (input == null) input = '';
 
   // allow passing an args array directly
   if (Array.isArray(opt)) opt = { args: opt };
   if (opt == null || typeof opt !== 'object') opt = {};
+
+  const n3Input = normalizeReasonerInputSync(input);
+  if (typeof n3Input !== 'string') {
+    throw new TypeError('reason(opt, input): input must resolve to an N3 string');
+  }
 
   const args = [];
 
@@ -43,7 +48,7 @@ function reason(opt = {}, n3_input = '') {
   const inputFile = path.join(dir, 'input.n3');
 
   try {
-    fs.writeFileSync(inputFile, n3_input, 'utf8');
+    fs.writeFileSync(inputFile, n3Input, 'utf8');
 
     const eyelingPath = path.join(__dirname, 'eyeling.js');
     const res = cp.spawnSync(process.execPath, [eyelingPath, ...args, inputFile], { encoding: 'utf8', maxBuffer });
@@ -67,7 +72,12 @@ function reason(opt = {}, n3_input = '') {
   }
 }
 
-module.exports = { reason };
+module.exports = {
+  reason,
+  reasonStream: bundleApi.reasonStream,
+  reasonRdfJs: bundleApi.reasonRdfJs,
+  rdfjs: dataFactory,
+};
 
 // small interop nicety for ESM default import
 module.exports.default = module.exports;
