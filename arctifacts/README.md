@@ -2,6 +2,8 @@
 
 ARCtifacts are trustworthy programs telling a concise story in three parts. First comes the **Answer** to a specific question. This is followed by the **Reason Why** that answer is correct, articulated in everyday language and supported by the relevant identities, rules, or ideas. Finally, every case includes a **Check**—a concrete test designed to fail loudly if an assumption doesn't hold or an edge case bites. The result is a computation with a complete, auditable trail: you can see precisely what was done, why it was valid, and how the page verifies its own work.
 
+At the core of this approach are three familiar ingredients: **Data**, **Logic**, and a **Question**. We summarize the workflow as **P3 — Prompt → Program → Proof**: the prompt supplies the task and materials, the program turns them into a concrete, repeatable procedure, and the proof is practical rather than ceremonial, consisting of the **Reason Why** together with the **Check**. This is what makes each ARCtifact not just a result, but a portable, auditable, and trustworthy computational artifact.
+
 ## Science
 
 - [**Body Mass Index**](https://eyereasoner.github.io/eyeling/arctifacts/bmi.html) — Compute BMI categories with explainable thresholds and sanity checks.
