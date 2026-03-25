@@ -135,6 +135,33 @@ function __builtinCollectVarsInTriple(tr, out) {
   __builtinCollectVarsInTerm(tr.o, out);
 }
 
+function __isRuleFormulaLikeTerm(t) {
+  return t instanceof GraphTerm || (t instanceof Literal && (t.value === 'true' || t.value === 'false'));
+}
+
+function __expandScopedVarPredicateGoals(goals) {
+  if (!Array.isArray(goals) || goals.length === 0) return [{ goals, bind: null }];
+
+  let variants = [{ goals: goals.slice(), bind: null }];
+  const impliesIri = internIri(LOG_NS + 'implies');
+
+  for (let i = 0; i < goals.length; i++) {
+    const tr = goals[i];
+    if (!(tr.p instanceof Var)) continue;
+    if (!__isRuleFormulaLikeTerm(tr.s) && !__isRuleFormulaLikeTerm(tr.o)) continue;
+
+    const next = variants.slice();
+    for (const v of variants) {
+      const altGoals = v.goals.slice();
+      altGoals[i] = new Triple(altGoals[i].s, impliesIri, altGoals[i].o);
+      const altBind = { ...(v.bind || {}), [tr.p.name]: impliesIri };
+      next.push({ goals: altGoals, bind: altBind });
+    }
+    variants = next;
+  }
+  return variants;
+}
+
 function __builtinCollectVarsInTriples(triples, out) {
   for (const tr of triples) __builtinCollectVarsInTriple(tr, out);
 }
@@ -3071,18 +3098,39 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const visited2 = [];
     const keepVars = new Set();
     if (g.s instanceof GraphTerm) __builtinCollectVarsInTriples(g.s.triples, keepVars);
-    // Start from the incoming substitution so bindings flow outward.
-    return proveGoals(
-      Array.from(g.o.triples),
-      { ...subst },
-      scopeFacts,
-      scopeBackRules,
-      depth + 1,
-      visited2,
-      varGen,
-      maxResults,
-      keepVars.size ? { keepVars } : undefined,
-    );
+
+    const goalVariants = __expandScopedVarPredicateGoals(Array.from(g.o.triples));
+    const out = [];
+    for (const variant of goalVariants) {
+      const sols = proveGoals(
+        variant.goals,
+        { ...subst },
+        scopeFacts,
+        scopeBackRules,
+        depth + 1,
+        visited2,
+        varGen,
+        maxResults,
+        keepVars.size ? { keepVars } : undefined,
+      );
+      for (const s2 of sols) {
+        const merged = { ...s2 };
+        let ok = true;
+        if (variant.bind) {
+          for (const [k, v] of Object.entries(variant.bind)) {
+            if (Object.prototype.hasOwnProperty.call(merged, k) && !termsEqual(merged[k], v)) {
+              ok = false;
+              break;
+            }
+            merged[k] = v;
+          }
+        }
+        if (!ok) continue;
+        out.push(merged);
+        if (typeof maxResults === 'number' && maxResults > 0 && out.length >= maxResults) return out;
+      }
+    }
+    return out;
   }
 
   // log:notIncludes
