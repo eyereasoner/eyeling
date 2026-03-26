@@ -1,0 +1,15 @@
+@prefix : <http://example.org/mix#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:specialization :residualProgram {
+    {
+        ?order :subtotal ?subtotal .
+        (?subtotal "0.90"^^xsd:decimal) math:product ?discounted .
+        (?discounted "5.00"^^xsd:decimal) math:sum ?final .
+    } => {
+        ?order :finalPrice ?final .
+    } .
+} .
+:futureOrder :computedByResidualProgram "95"^^xsd:decimal .

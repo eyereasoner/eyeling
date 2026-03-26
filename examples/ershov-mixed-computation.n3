@@ -1,0 +1,106 @@
+# =====================================================================
+# Ershov mixed computation in Notation3
+#
+# This example illustrates the basic idea of Ershov mixed computation:
+# a computation is split into two phases.
+#
+#   Phase 1: specialization
+#     We take a generic pricing computation and the part of the input
+#     already known now (here: the customer is VIP), and we produce a
+#     residual program with those known values baked in.
+#
+#   Phase 2: residual execution
+#     Later, when the remaining input becomes available
+#     (here: an order subtotal), we run the residual program and obtain
+#     the final result.
+#
+# In this example:
+#   generic formula: finalPrice = subtotal * discountRate + shippingFee
+#   known now:       customerClass = VIP
+#   known later:     subtotal = 100.00
+#
+# Specialization fixes:
+#   discountRate = 0.90
+#   shippingFee  = 5.00
+#
+# So the residual program becomes:
+#   finalPrice = subtotal * 0.90 + 5.00
+#
+# With subtotal = 100.00, the expected result is:
+#   100.00 * 0.90 + 5.00 = 95.00
+#
+# Typical eyeling output therefore includes:
+#   - the specialized residual rule
+#   - :futureOrder :computedByResidualProgram "95"^^xsd:decimal
+#
+# This is a tiny staging example, not a full partial evaluator.
+# =====================================================================
+
+@prefix :    <http://example.org/mix#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix math:<http://www.w3.org/2000/10/swap/math#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# ------------------------------------------------------------
+# Generic computation, represented as static parameters
+# ------------------------------------------------------------
+
+:pricingProgram
+    :discountRate "0.90"^^xsd:decimal;
+    :shippingFee  "5.00"^^xsd:decimal.
+
+# Static input known at specialization time
+:specialization :customerClass :VIP.
+
+# ------------------------------------------------------------
+# Phase 1: specialization
+#
+# Build a residual program for the VIP case by baking the static
+# constants into a quoted rule.
+# ------------------------------------------------------------
+
+{
+    :pricingProgram :discountRate ?rate;
+                    :shippingFee ?fee.
+    :specialization :customerClass :VIP.
+}
+=>
+{
+    :specialization :residualProgram {
+        {
+            ?order :subtotal ?subtotal.
+            (?subtotal ?rate) math:product ?discounted.
+            (?discounted ?fee) math:sum ?final.
+        }
+        =>
+        {
+            ?order :finalPrice ?final.
+        } .
+    } .
+} .
+
+# ------------------------------------------------------------
+# Phase 2: residual execution
+#
+# Later input arrives:
+#   :futureOrder :subtotal 100.00
+#
+# We combine that later input with the residual program, take the
+# logical closure, and extract the inferred final price.
+# ------------------------------------------------------------
+
+{
+    :specialization :residualProgram ?rp.
+
+    ( ?rp
+      { :futureOrder :subtotal "100.00"^^xsd:decimal. }
+    ) log:conjunction ?run .
+
+    ?run log:conclusion ?closure .
+
+    ?closure log:includes { :futureOrder :finalPrice ?price. } .
+}
+=>
+{
+    :futureOrder :computedByResidualProgram ?price.
+} .
