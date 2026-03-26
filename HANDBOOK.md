@@ -484,6 +484,8 @@ When proving a goal with IRI predicate, Eyeling computes candidate facts by:
 
 This is a cheap selectivity heuristic. In type-heavy RDF, `(p,o)` is often extremely selective (e.g., `rdf:type` + a class IRI), so the PO index can be a major speed win.
 
+The same selectivity idea is also reused by the single-premise forward-rule agenda in `forwardChain`: safe one-premise rules are pre-indexed by predicate / `(p,s)` / `(p,o)` patterns so a newly added fact only checks the small subset of rules that could match it.
+
 ### 7.3 Duplicate detection with fast keys
 
 When adding derived facts, Eyeling uses a fast-path duplicate check when possible:
@@ -661,6 +663,8 @@ until not changed
 ```
 
 Top-level input triples are kept as parsed (including non-ground triples such as ?X :p :o.). Groundness is enforced when adding derived facts during forward chaining, and when selecting printed/query output triples.
+
+There is also a narrow fast path for some **single-premise** forward rules. When a rule has exactly one non-builtin premise and that premise cannot also be satisfied through backward rules, `forwardChain` can index the rule by that premise shape and fire it directly from newly added facts. This does **not** replace the general saturation loop; it is only an agenda-style shortcut for the safe one-premise case.
 
 ### 9.2 Strict-ground head optimization
 
