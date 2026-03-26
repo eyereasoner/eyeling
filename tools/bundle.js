@@ -140,8 +140,10 @@ out.push('  }');
 out.push('  const __entry = __loadEntry();');
 out.push('  const __api = { reasonStream: __entry.reasonStream, reasonRdfJs: __entry.reasonRdfJs };');
 out.push('');
-out.push('  try { if (__outerModule && __outerModule.exports) __outerModule.exports = __api; } catch (_e) {}');
-out.push('  try { if (__outerSelf) __outerSelf.eyeling = __api; } catch (_e) {}');
+out.push(
+  '  try { if (__outerModule && __outerModule.exports) __outerModule.exports = __api; } catch (ignoredError) {}',
+);
+out.push('  try { if (__outerSelf) __outerSelf.eyeling = __api; } catch (ignoredError) {}');
 out.push('');
 out.push('  // ---- demo.html compatibility ----');
 out.push('  // The original monolithic eyeling.js exposed internal functions/flags as globals.');
@@ -175,14 +177,14 @@ out.push('          } else {');
 out.push('            // Fallback (no live linkage)');
 out.push('            if (typeof getFn === "function") __outerSelf[name] = getFn();');
 out.push('          }');
-out.push('        } catch (_e) {}');
+out.push('        } catch (ignoredError) {}');
 out.push('      };');
 out.push('');
 out.push('      def("enforceHttpsEnabled", __entry.getEnforceHttpsEnabled, __entry.setEnforceHttpsEnabled);');
 out.push('      def("proofCommentsEnabled", __entry.getProofCommentsEnabled, __entry.setProofCommentsEnabled);');
 out.push('      def("__tracePrefixes", __entry.getTracePrefixes, __entry.setTracePrefixes);');
 out.push('    }');
-out.push('  } catch (_e) {}');
+out.push('  } catch (ignoredError) {}');
 out.push('');
 out.push('  try {');
 out.push(
@@ -190,7 +192,7 @@ out.push(
 );
 out.push('      __entry.main();');
 out.push('    }');
-out.push('  } catch (_e) {}');
+out.push('  } catch (ignoredError) {}');
 out.push('})();');
 
 fs.writeFileSync(OUT, out.join('\n') + '\n', { encoding: 'utf8' });

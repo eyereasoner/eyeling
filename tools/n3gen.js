@@ -32,7 +32,7 @@ const process = require('node:process');
 
 const crypto = require('node:crypto');
 
-function _stripIriRef(s) {
+function stripIriRef(s) {
   // Allow passing an IRIREF like <...>
   if (typeof s !== 'string') return '';
   s = s.trim();
@@ -41,7 +41,7 @@ function _stripIriRef(s) {
 }
 
 function normalizeSkolemRoot(root) {
-  root = _stripIriRef(root);
+  root = stripIriRef(root);
   if (!root) return '';
   // Ensure it ends with '/.well-known/genid/' OR at least with '/'
   if (!root.endsWith('/')) root += '/';
@@ -64,7 +64,7 @@ const SKOLEM_ROOT = normalizeSkolemRoot(process.env.SKOLEM_ROOT) || DEFAULT_SKOL
 let SKOLEM_UUID = null; // e.g., '3f2504e0-4f89-5d3a-9a0c-0305e82c3301'
 let SKOLEM_PREFIX_IRI = null; // e.g., 'https://.../.well-known/genid/<UUID>#'
 
-function _deterministicUuidFromText(inputText) {
+function deterministicUuidFromText(inputText) {
   const h = crypto.createHash('sha256').update(inputText, 'utf8').digest();
   const b = Buffer.from(h.subarray(0, 16));
 
@@ -77,11 +77,11 @@ function _deterministicUuidFromText(inputText) {
 }
 
 function initSkolemForInput(inputText) {
-  SKOLEM_UUID = _deterministicUuidFromText(inputText);
+  SKOLEM_UUID = deterministicUuidFromText(inputText);
   SKOLEM_PREFIX_IRI = `${SKOLEM_ROOT}${SKOLEM_UUID}#`;
 }
 
-function _pnLocalSafe(s) {
+function pnLocalSafe(s) {
   // Turtle PN_LOCAL allows percent escapes (PLX). We make sure all "special"
   // encodeURIComponent survivors are percent-escaped too.
   return encodeURIComponent(s).replace(/[!'()*]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase());
@@ -786,7 +786,7 @@ class TurtleParser {
     this.blankCounter = 0;
     this.pendingTriples = [];
     this.reifierCounter = 0;
-    this._reifiesEmitted = new Set();
+    this.reifiesEmitted = new Set();
   }
 
   peek() {
@@ -811,16 +811,16 @@ class TurtleParser {
     return new Blank(`_:n3r${this.reifierCounter}`);
   }
 
-  _termKey(t) {
+  termKey(t) {
     if (t == null) return '[]';
     if (t instanceof Iri) return `I:${t.value}`;
     if (t instanceof Blank) return `B:${t.label}`;
     if (t instanceof Literal) return `L:${t.value}`;
     if (t instanceof Var) return `V:${t.name}`;
-    if (t instanceof ListTerm) return `T:(` + t.elems.map((x) => this._termKey(x)).join(' ') + `)`;
+    if (t instanceof ListTerm) return `T:(` + t.elems.map((x) => this.termKey(x)).join(' ') + `)`;
     if (t instanceof GraphTerm) {
       const inner = t.triples
-        .map((tr) => `${this._termKey(tr.s)} ${this._termKey(tr.p)} ${this._termKey(tr.o)}`)
+        .map((tr) => `${this.termKey(tr.s)} ${this.termKey(tr.p)} ${this.termKey(tr.o)}`)
         .join(' | ');
       return `G:{${inner}}`;
     }
@@ -831,9 +831,9 @@ class TurtleParser {
   //   reifier log:nameOf tripleTerm .
   // We represent tripleTerm in N3 as a quoted graph term: { s p o . }
   emitReifies(reifier, tripleGraph) {
-    const key = `${this._termKey(reifier)}|${this._termKey(tripleGraph)}`;
-    if (this._reifiesEmitted.has(key)) return;
-    this._reifiesEmitted.add(key);
+    const key = `${this.termKey(reifier)}|${this.termKey(tripleGraph)}`;
+    if (this.reifiesEmitted.has(key)) return;
+    this.reifiesEmitted.add(key);
     this.pendingTriples.push(new Triple(reifier, internIri(LOG_NS + 'nameOf'), tripleGraph));
   }
 
@@ -1519,7 +1519,7 @@ function buildSkolemMapForBnodesThatCrossScopes(triples) {
     if (scopes.size <= 1) continue;
 
     const id = lbl.startsWith('_:') ? lbl.slice(2) : lbl;
-    const local = _pnLocalSafe(id);
+    const local = pnLocalSafe(id);
     skolemMap.set(lbl, `${SKOLEM_PREFIX}:${local}`);
   }
   return skolemMap;
@@ -1538,16 +1538,16 @@ function buildSkolemMapForBnodesThatCrossScopes(triples) {
 // semantics-preserving.
 // ---------------------------------------------------------------------------
 
-function _termKey(t) {
+function termKey(t) {
   if (t == null) return 'N:null';
   if (t instanceof Iri) return `I:${t.value}`;
   if (t instanceof Blank) return `B:${t.label}`;
   if (t instanceof Literal) return `L:${t.value}`;
   if (t instanceof Var) return `V:${t.name}`;
-  if (t instanceof ListTerm) return `T:(` + t.elems.map(_termKey).join(' ') + `)`;
-  if (t instanceof OpenListTerm) return `T:(` + t.prefix.map(_termKey).join(' ') + ` ... ?${t.tailVar})`;
+  if (t instanceof ListTerm) return `T:(` + t.elems.map(termKey).join(' ') + `)`;
+  if (t instanceof OpenListTerm) return `T:(` + t.prefix.map(termKey).join(' ') + ` ... ?${t.tailVar})`;
   if (t instanceof GraphTerm)
-    return `G:{` + t.triples.map((tr) => `${_termKey(tr.s)} ${_termKey(tr.p)} ${_termKey(tr.o)}`).join(' ; ') + `}`;
+    return `G:{` + t.triples.map((tr) => `${termKey(tr.s)} ${termKey(tr.p)} ${termKey(tr.o)}`).join(' ; ') + `}`;
   return `X:${String(t)}`;
 }
 
@@ -1567,11 +1567,11 @@ function foldRdfLists(triples) {
 
   for (let i = 0; i < triples.length; i++) {
     const tr = triples[i];
-    const sKey = _termKey(tr.s);
+    const sKey = termKey(tr.s);
     if (!outBySubj.has(sKey)) outBySubj.set(sKey, { term: tr.s, idxs: [] });
     outBySubj.get(sKey).idxs.push(i);
 
-    const oKey = _termKey(tr.o);
+    const oKey = termKey(tr.o);
     const viaRest = isIri(tr.p, rdfRest);
     addIncoming(oKey, viaRest);
   }
@@ -1655,7 +1655,7 @@ function foldRdfLists(triples) {
         break;
       }
 
-      const nextKey = _termKey(next);
+      const nextKey = termKey(next);
 
       // Intermediate node safety: only referenced via rdf:rest and exactly once.
       const inc = incoming.get(nextKey) || 0;
@@ -1694,7 +1694,7 @@ function foldRdfLists(triples) {
     if (t == null) return t;
 
     if (t instanceof Blank) {
-      const m = listMap.get(_termKey(t));
+      const m = listMap.get(termKey(t));
       if (m) return replaceTerm(m.listTerm);
       return t;
     }
@@ -1813,7 +1813,7 @@ function ensureSkolemPrefix(prefixes, skolemMap) {
     const base = prefixes ? prefixes.baseIri || '' : '';
     const labels = [...skolemMap.keys()].sort().join('\n');
     const seed = ['n3gen-skolem', SKOLEM_ROOT, base, labels, ''].join('\n');
-    const uuid = _deterministicUuidFromText(seed);
+    const uuid = deterministicUuidFromText(seed);
     SKOLEM_PREFIX_IRI = `${SKOLEM_ROOT}${uuid}#`;
   } else if (!SKOLEM_PREFIX_IRI) {
     SKOLEM_PREFIX_IRI = `${SKOLEM_ROOT}${SKOLEM_UUID}#`;

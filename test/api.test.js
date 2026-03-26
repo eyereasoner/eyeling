@@ -1305,15 +1305,15 @@ ex:a p:trig ex:b.
       });
 
       // stash for check()
-      this._seen = seen;
-      this._result = r;
+      this.seen = seen;
+      this.result = r;
       return r.closureN3;
     },
     expect: [/http:\/\/example\.org\/q/m],
     notExpect: [/http:\/\/example\.org\/p/m],
     check(out, tc) {
-      assert.equal(tc._seen.length, 1, 'Expected onDerived to be called once');
-      assert.match(tc._seen[0], /http:\/\/example\.org\/q/, 'Expected streamed triple to be the derived one');
+      assert.equal(tc.seen.length, 1, 'Expected onDerived to be called once');
+      assert.match(tc.seen[0], /http:\/\/example\.org\/q/, 'Expected streamed triple to be the derived one');
       // closureN3 should be exactly the derived triple (no input facts).
       assert.ok(String(out).trim().includes('http://example.org/q'));
       assert.ok(!String(out).includes('http://example.org/p'));
@@ -1584,19 +1584,19 @@ _:x :hates { _:foo :making :mess }.
           onDerived: ({ quad }) => seen.push(quad),
         },
       );
-      this._seen = seen;
-      this._result = result;
+      this.seen = seen;
+      this.result = result;
       return result.closureN3;
     },
     expect: [/http:\/\/example\.org\/q/m],
     notExpect: [/http:\/\/example\.org\/p/m],
-    check(_out, tc) {
-      assert.equal(tc._seen.length, 1, 'Expected one streamed RDF/JS quad');
-      assert.equal(tc._seen[0].termType, 'Quad');
-      assert.equal(tc._seen[0].predicate.value, 'http://example.org/q');
-      assert.ok(Array.isArray(tc._result.closureQuads), 'Expected closureQuads array');
-      assert.equal(tc._result.closureQuads.length, 1);
-      assert.equal(tc._result.closureQuads[0].object.value, 'http://example.org/o');
+    check(outputIgnored, tc) {
+      assert.equal(tc.seen.length, 1, 'Expected one streamed RDF/JS quad');
+      assert.equal(tc.seen[0].termType, 'Quad');
+      assert.equal(tc.seen[0].predicate.value, 'http://example.org/q');
+      assert.ok(Array.isArray(tc.result.closureQuads), 'Expected closureQuads array');
+      assert.equal(tc.result.closureQuads.length, 1);
+      assert.equal(tc.result.closureQuads[0].object.value, 'http://example.org/o');
     },
   },
   {
@@ -1633,14 +1633,14 @@ _:x :hates { _:foo :making :mess }.
       })) {
         quads.push(quad);
       }
-      this._quads = quads;
+      this.quads = quads;
       return quads.map((q) => `${q.subject.value} ${q.predicate.value} ${q.object.value}`).join('\n');
     },
     expect: [/http:\/\/example\.org\/q/],
-    check(_out, tc) {
-      assert.equal(tc._quads.length, 1, 'Expected one yielded quad');
-      assert.equal(tc._quads[0].predicate.value, 'http://example.org/q');
-      assert.equal(tc._quads[0].graph.termType, 'DefaultGraph');
+    check(outputIgnored, tc) {
+      assert.equal(tc.quads.length, 1, 'Expected one yielded quad');
+      assert.equal(tc.quads[0].predicate.value, 'http://example.org/q');
+      assert.equal(tc.quads[0].graph.termType, 'DefaultGraph');
     },
   },
   {

@@ -74,7 +74,7 @@ function startStaticServer(rootDir) {
 
       res.writeHead(200, { 'Content-Type': guessContentType(fsPath), 'Cache-Control': 'no-store' });
       fs.createReadStream(fsPath).pipe(res);
-    } catch (_e) {
+    } catch {
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
       res.end('Not found');
     }

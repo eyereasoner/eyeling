@@ -294,7 +294,7 @@ function termToJsString(t) {
   if (t instanceof Iri) return t.value;
   if (!(t instanceof Literal)) return null;
 
-  const [lex, _dt] = literalParts(t.value);
+  const [lex] = literalParts(t.value);
 
   if (isQuotedLexical(lex)) {
     // Interpret N3/Turtle string escapes (\" \n \uXXXX \UXXXXXXXX …)
@@ -316,7 +316,7 @@ function termToJsStringDecoded(t) {
   // Like termToJsString, but for short literals it *also* interprets escapes
   // (\" \n \uXXXX …) by attempting JSON.parse on the quoted lexical form.
   if (!(t instanceof Literal)) return null;
-  const [lex, _dt] = literalParts(t.value);
+  const [lex] = literalParts(t.value);
 
   // Long strings: """ ... """ are taken verbatim.
   if (lex.length >= 6 && lex.startsWith('"""') && lex.endsWith('"""')) {
@@ -327,7 +327,7 @@ function termToJsStringDecoded(t) {
   if (lex.length >= 2 && lex[0] === '"' && lex[lex.length - 1] === '"') {
     try {
       return JSON.parse(lex);
-    } catch (_e) {
+    } catch {
       /* fall through */
     }
     return stripQuotes(lex);
@@ -392,13 +392,13 @@ function compileSwapRegex(pattern, extraFlags) {
   const flags = (extraFlags || '') + (needU ? 'u' : '');
   try {
     return new RegExp(pattern, flags);
-  } catch (_e) {
+  } catch {
     if (needU) {
       const p2 = sanitizeForUnicodeMode(pattern);
       if (p2 !== pattern) {
         try {
           return new RegExp(p2, flags);
-        } catch (_e2) {}
+        } catch {}
       }
     }
     return null;
@@ -1420,7 +1420,7 @@ function hashLiteralTerm(t, algo) {
   try {
     const digest = nodeCrypto.createHash(algo).update(input, 'utf8').digest('hex');
     return internLiteral(JSON.stringify(digest));
-  } catch (_e) {
+  } catch {
     return null;
   }
 }
@@ -2617,7 +2617,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
 
     const results = [];
     for (const el of inputList) {
-      const yvar = new Var('_mapY');
+      const yvar = new Var('mapY');
       const goal2 = new Triple(el, pred, yvar);
       const sols = proveGoals([goal2], subst, facts, backRules, depth + 1, [], varGen);
 
@@ -4020,7 +4020,7 @@ function main() {
   }
 
   if (showAst) {
-    function astReplacer(_key, value) {
+    function astReplacer(unusedJsonKey, value) {
       if (value instanceof Set) return Array.from(value);
       if (value && typeof value === 'object' && value.constructor) {
         const t = value.constructor.name;
@@ -4160,7 +4160,7 @@ function main() {
     engine.setTracePrefixes(outPrefixes);
 
     const entries = Object.entries(outPrefixes.map)
-      .filter(([_p, base]) => !!base)
+      .filter(([, base]) => !!base)
       .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
 
     for (const [pfx, base] of entries) {
@@ -4594,7 +4594,7 @@ function parseSemanticsToFormula(text, baseIri) {
   const parser = new Parser(toks);
   if (typeof baseIri === 'string' && baseIri) parser.prefixes.setBase(baseIri);
 
-  const [_prefixes, triples, frules, brules] = parser.parseDocument();
+  const [, triples, frules, brules] = parser.parseDocument();
 
   const all = triples.slice();
 
@@ -7974,7 +7974,7 @@ function makeExplain(deps) {
   // log:outputString support
   // ===========================================================================
 
-  function __compareOutputStringKeys(a, b, _prefixes) {
+  function compareOutputStringKeys(a, b) {
     // Deterministic ordering of keys. The spec only requires "order of the subject keys"
     // and leaves concrete term ordering reasoner-dependent. We implement:
     //   1) numeric literals (numeric value)
@@ -8052,7 +8052,7 @@ function makeExplain(deps) {
     }
 
     pairs.sort((a, b) => {
-      const c = __compareOutputStringKeys(a.key, b.key, prefixes);
+      const c = compareOutputStringKeys(a.key, b.key, prefixes);
       if (c !== 0) return c;
       return a.idx - b.idx; // stable tie-breaker
     });
@@ -10053,7 +10053,7 @@ function collectIrisInTerm(t) {
   if (t instanceof Iri) {
     out.push(t.value);
   } else if (t instanceof Literal) {
-    const [_lex, dt] = literalParts(t.value);
+    const [, dt] = literalParts(t.value);
     if (dt) out.push(dt); // so rdf/xsd prefixes are emitted when only used in ^^...
   } else if (t instanceof ListTerm) {
     for (const x of t.elems) out.push(...collectIrisInTerm(x));
@@ -11624,8 +11624,8 @@ module.exports = {
   const __entry = __loadEntry();
   const __api = { reasonStream: __entry.reasonStream, reasonRdfJs: __entry.reasonRdfJs };
 
-  try { if (__outerModule && __outerModule.exports) __outerModule.exports = __api; } catch (_e) {}
-  try { if (__outerSelf) __outerSelf.eyeling = __api; } catch (_e) {}
+  try { if (__outerModule && __outerModule.exports) __outerModule.exports = __api; } catch (ignoredError) {}
+  try { if (__outerSelf) __outerSelf.eyeling = __api; } catch (ignoredError) {}
 
   // ---- demo.html compatibility ----
   // The original monolithic eyeling.js exposed internal functions/flags as globals.
@@ -11653,18 +11653,18 @@ module.exports = {
             // Fallback (no live linkage)
             if (typeof getFn === "function") __outerSelf[name] = getFn();
           }
-        } catch (_e) {}
+        } catch (ignoredError) {}
       };
 
       def("enforceHttpsEnabled", __entry.getEnforceHttpsEnabled, __entry.setEnforceHttpsEnabled);
       def("proofCommentsEnabled", __entry.getProofCommentsEnabled, __entry.setProofCommentsEnabled);
       def("__tracePrefixes", __entry.getTracePrefixes, __entry.setTracePrefixes);
     }
-  } catch (_e) {}
+  } catch (ignoredError) {}
 
   try {
     if (__outerModule && __outerRequire && __outerRequire.main === __outerModule && typeof __entry.main === "function") {
       __entry.main();
     }
-  } catch (_e) {}
+  } catch (ignoredError) {}
 })();
