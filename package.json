@@ -30,8 +30,7 @@
     "lib",
     "test",
     "tools",
-    "examples",
-    "arctifacts"
+    "examples"
   ],
   "engines": {
     "node": ">=18"
