@@ -30,6 +30,7 @@
 - [Appendix C — N3 beyond Prolog: logic that survives the open web](#app-c)
 - [Appendix D — LLM + Eyeling: A Repeatable Logic Toolchain](#app-d)
 - [Appendix E — How Eyeling reaches 100% on `notation3tests`](#app-e)
+- [Appendix F — The ARC approach: Answer • Reason Why • Check](#app-f)
 
 ---
 
@@ -2576,3 +2577,159 @@ That is the method:
 - duplicate-safe fixpoint closure
 
 That is why the result is 100%.
+
+---
+
+<a id="app-f"></a>
+
+## Appendix F — The ARC approach: Answer • Reason Why • Check
+
+A useful way to structure an Eyeling program is the ARC approach:
+
+> Answer • Reason Why • Check
+
+The idea is simple: do not stop at producing a result. Produce the result, explain why it is the right result, and include a concrete verification that fails loudly when an important assumption does not hold.
+
+ARC treats a program as a small, accountable artifact built from three ingredients:
+
+1. Data
+2. Logic
+3. A Question
+
+From these, we build a compact program that answers the question, explains the answer, and checks itself.
+
+### F.1 The three parts
+
+#### Answer
+
+The **Answer** is the direct response to the question being asked.
+
+It should be short, specific, and easy to read. In Eyeling, this is often emitted as one or more `log:outputString` lines such as:
+
+- the final decision
+- the selected item
+- the computed value
+- the resulting classification
+
+A good Answer reads like something you could show to a user, an auditor, or a calling program.
+
+#### Reason Why
+
+The **Reason Why** explains why the Answer is correct.
+
+This is not a full proof calculus or a hidden chain of thought. It is a concise, inspectable explanation grounded in the facts, rules, thresholds, identities, or policies that matter for the case. In practice, it often includes:
+
+- the relevant inputs
+- the governing rule or policy
+- the key intermediate facts
+- the condition that made the conclusion follow
+
+In Eyeling, the Reason Why is usually rendered as additional `log:outputString` lines derived from the same closure as the Answer.
+
+#### Check
+
+The **Check** is an independent validation step.
+
+Its purpose is not to restate the Answer, but to test that important invariants still hold. A Check should fail loudly if the program’s assumptions break, if a data dependency is malformed, or if an edge case invalidates the intended conclusion.
+
+In Eyeling, Checks are a natural fit for either:
+
+- derived facts such as `:ok :signatureVerified true .`, or
+- inference fuses such as `{ ... } => false .` when a violation must stop execution.
+
+This makes verification part of the program itself rather than something left to external commentary.
+
+### F.2 Proof = Reason Why + Check
+
+ARC summarizes its trust model as:
+
+> Proof = Reason Why + Check
+
+That is a practical notion of proof. The Reason Why explains the logic in human terms. The Check verifies that the critical conditions actually hold at runtime.
+
+For many real workflows, that combination is more useful than a bare result:
+it is inspectable, repeatable, and suitable for automation.
+
+### F.3 Why ARC fits Eyeling well
+
+Eyeling already encourages the separation that ARC needs.
+
+Rules derive facts. Facts can include output facts. Output is not printed eagerly during proof search; instead, `log:outputString` facts are collected from the final closure and rendered deterministically, for example with `-r` / `--strings`. This makes it natural to derive a structured Answer and Reason Why as part of the logic itself.
+
+Checks also map well to Eyeling. A rule with conclusion `false` acts as an inference fuse: if its body becomes provable, execution stops with a hard failure. This is exactly the behavior we want for “must-hold” conditions.
+
+So ARC in Eyeling is not an add-on. It is mostly a disciplined way of organizing what Eyeling already does well:
+derive conclusions, expose supporting facts, and enforce invariants.
+
+### F.4 A practical pattern
+
+A simple ARC-oriented Eyeling file often has four layers:
+
+1. **Facts**  
+   Input data, parameters, policies, and known relationships.
+
+2. **Logic**  
+   Rules that derive the program’s internal conclusions.
+
+3. **Presentation**  
+   Rules that turn derived conclusions into `log:outputString` lines for the Answer and Reason Why.
+
+4. **Verification**  
+   Rules that derive check facts or trigger inference fuses on violations.
+
+A useful habit is to keep these layers visually separate in the file.
+
+### F.5 A tiny template
+
+```n3
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+# Facts
+:case :input 42 .
+
+# Logic
+{ :case :input ?n . ?n math:greaterThan 10 . }
+    => { :case :decision "allowed" . } .
+
+# Answer
+{ :case :decision ?d . }
+    => { :answer log:outputString "Answer\n" .
+         :answer log:outputString ?d . } .
+
+# Reason Why
+{ :case :input ?n . :case :decision ?d . }
+    => { :why log:outputString "\nReason Why\n" .
+         :why log:outputString "Input satisfied the rule threshold.\n" . } .
+
+# Check
+{ :case :decision "allowed" .
+  :case :input ?n .
+  ?n math:notGreaterThan 10 . }
+    => false .
+```
+
+The exact presentation style can vary, but the shape remains the same:
+derive the result, explain the result, and verify the result.
+
+### F.6 What ARC is not
+
+ARC does **not** mean:
+
+* printing a result and calling it explained
+* replacing checks with prose
+* hiding the important assumptions
+* relying on “trust me” comments outside the executable artifact
+
+A file follows ARC only when the answer, explanation, and validation are all carried by the program itself.
+
+### F.7 A good default for examples
+
+For worked examples in this handbook, ARC is a strong default presentation style:
+
+* **Answer** for the main result
+* **Reason Why** for the key supporting explanation
+* **Check** for invariants and fail-loud validation
+
+This keeps examples readable for newcomers while also making them more useful as reusable, auditable logic artifacts.
+
