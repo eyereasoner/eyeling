@@ -1,0 +1,405 @@
+# ===========================================================================
+# Delfour — Ruben Verborgh's "Inside the Insight Economy" case.
+# See https://ruben.verborgh.org/blog/2025/08/12/inside-the-insight-economy/
+#
+# This example shows how a person can share a useful shopping hint without
+# exposing sensitive health details. A phone turns a private condition into a
+# neutral, limited insight such as “prefer lower-sugar products”, attaches clear
+# usage rules and an expiry time, and sends it to a store scanner. The scanner
+# may use that insight to suggest a better product, but not for unrelated
+# purposes such as marketing.
+# ===========================================================================
+
+@prefix : <https://example.org/delfour#> .
+@prefix arc: <https://josd.github.io/arc/terms#> .
+@prefix ins: <https://example.org/insight#> .
+@prefix odrl: <http://www.w3.org/ns/odrl/2/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+@prefix crypto: <http://www.w3.org/2000/10/swap/crypto#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:case
+    a arc:Case ;
+    :caseName "delfour" ;
+    arc:question "Is the Delfour self-scanner allowed to use a neutral shopping insight for shopping assistance, and if so what lower-sugar alternative should it suggest?" ;
+    :expectedFilesWritten 6 ;
+    :requestPurpose "shopping_assist" ;
+    :requestAction odrl:use ;
+    :phoneCreatedAt "2025-10-05T20:33:48.907163+00:00"^^xsd:dateTime ;
+    :phoneExpiresAt "2025-10-05T22:33:48.907185+00:00"^^xsd:dateTime ;
+    :scannerAuthAt "2025-10-05T20:35:48.907163+00:00"^^xsd:dateTime ;
+    :scannerDutyAt "2025-10-05T20:37:48.907163+00:00"^^xsd:dateTime ;
+    :filesWritten 6 ;
+    :auditEntries 1 .
+
+:catalog a :Catalog .
+
+:prod_BIS_001
+    a :Product ;
+    :productId "prod:BIS_001" ;
+    :productName "Classic Tea Biscuits" ;
+    :sugarTenths 120 ;
+    :sugarPerServing 12.0 .
+
+:prod_BIS_101
+    a :Product ;
+    :productId "prod:BIS_101" ;
+    :productName "Low-Sugar Tea Biscuits" ;
+    :sugarTenths 30 ;
+    :sugarPerServing 3.0 .
+
+:prod_CHOC_050
+    a :Product ;
+    :productId "prod:CHOC_050" ;
+    :productName "Milk Chocolate Bar" ;
+    :sugarTenths 150 ;
+    :sugarPerServing 15.0 .
+
+:prod_CHOC_150
+    a :Product ;
+    :productId "prod:CHOC_150" ;
+    :productName "85% Dark Chocolate" ;
+    :sugarTenths 60 ;
+    :sugarPerServing 6.0 .
+
+:householdProfile :condition "Diabetes" .
+:scan :scannedProduct :prod_BIS_001 .
+
+<https://example.org/insight/delfour>
+    a ins:Insight ;
+    :metric "sugar_g_per_serving" ;
+    :thresholdTenths 100 ;
+    :thresholdDisplay "10.0" ;
+    :thresholdG 10.0 ;
+    :suggestionPolicy "lower_metric_first_higher_price_ok" ;
+    :scopeDevice "self-scanner" ;
+    :scopeEvent "pick_up_scanner" ;
+    :retailer "Delfour" ;
+    :createdAt "2025-10-05T20:33:48.907163+00:00"^^xsd:dateTime ;
+    :expiresAt "2025-10-05T22:33:48.907185+00:00"^^xsd:dateTime ;
+    :serializedLowercase "{\"createdat\":\"2025-10-05t20:33:48.907163+00:00\",\"expiresat\":\"2025-10-05t22:33:48.907185+00:00\",\"id\":\"https://example.org/insight/delfour\",\"metric\":\"sugar_g_per_serving\",\"retailer\":\"delfour\",\"scopedevice\":\"self-scanner\",\"scopeevent\":\"pick_up_scanner\",\"suggestionpolicy\":\"lower_metric_first_higher_price_ok\",\"threshold\":10.0,\"type\":\"ins:insight\"}" .
+
+:policy
+    a odrl:Policy ;
+    :profile "Delfour-Insight-Policy" ;
+    odrl:permission [
+        odrl:action odrl:use ;
+        odrl:target <https://example.org/insight/delfour> ;
+        odrl:constraint [
+            odrl:leftOperand odrl:purpose ;
+            odrl:operator odrl:eq ;
+            odrl:rightOperand "shopping_assist"
+        ]
+    ] ;
+    odrl:prohibition [
+        odrl:action odrl:distribute ;
+        odrl:target <https://example.org/insight/delfour> ;
+        odrl:constraint [
+            odrl:leftOperand odrl:purpose ;
+            odrl:operator odrl:eq ;
+            odrl:rightOperand "marketing"
+        ]
+    ] ;
+    odrl:duty [
+        odrl:action odrl:delete ;
+        odrl:constraint [
+            odrl:leftOperand odrl:dateTime ;
+            odrl:operator odrl:eq ;
+            odrl:rightOperand "2025-10-05T22:33:48.907185+00:00"^^xsd:dateTime
+        ]
+    ] .
+
+:envelope
+    :insight <https://example.org/insight/delfour> ;
+    :policy :policy ;
+    :canonicalJson "{\"insight\":{\"createdAt\":\"2025-10-05T20:33:48.907163+00:00\",\"expiresAt\":\"2025-10-05T22:33:48.907185+00:00\",\"id\":\"https://example.org/insight/delfour\",\"metric\":\"sugar_g_per_serving\",\"retailer\":\"Delfour\",\"scopeDevice\":\"self-scanner\",\"scopeEvent\":\"pick_up_scanner\",\"suggestionPolicy\":\"lower_metric_first_higher_price_ok\",\"threshold\":10.0,\"type\":\"ins:Insight\"},\"policy\":{\"duty\":{\"action\":\"odrl:delete\",\"constraint\":{\"leftOperand\":\"odrl:dateTime\",\"operator\":\"odrl:eq\",\"rightOperand\":\"2025-10-05T22:33:48.907185+00:00\"}},\"permission\":{\"action\":\"odrl:use\",\"constraint\":{\"leftOperand\":\"odrl:purpose\",\"operator\":\"odrl:eq\",\"rightOperand\":\"shopping_assist\"},\"target\":\"https://example.org/insight/delfour\"},\"profile\":\"Delfour-Insight-Policy\",\"prohibition\":{\"action\":\"odrl:distribute\",\"constraint\":{\"leftOperand\":\"odrl:purpose\",\"operator\":\"odrl:eq\",\"rightOperand\":\"marketing\"},\"target\":\"https://example.org/insight/delfour\"},\"type\":\"odrl:Policy\"}}" .
+
+:signature
+    :alg "HMAC-SHA256" ;
+    :keyid "demo-shared-secret" ;
+    :created "2025-10-05T20:33:48.907163+00:00"^^xsd:dateTime ;
+    :payloadHashSHA256 "34ad35638dfd7c67d031eeca8abb235ec24280740f863f3f31cd9d7b6517f098" ;
+    :signatureHMAC "b21d0072d90112a9f820aced0286889f4b6ef92b145e6fdef1011f3bfa4608c2" ;
+    :hmacVerificationMode :trustedPrecomputedInput .
+
+:reasonText
+    :value "Household requires low-sugar guidance (diabetes in POD). A neutral Insight is scoped to device 'self-scanner', event 'pick_up_scanner', retailer 'Delfour', and expires soon; the policy confines use to shopping assistance.\n" .
+
+# -----
+# Logic
+# -----
+
+# desensitize(&["Diabetes"]) -> true
+{ :householdProfile :condition "Diabetes" . }
+    => { :case :needsLowSugar true . } .
+
+# derive_insight(...)
+{ :case :needsLowSugar true . }
+    => { <https://example.org/insight/delfour> :derivedFromNeed "low_sugar" . } .
+
+# payload_hash_matches
+{
+    :envelope :canonicalJson ?json .
+    ?json crypto:sha256 ?digest .
+    :signature :payloadHashSHA256 ?digest .
+} => {
+    :check :payloadHashMatches true .
+} .
+
+# signature_verified
+{
+    :signature :hmacVerificationMode :trustedPrecomputedInput .
+} => {
+    :check :signatureVerifies true .
+} .
+
+# minimization_no_sensitive_terms
+{
+    <https://example.org/insight/delfour> :serializedLowercase ?s .
+    ?s string:notMatches "diabetes|medical" .
+} => {
+    :check :minimizationStripsSensitiveTerms true .
+} .
+
+# scope_complete
+{
+    <https://example.org/insight/delfour> :scopeDevice ?device ;
+        :scopeEvent ?event ;
+        :expiresAt ?expiry .
+} => {
+    :check :scopeComplete true .
+} .
+
+# authorization_allowed
+{
+    :policy odrl:permission [
+        odrl:action odrl:use ;
+        odrl:target <https://example.org/insight/delfour> ;
+        odrl:constraint [
+            odrl:leftOperand odrl:purpose ;
+            odrl:operator odrl:eq ;
+            odrl:rightOperand "shopping_assist"
+        ]
+    ] .
+    :case :scannerAuthAt ?authAt .
+    <https://example.org/insight/delfour> :expiresAt ?expiresAt .
+    ?authAt math:notGreaterThan ?expiresAt .
+} => {
+    :decision
+        :at "2025-10-05T20:35:48.907163+00:00"^^xsd:dateTime ;
+        :outcome "Allowed" ;
+        :target <https://example.org/insight/delfour> .
+    :check :authorizationAllowed true .
+} .
+
+# banner if scanned product meets/exceeds threshold
+{
+    :decision :outcome "Allowed" .
+    :scan :scannedProduct ?product .
+    ?product :sugarPerServing ?sugar .
+    <https://example.org/insight/delfour> :thresholdG ?threshold .
+    ?sugar math:notLessThan ?threshold .
+} => {
+    :banner
+        :headline "Track sugar per serving while you scan" ;
+        :note "High sugar" .
+    :check :bannerFlagsHighSugar true .
+} .
+
+# choose the lower-sugar alternative with the smallest sugar score
+{
+    :scan :scannedProduct ?scanned .
+    ?scanned :sugarTenths ?scannedSugar .
+    ?candidate a :Product ;
+        :sugarTenths ?candidateSugar .
+    ?scannedSugar math:greaterThan ?candidateSugar .
+    1 log:notIncludes {
+        ?other a :Product ;
+            :sugarTenths ?otherSugar .
+        ?scannedSugar math:greaterThan ?otherSugar .
+        ?otherSugar math:lessThan ?candidateSugar .
+    } .
+} => {
+    :case :suggestedAlternative ?candidate .
+} .
+
+{
+    :banner :note "High sugar" .
+    :case :suggestedAlternative ?alt .
+    ?alt :productName ?altName .
+} => {
+    :banner :suggestedAlternative ?altName .
+} .
+
+{
+    :scan :scannedProduct ?scanned .
+    ?scanned :sugarTenths ?scannedSugar .
+    :case :suggestedAlternative ?alt .
+    ?alt :sugarTenths ?altSugar .
+    ?scannedSugar math:greaterThan ?altSugar .
+} => {
+    :check :alternativeIsLowerSugar true .
+} .
+
+# duty_timing_consistent
+{
+    :case :scannerDutyAt ?dutyAt .
+    <https://example.org/insight/delfour> :expiresAt ?expiresAt .
+    ?dutyAt math:notGreaterThan ?expiresAt .
+} => {
+    :check :dutyTimingConsistent true .
+} .
+
+# marketing_prohibited
+{
+    :policy odrl:prohibition [
+        odrl:action odrl:distribute ;
+        odrl:constraint [
+            odrl:rightOperand "marketing"
+        ]
+    ] .
+} => {
+    :check :marketingProhibited true .
+} .
+
+# file count check mirrors EXPECTED_FILES_WRITTEN
+{
+    :case :filesWritten 6 .
+} => {
+    :check :filesWrittenExpected true .
+} .
+
+{
+    :check :signatureVerifies true ;
+        :payloadHashMatches true ;
+        :minimizationStripsSensitiveTerms true ;
+        :scopeComplete true ;
+        :authorizationAllowed true ;
+        :bannerFlagsHighSugar true ;
+        :alternativeIsLowerSugar true ;
+        :dutyTimingConsistent true ;
+        :marketingProhibited true ;
+        :filesWrittenExpected true .
+} => {
+    :result :allChecksPass true .
+} .
+
+# -------------------------------------
+# Hard checks (Eyeling inference fuses)
+# -------------------------------------
+
+{
+    :case :filesWritten ?n .
+    ?n math:notEqualTo 6 .
+} => false .
+
+{
+    :case :scannerAuthAt ?authAt .
+    <https://example.org/insight/delfour> :expiresAt ?expiresAt .
+    ?authAt math:greaterThan ?expiresAt .
+} => false .
+
+{
+    :scan :scannedProduct ?scanned .
+    ?scanned :sugarTenths ?scannedSugar .
+    :case :suggestedAlternative ?alt .
+    ?alt :sugarTenths ?altSugar .
+    ?altSugar math:notLessThan ?scannedSugar .
+} => false .
+
+{
+    :policy odrl:prohibition [
+        odrl:action ?action
+    ] .
+    ?action log:notEqualTo odrl:distribute .
+} => false .
+
+{
+    :envelope :canonicalJson ?json .
+    ?json crypto:sha256 ?actual .
+    :signature :payloadHashSHA256 ?expected .
+    ?actual log:notEqualTo ?expected .
+} => false .
+
+# --------------------------------------
+# ARC rendering through log:outputString
+# --------------------------------------
+
+:out01 log:outputString "=== Answer ===\n" .
+:out02 log:outputString "The scanner is allowed to use a neutral shopping insight and recommends Low-Sugar Tea Biscuits instead of Classic Tea Biscuits.\n" .
+:out03 log:outputString "case                 : delfour\n" .
+:out04 log:outputString "decision             : Allowed\n" .
+:out05 log:outputString "scanned product      : Classic Tea Biscuits\n" .
+
+{
+    :case :suggestedAlternative ?alt .
+    ?alt :productName ?altName .
+    ("suggested alternative: %s\n" ?altName) string:format ?line .
+} => {
+    :out06 log:outputString ?line .
+} .
+
+:out07 log:outputString "\n=== Reason Why ===\n" .
+:out08 log:outputString "The phone desensitizes a diabetes-related household condition into a scoped low-sugar need, wraps it in an expiring Insight + Policy envelope, signs it, and the scanner consumes that envelope for shopping assistance.\n" .
+:out09 log:outputString "metric               : sugar_g_per_serving\n" .
+
+{
+    <https://example.org/insight/delfour> :thresholdDisplay ?threshold .
+    ("threshold            : %s\n" ?threshold) string:format ?line .
+} => {
+    :out10 log:outputString ?line .
+} .
+
+:out11 log:outputString "scope                : self-scanner @ pick_up_scanner\n" .
+:out12 log:outputString "retailer             : Delfour\n" .
+
+{
+    :signature :alg ?alg .
+    ("signature alg        : %s\n" ?alg) string:format ?line .
+} => {
+    :out13 log:outputString ?line .
+} .
+
+{
+    :banner :headline ?headline .
+    ("banner headline      : %s\n" ?headline) string:format ?line .
+} => {
+    :out14 log:outputString ?line .
+} .
+
+:out15 log:outputString "expires at           : 2025-10-05T22:33:48.907185+00:00\n" .
+
+{
+    :reasonText :value ?reason .
+    ("reason.txt           : %s" ?reason) string:format ?line .
+} => {
+    :out16 log:outputString ?line .
+} .
+
+{
+    :case :auditEntries ?n .
+    ("audit entries        : %s\n" ?n) string:format ?line .
+} => {
+    :out17 log:outputString ?line .
+} .
+
+{
+    :case :filesWritten ?n .
+    ("bus files written    : %s\n" ?n) string:format ?line .
+} => {
+    :out18 log:outputString ?line .
+} .
+
+:out19 log:outputString "\n=== Check ===\n" .
+
+{ :check :signatureVerifies true . } => { :out20 log:outputString "signature verifies              : yes\n" . } .
+{ :check :payloadHashMatches true . } => { :out21 log:outputString "payload hash matches            : yes\n" . } .
+{ :check :minimizationStripsSensitiveTerms true . } => { :out22 log:outputString "minimization strips sensitive terms: yes\n" . } .
+{ :check :scopeComplete true . } => { :out23 log:outputString "scope complete                  : yes\n" . } .
+{ :check :authorizationAllowed true . } => { :out24 log:outputString "authorization allowed           : yes\n" . } .
+{ :check :bannerFlagsHighSugar true . } => { :out25 log:outputString "high-sugar banner               : yes\n" . } .
+{ :check :alternativeIsLowerSugar true . } => { :out26 log:outputString "alternative lowers sugar        : yes\n" . } .
+{ :check :dutyTimingConsistent true . } => { :out27 log:outputString "duty timing consistent          : yes\n" . } .
+{ :check :marketingProhibited true . } => { :out28 log:outputString "marketing prohibited            : yes\n" . } .
