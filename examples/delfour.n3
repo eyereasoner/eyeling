@@ -1,4 +1,4 @@
-# ===========================================================================
+# ==============================================================================
 # Delfour — Ruben Verborgh's "Inside the Insight Economy" case.
 # See https://ruben.verborgh.org/blog/2025/08/12/inside-the-insight-economy/
 #
@@ -8,7 +8,7 @@
 # usage rules and an expiry time, and sends it to a store scanner. The scanner
 # may use that insight to suggest a better product, but not for unrelated
 # purposes such as marketing.
-# ===========================================================================
+# ==============================================================================
 
 @prefix : <https://example.org/delfour#> .
 @prefix arc: <https://josd.github.io/arc/terms#> .
