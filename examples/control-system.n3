@@ -1,22 +1,21 @@
-# ===========================================================================
-# Control System — ARC-style rewrite of Eyeling's control example.
-# Original example: https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/control-system.n3
+# =============================================================================
+# Control System — ARC-style
 #
 # This example shows how a small control system turns sensor readings into two
 # actuator commands. One command anticipates a known disturbance before it hits
 # the system. The other compares the measured output with the target and then
 # corrects the remaining gap. The ARC presentation makes the result easy to
 # inspect by giving an Answer, a clear Reason Why, and independent Checks.
-# ===========================================================================
+# =============================================================================
 
 @prefix log: <http://www.w3.org/2000/10/swap/log#>.
 @prefix math: <http://www.w3.org/2000/10/swap/math#>.
 @prefix string: <http://www.w3.org/2000/10/swap/string#>.
 @prefix : <https://example.org/control-system#>.
 
-# ---------------------------------------------------------------------------
+# -----
 # Facts
-# ---------------------------------------------------------------------------
+# -----
 
 # input
 :input1 :measurement1 (6 11).
@@ -36,9 +35,9 @@
 :output2 :measurement4 24.
 :output2 :target2 29.
 
-# ---------------------------------------------------------------------------
-# Original control logic, preserved from the source example
-# ---------------------------------------------------------------------------
+# -------------
+# control logic
+# -------------
 
 { :input1 :measurement10 ?M1.
   :input2 :measurement2 true.
@@ -78,9 +77,9 @@
   ?M1 math:notLessThan ?M2.
 }.
 
-# ---------------------------------------------------------------------------
+# -------------------------------------------------------------------
 # Explanation layer: compute an explicit why-story from the raw facts
-# ---------------------------------------------------------------------------
+# -------------------------------------------------------------------
 
 { :input1 :measurement1 (?Low ?High).
   ?Low math:lessThan ?High.
@@ -134,9 +133,9 @@
             :actuator1Command ?A1;
             :actuator2Command ?A2. }.
 
-# ---------------------------------------------------------------------------
+# ----------
 # ARC report
-# ---------------------------------------------------------------------------
+# ----------
 
 { :decision :answer ?Answer;
             :actuator1Command ?A1;
