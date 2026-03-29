@@ -1,0 +1,15 @@
+@prefix : <https://example.org/parcellocker#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+:case :checkC8 :Passed .
+:case :checkC6 :Passed .
+:case :checkC7 :Passed .
+:case :checkC9 :Passed .
+:case :checkC10 :Passed .
+:case :checkC1 :Passed .
+:case :checkC2 :Passed .
+:case :checkC3 :Passed .
+:case :checkC4 :Passed .
+:case :checkC5 :Passed .
+:case :decision :Permit .
+:out log:outputString "ParcelLocker — One-time parcel pickup by a friend\n\nAnswer\nPERMIT\nNoah may collect Maya's parcel from locker B17.\n\nReason Why\nMaya created a one-time authorization for Noah only, for this parcel only, at this locker only, and for pickup only. The token is active, the parcel is ready, and the same authorization does not reveal billing details or allow redirection.\n\nCheck\nC1  OK - requester matches the named delegate\nC2  OK - requested parcel matches the authorized parcel\nC3  OK - requested locker matches the authorized locker\nC4  OK - requested action is parcel collection\nC5  OK - requested purpose is pickup only\nC6  OK - authorization is active\nC7  OK - authorization is single-use\nC8  OK - parcel is ready for pickup\nC9  OK - billing details stay hidden\nC10 OK - parcel redirection is not allowed\n" .

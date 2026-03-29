@@ -1,0 +1,164 @@
+# ===========================================================================
+# ParcelLocker — One-time parcel pickup by a friend.
+#
+# This example shows how a person can let someone else collect a parcel without
+# handing over their full shopping account. A one-time authorization is limited
+# to one named person, one parcel, one locker, and one purpose: pickup. The
+# locker may release the parcel, but the same authorization cannot be used to
+# view billing details or redirect the parcel somewhere else.
+# ===========================================================================
+
+@prefix : <https://example.org/parcellocker#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+# -----
+# Facts
+# -----
+
+:maya a :Person; :name "Maya" .
+:noah a :Person; :name "Noah" .
+
+:parcel123 a :Parcel;
+    :owner :maya;
+    :status :ReadyForPickup .
+
+:lockerB17 a :Locker;
+    :site "Station West" .
+
+:pickupToken a :PickupAuthorization;
+    :issuedBy :maya;
+    :delegate :noah;
+    :parcel :parcel123;
+    :locker :lockerB17;
+    :action :CollectParcel;
+    :purpose :PickupOnly;
+    :state :Active;
+    :reuse :SingleUse;
+    :billingAccess :None;
+    :redirectAllowed :No .
+
+:pickupRequest a :Request;
+    :requester :noah;
+    :parcel :parcel123;
+    :locker :lockerB17;
+    :action :CollectParcel;
+    :purpose :PickupOnly .
+
+# -----
+# Logic
+# -----
+
+{ :pickupToken :delegate ?who .
+  :pickupRequest :requester ?who . }
+    => { :case :checkC1 :Passed . } .
+
+{ :pickupToken :parcel ?parcel .
+  :pickupRequest :parcel ?parcel . }
+    => { :case :checkC2 :Passed . } .
+
+{ :pickupToken :locker ?locker .
+  :pickupRequest :locker ?locker . }
+    => { :case :checkC3 :Passed . } .
+
+{ :pickupToken :action ?action .
+  :pickupRequest :action ?action . }
+    => { :case :checkC4 :Passed . } .
+
+{ :pickupToken :purpose ?purpose .
+  :pickupRequest :purpose ?purpose . }
+    => { :case :checkC5 :Passed . } .
+
+{ :pickupToken :state :Active . }
+    => { :case :checkC6 :Passed . } .
+
+{ :pickupToken :reuse :SingleUse . }
+    => { :case :checkC7 :Passed . } .
+
+{ :parcel123 :status :ReadyForPickup . }
+    => { :case :checkC8 :Passed . } .
+
+{ :pickupToken :billingAccess :None . }
+    => { :case :checkC9 :Passed . } .
+
+{ :pickupToken :redirectAllowed :No . }
+    => { :case :checkC10 :Passed . } .
+
+{ :case :checkC1 :Passed .
+  :case :checkC2 :Passed .
+  :case :checkC3 :Passed .
+  :case :checkC4 :Passed .
+  :case :checkC5 :Passed .
+  :case :checkC6 :Passed .
+  :case :checkC7 :Passed .
+  :case :checkC8 :Passed .
+  :case :checkC9 :Passed .
+  :case :checkC10 :Passed . }
+    => { :case :decision :Permit . } .
+
+# ------------------
+# Presentation (ARC)
+# ------------------
+
+{ :case :decision :Permit . }
+    => {
+        :out log:outputString "ParcelLocker — One-time parcel pickup by a friend\n\nAnswer\nPERMIT\nNoah may collect Maya's parcel from locker B17.\n\nReason Why\nMaya created a one-time authorization for Noah only, for this parcel only, at this locker only, and for pickup only. The token is active, the parcel is ready, and the same authorization does not reveal billing details or allow redirection.\n\nCheck\nC1  OK - requester matches the named delegate\nC2  OK - requested parcel matches the authorized parcel\nC3  OK - requested locker matches the authorized locker\nC4  OK - requested action is parcel collection\nC5  OK - requested purpose is pickup only\nC6  OK - authorization is active\nC7  OK - authorization is single-use\nC8  OK - parcel is ready for pickup\nC9  OK - billing details stay hidden\nC10 OK - parcel redirection is not allowed\n" .
+    } .
+
+# ----------------
+# Fail-loud checks
+# ----------------
+
+{ :case :decision :Permit .
+  :pickupRequest :requester ?r .
+  :pickupToken :delegate ?d .
+  ?r log:notEqualTo ?d . }
+    => false .
+
+{ :case :decision :Permit .
+  :pickupRequest :parcel ?requested .
+  :pickupToken :parcel ?authorized .
+  ?requested log:notEqualTo ?authorized . }
+    => false .
+
+{ :case :decision :Permit .
+  :pickupRequest :locker ?requested .
+  :pickupToken :locker ?authorized .
+  ?requested log:notEqualTo ?authorized . }
+    => false .
+
+{ :case :decision :Permit .
+  :pickupRequest :action ?requested .
+  :pickupToken :action ?authorized .
+  ?requested log:notEqualTo ?authorized . }
+    => false .
+
+{ :case :decision :Permit .
+  :pickupRequest :purpose ?requested .
+  :pickupToken :purpose ?authorized .
+  ?requested log:notEqualTo ?authorized . }
+    => false .
+
+{ :case :decision :Permit .
+  :pickupToken :state ?state .
+  ?state log:notEqualTo :Active . }
+    => false .
+
+{ :case :decision :Permit .
+  :pickupToken :reuse ?reuse .
+  ?reuse log:notEqualTo :SingleUse . }
+    => false .
+
+{ :case :decision :Permit .
+  :parcel123 :status ?status .
+  ?status log:notEqualTo :ReadyForPickup . }
+    => false .
+
+{ :case :decision :Permit .
+  :pickupToken :billingAccess ?access .
+  ?access log:notEqualTo :None . }
+    => false .
+
+{ :case :decision :Permit .
+  :pickupToken :redirectAllowed ?redirect .
+  ?redirect log:notEqualTo :No . }
+    => false .
