@@ -3210,7 +3210,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   // Schema: $s+ log:outputString $o+
   // Side-effecting output directive. As a builtin goal, we simply succeed
   // when both sides are bound and the object is a string literal.
-  // Actual printing is handled at the end of a reasoning run (see --strings).
+  // Actual rendering is handled after reasoning, if any log:outputString facts exist.
   if (pv === LOG_NS + 'outputString') {
     // Require subject to be bound (not a variable) and object to be a concrete string literal.
     if (g.s instanceof Var) return [];
@@ -3938,7 +3938,6 @@ function main() {
       `  -e, --enforce-https          Rewrite http:// IRIs to https:// for log dereferencing builtins.\n` +
       `  -h, --help                   Show this help and exit.\n` +
       `  -p, --proof-comments         Enable proof explanations.\n` +
-      `  -r, --strings                Print log:outputString strings (ordered by key), including via log:query.\n` +
       `  -s, --super-restricted       Disable all builtins except => and <=.\n` +
       `  -t, --stream                 Stream derived triples as soon as they are derived.\n` +
       `  -v, --version                Print version and exit.\n`;
@@ -3958,7 +3957,6 @@ function main() {
   }
 
   const showAst = argv.includes('--ast') || argv.includes('-a');
-  const outputStringsMode = argv.includes('--strings') || argv.includes('-r');
   const streamMode = argv.includes('--stream') || argv.includes('-t');
 
   // --enforce-https: rewrite http:// -> https:// for log dereferencing builtins
@@ -4045,28 +4043,30 @@ function main() {
   // ground-gated in the engine.
   const facts = triples.slice();
 
-  // If requested, print log:outputString values (ordered by subject key) and exit.
-  // Note: log:outputString values may depend on derived facts, so we must saturate first.
-  if (outputStringsMode) {
-    const hasQueries = Array.isArray(qrules) && qrules.length;
+  const LOG_OUTPUT_STRING = 'http://www.w3.org/2000/10/swap/log#outputString';
 
-    // If log:query directives are present, the intended output may not be part of the
-    // saturated fact store (queries are output-selection statements). In that case,
-    // collect log:outputString triples from the instantiated query conclusions.
-    let outTriples;
-    if (hasQueries) {
-      const res = engine.forwardChainAndCollectLogQueryConclusions(facts, frules, brules, qrules, null, {
-        captureExplanations: engine.getProofCommentsEnabled(),
-      });
-      outTriples = res.queryTriples;
-    } else {
-      engine.forwardChain(facts, frules, brules, null, { captureExplanations: false });
-      outTriples = facts;
-    }
+  function programMayProduceOutputStrings(topLevelTriples, forwardRules, logQueryRules) {
+    const hasOutputStringPredicate = (trs) =>
+      Array.isArray(trs) &&
+      trs.some(
+        (tr) => tr && tr.p && tr.p.constructor && tr.p.constructor.name === 'Iri' && tr.p.value === LOG_OUTPUT_STRING,
+      );
 
-    const out = engine.collectOutputStringsFromFacts(outTriples, prefixes);
-    if (out) process.stdout.write(out);
-    process.exit(0);
+    if (hasOutputStringPredicate(topLevelTriples)) return true;
+    if (Array.isArray(forwardRules) && forwardRules.some((r) => hasOutputStringPredicate(r && r.conclusion)))
+      return true;
+    if (Array.isArray(logQueryRules) && logQueryRules.some((r) => hasOutputStringPredicate(r && r.conclusion)))
+      return true;
+    return false;
+  }
+
+  function factsContainOutputStrings(triplesForOutput) {
+    return (
+      Array.isArray(triplesForOutput) &&
+      triplesForOutput.some(
+        (tr) => tr && tr.p && tr.p.constructor && tr.p.constructor.name === 'Iri' && tr.p.value === LOG_OUTPUT_STRING,
+      )
+    );
   }
 
   // In --stream mode we print prefixes *before* any derivations happen.
@@ -4154,7 +4154,10 @@ function main() {
   // Streaming mode: print (input) prefixes first, then print derived triples as soon as they are found.
   // Note: when log:query directives are present, we cannot stream output because
   // the selected results depend on the saturated closure.
-  if (streamMode && !(Array.isArray(qrules) && qrules.length)) {
+  const hasQueries = Array.isArray(qrules) && qrules.length;
+  const mayAutoRenderOutputStrings = programMayProduceOutputStrings(triples, frules, qrules);
+
+  if (streamMode && !hasQueries && !mayAutoRenderOutputStrings) {
     const usedInInput = prefixesUsedInInputTokens(toks, prefixes);
     const outPrefixes = restrictPrefixEnv(prefixes, usedInInput);
 
@@ -4189,8 +4192,6 @@ function main() {
     return;
   }
 
-  const hasQueries = Array.isArray(qrules) && qrules.length;
-
   // Default (non-streaming):
   // - without log:query: derive everything first, then print only newly derived facts
   // - with log:query: derive everything first, then print only unique instantiated
@@ -4210,6 +4211,12 @@ function main() {
     });
     outDerived = derived;
     outTriples = derived.map((df) => df.fact);
+  }
+
+  const renderedOutputTriples = hasQueries ? outTriples : facts;
+  if (factsContainOutputStrings(renderedOutputTriples)) {
+    process.stdout.write(engine.collectOutputStringsFromFacts(renderedOutputTriples, prefixes));
+    return;
   }
 
   const usedPrefixes = prefixes.prefixesUsedForOutput(outTriples);

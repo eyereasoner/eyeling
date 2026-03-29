@@ -44,7 +44,7 @@ Show all options:
 npx eyeling --help
 ```
 
-Useful flags include `--proof-comments`, `--stream`, `--strings`, and `--enforce-https`.
+Useful flags include `--proof-comments`, `--stream`, and `--enforce-https`. If the final closure contains any `log:outputString` triples, Eyeling now renders those strings automatically instead of printing N3 output.
 
 ## What gets printed?
 

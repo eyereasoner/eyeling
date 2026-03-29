@@ -1537,7 +1537,7 @@ Implementation: this is implemented by `lib/trace.js` and called from `lib/engin
 
 As a goal, this builtin simply checks that the terms are sufficiently bound/usable and then succeeds. The actual “printing” behavior is handled by the CLI:
 
-- When you run Eyeling with `--strings` / `-r`, the CLI collects all `log:outputString` triples from the _saturated_ closure.
+- When the final closure contains any `log:outputString` triples, the CLI collects all of them from the _saturated_ closure and renders those strings instead of the default N3 output.
 - It sorts them deterministically by the subject “key” and concatenates the string values in that order.
 
 This is a pure test/side-effect marker (it shouldn’t drive search; it should merely validate that strings exist once other reasoning has produced them). In forward rules Eyeling may defer it if it is reached before the terms are usable.
@@ -1656,7 +1656,7 @@ Matches the regex once and returns the **first capturing group** (group 1). If t
 
 From a logic-programming point of view, printing is awkward: if you print _during_ proof search, you risk producing output along branches that later backtrack, or producing the same line multiple times in different derivations. Eyeling avoids that whole class of problems by treating “output” as **data**.
 
-The predicate `log:outputString` is the only officially supported “side-effect channel”, and even it is handled in two phases:
+The predicate `log:outputString` is the only officially supported “side-effect channel”, and even it is handled in two phases. If any final `log:outputString` facts exist, Eyeling renders them automatically as the CLI output:
 
 1. **During reasoning (declarative phase):**  
    `log:outputString` behaves like a pure test builtin (implemented in `lib/builtins.js`): it succeeds when its arguments are well-formed and sufficiently bound (notably, when the object is a string literal that can be emitted). Importantly, it does _not_ print anything at this time. If a rule derives a triple like:
@@ -1675,7 +1675,7 @@ This separation is not just an aesthetic choice; it preserves the meaning of log
 - Output becomes explainable. If you enable proof comments or inspect the closure, `log:outputString` facts can be traced back to the rules that produced them.
 - Output becomes compositional. You can reason about output strings (e.g., sort them, filter them, derive them conditionally) just like any other data.
 
-In short: Eyeling makes `log:outputString` safe by refusing to treat it as an immediate effect. It is a _declarative output fact_ whose concrete rendering is a final, deterministic post-processing step.
+In short: Eyeling makes `log:outputString` safe by refusing to treat it as an immediate effect. It is a _declarative output fact_ whose concrete rendering is a final, deterministic post-processing step. If any such facts are present in the final closure, Eyeling renders those strings automatically instead of printing the default N3 result set.
 
 ---
 
@@ -1773,7 +1773,7 @@ The bundle contains the whole engine. The CLI path is the “canonical behavior�
 
 - parse input file
 - reason to closure
-- print derived triples or output strings
+- print derived triples, or render `log:outputString` strings when present
 - optional proof comments
 - optional streaming
 
@@ -1785,7 +1785,6 @@ The current CLI supports a small set of flags (see `lib/cli.js`):
 - `-d`, `--deterministic-skolem` — make `log:skolem` stable across runs.
 - `-e`, `--enforce-https` — rewrite `http://…` to `https://…` for dereferencing builtins.
 - `-p`, `--proof-comments` — include per-fact proof comment blocks in output.
-- `-r`, `--strings` — after reasoning, render only `log:outputString` values (ordered by subject key).
 - `-s`, `--super-restricted` — disable all builtins except `log:implies` / `log:impliedBy`.
 - `-t`, `--stream` — stream derived triples as soon as they are derived.
 - `-v`, `--version` — print version and exit.
@@ -1988,13 +1987,12 @@ Options:
   -e, --enforce-https          Rewrite http:// IRIs to https:// for log dereferencing builtins.
   -h, --help                   Show this help and exit.
   -p, --proof-comments         Enable proof explanations.
-  -r, --strings                Print log:outputString strings (ordered by key) instead of N3 output.
   -s, --super-restricted       Disable all builtins except => and <=.
   -t, --stream                 Stream derived triples as soon as they are derived.
   -v, --version                Print version and exit.
 ```
 
-Note: when `log:query` directives are present, Eyeling cannot stream output (the selected results depend on the saturated closure), so `--stream` has no effect in that mode.
+Note: when `log:query` directives are present, or when the program may produce `log:outputString` facts, Eyeling cannot stream its final user-facing output from partial derivations, so `--stream` has no effect in those cases. In the latter case Eyeling saturates first and then renders the collected output strings.
 
 See also:
 
@@ -2653,7 +2651,7 @@ For many real workflows, that combination is more useful than a bare result: it 
 
 Eyeling already encourages the separation that ARC needs.
 
-Rules derive facts. Facts can include output facts. Output is not printed eagerly during proof search; instead, `log:outputString` facts are collected from the final closure and rendered deterministically, for example with `-r` / `--strings`. This makes it natural to derive a structured Answer and Reason Why as part of the logic itself.
+Rules derive facts. Facts can include output facts. Output is not printed eagerly during proof search; instead, `log:outputString` facts are collected from the final closure and rendered deterministically whenever they are present. This makes it natural to derive a structured Answer and Reason Why as part of the logic itself.
 
 Checks also map well to Eyeling. A rule with conclusion `false` acts as an inference fuse: if its body becomes provable, execution stops with a hard failure. This is exactly the behavior we want for “must-hold” conditions.
 

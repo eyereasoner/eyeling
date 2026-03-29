@@ -1,118 +1,149 @@
-@prefix : <https://example.org/auroracare#> .
-@prefix ac: <https://example.org/auroracare#> .
-@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+AuroraCare — Purpose-based Medical Data Exchange
 
-:scenario_C :decision "DENY" .
-:scenario_C :reason "Denied: no policy matched (purpose, environment, TOMs, or categories out of scope)." .
-:scenario_C :trace "urn:policy:qi-2025-aurora:deny:odrl:no_permission_matched" .
-:scenario_D :matchedProhibition :policy_deny_insurance .
-:scenario_D :decision "DENY" .
-:scenario_D :reason "Denied: the requested purpose (insurance management) is prohibited by policy." .
-:scenario_D :trace "deny:prohibited_purpose" .
-:scenario_D :trace "urn:policy:deny-insurance:deny:odrl:prohibition_matched" .
-:scenario_C :checkC1 "SKIPPED - not a prohibited purpose" .
-:scenario_C :checkC2 "SKIPPED" .
-:scenario_C :checkC3 "SKIPPED" .
-:scenario_C :checkC4 "OK - denied because opt-in missing or no policy match" .
-:scenario_C :checkC5 "SKIPPED" .
-:scenario_C :checkC6 "SKIPPED - no prohibition matched" .
-:scenario_C :checkC7 "SKIPPED" .
-:scenario_C :checkC8 "SKIPPED - no matched policy or no duties" .
-:scenario_C :checkC9 "SKIPPED" .
-:scenario_C :checkC10Text "SKIPPED - no matched policy" .
-:out_030_C log:outputString "=== C – Quality improvement (out of scope) ===\nQI analyst with only lab results; policy expects labs + summary.\n\nAnswer\nDENY\n\nReason Why\nDenied: no policy matched (purpose, environment, TOMs, or categories out of scope).\n\nCheck\nC1 SKIPPED - not a prohibited purpose\nC2 SKIPPED\nC3 SKIPPED\nC4 OK - denied because opt-in missing or no policy match\nC5 SKIPPED\nC6 SKIPPED - no prohibition matched\nC7 SKIPPED\nC8 SKIPPED - no matched policy or no duties\nC9 SKIPPED\nC10 SKIPPED - no matched policy\n\n" .
-:scenario_D :checkC1 "OK - denied prohibited purpose" .
-:scenario_D :checkC2 "SKIPPED" .
-:scenario_D :checkC3 "SKIPPED" .
-:scenario_D :checkC4 "SKIPPED" .
-:scenario_D :checkC5 "SKIPPED" .
-:scenario_D :checkC6 "OK - denied due to prohibition" .
-:scenario_D :checkC7 "SKIPPED" .
-:scenario_D :checkC8 "SKIPPED - no matched policy or no duties" .
-:scenario_D :checkC9 "SKIPPED" .
-:scenario_D :checkC10Text "SKIPPED - no matched policy" .
-:out_040_D log:outputString "=== D – Insurance management ===\nInsurance bot attempting to use health data for insurance management (prohibited purpose).\n\nAnswer\nDENY\n\nReason Why\nDenied: the requested purpose (insurance management) is prohibited by policy.\n\nCheck\nC1 OK - denied prohibited purpose\nC2 SKIPPED\nC3 SKIPPED\nC4 SKIPPED\nC5 SKIPPED\nC6 OK - denied due to prohibition\nC7 SKIPPED\nC8 SKIPPED - no matched policy or no duties\nC9 SKIPPED\nC10 SKIPPED - no matched policy\n\n" .
-:scenario_A :careTeamLinked "yes" .
-:scenario_E :careTeamLinked "yes" .
-:scenario_F :subjectOptIn "yes" .
-:scenario_G :subjectOptOut "yes" .
-:scenario_A :matchedPolicy :policy_primary .
-:scenario_A :matchedPolicyUid "urn:policy:primary-care-001" .
-:scenario_A :decision "PERMIT" .
-:scenario_A :reason "Permitted: clinician in the patient's care team, and the primary-care policy matched." .
-:scenario_A :trace "permit:primary_care_allowed" .
-:scenario_A :trace "urn:policy:primary-care-001:permit:odrl:permission_matched" .
-:scenario_E :matchedPolicy :policy_primary .
-:scenario_E :matchedPolicyUid "urn:policy:primary-care-001" .
-:scenario_E :decision "PERMIT" .
-:scenario_E :reason "Permitted: clinician in the patient's care team, and the primary-care policy matched." .
-:scenario_E :trace "permit:primary_care_allowed" .
-:scenario_E :trace "urn:policy:primary-care-001:permit:odrl:permission_matched" .
-:scenario_B :matchedPolicy :policy_qi .
-:scenario_B :matchedPolicyUid "urn:policy:qi-2025-aurora" .
-:scenario_B :decision "PERMIT" .
-:scenario_B :reason "Permitted: ODRL/DPV policy matched for secondary use." .
-:scenario_B :trace "urn:policy:qi-2025-aurora:permit:odrl:permission_matched" .
-:scenario_F :matchedPolicy :policy_research .
-:scenario_F :matchedPolicyUid "urn:policy:research-aurora-diabetes" .
-:scenario_F :decision "PERMIT" .
-:scenario_F :reason "Permitted: subject opted in and an ODRL/DPV policy matched (anonymised dataset in secure environment)." .
-:scenario_F :trace "urn:policy:research-aurora-diabetes:permit:odrl:permission_matched" .
-:scenario_G :decision "DENY" .
-:scenario_G :reason "Denied: you opted out of your data being used to train AI systems." .
-:scenario_G :trace "deny:subject_opted_out_ai_training" .
-:scenario_A :checkC1 "SKIPPED - not a prohibited purpose" .
-:scenario_A :checkC2 "OK - clinician" .
-:scenario_A :checkC3 "OK - care-team linked" .
-:scenario_A :checkC4 "SKIPPED" .
-:scenario_A :checkC5 "OK - operator=isAnyOf, allowed=[\"https://example.org/health#PATIENT_SUMMARY\",\"https://example.org/health#LAB_RESULTS\"], requested=[\"https://example.org/health#PATIENT_SUMMARY\"]" .
-:scenario_A :checkC6 "SKIPPED - no prohibition matched" .
-:scenario_A :checkC7 "OK - trace shows matching permission" .
-:scenario_A :checkC8 "SKIPPED - no matched policy or no duties" .
-:scenario_A :checkC9 "SKIPPED - policy has no environment constraint" .
-:scenario_A :checkC10Text "INFO - matched policy: urn:policy:primary-care-001" .
-:out_010_A log:outputString "=== A – Primary care visit ===\nClinician in the patient's care team accessing the patient summary for primary care management.\n\nAnswer\nPERMIT\n\nReason Why\nPermitted: clinician in the patient's care team, and the primary-care policy matched.\n\nCheck\nC1 SKIPPED - not a prohibited purpose\nC2 OK - clinician\nC3 OK - care-team linked\nC4 SKIPPED\nC5 OK - operator=isAnyOf, allowed=[\"https://example.org/health#PATIENT_SUMMARY\",\"https://example.org/health#LAB_RESULTS\"], requested=[\"https://example.org/health#PATIENT_SUMMARY\"]\nC6 SKIPPED - no prohibition matched\nC7 OK - trace shows matching permission\nC8 SKIPPED - no matched policy or no duties\nC9 SKIPPED - policy has no environment constraint\nC10 INFO - matched policy: urn:policy:primary-care-001\n\n" .
-:scenario_E :checkC1 "SKIPPED - not a prohibited purpose" .
-:scenario_E :checkC2 "OK - clinician" .
-:scenario_E :checkC3 "OK - care-team linked" .
-:scenario_E :checkC4 "SKIPPED" .
-:scenario_E :checkC5 "OK - operator=isAnyOf, allowed=[\"https://example.org/health#PATIENT_SUMMARY\",\"https://example.org/health#LAB_RESULTS\"], requested=[\"https://example.org/health#LAB_RESULTS\"]" .
-:scenario_E :checkC6 "SKIPPED - no prohibition matched" .
-:scenario_E :checkC7 "OK - trace shows matching permission" .
-:scenario_E :checkC8 "SKIPPED - no matched policy or no duties" .
-:scenario_E :checkC9 "SKIPPED - policy has no environment constraint" .
-:scenario_E :checkC10Text "INFO - matched policy: urn:policy:primary-care-001" .
-:out_050_E log:outputString "=== E – GP checks labs ===\nGP for the same patient checking lab results via the API gateway.\n\nAnswer\nPERMIT\n\nReason Why\nPermitted: clinician in the patient's care team, and the primary-care policy matched.\n\nCheck\nC1 SKIPPED - not a prohibited purpose\nC2 OK - clinician\nC3 OK - care-team linked\nC4 SKIPPED\nC5 OK - operator=isAnyOf, allowed=[\"https://example.org/health#PATIENT_SUMMARY\",\"https://example.org/health#LAB_RESULTS\"], requested=[\"https://example.org/health#LAB_RESULTS\"]\nC6 SKIPPED - no prohibition matched\nC7 OK - trace shows matching permission\nC8 SKIPPED - no matched policy or no duties\nC9 SKIPPED - policy has no environment constraint\nC10 INFO - matched policy: urn:policy:primary-care-001\n\n" .
-:scenario_B :checkC1 "SKIPPED - not a prohibited purpose" .
-:scenario_B :checkC2 "SKIPPED" .
-:scenario_B :checkC3 "SKIPPED" .
-:scenario_B :checkC4 "OK - opt-in present and policy matched" .
-:scenario_B :checkC5 "OK - operator=isAllOf, allowed=[\"https://example.org/health#LAB_RESULTS\",\"https://example.org/health#PATIENT_SUMMARY\"], requested=[\"https://example.org/health#LAB_RESULTS\",\"https://example.org/health#PATIENT_SUMMARY\"]" .
-:scenario_B :checkC6 "SKIPPED - no prohibition matched" .
-:scenario_B :checkC7 "OK - trace shows matching permission" .
-:scenario_B :checkC8 "INFO - duties attached: duty:https://w3id.org/dpv/legal/eu/ehds#requireConsent, duty:https://w3id.org/dpv/legal/eu/ehds#noExfiltration" .
-:scenario_B :checkC9 "OK - operator=eq, allowed=\"secure_env\", requested=\"secure_env\"" .
-:scenario_B :checkC10Text "INFO - matched policy: urn:policy:qi-2025-aurora" .
-:out_020_B log:outputString "=== B – Quality improvement (in scope) ===\nQI analyst using lab results + summary in a secure environment.\n\nAnswer\nPERMIT\n\nReason Why\nPermitted: ODRL/DPV policy matched for secondary use.\n\nCheck\nC1 SKIPPED - not a prohibited purpose\nC2 SKIPPED\nC3 SKIPPED\nC4 OK - opt-in present and policy matched\nC5 OK - operator=isAllOf, allowed=[\"https://example.org/health#LAB_RESULTS\",\"https://example.org/health#PATIENT_SUMMARY\"], requested=[\"https://example.org/health#LAB_RESULTS\",\"https://example.org/health#PATIENT_SUMMARY\"]\nC6 SKIPPED - no prohibition matched\nC7 OK - trace shows matching permission\nC8 INFO - duties attached: duty:https://w3id.org/dpv/legal/eu/ehds#requireConsent, duty:https://w3id.org/dpv/legal/eu/ehds#noExfiltration\nC9 OK - operator=eq, allowed=\"secure_env\", requested=\"secure_env\"\nC10 INFO - matched policy: urn:policy:qi-2025-aurora\n\n" .
-:scenario_F :checkC1 "SKIPPED - not a prohibited purpose" .
-:scenario_F :checkC2 "SKIPPED" .
-:scenario_F :checkC3 "SKIPPED" .
-:scenario_F :checkC4 "OK - opt-in present and policy matched" .
-:scenario_F :checkC5 "OK - operator=isAnyOf, allowed=[\"https://example.org/health#LAB_RESULTS\",\"https://example.org/health#PATIENT_SUMMARY\",\"https://example.org/health#IMAGING_REPORT\"], requested=[\"https://example.org/health#PATIENT_SUMMARY\",\"https://example.org/health#LAB_RESULTS\"]" .
-:scenario_F :checkC6 "SKIPPED - no prohibition matched" .
-:scenario_F :checkC7 "OK - trace shows matching permission" .
-:scenario_F :checkC8 "INFO - duties attached: duty:https://w3id.org/dpv/legal/eu/ehds#annualOutcomeReport, duty:https://w3id.org/dpv/legal/eu/ehds#noReidentification, duty:https://w3id.org/dpv/legal/eu/ehds#noExfiltration" .
-:scenario_F :checkC9 "OK - operator=eq, allowed=\"secure_env\", requested=\"secure_env\"" .
-:scenario_F :checkC10Text "INFO - matched policy: urn:policy:research-aurora-diabetes" .
-:out_060_F log:outputString "=== F – Research on anonymised dataset ===\nResearcher using anonymised labs + summary in a secure environment, with opt-in.\n\nAnswer\nPERMIT\n\nReason Why\nPermitted: subject opted in and an ODRL/DPV policy matched (anonymised dataset in secure environment).\n\nCheck\nC1 SKIPPED - not a prohibited purpose\nC2 SKIPPED\nC3 SKIPPED\nC4 OK - opt-in present and policy matched\nC5 OK - operator=isAnyOf, allowed=[\"https://example.org/health#LAB_RESULTS\",\"https://example.org/health#PATIENT_SUMMARY\",\"https://example.org/health#IMAGING_REPORT\"], requested=[\"https://example.org/health#PATIENT_SUMMARY\",\"https://example.org/health#LAB_RESULTS\"]\nC6 SKIPPED - no prohibition matched\nC7 OK - trace shows matching permission\nC8 INFO - duties attached: duty:https://w3id.org/dpv/legal/eu/ehds#annualOutcomeReport, duty:https://w3id.org/dpv/legal/eu/ehds#noReidentification, duty:https://w3id.org/dpv/legal/eu/ehds#noExfiltration\nC9 OK - operator=eq, allowed=\"secure_env\", requested=\"secure_env\"\nC10 INFO - matched policy: urn:policy:research-aurora-diabetes\n\n" .
-:scenario_G :checkC1 "SKIPPED - not a prohibited purpose" .
-:scenario_G :checkC2 "SKIPPED" .
-:scenario_G :checkC3 "SKIPPED" .
-:scenario_G :checkC4 "OK - denied because opt-in missing or no policy match" .
-:scenario_G :checkC5 "SKIPPED" .
-:scenario_G :checkC6 "SKIPPED - no prohibition matched" .
-:scenario_G :checkC7 "SKIPPED" .
-:scenario_G :checkC8 "SKIPPED - no matched policy or no duties" .
-:scenario_G :checkC9 "SKIPPED" .
-:scenario_G :checkC10Text "SKIPPED - no matched policy" .
-:out_070_G log:outputString "=== G – AI training (opt-out) ===\nData user wants to train AI, but the subject opted out of AI training.\n\nAnswer\nDENY\n\nReason Why\nDenied: you opted out of your data being used to train AI systems.\n\nCheck\nC1 SKIPPED - not a prohibited purpose\nC2 SKIPPED\nC3 SKIPPED\nC4 OK - denied because opt-in missing or no policy match\nC5 SKIPPED\nC6 SKIPPED - no prohibition matched\nC7 SKIPPED\nC8 SKIPPED - no matched policy or no duties\nC9 SKIPPED\nC10 SKIPPED - no matched policy\n\n" .
+=== A – Primary care visit ===
+Clinician in the patient's care team accessing the patient summary for primary care management.
+
+Answer
+PERMIT
+
+Reason Why
+Permitted: clinician in the patient's care team, and the primary-care policy matched.
+
+Check
+C1 SKIPPED - not a prohibited purpose
+C2 OK - clinician
+C3 OK - care-team linked
+C4 SKIPPED
+C5 OK - operator=isAnyOf, allowed=["https://example.org/health#PATIENT_SUMMARY","https://example.org/health#LAB_RESULTS"], requested=["https://example.org/health#PATIENT_SUMMARY"]
+C6 SKIPPED - no prohibition matched
+C7 OK - trace shows matching permission
+C8 SKIPPED - no matched policy or no duties
+C9 SKIPPED - policy has no environment constraint
+C10 INFO - matched policy: urn:policy:primary-care-001
+
+=== B – Quality improvement (in scope) ===
+QI analyst using lab results + summary in a secure environment.
+
+Answer
+PERMIT
+
+Reason Why
+Permitted: ODRL/DPV policy matched for secondary use.
+
+Check
+C1 SKIPPED - not a prohibited purpose
+C2 SKIPPED
+C3 SKIPPED
+C4 OK - opt-in present and policy matched
+C5 OK - operator=isAllOf, allowed=["https://example.org/health#LAB_RESULTS","https://example.org/health#PATIENT_SUMMARY"], requested=["https://example.org/health#LAB_RESULTS","https://example.org/health#PATIENT_SUMMARY"]
+C6 SKIPPED - no prohibition matched
+C7 OK - trace shows matching permission
+C8 INFO - duties attached: duty:https://w3id.org/dpv/legal/eu/ehds#requireConsent, duty:https://w3id.org/dpv/legal/eu/ehds#noExfiltration
+C9 OK - operator=eq, allowed="secure_env", requested="secure_env"
+C10 INFO - matched policy: urn:policy:qi-2025-aurora
+
+=== C – Quality improvement (out of scope) ===
+QI analyst with only lab results; policy expects labs + summary.
+
+Answer
+DENY
+
+Reason Why
+Denied: no policy matched (purpose, environment, TOMs, or categories out of scope).
+
+Check
+C1 SKIPPED - not a prohibited purpose
+C2 SKIPPED
+C3 SKIPPED
+C4 OK - denied because opt-in missing or no policy match
+C5 SKIPPED
+C6 SKIPPED - no prohibition matched
+C7 SKIPPED
+C8 SKIPPED - no matched policy or no duties
+C9 SKIPPED
+C10 SKIPPED - no matched policy
+
+=== D – Insurance management ===
+Insurance bot attempting to use health data for insurance management (prohibited purpose).
+
+Answer
+DENY
+
+Reason Why
+Denied: the requested purpose (insurance management) is prohibited by policy.
+
+Check
+C1 OK - denied prohibited purpose
+C2 SKIPPED
+C3 SKIPPED
+C4 SKIPPED
+C5 SKIPPED
+C6 OK - denied due to prohibition
+C7 SKIPPED
+C8 SKIPPED - no matched policy or no duties
+C9 SKIPPED
+C10 SKIPPED - no matched policy
+
+=== E – GP checks labs ===
+GP for the same patient checking lab results via the API gateway.
+
+Answer
+PERMIT
+
+Reason Why
+Permitted: clinician in the patient's care team, and the primary-care policy matched.
+
+Check
+C1 SKIPPED - not a prohibited purpose
+C2 OK - clinician
+C3 OK - care-team linked
+C4 SKIPPED
+C5 OK - operator=isAnyOf, allowed=["https://example.org/health#PATIENT_SUMMARY","https://example.org/health#LAB_RESULTS"], requested=["https://example.org/health#LAB_RESULTS"]
+C6 SKIPPED - no prohibition matched
+C7 OK - trace shows matching permission
+C8 SKIPPED - no matched policy or no duties
+C9 SKIPPED - policy has no environment constraint
+C10 INFO - matched policy: urn:policy:primary-care-001
+
+=== F – Research on anonymised dataset ===
+Researcher using anonymised labs + summary in a secure environment, with opt-in.
+
+Answer
+PERMIT
+
+Reason Why
+Permitted: subject opted in and an ODRL/DPV policy matched (anonymised dataset in secure environment).
+
+Check
+C1 SKIPPED - not a prohibited purpose
+C2 SKIPPED
+C3 SKIPPED
+C4 OK - opt-in present and policy matched
+C5 OK - operator=isAnyOf, allowed=["https://example.org/health#LAB_RESULTS","https://example.org/health#PATIENT_SUMMARY","https://example.org/health#IMAGING_REPORT"], requested=["https://example.org/health#PATIENT_SUMMARY","https://example.org/health#LAB_RESULTS"]
+C6 SKIPPED - no prohibition matched
+C7 OK - trace shows matching permission
+C8 INFO - duties attached: duty:https://w3id.org/dpv/legal/eu/ehds#annualOutcomeReport, duty:https://w3id.org/dpv/legal/eu/ehds#noReidentification, duty:https://w3id.org/dpv/legal/eu/ehds#noExfiltration
+C9 OK - operator=eq, allowed="secure_env", requested="secure_env"
+C10 INFO - matched policy: urn:policy:research-aurora-diabetes
+
+=== G – AI training (opt-out) ===
+Data user wants to train AI, but the subject opted out of AI training.
+
+Answer
+DENY
+
+Reason Why
+Denied: you opted out of your data being used to train AI systems.
+
+Check
+C1 SKIPPED - not a prohibited purpose
+C2 SKIPPED
+C3 SKIPPED
+C4 OK - denied because opt-in missing or no policy match
+C5 SKIPPED
+C6 SKIPPED - no prohibition matched
+C7 SKIPPED
+C8 SKIPPED - no matched policy or no duties
+C9 SKIPPED
+C10 SKIPPED - no matched policy
+

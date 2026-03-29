@@ -1,40 +1,30 @@
-@prefix : <https://example.org/delfour#> .
-@prefix log: <http://www.w3.org/2000/10/swap/log#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+=== Answer ===
+The scanner is allowed to use a neutral shopping insight and recommends Low-Sugar Tea Biscuits instead of Classic Tea Biscuits.
+case                 : delfour
+decision             : Allowed
+scanned product      : Classic Tea Biscuits
+suggested alternative: Low-Sugar Tea Biscuits
 
-:check :filesWrittenExpected true .
-:case :needsLowSugar true .
-:check :signatureVerifies true .
-<https://example.org/insight/delfour> :derivedFromNeed "low_sugar" .
-:out20 log:outputString "signature verifies              : yes\n" .
-:check :payloadHashMatches true .
-:check :minimizationStripsSensitiveTerms true .
-:check :scopeComplete true .
-:decision :at "2025-10-05T20:35:48.907163+00:00"^^xsd:dateTime .
-:decision :outcome "Allowed" .
-:decision :target <https://example.org/insight/delfour> .
-:check :authorizationAllowed true .
-:banner :headline "Track sugar per serving while you scan" .
-:banner :note "High sugar" .
-:check :bannerFlagsHighSugar true .
-:check :dutyTimingConsistent true .
-:check :marketingProhibited true .
-:out10 log:outputString "threshold            : 10.0\n" .
-:out13 log:outputString "signature alg        : HMAC-SHA256\n" .
-:out14 log:outputString "banner headline      : Track sugar per serving while you scan\n" .
-:out16 log:outputString "reason.txt           : Household requires low-sugar guidance (diabetes in POD). A neutral Insight is scoped to device 'self-scanner', event 'pick_up_scanner', retailer 'Delfour', and expires soon; the policy confines use to shopping assistance.\n" .
-:out17 log:outputString "audit entries        : 1\n" .
-:out18 log:outputString "bus files written    : 6\n" .
-:out21 log:outputString "payload hash matches            : yes\n" .
-:out22 log:outputString "minimization strips sensitive terms: yes\n" .
-:out23 log:outputString "scope complete                  : yes\n" .
-:out24 log:outputString "authorization allowed           : yes\n" .
-:out25 log:outputString "high-sugar banner               : yes\n" .
-:out27 log:outputString "duty timing consistent          : yes\n" .
-:out28 log:outputString "marketing prohibited            : yes\n" .
-:case :suggestedAlternative :prod_BIS_101 .
-:banner :suggestedAlternative "Low-Sugar Tea Biscuits" .
-:check :alternativeIsLowerSugar true .
-:result :allChecksPass true .
-:out06 log:outputString "suggested alternative: Low-Sugar Tea Biscuits\n" .
-:out26 log:outputString "alternative lowers sugar        : yes\n" .
+=== Reason Why ===
+The phone desensitizes a diabetes-related household condition into a scoped low-sugar need, wraps it in an expiring Insight + Policy envelope, signs it, and the scanner consumes that envelope for shopping assistance.
+metric               : sugar_g_per_serving
+threshold            : 10.0
+scope                : self-scanner @ pick_up_scanner
+retailer             : Delfour
+signature alg        : HMAC-SHA256
+banner headline      : Track sugar per serving while you scan
+expires at           : 2025-10-05T22:33:48.907185+00:00
+reason.txt           : Household requires low-sugar guidance (diabetes in POD). A neutral Insight is scoped to device 'self-scanner', event 'pick_up_scanner', retailer 'Delfour', and expires soon; the policy confines use to shopping assistance.
+audit entries        : 1
+bus files written    : 6
+
+=== Check ===
+signature verifies              : yes
+payload hash matches            : yes
+minimization strips sensitive terms: yes
+scope complete                  : yes
+authorization allowed           : yes
+high-sugar banner               : yes
+alternative lowers sugar        : yes
+duty timing consistent          : yes
+marketing prohibited            : yes

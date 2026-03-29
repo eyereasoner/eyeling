@@ -1205,8 +1205,8 @@ _:l2 rdf:rest rdf:nil.
   // -------------------------
 
   {
-    name: '51 --strings: prints log:outputString values ordered by key (subject)',
-    opt: ['--strings', '-n'],
+    name: '51 automatic output rendering: prints log:outputString values ordered by key (subject)',
+    opt: ['-n'],
     input: `@prefix log: <http://www.w3.org/2000/10/swap/log#>.
 
 <http://example.org/2> log:outputString "B".

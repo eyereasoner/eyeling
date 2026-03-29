@@ -1,3 +1,1 @@
-@prefix log: <http://www.w3.org/2000/10/swap/log#> .
-
-1 log:outputString "Knapsack GA best genome 101000000101 (feasible=true): weight=50 value=101 after 4 generations.\n" .
+Knapsack GA best genome 101000000101 (feasible=true): weight=50 value=101 after 4 generations.

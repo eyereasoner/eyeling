@@ -1,12 +1,21 @@
-@prefix : <https://example.org/odrl-dpv-ehds-risk-ranked#> .
-@prefix log: <http://www.w3.org/2000/10/swap/log#> .
 
-(:AgreementEHDS1 :PatientProfileExample 0) log:outputString "\n=== Ranked DPV Risk Report (EHDS-aligned) ===\nAgreement: EHDS Secondary Use Agreement (example)\nProfile: Example patient profile (EHDS rights expectations)\n\n" .
-(:AgreementEHDS1 :PatientProfileExample 1 900 "H1" 0 _:sk_1) log:outputString "score=100 (https://w3id.org/dpv/risk#HighRisk, https://w3id.org/dpv/risk#HighSeverity) clause H1\n Risk: secondary use is permitted without an EHDS Data Permit safeguard. Clause H1: Hospital may provide electronic health data for secondary use based on a bilateral data use agreement with the applicant.\n\n" .
-(:AgreementEHDS1 :PatientProfileExample 1 900 "H1" 1 _:sk_1 _:sk_2) log:outputString " - mitigation for clause H1: Require an EHDS Data Permit (eu-ehds:DataPermit) issued by a Health Data Access Body prior to secondary use.\n" .
-(:AgreementEHDS1 :PatientProfileExample 1 900 "H2" 0 _:sk_5) log:outputString "score=100 (https://w3id.org/dpv/risk#HighRisk, https://w3id.org/dpv/risk#HighSeverity) clause H2\n Risk: secondary use may include patients who opted out (EHDS A71). Clause H2: Secondary use may include all patient records for training and evaluating health-related algorithms.\n\n" .
-(:AgreementEHDS1 :PatientProfileExample 1 900 "H2" 1 _:sk_5 _:sk_6) log:outputString " - mitigation for clause H2: Add an explicit safeguard to exclude records of persons who exercised the EHDS opt-out from secondary use (A71).\n" .
-(:AgreementEHDS1 :PatientProfileExample 1 912 "H3" 0 _:sk_9) log:outputString "score=88 (https://w3id.org/dpv/risk#HighRisk, https://w3id.org/dpv/risk#HighSeverity) clause H3\n Risk: the agreement permits local downloads rather than processing within a secure processing environment. Clause H3: The applicant may download a complete local copy of the dataset to its own infrastructure for analysis.\n\n" .
-(:AgreementEHDS1 :PatientProfileExample 1 912 "H3" 1 _:sk_9 _:sk_10) log:outputString " - mitigation for clause H3: Require processing only within a secure processing environment (e.g., eu-dga:SecureProcessingEnvironment), and prohibit local downloads of raw datasets.\n" .
-(:AgreementEHDS1 :PatientProfileExample 1 920 "H4" 0 _:sk_12) log:outputString "score=80 (https://w3id.org/dpv/risk#HighRisk, https://w3id.org/dpv/risk#HighSeverity) clause H4\n Risk: secondary-use dataset is only described as pseudonymised, without a safeguard requiring statistically anonymised data for secondary use. Clause H4: The dataset will be provided in pseudonymised form by removing direct identifiers.\n\n" .
-(:AgreementEHDS1 :PatientProfileExample 1 920 "H4" 1 _:sk_12 _:sk_13) log:outputString " - mitigation for clause H4: Require an EHDS Health Data Request for statistically anonymised data (eu-ehds:HealthDataRequest), and add a constraint that secondary-use data must be statistically anonymised.\n" .
+=== Ranked DPV Risk Report (EHDS-aligned) ===
+Agreement: EHDS Secondary Use Agreement (example)
+Profile: Example patient profile (EHDS rights expectations)
+
+score=100 (https://w3id.org/dpv/risk#HighRisk, https://w3id.org/dpv/risk#HighSeverity) clause H1
+ Risk: secondary use is permitted without an EHDS Data Permit safeguard. Clause H1: Hospital may provide electronic health data for secondary use based on a bilateral data use agreement with the applicant.
+
+ - mitigation for clause H1: Require an EHDS Data Permit (eu-ehds:DataPermit) issued by a Health Data Access Body prior to secondary use.
+score=100 (https://w3id.org/dpv/risk#HighRisk, https://w3id.org/dpv/risk#HighSeverity) clause H2
+ Risk: secondary use may include patients who opted out (EHDS A71). Clause H2: Secondary use may include all patient records for training and evaluating health-related algorithms.
+
+ - mitigation for clause H2: Add an explicit safeguard to exclude records of persons who exercised the EHDS opt-out from secondary use (A71).
+score=88 (https://w3id.org/dpv/risk#HighRisk, https://w3id.org/dpv/risk#HighSeverity) clause H3
+ Risk: the agreement permits local downloads rather than processing within a secure processing environment. Clause H3: The applicant may download a complete local copy of the dataset to its own infrastructure for analysis.
+
+ - mitigation for clause H3: Require processing only within a secure processing environment (e.g., eu-dga:SecureProcessingEnvironment), and prohibit local downloads of raw datasets.
+score=80 (https://w3id.org/dpv/risk#HighRisk, https://w3id.org/dpv/risk#HighSeverity) clause H4
+ Risk: secondary-use dataset is only described as pseudonymised, without a safeguard requiring statistically anonymised data for secondary use. Clause H4: The dataset will be provided in pseudonymised form by removing direct identifiers.
+
+ - mitigation for clause H4: Require an EHDS Health Data Request for statistically anonymised data (eu-ehds:HealthDataRequest), and add a constraint that secondary-use data must be statistically anonymised.

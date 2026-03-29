@@ -1,18 +1,15 @@
-@prefix : <https://example.org/gps-case#> .
-@prefix gps: <https://example.org/gps#> .
-@prefix log: <http://www.w3.org/2000/10/swap/log#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+GPS — Goal driven route planning
 
-:i1 gps:path ((:drive_gent_brugge :drive_brugge_oostende) "2400"^^xsd:decimal "0.01"^^xsd:decimal "0.9408"^^xsd:decimal "0.99"^^xsd:decimal) .
-:i1 gps:path ((:drive_gent_kortrijk :drive_kortrijk_brugge :drive_brugge_oostende) "4100"^^xsd:decimal "0.018"^^xsd:decimal "0.903168"^^xsd:decimal "0.9801"^^xsd:decimal) .
-:routeDirect :duration "2400"^^xsd:decimal .
-:routeDirect :cost "0.01"^^xsd:decimal .
-:routeDirect :belief "0.9408"^^xsd:decimal .
-:routeDirect :comfort "0.99"^^xsd:decimal .
-:routeViaKortrijk :duration "4100"^^xsd:decimal .
-:routeViaKortrijk :cost "0.018"^^xsd:decimal .
-:routeViaKortrijk :belief "0.903168"^^xsd:decimal .
-:routeViaKortrijk :comfort "0.9801"^^xsd:decimal .
-:decision :recommendedRoute :routeDirect .
-:decision :outcome "Take the direct route via Brugge." .
-:report log:outputString "GPS — Goal driven route planning\n\nAnswer\nTake the direct route via Brugge.\nRecommended route: Gent → Brugge → Oostende\n\nReason Why\nFrom Gent to Oostende, the planner found two routes in this small map. The direct route (Gent → Brugge → Oostende) takes 2400 seconds at cost 0.01, with belief 0.9408 and comfort 0.99. The alternative (Gent → Kortrijk → Brugge → Oostende) takes 4100 seconds at cost 0.018, with belief 0.903168 and comfort 0.9801. So the direct route is faster, cheaper, more reliable, and slightly more comfortable.\n\nCheck\nC1 OK - the direct Gent → Brugge → Oostende route was derived.\nC2 OK - the alternative Gent → Kortrijk → Brugge → Oostende route was derived.\nC3 OK - the recommended route is faster than the alternative.\nC4 OK - the recommended route is cheaper than the alternative.\nC5 OK - the recommended route has higher belief and comfort scores.\n" .
+Answer
+Take the direct route via Brugge.
+Recommended route: Gent → Brugge → Oostende
+
+Reason Why
+From Gent to Oostende, the planner found two routes in this small map. The direct route (Gent → Brugge → Oostende) takes 2400 seconds at cost 0.01, with belief 0.9408 and comfort 0.99. The alternative (Gent → Kortrijk → Brugge → Oostende) takes 4100 seconds at cost 0.018, with belief 0.903168 and comfort 0.9801. So the direct route is faster, cheaper, more reliable, and slightly more comfortable.
+
+Check
+C1 OK - the direct Gent → Brugge → Oostende route was derived.
+C2 OK - the alternative Gent → Kortrijk → Brugge → Oostende route was derived.
+C3 OK - the recommended route is faster than the alternative.
+C4 OK - the recommended route is cheaper than the alternative.
+C5 OK - the recommended route has higher belief and comfort scores.

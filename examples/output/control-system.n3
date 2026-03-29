@@ -1,28 +1,20 @@
-@prefix : <https://example.org/control-system#> .
-@prefix log: <http://www.w3.org/2000/10/swap/log#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+Control System — ARC explanation of two control signals
 
-:actuator1 :control1 "39.27346198678276"^^xsd:decimal .
-:actuator2 :control1 "26.08"^^xsd:decimal .
-:why :sensorTrend "rising" .
-:why :sensorLow 6 .
-:why :sensorHigh 11 .
-:why :sensorGap 5 .
-:why :normalizedMeasurement "2.23606797749979"^^xsd:decimal .
-:why :feedforwardProportional "43.82693235899588"^^xsd:decimal .
-:why :disturbanceMagnitude 35766 .
-:why :disturbanceCompensation "4.553470372213121"^^xsd:decimal .
-:why :feedforwardCommand "39.27346198678276"^^xsd:decimal .
-:why :observedState 22 .
-:why :measuredOutput 24 .
-:why :targetOutput 29 .
-:why :trackingError 5 .
-:why :differentialError -2 .
-:why :feedbackProportional "29"^^xsd:decimal .
-:why :feedbackFactor "1.46"^^xsd:decimal .
-:why :feedbackDifferential "-2.92"^^xsd:decimal .
-:why :feedbackCommand "26.08"^^xsd:decimal .
-:decision :answer "Send both actuator commands now." .
-:decision :actuator1Command "39.27346198678276"^^xsd:decimal .
-:decision :actuator2Command "26.08"^^xsd:decimal .
-:report log:outputString "Control System — ARC explanation of two control signals\n\nAnswer\nSend both actuator commands now.\nActuator 1 command: 39.27346198678276\nActuator 2 command: 26.08\n\nReason Why\nThe first sensor pair is 6 and 11, so the reading is rising and the controller normalizes the gap 5 into 2.23606797749979. That normalized value creates a feedforward term of 43.82693235899588, while the known disturbance 35766 contributes a compensation term of 4.553470372213121. Subtracting that compensation gives actuator 1 the command 39.27346198678276. For actuator 2, the target is 5 units above the measured output, so the tracking error is positive. The observed state is -2 relative units below the measured output, so the differential correction is negative. That yields a proportional feedback part of 29, a nonlinear factor of 1.46, and a differential contribution of -2.92. Together they produce actuator 2 command 26.08.\n\nCheck\nC1 OK - the first sensor pair is rising, so the normalization uses the rising-branch rule.\nC2 OK - the normalized measurement is positive and smaller than the raw gap, which is consistent with a square-root normalization.\nC3 OK - actuator 1 is lower than its proportional feedforward term because disturbance compensation is subtracted.\nC4 OK - the target is above the measured output, so the tracking error is positive.\nC5 OK - the observed state is below the measured output, so the differential error is negative.\nC6 OK - actuator 2 is lower than its pure proportional term because the differential part reduces it.\nC7 OK - actuator 1 matches an independently reconstructed feedforward calculation.\nC8 OK - actuator 2 matches an independently reconstructed feedback calculation.\nC9 OK - both actuator commands stay positive.\n" .
+Answer
+Send both actuator commands now.
+Actuator 1 command: 39.27346198678276
+Actuator 2 command: 26.08
+
+Reason Why
+The first sensor pair is 6 and 11, so the reading is rising and the controller normalizes the gap 5 into 2.23606797749979. That normalized value creates a feedforward term of 43.82693235899588, while the known disturbance 35766 contributes a compensation term of 4.553470372213121. Subtracting that compensation gives actuator 1 the command 39.27346198678276. For actuator 2, the target is 5 units above the measured output, so the tracking error is positive. The observed state is -2 relative units below the measured output, so the differential correction is negative. That yields a proportional feedback part of 29, a nonlinear factor of 1.46, and a differential contribution of -2.92. Together they produce actuator 2 command 26.08.
+
+Check
+C1 OK - the first sensor pair is rising, so the normalization uses the rising-branch rule.
+C2 OK - the normalized measurement is positive and smaller than the raw gap, which is consistent with a square-root normalization.
+C3 OK - actuator 1 is lower than its proportional feedforward term because disturbance compensation is subtracted.
+C4 OK - the target is above the measured output, so the tracking error is positive.
+C5 OK - the observed state is below the measured output, so the differential error is negative.
+C6 OK - actuator 2 is lower than its pure proportional term because the differential part reduces it.
+C7 OK - actuator 1 matches an independently reconstructed feedforward calculation.
+C8 OK - actuator 2 matches an independently reconstructed feedback calculation.
+C9 OK - both actuator commands stay positive.
