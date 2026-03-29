@@ -2647,8 +2647,7 @@ ARC summarizes its trust model as:
 
 That is a practical notion of proof. The Reason Why explains the logic in human terms. The Check verifies that the critical conditions actually hold at runtime.
 
-For many real workflows, that combination is more useful than a bare result:
-it is inspectable, repeatable, and suitable for automation.
+For many real workflows, that combination is more useful than a bare result: it is inspectable, repeatable, and suitable for automation.
 
 ### F.3 Why ARC fits Eyeling well
 
@@ -2658,8 +2657,7 @@ Rules derive facts. Facts can include output facts. Output is not printed eagerl
 
 Checks also map well to Eyeling. A rule with conclusion `false` acts as an inference fuse: if its body becomes provable, execution stops with a hard failure. This is exactly the behavior we want for “must-hold” conditions.
 
-So ARC in Eyeling is not an add-on. It is mostly a disciplined way of organizing what Eyeling already does well:
-derive conclusions, expose supporting facts, and enforce invariants.
+So ARC in Eyeling is not an add-on. It is mostly a disciplined way of organizing what Eyeling already does well: derive conclusions, expose supporting facts, and enforce invariants.
 
 ### F.4 A practical pattern
 
@@ -2709,17 +2707,16 @@ A useful habit is to keep these layers visually separate in the file.
     => false .
 ```
 
-The exact presentation style can vary, but the shape remains the same:
-derive the result, explain the result, and verify the result.
+The exact presentation style can vary, but the shape remains the same: derive the result, explain the result, and verify the result.
 
 ### F.6 What ARC is not
 
 ARC does **not** mean:
 
-* printing a result and calling it explained
-* replacing checks with prose
-* hiding the important assumptions
-* relying on “trust me” comments outside the executable artifact
+- printing a result and calling it explained
+- replacing checks with prose
+- hiding the important assumptions
+- relying on “trust me” comments outside the executable artifact
 
 A file follows ARC only when the answer, explanation, and validation are all carried by the program itself.
 
@@ -2727,9 +2724,8 @@ A file follows ARC only when the answer, explanation, and validation are all car
 
 For worked examples in this handbook, ARC is a strong default presentation style:
 
-* **Answer** for the main result
-* **Reason Why** for the key supporting explanation
-* **Check** for invariants and fail-loud validation
+- **Answer** for the main result
+- **Reason Why** for the key supporting explanation
+- **Check** for invariants and fail-loud validation
 
 This keeps examples readable for newcomers while also making them more useful as reusable, auditable logic artifacts.
-
