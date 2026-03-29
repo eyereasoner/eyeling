@@ -4719,6 +4719,8 @@ const {
   MATH_NS,
   LOG_NS,
   SKOLEM_NS,
+  MAX_LITERAL_TID_LEN,
+  normalizeLiteralForTid,
   Literal,
   Iri,
   Var,
@@ -5627,7 +5629,18 @@ function __internCompoundTid(key) {
 
 function termFastKey(t) {
   // Atomic terms that already have a stable id.
-  if (t instanceof Iri || t instanceof Blank || t instanceof Literal) return t.__tid;
+  if (t instanceof Iri || t instanceof Blank) return t.__tid;
+
+  if (t instanceof Literal) {
+    // Very large literals intentionally skip global interning in prelude.js to
+    // avoid retaining huge strings forever. Their per-object __tid is therefore
+    // not value-stable, so using it here breaks duplicate detection for facts
+    // such as long log:outputString blocks that are re-derived during forward
+    // chaining. Fall back to a value-based key in that case.
+    const norm = normalizeLiteralForTid(t.value);
+    if (typeof norm === 'string' && norm.length > MAX_LITERAL_TID_LEN) return 'L:' + norm;
+    return t.__tid;
+  }
 
   // Structural fast key for strict-ground list terms.
   // We only index when every element has a fast key; otherwise return null.
@@ -10389,6 +10402,8 @@ module.exports = {
   RDF_JSON_DT,
   resolveIriRef,
   literalParts,
+  normalizeLiteralForTid,
+  MAX_LITERAL_TID_LEN,
   Term,
   Iri,
   Literal,

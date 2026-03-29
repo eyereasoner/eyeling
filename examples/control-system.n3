@@ -1,9 +1,22 @@
-# ==============
-# Control System
-# ==============
+# ===========================================================================
+# Control System — ARC-style rewrite of Eyeling's control example.
+# Original example: https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/control-system.n3
+#
+# This example shows how a small control system turns sensor readings into two
+# actuator commands. One command anticipates a known disturbance before it hits
+# the system. The other compares the measured output with the target and then
+# corrects the remaining gap. The ARC presentation makes the result easy to
+# inspect by giving an Answer, a clear Reason Why, and independent Checks.
+# ===========================================================================
 
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
 @prefix math: <http://www.w3.org/2000/10/swap/math#>.
-@prefix : <https://eyereasoner.github.io/eye/reasoning/cs#>.
+@prefix string: <http://www.w3.org/2000/10/swap/string#>.
+@prefix : <https://example.org/control-system#>.
+
+# ---------------------------------------------------------------------------
+# Facts
+# ---------------------------------------------------------------------------
 
 # input
 :input1 :measurement1 (6 11).
@@ -23,55 +36,218 @@
 :output2 :measurement4 24.
 :output2 :target2 29.
 
-# forward rules
-{
-    :input1 :measurement10 ?M1.
-    :input2 :measurement2 true.
-    :disturbance1 :measurement3 ?D1.
-    (?M1 19.6) math:product ?C1.        # proportial part
-    (10 ?C2) math:exponentiation ?D1.   # compensation part
-    (?C1 ?C2) math:difference ?C.       # simple feedforward control
+# ---------------------------------------------------------------------------
+# Original control logic, preserved from the source example
+# ---------------------------------------------------------------------------
+
+{ :input1 :measurement10 ?M1.
+  :input2 :measurement2 true.
+  :disturbance1 :measurement3 ?D1.
+  (?M1 19.6) math:product ?C1.
+  (10 ?C2) math:exponentiation ?D1.
+  (?C1 ?C2) math:difference ?C.
 }
-=>
-{
-    :actuator1 :control1 ?C.
+    =>
+{ :actuator1 :control1 ?C. }.
+
+{ :input3 :measurement3 ?M3.
+  :state3 :observation3 ?P3.
+  :output2 :measurement4 ?M4.
+  :output2 :target2 ?T2.
+  (?T2 ?M4) math:difference ?E.
+  (?P3 ?M4) math:difference ?D.
+  (5.8 ?E) math:product ?C1.
+  (7.3 ?E) math:quotient ?N.
+  (?N ?D) math:product ?C2.
+  (?C1 ?C2) math:sum ?C.
+}
+    =>
+{ :actuator2 :control1 ?C. }.
+
+{ ?I :measurement10 ?M. }
+    <=
+{ ?I :measurement1 (?M1 ?M2).
+  ?M1 math:lessThan ?M2.
+  (?M2 ?M1) math:difference ?M3.
+  (?M3 0.5) math:exponentiation ?M.
 }.
 
-{
-    :input3 :measurement3 ?M3.
-    :state3 :observation3 ?P3.
-    :output2 :measurement4 ?M4.
-    :output2 :target2 ?T2.
-    (?T2 ?M4) math:difference ?E.       # error
-    (?P3 ?M4) math:difference ?D.       # differential error
-    (5.8 ?E) math:product ?C1.          # proportial part
-    (7.3 ?E) math:quotient ?N.          # nonlinear factor
-    (?N ?D) math:product ?C2.           # nonlinear differential part
-    (?C1 ?C2) math:sum ?C.              # PND feedback control
-}
-=>
-{
-    :actuator2 :control1 ?C.
+{ ?I :measurement10 ?M1. }
+    <=
+{ ?I :measurement1 (?M1 ?M2).
+  ?M1 math:notLessThan ?M2.
 }.
 
-# backward rules
-{
-    ?I :measurement10 ?M.
-}
-<=
-{
-    ?I :measurement1 (?M1 ?M2).
-    ?M1 math:lessThan ?M2.
-    (?M2 ?M1) math:difference ?M3.
-    (?M3 0.5) math:exponentiation ?M.
-}.
+# ---------------------------------------------------------------------------
+# Explanation layer: compute an explicit why-story from the raw facts
+# ---------------------------------------------------------------------------
 
-{
-    ?I :measurement10 ?M1.
+{ :input1 :measurement1 (?Low ?High).
+  ?Low math:lessThan ?High.
+  (?High ?Low) math:difference ?Gap.
+  (?Gap 0.5) math:exponentiation ?Norm.
 }
-<=
-{
-    ?I :measurement1 (?M1 ?M2).
-    ?M1 math:notLessThan ?M2.
-}.
+    =>
+{ :why :sensorTrend "rising";
+       :sensorLow ?Low;
+       :sensorHigh ?High;
+       :sensorGap ?Gap;
+       :normalizedMeasurement ?Norm. }.
 
+{ :why :normalizedMeasurement ?Norm.
+  (?Norm 19.6) math:product ?Prop.
+  :disturbance1 :measurement3 ?Dist.
+  (10 ?Comp) math:exponentiation ?Dist.
+  (?Prop ?Comp) math:difference ?Cmd.
+}
+    =>
+{ :why :feedforwardProportional ?Prop;
+       :disturbanceMagnitude ?Dist;
+       :disturbanceCompensation ?Comp;
+       :feedforwardCommand ?Cmd. }.
+
+{ :state3 :observation3 ?Observed.
+  :output2 :measurement4 ?Measured.
+  :output2 :target2 ?Target.
+  (?Target ?Measured) math:difference ?Err.
+  (?Observed ?Measured) math:difference ?DiffErr.
+  (5.8 ?Err) math:product ?Prop.
+  (7.3 ?Err) math:quotient ?Factor.
+  (?Factor ?DiffErr) math:product ?DiffPart.
+  (?Prop ?DiffPart) math:sum ?Cmd.
+}
+    =>
+{ :why :observedState ?Observed;
+       :measuredOutput ?Measured;
+       :targetOutput ?Target;
+       :trackingError ?Err;
+       :differentialError ?DiffErr;
+       :feedbackProportional ?Prop;
+       :feedbackFactor ?Factor;
+       :feedbackDifferential ?DiffPart;
+       :feedbackCommand ?Cmd. }.
+
+{ :actuator1 :control1 ?A1.
+  :actuator2 :control1 ?A2. }
+    =>
+{ :decision :answer "Send both actuator commands now.";
+            :actuator1Command ?A1;
+            :actuator2Command ?A2. }.
+
+# ---------------------------------------------------------------------------
+# ARC report
+# ---------------------------------------------------------------------------
+
+{ :decision :answer ?Answer;
+            :actuator1Command ?A1;
+            :actuator2Command ?A2.
+  :why :sensorTrend ?Trend;
+       :sensorLow ?Low;
+       :sensorHigh ?High;
+       :sensorGap ?Gap;
+       :normalizedMeasurement ?Norm;
+       :feedforwardProportional ?FFProp;
+       :disturbanceMagnitude ?Dist;
+       :disturbanceCompensation ?FFComp;
+       :trackingError ?Err;
+       :differentialError ?DiffErr;
+       :feedbackProportional ?FBProp;
+       :feedbackFactor ?FBFactor;
+       :feedbackDifferential ?FBDiff.
+  (
+    "Control System — ARC explanation of two control signals\n\n"
+    "Answer\n"
+    ?Answer "\n"
+    "Actuator 1 command: " ?A1 "\n"
+    "Actuator 2 command: " ?A2 "\n\n"
+    "Reason Why\n"
+    "The first sensor pair is " ?Low " and " ?High ", so the reading is " ?Trend
+    " and the controller normalizes the gap " ?Gap " into " ?Norm ". "
+    "That normalized value creates a feedforward term of " ?FFProp
+    ", while the known disturbance " ?Dist " contributes a compensation term of " ?FFComp
+    ". Subtracting that compensation gives actuator 1 the command " ?A1 ". "
+    "For actuator 2, the target is " ?Err " units above the measured output, so the tracking error is positive. "
+    "The observed state is " ?DiffErr " relative units below the measured output, so the differential correction is negative. "
+    "That yields a proportional feedback part of " ?FBProp ", a nonlinear factor of " ?FBFactor
+    ", and a differential contribution of " ?FBDiff ". Together they produce actuator 2 command " ?A2 ".\n\n"
+    "Check\n"
+    "C1 OK - the first sensor pair is rising, so the normalization uses the rising-branch rule.\n"
+    "C2 OK - the normalized measurement is positive and smaller than the raw gap, which is consistent with a square-root normalization.\n"
+    "C3 OK - actuator 1 is lower than its proportional feedforward term because disturbance compensation is subtracted.\n"
+    "C4 OK - the target is above the measured output, so the tracking error is positive.\n"
+    "C5 OK - the observed state is below the measured output, so the differential error is negative.\n"
+    "C6 OK - actuator 2 is lower than its pure proportional term because the differential part reduces it.\n"
+    "C7 OK - actuator 1 matches an independently reconstructed feedforward calculation.\n"
+    "C8 OK - actuator 2 matches an independently reconstructed feedback calculation.\n"
+    "C9 OK - both actuator commands stay positive.\n"
+  ) string:concatenation ?Block.
+}
+    =>
+{ :report log:outputString ?Block. }.
+
+# ---------------------------------------------------------------------------
+# Independent checks: validate the shape of the reasoning, not just constants
+# ---------------------------------------------------------------------------
+
+# The first sensor pair must be rising for this explanation path.
+{ :input1 :measurement1 (?Low ?High).
+  ?Low math:notLessThan ?High. }
+    => false.
+
+# Square-root normalization should stay positive and smaller than the raw gap.
+{ :why :normalizedMeasurement ?Norm.
+  ?Norm math:notGreaterThan 0. }
+    => false.
+
+{ :why :normalizedMeasurement ?Norm;
+       :sensorGap ?Gap.
+  ?Norm math:notLessThan ?Gap. }
+    => false.
+
+# Feedforward compensation must reduce the raw proportional response.
+{ :actuator1 :control1 ?A1.
+  :why :feedforwardProportional ?Prop.
+  ?A1 math:notLessThan ?Prop. }
+    => false.
+
+# The tracking target must exceed the current measurement in this case.
+{ :output2 :target2 ?Target.
+  :output2 :measurement4 ?Measured.
+  ?Target math:notGreaterThan ?Measured. }
+    => false.
+
+# The observed state must be below the measured output, making the differential error negative.
+{ :state3 :observation3 ?Observed.
+  :output2 :measurement4 ?Measured.
+  ?Observed math:notLessThan ?Measured. }
+    => false.
+
+{ :why :feedbackDifferential ?Diff.
+  ?Diff math:notLessThan 0. }
+    => false.
+
+# The differential part must reduce the pure proportional feedback command.
+{ :actuator2 :control1 ?A2.
+  :why :feedbackProportional ?Prop.
+  ?A2 math:notLessThan ?Prop. }
+    => false.
+
+# Independent reconstructions must agree with the derived actuator commands.
+{ :actuator1 :control1 ?A1.
+  :why :feedforwardCommand ?Rebuilt.
+  ?A1 math:notEqualTo ?Rebuilt. }
+    => false.
+
+{ :actuator2 :control1 ?A2.
+  :why :feedbackCommand ?Rebuilt.
+  ?A2 math:notEqualTo ?Rebuilt. }
+    => false.
+
+# The resulting commands should stay positive.
+{ :actuator1 :control1 ?A1.
+  ?A1 math:notGreaterThan 0. }
+    => false.
+
+{ :actuator2 :control1 ?A2.
+  ?A2 math:notGreaterThan 0. }
+    => false.
