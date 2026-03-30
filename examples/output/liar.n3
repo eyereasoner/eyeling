@@ -1,1 +1,7 @@
-# Inference fuse triggered: a { ... } => false. rule fired.
+# Inference fuse triggered.
+# Fired rule:
+#   {
+#     {
+#       :Alice a :Liar .
+#   } => false .
+#   } => false .

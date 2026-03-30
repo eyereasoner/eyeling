@@ -4187,7 +4187,7 @@ function main() {
           console.log(engine.tripleToN3(df.fact, outPrefixes));
         }
       },
-      { captureExplanations: engine.getProofCommentsEnabled() },
+      { captureExplanations: engine.getProofCommentsEnabled(), prefixes: outPrefixes },
     );
     return;
   }
@@ -4201,13 +4201,14 @@ function main() {
   let outDerived = [];
 
   if (hasQueries) {
-    const res = engine.forwardChainAndCollectLogQueryConclusions(facts, frules, brules, qrules);
+    const res = engine.forwardChainAndCollectLogQueryConclusions(facts, frules, brules, qrules, { prefixes });
     derived = res.derived;
     outTriples = res.queryTriples;
     outDerived = res.queryDerived;
   } else {
     derived = engine.forwardChain(facts, frules, brules, null, {
       captureExplanations: engine.getProofCommentsEnabled(),
+      prefixes,
     });
     outDerived = derived;
     outTriples = derived.map((df) => df.fact);
@@ -4767,7 +4768,7 @@ const {
 
 const { makeExplain } = require('./explain');
 
-const { tripleToN3, prettyPrintQueryTriples } = require('./printing');
+const { termToN3, tripleToN3, prettyPrintQueryTriples } = require('./printing');
 const {
   getDataFactory,
   internalTripleToRdfJsQuad,
@@ -7294,6 +7295,67 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
 // Forward chaining to fixpoint
 // ===========================================================================
 
+function __defaultFusePrefixEnv() {
+  return {
+    shrinkIri() {
+      return null;
+    },
+  };
+}
+
+function __serializeFuseFormulaTriples(triples, prefixes) {
+  if (!Array.isArray(triples) || triples.length === 0) return '{ }';
+  return `{
+${triples.map((tr) => `  ${tripleToN3(tr, prefixes)}`).join('\n')}
+}`;
+}
+
+function __serializeFuseRule(rule, prefixes, subst /* optional */) {
+  const pref = prefixes && typeof prefixes.shrinkIri === 'function' ? prefixes : __defaultFusePrefixEnv();
+  const premise = Array.isArray(rule.premise)
+    ? subst
+      ? rule.premise.map((tr) => applySubstTriple(tr, subst))
+      : rule.premise
+    : [];
+
+  const premiseText = premise.length ? __serializeFuseFormulaTriples(premise, pref) : 'true';
+
+  let headText = 'true';
+  if (rule.isFuse) {
+    headText = 'false';
+  } else if (rule.__dynamicConclusionTerm) {
+    const dyn = subst ? applySubstTerm(rule.__dynamicConclusionTerm, subst) : rule.__dynamicConclusionTerm;
+    headText = termToN3(dyn, pref);
+  } else {
+    const conclusion = Array.isArray(rule.conclusion)
+      ? subst
+        ? rule.conclusion.map((tr) => applySubstTriple(tr, subst))
+        : rule.conclusion
+      : [];
+    headText = conclusion.length ? __serializeFuseFormulaTriples(conclusion, pref) : 'true';
+  }
+
+  const arrow = rule.isForward === false ? '<=' : '=>';
+  return `${premiseText} ${arrow} ${headText} .`;
+}
+
+function __printTriggeredFuse(rule, prefixes, subst /* optional */, extraNote /* optional */) {
+  console.log('# Inference fuse triggered.');
+  if (extraNote) console.log(`# ${extraNote}`);
+
+  const schematic = __serializeFuseRule(rule, prefixes, null);
+  console.log('# Fired rule:');
+  for (const line of schematic.split(/\r?\n/)) console.log('#   ' + line);
+
+  if (subst) {
+    const instantiated = __serializeFuseRule(rule, prefixes, subst);
+    if (instantiated !== schematic) {
+      console.log('# Matched instance:');
+      for (const line of instantiated.split(/\r?\n/)) console.log('#   ' + line);
+    }
+  }
+}
+
 function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, opts = {}) {
   enterReasoningRun();
   try {
@@ -7432,7 +7494,7 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
 
         // Allow dynamic fuses: ... => ?X. where ?X becomes false
         if (dynTerm instanceof Literal && dynTerm.value === 'false') {
-          console.log('# Inference fuse triggered: dynamic head resolved to false.');
+          __printTriggeredFuse(r, opts && opts.prefixes, s, 'Dynamic head resolved to false.');
           process.exit(2);
         }
 
@@ -7601,7 +7663,7 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
 
           // Inference fuse
           if (r.isFuse && sols.length) {
-            console.log('# Inference fuse triggered: a { ... } => false. rule fired.');
+            __printTriggeredFuse(r, opts && opts.prefixes, sols[0]);
             process.exit(2);
           }
 
@@ -7891,7 +7953,7 @@ function reasonStream(input, opts = {}) {
   if (Array.isArray(logQueryRules) && logQueryRules.length) {
     // Query-selection mode: derive full closure, then output only the unique
     // instantiated conclusion triples of the log:query directives.
-    const res = forwardChainAndCollectLogQueryConclusions(facts, frules, brules, logQueryRules);
+    const res = forwardChainAndCollectLogQueryConclusions(facts, frules, brules, logQueryRules, { prefixes });
     derived = res.derived;
     queryTriples = res.queryTriples;
     queryDerived = res.queryDerived;
@@ -7907,16 +7969,22 @@ function reasonStream(input, opts = {}) {
     }
   } else {
     // Default mode: output only newly derived forward facts.
-    derived = forwardChain(facts, frules, brules, (df) => {
-      if (typeof onDerived === 'function') {
-        const payload = {
-          triple: tripleToN3(df.fact, prefixes),
-          df,
-        };
-        if (rdfFactory) payload.quad = internalTripleToRdfJsQuad(df.fact, rdfFactory);
-        onDerived(payload);
-      }
-    });
+    derived = forwardChain(
+      facts,
+      frules,
+      brules,
+      (df) => {
+        if (typeof onDerived === 'function') {
+          const payload = {
+            triple: tripleToN3(df.fact, prefixes),
+            df,
+          };
+          if (rdfFactory) payload.quad = internalTripleToRdfJsQuad(df.fact, rdfFactory);
+          onDerived(payload);
+        }
+      },
+      { prefixes },
+    );
   }
 
   const closureTriples =
