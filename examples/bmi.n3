@@ -1,0 +1,219 @@
+# ============================================================================
+# BMI — ARC-style Body Mass Index example.
+#
+# This example turns a familiar health calculation into a small, inspectable
+# ARC program. It normalizes either metric or US inputs, computes BMI, assigns
+# a WHO adult category, and derives a healthy-range weight band for the given
+# height. The report explains the result and includes independent checks for
+# boundary handling and category behavior.
+#
+# For reproducibility and documentation only; not medical advice.
+# ============================================================================
+
+@prefix : <https://example.org/bmi#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+
+# --------------
+# Editable input
+# --------------
+
+:Input
+  :unitSystem "metric";
+  :weight 72.0;
+  :height 178.0.
+
+# US alternative:
+# :Input
+#   :unitSystem "us";
+#   :weight 158.73;
+#   :height 70.08.
+
+# ---------------------------------
+# Normalization and BMI calculation
+# ---------------------------------
+
+{ :Input :unitSystem "metric"; :weight ?W; :height ?H.
+  (?H 100.0) math:quotient ?M. }
+    =>
+{ :Case :weightKg ?W; :heightM ?M.
+  :Reason :units "Inputs were already metric, so kilograms stay kilograms and centimeters are divided by 100 to obtain meters.". } .
+
+{ :Input :unitSystem "us"; :weight ?W; :height ?H.
+  (?W 0.45359237) math:product ?Kg.
+  (?H 0.0254) math:product ?M. }
+    =>
+{ :Case :weightKg ?Kg; :heightM ?M.
+  :Reason :units "US inputs were converted to SI units: pounds to kilograms and inches to meters.". } .
+
+{ :Case :weightKg ?Kg; :heightM ?M.
+  (?M ?M) math:product ?M2.
+  (?Kg ?M2) math:quotient ?Bmi.
+  (?Bmi 100.0) math:product ?BmiX100.
+  ?BmiX100 math:rounded ?BmiRoundedInt.
+  (?BmiRoundedInt 100.0) math:quotient ?BmiRounded.
+  (18.5 ?M2) math:product ?HealthyMin.
+  (24.9 ?M2) math:product ?HealthyMax.
+  (?HealthyMin 10.0) math:product ?MinX10.
+  (?HealthyMax 10.0) math:product ?MaxX10.
+  ?MinX10 math:rounded ?MinRoundedInt.
+  ?MaxX10 math:rounded ?MaxRoundedInt.
+  (?MinRoundedInt 10.0) math:quotient ?HealthyMinRounded.
+  (?MaxRoundedInt 10.0) math:quotient ?HealthyMaxRounded. }
+    =>
+{ :Case :heightSquared ?M2;
+        :bmi ?Bmi;
+        :bmiRounded ?BmiRounded;
+        :healthyMinKg ?HealthyMin;
+        :healthyMaxKg ?HealthyMax;
+        :healthyMinKgRounded ?HealthyMinRounded;
+        :healthyMaxKgRounded ?HealthyMaxRounded. } .
+
+# ------------------------------------------
+# WHO adult categories (half-open intervals)
+# ------------------------------------------
+
+{ :Case :bmi ?Bmi. ?Bmi math:lessThan 18.5. }
+    => { :Decision :category "Underweight". } .
+
+{ :Case :bmi ?Bmi. ?Bmi math:notLessThan 18.5. ?Bmi math:lessThan 25.0. }
+    => { :Decision :category "Normal". } .
+
+{ :Case :bmi ?Bmi. ?Bmi math:notLessThan 25.0. ?Bmi math:lessThan 30.0. }
+    => { :Decision :category "Overweight". } .
+
+{ :Case :bmi ?Bmi. ?Bmi math:notLessThan 30.0. ?Bmi math:lessThan 35.0. }
+    => { :Decision :category "Obesity I". } .
+
+{ :Case :bmi ?Bmi. ?Bmi math:notLessThan 35.0. ?Bmi math:lessThan 40.0. }
+    => { :Decision :category "Obesity II". } .
+
+{ :Case :bmi ?Bmi. ?Bmi math:notLessThan 40.0. }
+    => { :Decision :category "Obesity III". } .
+
+# ---------------------
+# Answer and reason why
+# ---------------------
+
+{ :Case :bmiRounded ?BmiRounded;
+        :healthyMinKgRounded ?HealthyMinRounded;
+        :healthyMaxKgRounded ?HealthyMaxRounded;
+        :heightM ?M.
+  :Decision :category ?Category.
+  (?M 100.0) math:product ?Cm.
+  ?Cm math:rounded ?CmRounded. }
+    =>
+{ :Answer :bmi ?BmiRounded;
+          :category ?Category;
+          :healthyMinKg ?HealthyMinRounded;
+          :healthyMaxKg ?HealthyMaxRounded;
+          :heightCm ?CmRounded. } .
+
+{ :Case :weightKg ?Kg; :heightM ?M; :heightSquared ?M2; :bmiRounded ?BmiRounded.
+  :Reason :units ?Units.
+  :Decision :category ?Category. }
+    =>
+{ :Reason :formula "BMI is defined as weight in kilograms divided by height in meters squared.";
+          :calculation "The normalized weight and height were used to compute BMI, then the result was mapped to the WHO adult category table.";
+          :categoryRule ?Category;
+          :unitsExplanation ?Units. } .
+
+# ------------------
+# Independent checks
+# ------------------
+
+{ :Case :weightKg ?Kg; :heightM ?M. ?Kg math:greaterThan 0. ?M math:greaterThan 0. }
+    => { :Check :c1 "OK - the input was normalized into positive SI values.". } .
+
+{ :Case :heightM ?M; :heightSquared ?M2. (?M ?M) math:product ?M2. }
+    => { :Check :c2 "OK - height squared was reconstructed from the normalized height.". } .
+
+{ :Case :weightKg ?Kg; :heightSquared ?M2; :bmi ?Bmi. (?Kg ?M2) math:quotient ?Bmi. }
+    => { :Check :c3 "OK - the BMI value matches the BMI = kg / m² formula.". } .
+
+{ 18.49 math:lessThan 18.5. }
+    => { :Check :c4 "OK - a BMI of 18.49 stays below the normal-weight threshold.". } .
+
+{ 18.5 math:notLessThan 18.5. 18.5 math:lessThan 25.0. }
+    => { :Check :c5 "OK - the lower boundary is half-open: BMI 18.5 is classified as Normal.". } .
+
+{ 25.0 math:notLessThan 25.0. 25.0 math:lessThan 30.0. }
+    => { :Check :c6 "OK - BMI 25.0 starts the Overweight category.". } .
+
+{ 30.0 math:notLessThan 30.0. 30.0 math:lessThan 35.0. }
+    => { :Check :c7 "OK - BMI 30.0 starts the Obesity I category.". } .
+
+{ 22.0 math:notLessThan 18.5. 22.0 math:lessThan 25.0.
+  27.0 math:notLessThan 25.0. 27.0 math:lessThan 30.0.
+  41.0 math:notLessThan 40.0. }
+    => { :Check :c8 "OK - classification behavior is monotonic across representative BMI values.". } .
+
+{ :Case :heightSquared ?M2; :healthyMinKg ?Min; :healthyMaxKg ?Max.
+  (18.5 ?M2) math:product ?Min.
+  (24.9 ?M2) math:product ?Max. }
+    => { :Check :c9 "OK - the healthy-weight band was reconstructed from BMI 18.5 to 24.9 at the same height.". } .
+
+# -----
+# Fuses
+# -----
+
+{ :Decision :category ?Any.
+  1 log:notIncludes {
+    :Check :c1 ?C1.
+    :Check :c2 ?C2.
+    :Check :c3 ?C3.
+    :Check :c4 ?C4.
+    :Check :c5 ?C5.
+    :Check :c6 ?C6.
+    :Check :c7 ?C7.
+    :Check :c8 ?C8.
+    :Check :c9 ?C9.
+  }. }
+    => false .
+
+{ :Decision :category ?C1, ?C2.
+  ?C1 log:notEqualTo ?C2. }
+    => false .
+
+# ---------------------------------------------
+# ARC report (built from actual derived values)
+# ---------------------------------------------
+
+{ :Answer :bmi ?BmiRounded;
+          :category ?Category;
+          :healthyMinKg ?HealthyMinRounded;
+          :healthyMaxKg ?HealthyMaxRounded;
+          :heightCm ?CmRounded.
+  :Check :c1 ?C1.
+  :Check :c2 ?C2.
+  :Check :c3 ?C3.
+  :Check :c4 ?C4.
+  :Check :c5 ?C5.
+  :Check :c6 ?C6.
+  :Check :c7 ?C7.
+  :Check :c8 ?C8.
+  :Check :c9 ?C9.
+  (
+    "BMI — ARC-style Body Mass Index example\n\n"
+    "Answer\n"
+    "BMI = " ?BmiRounded "\n"
+    "Category = " ?Category "\n"
+    "At height " ?CmRounded " cm, a healthy-weight range is about " ?HealthyMinRounded "–" ?HealthyMaxRounded " kg (BMI 18.5–24.9).\n\n"
+    "Reason Why\n"
+    "BMI is defined as weight in kilograms divided by height in meters squared. "
+    "This program first normalizes the input to SI units, computes BMI, and then applies WHO adult categories as half-open intervals. "
+    "The healthy-weight band is the weight range at the same height that corresponds to BMI 18.5 through 24.9.\n\n"
+    "Check\n"
+    "C1 " ?C1 "\n"
+    "C2 " ?C2 "\n"
+    "C3 " ?C3 "\n"
+    "C4 " ?C4 "\n"
+    "C5 " ?C5 "\n"
+    "C6 " ?C6 "\n"
+    "C7 " ?C7 "\n"
+    "C8 " ?C8 "\n"
+    "C9 " ?C9 "\n"
+  ) string:concatenation ?Block. }
+    =>
+{ :report log:outputString ?Block. } .
