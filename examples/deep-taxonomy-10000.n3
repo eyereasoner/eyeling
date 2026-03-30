@@ -1,6 +1,11 @@
 # =============================================================================================================================  
-# Deep Taxonomy - depth 10000
+# Deep Taxonomy - depth 10000 - ARC style
 # See https://web.archive.org/web/20220119222608/http://responder.ruleml.org/WellnessRules/files/WellnessRulesN3-2009-11-10.pdf
+#
+# This example is a stress test for deep classification. One individual starts
+# in class N0. Each rule moves that individual one level deeper in the taxonomy
+# and also adds two side labels. If reasoning reaches N10000, the final rule
+# derives A2 and the test succeeds.
 # =============================================================================================================================  
 
 @prefix : <http://eulersharp.sourceforge.net/2009/12dtb/test#>.
@@ -10013,3 +10018,49 @@
 {?X a :N9999} => {?X a :N10000, :I10000, :J10000}.
 
 {?X a :N10000} => {?X a :A2}.
+
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+
+# ARC checks
+{ :ind a :N0. }
+    => { :arc :check1 "C1 OK - the starting classification N0 is present." . } .
+
+{ :ind a :N1, :I1, :J1. }
+    => { :arc :check2 "C2 OK - the first expansion produced N1 together with side labels I1 and J1." . } .
+
+{ :ind a :N5000, :I5000, :J5000. }
+    => { :arc :check3 "C3 OK - the chain reaches the midpoint N5000 and still carries both side-label branches." . } .
+
+{ :ind a :N9999, :N10000. }
+    => { :arc :check4 "C4 OK - the final taxonomy step from N9999 to N10000 was completed." . } .
+
+{ :ind a :N10000, :A2. }
+    => { :arc :check5 "C5 OK - once N10000 is reached, the terminal class A2 is derived." . } .
+
+{ :ind a :A2. :test :is true. }
+    => { :arc :check6 "C6 OK - the success flag is raised only after the terminal class A2 is present." . } .
+
+# ARC report
+{
+    :test :is true.
+    :arc :check1 ?C1; :check2 ?C2; :check3 ?C3; :check4 ?C4; :check5 ?C5; :check6 ?C6.
+}
+    =>
+{
+    :report log:outputString "Deep Taxonomy - deep classification benchmark
+
+Answer
+The test succeeds: starting from one individual classified as N0, the rules eventually classify it as N10000 and then as A2.
+
+Reason Why
+Each rule moves the same individual one level deeper in the taxonomy and also adds two side labels. Because that chain continues all the way from N0 to N10000, the final rule deriving A2 fires, and that in turn makes the test true.
+
+Check
+C1 OK - the starting classification N0 is present.
+C2 OK - the first expansion produced N1 together with side labels I1 and J1.
+C3 OK - the chain reaches the midpoint N5000 and still carries both side-label branches.
+C4 OK - the final taxonomy step from N9999 to N10000 was completed.
+C5 OK - once N10000 is reached, the terminal class A2 is derived.
+C6 OK - the success flag is raised only after the terminal class A2 is present.
+" .
+} .

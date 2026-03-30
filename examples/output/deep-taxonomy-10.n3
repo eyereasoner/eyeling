@@ -1,34 +1,15 @@
-@prefix : <http://eulersharp.sourceforge.net/2009/12dtb/test#> .
+Deep Taxonomy - deep classification benchmark
 
-:ind a :N1 .
-:ind a :I1 .
-:ind a :J1 .
-:ind a :N2 .
-:ind a :I2 .
-:ind a :J2 .
-:ind a :N3 .
-:ind a :I3 .
-:ind a :J3 .
-:ind a :N4 .
-:ind a :I4 .
-:ind a :J4 .
-:ind a :N5 .
-:ind a :I5 .
-:ind a :J5 .
-:ind a :N6 .
-:ind a :I6 .
-:ind a :J6 .
-:ind a :N7 .
-:ind a :I7 .
-:ind a :J7 .
-:ind a :N8 .
-:ind a :I8 .
-:ind a :J8 .
-:ind a :N9 .
-:ind a :I9 .
-:ind a :J9 .
-:ind a :N10 .
-:ind a :I10 .
-:ind a :J10 .
-:ind a :A2 .
-:test :is true .
+Answer
+The test succeeds: starting from one individual classified as N0, the rules eventually classify it as N10 and then as A2.
+
+Reason Why
+Each rule moves the same individual one level deeper in the taxonomy and also adds two side labels. Because that chain continues all the way from N0 to N10, the final rule deriving A2 fires, and that in turn makes the test true.
+
+Check
+C1 OK - the starting classification N0 is present.
+C2 OK - the first expansion produced N1 together with side labels I1 and J1.
+C3 OK - the chain reaches the midpoint N5 and still carries both side-label branches.
+C4 OK - the final taxonomy step from N9 to N10 was completed.
+C5 OK - once N10 is reached, the terminal class A2 is derived.
+C6 OK - the success flag is raised only after the terminal class A2 is present.
