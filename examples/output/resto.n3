@@ -1,0 +1,20 @@
+RESTdesc — Restaurant finder
+
+Answer
+A restaurant was found and reserved.
+Restaurant: Maximiliaan
+Date: 2026-04-08
+Seating: outside terrace
+
+Reason Why
+The plan resolved the person's address, turned it into a map point, checked the local weather, selected a suitable restaurant, and then created a reservation. Because the weather came back mild and stable (22 C and 1016 mbar), the chosen seating stayed outdoors.
+
+Check
+C1 address resolved.
+C2 location found.
+C3 weather loaded.
+C4 outdoor dining justified.
+C5 reservable restaurant selected.
+C6 requested date preserved.
+C7 outdoor preference preserved.
+C8 original goal pattern satisfied.

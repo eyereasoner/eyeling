@@ -1,0 +1,241 @@
+# ===========================================================================
+# RESTdesc restaurant finder — ARC style service composition example.
+# Based on the RestoProof [1] idea of describing hypermedia APIs as N3 rules.
+#
+# This example starts with only a person and a desired dinner date. A chain of
+# RESTdesc-style service descriptions first finds the person's address, then a
+# location, then today's weather, then a suitable restaurant, and finally a
+# reservation. The ARC report explains the result in plain language and checks
+# that the reservation really preserves the requested date and outdoor seating
+# preference.
+#
+# [1] https://github.com/RESTdesc/RestoProof
+# ===========================================================================
+
+@prefix : <http://example.org/resto#>.
+@prefix http: <http://www.w3.org/2011/http#>.
+@prefix foaf: <http://xmlns.com/foaf/0.1/>.
+@prefix con: <http://www.w3.org/2000/10/swap/pim/contact#>.
+@prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>.
+@prefix meteo: <http://purl.org/ns/meteo#>.
+@prefix resto: <http://example.org/restaurant#>.
+@prefix string: <http://www.w3.org/2000/10/swap/string#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+
+# ----------------
+# Initial question
+# ----------------
+
+:Ruben a foaf:Person.
+:PlanningDocument a foaf:Document.
+:DinnerPlan resto:hasDate "2026-04-08";
+    resto:isOn :appointmentList.
+
+# -----------------------------------
+# RESTdesc-style service descriptions
+# -----------------------------------
+
+# Preferences API: from person + document to address.
+{ :Ruben a foaf:Person.
+  :PlanningDocument a foaf:Document. }
+=>
+{ :reqPreferences http:methodName "GET";
+      http:requestURI :preferencesEndpoint;
+      http:resp :respPreferences.
+  :respPreferences http:body :GentAddress.
+  :Ruben foaf:based_near :GentAddress.
+  :GentAddress a con:Address;
+      resto:label "Gent". }.
+
+# Location API: from address to geo point.
+{ :GentAddress a con:Address. }
+=>
+{ :reqLocation http:methodName "GET";
+      http:requestURI :locationEndpoint;
+      http:resp :respLocation.
+  :respLocation http:body :GentPoint.
+  :GentPoint a geo:Point;
+      geo:lat "51.05";
+      geo:long "3.72". }.
+
+# Temperature API: from point to temperature.
+{ :GentPoint a geo:Point. }
+=>
+{ :reqTemperature http:methodName "GET";
+      http:requestURI :temperatureEndpoint;
+      http:resp :respTemperature.
+  :respTemperature http:body :Temp22.
+  :GentPoint meteo:temperature :Temp22.
+  :Temp22 meteo:celsius "22". }.
+
+# Pressure API: from point to pressure.
+{ :GentPoint a geo:Point. }
+=>
+{ :reqPressure http:methodName "GET";
+      http:requestURI :pressureEndpoint;
+      http:resp :respPressure.
+  :respPressure http:body :Pressure1016.
+  :GentPoint meteo:pressure :Pressure1016.
+  :Pressure1016 meteo:millibar "1016". }.
+
+# Weather interpretation: mild temperature + stable pressure => outdoor dining.
+{ :GentPoint meteo:temperature :Temp22;
+      meteo:pressure :Pressure1016.
+  :Temp22 meteo:celsius "22".
+  :Pressure1016 meteo:millibar "1016". }
+=>
+{ :TodayWeather resto:mildTemperature true;
+      resto:stableWeather true;
+      resto:goodForOutsideSeating true.
+  :DesiredPlace resto:isOutside true;
+      resto:label "outside terrace". }.
+
+# Appointment API: from location + weather + date to a suitable restaurant.
+{ :GentPoint a geo:Point.
+  :TodayWeather resto:goodForOutsideSeating true.
+  :DinnerPlan resto:isOn :appointmentList;
+      resto:hasDate ?Date. }
+=>
+{ :reqRecommendation http:methodName "POST";
+      http:requestURI :appointmentList;
+      http:body :DinnerPlan;
+      http:resp :respRecommendation.
+  :respRecommendation http:body :DinnerPlan.
+  :DinnerPlan resto:isAt :RiverTerraceBistro.
+  :RiverTerraceBistro a resto:Restaurant;
+      resto:name "Maximiliaan";
+      resto:reservationList :RiverTerraceReservations. }.
+
+# Restaurant API: from restaurant + desired place + date to a reservation.
+{ :RiverTerraceBistro resto:reservationList :RiverTerraceReservations.
+  :DesiredPlace resto:isOutside ?Outside.
+  :DinnerPlan resto:hasDate ?Date. }
+=>
+{ :reqReservation http:methodName "POST";
+      http:requestURI :RiverTerraceReservations;
+      http:body :DinnerPlan;
+      http:resp :respReservation.
+  :respReservation http:body :Reservation42.
+  :RiverTerraceBistro resto:hasReservation :Reservation42.
+  :Reservation42 resto:onDate ?Date;
+      resto:place :TableArea42.
+  :TableArea42 resto:isOutside ?Outside. }.
+
+# Goal shape, in the style of the original RestoProof query.
+{ ?Restaurant resto:hasReservation ?Reservation.
+  ?Reservation resto:onDate ?Date;
+      resto:place ?Place.
+  ?Place resto:isOutside ?Outside. }
+=>
+{ :Goal resto:restaurant ?Restaurant;
+      resto:reservation ?Reservation;
+      resto:onDate ?Date;
+      resto:isOutside ?Outside. }.
+
+# ----------------
+# Reason-why facts
+# ----------------
+
+{ :Goal resto:restaurant ?Restaurant;
+      resto:onDate ?Date;
+      resto:isOutside true.
+  ?Restaurant resto:name ?Name. }
+=>
+{ :Decision :outcome "A restaurant was found and reserved.";
+      :restaurantName ?Name;
+      :reservationDate ?Date;
+      :seating "outside terrace". }.
+
+# ------------------
+# Independent checks
+# ------------------
+
+{ :Ruben foaf:based_near :GentAddress.
+  :GentAddress a con:Address. }
+=>
+{ :Check :c1 "OK - the preferences service resolved the person's address." }.
+
+{ :GentPoint a geo:Point;
+      geo:lat "51.05";
+      geo:long "3.72". }
+=>
+{ :Check :c2 "OK - the location service turned the address into map coordinates." }.
+
+{ :GentPoint meteo:temperature :Temp22;
+      meteo:pressure :Pressure1016.
+  :Temp22 meteo:celsius "22".
+  :Pressure1016 meteo:millibar "1016". }
+=>
+{ :Check :c3 "OK - the weather services supplied temperature and pressure for that location." }.
+
+{ :TodayWeather resto:mildTemperature true;
+      resto:stableWeather true;
+      resto:goodForOutsideSeating true. }
+=>
+{ :Check :c4 "OK - the weather interpretation justified outdoor seating." }.
+
+{ :DinnerPlan resto:isAt :RiverTerraceBistro.
+  :RiverTerraceBistro a resto:Restaurant;
+      resto:reservationList :RiverTerraceReservations. }
+=>
+{ :Check :c5 "OK - the recommendation step selected a restaurant that can accept reservations." }.
+
+{ :DinnerPlan resto:hasDate ?Requested.
+  :Reservation42 resto:onDate ?Actual.
+  ?Requested log:equalTo ?Actual. }
+=>
+{ :Check :c6 "OK - the reservation preserved the requested dinner date." }.
+
+{ :DesiredPlace resto:isOutside ?Wanted.
+  :TableArea42 resto:isOutside ?Actual.
+  ?Wanted log:equalTo ?Actual. }
+=>
+{ :Check :c7 "OK - the reservation preserved the outdoor seating preference." }.
+
+{ :Goal resto:restaurant :RiverTerraceBistro;
+      resto:reservation :Reservation42;
+      resto:isOutside true. }
+=>
+{ :Check :c8 "OK - the final goal pattern from the original RESTdesc query is satisfied." }.
+
+# Fail loudly on the two key integrity conditions.
+{ :DinnerPlan resto:hasDate ?Requested.
+  :Reservation42 resto:onDate ?Actual.
+  ?Requested log:notEqualTo ?Actual. }
+=> false.
+
+{ :DesiredPlace resto:isOutside ?Wanted.
+  :TableArea42 resto:isOutside ?Actual.
+  ?Wanted log:notEqualTo ?Actual. }
+=> false.
+
+# ----------
+# ARC report
+# ----------
+
+{ :Decision :outcome ?Outcome;
+      :restaurantName ?RestaurantName;
+      :reservationDate ?Date;
+      :seating ?Seating.
+  (
+    "RESTdesc — Restaurant finder\n\n"
+    "Answer\n"
+    ?Outcome "\n"
+    "Restaurant: " ?RestaurantName "\n"
+    "Date: " ?Date "\n"
+    "Seating: " ?Seating "\n\n"
+    "Reason Why\n"
+    "The plan resolved the person's address, turned it into a map point, checked the local weather, selected a suitable restaurant, and then created a reservation. "
+    "Because the weather came back mild and stable (22 C and 1016 mbar), the chosen seating stayed outdoors.\n\n"
+    "Check\n"
+    "C1 address resolved.\n"
+    "C2 location found.\n"
+    "C3 weather loaded.\n"
+    "C4 outdoor dining justified.\n"
+    "C5 reservable restaurant selected.\n"
+    "C6 requested date preserved.\n"
+    "C7 outdoor preference preserved.\n"
+    "C8 original goal pattern satisfied.\n"
+  ) string:concatenation ?Block. }
+=>
+{ :Report log:outputString ?Block. }.
