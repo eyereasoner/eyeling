@@ -1913,6 +1913,9 @@ const batch = [];
                 autoResizeCodeMirror(outputEl, 80, mh.output);
 
                 statusEl.textContent = 'Done (rendered output). (' + (Math.max(0, durationMs) / 1000).toFixed(2) + 's)';
+
+                // Highlight syntax errors back in the program editor (red line background)
+                highlightErrorFromOutput(resultText || '');
               } catch (e) {
                 const mh = currentMaxHeights();
                 const msg = e && e.message ? e.message : String(e);
