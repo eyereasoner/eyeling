@@ -1,4 +1,4 @@
-# ===========================================================================
+# ============================================================================
 # RESTdesc restaurant finder — ARC style service composition example.
 # Based on the RestoProof [1] idea of describing hypermedia APIs as N3 rules.
 #
@@ -10,7 +10,7 @@
 # preference.
 #
 # [1] https://github.com/RESTdesc/RestoProof
-# ===========================================================================
+# ============================================================================
 
 @prefix : <http://example.org/resto#>.
 @prefix http: <http://www.w3.org/2011/http#>.
@@ -209,6 +209,67 @@
   ?Wanted log:notEqualTo ?Actual. }
 => false.
 
+# Also fail loudly if any expected check is missing once a decision exists.
+{ :Decision :outcome ?Outcome.
+  :Check :c1 ?C1.
+  :Check :c2 ?C2.
+  :Check :c3 ?C3.
+  :Check :c4 ?C4.
+  :Check :c5 ?C5.
+  :Check :c6 ?C6.
+  :Check :c7 ?C7.
+  1 log:notIncludes { :Check :c8 ?Any. }. }
+=> false.
+
+{ :Decision :outcome ?Outcome.
+  :Check :c1 ?C1.
+  :Check :c2 ?C2.
+  :Check :c3 ?C3.
+  :Check :c4 ?C4.
+  :Check :c5 ?C5.
+  :Check :c6 ?C6.
+  1 log:notIncludes { :Check :c7 ?Any. }. }
+=> false.
+
+{ :Decision :outcome ?Outcome.
+  :Check :c1 ?C1.
+  :Check :c2 ?C2.
+  :Check :c3 ?C3.
+  :Check :c4 ?C4.
+  :Check :c5 ?C5.
+  1 log:notIncludes { :Check :c6 ?Any. }. }
+=> false.
+
+{ :Decision :outcome ?Outcome.
+  :Check :c1 ?C1.
+  :Check :c2 ?C2.
+  :Check :c3 ?C3.
+  :Check :c4 ?C4.
+  1 log:notIncludes { :Check :c5 ?Any. }. }
+=> false.
+
+{ :Decision :outcome ?Outcome.
+  :Check :c1 ?C1.
+  :Check :c2 ?C2.
+  :Check :c3 ?C3.
+  1 log:notIncludes { :Check :c4 ?Any. }. }
+=> false.
+
+{ :Decision :outcome ?Outcome.
+  :Check :c1 ?C1.
+  :Check :c2 ?C2.
+  1 log:notIncludes { :Check :c3 ?Any. }. }
+=> false.
+
+{ :Decision :outcome ?Outcome.
+  :Check :c1 ?C1.
+  1 log:notIncludes { :Check :c2 ?Any. }. }
+=> false.
+
+{ :Decision :outcome ?Outcome.
+  1 log:notIncludes { :Check :c1 ?Any. }. }
+=> false.
+
 # ----------
 # ARC report
 # ----------
@@ -217,6 +278,14 @@
       :restaurantName ?RestaurantName;
       :reservationDate ?Date;
       :seating ?Seating.
+  :Check :c1 ?C1.
+  :Check :c2 ?C2.
+  :Check :c3 ?C3.
+  :Check :c4 ?C4.
+  :Check :c5 ?C5.
+  :Check :c6 ?C6.
+  :Check :c7 ?C7.
+  :Check :c8 ?C8.
   (
     "RESTdesc — Restaurant finder\n\n"
     "Answer\n"
@@ -228,14 +297,14 @@
     "The plan resolved the person's address, turned it into a map point, checked the local weather, selected a suitable restaurant, and then created a reservation. "
     "Because the weather came back mild and stable (22 C and 1016 mbar), the chosen seating stayed outdoors.\n\n"
     "Check\n"
-    "C1 address resolved.\n"
-    "C2 location found.\n"
-    "C3 weather loaded.\n"
-    "C4 outdoor dining justified.\n"
-    "C5 reservable restaurant selected.\n"
-    "C6 requested date preserved.\n"
-    "C7 outdoor preference preserved.\n"
-    "C8 original goal pattern satisfied.\n"
+    "C1 " ?C1 "\n"
+    "C2 " ?C2 "\n"
+    "C3 " ?C3 "\n"
+    "C4 " ?C4 "\n"
+    "C5 " ?C5 "\n"
+    "C6 " ?C6 "\n"
+    "C7 " ?C7 "\n"
+    "C8 " ?C8 "\n"
   ) string:concatenation ?Block. }
 =>
 { :Report log:outputString ?Block. }.
