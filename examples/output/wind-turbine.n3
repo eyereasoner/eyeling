@@ -1,6 +1,18 @@
-@prefix : <http://example.org/> .
+Wind turbine — Predictive maintenance
 
-:turbine1 :hasAnomaly :highTemperature .
-:turbine1 :hasAnomaly :highVibration .
-:turbine1 :requires :gearboxMaintenance .
-:turbine1 :requires :urgentInspection .
+Answer
+Act now: schedule an urgent inspection and gearbox maintenance.
+
+Reason Why
+North field turbine reports vibration 0.42 against a threshold of 0.35, temperature 78 against a threshold of 75, and rotor speed 1650 against a critical limit of 1800. Both vibration and temperature are above their safety thresholds, so the turbine shows a combined warning pattern. The gearbox is also degraded, so maintenance is needed even though the rotor speed is still below the critical RPM limit.
+
+Check
+C1 OK - measured vibration is above the vibration threshold.
+C2 OK - measured temperature is above the temperature threshold.
+C3 OK - a high-vibration anomaly was inferred from the readings.
+C4 OK - a high-temperature anomaly was inferred from the readings.
+C5 OK - urgent inspection follows from the combination of both anomalies.
+C6 OK - the gearbox is marked as degraded.
+C7 OK - degraded gearbox status triggered gearbox maintenance.
+C8 OK - rotor speed is below the critical RPM threshold, so the urgent action is not based on overspeed.
+C9 OK - two separate actions were derived: inspection and maintenance.

@@ -1,63 +1,117 @@
-@prefix : <http://example.org/> .
-@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+# ===========================================================================
+# Wind turbine — ARC-style predictive maintenance example.
+#
+# This example shows how simple sensor readings can support a maintenance
+# decision that is understandable to a wide audience. When vibration and
+# temperature both rise above safe thresholds, the turbine is flagged for an
+# urgent inspection. A degraded gearbox independently triggers maintenance.
+# The final report explains the decision in plain language and checks that it
+# follows from the measured conditions rather than from hard-coded answers.
+# ===========================================================================
+
+@prefix : <https://example.org/wind-turbine#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-# --- Sensor Data ---
-:turbine1 :vibration "0.42"^^xsd:decimal.
-:turbine1 :temperature "78"^^xsd:decimal.
-:turbine1 :rpm "1650"^^xsd:decimal.
-:turbine1 :gearboxStatus :degraded.
+# --- Sensor data ---
+:turbine1
+    :label "North field turbine" ;
+    :vibration "0.42"^^xsd:decimal ;
+    :temperature "78"^^xsd:decimal ;
+    :rpm "1650"^^xsd:decimal ;
+    :gearboxStatus :degraded .
 
-# --- Threshold Values ---
-:highVibrationThreshold :value "0.35"^^xsd:decimal.
-:highTemperatureThreshold :value "75"^^xsd:decimal.
-:criticalRPM :value "1800"^^xsd:decimal.
+# --- Threshold values ---
+:highVibrationThreshold :value "0.35"^^xsd:decimal .
+:highTemperatureThreshold :value "75"^^xsd:decimal .
+:criticalRPM :value "1800"^^xsd:decimal .
 
-# --- Rule: Vibration Anomaly ---
-{
-  ?T :vibration ?V.
+# --- Core logic from the original example ---
+{ ?T :vibration ?V. :highVibrationThreshold :value ?VT.
+  ?V math:greaterThan ?VT. }
+    => { ?T :hasAnomaly :highVibration. } .
+
+{ ?T :temperature ?Temp. :highTemperatureThreshold :value ?TT.
+  ?Temp math:greaterThan ?TT. }
+    => { ?T :hasAnomaly :highTemperature. } .
+
+{ ?T :hasAnomaly :highVibration.
+  ?T :hasAnomaly :highTemperature. }
+    => { ?T :requires :urgentInspection. } .
+
+{ ?T :gearboxStatus :degraded. }
+    => { ?T :requires :gearboxMaintenance. } .
+
+# --- Explanation layer ---
+{ :turbine1 :vibration ?V; :temperature ?Temp; :rpm ?RPM; :gearboxStatus ?Gearbox.
   :highVibrationThreshold :value ?VT.
-  ?V math:greaterThan ?VT.
-} => {
-  ?T :hasAnomaly :highVibration.
-}.
-
-# --- Rule: Temperature Anomaly ---
-{
-  ?T :temperature ?Temp.
   :highTemperatureThreshold :value ?TT.
+  :criticalRPM :value ?RT.
+  ?V math:greaterThan ?VT.
   ?Temp math:greaterThan ?TT.
-} => {
-  ?T :hasAnomaly :highTemperature.
-}.
+  ?RT math:greaterThan ?RPM. }
+    => {
+      :decision :outcome "Act now: schedule an urgent inspection and gearbox maintenance." ;
+                :reason "Both vibration and temperature are above their safety thresholds, so the turbine shows a combined warning pattern. The gearbox is also degraded, so maintenance is needed even though the rotor speed is still below the critical RPM limit." .
+    } .
 
-# --- Rule: Combined Anomalies Trigger Urgent Inspection ---
-{
-  ?T :hasAnomaly :highVibration.
-  ?T :hasAnomaly :highTemperature.
-} => {
-  ?T :requires :urgentInspection.
-}.
+# --- ARC checks ---
+{ :turbine1 :vibration ?V. :highVibrationThreshold :value ?VT. ?V math:greaterThan ?VT. }
+    => { :check :c1 "OK - measured vibration is above the vibration threshold." . } .
 
-# --- Rule: Gearbox Status Triggers Maintenance ---
-{
-  ?T :gearboxStatus :degraded.
-} => {
-  ?T :requires :gearboxMaintenance.
-}.
+{ :turbine1 :temperature ?Temp. :highTemperatureThreshold :value ?TT. ?Temp math:greaterThan ?TT. }
+    => { :check :c2 "OK - measured temperature is above the temperature threshold." . } .
 
-# --- Query: Detected Anomalies ---
-{
-  ?T :hasAnomaly ?Anomaly.
-} log:query {
-  ?T :hasAnomaly ?Anomaly.
-}.
+{ :turbine1 :hasAnomaly :highVibration. }
+    => { :check :c3 "OK - a high-vibration anomaly was inferred from the readings." . } .
 
-# --- Query: Required Actions ---
-{
-  ?T :requires ?Action.
-} log:query {
-  ?T :requires ?Action.
-}.
+{ :turbine1 :hasAnomaly :highTemperature. }
+    => { :check :c4 "OK - a high-temperature anomaly was inferred from the readings." . } .
 
+{ :turbine1 :hasAnomaly :highVibration.
+  :turbine1 :hasAnomaly :highTemperature.
+  :turbine1 :requires :urgentInspection. }
+    => { :check :c5 "OK - urgent inspection follows from the combination of both anomalies." . } .
+
+{ :turbine1 :gearboxStatus :degraded. }
+    => { :check :c6 "OK - the gearbox is marked as degraded." . } .
+
+{ :turbine1 :requires :gearboxMaintenance. }
+    => { :check :c7 "OK - degraded gearbox status triggered gearbox maintenance." . } .
+
+{ :criticalRPM :value ?RT. :turbine1 :rpm ?RPM. ?RT math:greaterThan ?RPM. }
+    => { :check :c8 "OK - rotor speed is below the critical RPM threshold, so the urgent action is not based on overspeed." . } .
+
+{ :turbine1 :requires :urgentInspection.
+  :turbine1 :requires :gearboxMaintenance. }
+    => { :check :c9 "OK - two separate actions were derived: inspection and maintenance." . } .
+
+# --- ARC output ---
+{ :turbine1 :label ?Label; :vibration ?V; :temperature ?Temp; :rpm ?RPM.
+  :highVibrationThreshold :value ?VT.
+  :highTemperatureThreshold :value ?TT.
+  :criticalRPM :value ?RT.
+  :decision :outcome ?Outcome; :reason ?Reason.
+  :check :c1 ?C1; :c2 ?C2; :c3 ?C3; :c4 ?C4; :c5 ?C5; :c6 ?C6; :c7 ?C7; :c8 ?C8; :c9 ?C9.
+  (
+    "Wind turbine — Predictive maintenance\n\n"
+    "Answer\n"
+    ?Outcome "\n\n"
+    "Reason Why\n"
+    ?Label " reports vibration " ?V " against a threshold of " ?VT ", temperature " ?Temp
+    " against a threshold of " ?TT ", and rotor speed " ?RPM " against a critical limit of " ?RT ". "
+    ?Reason "\n\n"
+    "Check\n"
+    "C1 " ?C1 "\n"
+    "C2 " ?C2 "\n"
+    "C3 " ?C3 "\n"
+    "C4 " ?C4 "\n"
+    "C5 " ?C5 "\n"
+    "C6 " ?C6 "\n"
+    "C7 " ?C7 "\n"
+    "C8 " ?C8 "\n"
+    "C9 " ?C9 "\n"
+  ) string:concatenation ?Block. }
+    => { :report log:outputString ?Block. } .
