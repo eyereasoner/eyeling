@@ -1,33 +1,147 @@
-# ============================================
-# Traversing Graph Paths
-# Simple data & rules over a tiny city dataset
-# ============================================
+# ===========================================================================
+# French cities — ARC style graph reachability example.
+# Based on https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/french-cities.n3
+#
+# This example shows how simple graph rules can answer a practical travel-style
+# question: which cities can reach Nantes by following one-way connections?
+# The program derives longer paths from shorter ones, explains why the answer is
+# correct, and checks the key steps independently.
+# ===========================================================================
 
 @prefix log: <http://www.w3.org/2000/10/swap/log#>.
 @prefix owl: <http://www.w3.org/2002/07/owl#>.
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
-@prefix : <http://www.agfa.com/w3c/euler/graph.axiom#>.
+@prefix string: <http://www.w3.org/2000/10/swap/string#>.
+@prefix : <https://example.org/french-cities#>.
 
-:paris :oneway :orleans.
-:paris :oneway :chartres.
-:paris :oneway :amiens.
-:orleans :oneway :blois.
-:orleans :oneway :bourges.
-:blois :oneway :tours.
+# ---------------------------------------------------------------------------
+# Facts
+# ---------------------------------------------------------------------------
+
+:paris    :oneway :orleans.
+:paris    :oneway :chartres.
+:paris    :oneway :amiens.
+:orleans  :oneway :blois.
+:orleans  :oneway :bourges.
+:blois    :oneway :tours.
 :chartres :oneway :lemans.
-:lemans :oneway :angers.
-:lemans :oneway :tours.
-:angers :oneway :nantes.
+:lemans   :oneway :angers.
+:lemans   :oneway :tours.
+:angers   :oneway :nantes.
 
 :oneway rdfs:subPropertyOf :path.
 :path a owl:TransitiveProperty.
 
-# RDFS rules
-{?P rdfs:subPropertyOf ?Q. ?S ?P ?O} => {?S ?Q ?O}.
-{?P rdfs:subPropertyOf ?Q. ?Q rdfs:subPropertyOf ?R} => {?P rdfs:subPropertyOf ?R}.
+:paris    :label "Paris".
+:chartres :label "Chartres".
+:lemans   :label "Le Mans".
+:angers   :label "Angers".
+:nantes   :label "Nantes".
 
-# OWL rules
-{?P a owl:TransitiveProperty. ?S ?P ?X. ?X ?P ?O.} => {?S ?P ?O}.
+# ---------------------------------------------------------------------------
+# RDFS / OWL rules from the original example
+# ---------------------------------------------------------------------------
 
-# query
-{?C :path :nantes} log:query {?C :path :nantes}.
+{ ?P rdfs:subPropertyOf ?Q.
+  ?S ?P ?O. }
+    => { ?S ?Q ?O. }.
+
+{ ?P rdfs:subPropertyOf ?Q.
+  ?Q rdfs:subPropertyOf ?R. }
+    => { ?P rdfs:subPropertyOf ?R. }.
+
+{ ?P a owl:TransitiveProperty.
+  ?S ?P ?X.
+  ?X ?P ?O. }
+    => { ?S ?P ?O. }.
+
+# ---------------------------------------------------------------------------
+# ARC logic
+# ---------------------------------------------------------------------------
+
+{ ?C :path :nantes. }
+    => { ?C :canReach :nantes. }.
+
+{ :paris    :canReach :nantes. }
+    => { :report :reachableCity :paris. }.
+
+{ :chartres :canReach :nantes. }
+    => { :report :reachableCity :chartres. }.
+
+{ :lemans   :canReach :nantes. }
+    => { :report :reachableCity :lemans. }.
+
+{ :angers   :canReach :nantes. }
+    => { :report :reachableCity :angers. }.
+
+{ :report :reachableCity :paris, :chartres, :lemans, :angers. }
+    => { :report :outcome
+        "Four cities in this small network can reach Nantes: Paris, Chartres, Le Mans, and Angers.". }.
+
+# Independent check facts
+
+{ :angers :oneway :nantes. }
+    => { :check :c1 "OK - Angers has a direct one-way connection to Nantes.". }.
+
+{ :lemans :oneway :angers.
+  :angers :path :nantes. }
+    => { :check :c2 "OK - Le Mans reaches Nantes by chaining Le Mans → Angers → Nantes.". }.
+
+{ :chartres :oneway :lemans.
+  :lemans :path :nantes. }
+    => { :check :c3 "OK - Chartres reaches Nantes by chaining Chartres → Le Mans → Angers → Nantes.". }.
+
+{ :paris :oneway :chartres.
+  :chartres :path :nantes. }
+    => { :check :c4 "OK - Paris reaches Nantes by chaining Paris → Chartres → Le Mans → Angers → Nantes.". }.
+
+{ :orleans :path :nantes. }
+    => false.
+
+{ :amiens :path :nantes. }
+    => false.
+
+{ :bourges :path :nantes. }
+    => false.
+
+{ :blois :path :nantes.
+  :blois log:notEqualTo :nantes. }
+    => false.
+
+{ :tours :path :nantes.
+  :tours log:notEqualTo :nantes. }
+    => false.
+
+{ :report :reachableCity ?C.
+  ?C :label ?L. }
+    => { ?C :reachableLabel ?L. }.
+
+# ---------------------------------------------------------------------------
+# ARC output
+# ---------------------------------------------------------------------------
+
+{ :report :outcome ?Outcome.
+  :paris :reachableLabel ?Paris.
+  :chartres :reachableLabel ?Chartres.
+  :lemans :reachableLabel ?LeMans.
+  :angers :reachableLabel ?Angers.
+  :check :c1 ?C1; :c2 ?C2; :c3 ?C3; :c4 ?C4.
+  (
+    "French cities — ARC style graph reachability\n\n"
+    "Answer\n"
+    ?Outcome "\n\n"
+    "Reason Why\n"
+    "The original example says that every :oneway link is also a :path, and that :path is transitive. "
+    "So once Angers can reach Nantes directly, longer routes can be built by chaining earlier links. "
+    ?Angers " reaches Nantes directly. "
+    ?LeMans " reaches Nantes through Angers. "
+    ?Chartres " reaches Nantes through Le Mans and Angers. "
+    ?Paris " reaches Nantes through Chartres, Le Mans, and Angers.\n\n"
+    "Check\n"
+    "C1 " ?C1 "\n"
+    "C2 " ?C2 "\n"
+    "C3 " ?C3 "\n"
+    "C4 " ?C4 "\n"
+    "C5 OK - cities without a chain to Nantes are rejected by fail-loud fuse rules.\n"
+  ) string:concatenation ?Block. }
+    => { :report log:outputString ?Block. }.
