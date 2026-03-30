@@ -101,22 +101,22 @@
       http:body :DinnerPlan;
       http:resp :respRecommendation.
   :respRecommendation http:body :DinnerPlan.
-  :DinnerPlan resto:isAt :RiverTerraceBistro.
-  :RiverTerraceBistro a resto:Restaurant;
+  :DinnerPlan resto:isAt :Maximiliaan.
+  :Maximiliaan a resto:Restaurant;
       resto:name "Maximiliaan";
-      resto:reservationList :RiverTerraceReservations. }.
+      resto:reservationList :MaximiliaanReservations. }.
 
 # Restaurant API: from restaurant + desired place + date to a reservation.
-{ :RiverTerraceBistro resto:reservationList :RiverTerraceReservations.
+{ :Maximiliaan resto:reservationList :MaximiliaanReservations.
   :DesiredPlace resto:isOutside ?Outside.
   :DinnerPlan resto:hasDate ?Date. }
 =>
 { :reqReservation http:methodName "POST";
-      http:requestURI :RiverTerraceReservations;
+      http:requestURI :MaximiliaanReservations;
       http:body :DinnerPlan;
       http:resp :respReservation.
   :respReservation http:body :Reservation42.
-  :RiverTerraceBistro resto:hasReservation :Reservation42.
+  :Maximiliaan resto:hasReservation :Reservation42.
   :Reservation42 resto:onDate ?Date;
       resto:place :TableArea42.
   :TableArea42 resto:isOutside ?Outside. }.
@@ -174,9 +174,9 @@
 =>
 { :Check :c4 "OK - the weather interpretation justified outdoor seating." }.
 
-{ :DinnerPlan resto:isAt :RiverTerraceBistro.
-  :RiverTerraceBistro a resto:Restaurant;
-      resto:reservationList :RiverTerraceReservations. }
+{ :DinnerPlan resto:isAt :Maximiliaan.
+  :Maximiliaan a resto:Restaurant;
+      resto:reservationList :MaximiliaanReservations. }
 =>
 { :Check :c5 "OK - the recommendation step selected a restaurant that can accept reservations." }.
 
@@ -192,7 +192,7 @@
 =>
 { :Check :c7 "OK - the reservation preserved the outdoor seating preference." }.
 
-{ :Goal resto:restaurant :RiverTerraceBistro;
+{ :Goal resto:restaurant :Maximiliaan;
       resto:reservation :Reservation42;
       resto:isOutside true. }
 =>
