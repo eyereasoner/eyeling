@@ -1,0 +1,299 @@
+# =============================================================================
+# transistor-switch.n3
+#
+# - supply voltage            = 5000 mV
+# - low input                 = 0 mV
+# - high input                = 5000 mV
+# - base-emitter turn-on      = 700 mV
+# - collector-emitter sat     = 200 mV
+# - base resistor             = 10000 ohms
+# - load resistor             = 1000 ohms
+# - transistor beta proxy     = 100
+#
+# We model an NPN low-side switch with exact millivolt and microamp arithmetic.
+# If Vin <= Vbe,on the transistor stays in cutoff and the collector branch is
+# OFF. If Vin > Vbe,on then Ib = (Vin - Vbe,on) * 1000 / Rb, the gain-limited
+# collector current is beta * Ib, the load-limited current is
+# (Vcc - Vce,sat) * 1000 / Rl, and the actual collector current is the smaller
+# of those two limits.
+# =============================================================================
+
+@prefix : <http://example.org/transistor-switch#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+
+# -----
+# Facts
+# -----
+
+:case :name "transistor-switch" .
+:case :supplyMv 5000 .
+:case :vbeOnMv 700 .
+:case :vceSatMv 200 .
+:case :baseResistanceOhms 10000 .
+:case :loadResistanceOhms 1000 .
+:case :beta 100 .
+
+:low :inputLabel "low input" ; :inputMv 0 .
+:high :inputLabel "high input" ; :inputMv 5000 .
+
+:mvfmt-0 :mvValue 0 ; :text "0.00 V" .
+:mvfmt-200 :mvValue 200 ; :text "0.20 V" .
+:mvfmt-4800 :mvValue 4800 ; :text "4.80 V" .
+:mvfmt-5000 :mvValue 5000 ; :text "5.00 V" .
+
+:uafmt-0 :uaValue 0 ; :text "0.00 mA" .
+:uafmt-430 :uaValue 430 ; :text "0.43 mA" .
+:uafmt-4800 :uaValue 4800 ; :text "4.80 mA" .
+:uafmt-43000 :uaValue 43000 ; :text "43.00 mA" .
+
+# -----
+# Logic
+# -----
+
+# Low-input branch: below turn-on, the transistor stays in cutoff.
+{ ?state list:in (:low :high) .
+  ?state :inputMv ?vin .
+  :case :vbeOnMv ?vbe .
+  ?vin math:notGreaterThan ?vbe .
+  :case :supplyMv ?vcc .
+}
+    => { ?state :baseCurrentUa 0 .
+         ?state :collectorGainLimitUa 0 .
+         ?state :collectorLoadLimitUa 0 .
+         ?state :collectorCurrentUa 0 .
+         ?state :loadVoltageMv 0 .
+         ?state :collectorEmitterVoltageMv ?vcc .
+         ?state :cutoff true .
+         ?state :saturation false .
+         ?state :stateLabel "cutoff / OFF" . } .
+
+# Forward-biased branch: derive base current and the two collector limits.
+{ ?state list:in (:low :high) .
+  ?state :inputMv ?vin .
+  :case :vbeOnMv ?vbe .
+  ?vin math:greaterThan ?vbe .
+  :case :baseResistanceOhms ?rb .
+  ( ?vin ?vbe ) math:difference ?overdriveMv .
+  ( ?overdriveMv 1000 ) math:product ?baseNumerator .
+  ( ?baseNumerator ?rb ) math:integerQuotient ?baseCurrentUa .
+  :case :beta ?beta .
+  ( ?baseCurrentUa ?beta ) math:product ?collectorGainLimitUa .
+  :case :supplyMv ?vcc .
+  :case :vceSatMv ?vceSat .
+  :case :loadResistanceOhms ?rl .
+  ( ?vcc ?vceSat ) math:difference ?loadSpanMv .
+  ( ?loadSpanMv 1000 ) math:product ?loadNumerator .
+  ( ?loadNumerator ?rl ) math:integerQuotient ?collectorLoadLimitUa .
+}
+    => { ?state :baseCurrentUa ?baseCurrentUa .
+         ?state :collectorGainLimitUa ?collectorGainLimitUa .
+         ?state :collectorLoadLimitUa ?collectorLoadLimitUa .
+         ?state :cutoff false . } .
+
+# Saturated ON branch: gain limit is large enough to reach the load limit.
+# Only applies after the forward-biased branch has established cutoff=false.
+{ ?state :cutoff false .
+  ?state :collectorGainLimitUa ?gainLimit .
+  ?state :collectorLoadLimitUa ?loadLimit .
+  ?gainLimit math:notLessThan ?loadLimit .
+  :case :loadResistanceOhms ?rl .
+  ( ?loadLimit ?rl ) math:product ?loadVoltageNumerator .
+  ( ?loadVoltageNumerator 1000 ) math:integerQuotient ?loadVoltageMv .
+  :case :vceSatMv ?vceSat .
+}
+    => { ?state :collectorCurrentUa ?loadLimit .
+         ?state :loadVoltageMv ?loadVoltageMv .
+         ?state :collectorEmitterVoltageMv ?vceSat .
+         ?state :saturation true .
+         ?state :stateLabel "saturation / ON" . } .
+
+# Active branch: included for completeness, although the sampled high input
+# reaches saturation in this toy case. It also only applies after cutoff=false.
+{ ?state :cutoff false .
+  ?state :collectorGainLimitUa ?gainLimit .
+  ?state :collectorLoadLimitUa ?loadLimit .
+  ?gainLimit math:lessThan ?loadLimit .
+  :case :loadResistanceOhms ?rl .
+  ( ?gainLimit ?rl ) math:product ?loadVoltageNumerator .
+  ( ?loadVoltageNumerator 1000 ) math:integerQuotient ?loadVoltageMv .
+  :case :supplyMv ?vcc .
+  ( ?vcc ?loadVoltageMv ) math:difference ?vceMv .
+}
+    => { ?state :collectorCurrentUa ?gainLimit .
+         ?state :loadVoltageMv ?loadVoltageMv .
+         ?state :collectorEmitterVoltageMv ?vceMv .
+         ?state :saturation false .
+         ?state :stateLabel "active / linear" . } .
+
+# Derived report-level checks.
+{ :low :cutoff true .
+  :low :baseCurrentUa 0 .
+  :low :collectorCurrentUa 0 .
+  :low :loadVoltageMv 0 .
+  :case :supplyMv ?vcc .
+  :low :collectorEmitterVoltageMv ?vcc .
+}
+    => { :case :lowInputStaysInCutoff true . } .
+
+{ :high :saturation true .
+  :case :vceSatMv ?vceSat .
+  :high :collectorEmitterVoltageMv ?vceSat .
+}
+    => { :case :highInputReachesSaturation true . } .
+
+{ :low :cutoff true .
+  :high :saturation true .
+}
+    => { :case :switchesCleanly true . } .
+
+{ :high :collectorCurrentUa ?ic .
+  :high :collectorLoadLimitUa ?ic .
+  :high :collectorGainLimitUa ?gain .
+  ?gain math:greaterThan ?ic .
+}
+    => { :case :onStateIsLoadLimited true . } .
+
+{ :high :collectorCurrentUa ?ic .
+  :case :loadResistanceOhms ?rl .
+  ( ?ic ?rl ) math:product ?loadVoltageNumerator .
+  ( ?loadVoltageNumerator 1000 ) math:integerQuotient ?expectedLoadVoltageMv .
+  :high :loadVoltageMv ?expectedLoadVoltageMv .
+}
+    => { :case :loadVoltageMatchesResistorDrop true . } .
+
+# State summary rendering.
+{ ?state list:in (:low :high) .
+  ?state :inputMv ?vin .
+  ?mvVin :mvValue ?vin ; :text ?vinText .
+  ?state :baseCurrentUa ?ib .
+  ?uaIb :uaValue ?ib ; :text ?ibText .
+  ?state :collectorCurrentUa ?ic .
+  ?uaIc :uaValue ?ic ; :text ?icText .
+  ?state :collectorEmitterVoltageMv ?vce .
+  ?mvVce :mvValue ?vce ; :text ?vceText .
+  ?state :stateLabel ?label .
+  ( "Vin=%s -> Ib=%s, Ic=%s, Vce=%s, state=%s\n" ?vinText ?ibText ?icText ?vceText ?label ) string:format ?summary .
+}
+    => { ?state :summaryLine ?summary . } .
+
+# -----------------------------------------------
+# Presentation (ARC: Answer • Reason Why • Check)
+# -----------------------------------------------
+
+# Answer
+{ :low :stateLabel ?lowLabel .
+  :high :stateLabel ?highLabel .
+  :high :collectorCurrentUa ?onCurrentUa .
+  ?uaOn :uaValue ?onCurrentUa ; :text ?onCurrentText .
+  ( "low input state                  : %s\n" ?lowLabel ) string:format ?lowStateLine .
+  ( "high input state                 : %s\n" ?highLabel ) string:format ?highStateLine .
+  ( "on-state load current            : %s\n\n" ?onCurrentText ) string:format ?onCurrentLine .
+}
+    => {
+         :01-answer-1 log:outputString "=== Answer ===\n" .
+         :01-answer-2 log:outputString "In this toy transistor-switch model, a low input leaves the transistor in cutoff (OFF) and a high input drives it into saturation (ON), so the load behaves like an on/off branch rather than a linear amplifier.\n" .
+         :01-answer-3 log:outputString "case                             : transistor-switch\n" .
+         :01-answer-4 log:outputString ?lowStateLine .
+         :01-answer-5 log:outputString ?highStateLine .
+         :01-answer-6 log:outputString ?onCurrentLine .
+       } .
+
+# Reason Why
+{ :case :supplyMv ?supplyMv .
+  ?mvSupply :mvValue ?supplyMv ; :text ?supplyText .
+  :case :baseResistanceOhms ?rb .
+  :case :loadResistanceOhms ?rl .
+  :case :beta ?beta .
+  :low :summaryLine ?lowSummary .
+  :high :summaryLine ?highSummary .
+  :high :collectorGainLimitUa ?gainLimitUa .
+  ?uaGain :uaValue ?gainLimitUa ; :text ?gainLimitText .
+  :high :collectorLoadLimitUa ?loadLimitUa .
+  ?uaLoad :uaValue ?loadLimitUa ; :text ?loadLimitText .
+  ( "supply voltage                   : %s\n" ?supplyText ) string:format ?supplyLine .
+  ( "base resistor                    : %s ohms\n" ?rb ) string:format ?rbLine .
+  ( "load resistor                    : %s ohms\n" ?rl ) string:format ?rlLine .
+  ( "transistor beta proxy            : %s\n" ?beta ) string:format ?betaLine .
+  ( "low input                        : %s" ?lowSummary ) string:format ?lowLine .
+  ( "high input                       : %s" ?highSummary ) string:format ?highLine .
+  ( "high-input gain limit            : %s\n" ?gainLimitText ) string:format ?gainLine .
+  ( "high-input load limit            : %s\n" ?loadLimitText ) string:format ?loadLine .
+}
+    => {
+         :02-why-01 log:outputString "=== Reason Why ===\n" .
+         :02-why-02 log:outputString "We model an NPN low-side switch with exact millivolt and microamp arithmetic. The base current comes from (Vin - Vbe,on)/Rb when the base-emitter junction is forward biased, and the collector current is the smaller of beta * Ib and the load-limited current (Vcc - Vce,sat)/Rl.\n" .
+         :02-why-03 log:outputString ?supplyLine .
+         :02-why-04 log:outputString ?rbLine .
+         :02-why-05 log:outputString ?rlLine .
+         :02-why-06 log:outputString ?betaLine .
+         :02-why-07 log:outputString ?lowLine .
+         :02-why-08 log:outputString ?highLine .
+         :02-why-09 log:outputString ?gainLine .
+         :02-why-10 log:outputString ?loadLine .
+         :02-why-99 log:outputString "\n" .
+       } .
+
+# Check
+{ :case :lowInputStaysInCutoff true .
+  :case :highInputReachesSaturation true .
+  :case :switchesCleanly true .
+  :case :onStateIsLoadLimited true .
+  :case :loadVoltageMatchesResistorDrop true .
+}
+    => {
+         :03-check-1 log:outputString "=== Check ===\n" .
+         :03-check-2 log:outputString "low input stays in cutoff        : yes\n" .
+         :03-check-3 log:outputString "high input reaches saturation    : yes\n" .
+         :03-check-4 log:outputString "switching states differ          : yes\n" .
+         :03-check-5 log:outputString "on-state current is load-limited : yes\n" .
+         :03-check-6 log:outputString "load voltage matches resistor drop : yes\n" .
+       } .
+
+# ------------------
+# Verification fuses
+# ------------------
+
+# If any of the key invariants fail, stop the run loudly.
+
+{ :low :baseCurrentUa ?ib .
+  ?ib math:notEqualTo 0 .
+} => false .
+
+{ :low :collectorCurrentUa ?ic .
+  ?ic math:notEqualTo 0 .
+} => false .
+
+{ :low :loadVoltageMv ?loadVoltageMv .
+  ?loadVoltageMv math:notEqualTo 0 .
+} => false .
+
+{ :low :collectorEmitterVoltageMv ?lowVce .
+  :case :supplyMv ?vcc .
+  ?lowVce math:notEqualTo ?vcc .
+} => false .
+
+{ :high :collectorEmitterVoltageMv ?highVce .
+  :case :vceSatMv ?vceSat .
+  ?highVce math:notEqualTo ?vceSat .
+} => false .
+
+{ :high :collectorCurrentUa ?ic .
+  :high :collectorLoadLimitUa ?loadLimit .
+  ?ic math:notEqualTo ?loadLimit .
+} => false .
+
+{ :high :collectorGainLimitUa ?gain .
+  :high :collectorLoadLimitUa ?loadLimit .
+  ?gain math:notGreaterThan ?loadLimit .
+} => false .
+
+{ :high :collectorCurrentUa ?ic .
+  :case :loadResistanceOhms ?rl .
+  ( ?ic ?rl ) math:product ?loadVoltageNumerator .
+  ( ?loadVoltageNumerator 1000 ) math:integerQuotient ?expectedLoadVoltageMv .
+  :high :loadVoltageMv ?actualLoadVoltageMv .
+  ?expectedLoadVoltageMv math:notEqualTo ?actualLoadVoltageMv .
+} => false .

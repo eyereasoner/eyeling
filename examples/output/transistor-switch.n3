@@ -1,0 +1,24 @@
+=== Answer ===
+In this toy transistor-switch model, a low input leaves the transistor in cutoff (OFF) and a high input drives it into saturation (ON), so the load behaves like an on/off branch rather than a linear amplifier.
+case                             : transistor-switch
+low input state                  : cutoff / OFF
+high input state                 : saturation / ON
+on-state load current            : 4.80 mA
+
+=== Reason Why ===
+We model an NPN low-side switch with exact millivolt and microamp arithmetic. The base current comes from (Vin - Vbe,on)/Rb when the base-emitter junction is forward biased, and the collector current is the smaller of beta * Ib and the load-limited current (Vcc - Vce,sat)/Rl.
+supply voltage                   : 5.00 V
+base resistor                    : 10000 ohms
+load resistor                    : 1000 ohms
+transistor beta proxy            : 100
+low input                        : Vin=0.00 V -> Ib=0.00 mA, Ic=0.00 mA, Vce=5.00 V, state=cutoff / OFF
+high input                       : Vin=5.00 V -> Ib=0.43 mA, Ic=4.80 mA, Vce=0.20 V, state=saturation / ON
+high-input gain limit            : 43.00 mA
+high-input load limit            : 4.80 mA
+
+=== Check ===
+low input stays in cutoff        : yes
+high input reaches saturation    : yes
+switching states differ          : yes
+on-state current is load-limited : yes
+load voltage matches resistor drop : yes

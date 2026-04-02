@@ -1,0 +1,227 @@
+# ===========================================================================
+# pn-junction-tunneling.n3
+#
+# - ordinary depletion width  = 8 nm
+# - tunnel depletion width    = 1 nm
+# - filled N-side states      = [1, 2, 3, 4]
+# - empty P-side states @ 0V  = [3, 4, 5, 6]
+# - bias points               = 0..6
+#
+# For each bias, the empty P-side levels shift downward by the bias amount.
+# A shifted level contributes 1 to the current proxy exactly when it lands in
+# the occupied N-side window [1, 4]. The four slot contributions are summed.
+# ===========================================================================
+
+@prefix : <http://example.org/pn-junction-tunneling#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+
+# -----
+# Facts
+# -----
+
+:case :name "pn-junction-tunneling" .
+:case :ordinaryDepletionWidthNm 8 .
+:case :tunnelDepletionWidthNm 1 .
+:case :nFilledLevels (1 2 3 4) .
+:case :pEmptyZeroBiasLevels (3 4 5 6) .
+
+:b0 :value 0 .
+:b1 :value 1 .
+:b2 :value 2 .
+:b3 :value 3 .
+:b4 :value 4 .
+:b5 :value 5 .
+:b6 :value 6 .
+
+# -----
+# Logic
+# -----
+
+# Heavy doping is modeled as a much narrower depletion region.
+{ :case :tunnelDepletionWidthNm ?t .
+  :case :ordinaryDepletionWidthNm ?o .
+  ?t math:lessThan ?o .
+}
+    => { :case :barrierIsNarrower true . } .
+
+# For each bias node and each zero-bias P-side slot, shift the level downward:
+# shifted = zeroBiasLevel - bias.
+{ ?bnode list:in (:b0 :b1 :b2 :b3 :b4 :b5 :b6) .
+  ?bnode :value ?bias .
+  :case :pEmptyZeroBiasLevels ?levels .
+  ?levels list:iterate ( ?slot ?zeroLevel ) .
+  ( ?zeroLevel ?bias ) math:difference ?shifted .
+}
+    => { ( ?bnode ?slot ) :shiftedLevel ?shifted . } .
+
+# Each shifted slot contributes 1 when it falls inside the occupied N-side
+# window [1, 4], otherwise 0.
+{ ( ?bnode ?slot ) :shiftedLevel ?shifted .
+  ?shifted math:notLessThan 1 .
+  ?shifted math:notGreaterThan 4 .
+}
+    => { ( ?bnode ?slot ) :overlapValue 1 . } .
+
+{ ( ?bnode ?slot ) :shiftedLevel ?shifted .
+  ?shifted math:lessThan 1 .
+}
+    => { ( ?bnode ?slot ) :overlapValue 0 . } .
+
+{ ( ?bnode ?slot ) :shiftedLevel ?shifted .
+  ?shifted math:greaterThan 4 .
+}
+    => { ( ?bnode ?slot ) :overlapValue 0 . } .
+
+# The current proxy is the sum of the four slot contributions.
+{ ( ?bnode 0 ) :overlapValue ?v0 .
+  ( ?bnode 1 ) :overlapValue ?v1 .
+  ( ?bnode 2 ) :overlapValue ?v2 .
+  ( ?bnode 3 ) :overlapValue ?v3 .
+  ( ?v0 ?v1 ?v2 ?v3 ) math:sum ?current .
+}
+    => { ?bnode :currentProxy ?current . } .
+
+# Peak = the unique maximum at bias 2 in this toy curve.
+{ :b2 :currentProxy ?peak .
+  :b0 :currentProxy ?c0 . ?peak math:greaterThan ?c0 .
+  :b1 :currentProxy ?c1 . ?peak math:greaterThan ?c1 .
+  :b3 :currentProxy ?c3 . ?peak math:greaterThan ?c3 .
+  :b4 :currentProxy ?c4 . ?peak math:greaterThan ?c4 .
+  :b5 :currentProxy ?c5 . ?peak math:greaterThan ?c5 .
+  :b6 :currentProxy ?c6 . ?peak math:greaterThan ?c6 .
+}
+    => { :case :peakBias 2 .
+         :case :peakCurrent ?peak . } .
+
+# High-bias valley = the final sampled point, matching the Rust code.
+{ :b6 :currentProxy ?valley . }
+    => { :case :valleyBias 6 .
+         :case :valleyCurrent ?valley . } .
+
+# A negative differential region is present once the curve drops after the peak.
+{ :b2 :currentProxy ?c2 .
+  :b3 :currentProxy ?c3 .
+  ?c2 math:greaterThan ?c3 .
+}
+    => { :case :negativeDifferentialRegion true . } .
+
+{ :case :peakBias ?peakBias .
+  :case :valleyBias ?valleyBias .
+  ?peakBias math:lessThan ?valleyBias .
+}
+    => { :case :peakIsBeforeValley true . } .
+
+{ :case :valleyCurrent 0 . }
+    => { :case :overlapClosesAtHighBias true . } .
+
+{ :case :peakCurrent ?peakCurrent .
+  :case :nFilledLevels ?nLevels .
+  ?nLevels list:length ?nCount .
+  ?peakCurrent math:equalTo ?nCount .
+}
+    => { :case :peakMatchesFullOverlap true . } .
+
+# -----------------------------------------------
+# Presentation (ARC: Answer • Reason Why • Check)
+# -----------------------------------------------
+
+# Answer
+{ :case :peakBias ?peakBias .
+  :case :peakCurrent ?peakCurrent .
+  :case :negativeDifferentialRegion true .
+  ( "peak bias                     : %s\n" ?peakBias ) string:format ?peakBiasLine .
+  ( "peak current proxy            : %s\n" ?peakCurrent ) string:format ?peakCurrentLine .
+}
+    => {
+         :01-answer-1 log:outputString "=== Answer ===\n" .
+         :01-answer-2 log:outputString "In this toy PN-junction tunneling model, heavy doping narrows the depletion region enough for a tunneling window that rises to a peak and then falls, producing a negative-differential region.\n" .
+         :01-answer-3 log:outputString "case                          : pn-junction-tunneling\n" .
+         :01-answer-4 log:outputString ?peakBiasLine .
+         :01-answer-5 log:outputString ?peakCurrentLine .
+         :01-answer-6 log:outputString "negative differential region  : yes\n\n" .
+       } .
+
+# Reason Why
+{ :case :ordinaryDepletionWidthNm ?ordinary .
+  :case :tunnelDepletionWidthNm ?tunnel .
+  :b0 :currentProxy ?c0 .
+  :b1 :currentProxy ?c1 .
+  :b2 :currentProxy ?c2 .
+  :b3 :currentProxy ?c3 .
+  :b4 :currentProxy ?c4 .
+  :b5 :currentProxy ?c5 .
+  :b6 :currentProxy ?c6 .
+  :case :peakBias ?peakBias .
+  :case :peakCurrent ?peakCurrent .
+  :case :valleyBias ?valleyBias .
+  :case :valleyCurrent ?valleyCurrent .
+  ( "%s->%s, %s->%s, %s->%s, %s->%s, %s->%s, %s->%s, %s->%s"
+    0 ?c0 1 ?c1 2 ?c2 3 ?c3 4 ?c4 5 ?c5 6 ?c6 ) string:format ?curve .
+  ( "ordinary depletion width (nm) : %s\n" ?ordinary ) string:format ?ordinaryLine .
+  ( "tunnel depletion width (nm)   : %s\n" ?tunnel ) string:format ?tunnelLine .
+  ( "bias -> overlap current proxy : %s\n" ?curve ) string:format ?curveLine .
+  ( "peak point                    : %s -> %s\n" ?peakBias ?peakCurrent ) string:format ?peakLine .
+  ( "high-bias point               : %s -> %s\n" ?valleyBias ?valleyCurrent ) string:format ?valleyLine .
+}
+    => {
+         :02-why-1 log:outputString "=== Reason Why ===\n" .
+         :02-why-2 log:outputString "We model tunneling current as an exact overlap count between filled N-side states and empty P-side states while forward bias shifts the bands. Heavy doping is represented by a much narrower depletion region.\n" .
+         :02-why-3 log:outputString ?ordinaryLine .
+         :02-why-4 log:outputString ?tunnelLine .
+         :02-why-5 log:outputString "filled N-side states          : [1, 2, 3, 4]\n" .
+         :02-why-6 log:outputString "empty P-side states at 0 bias : [3, 4, 5, 6]\n" .
+         :02-why-7 log:outputString ?curveLine .
+         :02-why-8 log:outputString ?peakLine .
+         :02-why-9 log:outputString ?valleyLine .
+         :02-why-99 log:outputString "\n" .
+       } .
+
+# Check
+{ :case :barrierIsNarrower true .
+  :case :peakIsBeforeValley true .
+  :case :negativeDifferentialRegion true .
+  :case :overlapClosesAtHighBias true .
+  :case :peakMatchesFullOverlap true .
+}
+    => {
+         :03-check-1 log:outputString "=== Check ===\n" .
+         :03-check-2 log:outputString "heavily doped barrier is narrower : yes\n" .
+         :03-check-3 log:outputString "peak occurs before overlap closes : yes\n" .
+         :03-check-4 log:outputString "negative differential region present : yes\n" .
+         :03-check-5 log:outputString "high-bias overlap closes           : yes\n" .
+         :03-check-6 log:outputString "peak equals full four-state overlap: yes\n" .
+       } .
+
+# ------------------
+# Verification fuses
+# ------------------
+
+# If any of the key invariants fail, stop the run loudly.
+
+{ :case :tunnelDepletionWidthNm ?t .
+  :case :ordinaryDepletionWidthNm ?o .
+  ?t math:notLessThan ?o .
+} => false .
+
+{ :case :peakBias ?peakBias .
+  :case :valleyBias ?valleyBias .
+  ?peakBias math:notLessThan ?valleyBias .
+} => false .
+
+{ :b2 :currentProxy ?c2 .
+  :b3 :currentProxy ?c3 .
+  ?c2 math:notGreaterThan ?c3 .
+} => false .
+
+{ :case :valleyCurrent ?valleyCurrent .
+  ?valleyCurrent math:notEqualTo 0 .
+} => false .
+
+{ :case :peakCurrent ?peakCurrent .
+  :case :nFilledLevels ?nLevels .
+  ?nLevels list:length ?nCount .
+  ?peakCurrent math:notEqualTo ?nCount .
+} => false .
