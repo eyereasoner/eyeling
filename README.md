@@ -17,4 +17,3 @@ npx eyeling examples/socrates.n3
 - **Semantics:** [eyereasoner.github.io/eyeling/SEMANTICS](https://eyereasoner.github.io/eyeling/SEMANTICS)
 - **Playground:** [eyereasoner.github.io/eyeling/demo](https://eyereasoner.github.io/eyeling/demo)
 - **Conformance report:** [codeberg.org/phochste/notation3tests/.../report.md](https://codeberg.org/phochste/notation3tests/src/branch/main/reports/report.md)
-

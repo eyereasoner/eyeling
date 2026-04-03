@@ -1898,9 +1898,15 @@ That means an input such as this is valid:
 const { reason } = require('eyeling');
 
 const input = {
-  triples: [/* Eyeling Triple objects */],
-  forwardRules: [/* Eyeling Rule objects */],
-  backwardRules: [/* optional Eyeling Rule objects */],
+  triples: [
+    /* Eyeling Triple objects */
+  ],
+  forwardRules: [
+    /* Eyeling Rule objects */
+  ],
+  backwardRules: [
+    /* optional Eyeling Rule objects */
+  ],
 };
 
 const out = reason(input);
@@ -2070,7 +2076,7 @@ module.exports = ({ registerBuiltin, internLiteral, unifyTerm, terms }) => {
 module.exports = {
   register(api) {
     api.registerBuiltin('http://example.org/custom#ping', ({ subst }) => [subst]);
-  }
+  },
 };
 ```
 
@@ -2078,7 +2084,7 @@ module.exports = {
 
 ```js
 module.exports = {
-  'http://example.org/custom#ok': ({ subst }) => [subst]
+  'http://example.org/custom#ok': ({ subst }) => [subst],
 };
 ```
 
