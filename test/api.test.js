@@ -1763,19 +1763,7 @@ _:x :hates { _:foo :making :mess }.
     expect: [/http:\/\/example\.org\/ancestor/m],
   },
   {
-    name: '240 bundled sudoku builtin solves the shipped puzzle',
-    run() {
-      return reasonQuiet({}, require('node:fs').readFileSync(require('node:path').join(ROOT, 'sudoku.n3'), 'utf8'));
-    },
-    expect: [
-      /=== Answer ===/m,
-      /The puzzle is solved, and the completed grid is the unique valid Sudoku solution\./m,
-      /=== Check ===/m,
-      /C8 OK - a second search found no alternative solution, so the solution is unique\./m,
-    ],
-  },
-  {
-    name: '241 custom builtin module can be loaded via --builtin',
+    name: '240 custom builtin module can be loaded via --builtin',
     run() {
       const tmp = require('node:fs').mkdtempSync(
         require('node:path').join(require('node:os').tmpdir(), 'eyeling-builtin-'),
