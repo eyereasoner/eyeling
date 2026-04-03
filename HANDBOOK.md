@@ -1820,6 +1820,7 @@ The bundle contains the whole engine. The CLI path is the “canonical behavior�
 The current CLI supports a small set of flags (see `lib/cli.js`):
 
 - `-a`, `--ast` — print the parsed AST as JSON and exit.
+- `--builtin <module.js>` — load a custom builtin module (repeatable).
 - `-d`, `--deterministic-skolem` — make `log:skolem` stable across runs.
 - `-e`, `--enforce-https` — rewrite `http://…` to `https://…` for dereferencing builtins.
 - `-p`, `--proof-comments` — include per-fact proof comment blocks in output.
