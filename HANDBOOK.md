@@ -1995,12 +1995,12 @@ That API keeps the extension boundary explicit: custom builtins get the operatio
 
 ### 16.6 A shipped example: the Sudoku builtin
 
-The repository now ships a Sudoku builtin module (`lib/builtin-sudoku.js`) and a matching example program (`sudoku.n3`).
+The repository now ships a Sudoku builtin module (`lib/builtin-sudoku.js`) and a matching example program (`examples/sudoku.n3`).
 
 So this works out of the box:
 
 ```bash
-eyeling sudoku.n3
+eyeling --builtin lib/builtin-sudoku.js examples/sudoku.n3
 ```
 
 That example is useful for two reasons:
