@@ -1938,15 +1938,9 @@ const rule = {
 const out = reason(
   { proofComments: false },
   {
-    quads: [
-      rdfjs.quad(
-        rdfjs.namedNode(ex + 'alice'),
-        rdfjs.namedNode(ex + 'parent'),
-        rdfjs.namedNode(ex + 'bob')
-      ),
-    ],
+    quads: [rdfjs.quad(rdfjs.namedNode(ex + 'alice'), rdfjs.namedNode(ex + 'parent'), rdfjs.namedNode(ex + 'bob'))],
     rules: [rule],
-  }
+  },
 );
 
 console.log(out);
@@ -2111,7 +2105,7 @@ module.exports = ({ registerBuiltin, internLiteral, unifyTerm, terms }) => {
 module.exports = {
   register(api) {
     api.registerBuiltin('http://example.org/custom#ping', ({ subst }) => [subst]);
-  }
+  },
 };
 ```
 
@@ -2119,7 +2113,7 @@ module.exports = {
 
 ```js
 module.exports = {
-  'http://example.org/custom#ok': ({ subst }) => [subst]
+  'http://example.org/custom#ok': ({ subst }) => [subst],
 };
 ```
 
