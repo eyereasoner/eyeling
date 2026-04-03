@@ -11,12 +11,6 @@ npm i eyeling
 npx eyeling examples/socrates.n3
 ```
 
-Custom builtins are loaded explicitly:
-
-```bash
-npx eyeling --builtin lib/builtin-sudoku.js examples/sudoku.n3
-```
-
 ## Read more
 
 - **Handbook:** [eyereasoner.github.io/eyeling/HANDBOOK](https://eyereasoner.github.io/eyeling/HANDBOOK)
