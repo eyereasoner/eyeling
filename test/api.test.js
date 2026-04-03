@@ -1763,6 +1763,55 @@ _:x :hates { _:foo :making :mess }.
     expect: [/http:\/\/example\.org\/ancestor/m],
   },
   {
+    name: '67 CLI stdin: accepts piped N3 when no file argument is given',
+    run() {
+      const input = `@prefix : <http://example.org/> .
+:Socrates a :Man .
+{ ?x a :Man } => { ?x a :Mortal } .
+`;
+      const r = spawnSync(process.execPath, [path.join(ROOT, 'eyeling.js')], {
+        input,
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      if (r.error) throw r.error;
+      if (r.status !== 0) {
+        const err = new Error(`CLI failed with exit ${r.status}`);
+        err.code = r.status;
+        err.stdout = r.stdout;
+        err.stderr = r.stderr;
+        throw err;
+      }
+      return r.stdout;
+    },
+    expect: [/:(?:Socrates)\s+a\s+:(?:Mortal)\s*\./],
+  },
+  {
+    name: '68 CLI stdin: accepts explicit - for stdin',
+    run() {
+      const input = `@prefix : <http://example.org/> .
+:Socrates a :Man .
+{ ?x a :Man } => { ?x a :Mortal } .
+`;
+      const r = spawnSync(process.execPath, [path.join(ROOT, 'eyeling.js'), '-'], {
+        input,
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      if (r.error) throw r.error;
+      if (r.status !== 0) {
+        const err = new Error(`CLI failed with exit ${r.status}`);
+        err.code = r.status;
+        err.stdout = r.stdout;
+        err.stderr = r.stderr;
+        throw err;
+      }
+      return r.stdout;
+    },
+    expect: [/:(?:Socrates)\s+a\s+:(?:Mortal)\s*\./],
+  },
+
+  {
     name: '240 custom builtin module can be loaded via --builtin',
     run() {
       const tmp = require('node:fs').mkdtempSync(

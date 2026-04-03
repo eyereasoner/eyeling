@@ -7,8 +7,9 @@ A compact [Notation3 (N3)](https://notation3.org/) reasoner in **JavaScript**.
 ## Quick start
 
 ```bash
-npm i eyeling
-npx eyeling examples/socrates.n3
+echo '@prefix : <http://example.org/> .
+:Socrates a :Man .
+{ ?x a :Man } => { ?x a :Mortal } .' | npx eyeling
 ```
 
 ## Read more

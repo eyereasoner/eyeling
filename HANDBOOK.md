@@ -1777,11 +1777,15 @@ Install from npm:
 npm i eyeling
 ```
 
-Run a file:
+Run a self-contained example from stdin:
 
 ```bash
-npx eyeling examples/socrates.n3
+echo '@prefix : <http://example.org/> .
+:Socrates a :Man .
+{ ?x a :Man } => { ?x a :Mortal } .' | npx eyeling
 ```
+
+You can also pass a file path, or `-` to read explicitly from stdin.
 
 Show the available options:
 
@@ -1823,6 +1827,8 @@ The current CLI supports a small set of flags (see `lib/cli.js`):
 - `-t`, `--stream` — stream derived triples as soon as they are derived.
 - `-v`, `--version` — print version and exit.
 - `-h`, `--help` — show usage.
+- With no positional argument, Eyeling reads from stdin when input is piped.
+- Use `-` as the input path to read explicitly from stdin.
 
 ### 14.3 `lib/entry.js`: bundler-friendly exports
 
