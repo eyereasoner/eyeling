@@ -148,7 +148,22 @@ declare module 'eyeling' {
     noProofComments?: boolean;
     args?: string[];
     maxBuffer?: number;
+    builtinModules?: string | string[];
   }
+
+  export interface BuiltinRegistrationContext {
+    iri: string;
+    goal: EyelingTriple;
+    subst: Record<string, EyelingTerm>;
+    facts: any[];
+    backRules: EyelingRule[];
+    depth: number;
+    varGen: number[];
+    maxResults?: number;
+    api: any;
+  }
+
+  export type BuiltinHandler = (ctx: BuiltinRegistrationContext) => Array<Record<string, EyelingTerm>>;
 
   export interface ReasonStreamOptions {
     baseIri?: string | null;
@@ -157,6 +172,7 @@ declare module 'eyeling' {
     enforceHttps?: boolean;
     rdfjs?: boolean;
     dataFactory?: RdfJsDataFactory | null;
+    builtinModules?: string | string[];
     onDerived?: (item: { triple: string; quad?: RdfJsQuad; df: any }) => void;
   }
 
@@ -183,4 +199,9 @@ declare module 'eyeling' {
   ): AsyncIterable<RdfJsQuad>;
 
   export const rdfjs: RdfJsDataFactory;
+  export function registerBuiltin(iri: string, handler: BuiltinHandler): BuiltinHandler;
+  export function unregisterBuiltin(iri: string): boolean;
+  export function registerBuiltinModule(mod: any, origin?: string): boolean;
+  export function loadBuiltinModule(specifier: string, options?: { resolveFrom?: string }): string;
+  export function listBuiltinIris(): string[];
 }

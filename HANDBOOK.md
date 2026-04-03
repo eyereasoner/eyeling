@@ -1870,28 +1870,162 @@ That’s the whole engine in miniature: unify, compose substitutions, emit head 
 
 Eyeling is small, which makes it pleasant to extend — but there are a few invariants worth respecting.
 
-### 16.1 Adding a builtin
+The most important update is architectural: **you no longer need to patch `lib/builtins.js` just to add a project-specific builtin**. The preferred path is now to load a custom builtin module, either programmatically or from the CLI. Core builtins still live in `lib/builtins.js`, but user extensions can stay outside the engine.
 
-Most extensions belong in `lib/builtins.js` (inside `evalBuiltin`):
+### 16.1 The preferred path: custom builtin modules
 
-- Decide if your builtin is:
-  - a test (0/1 solution)
-  - functional (bind output)
-  - generator (many solutions)
-- Return _deltas_ `{ varName: Term }`, not full substitutions.
-- Be cautious with fully-unbound cases: generators can explode the search space.
-- If you add a _new predicate_ (not just a new case inside an existing namespace), make sure it is recognized by `isBuiltinPred(...)`.
+Eyeling now exposes a small custom-builtin registry.
 
-A small architectural note: `lib/builtins.js` is initialized by the engine via `makeBuiltins(deps)`. It receives hooks (unification, proving, deref, scoped-closure helpers, …) instead of importing the engine directly, which keeps the module graph acyclic and makes browser bundling easier.
+At runtime, builtin predicates can be added with:
+
+- `registerBuiltin(iri, handler)`
+- `unregisterBuiltin(iri)`
+- `registerBuiltinModule(moduleExport, origin?)`
+- `loadBuiltinModule(specifier, { resolveFrom? })`
+- `listBuiltinIris()`
+
+That means the extension story is:
+
+- keep the engine’s shipped builtins in `lib/builtins.js`
+- keep your own application or domain builtins in a separate `.js` module
+- load that module with `--builtin` or from JavaScript
+
+This is the safest way to extend Eyeling because it avoids forking the builtin dispatcher and keeps upgrades merge-friendly.
+
+### 16.2 CLI loading: `--builtin`
+
+The CLI accepts a repeatable `--builtin <module.js>` option:
+
+```bash
+eyeling --builtin ./hello-builtin.js rules.n3
+```
+
+You can pass it more than once:
+
+```bash
+eyeling --builtin ./math-extra.js --builtin ./domain-rules.js input.n3
+```
+
+Each module is loaded before reasoning starts. Paths are resolved from the current working directory.
+
+The same capability is available through the npm wrapper:
+
+```js
+const { reason } = require('eyeling');
+const out = reason({ builtinModules: ['./hello-builtin.js'] }, n3Text);
+```
+
+### 16.3 What a builtin module may export
+
+Eyeling accepts three module shapes.
+
+#### A function export
+
+```js
+module.exports = ({ registerBuiltin, internLiteral, unifyTerm, terms }) => {
+  const { Var } = terms;
+
+  registerBuiltin('http://example.org/custom#hello', ({ goal, subst }) => {
+    const lit = internLiteral('"world"');
+    if (goal.o instanceof Var) {
+      return [{ ...subst, [goal.o.name]: lit }];
+    }
+    const s2 = unifyTerm(goal.o, lit, subst);
+    return s2 ? [s2] : [];
+  });
+};
+```
+
+#### An object with `register(api)`
+
+```js
+module.exports = {
+  register(api) {
+    api.registerBuiltin('http://example.org/custom#ping', ({ subst }) => [subst]);
+  },
+};
+```
+
+#### A plain object mapping predicate IRIs to handlers
+
+```js
+module.exports = {
+  'http://example.org/custom#ok': ({ subst }) => [subst],
+};
+```
+
+If none of those shapes match, Eyeling rejects the module with a descriptive error.
+
+### 16.4 The handler contract
+
+Builtin handlers are called with a context object like:
+
+- `iri` — the predicate IRI string
+- `goal` — the current triple goal
+- `subst` — the current substitution
+- `facts`, `backRules`, `depth`, `varGen`, `maxResults`
+- `api` — the same registration/helper API used by modules
+
+A handler returns **an array of substitutions**:
+
+- `[]` means failure / no solutions
+- `[subst2]` means one successful continuation
+- multiple substitutions mean a generator builtin
+
+In practice:
+
+- Decide if your builtin is a test, a functional relation, or a generator.
+- Return substitutions (or substitution deltas merged into the current substitution), not printed output.
+- Be cautious with fully-unbound generators: they can explode the search space.
+- If a builtin needs inputs to be bound first, it is fine to fail early and let forward-rule proving retry later in the conjunction.
+
+Custom builtin failures are wrapped so the predicate IRI appears in the thrown error message, which makes debugging much easier from the CLI.
+
+### 16.5 The helper API exposed to builtin modules
+
+Builtin modules do not need to import internal engine files directly. Eyeling passes a helper API into module registration, including:
+
+- registration helpers: `registerBuiltin`, `unregisterBuiltin`, `listBuiltinIris`
+- term constructors via `terms` (`Literal`, `Iri`, `Var`, `Blank`, `ListTerm`, `GraphTerm`, `Triple`, `Rule`, ...)
+- literal/term helpers such as `internLiteral`, `internIri`, `literalParts`, `termToN3`, `termToJsString`
+- reasoning helpers such as `unifyTerm`, `applySubstTerm`, `applySubstTriple`, `proveGoals`
+- namespace constants via `ns`
+
+That API keeps the extension boundary explicit: custom builtins get the operations they need without reaching into Eyeling’s private module graph.
+
+### 16.6 A shipped example: the Sudoku builtin
+
+The repository now ships a Sudoku builtin module (`lib/builtin-sudoku.js`) and a matching example program (`sudoku.n3`).
+
+So this works out of the box:
+
+```bash
+eyeling sudoku.n3
+```
+
+That example is useful for two reasons:
+
+- it shows a realistic domain-specific builtin implemented outside the core builtin switchboard
+- it demonstrates the intended deployment model for larger custom relations: keep the N3 logic in the `.n3` file, and keep specialized search/verification code in a loadable builtin module
+
+### 16.7 When you should still edit `lib/builtins.js`
+
+Editing `lib/builtins.js` is still reasonable when you are:
+
+- adding or fixing a **core** Eyeling builtin
+- changing builtin behavior that should ship as part of Eyeling itself
+- modifying the builtin helper API that custom modules depend on
+
+But if the builtin is project-specific, experimental, or domain-bound, prefer a custom module first.
+
+A small architectural note: `lib/builtins.js` is still initialized by the engine via `makeBuiltins(deps)`. It receives hooks (unification, proving, deref, scoped-closure helpers, …) instead of importing the engine directly, which keeps the module graph acyclic and makes browser bundling easier.
 
 If your builtin needs a stable view of the scoped closure, follow the scoped-builtin pattern:
 
 - read from `facts.__scopedSnapshot`
 - honor `facts.__scopedClosureLevel` and priority gating
 
-And if your builtin is “forward-only” (needs inputs bound), it’s fine to **fail early** until inputs are available — forward rule proving enables builtin deferral, so the goal can be retried later in the same conjunction.
-
-### 16.2 Adding new term shapes
+### 16.8 Adding new term shapes
 
 If you add a new Term subclass, you’ll likely need to touch:
 
@@ -1900,7 +2034,7 @@ If you add a new Term subclass, you’ll likely need to touch:
 - variable collection for compaction (`gcCollectVarsInTerm`)
 - groundness checks
 
-### 16.3 Parser extensions
+### 16.9 Parser extensions
 
 If you extend parsing, preserve the Rule invariants:
 
@@ -1983,6 +2117,7 @@ Options:
 
 ```
   -a, --ast                    Print parsed AST as JSON and exit.
+      --builtin <module.js>    Load a custom builtin module (repeatable).
   -d, --deterministic-skolem   Make log:skolem stable across reasoning runs.
   -e, --enforce-https          Rewrite http:// IRIs to https:// for log dereferencing builtins.
   -h, --help                   Show this help and exit.
@@ -2037,10 +2172,23 @@ See also:
 
 Eyeling supports a built-in “standard library” across namespaces like `log:`, `math:`, `string:`, `list:`, `time:`, `crypto:`.
 
+It also supports **custom builtin modules**.
+
+- From the CLI: `eyeling --builtin ./my-builtins.js input.n3`
+- From JavaScript: `reason({ builtinModules: ['./my-builtins.js'] }, input)`
+- Programmatically in-process: `registerBuiltin(...)`, `registerBuiltinModule(...)`, `loadBuiltinModule(...)`
+
+A concrete shipped example is the Sudoku builtin and the root-level `sudoku.n3` program:
+
+```bash
+eyeling sudoku.n3
+```
+
 References:
 
 - W3C N3 Built-ins overview: [https://w3c.github.io/N3/reports/20230703/builtins.html](https://w3c.github.io/N3/reports/20230703/builtins.html)
 - Eyeling implementation details: [Chapter 11 — Built-ins as a standard library](#ch11)
+- Extension API and custom module loading: [Chapter 16 — Extending Eyeling (without breaking it)](#ch16)
 - The shipped builtin catalogue: `eyeling-builtins.ttl` (in this repo)
 
 If you are running untrusted inputs, consider `--super-restricted` to disable all builtins except implication.

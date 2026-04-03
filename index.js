@@ -7,6 +7,7 @@ const cp = require('node:child_process');
 
 const bundleApi = require('./eyeling.js');
 const { dataFactory, normalizeReasonerInputSync } = require('./lib/rdfjs');
+const engine = require('./lib/engine');
 
 function reason(opt = {}, input = '') {
   if (input == null) input = '';
@@ -41,6 +42,13 @@ function reason(opt = {}, input = '') {
   }
 
   if (Array.isArray(opt.args)) args.push(...opt.args);
+
+  const builtinModules = Array.isArray(opt.builtinModules)
+    ? opt.builtinModules
+    : typeof opt.builtinModules === 'string' && opt.builtinModules
+      ? [opt.builtinModules]
+      : [];
+  for (const spec of builtinModules) args.push('--builtin', spec);
 
   const maxBuffer = Number.isFinite(opt.maxBuffer) ? opt.maxBuffer : 50 * 1024 * 1024;
 
@@ -77,6 +85,11 @@ module.exports = {
   reasonStream: bundleApi.reasonStream,
   reasonRdfJs: bundleApi.reasonRdfJs,
   rdfjs: dataFactory,
+  registerBuiltin: engine.registerBuiltin,
+  unregisterBuiltin: engine.unregisterBuiltin,
+  registerBuiltinModule: engine.registerBuiltinModule,
+  loadBuiltinModule: engine.loadBuiltinModule,
+  listBuiltinIris: engine.listBuiltinIris,
 };
 
 // small interop nicety for ESM default import

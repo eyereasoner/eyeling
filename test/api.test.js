@@ -1762,6 +1762,47 @@ _:x :hates { _:foo :making :mess }.
     },
     expect: [/http:\/\/example\.org\/ancestor/m],
   },
+  {
+    name: '240 bundled sudoku builtin solves the shipped puzzle',
+    run() {
+      return reasonQuiet({}, require('node:fs').readFileSync(require('node:path').join(ROOT, 'sudoku.n3'), 'utf8'));
+    },
+    expect: [
+      /=== Answer ===/m,
+      /The puzzle is solved, and the completed grid is the unique valid Sudoku solution\./m,
+      /=== Check ===/m,
+      /C8 OK - a second search found no alternative solution, so the solution is unique\./m,
+    ],
+  },
+  {
+    name: '241 custom builtin module can be loaded via --builtin',
+    run() {
+      const tmp = require('node:fs').mkdtempSync(
+        require('node:path').join(require('node:os').tmpdir(), 'eyeling-builtin-'),
+      );
+      const modPath = require('node:path').join(tmp, 'hello-builtin.js');
+      require('node:fs').writeFileSync(
+        modPath,
+        `module.exports = ({ registerBuiltin, internLiteral, unifyTerm, terms }) => {\n` +
+          `  const { Var } = terms;\n` +
+          `  registerBuiltin("http://example.org/custom#hello", ({ goal, subst }) => {\n` +
+          `    const lit = internLiteral("\\"world\\"");\n` +
+          `    if (goal.o instanceof Var) { const s2 = { ...subst }; s2[goal.o.name] = lit; return [s2]; }\n` +
+          `    const s2 = unifyTerm(goal.o, lit, subst);\n` +
+          `    return s2 !== null ? [s2] : [];\n` +
+          `  });\n` +
+          `};\n`,
+        'utf8',
+      );
+      const out = reasonQuiet(
+        { builtinModules: [modPath] },
+        `@prefix : <http://example.org/> .\n@prefix cb: <http://example.org/custom#> .\n{ :x cb:hello ?o . } => { :x :value ?o . } .\n:x cb:hello ?o .\n`,
+      );
+      require('node:fs').rmSync(tmp, { recursive: true, force: true });
+      return out;
+    },
+    expect: [/:x :value "world" \./m],
+  },
 ];
 
 let passed = 0;

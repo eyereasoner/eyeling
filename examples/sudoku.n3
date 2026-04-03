@@ -1,0 +1,257 @@
+# ==================================================
+# sudoku.n3
+#
+# A standalone Sudoku solver and report generator.
+#
+# Edit :case :puzzle to solve another puzzle.
+# Accepted blanks: 0, ., _
+# Whitespace and ASCII board separators are ignored.
+# ==================================================
+
+@prefix : <http://example.org/sudoku#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+@prefix sb: <http://example.org/sudoku-builtin#> .
+
+# -----
+# Facts
+# -----
+
+:case :name "sudoku" .
+:case :puzzleName "classic" .
+:case :puzzle "100007090030020008009600500005300900010080002600004000300000010040000007007000300" .
+
+# ------------------------------------
+# Report facts from the solver builtin
+# ------------------------------------
+
+{ :case :puzzle ?p .
+  ?p sb:status ?status .
+  ?p sb:normalizedPuzzle ?normalized .
+  ?p sb:givens ?givens .
+  ?p sb:blanks ?blanks .
+  ?p sb:puzzleText ?puzzleText .
+}
+    => {
+         :case :status ?status ;
+               :normalizedPuzzle ?normalized ;
+               :givens ?givens ;
+               :blanks ?blanks ;
+               :puzzleText ?puzzleText .
+       } .
+
+{ :case :puzzle ?p .
+  ?p sb:status "ok" .
+  ?p sb:solution ?solution ;
+     sb:solutionText ?solutionText ;
+     sb:forcedMoves ?forced ;
+     sb:guessedMoves ?guessed ;
+     sb:recursiveNodes ?nodes ;
+     sb:backtracks ?backtracks ;
+     sb:maxDepth ?maxDepth ;
+     sb:unique ?unique ;
+     sb:moveSummary ?moveSummary ;
+     sb:givensPreservedText ?givensPreserved ;
+     sb:noBlanksText ?noBlanks ;
+     sb:rowsCompleteText ?rowsComplete ;
+     sb:colsCompleteText ?colsComplete ;
+     sb:boxesCompleteText ?boxesComplete ;
+     sb:replayLegalText ?replayLegal ;
+     sb:storyConsistentText ?storyConsistent .
+}
+    => {
+         :case :solution ?solution ;
+               :solutionText ?solutionText ;
+               :forcedMoves ?forced ;
+               :guessedMoves ?guessed ;
+               :recursiveNodes ?nodes ;
+               :backtracks ?backtracks ;
+               :maxDepth ?maxDepth ;
+               :unique ?unique ;
+               :moveSummary ?moveSummary ;
+               :givensPreserved ?givensPreserved ;
+               :noBlanks ?noBlanks ;
+               :rowsComplete ?rowsComplete ;
+               :colsComplete ?colsComplete ;
+               :boxesComplete ?boxesComplete ;
+               :replayLegal ?replayLegal ;
+               :storyConsistent ?storyConsistent .
+       } .
+
+{ :case :puzzle ?p .
+  ?p sb:status ?status .
+  ?status string:notEqualIgnoringCase "ok" .
+  ?p sb:error ?error .
+}
+    => { :case :error ?error . } .
+
+# ------------
+# Presentation
+# ------------
+
+# Successful solve, unique.
+{ :case :status "ok" .
+  :case :unique true .
+  :case :givens ?givens ;
+        :blanks ?blanks ;
+        :forcedMoves ?forced ;
+        :guessedMoves ?guessed ;
+        :recursiveNodes ?nodes ;
+        :backtracks ?backtracks ;
+        :moveSummary ?moveSummary ;
+        :puzzleText ?puzzleText ;
+        :solutionText ?solutionText .
+  ( "The puzzle is solved, and the completed grid is the unique valid Sudoku solution.\n" ) string:concatenation ?answerText .
+  ( "The solver starts from %s clues and fills the remaining %s cells by combining constraint propagation with depth-first search. At each step it chooses the empty cell with the fewest legal digits, places forced singles immediately, and only guesses when more than one candidate remains. Across the search it made %s forced placements and tried %s guesses, visited %s search nodes overall, and backtracked %s times before reaching the completed grid. The solver also confirmed that the solution is unique. Early steps: %s"
+    ?givens ?blanks ?forced ?guessed ?nodes ?backtracks ?moveSummary ) string:format ?reasonText .
+}
+    => {
+         :01-answer log:outputString "=== Answer ===\n" ;
+                    log:outputString ?answerText .
+         :01a-answer log:outputString "case              : sudoku\n" ;
+                     log:outputString "default puzzle    : classic\n\n" ;
+                     log:outputString "Puzzle\n" ;
+                     log:outputString ?puzzleText ;
+                     log:outputString "\n" ;
+                     log:outputString "Completed grid\n" ;
+                     log:outputString ?solutionText ;
+                     log:outputString "\n" .
+         :02-reason log:outputString "=== Reason Why ===\n" ;
+                    log:outputString ?reasonText ;
+                    log:outputString "\n\n" .
+       } .
+
+# Successful solve, not unique.
+{ :case :status "ok" .
+  :case :unique false .
+  :case :givens ?givens ;
+        :blanks ?blanks ;
+        :forcedMoves ?forced ;
+        :guessedMoves ?guessed ;
+        :recursiveNodes ?nodes ;
+        :backtracks ?backtracks ;
+        :moveSummary ?moveSummary ;
+        :puzzleText ?puzzleText ;
+        :solutionText ?solutionText .
+  ( "The puzzle is solved, and the completed grid is a valid Sudoku solution.\n" ) string:concatenation ?answerText .
+  ( "The solver starts from %s clues and fills the remaining %s cells by combining constraint propagation with depth-first search. At each step it chooses the empty cell with the fewest legal digits, places forced singles immediately, and only guesses when more than one candidate remains. Across the search it made %s forced placements and tried %s guesses, visited %s search nodes overall, and backtracked %s times before reaching the completed grid. The solver found a valid solution, but there is more than one. Early steps: %s"
+    ?givens ?blanks ?forced ?guessed ?nodes ?backtracks ?moveSummary ) string:format ?reasonText .
+}
+    => {
+         :01-answer log:outputString "=== Answer ===\n" ;
+                    log:outputString ?answerText .
+         :01a-answer log:outputString "case              : sudoku\n" ;
+                     log:outputString "default puzzle    : classic\n\n" ;
+                     log:outputString "Puzzle\n" ;
+                     log:outputString ?puzzleText ;
+                     log:outputString "\n" ;
+                     log:outputString "Completed grid\n" ;
+                     log:outputString ?solutionText ;
+                     log:outputString "\n" .
+         :02-reason log:outputString "=== Reason Why ===\n" ;
+                    log:outputString ?reasonText ;
+                    log:outputString "\n\n" .
+       } .
+
+# Invalid input length / characters.
+{ :case :status "invalid-input" .
+  :case :error ?error .
+}
+    => {
+         :01-answer log:outputString "=== Answer ===\n" ;
+                    log:outputString "The supplied puzzle is not well formed and cannot be parsed as a 9×9 Sudoku.\n" ;
+                    log:outputString "case              : sudoku\n\n" .
+         :02-reason log:outputString "=== Reason Why ===\n" ;
+                    log:outputString ?error ;
+                    log:outputString "\n\n" .
+       } .
+
+# Illegal clues.
+{ :case :status "illegal-clues" .
+  :case :puzzleText ?puzzleText ;
+        :error ?error .
+}
+    => {
+         :01-answer log:outputString "=== Answer ===\n" ;
+                    log:outputString "The puzzle is invalid and cannot be solved as a standard Sudoku.\n" ;
+                    log:outputString "case              : sudoku\n\n" ;
+                    log:outputString "Puzzle\n" ;
+                    log:outputString ?puzzleText ;
+                    log:outputString "\n" .
+         :02-reason log:outputString "=== Reason Why ===\n" ;
+                    log:outputString ?error ;
+                    log:outputString "\n\n" .
+       } .
+
+# Unsatisfiable puzzle.
+{ :case :status "unsatisfiable" .
+  :case :givens ?givens ;
+        :blanks ?blanks ;
+        :recursiveNodes ?nodes ;
+        :backtracks ?backtracks ;
+        :puzzleText ?puzzleText .
+  ( "The solver explored %s search nodes with minimum-remaining-values branching and backtracked %s times, but every branch eventually contradicted the row, column, or box constraints."
+    ?nodes ?backtracks ) string:format ?reasonText .
+}
+    => {
+         :01-answer log:outputString "=== Answer ===\n" ;
+                    log:outputString "No valid Sudoku solution exists for the supplied puzzle.\n" ;
+                    log:outputString "case                         : sudoku\n" ;
+                    log:outputString "default puzzle               : classic\n" ;
+                    log:outputString "\nPuzzle\n" ;
+                    log:outputString ?puzzleText ;
+                    log:outputString "\n" .
+         :02-reason log:outputString "=== Reason Why ===\n" ;
+                    log:outputString ?reasonText ;
+                    log:outputString "\n\n" .
+       } .
+
+# -----------
+# Check block
+# -----------
+
+{ :case :status "ok" .
+  :case :givensPreserved ?c1 ;
+        :noBlanks ?c2 ;
+        :rowsComplete ?c3 ;
+        :colsComplete ?c4 ;
+        :boxesComplete ?c5 ;
+        :replayLegal ?c6 ;
+        :storyConsistent ?c7 .
+  ( "C1 %s - every given clue is preserved in the final grid.\n" ?c1 ) string:format ?l1 .
+  ( "C2 %s - the final grid contains only digits 1 through 9, with no blanks left.\n" ?c2 ) string:format ?l2 .
+  ( "C3 %s - each row contains every digit exactly once.\n" ?c3 ) string:format ?l3 .
+  ( "C4 %s - each column contains every digit exactly once.\n" ?c4 ) string:format ?l4 .
+  ( "C5 %s - each 3×3 box contains every digit exactly once.\n" ?c5 ) string:format ?l5 .
+  ( "C6 %s - replaying the recorded placements from the original puzzle remains legal at every step.\n" ?c6 ) string:format ?l6 .
+  ( "C7 %s - the search statistics and the successful proof path are internally consistent.\n" ?c7 ) string:format ?l7 .
+}
+    => {
+         :03-check log:outputString "=== Check ===\n" ;
+                   log:outputString ?l1 ;
+                   log:outputString ?l2 ;
+                   log:outputString ?l3 ;
+                   log:outputString ?l4 ;
+                   log:outputString ?l5 ;
+                   log:outputString ?l6 ;
+                   log:outputString ?l7 .
+       } .
+
+{ :case :status "ok" .
+  :case :unique true .
+}
+    => { :03a-check log:outputString "C8 OK - a second search found no alternative solution, so the solution is unique.\n" . } .
+
+{ :case :status "ok" .
+  :case :unique false .
+}
+    => { :03a-check log:outputString "C8 INFO - a second search found another solution, so the puzzle is not unique.\n" . } .
+
+{ :case :status "illegal-clues" . }
+    => { :03-check log:outputString "=== Check ===\nC1 failed - the given clues already violate Sudoku rules.\n" . } .
+
+{ :case :status "invalid-input" . }
+    => { :03-check log:outputString "=== Check ===\nC1 failed - the supplied text does not normalize to exactly 81 legal Sudoku cells.\n" . } .
+
+{ :case :status "unsatisfiable" . }
+    => { :03-check log:outputString "=== Check ===\nC1 OK - the given clues are internally consistent.\nC2 OK - every explored assignment respected row, column, and box legality.\nC3 failed - exhaustive search found no complete legal grid.\n" . } .
