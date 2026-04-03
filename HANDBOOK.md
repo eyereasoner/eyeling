@@ -1833,7 +1833,14 @@ The current CLI supports a small set of flags (see `lib/cli.js`):
 
 `rdfjs` is a small built-in RDF/JS `DataFactory`, so browser / worker code can construct quads without pulling in another package first.
 
-### 14.4 `index.js`: the npm API wrapper
+### 14.4 JavaScript API
+
+Eyeling exposes two JavaScript entry styles:
+
+- `reason(...)` from `index.js` when you want the same text output as the CLI
+- `reasonStream(...)` / `reasonRdfJs(...)` from the bundle entry when you want in-process reasoning and structured RDF/JS results
+
+#### 14.4.1 npm helper: `reason(...)`
 
 The npm `reason(...)` function does something intentionally simple and robust:
 
@@ -1844,119 +1851,147 @@ The npm `reason(...)` function does something intentionally simple and robust:
 
 This keeps the observable output identical to the CLI while still allowing richer JS-side inputs.
 
-In particular, the npm API now accepts:
-
-- raw N3 strings
-- RDF/JS fact inputs (`quads`, `facts`, or `dataset`)
-- Eyeling rule objects or full AST bundles like `[prefixes, triples, frules, brules]`
-
-For structured JavaScript input, rules are supplied as current Eyeling `Rule` / `Triple` object graphs or as JSON-serialized `--ast` output with `_type` markers.
-
-If you want to use N3 source text, pass the whole input as a plain N3 string.
-
-#### 14.4.1 RDF/JS quads as fact input
-
-Eyeling can take RDF/JS quads directly as its fact input. At the npm API boundary, the input object may provide any of:
-
-- `quads`
-- `facts`
-- `dataset`
-
-Each is treated as an iterable of RDF/JS **default-graph** quads and converted into Eyeling’s internal triple form before reasoning starts.
-
-```js
-const { reason, rdfjs } = require('eyeling');
-
-const input = {
-  quads: [
-    rdfjs.quad(
-      rdfjs.namedNode('http://example.org/Socrates'),
-      rdfjs.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'),
-      rdfjs.namedNode('http://example.org/Human'),
-    ),
-  ],
-  n3: `
-    @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
-    @prefix : <http://example.org/>.
-    :Human rdfs:subClassOf :Mortal.
-    { ?x a ?c. ?c rdfs:subClassOf ?d. } => { ?x a ?d. }.
-  `,
-};
-
-const out = reason(input);
-```
-
-The important point is architectural: RDF/JS quads can be used as the **fact channel**, while rules may still come from N3 text or Eyeling rule objects. Named-graph quads are intentionally rejected here; Eyeling’s input model is triple-oriented and expects the default graph only.
-
-#### 14.4.2 Passing Eyeling rule objects directly
-
-The JS API also accepts Eyeling rule objects directly, so you do not have to serialize everything back into N3 first.
-
-That means an input such as this is valid:
+CommonJS:
 
 ```js
 const { reason } = require('eyeling');
 
-const input = {
-  triples: [
-    /* Eyeling Triple objects */
-  ],
-  forwardRules: [
-    /* Eyeling Rule objects */
-  ],
-  backwardRules: [
-    /* optional Eyeling Rule objects */
-  ],
-};
+const input = `
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix : <http://example.org/socrates#>.
 
-const out = reason(input);
+:Socrates a :Human.
+:Human rdfs:subClassOf :Mortal.
+
+{ ?s a ?A. ?A rdfs:subClassOf ?B. } => { ?s a ?B. }.
+`;
+
+console.log(reason({ proofComments: false }, input));
 ```
 
-The accepted shapes are intentionally flexible:
-
-- `triples`
-- `forwardRules` or `frules`
-- `backwardRules` or `brules`
-- `queryRules`, `logQueryRules`, or `qrules`
-- a full AST bundle like `[prefixes, triples, frules, brules, queryRules]`
-
-So Eyeling rule objects can be passed directly in the API, either as separate arrays or bundled into the same object graph the parser itself uses.
-
-#### 14.4.3 Consuming derived RDF/JS results
-
-There are two main ways to consume derived results in RDF/JS form.
-
-First, `reasonStream(...)` can emit RDF/JS quads **while reasoning runs**. Pass `rdfjs: true` and an `onDerived(...)` callback:
+ESM:
 
 ```js
-const { reasonStream } = require('eyeling/lib/entry');
+import eyeling from 'eyeling';
 
-reasonStream(input, {
-  rdfjs: true,
-  onDerived({ triple, quad }) {
-    // triple = Eyeling's N3 string form
-    // quad   = RDF/JS Quad for the same derived fact
+const input = `
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix : <http://example.org/socrates#>.
+
+:Socrates a :Human.
+:Human rdfs:subClassOf :Mortal.
+
+{ ?s a ?A. ?A rdfs:subClassOf ?B. } => { ?s a ?B. }.
+`;
+
+console.log(eyeling.reason({ proofComments: false }, input));
+```
+
+Notes:
+
+- `reason()` returns the same textual output you would get from the CLI for the same input and options.
+- By default, the npm helper keeps output machine-friendly (`proofComments: false`).
+- Use this path when you want CLI-equivalent behavior inside JavaScript.
+
+#### 14.4.2 RDF-JS and Eyeling rule-object interoperability
+
+The JavaScript APIs accept three input styles:
+
+1. plain N3 text
+2. RDF/JS fact input (`quads`, `facts`, or `dataset`)
+3. Eyeling rule objects or full AST bundles
+
+If you want to use N3 source text, pass the whole input as a plain string.
+
+For RDF/JS facts, the graph must be the default graph. Named-graph quads are rejected.
+
+If you already have rules in structured form, Eyeling rule objects can be passed directly in the API:
+
+```js
+const { reason, rdfjs } = require('eyeling');
+
+const ex = 'http://example.org/';
+
+const rule = {
+  _type: 'Rule',
+  premise: [
+    {
+      _type: 'Triple',
+      s: { _type: 'Var', name: 'x' },
+      p: { _type: 'Iri', value: ex + 'parent' },
+      o: { _type: 'Var', name: 'y' },
+    },
+  ],
+  conclusion: [
+    {
+      _type: 'Triple',
+      s: { _type: 'Var', name: 'x' },
+      p: { _type: 'Iri', value: ex + 'ancestor' },
+      o: { _type: 'Var', name: 'y' },
+    },
+  ],
+  isForward: true,
+  isFuse: false,
+  headBlankLabels: [],
+};
+
+const out = reason(
+  { proofComments: false },
+  {
+    quads: [
+      rdfjs.quad(
+        rdfjs.namedNode(ex + 'alice'),
+        rdfjs.namedNode(ex + 'parent'),
+        rdfjs.namedNode(ex + 'bob')
+      ),
+    ],
+    rules: [rule],
+  }
+);
+
+console.log(out);
+```
+
+You can also pass a full AST bundle directly, for example `[prefixes, triples, forwardRules, backwardRules]`.
+
+#### 14.4.3 In-process bundle API: `reasonStream(...)` and `reasonRdfJs(...)`
+
+Use the bundle entry if you want structured results while the engine is running instead of final CLI text after the fact.
+
+`reasonStream(...)` can emit RDF/JS quads while reasoning runs:
+
+```js
+import eyeling from './eyeling.js';
+
+const result = eyeling.reasonStream(input, {
+  proof: false,
+  onDerived: ({ quad }) => {
+    if (quad) console.log(quad);
   },
 });
 ```
 
-This is the “push” interface: each newly derived forward fact is reported as soon as it is produced.
-
-Second, `reasonRdfJs(...)` exposes the same derived results as an **async stream of RDF/JS quads**:
+That same path also lets derived results be consumed as an async stream of RDF/JS quads:
 
 ```js
-const { reasonRdfJs } = require('eyeling/lib/entry');
-
-for await (const quad of reasonRdfJs(input)) {
-  // consume RDF/JS quads incrementally
+for await (const quad of eyeling.reasonRdfJs(input)) {
+  console.log(quad);
 }
 ```
 
-This is the “pull” interface: the consumer iterates an async iterable of quads instead of registering a callback.
+Use these entry points when you need one or more of the following:
 
-One practical implication remains:
+- RDF/JS quads as fact input
+- Eyeling rule objects passed directly from JavaScript
+- derived results consumed as RDF/JS quads
+- streaming derived RDF/JS quads during reasoning
 
-- if you want _in-process_ access to the engine objects (facts arrays, derived proof objects), use `reasonStream` / `reasonRdfJs` from the bundle entry rather than the subprocess-based API.
+### 14.5 Choosing the right entry point
+
+A practical rule of thumb:
+
+- if you want the same final text output as the CLI, use `reason(...)`
+- if you want in-process access to structured facts, quads, or streaming derivations, use `reasonStream(...)` / `reasonRdfJs(...)`
 
 ---
 
@@ -2076,7 +2111,7 @@ module.exports = ({ registerBuiltin, internLiteral, unifyTerm, terms }) => {
 module.exports = {
   register(api) {
     api.registerBuiltin('http://example.org/custom#ping', ({ subst }) => [subst]);
-  },
+  }
 };
 ```
 
@@ -2084,7 +2119,7 @@ module.exports = {
 
 ```js
 module.exports = {
-  'http://example.org/custom#ok': ({ subst }) => [subst],
+  'http://example.org/custom#ok': ({ subst }) => [subst]
 };
 ```
 
