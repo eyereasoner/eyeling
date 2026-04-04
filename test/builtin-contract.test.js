@@ -20,36 +20,65 @@ function fail(msg) {
 
 const fixtures = path.join(__dirname, 'fixtures', 'builtins');
 const builtins = require('../lib/builtins');
-const { CONTRACT } = require('../lib/builtin-contract');
 require('../lib/engine');
 
-const expectedApiKeys = [...Object.keys(CONTRACT.api.functions), ...Object.keys(CONTRACT.api.namespaces)].sort();
+const expectedApiKeys = [
+  'registerBuiltin',
+  'unregisterBuiltin',
+  'listBuiltinIris',
+  'internIri',
+  'internLiteral',
+  'literalParts',
+  'termToJsString',
+  'termToJsStringDecoded',
+  'termToN3',
+  'iriValue',
+  'unifyTerm',
+  'applySubstTerm',
+  'applySubstTriple',
+  'proveGoals',
+  'isGroundTerm',
+  'computeConclusionFromFormula',
+  'skolemIriFromGroundTerm',
+  'parseBooleanLiteralInfo',
+  'parseNumericLiteralInfo',
+  'parseXsdDecimalToBigIntScale',
+  'pow10n',
+  'normalizeLiteralForFastKey',
+  'literalsEquivalentAsXsdString',
+  'materializeRdfLists',
+  'terms',
+  'ns',
+].sort();
 
-const expectedFunctionArities = Object.fromEntries(
-  Object.entries(CONTRACT.api.functions).map(([name, spec]) => [name, spec]),
-);
+const expectedTermsKeys = [
+  'Literal',
+  'Iri',
+  'Var',
+  'Blank',
+  'ListTerm',
+  'OpenListTerm',
+  'GraphTerm',
+  'Triple',
+  'Rule',
+].sort();
+const expectedNsKeys = ['RDF_NS', 'XSD_NS', 'CRYPTO_NS', 'MATH_NS', 'TIME_NS', 'LIST_NS', 'LOG_NS', 'STRING_NS'].sort();
 
 const cases = [
   {
-    name: 'builtin API exact helper surface is stable',
+    name: 'builtin helper API stays stable and frozen',
     run() {
       const api = builtins.__testBuildBuiltinApi();
       assert.deepEqual(Object.keys(api).sort(), expectedApiKeys);
       assert.equal(Object.isFrozen(api), true);
       assert.equal(Object.isFrozen(api.terms), true);
       assert.equal(Object.isFrozen(api.ns), true);
-      for (const [name, spec] of Object.entries(expectedFunctionArities)) {
-        assert.equal(typeof api[name], 'function', `${name} must be a function`);
-        if (Number.isInteger(spec.arity)) assert.equal(api[name].length, spec.arity, `${name} arity drifted`);
-        if (Number.isInteger(spec.arityMin)) assert.ok(api[name].length >= spec.arityMin, `${name} arity drifted`);
-      }
-      assert.deepEqual(Object.keys(api.terms).sort(), CONTRACT.api.namespaces.terms.slice().sort());
-      assert.deepEqual(Object.keys(api.ns).sort(), CONTRACT.api.namespaces.ns.slice().sort());
-      assert.equal(api.getBuiltinApiVersion(), CONTRACT.version);
+      assert.deepEqual(Object.keys(api.terms).sort(), expectedTermsKeys);
+      assert.deepEqual(Object.keys(api.ns).sort(), expectedNsKeys);
     },
   },
   {
-    name: 'registerBuiltinModule accepts all declared module export forms',
+    name: 'registerBuiltinModule accepts supported module export forms',
     run() {
       assert.doesNotThrow(() => builtins.registerBuiltinModule(require(path.join(fixtures, 'ok-map.js')), 'ok-map'));
       assert.doesNotThrow(() =>
@@ -73,33 +102,13 @@ const cases = [
     },
   },
   {
-    name: 'registered builtin handlers must return substitution-delta arrays',
+    name: 'registered builtin handlers must return substitution arrays',
     run() {
-      builtins.registerBuiltinModule(require(path.join(fixtures, 'bad-return.js')), 'bad-return');
-      assert.throws(() => {
-        const h = builtins.registerBuiltin('http://example.org/test#shape-check', () => ({ nope: true }));
-        h({
-          iri: 'http://example.org/test#shape-check',
-          goal: {},
-          subst: {},
-          facts: [],
-          backRules: [],
-          depth: 0,
-          varGen: 0,
-          maxResults: 1,
-          api: builtins.__testBuildBuiltinApi(),
-        });
-      }, /must return an array of substitution deltas/);
-    },
-  },
-  {
-    name: 'registered builtin handlers receive the exact stable ctx shape',
-    run() {
-      const wrapped = builtins.registerBuiltin('http://example.org/test#ctx-shape', ({ subst }) => [subst]);
+      const wrapped = builtins.registerBuiltin('http://example.org/test#shape-check', () => ({ nope: true }));
       assert.throws(
         () =>
           wrapped({
-            iri: 'http://example.org/test#ctx-shape',
+            iri: 'http://example.org/test#shape-check',
             goal: {},
             subst: {},
             facts: [],
@@ -108,9 +117,8 @@ const cases = [
             varGen: 0,
             maxResults: 1,
             api: builtins.__testBuildBuiltinApi(),
-            extra: true,
           }),
-        /Builtin handler ctx keys changed|Builtin handler ctx shape changed/,
+        /must return an array of substitution deltas/,
       );
     },
   },

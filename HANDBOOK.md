@@ -2087,20 +2087,18 @@ const out = reason({ builtinModules: ['./hello-builtin.js'] }, n3Text);
 
 ### 16.2.1 Stability rule for `--builtin`
 
-Eyeling now treats the custom-builtin boundary as a **versioned API contract** rather than an informal convenience layer.
+Eyeling keeps `--builtin` simple.
 
-That matters for LLM-generated builtin modules: the model is free to decide **when** a builtin should be used, but it is **not** free to rename helpers, invent new helper names, change handler context fields, or change the expected return shape.
+There is one small helper API passed into builtin modules. That helper object is frozen, its key set is regression-tested, and builtin modules must use one of the documented export forms.
 
-The stable rule is:
+In practice, this means:
 
-- builtin module loading accepts only the declared export forms
-- the helper API exposed by `__buildBuiltinRegistrationApi()` has an **exact key set**
-- helper names and helper arities are treated as public contract
-- builtin handlers receive an **exact** context object shape
-- builtin handlers must return an **array of substitution-delta objects**
-- any add/remove/rename of these contract elements is a **breaking change** and should bump the builtin API version
+- builtin module loading accepts only the documented export forms
+- the helper API exposed by `__buildBuiltinRegistrationApi()` has a fixed key set
+- builtin handlers should return an array of substitution objects
+- accidental helper drift is caught by `test/builtin-contract.test.js`
 
-In code, this contract lives in `lib/builtin-contract.js`, is enforced at runtime by `lib/builtins.js`, and is locked by `test/builtin-contract.test.js`.
+This is only meant to stop silent breakage. It is **not** a promise that Eyeling can never change the builtin API. If the helper surface ever needs to change, that change should be deliberate, documented, and called out in release notes.
 
 ### 16.3 What a builtin module may export
 
@@ -2167,7 +2165,7 @@ If none of those shapes match, Eyeling rejects the module with a descriptive err
 
 ### 16.4 The handler contract
 
-Builtin handlers are called with an **exactly versioned** context object:
+Builtin handlers are called with a context object containing:
 
 - `iri` — the predicate IRI string
 - `goal` — the current triple goal
@@ -2179,16 +2177,14 @@ Builtin handlers are called with an **exactly versioned** context object:
 - `maxResults` — current result cap
 - `api` — the same registration/helper API used by modules
 
-The exact key set is part of the contract; adding, removing, or renaming a context field is a breaking change.
-
-A handler returns **an array of substitution-delta objects**:
+A handler should return an **array of substitution objects**:
 
 - `[]` means failure / no solutions
 - `[{}]` means success with no new bindings
 - `[{ ...delta }]` means one successful continuation with bindings
 - multiple objects mean a generator builtin
 
-Returning a non-array, `null` elements, or non-object delta elements is rejected by the runtime contract wrapper.
+Returning something else is rejected at runtime.
 
 In practice:
 
@@ -2201,13 +2197,9 @@ Custom builtin failures are wrapped so the predicate IRI appears in the thrown e
 
 ### 16.5 The helper API exposed to builtin modules
 
-Builtin modules do not need to import internal engine files directly. Eyeling passes a helper API into module registration, and that helper surface is now treated as an **exact public contract**.
+Builtin modules do not need to import internal engine files directly. Eyeling passes a helper API into module registration, and that helper surface is kept intentionally small.
 
-The current builtin API version is exposed as:
-
-- `getBuiltinApiVersion()`
-
-The stable helper function set is:
+The current helper function set is:
 
 - `registerBuiltin`, `unregisterBuiltin`, `listBuiltinIris`
 - `internIri`, `internLiteral`, `literalParts`
@@ -2222,7 +2214,7 @@ The stable namespace bags are:
 - `terms`: `Literal`, `Iri`, `Var`, `Blank`, `ListTerm`, `OpenListTerm`, `GraphTerm`, `Triple`, `Rule`
 - `ns`: `RDF_NS`, `XSD_NS`, `CRYPTO_NS`, `MATH_NS`, `TIME_NS`, `LIST_NS`, `LOG_NS`, `STRING_NS`
 
-The contract is intentionally strict: if a helper is added, removed, renamed, or its callable shape changes, the builtin contract tests fail until the change is made explicit and the version is bumped.
+The helper object is frozen and regression-tested so helper additions, removals, and renames do not slip in silently.
 
 That API keeps the extension boundary explicit: custom builtins get the operations they need without reaching into Eyeling’s private module graph.
 
