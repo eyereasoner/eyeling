@@ -1463,6 +1463,42 @@ _:x :hates { _:foo :making :mess }.
   },
 
   {
+    name: '59b regression: log:includes rejects non-scope literal or term subjects',
+    opt: { proofComments: false },
+    input: `@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@base <http://example.org/> .
+
+{ false log:includes true. } => { :result :has :fail-literal-1. }.
+{ "foo" log:includes true. } => { :result :has :fail-literal-2. }.
+{ :foo log:includes true. } => { :result :has :fail-literal-3. }.
+{ 0 log:includes true. } => { :result :has :fail-literal-4. }.
+{ 42.3 log:includes true. } => { :result :has :fail-literal-5. }.
+{ (:foo 1 _:x) log:includes true. } => { :result :has :fail-literal-6. }.
+
+{ } => {
+  :test :contains :fail-literal-1, :fail-literal-2, :fail-literal-3, :fail-literal-4, :fail-literal-5, :fail-literal-6.
+}.
+`,
+    expect: [
+      /:(?:test)\s+:(?:contains)\s+:(?:fail-literal-1)\s*\./,
+      /:(?:test)\s+:(?:contains)\s+:(?:fail-literal-2)\s*\./,
+      /:(?:test)\s+:(?:contains)\s+:(?:fail-literal-3)\s*\./,
+      /:(?:test)\s+:(?:contains)\s+:(?:fail-literal-4)\s*\./,
+      /:(?:test)\s+:(?:contains)\s+:(?:fail-literal-5)\s*\./,
+      /:(?:test)\s+:(?:contains)\s+:(?:fail-literal-6)\s*\./,
+    ],
+    notExpect: [
+      /:(?:result)\s+:(?:has)\s+:(?:fail-literal-1)\s*\./,
+      /:(?:result)\s+:(?:has)\s+:(?:fail-literal-2)\s*\./,
+      /:(?:result)\s+:(?:has)\s+:(?:fail-literal-3)\s*\./,
+      /:(?:result)\s+:(?:has)\s+:(?:fail-literal-4)\s*\./,
+      /:(?:result)\s+:(?:has)\s+:(?:fail-literal-5)\s*\./,
+      /:(?:result)\s+:(?:has)\s+:(?:fail-literal-6)\s*\./,
+    ],
+  },
+
+  {
     name: '60 regression: log:includes must match quoted triples with variable predicates',
     opt: { proofComments: false },
     input: `@prefix : <http://example.org/> .

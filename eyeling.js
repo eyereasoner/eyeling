@@ -3670,7 +3670,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   //   - subject = GraphTerm: explicit scope, run immediately (no closure gating)
   //   - subject = positive integer literal N (>= 1): delay until saturated closure level >= N
   //   - subject = Var: treat as priority 1 (do not bind)
-  //   - any other subject: backward-compatible default priority 1
+  //   - any other subject: invalid, so the builtin fails
   if (pv === LOG_NS + 'includes') {
     let scopeFacts = null;
     let scopeBackRules = backRules;
@@ -3698,7 +3698,8 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
         prio = 1; // do not bind
       } else {
         const p0 = __logNaturalPriorityFromTerm(g.s);
-        if (p0 !== null) prio = p0;
+        if (p0 === null) return [];
+        prio = p0;
       }
 
       const snap = facts.__scopedSnapshot || null;
@@ -3781,7 +3782,8 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
         prio = 1; // do not bind
       } else {
         const p0 = __logNaturalPriorityFromTerm(g.s);
-        if (p0 !== null) prio = p0;
+        if (p0 === null) return [];
+        prio = p0;
       }
 
       const snap = facts.__scopedSnapshot || null;
