@@ -1499,6 +1499,33 @@ _:x :hates { _:foo :making :mess }.
   },
 
   {
+    name: '59c regression: integer-safe math absoluteValue, negation, and rounded preserve large integers',
+    opt: { proofComments: false },
+    input: `@prefix : <http://example.org/> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@base <http://example.org/> .
+
+{ 9999999999999999 math:absoluteValue ?X. ?X math:notEqualTo 9999999999999999. } => { :result :has :fail-abs. }.
+{ 9999999999999999 math:negation ?X. ?X math:negation ?Y. ?Y math:notEqualTo 9999999999999999. } => { :result :has :fail-neg. }.
+{ 9999999999999999 math:rounded ?X. ?X math:notEqualTo 9999999999999999. } => { :result :has :fail-round. }.
+
+{ } => {
+  :test :contains :fail-abs, :fail-neg, :fail-round.
+}.
+`,
+    expect: [
+      /:(?:test)\s+:(?:contains)\s+:(?:fail-abs)\s*\./,
+      /:(?:test)\s+:(?:contains)\s+:(?:fail-neg)\s*\./,
+      /:(?:test)\s+:(?:contains)\s+:(?:fail-round)\s*\./,
+    ],
+    notExpect: [
+      /:(?:result)\s+:(?:has)\s+:(?:fail-abs)\s*\./,
+      /:(?:result)\s+:(?:has)\s+:(?:fail-neg)\s*\./,
+      /:(?:result)\s+:(?:has)\s+:(?:fail-round)\s*\./,
+    ],
+  },
+
+  {
     name: '60 regression: log:includes must match quoted triples with variable predicates',
     opt: { proofComments: false },
     input: `@prefix : <http://example.org/> .
