@@ -3046,9 +3046,7 @@ A few are particularly good first reads:
 - [`examples/control-system.n3`](examples/control-system.n3) — derives actuator decisions, explains the control basis, and checks the result. Expected output: [`examples/output/control-system.n3`](examples/output/control-system.n3)
 - [`examples/deep-taxonomy-100000.n3`](examples/deep-taxonomy-100000.n3) — a deep classification stress test whose answer is whether the final goal class is reached. Expected output: [`examples/output/deep-taxonomy-100000.n3`](examples/output/deep-taxonomy-100000.n3)
 - [`examples/gps.n3`](examples/gps.n3) — route planning with readable route output. Expected output: [`examples/output/gps.n3`](examples/output/gps.n3)
-- [`examples/path-discovery.n3`](examples/path-discovery.n3) — path discovery over a flight graph with explicit route witnesses. Expected output: [`examples/output/path-discovery.n3`](examples/output/path-discovery.n3)
 - [`examples/sudoku.n3`](examples/sudoku.n3) — solver output plus legality and consistency checks. Expected output: [`examples/output/sudoku.n3`](examples/output/sudoku.n3)
-- [`examples/transistor-switch.n3`](examples/transistor-switch.n3) — computes OFF and ON switch states with exact arithmetic and explicit checks. Expected output: [`examples/output/transistor-switch.n3`](examples/output/transistor-switch.n3)
 
 ### F.7 How to read an ARC-style example
 
