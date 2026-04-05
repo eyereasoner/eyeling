@@ -23,6 +23,7 @@
     10 :fibonacci ?F10.
     100 :fibonacci ?F100.
     1000 :fibonacci ?F1000.
+    10000 :fibonacci ?F10000.
 } => {
     :test :is {
         0 :fibonacci ?F0.
@@ -30,6 +31,7 @@
         10 :fibonacci ?F10.
         100 :fibonacci ?F100.
         1000 :fibonacci ?F1000.
+        10000 :fibonacci ?F10000.
     }.
 }.
 
