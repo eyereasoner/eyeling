@@ -3044,32 +3044,11 @@ A few are particularly good first reads:
 
 - [`examples/delfour.n3`](examples/delfour.n3) — privacy-preserving shopping assistance with a concrete recommendation, an explanation, and policy checks. Expected output: [`examples/output/delfour.n3`](examples/output/delfour.n3)
 - [`examples/control-system.n3`](examples/control-system.n3) — derives actuator decisions, explains the control basis, and checks the result. Expected output: [`examples/output/control-system.n3`](examples/output/control-system.n3)
-- [`examples/odrl-dpv-ehds-risk-ranked.n3`](examples/odrl-dpv-ehds-risk-ranked.n3) — ranks policy risks with explicit findings and verification-oriented output. Expected output: [`examples/output/odrl-dpv-ehds-risk-ranked.n3`](examples/output/odrl-dpv-ehds-risk-ranked.n3)
-- [`examples/sudoku.n3`](examples/sudoku.n3) — solver output plus legality and consistency checks. Expected output: [`examples/output/sudoku.n3`](examples/output/sudoku.n3)
-
-There are also several small computational examples where the answer and witness are tightly connected:
-
-- [`examples/euler-identity.n3`](examples/euler-identity.n3) — a certificate-style derivation of `exp(i*pi) + 1 = 0`. Expected output: [`examples/output/euler-identity.n3`](examples/output/euler-identity.n3)
-- [`examples/fibonacci.n3`](examples/fibonacci.n3) — compact answer-oriented reporting of Fibonacci values. Expected output: [`examples/output/fibonacci.n3`](examples/output/fibonacci.n3)
-- [`examples/collatz.n3`](examples/collatz.n3) — computes Collatz trajectories and materializes witness lists. Expected output: [`examples/output/collatz.n3`](examples/output/collatz.n3)
-- [`examples/goldbach.n3`](examples/goldbach.n3) — searches Goldbach decompositions with explicit witness pairs. Expected output: [`examples/output/goldbach.n3`](examples/output/goldbach.n3)
-- [`examples/kaprekar.n3`](examples/kaprekar.n3) — shows convergence to 6174 with readable witness traces. Expected output: [`examples/output/kaprekar.n3`](examples/output/kaprekar.n3)
-- [`examples/polynomial.n3`](examples/polynomial.n3) — derives roots and checks internal consistency of the reported examples. Expected output: [`examples/output/polynomial.n3`](examples/output/polynomial.n3)
-
-For paths, planning, and search, these work well:
-
+- [`examples/deep-taxonomy-100000.n3`](examples/deep-taxonomy-100000.n3) — a deep classification stress test whose answer is whether the final goal class is reached. Expected output: [`examples/output/deep-taxonomy-100000.n3`](examples/output/deep-taxonomy-100000.n3)
 - [`examples/gps.n3`](examples/gps.n3) — route planning with readable route output. Expected output: [`examples/output/gps.n3`](examples/output/gps.n3)
 - [`examples/path-discovery.n3`](examples/path-discovery.n3) — path discovery over a flight graph with explicit route witnesses. Expected output: [`examples/output/path-discovery.n3`](examples/output/path-discovery.n3)
-
-For toy physical or engineering models:
-
-- [`examples/pn-junction-tunneling.n3`](examples/pn-junction-tunneling.n3) — models a narrow-barrier tunneling story and checks the expected rise-and-fall shape. Expected output: [`examples/output/pn-junction-tunneling.n3`](examples/output/pn-junction-tunneling.n3)
+- [`examples/sudoku.n3`](examples/sudoku.n3) — solver output plus legality and consistency checks. Expected output: [`examples/output/sudoku.n3`](examples/output/sudoku.n3)
 - [`examples/transistor-switch.n3`](examples/transistor-switch.n3) — computes OFF and ON switch states with exact arithmetic and explicit checks. Expected output: [`examples/output/transistor-switch.n3`](examples/output/transistor-switch.n3)
-
-Two more examples are useful for scale or specialization:
-
-- [`examples/deep-taxonomy-100000.n3`](examples/deep-taxonomy-100000.n3) — a deep classification stress test whose answer is whether the final goal class is reached. Expected output: [`examples/output/deep-taxonomy-100000.n3`](examples/output/deep-taxonomy-100000.n3)
-- [`examples/ershov-mixed-computation.n3`](examples/ershov-mixed-computation.n3) — a small staging example showing how a generic program can be specialized and then run later as a residual program. Expected output: [`examples/output/ershov-mixed-computation.n3`](examples/output/ershov-mixed-computation.n3)
 
 ### F.7 How to read an ARC-style example
 
