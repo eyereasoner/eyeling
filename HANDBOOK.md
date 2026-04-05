@@ -3040,8 +3040,6 @@ The point is not to make checks large. The point is to make them real.
 
 The following examples are especially good places to see this style in practice.
 
-A few are particularly good first reads:
-
 - [`examples/delfour.n3`](examples/delfour.n3) — privacy-preserving shopping assistance with a concrete recommendation, an explanation, and policy checks. Expected output: [`examples/output/delfour.n3`](examples/output/delfour.n3)
 - [`examples/control-system.n3`](examples/control-system.n3) — derives actuator decisions, explains the control basis, and checks the result. Expected output: [`examples/output/control-system.n3`](examples/output/control-system.n3)
 - [`examples/deep-taxonomy-100000.n3`](examples/deep-taxonomy-100000.n3) — a deep classification stress test whose answer is whether the final goal class is reached. Expected output: [`examples/output/deep-taxonomy-100000.n3`](examples/output/deep-taxonomy-100000.n3)
