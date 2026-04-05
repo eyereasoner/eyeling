@@ -2955,104 +2955,52 @@ That is why the result is 100%.
 
 ## Appendix F — The ARC approach: Answer • Reason Why • Check
 
-A useful way to structure an Eyeling program is the ARC approach:
+A simple way to write a good Eyeling program is to make it do three things in one file:
 
-> Answer • Reason Why • Check
+> give the answer, say why, and check that it really holds.
 
-The idea is simple: do not stop at producing a result. Produce the result, explain why it is the right result, and include a concrete verification that fails loudly when an important assumption does not hold.
+That is the ARC approach: **Answer • Reason Why • Check**.
 
-ARC treats a program as a small, accountable artifact built from three ingredients:
+The idea is not to make the program more grand or formal. It is to make it more useful. A bare result is often not enough. A reader also wants to see the small reason that matters, and to know that the program will fail loudly if an important assumption is wrong.
 
-1. Data
-2. Logic
-3. A Question
+In Eyeling this style comes quite naturally. Facts hold the data. Rules derive the conclusion. `log:outputString` can turn the conclusion into readable output. And a rule that concludes `false` acts as a fuse: if a bad condition becomes provable, the run stops instead of quietly producing a misleading result.
 
-From these, we build a compact program that answers the question, explains the answer, and checks itself.
+### F.1 What the three parts mean
 
-### F.1 The three parts
+The **Answer** is the direct result. It should be short and easy to recognize. In many Eyeling files it is a final recommendation, a route, a computed value, a decision such as `allowed` or `blocked`, or a small report line emitted with `log:outputString`.
 
-#### Answer
+The **Reason Why** is the compact explanation. It is not hidden chain-of-thought and it does not need to be long. Usually it is just the witness, threshold, policy, path, or intermediate fact that made the answer follow. A good reason tells the reader what mattered.
 
-The **Answer** is the direct response to the question being asked.
+The **Check** is the part that keeps the program honest. It should do more than repeat the answer in different words. A good check tests something that could really fail: a structural invariant, a recomputed quantity, a boundary condition, or a rule that derives `false` when the answer would be inconsistent with the inputs.
 
-It should be short, specific, and easy to read. In Eyeling, this is often emitted as one or more `log:outputString` lines such as:
+A short way to remember ARC is this:
 
-- the final decision
-- the selected item
-- the computed value
-- the resulting classification
+> an answer tells you **what** happened,
+> a reason tells you **why**,
+> and a check tells you **whether you should trust it**.
 
-A good Answer reads like something you could show to a user, an auditor, or a calling program.
+### F.2 Why this fits Eyeling well
 
-#### Reason Why
+ARC is not an extra subsystem in Eyeling. It is mostly a good habit.
 
-The **Reason Why** explains why the Answer is correct.
+Eyeling already separates data from logic. It already lets you derive readable output instead of printing ad hoc text during proof search. And it already has a very strong notion of validation through inference fuses. So ARC is really just a clean way to organize an ordinary Eyeling file so that a human reader can see the result, the explanation, and the safety net together.
 
-This is not a full proof calculus or a hidden chain of thought. It is a concise, inspectable explanation grounded in the facts, rules, thresholds, identities, or policies that matter for the case. In practice, it often includes:
+This is especially useful for examples. A newcomer can run the file and see what it does. A maintainer can inspect the few rules that justify the result. And an external developer can tell whether the example merely prints something nice or actually checks itself.
 
-- the relevant inputs
-- the governing rule or policy
-- the key intermediate facts
-- the condition that made the conclusion follow
+### F.3 A simple pattern to follow
 
-In Eyeling, the Reason Why is usually rendered as additional `log:outputString` lines derived from the same closure as the Answer.
+A practical ARC-style Eyeling file often has four visible layers.
 
-#### Check
+First come the **facts**: the input data, parameters, thresholds, policies, or known relationships. Then comes the **logic**: the rules that derive the internal conclusion. Then comes the **presentation**: rules that turn the result into `log:outputString` lines or other report facts. Finally come the **checks**: rules that validate the result or trigger `false` when an invariant is broken.
 
-The **Check** is an independent validation step.
+You do not have to separate these layers perfectly, but it helps a lot when the file reads in roughly that order.
 
-Its purpose is not to restate the Answer, but to test that important invariants still hold. A Check should fail loudly if the program’s assumptions break, if a data dependency is malformed, or if an edge case invalidates the intended conclusion.
-
-In Eyeling, Checks are a natural fit for either:
-
-- derived facts such as `:ok :signatureVerified true .`, or
-- inference fuses such as `{ ... } => false .` when a violation must stop execution.
-
-This makes verification part of the program itself rather than something left to external commentary.
-
-### F.2 Proof = Reason Why + Check
-
-ARC summarizes its trust model as:
-
-> Proof = Reason Why + Check
-
-That is a practical notion of proof. The Reason Why explains the logic in human terms. The Check verifies that the critical conditions actually hold at runtime.
-
-For many real workflows, that combination is more useful than a bare result: it is inspectable, repeatable, and suitable for automation.
-
-### F.3 Why ARC fits Eyeling well
-
-Eyeling already encourages the separation that ARC needs.
-
-Rules derive facts. Facts can include output facts. Output is not printed eagerly during proof search; instead, `log:outputString` facts are collected from the final closure and rendered deterministically whenever they are present. This makes it natural to derive a structured Answer and Reason Why as part of the logic itself.
-
-Checks also map well to Eyeling. A rule with conclusion `false` acts as an inference fuse: if its body becomes provable, execution stops with a hard failure. This is exactly the behavior we want for “must-hold” conditions.
-
-So ARC in Eyeling is not an add-on. It is mostly a disciplined way of organizing what Eyeling already does well: derive conclusions, expose supporting facts, and enforce invariants.
-
-### F.4 A practical pattern
-
-A simple ARC-oriented Eyeling file often has four layers:
-
-1. **Facts**  
-   Input data, parameters, policies, and known relationships.
-
-2. **Logic**  
-   Rules that derive the program’s internal conclusions.
-
-3. **Presentation**  
-   Rules that turn derived conclusions into `log:outputString` lines for the Answer and Reason Why.
-
-4. **Verification**  
-   Rules that derive check facts or trigger inference fuses on violations.
-
-A useful habit is to keep these layers visually separate in the file.
-
-### F.5 A tiny template
+### F.4 A tiny template
 
 ```n3
 @prefix : <http://example.org/> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
 
 # Facts
 :case :input 42 .
@@ -3078,25 +3026,63 @@ A useful habit is to keep these layers visually separate in the file.
     => false .
 ```
 
-The exact presentation style can vary, but the shape remains the same: derive the result, explain the result, and verify the result.
+The exact wording can vary. The important thing is the shape: derive the result, make the key reason visible, and include at least one check that could fail for a real reason.
 
-### F.6 What ARC is not
+### F.5 What a good check looks like
 
-ARC does **not** mean:
+A good check is not a decorative `:ok true` line. It should add real confidence.
 
-- printing a result and calling it explained
-- replacing checks with prose
-- hiding the important assumptions
-- relying on “trust me” comments outside the executable artifact
+Sometimes that means recomputing a quantity from another angle. Sometimes it means checking a witness path instead of only the summary result. Sometimes it means making sure a threshold really was crossed, or that a list or graph has the shape the rest of the program assumes. And sometimes the right check is simply an inference fuse that says: if this contradiction appears, stop.
 
-A file follows ARC only when the answer, explanation, and validation are all carried by the program itself.
+The point is not to make checks large. The point is to make them real.
 
-### F.7 A good default for examples
+### F.6 Examples in `examples/` that read well in ARC style
 
-For worked examples in this handbook, ARC is a strong default presentation style:
+The following examples are especially good places to see this style in practice.
 
-- **Answer** for the main result
-- **Reason Why** for the key supporting explanation
-- **Check** for invariants and fail-loud validation
+A few are particularly good first reads:
 
-This keeps examples readable for newcomers while also making them more useful as reusable, auditable logic artifacts.
+- [`examples/delfour.n3`](examples/delfour.n3) — privacy-preserving shopping assistance with a concrete recommendation, an explanation, and policy checks. Expected output: [`examples/output/delfour.n3`](examples/output/delfour.n3)
+- [`examples/control-system.n3`](examples/control-system.n3) — derives actuator decisions, explains the control basis, and checks the result. Expected output: [`examples/output/control-system.n3`](examples/output/control-system.n3)
+- [`examples/odrl-dpv-ehds-risk-ranked.n3`](examples/odrl-dpv-ehds-risk-ranked.n3) — ranks policy risks with explicit findings and verification-oriented output. Expected output: [`examples/output/odrl-dpv-ehds-risk-ranked.n3`](examples/output/odrl-dpv-ehds-risk-ranked.n3)
+- [`examples/sudoku.n3`](examples/sudoku.n3) — solver output plus legality and consistency checks. Expected output: [`examples/output/sudoku.n3`](examples/output/sudoku.n3)
+
+There are also several small computational examples where the answer and witness are tightly connected:
+
+- [`examples/euler-identity.n3`](examples/euler-identity.n3) — a certificate-style derivation of `exp(i*pi) + 1 = 0`. Expected output: [`examples/output/euler-identity.n3`](examples/output/euler-identity.n3)
+- [`examples/fibonacci.n3`](examples/fibonacci.n3) — compact answer-oriented reporting of Fibonacci values. Expected output: [`examples/output/fibonacci.n3`](examples/output/fibonacci.n3)
+- [`examples/collatz.n3`](examples/collatz.n3) — computes Collatz trajectories and materializes witness lists. Expected output: [`examples/output/collatz.n3`](examples/output/collatz.n3)
+- [`examples/goldbach.n3`](examples/goldbach.n3) — searches Goldbach decompositions with explicit witness pairs. Expected output: [`examples/output/goldbach.n3`](examples/output/goldbach.n3)
+- [`examples/kaprekar.n3`](examples/kaprekar.n3) — shows convergence to 6174 with readable witness traces. Expected output: [`examples/output/kaprekar.n3`](examples/output/kaprekar.n3)
+- [`examples/polynomial.n3`](examples/polynomial.n3) — derives roots and checks internal consistency of the reported examples. Expected output: [`examples/output/polynomial.n3`](examples/output/polynomial.n3)
+
+For paths, planning, and search, these work well:
+
+- [`examples/gps.n3`](examples/gps.n3) — route planning with readable route output. Expected output: [`examples/output/gps.n3`](examples/output/gps.n3)
+- [`examples/path-discovery.n3`](examples/path-discovery.n3) — path discovery over a flight graph with explicit route witnesses. Expected output: [`examples/output/path-discovery.n3`](examples/output/path-discovery.n3)
+
+For toy physical or engineering models:
+
+- [`examples/pn-junction-tunneling.n3`](examples/pn-junction-tunneling.n3) — models a narrow-barrier tunneling story and checks the expected rise-and-fall shape. Expected output: [`examples/output/pn-junction-tunneling.n3`](examples/output/pn-junction-tunneling.n3)
+- [`examples/transistor-switch.n3`](examples/transistor-switch.n3) — computes OFF and ON switch states with exact arithmetic and explicit checks. Expected output: [`examples/output/transistor-switch.n3`](examples/output/transistor-switch.n3)
+
+Two more examples are useful for scale or specialization:
+
+- [`examples/deep-taxonomy-100000.n3`](examples/deep-taxonomy-100000.n3) — a deep classification stress test whose answer is whether the final goal class is reached. Expected output: [`examples/output/deep-taxonomy-100000.n3`](examples/output/deep-taxonomy-100000.n3)
+- [`examples/ershov-mixed-computation.n3`](examples/ershov-mixed-computation.n3) — a small staging example showing how a generic program can be specialized and then run later as a residual program. Expected output: [`examples/output/ershov-mixed-computation.n3`](examples/output/ershov-mixed-computation.n3)
+
+### F.7 How to read an ARC-style example
+
+A good way to read one of these files is to start with the question in the comments or input facts. Then find the part that gives the answer. Then trace the few rules that explain why that answer follows. Finally, look for the checks: the validation facts, the recomputation, or the `=> false` fuse that would stop the run if something important were wrong.
+
+That reading order keeps the example grounded in observable behavior rather than in source code alone.
+
+### F.8 What ARC is not
+
+ARC does not mean wrapping every file in ceremony. It does not mean long prose explanations. It does not mean hiding important assumptions in comments while the executable part stays thin. And it does not mean replacing checks with a confident tone.
+
+A file really follows ARC only when the answer, the explanation, and the validation all live in the program itself.
+
+### F.9 Why this style is worth using
+
+This style is worth using because it makes an Eyeling file easier to run, easier to inspect, and easier to trust. The result is visible. The key reason is visible. The check is visible. That makes examples better teaching material, makes policy or computation examples easier to audit, and makes the whole file more reusable as a small reasoning artifact instead of an opaque session transcript.
