@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 'use strict';
 
+/**
+ * Polynomial case with lightweight complex arithmetic and numerical root finding.
+ * The result is checked both by evaluating the polynomial at the roots and by reconstructing the coefficients.
+ */
+
 const ROOT_TOL = 1e-10;
 const COEFF_TOL = 1e-8;
 const MAX_ITER = 200;
@@ -46,6 +51,7 @@ function multiplyPolys(left, right) {
   }
   return out;
 }
+// Durand-Kerner-style iteration on a monic copy of the polynomial.
 function rootsFromCoeffs(coeffs) {
   const degree = coeffs.length - 1;
   const monic = [];
@@ -89,7 +95,8 @@ function sortRoots(roots) {
       if (leftReal && rightReal) swap = roots[j].re > roots[i].re;
       else if (!leftReal && rightReal) swap = false;
       else if (leftReal && !rightReal) swap = true;
-      else if (roots[j].im > roots[i].im || (Math.abs(roots[j].im - roots[i].im) < 1e-8 && roots[j].re > roots[i].re)) swap = true;
+      else if (roots[j].im > roots[i].im || (Math.abs(roots[j].im - roots[i].im) < 1e-8 && roots[j].re > roots[i].re))
+        swap = true;
       if (swap) {
         const t = roots[i];
         roots[i] = roots[j];
@@ -102,7 +109,10 @@ function fmtG(value) {
   const v = Math.abs(value) < 1e-8 ? 0 : value;
   if (v === 0) return '0';
   const s = Number(v).toPrecision(10);
-  return s.replace(/(?:\.0+|(\.\d*?[1-9])0+)(e|$)/, '$1$2').replace(/\.0+$/, '').replace(/e\+?/, 'e');
+  return s
+    .replace(/(?:\.0+|(\.\d*?[1-9])0+)(e|$)/, '$1$2')
+    .replace(/\.0+$/, '')
+    .replace(/e\+?/, 'e');
 }
 function printCx(z) {
   const re = Math.abs(z.re) < 1e-8 ? 0 : z.re;
@@ -112,6 +122,8 @@ function printCx(z) {
   return `${fmtG(re)} ${im >= 0 ? '+' : '-'} ${fmtG(Math.abs(im))}i`;
 }
 
+// Solve, reconstruct, and validate the polynomial in three complementary ways.
+// Build the final ARC-style report and exit non-zero if a check fails.
 function main() {
   const cases = [
     [cx(1, 0), cx(-10, 0), cx(35, 0), cx(-50, 0), cx(24, 0)],
@@ -122,10 +134,14 @@ function main() {
 
   const lines = [];
   lines.push('=== Answer ===');
-  lines.push('Both polynomial examples are solved consistently: the computed roots satisfy the source polynomials and reconstruct the original coefficients.');
+  lines.push(
+    'Both polynomial examples are solved consistently: the computed roots satisfy the source polynomials and reconstruct the original coefficients.',
+  );
   lines.push('');
   lines.push('=== Reason Why ===');
-  lines.push('For each quartic, the program solves for the roots numerically, substitutes them back, and rebuilds the polynomial from those roots.');
+  lines.push(
+    'For each quartic, the program solves for the roots numerically, substitutes them back, and rebuilds the polynomial from those roots.',
+  );
   for (let c = 0; c < 2; c += 1) {
     const roots = rootsFromCoeffs(cases[c]);
     sortRoots(roots);

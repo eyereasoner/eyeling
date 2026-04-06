@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 'use strict';
 
-const ALL_MASK = 0x1FF;
-const DEFAULT_PUZZLE =
-  '100007090030020008009600500005300900010080002600004000300000010040000007007000300';
+/**
+ * Sudoku solver specialized to a single-file search-and-propagation implementation.
+ * The state keeps row, column, and box usage bitmasks so constraints can be checked quickly.
+ */
+
+const ALL_MASK = 0x1ff;
+const DEFAULT_PUZZLE = '100007090030020008009600500005300900010080002600004000300000010040000007007000300';
 
 function popcount16(x) {
   let c = 0;
@@ -69,6 +73,7 @@ function parsePuzzle(text) {
   return out;
 }
 
+// Initialize the board and the occupancy bitmasks from the input puzzle.
 function stateFromPuzzle(puzzle) {
   const state = {
     cells: new Array(81).fill(0),
@@ -219,6 +224,7 @@ function boardLines(cells) {
   return lines;
 }
 
+// Solve the fixed puzzle and report both the solution and the internal consistency checks.
 function main() {
   const puzzle = parsePuzzle(DEFAULT_PUZZLE);
   if (!puzzle) process.exit(1);
@@ -284,7 +290,11 @@ function main() {
 
   const lines = [];
   lines.push('=== Answer ===');
-  lines.push(unique ? 'The puzzle is solved, and the completed grid is the unique valid Sudoku solution.' : 'The puzzle is solved, and the completed grid is a valid Sudoku solution.');
+  lines.push(
+    unique
+      ? 'The puzzle is solved, and the completed grid is the unique valid Sudoku solution.'
+      : 'The puzzle is solved, and the completed grid is a valid Sudoku solution.',
+  );
   lines.push('');
   lines.push('Puzzle');
   lines.push(...boardLines(puzzle));
@@ -293,7 +303,9 @@ function main() {
   if (solvedOk) lines.push(...boardLines(solved.cells));
   lines.push('');
   lines.push('=== Reason Why ===');
-  lines.push('The solver combines constraint propagation with depth-first search. It fills forced singles immediately and branches on the blank cell with the fewest candidates.');
+  lines.push(
+    'The solver combines constraint propagation with depth-first search. It fills forced singles immediately and branches on the blank cell with the fewest candidates.',
+  );
   lines.push(`givens             : ${stats.givens}`);
   lines.push(`blanks             : ${stats.blanks}`);
   lines.push(`forced placements  : ${stats.forcedMoves}`);

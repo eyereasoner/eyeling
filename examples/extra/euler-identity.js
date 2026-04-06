@@ -1,10 +1,16 @@
 #!/usr/bin/env node
 'use strict';
 
+/**
+ * Minimal exact-arithmetic witness for Euler's identity.
+ * Using an exact representation keeps the check section purely logical instead of approximate.
+ */
+
 function add(a, b) {
   return { re: a.re + b.re, im: a.im + b.im };
 }
 
+// Build the exact witness and print the three ARC sections.
 function main() {
   const expIpi = { re: -1, im: 0 };
   const one = { re: 1, im: 0 };

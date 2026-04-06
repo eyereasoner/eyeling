@@ -41,8 +41,7 @@ What changes in `examples/extra/` is the execution strategy.
 
 These cases begin from the same broad ARC mindset as the N3 examples in `examples/`, but they are shaped as specialized programs so that repeated execution is small, direct, and efficient.
 
-In other words, they are not a different philosophy.
-They are a different operational form.
+In other words, they are not a different philosophy. They are a different operational form.
 
 ---
 
@@ -53,8 +52,7 @@ A useful way to think about the relationship is this:
 - **`examples/`** presents ARC cases in declarative Eyeling form.
 - **`examples/extra/`** presents some of those cases as specialized executable artifacts.
 
-The declarative version is ideal for seeing the logic in the open.
-The specialized version is ideal when the logical structure is already known and you want a compact program that runs very quickly while still delivering the same ARC-style shape of result.
+The declarative version is ideal for seeing the logic in the open. The specialized version is ideal when the logical structure is already known and you want a compact program that runs very quickly while still delivering the same ARC-style shape of result.
 
 So `examples/extra/` should be read as a performance-oriented companion to part of the N3 collection, not as a replacement for it.
 
@@ -97,15 +95,13 @@ The run should expose the key explanation, witness, derivation, or summary that 
 
 ### 3. A real check
 
-The case should validate something substantial, not merely restate the conclusion.
-A check should be capable of failing for a meaningful reason.
+The case should validate something substantial, not merely restate the conclusion. A check should be capable of failing for a meaningful reason.
 
 ### 4. Repeatability
 
 The program should be easy to run again, inspect again, and compare again.
 
-That is why these examples belong with the ARC material rather than merely beside it.
-They preserve the same trust pattern while changing the performance profile.
+That is why these examples belong with the ARC material rather than merely beside it. They preserve the same trust pattern while changing the performance profile.
 
 ---
 
@@ -144,8 +140,7 @@ A good way to approach `examples/extra/` is:
 
 That perspective makes the role of the collection clear.
 
-It is not a random set of auxiliary programs.
-It is a demonstration that ARC-style cases can remain auditable while also being pushed toward compact, high-speed execution.
+It is not a random set of auxiliary programs. It is a demonstration that ARC-style cases can remain auditable while also being pushed toward compact, high-speed execution.
 
 ---
 

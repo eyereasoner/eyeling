@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 'use strict';
 
+/**
+ * Specialized EHDS risk-ranking case with concrete permissions, needs, and scoring rules.
+ * Instead of generic policy reasoning, the file evaluates the fixed rule set directly and explains the ranking.
+ */
+
 const ACTION = {
   PROVIDE_SECONDARY_USE_DATA: 0,
   DOWNLOAD: 1,
@@ -31,10 +36,26 @@ function actionName(a) {
 }
 
 const NEEDS = [
-  { id: 'Need_RequireDataPermit', importance: 20, description: 'Secondary use should be authorised via an EHDS Data Permit.' },
-  { id: 'Need_RespectOptOutSecondaryUse', importance: 25, description: 'Respect the EHDS right to opt out from secondary use.' },
-  { id: 'Need_SecureProcessingEnvironment', importance: 18, description: 'Secondary-use processing must occur within a secure processing environment.' },
-  { id: 'Need_StatisticallyAnonymisedSecondaryUse', importance: 15, description: 'Secondary use should use statistically anonymised data.' },
+  {
+    id: 'Need_RequireDataPermit',
+    importance: 20,
+    description: 'Secondary use should be authorised via an EHDS Data Permit.',
+  },
+  {
+    id: 'Need_RespectOptOutSecondaryUse',
+    importance: 25,
+    description: 'Respect the EHDS right to opt out from secondary use.',
+  },
+  {
+    id: 'Need_SecureProcessingEnvironment',
+    importance: 18,
+    description: 'Secondary-use processing must occur within a secure processing environment.',
+  },
+  {
+    id: 'Need_StatisticallyAnonymisedSecondaryUse',
+    importance: 15,
+    description: 'Secondary use should use statistically anonymised data.',
+  },
 ];
 
 const P1_C = [{ key: CONSTRAINT_KEY.PURPOSE, value: 'HealthcareScientificResearch' }];
@@ -42,10 +63,28 @@ const P2_C = [{ key: CONSTRAINT_KEY.PURPOSE, value: 'TrainTestAndEvaluateHealthA
 const P4_D = [{ action: ACTION.REMOVE_DIRECT_IDENTIFIERS }];
 
 const PERMISSIONS = [
-  { id: 'PermSecondaryUseDUA', clauseId: 'H1', action: ACTION.PROVIDE_SECONDARY_USE_DATA, constraints: P1_C, duties: [] },
-  { id: 'PermSecondaryUseAllPatients', clauseId: 'H2', action: ACTION.PROVIDE_SECONDARY_USE_DATA, constraints: P2_C, duties: [] },
+  {
+    id: 'PermSecondaryUseDUA',
+    clauseId: 'H1',
+    action: ACTION.PROVIDE_SECONDARY_USE_DATA,
+    constraints: P1_C,
+    duties: [],
+  },
+  {
+    id: 'PermSecondaryUseAllPatients',
+    clauseId: 'H2',
+    action: ACTION.PROVIDE_SECONDARY_USE_DATA,
+    constraints: P2_C,
+    duties: [],
+  },
   { id: 'PermDownloadLocalCopy', clauseId: 'H3', action: ACTION.DOWNLOAD, constraints: [], duties: [] },
-  { id: 'PermProvidePseudonymisedData', clauseId: 'H4', action: ACTION.PROVIDE_SECONDARY_USE_DATA, constraints: [], duties: P4_D },
+  {
+    id: 'PermProvidePseudonymisedData',
+    clauseId: 'H4',
+    action: ACTION.PROVIDE_SECONDARY_USE_DATA,
+    constraints: [],
+    duties: P4_D,
+  },
 ];
 
 const MISSING = {
@@ -55,11 +94,48 @@ const MISSING = {
   MISSING_STAT_ANON: 3,
 };
 
+// Risk rules combine a base severity with the importance of the unmet need.
 const RULES = [
-  { ruleId: 'R1', permissionId: 'PermSecondaryUseDUA', clauseId: 'H1', needId: 'Need_RequireDataPermit', baseScore: 80, riskSource: 'Secondary use permitted without EHDS Data Permit.', mitigation: 'Require an EHDS Data Permit before secondary use.', missing: MISSING.MISSING_DATA_PERMIT },
-  { ruleId: 'R2', permissionId: 'PermSecondaryUseAllPatients', clauseId: 'H2', needId: 'Need_RespectOptOutSecondaryUse', baseScore: 75, riskSource: 'Opt-out from secondary use not explicitly respected.', mitigation: 'Exclude records of persons who exercised the EHDS opt-out.', missing: MISSING.MISSING_OPT_OUT },
-  { ruleId: 'R3', permissionId: 'PermDownloadLocalCopy', clauseId: 'H3', needId: 'Need_SecureProcessingEnvironment', baseScore: 70, riskSource: 'Local download permitted; secure processing environment not required.', mitigation: 'Require processing only within a secure processing environment.', missing: MISSING.MISSING_SECURE_ENV },
-  { ruleId: 'R4', permissionId: 'PermProvidePseudonymisedData', clauseId: 'H4', needId: 'Need_StatisticallyAnonymisedSecondaryUse', baseScore: 65, riskSource: 'Statistical anonymisation safeguard missing for secondary use.', mitigation: 'Require statistically anonymised data for secondary use.', missing: MISSING.MISSING_STAT_ANON },
+  {
+    ruleId: 'R1',
+    permissionId: 'PermSecondaryUseDUA',
+    clauseId: 'H1',
+    needId: 'Need_RequireDataPermit',
+    baseScore: 80,
+    riskSource: 'Secondary use permitted without EHDS Data Permit.',
+    mitigation: 'Require an EHDS Data Permit before secondary use.',
+    missing: MISSING.MISSING_DATA_PERMIT,
+  },
+  {
+    ruleId: 'R2',
+    permissionId: 'PermSecondaryUseAllPatients',
+    clauseId: 'H2',
+    needId: 'Need_RespectOptOutSecondaryUse',
+    baseScore: 75,
+    riskSource: 'Opt-out from secondary use not explicitly respected.',
+    mitigation: 'Exclude records of persons who exercised the EHDS opt-out.',
+    missing: MISSING.MISSING_OPT_OUT,
+  },
+  {
+    ruleId: 'R3',
+    permissionId: 'PermDownloadLocalCopy',
+    clauseId: 'H3',
+    needId: 'Need_SecureProcessingEnvironment',
+    baseScore: 70,
+    riskSource: 'Local download permitted; secure processing environment not required.',
+    mitigation: 'Require processing only within a secure processing environment.',
+    missing: MISSING.MISSING_SECURE_ENV,
+  },
+  {
+    ruleId: 'R4',
+    permissionId: 'PermProvidePseudonymisedData',
+    clauseId: 'H4',
+    needId: 'Need_StatisticallyAnonymisedSecondaryUse',
+    baseScore: 65,
+    riskSource: 'Statistical anonymisation safeguard missing for secondary use.',
+    mitigation: 'Require statistically anonymised data for secondary use.',
+    missing: MISSING.MISSING_STAT_ANON,
+  },
 ];
 
 function findNeed(id) {
@@ -93,6 +169,7 @@ function missing(permission, kind) {
   }
 }
 
+// Materialize the ranked risk list and verify the ordering and scores.
 function main() {
   const risks = [];
   for (const rule of RULES) {
@@ -143,10 +220,14 @@ function main() {
 
   const lines = [];
   lines.push('=== Answer ===');
-  lines.push('The EHDS secondary-use agreement yields four ranked risks; H1 and H2 normalize to score 100, followed by H3 at 88 and H4 at 80.');
+  lines.push(
+    'The EHDS secondary-use agreement yields four ranked risks; H1 and H2 normalize to score 100, followed by H3 at 88 and H4 at 80.',
+  );
   lines.push('');
   lines.push('=== Reason Why ===');
-  lines.push('The agreement instantiates concrete clauses, permissions, patient needs, and rule applications. A risk appears when a permission is missing a required safeguard.');
+  lines.push(
+    'The agreement instantiates concrete clauses, permissions, patient needs, and rule applications. A risk appears when a permission is missing a required safeguard.',
+  );
   for (let i = 0; i < risks.length; i += 1) {
     const risk = risks[i];
     lines.push(`Risk #${i + 1}`);

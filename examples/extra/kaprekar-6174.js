@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 'use strict';
 
+/**
+ * Kaprekar 6174 exploration over all admissible four-digit starts.
+ * The script records traces, a convergence histogram, and a few representative witnesses.
+ */
+
 function digits4(n) {
-  return [
-    Math.floor(n / 1000) % 10,
-    Math.floor(n / 100) % 10,
-    Math.floor(n / 10) % 10,
-    n % 10,
-  ];
+  return [Math.floor(n / 1000) % 10, Math.floor(n / 100) % 10, Math.floor(n / 10) % 10, n % 10];
 }
 
 function sort4(digits, descending) {
@@ -47,6 +47,7 @@ function fmt4(n) {
   return String(n).padStart(4, '0');
 }
 
+// Explore the full start space and then print a compact convergence summary.
 function main() {
   let validStarts = 0;
   let repdigits = 0;
@@ -88,7 +89,9 @@ function main() {
   lines.push('Every valid four-digit start tested reaches 6174, and all of them do so within seven iterations.');
   lines.push('');
   lines.push('=== Reason Why ===');
-  lines.push("The program applies Kaprekar's routine to every non-repdigit start, records the iteration count, and keeps witness traces.");
+  lines.push(
+    "The program applies Kaprekar's routine to every non-repdigit start, records the iteration count, and keeps witness traces.",
+  );
   lines.push(`valid starts checked: ${validStarts}`);
   lines.push(`repdigits excluded  : ${repdigits}`);
   lines.push(`max iterations      : ${maxIterations}`);

@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 'use strict';
 
+/**
+ * Goldbach sweep for all even targets up to 1000.
+ * A sieve provides the prime table; the report summarizes sparse, rich, and balanced decompositions.
+ */
+
 const LIMIT = 1000;
 
 function sieve(limit) {
@@ -30,6 +35,7 @@ function goldbachPairs(target, primes, prime) {
   return count;
 }
 
+// Sweep the entire range and summarize the decomposition counts.
 function main() {
   const prime = sieve(LIMIT);
   const primes = collectPrimes(prime, LIMIT);
@@ -83,8 +89,10 @@ function main() {
   lines.push('Every even integer from 4 through 1000 has at least one Goldbach decomposition in the tested range.');
   lines.push('');
   lines.push('=== Reason Why ===');
-  lines.push('The program builds a prime table, enumerates unordered pairs p+q=n for each even target, and summarizes sparse and rich cases.');
-  lines.push(`even targets checked : ${((LIMIT - 4) / 2) + 1}`);
+  lines.push(
+    'The program builds a prime table, enumerates unordered pairs p+q=n for each even target, and summarizes sparse and rich cases.',
+  );
+  lines.push(`even targets checked : ${(LIMIT - 4) / 2 + 1}`);
   lines.push(`total decompositions : ${totalDecompositions}`);
   lines.push(`fewest decompositions: ${fewest}`);
   lines.push(`hardest targets      : ${hardest.join(', ')}`);

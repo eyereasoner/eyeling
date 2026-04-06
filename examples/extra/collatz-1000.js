@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 'use strict';
 
+/**
+ * Specialized Collatz sweep for start values 1..10000.
+ * The program keeps the arithmetic direct and reports both evidence and sanity checks in ARC style.
+ */
+
 const MAX_START = 10000;
 const SAMPLE_START = 27;
 
@@ -26,6 +31,7 @@ function traceFollowsRule(trace) {
   return true;
 }
 
+// Evaluate every start value and collect both witnesses and summary statistics.
 function evaluate() {
   const memo = new Array(MAX_START + 1).fill(0);
   const known = new Array(MAX_START + 1).fill(false);
@@ -98,17 +104,19 @@ function evaluate() {
   return report;
 }
 
+// Build the final ARC-style report and exit non-zero if a check fails.
 function main() {
   const r = evaluate();
-  const ok =
-    r.allReachOne && r.sampleTraceRuleValid && r.maxStepsWitnessVerified && r.peakWitnessVerified;
+  const ok = r.allReachOne && r.sampleTraceRuleValid && r.maxStepsWitnessVerified && r.peakWitnessVerified;
 
   const lines = [];
   lines.push('=== Answer ===');
   lines.push(`For starts 1..=${MAX_START}, every tested value reaches 1 under the Collatz map.`);
   lines.push('');
   lines.push('=== Reason Why ===');
-  lines.push('The program applies the standard Collatz rule, memoizes stopping times, and tracks the hardest witnesses.');
+  lines.push(
+    'The program applies the standard Collatz rule, memoizes stopping times, and tracks the hardest witnesses.',
+  );
   lines.push(`starts checked      : ${r.startsChecked}`);
   lines.push(`max steps           : ${r.maxSteps}`);
   lines.push(`max-steps start     : ${r.maxStepsStart}`);

@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 'use strict';
 
+/**
+ * Tiny closed-form control-system case with the rules already specialized into numeric formulas.
+ * It computes the helper signal and both actuator outputs, then emits an ARC-style report.
+ */
+
 function measurement10Input1() {
   return Math.sqrt(11.0 - 6.0);
 }
@@ -24,6 +29,7 @@ function approxEq(a, b, tol) {
   return Math.abs(a - b) <= tol;
 }
 
+// Assemble the ARC-style output and fail fast if any formula check disagrees.
 function main() {
   const helper = measurement10Input1();
   const outputs = [
@@ -41,7 +47,9 @@ function main() {
   lines.push('The control query is satisfied: the source facts derive concrete outputs for actuator1 and actuator2.');
   lines.push('');
   lines.push('=== Reason Why ===');
-  lines.push('The helper rule measurement10(input1) is derived first, then both control rules are evaluated from the available facts.');
+  lines.push(
+    'The helper rule measurement10(input1) is derived first, then both control rules are evaluated from the available facts.',
+  );
   lines.push(`measurement10(input1): ${helper.toFixed(6)}`);
   for (const output of outputs) {
     lines.push(`${output.name.padEnd(21)}: ${output.value.toFixed(6)}`);

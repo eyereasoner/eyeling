@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 'use strict';
 
+/**
+ * Large taxonomy reachability case compiled down to a queue-based propagation over integer identifiers.
+ * This avoids generic rule interpretation while preserving the same answer / reason / check structure.
+ */
+
 const MAX_N = 100000;
 const RULE_COUNT = 100002;
 const EXPECTED_TYPE_FACTS = 3 * MAX_N + 2;
@@ -12,6 +17,7 @@ function insertFlag(arr, index) {
   return true;
 }
 
+// Run a specialized breadth-first propagation over the class ladder.
 function main() {
   const nSeen = new Uint8Array(MAX_N + 1);
   const iSeen = new Uint8Array(MAX_N + 1);
@@ -63,10 +69,14 @@ function main() {
 
   const lines = [];
   lines.push('=== Answer ===');
-  lines.push('The deep taxonomy chain reaches the goal from the seed fact after deriving the full class ladder up to N(100000).');
+  lines.push(
+    'The deep taxonomy chain reaches the goal from the seed fact after deriving the full class ladder up to N(100000).',
+  );
   lines.push('');
   lines.push('=== Reason Why ===');
-  lines.push('Starting from Ind:N(0), each N(i) derives N(i+1), I(i+1), and J(i+1); N(100000) then derives A2 and the goal.');
+  lines.push(
+    'Starting from Ind:N(0), each N(i) derives N(i+1), I(i+1), and J(i+1); N(100000) then derives A2 and the goal.',
+  );
   lines.push('seed facts    : 1');
   lines.push(`rules         : ${RULE_COUNT}`);
   lines.push(`derived facts : ${derivedFacts}`);

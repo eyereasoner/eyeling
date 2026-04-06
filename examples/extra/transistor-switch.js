@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 'use strict';
 
+/**
+ * Toy transistor-switch calculation in millivolts, microamps, and ohms.
+ * Two input cases are enough to demonstrate the OFF and saturated ON states and verify the arithmetic.
+ */
+
 const VCC_MV = 5000;
 const VIN_LOW_MV = 0;
 const VIN_HIGH_MV = 5000;
@@ -10,6 +15,7 @@ const RB_OHMS = 10000;
 const RL_OHMS = 1000;
 const BETA = 100;
 
+// Evaluate one DC operating point using simple cutoff / active / saturation logic.
 function evaluateState(inputMv) {
   if (inputMv <= VBE_ON_MV) {
     return {
@@ -48,6 +54,7 @@ function stateName(state) {
   return state.cutoff ? 'cutoff / OFF' : state.saturation ? 'saturation / ON' : 'active / linear';
 }
 
+// Compare the low-input and high-input operating points and verify the switching story.
 function main() {
   const low = evaluateState(VIN_LOW_MV);
   const high = evaluateState(VIN_HIGH_MV);
@@ -55,14 +62,15 @@ function main() {
   const highSat = high.saturation && high.collectorEmitterVoltageMv === VCE_SAT_MV;
   const switchingCleanly = low.cutoff && high.saturation;
   const loadLimited =
-    high.collectorCurrentUa === high.collectorLoadLimitUa &&
-    high.collectorGainLimitUa > high.collectorLoadLimitUa;
+    high.collectorCurrentUa === high.collectorLoadLimitUa && high.collectorGainLimitUa > high.collectorLoadLimitUa;
   const ohmOk = high.loadVoltageMv === Math.floor((high.collectorCurrentUa * RL_OHMS) / 1000);
   const ok = lowCutoff && highSat && switchingCleanly && loadLimited && ohmOk;
 
   const lines = [];
   lines.push('=== Answer ===');
-  lines.push('In this toy transistor-switch model, a low input leaves the transistor OFF and a high input drives it ON in saturation.');
+  lines.push(
+    'In this toy transistor-switch model, a low input leaves the transistor OFF and a high input drives it ON in saturation.',
+  );
   lines.push('');
   lines.push('=== Reason Why ===');
   lines.push(`low input state   : ${stateName(low)}`);

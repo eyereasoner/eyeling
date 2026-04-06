@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 'use strict';
 
+/**
+ * Small route-planning case with fixed legs, costs, and trust-style metrics.
+ * Routes are composed forward from the primitive descriptions and then filtered by the goal constraints.
+ */
+
 const CITY = {
   GENT: 0,
   BRUGGE: 1,
@@ -15,11 +20,44 @@ const ACTION = {
   DRIVE_BRUGGE_OOSTENDE: 3,
 };
 
+// Primitive route descriptions: each one is a direct edge with its accumulated metrics.
 const DESCRIPTIONS = [
-  { from: CITY.GENT, to: CITY.BRUGGE, action: ACTION.DRIVE_GENT_BRUGGE, durationSeconds: 1500, costMilli: 6, beliefPpm: 960000, comfortPpm: 990000 },
-  { from: CITY.GENT, to: CITY.KORTRIJK, action: ACTION.DRIVE_GENT_KORTRIJK, durationSeconds: 1600, costMilli: 7, beliefPpm: 960000, comfortPpm: 990000 },
-  { from: CITY.KORTRIJK, to: CITY.BRUGGE, action: ACTION.DRIVE_KORTRIJK_BRUGGE, durationSeconds: 1600, costMilli: 7, beliefPpm: 960000, comfortPpm: 990000 },
-  { from: CITY.BRUGGE, to: CITY.OOSTENDE, action: ACTION.DRIVE_BRUGGE_OOSTENDE, durationSeconds: 900, costMilli: 4, beliefPpm: 980000, comfortPpm: 1000000 },
+  {
+    from: CITY.GENT,
+    to: CITY.BRUGGE,
+    action: ACTION.DRIVE_GENT_BRUGGE,
+    durationSeconds: 1500,
+    costMilli: 6,
+    beliefPpm: 960000,
+    comfortPpm: 990000,
+  },
+  {
+    from: CITY.GENT,
+    to: CITY.KORTRIJK,
+    action: ACTION.DRIVE_GENT_KORTRIJK,
+    durationSeconds: 1600,
+    costMilli: 7,
+    beliefPpm: 960000,
+    comfortPpm: 990000,
+  },
+  {
+    from: CITY.KORTRIJK,
+    to: CITY.BRUGGE,
+    action: ACTION.DRIVE_KORTRIJK_BRUGGE,
+    durationSeconds: 1600,
+    costMilli: 7,
+    beliefPpm: 960000,
+    comfortPpm: 990000,
+  },
+  {
+    from: CITY.BRUGGE,
+    to: CITY.OOSTENDE,
+    action: ACTION.DRIVE_BRUGGE_OOSTENDE,
+    durationSeconds: 900,
+    costMilli: 4,
+    beliefPpm: 980000,
+    comfortPpm: 1000000,
+  },
 ];
 
 const GOAL = {
@@ -118,6 +156,7 @@ function routeMatchesDescriptions(route) {
   );
 }
 
+// Compose longer routes from the primitive descriptions until no new route appears.
 function inferGoalRoutes() {
   const known = [];
   let agendaHead = 0;
@@ -179,8 +218,12 @@ function routeLines(index, route) {
   lines.push(` Steps    : ${route.actions.length}`);
   lines.push(` Duration : ${route.durationSeconds} s (≤ ${GOAL.maxDurationSeconds})`);
   lines.push(` Cost     : ${formatDecimal(route.costMilli, 1000, 3)} (≤ ${formatDecimal(GOAL.maxCostMilli, 1000, 1)})`);
-  lines.push(` Belief   : ${formatDecimal(route.beliefPpm, 1000000, 3)} (≥ ${formatDecimal(GOAL.minBeliefPpm, 1000000, 1)})`);
-  lines.push(` Comfort  : ${formatDecimal(route.comfortPpm, 1000000, 3)} (≥ ${formatDecimal(GOAL.minComfortPpm, 1000000, 1)})`);
+  lines.push(
+    ` Belief   : ${formatDecimal(route.beliefPpm, 1000000, 3)} (≥ ${formatDecimal(GOAL.minBeliefPpm, 1000000, 1)})`,
+  );
+  lines.push(
+    ` Comfort  : ${formatDecimal(route.comfortPpm, 1000000, 3)} (≥ ${formatDecimal(GOAL.minComfortPpm, 1000000, 1)})`,
+  );
   lines.push(` Stages   : ${stageCount(route)} (≤ ${GOAL.maxStages})`);
   for (let i = 0; i < route.actions.length; i += 1) {
     lines.push(`   ${i + 1}. ${actionName(route.actions[i])}`);
@@ -188,6 +231,7 @@ function routeLines(index, route) {
   return lines;
 }
 
+// Emit every route that satisfies the fixed Gent -> Oostende goal.
 function main() {
   const routes = inferGoalRoutes();
 
@@ -200,11 +244,7 @@ function main() {
     allMetricsRecompute &&= routeMatchesDescriptions(route);
   }
 
-  const ok =
-    routes.length === 2 &&
-    allRoutesSatisfyConstraints &&
-    allRoutesHitGoalEndpoints &&
-    allMetricsRecompute;
+  const ok = routes.length === 2 && allRoutesSatisfyConstraints && allRoutesHitGoalEndpoints && allMetricsRecompute;
 
   const lines = [];
   lines.push('=== Answer ===');
@@ -213,7 +253,9 @@ function main() {
   lines.push(`routes    : ${routes.length}`);
   lines.push('');
   lines.push('=== Reason Why ===');
-  lines.push('Routes are built compositionally from direct descriptions, with duration and cost added and belief and comfort combined multiplicatively.');
+  lines.push(
+    'Routes are built compositionally from direct descriptions, with duration and cost added and belief and comfort combined multiplicatively.',
+  );
   for (let i = 0; i < routes.length; i += 1) {
     lines.push(...routeLines(i + 1, routes[i]));
     if (i + 1 !== routes.length) lines.push('');

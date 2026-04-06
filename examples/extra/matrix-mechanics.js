@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 'use strict';
 
+/**
+ * Toy matrix-mechanics example over 2x2 matrices.
+ * It highlights spectrum, involution, and a non-zero commutator in a compact exact model.
+ */
+
 function m2(a11, a12, a21, a22) {
   return { a11, a12, a21, a22 };
 }
@@ -26,6 +31,7 @@ function det(a) {
   return a.a11 * a.a22 - a.a12 * a.a21;
 }
 
+// Evaluate the tiny model exactly, then verify the expected algebraic properties.
 function main() {
   const H = m2(1, 0, 0, 2);
   const X = m2(0, 1, 1, 0);
@@ -40,7 +46,9 @@ function main() {
 
   const lines = [];
   lines.push('=== Answer ===');
-  lines.push('In this toy matrix-mechanics model, the Hamiltonian has two discrete energy levels and does not commute with a second observable.');
+  lines.push(
+    'In this toy matrix-mechanics model, the Hamiltonian has two discrete energy levels and does not commute with a second observable.',
+  );
   lines.push('');
   lines.push('=== Reason Why ===');
   lines.push(`H  = [[${H.a11},${H.a12}],[${H.a21},${H.a22}]]`);

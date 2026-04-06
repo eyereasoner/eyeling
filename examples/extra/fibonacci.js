@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 'use strict';
 
+/**
+ * Exact Fibonacci benchmark using BigInt throughout.
+ * The main path is iterative, while fast doubling is used as an independent cross-check.
+ */
+
 function fibonacciIterative(n) {
   let a = 0n;
   let b = 1n;
@@ -12,6 +17,7 @@ function fibonacciIterative(n) {
   return a;
 }
 
+// Independent cross-check based on the fast-doubling identities.
 function fastDoubling(n) {
   if (n === 0) return [0n, 1n];
   const [a, b] = fastDoubling(Math.floor(n / 2));
@@ -21,6 +27,7 @@ function fastDoubling(n) {
   return [d, c + d];
 }
 
+// Compute the requested values, then verify a few known identities and size facts.
 function main() {
   const targets = [0, 1, 10, 100, 1000, 10000];
   const vals = targets.map((n) => fibonacciIterative(n));
@@ -43,20 +50,16 @@ function main() {
   const cassiniOk = f101 * f99 === f100 * f100 + 1n;
   const f10000Last3Ok = f10000Str.endsWith('875');
 
-  const ok =
-    f10Ok &&
-    fastOk &&
-    cassiniOk &&
-    f1000Digits === 209 &&
-    f10000Digits === 2090 &&
-    f10000Last3Ok;
+  const ok = f10Ok && fastOk && cassiniOk && f1000Digits === 209 && f10000Digits === 2090 && f10000Last3Ok;
 
   const lines = [];
   lines.push('=== Answer ===');
   lines.push('The requested Fibonacci values are computed exactly, up to F(10000).');
   lines.push('');
   lines.push('=== Reason Why ===');
-  lines.push('The main computation uses the defining recurrence F(n+1)=F(n)+F(n-1), and the results are cross-checked with fast doubling.');
+  lines.push(
+    'The main computation uses the defining recurrence F(n+1)=F(n)+F(n-1), and the results are cross-checked with fast doubling.',
+  );
   for (let i = 0; i < targets.length; i += 1) {
     lines.push(`value[${i}]          : F(${targets[i]}) = ${vals[i].toString()}`);
   }
