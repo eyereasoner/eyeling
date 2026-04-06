@@ -727,7 +727,7 @@
                   console.error = __origConsoleError;
                 }
                 flush(true);
-                onDone && onDone({ runId });
+                onDone && onDone({ runId, exitCode: msg.exitCode || 0, message: msg.message || '' });
               } catch (e) {
                 onError && onError(formatMaybeSyntaxError(e, program, 'input.n3'));
               }
@@ -921,6 +921,17 @@ const batch = [];
                 flush(true);
                 self.postMessage({ type: "done", runId });
               } catch (e) {
+                if (e && e.__eyelingExit) {
+                  flush(true);
+                  self.postMessage({
+                    type: e.code === 2 ? "done" : "error",
+                    runId,
+                    exitCode: e.code,
+                    message: e.code === 2 ? "Inference fuse triggered." : ((e && e.message) ? e.message : String(e)),
+                  });
+                  return;
+                }
+
                 let msgText = (e && e.message) ? e.message : String(e);
                 try {
                   if (e && e.name === "N3SyntaxError" && typeof e.offset === "number") {
@@ -2082,20 +2093,29 @@ const batch = [];
               statusEl.textContent =
                 (playPaused ? 'Paused… Derived: ' : 'Reasoning (streaming)… Derived: ') + derivedCount.toLocaleString();
             },
-            onDone: () => {
+            onDone: (info) => {
               appender.flushNow();
               activePlayCancel = null;
               // If paused, keep the pause button enabled so user can "Resume" and reveal buffered output.
               enablePlayControls(false);
 
               const totalSeconds = (performance.now() - startMs) / 1000;
-              statusEl.textContent = playPaused
-                ? 'Done (paused). Derived: ' +
-                  derivedCount.toLocaleString() +
-                  ' — click Resume to display buffered output (' +
-                  totalSeconds.toFixed(2) +
-                  's)'
-                : 'Done. Derived: ' + derivedCount.toLocaleString() + ' (' + totalSeconds.toFixed(2) + 's)';
+              const exitCode = info && typeof info.exitCode === 'number' ? info.exitCode : 0;
+              if (exitCode === 2) {
+                statusEl.textContent = playPaused
+                  ? 'Inference fuse triggered — click Resume to display buffered output (' +
+                    totalSeconds.toFixed(2) +
+                    's)'
+                  : 'Inference fuse triggered. (' + totalSeconds.toFixed(2) + 's)';
+              } else {
+                statusEl.textContent = playPaused
+                  ? 'Done (paused). Derived: ' +
+                    derivedCount.toLocaleString() +
+                    ' — click Resume to display buffered output (' +
+                    totalSeconds.toFixed(2) +
+                    's)'
+                  : 'Done. Derived: ' + derivedCount.toLocaleString() + ' (' + totalSeconds.toFixed(2) + 's)';
+              }
               runBtn.disabled = false;
             },
             onError: (msg) => {

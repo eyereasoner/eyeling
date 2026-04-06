@@ -2975,9 +2975,7 @@ The **Check** is the part that keeps the program honest. It should do more than 
 
 A short way to remember ARC is this:
 
-> an answer tells you **what** happened,
-> a reason tells you **why**,
-> and a check tells you **whether you should trust it**.
+> an answer tells you **what** happened, a reason tells you **why**, and a check tells you **whether you should trust it**.
 
 ### F.2 Why this fits Eyeling well
 
