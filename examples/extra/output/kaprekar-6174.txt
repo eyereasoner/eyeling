@@ -1,0 +1,17 @@
+=== Answer ===
+Every valid four-digit start tested reaches 6174, and all of them do so within seven iterations.
+
+=== Reason Why ===
+The program applies Kaprekar's routine to every non-repdigit start, records the iteration count, and keeps witness traces.
+valid starts checked: 9990
+repdigits excluded  : 10
+max iterations      : 7
+worst-case starts   : 2184
+worst trace         : 0014 -> 4086 -> 8172 -> 7443 -> 3996 -> 6264 -> 4176 -> 6174
+leading-zero trace  : 2111 -> 0999 -> 8991 -> 8082 -> 8532 -> 6174
+
+=== Check ===
+6174 fixed point    : yes
+all starts reach it : yes
+bound <= 7 verified : yes
+histogram total ok  : yes

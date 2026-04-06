@@ -1,0 +1,15 @@
+=== Answer ===
+The deep taxonomy chain reaches the goal from the seed fact after deriving the full class ladder up to N(100000).
+
+=== Reason Why ===
+Starting from Ind:N(0), each N(i) derives N(i+1), I(i+1), and J(i+1); N(100000) then derives A2 and the goal.
+seed facts    : 1
+rules         : 100002
+derived facts : 300003
+type facts    : 300002
+
+=== Check ===
+goal reached  : yes
+N(100000) seen: yes
+A2 derived    : yes
+count formula : yes

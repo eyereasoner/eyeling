@@ -1,0 +1,17 @@
+=== Answer ===
+Every even integer from 4 through 1000 has at least one Goldbach decomposition in the tested range.
+
+=== Reason Why ===
+The program builds a prime table, enumerates unordered pairs p+q=n for each even target, and summarizes sparse and rich cases.
+even targets checked : 499
+total decompositions : 8222
+fewest decompositions: 1
+hardest targets      : 4, 6, 8, 12
+most decompositions  : 52
+richest target       : 990
+balanced pair(1000)  : 491 + 509
+
+=== Check ===
+all represented      : yes
+prime count known    : yes
+balanced pair valid  : yes

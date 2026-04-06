@@ -1,0 +1,14 @@
+=== Answer ===
+The control query is satisfied: the source facts derive concrete outputs for actuator1 and actuator2.
+
+=== Reason Why ===
+The helper rule measurement10(input1) is derived first, then both control rules are evaluated from the available facts.
+measurement10(input1): 2.236068
+actuator1            : 39.273462
+actuator2            : 26.080000
+
+=== Check ===
+query satisfied      : yes
+unique actuators     : yes
+actuator1 formula ok : yes
+actuator2 formula ok : yes

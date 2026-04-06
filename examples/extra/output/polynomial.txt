@@ -1,0 +1,20 @@
+=== Answer ===
+Both polynomial examples are solved consistently: the computed roots satisfy the source polynomials and reconstruct the original coefficients.
+
+=== Reason Why ===
+For each quartic, the program solves for the roots numerically, substitutes them back, and rebuilds the polynomial from those roots.
+
+Example #1 (real quartic)
+roots               : 4, 3, 2, 1
+residuals           : 0, 0, 0, 0
+reconstruction ok   : yes
+roots valid         : yes
+
+Example #2 (complex quartic)
+roots               : 3 + 2i, 1i, 1 + 1i, 5 + 1i
+residuals           : 0, 0, 0, 0
+reconstruction ok   : yes
+roots valid         : yes
+
+=== Check ===
+all examples valid  : yes

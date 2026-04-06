@@ -1,0 +1,12 @@
+=== Answer ===
+Euler's identity holds exactly in this exact-arithmetic model: exp(i*pi) + 1 = 0.
+
+=== Reason Why ===
+exp(i*pi) is represented as (-1, 0) and adding (1, 0) gives the exact zero complex number.
+exp(i*pi)   : (-1, 0)
+exp(i*pi)+1 : (0, 0)
+|exp(i*pi)|^2: 1
+
+=== Check ===
+identity exact: yes
+unit circle   : yes

@@ -1,0 +1,18 @@
+=== Answer ===
+For starts 1..=10000, every tested value reaches 1 under the Collatz map.
+
+=== Reason Why ===
+The program applies the standard Collatz rule, memoizes stopping times, and tracks the hardest witnesses.
+starts checked      : 10000
+max steps           : 261
+max-steps start     : 6171
+highest peak        : 27114424
+peak start          : 9663
+trace(27) steps     : 111
+trace(27) peak      : 9232
+
+=== Check ===
+all reach 1         : yes
+trace(27) valid     : yes
+max-steps witness ok: yes
+peak witness ok     : yes

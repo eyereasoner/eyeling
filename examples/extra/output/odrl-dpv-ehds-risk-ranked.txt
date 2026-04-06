@@ -1,0 +1,48 @@
+=== Answer ===
+The EHDS secondary-use agreement yields four ranked risks; H1 and H2 normalize to score 100, followed by H3 at 88 and H4 at 80.
+
+=== Reason Why ===
+The agreement instantiates concrete clauses, permissions, patient needs, and rule applications. A risk appears when a permission is missing a required safeguard.
+Risk #1
+  clause        : H1
+  permission    : PermSecondaryUseDUA
+  action        : provideSecondaryUseData
+  violated need : Need_RequireDataPermit
+  score raw     : 100
+  score         : 100
+  source        : Secondary use permitted without EHDS Data Permit.
+  mitigation    : Require an EHDS Data Permit before secondary use.
+Risk #2
+  clause        : H2
+  permission    : PermSecondaryUseAllPatients
+  action        : provideSecondaryUseData
+  violated need : Need_RespectOptOutSecondaryUse
+  score raw     : 100
+  score         : 100
+  source        : Opt-out from secondary use not explicitly respected.
+  mitigation    : Exclude records of persons who exercised the EHDS opt-out.
+Risk #3
+  clause        : H3
+  permission    : PermDownloadLocalCopy
+  action        : download
+  violated need : Need_SecureProcessingEnvironment
+  score raw     : 88
+  score         : 88
+  source        : Local download permitted; secure processing environment not required.
+  mitigation    : Require processing only within a secure processing environment.
+Risk #4
+  clause        : H4
+  permission    : PermProvidePseudonymisedData
+  action        : provideSecondaryUseData
+  violated need : Need_StatisticallyAnonymisedSecondaryUse
+  score raw     : 80
+  score         : 80
+  source        : Statistical anonymisation safeguard missing for secondary use.
+  mitigation    : Require statistically anonymised data for secondary use.
+
+=== Check ===
+risk count = 4          : yes
+score formula recomputes: yes
+ranking sorted desc     : yes
+expected top pair       : yes
+every risk has mitigation: yes
