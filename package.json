@@ -15,7 +15,7 @@
   },
   "homepage": "https://github.com/eyereasoner/eyeling#readme",
   "bin": {
-    "eyeling": "./eyeling.js"
+    "eyeling": "./bin/eyeling.cjs"
   },
   "types": "./index.d.ts",
   "files": [
@@ -27,6 +27,8 @@
     "eyeling.js",
     "index.js",
     "index.d.ts",
+    "bin",
+    "dist",
     "lib",
     "test",
     "tools",
@@ -53,5 +55,26 @@
     "posttest": "npm run test:package",
     "preversion": "npm test",
     "postversion": "git push origin HEAD --follow-tags"
+  },
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "browser": "./dist/browser/index.mjs",
+      "require": "./index.js",
+      "default": "./index.js"
+    },
+    "./browser": {
+      "types": "./index.d.ts",
+      "default": "./dist/browser/index.mjs"
+    },
+    "./eyeling.js": "./eyeling.js",
+    "./package.json": "./package.json"
+  },
+  "typesVersions": {
+    "*": {
+      "browser": [
+        "index.d.ts"
+      ]
+    }
   }
 }

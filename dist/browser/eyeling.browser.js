@@ -12793,9 +12793,4 @@ module.exports = {
     }
   } catch (ignoredError) {}
 
-  try {
-    if (__outerModule && __outerRequire && __outerRequire.main === __outerModule && typeof __entry.main === "function") {
-      __entry.main();
-    }
-  } catch (ignoredError) {}
 })();

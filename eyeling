@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+node $(dirname "$(readlink -f "$0")")/eyeling.js "$@"

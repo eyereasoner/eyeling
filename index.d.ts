@@ -205,3 +205,41 @@ declare module 'eyeling' {
   export function loadBuiltinModule(specifier: string, options?: { resolveFrom?: string }): string;
   export function listBuiltinIris(): string[];
 }
+
+declare module 'eyeling/browser' {
+  export type RdfJsDataFactory = import('eyeling').RdfJsDataFactory;
+  export type RdfJsQuad = import('eyeling').RdfJsQuad;
+  export type RdfJsReasonInput = import('eyeling').RdfJsReasonInput;
+  export type EyelingAstBundle = import('eyeling').EyelingAstBundle;
+  export type ReasonStreamOptions = import('eyeling').ReasonStreamOptions;
+  export type ReasonStreamResult = import('eyeling').ReasonStreamResult;
+  export type BuiltinHandler = import('eyeling').BuiltinHandler;
+
+  export function reasonStream(
+    input: string | RdfJsReasonInput | EyelingAstBundle,
+    opts?: ReasonStreamOptions,
+  ): ReasonStreamResult;
+  export function reasonRdfJs(
+    input: string | RdfJsReasonInput | EyelingAstBundle,
+    opts?: Omit<ReasonStreamOptions, 'rdfjs' | 'onDerived'>,
+  ): AsyncIterable<RdfJsQuad>;
+
+  export const rdfjs: RdfJsDataFactory;
+  export function registerBuiltin(iri: string, handler: BuiltinHandler): BuiltinHandler;
+  export function unregisterBuiltin(iri: string): boolean;
+  export function registerBuiltinModule(mod: any, origin?: string): boolean;
+  export function listBuiltinIris(): string[];
+
+  const eyeling: {
+    readonly version: string;
+    reasonStream: typeof reasonStream;
+    reasonRdfJs: typeof reasonRdfJs;
+    rdfjs: typeof rdfjs;
+    registerBuiltin: typeof registerBuiltin;
+    unregisterBuiltin: typeof unregisterBuiltin;
+    registerBuiltinModule: typeof registerBuiltinModule;
+    listBuiltinIris: typeof listBuiltinIris;
+  };
+
+  export default eyeling;
+}

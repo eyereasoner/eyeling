@@ -30,8 +30,12 @@ try {
   assert.ok(fs.existsSync('eyeling.js'), 'eyeling.js missing');
   assert.ok(fs.existsSync('index.js'), 'index.js missing');
 
-  const firstLine = fs.readFileSync('eyeling.js', 'utf8').split(/\r?\n/, 1)[0];
-  assert.match(firstLine, /^#!\/usr\/bin\/env node\b/, 'eyeling.js should start with "#!/usr/bin/env node"');
+  assert.ok(fs.existsSync('bin/eyeling.cjs'), 'bin/eyeling.cjs missing');
+  assert.ok(fs.existsSync('dist/browser/eyeling.browser.js'), 'dist/browser/eyeling.browser.js missing');
+  assert.ok(fs.existsSync('dist/browser/index.mjs'), 'dist/browser/index.mjs missing');
+
+  const binFirstLine = fs.readFileSync('bin/eyeling.cjs', 'utf8').split(/\r?\n/, 1)[0];
+  assert.match(binFirstLine, /^#!\/usr\/bin\/env node\b/, 'bin/eyeling.cjs should start with "#!/usr/bin/env node"');
 
   let packJson;
   try {
@@ -43,7 +47,16 @@ try {
   const pack = JSON.parse(packJson)[0];
   const paths = new Set(pack.files.map((f) => f.path));
 
-  const mustHave = ['package.json', 'README.md', 'LICENSE.md', 'eyeling.js', 'index.js'];
+  const mustHave = [
+    'package.json',
+    'README.md',
+    'LICENSE.md',
+    'eyeling.js',
+    'index.js',
+    'bin/eyeling.cjs',
+    'dist/browser/eyeling.browser.js',
+    'dist/browser/index.mjs',
+  ];
 
   for (const p of mustHave) assert.ok(paths.has(p), `missing from npm pack: ${p}`);
 

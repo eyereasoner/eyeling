@@ -54,7 +54,7 @@ That last point is the heart of Eyeling’s design: _forward rules are executed 
 
 Eyeling deliberately keeps the implementation small and dependency-free:
 
-- the published package includes a single bundled file (`eyeling.js`)
+- the published package includes a Node-oriented bundle (`eyeling.js`) and a dedicated browser bundle (`dist/browser/eyeling.browser.js`)
 - the source is organized into `lib/*` modules that read like a miniature compiler + logic engine.
 
 This handbook is a tour of that miniature system.
@@ -1805,7 +1805,7 @@ Custom builtins can be loaded explicitly from the CLI:
 npx eyeling --builtin lib/builtin-sudoku.js examples/sudoku.n3
 ```
 
-### 14.2 The bundled CLI (`eyeling.js`)
+### 14.2 The bundled Node CLI/runtime (`eyeling.js`)
 
 The bundle contains the whole engine. The CLI path is the “canonical behavior”:
 
@@ -1831,6 +1831,42 @@ The current CLI supports a small set of flags (see `lib/cli.js`):
 - With no positional argument, Eyeling reads from stdin when input is piped.
 - Use `-` as the input path to read explicitly from stdin.
 
+### 14.3 Package entrypoint split for Node, browser, and CLI
+
+The repo now publishes three distinct surfaces instead of forcing browser tooling through the Node-first bundle entry:
+
+- `index.js` remains the **Node API** used by `require('eyeling')` and `import eyeling from 'eyeling'` in Node.
+- `bin/eyeling.cjs` is the **CLI shim** with the shebang. It loads the Node bundle and calls `main()`.
+- `dist/browser/eyeling.browser.js` is the **browser-safe bundle asset** with **no shebang**.
+- `dist/browser/index.mjs` is the **browser import surface** exported as `eyeling/browser`.
+
+That gives the intended mental model:
+
+```js
+import eyeling from 'eyeling'; // Node
+import eyelingBrowser from 'eyeling/browser'; // Browser / worker
+```
+
+```bash
+npx eyeling …                              # CLI
+```
+
+The `package.json` `exports` map points the `browser` condition at `dist/browser/index.mjs`, so browser-oriented bundlers stop resolving the package root to the Node wrapper in `index.js`.
+
+`dist/browser/index.mjs` intentionally re-exports only the browser-safe surface:
+
+- `reasonStream(...)`
+- `reasonRdfJs(...)`
+- `rdfjs`
+- `registerBuiltin(...)`
+- `unregisterBuiltin(...)`
+- `registerBuiltinModule(...)`
+- `listBuiltinIris()`
+
+It deliberately does **not** expose `loadBuiltinModule(...)`, because loading builtin files by module specifier is a Node-only pattern. In browsers, custom builtins should be registered directly in-process (for example with `registerBuiltin(...)` or `registerBuiltinModule(...)`).
+
+For browser apps, prefer running Eyeling in a **Web Worker** and importing `eyeling/browser` there.
+
 ### 14.3 `lib/entry.js`: bundler-friendly exports
 
 `lib/entry.js` exports:
@@ -1845,7 +1881,7 @@ The current CLI supports a small set of flags (see `lib/cli.js`):
 Eyeling exposes two JavaScript entry styles:
 
 - `reason(...)` from `index.js` when you want the same text output as the CLI
-- `reasonStream(...)` / `reasonRdfJs(...)` from the bundle entry when you want in-process reasoning and structured RDF/JS results
+- `reasonStream(...)` / `reasonRdfJs(...)` from the Node bundle or `eyeling/browser` when you want in-process reasoning and structured RDF/JS results
 
 #### 14.4.1 npm helper: `reason(...)`
 

@@ -542,7 +542,7 @@
       </div>
     </div>
 
-    <script src="eyeling.js"></script>
+    <script src="dist/browser/eyeling.browser.js"></script>
 
     <script>
       (function () {
@@ -586,7 +586,7 @@
           });
         } catch (_) {}
 
-        const EYELING_JS_URL = new URL('eyeling.js', window.location.href).toString();
+        const EYELING_BROWSER_JS_URL = new URL('dist/browser/eyeling.browser.js', window.location.href).toString();
         const EYELING_PKG_URL = new URL('package.json', window.location.href).toString();
 
         let eyelingVersion = 'unknown';
@@ -596,6 +596,7 @@
         // Exposes: window.__eyelingUnified.startStreamRun({
         //   program, enforceHttps, proof,
         //   onBatch(derivedTriples[]),
+        //   onRenderedText(text, countTriples),
         //   onStdout(text), onStderr(text),
         //   onDone({runId}), onError(message)
         // })
@@ -680,6 +681,7 @@
             const enforceHttps = !!(args && args.enforceHttps);
             const proof = !!(args && args.proof);
             const onBatch = args && typeof args.onBatch === 'function' ? args.onBatch : null;
+            const onRenderedText = args && typeof args.onRenderedText === 'function' ? args.onRenderedText : null;
             const onStdout = args && typeof args.onStdout === 'function' ? args.onStdout : null;
             const onStderr = args && typeof args.onStderr === 'function' ? args.onStderr : null;
             const onDone = args && typeof args.onDone === 'function' ? args.onDone : null;
@@ -738,7 +740,7 @@
             // Worker path (keeps UI responsive and enables true streaming)
             stopActiveWorker();
 
-            const eyelingUrl = new URL('eyeling.js', window.location.href).toString();
+            const eyelingUrl = EYELING_BROWSER_JS_URL;
             const eyelingUrlEsc = eyelingUrl.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 
             const workerSrc = `
@@ -763,7 +765,7 @@
                 }
 
                 const resp = await fetch(__EYELING_URL);
-                if (!resp.ok) throw new Error("Failed to load eyeling.js (" + resp.status + ")");
+                if (!resp.ok) throw new Error("Failed to load eyeling.browser.js (" + resp.status + ")");
                 const raw = await resp.text();
                 const cleaned = __stripShebang(raw);
                 // Execute in the global scope of the worker.
@@ -819,12 +821,29 @@ const batch = [];
               }
 
               try {
-                // Implement a streaming run that *also* supports proof comments.
-                // The public API (eyeling.reasonStream) streams triples but does not print
-                // proof explanations; those are printed only in the CLI path. Here we
-                // reuse the same internal functions and forward console.log output.
+                // Streaming mode uses forwardChain directly so derived triples can be posted
+                // as soon as they are found. For browser-rendered modes (log:query or
+                // log:outputString), we use the browser API and emit a single rendered block.
                 if (typeof lex !== "function" || typeof Parser !== "function" || typeof forwardChain !== "function") {
                   throw new Error("Eyeling internals not available (lex/Parser/forwardChain missing).");
+                }
+
+                const LOG_OUTPUT_STRING = "http://www.w3.org/2000/10/swap/log#outputString";
+
+                function hasOutputStringPredicate(trs) {
+                  return Array.isArray(trs) && trs.some((tr) => tr && tr.p && tr.p.value === LOG_OUTPUT_STRING);
+                }
+
+                function programMayProduceOutputStrings(topLevelTriples, forwardRules, logQueryRules) {
+                  return (
+                    hasOutputStringPredicate(topLevelTriples) ||
+                    (Array.isArray(forwardRules) && forwardRules.some((r) => hasOutputStringPredicate(r && r.conclusion))) ||
+                    (Array.isArray(logQueryRules) && logQueryRules.some((r) => hasOutputStringPredicate(r && r.conclusion)))
+                  );
+                }
+
+                function factsContainOutputStrings(triplesForOutput) {
+                  return Array.isArray(triplesForOutput) && triplesForOutput.some((tr) => tr && tr.p && tr.p.value === LOG_OUTPUT_STRING);
                 }
 
                 const __oldEnforce = (typeof enforceHttpsEnabled !== "undefined") ? enforceHttpsEnabled : false;
@@ -851,36 +870,64 @@ const batch = [];
                   const facts = triples.filter((tr) => (typeof isGroundTriple === "function") ? isGroundTriple(tr) : true);
 
                   const hasQueries = Array.isArray(qrules) && qrules.length;
-                  if (hasQueries) {
-                    // Query-selection mode: cannot stream during saturation.
+                  const mayAutoRenderOutputStrings = programMayProduceOutputStrings(triples, frules, qrules);
+
+                  if (hasQueries || mayAutoRenderOutputStrings) {
                     if (!self.eyeling || typeof self.eyeling.reasonStream !== "function") {
                       throw new Error("Eyeling API not available (eyeling.reasonStream missing).");
                     }
+
                     const res = self.eyeling.reasonStream(program, { enforceHttps, proof });
                     const pfx = res && res.prefixes ? res.prefixes : prefixes;
-                    const qdfs = (res && Array.isArray(res.queryDerived)) ? res.queryDerived : [];
-                    if (!proof) {
-                      // Query mode can't stream during saturation; emit a single pretty block.
+                    const queryMode = !!(res && res.queryMode);
+                    const outDerived = queryMode
+                      ? ((res && Array.isArray(res.queryDerived)) ? res.queryDerived : [])
+                      : ((res && Array.isArray(res.derived)) ? res.derived : []);
+                    const renderedOutputTriples = queryMode
+                      ? ((res && Array.isArray(res.queryTriples)) ? res.queryTriples : [])
+                      : ((res && Array.isArray(res.facts)) ? res.facts : []);
+
+                    if (factsContainOutputStrings(renderedOutputTriples)) {
+                      const collectOutputStrings =
+                        (self.eyeling && typeof self.eyeling.collectOutputStringsFromFacts === "function")
+                          ? self.eyeling.collectOutputStringsFromFacts
+                          : ((typeof self.collectOutputStringsFromFacts === "function")
+                              ? self.collectOutputStringsFromFacts
+                              : null);
+                      if (typeof collectOutputStrings !== "function") {
+                        throw new Error("Eyeling API not available (collectOutputStringsFromFacts missing).");
+                      }
+                      let txt = "";
+                      try {
+                        txt = String(collectOutputStrings(renderedOutputTriples, pfx) || "");
+                      } catch (_) {}
+                      self.postMessage({
+                        type: "rendered_text",
+                        runId,
+                        text: txt,
+                        countTriples: outDerived.length,
+                      });
+                    } else if (queryMode && !proof) {
                       let txt = "";
                       try { txt = (res && res.closureN3 != null) ? String(res.closureN3) : ""; } catch (_) {}
-                      if (txt) {
-                        const lines = txt.split(/\\r?\\n/);
-                        for (const ln of lines) batch.push(ln);
-                        countTriplesNext = qdfs.length;
-                        flush(true);
-                      }
+                      self.postMessage({
+                        type: "rendered_text",
+                        runId,
+                        text: txt,
+                        countTriples: outDerived.length,
+                      });
                     } else {
-                      for (const qdf of qdfs) {
+                      for (const df of outDerived) {
                         try {
                           if (proof && typeof printExplanation === "function") {
-                            printExplanation(qdf, pfx);
+                            printExplanation(df, pfx);
                           }
                         } catch (_) {}
 
                         let t = "";
                         try {
-                          if (typeof tripleToN3 === "function") t = tripleToN3(qdf.fact, pfx);
-                          else if (qdf && qdf.fact && qdf.fact.toString) t = String(qdf.fact);
+                          if (typeof tripleToN3 === "function") t = tripleToN3(df.fact, pfx);
+                          else if (df && df.fact && df.fact.toString) t = String(df.fact);
                         } catch (_) {}
                         if (t) {
                           batch.push(t);
@@ -890,26 +937,25 @@ const batch = [];
                     }
                   } else {
                     forwardChain(facts, frules, brules, (df) => {
-                    try {
-                      if (proof && typeof printExplanation === "function") {
-                        // Prints via console.log (forwarded to main thread as stdout).
-                        printExplanation(df, prefixes);
+                      try {
+                        if (proof && typeof printExplanation === "function") {
+                          // Prints via console.log (forwarded to main thread as stdout).
+                          printExplanation(df, prefixes);
+                        }
+                      } catch (_) {}
+
+                      let t = "";
+                      try {
+                        if (typeof tripleToN3 === "function") t = tripleToN3(df.fact, prefixes);
+                        else if (df && df.fact && df.fact.toString) t = String(df.fact);
+                      } catch (_) {}
+
+                      if (t) {
+                        batch.push(t);
+                        // When proof comments are enabled, flush immediately so the
+                        // derived triple follows the proof block closely.
+                        flush(!!proof);
                       }
-                    } catch (_) {}
-
-                    // Derived triple (as N3, using the parsed prefixes)
-                    let t = "";
-                    try {
-                      if (typeof tripleToN3 === "function") t = tripleToN3(df.fact, prefixes);
-                      else if (df && df.fact && df.fact.toString) t = String(df.fact);
-                    } catch (_) {}
-
-                    if (t) {
-                      batch.push(t);
-                      // When proof comments are enabled, flush immediately so the
-                      // derived triple follows the proof block closely.
-                      flush(!!proof);
-                    }
                     });
                   }
                 } finally {
@@ -984,6 +1030,8 @@ const batch = [];
 
               if (msg.type === 'derived_batch') {
                 onBatch && onBatch(msg.triples || [], msg.countTriples);
+              } else if (msg.type === 'rendered_text') {
+                onRenderedText && onRenderedText(msg.text == null ? '' : String(msg.text), msg.countTriples);
               } else if (msg.type === 'stdout') {
                 const t = msg.text == null ? '' : String(msg.text);
                 if (t) onStdout && onStdout(t);
@@ -1318,452 +1366,6 @@ const batch = [];
         // start loading version ASAP
         ensureEyelingVersion();
 
-        // --- EYELING RUNNER SETUP ---
-        let runnerPromise = null;
-
-        // --- EYELING WORKER SETUP (keeps UI responsive) ---
-        let workerRunnerPromise = null;
-
-        async function getEyelingWorkerRunner() {
-          // Returns an object: { run(n3Text, {proof,enforceHttps}): Promise<{result,durationMs}> }
-          // Falls back to null if Workers are unavailable.
-          if (typeof Worker === 'undefined') return null;
-          if (workerRunnerPromise) return workerRunnerPromise;
-
-          workerRunnerPromise = (async () => {
-            // Ensure we have a version for the worker's ./package.json shim.
-            await ensureEyelingVersion();
-
-            const workerSource = `
-            let cleanedSource = null;
-            let baseVersion = "unknown";
-            let initPromise = null;
-
-            function cleanShebang(src) {
-              // NOTE: This code lives inside a template literal on the main thread.
-              // We need double escapes (\\n) here so the worker sees the backslash-n sequence.
-              return String(src || "").replace(/^#![^\\n]*\\n/, "");
-            }
-
-            async function init(payload) {
-              if (initPromise) return initPromise;
-              initPromise = (async () => {
-                baseVersion = payload && payload.version ? String(payload.version) : "unknown";
-                const jsUrl = payload && payload.eyelingJsUrl ? String(payload.eyelingJsUrl) : "";
-                if (!jsUrl) throw new Error("Missing eyelingJsUrl");
-
-                const resp = await fetch(jsUrl);
-                if (!resp.ok) throw new Error("Failed to load eyeling.js (" + resp.status + ")");
-                const raw = await resp.text();
-                cleanedSource = cleanShebang(raw);
-              })();
-              return initPromise;
-            }
-
-            function runOnce(n3Input, proof, enforceHttps, versionOverride) {
-              const lines = [];
-
-              const consoleShim = {
-                log: (...args) => lines.push(args.join(" ")),
-                error: (...args) => lines.push(args.join(" ")),
-              };
-
-              const fsShim = {
-                readFileSync: () => n3Input,
-              };
-
-              const processShim = {
-                argv: [
-                  "node",
-                  "eyeling.js",
-                  ...(proof ? ["-p"] : []),
-                  ...(enforceHttps ? ["--enforce-https"] : []),
-                  "input.n3",
-                ],
-
-                stdout: {
-                  write: (chunk, encoding, cb) => {
-                    try {
-                      if (typeof encoding === "function") {
-                        cb = encoding;
-                        encoding = undefined;
-                      }
-                      if (chunk instanceof Uint8Array) {
-                        chunk = new TextDecoder().decode(chunk);
-                      }
-                      lines.push(String(chunk));
-                    } catch (_) {
-                      lines.push(String(chunk));
-                    }
-                    if (typeof cb === "function") {
-                      try { cb(); } catch (_) {}
-                    }
-                    return true;
-                  },
-                  isTTY: false,
-                },
-                stderr: {
-                  write: (chunk, encoding, cb) => {
-                    try {
-                      if (typeof encoding === "function") {
-                        cb = encoding;
-                        encoding = undefined;
-                      }
-                      if (chunk instanceof Uint8Array) {
-                        chunk = new TextDecoder().decode(chunk);
-                      }
-                      lines.push(String(chunk));
-                    } catch (_) {
-                      lines.push(String(chunk));
-                    }
-                    if (typeof cb === "function") {
-                      try { cb(); } catch (_) {}
-                    }
-                    return true;
-                  },
-                  isTTY: false,
-                },
-                exit: (code) => {
-                  throw { __eyelingExit: true, code };
-                },
-              };
-
-              const moduleShim = { exports: {} };
-
-              function requireShim(id) {
-                if (id === "./package.json") {
-                  return { version: (versionOverride || baseVersion || "unknown") };
-                }
-                if (id === "fs") return fsShim;
-                if (id === "crypto") {
-                  return {
-                    createHash: () => ({
-                      update: () => {},
-                      digest: () => "",
-                    }),
-                  };
-                }
-                return {};
-              }
-
-              // Make eyeling think this is the main module so main() runs.
-              requireShim.main = moduleShim;
-
-              try {
-                const fn = new Function(
-                  "require",
-                  "module",
-                  "exports",
-                  "process",
-                  "console",
-                  cleanedSource
-                );
-                fn(requireShim, moduleShim, moduleShim.exports, processShim, consoleShim);
-              } catch (e) {
-                if (!e || !e.__eyelingExit) {
-                  lines.push(
-                    "JavaScript error: " + (e && e.message ? e.message : String(e))
-                  );
-                }
-              }
-
-              return lines.join("\\n");
-            }
-
-            const pending = new Map();
-
-            function resolvePending(id, payload) {
-              const p = pending.get(id);
-              if (!p) return;
-              pending.delete(id);
-              p.resolve(payload);
-            }
-
-            function rejectPending(id, err) {
-              const p = pending.get(id);
-              if (!p) return;
-              pending.delete(id);
-              p.reject(err);
-            }
-
-            self.onmessage = async (ev) => {
-              const msg = ev && ev.data ? ev.data : {};
-              try {
-                if (msg.type === "init") {
-                  await init(msg);
-                  self.postMessage({ type: "inited" });
-                  return;
-                }
-                if (msg.type === "run") {
-                  if (!initPromise) {
-                    // If caller forgot init, try a best-effort init.
-                    await init(msg);
-                  } else {
-                    await initPromise;
-                  }
-
-                  const t0 = self.performance && performance.now ? performance.now() : Date.now();
-                  const result = runOnce(
-                    msg.n3Input || "",
-                    !!msg.proof,
-                    !!msg.enforceHttps,
-                    msg.version || baseVersion
-                  );
-                  const t1 = self.performance && performance.now ? performance.now() : Date.now();
-
-                  self.postMessage({
-                    type: "result",
-                    id: msg.id,
-                    result,
-                    durationMs: Math.max(0, t1 - t0),
-                  });
-                  return;
-                }
-              } catch (e) {
-                const errText = e && e.message ? e.message : String(e);
-
-                if (msg && msg.type === "run" && msg.id != null) {
-                  self.postMessage({
-                    type: "result",
-                    id: msg.id,
-                    error: errText,
-                    durationMs: 0,
-                  });
-                  return;
-                }
-                self.postMessage({ type: "initError", error: errText });
-              }
-            };
-          `;
-
-            const blob = new Blob([workerSource], { type: 'text/javascript' });
-            const url = URL.createObjectURL(blob);
-            const worker = new Worker(url);
-
-            let nextId = 1;
-            const pending = new Map();
-
-            function failAll(err) {
-              for (const [id, p] of pending.entries()) {
-                pending.delete(id);
-                p.reject(err);
-              }
-            }
-
-            worker.addEventListener('message', (ev) => {
-              const msg = ev && ev.data ? ev.data : {};
-              if (msg.type === 'inited') {
-                return;
-              }
-              if (msg.type === 'initError') {
-                failAll(new Error(msg.error || 'Worker init failed'));
-                return;
-              }
-              if (msg.type === 'result') {
-                const p = pending.get(msg.id);
-                if (!p) return;
-                pending.delete(msg.id);
-
-                if (msg.error) {
-                  p.reject(new Error(msg.error));
-                } else {
-                  p.resolve({
-                    result: msg.result || '',
-                    durationMs: typeof msg.durationMs === 'number' ? msg.durationMs : 0,
-                  });
-                }
-              }
-            });
-
-            worker.addEventListener('error', (ev) => {
-              const err = new Error('Worker error: ' + (ev && ev.message ? ev.message : 'unknown'));
-              failAll(err);
-            });
-
-            // Wait for init confirmation.
-            const initAck = new Promise((resolve, reject) => {
-              function onMessage(ev) {
-                const msg = ev && ev.data ? ev.data : {};
-                if (msg.type === 'inited') {
-                  worker.removeEventListener('message', onMessage);
-                  worker.removeEventListener('message', onInitError);
-                  resolve();
-                }
-              }
-              function onInitError(ev) {
-                const msg = ev && ev.data ? ev.data : {};
-                if (msg.type === 'initError') {
-                  worker.removeEventListener('message', onMessage);
-                  worker.removeEventListener('message', onInitError);
-                  reject(new Error(msg.error || 'Worker init failed'));
-                }
-              }
-              worker.addEventListener('message', onMessage);
-              worker.addEventListener('message', onInitError);
-            });
-
-            worker.postMessage({
-              type: 'init',
-              eyelingJsUrl: EYELING_JS_URL,
-              version: eyelingVersion || 'unknown',
-            });
-
-            await initAck;
-
-            // Now that the worker has loaded the Blob source, we can revoke the URL.
-            URL.revokeObjectURL(url);
-
-            return {
-              run: (n3Input, opts) => {
-                const id = nextId++;
-                const proof = !!(opts && opts.proof);
-                const enforceHttps = !!(opts && opts.enforceHttps);
-                return new Promise((resolve, reject) => {
-                  pending.set(id, { resolve, reject });
-                  worker.postMessage({
-                    type: 'run',
-                    id,
-                    n3Input: String(n3Input || ''),
-                    proof,
-                    enforceHttps,
-                    version: eyelingVersion || 'unknown',
-                  });
-                });
-              },
-            };
-          })();
-
-          return workerRunnerPromise;
-        }
-
-        async function getEyelingRunner() {
-          if (runnerPromise) return runnerPromise;
-
-          runnerPromise = (async () => {
-            // Make sure version is known (so require("./package.json") can match UI)
-            await ensureEyelingVersion();
-
-            const resp = await fetch(EYELING_JS_URL);
-            if (!resp.ok) {
-              throw new Error('Failed to load eyeling.js (' + resp.status + ')');
-            }
-
-            const rawSource = await resp.text();
-            const cleanedSource = rawSource.replace(/^#![^\n]*\n/, '');
-
-            // Build a function that runs eyeling as a CLI once, given N3 text.
-            function runOnce(n3Input) {
-              const lines = [];
-
-              const consoleShim = {
-                log: (...args) => lines.push(args.join(' ')),
-                error: (...args) => lines.push(args.join(' ')),
-              };
-
-              const fsShim = {
-                readFileSync: () => n3Input,
-              };
-
-              const processShim = {
-                argv: [
-                  'node',
-                  'eyeling.js',
-                  ...(proofCheckbox.checked ? ['-p'] : []),
-                  ...(enforceHttpsCheckbox.checked ? ['--enforce-https'] : []),
-                  'input.n3',
-                ],
-
-                stdout: {
-                  write: (chunk, encoding, cb) => {
-                    try {
-                      if (typeof encoding === 'function') {
-                        cb = encoding;
-                        encoding = undefined;
-                      }
-                      if (chunk instanceof Uint8Array) {
-                        chunk = new TextDecoder().decode(chunk);
-                      }
-                      lines.push(String(chunk));
-                    } catch (_) {
-                      lines.push(String(chunk));
-                    }
-                    if (typeof cb === 'function') {
-                      try {
-                        cb();
-                      } catch (_) {}
-                    }
-                    return true;
-                  },
-                  isTTY: false,
-                },
-                stderr: {
-                  write: (chunk, encoding, cb) => {
-                    try {
-                      if (typeof encoding === 'function') {
-                        cb = encoding;
-                        encoding = undefined;
-                      }
-                      if (chunk instanceof Uint8Array) {
-                        chunk = new TextDecoder().decode(chunk);
-                      }
-                      lines.push(String(chunk));
-                    } catch (_) {
-                      lines.push(String(chunk));
-                    }
-                    if (typeof cb === 'function') {
-                      try {
-                        cb();
-                      } catch (_) {}
-                    }
-                    return true;
-                  },
-                  isTTY: false,
-                },
-                exit: (code) => {
-                  throw { __eyelingExit: true, code };
-                },
-              };
-
-              const moduleShim = { exports: {} };
-
-              function requireShim(id) {
-                if (id === './package.json') {
-                  return { version: eyelingVersion || 'unknown' };
-                }
-                if (id === 'fs') return fsShim;
-                if (id === 'crypto') {
-                  // Minimal stub – enough for examples that don't depend on crypto.
-                  return {
-                    createHash: () => ({
-                      update: () => {},
-                      digest: () => '',
-                    }),
-                  };
-                }
-                return {};
-              }
-
-              // Make eyeling think this is the main module so main() runs.
-              requireShim.main = moduleShim;
-
-              try {
-                const fn = new Function('require', 'module', 'exports', 'process', 'console', cleanedSource);
-                fn(requireShim, moduleShim, moduleShim.exports, processShim, consoleShim);
-              } catch (e) {
-                if (!e || !e.__eyelingExit) {
-                  lines.push('JavaScript error: ' + (e && e.message ? e.message : String(e)));
-                }
-              }
-
-              return lines.join('\n');
-            }
-
-            return runOnce;
-          })();
-
-          return runnerPromise;
-        }
-
         // --- Streaming output for the Playground tab (keeps UI responsive) ---
         let activePlayCancel = null;
         let activePlayAppender = null;
@@ -1871,150 +1473,15 @@ const batch = [];
         }
 
         async function runReasoner() {
-          // If the program emits log:outputString facts, run Eyeling in CLI mode
-          // so the final rendered output matches the command-line behavior.
-          {
-            const programText = editor.getValue();
-            if (programMentionsOutputStrings(programText)) {
-              // Cancel any prior streaming run.
-              try {
-                if (activePlayCancel) activePlayCancel();
-              } catch (_) {}
-              activePlayCancel = null;
-              activePlayAppender = null;
-              setPlayPaused(false);
-              playPausedBuffer = [];
-              enablePlayControls(false);
-
-              clearErrorHighlight();
-
-              runBtn.disabled = true;
-              statusEl.textContent = 'Reasoning (rendered output)…';
-
-              {
-                const mh = currentMaxHeights();
-                outputEl.setValue('');
-                autoResizeCodeMirror(outputEl, 80, mh.output);
-              }
-
-              if (hashSyncEnabled) updateShareUrl();
-              await new Promise(requestAnimationFrame);
-
-              try {
-                const workerRunner = await getEyelingWorkerRunner();
-                let resultText = '';
-                let durationMs = 0;
-
-                if (workerRunner) {
-                  const r = await workerRunner.run(programText, {
-                    proof: proofCheckbox.checked,
-                    enforceHttps: enforceHttpsCheckbox.checked,
-                  });
-                  resultText = r && typeof r.result === 'string' ? r.result : '';
-                  durationMs = r && typeof r.durationMs === 'number' ? r.durationMs : 0;
-                } else {
-                  const runOnce = await getEyelingRunner();
-                  const t0 = performance.now();
-                  resultText = String(runOnce(programText) || '');
-                  durationMs = Math.max(0, performance.now() - t0);
-                }
-
-                const mh = currentMaxHeights();
-                outputEl.setValue(resultText || '(no output)');
-                autoResizeCodeMirror(outputEl, 80, mh.output);
-
-                statusEl.textContent = 'Done (rendered output). (' + (Math.max(0, durationMs) / 1000).toFixed(2) + 's)';
-
-                // Highlight syntax errors back in the program editor (red line background)
-                highlightErrorFromOutput(resultText || '');
-              } catch (e) {
-                const mh = currentMaxHeights();
-                const msg = e && e.message ? e.message : String(e);
-                outputEl.setValue('Reasoning error: ' + msg);
-                autoResizeCodeMirror(outputEl, 80, mh.output);
-                statusEl.textContent = 'Error.';
-                highlightErrorFromOutput('Reasoning error: ' + msg);
-              } finally {
-                runBtn.disabled = false;
-              }
-              return;
-            }
-          }
-
-          // log:query mode: use the CLI runner (non-streaming) when proof comments are OFF.
-          // Streaming emits skolemized triples; the CLI output is the canonical pretty-printed form.
-          {
-            const programText = editor.getValue();
-            const isLogQuery = /log:query/.test(programText) || /swap\/log#query/.test(programText);
-
-            if (isLogQuery && !proofCheckbox.checked) {
-              // Cancel any prior streaming run.
-              try {
-                if (activePlayCancel) activePlayCancel();
-              } catch (_) {}
-              activePlayCancel = null;
-              activePlayAppender = null;
-              setPlayPaused(false);
-              playPausedBuffer = [];
-              enablePlayControls(false);
-
-              clearErrorHighlight();
-
-              runBtn.disabled = true;
-              statusEl.textContent = 'Reasoning (log:query)…';
-
-              // Clear output immediately.
-              {
-                const mh = currentMaxHeights();
-                outputEl.setValue('');
-                autoResizeCodeMirror(outputEl, 80, mh.output);
-              }
-
-              if (hashSyncEnabled) updateShareUrl();
-
-              // Let the browser paint before we start.
-              await new Promise(requestAnimationFrame);
-
-              try {
-                const workerRunner = await getEyelingWorkerRunner();
-                let resultText = '';
-                let durationMs = 0;
-
-                if (workerRunner) {
-                  const r = await workerRunner.run(programText, {
-                    proof: false,
-                    enforceHttps: enforceHttpsCheckbox.checked,
-                  });
-                  resultText = r && typeof r.result === 'string' ? r.result : '';
-                  durationMs = r && typeof r.durationMs === 'number' ? r.durationMs : 0;
-                } else {
-                  const runOnce = await getEyelingRunner();
-                  const t0 = performance.now();
-                  resultText = String(runOnce(programText) || '');
-                  durationMs = Math.max(0, performance.now() - t0);
-                }
-
-                const mh = currentMaxHeights();
-                outputEl.setValue(resultText || '(no output)');
-                autoResizeCodeMirror(outputEl, 80, mh.output);
-
-                statusEl.textContent = 'Done (log:query). (' + (Math.max(0, durationMs) / 1000).toFixed(2) + 's)';
-
-                // Highlight syntax errors back in the program editor (red line background)
-                highlightErrorFromOutput(resultText || '');
-              } catch (e) {
-                const mh = currentMaxHeights();
-                const msg = e && e.message ? e.message : String(e);
-                outputEl.setValue('Reasoning error: ' + msg);
-                autoResizeCodeMirror(outputEl, 80, mh.output);
-                statusEl.textContent = 'Error.';
-                highlightErrorFromOutput('Reasoning error: ' + msg);
-              } finally {
-                runBtn.disabled = false;
-              }
-              return;
-            }
-          }
+          const programText = editor.getValue();
+          const isRenderedOutputMode = programMentionsOutputStrings(programText);
+          const isLogQueryMode = /\blog:query\b/.test(programText) || /swap\/log#query/.test(programText);
+          const usesRenderedText = isRenderedOutputMode || (isLogQueryMode && !proofCheckbox.checked);
+          const modeLabel = isRenderedOutputMode
+            ? 'rendered output'
+            : isLogQueryMode && !proofCheckbox.checked
+              ? 'log:query'
+              : 'streaming';
 
           runBtn.disabled = true;
           setPlayPaused(false);
@@ -2026,18 +1493,16 @@ const batch = [];
           const startMs = performance.now();
           let derivedCount = 0;
 
-          statusEl.textContent = 'Reasoning (streaming)…';
+          statusEl.textContent = usesRenderedText ? 'Reasoning (' + modeLabel + ')…' : 'Reasoning (streaming)…';
 
-          // Clear output immediately.
           {
             const mh = currentMaxHeights();
-            outputEl.setValue('# Derived triples (streaming):\n');
+            outputEl.setValue(usesRenderedText ? '' : '# Derived triples (streaming):\n');
             autoResizeCodeMirror(outputEl, 80, mh.output);
           }
 
           if (hashSyncEnabled) updateShareUrl();
 
-          // Let the browser paint before we start.
           await new Promise(requestAnimationFrame);
 
           const appender = makeCMAppender(outputEl, () => {
@@ -2046,7 +1511,6 @@ const batch = [];
           });
           activePlayAppender = appender;
 
-          // Cancel any prior run
           try {
             if (activePlayCancel) activePlayCancel();
           } catch (_) {}
@@ -2060,9 +1524,21 @@ const batch = [];
           }
 
           const { cancel } = U.startStreamRun({
-            program: editor.getValue(),
+            program: programText,
             enforceHttps: enforceHttpsCheckbox.checked,
             proof: proofCheckbox.checked,
+            onRenderedText: (text, countTriples) => {
+              derivedCount += countTriples != null ? countTriples : 0;
+              const chunk = String(text == null ? '' : text);
+              if (playPaused) playPausedBuffer.push(chunk);
+              else appender.append(chunk);
+              statusEl.textContent = usesRenderedText
+                ? playPaused
+                  ? 'Paused (' + modeLabel + ')…'
+                  : 'Reasoning (' + modeLabel + ')…'
+                : (playPaused ? 'Paused… Derived: ' : 'Reasoning (streaming)… Derived: ') +
+                  derivedCount.toLocaleString();
+            },
             onStdout: (text) => {
               const s = String(text == null ? '' : text);
               if (!s) return;
@@ -2090,13 +1566,16 @@ const batch = [];
               } else {
                 appender.append(triples.join('\n') + '\n');
               }
-              statusEl.textContent =
-                (playPaused ? 'Paused… Derived: ' : 'Reasoning (streaming)… Derived: ') + derivedCount.toLocaleString();
+              statusEl.textContent = usesRenderedText
+                ? playPaused
+                  ? 'Paused (' + modeLabel + ')…'
+                  : 'Reasoning (' + modeLabel + ')…'
+                : (playPaused ? 'Paused… Derived: ' : 'Reasoning (streaming)… Derived: ') +
+                  derivedCount.toLocaleString();
             },
             onDone: (info) => {
               appender.flushNow();
               activePlayCancel = null;
-              // If paused, keep the pause button enabled so user can "Resume" and reveal buffered output.
               enablePlayControls(false);
 
               const totalSeconds = (performance.now() - startMs) / 1000;
@@ -2107,6 +1586,14 @@ const batch = [];
                     totalSeconds.toFixed(2) +
                     's)'
                   : 'Inference fuse triggered. (' + totalSeconds.toFixed(2) + 's)';
+              } else if (usesRenderedText) {
+                statusEl.textContent = playPaused
+                  ? 'Done (' +
+                    modeLabel +
+                    ', paused) — click Resume to display buffered output (' +
+                    totalSeconds.toFixed(2) +
+                    's)'
+                  : 'Done (' + modeLabel + '). (' + totalSeconds.toFixed(2) + 's)';
               } else {
                 statusEl.textContent = playPaused
                   ? 'Done (paused). Derived: ' +
@@ -2129,7 +1616,6 @@ const batch = [];
               outputEl.setValue('Reasoning error: ' + msg);
               autoResizeCodeMirror(outputEl, 80, mh.output);
 
-              // Highlight syntax errors back in the program editor (red line background)
               try {
                 highlightErrorFromOutput('Reasoning error: ' + msg);
               } catch (_) {}
