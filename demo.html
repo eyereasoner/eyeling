@@ -1581,6 +1581,17 @@ const batch = [];
               const totalSeconds = (performance.now() - startMs) / 1000;
               const exitCode = info && typeof info.exitCode === 'number' ? info.exitCode : 0;
               if (exitCode === 2) {
+                try {
+                  const curOut = String(outputEl.getValue ? outputEl.getValue() : '');
+                  if (!/Inference fuse triggered\./i.test(curOut)) {
+                    const prefix = curOut && !/\n$/.test(curOut) ? '\n' : '';
+                    const fuseText = prefix + '# Inference fuse triggered.\n';
+                    if (playPaused) playPausedBuffer.push(fuseText);
+                    else appender.append(fuseText);
+                    appender.flushNow();
+                  }
+                } catch (_) {}
+
                 statusEl.textContent = playPaused
                   ? 'Inference fuse triggered — click Resume to display buffered output (' +
                     totalSeconds.toFixed(2) +

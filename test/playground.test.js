@@ -125,10 +125,14 @@ function findChromium() {
 const CODEMIRROR_STUB = String.raw`(function(){
   if (window.CodeMirror) return;
 
+  function normalizeText(text){
+    return String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  }
+
   function posToIndex(text, line, ch){
     line = Math.max(0, line|0);
     ch = Math.max(0, ch|0);
-    const norm = String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const norm = normalizeText(text);
     const lines = norm.split('\n');
     if (lines.length === 0) return 0;
     if (line >= lines.length) line = lines.length - 1;
@@ -152,29 +156,75 @@ const CODEMIRROR_STUB = String.raw`(function(){
     var code = document.createElement('div');
     code.className = 'CodeMirror-code';
 
-    var pre = document.createElement('pre');
-    pre.textContent = textarea.value || '';
-
-    code.appendChild(pre);
     sizer.appendChild(code);
     scroll.appendChild(sizer);
     wrapper.appendChild(scroll);
 
-    return { wrapper: wrapper, scroll: scroll, pre: pre };
+    return { wrapper: wrapper, scroll: scroll, sizer: sizer, code: code };
   }
+
+  function makeLineHandle(lineNo, text){
+    var wrap = document.createElement('div');
+    wrap.className = 'CodeMirror-linewrap';
+    wrap.dataset.lineNumber = String(lineNo + 1);
+
+    var bg = document.createElement('div');
+    bg.className = 'CodeMirror-linebackground';
+
+    var pre = document.createElement('pre');
+    pre.className = 'CodeMirror-line';
+    pre.textContent = text && text.length ? text : ' ';
+
+    wrap.appendChild(bg);
+    wrap.appendChild(pre);
+    return { lineNo: lineNo, wrap: wrap, bg: bg, pre: pre };
+  }
+
+  window.__cmStubsById = window.__cmStubsById || Object.create(null);
 
   window.CodeMirror = {
     fromTextArea: function(textarea/*, opts*/){
       var obj = mkWrapper(textarea);
+      var listeners = Object.create(null);
+      var lineHandles = [];
+      var cursor = { line: 0, ch: 0 };
+
+      function emit(name){
+        var hs = listeners[name] || [];
+        var args = Array.prototype.slice.call(arguments, 1);
+        for (var i = 0; i < hs.length; i++) {
+          try { hs[i].apply(null, args); } catch(_) {}
+        }
+      }
+
+      function getText(){
+        return normalizeText(textarea.value || '');
+      }
+
+      function getLines(){
+        return getText().split('\n');
+      }
+
+      function render(){
+        var lines = getLines();
+        obj.code.innerHTML = '';
+        lineHandles = [];
+        for (var i = 0; i < lines.length; i++) {
+          var h = makeLineHandle(i, lines[i]);
+          lineHandles.push(h);
+          obj.code.appendChild(h.wrap);
+        }
+        if (!lineHandles.length) {
+          var h0 = makeLineHandle(0, '');
+          lineHandles.push(h0);
+          obj.code.appendChild(h0.wrap);
+        }
+      }
+
       try {
         textarea.style.display = 'none';
         textarea.parentNode.insertBefore(obj.wrapper, textarea.nextSibling);
       } catch(_) {}
-
-      function sync(){ obj.pre.textContent = textarea.value || ''; }
-      function getLines(){
-        return String(textarea.value || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
-      }
 
       const doc = {
         posFromIndex: function(i){
@@ -190,9 +240,9 @@ const CODEMIRROR_STUB = String.raw`(function(){
         }
       };
 
-      return {
+      const api = {
         getValue: function(){ return textarea.value || ''; },
-        setValue: function(v){ textarea.value = String(v == null ? '' : v); sync(); },
+        setValue: function(v){ textarea.value = String(v == null ? '' : v); render(); emit('change', api, { origin: 'setValue' }); },
 
         // Methods used by demo.html's streaming appender
         getScrollerElement: function(){ return obj.scroll; },
@@ -202,22 +252,37 @@ const CODEMIRROR_STUB = String.raw`(function(){
           const cur = String(textarea.value || '');
           const idx = posToIndex(cur, pos && pos.line, pos && pos.ch);
           textarea.value = cur.slice(0, idx) + String(text == null ? '' : text) + cur.slice(idx);
-          sync();
+          render();
+          emit('change', api, { origin: '+input' });
         },
 
         // Misc methods used by layout / resizing code
         refresh: function(){},
         setSize: function(){},
         setOption: function(){},
-        on: function(){},
+        on: function(name, fn){ if (!listeners[name]) listeners[name] = []; listeners[name].push(fn); },
         operation: function(fn){ try{ fn(); } catch(_){} },
         getWrapperElement: function(){ return obj.wrapper; },
         getScrollInfo: function(){ return { height: 0, clientHeight: 0, top: 0 }; },
         defaultTextHeight: function(){ return 17; },
+        lineCount: function(){ return lineHandles.length; },
+        getLineHandle: function(n){ return (n >= 0 && n < lineHandles.length) ? lineHandles[n] : null; },
+        scrollIntoView: function(){},
+        setCursor: function(pos){ cursor = { line: pos && pos.line || 0, ch: pos && pos.ch || 0 }; },
+        getCursor: function(){ return { line: cursor.line, ch: cursor.ch }; },
 
-        // Error highlighting hooks (no-op in stub)
-        addLineClass: function(){},
-        removeLineClass: function(){},
+        // Error highlighting hooks
+        addLineClass: function(handle, where, cls){
+          if (!handle || !cls) return handle;
+          if (where === 'background' && handle.bg) handle.bg.classList.add(cls);
+          if (handle.wrap) handle.wrap.classList.add(cls);
+          return handle;
+        },
+        removeLineClass: function(handle, where, cls){
+          if (!handle || !cls) return;
+          if (where === 'background' && handle.bg) handle.bg.classList.remove(cls);
+          if (handle.wrap) handle.wrap.classList.remove(cls);
+        },
         clearGutter: function(){},
         setGutterMarker: function(){},
 
@@ -225,6 +290,11 @@ const CODEMIRROR_STUB = String.raw`(function(){
         getDoc: function(){ return doc; },
         doc: doc
       };
+
+      render();
+      textarea.__cmInstance = api;
+      window.__cmStubsById[textarea.id || ('cm-' + Object.keys(window.__cmStubsById).length)] = api;
+      return api;
     }
   };
 })();`;
@@ -499,73 +569,167 @@ async function main() {
     assert.ok(!nav.errorText, `demo.html navigation failed: ${nav.errorText}`);
     await loadFired;
 
-    // Click the Run button.
-    await cdp.send(
-      'Runtime.evaluate',
-      {
-        expression: `document.getElementById('run-btn') && document.getElementById('run-btn').click();`,
-        returnByValue: true,
-      },
-      sessionId,
-    );
-
-    // Wait for completion and capture output.
-    // The demo reports completion with status strings like:
-    //   "Done. Derived: …", "Done (paused). …", or "Done. (Run N)".
-    let last = { status: '', output: '' };
-    const deadline = Date.now() + 60000;
-
-    while (Date.now() < deadline) {
-      // Fail fast on runtime exceptions (often indicates a broken CodeMirror stub or worker init).
-      if (exceptions.length) {
-        throw new Error(`Uncaught exception in demo.html: ${JSON.stringify(exceptions[0] || {})}`);
-      }
-
+    async function evalInPage(expression) {
       const r = await cdp.send(
         'Runtime.evaluate',
         {
-          expression: `(() => {
-        const s = document.getElementById('status');
-        const o = document.getElementById('output-editor');
-        return { status: s ? String(s.textContent || '') : '', output: o ? String(o.value || '') : '' };
-      })()`,
+          expression,
           returnByValue: true,
+          awaitPromise: true,
         },
         sessionId,
       );
-      last = r && r.result ? r.result.value : last;
-
-      const st = last && typeof last.status === 'string' ? last.status : '';
-
-      // Treat any "Reasoning error" as failure.
-      if (/Reasoning error/i.test(st)) {
-        throw new Error(`Playground reported error: ${st}
-Output:
-${last.output || ''}`);
-      }
-
-      // Success conditions: status starts with "Done" (covers "Done." and "Done (paused).")
-      if (
-        String(st || '')
-          .trim()
-          .startsWith('Done')
-      )
-        break;
-
-      await sleep(100);
+      return r && r.result ? r.result.value : undefined;
     }
 
-    assert.ok(
-      last &&
-        typeof last.status === 'string' &&
-        String(last.status || '')
+    function failFastOnExceptions() {
+      if (exceptions.length) {
+        throw new Error(`Uncaught exception in demo.html: ${JSON.stringify(exceptions[0] || {})}`);
+      }
+    }
+
+    async function getPlaygroundState() {
+      return (
+        (await evalInPage(`(() => {
+        const statusEl = document.getElementById('status');
+        const outputTa = document.getElementById('output-editor');
+        const inputCm = window.__cmStubsById && (window.__cmStubsById['n3-editor'] || window.__cmStubsById['input-editor']);
+        const outputCm = window.__cmStubsById && window.__cmStubsById['output-editor'];
+        const inputWrapper = inputCm && typeof inputCm.getWrapperElement === 'function' ? inputCm.getWrapperElement() : null;
+        const highlighted = inputWrapper
+          ? Array.from(inputWrapper.querySelectorAll('.CodeMirror-linebackground.cm-error-line')).map((el) => {
+              const wrap = el.parentElement;
+              const pre = wrap && wrap.querySelector('pre');
+              return {
+                line: wrap && wrap.dataset && wrap.dataset.lineNumber ? Number(wrap.dataset.lineNumber) : null,
+                text: pre ? String(pre.textContent || '') : '',
+              };
+            })
+          : [];
+        return {
+          status: statusEl ? String(statusEl.textContent || '') : '',
+          output: outputCm && typeof outputCm.getValue === 'function'
+            ? String(outputCm.getValue() || '')
+            : (outputTa ? String(outputTa.value || '') : ''),
+          highlighted,
+        };
+      })()`)) || { status: '', output: '', highlighted: [] }
+      );
+    }
+
+    async function setProgram(text) {
+      const payload = JSON.stringify(String(text));
+      await evalInPage(`(() => {
+        const cm = window.__cmStubsById && (window.__cmStubsById['n3-editor'] || window.__cmStubsById['input-editor']);
+        if (cm && typeof cm.setValue === 'function') {
+          cm.setValue(${payload});
+          return true;
+        }
+        const ta = document.getElementById('n3-editor') || document.getElementById('input-editor');
+        if (!ta) throw new Error('n3-editor textarea not found');
+        ta.value = ${payload};
+        return true;
+      })()`);
+    }
+
+    async function clickRun() {
+      await evalInPage(`(() => {
+        const btn = document.getElementById('run-btn');
+        if (!btn) throw new Error('run-btn not found');
+        btn.click();
+        return true;
+      })()`);
+    }
+
+    async function waitForState(label, predicate, timeoutMs = 60000) {
+      const deadline = Date.now() + timeoutMs;
+      let last = { status: '', output: '', highlighted: [] };
+      while (Date.now() < deadline) {
+        failFastOnExceptions();
+        last = await getPlaygroundState();
+        if (predicate(last)) return last;
+        await sleep(100);
+      }
+      throw new Error(`Timed out waiting for ${label}. Last state:
+${JSON.stringify(last, null, 2)}`);
+    }
+
+    const DEFAULT_PROGRAM_EXPECTS = [
+      [/Socrates/i, 'Expected output to mention Socrates'],
+      [/Mortal/i, 'Expected output to mention Mortal'],
+    ];
+    const syntaxErrorProgram = `@prefix : <#> .
+:alice :name "Ada" .
+^
+`;
+    const fuseProgram = fs.readFileSync(path.join(ROOT, 'examples', 'fuse.n3'), 'utf8');
+    const outputStringProgram = `@prefix : <#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+:report log:outputString "Hello from output string\nLine 2\n" .
+`;
+
+    // 1) Baseline smoke test: the default program runs to completion.
+    await clickRun();
+    const baseline = await waitForState(
+      'default program completion',
+      (st) =>
+        String(st.status || '')
           .trim()
           .startsWith('Done'),
-      `Expected Done. Got: ${last.status}`,
+      60000,
     );
-    assert.ok(last && typeof last.output === 'string' && last.output.length > 0, 'Expected non-empty output');
-    assert.match(last.output, /Socrates/i, 'Expected output to mention Socrates');
-    assert.match(last.output, /Mortal/i, 'Expected output to mention Mortal');
+    assert.ok(typeof baseline.output === 'string' && baseline.output.length > 0, 'Expected non-empty output');
+    for (const [re, msg] of DEFAULT_PROGRAM_EXPECTS) assert.match(baseline.output, re, msg);
+    ok('playground runs the default Socrates program');
+
+    // 2) N3 syntax errors should be shown in Output and highlight the offending line.
+    await setProgram(syntaxErrorProgram);
+    await clickRun();
+    const syntaxErr = await waitForState(
+      'syntax error reporting',
+      (st) => String(st.status || '').trim() === 'Error.' && /syntax error/i.test(String(st.output || '')),
+      20000,
+    );
+    assert.match(syntaxErr.output, /Syntax error in input\.n3:3:1:/i, 'Expected line/column in syntax error output');
+    assert.match(syntaxErr.output, /\n\^\s*$/m, 'Expected caret line in syntax error output');
+    assert.equal(syntaxErr.highlighted[0].line, 3, 'Expected line 3 to be highlighted');
+    assert.equal(syntaxErr.highlighted[0].text, '^', 'Expected highlighted line text to match the broken line');
+    ok('playground shows syntax errors in Output and highlights the offending line');
+
+    // 3) Inference fuse output should be visible in the Output pane.
+    await setProgram(fuseProgram);
+    await clickRun();
+    const fuse = await waitForState(
+      'inference fuse reporting',
+      (st) =>
+        String(st.status || '')
+          .trim()
+          .startsWith('Done') && /Inference fuse triggered/i.test(String(st.output || '')),
+      30000,
+    );
+    assert.match(fuse.output, /Inference fuse triggered\./i, 'Expected fuse message in Output');
+    assert.match(fuse.output, /Fired rule:/i, 'Expected fired rule explanation in Output');
+    assert.match(fuse.output, /Matched instance:/i, 'Expected matched instance in Output');
+    ok('playground clearly shows inference fuse output');
+
+    // 4) log:outputString should render as clean text, not raw triples.
+    await setProgram(outputStringProgram);
+    await clickRun();
+    const rendered = await waitForState(
+      'log:outputString rendering',
+      (st) =>
+        String(st.status || '')
+          .trim()
+          .startsWith('Done') && /Hello from output string/.test(String(st.output || '')),
+      20000,
+    );
+    assert.match(rendered.output, /^Hello from output string\nLine 2\n?$/m, 'Expected rendered outputString text');
+    assert.doesNotMatch(
+      rendered.output,
+      /:report\s+log:outputString\s+"|# Derived triples/i,
+      'Expected clean rendered output without raw triples',
+    );
+    ok('playground renders log:outputString cleanly in Output');
 
     // Ensure no uncaught runtime exceptions.
     assert.equal(exceptions.length, 0, `Uncaught exceptions in demo.html: ${JSON.stringify(exceptions[0] || {})}`);
@@ -578,8 +742,6 @@ ${last.output || ''}`);
     try {
       await cdp.send('Browser.close');
     } catch (_) {}
-
-    ok('demo.html loads and runs the default program');
   } finally {
     await cleanup();
   }
