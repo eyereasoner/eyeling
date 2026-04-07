@@ -1,0 +1,374 @@
+# =======================================================================
+# matrix-mechanics.n3
+#
+# Purpose
+# -------
+# This is a small toy "matrix mechanics" example written in Eyeling-style
+# Notation3. It models two 2x2 matrices:
+#
+#   H = [[1,0],[0,2]]
+#   X = [[0,1],[1,0]]
+#
+# and derives:
+#   - trace(H)
+#   - det(H)
+#   - HX
+#   - XH
+#   - the commutator [H,X] = HX - XH
+#
+# What the example demonstrates
+# -----------------------------
+# 1. How to encode a small algebraic model as RDF-style facts.
+# 2. How to derive new facts with N3 implication rules.
+# 3. How to present conclusions with log:outputString.
+# 4. How to add hard checks using `=> false`.
+#
+# Expected result
+# ---------------
+# - H has trace 3 and determinant 2.
+# - X is an involution: X^2 = I.
+# - [H,X] is non-zero, so H and X do not commute.
+#
+# Notes
+# -----
+# - This is a direct, concrete 2x2 example, not a general matrix library.
+# - The structure follows the Eyeling handbook style:
+#     Facts -> Logic -> Presentation -> Checks
+# - The output is organized in ARC form:
+#     Answer -> Reason Why -> Check
+# =======================================================================
+
+@prefix : <http://example.org/#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+
+# -----
+# Facts
+# -----
+
+:H :a11 1; :a12 0; :a21 0; :a22 2 .
+:X :a11 0; :a12 1; :a21 1; :a22 0 .
+
+# -----
+# Logic
+# -----
+
+# trace(H) = H11 + H22
+{
+  :H :a11 ?h11; :a22 ?h22 .
+  (?h11 ?h22) math:sum ?tr .
+}
+=>
+{
+  :H :trace ?tr .
+} .
+
+# det(H) = H11*H22 - H12*H21
+{
+  :H :a11 ?h11; :a12 ?h12; :a21 ?h21; :a22 ?h22 .
+  (?h11 ?h22) math:product ?p1 .
+  (?h12 ?h21) math:product ?p2 .
+  (?p1 ?p2) math:difference ?det .
+}
+=>
+{
+  :H :det ?det .
+} .
+
+# HX = H * X
+{
+  :H :a11 ?h11; :a12 ?h12; :a21 ?h21; :a22 ?h22 .
+  :X :a11 ?x11; :a12 ?x12; :a21 ?x21; :a22 ?x22 .
+
+  (?h11 ?x11) math:product ?hx11a .
+  (?h12 ?x21) math:product ?hx11b .
+  (?hx11a ?hx11b) math:sum ?hx11 .
+
+  (?h11 ?x12) math:product ?hx12a .
+  (?h12 ?x22) math:product ?hx12b .
+  (?hx12a ?hx12b) math:sum ?hx12 .
+
+  (?h21 ?x11) math:product ?hx21a .
+  (?h22 ?x21) math:product ?hx21b .
+  (?hx21a ?hx21b) math:sum ?hx21 .
+
+  (?h21 ?x12) math:product ?hx22a .
+  (?h22 ?x22) math:product ?hx22b .
+  (?hx22a ?hx22b) math:sum ?hx22 .
+}
+=>
+{
+  :HX :a11 ?hx11; :a12 ?hx12; :a21 ?hx21; :a22 ?hx22 .
+} .
+
+# XH = X * H
+{
+  :X :a11 ?x11; :a12 ?x12; :a21 ?x21; :a22 ?x22 .
+  :H :a11 ?h11; :a12 ?h12; :a21 ?h21; :a22 ?h22 .
+
+  (?x11 ?h11) math:product ?xh11a .
+  (?x12 ?h21) math:product ?xh11b .
+  (?xh11a ?xh11b) math:sum ?xh11 .
+
+  (?x11 ?h12) math:product ?xh12a .
+  (?x12 ?h22) math:product ?xh12b .
+  (?xh12a ?xh12b) math:sum ?xh12 .
+
+  (?x21 ?h11) math:product ?xh21a .
+  (?x22 ?h21) math:product ?xh21b .
+  (?xh21a ?xh21b) math:sum ?xh21 .
+
+  (?x21 ?h12) math:product ?xh22a .
+  (?x22 ?h22) math:product ?xh22b .
+  (?xh22a ?xh22b) math:sum ?xh22 .
+}
+=>
+{
+  :XH :a11 ?xh11; :a12 ?xh12; :a21 ?xh21; :a22 ?xh22 .
+} .
+
+# XX = X * X
+{
+  :X :a11 ?x11; :a12 ?x12; :a21 ?x21; :a22 ?x22 .
+
+  (?x11 ?x11) math:product ?xx11a .
+  (?x12 ?x21) math:product ?xx11b .
+  (?xx11a ?xx11b) math:sum ?xx11 .
+
+  (?x11 ?x12) math:product ?xx12a .
+  (?x12 ?x22) math:product ?xx12b .
+  (?xx12a ?xx12b) math:sum ?xx12 .
+
+  (?x21 ?x11) math:product ?xx21a .
+  (?x22 ?x21) math:product ?xx21b .
+  (?xx21a ?xx21b) math:sum ?xx21 .
+
+  (?x21 ?x12) math:product ?xx22a .
+  (?x22 ?x22) math:product ?xx22b .
+  (?xx22a ?xx22b) math:sum ?xx22 .
+}
+=>
+{
+  :XX :a11 ?xx11; :a12 ?xx12; :a21 ?xx21; :a22 ?xx22 .
+} .
+
+# C = [H,X] = HX - XH
+{
+  :HX :a11 ?hx11; :a12 ?hx12; :a21 ?hx21; :a22 ?hx22 .
+  :XH :a11 ?xh11; :a12 ?xh12; :a21 ?xh21; :a22 ?xh22 .
+
+  (?hx11 ?xh11) math:difference ?c11 .
+  (?hx12 ?xh12) math:difference ?c12 .
+  (?hx21 ?xh21) math:difference ?c21 .
+  (?hx22 ?xh22) math:difference ?c22 .
+}
+=>
+{
+  :C :a11 ?c11; :a12 ?c12; :a21 ?c21; :a22 ?c22 .
+} .
+
+# Summary facts
+{
+  :H :trace 3; :det 2 .
+}
+=>
+{
+  :H :spectrumOk "yes" .
+} .
+
+{
+  :XX :a11 1; :a12 0; :a21 0; :a22 1 .
+}
+=>
+{
+  :X :involution "yes" .
+} .
+
+{
+  :C :a11 ?v .
+  ?v math:notEqualTo 0 .
+}
+=>
+{
+  :C :nonzero "yes" .
+} .
+
+{
+  :C :a12 ?v .
+  ?v math:notEqualTo 0 .
+}
+=>
+{
+  :C :nonzero "yes" .
+} .
+
+{
+  :C :a21 ?v .
+  ?v math:notEqualTo 0 .
+}
+=>
+{
+  :C :nonzero "yes" .
+} .
+
+{
+  :C :a22 ?v .
+  ?v math:notEqualTo 0 .
+}
+=>
+{
+  :C :nonzero "yes" .
+} .
+
+{
+  :H :spectrumOk "yes" .
+  :X :involution "yes" .
+  :C :nonzero "yes" .
+}
+=>
+{
+  :model :ok "yes" ;
+         :answer "In this toy matrix-mechanics model, the Hamiltonian has two discrete energy levels and does not commute with a second observable." .
+} .
+
+# -----------------------------------------------
+# Presentation (ARC: Answer • Reason Why • Check)
+# -----------------------------------------------
+
+{
+  :model :answer ?txt .
+}
+=>
+{
+  :s01 log:outputString "=== Answer ===\n" .
+  :s02 log:outputString ?txt .
+  :s03 log:outputString "\n\n=== Reason Why ===\n" .
+} .
+
+{
+  :H :a11 ?a11; :a12 ?a12; :a21 ?a21; :a22 ?a22 .
+  ("H = [[" ?a11 "," ?a12 "],[" ?a21 "," ?a22 "]]\n")
+    string:concatenation ?line .
+}
+=>
+{
+  :s04 log:outputString ?line .
+} .
+
+{
+  :X :a11 ?a11; :a12 ?a12; :a21 ?a21; :a22 ?a22 .
+  ("X = [[" ?a11 "," ?a12 "],[" ?a21 "," ?a22 "]]\n")
+    string:concatenation ?line .
+}
+=>
+{
+  :s05 log:outputString ?line .
+} .
+
+{
+  :HX :a11 ?a11; :a12 ?a12; :a21 ?a21; :a22 ?a22 .
+  ("HX = [[" ?a11 "," ?a12 "],[" ?a21 "," ?a22 "]]\n")
+    string:concatenation ?line .
+}
+=>
+{
+  :s06 log:outputString ?line .
+} .
+
+{
+  :XH :a11 ?a11; :a12 ?a12; :a21 ?a21; :a22 ?a22 .
+  ("XH = [[" ?a11 "," ?a12 "],[" ?a21 "," ?a22 "]]\n")
+    string:concatenation ?line .
+}
+=>
+{
+  :s07 log:outputString ?line .
+} .
+
+{
+  :C :a11 ?a11; :a12 ?a12; :a21 ?a21; :a22 ?a22 .
+  ("[H,X] = [[" ?a11 "," ?a12 "],[" ?a21 "," ?a22 "]]\n")
+    string:concatenation ?line .
+}
+=>
+{
+  :s08 log:outputString ?line .
+} .
+
+{
+  :model :ok "yes" .
+}
+=>
+{
+  :s09 log:outputString "\n=== Check ===\n" .
+} .
+
+{
+  :H :spectrumOk "yes" .
+}
+=>
+{
+  :s10 log:outputString "trace/determinant match energy levels: yes\n" .
+} .
+
+{
+  :X :involution "yes" .
+}
+=>
+{
+  :s11 log:outputString "X^2 = I : yes\n" .
+} .
+
+{
+  :C :nonzero "yes" .
+}
+=>
+{
+  :s12 log:outputString "[H,X] != 0 : yes\n" .
+} .
+
+# ------------------------------------------
+# Checks (fail hard if the algebra is wrong)
+# ------------------------------------------
+
+{
+  :H :trace ?tr .
+  ?tr math:notEqualTo 3 .
+}
+=> false .
+
+{
+  :H :det ?det .
+  ?det math:notEqualTo 2 .
+}
+=> false .
+
+{
+  :XX :a11 ?v .
+  ?v math:notEqualTo 1 .
+}
+=> false .
+
+{
+  :XX :a12 ?v .
+  ?v math:notEqualTo 0 .
+}
+=> false .
+
+{
+  :XX :a21 ?v .
+  ?v math:notEqualTo 0 .
+}
+=> false .
+
+{
+  :XX :a22 ?v .
+  ?v math:notEqualTo 1 .
+}
+=> false .
+
+{
+  :C :a11 0; :a12 0; :a21 0; :a22 0 .
+}
+=> false .
