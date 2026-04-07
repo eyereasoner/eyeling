@@ -1,7 +1,6 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const path = require('node:path');
 
 const TTY = process.stdout.isTTY;
 const C = TTY
@@ -18,7 +17,6 @@ function fail(msg) {
   console.error(`${C.r}FAIL${C.n} ${msg}`);
 }
 
-const fixtures = path.join(__dirname, 'fixtures', 'builtins');
 const builtins = require('../lib/builtins');
 require('../lib/engine');
 
@@ -62,7 +60,42 @@ const expectedTermsKeys = [
   'Triple',
   'Rule',
 ].sort();
+
 const expectedNsKeys = ['RDF_NS', 'XSD_NS', 'CRYPTO_NS', 'MATH_NS', 'TIME_NS', 'LIST_NS', 'LOG_NS', 'STRING_NS'].sort();
+
+function makeOkMapModule() {
+  return {
+    'http://example.org/test#ok': ({ subst }) => [subst],
+  };
+}
+
+function makeOkRegisterModule() {
+  return {
+    register(api) {
+      api.registerBuiltin('http://example.org/test#ok-register', ({ subst }) => [subst]);
+    },
+  };
+}
+
+function makeOkBuiltinsModule() {
+  return {
+    builtins: {
+      'http://example.org/test#ok-builtins': ({ subst }) => [subst],
+    },
+  };
+}
+
+function makeOkDefaultMapModule() {
+  return {
+    default: {
+      'http://example.org/test#ok-default-map': ({ subst }) => [subst],
+    },
+  };
+}
+
+function makeBadExportModule() {
+  return 42;
+}
 
 const cases = [
   {
@@ -80,23 +113,17 @@ const cases = [
   {
     name: 'registerBuiltinModule accepts supported module export forms',
     run() {
-      assert.doesNotThrow(() => builtins.registerBuiltinModule(require(path.join(fixtures, 'ok-map.js')), 'ok-map'));
-      assert.doesNotThrow(() =>
-        builtins.registerBuiltinModule(require(path.join(fixtures, 'ok-register.js')), 'ok-register'),
-      );
-      assert.doesNotThrow(() =>
-        builtins.registerBuiltinModule(require(path.join(fixtures, 'ok-builtins.js')), 'ok-builtins'),
-      );
-      assert.doesNotThrow(() =>
-        builtins.registerBuiltinModule(require(path.join(fixtures, 'ok-default-map.js')), 'ok-default-map'),
-      );
+      assert.doesNotThrow(() => builtins.registerBuiltinModule(makeOkMapModule(), 'ok-map'));
+      assert.doesNotThrow(() => builtins.registerBuiltinModule(makeOkRegisterModule(), 'ok-register'));
+      assert.doesNotThrow(() => builtins.registerBuiltinModule(makeOkBuiltinsModule(), 'ok-builtins'));
+      assert.doesNotThrow(() => builtins.registerBuiltinModule(makeOkDefaultMapModule(), 'ok-default-map'));
     },
   },
   {
     name: 'registerBuiltinModule rejects unsupported module exports',
     run() {
       assert.throws(
-        () => builtins.registerBuiltinModule(require(path.join(fixtures, 'bad-export.js')), 'bad-export'),
+        () => builtins.registerBuiltinModule(makeBadExportModule(), 'bad-export'),
         /must export a function, a \{ register\(\) \} object, or an object mapping predicate IRIs to handlers/,
       );
     },

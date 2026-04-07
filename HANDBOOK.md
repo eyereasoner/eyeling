@@ -2141,7 +2141,7 @@ In practice, this means:
 - builtin module loading accepts only the documented export forms
 - the helper API exposed by `__buildBuiltinRegistrationApi()` has a fixed key set
 - builtin handlers should return an array of substitution objects
-- accidental helper drift is caught by `test/builtin-contract.test.js`
+- accidental helper drift is caught by `test/builtins.test.js`
 
 This is only meant to stop silent breakage. It is **not** a promise that Eyeling can never change the builtin API. If the helper surface ever needs to change, that change should be deliberate, documented, and called out in release notes.
 
