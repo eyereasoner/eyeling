@@ -3110,7 +3110,7 @@ This style is worth using because it makes an Eyeling file easier to run, easier
 
 ## Appendix G — Eyeling and the W3C CG Notation3 Semantics
 
-This appendix folds the old `SEMANTICS.md` note into the handbook. Its purpose is simple: to say where Eyeling tracks the W3C CG Notation3 semantics closely, and where Eyeling makes deliberate operational choices of its own.
+The purpose of this appendix is to say where Eyeling tracks the [W3C CG Notation3 semantics](https://w3c.github.io/N3/spec/semantics) closely, and where Eyeling makes deliberate operational choices of its own.
 
 The comparison point here is the W3C CG Notation3 semantics document, not a claim that Eyeling is trying to be a line-by-line implementation of that document. Eyeling is a working reasoner, so some choices are shaped by execution, indexing, determinism, and the practical habits of N3 authors.
 
