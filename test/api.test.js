@@ -1707,6 +1707,60 @@ _:x :hates { _:foo :making :mess }.
     },
   },
   {
+    name: '63a RDF/JS export: reasonRdfJs can skip N3-only derived triples',
+    async run() {
+      const ex = 'http://example.org/';
+      const input = `@prefix : <${ex}>.
+:a :p :b.
+{ :a :p :b. } => { :x :holds { :a :p :b. }. :x :ok :yes. }.`;
+      const quads = [];
+      for await (const quad of reasonRdfJs(input, { skipUnsupportedRdfJs: true })) {
+        quads.push(quad);
+      }
+      this.quads = quads;
+      return quads.map((q) => `${q.subject.value} ${q.predicate.value} ${q.object.value}`).join('\n');
+    },
+    expect: [/http:\/\/example\.org\/ok/],
+    notExpect: [/http:\/\/example\.org\/holds/],
+    check(outputIgnored, tc) {
+      assert.equal(tc.quads.length, 1, 'Expected one yielded RDF/JS quad after skipping GraphTerm output');
+      assert.equal(tc.quads[0].predicate.value, 'http://example.org/ok');
+      assert.equal(tc.quads[0].object.value, 'http://example.org/yes');
+    },
+  },
+  {
+    name: '63b RDF/JS export: reasonStream keeps N3 closure while omitting unsupported closureQuads',
+    run() {
+      const ex = 'http://example.org/';
+      const input = `@prefix : <${ex}>.
+:a :p :b.
+{ :a :p :b. } => { :x :holds { :a :p :b. }. :x :ok :yes. }.`;
+      const seen = [];
+      const result = reasonStream(input, {
+        rdfjs: true,
+        skipUnsupportedRdfJs: true,
+        includeInputFactsInClosure: false,
+        onDerived: ({ triple, quad }) => seen.push({ triple, quad }),
+      });
+      this.seen = seen;
+      this.result = result;
+      return result.closureN3;
+    },
+    expect: [/:holds/, /:ok/],
+    check(outputIgnored, tc) {
+      assert.equal(tc.seen.length, 2, 'Expected both derived facts to reach onDerived');
+      assert.equal(tc.seen.filter((x) => x.quad).length, 1, 'Expected only one RDF/JS quad in onDerived');
+      assert.ok(Array.isArray(tc.result.closureQuads), 'Expected closureQuads array');
+      assert.equal(
+        tc.result.closureQuads.length,
+        1,
+        'Expected unsupported GraphTerm triple to be omitted from closureQuads',
+      );
+      assert.equal(tc.result.closureQuads[0].predicate.value, 'http://example.org/ok');
+      assert.match(tc.result.closureN3, /:holds/, 'Expected N3 closure to retain quoted-formula triple');
+    },
+  },
+  {
     name: '64 RDF/JS validation: named-graph input quads are rejected clearly',
     expectError: true,
     run() {

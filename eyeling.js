@@ -8679,6 +8679,23 @@ function forwardChainAndCollectLogQueryConclusions(
 
 // (proof printing + log:outputString moved to lib/explain.js)
 
+function isUnsupportedRdfJsConversionError(err) {
+  return (
+    err instanceof TypeError &&
+    typeof err.message === 'string' &&
+    err.message.startsWith('Cannot convert N3-only term ')
+  );
+}
+
+function maybeTripleToRdfJsQuad(triple, rdfFactory, skipUnsupportedRdfJs) {
+  try {
+    return internalTripleToRdfJsQuad(triple, rdfFactory);
+  } catch (err) {
+    if (skipUnsupportedRdfJs && isUnsupportedRdfJsConversionError(err)) return null;
+    throw err;
+  }
+}
+
 function reasonStream(input, opts = {}) {
   const {
     baseIri = null,
@@ -8688,6 +8705,7 @@ function reasonStream(input, opts = {}) {
     enforceHttps = false,
     rdfjs = false,
     dataFactory = null,
+    skipUnsupportedRdfJs = false,
     builtinModules = null,
   } = opts;
 
@@ -8750,7 +8768,10 @@ function reasonStream(input, opts = {}) {
     if (typeof onDerived === 'function') {
       for (const qdf of queryDerived) {
         const payload = { triple: tripleToN3(qdf.fact, prefixes), df: qdf };
-        if (rdfFactory) payload.quad = internalTripleToRdfJsQuad(qdf.fact, rdfFactory);
+        if (rdfFactory) {
+          const quad = maybeTripleToRdfJsQuad(qdf.fact, rdfFactory, skipUnsupportedRdfJs);
+          if (quad) payload.quad = quad;
+        }
         onDerived(payload);
       }
     }
@@ -8766,7 +8787,10 @@ function reasonStream(input, opts = {}) {
             triple: tripleToN3(df.fact, prefixes),
             df,
           };
-          if (rdfFactory) payload.quad = internalTripleToRdfJsQuad(df.fact, rdfFactory);
+          if (rdfFactory) {
+            const quad = maybeTripleToRdfJsQuad(df.fact, rdfFactory, skipUnsupportedRdfJs);
+            if (quad) payload.quad = quad;
+          }
           onDerived(payload);
         }
       },
@@ -8797,15 +8821,19 @@ function reasonStream(input, opts = {}) {
   };
 
   if (rdfFactory) {
-    __out.closureQuads = closureTriples.map((t) => internalTripleToRdfJsQuad(t, rdfFactory));
-    __out.queryQuads = queryTriples.map((t) => internalTripleToRdfJsQuad(t, rdfFactory));
+    __out.closureQuads = closureTriples
+      .map((t) => maybeTripleToRdfJsQuad(t, rdfFactory, skipUnsupportedRdfJs))
+      .filter(Boolean);
+    __out.queryQuads = queryTriples
+      .map((t) => maybeTripleToRdfJsQuad(t, rdfFactory, skipUnsupportedRdfJs))
+      .filter(Boolean);
   }
   deref.setEnforceHttpsEnabled(__oldEnforceHttps);
   return __out;
 }
 
 function reasonRdfJs(input, opts = {}) {
-  const { dataFactory = null, ...restOpts } = opts || {};
+  const { dataFactory = null, skipUnsupportedRdfJs = false, ...restOpts } = opts || {};
   const rdfFactory = getDataFactory(dataFactory);
 
   const queue = [];
@@ -8829,8 +8857,11 @@ function reasonRdfJs(input, opts = {}) {
         ...restOpts,
         rdfjs: false,
         onDerived: ({ df }) => {
-          queue.push(internalTripleToRdfJsQuad(df.fact, rdfFactory));
-          flush();
+          const quad = maybeTripleToRdfJsQuad(df.fact, rdfFactory, skipUnsupportedRdfJs);
+          if (quad) {
+            queue.push(quad);
+            flush();
+          }
         },
       });
     } catch (e) {

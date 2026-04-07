@@ -172,6 +172,7 @@ declare module 'eyeling' {
     enforceHttps?: boolean;
     rdfjs?: boolean;
     dataFactory?: RdfJsDataFactory | null;
+    skipUnsupportedRdfJs?: boolean;
     builtinModules?: string | string[];
     onDerived?: (item: { triple: string; quad?: RdfJsQuad; df: any }) => void;
   }

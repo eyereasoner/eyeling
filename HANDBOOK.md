@@ -1757,7 +1757,9 @@ The same API can now also emit RDF/JS output. When `rdfjs: true` is passed, ever
 - `triple` — Eyeling’s N3 string form
 - `quad` — the same fact as an RDF/JS default-graph quad
 
-For fully stream-oriented RDF/JS consumers there is also `reasonRdfJs(...)`, which exposes the derived facts as an async iterable of RDF/JS quads.
+If your closure may contain N3-only terms such as quoted formulas (`GraphTerm`), RDF/JS conversion can fail because those terms have no standard RDF/JS representation. In that case, pass `skipUnsupportedRdfJs: true` to keep the full N3 closure while silently omitting any derived triples that cannot be represented as RDF/JS quads. When this flag is enabled, `onDerived(...)` still fires for every derived fact, but `quad` is only present for the representable ones.
+
+For fully stream-oriented RDF/JS consumers there is also `reasonRdfJs(...)`, which exposes the derived facts as an async iterable of RDF/JS quads. The same `skipUnsupportedRdfJs: true` flag applies there as well.
 
 ---
 
@@ -2002,8 +2004,11 @@ import eyeling from './eyeling.js';
 
 const result = eyeling.reasonStream(input, {
   proof: false,
-  onDerived: ({ quad }) => {
+  rdfjs: true,
+  skipUnsupportedRdfJs: true,
+  onDerived: ({ triple, quad }) => {
     if (quad) console.log(quad);
+    else console.warn('Skipped non-RDF/JS derived triple:', triple);
   },
 });
 ```
@@ -2011,10 +2016,14 @@ const result = eyeling.reasonStream(input, {
 That same path also lets derived results be consumed as an async stream of RDF/JS quads:
 
 ```js
-for await (const quad of eyeling.reasonRdfJs(input)) {
+for await (const quad of eyeling.reasonRdfJs(input, {
+  skipUnsupportedRdfJs: true,
+})) {
   console.log(quad);
 }
 ```
+
+Use `skipUnsupportedRdfJs: true` when you want RDF/JS consumers to ignore derived triples that contain N3-only terms such as quoted formulas. This affects only RDF/JS export. The underlying Eyeling closure and `closureN3` output remain unchanged.
 
 Use these entry points when you need one or more of the following:
 
