@@ -31,6 +31,7 @@
 - [Appendix D — LLM + Eyeling: A Repeatable Logic Toolchain](#app-d)
 - [Appendix E — How Eyeling reaches 100% on `notation3tests`](#app-e)
 - [Appendix F — The ARC approach: Answer • Reason Why • Check](#app-f)
+- [Appendix G — Eyeling and the W3C CG Notation3 Semantics](#app-g)
 
 ---
 
@@ -3104,3 +3105,63 @@ A file really follows ARC only when the answer, the explanation, and the validat
 ### F.9 Why this style is worth using
 
 This style is worth using because it makes an Eyeling file easier to run, easier to inspect, and easier to trust. The result is visible. The key reason is visible. The check is visible. That makes examples better teaching material, makes policy or computation examples easier to audit, and makes the whole file more reusable as a small reasoning artifact instead of an opaque session transcript.
+
+<a id="app-g"></a>
+
+## Appendix G — Eyeling and the W3C CG Notation3 Semantics
+
+This appendix folds the old `SEMANTICS.md` note into the handbook. Its purpose is simple: to say where Eyeling tracks the W3C CG Notation3 semantics closely, and where Eyeling makes deliberate operational choices of its own.
+
+The comparison point here is the W3C CG Notation3 semantics document, not a claim that Eyeling is trying to be a line-by-line implementation of that document. Eyeling is a working reasoner, so some choices are shaped by execution, indexing, determinism, and the practical habits of N3 authors.
+
+### G.1 Where Eyeling is strongly aligned
+
+- **Core term model (IRIs, literals, variables, blank nodes, lists, quoted formulas):** The semantics document treats N3 terms as IRIs, literals, variables, lists, and graph terms. Eyeling’s internal model matches that shape directly through `Iri`, `Literal`, `Var`, `Blank`, `ListTerm`, and `GraphTerm`.
+
+- **Quoted formulas need alpha-equivalence / isomorphism:** The semantics document defines isomorphism for graphs and graph terms using consistent renaming. Eyeling implements the same practical idea operationally as alpha-equivalence for `GraphTerm`, with consistent renaming as the criterion for a match.
+
+- **Rules as implication (and `true` as empty formula):** The semantics document gives a special role to `log:implies` and treats `true` and `false` specially, with `true` corresponding to the empty formula. Eyeling follows that shape: it accepts both `{ P } => { C }` and `{ P } log:implies { C }`, and it treats `true` as `{}`.
+
+- **Lists as first-class citizens (not just RDF collections):** The semantics document treats lists as genuine N3 terms. Eyeling does the same through `ListTerm`, and also materializes RDF `rdf:first` / `rdf:rest` chains into list terms so one list model can be used throughout the engine.
+
+### G.2 Where Eyeling diverges or goes beyond the semantics document
+
+#### G.2.1 Blank nodes in rule bodies: Eyeling chooses common N3 rule-writing practice
+
+The semantics document describes blank nodes as existentially quantified with local scope. Eyeling intentionally rewrites blank nodes in **rule premises** into variables during normalization. In practice this makes body blanks behave like the placeholders many N3 authors expect when they write rules.
+
+That is a real semantic choice. It is useful and intentional, but it is not the same as reading blank nodes as existentials everywhere.
+
+#### G.2.2 Groundness of quoted formulas containing variables
+
+In the semantics document, whether a graph term is ground depends on whether the underlying graph is closed, and nested formulas can still contain free variables when viewed in isolation. Eyeling makes a pragmatic engine choice: variables inside a `GraphTerm` do not make the surrounding triple non-ground. In the handbook this is summarized as “variables inside formulas do not leak.”
+
+That supports indexing, matching, and duplicate checks, but it is not a one-to-one restatement of model-theoretic groundness for graph terms.
+
+#### G.2.3 Eyeling defines operational behavior beyond what the semantics document currently fixes
+
+The semantics document mainly fixes meaning around implication and the core N3 term/formula model. Eyeling goes further and gives operational meaning to a large standard library of builtins and control features. Examples include `math:*`, `string:*`, `list:*`, `time:*`, `log:includes`, `log:notIncludes`, `log:query`, and scoped closure via `log:conclusion`.
+
+So Eyeling is not only implementing the semantics document; it is also defining engine behavior for features that the current document does not fully specify.
+
+#### G.2.4 Inference fuses (`=> false`) are an engine-level procedural feature
+
+The semantics document discusses `false` in relation to implication and constraints. Eyeling turns `{ ... } => false` into an engine-level hard failure with a visible message and failing exit status. That is a practical tooling feature: it lets a rule act like a checked invariant.
+
+This is very useful in real programs, but it is an operational behavior of the reasoner, not something a model-theoretic semantics “executes.”
+
+#### G.2.5 Surface-language coverage is not the same thing as semantic alignment
+
+The semantics document discusses explicit quantification in its abstract syntax. Eyeling mostly exposes implicit quantification through `?x` variables and blank nodes, together with the rule-normalization choices described earlier. The handbook documents the supported surface forms Eyeling actually parses, which may be narrower than the full abstract surface discussed in the semantics document.
+
+So even where the underlying ideas line up, the accepted concrete syntax may still be a proper subset.
+
+### G.3 The practical takeaway
+
+A good short summary is this:
+
+- Eyeling is strongly aligned with the N3 semantics on the **core ontology of terms, quoted formulas, implication, and lists**.
+- Eyeling makes deliberate, implementation-shaped choices around **rule-body blanks, groundness of quoted formulas, and constraint execution**.
+- Eyeling also defines a wider operational language than the current semantics document, especially through builtins and scoped proof/query features.
+
+So the handbook and the semantics document are best read as complementary. The semantics document explains the abstract shape of Notation3. The handbook explains how a compact working reasoner realizes that shape, and where it chooses a practical execution model over a purely model-theoretic presentation.
