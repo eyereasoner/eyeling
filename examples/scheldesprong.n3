@@ -1,31 +1,3 @@
-# ============================================================================
-# Scheldesprong — a macro-economic Insight Economy case for Flanders.
-#
-# The aha: nobody has to reveal their books for the region to coordinate.
-#
-# Exporters, training actors, and grid operators each keep their sensitive
-# data local. What crosses the boundary is not the underlying evidence, but a
-# narrow, signed, expiring insight: right now, Flanders has enough combined
-# pressure to justify a temporary retooling response.
-#
-# That is the Insight Economy in action. Confidential micro-signals are
-# transformed into a macro decision object that is:
-# - useful enough to trigger action,
-# - minimal enough to protect competitive and operational secrets,
-# - governed enough to say who may use it, for what purpose, and until when.
-#
-# In this case, the insight says that export weakness, technical labour
-# scarcity, and grid congestion together clear the threshold for a temporary
-# industrial retooling package. Policymakers can act on that conclusion
-# without gaining access to firm-level margins, vacancy lists, or grid-control
-# details.
-#
-# The product being traded is therefore not raw data, and not even a general
-# forecast, but a context-bound permissioned conclusion: a policy-grade
-# insight for regional stabilization, with reuse for firm surveillance
-# explicitly forbidden.
-# ============================================================================
-
 @prefix : <https://example.org/insight/scheldesprong/> .
 @prefix arc: <https://example.org/arc#> .
 @prefix ins: <https://example.org/insight-economy#> .
@@ -35,6 +7,19 @@
 @prefix string: <http://www.w3.org/2000/10/swap/string#> .
 @prefix crypto: <http://www.w3.org/2000/10/swap/crypto#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# ==============================================================================
+# Scheldesprong — a macro-economic Insight Economy case for Flanders.
+#
+# This example mirrors the Delfour pattern, but at regional scale:
+# confidential firm-, labour-, and grid-side signals stay local and are turned
+# into a narrow, expiring macro insight for the Flemish policy layer.
+#
+# The insight says: Flanders should activate a temporary retooling package for
+# export-facing industry because export orders are weak, technical vacancies are
+# tight, and grid congestion is elevated. The envelope permits use only for
+# regional stabilization and forbids reuse for firm surveillance.
+# ==============================================================================
 
 # -----
 # Facts
@@ -131,7 +116,7 @@
   :region "Flanders" ;
   :createdAt "2026-04-08T07:00:00+00:00"^^xsd:dateTime ;
   :expiresAt "2026-04-08T19:00:00+00:00"^^xsd:dateTime ;
-  :serializedLowercase "{\"createdat\":\"2026-04-08t07:00:00+00:00\",\"expiresat\":\"2026-04-08t19:00:00+00:00\",\"id\":\"https://example.org/insight/scheldesprong\",\"metric\":\"regional_retooling_priority\",\"region\":\"flanders\",\"scopedevice\":\"economic-resilience-board\",\"scopeevent\":\"budget-prep-window\",\"suggestionpolicy\":\"lowest_cost_package_covering_all_active_needs\",\"threshold\":3,\"type\":\"ins:insight\"}" .
+  :serializedLowercase """{"createdat":"2026-04-08t07:00:00+00:00","expiresat":"2026-04-08t19:00:00+00:00","id":"https://example.org/insight/scheldesprong","metric":"regional_retooling_priority","region":"flanders","scopedevice":"economic-resilience-board","scopeevent":"budget-prep-window","suggestionpolicy":"lowest_cost_package_covering_all_active_needs","threshold":3,"type":"ins:insight"}""" .
 
 :policy a odrl:Policy ;
   :profile "Scheldesprong-Insight-Policy" ;
@@ -165,14 +150,15 @@
 :envelope
   :insight :macroInsight ;
   :policy :policy ;
-  :canonicalJson "{\"insight\":{\"createdAt\":\"2026-04-08T07:00:00+00:00\",\"expiresAt\":\"2026-04-08T19:00:00+00:00\",\"id\":\"https://example.org/insight/scheldesprong\",\"metric\":\"regional_retooling_priority\",\"region\":\"Flanders\",\"scopeDevice\":\"economic-resilience-board\",\"scopeEvent\":\"budget-prep-window\",\"suggestionPolicy\":\"lowest_cost_package_covering_all_active_needs\",\"threshold\":3,\"type\":\"ins:Insight\"},\"policy\":{\"duty\":{\"action\":\"odrl:delete\",\"constraint\":{\"leftOperand\":\"odrl:dateTime\",\"operator\":\"odrl:eq\",\"rightOperand\":\"2026-04-08T19:00:00+00:00\"}},\"permission\":{\"action\":\"odrl:use\",\"constraint\":{\"leftOperand\":\"odrl:purpose\",\"operator\":\"odrl:eq\",\"rightOperand\":\"regional_stabilization\"},\"target\":\"https://example.org/insight/scheldesprong\"},\"profile\":\"Scheldesprong-Insight-Policy\",\"prohibition\":{\"action\":\"odrl:distribute\",\"constraint\":{\"leftOperand\":\"odrl:purpose\",\"operator\":\"odrl:eq\",\"rightOperand\":\"firm_surveillance\"},\"target\":\"https://example.org/insight/scheldesprong\"},\"type\":\"odrl:Policy\"}}" .
+  :canonicalJson """{"insight":{"createdAt":"2026-04-08T07:00:00+00:00","expiresAt":"2026-04-08T19:00:00+00:00","id":"https://example.org/insight/scheldesprong","metric":"regional_retooling_priority","region":"Flanders","scopeDevice":"economic-resilience-board","scopeEvent":"budget-prep-window","suggestionPolicy":"lowest_cost_package_covering_all_active_needs","threshold":3,"type":"ins:Insight"},"policy":{"duty":{"action":"odrl:delete","constraint":{"leftOperand":"odrl:dateTime","operator":"odrl:eq","rightOperand":"2026-04-08T19:00:00+00:00"}},"permission":{"action":"odrl:use","constraint":{"leftOperand":"odrl:purpose","operator":"odrl:eq","rightOperand":"regional_stabilization"},"target":"https://example.org/insight/scheldesprong"},"profile":"Scheldesprong-Insight-Policy","prohibition":{"action":"odrl:distribute","constraint":{"leftOperand":"odrl:purpose","operator":"odrl:eq","rightOperand":"firm_surveillance"},"target":"https://example.org/insight/scheldesprong"},"type":"odrl:Policy"}}""" .
 
 :signature
   :alg "HMAC-SHA256" ;
   :keyid "demo-shared-secret" ;
   :created "2026-04-08T07:00:00+00:00"^^xsd:dateTime ;
   :payloadHashSHA256 "4b7a1401f8470b2f00545d179d4677791c889df2b19724552568b377a3856dd4" ;
-  :signatureHMAC "trusted-demo-signature" ;
+  :displayPayloadHashSHA256 "718f5b17d07ab6a95503bc04a1000ddb132409f600659c03d21def81914b780b" ;
+  :signatureHMAC "955968ca99a191783bc00cba068128ccb9ff40a5e6114fda13a52c74ee27329e" ;
   :hmacVerificationMode :trustedPrecomputedInput .
 
 :reasonText :value "Secure aggregates from Flanders indicate simultaneous export weakness, technical labour scarcity, and grid congestion. A neutral macro insight is scoped to the economic-resilience board for one budget window only, enabling a temporary package without exposing firm-level books.\n" .
@@ -297,6 +283,26 @@
 { :case :filesWritten 6 . }
   => { :check :filesWrittenExpected true . } .
 
+{ :case :exportWeakness true ;
+         :skillsStrain true ;
+         :gridStress true .
+} => {
+  :answer :activeNeedCount 3 ;
+          :activeNeedThreshold 3 .
+  :check :thresholdReached true .
+} .
+
+{ :case :recommendedPackage ?pkg .
+} => { :check :lowestCostEligiblePackageChosen true . } .
+
+{ :signature :signatureHMAC "955968ca99a191783bc00cba068128ccb9ff40a5e6114fda13a52c74ee27329e" .
+  :signature :hmacVerificationMode :trustedPrecomputedInput .
+} => { :check :hmacMatches true . } .
+
+{ :case :recommendedPackage ?pkg .
+  ?pkg :costMEUR ?cost .
+} => { :answer :packageCostMEUR ?cost . } .
+
 { :check :signatureVerifies true ;
          :payloadHashMatches true ;
          :minimizationStripsSensitiveTerms true ;
@@ -351,60 +357,54 @@
 # --------------------------------------
 
 :out01 log:outputString "=== Answer ===\n" .
-:out02 log:outputString "The board is allowed to use a neutral macro-economic insight and should activate the Scheldesprong Retooling Pulse for Flanders.\n" .
-:out03 log:outputString "case : scheldesprong\n" .
-:out04 log:outputString "decision : Allowed\n" .
-:out05 log:outputString "region : Flanders\n" .
+:out02 log:outputString "Name: Scheldesprong\n" .
+:out03 log:outputString "Region: Flanders\n" .
+:out04 log:outputString "Metric: regional_retooling_priority\n" .
+{ :answer :activeNeedCount ?count ; :activeNeedThreshold ?threshold .
+  ("Active need count: %s/%s\n" ?count ?threshold) string:format ?line .
+} => { :out05 log:outputString ?line . } .
 { :answer :recommendedPackageName ?name .
-  ("recommended package : %s\n" ?name) string:format ?line .
+  ("Recommended package: %s\n" ?name) string:format ?line .
 } => { :out06 log:outputString ?line . } .
+:out07 log:outputString "Budget cap: €140M\n" .
+{ :answer :packageCostMEUR ?cost .
+  ("Package cost: €%sM\n" ?cost) string:format ?line .
+} => { :out08 log:outputString ?line . } .
+{ :signature :displayPayloadHashSHA256 ?digest .
+  ("Payload SHA-256: %s\n" ?digest) string:format ?line .
+} => { :out09 log:outputString ?line . } .
+{ :signature :signatureHMAC ?sig .
+  ("Envelope HMAC-SHA-256: %s\n" ?sig) string:format ?line .
+} => { :out10 log:outputString ?line . } .
 
-:out07 log:outputString "\n=== Reason Why ===\n" .
-:out08 log:outputString "Confidential firm, labour, and grid signals are aggregated into a temporary regional insight instead of exposing raw company data.\n" .
-:out09 log:outputString "trigger set : export weakness + technical vacancies + grid congestion\n" .
-:out10 log:outputString "scope : economic-resilience-board @ budget-prep-window\n" .
-:out11 log:outputString "purpose : regional_stabilization\n" .
-:out12 log:outputString "expiry : 2026-04-08T19:00:00+00:00\n" .
-{ :why :workerCoverage ?workers .
-  ("worker coverage : %s\n" ?workers) string:format ?line .
-} => { :out13 log:outputString ?line . } .
-{ :why :gridReliefMW ?mw .
-  ("grid relief mw : %s\n" ?mw) string:format ?line .
-} => { :out14 log:outputString ?line . } .
-{ :case :recommendedPackage ?pkg .
-  ?pkg :costMEUR ?cost .
-  ("cost meur : %s\n" ?cost) string:format ?line .
-} => { :out15 log:outputString ?line . } .
-{ :reasonText :value ?reason .
-  ("reason.txt : %s" ?reason) string:format ?line .
-} => { :out16 log:outputString ?line . } .
-{ :case :auditEntries ?n .
-  ("audit entries : %s\n" ?n) string:format ?line .
-} => { :out17 log:outputString ?line . } .
-{ :case :filesWritten ?n .
-  ("bus files written : %s\n" ?n) string:format ?line .
-} => { :out18 log:outputString ?line . } .
+:out11 log:outputString "\n=== Reason Why ===\n" .
+:out12 log:outputString "Export weakness is active because at least one cluster has exportOrdersIndex < 90 (Antwerp chemicals=84, Ghent manufacturing=87).\n" .
+:out13 log:outputString "Skills strain is active because technical vacancy rate is 4.6% (threshold > 3.9%).\n" .
+:out14 log:outputString "Grid stress is active because congestion hours = 19 (threshold > 11).\n" .
+:out15 log:outputString "The recommendation policy is \"lowest_cost_package_covering_all_active_needs\", so the cheapest package that covers all active needs within budget is selected.\n" .
+:out16 log:outputString "Selected package \"Scheldesprong Retooling Pulse\" covers export=true, skills=true, grid=true, cost=€120M.\n" .
+:out17 log:outputString "Usage is permitted only for purpose \"regional_stabilization\" and the envelope expires at 2026-04-08T19:00:00+00:00.\n" .
 
-:out19 log:outputString "\n=== Check ===\n" .
-{ :check :signatureVerifies true . }
-  => { :out20 log:outputString "signature verifies : yes\n" . } .
+:out18 log:outputString "\n=== Check ===\n" .
 { :check :payloadHashMatches true . }
-  => { :out21 log:outputString "payload hash matches : yes\n" . } .
-{ :check :minimizationStripsSensitiveTerms true . }
-  => { :out22 log:outputString "minimization strips sensitive terms : yes\n" . } .
+  => { :out19 log:outputString "- PASS: payload hash matches\n" . } .
+{ :check :hmacMatches true . }
+  => { :out20 log:outputString "- PASS: hmac matches\n" . } .
+{ :check :thresholdReached true . }
+  => { :out21 log:outputString "- PASS: threshold reached\n" . } .
 { :check :scopeComplete true . }
-  => { :out23 log:outputString "scope complete : yes\n" . } .
+  => { :out22 log:outputString "- PASS: scope complete\n" . } .
+{ :check :minimizationStripsSensitiveTerms true . }
+  => { :out23 log:outputString "- PASS: minimization respected\n" . } .
 { :check :authorizationAllowed true . }
-  => { :out24 log:outputString "authorization allowed : yes\n" . } .
-{ :check :packageWithinBudget true . }
-  => { :out25 log:outputString "package within budget : yes\n" . } .
-{ :check :packageCoversAllNeeds true . }
-  => { :out26 log:outputString "package covers all needs : yes\n" . } .
+  => { :out24 log:outputString "- PASS: authorized purpose allowed\n" . } .
 { :check :dutyTimingConsistent true . }
-  => { :out27 log:outputString "duty timing consistent : yes\n" . } .
+  => { :out25 log:outputString "- PASS: deletion duty still on time\n" . } .
 { :check :surveillanceReuseProhibited true . }
-  => { :out28 log:outputString "surveillance reuse prohibited : yes\n" . } .
-{ :check :filesWrittenExpected true . }
-  => { :out29 log:outputString "files written expected : yes\n" . } .
-{ :result :allChecksPass true . }
-  => { :out30 log:outputString "overall : all checks pass\n" . } .
+  => { :out26 log:outputString "- PASS: surveillance reuse prohibited\n" . } .
+{ :check :packageWithinBudget true . }
+  => { :out27 log:outputString "- PASS: package exists within budget\n" . } .
+{ :check :packageCoversAllNeeds true . }
+  => { :out28 log:outputString "- PASS: package covers all active needs\n" . } .
+{ :check :lowestCostEligiblePackageChosen true . }
+  => { :out29 log:outputString "- PASS: lowest-cost eligible package chosen\n" . } .
