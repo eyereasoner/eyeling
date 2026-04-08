@@ -1,15 +1,30 @@
-# ==============================================================================
+# ============================================================================
 # Scheldesprong — a macro-economic Insight Economy case for Flanders.
 #
-# This example mirrors the Delfour pattern, but at regional scale:
-# confidential firm-, labour-, and grid-side signals stay local and are turned
-# into a narrow, expiring macro insight for the Flemish policy layer.
+# The aha: nobody has to reveal their books for the region to coordinate.
 #
-# The insight says: Flanders should activate a temporary retooling package for
-# export-facing industry because export orders are weak, technical vacancies are
-# tight, and grid congestion is elevated. The envelope permits use only for
-# regional stabilization and forbids reuse for firm surveillance.
-# ==============================================================================
+# Exporters, training actors, and grid operators each keep their sensitive
+# data local. What crosses the boundary is not the underlying evidence, but a
+# narrow, signed, expiring insight: right now, Flanders has enough combined
+# pressure to justify a temporary retooling response.
+#
+# That is the Insight Economy in action. Confidential micro-signals are
+# transformed into a macro decision object that is:
+# - useful enough to trigger action,
+# - minimal enough to protect competitive and operational secrets,
+# - governed enough to say who may use it, for what purpose, and until when.
+#
+# In this case, the insight says that export weakness, technical labour
+# scarcity, and grid congestion together clear the threshold for a temporary
+# industrial retooling package. Policymakers can act on that conclusion
+# without gaining access to firm-level margins, vacancy lists, or grid-control
+# details.
+#
+# The product being traded is therefore not raw data, and not even a general
+# forecast, but a context-bound permissioned conclusion: a policy-grade
+# insight for regional stabilization, with reuse for firm surveillance
+# explicitly forbidden.
+# ============================================================================
 
 @prefix : <https://example.org/insight/scheldesprong/> .
 @prefix arc: <https://example.org/arc#> .
