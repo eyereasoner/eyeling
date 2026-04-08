@@ -1,0 +1,32 @@
+=== Answer ===
+The board is allowed to use a neutral macro-economic insight and should activate the Scheldesprong Retooling Pulse for Flanders.
+case : scheldesprong
+decision : Allowed
+region : Flanders
+recommended package : Scheldesprong Retooling Pulse
+
+=== Reason Why ===
+Confidential firm, labour, and grid signals are aggregated into a temporary regional insight instead of exposing raw company data.
+trigger set : export weakness + technical vacancies + grid congestion
+scope : economic-resilience-board @ budget-prep-window
+purpose : regional_stabilization
+expiry : 2026-04-08T19:00:00+00:00
+worker coverage : 1200
+grid relief mw : 85
+cost meur : 120
+reason.txt : Secure aggregates from Flanders indicate simultaneous export weakness, technical labour scarcity, and grid congestion. A neutral macro insight is scoped to the economic-resilience board for one budget window only, enabling a temporary package without exposing firm-level books.
+audit entries : 1
+bus files written : 6
+
+=== Check ===
+signature verifies : yes
+payload hash matches : yes
+minimization strips sensitive terms : yes
+scope complete : yes
+authorization allowed : yes
+package within budget : yes
+package covers all needs : yes
+duty timing consistent : yes
+surveillance reuse prohibited : yes
+files written expected : yes
+overall : all checks pass
