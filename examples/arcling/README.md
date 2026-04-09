@@ -1,32 +1,25 @@
-# ARC Bridge
+# Arcling
 
-This directory holds **ARC Bridge** cases.
+This directory holds **Arcling** cases.
 
-An ARC Bridge case sits between two existing forms in Eyeling:
-
-- the **declarative N3** case in `examples/`, and
-- the **specialized executable** case in `examples/extra/`.
-
-Its purpose is to keep the ARC promise visible while making the case easy to read, easy to rerun, and easy to port.
+An Arcling case sits alongside the declarative N3 cases in `examples/`. Its purpose is to keep the ARC promise visible while making the case easy to read, easy to rerun, and easy to port.
 
 In one line:
 
-> `examples/arc-bridge/` presents controlled-English ARC specifications with reference ECMAScript realizations and JSON test vectors.
+> `examples/arcling/` presents ARC cases in mathematical English with reference ECMAScript realizations and JSON test vectors.
 
 ## Why this directory exists
 
-Eyeling already has two valuable ways to present a case.
+Eyeling already has a strong way to present a case in declarative N3. Arcling adds a second presentation layer for cases that benefit from a normative mathematical-English statement plus a compact reference model.
 
-The files in `examples/` are ideal for seeing the logic in open declarative form. The files in `examples/extra/` are ideal when a case has already been shaped and we want a compact executable artifact that runs quickly.
+Each Arcling case gives you:
 
-ARC Bridge exists for the middle layer. It gives each case:
-
-- a **normative statement** in controlled mathematical English,
+- a **normative statement** in mathematical English,
 - a **reference realization** in ECMAScript,
-- a **concrete instance** in JSON, and
-- an **expected result** for comparison and regression testing.
+- a **concrete instance** in JSON,
+- and an **expected result** for comparison and regression testing.
 
-So ARC Bridge is not a replacement for either of the existing collections. It is a bridge between them.
+So Arcling does not replace declarative Eyeling. It complements it.
 
 ## The ARC part
 
@@ -36,7 +29,7 @@ ARC means:
 - **Reason Why**
 - **Check**
 
-A good ARC Bridge case should preserve that trust pattern even though it is not written directly in N3.
+A good Arcling case preserves that trust pattern even though it is not written entirely in N3.
 
 That means:
 
@@ -46,12 +39,12 @@ That means:
 
 ## What belongs here
 
-A case belongs in `examples/arc-bridge/` when:
+A case belongs in `examples/arcling/` when:
 
 - there is a useful ARC-style case in `examples/`,
-- there is value in giving the case a more direct operational form,
-- but we still want the logic to stay explicit and auditable,
-- with a specification that can be read independently of the code.
+- there is value in giving the case a direct operational form,
+- we want the logic to stay explicit and auditable,
+- and we want a specification that can be read independently of the code.
 
 Typical uses:
 
@@ -60,37 +53,15 @@ Typical uses:
 - cases with a stable logical core and a small executable shell,
 - cases that benefit from conformance-style testing.
 
-## Directory shape
-
-Each case should live in its own subdirectory.
-
-For example:
-
-```text
-examples/arc-bridge/
-  delfour/
-    delfour.spec.md
-    delfour.data.json
-    delfour.model.mjs
-    delfour.expected.json
-    delfour.instance.schema.json
-  flandor/
-    flandor.spec.md
-    flandor.data.json
-    flandor.model.mjs
-    flandor.expected.json
-    flandor.instance.schema.json
-```
-
 ## The five files
 
-Each ARC Bridge case should contain these files.
+Each Arcling case should contain these files.
 
 ### 1. `name.spec.md`
 
 The normative case description.
 
-This file should use **controlled mathematical English**. It should define the vocabulary, the inputs, the derived predicates, the decision rule, the governance rule, the checks, and the output contract.
+This file should use **mathematical English**. It should define the vocabulary, the inputs, the derived predicates, the decision rule, the governance rule, the checks, and the output contract.
 
 The spec should be written so that a careful reader can understand the case without reading the ECMAScript source first.
 
@@ -127,7 +98,7 @@ The instance schema.
 
 This file defines the required structure of the input JSON. It should be strict enough to catch malformed case instances before evaluation.
 
-## How to read an ARC Bridge case
+## How to read an Arcling case
 
 A good reading order is:
 
@@ -135,7 +106,7 @@ A good reading order is:
 2. inspect `name.data.json`,
 3. run `name.model.mjs`,
 4. compare the result with `name.expected.json`,
-5. then relate the case back to its N3 and specialized counterparts.
+5. then relate the case back to its N3 counterpart.
 
 That order keeps the meaning visible before the operational details.
 
@@ -144,14 +115,12 @@ That order keeps the meaning visible before the operational details.
 A useful mental model is:
 
 - `examples/` shows ARC cases in **declarative Eyeling form**,
-- `examples/arc-bridge/` shows the same kind of cases in **specification-plus-reference form**,
-- `examples/extra/` shows selected cases in **specialized executable form**.
+- `examples/arcling/` shows the same kind of cases in **mathematical-English specification plus reference ECMAScript form**.
 
-So the three collections are complementary:
+So the two collections are complementary:
 
 - **N3** is best for seeing the logic in the open,
-- **ARC Bridge** is best for stating the case normatively and running a portable reference model,
-- **extra** is best for fast specialized execution.
+- **Arcling** is best for stating the case normatively and running a portable reference model.
 
 ## Design rules
 
@@ -175,21 +144,21 @@ A check should add confidence. It should not only restate the answer.
 
 ### 5. Keep names aligned
 
-If a case is called `delfour` in `examples/` and `examples/extra/`, the ARC Bridge case should use the same base name.
+If a case is called `delfour` or `flandor` in `examples/`, the Arcling case should use the same base name.
 
 ## Suggested workflow for a new case
 
 1. Start from a strong ARC-style N3 example.
-2. Write a controlled-English specification of the case.
+2. Write a mathematical-English specification of the case.
 3. Move the concrete instance into JSON.
 4. Implement a small ECMAScript reference model.
 5. Capture the expected result in JSON.
 6. Keep the visible output in Answer / Reason Why / Check shape.
-7. Link the bridge case to its N3 and specialized counterparts.
+7. Link the Arcling case to its N3 counterpart.
 
-## What ARC Bridge is not
+## What Arcling is not
 
-ARC Bridge is not:
+Arcling is not:
 
 - a replacement for declarative Eyeling,
 - a performance collection,
@@ -205,4 +174,4 @@ It exists to make a case simultaneously:
 
 ## In one line
 
-`examples/arc-bridge/` presents controlled-English ARC case specifications with reference ECMAScript realizations, JSON instances, and expected results, as a bridge between declarative Eyeling examples and specialized executable companions.
+`examples/arcling/` presents ARC cases in mathematical English with reference ECMAScript realizations, JSON instances, and expected results, alongside declarative Eyeling examples.

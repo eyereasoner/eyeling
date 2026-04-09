@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.org/schema/delfour.instance.schema.json",
-  "title": "ARC Bridge Flandor instance",
+  "title": "Arcling Delfour instance",
   "type": "object",
   "additionalProperties": false,
   "required": [

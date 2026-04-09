@@ -21,7 +21,7 @@ function fail(msg) {
 }
 
 const ROOT = path.resolve(__dirname, '..');
-const BRIDGE_DIR = path.join(ROOT, 'examples', 'arc-bridge');
+const ARCLING_DIR = path.join(ROOT, 'examples', 'arcling');
 
 function isDirectory(p) {
   try {
@@ -37,7 +37,7 @@ function readJson(filePath) {
 
 function listCaseDirs(baseDir) {
   if (!isDirectory(baseDir)) {
-    throw new Error(`Bridge directory not found: ${baseDir}`);
+    throw new Error(`Arcling directory not found: ${baseDir}`);
   }
 
   return fs
@@ -56,7 +56,7 @@ function findCaseFiles(caseDir) {
 
   for (const required of [modelPath, dataPath, expectedPath]) {
     if (!fs.existsSync(required)) {
-      throw new Error(`Missing required bridge artifact: ${required}`);
+      throw new Error(`Missing required arcling artifact: ${required}`);
     }
   }
 
@@ -99,13 +99,13 @@ async function runCase(caseDir) {
 }
 
 async function main() {
-  const caseDirs = listCaseDirs(BRIDGE_DIR);
+  const caseDirs = listCaseDirs(ARCLING_DIR);
 
   if (caseDirs.length === 0) {
-    throw new Error(`No bridge cases found in ${BRIDGE_DIR}`);
+    throw new Error(`No arcling cases found in ${ARCLING_DIR}`);
   }
 
-  info(`bridge tests: ${caseDirs.length} case(s)`);
+  info(`arcling tests: ${caseDirs.length} case(s)`);
 
   let passed = 0;
 
@@ -125,7 +125,7 @@ async function main() {
     }
   }
 
-  info(`all ${passed} bridge test(s) passed`);
+  info(`all ${passed} arcling test(s) passed`);
 }
 
 main().catch((error) => {
