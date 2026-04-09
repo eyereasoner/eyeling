@@ -89,19 +89,11 @@ async function runCase(caseDir) {
   const expected = readJson(expectedPath);
   const actual = await evaluate(data);
 
-  assert.equal(
-    actual.allChecksPass,
-    true,
-    `${base}: expected allChecksPass === true`
-  );
+  assert.equal(actual.allChecksPass, true, `${base}: expected allChecksPass === true`);
 
   assertArcTextShape(actual.arcText, base);
 
-  assert.deepStrictEqual(
-    actual,
-    expected,
-    `${base}: actual result does not match expected JSON`
-  );
+  assert.deepStrictEqual(actual, expected, `${base}: actual result does not match expected JSON`);
 
   return base;
 }
