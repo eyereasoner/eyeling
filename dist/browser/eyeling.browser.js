@@ -1,2345 +1,2087 @@
 'use strict';
 
-(function(){
-  const __outerRequire = (typeof require === "function") ? require : null;
-  const __outerModule = (typeof module !== "undefined") ? module : null;
-  const __outerSelf = (typeof self !== "undefined") ? self : null;
+(function () {
+  const __outerRequire = typeof require === 'function' ? require : null;
+  const __outerModule = typeof module !== 'undefined' ? module : null;
+  const __outerSelf = typeof self !== 'undefined' ? self : null;
   const __modules = Object.create(null);
   const __cache = Object.create(null);
 
   // ---- bundled modules ----
-  __modules["lib/builtin-sudoku.js"] = function(require, module, exports){
-'use strict';
+  __modules['lib/builtin-sudoku.js'] = function (require, module, exports) {
+    'use strict';
 
-module.exports = function registerSudokuBuiltins(api) {
-  const { registerBuiltin, internLiteral, termToJsString, unifyTerm, terms } = api;
-  const { Var } = terms;
+    module.exports = function registerSudokuBuiltins(api) {
+      const { registerBuiltin, internLiteral, termToJsString, unifyTerm, terms } = api;
+      const { Var } = terms;
 
-  const SUDOKU_NS = 'http://example.org/sudoku-builtin#';
-  const __sudokuReportCache = new Map();
-  const __SUDOKU_ALL = 0x1ff;
+      const SUDOKU_NS = 'http://example.org/sudoku-builtin#';
+      const __sudokuReportCache = new Map();
+      const __SUDOKU_ALL = 0x1ff;
 
-  function makeStringLiteral(str) {
-    return internLiteral(JSON.stringify(str));
-  }
-
-  function digitMask(v) {
-    return 1 << (v - 1);
-  }
-
-  function boxIndex(r, c) {
-    return Math.floor(r / 3) * 3 + Math.floor(c / 3);
-  }
-
-  function popcount(mask) {
-    let n = 0;
-    while (mask) {
-      mask &= mask - 1;
-      n += 1;
-    }
-    return n;
-  }
-
-  function maskToDigits(mask) {
-    const out = [];
-    for (let d = 1; d <= 9; d += 1) if (mask & digitMask(d)) out.push(d);
-    return out;
-  }
-
-  function formatBoard(cells) {
-    let out = '';
-    for (let r = 0; r < 9; r += 1) {
-      if (r > 0 && r % 3 === 0) out += '\n';
-      for (let c = 0; c < 9; c += 1) {
-        if (c > 0 && c % 3 === 0) out += '| ';
-        const v = cells[r * 9 + c];
-        out += v === 0 ? '. ' : `${String(v)} `;
+      function makeStringLiteral(str) {
+        return internLiteral(JSON.stringify(str));
       }
-      out += '\n';
-    }
-    return out;
-  }
 
-  function parsePuzzle(input) {
-    const filtered = [];
-    for (const ch of input) {
-      if (/\s/.test(ch) || ch === '|' || ch === '+') continue;
-      filtered.push(ch);
-    }
-    if (filtered.length !== 81) {
-      return { error: `Expected exactly 81 cells after removing whitespace, but found ${filtered.length}.` };
-    }
-    const cells = new Array(81).fill(0);
-    for (let i = 0; i < 81; i += 1) {
-      const ch = filtered[i];
-      if (ch >= '1' && ch <= '9') cells[i] = ch.charCodeAt(0) - 48;
-      else if (ch === '0' || ch === '.' || ch === '_') cells[i] = 0;
-      else return { error: `Unexpected character '${ch}' at position ${i + 1}.` };
-    }
-    return { cells };
-  }
-
-  function attachMethods(state) {
-    state.place = function place(idx, value) {
-      if (this.cells[idx] !== 0) return this.cells[idx] === value;
-      const row = Math.floor(idx / 9);
-      const col = idx % 9;
-      const bx = boxIndex(row, col);
-      const bit = digitMask(value);
-      if (((this.rowUsed[row] | this.colUsed[col] | this.boxUsed[bx]) & bit) !== 0) return false;
-      this.cells[idx] = value;
-      this.rowUsed[row] |= bit;
-      this.colUsed[col] |= bit;
-      this.boxUsed[bx] |= bit;
-      return true;
-    };
-
-    state.candidates = function candidates(idx) {
-      const row = Math.floor(idx / 9);
-      const col = idx % 9;
-      const bx = boxIndex(row, col);
-      return __SUDOKU_ALL & ~(this.rowUsed[row] | this.colUsed[col] | this.boxUsed[bx]);
-    };
-
-    state.clone = function clone() {
-      return attachMethods({
-        cells: this.cells.slice(),
-        rowUsed: this.rowUsed.slice(),
-        colUsed: this.colUsed.slice(),
-        boxUsed: this.boxUsed.slice(),
-        moves: this.moves.slice(),
-      });
-    };
-
-    return state;
-  }
-
-  function stateFromPuzzle(cells) {
-    const state = attachMethods({
-      cells: new Array(81).fill(0),
-      rowUsed: new Array(9).fill(0),
-      colUsed: new Array(9).fill(0),
-      boxUsed: new Array(9).fill(0),
-      moves: [],
-    });
-
-    for (let idx = 0; idx < 81; idx += 1) {
-      const value = cells[idx];
-      if (value === 0) continue;
-      if (value < 1 || value > 9) {
-        return { error: `Cell ${idx + 1} contains ${value}, but only digits 1-9 or 0/. are allowed.` };
+      function digitMask(v) {
+        return 1 << (v - 1);
       }
-      if (!state.place(idx, value)) {
-        const row = Math.floor(idx / 9) + 1;
-        const col = (idx % 9) + 1;
-        return { error: `The given clues already conflict at row ${row}, column ${col}.` };
+
+      function boxIndex(r, c) {
+        return Math.floor(r / 3) * 3 + Math.floor(c / 3);
       }
-    }
 
-    return { state };
-  }
+      function popcount(mask) {
+        let n = 0;
+        while (mask) {
+          mask &= mask - 1;
+          n += 1;
+        }
+        return n;
+      }
 
-  function summarizeMoves(moves, limit) {
-    if (!moves.length) return 'no placements were needed';
-    const parts = [];
-    for (const mv of moves.slice(0, limit)) {
-      const row = Math.floor(mv.index / 9) + 1;
-      const col = (mv.index % 9) + 1;
-      const mode = mv.forced ? 'forced' : 'guess';
-      parts.push(`r${row}c${col}=${mv.value}: ${mode}`);
-    }
-    if (moves.length > limit) parts.push(`… and ${moves.length - limit} more placements`);
-    return parts.join(', ');
-  }
+      function maskToDigits(mask) {
+        const out = [];
+        for (let d = 1; d <= 9; d += 1) if (mask & digitMask(d)) out.push(d);
+        return out;
+      }
 
-  function unitIsComplete(values) {
-    let seen = 0;
-    for (const v of values) {
-      if (v < 1 || v > 9) return false;
-      const bit = digitMask(v);
-      if (seen & bit) return false;
-      seen |= bit;
-    }
-    return seen === __SUDOKU_ALL;
-  }
+      function formatBoard(cells) {
+        let out = '';
+        for (let r = 0; r < 9; r += 1) {
+          if (r > 0 && r % 3 === 0) out += '\n';
+          for (let c = 0; c < 9; c += 1) {
+            if (c > 0 && c % 3 === 0) out += '| ';
+            const v = cells[r * 9 + c];
+            out += v === 0 ? '. ' : `${String(v)} `;
+          }
+          out += '\n';
+        }
+        return out;
+      }
 
-  function replayMovesAreLegal(puzzleCells, moves) {
-    const init = stateFromPuzzle(puzzleCells);
-    if (init.error) return false;
-    const state = init.state;
-    for (const mv of moves) {
-      if (state.cells[mv.index] !== 0) return false;
-      const maskNow = state.candidates(mv.index);
-      if (maskNow !== mv.candidatesMask) return false;
-      if ((maskNow & digitMask(mv.value)) === 0) return false;
-      if (mv.forced && popcount(maskNow) !== 1) return false;
-      if (!state.place(mv.index, mv.value)) return false;
-    }
-    return true;
-  }
+      function parsePuzzle(input) {
+        const filtered = [];
+        for (const ch of input) {
+          if (/\s/.test(ch) || ch === '|' || ch === '+') continue;
+          filtered.push(ch);
+        }
+        if (filtered.length !== 81) {
+          return { error: `Expected exactly 81 cells after removing whitespace, but found ${filtered.length}.` };
+        }
+        const cells = new Array(81).fill(0);
+        for (let i = 0; i < 81; i += 1) {
+          const ch = filtered[i];
+          if (ch >= '1' && ch <= '9') cells[i] = ch.charCodeAt(0) - 48;
+          else if (ch === '0' || ch === '.' || ch === '_') cells[i] = 0;
+          else return { error: `Unexpected character '${ch}' at position ${i + 1}.` };
+        }
+        return { cells };
+      }
 
-  function propagateSingles(state, stats) {
-    for (;;) {
-      let progress = false;
-      for (let idx = 0; idx < 81; idx += 1) {
-        if (state.cells[idx] !== 0) continue;
-        const mask = state.candidates(idx);
-        const count = popcount(mask);
-        if (count === 0) return false;
-        if (count === 1) {
-          const digit = maskToDigits(mask)[0];
-          state.moves.push({ index: idx, value: digit, candidatesMask: mask, forced: true });
-          if (!state.place(idx, digit)) return false;
-          stats.forcedMoves += 1;
-          progress = true;
+      function attachMethods(state) {
+        state.place = function place(idx, value) {
+          if (this.cells[idx] !== 0) return this.cells[idx] === value;
+          const row = Math.floor(idx / 9);
+          const col = idx % 9;
+          const bx = boxIndex(row, col);
+          const bit = digitMask(value);
+          if (((this.rowUsed[row] | this.colUsed[col] | this.boxUsed[bx]) & bit) !== 0) return false;
+          this.cells[idx] = value;
+          this.rowUsed[row] |= bit;
+          this.colUsed[col] |= bit;
+          this.boxUsed[bx] |= bit;
+          return true;
+        };
+
+        state.candidates = function candidates(idx) {
+          const row = Math.floor(idx / 9);
+          const col = idx % 9;
+          const bx = boxIndex(row, col);
+          return __SUDOKU_ALL & ~(this.rowUsed[row] | this.colUsed[col] | this.boxUsed[bx]);
+        };
+
+        state.clone = function clone() {
+          return attachMethods({
+            cells: this.cells.slice(),
+            rowUsed: this.rowUsed.slice(),
+            colUsed: this.colUsed.slice(),
+            boxUsed: this.boxUsed.slice(),
+            moves: this.moves.slice(),
+          });
+        };
+
+        return state;
+      }
+
+      function stateFromPuzzle(cells) {
+        const state = attachMethods({
+          cells: new Array(81).fill(0),
+          rowUsed: new Array(9).fill(0),
+          colUsed: new Array(9).fill(0),
+          boxUsed: new Array(9).fill(0),
+          moves: [],
+        });
+
+        for (let idx = 0; idx < 81; idx += 1) {
+          const value = cells[idx];
+          if (value === 0) continue;
+          if (value < 1 || value > 9) {
+            return { error: `Cell ${idx + 1} contains ${value}, but only digits 1-9 or 0/. are allowed.` };
+          }
+          if (!state.place(idx, value)) {
+            const row = Math.floor(idx / 9) + 1;
+            const col = (idx % 9) + 1;
+            return { error: `The given clues already conflict at row ${row}, column ${col}.` };
+          }
+        }
+
+        return { state };
+      }
+
+      function summarizeMoves(moves, limit) {
+        if (!moves.length) return 'no placements were needed';
+        const parts = [];
+        for (const mv of moves.slice(0, limit)) {
+          const row = Math.floor(mv.index / 9) + 1;
+          const col = (mv.index % 9) + 1;
+          const mode = mv.forced ? 'forced' : 'guess';
+          parts.push(`r${row}c${col}=${mv.value}: ${mode}`);
+        }
+        if (moves.length > limit) parts.push(`… and ${moves.length - limit} more placements`);
+        return parts.join(', ');
+      }
+
+      function unitIsComplete(values) {
+        let seen = 0;
+        for (const v of values) {
+          if (v < 1 || v > 9) return false;
+          const bit = digitMask(v);
+          if (seen & bit) return false;
+          seen |= bit;
+        }
+        return seen === __SUDOKU_ALL;
+      }
+
+      function replayMovesAreLegal(puzzleCells, moves) {
+        const init = stateFromPuzzle(puzzleCells);
+        if (init.error) return false;
+        const state = init.state;
+        for (const mv of moves) {
+          if (state.cells[mv.index] !== 0) return false;
+          const maskNow = state.candidates(mv.index);
+          if (maskNow !== mv.candidatesMask) return false;
+          if ((maskNow & digitMask(mv.value)) === 0) return false;
+          if (mv.forced && popcount(maskNow) !== 1) return false;
+          if (!state.place(mv.index, mv.value)) return false;
+        }
+        return true;
+      }
+
+      function propagateSingles(state, stats) {
+        for (;;) {
+          let progress = false;
+          for (let idx = 0; idx < 81; idx += 1) {
+            if (state.cells[idx] !== 0) continue;
+            const mask = state.candidates(idx);
+            const count = popcount(mask);
+            if (count === 0) return false;
+            if (count === 1) {
+              const digit = maskToDigits(mask)[0];
+              state.moves.push({ index: idx, value: digit, candidatesMask: mask, forced: true });
+              if (!state.place(idx, digit)) return false;
+              stats.forcedMoves += 1;
+              progress = true;
+            }
+          }
+          if (!progress) return true;
         }
       }
-      if (!progress) return true;
-    }
-  }
 
-  function selectUnfilledCell(state) {
-    let best = null;
-    for (let idx = 0; idx < 81; idx += 1) {
-      if (state.cells[idx] !== 0) continue;
-      const mask = state.candidates(idx);
-      const count = popcount(mask);
-      if (best === null || count < best.count) best = { idx, mask, count };
-      if (count === 2) break;
-    }
-    return best;
-  }
-
-  function solve(state, stats, depth) {
-    stats.recursiveNodes += 1;
-    if (depth > stats.maxDepth) stats.maxDepth = depth;
-    const current = state.clone();
-    if (!propagateSingles(current, stats)) {
-      stats.backtracks += 1;
-      return null;
-    }
-    const best = selectUnfilledCell(current);
-    if (!best) return current;
-    for (const digit of maskToDigits(best.mask)) {
-      const next = current.clone();
-      const candidatesMask = next.candidates(best.idx);
-      next.moves.push({ index: best.idx, value: digit, candidatesMask, forced: false });
-      stats.guessedMoves += 1;
-      if (!next.place(best.idx, digit)) continue;
-      const solved = solve(next, stats, depth + 1);
-      if (solved) return solved;
-    }
-    stats.backtracks += 1;
-    return null;
-  }
-
-  function countSolutions(state, limit, countRef) {
-    if (countRef.count >= limit) return;
-    const current = state.clone();
-    const dummy = {
-      givens: 0,
-      blanks: 0,
-      forcedMoves: 0,
-      guessedMoves: 0,
-      recursiveNodes: 0,
-      backtracks: 0,
-      maxDepth: 0,
-    };
-    if (!propagateSingles(current, dummy)) return;
-    const best = selectUnfilledCell(current);
-    if (!best) {
-      countRef.count += 1;
-      return;
-    }
-    for (const digit of maskToDigits(best.mask)) {
-      if (countRef.count >= limit) return;
-      const next = current.clone();
-      if (next.place(best.idx, digit)) countSolutions(next, limit, countRef);
-    }
-  }
-
-  function computeReport(term) {
-    const raw = termToJsString(term);
-    if (raw === null) return null;
-    if (__sudokuReportCache.has(raw)) return __sudokuReportCache.get(raw);
-
-    const parsed = parsePuzzle(raw);
-    if (parsed.error) {
-      const rep = { status: 'invalid-input', error: parsed.error, raw, normalized: null };
-      __sudokuReportCache.set(raw, rep);
-      return rep;
-    }
-
-    const normalized = parsed.cells.join('');
-    const init = stateFromPuzzle(parsed.cells);
-    if (init.error) {
-      const rep = {
-        status: 'illegal-clues',
-        error: init.error,
-        raw,
-        normalized,
-        givens: parsed.cells.filter((v) => v !== 0).length,
-        blanks: parsed.cells.filter((v) => v === 0).length,
-        puzzleText: formatBoard(parsed.cells),
-      };
-      __sudokuReportCache.set(raw, rep);
-      return rep;
-    }
-
-    const initial = init.state;
-    const stats = {
-      givens: parsed.cells.filter((v) => v !== 0).length,
-      blanks: parsed.cells.filter((v) => v === 0).length,
-      forcedMoves: 0,
-      guessedMoves: 0,
-      recursiveNodes: 0,
-      backtracks: 0,
-      maxDepth: 0,
-    };
-
-    const solved = solve(initial, stats, 0);
-    if (!solved) {
-      const rep = {
-        status: 'unsatisfiable',
-        raw,
-        normalized,
-        givens: stats.givens,
-        blanks: stats.blanks,
-        recursiveNodes: stats.recursiveNodes,
-        backtracks: stats.backtracks,
-        puzzleText: formatBoard(parsed.cells),
-      };
-      __sudokuReportCache.set(raw, rep);
-      return rep;
-    }
-
-    const countRef = { count: 0 };
-    countSolutions(initial, 2, countRef);
-
-    const givensPreserved = parsed.cells.every((v, i) => v === 0 || v === solved.cells[i]);
-    const noBlanks = solved.cells.every((v) => v >= 1 && v <= 9);
-    const rowsComplete = Array.from({ length: 9 }, (_, r) =>
-      unitIsComplete(solved.cells.slice(r * 9, r * 9 + 9)),
-    ).every(Boolean);
-    const colsComplete = Array.from({ length: 9 }, (_, c) =>
-      unitIsComplete(Array.from({ length: 9 }, (_, r) => solved.cells[r * 9 + c])),
-    ).every(Boolean);
-    const boxesComplete = Array.from({ length: 9 }, (_, b) => {
-      const br = Math.floor(b / 3) * 3;
-      const bc = (b % 3) * 3;
-      const vals = [];
-      for (let dr = 0; dr < 3; dr += 1) {
-        for (let dc = 0; dc < 3; dc += 1) vals.push(solved.cells[(br + dr) * 9 + (bc + dc)]);
+      function selectUnfilledCell(state) {
+        let best = null;
+        for (let idx = 0; idx < 81; idx += 1) {
+          if (state.cells[idx] !== 0) continue;
+          const mask = state.candidates(idx);
+          const count = popcount(mask);
+          if (best === null || count < best.count) best = { idx, mask, count };
+          if (count === 2) break;
+        }
+        return best;
       }
-      return unitIsComplete(vals);
-    }).every(Boolean);
-    const replayLegal = replayMovesAreLegal(parsed.cells, solved.moves);
-    const proofPathGuessCount = solved.moves.filter((m) => !m.forced).length;
-    const storyConsistent =
-      stats.recursiveNodes >= 1 &&
-      stats.maxDepth <= stats.blanks &&
-      solved.moves.length === stats.blanks &&
-      proofPathGuessCount <= stats.guessedMoves;
 
-    const rep = {
-      status: 'ok',
-      raw,
-      normalized,
-      givens: stats.givens,
-      blanks: stats.blanks,
-      forcedMoves: stats.forcedMoves,
-      guessedMoves: stats.guessedMoves,
-      recursiveNodes: stats.recursiveNodes,
-      backtracks: stats.backtracks,
-      maxDepth: stats.maxDepth,
-      unique: countRef.count === 1,
-      solution: solved.cells.join(''),
-      puzzleText: formatBoard(parsed.cells),
-      solutionText: formatBoard(solved.cells),
-      moveSummary: summarizeMoves(solved.moves, 8),
-      moveCount: solved.moves.length,
-      givensPreserved,
-      noBlanks,
-      rowsComplete,
-      colsComplete,
-      boxesComplete,
-      replayLegal,
-      storyConsistent,
+      function solve(state, stats, depth) {
+        stats.recursiveNodes += 1;
+        if (depth > stats.maxDepth) stats.maxDepth = depth;
+        const current = state.clone();
+        if (!propagateSingles(current, stats)) {
+          stats.backtracks += 1;
+          return null;
+        }
+        const best = selectUnfilledCell(current);
+        if (!best) return current;
+        for (const digit of maskToDigits(best.mask)) {
+          const next = current.clone();
+          const candidatesMask = next.candidates(best.idx);
+          next.moves.push({ index: best.idx, value: digit, candidatesMask, forced: false });
+          stats.guessedMoves += 1;
+          if (!next.place(best.idx, digit)) continue;
+          const solved = solve(next, stats, depth + 1);
+          if (solved) return solved;
+        }
+        stats.backtracks += 1;
+        return null;
+      }
+
+      function countSolutions(state, limit, countRef) {
+        if (countRef.count >= limit) return;
+        const current = state.clone();
+        const dummy = {
+          givens: 0,
+          blanks: 0,
+          forcedMoves: 0,
+          guessedMoves: 0,
+          recursiveNodes: 0,
+          backtracks: 0,
+          maxDepth: 0,
+        };
+        if (!propagateSingles(current, dummy)) return;
+        const best = selectUnfilledCell(current);
+        if (!best) {
+          countRef.count += 1;
+          return;
+        }
+        for (const digit of maskToDigits(best.mask)) {
+          if (countRef.count >= limit) return;
+          const next = current.clone();
+          if (next.place(best.idx, digit)) countSolutions(next, limit, countRef);
+        }
+      }
+
+      function computeReport(term) {
+        const raw = termToJsString(term);
+        if (raw === null) return null;
+        if (__sudokuReportCache.has(raw)) return __sudokuReportCache.get(raw);
+
+        const parsed = parsePuzzle(raw);
+        if (parsed.error) {
+          const rep = { status: 'invalid-input', error: parsed.error, raw, normalized: null };
+          __sudokuReportCache.set(raw, rep);
+          return rep;
+        }
+
+        const normalized = parsed.cells.join('');
+        const init = stateFromPuzzle(parsed.cells);
+        if (init.error) {
+          const rep = {
+            status: 'illegal-clues',
+            error: init.error,
+            raw,
+            normalized,
+            givens: parsed.cells.filter((v) => v !== 0).length,
+            blanks: parsed.cells.filter((v) => v === 0).length,
+            puzzleText: formatBoard(parsed.cells),
+          };
+          __sudokuReportCache.set(raw, rep);
+          return rep;
+        }
+
+        const initial = init.state;
+        const stats = {
+          givens: parsed.cells.filter((v) => v !== 0).length,
+          blanks: parsed.cells.filter((v) => v === 0).length,
+          forcedMoves: 0,
+          guessedMoves: 0,
+          recursiveNodes: 0,
+          backtracks: 0,
+          maxDepth: 0,
+        };
+
+        const solved = solve(initial, stats, 0);
+        if (!solved) {
+          const rep = {
+            status: 'unsatisfiable',
+            raw,
+            normalized,
+            givens: stats.givens,
+            blanks: stats.blanks,
+            recursiveNodes: stats.recursiveNodes,
+            backtracks: stats.backtracks,
+            puzzleText: formatBoard(parsed.cells),
+          };
+          __sudokuReportCache.set(raw, rep);
+          return rep;
+        }
+
+        const countRef = { count: 0 };
+        countSolutions(initial, 2, countRef);
+
+        const givensPreserved = parsed.cells.every((v, i) => v === 0 || v === solved.cells[i]);
+        const noBlanks = solved.cells.every((v) => v >= 1 && v <= 9);
+        const rowsComplete = Array.from({ length: 9 }, (_, r) =>
+          unitIsComplete(solved.cells.slice(r * 9, r * 9 + 9)),
+        ).every(Boolean);
+        const colsComplete = Array.from({ length: 9 }, (_, c) =>
+          unitIsComplete(Array.from({ length: 9 }, (_, r) => solved.cells[r * 9 + c])),
+        ).every(Boolean);
+        const boxesComplete = Array.from({ length: 9 }, (_, b) => {
+          const br = Math.floor(b / 3) * 3;
+          const bc = (b % 3) * 3;
+          const vals = [];
+          for (let dr = 0; dr < 3; dr += 1) {
+            for (let dc = 0; dc < 3; dc += 1) vals.push(solved.cells[(br + dr) * 9 + (bc + dc)]);
+          }
+          return unitIsComplete(vals);
+        }).every(Boolean);
+        const replayLegal = replayMovesAreLegal(parsed.cells, solved.moves);
+        const proofPathGuessCount = solved.moves.filter((m) => !m.forced).length;
+        const storyConsistent =
+          stats.recursiveNodes >= 1 &&
+          stats.maxDepth <= stats.blanks &&
+          solved.moves.length === stats.blanks &&
+          proofPathGuessCount <= stats.guessedMoves;
+
+        const rep = {
+          status: 'ok',
+          raw,
+          normalized,
+          givens: stats.givens,
+          blanks: stats.blanks,
+          forcedMoves: stats.forcedMoves,
+          guessedMoves: stats.guessedMoves,
+          recursiveNodes: stats.recursiveNodes,
+          backtracks: stats.backtracks,
+          maxDepth: stats.maxDepth,
+          unique: countRef.count === 1,
+          solution: solved.cells.join(''),
+          puzzleText: formatBoard(parsed.cells),
+          solutionText: formatBoard(solved.cells),
+          moveSummary: summarizeMoves(solved.moves, 8),
+          moveCount: solved.moves.length,
+          givensPreserved,
+          noBlanks,
+          rowsComplete,
+          colsComplete,
+          boxesComplete,
+          replayLegal,
+          storyConsistent,
+        };
+
+        __sudokuReportCache.set(raw, rep);
+        return rep;
+      }
+
+      function reportFieldAsTerm(report, field) {
+        if (!report) return null;
+        if (field === 'status') return makeStringLiteral(report.status);
+        if (field === 'error') return report.error ? makeStringLiteral(report.error) : null;
+        if (field === 'normalizedPuzzle') return report.normalized ? makeStringLiteral(report.normalized) : null;
+        if (field === 'solution') return report.solution ? makeStringLiteral(report.solution) : null;
+        if (field === 'puzzleText') return report.puzzleText ? makeStringLiteral(report.puzzleText) : null;
+        if (field === 'solutionText') return report.solutionText ? makeStringLiteral(report.solutionText) : null;
+        if (field === 'moveSummary') return report.moveSummary ? makeStringLiteral(report.moveSummary) : null;
+        if (field === 'givensPreservedText')
+          return report.givensPreserved === undefined
+            ? null
+            : makeStringLiteral(report.givensPreserved ? 'OK' : 'failed');
+        if (field === 'noBlanksText')
+          return report.noBlanks === undefined ? null : makeStringLiteral(report.noBlanks ? 'OK' : 'failed');
+        if (field === 'rowsCompleteText')
+          return report.rowsComplete === undefined ? null : makeStringLiteral(report.rowsComplete ? 'OK' : 'failed');
+        if (field === 'colsCompleteText')
+          return report.colsComplete === undefined ? null : makeStringLiteral(report.colsComplete ? 'OK' : 'failed');
+        if (field === 'boxesCompleteText')
+          return report.boxesComplete === undefined ? null : makeStringLiteral(report.boxesComplete ? 'OK' : 'failed');
+        if (field === 'replayLegalText')
+          return report.replayLegal === undefined ? null : makeStringLiteral(report.replayLegal ? 'OK' : 'failed');
+        if (field === 'storyConsistentText')
+          return report.storyConsistent === undefined
+            ? null
+            : makeStringLiteral(report.storyConsistent ? 'OK' : 'failed');
+
+        const boolFields = [
+          'unique',
+          'givensPreserved',
+          'noBlanks',
+          'rowsComplete',
+          'colsComplete',
+          'boxesComplete',
+          'replayLegal',
+          'storyConsistent',
+        ];
+        if (boolFields.includes(field))
+          return report[field] === undefined ? null : internLiteral(report[field] ? 'true' : 'false');
+
+        const numberFields = [
+          'givens',
+          'blanks',
+          'forcedMoves',
+          'guessedMoves',
+          'recursiveNodes',
+          'backtracks',
+          'maxDepth',
+          'moveCount',
+        ];
+        if (numberFields.includes(field))
+          return report[field] === undefined ? null : internLiteral(String(report[field]));
+
+        return null;
+      }
+
+      function evalSudokuField(goal, subst, field) {
+        const report = computeReport(goal.s);
+        if (!report) return [];
+        const term = reportFieldAsTerm(report, field);
+        if (!term) return [];
+        if (goal.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[goal.o.name] = term;
+          return [s2];
+        }
+        const s2 = unifyTerm(goal.o, term, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      const fields = [
+        'status',
+        'error',
+        'normalizedPuzzle',
+        'solution',
+        'givens',
+        'blanks',
+        'forcedMoves',
+        'guessedMoves',
+        'recursiveNodes',
+        'backtracks',
+        'maxDepth',
+        'unique',
+        'givensPreserved',
+        'noBlanks',
+        'rowsComplete',
+        'colsComplete',
+        'boxesComplete',
+        'replayLegal',
+        'storyConsistent',
+        'givensPreservedText',
+        'noBlanksText',
+        'rowsCompleteText',
+        'colsCompleteText',
+        'boxesCompleteText',
+        'replayLegalText',
+        'storyConsistentText',
+        'moveSummary',
+        'puzzleText',
+        'solutionText',
+        'moveCount',
+      ];
+
+      for (const field of fields) {
+        registerBuiltin(SUDOKU_NS + field, ({ goal, subst }) => evalSudokuField(goal, subst, field));
+      }
     };
-
-    __sudokuReportCache.set(raw, rep);
-    return rep;
-  }
-
-  function reportFieldAsTerm(report, field) {
-    if (!report) return null;
-    if (field === 'status') return makeStringLiteral(report.status);
-    if (field === 'error') return report.error ? makeStringLiteral(report.error) : null;
-    if (field === 'normalizedPuzzle') return report.normalized ? makeStringLiteral(report.normalized) : null;
-    if (field === 'solution') return report.solution ? makeStringLiteral(report.solution) : null;
-    if (field === 'puzzleText') return report.puzzleText ? makeStringLiteral(report.puzzleText) : null;
-    if (field === 'solutionText') return report.solutionText ? makeStringLiteral(report.solutionText) : null;
-    if (field === 'moveSummary') return report.moveSummary ? makeStringLiteral(report.moveSummary) : null;
-    if (field === 'givensPreservedText')
-      return report.givensPreserved === undefined ? null : makeStringLiteral(report.givensPreserved ? 'OK' : 'failed');
-    if (field === 'noBlanksText')
-      return report.noBlanks === undefined ? null : makeStringLiteral(report.noBlanks ? 'OK' : 'failed');
-    if (field === 'rowsCompleteText')
-      return report.rowsComplete === undefined ? null : makeStringLiteral(report.rowsComplete ? 'OK' : 'failed');
-    if (field === 'colsCompleteText')
-      return report.colsComplete === undefined ? null : makeStringLiteral(report.colsComplete ? 'OK' : 'failed');
-    if (field === 'boxesCompleteText')
-      return report.boxesComplete === undefined ? null : makeStringLiteral(report.boxesComplete ? 'OK' : 'failed');
-    if (field === 'replayLegalText')
-      return report.replayLegal === undefined ? null : makeStringLiteral(report.replayLegal ? 'OK' : 'failed');
-    if (field === 'storyConsistentText')
-      return report.storyConsistent === undefined ? null : makeStringLiteral(report.storyConsistent ? 'OK' : 'failed');
-
-    const boolFields = [
-      'unique',
-      'givensPreserved',
-      'noBlanks',
-      'rowsComplete',
-      'colsComplete',
-      'boxesComplete',
-      'replayLegal',
-      'storyConsistent',
-    ];
-    if (boolFields.includes(field))
-      return report[field] === undefined ? null : internLiteral(report[field] ? 'true' : 'false');
-
-    const numberFields = [
-      'givens',
-      'blanks',
-      'forcedMoves',
-      'guessedMoves',
-      'recursiveNodes',
-      'backtracks',
-      'maxDepth',
-      'moveCount',
-    ];
-    if (numberFields.includes(field)) return report[field] === undefined ? null : internLiteral(String(report[field]));
-
-    return null;
-  }
-
-  function evalSudokuField(goal, subst, field) {
-    const report = computeReport(goal.s);
-    if (!report) return [];
-    const term = reportFieldAsTerm(report, field);
-    if (!term) return [];
-    if (goal.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[goal.o.name] = term;
-      return [s2];
-    }
-    const s2 = unifyTerm(goal.o, term, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  const fields = [
-    'status',
-    'error',
-    'normalizedPuzzle',
-    'solution',
-    'givens',
-    'blanks',
-    'forcedMoves',
-    'guessedMoves',
-    'recursiveNodes',
-    'backtracks',
-    'maxDepth',
-    'unique',
-    'givensPreserved',
-    'noBlanks',
-    'rowsComplete',
-    'colsComplete',
-    'boxesComplete',
-    'replayLegal',
-    'storyConsistent',
-    'givensPreservedText',
-    'noBlanksText',
-    'rowsCompleteText',
-    'colsCompleteText',
-    'boxesCompleteText',
-    'replayLegalText',
-    'storyConsistentText',
-    'moveSummary',
-    'puzzleText',
-    'solutionText',
-    'moveCount',
-  ];
-
-  for (const field of fields) {
-    registerBuiltin(SUDOKU_NS + field, ({ goal, subst }) => evalSudokuField(goal, subst, field));
-  }
-};
-
   };
-  __modules["lib/builtins.js"] = function(require, module, exports){
-/**
- * Eyeling Reasoner — builtins
- *
- * Builtin evaluation plus shared literal/number/string helpers.
- * This module is initialized by lib/engine.js via makeBuiltins(deps).
- */
-'use strict';
-
-const {
-  RDF_NS,
-  XSD_NS,
-  CRYPTO_NS,
-  MATH_NS,
-  TIME_NS,
-  LIST_NS,
-  LOG_NS,
-  STRING_NS,
-  Literal,
-  Iri,
-  Var,
-  Blank,
-  ListTerm,
-  OpenListTerm,
-  GraphTerm,
-  Triple,
-  Rule,
-  internIri,
-  internLiteral,
-  PrefixEnv,
-  literalParts,
-} = require('./prelude');
-
-const { decodeN3StringEscapes } = require('./lexer');
-const { termToN3 } = require('./printing');
-const trace = require('./trace');
-const time = require('./time');
-const deref = require('./deref');
-
-let nodeCrypto = null;
-try {
-  if (typeof require === 'function') nodeCrypto = require('crypto');
-} catch (_) {}
-
-//
-// Hot caches (moved from engine.js)
-//
-const __parseNumCache = new Map(); // lit string -> number|null
-const __parseIntCache = new Map(); // lit string -> bigint|null
-const __parseNumericInfoCache = new Map(); // lit string -> info|null
-
-// Avoid caching extremely large numeric literals.
-// Caching them retains giant strings/BigInts in global Maps and can cause OOM.
-const MAX_NUMERIC_CACHE_KEY_LEN = 1024;
-
-// Safety cap for BigInt exponentiation results.
-// Prevents accidental creation of enormous integers that would OOM the process.
-// (Ackermann(4,2) is ~65k bits, so well below this.)
-const MAX_BIGINT_POW_RESULT_BITS = 2_000_000n;
-
-function __useNumericCacheKey(key) {
-  return typeof key === 'string' && key.length <= MAX_NUMERIC_CACHE_KEY_LEN;
-}
-
-// ---------------------------------------------------------------------------
-// Custom builtin registry
-// ---------------------------------------------------------------------------
-const __customBuiltinHandlers = new Map(); // predicate IRI -> evaluator(ctx) => deltas[]
-const __loadedBuiltinModuleIds = new Set();
-
-function __validateBuiltinIri(iri) {
-  if (typeof iri !== 'string' || !iri) {
-    throw new TypeError('Custom builtin IRI must be a non-empty string');
-  }
-}
-
-function registerBuiltin(iri, handler) {
-  __validateBuiltinIri(iri);
-  if (typeof handler !== 'function') {
-    throw new TypeError(`Custom builtin ${iri} must be registered with a function handler`);
-  }
-
-  const wrapped = function builtinResultWrapper(ctx) {
-    const out = handler(ctx);
-    __assertBuiltinHandlerResult(iri, out);
-    return out;
-  };
-
-  __customBuiltinHandlers.set(iri, wrapped);
-  return wrapped;
-}
-
-function unregisterBuiltin(iri) {
-  return __customBuiltinHandlers.delete(iri);
-}
-
-function listBuiltinIris() {
-  return Array.from(__customBuiltinHandlers.keys()).sort();
-}
-
-let __builtinApiSingleton = null;
-
-function __freezeBuiltinApi(api) {
-  Object.freeze(api.terms);
-  Object.freeze(api.ns);
-  return Object.freeze(api);
-}
-
-function __assertBuiltinHandlerResult(iri, out) {
-  if (out == null) return;
-  if (!Array.isArray(out)) {
-    throw new TypeError(`Custom builtin ${iri} must return an array of substitution deltas`);
-  }
-  for (const delta of out) {
-    if (!delta || typeof delta !== 'object' || Array.isArray(delta)) {
-      throw new TypeError(`Custom builtin ${iri} must return an array of substitution deltas`);
-    }
-  }
-}
-
-function __buildBuiltinRegistrationApi() {
-  if (__builtinApiSingleton) return __builtinApiSingleton;
-
-  const api = {
-    registerBuiltin,
-    unregisterBuiltin,
-    listBuiltinIris,
-    internIri,
-    internLiteral,
-    literalParts,
-    termToJsString,
-    termToJsStringDecoded,
-    termToN3,
-    iriValue,
-    unifyTerm,
-    applySubstTerm,
-    applySubstTriple,
-    proveGoals,
-    isGroundTerm,
-    computeConclusionFromFormula,
-    skolemIriFromGroundTerm,
-    parseBooleanLiteralInfo,
-    parseNumericLiteralInfo,
-    parseXsdDecimalToBigIntScale,
-    pow10n,
-    normalizeLiteralForFastKey,
-    literalsEquivalentAsXsdString,
-    materializeRdfLists,
-    terms: { Literal, Iri, Var, Blank, ListTerm, OpenListTerm, GraphTerm, Triple, Rule },
-    ns: { RDF_NS, XSD_NS, CRYPTO_NS, MATH_NS, TIME_NS, LIST_NS, LOG_NS, STRING_NS },
-  };
-
-  __builtinApiSingleton = __freezeBuiltinApi(api);
-  return __builtinApiSingleton;
-}
-
-function registerBuiltinModule(mod, origin = '<builtin-module>') {
-  if (!mod) throw new TypeError(`Builtin module ${origin} did not export anything`);
-
-  const api = __buildBuiltinRegistrationApi();
-
-  if (typeof mod === 'function') {
-    mod(api);
-    return true;
-  }
-
-  if (typeof mod.register === 'function') {
-    mod.register(api);
-    return true;
-  }
-
-  const candidates = [];
-  if (mod && typeof mod.builtins === 'object' && mod.builtins) candidates.push(mod.builtins);
-  if (mod && typeof mod.default === 'object' && mod.default) candidates.push(mod.default);
-  candidates.push(mod);
-
-  let registeredAny = false;
-  for (const obj of candidates) {
-    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) continue;
-    for (const [iri, handler] of Object.entries(obj)) {
-      if (typeof handler !== 'function') continue;
-      registerBuiltin(iri, handler);
-      registeredAny = true;
-    }
-    if (registeredAny) return true;
-  }
-
-  throw new TypeError(
-    `Builtin module ${origin} must export a function, a { register() } object, or an object mapping predicate IRIs to handlers`,
-  );
-}
-
-function loadBuiltinModule(specifier, options = {}) {
-  if (typeof require !== 'function') {
-    throw new Error('Custom builtin modules can only be loaded when require() is available');
-  }
-  if (typeof specifier !== 'string' || !specifier) {
-    throw new TypeError('Builtin module specifier must be a non-empty string');
-  }
-
-  const path = require('node:path');
-  const resolved = options && options.resolveFrom ? path.resolve(options.resolveFrom, specifier) : specifier;
-  const moduleId = String(resolved);
-  if (__loadedBuiltinModuleIds.has(moduleId)) return moduleId;
-
-  const loaded = require(resolved);
-  registerBuiltinModule(loaded, moduleId);
-  __loadedBuiltinModuleIds.add(moduleId);
-  return moduleId;
-}
-
-function __evalRegisteredBuiltin(pv, goal, subst, facts, backRules, depth, varGen, maxResults) {
-  const handler = __customBuiltinHandlers.get(pv);
-  if (typeof handler !== 'function') return null;
-
-  const ctx = {
-    iri: pv,
-    goal,
-    subst,
-    facts,
-    backRules,
-    depth,
-    varGen,
-    maxResults,
-    api: __buildBuiltinRegistrationApi(),
-  };
-
-  try {
-    const out = handler(ctx);
-    if (out == null) return [];
-    __assertBuiltinHandlerResult(pv, out);
-    return out;
-  } catch (err) {
-    if (err && typeof err === 'object' && typeof err.message === 'string') {
-      err.message = `Error in custom builtin ${pv}: ${err.message}`;
-    }
-    throw err;
-  }
-}
-
-//
-// Engine hooks (injected once by makeBuiltins)
-//
-let applySubstTerm;
-let applySubstTriple;
-let unifyTerm;
-let unifyTermListAppend;
-let termsEqual;
-let proveGoals;
-let isGroundTerm;
-let iriValue;
-let skolemIriFromGroundTerm;
-let computeConclusionFromFormula;
-let getSuperRestrictedMode;
-// Optional hooks from engine for fact indexing & strict numeric equality
-let termFastKey;
-let ensureFactIndexes;
-let termsEqualNoIntDecimal;
-
-function makeBuiltins(deps) {
-  applySubstTerm = deps.applySubstTerm;
-  applySubstTriple = deps.applySubstTriple;
-  unifyTerm = deps.unifyTerm;
-  unifyTermListAppend = deps.unifyTermListAppend;
-  termsEqual = deps.termsEqual;
-  proveGoals = deps.proveGoals;
-  isGroundTerm = deps.isGroundTerm;
-  iriValue = deps.iriValue;
-  skolemIriFromGroundTerm = deps.skolemIriFromGroundTerm;
-  computeConclusionFromFormula = deps.computeConclusionFromFormula;
-  getSuperRestrictedMode = deps.getSuperRestrictedMode;
-  termFastKey = deps.termFastKey;
-  ensureFactIndexes = deps.ensureFactIndexes;
-  termsEqualNoIntDecimal = deps.termsEqualNoIntDecimal;
-  return { evalBuiltin, isBuiltinPred };
-}
-
-function __builtinCollectVarsInTerm(t, out) {
-  if (t instanceof Var) {
-    out.add(t.name);
-    return;
-  }
-  if (t instanceof ListTerm) {
-    for (const e of t.elems) __builtinCollectVarsInTerm(e, out);
-    return;
-  }
-  if (t instanceof OpenListTerm) {
-    for (const e of t.prefix) __builtinCollectVarsInTerm(e, out);
-    out.add(t.tailVar);
-    return;
-  }
-  if (t instanceof GraphTerm) {
-    for (const tr of t.triples) __builtinCollectVarsInTriple(tr, out);
-  }
-}
-
-function __builtinCollectVarsInTriple(tr, out) {
-  __builtinCollectVarsInTerm(tr.s, out);
-  __builtinCollectVarsInTerm(tr.p, out);
-  __builtinCollectVarsInTerm(tr.o, out);
-}
-
-function __isRuleFormulaLikeTerm(t) {
-  return t instanceof GraphTerm || (t instanceof Literal && (t.value === 'true' || t.value === 'false'));
-}
-
-function __expandScopedVarPredicateGoals(goals) {
-  if (!Array.isArray(goals) || goals.length === 0) return [{ goals, bind: null }];
-
-  let variants = [{ goals: goals.slice(), bind: null }];
-  const impliesIri = internIri(LOG_NS + 'implies');
-
-  for (let i = 0; i < goals.length; i++) {
-    const tr = goals[i];
-    if (!(tr.p instanceof Var)) continue;
-    if (!__isRuleFormulaLikeTerm(tr.s) && !__isRuleFormulaLikeTerm(tr.o)) continue;
-
-    const next = variants.slice();
-    for (const v of variants) {
-      const altGoals = v.goals.slice();
-      altGoals[i] = new Triple(altGoals[i].s, impliesIri, altGoals[i].o);
-      const altBind = { ...(v.bind || {}), [tr.p.name]: impliesIri };
-      next.push({ goals: altGoals, bind: altBind });
-    }
-    variants = next;
-  }
-  return variants;
-}
-
-function __builtinCollectVarsInTriples(triples, out) {
-  for (const tr of triples) __builtinCollectVarsInTriple(tr, out);
-}
-
-function literalHasLangTag(lit) {
-  // True iff the literal is a quoted string literal with a language tag suffix,
-  // e.g. "hello"@en or """hello"""@en.
-  // (The parser rejects language tags combined with datatypes.)
-  if (typeof lit !== 'string') return false;
-  if (lit.indexOf('^^') >= 0) return false;
-  if (!lit.startsWith('"')) return false;
-
-  if (lit.startsWith('"""')) {
-    const end = lit.lastIndexOf('"""');
-    if (end < 0) return false;
-    const after = end + 3;
-    return after < lit.length && lit[after] === '@';
-  }
-
-  const lastQuote = lit.lastIndexOf('"');
-  if (lastQuote < 0) return false;
-  const after = lastQuote + 1;
-  return after < lit.length && lit[after] === '@';
-}
-
-function isPlainStringLiteralValue(lit) {
-  // Plain string literal: quoted, no datatype, no lang.
-  if (typeof lit !== 'string') return false;
-  if (lit.indexOf('^^') >= 0) return false;
-  if (!isQuotedLexical(lit)) return false;
-  return !literalHasLangTag(lit);
-}
-
-function literalsEquivalentAsXsdString(aLit, bLit) {
-  // Treat "abc" and "abc"^^xsd:string as equal, but do NOT conflate language-tagged strings.
-  if (typeof aLit !== 'string' || typeof bLit !== 'string') return false;
-
-  const [alex, adt] = literalParts(aLit);
-  const [blex, bdt] = literalParts(bLit);
-  if (alex !== blex) return false;
-
-  const aPlain = adt === null && isPlainStringLiteralValue(aLit);
-  const bPlain = bdt === null && isPlainStringLiteralValue(bLit);
-  const aXsdStr = adt === XSD_NS + 'string';
-  const bXsdStr = bdt === XSD_NS + 'string';
-
-  return (aPlain && bXsdStr) || (bPlain && aXsdStr);
-}
-
-function normalizeLiteralForFastKey(lit) {
-  // Canonicalize so that "abc" and "abc"^^xsd:string share the same index/dedup key.
-  if (typeof lit !== 'string') return lit;
-  const [lex, dt] = literalParts(lit);
-
-  if (dt === XSD_NS + 'string') {
-    return `${lex}^^<${XSD_NS}string>`;
-  }
-  if (dt === null && isPlainStringLiteralValue(lit)) {
-    return `${lex}^^<${XSD_NS}string>`;
-  }
-  return lit;
-}
-
-// ---------------------------------------------------------------------------
-// Fast-key helpers (used for cheap dedup/indexing)
-// ---------------------------------------------------------------------------
-// Note: the engine also has a richer termFastKey for indexing facts. Builtins
-// Use these local helpers for purely syntactic fast-paths (e.g., dedup in log:conjunction)
-// and keep them robust even if the engine changes.
-
-function __termFastKeyLocal(t) {
-  if (t instanceof Iri) return `I:${t.value}`;
-  if (t instanceof Literal) return `L:${normalizeLiteralForFastKey(t.value)}`;
-  return null;
-}
-
-function tripleFastKey(tr) {
-  const ks = __termFastKeyLocal(tr.s);
-  const kp = __termFastKeyLocal(tr.p);
-  const ko = __termFastKeyLocal(tr.o);
-  if (ks === null || kp === null || ko === null) return null;
-  return `${ks}|${kp}|${ko}`;
-}
-
-function stripQuotes(lex) {
-  if (typeof lex !== 'string') return lex;
-  // Handle both short ('...' / "...") and long ('''...''' / """...""") forms.
-  if (lex.length >= 6) {
-    if (lex.startsWith('"""') && lex.endsWith('"""')) return lex.slice(3, -3);
-    if (lex.startsWith("'''") && lex.endsWith("'''")) return lex.slice(3, -3);
-  }
-  if (lex.length >= 2) {
-    const a = lex[0];
-    const b = lex[lex.length - 1];
-    if ((a === '"' && b === '"') || (a === "'" && b === "'")) return lex.slice(1, -1);
-  }
-  return lex;
-}
-
-function termToJsXsdStringNoLang(t) {
-  // Strict xsd:string extraction *without* language tags.
-  // Accept:
-  //   - plain string literals ("...")
-  //   - "..."^^xsd:string
-  // Reject:
-  //   - language-tagged strings ("..."@en)
-  //   - any other datatype
-  if (!(t instanceof Literal)) return null;
-  if (literalHasLangTag(t.value)) return null;
-
-  const [lex, dt] = literalParts(t.value);
-  if (!isQuotedLexical(lex)) return null;
-  if (dt !== null && dt !== XSD_NS + 'string' && dt !== 'xsd:string') return null;
-  return decodeN3StringEscapes(stripQuotes(lex));
-}
-
-function termToJsString(t) {
-  // Domain is xsd:string for SWAP/N3 string builtins (string:*).
-  //
-  // Per the N3 Builtins spec, when the domain is xsd:string we must be able to
-  // cast *any* IRI or literal value (incl. numeric, boolean, dateTime, anyURI,
-  // rdf:langString, and plain literals) to a string.
-  //
-  // We implement this as:
-  //   - IRI    -> its IRI string
-  //   - Literal:
-  //       * quoted lexical form: decode N3/Turtle escapes and strip quotes
-  //       * unquoted lexical form: use as-is (e.g., 1234, true, 1971-..., 1.23E4)
-  //   - Everything else (blank nodes, lists, formulas, vars) -> fail
-  if (t instanceof Iri) return t.value;
-  if (!(t instanceof Literal)) return null;
-
-  const [lex] = literalParts(t.value);
-
-  if (isQuotedLexical(lex)) {
-    // Interpret N3/Turtle string escapes (\" \n \uXXXX \UXXXXXXXX …)
-    // to obtain the actual string value.
-    return decodeN3StringEscapes(stripQuotes(lex));
-  }
-
-  // Unquoted lexical (numbers/booleans/dateTimes, etc.)
-  return typeof lex === 'string' ? lex : String(lex);
-}
-
-function makeStringLiteral(str) {
-  // JSON.stringify gives us a valid N3/Turtle-style quoted string
-  // (with proper escaping for quotes, backslashes, newlines, …).
-  return internLiteral(JSON.stringify(str));
-}
-
-function termToJsStringDecoded(t) {
-  // Like termToJsString, but for short literals it *also* interprets escapes
-  // (\" \n \uXXXX …) by attempting JSON.parse on the quoted lexical form.
-  if (!(t instanceof Literal)) return null;
-  const [lex] = literalParts(t.value);
-
-  // Long strings: """ ... """ are taken verbatim.
-  if (lex.length >= 6 && lex.startsWith('"""') && lex.endsWith('"""')) {
-    return lex.slice(3, -3);
-  }
-
-  // Short strings: try to decode escapes (this makes "{\"a\":1}" usable too).
-  if (lex.length >= 2 && lex[0] === '"' && lex[lex.length - 1] === '"') {
+  __modules['lib/builtins.js'] = function (require, module, exports) {
+    /**
+     * Eyeling Reasoner — builtins
+     *
+     * Builtin evaluation plus shared literal/number/string helpers.
+     * This module is initialized by lib/engine.js via makeBuiltins(deps).
+     */
+    'use strict';
+
+    const {
+      RDF_NS,
+      XSD_NS,
+      CRYPTO_NS,
+      MATH_NS,
+      TIME_NS,
+      LIST_NS,
+      LOG_NS,
+      STRING_NS,
+      Literal,
+      Iri,
+      Var,
+      Blank,
+      ListTerm,
+      OpenListTerm,
+      GraphTerm,
+      Triple,
+      Rule,
+      internIri,
+      internLiteral,
+      PrefixEnv,
+      literalParts,
+    } = require('./prelude');
+
+    const { decodeN3StringEscapes } = require('./lexer');
+    const { termToN3 } = require('./printing');
+    const trace = require('./trace');
+    const time = require('./time');
+    const deref = require('./deref');
+
+    let nodeCrypto = null;
     try {
-      return JSON.parse(lex);
-    } catch {
-      /* fall through */
+      if (typeof require === 'function') nodeCrypto = require('crypto');
+    } catch (_) {}
+
+    //
+    // Hot caches (moved from engine.js)
+    //
+    const __parseNumCache = new Map(); // lit string -> number|null
+    const __parseIntCache = new Map(); // lit string -> bigint|null
+    const __parseNumericInfoCache = new Map(); // lit string -> info|null
+
+    // Avoid caching extremely large numeric literals.
+    // Caching them retains giant strings/BigInts in global Maps and can cause OOM.
+    const MAX_NUMERIC_CACHE_KEY_LEN = 1024;
+
+    // Safety cap for BigInt exponentiation results.
+    // Prevents accidental creation of enormous integers that would OOM the process.
+    // (Ackermann(4,2) is ~65k bits, so well below this.)
+    const MAX_BIGINT_POW_RESULT_BITS = 2_000_000n;
+
+    function __useNumericCacheKey(key) {
+      return typeof key === 'string' && key.length <= MAX_NUMERIC_CACHE_KEY_LEN;
     }
-    return stripQuotes(lex);
-  }
 
-  return stripQuotes(lex);
-}
+    // ---------------------------------------------------------------------------
+    // Custom builtin registry
+    // ---------------------------------------------------------------------------
+    const __customBuiltinHandlers = new Map(); // predicate IRI -> evaluator(ctx) => deltas[]
+    const __loadedBuiltinModuleIds = new Set();
 
-// Tiny subset of sprintf: supports only %s and %%.
-// Good enough for most N3 string:format use cases that just splice strings.
-function simpleStringFormat(fmt, args) {
-  let out = '';
-  let argIndex = 0;
+    function __validateBuiltinIri(iri) {
+      if (typeof iri !== 'string' || !iri) {
+        throw new TypeError('Custom builtin IRI must be a non-empty string');
+      }
+    }
 
-  for (let i = 0; i < fmt.length; i++) {
-    const ch = fmt[i];
-    if (ch === '%' && i + 1 < fmt.length) {
-      const spec = fmt[i + 1];
-
-      if (spec === 's') {
-        const arg = argIndex < args.length ? args[argIndex++] : '';
-        out += arg;
-        i++;
-        continue;
+    function registerBuiltin(iri, handler) {
+      __validateBuiltinIri(iri);
+      if (typeof handler !== 'function') {
+        throw new TypeError(`Custom builtin ${iri} must be registered with a function handler`);
       }
 
-      if (spec === '%') {
-        out += '%';
-        i++;
-        continue;
+      const wrapped = function builtinResultWrapper(ctx) {
+        const out = handler(ctx);
+        __assertBuiltinHandlerResult(iri, out);
+        return out;
+      };
+
+      __customBuiltinHandlers.set(iri, wrapped);
+      return wrapped;
+    }
+
+    function unregisterBuiltin(iri) {
+      return __customBuiltinHandlers.delete(iri);
+    }
+
+    function listBuiltinIris() {
+      return Array.from(__customBuiltinHandlers.keys()).sort();
+    }
+
+    let __builtinApiSingleton = null;
+
+    function __freezeBuiltinApi(api) {
+      Object.freeze(api.terms);
+      Object.freeze(api.ns);
+      return Object.freeze(api);
+    }
+
+    function __assertBuiltinHandlerResult(iri, out) {
+      if (out == null) return;
+      if (!Array.isArray(out)) {
+        throw new TypeError(`Custom builtin ${iri} must return an array of substitution deltas`);
+      }
+      for (const delta of out) {
+        if (!delta || typeof delta !== 'object' || Array.isArray(delta)) {
+          throw new TypeError(`Custom builtin ${iri} must return an array of substitution deltas`);
+        }
+      }
+    }
+
+    function __buildBuiltinRegistrationApi() {
+      if (__builtinApiSingleton) return __builtinApiSingleton;
+
+      const api = {
+        registerBuiltin,
+        unregisterBuiltin,
+        listBuiltinIris,
+        internIri,
+        internLiteral,
+        literalParts,
+        termToJsString,
+        termToJsStringDecoded,
+        termToN3,
+        iriValue,
+        unifyTerm,
+        applySubstTerm,
+        applySubstTriple,
+        proveGoals,
+        isGroundTerm,
+        computeConclusionFromFormula,
+        skolemIriFromGroundTerm,
+        parseBooleanLiteralInfo,
+        parseNumericLiteralInfo,
+        parseXsdDecimalToBigIntScale,
+        pow10n,
+        normalizeLiteralForFastKey,
+        literalsEquivalentAsXsdString,
+        materializeRdfLists,
+        terms: { Literal, Iri, Var, Blank, ListTerm, OpenListTerm, GraphTerm, Triple, Rule },
+        ns: { RDF_NS, XSD_NS, CRYPTO_NS, MATH_NS, TIME_NS, LIST_NS, LOG_NS, STRING_NS },
+      };
+
+      __builtinApiSingleton = __freezeBuiltinApi(api);
+      return __builtinApiSingleton;
+    }
+
+    function registerBuiltinModule(mod, origin = '<builtin-module>') {
+      if (!mod) throw new TypeError(`Builtin module ${origin} did not export anything`);
+
+      const api = __buildBuiltinRegistrationApi();
+
+      if (typeof mod === 'function') {
+        mod(api);
+        return true;
       }
 
-      // Unsupported specifier (like %d, %f, …) ⇒ fail the builtin.
+      if (typeof mod.register === 'function') {
+        mod.register(api);
+        return true;
+      }
+
+      const candidates = [];
+      if (mod && typeof mod.builtins === 'object' && mod.builtins) candidates.push(mod.builtins);
+      if (mod && typeof mod.default === 'object' && mod.default) candidates.push(mod.default);
+      candidates.push(mod);
+
+      let registeredAny = false;
+      for (const obj of candidates) {
+        if (!obj || typeof obj !== 'object' || Array.isArray(obj)) continue;
+        for (const [iri, handler] of Object.entries(obj)) {
+          if (typeof handler !== 'function') continue;
+          registerBuiltin(iri, handler);
+          registeredAny = true;
+        }
+        if (registeredAny) return true;
+      }
+
+      throw new TypeError(
+        `Builtin module ${origin} must export a function, a { register() } object, or an object mapping predicate IRIs to handlers`,
+      );
+    }
+
+    function loadBuiltinModule(specifier, options = {}) {
+      if (typeof require !== 'function') {
+        throw new Error('Custom builtin modules can only be loaded when require() is available');
+      }
+      if (typeof specifier !== 'string' || !specifier) {
+        throw new TypeError('Builtin module specifier must be a non-empty string');
+      }
+
+      const path = require('node:path');
+      const resolved = options && options.resolveFrom ? path.resolve(options.resolveFrom, specifier) : specifier;
+      const moduleId = String(resolved);
+      if (__loadedBuiltinModuleIds.has(moduleId)) return moduleId;
+
+      const loaded = require(resolved);
+      registerBuiltinModule(loaded, moduleId);
+      __loadedBuiltinModuleIds.add(moduleId);
+      return moduleId;
+    }
+
+    function __evalRegisteredBuiltin(pv, goal, subst, facts, backRules, depth, varGen, maxResults) {
+      const handler = __customBuiltinHandlers.get(pv);
+      if (typeof handler !== 'function') return null;
+
+      const ctx = {
+        iri: pv,
+        goal,
+        subst,
+        facts,
+        backRules,
+        depth,
+        varGen,
+        maxResults,
+        api: __buildBuiltinRegistrationApi(),
+      };
+
+      try {
+        const out = handler(ctx);
+        if (out == null) return [];
+        __assertBuiltinHandlerResult(pv, out);
+        return out;
+      } catch (err) {
+        if (err && typeof err === 'object' && typeof err.message === 'string') {
+          err.message = `Error in custom builtin ${pv}: ${err.message}`;
+        }
+        throw err;
+      }
+    }
+
+    //
+    // Engine hooks (injected once by makeBuiltins)
+    //
+    let applySubstTerm;
+    let applySubstTriple;
+    let unifyTerm;
+    let unifyTermListAppend;
+    let termsEqual;
+    let proveGoals;
+    let isGroundTerm;
+    let iriValue;
+    let skolemIriFromGroundTerm;
+    let computeConclusionFromFormula;
+    let getSuperRestrictedMode;
+    // Optional hooks from engine for fact indexing & strict numeric equality
+    let termFastKey;
+    let ensureFactIndexes;
+    let termsEqualNoIntDecimal;
+
+    function makeBuiltins(deps) {
+      applySubstTerm = deps.applySubstTerm;
+      applySubstTriple = deps.applySubstTriple;
+      unifyTerm = deps.unifyTerm;
+      unifyTermListAppend = deps.unifyTermListAppend;
+      termsEqual = deps.termsEqual;
+      proveGoals = deps.proveGoals;
+      isGroundTerm = deps.isGroundTerm;
+      iriValue = deps.iriValue;
+      skolemIriFromGroundTerm = deps.skolemIriFromGroundTerm;
+      computeConclusionFromFormula = deps.computeConclusionFromFormula;
+      getSuperRestrictedMode = deps.getSuperRestrictedMode;
+      termFastKey = deps.termFastKey;
+      ensureFactIndexes = deps.ensureFactIndexes;
+      termsEqualNoIntDecimal = deps.termsEqualNoIntDecimal;
+      return { evalBuiltin, isBuiltinPred };
+    }
+
+    function __builtinCollectVarsInTerm(t, out) {
+      if (t instanceof Var) {
+        out.add(t.name);
+        return;
+      }
+      if (t instanceof ListTerm) {
+        for (const e of t.elems) __builtinCollectVarsInTerm(e, out);
+        return;
+      }
+      if (t instanceof OpenListTerm) {
+        for (const e of t.prefix) __builtinCollectVarsInTerm(e, out);
+        out.add(t.tailVar);
+        return;
+      }
+      if (t instanceof GraphTerm) {
+        for (const tr of t.triples) __builtinCollectVarsInTriple(tr, out);
+      }
+    }
+
+    function __builtinCollectVarsInTriple(tr, out) {
+      __builtinCollectVarsInTerm(tr.s, out);
+      __builtinCollectVarsInTerm(tr.p, out);
+      __builtinCollectVarsInTerm(tr.o, out);
+    }
+
+    function __isRuleFormulaLikeTerm(t) {
+      return t instanceof GraphTerm || (t instanceof Literal && (t.value === 'true' || t.value === 'false'));
+    }
+
+    function __expandScopedVarPredicateGoals(goals) {
+      if (!Array.isArray(goals) || goals.length === 0) return [{ goals, bind: null }];
+
+      let variants = [{ goals: goals.slice(), bind: null }];
+      const impliesIri = internIri(LOG_NS + 'implies');
+
+      for (let i = 0; i < goals.length; i++) {
+        const tr = goals[i];
+        if (!(tr.p instanceof Var)) continue;
+        if (!__isRuleFormulaLikeTerm(tr.s) && !__isRuleFormulaLikeTerm(tr.o)) continue;
+
+        const next = variants.slice();
+        for (const v of variants) {
+          const altGoals = v.goals.slice();
+          altGoals[i] = new Triple(altGoals[i].s, impliesIri, altGoals[i].o);
+          const altBind = { ...(v.bind || {}), [tr.p.name]: impliesIri };
+          next.push({ goals: altGoals, bind: altBind });
+        }
+        variants = next;
+      }
+      return variants;
+    }
+
+    function __builtinCollectVarsInTriples(triples, out) {
+      for (const tr of triples) __builtinCollectVarsInTriple(tr, out);
+    }
+
+    function literalHasLangTag(lit) {
+      // True iff the literal is a quoted string literal with a language tag suffix,
+      // e.g. "hello"@en or """hello"""@en.
+      // (The parser rejects language tags combined with datatypes.)
+      if (typeof lit !== 'string') return false;
+      if (lit.indexOf('^^') >= 0) return false;
+      if (!lit.startsWith('"')) return false;
+
+      if (lit.startsWith('"""')) {
+        const end = lit.lastIndexOf('"""');
+        if (end < 0) return false;
+        const after = end + 3;
+        return after < lit.length && lit[after] === '@';
+      }
+
+      const lastQuote = lit.lastIndexOf('"');
+      if (lastQuote < 0) return false;
+      const after = lastQuote + 1;
+      return after < lit.length && lit[after] === '@';
+    }
+
+    function isPlainStringLiteralValue(lit) {
+      // Plain string literal: quoted, no datatype, no lang.
+      if (typeof lit !== 'string') return false;
+      if (lit.indexOf('^^') >= 0) return false;
+      if (!isQuotedLexical(lit)) return false;
+      return !literalHasLangTag(lit);
+    }
+
+    function literalsEquivalentAsXsdString(aLit, bLit) {
+      // Treat "abc" and "abc"^^xsd:string as equal, but do NOT conflate language-tagged strings.
+      if (typeof aLit !== 'string' || typeof bLit !== 'string') return false;
+
+      const [alex, adt] = literalParts(aLit);
+      const [blex, bdt] = literalParts(bLit);
+      if (alex !== blex) return false;
+
+      const aPlain = adt === null && isPlainStringLiteralValue(aLit);
+      const bPlain = bdt === null && isPlainStringLiteralValue(bLit);
+      const aXsdStr = adt === XSD_NS + 'string';
+      const bXsdStr = bdt === XSD_NS + 'string';
+
+      return (aPlain && bXsdStr) || (bPlain && aXsdStr);
+    }
+
+    function normalizeLiteralForFastKey(lit) {
+      // Canonicalize so that "abc" and "abc"^^xsd:string share the same index/dedup key.
+      if (typeof lit !== 'string') return lit;
+      const [lex, dt] = literalParts(lit);
+
+      if (dt === XSD_NS + 'string') {
+        return `${lex}^^<${XSD_NS}string>`;
+      }
+      if (dt === null && isPlainStringLiteralValue(lit)) {
+        return `${lex}^^<${XSD_NS}string>`;
+      }
+      return lit;
+    }
+
+    // ---------------------------------------------------------------------------
+    // Fast-key helpers (used for cheap dedup/indexing)
+    // ---------------------------------------------------------------------------
+    // Note: the engine also has a richer termFastKey for indexing facts. Builtins
+    // Use these local helpers for purely syntactic fast-paths (e.g., dedup in log:conjunction)
+    // and keep them robust even if the engine changes.
+
+    function __termFastKeyLocal(t) {
+      if (t instanceof Iri) return `I:${t.value}`;
+      if (t instanceof Literal) return `L:${normalizeLiteralForFastKey(t.value)}`;
       return null;
     }
-    out += ch;
-  }
 
-  return out;
-}
+    function tripleFastKey(tr) {
+      const ks = __termFastKeyLocal(tr.s);
+      const kp = __termFastKeyLocal(tr.p);
+      const ko = __termFastKeyLocal(tr.o);
+      if (ks === null || kp === null || ko === null) return null;
+      return `${ks}|${kp}|${ko}`;
+    }
 
-function termToFormatArgString(t) {
-  const s = termToJsString(t);
-  if (s !== null) return s;
-  if (t instanceof Var) return null;
-  return termToN3(t, PrefixEnv.newDefault());
-}
+    function stripQuotes(lex) {
+      if (typeof lex !== 'string') return lex;
+      // Handle both short ('...' / "...") and long ('''...''' / """...""") forms.
+      if (lex.length >= 6) {
+        if (lex.startsWith('"""') && lex.endsWith('"""')) return lex.slice(3, -3);
+        if (lex.startsWith("'''") && lex.endsWith("'''")) return lex.slice(3, -3);
+      }
+      if (lex.length >= 2) {
+        const a = lex[0];
+        const b = lex[lex.length - 1];
+        if ((a === '"' && b === '"') || (a === "'" && b === "'")) return lex.slice(1, -1);
+      }
+      return lex;
+    }
 
-// -----------------------------------------------------------------------------
-// SWAP/N3 regex compatibility helper
-// -----------------------------------------------------------------------------
-function regexNeedsUnicodeMode(pattern) {
-  // JS requires /u for Unicode property escapes and code point escapes.
-  return /\\[pP]\{/.test(pattern) || /\\u\{/.test(pattern);
-}
+    function termToJsXsdStringNoLang(t) {
+      // Strict xsd:string extraction *without* language tags.
+      // Accept:
+      //   - plain string literals ("...")
+      //   - "..."^^xsd:string
+      // Reject:
+      //   - language-tagged strings ("..."@en)
+      //   - any other datatype
+      if (!(t instanceof Literal)) return null;
+      if (literalHasLangTag(t.value)) return null;
 
-function sanitizeForUnicodeMode(pattern) {
-  // In JS Unicode mode, “identity escapes” like \! are a SyntaxError.
-  // In Perl-ish regexes they commonly mean “literal !”. So drop the redundant "\".
-  // Keep escapes that are regex-syntax or are commonly needed in char classes.
-  const KEEP = '^$\\.*+?()[]{}|/-';
-  return pattern.replace(/\\([^A-Za-z0-9])/g, (m, ch) => {
-    return KEEP.includes(ch) ? m : ch;
-  });
-}
+      const [lex, dt] = literalParts(t.value);
+      if (!isQuotedLexical(lex)) return null;
+      if (dt !== null && dt !== XSD_NS + 'string' && dt !== 'xsd:string') return null;
+      return decodeN3StringEscapes(stripQuotes(lex));
+    }
 
-function compileSwapRegex(pattern, extraFlags) {
-  const needU = regexNeedsUnicodeMode(pattern);
-  const flags = (extraFlags || '') + (needU ? 'u' : '');
-  try {
-    return new RegExp(pattern, flags);
-  } catch {
-    if (needU) {
-      const p2 = sanitizeForUnicodeMode(pattern);
-      if (p2 !== pattern) {
+    function termToJsString(t) {
+      // Domain is xsd:string for SWAP/N3 string builtins (string:*).
+      //
+      // Per the N3 Builtins spec, when the domain is xsd:string we must be able to
+      // cast *any* IRI or literal value (incl. numeric, boolean, dateTime, anyURI,
+      // rdf:langString, and plain literals) to a string.
+      //
+      // We implement this as:
+      //   - IRI    -> its IRI string
+      //   - Literal:
+      //       * quoted lexical form: decode N3/Turtle escapes and strip quotes
+      //       * unquoted lexical form: use as-is (e.g., 1234, true, 1971-..., 1.23E4)
+      //   - Everything else (blank nodes, lists, formulas, vars) -> fail
+      if (t instanceof Iri) return t.value;
+      if (!(t instanceof Literal)) return null;
+
+      const [lex] = literalParts(t.value);
+
+      if (isQuotedLexical(lex)) {
+        // Interpret N3/Turtle string escapes (\" \n \uXXXX \UXXXXXXXX …)
+        // to obtain the actual string value.
+        return decodeN3StringEscapes(stripQuotes(lex));
+      }
+
+      // Unquoted lexical (numbers/booleans/dateTimes, etc.)
+      return typeof lex === 'string' ? lex : String(lex);
+    }
+
+    function makeStringLiteral(str) {
+      // JSON.stringify gives us a valid N3/Turtle-style quoted string
+      // (with proper escaping for quotes, backslashes, newlines, …).
+      return internLiteral(JSON.stringify(str));
+    }
+
+    function termToJsStringDecoded(t) {
+      // Like termToJsString, but for short literals it *also* interprets escapes
+      // (\" \n \uXXXX …) by attempting JSON.parse on the quoted lexical form.
+      if (!(t instanceof Literal)) return null;
+      const [lex] = literalParts(t.value);
+
+      // Long strings: """ ... """ are taken verbatim.
+      if (lex.length >= 6 && lex.startsWith('"""') && lex.endsWith('"""')) {
+        return lex.slice(3, -3);
+      }
+
+      // Short strings: try to decode escapes (this makes "{\"a\":1}" usable too).
+      if (lex.length >= 2 && lex[0] === '"' && lex[lex.length - 1] === '"') {
         try {
-          return new RegExp(p2, flags);
-        } catch {}
+          return JSON.parse(lex);
+        } catch {
+          /* fall through */
+        }
+        return stripQuotes(lex);
+      }
+
+      return stripQuotes(lex);
+    }
+
+    // Tiny subset of sprintf: supports only %s and %%.
+    // Good enough for most N3 string:format use cases that just splice strings.
+    function simpleStringFormat(fmt, args) {
+      let out = '';
+      let argIndex = 0;
+
+      for (let i = 0; i < fmt.length; i++) {
+        const ch = fmt[i];
+        if (ch === '%' && i + 1 < fmt.length) {
+          const spec = fmt[i + 1];
+
+          if (spec === 's') {
+            const arg = argIndex < args.length ? args[argIndex++] : '';
+            out += arg;
+            i++;
+            continue;
+          }
+
+          if (spec === '%') {
+            out += '%';
+            i++;
+            continue;
+          }
+
+          // Unsupported specifier (like %d, %f, …) ⇒ fail the builtin.
+          return null;
+        }
+        out += ch;
+      }
+
+      return out;
+    }
+
+    function termToFormatArgString(t) {
+      const s = termToJsString(t);
+      if (s !== null) return s;
+      if (t instanceof Var) return null;
+      return termToN3(t, PrefixEnv.newDefault());
+    }
+
+    // -----------------------------------------------------------------------------
+    // SWAP/N3 regex compatibility helper
+    // -----------------------------------------------------------------------------
+    function regexNeedsUnicodeMode(pattern) {
+      // JS requires /u for Unicode property escapes and code point escapes.
+      return /\\[pP]\{/.test(pattern) || /\\u\{/.test(pattern);
+    }
+
+    function sanitizeForUnicodeMode(pattern) {
+      // In JS Unicode mode, “identity escapes” like \! are a SyntaxError.
+      // In Perl-ish regexes they commonly mean “literal !”. So drop the redundant "\".
+      // Keep escapes that are regex-syntax or are commonly needed in char classes.
+      const KEEP = '^$\\.*+?()[]{}|/-';
+      return pattern.replace(/\\([^A-Za-z0-9])/g, (m, ch) => {
+        return KEEP.includes(ch) ? m : ch;
+      });
+    }
+
+    function compileSwapRegex(pattern, extraFlags) {
+      const needU = regexNeedsUnicodeMode(pattern);
+      const flags = (extraFlags || '') + (needU ? 'u' : '');
+      try {
+        return new RegExp(pattern, flags);
+      } catch {
+        if (needU) {
+          const p2 = sanitizeForUnicodeMode(pattern);
+          if (p2 !== pattern) {
+            try {
+              return new RegExp(p2, flags);
+            } catch {}
+          }
+        }
+        return null;
       }
     }
-    return null;
-  }
-}
 
-// -----------------------------------------------------------------------------
-// Strict numeric literal parsing for math: builtins
-// -----------------------------------------------------------------------------
-const XSD_DECIMAL_DT = XSD_NS + 'decimal';
-const XSD_DOUBLE_DT = XSD_NS + 'double';
-const XSD_FLOAT_DT = XSD_NS + 'float';
-const XSD_INTEGER_DT = XSD_NS + 'integer';
+    // -----------------------------------------------------------------------------
+    // Strict numeric literal parsing for math: builtins
+    // -----------------------------------------------------------------------------
+    const XSD_DECIMAL_DT = XSD_NS + 'decimal';
+    const XSD_DOUBLE_DT = XSD_NS + 'double';
+    const XSD_FLOAT_DT = XSD_NS + 'float';
+    const XSD_INTEGER_DT = XSD_NS + 'integer';
 
-// Integer-derived datatypes from XML Schema Part 2 (and commonly used ones).
-const XSD_INTEGER_DERIVED_DTS = new Set([
-  XSD_INTEGER_DT,
-  XSD_NS + 'nonPositiveInteger',
-  XSD_NS + 'negativeInteger',
-  XSD_NS + 'long',
-  XSD_NS + 'int',
-  XSD_NS + 'short',
-  XSD_NS + 'byte',
-  XSD_NS + 'nonNegativeInteger',
-  XSD_NS + 'unsignedLong',
-  XSD_NS + 'unsignedInt',
-  XSD_NS + 'unsignedShort',
-  XSD_NS + 'unsignedByte',
-  XSD_NS + 'positiveInteger',
-]);
+    // Integer-derived datatypes from XML Schema Part 2 (and commonly used ones).
+    const XSD_INTEGER_DERIVED_DTS = new Set([
+      XSD_INTEGER_DT,
+      XSD_NS + 'nonPositiveInteger',
+      XSD_NS + 'negativeInteger',
+      XSD_NS + 'long',
+      XSD_NS + 'int',
+      XSD_NS + 'short',
+      XSD_NS + 'byte',
+      XSD_NS + 'nonNegativeInteger',
+      XSD_NS + 'unsignedLong',
+      XSD_NS + 'unsignedInt',
+      XSD_NS + 'unsignedShort',
+      XSD_NS + 'unsignedByte',
+      XSD_NS + 'positiveInteger',
+    ]);
 
-function parseBooleanLiteralInfo(t) {
-  if (!(t instanceof Literal)) return null;
+    function parseBooleanLiteralInfo(t) {
+      if (!(t instanceof Literal)) return null;
 
-  const boolDt = XSD_NS + 'boolean';
-  const v = t.value;
-  const [lex, dt] = literalParts(v);
+      const boolDt = XSD_NS + 'boolean';
+      const v = t.value;
+      const [lex, dt] = literalParts(v);
 
-  // Typed xsd:boolean: accept "true"/"false"/"1"/"0"
-  if (dt !== null) {
-    if (dt !== boolDt) return null;
-    const s = stripQuotes(lex);
-    if (s === 'true' || s === '1') return { dt: boolDt, value: true };
-    if (s === 'false' || s === '0') return { dt: boolDt, value: false };
-    return null;
-  }
+      // Typed xsd:boolean: accept "true"/"false"/"1"/"0"
+      if (dt !== null) {
+        if (dt !== boolDt) return null;
+        const s = stripQuotes(lex);
+        if (s === 'true' || s === '1') return { dt: boolDt, value: true };
+        if (s === 'false' || s === '0') return { dt: boolDt, value: false };
+        return null;
+      }
 
-  // Untyped boolean token: true/false
-  if (v === 'true') return { dt: boolDt, value: true };
-  if (v === 'false') return { dt: boolDt, value: false };
-  return null;
-}
-
-function parseXsdFloatSpecialLex(s) {
-  if (s === 'INF' || s === '+INF') return Infinity;
-  if (s === '-INF') return -Infinity;
-  if (s === 'NaN') return NaN;
-  return null;
-}
-
-// ===========================================================================
-// Math builtin helpers
-// ===========================================================================
-
-function formatXsdFloatSpecialLex(n) {
-  if (n === Infinity) return 'INF';
-  if (n === -Infinity) return '-INF';
-  if (Number.isNaN(n)) return 'NaN';
-  return null;
-}
-
-function isQuotedLexical(lex) {
-  // Accept both Turtle/N3 quoting styles:
-  //   short:  "..."  or  '...'
-  //   long:   """..."""  or  '''...'''
-  if (typeof lex !== 'string') return false;
-  const n = lex.length;
-  if (n >= 6 && ((lex.startsWith('"""') && lex.endsWith('"""')) || (lex.startsWith("'''") && lex.endsWith("'''"))))
-    return true;
-  if (n >= 2) {
-    const a = lex[0];
-    const b = lex[n - 1];
-    return (a === '"' && b === '"') || (a === "'" && b === "'");
-  }
-  return false;
-}
-
-function isXsdNumericDatatype(dt) {
-  if (dt === null) return false;
-  return dt === XSD_DECIMAL_DT || dt === XSD_DOUBLE_DT || dt === XSD_FLOAT_DT || XSD_INTEGER_DERIVED_DTS.has(dt);
-}
-
-function isXsdIntegerDatatype(dt) {
-  if (dt === null) return false;
-  return XSD_INTEGER_DERIVED_DTS.has(dt);
-}
-
-function looksLikeUntypedNumericTokenLex(lex) {
-  // We only treat *unquoted* tokens as "untyped numeric" (Turtle/N3 numeric literal).
-  // Quoted literals without datatype are strings, never numbers.
-  if (isQuotedLexical(lex)) return false;
-
-  // integer
-  if (/^[+-]?\d+$/.test(lex)) return true;
-
-  // decimal (no exponent)
-  if (/^[+-]?(?:\d+\.\d*|\.\d+)$/.test(lex)) return true;
-
-  // double (with exponent)
-  if (/^[+-]?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][+-]?\d+)$/.test(lex)) return true;
-
-  return false;
-}
-
-function parseNum(t) {
-  // Parse as JS Number, but ONLY for xsd numeric datatypes or untyped numeric tokens.
-  // For xsd:float/xsd:double, accept INF/-INF/NaN (and +INF).
-  if (!(t instanceof Literal)) return null;
-
-  const key = t.value;
-  const useCache = __useNumericCacheKey(key);
-  if (useCache && __parseNumCache.has(key)) return __parseNumCache.get(key);
-
-  const [lex, dt] = literalParts(key);
-
-  // Typed literals: must be xsd numeric.
-  if (dt !== null) {
-    if (!isXsdNumericDatatype(dt)) {
-      if (useCache) __parseNumCache.set(key, null);
+      // Untyped boolean token: true/false
+      if (v === 'true') return { dt: boolDt, value: true };
+      if (v === 'false') return { dt: boolDt, value: false };
       return null;
     }
-    const val = stripQuotes(lex);
 
-    // float/double: allow INF/-INF/NaN and allow +/-Infinity results
-    if (dt === XSD_FLOAT_DT || dt === XSD_DOUBLE_DT) {
-      const sp = parseXsdFloatSpecialLex(val);
-      if (sp !== null) {
-        if (useCache) __parseNumCache.set(key, sp);
-        return sp;
+    function parseXsdFloatSpecialLex(s) {
+      if (s === 'INF' || s === '+INF') return Infinity;
+      if (s === '-INF') return -Infinity;
+      if (s === 'NaN') return NaN;
+      return null;
+    }
+
+    // ===========================================================================
+    // Math builtin helpers
+    // ===========================================================================
+
+    function formatXsdFloatSpecialLex(n) {
+      if (n === Infinity) return 'INF';
+      if (n === -Infinity) return '-INF';
+      if (Number.isNaN(n)) return 'NaN';
+      return null;
+    }
+
+    function isQuotedLexical(lex) {
+      // Accept both Turtle/N3 quoting styles:
+      //   short:  "..."  or  '...'
+      //   long:   """..."""  or  '''...'''
+      if (typeof lex !== 'string') return false;
+      const n = lex.length;
+      if (n >= 6 && ((lex.startsWith('"""') && lex.endsWith('"""')) || (lex.startsWith("'''") && lex.endsWith("'''"))))
+        return true;
+      if (n >= 2) {
+        const a = lex[0];
+        const b = lex[n - 1];
+        return (a === '"' && b === '"') || (a === "'" && b === "'");
       }
-      const n = Number(val);
-      if (Number.isNaN(n)) {
+      return false;
+    }
+
+    function isXsdNumericDatatype(dt) {
+      if (dt === null) return false;
+      return dt === XSD_DECIMAL_DT || dt === XSD_DOUBLE_DT || dt === XSD_FLOAT_DT || XSD_INTEGER_DERIVED_DTS.has(dt);
+    }
+
+    function isXsdIntegerDatatype(dt) {
+      if (dt === null) return false;
+      return XSD_INTEGER_DERIVED_DTS.has(dt);
+    }
+
+    function looksLikeUntypedNumericTokenLex(lex) {
+      // We only treat *unquoted* tokens as "untyped numeric" (Turtle/N3 numeric literal).
+      // Quoted literals without datatype are strings, never numbers.
+      if (isQuotedLexical(lex)) return false;
+
+      // integer
+      if (/^[+-]?\d+$/.test(lex)) return true;
+
+      // decimal (no exponent)
+      if (/^[+-]?(?:\d+\.\d*|\.\d+)$/.test(lex)) return true;
+
+      // double (with exponent)
+      if (/^[+-]?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][+-]?\d+)$/.test(lex)) return true;
+
+      return false;
+    }
+
+    function parseNum(t) {
+      // Parse as JS Number, but ONLY for xsd numeric datatypes or untyped numeric tokens.
+      // For xsd:float/xsd:double, accept INF/-INF/NaN (and +INF).
+      if (!(t instanceof Literal)) return null;
+
+      const key = t.value;
+      const useCache = __useNumericCacheKey(key);
+      if (useCache && __parseNumCache.has(key)) return __parseNumCache.get(key);
+
+      const [lex, dt] = literalParts(key);
+
+      // Typed literals: must be xsd numeric.
+      if (dt !== null) {
+        if (!isXsdNumericDatatype(dt)) {
+          if (useCache) __parseNumCache.set(key, null);
+          return null;
+        }
+        const val = stripQuotes(lex);
+
+        // float/double: allow INF/-INF/NaN and allow +/-Infinity results
+        if (dt === XSD_FLOAT_DT || dt === XSD_DOUBLE_DT) {
+          const sp = parseXsdFloatSpecialLex(val);
+          if (sp !== null) {
+            if (useCache) __parseNumCache.set(key, sp);
+            return sp;
+          }
+          const n = Number(val);
+          if (Number.isNaN(n)) {
+            if (useCache) __parseNumCache.set(key, null);
+            return null;
+          }
+          if (useCache) __parseNumCache.set(key, n);
+          return n; // may be finite, +/-Infinity
+        }
+
+        // decimal/integer-derived: keep strict finite parsing
+        const n = Number(val);
+        if (!Number.isFinite(n)) {
+          if (useCache) __parseNumCache.set(key, null);
+          return null;
+        }
+        if (useCache) __parseNumCache.set(key, n);
+        return n;
+      }
+
+      // Untyped literals: accept only unquoted numeric tokens.
+      if (!looksLikeUntypedNumericTokenLex(lex)) {
+        if (useCache) __parseNumCache.set(key, null);
+        return null;
+      }
+      const n = Number(lex);
+      if (!Number.isFinite(n)) {
         if (useCache) __parseNumCache.set(key, null);
         return null;
       }
       if (useCache) __parseNumCache.set(key, n);
-      return n; // may be finite, +/-Infinity
+      return n;
     }
 
-    // decimal/integer-derived: keep strict finite parsing
-    const n = Number(val);
-    if (!Number.isFinite(n)) {
-      if (useCache) __parseNumCache.set(key, null);
-      return null;
+    function parseIntLiteral(t) {
+      // Parse as BigInt if (and only if) it is an integer literal in an integer datatype,
+      // or an untyped integer token.
+      if (!(t instanceof Literal)) return null;
+
+      const key = t.value;
+      const useCache = __useNumericCacheKey(key);
+      if (useCache && __parseIntCache.has(key)) return __parseIntCache.get(key);
+
+      const [lex, dt] = literalParts(key);
+
+      if (dt !== null) {
+        if (!isXsdIntegerDatatype(dt)) {
+          if (useCache) __parseIntCache.set(key, null);
+          return null;
+        }
+        const val = stripQuotes(lex);
+        if (!/^[+-]?\d+$/.test(val)) {
+          if (useCache) __parseIntCache.set(key, null);
+          return null;
+        }
+        try {
+          const out = BigInt(val);
+          if (useCache) __parseIntCache.set(key, out);
+          return out;
+        } catch {
+          if (useCache) __parseIntCache.set(key, null);
+          return null;
+        }
+      }
+
+      // Untyped: only accept unquoted integer tokens.
+      if (isQuotedLexical(lex)) {
+        if (useCache) __parseIntCache.set(key, null);
+        return null;
+      }
+      if (!/^[+-]?\d+$/.test(lex)) {
+        if (useCache) __parseIntCache.set(key, null);
+        return null;
+      }
+      try {
+        const out = BigInt(lex);
+        if (useCache) __parseIntCache.set(key, out);
+        return out;
+      } catch {
+        if (useCache) __parseIntCache.set(key, null);
+        return null;
+      }
     }
-    if (useCache) __parseNumCache.set(key, n);
-    return n;
-  }
 
-  // Untyped literals: accept only unquoted numeric tokens.
-  if (!looksLikeUntypedNumericTokenLex(lex)) {
-    if (useCache) __parseNumCache.set(key, null);
-    return null;
-  }
-  const n = Number(lex);
-  if (!Number.isFinite(n)) {
-    if (useCache) __parseNumCache.set(key, null);
-    return null;
-  }
-  if (useCache) __parseNumCache.set(key, n);
-  return n;
-}
-
-function parseIntLiteral(t) {
-  // Parse as BigInt if (and only if) it is an integer literal in an integer datatype,
-  // or an untyped integer token.
-  if (!(t instanceof Literal)) return null;
-
-  const key = t.value;
-  const useCache = __useNumericCacheKey(key);
-  if (useCache && __parseIntCache.has(key)) return __parseIntCache.get(key);
-
-  const [lex, dt] = literalParts(key);
-
-  if (dt !== null) {
-    if (!isXsdIntegerDatatype(dt)) {
-      if (useCache) __parseIntCache.set(key, null);
-      return null;
+    function formatNum(n) {
+      return String(n);
     }
-    const val = stripQuotes(lex);
-    if (!/^[+-]?\d+$/.test(val)) {
-      if (useCache) __parseIntCache.set(key, null);
-      return null;
+
+    function parseXsdDecimalToBigIntScale(s) {
+      let t = String(s).trim();
+      let sign = 1n;
+
+      if (t.startsWith('+')) t = t.slice(1);
+      else if (t.startsWith('-')) {
+        sign = -1n;
+        t = t.slice(1);
+      }
+
+      // xsd:decimal lexical: (\d+(\.\d*)?|\.\d+)
+      if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(t)) return null;
+
+      let intPart = '0';
+      let fracPart = '';
+
+      if (t.includes('.')) {
+        const parts = t.split('.');
+        intPart = parts[0] === '' ? '0' : parts[0];
+        fracPart = parts[1] || '';
+      } else {
+        intPart = t;
+      }
+
+      // normalize
+      intPart = intPart.replace(/^0+(?=\d)/, '');
+      fracPart = fracPart.replace(/0+$/, ''); // drop trailing zeros
+
+      const scale = fracPart.length;
+      const digits = intPart + fracPart || '0';
+
+      return { num: sign * BigInt(digits), scale };
     }
-    try {
-      const out = BigInt(val);
-      if (useCache) __parseIntCache.set(key, out);
-      return out;
-    } catch {
-      if (useCache) __parseIntCache.set(key, null);
-      return null;
+
+    function pow10n(k) {
+      return 10n ** BigInt(k);
     }
-  }
 
-  // Untyped: only accept unquoted integer tokens.
-  if (isQuotedLexical(lex)) {
-    if (useCache) __parseIntCache.set(key, null);
-    return null;
-  }
-  if (!/^[+-]?\d+$/.test(lex)) {
-    if (useCache) __parseIntCache.set(key, null);
-    return null;
-  }
-  try {
-    const out = BigInt(lex);
-    if (useCache) __parseIntCache.set(key, out);
-    return out;
-  } catch {
-    if (useCache) __parseIntCache.set(key, null);
-    return null;
-  }
-}
-
-function formatNum(n) {
-  return String(n);
-}
-
-function parseXsdDecimalToBigIntScale(s) {
-  let t = String(s).trim();
-  let sign = 1n;
-
-  if (t.startsWith('+')) t = t.slice(1);
-  else if (t.startsWith('-')) {
-    sign = -1n;
-    t = t.slice(1);
-  }
-
-  // xsd:decimal lexical: (\d+(\.\d*)?|\.\d+)
-  if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(t)) return null;
-
-  let intPart = '0';
-  let fracPart = '';
-
-  if (t.includes('.')) {
-    const parts = t.split('.');
-    intPart = parts[0] === '' ? '0' : parts[0];
-    fracPart = parts[1] || '';
-  } else {
-    intPart = t;
-  }
-
-  // normalize
-  intPart = intPart.replace(/^0+(?=\d)/, '');
-  fracPart = fracPart.replace(/0+$/, ''); // drop trailing zeros
-
-  const scale = fracPart.length;
-  const digits = intPart + fracPart || '0';
-
-  return { num: sign * BigInt(digits), scale };
-}
-
-function pow10n(k) {
-  return 10n ** BigInt(k);
-}
-
-function absBigInt(x) {
-  return x < 0n ? -x : x;
-}
-
-function bigintBitLength(x) {
-  // Returns the bit length of |x| as a BigInt (0 for 0).
-  const a = absBigInt(x);
-  if (a === 0n) return 0n;
-  // toString(2) is fine here: we only use this as a conservative size guard.
-  return BigInt(a.toString(2).length);
-}
-
-function estimatePowResultBits(base, exp) {
-  // Conservative estimate of bit length for |base| ** exp (exp >= 0).
-  // For |base| in {0,1} this is tiny; otherwise ~ exp * log2(|base|).
-  if (exp === 0n) return 1n;
-  const a = absBigInt(base);
-  if (a === 0n) return 1n; // 0**k (k>0) => 0
-  if (a === 1n) return 1n;
-  const bl = bigintBitLength(a);
-  // If bl is the bit length, then 2^(bl-1) <= a < 2^bl.
-  // So a^exp has < bl*exp bits and >= (bl-1)*exp+1 bits.
-  return (bl - 1n) * exp + 1n;
-}
-
-// ===========================================================================
-// Time & duration builtin helpers
-// ===========================================================================
-
-function parseXsdDateTerm(t) {
-  if (!(t instanceof Literal)) return null;
-  const [lex, dt] = literalParts(t.value);
-  if (dt !== XSD_NS + 'date') return null;
-  const val = stripQuotes(lex);
-  const d = new Date(val + 'T00:00:00Z');
-  if (Number.isNaN(d.getTime())) return null;
-  return d;
-}
-
-function parseXsdDatetimeTerm(t) {
-  if (!(t instanceof Literal)) return null;
-  const [lex, dt] = literalParts(t.value);
-  if (dt !== XSD_NS + 'dateTime') return null;
-  const val = stripQuotes(lex);
-  const d = new Date(val);
-  if (Number.isNaN(d.getTime())) return null;
-  return d; // Date in local/UTC, we only use timestamp
-}
-
-function parseXsdDateTimeLexParts(t) {
-  // Parse *lexical* components of an xsd:dateTime literal without timezone normalization.
-  // Returns { yearStr, month, day, hour, minute, second, tz } or null.
-  if (!(t instanceof Literal)) return null;
-  const [lex, dt] = literalParts(t.value);
-  if (dt !== XSD_NS + 'dateTime') return null;
-  const val = stripQuotes(lex);
-
-  // xsd:dateTime lexical: YYYY-MM-DDThh:mm:ss(.s+)?(Z|(+|-)hh:mm)?
-  const m = /^(-?\d{4,})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|[+-]\d{2}:\d{2})?$/.exec(val);
-  if (!m) return null;
-
-  const yearStr = m[1];
-  const month = parseInt(m[2], 10);
-  const day = parseInt(m[3], 10);
-  const hour = parseInt(m[4], 10);
-  const minute = parseInt(m[5], 10);
-  const second = parseInt(m[6], 10);
-  const tz = m[7] || null;
-
-  if (!(month >= 1 && month <= 12)) return null;
-  if (!(day >= 1 && day <= 31)) return null;
-  if (!(hour >= 0 && hour <= 23)) return null;
-  if (!(minute >= 0 && minute <= 59)) return null;
-  if (!(second >= 0 && second <= 59)) return null;
-
-  return { yearStr, month, day, hour, minute, second, tz };
-}
-
-function parseDatetimeLike(t) {
-  const d = parseXsdDateTerm(t);
-  if (d !== null) return d;
-  return parseXsdDatetimeTerm(t);
-}
-
-function parseIso8601DurationToSeconds(s) {
-  if (!s) return null;
-  if (s[0] !== 'P') return null;
-  const it = s.slice(1);
-  let num = '';
-  let inTime = false;
-  let years = 0,
-    months = 0,
-    weeks = 0,
-    days = 0,
-    hours = 0,
-    minutes = 0,
-    seconds = 0;
-
-  for (const c of it) {
-    if (c === 'T') {
-      inTime = true;
-      continue;
+    function absBigInt(x) {
+      return x < 0n ? -x : x;
     }
-    if (/[0-9.]/.test(c)) {
-      num += c;
-      continue;
+
+    function bigintBitLength(x) {
+      // Returns the bit length of |x| as a BigInt (0 for 0).
+      const a = absBigInt(x);
+      if (a === 0n) return 0n;
+      // toString(2) is fine here: we only use this as a conservative size guard.
+      return BigInt(a.toString(2).length);
     }
-    if (!num) return null;
-    const val = Number(num);
-    if (Number.isNaN(val)) return null;
-    num = '';
-    if (!inTime && c === 'Y') years += val;
-    else if (!inTime && c === 'M') months += val;
-    else if (!inTime && c === 'W') weeks += val;
-    else if (!inTime && c === 'D') days += val;
-    else if (inTime && c === 'H') hours += val;
-    else if (inTime && c === 'M') minutes += val;
-    else if (inTime && c === 'S') seconds += val;
-    else return null;
-  }
 
-  const totalDays =
-    years * 365.2425 +
-    months * 30.436875 +
-    weeks * 7.0 +
-    days +
-    hours / 24.0 +
-    minutes / (24.0 * 60.0) +
-    seconds / (24.0 * 3600.0);
+    function estimatePowResultBits(base, exp) {
+      // Conservative estimate of bit length for |base| ** exp (exp >= 0).
+      // For |base| in {0,1} this is tiny; otherwise ~ exp * log2(|base|).
+      if (exp === 0n) return 1n;
+      const a = absBigInt(base);
+      if (a === 0n) return 1n; // 0**k (k>0) => 0
+      if (a === 1n) return 1n;
+      const bl = bigintBitLength(a);
+      // If bl is the bit length, then 2^(bl-1) <= a < 2^bl.
+      // So a^exp has < bl*exp bits and >= (bl-1)*exp+1 bits.
+      return (bl - 1n) * exp + 1n;
+    }
 
-  return totalDays * 86400.0;
-}
+    // ===========================================================================
+    // Time & duration builtin helpers
+    // ===========================================================================
 
-function parseNumericForCompareTerm(t) {
-  // Strict: only accept xsd numeric literals, xsd:duration, xsd:date, xsd:dateTime
-  // (or untyped numeric tokens).
-  const bi = parseIntLiteral(t);
-  if (bi !== null) return { kind: 'bigint', value: bi };
-
-  const nDur = parseNumOrDuration(t);
-  if (nDur !== null) return { kind: 'number', value: nDur };
-  return null;
-}
-
-function cmpNumericInfo(aInfo, bInfo, op) {
-  // op is one of ">", "<", ">=", "<=", "==", "!="
-  if (!aInfo || !bInfo) return false;
-
-  if (aInfo.kind === 'bigint' && bInfo.kind === 'bigint') {
-    if (op === '>') return aInfo.value > bInfo.value;
-    if (op === '<') return aInfo.value < bInfo.value;
-    if (op === '>=') return aInfo.value >= bInfo.value;
-    if (op === '<=') return aInfo.value <= bInfo.value;
-    if (op === '==') return aInfo.value == bInfo.value;
-    if (op === '!=') return aInfo.value != bInfo.value;
-    return false;
-  }
-
-  const a = typeof aInfo.value === 'bigint' ? Number(aInfo.value) : aInfo.value;
-  const b = typeof bInfo.value === 'bigint' ? Number(bInfo.value) : bInfo.value;
-
-  if (op === '>') return a > b;
-  if (op === '<') return a < b;
-  if (op === '>=') return a >= b;
-  if (op === '<=') return a <= b;
-  if (op === '==') return a == b;
-  if (op === '!=') return a != b;
-  return false;
-}
-
-function evalNumericComparisonBuiltin(g, subst, op) {
-  const aInfo = parseNumericForCompareTerm(g.s);
-  const bInfo = parseNumericForCompareTerm(g.o);
-  if (aInfo && bInfo && cmpNumericInfo(aInfo, bInfo, op)) return [{ ...subst }];
-
-  if (g.s instanceof ListTerm && g.s.elems.length === 2) {
-    const a2 = parseNumericForCompareTerm(g.s.elems[0]);
-    const b2 = parseNumericForCompareTerm(g.s.elems[1]);
-    if (a2 && b2 && cmpNumericInfo(a2, b2, op)) return [{ ...subst }];
-  }
-  return [];
-}
-
-function parseNumOrDuration(t) {
-  const n = parseNum(t);
-  if (n !== null) return n;
-
-  // xsd:duration
-  if (t instanceof Literal) {
-    const [lex, dt] = literalParts(t.value);
-    if (dt === XSD_NS + 'duration') {
+    function parseXsdDateTerm(t) {
+      if (!(t instanceof Literal)) return null;
+      const [lex, dt] = literalParts(t.value);
+      if (dt !== XSD_NS + 'date') return null;
       const val = stripQuotes(lex);
-      const negative = val.startsWith('-');
-      const core = negative ? val.slice(1) : val;
-      if (!core.startsWith('P')) return null;
-      const secs = parseIso8601DurationToSeconds(core);
-      if (secs === null) return null;
-      return negative ? -secs : secs;
+      const d = new Date(val + 'T00:00:00Z');
+      if (Number.isNaN(d.getTime())) return null;
+      return d;
     }
-  }
 
-  // xsd:date / xsd:dateTime
-  const dtval = parseDatetimeLike(t);
-  if (dtval !== null) {
-    return dtval.getTime() / 1000.0;
-  }
-  return null;
-}
+    function parseXsdDatetimeTerm(t) {
+      if (!(t instanceof Literal)) return null;
+      const [lex, dt] = literalParts(t.value);
+      if (dt !== XSD_NS + 'dateTime') return null;
+      const val = stripQuotes(lex);
+      const d = new Date(val);
+      if (Number.isNaN(d.getTime())) return null;
+      return d; // Date in local/UTC, we only use timestamp
+    }
 
-function formatDurationLiteralFromSeconds(secs) {
-  // xsd:duration allows a leading '-' sign.
-  // We emit a conservative seconds-only lexical form so we don't lose precision
-  // for sub-day differences (e.g., PT900S).
-  const neg = secs < 0;
-  const abs = Math.abs(secs);
-  const sLex = Number.isFinite(abs) ? (Number.isInteger(abs) && abs < 1e21 ? abs.toFixed(0) : String(abs)) : 'NaN';
-  const core = `P${abs === 0 ? 'T0S' : `T${sLex}S`}`;
-  const literalLex = neg ? `"-${core}"` : `"${core}"`;
-  return internLiteral(`${literalLex}^^<${XSD_NS}duration>`);
-}
-function numEqualTerm(t, n, eps = 1e-9) {
-  const v = parseNum(t);
-  if (v === null) return false;
+    function parseXsdDateTimeLexParts(t) {
+      // Parse *lexical* components of an xsd:dateTime literal without timezone normalization.
+      // Returns { yearStr, month, day, hour, minute, second, tz } or null.
+      if (!(t instanceof Literal)) return null;
+      const [lex, dt] = literalParts(t.value);
+      if (dt !== XSD_NS + 'dateTime') return null;
+      const val = stripQuotes(lex);
 
-  // NaN is not equal to anything (including itself) for our numeric-equality use.
-  if (Number.isNaN(v) || Number.isNaN(n)) return false;
+      // xsd:dateTime lexical: YYYY-MM-DDThh:mm:ss(.s+)?(Z|(+|-)hh:mm)?
+      const m = /^(-?\d{4,})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|[+-]\d{2}:\d{2})?$/.exec(val);
+      if (!m) return null;
 
-  // Infinity handling
-  if (!Number.isFinite(v) || !Number.isFinite(n)) return v === n;
+      const yearStr = m[1];
+      const month = parseInt(m[2], 10);
+      const day = parseInt(m[3], 10);
+      const hour = parseInt(m[4], 10);
+      const minute = parseInt(m[5], 10);
+      const second = parseInt(m[6], 10);
+      const tz = m[7] || null;
 
-  return Math.abs(v - n) < eps;
-}
+      if (!(month >= 1 && month <= 12)) return null;
+      if (!(day >= 1 && day <= 31)) return null;
+      if (!(hour >= 0 && hour <= 23)) return null;
+      if (!(minute >= 0 && minute <= 59)) return null;
+      if (!(second >= 0 && second <= 59)) return null;
 
-function numericDatatypeFromLex(lex) {
-  if (/[eE]/.test(lex)) return XSD_DOUBLE_DT;
-  if (lex.includes('.')) return XSD_DECIMAL_DT;
-  return XSD_INTEGER_DT;
-}
+      return { yearStr, month, day, hour, minute, second, tz };
+    }
 
-function parseNumericLiteralInfo(t) {
-  if (!(t instanceof Literal)) return null;
+    function parseDatetimeLike(t) {
+      const d = parseXsdDateTerm(t);
+      if (d !== null) return d;
+      return parseXsdDatetimeTerm(t);
+    }
 
-  const key = t.value;
-  const useCache = __useNumericCacheKey(key);
-  if (useCache && __parseNumericInfoCache.has(key)) return __parseNumericInfoCache.get(key);
+    function parseIso8601DurationToSeconds(s) {
+      if (!s) return null;
+      if (s[0] !== 'P') return null;
+      const it = s.slice(1);
+      let num = '';
+      let inTime = false;
+      let years = 0,
+        months = 0,
+        weeks = 0,
+        days = 0,
+        hours = 0,
+        minutes = 0,
+        seconds = 0;
 
-  const v = key;
-  const [lex, dt] = literalParts(v);
+      for (const c of it) {
+        if (c === 'T') {
+          inTime = true;
+          continue;
+        }
+        if (/[0-9.]/.test(c)) {
+          num += c;
+          continue;
+        }
+        if (!num) return null;
+        const val = Number(num);
+        if (Number.isNaN(val)) return null;
+        num = '';
+        if (!inTime && c === 'Y') years += val;
+        else if (!inTime && c === 'M') months += val;
+        else if (!inTime && c === 'W') weeks += val;
+        else if (!inTime && c === 'D') days += val;
+        else if (inTime && c === 'H') hours += val;
+        else if (inTime && c === 'M') minutes += val;
+        else if (inTime && c === 'S') seconds += val;
+        else return null;
+      }
 
-  let dt2 = dt;
-  let lexStr;
+      const totalDays =
+        years * 365.2425 +
+        months * 30.436875 +
+        weeks * 7.0 +
+        days +
+        hours / 24.0 +
+        minutes / (24.0 * 60.0) +
+        seconds / (24.0 * 3600.0);
 
-  if (dt2 !== null) {
-    // Accept all xsd numeric datatypes; normalize integer-derived to xsd:integer.
-    if (!isXsdNumericDatatype(dt2)) {
-      if (useCache) __parseNumericInfoCache.set(key, null);
+      return totalDays * 86400.0;
+    }
+
+    function parseNumericForCompareTerm(t) {
+      // Strict: only accept xsd numeric literals, xsd:duration, xsd:date, xsd:dateTime
+      // (or untyped numeric tokens).
+      const bi = parseIntLiteral(t);
+      if (bi !== null) return { kind: 'bigint', value: bi };
+
+      const nDur = parseNumOrDuration(t);
+      if (nDur !== null) return { kind: 'number', value: nDur };
       return null;
     }
-    if (isXsdIntegerDatatype(dt2)) dt2 = XSD_INTEGER_DT;
-    lexStr = stripQuotes(lex);
-  } else {
-    // Untyped numeric token (N3/Turtle numeric literal)
-    if (typeof v !== 'string') {
-      if (useCache) __parseNumericInfoCache.set(key, null);
-      return null;
+
+    function cmpNumericInfo(aInfo, bInfo, op) {
+      // op is one of ">", "<", ">=", "<=", "==", "!="
+      if (!aInfo || !bInfo) return false;
+
+      if (aInfo.kind === 'bigint' && bInfo.kind === 'bigint') {
+        if (op === '>') return aInfo.value > bInfo.value;
+        if (op === '<') return aInfo.value < bInfo.value;
+        if (op === '>=') return aInfo.value >= bInfo.value;
+        if (op === '<=') return aInfo.value <= bInfo.value;
+        if (op === '==') return aInfo.value == bInfo.value;
+        if (op === '!=') return aInfo.value != bInfo.value;
+        return false;
+      }
+
+      const a = typeof aInfo.value === 'bigint' ? Number(aInfo.value) : aInfo.value;
+      const b = typeof bInfo.value === 'bigint' ? Number(bInfo.value) : bInfo.value;
+
+      if (op === '>') return a > b;
+      if (op === '<') return a < b;
+      if (op === '>=') return a >= b;
+      if (op === '<=') return a <= b;
+      if (op === '==') return a == b;
+      if (op === '!=') return a != b;
+      return false;
     }
-    if (v.startsWith('"')) {
-      if (useCache) __parseNumericInfoCache.set(key, null);
-      return null; // exclude quoted strings
+
+    function evalNumericComparisonBuiltin(g, subst, op) {
+      const aInfo = parseNumericForCompareTerm(g.s);
+      const bInfo = parseNumericForCompareTerm(g.o);
+      if (aInfo && bInfo && cmpNumericInfo(aInfo, bInfo, op)) return [{ ...subst }];
+
+      if (g.s instanceof ListTerm && g.s.elems.length === 2) {
+        const a2 = parseNumericForCompareTerm(g.s.elems[0]);
+        const b2 = parseNumericForCompareTerm(g.s.elems[1]);
+        if (a2 && b2 && cmpNumericInfo(a2, b2, op)) return [{ ...subst }];
+      }
+      return [];
     }
-    if (!/^[+-]?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][+-]?\d+)?$/.test(v)) {
-      if (useCache) __parseNumericInfoCache.set(key, null);
+
+    function parseNumOrDuration(t) {
+      const n = parseNum(t);
+      if (n !== null) return n;
+
+      // xsd:duration
+      if (t instanceof Literal) {
+        const [lex, dt] = literalParts(t.value);
+        if (dt === XSD_NS + 'duration') {
+          const val = stripQuotes(lex);
+          const negative = val.startsWith('-');
+          const core = negative ? val.slice(1) : val;
+          if (!core.startsWith('P')) return null;
+          const secs = parseIso8601DurationToSeconds(core);
+          if (secs === null) return null;
+          return negative ? -secs : secs;
+        }
+      }
+
+      // xsd:date / xsd:dateTime
+      const dtval = parseDatetimeLike(t);
+      if (dtval !== null) {
+        return dtval.getTime() / 1000.0;
+      }
       return null;
     }
 
-    dt2 = numericDatatypeFromLex(v);
-    lexStr = v;
-  }
+    function formatDurationLiteralFromSeconds(secs) {
+      // xsd:duration allows a leading '-' sign.
+      // We emit a conservative seconds-only lexical form so we don't lose precision
+      // for sub-day differences (e.g., PT900S).
+      const neg = secs < 0;
+      const abs = Math.abs(secs);
+      const sLex = Number.isFinite(abs) ? (Number.isInteger(abs) && abs < 1e21 ? abs.toFixed(0) : String(abs)) : 'NaN';
+      const core = `P${abs === 0 ? 'T0S' : `T${sLex}S`}`;
+      const literalLex = neg ? `"-${core}"` : `"${core}"`;
+      return internLiteral(`${literalLex}^^<${XSD_NS}duration>`);
+    }
+    function numEqualTerm(t, n, eps = 1e-9) {
+      const v = parseNum(t);
+      if (v === null) return false;
 
-  if (dt2 === XSD_INTEGER_DT) {
-    try {
-      const info = { dt: dt2, kind: 'bigint', value: BigInt(lexStr), lexStr };
+      // NaN is not equal to anything (including itself) for our numeric-equality use.
+      if (Number.isNaN(v) || Number.isNaN(n)) return false;
+
+      // Infinity handling
+      if (!Number.isFinite(v) || !Number.isFinite(n)) return v === n;
+
+      return Math.abs(v - n) < eps;
+    }
+
+    function numericDatatypeFromLex(lex) {
+      if (/[eE]/.test(lex)) return XSD_DOUBLE_DT;
+      if (lex.includes('.')) return XSD_DECIMAL_DT;
+      return XSD_INTEGER_DT;
+    }
+
+    function parseNumericLiteralInfo(t) {
+      if (!(t instanceof Literal)) return null;
+
+      const key = t.value;
+      const useCache = __useNumericCacheKey(key);
+      if (useCache && __parseNumericInfoCache.has(key)) return __parseNumericInfoCache.get(key);
+
+      const v = key;
+      const [lex, dt] = literalParts(v);
+
+      let dt2 = dt;
+      let lexStr;
+
+      if (dt2 !== null) {
+        // Accept all xsd numeric datatypes; normalize integer-derived to xsd:integer.
+        if (!isXsdNumericDatatype(dt2)) {
+          if (useCache) __parseNumericInfoCache.set(key, null);
+          return null;
+        }
+        if (isXsdIntegerDatatype(dt2)) dt2 = XSD_INTEGER_DT;
+        lexStr = stripQuotes(lex);
+      } else {
+        // Untyped numeric token (N3/Turtle numeric literal)
+        if (typeof v !== 'string') {
+          if (useCache) __parseNumericInfoCache.set(key, null);
+          return null;
+        }
+        if (v.startsWith('"')) {
+          if (useCache) __parseNumericInfoCache.set(key, null);
+          return null; // exclude quoted strings
+        }
+        if (!/^[+-]?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][+-]?\d+)?$/.test(v)) {
+          if (useCache) __parseNumericInfoCache.set(key, null);
+          return null;
+        }
+
+        dt2 = numericDatatypeFromLex(v);
+        lexStr = v;
+      }
+
+      if (dt2 === XSD_INTEGER_DT) {
+        try {
+          const info = { dt: dt2, kind: 'bigint', value: BigInt(lexStr), lexStr };
+          if (useCache) __parseNumericInfoCache.set(key, info);
+          return info;
+        } catch {
+          if (useCache) __parseNumericInfoCache.set(key, null);
+          return null;
+        }
+      }
+
+      // float/double special lexicals
+      if (dt2 === XSD_FLOAT_DT || dt2 === XSD_DOUBLE_DT) {
+        const sp = parseXsdFloatSpecialLex(lexStr);
+        if (sp !== null) {
+          const info = { dt: dt2, kind: 'number', value: sp, lexStr };
+          if (useCache) __parseNumericInfoCache.set(key, info);
+          return info;
+        }
+      }
+
+      const num = Number(lexStr);
+      if (Number.isNaN(num)) {
+        if (useCache) __parseNumericInfoCache.set(key, null);
+        return null;
+      }
+
+      // allow +/-Infinity for float/double
+      if (dt2 === XSD_DECIMAL_DT && !Number.isFinite(num)) {
+        if (useCache) __parseNumericInfoCache.set(key, null);
+        return null;
+      }
+
+      const info = { dt: dt2, kind: 'number', value: num, lexStr };
       if (useCache) __parseNumericInfoCache.set(key, info);
       return info;
-    } catch {
-      if (useCache) __parseNumericInfoCache.set(key, null);
+    }
+
+    function numericRank(dt) {
+      if (dt === XSD_INTEGER_DT) return 0;
+      if (dt === XSD_DECIMAL_DT) return 1;
+      if (dt === XSD_FLOAT_DT) return 2;
+      if (dt === XSD_DOUBLE_DT) return 3;
+      return -1;
+    }
+
+    function numericDatatypeOfTerm(t) {
+      if (!(t instanceof Literal)) return null;
+      const [lex, dt] = literalParts(t.value);
+
+      if (dt !== null) {
+        if (!isXsdNumericDatatype(dt)) return null;
+        if (isXsdIntegerDatatype(dt)) return XSD_INTEGER_DT;
+        if (dt === XSD_DECIMAL_DT || dt === XSD_FLOAT_DT || dt === XSD_DOUBLE_DT) return dt;
+        return null;
+      }
+
+      // Untyped numeric token
+      if (!looksLikeUntypedNumericTokenLex(lex)) return null;
+      return numericDatatypeFromLex(lex);
+    }
+
+    function commonNumericDatatype(terms, outTerm) {
+      let r = 0;
+      const all = Array.isArray(terms) ? terms.slice() : [];
+      if (outTerm) all.push(outTerm);
+
+      for (const t of all) {
+        const dt = numericDatatypeOfTerm(t);
+        if (!dt) continue;
+        const rr = numericRank(dt);
+        if (rr > r) r = rr;
+      }
+
+      if (r === 3) return XSD_DOUBLE_DT;
+      if (r === 2) return XSD_FLOAT_DT;
+      if (r === 1) return XSD_DECIMAL_DT;
+      return XSD_INTEGER_DT;
+    }
+
+    function makeNumericOutputLiteral(val, dt) {
+      if (dt === XSD_INTEGER_DT) {
+        if (typeof val === 'bigint') return internLiteral(val.toString());
+        if (Number.isInteger(val)) return internLiteral(String(val));
+        // If a non-integer sneaks in, promote to decimal.
+        return internLiteral(`"${formatNum(val)}"^^<${XSD_DECIMAL_DT}>`);
+      }
+
+      if (dt === XSD_FLOAT_DT || dt === XSD_DOUBLE_DT) {
+        const sp = formatXsdFloatSpecialLex(val);
+        const lex = sp !== null ? sp : formatNum(val);
+        return internLiteral(`"${lex}"^^<${dt}>`);
+      }
+
+      // decimal
+      const lex = typeof val === 'bigint' ? val.toString() : formatNum(val);
+      return internLiteral(`"${lex}"^^<${dt}>`);
+    }
+
+    function evalUnaryMathRel(g, subst, forwardFn, inverseFn /* may be null */) {
+      const sIsUnbound = g.s instanceof Var || g.s instanceof Blank;
+      const oIsUnbound = g.o instanceof Var || g.o instanceof Blank;
+
+      const a = parseNum(g.s); // subject numeric?
+      const b = parseNum(g.o); // object numeric?
+
+      // Forward: s numeric => compute o
+      if (a !== null) {
+        const outVal = forwardFn(a);
+        if (!Number.isFinite(outVal)) return [];
+
+        let outDt = commonNumericDatatype([g.s], g.o);
+        if (outDt === XSD_INTEGER_DT && !Number.isInteger(outVal)) outDt = XSD_DECIMAL_DT;
+
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = makeNumericOutputLiteral(outVal, outDt);
+          return [s2];
+        }
+        if (g.o instanceof Blank) return [{ ...subst }];
+        if (numEqualTerm(g.o, outVal)) return [{ ...subst }];
+        return [];
+      }
+
+      // Reverse (bounded): o numeric => compute s
+      if (b !== null && typeof inverseFn === 'function') {
+        const inVal = inverseFn(b);
+        if (!Number.isFinite(inVal)) return [];
+
+        let inDt = commonNumericDatatype([g.o], g.s);
+        if (inDt === XSD_INTEGER_DT && !Number.isInteger(inVal)) inDt = XSD_DECIMAL_DT;
+
+        if (g.s instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.s.name] = makeNumericOutputLiteral(inVal, inDt);
+          return [s2];
+        }
+        if (g.s instanceof Blank) return [{ ...subst }];
+        if (numEqualTerm(g.s, inVal)) return [{ ...subst }];
+        return [];
+      }
+
+      // Fully unbound: do *not* treat as immediately satisfiable.
+      // In goal proving, succeeding with no bindings can let a conjunction
+      // "pass" before other goals bind one side, preventing later evaluation
+      // in the now-solvable direction. Instead, we fail here so the engine's
+      // builtin deferral can retry the goal once variables are bound.
+      if (sIsUnbound && oIsUnbound) return [];
+
+      return [];
+    }
+
+    // ===========================================================================
+    // List builtin helpers
+    // ===========================================================================
+
+    function listAppendSplit(parts, resElems, subst) {
+      if (!parts.length) {
+        if (!resElems.length) return [{ ...subst }];
+        return [];
+      }
+      const out = [];
+      const n = resElems.length;
+      for (let k = 0; k <= n; k++) {
+        const left = new ListTerm(resElems.slice(0, k));
+        const s1 = unifyTermListAppend(parts[0], left, subst);
+        if (s1 === null) continue;
+        const restElems = resElems.slice(k);
+        out.push(...listAppendSplit(parts.slice(1), restElems, s1));
+      }
+      return out;
+    }
+
+    // ---------------------------------------------------------------------------
+    // RDF-list support for list:* builtins
+    // ---------------------------------------------------------------------------
+
+    function __rdfListObjectsForSP(facts, predIri, subj) {
+      ensureFactIndexes(facts);
+      // Engine indexes predicate buckets by predicate term id.
+      const pk = internIri(predIri).__tid;
+      const sk = termFastKey(subj);
+      if (sk !== null) {
+        const ps = facts.__byPS.get(pk);
+        if (ps) {
+          const bucket = ps.get(sk);
+          if (bucket && bucket.length) return bucket.map((i) => facts[i].o);
+        }
+      }
+
+      // Fallback scan (covers non-indexable terms)
+      const pb = facts.__byPred.get(pk) || [];
+      const out = [];
+      for (const i of pb) {
+        const tr = facts[i];
+        if (termsEqual(tr.s, subj)) out.push(tr.o);
+      }
+      return out;
+    }
+
+    function __rdfListElemsFromNode(head, facts) {
+      if (!(head instanceof Iri || head instanceof Blank)) return null;
+
+      // Cache per fact-set (important in forward chaining)
+      if (!Object.prototype.hasOwnProperty.call(facts, '__rdfListCache')) {
+        Object.defineProperty(facts, '__rdfListCache', {
+          value: new Map(),
+          enumerable: false,
+          writable: true,
+          configurable: true,
+        });
+      }
+
+      const key = termFastKey(head);
+      if (key === null) return null;
+      const cache = facts.__rdfListCache;
+      if (cache.has(key)) return cache.get(key);
+
+      const RDF_FIRST = RDF_NS + 'first';
+      const RDF_REST = RDF_NS + 'rest';
+      const RDF_NIL = RDF_NS + 'nil';
+
+      const elems = [];
+      const seen = new Set();
+      let cur = head;
+
+      // RDF graphs are sets: duplicate triples are semantically irrelevant.
+      // In practice, users may concatenate files or repeat blocks, which can
+      // duplicate rdf:first/rdf:rest statements. Treat identical duplicates as
+      // a single value; but keep detection of *conflicting* values.
+      function __uniqTerms(ts) {
+        /** @type {any[]} */
+        const out = [];
+        for (const t of ts) {
+          if (!out.some((u) => termsEqual(u, t))) out.push(t);
+        }
+        return out;
+      }
+
+      while (true) {
+        if (cur instanceof Iri && cur.value === RDF_NIL) {
+          cache.set(key, elems);
+          return elems;
+        }
+
+        if (!(cur instanceof Iri || cur instanceof Blank)) {
+          cache.set(key, null);
+          return null;
+        }
+
+        const ck = termFastKey(cur);
+        if (ck === null) {
+          cache.set(key, null);
+          return null;
+        }
+        if (seen.has(ck)) {
+          cache.set(key, null);
+          return null; // cycle
+        }
+        seen.add(ck);
+
+        const firsts = __uniqTerms(__rdfListObjectsForSP(facts, RDF_FIRST, cur));
+        const rests = __uniqTerms(__rdfListObjectsForSP(facts, RDF_REST, cur));
+
+        if (firsts.length !== 1 || rests.length !== 1) {
+          cache.set(key, null);
+          return null;
+        }
+
+        elems.push(firsts[0]);
+        const rest = rests[0];
+
+        if (rest instanceof Iri && rest.value === RDF_NIL) {
+          cache.set(key, elems);
+          return elems;
+        }
+
+        // Mixed tail: rdf:rest can be an N3 list literal (e.g., (:b))
+        if (rest instanceof ListTerm) {
+          elems.push(...rest.elems);
+          cache.set(key, elems);
+          return elems;
+        }
+        if (rest instanceof OpenListTerm) {
+          elems.push(...rest.prefix);
+          elems.push(new Var(rest.tailVar));
+          cache.set(key, elems);
+          return elems;
+        }
+
+        cur = rest;
+      }
+    }
+
+    function __listElemsForBuiltin(listLike, facts) {
+      if (listLike instanceof ListTerm) return listLike.elems;
+      if (listLike instanceof Iri || listLike instanceof Blank) return __rdfListElemsFromNode(listLike, facts);
       return null;
     }
-  }
 
-  // float/double special lexicals
-  if (dt2 === XSD_FLOAT_DT || dt2 === XSD_DOUBLE_DT) {
-    const sp = parseXsdFloatSpecialLex(lexStr);
-    if (sp !== null) {
-      const info = { dt: dt2, kind: 'number', value: sp, lexStr };
-      if (useCache) __parseNumericInfoCache.set(key, info);
-      return info;
-    }
-  }
-
-  const num = Number(lexStr);
-  if (Number.isNaN(num)) {
-    if (useCache) __parseNumericInfoCache.set(key, null);
-    return null;
-  }
-
-  // allow +/-Infinity for float/double
-  if (dt2 === XSD_DECIMAL_DT && !Number.isFinite(num)) {
-    if (useCache) __parseNumericInfoCache.set(key, null);
-    return null;
-  }
-
-  const info = { dt: dt2, kind: 'number', value: num, lexStr };
-  if (useCache) __parseNumericInfoCache.set(key, info);
-  return info;
-}
-
-function numericRank(dt) {
-  if (dt === XSD_INTEGER_DT) return 0;
-  if (dt === XSD_DECIMAL_DT) return 1;
-  if (dt === XSD_FLOAT_DT) return 2;
-  if (dt === XSD_DOUBLE_DT) return 3;
-  return -1;
-}
-
-function numericDatatypeOfTerm(t) {
-  if (!(t instanceof Literal)) return null;
-  const [lex, dt] = literalParts(t.value);
-
-  if (dt !== null) {
-    if (!isXsdNumericDatatype(dt)) return null;
-    if (isXsdIntegerDatatype(dt)) return XSD_INTEGER_DT;
-    if (dt === XSD_DECIMAL_DT || dt === XSD_FLOAT_DT || dt === XSD_DOUBLE_DT) return dt;
-    return null;
-  }
-
-  // Untyped numeric token
-  if (!looksLikeUntypedNumericTokenLex(lex)) return null;
-  return numericDatatypeFromLex(lex);
-}
-
-function commonNumericDatatype(terms, outTerm) {
-  let r = 0;
-  const all = Array.isArray(terms) ? terms.slice() : [];
-  if (outTerm) all.push(outTerm);
-
-  for (const t of all) {
-    const dt = numericDatatypeOfTerm(t);
-    if (!dt) continue;
-    const rr = numericRank(dt);
-    if (rr > r) r = rr;
-  }
-
-  if (r === 3) return XSD_DOUBLE_DT;
-  if (r === 2) return XSD_FLOAT_DT;
-  if (r === 1) return XSD_DECIMAL_DT;
-  return XSD_INTEGER_DT;
-}
-
-function makeNumericOutputLiteral(val, dt) {
-  if (dt === XSD_INTEGER_DT) {
-    if (typeof val === 'bigint') return internLiteral(val.toString());
-    if (Number.isInteger(val)) return internLiteral(String(val));
-    // If a non-integer sneaks in, promote to decimal.
-    return internLiteral(`"${formatNum(val)}"^^<${XSD_DECIMAL_DT}>`);
-  }
-
-  if (dt === XSD_FLOAT_DT || dt === XSD_DOUBLE_DT) {
-    const sp = formatXsdFloatSpecialLex(val);
-    const lex = sp !== null ? sp : formatNum(val);
-    return internLiteral(`"${lex}"^^<${dt}>`);
-  }
-
-  // decimal
-  const lex = typeof val === 'bigint' ? val.toString() : formatNum(val);
-  return internLiteral(`"${lex}"^^<${dt}>`);
-}
-
-function evalUnaryMathRel(g, subst, forwardFn, inverseFn /* may be null */) {
-  const sIsUnbound = g.s instanceof Var || g.s instanceof Blank;
-  const oIsUnbound = g.o instanceof Var || g.o instanceof Blank;
-
-  const a = parseNum(g.s); // subject numeric?
-  const b = parseNum(g.o); // object numeric?
-
-  // Forward: s numeric => compute o
-  if (a !== null) {
-    const outVal = forwardFn(a);
-    if (!Number.isFinite(outVal)) return [];
-
-    let outDt = commonNumericDatatype([g.s], g.o);
-    if (outDt === XSD_INTEGER_DT && !Number.isInteger(outVal)) outDt = XSD_DECIMAL_DT;
-
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = makeNumericOutputLiteral(outVal, outDt);
-      return [s2];
-    }
-    if (g.o instanceof Blank) return [{ ...subst }];
-    if (numEqualTerm(g.o, outVal)) return [{ ...subst }];
-    return [];
-  }
-
-  // Reverse (bounded): o numeric => compute s
-  if (b !== null && typeof inverseFn === 'function') {
-    const inVal = inverseFn(b);
-    if (!Number.isFinite(inVal)) return [];
-
-    let inDt = commonNumericDatatype([g.o], g.s);
-    if (inDt === XSD_INTEGER_DT && !Number.isInteger(inVal)) inDt = XSD_DECIMAL_DT;
-
-    if (g.s instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.s.name] = makeNumericOutputLiteral(inVal, inDt);
-      return [s2];
-    }
-    if (g.s instanceof Blank) return [{ ...subst }];
-    if (numEqualTerm(g.s, inVal)) return [{ ...subst }];
-    return [];
-  }
-
-  // Fully unbound: do *not* treat as immediately satisfiable.
-  // In goal proving, succeeding with no bindings can let a conjunction
-  // "pass" before other goals bind one side, preventing later evaluation
-  // in the now-solvable direction. Instead, we fail here so the engine's
-  // builtin deferral can retry the goal once variables are bound.
-  if (sIsUnbound && oIsUnbound) return [];
-
-  return [];
-}
-
-// ===========================================================================
-// List builtin helpers
-// ===========================================================================
-
-function listAppendSplit(parts, resElems, subst) {
-  if (!parts.length) {
-    if (!resElems.length) return [{ ...subst }];
-    return [];
-  }
-  const out = [];
-  const n = resElems.length;
-  for (let k = 0; k <= n; k++) {
-    const left = new ListTerm(resElems.slice(0, k));
-    const s1 = unifyTermListAppend(parts[0], left, subst);
-    if (s1 === null) continue;
-    const restElems = resElems.slice(k);
-    out.push(...listAppendSplit(parts.slice(1), restElems, s1));
-  }
-  return out;
-}
-
-// ---------------------------------------------------------------------------
-// RDF-list support for list:* builtins
-// ---------------------------------------------------------------------------
-
-function __rdfListObjectsForSP(facts, predIri, subj) {
-  ensureFactIndexes(facts);
-  // Engine indexes predicate buckets by predicate term id.
-  const pk = internIri(predIri).__tid;
-  const sk = termFastKey(subj);
-  if (sk !== null) {
-    const ps = facts.__byPS.get(pk);
-    if (ps) {
-      const bucket = ps.get(sk);
-      if (bucket && bucket.length) return bucket.map((i) => facts[i].o);
-    }
-  }
-
-  // Fallback scan (covers non-indexable terms)
-  const pb = facts.__byPred.get(pk) || [];
-  const out = [];
-  for (const i of pb) {
-    const tr = facts[i];
-    if (termsEqual(tr.s, subj)) out.push(tr.o);
-  }
-  return out;
-}
-
-function __rdfListElemsFromNode(head, facts) {
-  if (!(head instanceof Iri || head instanceof Blank)) return null;
-
-  // Cache per fact-set (important in forward chaining)
-  if (!Object.prototype.hasOwnProperty.call(facts, '__rdfListCache')) {
-    Object.defineProperty(facts, '__rdfListCache', {
-      value: new Map(),
-      enumerable: false,
-      writable: true,
-      configurable: true,
-    });
-  }
-
-  const key = termFastKey(head);
-  if (key === null) return null;
-  const cache = facts.__rdfListCache;
-  if (cache.has(key)) return cache.get(key);
-
-  const RDF_FIRST = RDF_NS + 'first';
-  const RDF_REST = RDF_NS + 'rest';
-  const RDF_NIL = RDF_NS + 'nil';
-
-  const elems = [];
-  const seen = new Set();
-  let cur = head;
-
-  // RDF graphs are sets: duplicate triples are semantically irrelevant.
-  // In practice, users may concatenate files or repeat blocks, which can
-  // duplicate rdf:first/rdf:rest statements. Treat identical duplicates as
-  // a single value; but keep detection of *conflicting* values.
-  function __uniqTerms(ts) {
-    /** @type {any[]} */
-    const out = [];
-    for (const t of ts) {
-      if (!out.some((u) => termsEqual(u, t))) out.push(t);
-    }
-    return out;
-  }
-
-  while (true) {
-    if (cur instanceof Iri && cur.value === RDF_NIL) {
-      cache.set(key, elems);
-      return elems;
-    }
-
-    if (!(cur instanceof Iri || cur instanceof Blank)) {
-      cache.set(key, null);
-      return null;
-    }
-
-    const ck = termFastKey(cur);
-    if (ck === null) {
-      cache.set(key, null);
-      return null;
-    }
-    if (seen.has(ck)) {
-      cache.set(key, null);
-      return null; // cycle
-    }
-    seen.add(ck);
-
-    const firsts = __uniqTerms(__rdfListObjectsForSP(facts, RDF_FIRST, cur));
-    const rests = __uniqTerms(__rdfListObjectsForSP(facts, RDF_REST, cur));
-
-    if (firsts.length !== 1 || rests.length !== 1) {
-      cache.set(key, null);
-      return null;
-    }
-
-    elems.push(firsts[0]);
-    const rest = rests[0];
-
-    if (rest instanceof Iri && rest.value === RDF_NIL) {
-      cache.set(key, elems);
-      return elems;
-    }
-
-    // Mixed tail: rdf:rest can be an N3 list literal (e.g., (:b))
-    if (rest instanceof ListTerm) {
-      elems.push(...rest.elems);
-      cache.set(key, elems);
-      return elems;
-    }
-    if (rest instanceof OpenListTerm) {
-      elems.push(...rest.prefix);
-      elems.push(new Var(rest.tailVar));
-      cache.set(key, elems);
-      return elems;
-    }
-
-    cur = rest;
-  }
-}
-
-function __listElemsForBuiltin(listLike, facts) {
-  if (listLike instanceof ListTerm) return listLike.elems;
-  if (listLike instanceof Iri || listLike instanceof Blank) return __rdfListElemsFromNode(listLike, facts);
-  return null;
-}
-
-function evalListFirstLikeBuiltin(sTerm, oTerm, subst) {
-  if (!(sTerm instanceof ListTerm)) return [];
-  if (!sTerm.elems.length) return [];
-  const first = sTerm.elems[0];
-  const s2 = unifyTerm(oTerm, first, subst);
-  return s2 !== null ? [s2] : [];
-}
-
-function evalListRestLikeBuiltin(sTerm, oTerm, subst) {
-  // Closed list: (a b c) -> (b c)
-  if (sTerm instanceof ListTerm) {
-    if (!sTerm.elems.length) return [];
-    const rest = new ListTerm(sTerm.elems.slice(1));
-    const s2 = unifyTerm(oTerm, rest, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // Open list: (a b ... ?T) -> (b ... ?T)
-  if (sTerm instanceof OpenListTerm) {
-    if (!sTerm.prefix.length) return [];
-    if (sTerm.prefix.length === 1) {
-      const s2 = unifyTerm(oTerm, new Var(sTerm.tailVar), subst);
+    function evalListFirstLikeBuiltin(sTerm, oTerm, subst) {
+      if (!(sTerm instanceof ListTerm)) return [];
+      if (!sTerm.elems.length) return [];
+      const first = sTerm.elems[0];
+      const s2 = unifyTerm(oTerm, first, subst);
       return s2 !== null ? [s2] : [];
     }
-    const rest = new OpenListTerm(sTerm.prefix.slice(1), sTerm.tailVar);
-    const s2 = unifyTerm(oTerm, rest, subst);
-    return s2 !== null ? [s2] : [];
-  }
 
-  return [];
-}
-
-// ===========================================================================
-// RDF list materialization
-// ===========================================================================
-
-// Turn RDF Collections described with rdf:first/rdf:rest (+ rdf:nil) into ListTerm terms.
-// This mutates triples/rules in-place so list:* builtins work on RDF-serialized lists too.
-function materializeRdfLists(triples, forwardRules, backwardRules) {
-  const RDF_FIRST = RDF_NS + 'first';
-  const RDF_REST = RDF_NS + 'rest';
-  const RDF_NIL = RDF_NS + 'nil';
-
-  function nodeKey(t) {
-    // Only rewrite anonymous RDF list nodes (blank nodes). Named list nodes
-    // must keep their identity; list:* builtins can traverse rdf:first/rest.
-    if (t instanceof Blank) return `b:${t.label}`;
-    return null;
-  }
-
-  // Collect first/rest arcs from *input triples*
-  const firstMap = new Map(); // key(subject) -> Term (object)
-  const restMap = new Map(); // key(subject) -> Term (object)
-  for (const tr of triples) {
-    if (!(tr.p instanceof Iri)) continue;
-    const k = nodeKey(tr.s);
-    if (!k) continue;
-    if (tr.p.value === RDF_FIRST) firstMap.set(k, tr.o);
-    else if (tr.p.value === RDF_REST) restMap.set(k, tr.o);
-  }
-  if (!firstMap.size && !restMap.size) return;
-
-  const cache = new Map(); // key(node) -> ListTerm
-  const visiting = new Set(); // cycle guard
-
-  function buildListForKey(k) {
-    if (cache.has(k)) return cache.get(k);
-    if (visiting.has(k)) return null; // cycle => not a well-formed list
-    visiting.add(k);
-
-    // rdf:nil => ()
-    if (k === 'I:' + RDF_NIL) {
-      const empty = new ListTerm([]);
-      cache.set(k, empty);
-      visiting.delete(k);
-      return empty;
-    }
-
-    const head = firstMap.get(k);
-    const tail = restMap.get(k);
-    if (head === undefined || tail === undefined) {
-      visiting.delete(k);
-      return null; // not a full cons cell
-    }
-
-    const headTerm = rewriteTerm(head);
-
-    let tailListElems = null;
-    if (tail instanceof Iri && tail.value === RDF_NIL) {
-      tailListElems = [];
-    } else {
-      const tk = nodeKey(tail);
-      if (!tk) {
-        visiting.delete(k);
-        return null;
+    function evalListRestLikeBuiltin(sTerm, oTerm, subst) {
+      // Closed list: (a b c) -> (b c)
+      if (sTerm instanceof ListTerm) {
+        if (!sTerm.elems.length) return [];
+        const rest = new ListTerm(sTerm.elems.slice(1));
+        const s2 = unifyTerm(oTerm, rest, subst);
+        return s2 !== null ? [s2] : [];
       }
-      const tailList = buildListForKey(tk);
-      if (!tailList) {
-        visiting.delete(k);
-        return null;
-      }
-      tailListElems = tailList.elems;
-    }
 
-    const out = new ListTerm([headTerm, ...tailListElems]);
-    cache.set(k, out);
-    visiting.delete(k);
-    return out;
-  }
-
-  function rewriteTerm(t) {
-    // rdf:nil is the empty list ()
-    if (t instanceof Iri && t.value === RDF_NIL) return new ListTerm([]);
-    // Replace list nodes (Blank/Iri) by their constructed ListTerm when possible
-    const k = nodeKey(t);
-    if (k) {
-      const built = buildListForKey(k);
-      if (built) return built;
-      return t;
-    }
-    if (t instanceof ListTerm) {
-      let changed = false;
-      const elems = t.elems.map((e) => {
-        const r = rewriteTerm(e);
-        if (r !== e) changed = true;
-        return r;
-      });
-      return changed ? new ListTerm(elems) : t;
-    }
-    if (t instanceof OpenListTerm) {
-      let changed = false;
-      const prefix = t.prefix.map((e) => {
-        const r = rewriteTerm(e);
-        if (r !== e) changed = true;
-        return r;
-      });
-      return changed ? new OpenListTerm(prefix, t.tailVar) : t;
-    }
-    if (t instanceof GraphTerm) {
-      for (const tr of t.triples) rewriteTriple(tr);
-      return t;
-    }
-    return t;
-  }
-
-  function rewriteTriple(tr) {
-    tr.s = rewriteTerm(tr.s);
-    tr.p = rewriteTerm(tr.p);
-    tr.o = rewriteTerm(tr.o);
-  }
-
-  // Pre-build all reachable list heads
-  for (const k of firstMap.keys()) buildListForKey(k);
-
-  // Rewrite input triples + rules in-place
-  for (const tr of triples) rewriteTriple(tr);
-  for (const r of forwardRules) {
-    for (const tr of r.premise) rewriteTriple(tr);
-    for (const tr of r.conclusion) rewriteTriple(tr);
-  }
-  for (const r of backwardRules) {
-    for (const tr of r.premise) rewriteTriple(tr);
-    for (const tr of r.conclusion) rewriteTriple(tr);
-  }
-}
-
-// ===========================================================================
-// Crypto builtin helpers
-// ===========================================================================
-
-function hashLiteralTerm(t, algo) {
-  if (!(t instanceof Literal)) return null;
-  const [lex] = literalParts(t.value);
-  const input = stripQuotes(lex);
-  try {
-    const digest = nodeCrypto.createHash(algo).update(input, 'utf8').digest('hex');
-    return internLiteral(JSON.stringify(digest));
-  } catch {
-    return null;
-  }
-}
-
-function evalCryptoHashBuiltin(g, subst, algo) {
-  const lit = hashLiteralTerm(g.s, algo);
-  if (!lit) return [];
-  if (g.o instanceof Var) {
-    const s2 = { ...subst };
-    s2[g.o.name] = lit;
-    return [s2];
-  }
-  const s2 = unifyTerm(g.o, lit, subst);
-  return s2 !== null ? [s2] : [];
-}
-
-// ---------------------------------------------------------------------------
-// log: scoped-closure priority helper
-// ---------------------------------------------------------------------------
-// When log:collectAllIn / log:forAllIn are used with an object that is a
-// positive integer literal (>= 1), that number is treated as a *priority* (closure level).
-// See the adapted semantics near those builtins.
-function __logNaturalPriorityFromTerm(t) {
-  const info = parseNumericLiteralInfo(t);
-  if (!info) return null;
-  if (info.dt !== XSD_INTEGER_DT) return null;
-
-  const v = info.value;
-  if (typeof v === 'bigint') {
-    if (v < 1n) return null;
-    if (v > BigInt(Number.MAX_SAFE_INTEGER)) return null;
-    return Number(v);
-  }
-  if (typeof v === 'number') {
-    if (!Number.isInteger(v) || v < 1) return null;
-    return v;
-  }
-  return null;
-}
-
-// ===========================================================================
-// Builtin evaluation
-// ===========================================================================
-// Backward proof & builtins mutual recursion — declarations first
-
-function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
-  const g = applySubstTriple(goal, subst);
-  const pv = iriValue(g.p);
-  if (pv === null) return null;
-
-  // Super restricted mode: disable *all* builtins except => / <= (log:implies / log:impliedBy)
-  if (typeof getSuperRestrictedMode === 'function' && getSuperRestrictedMode()) {
-    const allow1 = LOG_NS + 'implies';
-    const allow2 = LOG_NS + 'impliedBy';
-    if (pv !== allow1 && pv !== allow2) return [];
-  }
-
-  const registeredBuiltinResult = __evalRegisteredBuiltin(pv, g, subst, facts, backRules, depth, varGen, maxResults);
-  if (registeredBuiltinResult !== null) return registeredBuiltinResult;
-
-  // -----------------------------------------------------------------
-  // 4.1 crypto: builtins
-  // -----------------------------------------------------------------
-
-  // crypto:sha, crypto:md5, crypto:sha256, crypto:sha512
-  // Digest builtins. crypto:sha uses SHA-1 per the N3/crypto convention.
-  const cryptoAlgo =
-    pv === CRYPTO_NS + 'sha'
-      ? 'sha1'
-      : pv === CRYPTO_NS + 'md5'
-        ? 'md5'
-        : pv === CRYPTO_NS + 'sha256'
-          ? 'sha256'
-          : pv === CRYPTO_NS + 'sha512'
-            ? 'sha512'
-            : null;
-  if (cryptoAlgo) return evalCryptoHashBuiltin(g, subst, cryptoAlgo);
-
-  // -----------------------------------------------------------------
-  // 4.2 math: builtins
-  // -----------------------------------------------------------------
-
-  // math:greaterThan / lessThan / notLessThan / notGreaterThan / equalTo / notEqualTo
-  const mathCmpOp =
-    pv === MATH_NS + 'greaterThan'
-      ? '>'
-      : pv === MATH_NS + 'lessThan'
-        ? '<'
-        : pv === MATH_NS + 'notLessThan'
-          ? '>='
-          : pv === MATH_NS + 'notGreaterThan'
-            ? '<='
-            : pv === MATH_NS + 'equalTo'
-              ? '=='
-              : pv === MATH_NS + 'notEqualTo'
-                ? '!='
-                : null;
-  if (mathCmpOp) return evalNumericComparisonBuiltin(g, subst, mathCmpOp);
-
-  // math:sum
-  // Schema: ( $s.i+ )+ math:sum $o-
-  if (pv === MATH_NS + 'sum') {
-    // We accept any (possibly empty) closed list here.
-    if (!(g.s instanceof ListTerm)) return [];
-    const xs = g.s.elems;
-
-    // Special-case: (dateTime durationOrSeconds) math:sum dateTime
-    // This mirrors EYE-style convenience for timestamp arithmetic.
-    //
-    // Notes:
-    // - We treat xsd:duration as seconds via parseNumOrDuration (same model as math:difference).
-    // - Output is normalized to UTC lexical form ("...Z"), consistent with other dateTime outputs.
-    if (xs.length === 2) {
-      const dt0 = parseDatetimeLike(xs[0]);
-      const dt1 = parseDatetimeLike(xs[1]);
-
-      if (dt0 !== null && dt1 === null) {
-        const secs = parseNumOrDuration(xs[1]);
-        if (secs !== null) {
-          const outSecs = dt0.getTime() / 1000.0 + secs;
-          const lex = time.utcIsoDateTimeStringFromEpochSeconds(outSecs);
-          const lit = internLiteral(`"${lex}"^^<${XSD_NS}dateTime>`);
-          if (g.o instanceof Var) {
-            const s2 = { ...subst };
-            s2[g.o.name] = lit;
-            return [s2];
-          }
-          const s2 = unifyTerm(g.o, lit, subst);
+      // Open list: (a b ... ?T) -> (b ... ?T)
+      if (sTerm instanceof OpenListTerm) {
+        if (!sTerm.prefix.length) return [];
+        if (sTerm.prefix.length === 1) {
+          const s2 = unifyTerm(oTerm, new Var(sTerm.tailVar), subst);
           return s2 !== null ? [s2] : [];
         }
+        const rest = new OpenListTerm(sTerm.prefix.slice(1), sTerm.tailVar);
+        const s2 = unifyTerm(oTerm, rest, subst);
+        return s2 !== null ? [s2] : [];
       }
 
-      if (dt1 !== null && dt0 === null) {
-        const secs = parseNumOrDuration(xs[0]);
-        if (secs !== null) {
-          const outSecs = dt1.getTime() / 1000.0 + secs;
-          const lex = time.utcIsoDateTimeStringFromEpochSeconds(outSecs);
-          const lit = internLiteral(`"${lex}"^^<${XSD_NS}dateTime>`);
-          if (g.o instanceof Var) {
-            const s2 = { ...subst };
-            s2[g.o.name] = lit;
-            return [s2];
-          }
-          const s2 = unifyTerm(g.o, lit, subst);
-          return s2 !== null ? [s2] : [];
-        }
-      }
-    }
-
-    const dtOut0 = commonNumericDatatype(xs, g.o);
-
-    // Exact integer mode
-    if (dtOut0 === XSD_INTEGER_DT) {
-      let total = 0n;
-      for (const t of xs) {
-        const v = parseIntLiteral(t);
-        if (v === null) return [];
-        total += v;
-      }
-
-      if (g.o instanceof Var) {
-        const s2 = { ...subst };
-        s2[g.o.name] = makeNumericOutputLiteral(total, XSD_INTEGER_DT);
-        return [s2];
-      }
-      if (g.o instanceof Blank) return [{ ...subst }];
-
-      const oi = parseIntLiteral(g.o);
-      if (oi !== null && oi === total) return [{ ...subst }];
-
-      // Fallback numeric compare
-      if (numEqualTerm(g.o, Number(total))) return [{ ...subst }];
       return [];
     }
 
-    // Numeric mode (decimal/float/double)
-    let total = 0.0;
-    for (const t of xs) {
-      const v = parseNum(t);
-      if (v === null) return [];
-      total += v;
-    }
+    // ===========================================================================
+    // RDF list materialization
+    // ===========================================================================
 
-    let dtOut = dtOut0;
-    if (dtOut === XSD_INTEGER_DT && !Number.isInteger(total)) dtOut = XSD_DECIMAL_DT;
-    const lit = makeNumericOutputLiteral(total, dtOut);
+    // Turn RDF Collections described with rdf:first/rdf:rest (+ rdf:nil) into ListTerm terms.
+    // This mutates triples/rules in-place so list:* builtins work on RDF-serialized lists too.
+    function materializeRdfLists(triples, forwardRules, backwardRules) {
+      const RDF_FIRST = RDF_NS + 'first';
+      const RDF_REST = RDF_NS + 'rest';
+      const RDF_NIL = RDF_NS + 'nil';
 
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = lit;
-      return [s2];
-    }
-    if (g.o instanceof Blank) return [{ ...subst }];
-    if (numEqualTerm(g.o, total)) return [{ ...subst }];
-    return [];
-  }
-
-  // math:product
-  // Schema: ( $s.i+ )+ math:product $o-
-  if (pv === MATH_NS + 'product') {
-    // We accept any (possibly empty) closed list here.
-    if (!(g.s instanceof ListTerm)) return [];
-    const xs = g.s.elems;
-
-    const dtOut0 = commonNumericDatatype(xs, g.o);
-
-    // Exact integer mode
-    if (dtOut0 === XSD_INTEGER_DT) {
-      let prod = 1n;
-      for (const t of xs) {
-        const v = parseIntLiteral(t);
-        if (v === null) return [];
-        prod *= v;
+      function nodeKey(t) {
+        // Only rewrite anonymous RDF list nodes (blank nodes). Named list nodes
+        // must keep their identity; list:* builtins can traverse rdf:first/rest.
+        if (t instanceof Blank) return `b:${t.label}`;
+        return null;
       }
 
-      if (g.o instanceof Var) {
-        const s2 = { ...subst };
-        s2[g.o.name] = makeNumericOutputLiteral(prod, XSD_INTEGER_DT);
-        return [s2];
+      // Collect first/rest arcs from *input triples*
+      const firstMap = new Map(); // key(subject) -> Term (object)
+      const restMap = new Map(); // key(subject) -> Term (object)
+      for (const tr of triples) {
+        if (!(tr.p instanceof Iri)) continue;
+        const k = nodeKey(tr.s);
+        if (!k) continue;
+        if (tr.p.value === RDF_FIRST) firstMap.set(k, tr.o);
+        else if (tr.p.value === RDF_REST) restMap.set(k, tr.o);
       }
-      if (g.o instanceof Blank) return [{ ...subst }];
+      if (!firstMap.size && !restMap.size) return;
 
-      const oi = parseIntLiteral(g.o);
-      if (oi !== null && oi === prod) return [{ ...subst }];
-      if (numEqualTerm(g.o, Number(prod))) return [{ ...subst }];
-      return [];
+      const cache = new Map(); // key(node) -> ListTerm
+      const visiting = new Set(); // cycle guard
+
+      function buildListForKey(k) {
+        if (cache.has(k)) return cache.get(k);
+        if (visiting.has(k)) return null; // cycle => not a well-formed list
+        visiting.add(k);
+
+        // rdf:nil => ()
+        if (k === 'I:' + RDF_NIL) {
+          const empty = new ListTerm([]);
+          cache.set(k, empty);
+          visiting.delete(k);
+          return empty;
+        }
+
+        const head = firstMap.get(k);
+        const tail = restMap.get(k);
+        if (head === undefined || tail === undefined) {
+          visiting.delete(k);
+          return null; // not a full cons cell
+        }
+
+        const headTerm = rewriteTerm(head);
+
+        let tailListElems = null;
+        if (tail instanceof Iri && tail.value === RDF_NIL) {
+          tailListElems = [];
+        } else {
+          const tk = nodeKey(tail);
+          if (!tk) {
+            visiting.delete(k);
+            return null;
+          }
+          const tailList = buildListForKey(tk);
+          if (!tailList) {
+            visiting.delete(k);
+            return null;
+          }
+          tailListElems = tailList.elems;
+        }
+
+        const out = new ListTerm([headTerm, ...tailListElems]);
+        cache.set(k, out);
+        visiting.delete(k);
+        return out;
+      }
+
+      function rewriteTerm(t) {
+        // rdf:nil is the empty list ()
+        if (t instanceof Iri && t.value === RDF_NIL) return new ListTerm([]);
+        // Replace list nodes (Blank/Iri) by their constructed ListTerm when possible
+        const k = nodeKey(t);
+        if (k) {
+          const built = buildListForKey(k);
+          if (built) return built;
+          return t;
+        }
+        if (t instanceof ListTerm) {
+          let changed = false;
+          const elems = t.elems.map((e) => {
+            const r = rewriteTerm(e);
+            if (r !== e) changed = true;
+            return r;
+          });
+          return changed ? new ListTerm(elems) : t;
+        }
+        if (t instanceof OpenListTerm) {
+          let changed = false;
+          const prefix = t.prefix.map((e) => {
+            const r = rewriteTerm(e);
+            if (r !== e) changed = true;
+            return r;
+          });
+          return changed ? new OpenListTerm(prefix, t.tailVar) : t;
+        }
+        if (t instanceof GraphTerm) {
+          for (const tr of t.triples) rewriteTriple(tr);
+          return t;
+        }
+        return t;
+      }
+
+      function rewriteTriple(tr) {
+        tr.s = rewriteTerm(tr.s);
+        tr.p = rewriteTerm(tr.p);
+        tr.o = rewriteTerm(tr.o);
+      }
+
+      // Pre-build all reachable list heads
+      for (const k of firstMap.keys()) buildListForKey(k);
+
+      // Rewrite input triples + rules in-place
+      for (const tr of triples) rewriteTriple(tr);
+      for (const r of forwardRules) {
+        for (const tr of r.premise) rewriteTriple(tr);
+        for (const tr of r.conclusion) rewriteTriple(tr);
+      }
+      for (const r of backwardRules) {
+        for (const tr of r.premise) rewriteTriple(tr);
+        for (const tr of r.conclusion) rewriteTriple(tr);
+      }
     }
 
-    // Numeric mode (decimal/float/double)
-    let prod = 1.0;
-    for (const t of xs) {
-      const v = parseNum(t);
-      if (v === null) return [];
-      prod *= v;
+    // ===========================================================================
+    // Crypto builtin helpers
+    // ===========================================================================
+
+    function hashLiteralTerm(t, algo) {
+      if (!(t instanceof Literal)) return null;
+      const [lex] = literalParts(t.value);
+      const input = stripQuotes(lex);
+      try {
+        const digest = nodeCrypto.createHash(algo).update(input, 'utf8').digest('hex');
+        return internLiteral(JSON.stringify(digest));
+      } catch {
+        return null;
+      }
     }
 
-    let dtOut = dtOut0;
-    if (dtOut === XSD_INTEGER_DT && !Number.isInteger(prod)) dtOut = XSD_DECIMAL_DT;
-    const lit = makeNumericOutputLiteral(prod, dtOut);
-
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = lit;
-      return [s2];
-    }
-    if (g.o instanceof Blank) return [{ ...subst }];
-    if (numEqualTerm(g.o, prod)) return [{ ...subst }];
-    return [];
-  }
-
-  // math:difference
-  // Schema: ( $s.1+ $s.2+ )+ math:difference $o-
-  if (pv === MATH_NS + 'difference') {
-    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
-    const [a0, b0] = g.s.elems;
-
-    // 1) Date/datetime difference -> xsd:duration
-    //
-    // Emit a conservative seconds-only lexical form (e.g., "PT900S"^^xsd:duration).
-    // This avoids day/month/year normalization ambiguity and still allows numeric
-    // comparisons via parseNumOrDuration (used by math:lessThan, etc.).
-    const aDt = parseDatetimeLike(a0);
-    const bDt = parseDatetimeLike(b0);
-    if (aDt !== null && bDt !== null) {
-      const diffSecs = (aDt.getTime() - bDt.getTime()) / 1000.0;
-      if (!Number.isFinite(diffSecs)) return [];
-
-      const lit = formatDurationLiteralFromSeconds(diffSecs);
-
+    function evalCryptoHashBuiltin(g, subst, algo) {
+      const lit = hashLiteralTerm(g.s, algo);
+      if (!lit) return [];
       if (g.o instanceof Var) {
         const s2 = { ...subst };
         s2[g.o.name] = lit;
@@ -2349,13 +2091,335 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       return s2 !== null ? [s2] : [];
     }
 
-    // 2) Date/datetime minus duration/seconds -> dateTime (keeps older functionality)
-    if (aDt !== null) {
-      const secs = parseNumOrDuration(b0);
-      if (secs !== null) {
-        const outSecs = aDt.getTime() / 1000.0 - secs;
-        const lex = time.utcIsoDateTimeStringFromEpochSeconds(outSecs);
-        const lit = internLiteral(`"${lex}"^^<${XSD_NS}dateTime>`);
+    // ---------------------------------------------------------------------------
+    // log: scoped-closure priority helper
+    // ---------------------------------------------------------------------------
+    // When log:collectAllIn / log:forAllIn are used with an object that is a
+    // positive integer literal (>= 1), that number is treated as a *priority* (closure level).
+    // See the adapted semantics near those builtins.
+    function __logNaturalPriorityFromTerm(t) {
+      const info = parseNumericLiteralInfo(t);
+      if (!info) return null;
+      if (info.dt !== XSD_INTEGER_DT) return null;
+
+      const v = info.value;
+      if (typeof v === 'bigint') {
+        if (v < 1n) return null;
+        if (v > BigInt(Number.MAX_SAFE_INTEGER)) return null;
+        return Number(v);
+      }
+      if (typeof v === 'number') {
+        if (!Number.isInteger(v) || v < 1) return null;
+        return v;
+      }
+      return null;
+    }
+
+    // ===========================================================================
+    // Builtin evaluation
+    // ===========================================================================
+    // Backward proof & builtins mutual recursion — declarations first
+
+    function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
+      const g = applySubstTriple(goal, subst);
+      const pv = iriValue(g.p);
+      if (pv === null) return null;
+
+      // Super restricted mode: disable *all* builtins except => / <= (log:implies / log:impliedBy)
+      if (typeof getSuperRestrictedMode === 'function' && getSuperRestrictedMode()) {
+        const allow1 = LOG_NS + 'implies';
+        const allow2 = LOG_NS + 'impliedBy';
+        if (pv !== allow1 && pv !== allow2) return [];
+      }
+
+      const registeredBuiltinResult = __evalRegisteredBuiltin(
+        pv,
+        g,
+        subst,
+        facts,
+        backRules,
+        depth,
+        varGen,
+        maxResults,
+      );
+      if (registeredBuiltinResult !== null) return registeredBuiltinResult;
+
+      // -----------------------------------------------------------------
+      // 4.1 crypto: builtins
+      // -----------------------------------------------------------------
+
+      // crypto:sha, crypto:md5, crypto:sha256, crypto:sha512
+      // Digest builtins. crypto:sha uses SHA-1 per the N3/crypto convention.
+      const cryptoAlgo =
+        pv === CRYPTO_NS + 'sha'
+          ? 'sha1'
+          : pv === CRYPTO_NS + 'md5'
+            ? 'md5'
+            : pv === CRYPTO_NS + 'sha256'
+              ? 'sha256'
+              : pv === CRYPTO_NS + 'sha512'
+                ? 'sha512'
+                : null;
+      if (cryptoAlgo) return evalCryptoHashBuiltin(g, subst, cryptoAlgo);
+
+      // -----------------------------------------------------------------
+      // 4.2 math: builtins
+      // -----------------------------------------------------------------
+
+      // math:greaterThan / lessThan / notLessThan / notGreaterThan / equalTo / notEqualTo
+      const mathCmpOp =
+        pv === MATH_NS + 'greaterThan'
+          ? '>'
+          : pv === MATH_NS + 'lessThan'
+            ? '<'
+            : pv === MATH_NS + 'notLessThan'
+              ? '>='
+              : pv === MATH_NS + 'notGreaterThan'
+                ? '<='
+                : pv === MATH_NS + 'equalTo'
+                  ? '=='
+                  : pv === MATH_NS + 'notEqualTo'
+                    ? '!='
+                    : null;
+      if (mathCmpOp) return evalNumericComparisonBuiltin(g, subst, mathCmpOp);
+
+      // math:sum
+      // Schema: ( $s.i+ )+ math:sum $o-
+      if (pv === MATH_NS + 'sum') {
+        // We accept any (possibly empty) closed list here.
+        if (!(g.s instanceof ListTerm)) return [];
+        const xs = g.s.elems;
+
+        // Special-case: (dateTime durationOrSeconds) math:sum dateTime
+        // This mirrors EYE-style convenience for timestamp arithmetic.
+        //
+        // Notes:
+        // - We treat xsd:duration as seconds via parseNumOrDuration (same model as math:difference).
+        // - Output is normalized to UTC lexical form ("...Z"), consistent with other dateTime outputs.
+        if (xs.length === 2) {
+          const dt0 = parseDatetimeLike(xs[0]);
+          const dt1 = parseDatetimeLike(xs[1]);
+
+          if (dt0 !== null && dt1 === null) {
+            const secs = parseNumOrDuration(xs[1]);
+            if (secs !== null) {
+              const outSecs = dt0.getTime() / 1000.0 + secs;
+              const lex = time.utcIsoDateTimeStringFromEpochSeconds(outSecs);
+              const lit = internLiteral(`"${lex}"^^<${XSD_NS}dateTime>`);
+              if (g.o instanceof Var) {
+                const s2 = { ...subst };
+                s2[g.o.name] = lit;
+                return [s2];
+              }
+              const s2 = unifyTerm(g.o, lit, subst);
+              return s2 !== null ? [s2] : [];
+            }
+          }
+
+          if (dt1 !== null && dt0 === null) {
+            const secs = parseNumOrDuration(xs[0]);
+            if (secs !== null) {
+              const outSecs = dt1.getTime() / 1000.0 + secs;
+              const lex = time.utcIsoDateTimeStringFromEpochSeconds(outSecs);
+              const lit = internLiteral(`"${lex}"^^<${XSD_NS}dateTime>`);
+              if (g.o instanceof Var) {
+                const s2 = { ...subst };
+                s2[g.o.name] = lit;
+                return [s2];
+              }
+              const s2 = unifyTerm(g.o, lit, subst);
+              return s2 !== null ? [s2] : [];
+            }
+          }
+        }
+
+        const dtOut0 = commonNumericDatatype(xs, g.o);
+
+        // Exact integer mode
+        if (dtOut0 === XSD_INTEGER_DT) {
+          let total = 0n;
+          for (const t of xs) {
+            const v = parseIntLiteral(t);
+            if (v === null) return [];
+            total += v;
+          }
+
+          if (g.o instanceof Var) {
+            const s2 = { ...subst };
+            s2[g.o.name] = makeNumericOutputLiteral(total, XSD_INTEGER_DT);
+            return [s2];
+          }
+          if (g.o instanceof Blank) return [{ ...subst }];
+
+          const oi = parseIntLiteral(g.o);
+          if (oi !== null && oi === total) return [{ ...subst }];
+
+          // Fallback numeric compare
+          if (numEqualTerm(g.o, Number(total))) return [{ ...subst }];
+          return [];
+        }
+
+        // Numeric mode (decimal/float/double)
+        let total = 0.0;
+        for (const t of xs) {
+          const v = parseNum(t);
+          if (v === null) return [];
+          total += v;
+        }
+
+        let dtOut = dtOut0;
+        if (dtOut === XSD_INTEGER_DT && !Number.isInteger(total)) dtOut = XSD_DECIMAL_DT;
+        const lit = makeNumericOutputLiteral(total, dtOut);
+
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = lit;
+          return [s2];
+        }
+        if (g.o instanceof Blank) return [{ ...subst }];
+        if (numEqualTerm(g.o, total)) return [{ ...subst }];
+        return [];
+      }
+
+      // math:product
+      // Schema: ( $s.i+ )+ math:product $o-
+      if (pv === MATH_NS + 'product') {
+        // We accept any (possibly empty) closed list here.
+        if (!(g.s instanceof ListTerm)) return [];
+        const xs = g.s.elems;
+
+        const dtOut0 = commonNumericDatatype(xs, g.o);
+
+        // Exact integer mode
+        if (dtOut0 === XSD_INTEGER_DT) {
+          let prod = 1n;
+          for (const t of xs) {
+            const v = parseIntLiteral(t);
+            if (v === null) return [];
+            prod *= v;
+          }
+
+          if (g.o instanceof Var) {
+            const s2 = { ...subst };
+            s2[g.o.name] = makeNumericOutputLiteral(prod, XSD_INTEGER_DT);
+            return [s2];
+          }
+          if (g.o instanceof Blank) return [{ ...subst }];
+
+          const oi = parseIntLiteral(g.o);
+          if (oi !== null && oi === prod) return [{ ...subst }];
+          if (numEqualTerm(g.o, Number(prod))) return [{ ...subst }];
+          return [];
+        }
+
+        // Numeric mode (decimal/float/double)
+        let prod = 1.0;
+        for (const t of xs) {
+          const v = parseNum(t);
+          if (v === null) return [];
+          prod *= v;
+        }
+
+        let dtOut = dtOut0;
+        if (dtOut === XSD_INTEGER_DT && !Number.isInteger(prod)) dtOut = XSD_DECIMAL_DT;
+        const lit = makeNumericOutputLiteral(prod, dtOut);
+
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = lit;
+          return [s2];
+        }
+        if (g.o instanceof Blank) return [{ ...subst }];
+        if (numEqualTerm(g.o, prod)) return [{ ...subst }];
+        return [];
+      }
+
+      // math:difference
+      // Schema: ( $s.1+ $s.2+ )+ math:difference $o-
+      if (pv === MATH_NS + 'difference') {
+        if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
+        const [a0, b0] = g.s.elems;
+
+        // 1) Date/datetime difference -> xsd:duration
+        //
+        // Emit a conservative seconds-only lexical form (e.g., "PT900S"^^xsd:duration).
+        // This avoids day/month/year normalization ambiguity and still allows numeric
+        // comparisons via parseNumOrDuration (used by math:lessThan, etc.).
+        const aDt = parseDatetimeLike(a0);
+        const bDt = parseDatetimeLike(b0);
+        if (aDt !== null && bDt !== null) {
+          const diffSecs = (aDt.getTime() - bDt.getTime()) / 1000.0;
+          if (!Number.isFinite(diffSecs)) return [];
+
+          const lit = formatDurationLiteralFromSeconds(diffSecs);
+
+          if (g.o instanceof Var) {
+            const s2 = { ...subst };
+            s2[g.o.name] = lit;
+            return [s2];
+          }
+          const s2 = unifyTerm(g.o, lit, subst);
+          return s2 !== null ? [s2] : [];
+        }
+
+        // 2) Date/datetime minus duration/seconds -> dateTime (keeps older functionality)
+        if (aDt !== null) {
+          const secs = parseNumOrDuration(b0);
+          if (secs !== null) {
+            const outSecs = aDt.getTime() / 1000.0 - secs;
+            const lex = time.utcIsoDateTimeStringFromEpochSeconds(outSecs);
+            const lit = internLiteral(`"${lex}"^^<${XSD_NS}dateTime>`);
+            if (g.o instanceof Var) {
+              const s2 = { ...subst };
+              s2[g.o.name] = lit;
+              return [s2];
+            }
+            const s2 = unifyTerm(g.o, lit, subst);
+            return s2 !== null ? [s2] : [];
+          }
+        }
+
+        // 3) Exact integer difference (BigInt)
+        const ai = parseIntLiteral(a0);
+        const bi = parseIntLiteral(b0);
+        if (ai !== null && bi !== null) {
+          const ci = ai - bi;
+          const lit = internLiteral(ci.toString());
+          if (g.o instanceof Var) {
+            const s2 = { ...subst };
+            s2[g.o.name] = lit;
+            return [s2];
+          }
+          const s2 = unifyTerm(g.o, lit, subst);
+          return s2 !== null ? [s2] : [];
+        }
+
+        // 4) Numeric difference (your “typed output + numeric compare” version)
+        const a = parseNum(a0);
+        const b = parseNum(b0);
+        if (a === null || b === null) return [];
+
+        const c = a - b;
+        if (!Number.isFinite(c)) return [];
+
+        // If you added commonNumericDatatype/makeNumericOutputLiteral, keep using them:
+        if (typeof commonNumericDatatype === 'function' && typeof makeNumericOutputLiteral === 'function') {
+          let dtOut = commonNumericDatatype([a0, b0], g.o);
+          if (dtOut === XSD_INTEGER_DT && !Number.isInteger(c)) dtOut = XSD_DECIMAL_DT;
+          const lit = makeNumericOutputLiteral(c, dtOut);
+
+          if (g.o instanceof Var) {
+            const s2 = { ...subst };
+            s2[g.o.name] = lit;
+            return [s2];
+          }
+          if (g.o instanceof Blank) return [{ ...subst }];
+          if (numEqualTerm(g.o, c)) return [{ ...subst }];
+          return [];
+        }
+
+        // Fallback (if you *don’t* have those helpers yet):
+        const lit = internLiteral(formatNum(c));
         if (g.o instanceof Var) {
           const s2 = { ...subst };
           s2[g.o.name] = lit;
@@ -2364,2908 +2428,2861 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
         const s2 = unifyTerm(g.o, lit, subst);
         return s2 !== null ? [s2] : [];
       }
-    }
 
-    // 3) Exact integer difference (BigInt)
-    const ai = parseIntLiteral(a0);
-    const bi = parseIntLiteral(b0);
-    if (ai !== null && bi !== null) {
-      const ci = ai - bi;
-      const lit = internLiteral(ci.toString());
-      if (g.o instanceof Var) {
-        const s2 = { ...subst };
-        s2[g.o.name] = lit;
-        return [s2];
-      }
-      const s2 = unifyTerm(g.o, lit, subst);
-      return s2 !== null ? [s2] : [];
-    }
+      // math:quotient
+      // Schema: ( $s.1+ $s.2+ )+ math:quotient $o-
+      if (pv === MATH_NS + 'quotient') {
+        if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
+        const [a0, b0] = g.s.elems;
 
-    // 4) Numeric difference (your “typed output + numeric compare” version)
-    const a = parseNum(a0);
-    const b = parseNum(b0);
-    if (a === null || b === null) return [];
+        const a = parseNum(a0);
+        const b = parseNum(b0);
+        if (a === null || b === null) return [];
+        if (!Number.isFinite(a) || !Number.isFinite(b) || b === 0) return [];
 
-    const c = a - b;
-    if (!Number.isFinite(c)) return [];
+        const c = a / b;
+        if (!Number.isFinite(c)) return [];
 
-    // If you added commonNumericDatatype/makeNumericOutputLiteral, keep using them:
-    if (typeof commonNumericDatatype === 'function' && typeof makeNumericOutputLiteral === 'function') {
-      let dtOut = commonNumericDatatype([a0, b0], g.o);
-      if (dtOut === XSD_INTEGER_DT && !Number.isInteger(c)) dtOut = XSD_DECIMAL_DT;
-      const lit = makeNumericOutputLiteral(c, dtOut);
+        let dtOut = commonNumericDatatype([a0, b0], g.o);
+        if (dtOut === XSD_INTEGER_DT && !Number.isInteger(c)) dtOut = XSD_DECIMAL_DT;
+        const lit = makeNumericOutputLiteral(c, dtOut);
 
-      if (g.o instanceof Var) {
-        const s2 = { ...subst };
-        s2[g.o.name] = lit;
-        return [s2];
-      }
-      if (g.o instanceof Blank) return [{ ...subst }];
-      if (numEqualTerm(g.o, c)) return [{ ...subst }];
-      return [];
-    }
-
-    // Fallback (if you *don’t* have those helpers yet):
-    const lit = internLiteral(formatNum(c));
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = lit;
-      return [s2];
-    }
-    const s2 = unifyTerm(g.o, lit, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // math:quotient
-  // Schema: ( $s.1+ $s.2+ )+ math:quotient $o-
-  if (pv === MATH_NS + 'quotient') {
-    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
-    const [a0, b0] = g.s.elems;
-
-    const a = parseNum(a0);
-    const b = parseNum(b0);
-    if (a === null || b === null) return [];
-    if (!Number.isFinite(a) || !Number.isFinite(b) || b === 0) return [];
-
-    const c = a / b;
-    if (!Number.isFinite(c)) return [];
-
-    let dtOut = commonNumericDatatype([a0, b0], g.o);
-    if (dtOut === XSD_INTEGER_DT && !Number.isInteger(c)) dtOut = XSD_DECIMAL_DT;
-    const lit = makeNumericOutputLiteral(c, dtOut);
-
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = lit;
-      return [s2];
-    }
-    if (g.o instanceof Blank) return [{ ...subst }];
-    if (numEqualTerm(g.o, c)) return [{ ...subst }];
-    return [];
-  }
-
-  // math:integerQuotient
-  // Schema: ( $a $b ) math:integerQuotient $q
-  // Cwm: divide first integer by second integer, ignoring remainder. :contentReference[oaicite:1]{index=1}
-  if (pv === MATH_NS + 'integerQuotient') {
-    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
-    const [a0, b0] = g.s.elems;
-
-    // Prefer exact integer division using BigInt when possible
-    const ai = parseIntLiteral(a0);
-    const bi = parseIntLiteral(b0);
-    if (ai !== null && bi !== null) {
-      if (bi === 0n) return [];
-      const q = ai / bi; // BigInt division truncates toward zero
-      const lit = internLiteral(q.toString());
-      if (g.o instanceof Var) {
-        const s2 = { ...subst };
-        s2[g.o.name] = lit;
-        return [s2];
-      }
-      if (g.o instanceof Blank) return [{ ...subst }];
-
-      const oi = parseIntLiteral(g.o);
-      if (oi !== null && oi === q) return [{ ...subst }];
-
-      // Only do numeric compare when safe enough to convert
-      const qNum = Number(q);
-      if (Number.isFinite(qNum) && Math.abs(qNum) <= Number.MAX_SAFE_INTEGER) {
-        if (numEqualTerm(g.o, qNum)) return [{ ...subst }];
-      }
-
-      const s2 = unifyTerm(g.o, lit, subst);
-      return s2 !== null ? [s2] : [];
-    }
-
-    // Fallback: allow Number literals that still represent integers
-    const a = parseNum(a0);
-    const b = parseNum(b0);
-    if (a === null || b === null) return [];
-    if (!Number.isFinite(a) || !Number.isFinite(b) || b === 0) return [];
-    if (!Number.isInteger(a) || !Number.isInteger(b)) return [];
-
-    const q = Math.trunc(a / b);
-    const lit = internLiteral(String(q));
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = lit;
-      return [s2];
-    }
-    if (g.o instanceof Blank) return [{ ...subst }];
-
-    if (numEqualTerm(g.o, q)) return [{ ...subst }];
-
-    const s2 = unifyTerm(g.o, lit, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // math:exponentiation
-  // Schema: ( $base $exp ) math:exponentiation $result
-  // Supports exact integer exponentiation via BigInt when both inputs are integers and exp >= 0.
-  if (pv === MATH_NS + 'exponentiation') {
-    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
-    const baseTerm = g.s.elems[0];
-    const expTerm = g.s.elems[1];
-
-    // 1) Exact integer mode (BigInt): (base exponent) -> result
-    //    This avoids huge intermediate derivations for things like Ackermann(4,2).
-    const baseI = parseIntLiteral(baseTerm);
-    const expI = parseIntLiteral(expTerm);
-    if (baseI !== null && expI !== null && expI >= 0n) {
-      // Size guard: refuse powers that would almost certainly OOM.
-      const estBits = estimatePowResultBits(baseI, expI);
-      if (estBits > MAX_BIGINT_POW_RESULT_BITS) return [];
-
-      let out;
-      try {
-        out = baseI ** expI;
-      } catch {
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = lit;
+          return [s2];
+        }
+        if (g.o instanceof Blank) return [{ ...subst }];
+        if (numEqualTerm(g.o, c)) return [{ ...subst }];
         return [];
       }
 
-      const lit = makeNumericOutputLiteral(out, XSD_INTEGER_DT);
-
-      if (g.o instanceof Var) {
-        const s2 = { ...subst };
-        s2[g.o.name] = lit;
-        return [s2];
-      }
-      if (g.o instanceof Blank) return [{ ...subst }];
-
-      const oi = parseIntLiteral(g.o);
-      if (oi !== null && oi === out) return [{ ...subst }];
-
-      const s2 = unifyTerm(g.o, lit, subst);
-      return s2 !== null ? [s2] : [];
-    }
-
-    // 2) Numeric mode (Number): forward + limited inverse
-    const a = parseNum(baseTerm);
-    const b = a !== null ? parseNum(expTerm) : null;
-
-    // Forward
-    if (a !== null && b !== null) {
-      const cVal = a ** b;
-      if (!Number.isFinite(cVal)) return [];
-
-      let dtOut = commonNumericDatatype([baseTerm, expTerm], g.o);
-      if (dtOut === XSD_INTEGER_DT && !Number.isInteger(cVal)) dtOut = XSD_DECIMAL_DT;
-      const lit = makeNumericOutputLiteral(cVal, dtOut);
-
-      if (g.o instanceof Var) {
-        const s2 = { ...subst };
-        s2[g.o.name] = lit;
-        return [s2];
-      }
-      if (g.o instanceof Blank) return [{ ...subst }];
-      if (numEqualTerm(g.o, cVal)) return [{ ...subst }];
-    }
-
-    // Inverse: solve exponent using logs (Number mode only)
-    const c = parseNum(g.o);
-    if (a !== null && expTerm instanceof Var && c !== null) {
-      if (a > 0.0 && a !== 1.0 && c > 0.0) {
-        const bVal = Math.log(c) / Math.log(a);
-        if (!Number.isFinite(bVal)) return [];
-
-        let dtB = commonNumericDatatype([baseTerm, g.o], expTerm);
-        if (dtB === XSD_INTEGER_DT && !Number.isInteger(bVal)) dtB = XSD_DECIMAL_DT;
-
-        const s2 = { ...subst };
-        s2[expTerm.name] = makeNumericOutputLiteral(bVal, dtB);
-        return [s2];
-      }
-    }
-    return [];
-  }
-
-  // math:absoluteValue
-  if (pv === MATH_NS + 'absoluteValue') {
-    const ai = parseIntLiteral(g.s);
-    if (ai !== null) {
-      const outVal = ai < 0n ? -ai : ai;
-      const lit = makeNumericOutputLiteral(outVal, XSD_INTEGER_DT);
-
-      if (g.o instanceof Var) {
-        const s2 = { ...subst };
-        s2[g.o.name] = lit;
-        return [s2];
-      }
-      if (g.o instanceof Blank) return [{ ...subst }];
-
-      const oi = parseIntLiteral(g.o);
-      if (oi !== null && oi === outVal) return [{ ...subst }];
-      if (numEqualTerm(g.o, Number(outVal))) return [{ ...subst }];
-      return [];
-    }
-
-    const a = parseNum(g.s);
-    if (a === null) return [];
-
-    const outVal = Math.abs(a);
-    if (!Number.isFinite(outVal)) return [];
-
-    let dtOut = commonNumericDatatype([g.s], g.o);
-    if (dtOut === XSD_INTEGER_DT && !Number.isInteger(outVal)) dtOut = XSD_DECIMAL_DT;
-
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = makeNumericOutputLiteral(outVal, dtOut);
-      return [s2];
-    }
-    if (g.o instanceof Blank) return [{ ...subst }];
-    if (numEqualTerm(g.o, outVal)) return [{ ...subst }];
-    return [];
-  }
-
-  // math:acos
-  if (pv === MATH_NS + 'acos') {
-    return evalUnaryMathRel(g, subst, Math.acos, Math.cos);
-  }
-
-  // math:asin
-  if (pv === MATH_NS + 'asin') {
-    return evalUnaryMathRel(g, subst, Math.asin, Math.sin);
-  }
-
-  // math:atan
-  if (pv === MATH_NS + 'atan') {
-    return evalUnaryMathRel(g, subst, Math.atan, Math.tan);
-  }
-
-  // math:sin  (inverse uses principal asin)
-  if (pv === MATH_NS + 'sin') {
-    return evalUnaryMathRel(g, subst, Math.sin, Math.asin);
-  }
-
-  // math:cos  (inverse uses principal acos)
-  if (pv === MATH_NS + 'cos') {
-    return evalUnaryMathRel(g, subst, Math.cos, Math.acos);
-  }
-
-  // math:tan  (inverse uses principal atan)
-  if (pv === MATH_NS + 'tan') {
-    return evalUnaryMathRel(g, subst, Math.tan, Math.atan);
-  }
-
-  // math:sinh / cosh / tanh (guard for JS availability)
-  if (pv === MATH_NS + 'sinh') {
-    if (typeof Math.sinh !== 'function' || typeof Math.asinh !== 'function') return [];
-    return evalUnaryMathRel(g, subst, Math.sinh, Math.asinh);
-  }
-  if (pv === MATH_NS + 'cosh') {
-    if (typeof Math.cosh !== 'function' || typeof Math.acosh !== 'function') return [];
-    return evalUnaryMathRel(g, subst, Math.cosh, Math.acosh);
-  }
-  if (pv === MATH_NS + 'tanh') {
-    if (typeof Math.tanh !== 'function' || typeof Math.atanh !== 'function') return [];
-    return evalUnaryMathRel(g, subst, Math.tanh, Math.atanh);
-  }
-
-  // math:degrees (inverse is radians)
-  if (pv === MATH_NS + 'degrees') {
-    const toDeg = (rad) => (rad * 180.0) / Math.PI;
-    const toRad = (deg) => (deg * Math.PI) / 180.0;
-    return evalUnaryMathRel(g, subst, toDeg, toRad);
-  }
-
-  // math:negation (inverse is itself)
-  if (pv === MATH_NS + 'negation') {
-    const si = parseIntLiteral(g.s);
-    if (si !== null) {
-      const outVal = -si;
-      const lit = makeNumericOutputLiteral(outVal, XSD_INTEGER_DT);
-      if (g.o instanceof Var) {
-        const s2 = { ...subst };
-        s2[g.o.name] = lit;
-        return [s2];
-      }
-      if (g.o instanceof Blank) return [{ ...subst }];
-      const oi = parseIntLiteral(g.o);
-      if (oi !== null && oi === outVal) return [{ ...subst }];
-      if (numEqualTerm(g.o, Number(outVal))) return [{ ...subst }];
-      return [];
-    }
-
-    const oi = parseIntLiteral(g.o);
-    if (oi !== null) {
-      const inVal = -oi;
-      const lit = makeNumericOutputLiteral(inVal, XSD_INTEGER_DT);
-      if (g.s instanceof Var) {
-        const s2 = { ...subst };
-        s2[g.s.name] = lit;
-        return [s2];
-      }
-      if (g.s instanceof Blank) return [{ ...subst }];
-      const si2 = parseIntLiteral(g.s);
-      if (si2 !== null && si2 === inVal) return [{ ...subst }];
-      if (numEqualTerm(g.s, Number(inVal))) return [{ ...subst }];
-      return [];
-    }
-
-    const neg = (x) => -x;
-    return evalUnaryMathRel(g, subst, neg, neg);
-  }
-
-  // math:remainder
-  // Subject is a list (dividend divisor); object is the remainder.
-  // Schema: ( $a $b ) math:remainder $r
-  if (pv === MATH_NS + 'remainder') {
-    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
-    const [a0, b0] = g.s.elems;
-
-    // Prefer exact integer arithmetic (BigInt)
-    const ai = parseIntLiteral(a0);
-    const bi = parseIntLiteral(b0);
-    if (ai !== null && bi !== null) {
-      if (bi === 0n) return [];
-      const r = ai % bi;
-      const lit = makeNumericOutputLiteral(r, XSD_INTEGER_DT);
-
-      if (g.o instanceof Var) {
-        const s2 = { ...subst };
-        s2[g.o.name] = lit;
-        return [s2];
-      }
-      if (g.o instanceof Blank) return [{ ...subst }];
-
-      const oi = parseIntLiteral(g.o);
-      if (oi !== null && oi === r) return [{ ...subst }];
-      if (numEqualTerm(g.o, Number(r))) return [{ ...subst }];
-      return [];
-    }
-
-    // Fallback: allow Number literals that still represent integers
-    const a = parseNum(a0);
-    const b = parseNum(b0);
-    if (a === null || b === null) return [];
-    if (!Number.isFinite(a) || !Number.isFinite(b) || b === 0) return [];
-    if (!Number.isInteger(a) || !Number.isInteger(b)) return [];
-
-    const rVal = a % b;
-    const lit = makeNumericOutputLiteral(rVal, XSD_INTEGER_DT);
-
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = lit;
-      return [s2];
-    }
-    if (g.o instanceof Blank) return [{ ...subst }];
-    if (numEqualTerm(g.o, rVal)) return [{ ...subst }];
-    return [];
-  }
-
-  // math:rounded
-  // Round to nearest integer.
-  // If there are two such numbers, then the one closest to positive infinity is returned.
-  // Schema: $s+ math:rounded $o-
-  // Note: spec says $o is xsd:integer, but we also accept any numeric $o that equals the rounded value.
-  if (pv === MATH_NS + 'rounded') {
-    const ai = parseIntLiteral(g.s);
-    if (ai !== null) {
-      const lit = makeNumericOutputLiteral(ai, XSD_INTEGER_DT);
-
-      if (g.o instanceof Var) {
-        const s2 = { ...subst };
-        s2[g.o.name] = lit;
-        return [s2];
-      }
-      if (g.o instanceof Blank) return [{ ...subst }];
-
-      const oi = parseIntLiteral(g.o);
-      if (oi !== null && oi === ai) return [{ ...subst }];
-      if (numEqualTerm(g.o, Number(ai))) return [{ ...subst }];
-
-      const s2 = unifyTerm(g.o, lit, subst);
-      return s2 !== null ? [s2] : [];
-    }
-
-    const a = parseNum(g.s);
-    if (a === null) return [];
-    if (Number.isNaN(a)) return [];
-
-    const rVal = Math.round(a); // ties go toward +∞ in JS (e.g., -1.5 -> -1)
-    const lit = internLiteral(String(rVal)); // integer token
-
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = lit;
-      return [s2];
-    }
-    if (g.o instanceof Blank) return [{ ...subst }];
-
-    // Accept typed numeric literals too (e.g., "3"^^xsd:float) if numerically equal.
-    if (numEqualTerm(g.o, rVal)) return [{ ...subst }];
-
-    // Fallback to strict unification
-    const s2 = unifyTerm(g.o, lit, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // -----------------------------------------------------------------
-  // 4.3 time: builtins
-  // -----------------------------------------------------------------
-
-  // time:day
-  // Gets as object the integer day component of the subject xsd:dateTime.
-  // Schema: $s+ time:day $o-
-  if (pv === TIME_NS + 'day') {
-    const parts = parseXsdDateTimeLexParts(g.s);
-    if (!parts) return [];
-    const out = internLiteral(String(parts.day));
-
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = out;
-      return [s2];
-    }
-    if (g.o instanceof Blank) return [{ ...subst }];
-
-    const oi = parseIntLiteral(g.o);
-    if (oi !== null) {
-      try {
-        if (oi === BigInt(parts.day)) return [{ ...subst }];
-      } catch {}
-    }
-
-    const s2 = unifyTerm(g.o, out, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // time:hour
-  // Gets as object the integer hour component of the subject xsd:dateTime.
-  // Schema: $s+ time:hour $o-
-  if (pv === TIME_NS + 'hour') {
-    const parts = parseXsdDateTimeLexParts(g.s);
-    if (!parts) return [];
-    const out = internLiteral(String(parts.hour));
-
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = out;
-      return [s2];
-    }
-    if (g.o instanceof Blank) return [{ ...subst }];
-
-    const oi = parseIntLiteral(g.o);
-    if (oi !== null) {
-      try {
-        if (oi === BigInt(parts.hour)) return [{ ...subst }];
-      } catch {}
-    }
-
-    const s2 = unifyTerm(g.o, out, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // time:minute
-  // Gets as object the integer minutes component of the subject xsd:dateTime.
-  // Schema: $s+ time:minute $o-
-  if (pv === TIME_NS + 'minute') {
-    const parts = parseXsdDateTimeLexParts(g.s);
-    if (!parts) return [];
-    const out = internLiteral(String(parts.minute));
-
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = out;
-      return [s2];
-    }
-    if (g.o instanceof Blank) return [{ ...subst }];
-
-    const oi = parseIntLiteral(g.o);
-    if (oi !== null) {
-      try {
-        if (oi === BigInt(parts.minute)) return [{ ...subst }];
-      } catch {}
-    }
-
-    const s2 = unifyTerm(g.o, out, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // time:month
-  // Gets as object the integer month component of the subject xsd:dateTime.
-  // Schema: $s+ time:month $o-
-  if (pv === TIME_NS + 'month') {
-    const parts = parseXsdDateTimeLexParts(g.s);
-    if (!parts) return [];
-    const out = internLiteral(String(parts.month));
-
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = out;
-      return [s2];
-    }
-    if (g.o instanceof Blank) return [{ ...subst }];
-
-    const oi = parseIntLiteral(g.o);
-    if (oi !== null) {
-      try {
-        if (oi === BigInt(parts.month)) return [{ ...subst }];
-      } catch {}
-    }
-
-    const s2 = unifyTerm(g.o, out, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // time:second
-  // Gets as object the integer seconds component of the subject xsd:dateTime.
-  // Schema: $s+ time:second $o-
-  if (pv === TIME_NS + 'second') {
-    const parts = parseXsdDateTimeLexParts(g.s);
-    if (!parts) return [];
-    const out = internLiteral(String(parts.second));
-
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = out;
-      return [s2];
-    }
-    if (g.o instanceof Blank) return [{ ...subst }];
-
-    const oi = parseIntLiteral(g.o);
-    if (oi !== null) {
-      try {
-        if (oi === BigInt(parts.second)) return [{ ...subst }];
-      } catch {}
-    }
-
-    const s2 = unifyTerm(g.o, out, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // time:timeZone
-  // Gets as object the trailing timezone offset of the subject xsd:dateTime (e.g., "-05:00" or "Z").
-  // Schema: $s+ time:timeZone $o-
-  if (pv === TIME_NS + 'timeZone') {
-    const parts = parseXsdDateTimeLexParts(g.s);
-    if (!parts) return [];
-    if (parts.tz === null) return [];
-    const out = internLiteral(`"${parts.tz}"`);
-
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = out;
-      return [s2];
-    }
-    if (g.o instanceof Blank) return [{ ...subst }];
-
-    if (termsEqual(g.o, out)) return [{ ...subst }];
-
-    // Also accept explicitly typed xsd:string literals.
-    if (g.o instanceof Literal) {
-      const [lexO, dtO] = literalParts(g.o.value);
-      if (dtO === XSD_NS + 'string' && stripQuotes(lexO) === parts.tz) return [{ ...subst }];
-    }
-    return [];
-  }
-
-  // time:year
-  // Gets as object the integer year component of the subject xsd:dateTime.
-  // Schema: $s+ time:year $o-
-  if (pv === TIME_NS + 'year') {
-    const parts = parseXsdDateTimeLexParts(g.s);
-    if (!parts) return [];
-    const out = internLiteral(String(parts.yearStr));
-
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = out;
-      return [s2];
-    }
-    if (g.o instanceof Blank) return [{ ...subst }];
-
-    const oi = parseIntLiteral(g.o);
-    if (oi !== null) {
-      try {
-        if (oi === BigInt(parts.yearStr)) return [{ ...subst }];
-      } catch {}
-    }
-
-    const s2 = unifyTerm(g.o, out, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // time:localTime
-  // "" time:localTime ?D.  binds ?D to “now” as xsd:dateTime.
-  if (pv === TIME_NS + 'localTime') {
-    const now = time.getNowLex();
-
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = internLiteral(`"${now}"^^<${XSD_NS}dateTime>`);
-      return [s2];
-    }
-    if (g.o instanceof Literal) {
-      const [lexO] = literalParts(g.o.value);
-      if (stripQuotes(lexO) === now) return [{ ...subst }];
-    }
-    return [];
-  }
-
-  // -----------------------------------------------------------------
-  // 4.4 list: builtins
-  // -----------------------------------------------------------------
-
-  // list:append
-  // true if and only if $o is the concatenation of all lists $s.i.
-  // Schema: ( $s.i?[*] )+ list:append $o?
-  if (pv === LIST_NS + 'append') {
-    if (!(g.s instanceof ListTerm)) return [];
-    const parts = g.s.elems;
-    if (g.o instanceof ListTerm) {
-      return listAppendSplit(parts, g.o.elems, subst);
-    }
-    const outElems = [];
-    for (const part of parts) {
-      if (!(part instanceof ListTerm)) return [];
-      outElems.push(...part.elems);
-    }
-    const result = new ListTerm(outElems);
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = result;
-      return [s2];
-    }
-    if (termsEqual(g.o, result)) return [{ ...subst }];
-    return [];
-  }
-
-  // list:first and rdf:first
-  // true iff $s is a list and $o is the first member of that list.
-  // Schema: $s+ list:first $o-
-  if (pv === LIST_NS + 'first') {
-    const xs = __listElemsForBuiltin(g.s, facts);
-    if (!xs || !xs.length) return [];
-    const s2 = unifyTerm(g.o, xs[0], subst);
-    return s2 !== null ? [s2] : [];
-  }
-  if (pv === RDF_NS + 'first') {
-    return evalListFirstLikeBuiltin(g.s, g.o, subst);
-  }
-
-  // list:rest and rdf:rest
-  // true iff $s is a (non-empty) list and $o is the rest (tail) of that list.
-  // Schema: $s+ list:rest $o-
-  if (pv === LIST_NS + 'rest') {
-    if (g.s instanceof ListTerm || g.s instanceof OpenListTerm) return evalListRestLikeBuiltin(g.s, g.o, subst);
-    const xs = __listElemsForBuiltin(g.s, facts);
-    if (!xs || !xs.length) return [];
-    const rest = new ListTerm(xs.slice(1));
-    const s2 = unifyTerm(g.o, rest, subst);
-    return s2 !== null ? [s2] : [];
-  }
-  if (pv === RDF_NS + 'rest') {
-    return evalListRestLikeBuiltin(g.s, g.o, subst);
-  }
-
-  // list:iterate
-  // Multi-solution builtin:
-  // For a list subject $s, generate solutions by unifying $o with (index value).
-  // This allows $o to be a variable (e.g., ?Y) or a pattern (e.g., (?i "Dewey")).
-  if (pv === LIST_NS + 'iterate') {
-    const xs = __listElemsForBuiltin(g.s, facts);
-    if (!xs) return [];
-    const outs = [];
-
-    for (let i = 0; i < xs.length; i++) {
-      const idxLit = internLiteral(String(i)); // 0-based
-      const val = xs[i];
-
-      // Fast path: object is exactly a 2-element list (idx, value)
-      if (g.o instanceof ListTerm && g.o.elems.length === 2) {
-        const [idxPat, valPat] = g.o.elems;
-
-        const s1 = unifyTerm(idxPat, idxLit, subst);
-        if (s1 === null) continue;
-
-        // If value-pattern is ground after subst: require STRICT term equality
-        const valPat2 = applySubstTerm(valPat, s1);
-        if (isGroundTerm(valPat2)) {
-          if (termsEqualNoIntDecimal(valPat2, val)) outs.push({ ...s1 });
-          continue;
+      // math:integerQuotient
+      // Schema: ( $a $b ) math:integerQuotient $q
+      // Cwm: divide first integer by second integer, ignoring remainder. :contentReference[oaicite:1]{index=1}
+      if (pv === MATH_NS + 'integerQuotient') {
+        if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
+        const [a0, b0] = g.s.elems;
+
+        // Prefer exact integer division using BigInt when possible
+        const ai = parseIntLiteral(a0);
+        const bi = parseIntLiteral(b0);
+        if (ai !== null && bi !== null) {
+          if (bi === 0n) return [];
+          const q = ai / bi; // BigInt division truncates toward zero
+          const lit = internLiteral(q.toString());
+          if (g.o instanceof Var) {
+            const s2 = { ...subst };
+            s2[g.o.name] = lit;
+            return [s2];
+          }
+          if (g.o instanceof Blank) return [{ ...subst }];
+
+          const oi = parseIntLiteral(g.o);
+          if (oi !== null && oi === q) return [{ ...subst }];
+
+          // Only do numeric compare when safe enough to convert
+          const qNum = Number(q);
+          if (Number.isFinite(qNum) && Math.abs(qNum) <= Number.MAX_SAFE_INTEGER) {
+            if (numEqualTerm(g.o, qNum)) return [{ ...subst }];
+          }
+
+          const s2 = unifyTerm(g.o, lit, subst);
+          return s2 !== null ? [s2] : [];
         }
 
-        // Otherwise, allow normal unification/binding
-        const s2 = unifyTerm(valPat, val, s1);
-        if (s2 !== null) outs.push(s2);
-        continue;
-      }
+        // Fallback: allow Number literals that still represent integers
+        const a = parseNum(a0);
+        const b = parseNum(b0);
+        if (a === null || b === null) return [];
+        if (!Number.isFinite(a) || !Number.isFinite(b) || b === 0) return [];
+        if (!Number.isInteger(a) || !Number.isInteger(b)) return [];
 
-      // Fallback: original behavior
-      const pair = new ListTerm([idxLit, val]);
-      const s2 = unifyTerm(g.o, pair, subst);
-      if (s2 !== null) outs.push(s2);
-    }
-
-    return outs;
-  }
-
-  // list:last
-  // true iff $s is a list and $o is the last member of that list.
-  // Schema: $s+ list:last $o-
-  if (pv === LIST_NS + 'last') {
-    const xs = __listElemsForBuiltin(g.s, facts);
-    if (!xs || !xs.length) return [];
-    const last = xs[xs.length - 1];
-    const s2 = unifyTerm(g.o, last, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // list:memberAt
-  // true iff $s.1 is a list, $s.2 is a valid index, and $o is the member at that index.
-  // Schema: ( $s.1+ $s.2?[*] )+ list:memberAt $o?[*]
-  if (pv === LIST_NS + 'memberAt') {
-    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
-    const [listRef, indexTerm] = g.s.elems;
-
-    const xs = __listElemsForBuiltin(listRef, facts);
-    if (!xs) return [];
-    const outs = [];
-
-    for (let i = 0; i < xs.length; i++) {
-      const idxLit = internLiteral(String(i)); // index starts at 0
-
-      // --- index side: strict if ground, otherwise unify/bind
-      let s1 = null;
-      const idxPat2 = applySubstTerm(indexTerm, subst);
-      if (isGroundTerm(idxPat2)) {
-        if (!termsEqualNoIntDecimal(idxPat2, idxLit)) continue;
-        s1 = { ...subst };
-      } else {
-        s1 = unifyTerm(indexTerm, idxLit, subst);
-        if (s1 === null) continue;
-      }
-
-      // --- value side: strict if ground, otherwise unify/bind
-      const o2 = applySubstTerm(g.o, s1);
-      if (isGroundTerm(o2)) {
-        if (termsEqualNoIntDecimal(o2, xs[i])) outs.push({ ...s1 });
-        continue;
-      }
-
-      const s2 = unifyTerm(g.o, xs[i], s1);
-      if (s2 !== null) outs.push(s2);
-    }
-
-    return outs;
-  }
-
-  // list:remove
-  // true iff $s.1 is a list and $o is that list with all occurrences of $s.2 removed.
-  // Schema: ( $s.1+ $s.2+ )+ list:remove $o-
-  if (pv === LIST_NS + 'remove') {
-    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
-    const [listTerm, itemTerm] = g.s.elems;
-    if (!(listTerm instanceof ListTerm)) return [];
-
-    // item must be bound
-    const item2 = applySubstTerm(itemTerm, subst);
-    if (!isGroundTerm(item2)) return [];
-
-    const xs = listTerm.elems;
-    const filtered = [];
-    for (const e of xs) {
-      // strict term match (still allows plain "abc" == "abc"^^xsd:string)
-      if (!termsEqualNoIntDecimal(e, item2)) filtered.push(e);
-    }
-
-    const resList = new ListTerm(filtered);
-    const s2 = unifyTerm(g.o, resList, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // list:member
-  if (pv === LIST_NS + 'member') {
-    const xs = __listElemsForBuiltin(g.s, facts);
-    if (!xs) return [];
-    const outs = [];
-    for (const x of xs) {
-      const s2 = unifyTerm(g.o, x, subst);
-      if (s2 !== null) outs.push(s2);
-    }
-    return outs;
-  }
-
-  // list:in
-  if (pv === LIST_NS + 'in') {
-    if (!(g.o instanceof ListTerm)) return [];
-    const outs = [];
-    for (const x of g.o.elems) {
-      const s2 = unifyTerm(g.s, x, subst);
-      if (s2 !== null) outs.push(s2);
-    }
-    return outs;
-  }
-
-  // list:length  (strict: do not accept integer<->decimal matches for a ground object)
-  if (pv === LIST_NS + 'length') {
-    const xs = __listElemsForBuiltin(g.s, facts);
-    if (!xs) return [];
-    const nTerm = internLiteral(String(xs.length));
-
-    const o2 = applySubstTerm(g.o, subst);
-    if (isGroundTerm(o2)) {
-      return termsEqualNoIntDecimal(o2, nTerm) ? [{ ...subst }] : [];
-    }
-
-    const s2 = unifyTerm(g.o, nTerm, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // list:notMember
-  if (pv === LIST_NS + 'notMember') {
-    const xs = __listElemsForBuiltin(g.s, facts);
-    if (!xs) return [];
-    for (const el of xs) {
-      if (unifyTerm(g.o, el, subst) !== null) return [];
-    }
-    return [{ ...subst }];
-  }
-
-  // list:reverse
-  if (pv === LIST_NS + 'reverse') {
-    // Forward: compute o from s
-    if (g.s instanceof ListTerm) {
-      const rev = [...g.s.elems].reverse();
-      const rterm = new ListTerm(rev);
-      const s2 = unifyTerm(g.o, rterm, subst);
-      return s2 !== null ? [s2] : [];
-    }
-
-    const xs = __listElemsForBuiltin(g.s, facts);
-    if (xs) {
-      const rev = [...xs].reverse();
-      const rterm = new ListTerm(rev);
-      const s2 = unifyTerm(g.o, rterm, subst);
-      return s2 !== null ? [s2] : [];
-    }
-
-    // Reverse: compute s from o (only for explicit list terms)
-    if (g.o instanceof ListTerm) {
-      const rev = [...g.o.elems].reverse();
-      const rterm = new ListTerm(rev);
-      const s2 = unifyTerm(g.s, rterm, subst);
-      return s2 !== null ? [s2] : [];
-    }
-    return [];
-  }
-
-  // list:sort
-  if (pv === LIST_NS + 'sort') {
-    function cmpTermForSort(a, b) {
-      if (a instanceof Literal && b instanceof Literal) {
-        const [lexA] = literalParts(a.value);
-        const [lexB] = literalParts(b.value);
-        const sa = stripQuotes(lexA);
-        const sb = stripQuotes(lexB);
-        const na = Number(sa);
-        const nb = Number(sb);
-        if (!Number.isNaN(na) && !Number.isNaN(nb)) {
-          if (na < nb) return -1;
-          if (na > nb) return 1;
-          return 0;
+        const q = Math.trunc(a / b);
+        const lit = internLiteral(String(q));
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = lit;
+          return [s2];
         }
-        if (sa < sb) return -1;
-        if (sa > sb) return 1;
-        return 0;
-      }
-      if (a instanceof ListTerm && b instanceof ListTerm) {
-        const xs = a.elems;
-        const ys = b.elems;
-        let i = 0;
-        // lexicographic
-        while (true) {
-          if (i >= xs.length && i >= ys.length) return 0;
-          if (i >= xs.length) return -1;
-          if (i >= ys.length) return 1;
-          const c = cmpTermForSort(xs[i], ys[i]);
-          if (c !== 0) return c;
-          i++;
-        }
-      }
-      if (a instanceof Iri && b instanceof Iri) {
-        if (a.value < b.value) return -1;
-        if (a.value > b.value) return 1;
-        return 0;
-      }
-      // lists before non-lists
-      if (a instanceof ListTerm && !(b instanceof ListTerm)) return -1;
-      if (!(a instanceof ListTerm) && b instanceof ListTerm) return 1;
-      const sa = JSON.stringify(a);
-      const sb = JSON.stringify(b);
-      if (sa < sb) return -1;
-      if (sa > sb) return 1;
-      return 0;
-    }
+        if (g.o instanceof Blank) return [{ ...subst }];
 
-    let inputList;
-    if (g.s instanceof ListTerm) inputList = g.s.elems;
-    else if (g.o instanceof ListTerm) inputList = g.o.elems;
-    else return [];
+        if (numEqualTerm(g.o, q)) return [{ ...subst }];
 
-    if (!inputList.every((e) => isGroundTerm(e))) return [];
-
-    const sortedList = [...inputList].sort(cmpTermForSort);
-    const sortedTerm = new ListTerm(sortedList);
-    if (g.s instanceof ListTerm) {
-      const s2 = unifyTerm(g.o, sortedTerm, subst);
-      return s2 !== null ? [s2] : [];
-    }
-    if (g.o instanceof ListTerm) {
-      const s2 = unifyTerm(g.s, sortedTerm, subst);
-      return s2 !== null ? [s2] : [];
-    }
-    return [];
-  }
-
-  // list:map
-  if (pv === LIST_NS + 'map') {
-    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
-    const [inputTerm, predTerm] = g.s.elems;
-    if (!(inputTerm instanceof ListTerm)) return [];
-    const inputList = inputTerm.elems;
-    if (!(predTerm instanceof Iri)) return [];
-    const pred = internIri(predTerm.value);
-
-    // Allow mapping *any* predicate (not just builtins).
-    // Semantics: for each input element `el`, collect *all* solutions of `el pred ?y`
-    // (facts, rules, and builtins), in order, and concatenate them into the output list.
-    // If an element has no solutions, it contributes nothing.
-    if (!inputList.every((e) => isGroundTerm(e))) return [];
-
-    const results = [];
-    for (const el of inputList) {
-      const yvar = new Var('mapY');
-      const goal2 = new Triple(el, pred, yvar);
-      const sols = proveGoals([goal2], subst, facts, backRules, depth + 1, [], varGen);
-
-      for (const sol of sols) {
-        const yval = applySubstTerm(yvar, sol);
-        if (yval instanceof Var) continue;
-        results.push(yval);
-      }
-    }
-
-    const outList = new ListTerm(results);
-    const s2 = unifyTerm(g.o, outList, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // list:firstRest
-  if (pv === LIST_NS + 'firstRest') {
-    if (g.s instanceof ListTerm) {
-      if (!g.s.elems.length) return [];
-      const first = g.s.elems[0];
-      const rest = new ListTerm(g.s.elems.slice(1));
-      const pair = new ListTerm([first, rest]);
-      const s2 = unifyTerm(g.o, pair, subst);
-      return s2 !== null ? [s2] : [];
-    }
-    if (g.o instanceof ListTerm && g.o.elems.length === 2) {
-      const first = g.o.elems[0];
-      const rest = g.o.elems[1];
-      if (rest instanceof ListTerm) {
-        const n = rest.elems.length;
-        const xs = new Array(n + 1);
-        xs[0] = first;
-        for (let i = 0; i < n; i++) xs[i + 1] = rest.elems[i];
-        const constructed = new ListTerm(xs);
-        const s2 = unifyTerm(g.s, constructed, subst);
+        const s2 = unifyTerm(g.o, lit, subst);
         return s2 !== null ? [s2] : [];
       }
-      if (rest instanceof Var) {
-        const constructed = new OpenListTerm([first], rest.name);
-        const s2 = unifyTerm(g.s, constructed, subst);
-        return s2 !== null ? [s2] : [];
-      }
-      if (rest instanceof OpenListTerm) {
-        const n = rest.prefix.length;
-        const newPrefix = new Array(n + 1);
-        newPrefix[0] = first;
-        for (let i = 0; i < n; i++) newPrefix[i + 1] = rest.prefix[i];
-        const constructed = new OpenListTerm(newPrefix, rest.tailVar);
-        const s2 = unifyTerm(g.s, constructed, subst);
-        return s2 !== null ? [s2] : [];
-      }
-    }
-    return [];
-  }
 
-  // -----------------------------------------------------------------
-  // 4.5 log: builtins
-  // -----------------------------------------------------------------
+      // math:exponentiation
+      // Schema: ( $base $exp ) math:exponentiation $result
+      // Supports exact integer exponentiation via BigInt when both inputs are integers and exp >= 0.
+      if (pv === MATH_NS + 'exponentiation') {
+        if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
+        const baseTerm = g.s.elems[0];
+        const expTerm = g.s.elems[1];
 
-  // log:equalTo
-  if (pv === LOG_NS + 'equalTo') {
-    const s2 = unifyTerm(goal.s, goal.o, subst);
-    return s2 !== null ? [s2] : [];
-  }
+        // 1) Exact integer mode (BigInt): (base exponent) -> result
+        //    This avoids huge intermediate derivations for things like Ackermann(4,2).
+        const baseI = parseIntLiteral(baseTerm);
+        const expI = parseIntLiteral(expTerm);
+        if (baseI !== null && expI !== null && expI >= 0n) {
+          // Size guard: refuse powers that would almost certainly OOM.
+          const estBits = estimatePowResultBits(baseI, expI);
+          if (estBits > MAX_BIGINT_POW_RESULT_BITS) return [];
 
-  // log:notEqualTo
-  if (pv === LOG_NS + 'notEqualTo') {
-    const s2 = unifyTerm(goal.s, goal.o, subst);
-    if (s2 !== null) return [];
-    return [{ ...subst }];
-  }
+          let out;
+          try {
+            out = baseI ** expI;
+          } catch {
+            return [];
+          }
 
-  // log:conjunction
-  // Schema: ( $s.i+ )+ log:conjunction $o?
-  // $o is a formula containing a copy of each formula in the subject list.
-  // Duplicates are removed.
-  if (pv === LOG_NS + 'conjunction') {
-    if (!(g.s instanceof ListTerm)) return [];
+          const lit = makeNumericOutputLiteral(out, XSD_INTEGER_DT);
 
-    const parts = g.s.elems;
-    if (!parts.length) return [];
+          if (g.o instanceof Var) {
+            const s2 = { ...subst };
+            s2[g.o.name] = lit;
+            return [s2];
+          }
+          if (g.o instanceof Blank) return [{ ...subst }];
 
-    /** @type {Triple[]} */
-    const merged = [];
+          const oi = parseIntLiteral(g.o);
+          if (oi !== null && oi === out) return [{ ...subst }];
 
-    // Fast-path dedup for IRI/Literal-only triples.
-    const fastKeySet = new Set();
-
-    for (const part of parts) {
-      // Support the empty formula token `true`.
-      if (part instanceof Literal && part.value === 'true') continue;
-
-      if (!(part instanceof GraphTerm)) return [];
-
-      for (const tr of part.triples) {
-        const k = tripleFastKey(tr);
-        if (k !== null) {
-          if (fastKeySet.has(k)) continue;
-          fastKeySet.add(k);
-          merged.push(tr);
-          continue;
+          const s2 = unifyTerm(g.o, lit, subst);
+          return s2 !== null ? [s2] : [];
         }
 
-        // Fallback: structural equality (still respects plain-string == xsd:string).
-        let dup = false;
-        for (const ex of merged) {
-          if (triplesEqual(tr, ex)) {
-            dup = true;
-            break;
+        // 2) Numeric mode (Number): forward + limited inverse
+        const a = parseNum(baseTerm);
+        const b = a !== null ? parseNum(expTerm) : null;
+
+        // Forward
+        if (a !== null && b !== null) {
+          const cVal = a ** b;
+          if (!Number.isFinite(cVal)) return [];
+
+          let dtOut = commonNumericDatatype([baseTerm, expTerm], g.o);
+          if (dtOut === XSD_INTEGER_DT && !Number.isInteger(cVal)) dtOut = XSD_DECIMAL_DT;
+          const lit = makeNumericOutputLiteral(cVal, dtOut);
+
+          if (g.o instanceof Var) {
+            const s2 = { ...subst };
+            s2[g.o.name] = lit;
+            return [s2];
+          }
+          if (g.o instanceof Blank) return [{ ...subst }];
+          if (numEqualTerm(g.o, cVal)) return [{ ...subst }];
+        }
+
+        // Inverse: solve exponent using logs (Number mode only)
+        const c = parseNum(g.o);
+        if (a !== null && expTerm instanceof Var && c !== null) {
+          if (a > 0.0 && a !== 1.0 && c > 0.0) {
+            const bVal = Math.log(c) / Math.log(a);
+            if (!Number.isFinite(bVal)) return [];
+
+            let dtB = commonNumericDatatype([baseTerm, g.o], expTerm);
+            if (dtB === XSD_INTEGER_DT && !Number.isInteger(bVal)) dtB = XSD_DECIMAL_DT;
+
+            const s2 = { ...subst };
+            s2[expTerm.name] = makeNumericOutputLiteral(bVal, dtB);
+            return [s2];
           }
         }
-        if (!dup) merged.push(tr);
-      }
-    }
-
-    const outFormula = new GraphTerm(merged);
-
-    // Allow blank nodes as a don't-care output (common in builtin schemas).
-    if (g.o instanceof Blank) return [{ ...subst }];
-
-    const s2 = unifyTerm(g.o, outFormula, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // log:conclusion
-  // Schema: $s+ log:conclusion $o?
-  // $o is the deductive closure of the subject formula $s (including rule inferences).
-  if (pv === LOG_NS + 'conclusion') {
-    // Accept 'true' as the empty formula.
-    let inFormula = null;
-    if (g.s instanceof GraphTerm) inFormula = g.s;
-    else if (g.s instanceof Literal && g.s.value === 'true') inFormula = new GraphTerm([]);
-    else return [];
-
-    const conclusion = computeConclusionFromFormula(inFormula);
-    if (!(conclusion instanceof GraphTerm)) return [];
-
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = conclusion;
-      return [s2];
-    }
-    if (g.o instanceof Blank) return [{ ...subst }];
-
-    const s2 = unifyTerm(g.o, conclusion, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // log:content
-  // Schema: $s+ log:content $o?
-  // Dereferences $s and returns the online resource as an xsd:string.
-  if (pv === LOG_NS + 'content') {
-    const iri = iriValue(g.s);
-    if (iri === null) return [];
-    const docIri = deref.stripFragment(iri);
-
-    const text = deref.derefTextSync(docIri);
-    if (typeof text !== 'string') return [];
-
-    const lit = internLiteral(`${JSON.stringify(text)}^^<${XSD_NS}string>`);
-
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = lit;
-      return [s2];
-    }
-    if (g.o instanceof Blank) return [{ ...subst }];
-
-    const s2 = unifyTerm(g.o, lit, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // log:semantics
-  // Schema: $s+ log:semantics $o?
-  // Dereferences $s, parses the retrieved resource, and returns it as a formula.
-  if (pv === LOG_NS + 'semantics') {
-    const iri = iriValue(g.s);
-    if (iri === null) return [];
-    const docIri = deref.stripFragment(iri);
-
-    const formula = deref.derefSemanticsSync(docIri);
-    if (!(formula instanceof GraphTerm)) return [];
-
-    // Avoid variable capture between the returned quoted formula and the
-    // surrounding proof environment.
-    const formulaStd = standardizeTermApart(formula, varGen);
-    if (g.o instanceof Blank) return [{ ...subst }];
-
-    const s2 = unifyTerm(g.o, formulaStd, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // log:semanticsOrError
-  // Schema: $s+ log:semanticsOrError $o?
-  // Like log:semantics, but yields an xsd:string error message on failure.
-  if (pv === LOG_NS + 'semanticsOrError') {
-    const iri = iriValue(g.s);
-    if (iri === null) return [];
-
-    const docIri = deref.stripFragment(iri);
-    let term = deref.derefSemanticsOrError(docIri);
-
-    // Avoid variable capture between the returned quoted formula and the
-    // surrounding proof environment.
-    if (term instanceof GraphTerm) term = standardizeTermApart(term, varGen);
-
-    if (g.o instanceof Blank) return [{ ...subst }];
-
-    const s2 = unifyTerm(g.o, term, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // log:parsedAsN3
-  // Schema: $s+ log:parsedAsN3 $o-
-  // Parses the subject xsd:string as N3 and returns it as a formula.
-  if (pv === LOG_NS + 'parsedAsN3') {
-    const txt = termToJsXsdStringNoLang(g.s);
-    if (txt === null) return [];
-
-    let formula;
-    try {
-      // No external base is specified in the builtin definition; the parsed
-      // string may contain its own @base / @prefix directives.
-      formula = deref.parseSemanticsToFormula(txt, '');
-    } catch {
-      return [];
-    }
-
-    // Avoid variable capture between the parsed quoted formula and the
-    // surrounding proof environment.
-    formula = standardizeTermApart(formula, varGen);
-
-    if (g.o instanceof Blank) return [{ ...subst }];
-
-    const s2 = unifyTerm(g.o, formula, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // log:rawType
-  // Schema: $s+ log:rawType $o-
-  // Returns one of log:Formula, log:Literal, rdf:List, or log:Other.
-  if (pv === LOG_NS + 'rawType') {
-    if (g.s instanceof Var) return [];
-
-    let ty;
-    if (g.s instanceof GraphTerm) ty = internIri(LOG_NS + 'Formula');
-    else if (g.s instanceof Literal) ty = internIri(LOG_NS + 'Literal');
-    else if (g.s instanceof ListTerm || g.s instanceof OpenListTerm) ty = internIri(RDF_NS + 'List');
-    else ty = internIri(LOG_NS + 'Other');
-
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = ty;
-      return [s2];
-    }
-    if (g.o instanceof Blank) return [{ ...subst }];
-
-    const s2 = unifyTerm(g.o, ty, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // log:dtlit
-  // Schema: ( $s.1? $s.2? )? log:dtlit $o?
-  // true iff $o is a datatyped literal with string value $s.1 and datatype IRI $s.2
-  if (pv === LOG_NS + 'dtlit') {
-    // Fully unbound (both arguments '?'-mode): treat as satisfiable, succeed once.
-    // Required by notation3tests "success-fullUnbound-*".
-    if (g.s instanceof Var && g.o instanceof Var) return [{ ...subst }];
-
-    const results = [];
-
-    // Direction 1: object literal -> subject list (string, datatype)
-    if (g.o instanceof Literal) {
-      const [oLex, oDt0] = literalParts(g.o.value);
-      let oDt = oDt0;
-
-      // literalParts() strips @lang into the lexical part and leaves dt null,
-      // but RDF 1.1 language-tagged strings have datatype rdf:langString.
-      if (oDt === null) {
-        if (literalHasLangTag(g.o.value)) oDt = RDF_NS + 'langString';
-        else if (isPlainStringLiteralValue(g.o.value)) oDt = XSD_NS + 'string';
+        return [];
       }
 
-      if (oDt !== null) {
-        const strLit = isQuotedLexical(oLex) ? internLiteral(oLex) : makeStringLiteral(String(oLex));
-        const subjList = new ListTerm([strLit, internIri(oDt)]);
-        const s2 = unifyTerm(goal.s, subjList, subst);
-        if (s2 !== null) results.push(s2);
-      }
-    }
+      // math:absoluteValue
+      if (pv === MATH_NS + 'absoluteValue') {
+        const ai = parseIntLiteral(g.s);
+        if (ai !== null) {
+          const outVal = ai < 0n ? -ai : ai;
+          const lit = makeNumericOutputLiteral(outVal, XSD_INTEGER_DT);
 
-    // Direction 2: subject list -> object literal
-    if (g.s instanceof ListTerm && g.s.elems.length === 2) {
-      const a = g.s.elems[0];
-      const b = g.s.elems[1];
+          if (g.o instanceof Var) {
+            const s2 = { ...subst };
+            s2[g.o.name] = lit;
+            return [s2];
+          }
+          if (g.o instanceof Blank) return [{ ...subst }];
 
-      if (a instanceof Literal && b instanceof Iri) {
-        const [sLex, sDt0] = literalParts(a.value);
-
-        // $s.1 must be xsd:string (plain or ^^xsd:string), not language-tagged.
-        const okString = (sDt0 === null && isPlainStringLiteralValue(a.value)) || sDt0 === XSD_NS + 'string';
-        if (okString) {
-          const dtIri = b.value;
-          // For xsd:string, prefer the plain string literal form.
-          const outLit = dtIri === XSD_NS + 'string' ? internLiteral(sLex) : internLiteral(`${sLex}^^<${dtIri}>`);
-          const s2 = unifyTerm(goal.o, outLit, subst);
-          if (s2 !== null) results.push(s2);
+          const oi = parseIntLiteral(g.o);
+          if (oi !== null && oi === outVal) return [{ ...subst }];
+          if (numEqualTerm(g.o, Number(outVal))) return [{ ...subst }];
+          return [];
         }
+
+        const a = parseNum(g.s);
+        if (a === null) return [];
+
+        const outVal = Math.abs(a);
+        if (!Number.isFinite(outVal)) return [];
+
+        let dtOut = commonNumericDatatype([g.s], g.o);
+        if (dtOut === XSD_INTEGER_DT && !Number.isInteger(outVal)) dtOut = XSD_DECIMAL_DT;
+
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = makeNumericOutputLiteral(outVal, dtOut);
+          return [s2];
+        }
+        if (g.o instanceof Blank) return [{ ...subst }];
+        if (numEqualTerm(g.o, outVal)) return [{ ...subst }];
+        return [];
       }
-    }
 
-    return results;
-  }
-
-  // log:langlit
-  // Schema: ( $s.1? $s.2? )? log:langlit $o?
-  // true iff $o is a language-tagged literal with string value $s.1 and language tag $s.2
-  if (pv === LOG_NS + 'langlit') {
-    // Fully unbound (both arguments '?'-mode): treat as satisfiable, succeed once.
-    if (g.s instanceof Var && g.o instanceof Var) return [{ ...subst }];
-    const results = [];
-    const LANG_RE = /^[A-Za-z]+(?:-[A-Za-z0-9]+)*$/; // (same notion as literalParts/literalHasLangTag)
-
-    function extractLangTag(litVal) {
-      if (typeof litVal !== 'string') return null;
-      if (!literalHasLangTag(litVal)) return null;
-      const lastQuote = litVal.lastIndexOf('"');
-      if (lastQuote < 0) return null;
-      const after = lastQuote + 1;
-      if (after >= litVal.length || litVal[after] !== '@') return null;
-      const tag = litVal.slice(after + 1);
-      if (!LANG_RE.test(tag)) return null;
-      return tag;
-    }
-
-    // Direction 1: object language-tagged literal -> subject list (string, langtag)
-    if (g.o instanceof Literal) {
-      const tag = extractLangTag(g.o.value);
-      if (tag !== null) {
-        const [oLex] = literalParts(g.o.value); // strips @lang into lexical part
-        const strLit = isQuotedLexical(oLex) ? internLiteral(oLex) : makeStringLiteral(String(oLex));
-        const langLit = makeStringLiteral(tag);
-        const subjList = new ListTerm([strLit, langLit]);
-        const s2 = unifyTerm(goal.s, subjList, subst);
-        if (s2 !== null) results.push(s2);
+      // math:acos
+      if (pv === MATH_NS + 'acos') {
+        return evalUnaryMathRel(g, subst, Math.acos, Math.cos);
       }
-    }
 
-    // Direction 2: subject list -> object language-tagged literal
-    if (g.s instanceof ListTerm && g.s.elems.length === 2) {
-      const a = g.s.elems[0]; // string
-      const b = g.s.elems[1]; // lang tag string
-      if (a instanceof Literal && b instanceof Literal) {
-        const [sLex, sDt0] = literalParts(a.value);
-        const okString = (sDt0 === null && isPlainStringLiteralValue(a.value)) || sDt0 === XSD_NS + 'string';
-        const [langLex, langDt0] = literalParts(b.value);
-        const okLang = (langDt0 === null && isPlainStringLiteralValue(b.value)) || langDt0 === XSD_NS + 'string';
-        if (okString && okLang) {
-          const tag = stripQuotes(langLex);
-          if (LANG_RE.test(tag)) {
-            const outLit = internLiteral(`${sLex}@${tag}`);
-            const s2 = unifyTerm(goal.o, outLit, subst);
+      // math:asin
+      if (pv === MATH_NS + 'asin') {
+        return evalUnaryMathRel(g, subst, Math.asin, Math.sin);
+      }
+
+      // math:atan
+      if (pv === MATH_NS + 'atan') {
+        return evalUnaryMathRel(g, subst, Math.atan, Math.tan);
+      }
+
+      // math:sin  (inverse uses principal asin)
+      if (pv === MATH_NS + 'sin') {
+        return evalUnaryMathRel(g, subst, Math.sin, Math.asin);
+      }
+
+      // math:cos  (inverse uses principal acos)
+      if (pv === MATH_NS + 'cos') {
+        return evalUnaryMathRel(g, subst, Math.cos, Math.acos);
+      }
+
+      // math:tan  (inverse uses principal atan)
+      if (pv === MATH_NS + 'tan') {
+        return evalUnaryMathRel(g, subst, Math.tan, Math.atan);
+      }
+
+      // math:sinh / cosh / tanh (guard for JS availability)
+      if (pv === MATH_NS + 'sinh') {
+        if (typeof Math.sinh !== 'function' || typeof Math.asinh !== 'function') return [];
+        return evalUnaryMathRel(g, subst, Math.sinh, Math.asinh);
+      }
+      if (pv === MATH_NS + 'cosh') {
+        if (typeof Math.cosh !== 'function' || typeof Math.acosh !== 'function') return [];
+        return evalUnaryMathRel(g, subst, Math.cosh, Math.acosh);
+      }
+      if (pv === MATH_NS + 'tanh') {
+        if (typeof Math.tanh !== 'function' || typeof Math.atanh !== 'function') return [];
+        return evalUnaryMathRel(g, subst, Math.tanh, Math.atanh);
+      }
+
+      // math:degrees (inverse is radians)
+      if (pv === MATH_NS + 'degrees') {
+        const toDeg = (rad) => (rad * 180.0) / Math.PI;
+        const toRad = (deg) => (deg * Math.PI) / 180.0;
+        return evalUnaryMathRel(g, subst, toDeg, toRad);
+      }
+
+      // math:negation (inverse is itself)
+      if (pv === MATH_NS + 'negation') {
+        const si = parseIntLiteral(g.s);
+        if (si !== null) {
+          const outVal = -si;
+          const lit = makeNumericOutputLiteral(outVal, XSD_INTEGER_DT);
+          if (g.o instanceof Var) {
+            const s2 = { ...subst };
+            s2[g.o.name] = lit;
+            return [s2];
+          }
+          if (g.o instanceof Blank) return [{ ...subst }];
+          const oi = parseIntLiteral(g.o);
+          if (oi !== null && oi === outVal) return [{ ...subst }];
+          if (numEqualTerm(g.o, Number(outVal))) return [{ ...subst }];
+          return [];
+        }
+
+        const oi = parseIntLiteral(g.o);
+        if (oi !== null) {
+          const inVal = -oi;
+          const lit = makeNumericOutputLiteral(inVal, XSD_INTEGER_DT);
+          if (g.s instanceof Var) {
+            const s2 = { ...subst };
+            s2[g.s.name] = lit;
+            return [s2];
+          }
+          if (g.s instanceof Blank) return [{ ...subst }];
+          const si2 = parseIntLiteral(g.s);
+          if (si2 !== null && si2 === inVal) return [{ ...subst }];
+          if (numEqualTerm(g.s, Number(inVal))) return [{ ...subst }];
+          return [];
+        }
+
+        const neg = (x) => -x;
+        return evalUnaryMathRel(g, subst, neg, neg);
+      }
+
+      // math:remainder
+      // Subject is a list (dividend divisor); object is the remainder.
+      // Schema: ( $a $b ) math:remainder $r
+      if (pv === MATH_NS + 'remainder') {
+        if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
+        const [a0, b0] = g.s.elems;
+
+        // Prefer exact integer arithmetic (BigInt)
+        const ai = parseIntLiteral(a0);
+        const bi = parseIntLiteral(b0);
+        if (ai !== null && bi !== null) {
+          if (bi === 0n) return [];
+          const r = ai % bi;
+          const lit = makeNumericOutputLiteral(r, XSD_INTEGER_DT);
+
+          if (g.o instanceof Var) {
+            const s2 = { ...subst };
+            s2[g.o.name] = lit;
+            return [s2];
+          }
+          if (g.o instanceof Blank) return [{ ...subst }];
+
+          const oi = parseIntLiteral(g.o);
+          if (oi !== null && oi === r) return [{ ...subst }];
+          if (numEqualTerm(g.o, Number(r))) return [{ ...subst }];
+          return [];
+        }
+
+        // Fallback: allow Number literals that still represent integers
+        const a = parseNum(a0);
+        const b = parseNum(b0);
+        if (a === null || b === null) return [];
+        if (!Number.isFinite(a) || !Number.isFinite(b) || b === 0) return [];
+        if (!Number.isInteger(a) || !Number.isInteger(b)) return [];
+
+        const rVal = a % b;
+        const lit = makeNumericOutputLiteral(rVal, XSD_INTEGER_DT);
+
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = lit;
+          return [s2];
+        }
+        if (g.o instanceof Blank) return [{ ...subst }];
+        if (numEqualTerm(g.o, rVal)) return [{ ...subst }];
+        return [];
+      }
+
+      // math:rounded
+      // Round to nearest integer.
+      // If there are two such numbers, then the one closest to positive infinity is returned.
+      // Schema: $s+ math:rounded $o-
+      // Note: spec says $o is xsd:integer, but we also accept any numeric $o that equals the rounded value.
+      if (pv === MATH_NS + 'rounded') {
+        const ai = parseIntLiteral(g.s);
+        if (ai !== null) {
+          const lit = makeNumericOutputLiteral(ai, XSD_INTEGER_DT);
+
+          if (g.o instanceof Var) {
+            const s2 = { ...subst };
+            s2[g.o.name] = lit;
+            return [s2];
+          }
+          if (g.o instanceof Blank) return [{ ...subst }];
+
+          const oi = parseIntLiteral(g.o);
+          if (oi !== null && oi === ai) return [{ ...subst }];
+          if (numEqualTerm(g.o, Number(ai))) return [{ ...subst }];
+
+          const s2 = unifyTerm(g.o, lit, subst);
+          return s2 !== null ? [s2] : [];
+        }
+
+        const a = parseNum(g.s);
+        if (a === null) return [];
+        if (Number.isNaN(a)) return [];
+
+        const rVal = Math.round(a); // ties go toward +∞ in JS (e.g., -1.5 -> -1)
+        const lit = internLiteral(String(rVal)); // integer token
+
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = lit;
+          return [s2];
+        }
+        if (g.o instanceof Blank) return [{ ...subst }];
+
+        // Accept typed numeric literals too (e.g., "3"^^xsd:float) if numerically equal.
+        if (numEqualTerm(g.o, rVal)) return [{ ...subst }];
+
+        // Fallback to strict unification
+        const s2 = unifyTerm(g.o, lit, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // -----------------------------------------------------------------
+      // 4.3 time: builtins
+      // -----------------------------------------------------------------
+
+      // time:day
+      // Gets as object the integer day component of the subject xsd:dateTime.
+      // Schema: $s+ time:day $o-
+      if (pv === TIME_NS + 'day') {
+        const parts = parseXsdDateTimeLexParts(g.s);
+        if (!parts) return [];
+        const out = internLiteral(String(parts.day));
+
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = out;
+          return [s2];
+        }
+        if (g.o instanceof Blank) return [{ ...subst }];
+
+        const oi = parseIntLiteral(g.o);
+        if (oi !== null) {
+          try {
+            if (oi === BigInt(parts.day)) return [{ ...subst }];
+          } catch {}
+        }
+
+        const s2 = unifyTerm(g.o, out, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // time:hour
+      // Gets as object the integer hour component of the subject xsd:dateTime.
+      // Schema: $s+ time:hour $o-
+      if (pv === TIME_NS + 'hour') {
+        const parts = parseXsdDateTimeLexParts(g.s);
+        if (!parts) return [];
+        const out = internLiteral(String(parts.hour));
+
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = out;
+          return [s2];
+        }
+        if (g.o instanceof Blank) return [{ ...subst }];
+
+        const oi = parseIntLiteral(g.o);
+        if (oi !== null) {
+          try {
+            if (oi === BigInt(parts.hour)) return [{ ...subst }];
+          } catch {}
+        }
+
+        const s2 = unifyTerm(g.o, out, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // time:minute
+      // Gets as object the integer minutes component of the subject xsd:dateTime.
+      // Schema: $s+ time:minute $o-
+      if (pv === TIME_NS + 'minute') {
+        const parts = parseXsdDateTimeLexParts(g.s);
+        if (!parts) return [];
+        const out = internLiteral(String(parts.minute));
+
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = out;
+          return [s2];
+        }
+        if (g.o instanceof Blank) return [{ ...subst }];
+
+        const oi = parseIntLiteral(g.o);
+        if (oi !== null) {
+          try {
+            if (oi === BigInt(parts.minute)) return [{ ...subst }];
+          } catch {}
+        }
+
+        const s2 = unifyTerm(g.o, out, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // time:month
+      // Gets as object the integer month component of the subject xsd:dateTime.
+      // Schema: $s+ time:month $o-
+      if (pv === TIME_NS + 'month') {
+        const parts = parseXsdDateTimeLexParts(g.s);
+        if (!parts) return [];
+        const out = internLiteral(String(parts.month));
+
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = out;
+          return [s2];
+        }
+        if (g.o instanceof Blank) return [{ ...subst }];
+
+        const oi = parseIntLiteral(g.o);
+        if (oi !== null) {
+          try {
+            if (oi === BigInt(parts.month)) return [{ ...subst }];
+          } catch {}
+        }
+
+        const s2 = unifyTerm(g.o, out, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // time:second
+      // Gets as object the integer seconds component of the subject xsd:dateTime.
+      // Schema: $s+ time:second $o-
+      if (pv === TIME_NS + 'second') {
+        const parts = parseXsdDateTimeLexParts(g.s);
+        if (!parts) return [];
+        const out = internLiteral(String(parts.second));
+
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = out;
+          return [s2];
+        }
+        if (g.o instanceof Blank) return [{ ...subst }];
+
+        const oi = parseIntLiteral(g.o);
+        if (oi !== null) {
+          try {
+            if (oi === BigInt(parts.second)) return [{ ...subst }];
+          } catch {}
+        }
+
+        const s2 = unifyTerm(g.o, out, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // time:timeZone
+      // Gets as object the trailing timezone offset of the subject xsd:dateTime (e.g., "-05:00" or "Z").
+      // Schema: $s+ time:timeZone $o-
+      if (pv === TIME_NS + 'timeZone') {
+        const parts = parseXsdDateTimeLexParts(g.s);
+        if (!parts) return [];
+        if (parts.tz === null) return [];
+        const out = internLiteral(`"${parts.tz}"`);
+
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = out;
+          return [s2];
+        }
+        if (g.o instanceof Blank) return [{ ...subst }];
+
+        if (termsEqual(g.o, out)) return [{ ...subst }];
+
+        // Also accept explicitly typed xsd:string literals.
+        if (g.o instanceof Literal) {
+          const [lexO, dtO] = literalParts(g.o.value);
+          if (dtO === XSD_NS + 'string' && stripQuotes(lexO) === parts.tz) return [{ ...subst }];
+        }
+        return [];
+      }
+
+      // time:year
+      // Gets as object the integer year component of the subject xsd:dateTime.
+      // Schema: $s+ time:year $o-
+      if (pv === TIME_NS + 'year') {
+        const parts = parseXsdDateTimeLexParts(g.s);
+        if (!parts) return [];
+        const out = internLiteral(String(parts.yearStr));
+
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = out;
+          return [s2];
+        }
+        if (g.o instanceof Blank) return [{ ...subst }];
+
+        const oi = parseIntLiteral(g.o);
+        if (oi !== null) {
+          try {
+            if (oi === BigInt(parts.yearStr)) return [{ ...subst }];
+          } catch {}
+        }
+
+        const s2 = unifyTerm(g.o, out, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // time:localTime
+      // "" time:localTime ?D.  binds ?D to “now” as xsd:dateTime.
+      if (pv === TIME_NS + 'localTime') {
+        const now = time.getNowLex();
+
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = internLiteral(`"${now}"^^<${XSD_NS}dateTime>`);
+          return [s2];
+        }
+        if (g.o instanceof Literal) {
+          const [lexO] = literalParts(g.o.value);
+          if (stripQuotes(lexO) === now) return [{ ...subst }];
+        }
+        return [];
+      }
+
+      // -----------------------------------------------------------------
+      // 4.4 list: builtins
+      // -----------------------------------------------------------------
+
+      // list:append
+      // true if and only if $o is the concatenation of all lists $s.i.
+      // Schema: ( $s.i?[*] )+ list:append $o?
+      if (pv === LIST_NS + 'append') {
+        if (!(g.s instanceof ListTerm)) return [];
+        const parts = g.s.elems;
+        if (g.o instanceof ListTerm) {
+          return listAppendSplit(parts, g.o.elems, subst);
+        }
+        const outElems = [];
+        for (const part of parts) {
+          if (!(part instanceof ListTerm)) return [];
+          outElems.push(...part.elems);
+        }
+        const result = new ListTerm(outElems);
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = result;
+          return [s2];
+        }
+        if (termsEqual(g.o, result)) return [{ ...subst }];
+        return [];
+      }
+
+      // list:first and rdf:first
+      // true iff $s is a list and $o is the first member of that list.
+      // Schema: $s+ list:first $o-
+      if (pv === LIST_NS + 'first') {
+        const xs = __listElemsForBuiltin(g.s, facts);
+        if (!xs || !xs.length) return [];
+        const s2 = unifyTerm(g.o, xs[0], subst);
+        return s2 !== null ? [s2] : [];
+      }
+      if (pv === RDF_NS + 'first') {
+        return evalListFirstLikeBuiltin(g.s, g.o, subst);
+      }
+
+      // list:rest and rdf:rest
+      // true iff $s is a (non-empty) list and $o is the rest (tail) of that list.
+      // Schema: $s+ list:rest $o-
+      if (pv === LIST_NS + 'rest') {
+        if (g.s instanceof ListTerm || g.s instanceof OpenListTerm) return evalListRestLikeBuiltin(g.s, g.o, subst);
+        const xs = __listElemsForBuiltin(g.s, facts);
+        if (!xs || !xs.length) return [];
+        const rest = new ListTerm(xs.slice(1));
+        const s2 = unifyTerm(g.o, rest, subst);
+        return s2 !== null ? [s2] : [];
+      }
+      if (pv === RDF_NS + 'rest') {
+        return evalListRestLikeBuiltin(g.s, g.o, subst);
+      }
+
+      // list:iterate
+      // Multi-solution builtin:
+      // For a list subject $s, generate solutions by unifying $o with (index value).
+      // This allows $o to be a variable (e.g., ?Y) or a pattern (e.g., (?i "Dewey")).
+      if (pv === LIST_NS + 'iterate') {
+        const xs = __listElemsForBuiltin(g.s, facts);
+        if (!xs) return [];
+        const outs = [];
+
+        for (let i = 0; i < xs.length; i++) {
+          const idxLit = internLiteral(String(i)); // 0-based
+          const val = xs[i];
+
+          // Fast path: object is exactly a 2-element list (idx, value)
+          if (g.o instanceof ListTerm && g.o.elems.length === 2) {
+            const [idxPat, valPat] = g.o.elems;
+
+            const s1 = unifyTerm(idxPat, idxLit, subst);
+            if (s1 === null) continue;
+
+            // If value-pattern is ground after subst: require STRICT term equality
+            const valPat2 = applySubstTerm(valPat, s1);
+            if (isGroundTerm(valPat2)) {
+              if (termsEqualNoIntDecimal(valPat2, val)) outs.push({ ...s1 });
+              continue;
+            }
+
+            // Otherwise, allow normal unification/binding
+            const s2 = unifyTerm(valPat, val, s1);
+            if (s2 !== null) outs.push(s2);
+            continue;
+          }
+
+          // Fallback: original behavior
+          const pair = new ListTerm([idxLit, val]);
+          const s2 = unifyTerm(g.o, pair, subst);
+          if (s2 !== null) outs.push(s2);
+        }
+
+        return outs;
+      }
+
+      // list:last
+      // true iff $s is a list and $o is the last member of that list.
+      // Schema: $s+ list:last $o-
+      if (pv === LIST_NS + 'last') {
+        const xs = __listElemsForBuiltin(g.s, facts);
+        if (!xs || !xs.length) return [];
+        const last = xs[xs.length - 1];
+        const s2 = unifyTerm(g.o, last, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // list:memberAt
+      // true iff $s.1 is a list, $s.2 is a valid index, and $o is the member at that index.
+      // Schema: ( $s.1+ $s.2?[*] )+ list:memberAt $o?[*]
+      if (pv === LIST_NS + 'memberAt') {
+        if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
+        const [listRef, indexTerm] = g.s.elems;
+
+        const xs = __listElemsForBuiltin(listRef, facts);
+        if (!xs) return [];
+        const outs = [];
+
+        for (let i = 0; i < xs.length; i++) {
+          const idxLit = internLiteral(String(i)); // index starts at 0
+
+          // --- index side: strict if ground, otherwise unify/bind
+          let s1 = null;
+          const idxPat2 = applySubstTerm(indexTerm, subst);
+          if (isGroundTerm(idxPat2)) {
+            if (!termsEqualNoIntDecimal(idxPat2, idxLit)) continue;
+            s1 = { ...subst };
+          } else {
+            s1 = unifyTerm(indexTerm, idxLit, subst);
+            if (s1 === null) continue;
+          }
+
+          // --- value side: strict if ground, otherwise unify/bind
+          const o2 = applySubstTerm(g.o, s1);
+          if (isGroundTerm(o2)) {
+            if (termsEqualNoIntDecimal(o2, xs[i])) outs.push({ ...s1 });
+            continue;
+          }
+
+          const s2 = unifyTerm(g.o, xs[i], s1);
+          if (s2 !== null) outs.push(s2);
+        }
+
+        return outs;
+      }
+
+      // list:remove
+      // true iff $s.1 is a list and $o is that list with all occurrences of $s.2 removed.
+      // Schema: ( $s.1+ $s.2+ )+ list:remove $o-
+      if (pv === LIST_NS + 'remove') {
+        if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
+        const [listTerm, itemTerm] = g.s.elems;
+        if (!(listTerm instanceof ListTerm)) return [];
+
+        // item must be bound
+        const item2 = applySubstTerm(itemTerm, subst);
+        if (!isGroundTerm(item2)) return [];
+
+        const xs = listTerm.elems;
+        const filtered = [];
+        for (const e of xs) {
+          // strict term match (still allows plain "abc" == "abc"^^xsd:string)
+          if (!termsEqualNoIntDecimal(e, item2)) filtered.push(e);
+        }
+
+        const resList = new ListTerm(filtered);
+        const s2 = unifyTerm(g.o, resList, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // list:member
+      if (pv === LIST_NS + 'member') {
+        const xs = __listElemsForBuiltin(g.s, facts);
+        if (!xs) return [];
+        const outs = [];
+        for (const x of xs) {
+          const s2 = unifyTerm(g.o, x, subst);
+          if (s2 !== null) outs.push(s2);
+        }
+        return outs;
+      }
+
+      // list:in
+      if (pv === LIST_NS + 'in') {
+        if (!(g.o instanceof ListTerm)) return [];
+        const outs = [];
+        for (const x of g.o.elems) {
+          const s2 = unifyTerm(g.s, x, subst);
+          if (s2 !== null) outs.push(s2);
+        }
+        return outs;
+      }
+
+      // list:length  (strict: do not accept integer<->decimal matches for a ground object)
+      if (pv === LIST_NS + 'length') {
+        const xs = __listElemsForBuiltin(g.s, facts);
+        if (!xs) return [];
+        const nTerm = internLiteral(String(xs.length));
+
+        const o2 = applySubstTerm(g.o, subst);
+        if (isGroundTerm(o2)) {
+          return termsEqualNoIntDecimal(o2, nTerm) ? [{ ...subst }] : [];
+        }
+
+        const s2 = unifyTerm(g.o, nTerm, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // list:notMember
+      if (pv === LIST_NS + 'notMember') {
+        const xs = __listElemsForBuiltin(g.s, facts);
+        if (!xs) return [];
+        for (const el of xs) {
+          if (unifyTerm(g.o, el, subst) !== null) return [];
+        }
+        return [{ ...subst }];
+      }
+
+      // list:reverse
+      if (pv === LIST_NS + 'reverse') {
+        // Forward: compute o from s
+        if (g.s instanceof ListTerm) {
+          const rev = [...g.s.elems].reverse();
+          const rterm = new ListTerm(rev);
+          const s2 = unifyTerm(g.o, rterm, subst);
+          return s2 !== null ? [s2] : [];
+        }
+
+        const xs = __listElemsForBuiltin(g.s, facts);
+        if (xs) {
+          const rev = [...xs].reverse();
+          const rterm = new ListTerm(rev);
+          const s2 = unifyTerm(g.o, rterm, subst);
+          return s2 !== null ? [s2] : [];
+        }
+
+        // Reverse: compute s from o (only for explicit list terms)
+        if (g.o instanceof ListTerm) {
+          const rev = [...g.o.elems].reverse();
+          const rterm = new ListTerm(rev);
+          const s2 = unifyTerm(g.s, rterm, subst);
+          return s2 !== null ? [s2] : [];
+        }
+        return [];
+      }
+
+      // list:sort
+      if (pv === LIST_NS + 'sort') {
+        function cmpTermForSort(a, b) {
+          if (a instanceof Literal && b instanceof Literal) {
+            const [lexA] = literalParts(a.value);
+            const [lexB] = literalParts(b.value);
+            const sa = stripQuotes(lexA);
+            const sb = stripQuotes(lexB);
+            const na = Number(sa);
+            const nb = Number(sb);
+            if (!Number.isNaN(na) && !Number.isNaN(nb)) {
+              if (na < nb) return -1;
+              if (na > nb) return 1;
+              return 0;
+            }
+            if (sa < sb) return -1;
+            if (sa > sb) return 1;
+            return 0;
+          }
+          if (a instanceof ListTerm && b instanceof ListTerm) {
+            const xs = a.elems;
+            const ys = b.elems;
+            let i = 0;
+            // lexicographic
+            while (true) {
+              if (i >= xs.length && i >= ys.length) return 0;
+              if (i >= xs.length) return -1;
+              if (i >= ys.length) return 1;
+              const c = cmpTermForSort(xs[i], ys[i]);
+              if (c !== 0) return c;
+              i++;
+            }
+          }
+          if (a instanceof Iri && b instanceof Iri) {
+            if (a.value < b.value) return -1;
+            if (a.value > b.value) return 1;
+            return 0;
+          }
+          // lists before non-lists
+          if (a instanceof ListTerm && !(b instanceof ListTerm)) return -1;
+          if (!(a instanceof ListTerm) && b instanceof ListTerm) return 1;
+          const sa = JSON.stringify(a);
+          const sb = JSON.stringify(b);
+          if (sa < sb) return -1;
+          if (sa > sb) return 1;
+          return 0;
+        }
+
+        let inputList;
+        if (g.s instanceof ListTerm) inputList = g.s.elems;
+        else if (g.o instanceof ListTerm) inputList = g.o.elems;
+        else return [];
+
+        if (!inputList.every((e) => isGroundTerm(e))) return [];
+
+        const sortedList = [...inputList].sort(cmpTermForSort);
+        const sortedTerm = new ListTerm(sortedList);
+        if (g.s instanceof ListTerm) {
+          const s2 = unifyTerm(g.o, sortedTerm, subst);
+          return s2 !== null ? [s2] : [];
+        }
+        if (g.o instanceof ListTerm) {
+          const s2 = unifyTerm(g.s, sortedTerm, subst);
+          return s2 !== null ? [s2] : [];
+        }
+        return [];
+      }
+
+      // list:map
+      if (pv === LIST_NS + 'map') {
+        if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
+        const [inputTerm, predTerm] = g.s.elems;
+        if (!(inputTerm instanceof ListTerm)) return [];
+        const inputList = inputTerm.elems;
+        if (!(predTerm instanceof Iri)) return [];
+        const pred = internIri(predTerm.value);
+
+        // Allow mapping *any* predicate (not just builtins).
+        // Semantics: for each input element `el`, collect *all* solutions of `el pred ?y`
+        // (facts, rules, and builtins), in order, and concatenate them into the output list.
+        // If an element has no solutions, it contributes nothing.
+        if (!inputList.every((e) => isGroundTerm(e))) return [];
+
+        const results = [];
+        for (const el of inputList) {
+          const yvar = new Var('mapY');
+          const goal2 = new Triple(el, pred, yvar);
+          const sols = proveGoals([goal2], subst, facts, backRules, depth + 1, [], varGen);
+
+          for (const sol of sols) {
+            const yval = applySubstTerm(yvar, sol);
+            if (yval instanceof Var) continue;
+            results.push(yval);
+          }
+        }
+
+        const outList = new ListTerm(results);
+        const s2 = unifyTerm(g.o, outList, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // list:firstRest
+      if (pv === LIST_NS + 'firstRest') {
+        if (g.s instanceof ListTerm) {
+          if (!g.s.elems.length) return [];
+          const first = g.s.elems[0];
+          const rest = new ListTerm(g.s.elems.slice(1));
+          const pair = new ListTerm([first, rest]);
+          const s2 = unifyTerm(g.o, pair, subst);
+          return s2 !== null ? [s2] : [];
+        }
+        if (g.o instanceof ListTerm && g.o.elems.length === 2) {
+          const first = g.o.elems[0];
+          const rest = g.o.elems[1];
+          if (rest instanceof ListTerm) {
+            const n = rest.elems.length;
+            const xs = new Array(n + 1);
+            xs[0] = first;
+            for (let i = 0; i < n; i++) xs[i + 1] = rest.elems[i];
+            const constructed = new ListTerm(xs);
+            const s2 = unifyTerm(g.s, constructed, subst);
+            return s2 !== null ? [s2] : [];
+          }
+          if (rest instanceof Var) {
+            const constructed = new OpenListTerm([first], rest.name);
+            const s2 = unifyTerm(g.s, constructed, subst);
+            return s2 !== null ? [s2] : [];
+          }
+          if (rest instanceof OpenListTerm) {
+            const n = rest.prefix.length;
+            const newPrefix = new Array(n + 1);
+            newPrefix[0] = first;
+            for (let i = 0; i < n; i++) newPrefix[i + 1] = rest.prefix[i];
+            const constructed = new OpenListTerm(newPrefix, rest.tailVar);
+            const s2 = unifyTerm(g.s, constructed, subst);
+            return s2 !== null ? [s2] : [];
+          }
+        }
+        return [];
+      }
+
+      // -----------------------------------------------------------------
+      // 4.5 log: builtins
+      // -----------------------------------------------------------------
+
+      // log:equalTo
+      if (pv === LOG_NS + 'equalTo') {
+        const s2 = unifyTerm(goal.s, goal.o, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // log:notEqualTo
+      if (pv === LOG_NS + 'notEqualTo') {
+        const s2 = unifyTerm(goal.s, goal.o, subst);
+        if (s2 !== null) return [];
+        return [{ ...subst }];
+      }
+
+      // log:conjunction
+      // Schema: ( $s.i+ )+ log:conjunction $o?
+      // $o is a formula containing a copy of each formula in the subject list.
+      // Duplicates are removed.
+      if (pv === LOG_NS + 'conjunction') {
+        if (!(g.s instanceof ListTerm)) return [];
+
+        const parts = g.s.elems;
+        if (!parts.length) return [];
+
+        /** @type {Triple[]} */
+        const merged = [];
+
+        // Fast-path dedup for IRI/Literal-only triples.
+        const fastKeySet = new Set();
+
+        for (const part of parts) {
+          // Support the empty formula token `true`.
+          if (part instanceof Literal && part.value === 'true') continue;
+
+          if (!(part instanceof GraphTerm)) return [];
+
+          for (const tr of part.triples) {
+            const k = tripleFastKey(tr);
+            if (k !== null) {
+              if (fastKeySet.has(k)) continue;
+              fastKeySet.add(k);
+              merged.push(tr);
+              continue;
+            }
+
+            // Fallback: structural equality (still respects plain-string == xsd:string).
+            let dup = false;
+            for (const ex of merged) {
+              if (triplesEqual(tr, ex)) {
+                dup = true;
+                break;
+              }
+            }
+            if (!dup) merged.push(tr);
+          }
+        }
+
+        const outFormula = new GraphTerm(merged);
+
+        // Allow blank nodes as a don't-care output (common in builtin schemas).
+        if (g.o instanceof Blank) return [{ ...subst }];
+
+        const s2 = unifyTerm(g.o, outFormula, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // log:conclusion
+      // Schema: $s+ log:conclusion $o?
+      // $o is the deductive closure of the subject formula $s (including rule inferences).
+      if (pv === LOG_NS + 'conclusion') {
+        // Accept 'true' as the empty formula.
+        let inFormula = null;
+        if (g.s instanceof GraphTerm) inFormula = g.s;
+        else if (g.s instanceof Literal && g.s.value === 'true') inFormula = new GraphTerm([]);
+        else return [];
+
+        const conclusion = computeConclusionFromFormula(inFormula);
+        if (!(conclusion instanceof GraphTerm)) return [];
+
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = conclusion;
+          return [s2];
+        }
+        if (g.o instanceof Blank) return [{ ...subst }];
+
+        const s2 = unifyTerm(g.o, conclusion, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // log:content
+      // Schema: $s+ log:content $o?
+      // Dereferences $s and returns the online resource as an xsd:string.
+      if (pv === LOG_NS + 'content') {
+        const iri = iriValue(g.s);
+        if (iri === null) return [];
+        const docIri = deref.stripFragment(iri);
+
+        const text = deref.derefTextSync(docIri);
+        if (typeof text !== 'string') return [];
+
+        const lit = internLiteral(`${JSON.stringify(text)}^^<${XSD_NS}string>`);
+
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = lit;
+          return [s2];
+        }
+        if (g.o instanceof Blank) return [{ ...subst }];
+
+        const s2 = unifyTerm(g.o, lit, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // log:semantics
+      // Schema: $s+ log:semantics $o?
+      // Dereferences $s, parses the retrieved resource, and returns it as a formula.
+      if (pv === LOG_NS + 'semantics') {
+        const iri = iriValue(g.s);
+        if (iri === null) return [];
+        const docIri = deref.stripFragment(iri);
+
+        const formula = deref.derefSemanticsSync(docIri);
+        if (!(formula instanceof GraphTerm)) return [];
+
+        // Avoid variable capture between the returned quoted formula and the
+        // surrounding proof environment.
+        const formulaStd = standardizeTermApart(formula, varGen);
+        if (g.o instanceof Blank) return [{ ...subst }];
+
+        const s2 = unifyTerm(g.o, formulaStd, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // log:semanticsOrError
+      // Schema: $s+ log:semanticsOrError $o?
+      // Like log:semantics, but yields an xsd:string error message on failure.
+      if (pv === LOG_NS + 'semanticsOrError') {
+        const iri = iriValue(g.s);
+        if (iri === null) return [];
+
+        const docIri = deref.stripFragment(iri);
+        let term = deref.derefSemanticsOrError(docIri);
+
+        // Avoid variable capture between the returned quoted formula and the
+        // surrounding proof environment.
+        if (term instanceof GraphTerm) term = standardizeTermApart(term, varGen);
+
+        if (g.o instanceof Blank) return [{ ...subst }];
+
+        const s2 = unifyTerm(g.o, term, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // log:parsedAsN3
+      // Schema: $s+ log:parsedAsN3 $o-
+      // Parses the subject xsd:string as N3 and returns it as a formula.
+      if (pv === LOG_NS + 'parsedAsN3') {
+        const txt = termToJsXsdStringNoLang(g.s);
+        if (txt === null) return [];
+
+        let formula;
+        try {
+          // No external base is specified in the builtin definition; the parsed
+          // string may contain its own @base / @prefix directives.
+          formula = deref.parseSemanticsToFormula(txt, '');
+        } catch {
+          return [];
+        }
+
+        // Avoid variable capture between the parsed quoted formula and the
+        // surrounding proof environment.
+        formula = standardizeTermApart(formula, varGen);
+
+        if (g.o instanceof Blank) return [{ ...subst }];
+
+        const s2 = unifyTerm(g.o, formula, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // log:rawType
+      // Schema: $s+ log:rawType $o-
+      // Returns one of log:Formula, log:Literal, rdf:List, or log:Other.
+      if (pv === LOG_NS + 'rawType') {
+        if (g.s instanceof Var) return [];
+
+        let ty;
+        if (g.s instanceof GraphTerm) ty = internIri(LOG_NS + 'Formula');
+        else if (g.s instanceof Literal) ty = internIri(LOG_NS + 'Literal');
+        else if (g.s instanceof ListTerm || g.s instanceof OpenListTerm) ty = internIri(RDF_NS + 'List');
+        else ty = internIri(LOG_NS + 'Other');
+
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = ty;
+          return [s2];
+        }
+        if (g.o instanceof Blank) return [{ ...subst }];
+
+        const s2 = unifyTerm(g.o, ty, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // log:dtlit
+      // Schema: ( $s.1? $s.2? )? log:dtlit $o?
+      // true iff $o is a datatyped literal with string value $s.1 and datatype IRI $s.2
+      if (pv === LOG_NS + 'dtlit') {
+        // Fully unbound (both arguments '?'-mode): treat as satisfiable, succeed once.
+        // Required by notation3tests "success-fullUnbound-*".
+        if (g.s instanceof Var && g.o instanceof Var) return [{ ...subst }];
+
+        const results = [];
+
+        // Direction 1: object literal -> subject list (string, datatype)
+        if (g.o instanceof Literal) {
+          const [oLex, oDt0] = literalParts(g.o.value);
+          let oDt = oDt0;
+
+          // literalParts() strips @lang into the lexical part and leaves dt null,
+          // but RDF 1.1 language-tagged strings have datatype rdf:langString.
+          if (oDt === null) {
+            if (literalHasLangTag(g.o.value)) oDt = RDF_NS + 'langString';
+            else if (isPlainStringLiteralValue(g.o.value)) oDt = XSD_NS + 'string';
+          }
+
+          if (oDt !== null) {
+            const strLit = isQuotedLexical(oLex) ? internLiteral(oLex) : makeStringLiteral(String(oLex));
+            const subjList = new ListTerm([strLit, internIri(oDt)]);
+            const s2 = unifyTerm(goal.s, subjList, subst);
             if (s2 !== null) results.push(s2);
           }
         }
-      }
-    }
-    return results;
-  }
 
-  // log:implies — expose internal forward rules as data
-  if (pv === LOG_NS + 'implies') {
-    const allFw = backRules.__allForwardRules || [];
-    const results = [];
+        // Direction 2: subject list -> object literal
+        if (g.s instanceof ListTerm && g.s.elems.length === 2) {
+          const a = g.s.elems[0];
+          const b = g.s.elems[1];
 
-    for (const r0 of allFw) {
-      if (!r0.isForward) continue;
+          if (a instanceof Literal && b instanceof Iri) {
+            const [sLex, sDt0] = literalParts(a.value);
 
-      // fresh copy of the rule with fresh variable names
-      const r = standardizeRule(r0, varGen);
-
-      const premF = new GraphTerm(r.premise);
-      const concTerm = r0.isFuse ? internLiteral('false') : new GraphTerm(r.conclusion);
-
-      // unify subject with the premise formula
-      let s2 = unifyTerm(goal.s, premF, subst);
-      if (s2 === null) continue;
-
-      // unify object with the conclusion formula
-      s2 = unifyTerm(goal.o, concTerm, s2);
-      if (s2 === null) continue;
-
-      results.push(s2);
-    }
-
-    return results;
-  }
-
-  // log:impliedBy — expose internal backward rules as data
-  if (pv === LOG_NS + 'impliedBy') {
-    const allBw = backRules.__allBackwardRules || backRules;
-    const results = [];
-
-    for (const r0 of allBw) {
-      if (r0.isForward) continue; // only backward rules
-
-      // fresh copy of the rule with fresh variable names
-      const r = standardizeRule(r0, varGen);
-
-      // For backward rules, r.conclusion is the head, r.premise is the body
-      const headF = new GraphTerm(r.conclusion);
-      const bodyF = new GraphTerm(r.premise);
-
-      // unify subject with the head formula
-      let s2 = unifyTerm(goal.s, headF, subst);
-      if (s2 === null) continue;
-
-      // unify object with the body formula
-      s2 = unifyTerm(goal.o, bodyF, s2);
-      if (s2 === null) continue;
-
-      results.push(s2);
-    }
-
-    return results;
-  }
-
-  // log:includes
-  // Schema: $s? log:includes $o+
-  // Object may be a concrete formula or the literal `true` (empty formula).
-  //
-  // Priority / closure semantics (subject-driven):
-  //   - subject = GraphTerm: explicit scope, run immediately (no closure gating)
-  //   - subject = positive integer literal N (>= 1): delay until saturated closure level >= N
-  //   - subject = Var: treat as priority 1 (do not bind)
-  //   - any other subject: invalid, so the builtin fails
-  if (pv === LOG_NS + 'includes') {
-    let scopeFacts = null;
-    let scopeBackRules = backRules;
-
-    if (g.s instanceof GraphTerm) {
-      // Explicit scope graph: immediate, and do not use rules outside the quoted graph.
-      scopeFacts = g.s.triples.slice();
-      ensureFactIndexes(scopeFacts);
-      Object.defineProperty(scopeFacts, '__scopedSnapshot', {
-        value: scopeFacts,
-        enumerable: false,
-        writable: true,
-      });
-      const lvlHere = facts && typeof facts.__scopedClosureLevel === 'number' ? facts.__scopedClosureLevel : 0;
-      Object.defineProperty(scopeFacts, '__scopedClosureLevel', {
-        value: lvlHere,
-        enumerable: false,
-        writable: true,
-      });
-      scopeBackRules = [];
-    } else {
-      // Priority-gated scope: query the frozen snapshot for the requested closure level.
-      let prio = 1;
-      if (g.s instanceof Var) {
-        prio = 1; // do not bind
-      } else {
-        const p0 = __logNaturalPriorityFromTerm(g.s);
-        if (p0 === null) return [];
-        prio = p0;
-      }
-
-      const snap = facts.__scopedSnapshot || null;
-      const lvl = (facts && typeof facts.__scopedClosureLevel === 'number' && facts.__scopedClosureLevel) || 0;
-      if (!snap) return []; // DELAY until snapshot exists
-      if (lvl < prio) return []; // DELAY until saturated closure prio exists
-      scopeFacts = snap;
-    }
-
-    // Empty formula is always included (but may be priority-gated above).
-    if (g.o instanceof Literal && g.o.value === 'true') return [{ ...subst }];
-    if (!(g.o instanceof GraphTerm)) return [];
-
-    const visited2 = [];
-    const keepVars = new Set();
-    if (g.s instanceof GraphTerm) __builtinCollectVarsInTriples(g.s.triples, keepVars);
-
-    const goalVariants = __expandScopedVarPredicateGoals(Array.from(g.o.triples));
-    const out = [];
-    for (const variant of goalVariants) {
-      const sols = proveGoals(
-        variant.goals,
-        { ...subst },
-        scopeFacts,
-        scopeBackRules,
-        depth + 1,
-        visited2,
-        varGen,
-        maxResults,
-        keepVars.size ? { keepVars } : undefined,
-      );
-      for (const s2 of sols) {
-        const merged = { ...s2 };
-        let ok = true;
-        if (variant.bind) {
-          for (const [k, v] of Object.entries(variant.bind)) {
-            if (Object.prototype.hasOwnProperty.call(merged, k) && !termsEqual(merged[k], v)) {
-              ok = false;
-              break;
+            // $s.1 must be xsd:string (plain or ^^xsd:string), not language-tagged.
+            const okString = (sDt0 === null && isPlainStringLiteralValue(a.value)) || sDt0 === XSD_NS + 'string';
+            if (okString) {
+              const dtIri = b.value;
+              // For xsd:string, prefer the plain string literal form.
+              const outLit = dtIri === XSD_NS + 'string' ? internLiteral(sLex) : internLiteral(`${sLex}^^<${dtIri}>`);
+              const s2 = unifyTerm(goal.o, outLit, subst);
+              if (s2 !== null) results.push(s2);
             }
-            merged[k] = v;
           }
         }
-        if (!ok) continue;
-        out.push(merged);
-        if (typeof maxResults === 'number' && maxResults > 0 && out.length >= maxResults) return out;
-      }
-    }
-    return out;
-  }
 
-  // log:notIncludes
-  // Schema: $s? log:notIncludes $o+
-  //
-  // Priority / closure semantics (subject-driven): same as log:includes above.
-  if (pv === LOG_NS + 'notIncludes') {
-    let scopeFacts = null;
-    let scopeBackRules = backRules;
-
-    if (g.s instanceof GraphTerm) {
-      // Explicit scope graph: immediate, and do not use rules outside the quoted graph.
-      scopeFacts = g.s.triples.slice();
-      ensureFactIndexes(scopeFacts);
-      Object.defineProperty(scopeFacts, '__scopedSnapshot', {
-        value: scopeFacts,
-        enumerable: false,
-        writable: true,
-      });
-      const lvlHere = facts && typeof facts.__scopedClosureLevel === 'number' ? facts.__scopedClosureLevel : 0;
-      Object.defineProperty(scopeFacts, '__scopedClosureLevel', {
-        value: lvlHere,
-        enumerable: false,
-        writable: true,
-      });
-      scopeBackRules = [];
-    } else {
-      // Priority-gated scope: query the frozen snapshot for the requested closure level.
-      let prio = 1;
-      if (g.s instanceof Var) {
-        prio = 1; // do not bind
-      } else {
-        const p0 = __logNaturalPriorityFromTerm(g.s);
-        if (p0 === null) return [];
-        prio = p0;
+        return results;
       }
 
-      const snap = facts.__scopedSnapshot || null;
-      const lvl = (facts && typeof facts.__scopedClosureLevel === 'number' && facts.__scopedClosureLevel) || 0;
-      if (!snap) return []; // DELAY until snapshot exists
-      if (lvl < prio) return []; // DELAY until saturated closure prio exists
-      scopeFacts = snap;
-    }
+      // log:langlit
+      // Schema: ( $s.1? $s.2? )? log:langlit $o?
+      // true iff $o is a language-tagged literal with string value $s.1 and language tag $s.2
+      if (pv === LOG_NS + 'langlit') {
+        // Fully unbound (both arguments '?'-mode): treat as satisfiable, succeed once.
+        if (g.s instanceof Var && g.o instanceof Var) return [{ ...subst }];
+        const results = [];
+        const LANG_RE = /^[A-Za-z]+(?:-[A-Za-z0-9]+)*$/; // (same notion as literalParts/literalHasLangTag)
 
-    // Empty formula is always included, so it is never "not included" (but may be priority-gated above).
-    if (g.o instanceof Literal && g.o.value === 'true') return [];
-    if (!(g.o instanceof GraphTerm)) return [];
+        function extractLangTag(litVal) {
+          if (typeof litVal !== 'string') return null;
+          if (!literalHasLangTag(litVal)) return null;
+          const lastQuote = litVal.lastIndexOf('"');
+          if (lastQuote < 0) return null;
+          const after = lastQuote + 1;
+          if (after >= litVal.length || litVal[after] !== '@') return null;
+          const tag = litVal.slice(after + 1);
+          if (!LANG_RE.test(tag)) return null;
+          return tag;
+        }
 
-    const visited2 = [];
-    const sols = proveGoals(
-      Array.from(g.o.triples),
-      { ...subst },
-      scopeFacts,
-      scopeBackRules,
-      depth + 1,
-      visited2,
-      varGen,
-      1,
-    );
-    return sols.length ? [] : [{ ...subst }];
-  }
+        // Direction 1: object language-tagged literal -> subject list (string, langtag)
+        if (g.o instanceof Literal) {
+          const tag = extractLangTag(g.o.value);
+          if (tag !== null) {
+            const [oLex] = literalParts(g.o.value); // strips @lang into lexical part
+            const strLit = isQuotedLexical(oLex) ? internLiteral(oLex) : makeStringLiteral(String(oLex));
+            const langLit = makeStringLiteral(tag);
+            const subjList = new ListTerm([strLit, langLit]);
+            const s2 = unifyTerm(goal.s, subjList, subst);
+            if (s2 !== null) results.push(s2);
+          }
+        }
 
-  // log:trace
-  // Schema: $s? log:trace $o?
-  // Side-effecting debug output (to stderr). Always succeeds once.
-  // to mimic EYE's fm(...) formatting branch.
-  if (pv === LOG_NS + 'trace') {
-    const pref = trace.getTracePrefixes() || PrefixEnv.newDefault();
-
-    const xStr = termToN3(g.s, pref);
-    const yStr = termToN3(g.o, pref);
-
-    trace.writeTraceLine(`${xStr} TRACE ${yStr}`);
-    return [{ ...subst }];
-  }
-
-  // log:outputString
-  // Schema: $s+ log:outputString $o+
-  // Side-effecting output directive. As a builtin goal, we simply succeed
-  // when both sides are bound and the object is a string literal.
-  // Actual rendering is handled after reasoning, if any log:outputString facts exist.
-  if (pv === LOG_NS + 'outputString') {
-    // Require subject to be bound (not a variable) and object to be a concrete string literal.
-    if (g.s instanceof Var) return [];
-    if (g.o instanceof Var) return [];
-    const s = termToJsString(g.o);
-    if (s === null) return [];
-    return [{ ...subst }];
-  }
-
-  // log:collectAllIn (scoped)
-  if (pv === LOG_NS + 'collectAllIn') {
-    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 3) return [];
-    const [valueTempl, clauseTerm, listTerm] = g.s.elems;
-    if (!(clauseTerm instanceof GraphTerm)) return [];
-
-    // Priority / closure semantics:
-    //   - object = GraphTerm: explicit scope, run immediately (no closure gating)
-    //   - object = positive integer literal N (>= 1): delay until saturated closure level >= N
-    //   - object = Var: treat as priority 1 (do not bind)
-    //   - any other object: backward-compatible default priority 1
-
-    const outSubst = { ...subst };
-    let scopeFacts = null;
-    let scopeBackRules = backRules;
-
-    if (g.o instanceof GraphTerm) {
-      scopeFacts = g.o.triples.slice();
-      ensureFactIndexes(scopeFacts);
-      Object.defineProperty(scopeFacts, '__scopedSnapshot', {
-        value: scopeFacts,
-        enumerable: false,
-        writable: true,
-      });
-      const lvlHere = facts && typeof facts.__scopedClosureLevel === 'number' ? facts.__scopedClosureLevel : 0;
-      Object.defineProperty(scopeFacts, '__scopedClosureLevel', {
-        value: lvlHere,
-        enumerable: false,
-        writable: true,
-      });
-      scopeBackRules = [];
-    } else {
-      let prio = 1;
-      if (g.o instanceof Var) {
-        // Unbound var: behave as priority 1 (do not bind)
-        prio = 1;
-      } else {
-        const p0 = __logNaturalPriorityFromTerm(g.o);
-        if (p0 !== null) prio = p0;
+        // Direction 2: subject list -> object language-tagged literal
+        if (g.s instanceof ListTerm && g.s.elems.length === 2) {
+          const a = g.s.elems[0]; // string
+          const b = g.s.elems[1]; // lang tag string
+          if (a instanceof Literal && b instanceof Literal) {
+            const [sLex, sDt0] = literalParts(a.value);
+            const okString = (sDt0 === null && isPlainStringLiteralValue(a.value)) || sDt0 === XSD_NS + 'string';
+            const [langLex, langDt0] = literalParts(b.value);
+            const okLang = (langDt0 === null && isPlainStringLiteralValue(b.value)) || langDt0 === XSD_NS + 'string';
+            if (okString && okLang) {
+              const tag = stripQuotes(langLex);
+              if (LANG_RE.test(tag)) {
+                const outLit = internLiteral(`${sLex}@${tag}`);
+                const s2 = unifyTerm(goal.o, outLit, subst);
+                if (s2 !== null) results.push(s2);
+              }
+            }
+          }
+        }
+        return results;
       }
 
-      const snap = facts.__scopedSnapshot || null;
-      const lvl = (facts && typeof facts.__scopedClosureLevel === 'number' && facts.__scopedClosureLevel) || 0;
-      if (!snap) return []; // DELAY until snapshot exists
-      if (lvl < prio) return []; // DELAY until saturated closure prio exists
-      scopeFacts = snap;
-    }
+      // log:implies — expose internal forward rules as data
+      if (pv === LOG_NS + 'implies') {
+        const allFw = backRules.__allForwardRules || [];
+        const results = [];
 
-    // If sols is a blank node succeed without collecting/binding.
-    if (listTerm instanceof Blank) {
-      return [outSubst];
-    }
+        for (const r0 of allFw) {
+          if (!r0.isForward) continue;
 
-    const visited2 = [];
-    const sols = proveGoals(
-      Array.from(clauseTerm.triples),
-      {},
-      scopeFacts,
-      scopeBackRules,
-      depth + 1,
-      visited2,
-      varGen,
-    );
+          // fresh copy of the rule with fresh variable names
+          const r = standardizeRule(r0, varGen);
 
-    const collected = sols.map((sBody) => applySubstTerm(valueTempl, sBody));
-    const collectedList = new ListTerm(collected);
+          const premF = new GraphTerm(r.premise);
+          const concTerm = r0.isFuse ? internLiteral('false') : new GraphTerm(r.conclusion);
 
-    const s2 = unifyTerm(listTerm, collectedList, outSubst);
-    return s2 ? [s2] : [];
-  }
+          // unify subject with the premise formula
+          let s2 = unifyTerm(goal.s, premF, subst);
+          if (s2 === null) continue;
 
-  // log:forAllIn (scoped)
-  if (pv === LOG_NS + 'forAllIn') {
-    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
-    const [whereClause, thenClause] = g.s.elems;
-    if (!(whereClause instanceof GraphTerm) || !(thenClause instanceof GraphTerm)) return [];
+          // unify object with the conclusion formula
+          s2 = unifyTerm(goal.o, concTerm, s2);
+          if (s2 === null) continue;
 
-    // See log:collectAllIn above for the priority / closure semantics.
+          results.push(s2);
+        }
 
-    const outSubst = { ...subst };
-    let scopeFacts = null;
-    let scopeBackRules = backRules;
-
-    if (g.o instanceof GraphTerm) {
-      scopeFacts = g.o.triples.slice();
-      ensureFactIndexes(scopeFacts);
-      Object.defineProperty(scopeFacts, '__scopedSnapshot', {
-        value: scopeFacts,
-        enumerable: false,
-        writable: true,
-      });
-      const lvlHere = facts && typeof facts.__scopedClosureLevel === 'number' ? facts.__scopedClosureLevel : 0;
-      Object.defineProperty(scopeFacts, '__scopedClosureLevel', {
-        value: lvlHere,
-        enumerable: false,
-        writable: true,
-      });
-      scopeBackRules = [];
-    } else {
-      let prio = 1;
-      if (g.o instanceof Var) {
-        // Unbound var: behave as priority 1 (do not bind)
-        prio = 1;
-      } else {
-        const p0 = __logNaturalPriorityFromTerm(g.o);
-        if (p0 !== null) prio = p0;
+        return results;
       }
 
-      const snap = facts.__scopedSnapshot || null;
-      const lvl = (facts && typeof facts.__scopedClosureLevel === 'number' && facts.__scopedClosureLevel) || 0;
-      if (!snap) return []; // DELAY until snapshot exists
-      if (lvl < prio) return []; // DELAY until saturated closure prio exists
-      scopeFacts = snap;
+      // log:impliedBy — expose internal backward rules as data
+      if (pv === LOG_NS + 'impliedBy') {
+        const allBw = backRules.__allBackwardRules || backRules;
+        const results = [];
+
+        for (const r0 of allBw) {
+          if (r0.isForward) continue; // only backward rules
+
+          // fresh copy of the rule with fresh variable names
+          const r = standardizeRule(r0, varGen);
+
+          // For backward rules, r.conclusion is the head, r.premise is the body
+          const headF = new GraphTerm(r.conclusion);
+          const bodyF = new GraphTerm(r.premise);
+
+          // unify subject with the head formula
+          let s2 = unifyTerm(goal.s, headF, subst);
+          if (s2 === null) continue;
+
+          // unify object with the body formula
+          s2 = unifyTerm(goal.o, bodyF, s2);
+          if (s2 === null) continue;
+
+          results.push(s2);
+        }
+
+        return results;
+      }
+
+      // log:includes
+      // Schema: $s? log:includes $o+
+      // Object may be a concrete formula or the literal `true` (empty formula).
+      //
+      // Priority / closure semantics (subject-driven):
+      //   - subject = GraphTerm: explicit scope, run immediately (no closure gating)
+      //   - subject = positive integer literal N (>= 1): delay until saturated closure level >= N
+      //   - subject = Var: treat as priority 1 (do not bind)
+      //   - any other subject: invalid, so the builtin fails
+      if (pv === LOG_NS + 'includes') {
+        let scopeFacts = null;
+        let scopeBackRules = backRules;
+
+        if (g.s instanceof GraphTerm) {
+          // Explicit scope graph: immediate, and do not use rules outside the quoted graph.
+          scopeFacts = g.s.triples.slice();
+          ensureFactIndexes(scopeFacts);
+          Object.defineProperty(scopeFacts, '__scopedSnapshot', {
+            value: scopeFacts,
+            enumerable: false,
+            writable: true,
+          });
+          const lvlHere = facts && typeof facts.__scopedClosureLevel === 'number' ? facts.__scopedClosureLevel : 0;
+          Object.defineProperty(scopeFacts, '__scopedClosureLevel', {
+            value: lvlHere,
+            enumerable: false,
+            writable: true,
+          });
+          scopeBackRules = [];
+        } else {
+          // Priority-gated scope: query the frozen snapshot for the requested closure level.
+          let prio = 1;
+          if (g.s instanceof Var) {
+            prio = 1; // do not bind
+          } else {
+            const p0 = __logNaturalPriorityFromTerm(g.s);
+            if (p0 === null) return [];
+            prio = p0;
+          }
+
+          const snap = facts.__scopedSnapshot || null;
+          const lvl = (facts && typeof facts.__scopedClosureLevel === 'number' && facts.__scopedClosureLevel) || 0;
+          if (!snap) return []; // DELAY until snapshot exists
+          if (lvl < prio) return []; // DELAY until saturated closure prio exists
+          scopeFacts = snap;
+        }
+
+        // Empty formula is always included (but may be priority-gated above).
+        if (g.o instanceof Literal && g.o.value === 'true') return [{ ...subst }];
+        if (!(g.o instanceof GraphTerm)) return [];
+
+        const visited2 = [];
+        const keepVars = new Set();
+        if (g.s instanceof GraphTerm) __builtinCollectVarsInTriples(g.s.triples, keepVars);
+
+        const goalVariants = __expandScopedVarPredicateGoals(Array.from(g.o.triples));
+        const out = [];
+        for (const variant of goalVariants) {
+          const sols = proveGoals(
+            variant.goals,
+            { ...subst },
+            scopeFacts,
+            scopeBackRules,
+            depth + 1,
+            visited2,
+            varGen,
+            maxResults,
+            keepVars.size ? { keepVars } : undefined,
+          );
+          for (const s2 of sols) {
+            const merged = { ...s2 };
+            let ok = true;
+            if (variant.bind) {
+              for (const [k, v] of Object.entries(variant.bind)) {
+                if (Object.prototype.hasOwnProperty.call(merged, k) && !termsEqual(merged[k], v)) {
+                  ok = false;
+                  break;
+                }
+                merged[k] = v;
+              }
+            }
+            if (!ok) continue;
+            out.push(merged);
+            if (typeof maxResults === 'number' && maxResults > 0 && out.length >= maxResults) return out;
+          }
+        }
+        return out;
+      }
+
+      // log:notIncludes
+      // Schema: $s? log:notIncludes $o+
+      //
+      // Priority / closure semantics (subject-driven): same as log:includes above.
+      if (pv === LOG_NS + 'notIncludes') {
+        let scopeFacts = null;
+        let scopeBackRules = backRules;
+
+        if (g.s instanceof GraphTerm) {
+          // Explicit scope graph: immediate, and do not use rules outside the quoted graph.
+          scopeFacts = g.s.triples.slice();
+          ensureFactIndexes(scopeFacts);
+          Object.defineProperty(scopeFacts, '__scopedSnapshot', {
+            value: scopeFacts,
+            enumerable: false,
+            writable: true,
+          });
+          const lvlHere = facts && typeof facts.__scopedClosureLevel === 'number' ? facts.__scopedClosureLevel : 0;
+          Object.defineProperty(scopeFacts, '__scopedClosureLevel', {
+            value: lvlHere,
+            enumerable: false,
+            writable: true,
+          });
+          scopeBackRules = [];
+        } else {
+          // Priority-gated scope: query the frozen snapshot for the requested closure level.
+          let prio = 1;
+          if (g.s instanceof Var) {
+            prio = 1; // do not bind
+          } else {
+            const p0 = __logNaturalPriorityFromTerm(g.s);
+            if (p0 === null) return [];
+            prio = p0;
+          }
+
+          const snap = facts.__scopedSnapshot || null;
+          const lvl = (facts && typeof facts.__scopedClosureLevel === 'number' && facts.__scopedClosureLevel) || 0;
+          if (!snap) return []; // DELAY until snapshot exists
+          if (lvl < prio) return []; // DELAY until saturated closure prio exists
+          scopeFacts = snap;
+        }
+
+        // Empty formula is always included, so it is never "not included" (but may be priority-gated above).
+        if (g.o instanceof Literal && g.o.value === 'true') return [];
+        if (!(g.o instanceof GraphTerm)) return [];
+
+        const visited2 = [];
+        const sols = proveGoals(
+          Array.from(g.o.triples),
+          { ...subst },
+          scopeFacts,
+          scopeBackRules,
+          depth + 1,
+          visited2,
+          varGen,
+          1,
+        );
+        return sols.length ? [] : [{ ...subst }];
+      }
+
+      // log:trace
+      // Schema: $s? log:trace $o?
+      // Side-effecting debug output (to stderr). Always succeeds once.
+      // to mimic EYE's fm(...) formatting branch.
+      if (pv === LOG_NS + 'trace') {
+        const pref = trace.getTracePrefixes() || PrefixEnv.newDefault();
+
+        const xStr = termToN3(g.s, pref);
+        const yStr = termToN3(g.o, pref);
+
+        trace.writeTraceLine(`${xStr} TRACE ${yStr}`);
+        return [{ ...subst }];
+      }
+
+      // log:outputString
+      // Schema: $s+ log:outputString $o+
+      // Side-effecting output directive. As a builtin goal, we simply succeed
+      // when both sides are bound and the object is a string literal.
+      // Actual rendering is handled after reasoning, if any log:outputString facts exist.
+      if (pv === LOG_NS + 'outputString') {
+        // Require subject to be bound (not a variable) and object to be a concrete string literal.
+        if (g.s instanceof Var) return [];
+        if (g.o instanceof Var) return [];
+        const s = termToJsString(g.o);
+        if (s === null) return [];
+        return [{ ...subst }];
+      }
+
+      // log:collectAllIn (scoped)
+      if (pv === LOG_NS + 'collectAllIn') {
+        if (!(g.s instanceof ListTerm) || g.s.elems.length !== 3) return [];
+        const [valueTempl, clauseTerm, listTerm] = g.s.elems;
+        if (!(clauseTerm instanceof GraphTerm)) return [];
+
+        // Priority / closure semantics:
+        //   - object = GraphTerm: explicit scope, run immediately (no closure gating)
+        //   - object = positive integer literal N (>= 1): delay until saturated closure level >= N
+        //   - object = Var: treat as priority 1 (do not bind)
+        //   - any other object: backward-compatible default priority 1
+
+        const outSubst = { ...subst };
+        let scopeFacts = null;
+        let scopeBackRules = backRules;
+
+        if (g.o instanceof GraphTerm) {
+          scopeFacts = g.o.triples.slice();
+          ensureFactIndexes(scopeFacts);
+          Object.defineProperty(scopeFacts, '__scopedSnapshot', {
+            value: scopeFacts,
+            enumerable: false,
+            writable: true,
+          });
+          const lvlHere = facts && typeof facts.__scopedClosureLevel === 'number' ? facts.__scopedClosureLevel : 0;
+          Object.defineProperty(scopeFacts, '__scopedClosureLevel', {
+            value: lvlHere,
+            enumerable: false,
+            writable: true,
+          });
+          scopeBackRules = [];
+        } else {
+          let prio = 1;
+          if (g.o instanceof Var) {
+            // Unbound var: behave as priority 1 (do not bind)
+            prio = 1;
+          } else {
+            const p0 = __logNaturalPriorityFromTerm(g.o);
+            if (p0 !== null) prio = p0;
+          }
+
+          const snap = facts.__scopedSnapshot || null;
+          const lvl = (facts && typeof facts.__scopedClosureLevel === 'number' && facts.__scopedClosureLevel) || 0;
+          if (!snap) return []; // DELAY until snapshot exists
+          if (lvl < prio) return []; // DELAY until saturated closure prio exists
+          scopeFacts = snap;
+        }
+
+        // If sols is a blank node succeed without collecting/binding.
+        if (listTerm instanceof Blank) {
+          return [outSubst];
+        }
+
+        const visited2 = [];
+        const sols = proveGoals(
+          Array.from(clauseTerm.triples),
+          {},
+          scopeFacts,
+          scopeBackRules,
+          depth + 1,
+          visited2,
+          varGen,
+        );
+
+        const collected = sols.map((sBody) => applySubstTerm(valueTempl, sBody));
+        const collectedList = new ListTerm(collected);
+
+        const s2 = unifyTerm(listTerm, collectedList, outSubst);
+        return s2 ? [s2] : [];
+      }
+
+      // log:forAllIn (scoped)
+      if (pv === LOG_NS + 'forAllIn') {
+        if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
+        const [whereClause, thenClause] = g.s.elems;
+        if (!(whereClause instanceof GraphTerm) || !(thenClause instanceof GraphTerm)) return [];
+
+        // See log:collectAllIn above for the priority / closure semantics.
+
+        const outSubst = { ...subst };
+        let scopeFacts = null;
+        let scopeBackRules = backRules;
+
+        if (g.o instanceof GraphTerm) {
+          scopeFacts = g.o.triples.slice();
+          ensureFactIndexes(scopeFacts);
+          Object.defineProperty(scopeFacts, '__scopedSnapshot', {
+            value: scopeFacts,
+            enumerable: false,
+            writable: true,
+          });
+          const lvlHere = facts && typeof facts.__scopedClosureLevel === 'number' ? facts.__scopedClosureLevel : 0;
+          Object.defineProperty(scopeFacts, '__scopedClosureLevel', {
+            value: lvlHere,
+            enumerable: false,
+            writable: true,
+          });
+          scopeBackRules = [];
+        } else {
+          let prio = 1;
+          if (g.o instanceof Var) {
+            // Unbound var: behave as priority 1 (do not bind)
+            prio = 1;
+          } else {
+            const p0 = __logNaturalPriorityFromTerm(g.o);
+            if (p0 !== null) prio = p0;
+          }
+
+          const snap = facts.__scopedSnapshot || null;
+          const lvl = (facts && typeof facts.__scopedClosureLevel === 'number' && facts.__scopedClosureLevel) || 0;
+          if (!snap) return []; // DELAY until snapshot exists
+          if (lvl < prio) return []; // DELAY until saturated closure prio exists
+          scopeFacts = snap;
+        }
+
+        const visited1 = [];
+        const sols1 = proveGoals(
+          Array.from(whereClause.triples),
+          {},
+          scopeFacts,
+          scopeBackRules,
+          depth + 1,
+          visited1,
+          varGen,
+        );
+
+        for (const s1 of sols1) {
+          const visited2 = [];
+          const sols2 = proveGoals(
+            Array.from(thenClause.triples),
+            s1,
+            scopeFacts,
+            scopeBackRules,
+            depth + 1,
+            visited2,
+            varGen,
+          );
+          if (!sols2.length) return [];
+        }
+        return [outSubst];
+      }
+
+      // log:skolem
+      if (pv === LOG_NS + 'skolem') {
+        // Subject must be ground; commonly a list, but we allow any ground term.
+        if (!isGroundTerm(g.s)) return [];
+        if (typeof skolemIriFromGroundTerm !== 'function') return [];
+
+        const iri = skolemIriFromGroundTerm(g.s);
+        const s2 = unifyTerm(goal.o, iri, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // log:uri
+      // log:uri
+      if (pv === LOG_NS + 'uri') {
+        // Direction 1: subject is an IRI -> object is its string representation
+        if (g.s instanceof Iri) {
+          const uriStr = g.s.value; // raw IRI string
+          const lit = makeStringLiteral(uriStr); // "..."
+          const s2 = unifyTerm(goal.o, lit, subst);
+          return s2 !== null ? [s2] : [];
+        }
+
+        // Direction 2: object is a string literal -> subject is the corresponding IRI
+        if (g.o instanceof Literal) {
+          const uriStr = termToJsString(g.o); // JS string from the literal
+          if (uriStr === null) return [];
+
+          // Reject strings that cannot be safely serialized as <...> in Turtle/N3.
+          // Turtle IRIREF forbids control/space and these characters: < > " { } | ^ ` \
+          // (and eyeling also prints IRIs starting with "_:" as blank-node labels)
+          if (uriStr.startsWith('_:') || /[\u0000-\u0020<>"{}|^`\\]/.test(uriStr)) {
+            return [];
+          }
+
+          const iri = internIri(uriStr);
+          const s2 = unifyTerm(goal.s, iri, subst);
+          return s2 !== null ? [s2] : [];
+        }
+
+        const sOk = g.s instanceof Var || g.s instanceof Blank || g.s instanceof Iri;
+        const oOk = g.o instanceof Var || g.o instanceof Blank || g.o instanceof Literal;
+        if (!sOk || !oOk) return [];
+        return [{ ...subst }];
+      }
+
+      // -----------------------------------------------------------------
+      // 4.6 string: builtins
+      // -----------------------------------------------------------------
+
+      // string:concatenation
+      if (pv === STRING_NS + 'concatenation') {
+        if (!(g.s instanceof ListTerm)) return [];
+        const parts = [];
+        for (const t of g.s.elems) {
+          const sStr = termToJsString(t);
+          if (sStr === null) return [];
+          parts.push(sStr);
+        }
+        const lit = makeStringLiteral(parts.join(''));
+
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = lit;
+          return [s2];
+        }
+        const s2 = unifyTerm(g.o, lit, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // string:contains
+      if (pv === STRING_NS + 'contains') {
+        const sStr = termToJsString(g.s);
+        const oStr = termToJsString(g.o);
+        if (sStr === null || oStr === null) return [];
+        return sStr.includes(oStr) ? [{ ...subst }] : [];
+      }
+
+      // string:containsIgnoringCase
+      if (pv === STRING_NS + 'containsIgnoringCase') {
+        const sStr = termToJsString(g.s);
+        const oStr = termToJsString(g.o);
+        if (sStr === null || oStr === null) return [];
+        return sStr.toLowerCase().includes(oStr.toLowerCase()) ? [{ ...subst }] : [];
+      }
+
+      // string:endsWith
+      if (pv === STRING_NS + 'endsWith') {
+        const sStr = termToJsString(g.s);
+        const oStr = termToJsString(g.o);
+        if (sStr === null || oStr === null) return [];
+        return sStr.endsWith(oStr) ? [{ ...subst }] : [];
+      }
+
+      // string:equalIgnoringCase
+      if (pv === STRING_NS + 'equalIgnoringCase') {
+        const sStr = termToJsString(g.s);
+        const oStr = termToJsString(g.o);
+        if (sStr === null || oStr === null) return [];
+        return sStr.toLowerCase() === oStr.toLowerCase() ? [{ ...subst }] : [];
+      }
+
+      // string:format
+      // (limited: only %s and %% are supported, anything else ⇒ builtin fails)
+      // The format string itself must be string-castable, but placeholder arguments
+      // are allowed to be any bound non-variable term. Plain strings/IRIs keep their
+      // direct string value; other terms fall back to N3 rendering so formatting a
+      // bound blank node, list, or quoted formula does not make the whole builtin fail.
+      if (pv === STRING_NS + 'format') {
+        if (!(g.s instanceof ListTerm) || g.s.elems.length < 1) return [];
+        const fmtStr = termToJsString(g.s.elems[0]);
+        if (fmtStr === null) return [];
+
+        const args = [];
+        for (let i = 1; i < g.s.elems.length; i++) {
+          const aStr = termToFormatArgString(g.s.elems[i]);
+          if (aStr === null) return [];
+          args.push(aStr);
+        }
+
+        const formatted = simpleStringFormat(fmtStr, args);
+        if (formatted === null) return []; // unsupported format specifier(s)
+
+        const lit = makeStringLiteral(formatted);
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = lit;
+          return [s2];
+        }
+        const s2 = unifyTerm(g.o, lit, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // string:greaterThan
+      if (pv === STRING_NS + 'greaterThan') {
+        const sStr = termToJsString(g.s);
+        const oStr = termToJsString(g.o);
+        if (sStr === null || oStr === null) return [];
+        return sStr > oStr ? [{ ...subst }] : [];
+      }
+
+      // string:lessThan
+      if (pv === STRING_NS + 'lessThan') {
+        const sStr = termToJsString(g.s);
+        const oStr = termToJsString(g.o);
+        if (sStr === null || oStr === null) return [];
+        return sStr < oStr ? [{ ...subst }] : [];
+      }
+
+      // string:matches
+      if (pv === STRING_NS + 'matches') {
+        const sStr = termToJsString(g.s);
+        const pattern = termToJsString(g.o);
+        if (sStr === null || pattern === null) return [];
+        const re = compileSwapRegex(pattern, '');
+        if (!re) return [];
+        return re.test(sStr) ? [{ ...subst }] : [];
+      }
+
+      // string:notEqualIgnoringCase
+      if (pv === STRING_NS + 'notEqualIgnoringCase') {
+        const sStr = termToJsString(g.s);
+        const oStr = termToJsString(g.o);
+        if (sStr === null || oStr === null) return [];
+        return sStr.toLowerCase() !== oStr.toLowerCase() ? [{ ...subst }] : [];
+      }
+
+      // string:notGreaterThan  (≤ in Unicode code order)
+      if (pv === STRING_NS + 'notGreaterThan') {
+        const sStr = termToJsString(g.s);
+        const oStr = termToJsString(g.o);
+        if (sStr === null || oStr === null) return [];
+        return sStr <= oStr ? [{ ...subst }] : [];
+      }
+
+      // string:notLessThan  (≥ in Unicode code order)
+      if (pv === STRING_NS + 'notLessThan') {
+        const sStr = termToJsString(g.s);
+        const oStr = termToJsString(g.o);
+        if (sStr === null || oStr === null) return [];
+        return sStr >= oStr ? [{ ...subst }] : [];
+      }
+
+      // string:notMatches
+      if (pv === STRING_NS + 'notMatches') {
+        const sStr = termToJsString(g.s);
+        const pattern = termToJsString(g.o);
+        if (sStr === null || pattern === null) return [];
+        const re = compileSwapRegex(pattern, '');
+        if (!re) return [];
+        return re.test(sStr) ? [] : [{ ...subst }];
+      }
+
+      // string:replace
+      if (pv === STRING_NS + 'replace') {
+        if (!(g.s instanceof ListTerm) || g.s.elems.length !== 3) return [];
+        const dataStr = termToJsString(g.s.elems[0]);
+        const searchStr = termToJsString(g.s.elems[1]);
+        const replStr = termToJsString(g.s.elems[2]);
+        if (dataStr === null || searchStr === null || replStr === null) return [];
+
+        const re = compileSwapRegex(searchStr, 'g');
+        if (!re) return [];
+
+        const outStr = dataStr.replace(re, replStr);
+        const lit = makeStringLiteral(outStr);
+
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = lit;
+          return [s2];
+        }
+        const s2 = unifyTerm(g.o, lit, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // string:scrape
+      if (pv === STRING_NS + 'scrape') {
+        if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
+        const dataStr = termToJsString(g.s.elems[0]);
+        const pattern = termToJsString(g.s.elems[1]);
+        if (dataStr === null || pattern === null) return [];
+
+        const re = compileSwapRegex(pattern, '');
+        if (!re) return [];
+
+        const m = re.exec(dataStr);
+        // Spec says “exactly 1 group”; we just use the first capturing group if present.
+        if (!m || m.length < 2) return [];
+        const group = m[1];
+        const lit = makeStringLiteral(group);
+
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = lit;
+          return [s2];
+        }
+        const s2 = unifyTerm(g.o, lit, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // string:startsWith
+      if (pv === STRING_NS + 'startsWith') {
+        const sStr = termToJsString(g.s);
+        const oStr = termToJsString(g.o);
+        if (sStr === null || oStr === null) return [];
+        return sStr.startsWith(oStr) ? [{ ...subst }] : [];
+      }
+
+      // -----------------------------------------------------------------
+      // 4.6.1 extended string: builtins (Eyeling extensions)
+      // -----------------------------------------------------------------
+
+      // string:length
+      // Schema: $s+ string:length $o?
+      // $o is an integer literal (untyped numeric token).
+      if (pv === STRING_NS + 'length') {
+        const sStr = termToJsString(g.s);
+        if (sStr === null) return [];
+        const lit = internLiteral(String(sStr.length));
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = lit;
+          return [s2];
+        }
+        const s2 = unifyTerm(g.o, lit, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // string:charAt
+      // Schema: ( $str $idx ) string:charAt $ch
+      // $ch is a (possibly empty) string literal.
+      if (pv === STRING_NS + 'charAt') {
+        if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
+        const sStr = termToJsString(g.s.elems[0]);
+        const idxNum = parseNum(g.s.elems[1]);
+        if (sStr === null || idxNum === null) return [];
+        const idx = Math.trunc(idxNum);
+        const ch = idx < 0 || idx >= sStr.length ? '' : sStr.charAt(idx);
+        const lit = makeStringLiteral(ch);
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = lit;
+          return [s2];
+        }
+        const s2 = unifyTerm(g.o, lit, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // string:setCharAt
+      // Schema: ( $str $idx $ch ) string:setCharAt $out
+      // If idx out of range, returns the original string.
+      if (pv === STRING_NS + 'setCharAt') {
+        if (!(g.s instanceof ListTerm) || g.s.elems.length !== 3) return [];
+        const sStr = termToJsString(g.s.elems[0]);
+        const idxNum = parseNum(g.s.elems[1]);
+        const chStr = termToJsString(g.s.elems[2]);
+        if (sStr === null || idxNum === null || chStr === null) return [];
+        const idx = Math.trunc(idxNum);
+        const rep = chStr.length ? chStr[0] : '';
+        let out = sStr;
+        if (idx >= 0 && idx < sStr.length) out = sStr.slice(0, idx) + rep + sStr.slice(idx + 1);
+        const lit = makeStringLiteral(out);
+        if (g.o instanceof Var) {
+          const s2 = { ...subst };
+          s2[g.o.name] = lit;
+          return [s2];
+        }
+        const s2 = unifyTerm(g.o, lit, subst);
+        return s2 !== null ? [s2] : [];
+      }
+
+      // Unknown builtin
+      return [];
     }
 
-    const visited1 = [];
-    const sols1 = proveGoals(
-      Array.from(whereClause.triples),
-      {},
-      scopeFacts,
-      scopeBackRules,
-      depth + 1,
-      visited1,
-      varGen,
-    );
+    function isBuiltinPred(p) {
+      if (!(p instanceof Iri)) return false;
+      const v = p.value;
 
-    for (const s1 of sols1) {
-      const visited2 = [];
-      const sols2 = proveGoals(
-        Array.from(thenClause.triples),
-        s1,
-        scopeFacts,
-        scopeBackRules,
-        depth + 1,
-        visited2,
-        varGen,
+      // Super restricted mode: only treat => / <= as builtins.
+      // Everything else should be handled as ordinary predicates (and thus must be
+      // provided explicitly as facts/rules, without builtin evaluation).
+      if (typeof getSuperRestrictedMode === 'function' && getSuperRestrictedMode()) {
+        return v === LOG_NS + 'implies' || v === LOG_NS + 'impliedBy';
+      }
+
+      // Treat RDF Collections as list-term builtins too.
+      if (v === RDF_NS + 'first' || v === RDF_NS + 'rest') {
+        return true;
+      }
+
+      if (__customBuiltinHandlers.has(v)) return true;
+
+      return (
+        v.startsWith(CRYPTO_NS) ||
+        v.startsWith(MATH_NS) ||
+        v.startsWith(LOG_NS) ||
+        v.startsWith(STRING_NS) ||
+        v.startsWith(TIME_NS) ||
+        v.startsWith(LIST_NS)
       );
-      if (!sols2.length) return [];
-    }
-    return [outSubst];
-  }
-
-  // log:skolem
-  if (pv === LOG_NS + 'skolem') {
-    // Subject must be ground; commonly a list, but we allow any ground term.
-    if (!isGroundTerm(g.s)) return [];
-    if (typeof skolemIriFromGroundTerm !== 'function') return [];
-
-    const iri = skolemIriFromGroundTerm(g.s);
-    const s2 = unifyTerm(goal.o, iri, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // log:uri
-  // log:uri
-  if (pv === LOG_NS + 'uri') {
-    // Direction 1: subject is an IRI -> object is its string representation
-    if (g.s instanceof Iri) {
-      const uriStr = g.s.value; // raw IRI string
-      const lit = makeStringLiteral(uriStr); // "..."
-      const s2 = unifyTerm(goal.o, lit, subst);
-      return s2 !== null ? [s2] : [];
     }
 
-    // Direction 2: object is a string literal -> subject is the corresponding IRI
-    if (g.o instanceof Literal) {
-      const uriStr = termToJsString(g.o); // JS string from the literal
-      if (uriStr === null) return [];
+    // ===========================================================================
+    // Backward proof (SLD-style)
+    // ===========================================================================
 
-      // Reject strings that cannot be safely serialized as <...> in Turtle/N3.
-      // Turtle IRIREF forbids control/space and these characters: < > " { } | ^ ` \
-      // (and eyeling also prints IRIs starting with "_:" as blank-node labels)
-      if (uriStr.startsWith('_:') || /[\u0000-\u0020<>"{}|^`\\]/.test(uriStr)) {
-        return [];
+    // Standardize variables inside an arbitrary term (including quoted formulas)
+    // to fresh names, to avoid variable capture when a builtin returns a formula.
+    //
+    // This is similar to standardizeRule(), but operates on a single term.
+    function standardizeTermApart(term, gen) {
+      // Optimization: reuse Var objects for each standardized variable within a
+      // single standardization pass. This substantially reduces allocations in
+      // recursive backward chaining.
+      function renameTerm(t, vmapName, vmapVar, genArr) {
+        if (t instanceof Var) {
+          if (!Object.prototype.hasOwnProperty.call(vmapVar, t.name)) {
+            const name = `__n3_${genArr[0]}`;
+            genArr[0] += 1;
+            vmapName[t.name] = name;
+            vmapVar[t.name] = new Var(name);
+          }
+          return vmapVar[t.name];
+        }
+        if (t instanceof ListTerm) {
+          let changed = false;
+          const elems2 = t.elems.map((e) => {
+            const e2 = renameTerm(e, vmapName, vmapVar, genArr);
+            if (e2 !== e) changed = true;
+            return e2;
+          });
+          return changed ? new ListTerm(elems2) : t;
+        }
+        if (t instanceof OpenListTerm) {
+          let changed = false;
+          const newXs = t.prefix.map((e) => {
+            const e2 = renameTerm(e, vmapName, vmapVar, genArr);
+            if (e2 !== e) changed = true;
+            return e2;
+          });
+          if (!Object.prototype.hasOwnProperty.call(vmapName, t.tailVar)) {
+            const name = `__n3_${genArr[0]}`;
+            genArr[0] += 1;
+            vmapName[t.tailVar] = name;
+            vmapVar[t.tailVar] = new Var(name);
+          }
+          const newTail = vmapName[t.tailVar];
+          if (newTail !== t.tailVar) changed = true;
+          return changed ? new OpenListTerm(newXs, newTail) : t;
+        }
+        if (t instanceof GraphTerm) {
+          let changed = false;
+          const triples2 = t.triples.map((tr) => {
+            const s2 = renameTerm(tr.s, vmapName, vmapVar, genArr);
+            const p2 = renameTerm(tr.p, vmapName, vmapVar, genArr);
+            const o2 = renameTerm(tr.o, vmapName, vmapVar, genArr);
+            if (s2 !== tr.s || p2 !== tr.p || o2 !== tr.o) changed = true;
+            return s2 === tr.s && p2 === tr.p && o2 === tr.o ? tr : new Triple(s2, p2, o2);
+          });
+          return changed ? new GraphTerm(triples2) : t;
+        }
+        return t;
       }
 
-      const iri = internIri(uriStr);
-      const s2 = unifyTerm(goal.s, iri, subst);
-      return s2 !== null ? [s2] : [];
+      const vmapName = {};
+      const vmapVar = {};
+      return renameTerm(term, vmapName, vmapVar, gen);
     }
 
-    const sOk = g.s instanceof Var || g.s instanceof Blank || g.s instanceof Iri;
-    const oOk = g.o instanceof Var || g.o instanceof Blank || g.o instanceof Literal;
-    if (!sOk || !oOk) return [];
-    return [{ ...subst }];
-  }
-
-  // -----------------------------------------------------------------
-  // 4.6 string: builtins
-  // -----------------------------------------------------------------
-
-  // string:concatenation
-  if (pv === STRING_NS + 'concatenation') {
-    if (!(g.s instanceof ListTerm)) return [];
-    const parts = [];
-    for (const t of g.s.elems) {
-      const sStr = termToJsString(t);
-      if (sStr === null) return [];
-      parts.push(sStr);
-    }
-    const lit = makeStringLiteral(parts.join(''));
-
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = lit;
-      return [s2];
-    }
-    const s2 = unifyTerm(g.o, lit, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // string:contains
-  if (pv === STRING_NS + 'contains') {
-    const sStr = termToJsString(g.s);
-    const oStr = termToJsString(g.o);
-    if (sStr === null || oStr === null) return [];
-    return sStr.includes(oStr) ? [{ ...subst }] : [];
-  }
-
-  // string:containsIgnoringCase
-  if (pv === STRING_NS + 'containsIgnoringCase') {
-    const sStr = termToJsString(g.s);
-    const oStr = termToJsString(g.o);
-    if (sStr === null || oStr === null) return [];
-    return sStr.toLowerCase().includes(oStr.toLowerCase()) ? [{ ...subst }] : [];
-  }
-
-  // string:endsWith
-  if (pv === STRING_NS + 'endsWith') {
-    const sStr = termToJsString(g.s);
-    const oStr = termToJsString(g.o);
-    if (sStr === null || oStr === null) return [];
-    return sStr.endsWith(oStr) ? [{ ...subst }] : [];
-  }
-
-  // string:equalIgnoringCase
-  if (pv === STRING_NS + 'equalIgnoringCase') {
-    const sStr = termToJsString(g.s);
-    const oStr = termToJsString(g.o);
-    if (sStr === null || oStr === null) return [];
-    return sStr.toLowerCase() === oStr.toLowerCase() ? [{ ...subst }] : [];
-  }
-
-  // string:format
-  // (limited: only %s and %% are supported, anything else ⇒ builtin fails)
-  // The format string itself must be string-castable, but placeholder arguments
-  // are allowed to be any bound non-variable term. Plain strings/IRIs keep their
-  // direct string value; other terms fall back to N3 rendering so formatting a
-  // bound blank node, list, or quoted formula does not make the whole builtin fail.
-  if (pv === STRING_NS + 'format') {
-    if (!(g.s instanceof ListTerm) || g.s.elems.length < 1) return [];
-    const fmtStr = termToJsString(g.s.elems[0]);
-    if (fmtStr === null) return [];
-
-    const args = [];
-    for (let i = 1; i < g.s.elems.length; i++) {
-      const aStr = termToFormatArgString(g.s.elems[i]);
-      if (aStr === null) return [];
-      args.push(aStr);
-    }
-
-    const formatted = simpleStringFormat(fmtStr, args);
-    if (formatted === null) return []; // unsupported format specifier(s)
-
-    const lit = makeStringLiteral(formatted);
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = lit;
-      return [s2];
-    }
-    const s2 = unifyTerm(g.o, lit, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // string:greaterThan
-  if (pv === STRING_NS + 'greaterThan') {
-    const sStr = termToJsString(g.s);
-    const oStr = termToJsString(g.o);
-    if (sStr === null || oStr === null) return [];
-    return sStr > oStr ? [{ ...subst }] : [];
-  }
-
-  // string:lessThan
-  if (pv === STRING_NS + 'lessThan') {
-    const sStr = termToJsString(g.s);
-    const oStr = termToJsString(g.o);
-    if (sStr === null || oStr === null) return [];
-    return sStr < oStr ? [{ ...subst }] : [];
-  }
-
-  // string:matches
-  if (pv === STRING_NS + 'matches') {
-    const sStr = termToJsString(g.s);
-    const pattern = termToJsString(g.o);
-    if (sStr === null || pattern === null) return [];
-    const re = compileSwapRegex(pattern, '');
-    if (!re) return [];
-    return re.test(sStr) ? [{ ...subst }] : [];
-  }
-
-  // string:notEqualIgnoringCase
-  if (pv === STRING_NS + 'notEqualIgnoringCase') {
-    const sStr = termToJsString(g.s);
-    const oStr = termToJsString(g.o);
-    if (sStr === null || oStr === null) return [];
-    return sStr.toLowerCase() !== oStr.toLowerCase() ? [{ ...subst }] : [];
-  }
-
-  // string:notGreaterThan  (≤ in Unicode code order)
-  if (pv === STRING_NS + 'notGreaterThan') {
-    const sStr = termToJsString(g.s);
-    const oStr = termToJsString(g.o);
-    if (sStr === null || oStr === null) return [];
-    return sStr <= oStr ? [{ ...subst }] : [];
-  }
-
-  // string:notLessThan  (≥ in Unicode code order)
-  if (pv === STRING_NS + 'notLessThan') {
-    const sStr = termToJsString(g.s);
-    const oStr = termToJsString(g.o);
-    if (sStr === null || oStr === null) return [];
-    return sStr >= oStr ? [{ ...subst }] : [];
-  }
-
-  // string:notMatches
-  if (pv === STRING_NS + 'notMatches') {
-    const sStr = termToJsString(g.s);
-    const pattern = termToJsString(g.o);
-    if (sStr === null || pattern === null) return [];
-    const re = compileSwapRegex(pattern, '');
-    if (!re) return [];
-    return re.test(sStr) ? [] : [{ ...subst }];
-  }
-
-  // string:replace
-  if (pv === STRING_NS + 'replace') {
-    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 3) return [];
-    const dataStr = termToJsString(g.s.elems[0]);
-    const searchStr = termToJsString(g.s.elems[1]);
-    const replStr = termToJsString(g.s.elems[2]);
-    if (dataStr === null || searchStr === null || replStr === null) return [];
-
-    const re = compileSwapRegex(searchStr, 'g');
-    if (!re) return [];
-
-    const outStr = dataStr.replace(re, replStr);
-    const lit = makeStringLiteral(outStr);
-
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = lit;
-      return [s2];
-    }
-    const s2 = unifyTerm(g.o, lit, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // string:scrape
-  if (pv === STRING_NS + 'scrape') {
-    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
-    const dataStr = termToJsString(g.s.elems[0]);
-    const pattern = termToJsString(g.s.elems[1]);
-    if (dataStr === null || pattern === null) return [];
-
-    const re = compileSwapRegex(pattern, '');
-    if (!re) return [];
-
-    const m = re.exec(dataStr);
-    // Spec says “exactly 1 group”; we just use the first capturing group if present.
-    if (!m || m.length < 2) return [];
-    const group = m[1];
-    const lit = makeStringLiteral(group);
-
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = lit;
-      return [s2];
-    }
-    const s2 = unifyTerm(g.o, lit, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // string:startsWith
-  if (pv === STRING_NS + 'startsWith') {
-    const sStr = termToJsString(g.s);
-    const oStr = termToJsString(g.o);
-    if (sStr === null || oStr === null) return [];
-    return sStr.startsWith(oStr) ? [{ ...subst }] : [];
-  }
-
-  // -----------------------------------------------------------------
-  // 4.6.1 extended string: builtins (Eyeling extensions)
-  // -----------------------------------------------------------------
-
-  // string:length
-  // Schema: $s+ string:length $o?
-  // $o is an integer literal (untyped numeric token).
-  if (pv === STRING_NS + 'length') {
-    const sStr = termToJsString(g.s);
-    if (sStr === null) return [];
-    const lit = internLiteral(String(sStr.length));
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = lit;
-      return [s2];
-    }
-    const s2 = unifyTerm(g.o, lit, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // string:charAt
-  // Schema: ( $str $idx ) string:charAt $ch
-  // $ch is a (possibly empty) string literal.
-  if (pv === STRING_NS + 'charAt') {
-    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 2) return [];
-    const sStr = termToJsString(g.s.elems[0]);
-    const idxNum = parseNum(g.s.elems[1]);
-    if (sStr === null || idxNum === null) return [];
-    const idx = Math.trunc(idxNum);
-    const ch = idx < 0 || idx >= sStr.length ? '' : sStr.charAt(idx);
-    const lit = makeStringLiteral(ch);
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = lit;
-      return [s2];
-    }
-    const s2 = unifyTerm(g.o, lit, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // string:setCharAt
-  // Schema: ( $str $idx $ch ) string:setCharAt $out
-  // If idx out of range, returns the original string.
-  if (pv === STRING_NS + 'setCharAt') {
-    if (!(g.s instanceof ListTerm) || g.s.elems.length !== 3) return [];
-    const sStr = termToJsString(g.s.elems[0]);
-    const idxNum = parseNum(g.s.elems[1]);
-    const chStr = termToJsString(g.s.elems[2]);
-    if (sStr === null || idxNum === null || chStr === null) return [];
-    const idx = Math.trunc(idxNum);
-    const rep = chStr.length ? chStr[0] : '';
-    let out = sStr;
-    if (idx >= 0 && idx < sStr.length) out = sStr.slice(0, idx) + rep + sStr.slice(idx + 1);
-    const lit = makeStringLiteral(out);
-    if (g.o instanceof Var) {
-      const s2 = { ...subst };
-      s2[g.o.name] = lit;
-      return [s2];
-    }
-    const s2 = unifyTerm(g.o, lit, subst);
-    return s2 !== null ? [s2] : [];
-  }
-
-  // Unknown builtin
-  return [];
-}
-
-function isBuiltinPred(p) {
-  if (!(p instanceof Iri)) return false;
-  const v = p.value;
-
-  // Super restricted mode: only treat => / <= as builtins.
-  // Everything else should be handled as ordinary predicates (and thus must be
-  // provided explicitly as facts/rules, without builtin evaluation).
-  if (typeof getSuperRestrictedMode === 'function' && getSuperRestrictedMode()) {
-    return v === LOG_NS + 'implies' || v === LOG_NS + 'impliedBy';
-  }
-
-  // Treat RDF Collections as list-term builtins too.
-  if (v === RDF_NS + 'first' || v === RDF_NS + 'rest') {
-    return true;
-  }
-
-  if (__customBuiltinHandlers.has(v)) return true;
-
-  return (
-    v.startsWith(CRYPTO_NS) ||
-    v.startsWith(MATH_NS) ||
-    v.startsWith(LOG_NS) ||
-    v.startsWith(STRING_NS) ||
-    v.startsWith(TIME_NS) ||
-    v.startsWith(LIST_NS)
-  );
-}
-
-// ===========================================================================
-// Backward proof (SLD-style)
-// ===========================================================================
-
-// Standardize variables inside an arbitrary term (including quoted formulas)
-// to fresh names, to avoid variable capture when a builtin returns a formula.
-//
-// This is similar to standardizeRule(), but operates on a single term.
-function standardizeTermApart(term, gen) {
-  // Optimization: reuse Var objects for each standardized variable within a
-  // single standardization pass. This substantially reduces allocations in
-  // recursive backward chaining.
-  function renameTerm(t, vmapName, vmapVar, genArr) {
-    if (t instanceof Var) {
-      if (!Object.prototype.hasOwnProperty.call(vmapVar, t.name)) {
-        const name = `__n3_${genArr[0]}`;
-        genArr[0] += 1;
-        vmapName[t.name] = name;
-        vmapVar[t.name] = new Var(name);
+    function standardizeRule(rule, gen) {
+      // Optimization: reuse Var objects for each standardized variable within a
+      // single standardization pass.
+      function renameTerm(t, vmapName, vmapVar, genArr) {
+        if (t instanceof Var) {
+          if (!Object.prototype.hasOwnProperty.call(vmapVar, t.name)) {
+            const name = `${t.name}__${genArr[0]}`;
+            genArr[0] += 1;
+            vmapName[t.name] = name;
+            vmapVar[t.name] = new Var(name);
+          }
+          return vmapVar[t.name];
+        }
+        if (t instanceof ListTerm) {
+          let changed = false;
+          const elems2 = t.elems.map((e) => {
+            const e2 = renameTerm(e, vmapName, vmapVar, genArr);
+            if (e2 !== e) changed = true;
+            return e2;
+          });
+          return changed ? new ListTerm(elems2) : t;
+        }
+        if (t instanceof OpenListTerm) {
+          let changed = false;
+          const newXs = t.prefix.map((e) => {
+            const e2 = renameTerm(e, vmapName, vmapVar, genArr);
+            if (e2 !== e) changed = true;
+            return e2;
+          });
+          if (!Object.prototype.hasOwnProperty.call(vmapName, t.tailVar)) {
+            const name = `${t.tailVar}__${genArr[0]}`;
+            genArr[0] += 1;
+            vmapName[t.tailVar] = name;
+            vmapVar[t.tailVar] = new Var(name);
+          }
+          const newTail = vmapName[t.tailVar];
+          if (newTail !== t.tailVar) changed = true;
+          return changed ? new OpenListTerm(newXs, newTail) : t;
+        }
+        if (t instanceof GraphTerm) {
+          let changed = false;
+          const triples2 = t.triples.map((tr) => {
+            const s2 = renameTerm(tr.s, vmapName, vmapVar, genArr);
+            const p2 = renameTerm(tr.p, vmapName, vmapVar, genArr);
+            const o2 = renameTerm(tr.o, vmapName, vmapVar, genArr);
+            if (s2 !== tr.s || p2 !== tr.p || o2 !== tr.o) changed = true;
+            return s2 === tr.s && p2 === tr.p && o2 === tr.o ? tr : new Triple(s2, p2, o2);
+          });
+          return changed ? new GraphTerm(triples2) : t;
+        }
+        return t;
       }
-      return vmapVar[t.name];
-    }
-    if (t instanceof ListTerm) {
-      let changed = false;
-      const elems2 = t.elems.map((e) => {
-        const e2 = renameTerm(e, vmapName, vmapVar, genArr);
-        if (e2 !== e) changed = true;
-        return e2;
-      });
-      return changed ? new ListTerm(elems2) : t;
-    }
-    if (t instanceof OpenListTerm) {
-      let changed = false;
-      const newXs = t.prefix.map((e) => {
-        const e2 = renameTerm(e, vmapName, vmapVar, genArr);
-        if (e2 !== e) changed = true;
-        return e2;
-      });
-      if (!Object.prototype.hasOwnProperty.call(vmapName, t.tailVar)) {
-        const name = `__n3_${genArr[0]}`;
-        genArr[0] += 1;
-        vmapName[t.tailVar] = name;
-        vmapVar[t.tailVar] = new Var(name);
-      }
-      const newTail = vmapName[t.tailVar];
-      if (newTail !== t.tailVar) changed = true;
-      return changed ? new OpenListTerm(newXs, newTail) : t;
-    }
-    if (t instanceof GraphTerm) {
-      let changed = false;
-      const triples2 = t.triples.map((tr) => {
-        const s2 = renameTerm(tr.s, vmapName, vmapVar, genArr);
-        const p2 = renameTerm(tr.p, vmapName, vmapVar, genArr);
-        const o2 = renameTerm(tr.o, vmapName, vmapVar, genArr);
-        if (s2 !== tr.s || p2 !== tr.p || o2 !== tr.o) changed = true;
+
+      const vmapName2 = {};
+      const vmapVar2 = {};
+      const premise = rule.premise.map((tr) => {
+        const s2 = renameTerm(tr.s, vmapName2, vmapVar2, gen);
+        const p2 = renameTerm(tr.p, vmapName2, vmapVar2, gen);
+        const o2 = renameTerm(tr.o, vmapName2, vmapVar2, gen);
         return s2 === tr.s && p2 === tr.p && o2 === tr.o ? tr : new Triple(s2, p2, o2);
       });
-      return changed ? new GraphTerm(triples2) : t;
-    }
-    return t;
-  }
-
-  const vmapName = {};
-  const vmapVar = {};
-  return renameTerm(term, vmapName, vmapVar, gen);
-}
-
-function standardizeRule(rule, gen) {
-  // Optimization: reuse Var objects for each standardized variable within a
-  // single standardization pass.
-  function renameTerm(t, vmapName, vmapVar, genArr) {
-    if (t instanceof Var) {
-      if (!Object.prototype.hasOwnProperty.call(vmapVar, t.name)) {
-        const name = `${t.name}__${genArr[0]}`;
-        genArr[0] += 1;
-        vmapName[t.name] = name;
-        vmapVar[t.name] = new Var(name);
-      }
-      return vmapVar[t.name];
-    }
-    if (t instanceof ListTerm) {
-      let changed = false;
-      const elems2 = t.elems.map((e) => {
-        const e2 = renameTerm(e, vmapName, vmapVar, genArr);
-        if (e2 !== e) changed = true;
-        return e2;
-      });
-      return changed ? new ListTerm(elems2) : t;
-    }
-    if (t instanceof OpenListTerm) {
-      let changed = false;
-      const newXs = t.prefix.map((e) => {
-        const e2 = renameTerm(e, vmapName, vmapVar, genArr);
-        if (e2 !== e) changed = true;
-        return e2;
-      });
-      if (!Object.prototype.hasOwnProperty.call(vmapName, t.tailVar)) {
-        const name = `${t.tailVar}__${genArr[0]}`;
-        genArr[0] += 1;
-        vmapName[t.tailVar] = name;
-        vmapVar[t.tailVar] = new Var(name);
-      }
-      const newTail = vmapName[t.tailVar];
-      if (newTail !== t.tailVar) changed = true;
-      return changed ? new OpenListTerm(newXs, newTail) : t;
-    }
-    if (t instanceof GraphTerm) {
-      let changed = false;
-      const triples2 = t.triples.map((tr) => {
-        const s2 = renameTerm(tr.s, vmapName, vmapVar, genArr);
-        const p2 = renameTerm(tr.p, vmapName, vmapVar, genArr);
-        const o2 = renameTerm(tr.o, vmapName, vmapVar, genArr);
-        if (s2 !== tr.s || p2 !== tr.p || o2 !== tr.o) changed = true;
+      const conclusion = rule.conclusion.map((tr) => {
+        const s2 = renameTerm(tr.s, vmapName2, vmapVar2, gen);
+        const p2 = renameTerm(tr.p, vmapName2, vmapVar2, gen);
+        const o2 = renameTerm(tr.o, vmapName2, vmapVar2, gen);
         return s2 === tr.s && p2 === tr.p && o2 === tr.o ? tr : new Triple(s2, p2, o2);
       });
-      return changed ? new GraphTerm(triples2) : t;
+      return new Rule(premise, conclusion, rule.isForward, rule.isFuse, rule.headBlankLabels);
     }
-    return t;
-  }
 
-  const vmapName2 = {};
-  const vmapVar2 = {};
-  const premise = rule.premise.map((tr) => {
-    const s2 = renameTerm(tr.s, vmapName2, vmapVar2, gen);
-    const p2 = renameTerm(tr.p, vmapName2, vmapVar2, gen);
-    const o2 = renameTerm(tr.o, vmapName2, vmapVar2, gen);
-    return s2 === tr.s && p2 === tr.p && o2 === tr.o ? tr : new Triple(s2, p2, o2);
-  });
-  const conclusion = rule.conclusion.map((tr) => {
-    const s2 = renameTerm(tr.s, vmapName2, vmapVar2, gen);
-    const p2 = renameTerm(tr.p, vmapName2, vmapVar2, gen);
-    const o2 = renameTerm(tr.o, vmapName2, vmapVar2, gen);
-    return s2 === tr.s && p2 === tr.p && o2 === tr.o ? tr : new Triple(s2, p2, o2);
-  });
-  return new Rule(premise, conclusion, rule.isForward, rule.isFuse, rule.headBlankLabels);
-}
+    function triplesEqual(a, b) {
+      return termsEqual(a.s, b.s) && termsEqual(a.p, b.p) && termsEqual(a.o, b.o);
+    }
 
-function triplesEqual(a, b) {
-  return termsEqual(a.s, b.s) && termsEqual(a.p, b.p) && termsEqual(a.o, b.o);
-}
+    function listHasTriple(list, tr) {
+      return list.some((t) => triplesEqual(t, tr));
+    }
 
-function listHasTriple(list, tr) {
-  return list.some((t) => triplesEqual(t, tr));
-}
-
-module.exports = {
-  makeBuiltins,
-  registerBuiltin,
-  unregisterBuiltin,
-  registerBuiltinModule,
-  loadBuiltinModule,
-  listBuiltinIris,
-  __testBuildBuiltinApi: __buildBuiltinRegistrationApi,
-  // shared helpers used by engine/explain
-  parseBooleanLiteralInfo,
-  parseNumericLiteralInfo,
-  // numeric helpers used by engine unification / equality
-  parseXsdDecimalToBigIntScale,
-  pow10n,
-  normalizeLiteralForFastKey,
-  literalsEquivalentAsXsdString,
-  termToJsString,
-  termToJsStringDecoded,
-  materializeRdfLists,
-  // used by backward chaining
-  standardizeRule,
-  standardizeTermApart,
-  listHasTriple,
-};
-
+    module.exports = {
+      makeBuiltins,
+      registerBuiltin,
+      unregisterBuiltin,
+      registerBuiltinModule,
+      loadBuiltinModule,
+      listBuiltinIris,
+      __testBuildBuiltinApi: __buildBuiltinRegistrationApi,
+      // shared helpers used by engine/explain
+      parseBooleanLiteralInfo,
+      parseNumericLiteralInfo,
+      // numeric helpers used by engine unification / equality
+      parseXsdDecimalToBigIntScale,
+      pow10n,
+      normalizeLiteralForFastKey,
+      literalsEquivalentAsXsdString,
+      termToJsString,
+      termToJsStringDecoded,
+      materializeRdfLists,
+      // used by backward chaining
+      standardizeRule,
+      standardizeTermApart,
+      listHasTriple,
+    };
   };
-  __modules["lib/cli.js"] = function(require, module, exports){
-/**
- * Eyeling Reasoner — cli
- *
- * CLI helpers: argument handling, user-facing errors, and convenient wrappers
- * around the core engine for command-line usage.
- */
+  __modules['lib/cli.js'] = function (require, module, exports) {
+    /**
+     * Eyeling Reasoner — cli
+     *
+     * CLI helpers: argument handling, user-facing errors, and convenient wrappers
+     * around the core engine for command-line usage.
+     */
 
-'use strict';
+    'use strict';
 
-const engine = require('./engine');
-const { PrefixEnv } = require('./prelude');
+    const engine = require('./engine');
+    const { PrefixEnv } = require('./prelude');
 
-function offsetToLineCol(text, offset) {
-  const chars = Array.from(text);
-  const n = Math.max(0, Math.min(typeof offset === 'number' ? offset : 0, chars.length));
-  let line = 1;
-  let col = 1;
-  for (let i = 0; i < n; i++) {
-    const c = chars[i];
-    if (c === '\n') {
-      line++;
-      col = 1;
-    } else if (c === '\r') {
-      line++;
-      col = 1;
-      if (i + 1 < n && chars[i + 1] === '\n') i++; // swallow \n in CRLF
-    } else {
-      col++;
+    function offsetToLineCol(text, offset) {
+      const chars = Array.from(text);
+      const n = Math.max(0, Math.min(typeof offset === 'number' ? offset : 0, chars.length));
+      let line = 1;
+      let col = 1;
+      for (let i = 0; i < n; i++) {
+        const c = chars[i];
+        if (c === '\n') {
+          line++;
+          col = 1;
+        } else if (c === '\r') {
+          line++;
+          col = 1;
+          if (i + 1 < n && chars[i + 1] === '\n') i++; // swallow \n in CRLF
+        } else {
+          col++;
+        }
+      }
+      return { line, col };
     }
-  }
-  return { line, col };
-}
 
-function formatN3SyntaxError(err, text, path) {
-  const off = err && typeof err.offset === 'number' ? err.offset : null;
-  const label = path ? String(path) : '<input>';
-  if (off === null) {
-    return `Syntax error in ${label}: ${err && err.message ? err.message : String(err)}`;
-  }
-  const { line, col } = offsetToLineCol(text, off);
-  const lines = String(text).split(/\r\n|\n|\r/);
-  const lineText = lines[line - 1] ?? '';
-  const caret = ' '.repeat(Math.max(0, col - 1)) + '^';
-  return `Syntax error in ${label}:${line}:${col}: ${err.message}\n${lineText}\n${caret}`;
-}
-
-// CLI entry point (invoked when eyeling.js is run directly)
-function readTextFromStdinSync() {
-  const fs = require('node:fs');
-  return fs.readFileSync(0, { encoding: 'utf8' });
-}
-
-function main() {
-  // Drop "node" and script name; keep only user-provided args
-  // Expand combined short options: -pt == -p -t
-  const argvRaw = process.argv.slice(2);
-  const argv = [];
-  for (const a of argvRaw) {
-    if (a === '-' || !a.startsWith('-') || a.startsWith('--') || a.length === 2) {
-      argv.push(a);
-      continue;
+    function formatN3SyntaxError(err, text, path) {
+      const off = err && typeof err.offset === 'number' ? err.offset : null;
+      const label = path ? String(path) : '<input>';
+      if (off === null) {
+        return `Syntax error in ${label}: ${err && err.message ? err.message : String(err)}`;
+      }
+      const { line, col } = offsetToLineCol(text, off);
+      const lines = String(text).split(/\r\n|\n|\r/);
+      const lineText = lines[line - 1] ?? '';
+      const caret = ' '.repeat(Math.max(0, col - 1)) + '^';
+      return `Syntax error in ${label}:${line}:${col}: ${err.message}\n${lineText}\n${caret}`;
     }
-    // Combined short flags (the long --builtin option takes a value)
-    for (const ch of a.slice(1)) argv.push('-' + ch);
-  }
-  const prog = String(process.argv[1] || 'eyeling')
-    .split(/\//)
-    .pop();
 
-  function printHelp(toStderr = false) {
-    const msg =
-      `Usage: ${prog} [options] [file.n3|-]\n\n` +
-      `When no file is given and stdin is piped, read N3 from stdin.\n\n` +
-      `Options:\n` +
-      `  -a, --ast                    Print parsed AST as JSON and exit.\n` +
-      `      --builtin <module.js>    Load a custom builtin module (repeatable).\n` +
-      `  -d, --deterministic-skolem   Make log:skolem stable across reasoning runs.\n` +
-      `  -e, --enforce-https          Rewrite http:// IRIs to https:// for log dereferencing builtins.\n` +
-      `  -h, --help                   Show this help and exit.\n` +
-      `  -p, --proof-comments         Enable proof explanations.\n` +
-      `  -s, --super-restricted       Disable all builtins except => and <=.\n` +
-      `  -t, --stream                 Stream derived triples as soon as they are derived.\n` +
-      `  -v, --version                Print version and exit.\n`;
-    (toStderr ? console.error : console.log)(msg);
-  }
+    // CLI entry point (invoked when eyeling.js is run directly)
+    function readTextFromStdinSync() {
+      const fs = require('node:fs');
+      return fs.readFileSync(0, { encoding: 'utf8' });
+    }
 
-  // --help / -h: print help and exit
-  if (argv.includes('--help') || argv.includes('-h')) {
-    printHelp(false);
-    process.exit(0);
-  }
+    function main() {
+      // Drop "node" and script name; keep only user-provided args
+      // Expand combined short options: -pt == -p -t
+      const argvRaw = process.argv.slice(2);
+      const argv = [];
+      for (const a of argvRaw) {
+        if (a === '-' || !a.startsWith('-') || a.startsWith('--') || a.length === 2) {
+          argv.push(a);
+          continue;
+        }
+        // Combined short flags (the long --builtin option takes a value)
+        for (const ch of a.slice(1)) argv.push('-' + ch);
+      }
+      const prog = String(process.argv[1] || 'eyeling')
+        .split(/\//)
+        .pop();
 
-  // --version / -v: print version and exit
-  if (argv.includes('--version') || argv.includes('-v')) {
-    console.log(`eyeling v${engine.version}`);
-    process.exit(0);
-  }
+      function printHelp(toStderr = false) {
+        const msg =
+          `Usage: ${prog} [options] [file.n3|-]\n\n` +
+          `When no file is given and stdin is piped, read N3 from stdin.\n\n` +
+          `Options:\n` +
+          `  -a, --ast                    Print parsed AST as JSON and exit.\n` +
+          `      --builtin <module.js>    Load a custom builtin module (repeatable).\n` +
+          `  -d, --deterministic-skolem   Make log:skolem stable across reasoning runs.\n` +
+          `  -e, --enforce-https          Rewrite http:// IRIs to https:// for log dereferencing builtins.\n` +
+          `  -h, --help                   Show this help and exit.\n` +
+          `  -p, --proof-comments         Enable proof explanations.\n` +
+          `  -s, --super-restricted       Disable all builtins except => and <=.\n` +
+          `  -t, --stream                 Stream derived triples as soon as they are derived.\n` +
+          `  -v, --version                Print version and exit.\n`;
+        (toStderr ? console.error : console.log)(msg);
+      }
 
-  const builtinModules = [];
-  const positional = [];
-  for (let i = 0; i < argv.length; i++) {
-    const a = argv[i];
-    if (a === '--builtin') {
-      const next = argv[i + 1];
-      if (!next || next.startsWith('-')) {
-        console.error('Error: --builtin expects a module path.');
+      // --help / -h: print help and exit
+      if (argv.includes('--help') || argv.includes('-h')) {
+        printHelp(false);
+        process.exit(0);
+      }
+
+      // --version / -v: print version and exit
+      if (argv.includes('--version') || argv.includes('-v')) {
+        console.log(`eyeling v${engine.version}`);
+        process.exit(0);
+      }
+
+      const builtinModules = [];
+      const positional = [];
+      for (let i = 0; i < argv.length; i++) {
+        const a = argv[i];
+        if (a === '--builtin') {
+          const next = argv[i + 1];
+          if (!next || next.startsWith('-')) {
+            console.error('Error: --builtin expects a module path.');
+            process.exit(1);
+          }
+          builtinModules.push(next);
+          i += 1;
+          continue;
+        }
+        if (typeof a === 'string' && a.startsWith('--builtin=')) {
+          builtinModules.push(a.slice('--builtin='.length));
+          continue;
+        }
+        if (!a.startsWith('-')) positional.push(a);
+      }
+
+      const showAst = argv.includes('--ast') || argv.includes('-a');
+      const streamMode = argv.includes('--stream') || argv.includes('-t');
+
+      // --enforce-https: rewrite http:// -> https:// for log dereferencing builtins
+      if (argv.includes('--enforce-https') || argv.includes('-e')) {
+        engine.setEnforceHttpsEnabled(true);
+      }
+
+      // --deterministic-skolem / -d: make log:skolem stable across runs
+      if (argv.includes('--deterministic-skolem') || argv.includes('-d')) {
+        if (typeof engine.setDeterministicSkolemEnabled === 'function') engine.setDeterministicSkolemEnabled(true);
+      }
+
+      // --proof-comments / -p: enable proof explanations
+      if (argv.includes('--proof-comments') || argv.includes('-p')) {
+        engine.setProofCommentsEnabled(true);
+      }
+
+      // --super-restricted / -s: disable all builtins except => / <=
+      if (argv.includes('--super-restricted') || argv.includes('-s')) {
+        if (typeof engine.setSuperRestrictedMode === 'function') engine.setSuperRestrictedMode(true);
+      }
+
+      // Positional args (the N3 file)
+      const useImplicitStdin = positional.length === 0 && !process.stdin.isTTY;
+      if (positional.length === 0 && !useImplicitStdin) {
+        printHelp(false);
+        process.exit(0);
+      }
+      if (positional.length > 1) {
+        console.error('Error: expected at most one input [file.n3|-].');
+        printHelp(true);
         process.exit(1);
       }
-      builtinModules.push(next);
-      i += 1;
-      continue;
-    }
-    if (typeof a === 'string' && a.startsWith('--builtin=')) {
-      builtinModules.push(a.slice('--builtin='.length));
-      continue;
-    }
-    if (!a.startsWith('-')) positional.push(a);
-  }
 
-  const showAst = argv.includes('--ast') || argv.includes('-a');
-  const streamMode = argv.includes('--stream') || argv.includes('-t');
-
-  // --enforce-https: rewrite http:// -> https:// for log dereferencing builtins
-  if (argv.includes('--enforce-https') || argv.includes('-e')) {
-    engine.setEnforceHttpsEnabled(true);
-  }
-
-  // --deterministic-skolem / -d: make log:skolem stable across runs
-  if (argv.includes('--deterministic-skolem') || argv.includes('-d')) {
-    if (typeof engine.setDeterministicSkolemEnabled === 'function') engine.setDeterministicSkolemEnabled(true);
-  }
-
-  // --proof-comments / -p: enable proof explanations
-  if (argv.includes('--proof-comments') || argv.includes('-p')) {
-    engine.setProofCommentsEnabled(true);
-  }
-
-  // --super-restricted / -s: disable all builtins except => / <=
-  if (argv.includes('--super-restricted') || argv.includes('-s')) {
-    if (typeof engine.setSuperRestrictedMode === 'function') engine.setSuperRestrictedMode(true);
-  }
-
-  // Positional args (the N3 file)
-  const useImplicitStdin = positional.length === 0 && !process.stdin.isTTY;
-  if (positional.length === 0 && !useImplicitStdin) {
-    printHelp(false);
-    process.exit(0);
-  }
-  if (positional.length > 1) {
-    console.error('Error: expected at most one input [file.n3|-].');
-    printHelp(true);
-    process.exit(1);
-  }
-
-  for (const spec of builtinModules) {
-    try {
-      if (typeof engine.loadBuiltinModule === 'function')
-        engine.loadBuiltinModule(spec, { resolveFrom: process.cwd() });
-    } catch (e) {
-      console.error(`Error loading builtin module ${JSON.stringify(spec)}: ${e && e.message ? e.message : String(e)}`);
-      process.exit(1);
-    }
-  }
-
-  const sourceLabel = useImplicitStdin || positional[0] === '-' ? '<stdin>' : positional[0];
-  let text;
-  try {
-    if (sourceLabel === '<stdin>') text = readTextFromStdinSync();
-    else {
-      const fs = require('node:fs');
-      text = fs.readFileSync(sourceLabel, { encoding: 'utf8' });
-    }
-  } catch (e) {
-    if (sourceLabel === '<stdin>') console.error(`Error reading stdin: ${e.message}`);
-    else console.error(`Error reading file ${JSON.stringify(sourceLabel)}: ${e.message}`);
-    process.exit(1);
-  }
-
-  let toks;
-  let prefixes, triples, frules, brules, qrules;
-  try {
-    toks = engine.lex(text);
-    const parser = new engine.Parser(toks);
-    [prefixes, triples, frules, brules, qrules] = parser.parseDocument();
-    // Make the parsed prefixes available to log:trace output (CLI path)
-    engine.setTracePrefixes(prefixes);
-  } catch (e) {
-    if (e && e.name === 'N3SyntaxError') {
-      console.error(formatN3SyntaxError(e, text, sourceLabel));
-      process.exit(1);
-    }
-    throw e;
-  }
-
-  if (showAst) {
-    function astReplacer(unusedJsonKey, value) {
-      if (value instanceof Set) return Array.from(value);
-      if (value && typeof value === 'object' && value.constructor) {
-        const t = value.constructor.name;
-        if (t && t !== 'Object' && t !== 'Array') return { _type: t, ...value };
-      }
-      return value;
-    }
-    // For backwards compatibility, --ast prints exactly four top-level elements:
-    //   [prefixes, triples, forwardRules, backwardRules]
-    // log:query directives are output-selection statements and are not included
-    // in the legacy AST contract expected by test suites and downstream tools.
-    console.log(JSON.stringify([prefixes, triples, frules, brules], astReplacer, 2));
-    process.exit(0);
-  }
-
-  // Materialize anonymous rdf:first/rdf:rest collections into list terms.
-  // Named list nodes keep identity; list:* builtins can traverse them.
-  engine.materializeRdfLists(triples, frules.concat(qrules || []), brules);
-
-  // Keep non-ground top-level facts too (e.g., universally quantified N3 vars)
-  // so they can participate in rule matching. Derived/output facts remain
-  // ground-gated in the engine.
-  const facts = triples.slice();
-
-  const LOG_OUTPUT_STRING = 'http://www.w3.org/2000/10/swap/log#outputString';
-
-  function programMayProduceOutputStrings(topLevelTriples, forwardRules, logQueryRules) {
-    const hasOutputStringPredicate = (trs) =>
-      Array.isArray(trs) &&
-      trs.some(
-        (tr) => tr && tr.p && tr.p.constructor && tr.p.constructor.name === 'Iri' && tr.p.value === LOG_OUTPUT_STRING,
-      );
-
-    if (hasOutputStringPredicate(topLevelTriples)) return true;
-    if (Array.isArray(forwardRules) && forwardRules.some((r) => hasOutputStringPredicate(r && r.conclusion)))
-      return true;
-    if (Array.isArray(logQueryRules) && logQueryRules.some((r) => hasOutputStringPredicate(r && r.conclusion)))
-      return true;
-    return false;
-  }
-
-  function factsContainOutputStrings(triplesForOutput) {
-    return (
-      Array.isArray(triplesForOutput) &&
-      triplesForOutput.some(
-        (tr) => tr && tr.p && tr.p.constructor && tr.p.constructor.name === 'Iri' && tr.p.value === LOG_OUTPUT_STRING,
-      )
-    );
-  }
-
-  // In --stream mode we print prefixes *before* any derivations happen.
-  // To keep the header small and stable, emit only prefixes that are actually
-  // used (as QNames) in the *input* N3 program.
-  function prefixesUsedInInputTokens(toks2, prefEnv) {
-    const used = new Set();
-
-    function maybeAddFromQName(name) {
-      if (typeof name !== 'string') return;
-      if (!name.includes(':')) return;
-      if (name.startsWith('_:')) return; // blank node
-
-      // Split only on the first ':'
-      const idx = name.indexOf(':');
-      const p = name.slice(0, idx); // may be '' for ":foo"
-
-      // Ignore things like "http://..." unless that prefix is actually defined.
-      if (!Object.prototype.hasOwnProperty.call(prefEnv.map, p)) return;
-
-      used.add(p);
-    }
-
-    for (let i = 0; i < toks2.length; i++) {
-      const t = toks2[i];
-
-      // Skip @prefix ... .
-      if (t.typ === 'AtPrefix') {
-        while (i < toks2.length && toks2[i].typ !== 'Dot' && toks2[i].typ !== 'EOF') i++;
-        continue;
-      }
-      // Skip @base ... .
-      if (t.typ === 'AtBase') {
-        while (i < toks2.length && toks2[i].typ !== 'Dot' && toks2[i].typ !== 'EOF') i++;
-        continue;
+      for (const spec of builtinModules) {
+        try {
+          if (typeof engine.loadBuiltinModule === 'function')
+            engine.loadBuiltinModule(spec, { resolveFrom: process.cwd() });
+        } catch (e) {
+          console.error(
+            `Error loading builtin module ${JSON.stringify(spec)}: ${e && e.message ? e.message : String(e)}`,
+          );
+          process.exit(1);
+        }
       }
 
-      // Skip SPARQL/Turtle PREFIX pfx: <iri>
-      if (
-        t.typ === 'Ident' &&
-        typeof t.value === 'string' &&
-        t.value.toLowerCase() === 'prefix' &&
-        toks2[i + 1] &&
-        toks2[i + 1].typ === 'Ident' &&
-        typeof toks2[i + 1].value === 'string' &&
-        toks2[i + 1].value.endsWith(':') &&
-        toks2[i + 2] &&
-        (toks2[i + 2].typ === 'IriRef' || toks2[i + 2].typ === 'Ident')
-      ) {
-        i += 2;
-        continue;
+      const sourceLabel = useImplicitStdin || positional[0] === '-' ? '<stdin>' : positional[0];
+      let text;
+      try {
+        if (sourceLabel === '<stdin>') text = readTextFromStdinSync();
+        else {
+          const fs = require('node:fs');
+          text = fs.readFileSync(sourceLabel, { encoding: 'utf8' });
+        }
+      } catch (e) {
+        if (sourceLabel === '<stdin>') console.error(`Error reading stdin: ${e.message}`);
+        else console.error(`Error reading file ${JSON.stringify(sourceLabel)}: ${e.message}`);
+        process.exit(1);
       }
 
-      // Skip SPARQL BASE <iri>
-      if (
-        t.typ === 'Ident' &&
-        typeof t.value === 'string' &&
-        t.value.toLowerCase() === 'base' &&
-        toks2[i + 1] &&
-        toks2[i + 1].typ === 'IriRef'
-      ) {
-        i += 1;
-        continue;
+      let toks;
+      let prefixes, triples, frules, brules, qrules;
+      try {
+        toks = engine.lex(text);
+        const parser = new engine.Parser(toks);
+        [prefixes, triples, frules, brules, qrules] = parser.parseDocument();
+        // Make the parsed prefixes available to log:trace output (CLI path)
+        engine.setTracePrefixes(prefixes);
+      } catch (e) {
+        if (e && e.name === 'N3SyntaxError') {
+          console.error(formatN3SyntaxError(e, text, sourceLabel));
+          process.exit(1);
+        }
+        throw e;
       }
 
-      // Count QNames in identifiers (including datatypes like xsd:integer).
-      if (t.typ === 'Ident') {
-        maybeAddFromQName(t.value);
+      if (showAst) {
+        function astReplacer(unusedJsonKey, value) {
+          if (value instanceof Set) return Array.from(value);
+          if (value && typeof value === 'object' && value.constructor) {
+            const t = value.constructor.name;
+            if (t && t !== 'Object' && t !== 'Array') return { _type: t, ...value };
+          }
+          return value;
+        }
+        // For backwards compatibility, --ast prints exactly four top-level elements:
+        //   [prefixes, triples, forwardRules, backwardRules]
+        // log:query directives are output-selection statements and are not included
+        // in the legacy AST contract expected by test suites and downstream tools.
+        console.log(JSON.stringify([prefixes, triples, frules, brules], astReplacer, 2));
+        process.exit(0);
       }
-    }
 
-    return used;
-  }
+      // Materialize anonymous rdf:first/rdf:rest collections into list terms.
+      // Named list nodes keep identity; list:* builtins can traverse them.
+      engine.materializeRdfLists(triples, frules.concat(qrules || []), brules);
 
-  function restrictPrefixEnv(prefEnv, usedSet) {
-    const m = {};
-    for (const p of usedSet) {
-      if (Object.prototype.hasOwnProperty.call(prefEnv.map, p)) {
-        m[p] = prefEnv.map[p];
+      // Keep non-ground top-level facts too (e.g., universally quantified N3 vars)
+      // so they can participate in rule matching. Derived/output facts remain
+      // ground-gated in the engine.
+      const facts = triples.slice();
+
+      const LOG_OUTPUT_STRING = 'http://www.w3.org/2000/10/swap/log#outputString';
+
+      function programMayProduceOutputStrings(topLevelTriples, forwardRules, logQueryRules) {
+        const hasOutputStringPredicate = (trs) =>
+          Array.isArray(trs) &&
+          trs.some(
+            (tr) =>
+              tr && tr.p && tr.p.constructor && tr.p.constructor.name === 'Iri' && tr.p.value === LOG_OUTPUT_STRING,
+          );
+
+        if (hasOutputStringPredicate(topLevelTriples)) return true;
+        if (Array.isArray(forwardRules) && forwardRules.some((r) => hasOutputStringPredicate(r && r.conclusion)))
+          return true;
+        if (Array.isArray(logQueryRules) && logQueryRules.some((r) => hasOutputStringPredicate(r && r.conclusion)))
+          return true;
+        return false;
       }
-    }
-    return new PrefixEnv(m, prefEnv.baseIri || '');
-  }
 
-  // Streaming mode: print (input) prefixes first, then print derived triples as soon as they are found.
-  // Note: when log:query directives are present, we cannot stream output because
-  // the selected results depend on the saturated closure.
-  const hasQueries = Array.isArray(qrules) && qrules.length;
-  const mayAutoRenderOutputStrings = programMayProduceOutputStrings(triples, frules, qrules);
+      function factsContainOutputStrings(triplesForOutput) {
+        return (
+          Array.isArray(triplesForOutput) &&
+          triplesForOutput.some(
+            (tr) =>
+              tr && tr.p && tr.p.constructor && tr.p.constructor.name === 'Iri' && tr.p.value === LOG_OUTPUT_STRING,
+          )
+        );
+      }
 
-  if (streamMode && !hasQueries && !mayAutoRenderOutputStrings) {
-    const usedInInput = prefixesUsedInInputTokens(toks, prefixes);
-    const outPrefixes = restrictPrefixEnv(prefixes, usedInInput);
+      // In --stream mode we print prefixes *before* any derivations happen.
+      // To keep the header small and stable, emit only prefixes that are actually
+      // used (as QNames) in the *input* N3 program.
+      function prefixesUsedInInputTokens(toks2, prefEnv) {
+        const used = new Set();
 
-    // Ensure log:trace uses the same compact prefix set as the output.
-    engine.setTracePrefixes(outPrefixes);
+        function maybeAddFromQName(name) {
+          if (typeof name !== 'string') return;
+          if (!name.includes(':')) return;
+          if (name.startsWith('_:')) return; // blank node
 
-    const entries = Object.entries(outPrefixes.map)
-      .filter(([, base]) => !!base)
-      .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+          // Split only on the first ':'
+          const idx = name.indexOf(':');
+          const p = name.slice(0, idx); // may be '' for ":foo"
 
-    for (const [pfx, base] of entries) {
-      if (pfx === '') console.log(`@prefix : <${base}> .`);
-      else console.log(`@prefix ${pfx}: <${base}> .`);
-    }
-    if (entries.length) console.log();
+          // Ignore things like "http://..." unless that prefix is actually defined.
+          if (!Object.prototype.hasOwnProperty.call(prefEnv.map, p)) return;
 
-    engine.forwardChain(
-      facts,
-      frules,
-      brules,
-      (df) => {
+          used.add(p);
+        }
+
+        for (let i = 0; i < toks2.length; i++) {
+          const t = toks2[i];
+
+          // Skip @prefix ... .
+          if (t.typ === 'AtPrefix') {
+            while (i < toks2.length && toks2[i].typ !== 'Dot' && toks2[i].typ !== 'EOF') i++;
+            continue;
+          }
+          // Skip @base ... .
+          if (t.typ === 'AtBase') {
+            while (i < toks2.length && toks2[i].typ !== 'Dot' && toks2[i].typ !== 'EOF') i++;
+            continue;
+          }
+
+          // Skip SPARQL/Turtle PREFIX pfx: <iri>
+          if (
+            t.typ === 'Ident' &&
+            typeof t.value === 'string' &&
+            t.value.toLowerCase() === 'prefix' &&
+            toks2[i + 1] &&
+            toks2[i + 1].typ === 'Ident' &&
+            typeof toks2[i + 1].value === 'string' &&
+            toks2[i + 1].value.endsWith(':') &&
+            toks2[i + 2] &&
+            (toks2[i + 2].typ === 'IriRef' || toks2[i + 2].typ === 'Ident')
+          ) {
+            i += 2;
+            continue;
+          }
+
+          // Skip SPARQL BASE <iri>
+          if (
+            t.typ === 'Ident' &&
+            typeof t.value === 'string' &&
+            t.value.toLowerCase() === 'base' &&
+            toks2[i + 1] &&
+            toks2[i + 1].typ === 'IriRef'
+          ) {
+            i += 1;
+            continue;
+          }
+
+          // Count QNames in identifiers (including datatypes like xsd:integer).
+          if (t.typ === 'Ident') {
+            maybeAddFromQName(t.value);
+          }
+        }
+
+        return used;
+      }
+
+      function restrictPrefixEnv(prefEnv, usedSet) {
+        const m = {};
+        for (const p of usedSet) {
+          if (Object.prototype.hasOwnProperty.call(prefEnv.map, p)) {
+            m[p] = prefEnv.map[p];
+          }
+        }
+        return new PrefixEnv(m, prefEnv.baseIri || '');
+      }
+
+      // Streaming mode: print (input) prefixes first, then print derived triples as soon as they are found.
+      // Note: when log:query directives are present, we cannot stream output because
+      // the selected results depend on the saturated closure.
+      const hasQueries = Array.isArray(qrules) && qrules.length;
+      const mayAutoRenderOutputStrings = programMayProduceOutputStrings(triples, frules, qrules);
+
+      if (streamMode && !hasQueries && !mayAutoRenderOutputStrings) {
+        const usedInInput = prefixesUsedInInputTokens(toks, prefixes);
+        const outPrefixes = restrictPrefixEnv(prefixes, usedInInput);
+
+        // Ensure log:trace uses the same compact prefix set as the output.
+        engine.setTracePrefixes(outPrefixes);
+
+        const entries = Object.entries(outPrefixes.map)
+          .filter(([, base]) => !!base)
+          .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+
+        for (const [pfx, base] of entries) {
+          if (pfx === '') console.log(`@prefix : <${base}> .`);
+          else console.log(`@prefix ${pfx}: <${base}> .`);
+        }
+        if (entries.length) console.log();
+
+        engine.forwardChain(
+          facts,
+          frules,
+          brules,
+          (df) => {
+            if (engine.getProofCommentsEnabled()) {
+              engine.printExplanation(df, outPrefixes);
+              console.log(engine.tripleToN3(df.fact, outPrefixes));
+              console.log();
+            } else {
+              console.log(engine.tripleToN3(df.fact, outPrefixes));
+            }
+          },
+          { captureExplanations: engine.getProofCommentsEnabled(), prefixes: outPrefixes },
+        );
+        return;
+      }
+
+      // Default (non-streaming):
+      // - without log:query: derive everything first, then print only newly derived facts
+      // - with log:query: derive everything first, then print only unique instantiated
+      //   conclusion triples from the log:query directives.
+      let derived = [];
+      let outTriples = [];
+      let outDerived = [];
+
+      if (hasQueries) {
+        const res = engine.forwardChainAndCollectLogQueryConclusions(facts, frules, brules, qrules, { prefixes });
+        derived = res.derived;
+        outTriples = res.queryTriples;
+        outDerived = res.queryDerived;
+      } else {
+        derived = engine.forwardChain(facts, frules, brules, null, {
+          captureExplanations: engine.getProofCommentsEnabled(),
+          prefixes,
+        });
+        outDerived = derived;
+        outTriples = derived.map((df) => df.fact);
+      }
+
+      const renderedOutputTriples = hasQueries ? outTriples : facts;
+      if (factsContainOutputStrings(renderedOutputTriples)) {
+        process.stdout.write(engine.collectOutputStringsFromFacts(renderedOutputTriples, prefixes));
+        return;
+      }
+
+      const usedPrefixes = prefixes.prefixesUsedForOutput(outTriples);
+
+      for (const [pfx, base] of usedPrefixes) {
+        if (pfx === '') console.log(`@prefix : <${base}> .`);
+        else console.log(`@prefix ${pfx}: <${base}> .`);
+      }
+      if (outTriples.length && usedPrefixes.length) console.log();
+
+      // In log:query mode, when proof comments are disabled, pretty-print blank-node
+      // shaped outputs as Turtle property lists ("[ ... ] .") for readability.
+      if (hasQueries && !engine.getProofCommentsEnabled()) {
+        const s = engine.prettyPrintQueryTriples(outTriples, prefixes);
+        if (s) process.stdout.write(String(s).replace(/\s*$/g, '') + '\n');
+        return;
+      }
+
+      for (const df of outDerived) {
         if (engine.getProofCommentsEnabled()) {
-          engine.printExplanation(df, outPrefixes);
-          console.log(engine.tripleToN3(df.fact, outPrefixes));
+          engine.printExplanation(df, prefixes);
+          console.log(engine.tripleToN3(df.fact, prefixes));
           console.log();
         } else {
-          console.log(engine.tripleToN3(df.fact, outPrefixes));
+          console.log(engine.tripleToN3(df.fact, prefixes));
         }
-      },
-      { captureExplanations: engine.getProofCommentsEnabled(), prefixes: outPrefixes },
-    );
-    return;
-  }
-
-  // Default (non-streaming):
-  // - without log:query: derive everything first, then print only newly derived facts
-  // - with log:query: derive everything first, then print only unique instantiated
-  //   conclusion triples from the log:query directives.
-  let derived = [];
-  let outTriples = [];
-  let outDerived = [];
-
-  if (hasQueries) {
-    const res = engine.forwardChainAndCollectLogQueryConclusions(facts, frules, brules, qrules, { prefixes });
-    derived = res.derived;
-    outTriples = res.queryTriples;
-    outDerived = res.queryDerived;
-  } else {
-    derived = engine.forwardChain(facts, frules, brules, null, {
-      captureExplanations: engine.getProofCommentsEnabled(),
-      prefixes,
-    });
-    outDerived = derived;
-    outTriples = derived.map((df) => df.fact);
-  }
-
-  const renderedOutputTriples = hasQueries ? outTriples : facts;
-  if (factsContainOutputStrings(renderedOutputTriples)) {
-    process.stdout.write(engine.collectOutputStringsFromFacts(renderedOutputTriples, prefixes));
-    return;
-  }
-
-  const usedPrefixes = prefixes.prefixesUsedForOutput(outTriples);
-
-  for (const [pfx, base] of usedPrefixes) {
-    if (pfx === '') console.log(`@prefix : <${base}> .`);
-    else console.log(`@prefix ${pfx}: <${base}> .`);
-  }
-  if (outTriples.length && usedPrefixes.length) console.log();
-
-  // In log:query mode, when proof comments are disabled, pretty-print blank-node
-  // shaped outputs as Turtle property lists ("[ ... ] .") for readability.
-  if (hasQueries && !engine.getProofCommentsEnabled()) {
-    const s = engine.prettyPrintQueryTriples(outTriples, prefixes);
-    if (s) process.stdout.write(String(s).replace(/\s*$/g, '') + '\n');
-    return;
-  }
-
-  for (const df of outDerived) {
-    if (engine.getProofCommentsEnabled()) {
-      engine.printExplanation(df, prefixes);
-      console.log(engine.tripleToN3(df.fact, prefixes));
-      console.log();
-    } else {
-      console.log(engine.tripleToN3(df.fact, prefixes));
+      }
     }
-  }
-}
 
-module.exports = { main, formatN3SyntaxError };
-
+    module.exports = { main, formatN3SyntaxError };
   };
-  __modules["lib/deref.js"] = function(require, module, exports){
-/**
- * Eyeling Reasoner — deref
- *
- * Synchronous dereferencing + parsing support for log:content / log:semantics.
- * Includes small in-memory caches and optional HTTPS enforcement.
- */
+  __modules['lib/deref.js'] = function (require, module, exports) {
+    /**
+     * Eyeling Reasoner — deref
+     *
+     * Synchronous dereferencing + parsing support for log:content / log:semantics.
+     * Includes small in-memory caches and optional HTTPS enforcement.
+     */
 
-'use strict';
+    'use strict';
 
-// Dereferencing + parsing support for log:content / log:semantics.
-// This is intentionally synchronous to keep the core engine synchronous.
-// In browsers/workers, dereferencing uses synchronous XHR (subject to CORS).
+    // Dereferencing + parsing support for log:content / log:semantics.
+    // This is intentionally synchronous to keep the core engine synchronous.
+    // In browsers/workers, dereferencing uses synchronous XHR (subject to CORS).
 
-const { LOG_NS, GraphTerm, Triple, internIri, internLiteral } = require('./prelude');
+    const { LOG_NS, GraphTerm, Triple, internIri, internLiteral } = require('./prelude');
 
-const { lex } = require('./lexer');
-const { Parser } = require('./parser');
+    const { lex } = require('./lexer');
+    const { Parser } = require('./parser');
 
-// -----------------------------------------------------------------------------
-// Offline fixtures
-// -----------------------------------------------------------------------------
-// Some bundled examples (e.g. examples/reaching-out.n3) dereference well-known
-// W3C resources. To keep the test suite runnable offline (CI, air-gapped
-// environments), we ship a tiny set of built-in fixtures.
-//
-// IMPORTANT: keys must be *document* IRIs (no fragment).
+    // -----------------------------------------------------------------------------
+    // Offline fixtures
+    // -----------------------------------------------------------------------------
+    // Some bundled examples (e.g. examples/reaching-out.n3) dereference well-known
+    // W3C resources. To keep the test suite runnable offline (CI, air-gapped
+    // environments), we ship a tiny set of built-in fixtures.
+    //
+    // IMPORTANT: keys must be *document* IRIs (no fragment).
 
-const __OFFLINE_FIXTURES = new Map([
-  [
-    'https://www.w3.org/2000/10/swap/test/s1.n3',
-    // Exact content of https://www.w3.org/2000/10/swap/test/s1.n3
-    // (kept byte-for-byte stable to match examples/output/reaching-out.n3)
-    [
-      '# Schema for test data',
-      '#',
-      '# This is only ',
-      '@prefix daml: <http://www.daml.org/2001/03/daml+oil#> .',
-      '@prefix mech: <#> .',
-      '',
-      '@prefix : <#> .',
-      '',
-      ':includes a daml:TransitiveProperty .',
-      '',
-      ':partOf a daml:TransitiveProperty; daml:inverseOf :includes .',
-      '',
-      ':dependsOn a daml:TransitiveProperty ;',
-      '      daml:hasSubProperty  :includes .   # Real name of subproperty?',
-      '',
-      '',
-      '',
-      '',
-      '',
-    ].join('\n'),
-  ],
-  // Also accept the http:// form when --enforce-https is disabled.
-  [
-    'http://www.w3.org/2000/10/swap/test/s1.n3',
-    [
-      '# Schema for test data',
-      '#',
-      '# This is only ',
-      '@prefix daml: <http://www.daml.org/2001/03/daml+oil#> .',
-      '@prefix mech: <#> .',
-      '',
-      '@prefix : <#> .',
-      '',
-      ':includes a daml:TransitiveProperty .',
-      '',
-      ':partOf a daml:TransitiveProperty; daml:inverseOf :includes .',
-      '',
-      ':dependsOn a daml:TransitiveProperty ;',
-      '      daml:hasSubProperty  :includes .   # Real name of subproperty?',
-      '',
-      '',
-      '',
-      '',
-      '',
-    ].join('\n'),
-  ],
-  // (Duplicate key removed; the entry above already covers http://.)
-]);
+    const __OFFLINE_FIXTURES = new Map([
+      [
+        'https://www.w3.org/2000/10/swap/test/s1.n3',
+        // Exact content of https://www.w3.org/2000/10/swap/test/s1.n3
+        // (kept byte-for-byte stable to match examples/output/reaching-out.n3)
+        [
+          '# Schema for test data',
+          '#',
+          '# This is only ',
+          '@prefix daml: <http://www.daml.org/2001/03/daml+oil#> .',
+          '@prefix mech: <#> .',
+          '',
+          '@prefix : <#> .',
+          '',
+          ':includes a daml:TransitiveProperty .',
+          '',
+          ':partOf a daml:TransitiveProperty; daml:inverseOf :includes .',
+          '',
+          ':dependsOn a daml:TransitiveProperty ;',
+          '      daml:hasSubProperty  :includes .   # Real name of subproperty?',
+          '',
+          '',
+          '',
+          '',
+          '',
+        ].join('\n'),
+      ],
+      // Also accept the http:// form when --enforce-https is disabled.
+      [
+        'http://www.w3.org/2000/10/swap/test/s1.n3',
+        [
+          '# Schema for test data',
+          '#',
+          '# This is only ',
+          '@prefix daml: <http://www.daml.org/2001/03/daml+oil#> .',
+          '@prefix mech: <#> .',
+          '',
+          '@prefix : <#> .',
+          '',
+          ':includes a daml:TransitiveProperty .',
+          '',
+          ':partOf a daml:TransitiveProperty; daml:inverseOf :includes .',
+          '',
+          ':dependsOn a daml:TransitiveProperty ;',
+          '      daml:hasSubProperty  :includes .   # Real name of subproperty?',
+          '',
+          '',
+          '',
+          '',
+          '',
+        ].join('\n'),
+      ],
+      // (Duplicate key removed; the entry above already covers http://.)
+    ]);
 
-// Larger example programs sometimes dereference files that are shipped inside
-// this package (e.g. examples/shacl-conforms.n3). To keep these examples
-// runnable offline, mirror a small set of well-known HTTP(S) document IRIs to
-// local files.
-//
-// IMPORTANT: keys must be *document* IRIs (no fragment).
-// Values are repo-relative paths from the package root.
-const __OFFLINE_LOCAL_MIRRORS = new Map([
-  [
-    'https://eyereasoner.github.io/eyeling/examples/eventual-interoperability-interaction-patterns.n3',
-    'examples/eventual-interoperability-interaction-patterns.n3',
-  ],
-  [
-    'http://eyereasoner.github.io/eyeling/examples/eventual-interoperability-interaction-patterns.n3',
-    'examples/eventual-interoperability-interaction-patterns.n3',
-  ],
-]);
+    // Larger example programs sometimes dereference files that are shipped inside
+    // this package (e.g. examples/shacl-conforms.n3). To keep these examples
+    // runnable offline, mirror a small set of well-known HTTP(S) document IRIs to
+    // local files.
+    //
+    // IMPORTANT: keys must be *document* IRIs (no fragment).
+    // Values are repo-relative paths from the package root.
+    const __OFFLINE_LOCAL_MIRRORS = new Map([
+      [
+        'https://eyereasoner.github.io/eyeling/examples/eventual-interoperability-interaction-patterns.n3',
+        'examples/eventual-interoperability-interaction-patterns.n3',
+      ],
+      [
+        'http://eyereasoner.github.io/eyeling/examples/eventual-interoperability-interaction-patterns.n3',
+        'examples/eventual-interoperability-interaction-patterns.n3',
+      ],
+    ]);
 
-function __offlineFixtureTextForKey(key) {
-  if (__OFFLINE_FIXTURES.has(key)) return __OFFLINE_FIXTURES.get(key);
-  const rel = __OFFLINE_LOCAL_MIRRORS.get(key);
-  if (!rel || !__IS_NODE) return null;
-  try {
-    const path = require('path');
-    // In the source tree, deref.js lives in lib/, so the package root is one
-    // directory up. In the bundled CLI (eyeling.js), __dirname is the package
-    // root. Try both layouts.
-    const abs1 = path.join(__dirname, '..', rel);
-    const t1 = __readFileText(abs1);
-    if (typeof t1 === 'string') return t1;
+    function __offlineFixtureTextForKey(key) {
+      if (__OFFLINE_FIXTURES.has(key)) return __OFFLINE_FIXTURES.get(key);
+      const rel = __OFFLINE_LOCAL_MIRRORS.get(key);
+      if (!rel || !__IS_NODE) return null;
+      try {
+        const path = require('path');
+        // In the source tree, deref.js lives in lib/, so the package root is one
+        // directory up. In the bundled CLI (eyeling.js), __dirname is the package
+        // root. Try both layouts.
+        const abs1 = path.join(__dirname, '..', rel);
+        const t1 = __readFileText(abs1);
+        if (typeof t1 === 'string') return t1;
 
-    const abs2 = path.join(__dirname, rel);
-    const t2 = __readFileText(abs2);
-    if (typeof t2 === 'string') return t2;
+        const abs2 = path.join(__dirname, rel);
+        const t2 = __readFileText(abs2);
+        if (typeof t2 === 'string') return t2;
 
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-// -----------------------------------------------------------------------------
-// Caches (module-level)
-// -----------------------------------------------------------------------------
-// Key is the dereferenced document IRI *without* fragment.
-const __logContentCache = new Map(); // iri -> string | null (null means fetch/read failed)
-const __logSemanticsCache = new Map(); // iri -> GraphTerm | null (null means parse failed)
-const __logSemanticsOrErrorCache = new Map(); // iri -> Term (GraphTerm | Literal) for log:semanticsOrError
-
-// When enabled, force http:// IRIs to be dereferenced as https://
-// (CLI: --enforce-https, API: reasonStream({ enforceHttps: true })).
-let enforceHttpsEnabled = false;
-
-function getEnforceHttpsEnabled() {
-  return enforceHttpsEnabled;
-}
-
-function setEnforceHttpsEnabled(v) {
-  enforceHttpsEnabled = !!v;
-}
-
-function __maybeEnforceHttps(iri) {
-  if (!enforceHttpsEnabled) return iri;
-  return typeof iri === 'string' && iri.startsWith('http://') ? 'https://' + iri.slice('http://'.length) : iri;
-}
-
-// Environment detection (Node vs Browser/Worker).
-const __IS_NODE = typeof process !== 'undefined' && !!(process.versions && process.versions.node);
-
-function __hasXmlHttpRequest() {
-  return typeof XMLHttpRequest !== 'undefined';
-}
-
-function __resolveBrowserUrl(ref) {
-  if (!ref) return ref;
-  // If already absolute, keep as-is.
-  if (/^[A-Za-z][A-Za-z0-9+.-]*:/.test(ref)) return ref;
-  const base =
-    (typeof document !== 'undefined' && document.baseURI) || (typeof location !== 'undefined' && location.href) || '';
-  try {
-    return new URL(ref, base).toString();
-  } catch {
-    return ref;
-  }
-}
-
-function __fetchHttpTextSyncBrowser(url) {
-  if (!__hasXmlHttpRequest()) return null;
-  try {
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', url, false); // synchronous
-    try {
-      xhr.setRequestHeader(
-        'Accept',
-        'text/n3, text/turtle, application/n-triples, application/n-quads, text/plain;q=0.1, */*;q=0.01',
-      );
-    } catch {
-      // Some environments restrict setting headers (ignore).
+        return null;
+      } catch {
+        return null;
+      }
     }
-    xhr.send(null);
-    const sc = xhr.status || 0;
-    if (sc < 200 || sc >= 300) return null;
-    return xhr.responseText;
-  } catch {
-    return null;
-  }
-}
 
-function normalizeDerefIri(iriNoFrag) {
-  // In Node, treat non-http as local path; leave as-is.
-  if (__IS_NODE) return __maybeEnforceHttps(iriNoFrag);
-  // In browsers/workers, resolve relative references against the page URL.
-  return __maybeEnforceHttps(__resolveBrowserUrl(iriNoFrag));
-}
+    // -----------------------------------------------------------------------------
+    // Caches (module-level)
+    // -----------------------------------------------------------------------------
+    // Key is the dereferenced document IRI *without* fragment.
+    const __logContentCache = new Map(); // iri -> string | null (null means fetch/read failed)
+    const __logSemanticsCache = new Map(); // iri -> GraphTerm | null (null means parse failed)
+    const __logSemanticsOrErrorCache = new Map(); // iri -> Term (GraphTerm | Literal) for log:semanticsOrError
 
-function stripFragment(iri) {
-  const i = iri.indexOf('#');
-  return i >= 0 ? iri.slice(0, i) : iri;
-}
+    // When enabled, force http:// IRIs to be dereferenced as https://
+    // (CLI: --enforce-https, API: reasonStream({ enforceHttps: true })).
+    let enforceHttpsEnabled = false;
 
-function __isHttpIri(iri) {
-  return typeof iri === 'string' && (iri.startsWith('http://') || iri.startsWith('https://'));
-}
+    function getEnforceHttpsEnabled() {
+      return enforceHttpsEnabled;
+    }
 
-function __isFileIri(iri) {
-  return typeof iri === 'string' && iri.startsWith('file://');
-}
+    function setEnforceHttpsEnabled(v) {
+      enforceHttpsEnabled = !!v;
+    }
 
-function __fileIriToPath(fileIri) {
-  // Basic file:// URI decoding. Handles file:///abs/path and file://localhost/abs/path.
-  try {
-    const u = new URL(fileIri);
-    return decodeURIComponent(u.pathname);
-  } catch {
-    return decodeURIComponent(fileIri.replace(/^file:\/\//, ''));
-  }
-}
+    function __maybeEnforceHttps(iri) {
+      if (!enforceHttpsEnabled) return iri;
+      return typeof iri === 'string' && iri.startsWith('http://') ? 'https://' + iri.slice('http://'.length) : iri;
+    }
 
-function __readFileText(pathOrFileIri) {
-  if (!__IS_NODE) return null;
-  const fs = require('fs');
-  let path = pathOrFileIri;
-  if (__isFileIri(pathOrFileIri)) path = __fileIriToPath(pathOrFileIri);
-  try {
-    return fs.readFileSync(path, { encoding: 'utf8' });
-  } catch {
-    return null;
-  }
-}
+    // Environment detection (Node vs Browser/Worker).
+    const __IS_NODE = typeof process !== 'undefined' && !!(process.versions && process.versions.node);
 
-function __fetchHttpTextViaSubprocess(url) {
-  if (!__IS_NODE) return null;
-  const cp = require('child_process');
-  // Use a subprocess so this code remains synchronous without rewriting the whole reasoner to async.
-  const script = `
+    function __hasXmlHttpRequest() {
+      return typeof XMLHttpRequest !== 'undefined';
+    }
+
+    function __resolveBrowserUrl(ref) {
+      if (!ref) return ref;
+      // If already absolute, keep as-is.
+      if (/^[A-Za-z][A-Za-z0-9+.-]*:/.test(ref)) return ref;
+      const base =
+        (typeof document !== 'undefined' && document.baseURI) ||
+        (typeof location !== 'undefined' && location.href) ||
+        '';
+      try {
+        return new URL(ref, base).toString();
+      } catch {
+        return ref;
+      }
+    }
+
+    function __fetchHttpTextSyncBrowser(url) {
+      if (!__hasXmlHttpRequest()) return null;
+      try {
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', url, false); // synchronous
+        try {
+          xhr.setRequestHeader(
+            'Accept',
+            'text/n3, text/turtle, application/n-triples, application/n-quads, text/plain;q=0.1, */*;q=0.01',
+          );
+        } catch {
+          // Some environments restrict setting headers (ignore).
+        }
+        xhr.send(null);
+        const sc = xhr.status || 0;
+        if (sc < 200 || sc >= 300) return null;
+        return xhr.responseText;
+      } catch {
+        return null;
+      }
+    }
+
+    function normalizeDerefIri(iriNoFrag) {
+      // In Node, treat non-http as local path; leave as-is.
+      if (__IS_NODE) return __maybeEnforceHttps(iriNoFrag);
+      // In browsers/workers, resolve relative references against the page URL.
+      return __maybeEnforceHttps(__resolveBrowserUrl(iriNoFrag));
+    }
+
+    function stripFragment(iri) {
+      const i = iri.indexOf('#');
+      return i >= 0 ? iri.slice(0, i) : iri;
+    }
+
+    function __isHttpIri(iri) {
+      return typeof iri === 'string' && (iri.startsWith('http://') || iri.startsWith('https://'));
+    }
+
+    function __isFileIri(iri) {
+      return typeof iri === 'string' && iri.startsWith('file://');
+    }
+
+    function __fileIriToPath(fileIri) {
+      // Basic file:// URI decoding. Handles file:///abs/path and file://localhost/abs/path.
+      try {
+        const u = new URL(fileIri);
+        return decodeURIComponent(u.pathname);
+      } catch {
+        return decodeURIComponent(fileIri.replace(/^file:\/\//, ''));
+      }
+    }
+
+    function __readFileText(pathOrFileIri) {
+      if (!__IS_NODE) return null;
+      const fs = require('fs');
+      let path = pathOrFileIri;
+      if (__isFileIri(pathOrFileIri)) path = __fileIriToPath(pathOrFileIri);
+      try {
+        return fs.readFileSync(path, { encoding: 'utf8' });
+      } catch {
+        return null;
+      }
+    }
+
+    function __fetchHttpTextViaSubprocess(url) {
+      if (!__IS_NODE) return null;
+      const cp = require('child_process');
+      // Use a subprocess so this code remains synchronous without rewriting the whole reasoner to async.
+      const script = `
     const enforceHttps = ${enforceHttpsEnabled ? 'true' : 'false'};
     const url = process.argv[1];
     const maxRedirects = 10;
@@ -5341,2888 +5358,3215 @@ function __fetchHttpTextViaSubprocess(url) {
     }
     get(url, 0);
   `;
-  const r = cp.spawnSync(process.execPath, ['-e', script, url], {
-    encoding: 'utf8',
-    maxBuffer: 32 * 1024 * 1024,
-  });
-  if (r.status !== 0) return null;
-  return r.stdout;
-}
-
-function derefTextSync(iriNoFrag) {
-  const norm = normalizeDerefIri(iriNoFrag);
-  const key = typeof norm === 'string' && norm ? norm : iriNoFrag;
-
-  if (__logContentCache.has(key)) return __logContentCache.get(key);
-
-  // Offline fixtures (before attempting network / filesystem access).
-  // This keeps bundled examples deterministic even without Internet access.
-  const __fixtureTxt = __offlineFixtureTextForKey(key);
-  if (__fixtureTxt !== null && typeof __fixtureTxt !== 'undefined') {
-    __logContentCache.set(key, __fixtureTxt);
-    return __fixtureTxt;
-  }
-
-  let text = null;
-
-  if (__IS_NODE) {
-    if (__isHttpIri(key)) {
-      text = __fetchHttpTextViaSubprocess(key);
-    } else {
-      // Treat any non-http(s) IRI as a local path (including file://), for basic usability.
-      text = __readFileText(key);
+      const r = cp.spawnSync(process.execPath, ['-e', script, url], {
+        encoding: 'utf8',
+        maxBuffer: 32 * 1024 * 1024,
+      });
+      if (r.status !== 0) return null;
+      return r.stdout;
     }
-  } else {
-    // Browser / Worker: we can only dereference over HTTP(S), and it must pass CORS.
-    const url = typeof norm === 'string' && norm ? norm : key;
-    if (__isHttpIri(url)) text = __fetchHttpTextSyncBrowser(url);
-  }
 
-  __logContentCache.set(key, text);
-  return text;
-}
+    function derefTextSync(iriNoFrag) {
+      const norm = normalizeDerefIri(iriNoFrag);
+      const key = typeof norm === 'string' && norm ? norm : iriNoFrag;
 
-const __IMPLIES_PRED = internIri(LOG_NS + 'implies');
-const __IMPLIED_BY_PRED = internIri(LOG_NS + 'impliedBy');
+      if (__logContentCache.has(key)) return __logContentCache.get(key);
 
-function parseSemanticsToFormula(text, baseIri) {
-  const toks = lex(text);
-  const parser = new Parser(toks);
-  if (typeof baseIri === 'string' && baseIri) parser.prefixes.setBase(baseIri);
+      // Offline fixtures (before attempting network / filesystem access).
+      // This keeps bundled examples deterministic even without Internet access.
+      const __fixtureTxt = __offlineFixtureTextForKey(key);
+      if (__fixtureTxt !== null && typeof __fixtureTxt !== 'undefined') {
+        __logContentCache.set(key, __fixtureTxt);
+        return __fixtureTxt;
+      }
 
-  const [, triples, frules, brules] = parser.parseDocument();
+      let text = null;
 
-  const all = triples.slice();
+      if (__IS_NODE) {
+        if (__isHttpIri(key)) {
+          text = __fetchHttpTextViaSubprocess(key);
+        } else {
+          // Treat any non-http(s) IRI as a local path (including file://), for basic usability.
+          text = __readFileText(key);
+        }
+      } else {
+        // Browser / Worker: we can only dereference over HTTP(S), and it must pass CORS.
+        const url = typeof norm === 'string' && norm ? norm : key;
+        if (__isHttpIri(url)) text = __fetchHttpTextSyncBrowser(url);
+      }
 
-  // Represent top-level => / <= rules as triples between formula terms,
-  // so the returned formula can include them.
-  for (const r of frules) {
-    const concTerm = r.isFuse ? internLiteral('false') : new GraphTerm(r.conclusion);
-    all.push(new Triple(new GraphTerm(r.premise), __IMPLIES_PRED, concTerm));
-  }
-  for (const r of brules) {
-    all.push(new Triple(new GraphTerm(r.conclusion), __IMPLIED_BY_PRED, new GraphTerm(r.premise)));
-  }
+      __logContentCache.set(key, text);
+      return text;
+    }
 
-  return new GraphTerm(all);
-}
+    const __IMPLIES_PRED = internIri(LOG_NS + 'implies');
+    const __IMPLIED_BY_PRED = internIri(LOG_NS + 'impliedBy');
 
-function derefSemanticsSync(iriNoFrag) {
-  const norm = normalizeDerefIri(iriNoFrag);
-  const key = typeof norm === 'string' && norm ? norm : iriNoFrag;
-  if (__logSemanticsCache.has(key)) return __logSemanticsCache.get(key);
+    function parseSemanticsToFormula(text, baseIri) {
+      const toks = lex(text);
+      const parser = new Parser(toks);
+      if (typeof baseIri === 'string' && baseIri) parser.prefixes.setBase(baseIri);
 
-  const text = derefTextSync(iriNoFrag);
-  if (typeof text !== 'string') {
-    __logSemanticsCache.set(key, null);
-    return null;
-  }
-  try {
-    const baseIri = typeof key === 'string' && key ? key : iriNoFrag;
-    const formula = parseSemanticsToFormula(text, baseIri);
-    __logSemanticsCache.set(key, formula);
-    return formula;
-  } catch {
-    __logSemanticsCache.set(key, null);
-    return null;
-  }
-}
+      const [, triples, frules, brules] = parser.parseDocument();
 
-function __makeStringLiteral(str) {
-  return internLiteral(JSON.stringify(str));
-}
+      const all = triples.slice();
 
-function derefSemanticsOrError(iriNoFrag) {
-  const norm = normalizeDerefIri(iriNoFrag);
-  const key = typeof norm === 'string' && norm ? norm : iriNoFrag;
+      // Represent top-level => / <= rules as triples between formula terms,
+      // so the returned formula can include them.
+      for (const r of frules) {
+        const concTerm = r.isFuse ? internLiteral('false') : new GraphTerm(r.conclusion);
+        all.push(new Triple(new GraphTerm(r.premise), __IMPLIES_PRED, concTerm));
+      }
+      for (const r of brules) {
+        all.push(new Triple(new GraphTerm(r.conclusion), __IMPLIED_BY_PRED, new GraphTerm(r.premise)));
+      }
 
-  if (__logSemanticsOrErrorCache.has(key)) return __logSemanticsOrErrorCache.get(key);
+      return new GraphTerm(all);
+    }
 
-  let term = null;
+    function derefSemanticsSync(iriNoFrag) {
+      const norm = normalizeDerefIri(iriNoFrag);
+      const key = typeof norm === 'string' && norm ? norm : iriNoFrag;
+      if (__logSemanticsCache.has(key)) return __logSemanticsCache.get(key);
 
-  // If we already successfully computed log:semantics, reuse it.
-  const formula = derefSemanticsSync(iriNoFrag);
-
-  if (formula instanceof GraphTerm) {
-    term = formula;
-  } else {
-    // Try to get an informative error.
-    const txt = derefTextSync(iriNoFrag);
-    if (typeof txt !== 'string') {
-      term = __makeStringLiteral(`error(dereference_failed,${iriNoFrag})`);
-    } else {
+      const text = derefTextSync(iriNoFrag);
+      if (typeof text !== 'string') {
+        __logSemanticsCache.set(key, null);
+        return null;
+      }
       try {
         const baseIri = typeof key === 'string' && key ? key : iriNoFrag;
-        term = parseSemanticsToFormula(txt, baseIri);
-        // Keep the semantics cache consistent.
-        __logSemanticsCache.set(key, term);
-      } catch (e) {
-        const msg = e && e.message ? e.message : String(e);
-        term = __makeStringLiteral(`error(parse_error,${msg})`);
+        const formula = parseSemanticsToFormula(text, baseIri);
+        __logSemanticsCache.set(key, formula);
+        return formula;
+      } catch {
+        __logSemanticsCache.set(key, null);
+        return null;
       }
     }
-  }
 
-  __logSemanticsOrErrorCache.set(key, term);
-  return term;
-}
-
-module.exports = {
-  // flags
-  getEnforceHttpsEnabled,
-  setEnforceHttpsEnabled,
-
-  // helpers
-  stripFragment,
-  normalizeDerefIri,
-
-  // deref + parse
-  derefTextSync,
-  derefSemanticsSync,
-  derefSemanticsOrError,
-  parseSemanticsToFormula,
-
-  // caches (exposed for tests/debugging if needed)
-  __logContentCache,
-  __logSemanticsCache,
-  __logSemanticsOrErrorCache,
-};
-
-  };
-  __modules["lib/engine.js"] = function(require, module, exports){
-/**
- * Eyeling Reasoner — engine
- *
- * Core inference engine: unification, forward/backward chaining, builtin evaluation,
- * and proof/explanation bookkeeping. This module intentionally stays cohesive.
- */
-
-'use strict';
-
-const {
-  RDF_NS,
-  XSD_NS,
-  MATH_NS,
-  LOG_NS,
-  SKOLEM_NS,
-  MAX_LITERAL_TID_LEN,
-  normalizeLiteralForTid,
-  Literal,
-  Iri,
-  Var,
-  Blank,
-  ListTerm,
-  OpenListTerm,
-  GraphTerm,
-  Triple,
-  Rule,
-  DerivedFact,
-  internIri,
-  collectBlankLabelsInTriples,
-} = require('./prelude');
-
-// In N3/Turtle, rdf:nil is the canonical IRI for the empty RDF list.
-// Eyeling represents list literals with ListTerm; ensure rdf:nil unifies with ().
-const RDF_NIL_IRI = RDF_NS + 'nil';
-const EMPTY_LIST_TERM = new ListTerm([]);
-
-const { lex, N3SyntaxError } = require('./lexer');
-const { Parser } = require('./parser');
-const { liftBlankRuleVars } = require('./rules');
-
-const {
-  makeBuiltins,
-  registerBuiltin,
-  unregisterBuiltin,
-  registerBuiltinModule,
-  loadBuiltinModule,
-  listBuiltinIris,
-  // helpers used by engine core
-  parseBooleanLiteralInfo,
-  parseNumericLiteralInfo,
-  // numeric helpers used by engine unification / equality
-  parseXsdDecimalToBigIntScale,
-  pow10n,
-  literalsEquivalentAsXsdString,
-  materializeRdfLists,
-  // used by backward chaining
-  standardizeRule,
-} = require('./builtins');
-
-const { makeExplain } = require('./explain');
-
-const { termToN3, tripleToN3, prettyPrintQueryTriples } = require('./printing');
-const {
-  getDataFactory,
-  internalTripleToRdfJsQuad,
-  normalizeParsedReasonerInputSync,
-  normalizeReasonerInputSync,
-  normalizeReasonerInputAsync,
-} = require('./rdfjs');
-
-const trace = require('./trace');
-const { deterministicSkolemIdFromKey } = require('./skolem');
-
-const deref = require('./deref');
-
-const hasOwn = Object.prototype.hasOwnProperty;
-
-let version = 'dev';
-try {
-  // Node: keep package.json version if available
-  if (typeof require === 'function') version = require('./package.json').version || version;
-} catch {}
-
-let nodeCrypto = null;
-try {
-  // Node: crypto available
-  if (typeof require === 'function') nodeCrypto = require('crypto');
-} catch {}
-// For a single reasoning run, this maps a canonical representation
-// of the subject term in log:skolem to a Skolem IRI.
-const skolemCache = new Map();
-
-// log:skolem run salt and mode.
-//
-// Desired behavior:
-//   - Within one reasoning run: same subject -> same Skolem IRI.
-//   - Across reasoning runs (default): same subject -> different Skolem IRI.
-//   - Optional legacy mode: stable across runs (CLI: --deterministic-skolem).
-let deterministicSkolemAcrossRuns = false;
-let skolemRunDepth = 0;
-let skolemRunSalt = null;
-
-function makeSkolemRunSalt() {
-  // Prefer WebCrypto if present (browser/worker)
-  try {
-    const g = typeof globalThis !== 'undefined' ? globalThis : null;
-    if (g && g.crypto) {
-      if (typeof g.crypto.randomUUID === 'function') return g.crypto.randomUUID();
-      if (typeof g.crypto.getRandomValues === 'function') {
-        const a = new Uint8Array(16);
-        g.crypto.getRandomValues(a);
-        return Array.from(a)
-          .map((b) => b.toString(16).padStart(2, '0'))
-          .join('');
-      }
+    function __makeStringLiteral(str) {
+      return internLiteral(JSON.stringify(str));
     }
-  } catch {}
 
-  // Node.js crypto
-  try {
-    if (nodeCrypto) {
-      if (typeof nodeCrypto.randomUUID === 'function') return nodeCrypto.randomUUID();
-      if (typeof nodeCrypto.randomBytes === 'function') return nodeCrypto.randomBytes(16).toString('hex');
-    }
-  } catch {}
+    function derefSemanticsOrError(iriNoFrag) {
+      const norm = normalizeDerefIri(iriNoFrag);
+      const key = typeof norm === 'string' && norm ? norm : iriNoFrag;
 
-  // Last-resort fallback (not cryptographically strong)
-  return (
-    Date.now().toString(16) + '-' + Math.random().toString(16).slice(2) + '-' + Math.random().toString(16).slice(2)
-  );
-}
+      if (__logSemanticsOrErrorCache.has(key)) return __logSemanticsOrErrorCache.get(key);
 
-function enterReasoningRun() {
-  skolemRunDepth += 1;
-  if (skolemRunDepth === 1) {
-    skolemCache.clear();
-    skolemRunSalt = deterministicSkolemAcrossRuns ? '' : makeSkolemRunSalt();
-  }
-}
+      let term = null;
 
-function exitReasoningRun() {
-  if (skolemRunDepth > 0) skolemRunDepth -= 1;
-  if (skolemRunDepth === 0) {
-    // Clear the salt so a future top-level run gets a fresh one (default mode).
-    skolemRunSalt = null;
-  }
-}
+      // If we already successfully computed log:semantics, reuse it.
+      const formula = derefSemanticsSync(iriNoFrag);
 
-function skolemIdForKey(key) {
-  if (deterministicSkolemAcrossRuns) return deterministicSkolemIdFromKey(key);
-  // Ensure we have a run salt even if log:skolem is invoked outside forwardChain().
-  if (skolemRunSalt === null) {
-    skolemCache.clear();
-    skolemRunSalt = makeSkolemRunSalt();
-  }
-  return deterministicSkolemIdFromKey(skolemRunSalt + '|' + key);
-}
-
-function getDeterministicSkolemEnabled() {
-  return deterministicSkolemAcrossRuns;
-}
-
-function setDeterministicSkolemEnabled(v) {
-  deterministicSkolemAcrossRuns = !!v;
-  // Reset per-run state so the new mode takes effect immediately for the next run.
-  if (skolemRunDepth === 0) {
-    skolemRunSalt = null;
-    skolemCache.clear();
-  }
-}
-
-// -----------------------------------------------------------------------------
-// Structural checks
-// -----------------------------------------------------------------------------
-// "Strict ground" means the term contains no variables *anywhere*, even inside
-// quoted formulas. This can be used to cache rule properties safely.
-function __isStrictGroundTerm(t) {
-  if (t instanceof Var) return false;
-  if (t instanceof Blank) return false;
-  if (t instanceof OpenListTerm) return false;
-
-  if (t instanceof ListTerm) {
-    for (const e of t.elems) if (!__isStrictGroundTerm(e)) return false;
-    return true;
-  }
-  if (t instanceof GraphTerm) {
-    for (const tr of t.triples) if (!__isStrictGroundTriple(tr)) return false;
-    return true;
-  }
-  return true; // Iri/Literal and any other atomic terms
-}
-
-function __isStrictGroundTriple(tr) {
-  return __isStrictGroundTerm(tr.s) && __isStrictGroundTerm(tr.p) && __isStrictGroundTerm(tr.o);
-}
-
-// -----------------------------------------------------------------------------
-// Rule identity / firing keys
-// -----------------------------------------------------------------------------
-// Used to maintain O(1) membership sets for dynamically promoted rules, and to
-// memoize per-firing head-blank skolemization.
-function __ruleKey(isForward, isFuse, premise, conclusion, dynamicConclusionTerm /* optional */) {
-  let out = (isForward ? 'F' : 'B') + (isFuse ? '!' : '') + '|P|';
-  for (let i = 0; i < premise.length; i++) {
-    const tr = premise[i];
-    if (i) out += '\n';
-    out += skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
-  }
-  out += '|C|';
-  for (let i = 0; i < conclusion.length; i++) {
-    const tr = conclusion[i];
-    if (i) out += '\n';
-    out += skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
-  }
-  if (dynamicConclusionTerm) {
-    out += '|T|' + skolemKeyFromTerm(dynamicConclusionTerm);
-  }
-  return out;
-}
-
-function __firingKey(ruleIndex, instantiatedPremises) {
-  // Deterministic key derived from the instantiated body (ground per substitution).
-  let out = `R${ruleIndex}|`;
-  for (let i = 0; i < instantiatedPremises.length; i++) {
-    const tr = instantiatedPremises[i];
-    if (i) out += '\n';
-    out += skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
-  }
-  return out;
-}
-
-// -----------------------------------------------------------------------------
-// Rule metadata helpers
-// -----------------------------------------------------------------------------
-function __ensureRuleKeySet(rules) {
-  if (!hasOwn.call(rules, '__ruleKeySet')) {
-    Object.defineProperty(rules, '__ruleKeySet', {
-      value: new Set(
-        rules.map((r) => __ruleKey(r.isForward, r.isFuse, r.premise, r.conclusion, r.__dynamicConclusionTerm || null)),
-      ),
-      enumerable: false,
-      writable: false,
-      configurable: true,
-    });
-  }
-  return rules.__ruleKeySet;
-}
-
-function __computeHeadIsStrictGround(r) {
-  if (r.isFuse) return false;
-  // Dynamic heads depend on runtime bindings; treat as non-ground.
-  if (r.__dynamicConclusionTerm) return false;
-  if (r.__fromRulePromotion) return false;
-  if (r.headBlankLabels && r.headBlankLabels.size) return false;
-  for (const tr of r.conclusion) if (!__isStrictGroundTriple(tr)) return false;
-  return true;
-}
-
-function __prepareForwardRule(r) {
-  if (!hasOwn.call(r, '__scopedSkipInfo')) {
-    const info = __computeForwardRuleScopedSkipInfo(r);
-    Object.defineProperty(r, '__scopedSkipInfo', {
-      value: info,
-      enumerable: false,
-      writable: false,
-      configurable: true,
-    });
-  }
-  if (!hasOwn.call(r, '__headIsStrictGround')) {
-    Object.defineProperty(r, '__headIsStrictGround', {
-      value: __computeHeadIsStrictGround(r),
-      enumerable: false,
-      writable: false,
-      configurable: true,
-    });
-  }
-}
-
-function __graphTriplesOrTrue(term) {
-  if (term instanceof GraphTerm) return term.triples;
-  if (term instanceof Literal && term.value === 'true') return [];
-  return null;
-}
-
-// -----------------------------------------------------------------------------
-// Scoped-closure helpers (log:* builtins)
-// -----------------------------------------------------------------------------
-// Parse a 'naturalPriority' used by log:* scoped-closure builtins (e.g., log:collectAllIn).
-// Accept non-negative integral numeric literals; return null if not parseable.
-function __logNaturalPriorityFromTerm(t) {
-  if (!(t instanceof Literal)) return null;
-  const info = parseNumericLiteralInfo(t);
-  if (!info) return null;
-
-  if (info.kind === 'integer') {
-    const bi = info.value; // BigInt
-    if (bi < 0n) return null;
-    // clamp to MAX_SAFE_INTEGER (priorities are expected to be small)
-    const max = BigInt(Number.MAX_SAFE_INTEGER);
-    return Number(bi > max ? max : bi);
-  }
-
-  if (info.kind === 'decimal') {
-    const n = info.value; // number
-    if (!Number.isFinite(n)) return null;
-    if (Math.floor(n) !== n) return null;
-    if (n < 0) return null;
-    return n;
-  }
-
-  return null;
-}
-
-function __computeMaxScopedClosurePriorityNeeded(forwardRules, backRules) {
-  let maxP = 0;
-
-  function scanTriple(tr) {
-    if (!(tr && tr.p instanceof Iri)) return;
-    const pv = tr.p.value;
-
-    // log:collectAllIn / log:forAllIn use the object position for the priority.
-    if (pv === LOG_NS + 'collectAllIn' || pv === LOG_NS + 'forAllIn') {
-      // Explicit scope graphs are immediate and do not require a closure.
-      if (tr.o instanceof GraphTerm) return;
-      // Variable or non-numeric object => default priority 1 (if used).
-      if (tr.o instanceof Var) {
-        if (maxP < 1) maxP = 1;
-        return;
-      }
-      const p0 = __logNaturalPriorityFromTerm(tr.o);
-      if (p0 !== null) {
-        if (p0 > maxP) maxP = p0;
+      if (formula instanceof GraphTerm) {
+        term = formula;
       } else {
-        if (maxP < 1) maxP = 1;
-      }
-      return;
-    }
-
-    // log:includes / log:notIncludes use the subject position for the priority.
-    if (pv === LOG_NS + 'includes' || pv === LOG_NS + 'notIncludes') {
-      // Explicit scope graphs are immediate and do not require a closure.
-      if (tr.s instanceof GraphTerm) return;
-      // Variable or non-numeric subject => default priority 1 (if used).
-      if (tr.s instanceof Var) {
-        if (maxP < 1) maxP = 1;
-        return;
-      }
-      const p0 = __logNaturalPriorityFromTerm(tr.s);
-      if (p0 !== null) {
-        if (p0 > maxP) maxP = p0;
-      } else {
-        if (maxP < 1) maxP = 1;
-      }
-    }
-  }
-
-  for (const r of forwardRules) {
-    for (const tr of r.premise) scanTriple(tr);
-  }
-  for (const r of backRules) {
-    for (const tr of r.premise) scanTriple(tr);
-  }
-  return maxP;
-}
-
-function __termContainsVarName(t, name) {
-  if (t instanceof Var) return t.name === name;
-  if (t instanceof ListTerm) return t.elems.some((e) => __termContainsVarName(e, name));
-  if (t instanceof OpenListTerm) return t.tailVar === name || t.prefix.some((e) => __termContainsVarName(e, name));
-  if (t instanceof GraphTerm)
-    return t.triples.some(
-      (tr) =>
-        __termContainsVarName(tr.s, name) || __termContainsVarName(tr.p, name) || __termContainsVarName(tr.o, name),
-    );
-  return false;
-}
-
-function __varOccursElsewhereInPremise(premise, name, idx, field) {
-  for (let i = 0; i < premise.length; i++) {
-    const tr = premise[i];
-    if (!(tr && tr.s && tr.p && tr.o)) continue;
-
-    // Skip the specific scope/priority occurrence we are analyzing.
-    if (!(i === idx && field === 's') && __termContainsVarName(tr.s, name)) return true;
-    if (!(i === idx && field === 'p') && __termContainsVarName(tr.p, name)) return true;
-    if (!(i === idx && field === 'o') && __termContainsVarName(tr.o, name)) return true;
-  }
-  return false;
-}
-
-function __computeForwardRuleScopedSkipInfo(rule) {
-  let needsSnap = false;
-  let requiredLevel = 0;
-
-  for (let i = 0; i < rule.premise.length; i++) {
-    const tr = rule.premise[i];
-    if (!(tr && tr.p instanceof Iri)) continue;
-    const pv = tr.p.value;
-
-    if (pv === LOG_NS + 'collectAllIn' || pv === LOG_NS + 'forAllIn') {
-      if (tr.o instanceof GraphTerm) continue; // explicit scope
-      // If scope term is a Var that appears elsewhere, it might be bound to a GraphTerm.
-      // Be conservative and do not skip in that case.
-      if (tr.o instanceof Var) {
-        if (__varOccursElsewhereInPremise(rule.premise, tr.o.name, i, 'o')) return null;
-        needsSnap = true;
-        requiredLevel = Math.max(requiredLevel, 1);
-      } else {
-        needsSnap = true;
-        let prio = 1;
-        const p0 = __logNaturalPriorityFromTerm(tr.o);
-        if (p0 !== null) prio = p0;
-        requiredLevel = Math.max(requiredLevel, prio);
-      }
-      continue;
-    }
-
-    if (pv === LOG_NS + 'includes' || pv === LOG_NS + 'notIncludes') {
-      if (tr.s instanceof GraphTerm) continue; // explicit scope
-      if (tr.s instanceof Var) {
-        if (__varOccursElsewhereInPremise(rule.premise, tr.s.name, i, 's')) return null;
-        needsSnap = true;
-        requiredLevel = Math.max(requiredLevel, 1);
-      } else {
-        needsSnap = true;
-        let prio = 1;
-        const p0 = __logNaturalPriorityFromTerm(tr.s);
-        if (p0 !== null) prio = p0;
-        requiredLevel = Math.max(requiredLevel, prio);
-      }
-    }
-  }
-
-  if (!needsSnap) return { needsSnap: false, requiredLevel: 0 };
-  return { needsSnap: true, requiredLevel };
-}
-
-// -----------------------------------------------------------------------------
-// log:conclusion cache
-// -----------------------------------------------------------------------------
-// Cache deductive closure for log:conclusion
-const __logConclusionCache = new WeakMap(); // GraphTerm -> GraphTerm (deductive closure)
-
-function __makeRuleFromTerms(left, right, isForward) {
-  // Mirror Parser.makeRule, but usable at runtime (e.g., log:conclusion).
-  let premiseTerm, conclTerm;
-
-  if (isForward) {
-    premiseTerm = left;
-    conclTerm = right;
-  } else {
-    premiseTerm = right;
-    conclTerm = left;
-  }
-
-  let isFuse = false;
-  if (isForward) {
-    if (conclTerm instanceof Literal && conclTerm.value === 'false') {
-      isFuse = true;
-    }
-  }
-
-  // Premise/conclusion terms must be formulas ({ ... }) to contribute triples.
-  // true/false in either position simply means “no triples”.
-  const rawPremise = premiseTerm instanceof GraphTerm ? premiseTerm.triples : [];
-  const rawConclusion = conclTerm instanceof GraphTerm ? conclTerm.triples : [];
-
-  const headBlankLabels = collectBlankLabelsInTriples(rawConclusion);
-  const [premise, conclusion] = liftBlankRuleVars(rawPremise, rawConclusion);
-  return new Rule(premise, conclusion, isForward, isFuse, headBlankLabels);
-}
-
-function __computeConclusionFromFormula(formula) {
-  if (!(formula instanceof GraphTerm)) return null;
-
-  const cached = __logConclusionCache.get(formula);
-  if (cached) return cached;
-
-  // Facts start as *all* triples in the formula, including rule triples.
-  const facts2 = formula.triples.slice();
-
-  // Extract rules from rule-triples present inside the formula.
-  const fw = [];
-  const bw = [];
-
-  for (const tr of formula.triples) {
-    // Treat {A} => {B} as a forward rule.
-    if (isLogImplies(tr.p)) {
-      fw.push(__makeRuleFromTerms(tr.s, tr.o, true));
-      continue;
-    }
-
-    // Treat {A} <= {B} as the same rule in the other direction, i.e., {B} => {A},
-    // so it participates in deductive closure even if only <= is used.
-    if (isLogImpliedBy(tr.p)) {
-      fw.push(__makeRuleFromTerms(tr.o, tr.s, true));
-      // Also index it as a backward rule for completeness (helps proveGoals in some cases).
-      bw.push(__makeRuleFromTerms(tr.s, tr.o, false));
-      continue;
-    }
-  }
-
-  // Saturate within this local formula only.
-  forwardChain(facts2, fw, bw);
-
-  const out = new GraphTerm(facts2.slice());
-  __logConclusionCache.set(formula, out);
-  return out;
-}
-
-// Controls whether human-readable proof comments are printed.
-let proofCommentsEnabled = false;
-// Super restricted mode: disable *all* builtins except => / <= (log:implies / log:impliedBy)
-let superRestrictedMode = false;
-
-// Initialize builtin evaluation (implemented in lib/builtins.js).
-const { evalBuiltin, isBuiltinPred } = makeBuiltins({
-  applySubstTerm,
-  applySubstTriple,
-  unifyTerm,
-  unifyTermListAppend,
-  termsEqual,
-  proveGoals,
-  isGroundTerm,
-  iriValue,
-  skolemIriFromGroundTerm,
-  computeConclusionFromFormula: __computeConclusionFromFormula,
-  getSuperRestrictedMode: () => superRestrictedMode,
-  termFastKey,
-  ensureFactIndexes,
-  termsEqualNoIntDecimal,
-});
-
-try {
-  registerBuiltinModule(require('./builtin-sudoku'), './builtin-sudoku');
-} catch (_) {}
-
-// Initialize proof/output helpers (implemented in lib/explain.js).
-const { printExplanation, collectOutputStringsFromFacts } = makeExplain({
-  applySubstTerm,
-  skolemKeyFromTerm,
-});
-
-function skolemizeTermForHeadBlanks(t, headBlankLabels, mapping, skCounter, firingKey, globalMap) {
-  if (t instanceof Blank) {
-    const label = t.label;
-    // Only skolemize blanks that occur explicitly in the rule head
-    if (!headBlankLabels || !headBlankLabels.has(label)) {
-      return t; // this is a data blank (e.g. bound via ?X), keep it
-    }
-
-    if (!Object.prototype.hasOwnProperty.call(mapping, label)) {
-      // If we have a global cache keyed by firingKey, use it to ensure
-      // deterministic blank IDs for the same rule+substitution instance.
-      if (globalMap && firingKey) {
-        const gk = `${firingKey}|${label}`;
-        let sk = globalMap.get(gk);
-        if (!sk) {
-          const idx = skCounter[0];
-          skCounter[0] += 1;
-          sk = `_:sk_${idx}`;
-          globalMap.set(gk, sk);
-        }
-        mapping[label] = sk;
-      } else {
-        const idx = skCounter[0];
-        skCounter[0] += 1;
-        mapping[label] = `_:sk_${idx}`;
-      }
-    }
-    return new Blank(mapping[label]);
-  }
-
-  if (t instanceof ListTerm) {
-    return new ListTerm(
-      t.elems.map((e) => skolemizeTermForHeadBlanks(e, headBlankLabels, mapping, skCounter, firingKey, globalMap)),
-    );
-  }
-
-  if (t instanceof OpenListTerm) {
-    return new OpenListTerm(
-      t.prefix.map((e) => skolemizeTermForHeadBlanks(e, headBlankLabels, mapping, skCounter, firingKey, globalMap)),
-      t.tailVar,
-    );
-  }
-
-  if (t instanceof GraphTerm) {
-    return new GraphTerm(
-      t.triples.map((tr) =>
-        skolemizeTripleForHeadBlanks(tr, headBlankLabels, mapping, skCounter, firingKey, globalMap),
-      ),
-    );
-  }
-
-  return t;
-}
-
-function skolemizeTripleForHeadBlanks(tr, headBlankLabels, mapping, skCounter, firingKey, globalMap) {
-  return new Triple(
-    skolemizeTermForHeadBlanks(tr.s, headBlankLabels, mapping, skCounter, firingKey, globalMap),
-    skolemizeTermForHeadBlanks(tr.p, headBlankLabels, mapping, skCounter, firingKey, globalMap),
-    skolemizeTermForHeadBlanks(tr.o, headBlankLabels, mapping, skCounter, firingKey, globalMap),
-  );
-}
-
-// ===========================================================================
-// Alpha equivalence helpers
-// ===========================================================================
-
-function termsEqual(a, b) {
-  if (a === b) return true;
-  if (!a || !b) return false;
-  if (a.__tid && b.__tid && a.__tid === b.__tid) return true;
-
-  // rdf:nil is equivalent to the empty list ()
-  if (a instanceof Iri && a.value === RDF_NIL_IRI && b instanceof ListTerm && b.elems.length === 0) return true;
-  if (b instanceof Iri && b.value === RDF_NIL_IRI && a instanceof ListTerm && a.elems.length === 0) return true;
-  if (a.constructor !== b.constructor) return false;
-
-  if (a instanceof Iri) return a.value === b.value;
-
-  if (a instanceof Literal) {
-    if (a.value === b.value) return true;
-
-    // Plain "abc" == "abc"^^xsd:string (but not language-tagged strings)
-    if (literalsEquivalentAsXsdString(a.value, b.value)) return true;
-
-    // Keep in sync with unifyTerm(): numeric-value equality, datatype-aware.
-    const ai = parseNumericLiteralInfo(a);
-    const bi = parseNumericLiteralInfo(b);
-
-    if (ai && bi) {
-      // Same datatype => compare values
-      if (ai.dt === bi.dt) {
-        if (ai.kind === 'bigint' && bi.kind === 'bigint') return ai.value === bi.value;
-
-        const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
-        const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
-        return !Number.isNaN(an) && !Number.isNaN(bn) && an === bn;
-      }
-    }
-
-    return false;
-  }
-
-  if (a instanceof Var) return a.name === b.name;
-  if (a instanceof Blank) return a.label === b.label;
-
-  if (a instanceof ListTerm) {
-    if (a.elems.length !== b.elems.length) return false;
-    for (let i = 0; i < a.elems.length; i++) {
-      if (!termsEqual(a.elems[i], b.elems[i])) return false;
-    }
-    return true;
-  }
-
-  if (a instanceof OpenListTerm) {
-    if (a.tailVar !== b.tailVar) return false;
-    if (a.prefix.length !== b.prefix.length) return false;
-    for (let i = 0; i < a.prefix.length; i++) {
-      if (!termsEqual(a.prefix[i], b.prefix[i])) return false;
-    }
-    return true;
-  }
-
-  if (a instanceof GraphTerm) {
-    return alphaEqGraphTriples(a.triples, b.triples);
-  }
-
-  return false;
-}
-
-function termsEqualNoIntDecimal(a, b) {
-  if (a === b) return true;
-  if (!a || !b) return false;
-  if (a.__tid && b.__tid && a.__tid === b.__tid) return true;
-
-  // rdf:nil is equivalent to the empty list ()
-  if (a instanceof Iri && a.value === RDF_NIL_IRI && b instanceof ListTerm && b.elems.length === 0) return true;
-  if (b instanceof Iri && b.value === RDF_NIL_IRI && a instanceof ListTerm && a.elems.length === 0) return true;
-  if (a.constructor !== b.constructor) return false;
-
-  if (a instanceof Iri) return a.value === b.value;
-
-  if (a instanceof Literal) {
-    if (a.value === b.value) return true;
-
-    // Plain "abc" == "abc"^^xsd:string (but not language-tagged)
-    if (literalsEquivalentAsXsdString(a.value, b.value)) return true;
-
-    // Numeric equality ONLY when datatypes agree (no integer<->decimal here)
-    const ai = parseNumericLiteralInfo(a);
-    const bi = parseNumericLiteralInfo(b);
-    if (ai && bi && ai.dt === bi.dt) {
-      // integer: exact bigint
-      if (ai.kind === 'bigint' && bi.kind === 'bigint') return ai.value === bi.value;
-
-      // decimal: compare exactly via num/scale if possible
-      if (ai.dt === XSD_NS + 'decimal') {
-        const da = parseXsdDecimalToBigIntScale(ai.lexStr);
-        const db = parseXsdDecimalToBigIntScale(bi.lexStr);
-        if (da && db) {
-          const scale = Math.max(da.scale, db.scale);
-          const na = da.num * pow10n(scale - da.scale);
-          const nb = db.num * pow10n(scale - db.scale);
-          return na === nb;
-        }
-      }
-
-      // double/float-ish: JS number (same as your normal same-dt path)
-      const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
-      const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
-      return !Number.isNaN(an) && !Number.isNaN(bn) && an === bn;
-    }
-
-    return false;
-  }
-
-  if (a instanceof Var) return a.name === b.name;
-  if (a instanceof Blank) return a.label === b.label;
-
-  if (a instanceof ListTerm) {
-    if (a.elems.length !== b.elems.length) return false;
-    for (let i = 0; i < a.elems.length; i++) {
-      if (!termsEqualNoIntDecimal(a.elems[i], b.elems[i])) return false;
-    }
-    return true;
-  }
-
-  if (a instanceof OpenListTerm) {
-    if (a.tailVar !== b.tailVar) return false;
-    if (a.prefix.length !== b.prefix.length) return false;
-    for (let i = 0; i < a.prefix.length; i++) {
-      if (!termsEqualNoIntDecimal(a.prefix[i], b.prefix[i])) return false;
-    }
-    return true;
-  }
-
-  if (a instanceof GraphTerm) {
-    return alphaEqGraphTriples(a.triples, b.triples);
-  }
-
-  return false;
-}
-
-function triplesEqual(a, b) {
-  return termsEqual(a.s, b.s) && termsEqual(a.p, b.p) && termsEqual(a.o, b.o);
-}
-
-function triplesListEqual(xs, ys) {
-  if (xs.length !== ys.length) return false;
-  for (let i = 0; i < xs.length; i++) {
-    if (!triplesEqual(xs[i], ys[i])) return false;
-  }
-  return true;
-}
-
-function collectProtectedNamesInTerm(t, protectedVars, protectedBlanks) {
-  if (t instanceof Var) {
-    protectedVars.add(t.name);
-    return;
-  }
-  if (t instanceof Blank) {
-    protectedBlanks.add(t.label);
-    return;
-  }
-  if (t instanceof ListTerm) {
-    for (const e of t.elems) collectProtectedNamesInTerm(e, protectedVars, protectedBlanks);
-    return;
-  }
-  if (t instanceof OpenListTerm) {
-    for (const e of t.prefix) collectProtectedNamesInTerm(e, protectedVars, protectedBlanks);
-    protectedVars.add(t.tailVar);
-    return;
-  }
-  if (t instanceof GraphTerm) {
-    for (const tr of t.triples) {
-      collectProtectedNamesInTerm(tr.s, protectedVars, protectedBlanks);
-      collectProtectedNamesInTerm(tr.p, protectedVars, protectedBlanks);
-      collectProtectedNamesInTerm(tr.o, protectedVars, protectedBlanks);
-    }
-  }
-}
-
-function collectProtectedNamesFromSubst(subst) {
-  const protectedVars = new Set();
-  const protectedBlanks = new Set();
-  if (!subst) return { protectedVars, protectedBlanks };
-  for (const k in subst) {
-    if (!Object.prototype.hasOwnProperty.call(subst, k)) continue;
-    collectProtectedNamesInTerm(subst[k], protectedVars, protectedBlanks);
-  }
-  return { protectedVars, protectedBlanks };
-}
-
-// Alpha-equivalence for quoted formulas, up to *local* variable and blank-node renaming.
-// Terms that originate from the surrounding substitution are treated as fixed and are
-// therefore not alpha-renamable inside the quoted formula.
-// Treats a formula as an unordered set of triples (order-insensitive match).
-function alphaEqVarName(x, y, vmap, protectedVarsA, protectedVarsB) {
-  const xProtected = protectedVarsA && protectedVarsA.has(x);
-  const yProtected = protectedVarsB && protectedVarsB.has(y);
-  if (xProtected || yProtected) return xProtected && yProtected && x === y;
-  if (Object.prototype.hasOwnProperty.call(vmap, x)) return vmap[x] === y;
-  vmap[x] = y;
-  return true;
-}
-
-function alphaEqBlankLabel(x, y, bmap, protectedBlanksA, protectedBlanksB) {
-  const xProtected = protectedBlanksA && protectedBlanksA.has(x);
-  const yProtected = protectedBlanksB && protectedBlanksB.has(y);
-  if (xProtected || yProtected) return xProtected && yProtected && x === y;
-  if (Object.prototype.hasOwnProperty.call(bmap, x)) return bmap[x] === y;
-  bmap[x] = y;
-  return true;
-}
-
-function alphaEqTermInGraph(a, b, vmap, bmap, opts) {
-  const protectedVarsA = opts && opts.protectedVarsA;
-  const protectedVarsB = opts && opts.protectedVarsB;
-  const protectedBlanksA = opts && opts.protectedBlanksA;
-  const protectedBlanksB = opts && opts.protectedBlanksB;
-
-  // Blank nodes: renamable only when they are local to the formula.
-  if (a instanceof Blank && b instanceof Blank) {
-    return alphaEqBlankLabel(a.label, b.label, bmap, protectedBlanksA, protectedBlanksB);
-  }
-
-  // Variables: renamable only when they are local to the formula.
-  if (a instanceof Var && b instanceof Var) {
-    return alphaEqVarName(a.name, b.name, vmap, protectedVarsA, protectedVarsB);
-  }
-
-  if (a instanceof Iri && b instanceof Iri) return a.value === b.value;
-  if (a instanceof Literal && b instanceof Literal) return a.value === b.value;
-
-  if (a instanceof ListTerm && b instanceof ListTerm) {
-    if (a.elems.length !== b.elems.length) return false;
-    for (let i = 0; i < a.elems.length; i++) {
-      if (!alphaEqTermInGraph(a.elems[i], b.elems[i], vmap, bmap, opts)) return false;
-    }
-    return true;
-  }
-
-  if (a instanceof OpenListTerm && b instanceof OpenListTerm) {
-    if (a.prefix.length !== b.prefix.length) return false;
-    for (let i = 0; i < a.prefix.length; i++) {
-      if (!alphaEqTermInGraph(a.prefix[i], b.prefix[i], vmap, bmap, opts)) return false;
-    }
-    // tailVar is a var-name string, so treat it as renamable too when local.
-    return alphaEqVarName(a.tailVar, b.tailVar, vmap, protectedVarsA, protectedVarsB);
-  }
-
-  // Nested formulas: compare with fresh maps (separate scope), but keep the same
-  // protected outer names so already-substituted terms stay fixed everywhere.
-  if (a instanceof GraphTerm && b instanceof GraphTerm) {
-    return alphaEqGraphTriples(a.triples, b.triples, opts);
-  }
-
-  return false;
-}
-
-function alphaEqTripleInGraph(a, b, vmap, bmap, opts) {
-  return (
-    alphaEqTermInGraph(a.s, b.s, vmap, bmap, opts) &&
-    alphaEqTermInGraph(a.p, b.p, vmap, bmap, opts) &&
-    alphaEqTermInGraph(a.o, b.o, vmap, bmap, opts)
-  );
-}
-
-function alphaEqGraphTriples(xs, ys, opts) {
-  if (xs.length !== ys.length) return false;
-  // Fast path: exact same sequence.
-  if (triplesListEqual(xs, ys)) return true;
-
-  // Order-insensitive backtracking match, threading var/blank mappings.
-  const used = new Array(ys.length).fill(false);
-
-  function step(i, vmap, bmap) {
-    if (i >= xs.length) return true;
-    const x = xs[i];
-    for (let j = 0; j < ys.length; j++) {
-      if (used[j]) continue;
-      const y = ys[j];
-      // Cheap pruning when both predicates are IRIs.
-      if (x.p instanceof Iri && y.p instanceof Iri && x.p.value !== y.p.value) continue;
-
-      const v2 = { ...vmap };
-      const b2 = { ...bmap };
-      if (!alphaEqTripleInGraph(x, y, v2, b2, opts)) continue;
-
-      used[j] = true;
-      if (step(i + 1, v2, b2)) return true;
-      used[j] = false;
-    }
-    return false;
-  }
-
-  return step(0, {}, {});
-}
-
-// ===========================================================================
-// Indexes (facts + backward rules)
-// ===========================================================================
-//
-// Facts:
-//   - __byPred: Map<predicateId, number[]>   (indices into facts array)
-//   - __byPS:   Map<predicateId, Map<subjectId, number[]>>
-//   - __byPO:   Map<predicateId, Map<objectId, number[]>>
-//   - __keySet: Set<"S\tP\tO"> for Iri/Literal/Blank-only triples (fast dup check)
-//
-// Backward rules:
-//   - __byHeadPred:   Map<headPredicateId, Rule[]>
-//   - __wildHeadPred: Rule[] (non-IRI head predicate)
-
-// Compound-term fast-key interning.
-// Used to index strict-ground list literals without relying on object identity.
-//
-// This is a major performance win for N3 programs that use compound terms
-// (especially lists) as subjects/objects, e.g. tabling-style encodings.
-const __compoundKeyToTid = new Map();
-// Use a negative id space so we never collide with __tid (which is positive).
-let __nextCompoundTid = -1;
-
-function __internCompoundTid(key) {
-  const hit = __compoundKeyToTid.get(key);
-  if (hit !== undefined) return hit;
-  const id = __nextCompoundTid--;
-  __compoundKeyToTid.set(key, id);
-  return id;
-}
-
-function termFastKey(t) {
-  // Atomic terms that already have a stable id.
-  if (t instanceof Iri || t instanceof Blank) return t.__tid;
-
-  if (t instanceof Literal) {
-    // Very large literals intentionally skip global interning in prelude.js to
-    // avoid retaining huge strings forever. Their per-object __tid is therefore
-    // not value-stable, so using it here breaks duplicate detection for facts
-    // such as long log:outputString blocks that are re-derived during forward
-    // chaining. Fall back to a value-based key in that case.
-    const norm = normalizeLiteralForTid(t.value);
-    if (typeof norm === 'string' && norm.length > MAX_LITERAL_TID_LEN) return 'L:' + norm;
-    return t.__tid;
-  }
-
-  // Structural fast key for strict-ground list terms.
-  // We only index when every element has a fast key; otherwise return null.
-  if (t instanceof ListTerm) {
-    const cached = t.__ftid;
-    if (cached !== undefined) return cached;
-
-    const xs = t.elems;
-    const parts = new Array(xs.length);
-    for (let i = 0; i < xs.length; i++) {
-      const k = termFastKey(xs[i]);
-      if (k === null) return null;
-      parts[i] = k;
-    }
-
-    // Use a compact separator; include length to avoid edge-case collisions.
-    const key = 'L' + xs.length + '\u0001' + parts.join('\u0001');
-    const id = __internCompoundTid(key);
-
-    // Cache on the list object itself (lists are immutable in Eyeling).
-    Object.defineProperty(t, '__ftid', { value: id, enumerable: false });
-    return id;
-  }
-
-  return null;
-}
-
-function tripleFastKey(tr) {
-  const ks = termFastKey(tr.s);
-  const kp = termFastKey(tr.p);
-  const ko = termFastKey(tr.o);
-  if (ks === null || kp === null || ko === null) return null;
-  return ks + '\t' + kp + '\t' + ko;
-}
-
-function ensureFactIndexes(facts) {
-  if (
-    facts.__byPred &&
-    facts.__byPS &&
-    facts.__byPO &&
-    facts.__wildPred &&
-    facts.__wildPS &&
-    facts.__wildPO &&
-    facts.__keySet
-  )
-    return;
-
-  Object.defineProperty(facts, '__byPred', {
-    value: new Map(),
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(facts, '__byPS', {
-    value: new Map(),
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(facts, '__byPO', {
-    value: new Map(),
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(facts, '__wildPred', {
-    value: [],
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(facts, '__wildPS', {
-    value: new Map(),
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(facts, '__wildPO', {
-    value: new Map(),
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(facts, '__keySet', {
-    value: new Set(),
-    enumerable: false,
-    writable: true,
-  });
-
-  for (let i = 0; i < facts.length; i++) indexFact(facts, facts[i], i);
-}
-
-function indexFact(facts, tr, idx) {
-  const sk = termFastKey(tr.s);
-  const ok = termFastKey(tr.o);
-
-  if (tr.p instanceof Iri) {
-    // Use predicate term id as the primary key to avoid hashing long IRI strings.
-    const pk = tr.p.__tid;
-
-    let pb = facts.__byPred.get(pk);
-    if (!pb) {
-      pb = [];
-      facts.__byPred.set(pk, pb);
-    }
-    pb.push(idx);
-
-    if (sk !== null) {
-      let ps = facts.__byPS.get(pk);
-      if (!ps) {
-        ps = new Map();
-        facts.__byPS.set(pk, ps);
-      }
-      let psb = ps.get(sk);
-      if (!psb) {
-        psb = [];
-        ps.set(sk, psb);
-      }
-      psb.push(idx);
-    }
-
-    if (ok !== null) {
-      let po = facts.__byPO.get(pk);
-      if (!po) {
-        po = new Map();
-        facts.__byPO.set(pk, po);
-      }
-      let pob = po.get(ok);
-      if (!pob) {
-        pob = [];
-        po.set(ok, pob);
-      }
-      pob.push(idx);
-    }
-  } else {
-    facts.__wildPred.push(idx);
-
-    if (sk !== null) {
-      let psb = facts.__wildPS.get(sk);
-      if (!psb) {
-        psb = [];
-        facts.__wildPS.set(sk, psb);
-      }
-      psb.push(idx);
-    }
-
-    if (ok !== null) {
-      let pob = facts.__wildPO.get(ok);
-      if (!pob) {
-        pob = [];
-        facts.__wildPO.set(ok, pob);
-      }
-      pob.push(idx);
-    }
-  }
-
-  const key = tripleFastKey(tr);
-  if (key !== null) facts.__keySet.add(key);
-}
-
-function candidateFacts(facts, goal) {
-  ensureFactIndexes(facts);
-
-  if (goal.p instanceof Iri) {
-    const pk = goal.p.__tid;
-
-    const sk = termFastKey(goal.s);
-    const ok = termFastKey(goal.o);
-
-    /** @type {number[] | null} */
-    let byPS = null;
-    if (sk !== null) {
-      const ps = facts.__byPS.get(pk);
-      if (ps) byPS = ps.get(sk) || null;
-    }
-
-    /** @type {number[] | null} */
-    let byPO = null;
-    if (ok !== null) {
-      const po = facts.__byPO.get(pk);
-      if (po) byPO = po.get(ok) || null;
-    }
-
-    let exact = null;
-    if (byPS && byPO) exact = byPS.length <= byPO.length ? byPS : byPO;
-    else if (byPS) exact = byPS;
-    else if (byPO) exact = byPO;
-    else exact = facts.__byPred.get(pk) || null;
-
-    /** @type {number[] | null} */
-    let wildPS = null;
-    if (sk !== null) wildPS = facts.__wildPS.get(sk) || null;
-
-    /** @type {number[] | null} */
-    let wildPO = null;
-    if (ok !== null) wildPO = facts.__wildPO.get(ok) || null;
-
-    let wild = null;
-    if (wildPS && wildPO) wild = wildPS.length <= wildPO.length ? wildPS : wildPO;
-    else if (wildPS) wild = wildPS;
-    else if (wildPO) wild = wildPO;
-    else wild = facts.__wildPred.length ? facts.__wildPred : null;
-
-    return {
-      exact: exact || null,
-      wild: wild || null,
-      exactLen: exact ? exact.length : 0,
-      wildLen: wild ? wild.length : 0,
-      totalLen: (exact ? exact.length : 0) + (wild ? wild.length : 0),
-    };
-  }
-
-  return null;
-}
-
-function hasFactIndexed(facts, tr) {
-  ensureFactIndexes(facts);
-
-  const key = tripleFastKey(tr);
-  if (key !== null) return facts.__keySet.has(key);
-
-  if (tr.p instanceof Iri) {
-    const pk = tr.p.__tid;
-
-    const ok = termFastKey(tr.o);
-    if (ok !== null) {
-      const po = facts.__byPO.get(pk);
-      if (po) {
-        const pob = po.get(ok) || [];
-        // Facts are all in the same graph. Different blank node labels represent
-        // different existentials unless explicitly connected. Do NOT treat
-        // triples as duplicates modulo blank renaming, or you'll incorrectly
-        // drop facts like: _:sk_0 :x 8.0  (because _:b8 :x 8.0 exists).
-        return pob.some((i) => triplesEqual(facts[i], tr));
-      }
-    }
-
-    const pb = facts.__byPred.get(pk) || [];
-    return pb.some((i) => triplesEqual(facts[i], tr));
-  }
-
-  // Non-IRI predicate: fall back to strict triple equality.
-  return facts.some((t) => triplesEqual(t, tr));
-}
-
-function pushFactIndexed(facts, tr) {
-  ensureFactIndexes(facts);
-  const idx = facts.length;
-  facts.push(tr);
-  indexFact(facts, tr, idx);
-}
-
-function makeDerivedRecord(fact, rule, premises, subst, captureExplanations) {
-  if (captureExplanations === false) return { fact };
-  return new DerivedFact(fact, rule, premises.slice(), { ...subst });
-}
-
-function ensureBackRuleIndexes(backRules) {
-  if (backRules.__byHeadPred && backRules.__wildHeadPred) return;
-
-  Object.defineProperty(backRules, '__byHeadPred', {
-    value: new Map(),
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(backRules, '__wildHeadPred', {
-    value: [],
-    enumerable: false,
-    writable: true,
-  });
-
-  for (const r of backRules) indexBackRule(backRules, r);
-}
-
-function indexBackRule(backRules, r) {
-  if (!r || !r.conclusion || r.conclusion.length !== 1) return;
-  const head = r.conclusion[0];
-  if (head && head.p instanceof Iri) {
-    const k = head.p.__tid;
-    let bucket = backRules.__byHeadPred.get(k);
-    if (!bucket) {
-      bucket = [];
-      backRules.__byHeadPred.set(k, bucket);
-    }
-    bucket.push(r);
-  } else {
-    backRules.__wildHeadPred.push(r);
-  }
-}
-
-function isSinglePremiseAgendaRuleSafe(r, backRules) {
-  if (!r || r.isFuse || !Array.isArray(r.premise) || r.premise.length !== 1) return false;
-
-  // Keep agenda firing restricted to rules whose observable output order is
-  // already stable in the legacy engine. Dynamic heads and head-blank
-  // skolemization are deliberately left on the old path so example outputs keep
-  // the same derived blank labels and rule-promotion behavior.
-  if (r.__dynamicConclusionTerm) return false;
-  if (r.__fromRulePromotion) return false;
-  if (r.headBlankLabels && r.headBlankLabels.size) return false;
-
-  const goal = r.premise[0];
-
-  // Builtin-only bodies need the normal proveGoals path because they can
-  // succeed without matching an extensional fact and may depend on scoped state.
-  if (isBuiltinPred(goal.p)) return false;
-
-  // Safe only when the sole premise cannot be satisfied via backward rules.
-  // Otherwise matching just against newly-seen facts would be incomplete.
-  ensureBackRuleIndexes(backRules);
-  if (goal.p instanceof Iri) {
-    if ((backRules.__byHeadPred.get(goal.p.__tid) || []).length) return false;
-    if (backRules.__wildHeadPred.length) return false;
-    return true;
-  }
-
-  return backRules.__wildHeadPred.length === 0;
-}
-
-function mergeSinglePremiseAgendaBuckets() {
-  let out = null;
-  let seen = null;
-
-  for (let i = 0; i < arguments.length; i++) {
-    const bucket = arguments[i];
-    if (!bucket || bucket.length === 0) continue;
-
-    if (out === null) {
-      out = bucket.length === 1 ? [bucket[0]] : bucket.slice();
-      if (bucket.length > 1) seen = new Set(out);
-      continue;
-    }
-
-    if (!seen) seen = new Set(out);
-    for (let j = 0; j < bucket.length; j++) {
-      const entry = bucket[j];
-      if (seen.has(entry)) continue;
-      seen.add(entry);
-      out.push(entry);
-    }
-  }
-
-  return out;
-}
-
-function makeSinglePremiseAgendaIndex(forwardRules, backRules) {
-  const index = {
-    byPred: new Map(),
-    byPS: new Map(),
-    byPO: new Map(),
-    wildPred: [],
-    wildPS: new Map(),
-    wildPO: new Map(),
-    indexed: new Set(),
-    size: 0,
-  };
-
-  function addToMapArray(m, k, v) {
-    let bucket = m.get(k);
-    if (!bucket) {
-      bucket = [];
-      m.set(k, bucket);
-    }
-    bucket.push(v);
-  }
-
-  for (let i = 0; i < forwardRules.length; i++) {
-    const r = forwardRules[i];
-    if (!isSinglePremiseAgendaRuleSafe(r, backRules)) continue;
-
-    const goal = r.premise[0];
-    const entry = {
-      rule: r,
-      ruleIndex: i,
-      goal,
-      goalPredTid: goal.p instanceof Iri ? goal.p.__tid : null,
-      goalSKey: termFastKey(goal.s),
-      goalOKey: termFastKey(goal.o),
-    };
-
-    index.indexed.add(r);
-    index.size += 1;
-
-    if (entry.goalPredTid !== null) {
-      if (entry.goalSKey === null && entry.goalOKey === null) addToMapArray(index.byPred, entry.goalPredTid, entry);
-      if (entry.goalSKey !== null) {
-        let ps = index.byPS.get(entry.goalPredTid);
-        if (!ps) {
-          ps = new Map();
-          index.byPS.set(entry.goalPredTid, ps);
-        }
-        addToMapArray(ps, entry.goalSKey, entry);
-      }
-      if (entry.goalOKey !== null) {
-        let po = index.byPO.get(entry.goalPredTid);
-        if (!po) {
-          po = new Map();
-          index.byPO.set(entry.goalPredTid, po);
-        }
-        addToMapArray(po, entry.goalOKey, entry);
-      }
-    } else {
-      if (entry.goalSKey === null && entry.goalOKey === null) index.wildPred.push(entry);
-      if (entry.goalSKey !== null) addToMapArray(index.wildPS, entry.goalSKey, entry);
-      if (entry.goalOKey !== null) addToMapArray(index.wildPO, entry.goalOKey, entry);
-    }
-  }
-
-  return index;
-}
-
-function getSinglePremiseAgendaCandidates(index, fact) {
-  if (!index || index.size === 0) return null;
-
-  const sk = termFastKey(fact.s);
-  const ok = termFastKey(fact.o);
-
-  let exact = null;
-  if (fact.p instanceof Iri) {
-    const pk = fact.p.__tid;
-    const byPred = index.byPred.get(pk) || null;
-    let byPS = null;
-    if (sk !== null) {
-      const ps = index.byPS.get(pk);
-      if (ps) byPS = ps.get(sk) || null;
-    }
-    let byPO = null;
-    if (ok !== null) {
-      const po = index.byPO.get(pk);
-      if (po) byPO = po.get(ok) || null;
-    }
-
-    exact = mergeSinglePremiseAgendaBuckets(byPred, byPS, byPO);
-  }
-
-  const wildPred = index.wildPred.length ? index.wildPred : null;
-  let wildPS = null;
-  if (sk !== null) wildPS = index.wildPS.get(sk) || null;
-
-  let wildPO = null;
-  if (ok !== null) wildPO = index.wildPO.get(ok) || null;
-
-  const wild = mergeSinglePremiseAgendaBuckets(wildPred, wildPS, wildPO);
-
-  if (!exact && !wild) return null;
-  return { exact, wild, exactLen: exact ? exact.length : 0, wildLen: wild ? wild.length : 0 };
-}
-
-// ===========================================================================
-// Special predicate helpers
-// ===========================================================================
-
-function isLogImplies(p) {
-  return p instanceof Iri && p.value === LOG_NS + 'implies';
-}
-
-function isLogImpliedBy(p) {
-  return p instanceof Iri && p.value === LOG_NS + 'impliedBy';
-}
-
-// ===========================================================================
-// Completed-goal answer tables (minimal tabling)
-// ===========================================================================
-//
-// This is intentionally conservative:
-//   - only *completed* answer sets are cached
-//   - pending goals are never exposed
-//   - cache entries are invalidated whenever facts, backward rules, or the
-//     scoped-snapshot context change
-//
-// So this improves reuse across repeated backward proofs without changing the
-// semantics of recursive goals.
-
-function goalTableScopeVersion(facts, backRules) {
-  const factCount = Array.isArray(facts) ? facts.length : 0;
-  const backRuleCount = Array.isArray(backRules) ? backRules.length : 0;
-  const scopedLevel = facts && typeof facts.__scopedClosureLevel === 'number' ? facts.__scopedClosureLevel : 0;
-  const hasScopedSnapshot = facts && facts.__scopedSnapshot ? 1 : 0;
-  return `${factCount}|${backRuleCount}|${scopedLevel}|${hasScopedSnapshot}`;
-}
-
-function __makeGoalTable() {
-  return {
-    scopeVersion: null,
-    entries: new Map(),
-  };
-}
-
-function __attachGoalTable(scopeCarrier, goalTable) {
-  if (!scopeCarrier) return goalTable;
-  if (!hasOwn.call(scopeCarrier, 'goalTable')) {
-    Object.defineProperty(scopeCarrier, 'goalTable', {
-      value: goalTable,
-      enumerable: false,
-      writable: true,
-      configurable: true,
-    });
-  } else {
-    scopeCarrier.goalTable = goalTable;
-  }
-  return goalTable;
-}
-
-function __ensureGoalTable(facts, backRules) {
-  let table = (facts && facts.goalTable) || (backRules && backRules.goalTable) || null;
-  if (!table) table = __makeGoalTable();
-  __attachGoalTable(facts, table);
-  __attachGoalTable(backRules, table);
-
-  const version = goalTableScopeVersion(facts, backRules);
-  if (table.scopeVersion !== version) {
-    table.scopeVersion = version;
-    table.entries.clear();
-  }
-  return table;
-}
-
-function __goalMemoTripleKey(tr) {
-  return skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
-}
-
-function __goalMemoKey(goals, subst, facts, opts) {
-  const parts = new Array(goals.length);
-  for (let i = 0; i < goals.length; i++) parts[i] = __goalMemoTripleKey(applySubstTriple(goals[i], subst || {}));
-  const mode = opts && opts.deferBuiltins ? 'D1' : 'D0';
-  const scopedLevel = facts && typeof facts.__scopedClosureLevel === 'number' ? facts.__scopedClosureLevel : 0;
-  const scopedTag = facts && facts.__scopedSnapshot ? 'S' : 'N';
-  let keepVarsTag = '';
-  if (opts && opts.keepVars) {
-    const keepVars = Array.isArray(opts.keepVars) ? opts.keepVars.slice() : Array.from(opts.keepVars);
-    keepVars.sort();
-    keepVarsTag = `|K:${keepVars.join(',')}`;
-  }
-  return `${mode}|${scopedTag}|${scopedLevel}${keepVarsTag}|${parts.join('\n')}`;
-}
-
-function __cloneGoalSolutions(solutions) {
-  const out = new Array(solutions.length);
-  for (let i = 0; i < solutions.length; i++) out[i] = { ...solutions[i] };
-  return out;
-}
-
-function __canLookupGoalMemo(visited) {
-  return !visited || visited.length === 0;
-}
-
-function __canStoreGoalMemo(visited, maxResults) {
-  return (!visited || visited.length === 0) && !(typeof maxResults === 'number' && maxResults > 0);
-}
-
-// ===========================================================================
-// Unification + substitution
-// ===========================================================================
-
-function containsVarTerm(t, v) {
-  if (t instanceof Iri || t instanceof Literal || t instanceof Blank) return false;
-  if (t instanceof Var) return t.name === v;
-  if (t instanceof ListTerm) return t.elems.some((e) => containsVarTerm(e, v));
-  if (t instanceof OpenListTerm) return t.prefix.some((e) => containsVarTerm(e, v)) || t.tailVar === v;
-  if (t instanceof GraphTerm)
-    return t.triples.some((tr) => containsVarTerm(tr.s, v) || containsVarTerm(tr.p, v) || containsVarTerm(tr.o, v));
-  return false;
-}
-
-function isGroundTermInGraph(t) {
-  // variables inside graph terms are treated as local placeholders,
-  // so they don't make the *surrounding triple* non-ground.
-  if (t instanceof OpenListTerm) return false;
-  if (t instanceof ListTerm) return t.elems.every((e) => isGroundTermInGraph(e));
-  if (t instanceof GraphTerm) return t.triples.every((tr) => isGroundTripleInGraph(tr));
-  // Iri/Literal/Blank/Var are all OK inside formulas
-  return true;
-}
-
-function isGroundTripleInGraph(tr) {
-  return isGroundTermInGraph(tr.s) && isGroundTermInGraph(tr.p) && isGroundTermInGraph(tr.o);
-}
-
-function isGroundTerm(t) {
-  if (t instanceof Iri || t instanceof Literal || t instanceof Blank) return true;
-  if (t instanceof Var) return false;
-  if (t instanceof ListTerm) return t.elems.every((e) => isGroundTerm(e));
-  if (t instanceof OpenListTerm) return false;
-  if (t instanceof GraphTerm) return t.triples.every((tr) => isGroundTripleInGraph(tr));
-  return true;
-}
-
-function isGroundTriple(tr) {
-  return isGroundTerm(tr.s) && isGroundTerm(tr.p) && isGroundTerm(tr.o);
-}
-
-// Canonical JSON-ish encoding for use as a Skolem cache key.
-// We only *call* this on ground terms in log:skolem, but it is
-// robust to seeing vars/open lists anyway.
-function skolemKeyFromTerm(t) {
-  function enc(u) {
-    if (u instanceof Iri) return ['I', u.value];
-    if (u instanceof Literal) return ['L', u.value];
-    if (u instanceof Blank) return ['B', u.label];
-    if (u instanceof Var) return ['V', u.name];
-    if (u instanceof ListTerm) return ['List', u.elems.map(enc)];
-    if (u instanceof OpenListTerm) return ['OpenList', u.prefix.map(enc), u.tailVar];
-    if (u instanceof GraphTerm) return ['Graph', u.triples.map((tr) => [enc(tr.s), enc(tr.p), enc(tr.o)])];
-    return ['Other', String(u)];
-  }
-  return JSON.stringify(enc(t));
-}
-
-function skolemIriFromGroundTerm(t) {
-  // t must be ground (checked by caller).
-  const key = skolemKeyFromTerm(t);
-  let iri = skolemCache.get(key);
-  if (!iri) {
-    const id = skolemIdForKey(key);
-    iri = internIri(SKOLEM_NS + id);
-    skolemCache.set(key, iri);
-  }
-  return iri;
-}
-
-function applySubstTerm(t, s) {
-  // Hot fast path: most terms are already-ground atomic terms.
-  if (t instanceof Iri || t instanceof Literal || t instanceof Blank) return t;
-
-  // Common case: variable
-  if (t instanceof Var) {
-    const first = s[t.name];
-    if (first === undefined) return t;
-
-    // Follow chains X -> Y -> ... until we hit a non-var or a cycle.
-    // Avoid allocating a Set in the common case (short chains).
-    let cur = first;
-    const seen0 = t.name;
-    let seen1 = null;
-    let seen2 = null;
-    let seenSet = null;
-    let steps = 0;
-
-    while (cur instanceof Var) {
-      const name = cur.name;
-
-      // Cycle check
-      if (name === seen0 || name === seen1 || name === seen2 || (seenSet && seenSet.has(name))) {
-        return cur;
-      }
-
-      if (steps == 0) {
-        seen1 = name;
-      } else if (steps == 1) {
-        seen2 = name;
-      } else if (steps == 2) {
-        seenSet = new Set([seen0, seen1, seen2]);
-        seenSet.add(name);
-      } else if (seenSet) {
-        seenSet.add(name);
-      }
-
-      const nxt = s[name];
-      if (nxt === undefined) break;
-      cur = nxt;
-
-      steps += 1;
-      // Safety guard against pathological substitutions
-      if (steps > 1024) break;
-    }
-
-    if (cur instanceof Var) return cur;
-    // Bound to a non-var term: apply substitution recursively in case it contains variables inside.
-    return applySubstTerm(cur, s);
-  }
-
-  // Non-variable terms
-  if (t instanceof ListTerm) {
-    const xs = t.elems;
-    let out = null;
-    for (let i = 0; i < xs.length; i++) {
-      const v = applySubstTerm(xs[i], s);
-      if (out) {
-        out.push(v);
-      } else if (v !== xs[i]) {
-        out = xs.slice(0, i);
-        out.push(v);
-      }
-    }
-    return out ? new ListTerm(out) : t;
-  }
-
-  if (t instanceof OpenListTerm) {
-    const xs = t.prefix;
-    let newPrefix = null;
-    for (let i = 0; i < xs.length; i++) {
-      const v = applySubstTerm(xs[i], s);
-      if (newPrefix) {
-        newPrefix.push(v);
-      } else if (v !== xs[i]) {
-        newPrefix = xs.slice(0, i);
-        newPrefix.push(v);
-      }
-    }
-    const prefixApplied = newPrefix || xs;
-
-    const tailTerm = s[t.tailVar];
-    if (tailTerm === undefined) {
-      return prefixApplied === xs ? t : new OpenListTerm(prefixApplied, t.tailVar);
-    }
-
-    const tailApplied = applySubstTerm(tailTerm, s);
-    if (tailApplied instanceof ListTerm) {
-      if (prefixApplied.length === 0) return tailApplied;
-      return new ListTerm(prefixApplied.concat(tailApplied.elems));
-    } else if (tailApplied instanceof OpenListTerm) {
-      if (prefixApplied.length === 0) return tailApplied;
-      return new OpenListTerm(prefixApplied.concat(tailApplied.prefix), tailApplied.tailVar);
-    } else {
-      // Non-list tail binding: keep as open list (matches existing behavior).
-      return prefixApplied === xs ? t : new OpenListTerm(prefixApplied, t.tailVar);
-    }
-  }
-
-  if (t instanceof GraphTerm) {
-    const xs = t.triples;
-    let out = null;
-    for (let i = 0; i < xs.length; i++) {
-      const v = applySubstTriple(xs[i], s);
-      if (out) {
-        out.push(v);
-      } else if (v !== xs[i]) {
-        out = xs.slice(0, i);
-        out.push(v);
-      }
-    }
-    return out ? new GraphTerm(out) : t;
-  }
-
-  return t;
-}
-
-function applySubstTriple(tr, s) {
-  const s2 = applySubstTerm(tr.s, s);
-  const p2 = applySubstTerm(tr.p, s);
-  const o2 = applySubstTerm(tr.o, s);
-  if (s2 === tr.s && p2 === tr.p && o2 === tr.o) return tr;
-  return new Triple(s2, p2, o2);
-}
-
-function iriValue(t) {
-  return t instanceof Iri ? t.value : null;
-}
-
-function unifyOpenWithList(prefix, tailv, ys, subst) {
-  if (ys.length < prefix.length) return null;
-  let s2 = subst;
-  for (let i = 0; i < prefix.length; i++) {
-    s2 = unifyTerm(prefix[i], ys[i], s2);
-    if (s2 === null) return null;
-  }
-  const rest = new ListTerm(ys.slice(prefix.length));
-  s2 = unifyTerm(new Var(tailv), rest, s2);
-  if (s2 === null) return null;
-  return s2;
-}
-
-function unifyGraphTriples(xs, ys, subst) {
-  if (xs.length !== ys.length) return null;
-
-  // Fast path: exact same sequence.
-  if (triplesListEqual(xs, ys)) return subst;
-
-  // Backtracking match (order-insensitive), *threading* the substitution through.
-  const used = new Array(ys.length).fill(false);
-
-  function step(i, s) {
-    if (i >= xs.length) return s;
-    const x = xs[i];
-
-    for (let j = 0; j < ys.length; j++) {
-      if (used[j]) continue;
-      const y = ys[j];
-
-      // Cheap pruning when both predicates are IRIs.
-      if (x.p instanceof Iri && y.p instanceof Iri && x.p.value !== y.p.value) continue;
-
-      const s2 = unifyTriple(x, y, s); // IMPORTANT: use `s`, not {}
-      if (s2 === null) continue;
-
-      used[j] = true;
-      const s3 = step(i + 1, s2);
-      if (s3 !== null) return s3;
-      used[j] = false;
-    }
-    return null;
-  }
-
-  return step(0, subst); // IMPORTANT: start from the incoming subst
-}
-
-function unifyTerm(a, b, subst) {
-  return unifyTermWithOptions(a, b, subst, {
-    boolValueEq: true,
-    intDecimalEq: false,
-  });
-}
-
-function unifyTermListAppend(a, b, subst) {
-  // Keep list:append behavior: allow integer<->decimal exact equality,
-  // but do NOT add boolean-value equivalence (preserves current semantics).
-  return unifyTermWithOptions(a, b, subst, {
-    boolValueEq: false,
-    intDecimalEq: true,
-  });
-}
-
-function unifyTermWithOptions(a, b, subst, opts) {
-  a = applySubstTerm(a, subst);
-  b = applySubstTerm(b, subst);
-
-  // Normalize rdf:nil IRI to the empty list term, so it unifies with () and
-  // list builtins treat it consistently.
-  if (a instanceof Iri && a.value === RDF_NIL_IRI) a = EMPTY_LIST_TERM;
-  if (b instanceof Iri && b.value === RDF_NIL_IRI) b = EMPTY_LIST_TERM;
-
-  // Variable binding
-  if (a instanceof Var) {
-    const v = a.name;
-    const t = b;
-    if (t instanceof Var && t.name === v) return subst;
-    if (containsVarTerm(t, v)) return null;
-    const s2 = { ...subst };
-    s2[v] = t;
-    return s2;
-  }
-  if (b instanceof Var) {
-    return unifyTermWithOptions(b, a, subst, opts);
-  }
-
-  // Fast path: identical atomic term ids (covers IRI, blank, and string/xsd:string equivalence)
-  if (a.__tid && b.__tid && a.__tid === b.__tid) return subst;
-
-  // Exact matches
-  if (a instanceof Iri && b instanceof Iri && a.value === b.value) return subst;
-  if (a instanceof Literal && b instanceof Literal && a.value === b.value) return subst;
-  if (a instanceof Blank && b instanceof Blank && a.label === b.label) return subst;
-
-  // Plain string vs xsd:string equivalence
-  if (a instanceof Literal && b instanceof Literal) {
-    if (literalsEquivalentAsXsdString(a.value, b.value)) return subst;
-  }
-
-  // Boolean-value equivalence (ONLY for normal unifyTerm)
-  if (opts.boolValueEq && a instanceof Literal && b instanceof Literal) {
-    const ai = parseBooleanLiteralInfo(a);
-    const bi = parseBooleanLiteralInfo(b);
-    if (ai && bi && ai.value === bi.value) return subst;
-  }
-
-  // Numeric-value match:
-  // - always allow equality when datatype matches (existing behavior)
-  // - optionally allow integer<->decimal exact equality (list:append only)
-  if (a instanceof Literal && b instanceof Literal) {
-    const ai = parseNumericLiteralInfo(a);
-    const bi = parseNumericLiteralInfo(b);
-    if (ai && bi) {
-      if (ai.dt === bi.dt) {
-        if (ai.kind === 'bigint' && bi.kind === 'bigint') {
-          if (ai.value === bi.value) return subst;
+        // Try to get an informative error.
+        const txt = derefTextSync(iriNoFrag);
+        if (typeof txt !== 'string') {
+          term = __makeStringLiteral(`error(dereference_failed,${iriNoFrag})`);
         } else {
-          const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
-          const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
-          if (!Number.isNaN(an) && !Number.isNaN(bn) && an === bn) return subst;
-        }
-      }
-
-      if (opts.intDecimalEq) {
-        const intDt = XSD_NS + 'integer';
-        const decDt = XSD_NS + 'decimal';
-        if ((ai.dt === intDt && bi.dt === decDt) || (ai.dt === decDt && bi.dt === intDt)) {
-          const intInfo = ai.dt === intDt ? ai : bi; // bigint
-          const decInfo = ai.dt === decDt ? ai : bi; // number + lexStr
-          const dec = parseXsdDecimalToBigIntScale(decInfo.lexStr);
-          if (dec) {
-            const scaledInt = intInfo.value * pow10n(dec.scale);
-            if (scaledInt === dec.num) return subst;
+          try {
+            const baseIri = typeof key === 'string' && key ? key : iriNoFrag;
+            term = parseSemanticsToFormula(txt, baseIri);
+            // Keep the semantics cache consistent.
+            __logSemanticsCache.set(key, term);
+          } catch (e) {
+            const msg = e && e.message ? e.message : String(e);
+            term = __makeStringLiteral(`error(parse_error,${msg})`);
           }
         }
       }
-    }
-  }
 
-  // Open list vs concrete list
-  if (a instanceof OpenListTerm && b instanceof ListTerm) {
-    return unifyOpenWithList(a.prefix, a.tailVar, b.elems, subst);
-  }
-  if (a instanceof ListTerm && b instanceof OpenListTerm) {
-    return unifyOpenWithList(b.prefix, b.tailVar, a.elems, subst);
-  }
-
-  // Open list vs open list
-  if (a instanceof OpenListTerm && b instanceof OpenListTerm) {
-    if (a.tailVar !== b.tailVar || a.prefix.length !== b.prefix.length) return null;
-    let s2 = subst;
-    for (let i = 0; i < a.prefix.length; i++) {
-      s2 = unifyTermWithOptions(a.prefix[i], b.prefix[i], s2, opts);
-      if (s2 === null) return null;
-    }
-    return s2;
-  }
-
-  // List terms
-  if (a instanceof ListTerm && b instanceof ListTerm) {
-    if (a.elems.length !== b.elems.length) return null;
-    let s2 = subst;
-    for (let i = 0; i < a.elems.length; i++) {
-      s2 = unifyTermWithOptions(a.elems[i], b.elems[i], s2, opts);
-      if (s2 === null) return null;
-    }
-    return s2;
-  }
-
-  // Graphs
-  if (a instanceof GraphTerm && b instanceof GraphTerm) {
-    const protectedNames = collectProtectedNamesFromSubst(subst);
-    if (
-      alphaEqGraphTriples(a.triples, b.triples, {
-        protectedVarsA: protectedNames.protectedVars,
-        protectedVarsB: protectedNames.protectedVars,
-        protectedBlanksA: protectedNames.protectedBlanks,
-        protectedBlanksB: protectedNames.protectedBlanks,
-      })
-    ) {
-      return subst;
-    }
-    return unifyGraphTriples(a.triples, b.triples, subst);
-  }
-
-  return null;
-}
-
-function unifyTriple(pat, fact, subst) {
-  // Predicates are usually the cheapest and most selective
-  const s1 = unifyTerm(pat.p, fact.p, subst);
-  if (s1 === null) return null;
-
-  const s2 = unifyTerm(pat.s, fact.s, s1);
-  if (s2 === null) return null;
-
-  const s3 = unifyTerm(pat.o, fact.o, s2);
-  return s3;
-}
-
-// Strategy: when the substitution is "large" or search depth is high,
-// keep only bindings that are still relevant to:
-//   - variables appearing in the remaining goals
-//   - variables from the original goals (answer vars)
-// plus the transitive closure of variables that appear inside kept bindings.
-//
-// This is semantics-preserving for the ongoing proof state.
-
-function gcCollectVarsInTerm(t, out) {
-  if (t instanceof Var) {
-    out.add(t.name);
-    return;
-  }
-  if (t instanceof ListTerm) {
-    for (const e of t.elems) gcCollectVarsInTerm(e, out);
-    return;
-  }
-  if (t instanceof OpenListTerm) {
-    for (const e of t.prefix) gcCollectVarsInTerm(e, out);
-    out.add(t.tailVar);
-    return;
-  }
-  if (t instanceof GraphTerm) {
-    for (const tr of t.triples) gcCollectVarsInTriple(tr, out);
-    return;
-  }
-}
-
-function gcCollectVarsInTriple(tr, out) {
-  gcCollectVarsInTerm(tr.s, out);
-  gcCollectVarsInTerm(tr.p, out);
-  gcCollectVarsInTerm(tr.o, out);
-}
-
-function gcCollectVarsInGoals(goals, out) {
-  for (const g of goals) gcCollectVarsInTriple(g, out);
-}
-
-function gcCompactForGoals(subst, goals, answerVars) {
-  const keep = new Set(answerVars);
-  gcCollectVarsInGoals(goals, keep);
-
-  const expanded = new Set();
-  const queue = Array.from(keep);
-
-  while (queue.length) {
-    const v = queue.pop();
-    if (expanded.has(v)) continue;
-    expanded.add(v);
-
-    const bound = subst[v];
-    if (bound === undefined) continue;
-
-    const before = keep.size;
-    gcCollectVarsInTerm(bound, keep);
-    if (keep.size !== before) {
-      for (const nv of keep) {
-        if (!expanded.has(nv)) queue.push(nv);
-      }
-    }
-  }
-
-  const out = {};
-  for (const k of Object.keys(subst)) {
-    if (keep.has(k)) out[k] = subst[k];
-  }
-  return out;
-}
-
-// Helpers used by proveGoals() when deferring builtins.
-// Pure checks are kept at module scope to avoid per-call allocations.
-function __termHasVarOrBlank(t) {
-  if (t instanceof Var || t instanceof Blank) return true;
-  if (t instanceof ListTerm) return t.elems.some(__termHasVarOrBlank);
-  if (t instanceof OpenListTerm) return true;
-  if (t instanceof GraphTerm) return t.triples.some(__tripleHasVarOrBlank);
-  return false;
-}
-
-function __tripleHasVarOrBlank(tr) {
-  return __termHasVarOrBlank(tr.s) || __termHasVarOrBlank(tr.p) || __termHasVarOrBlank(tr.o);
-}
-
-function __builtinIsSatisfiableWhenFullyUnbound(pIriVal) {
-  return (
-    pIriVal === MATH_NS + 'sin' ||
-    pIriVal === MATH_NS + 'cos' ||
-    pIriVal === MATH_NS + 'tan' ||
-    pIriVal === MATH_NS + 'asin' ||
-    pIriVal === MATH_NS + 'acos' ||
-    pIriVal === MATH_NS + 'atan' ||
-    pIriVal === MATH_NS + 'sinh' ||
-    pIriVal === MATH_NS + 'cosh' ||
-    pIriVal === MATH_NS + 'tanh' ||
-    pIriVal === MATH_NS + 'degrees' ||
-    pIriVal === MATH_NS + 'negation'
-  );
-}
-
-function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxResults, opts) {
-  const goalTable = __canLookupGoalMemo(visited) ? __ensureGoalTable(facts, backRules) : null;
-  const goalMemoKeyNow = goalTable ? __goalMemoKey(goals, subst, facts, opts) : null;
-  if (goalTable && goalTable.entries.has(goalMemoKeyNow)) {
-    const cached = goalTable.entries.get(goalMemoKeyNow) || [];
-    const cloned = __cloneGoalSolutions(cached);
-    if (typeof maxResults === 'number' && maxResults > 0 && cloned.length > maxResults)
-      return cloned.slice(0, maxResults);
-    return cloned;
-  }
-
-  // Depth-first search with a single mutable substitution and a trail.
-  // This avoids cloning the whole substitution object at each unification step
-  // (Prolog-style: bind + trail, then undo on backtrack).
-  //
-  // IMPORTANT: This implementation is fully iterative (no JS recursion), so
-  // extremely deep backward proofs (e.g. examples/ackermann.n3) do not overflow
-  // the JavaScript call stack.
-  const results = [];
-  const max = typeof maxResults === 'number' && maxResults > 0 ? maxResults : Infinity;
-
-  // IMPORTANT: Goal reordering / deferral is only enabled when explicitly
-  // requested by the caller (used for forward rules).
-  const allowDeferredBuiltins = !!(opts && opts.deferBuiltins);
-
-  const initialGoals = Array.isArray(goals) ? goals.slice() : [];
-  const substMut = subst ? { ...subst } : {};
-  const initialVisited = visited ? visited.slice() : [];
-
-  // Variables from the original goal list (needed by the caller to instantiate conclusions)
-  const answerVars = new Set();
-  gcCollectVarsInGoals(initialGoals, answerVars);
-  if (opts && opts.keepVars) {
-    for (const v of opts.keepVars) answerVars.add(v);
-  }
-
-  if (!initialGoals.length) {
-    results.push(gcCompactForGoals(substMut, [], answerVars));
-    if (goalTable && __canStoreGoalMemo(visited, maxResults)) {
-      goalTable.entries.set(goalMemoKeyNow, __cloneGoalSolutions(results));
-    }
-    return results;
-  }
-
-  // Trail of variable names that were newly bound in substMut.
-  const trail = [];
-
-  function applyDeltaToSubst(delta) {
-    for (const k in delta) {
-      if (!Object.prototype.hasOwnProperty.call(delta, k)) continue;
-      const v = delta[k];
-
-      if (Object.prototype.hasOwnProperty.call(substMut, k)) {
-        if (!termsEqual(substMut[k], v)) return false;
-      } else {
-        substMut[k] = v;
-        trail.push(k);
-      }
-    }
-    return true;
-  }
-
-  function undoTo(mark) {
-    for (let i = trail.length - 1; i >= mark; i--) {
-      delete substMut[trail[i]];
-    }
-    trail.length = mark;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Visited set (loop check) implemented as a trail-backed multiset
-  // ---------------------------------------------------------------------------
-  // The previous implementation used an array + concat at each step:
-  //   visitedForRules = visitedNow.concat([goal0]);
-  // which becomes O(n^2) for very deep proofs. Here we use a Map-backed multiset
-  // with backtracking support (like the substitution trail).
-  const visitedCounts = new Map(); // key -> count
-  const visitedTrail = []; // stack of keys in insertion order
-
-  const termKeyCache = typeof WeakMap === 'function' ? new WeakMap() : null;
-
-  function termKeyForVisited(t) {
-    if (t instanceof Iri && t.value === RDF_NIL_IRI) return '()';
-    if (t instanceof ListTerm && t.elems.length === 0) return '()';
-
-    if (termKeyCache && t && typeof t === 'object') {
-      const cached = termKeyCache.get(t);
-      if (cached) return cached;
+      __logSemanticsOrErrorCache.set(key, term);
+      return term;
     }
 
-    let out;
-    if (t instanceof Var) {
-      out = 'V:' + t.name;
-    } else if (t instanceof Literal) {
-      // Match termsEqual() semantics for booleans and numerics where possible.
-      const bi = parseBooleanLiteralInfo(t);
-      if (bi) {
-        out = 'LB:' + (bi.value ? '1' : '0');
-      } else {
-        const ni = parseNumericLiteralInfo(t);
-        if (ni) {
-          if (ni.kind === 'bigint') {
-            out = 'LN:' + ni.dt + ':' + ni.value.toString();
-          } else if (typeof ni.value === 'number' && Number.isNaN(ni.value)) {
-            // NaN is never equal to NaN under termsEqual numeric comparison.
-            out = 'L#' + (t.__tid || String(t.value));
-          } else {
-            out = 'LN:' + ni.dt + ':' + String(ni.value);
+    module.exports = {
+      // flags
+      getEnforceHttpsEnabled,
+      setEnforceHttpsEnabled,
+
+      // helpers
+      stripFragment,
+      normalizeDerefIri,
+
+      // deref + parse
+      derefTextSync,
+      derefSemanticsSync,
+      derefSemanticsOrError,
+      parseSemanticsToFormula,
+
+      // caches (exposed for tests/debugging if needed)
+      __logContentCache,
+      __logSemanticsCache,
+      __logSemanticsOrErrorCache,
+    };
+  };
+  __modules['lib/engine.js'] = function (require, module, exports) {
+    /**
+     * Eyeling Reasoner — engine
+     *
+     * Core inference engine: unification, forward/backward chaining, builtin evaluation,
+     * and proof/explanation bookkeeping. This module intentionally stays cohesive.
+     */
+
+    'use strict';
+
+    const {
+      RDF_NS,
+      XSD_NS,
+      MATH_NS,
+      LOG_NS,
+      SKOLEM_NS,
+      MAX_LITERAL_TID_LEN,
+      normalizeLiteralForTid,
+      Literal,
+      Iri,
+      Var,
+      Blank,
+      ListTerm,
+      OpenListTerm,
+      GraphTerm,
+      Triple,
+      Rule,
+      DerivedFact,
+      internIri,
+      collectBlankLabelsInTriples,
+    } = require('./prelude');
+
+    // In N3/Turtle, rdf:nil is the canonical IRI for the empty RDF list.
+    // Eyeling represents list literals with ListTerm; ensure rdf:nil unifies with ().
+    const RDF_NIL_IRI = RDF_NS + 'nil';
+    const EMPTY_LIST_TERM = new ListTerm([]);
+
+    const { lex, N3SyntaxError } = require('./lexer');
+    const { Parser } = require('./parser');
+    const { liftBlankRuleVars } = require('./rules');
+
+    const {
+      makeBuiltins,
+      registerBuiltin,
+      unregisterBuiltin,
+      registerBuiltinModule,
+      loadBuiltinModule,
+      listBuiltinIris,
+      // helpers used by engine core
+      parseBooleanLiteralInfo,
+      parseNumericLiteralInfo,
+      // numeric helpers used by engine unification / equality
+      parseXsdDecimalToBigIntScale,
+      pow10n,
+      literalsEquivalentAsXsdString,
+      materializeRdfLists,
+      // used by backward chaining
+      standardizeRule,
+    } = require('./builtins');
+
+    const { makeExplain } = require('./explain');
+
+    const { termToN3, tripleToN3, prettyPrintQueryTriples } = require('./printing');
+    const {
+      getDataFactory,
+      internalTripleToRdfJsQuad,
+      normalizeParsedReasonerInputSync,
+      normalizeReasonerInputSync,
+      normalizeReasonerInputAsync,
+    } = require('./rdfjs');
+
+    const trace = require('./trace');
+    const { deterministicSkolemIdFromKey } = require('./skolem');
+
+    const deref = require('./deref');
+
+    const hasOwn = Object.prototype.hasOwnProperty;
+
+    let version = 'dev';
+    try {
+      // Node: keep package.json version if available
+      if (typeof require === 'function') version = require('./package.json').version || version;
+    } catch {}
+
+    let nodeCrypto = null;
+    try {
+      // Node: crypto available
+      if (typeof require === 'function') nodeCrypto = require('crypto');
+    } catch {}
+    // For a single reasoning run, this maps a canonical representation
+    // of the subject term in log:skolem to a Skolem IRI.
+    const skolemCache = new Map();
+
+    // log:skolem run salt and mode.
+    //
+    // Desired behavior:
+    //   - Within one reasoning run: same subject -> same Skolem IRI.
+    //   - Across reasoning runs (default): same subject -> different Skolem IRI.
+    //   - Optional legacy mode: stable across runs (CLI: --deterministic-skolem).
+    let deterministicSkolemAcrossRuns = false;
+    let skolemRunDepth = 0;
+    let skolemRunSalt = null;
+
+    function makeSkolemRunSalt() {
+      // Prefer WebCrypto if present (browser/worker)
+      try {
+        const g = typeof globalThis !== 'undefined' ? globalThis : null;
+        if (g && g.crypto) {
+          if (typeof g.crypto.randomUUID === 'function') return g.crypto.randomUUID();
+          if (typeof g.crypto.getRandomValues === 'function') {
+            const a = new Uint8Array(16);
+            g.crypto.getRandomValues(a);
+            return Array.from(a)
+              .map((b) => b.toString(16).padStart(2, '0'))
+              .join('');
           }
-        } else {
-          out = 'L#' + (t.__tid || String(t.value));
         }
-      }
-    } else if (t && t.__tid) {
-      // Iri / Blank and other atomic interned terms
-      out = 'T' + t.__tid;
-    } else if (t instanceof ListTerm) {
-      out = '[' + t.elems.map(termKeyForVisited).join(',') + ']';
-    } else if (t instanceof OpenListTerm) {
-      out = '[open:' + t.prefix.map(termKeyForVisited).join(',') + '|tail:' + t.tailVar + ']';
-    } else if (t instanceof GraphTerm) {
-      out =
-        '{' +
-        t.triples
-          .map((tr) => termKeyForVisited(tr.s) + ' ' + termKeyForVisited(tr.p) + ' ' + termKeyForVisited(tr.o))
-          .join(';') +
-        '}';
-    } else {
-      // Fallback (rare)
-      out = skolemKeyFromTerm(t);
-    }
+      } catch {}
 
-    if (termKeyCache && t && typeof t === 'object') termKeyCache.set(t, out);
-    return out;
-  }
-
-  function tripleKeyForVisited(tr) {
-    return termKeyForVisited(tr.s) + '\t' + termKeyForVisited(tr.p) + '\t' + termKeyForVisited(tr.o);
-  }
-
-  function pushVisitedKey(key) {
-    visitedTrail.push(key);
-    visitedCounts.set(key, (visitedCounts.get(key) || 0) + 1);
-  }
-
-  function undoVisitedKeysTo(mark) {
-    for (let i = visitedTrail.length - 1; i >= mark; i--) {
-      const k = visitedTrail[i];
-      const c = visitedCounts.get(k);
-      if (c === 1) visitedCounts.delete(k);
-      else visitedCounts.set(k, c - 1);
-    }
-    visitedTrail.length = mark;
-  }
-
-  for (const tr of initialVisited) pushVisitedKey(tripleKeyForVisited(tr));
-
-  // ---------------------------------------------------------------------------
-  // In-place unification into the mutable substitution + trail.
-  // ---------------------------------------------------------------------------
-  function bindVarTrail(varName, t) {
-    // t is assumed already substitution-applied (or at least safe to bind).
-    if (Object.prototype.hasOwnProperty.call(substMut, varName)) {
-      return unifyTermTrail(substMut[varName], t);
-    }
-    if (t instanceof Var && t.name === varName) return true;
-    if (containsVarTerm(t, varName)) return false;
-    substMut[varName] = t;
-    trail.push(varName);
-    return true;
-  }
-
-  function unifyOpenWithListTrail(prefix, tailVar, elems) {
-    if (prefix.length > elems.length) return false;
-    for (let i = 0; i < prefix.length; i++) {
-      if (!unifyTermTrail(prefix[i], elems[i])) return false;
-    }
-    const rest = new ListTerm(elems.slice(prefix.length));
-    return bindVarTrail(tailVar, rest);
-  }
-
-  function unifyTermTrail(a, b) {
-    a = applySubstTerm(a, substMut);
-    b = applySubstTerm(b, substMut);
-
-    // Normalize rdf:nil IRI to the empty list term, so it unifies with () and
-    // list builtins treat it consistently.
-    if (a instanceof Iri && a.value === RDF_NIL_IRI) a = EMPTY_LIST_TERM;
-    if (b instanceof Iri && b.value === RDF_NIL_IRI) b = EMPTY_LIST_TERM;
-
-    if (a === b) return true;
-
-    // Variable binding
-    if (a instanceof Var) return bindVarTrail(a.name, b);
-    if (b instanceof Var) return bindVarTrail(b.name, a);
-
-    // Fast path: identical atomic term ids (covers IRI, blank, and string/xsd:string equivalence)
-    if (a.__tid && b.__tid && a.__tid === b.__tid) return true;
-
-    // Exact matches
-    if (a instanceof Iri && b instanceof Iri && a.value === b.value) return true;
-    if (a instanceof Literal && b instanceof Literal && a.value === b.value) return true;
-    if (a instanceof Blank && b instanceof Blank && a.label === b.label) return true;
-
-    // Plain string vs xsd:string equivalence
-    if (a instanceof Literal && b instanceof Literal) {
-      if (literalsEquivalentAsXsdString(a.value, b.value)) return true;
-    }
-
-    // Boolean-value equivalence (matches unifyTerm semantics)
-    if (a instanceof Literal && b instanceof Literal) {
-      const ai = parseBooleanLiteralInfo(a);
-      const bi = parseBooleanLiteralInfo(b);
-      if (ai && bi && ai.value === bi.value) return true;
-    }
-
-    // Numeric-value match (datatype must match; no int<->decimal equivalence here)
-    if (a instanceof Literal && b instanceof Literal) {
-      const ai = parseNumericLiteralInfo(a);
-      const bi = parseNumericLiteralInfo(b);
-      if (ai && bi && ai.dt === bi.dt) {
-        if (ai.kind === 'bigint' && bi.kind === 'bigint') {
-          if (ai.value === bi.value) return true;
-        } else {
-          const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
-          const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
-          if (!Number.isNaN(an) && !Number.isNaN(bn) && an === bn) return true;
+      // Node.js crypto
+      try {
+        if (nodeCrypto) {
+          if (typeof nodeCrypto.randomUUID === 'function') return nodeCrypto.randomUUID();
+          if (typeof nodeCrypto.randomBytes === 'function') return nodeCrypto.randomBytes(16).toString('hex');
         }
+      } catch {}
+
+      // Last-resort fallback (not cryptographically strong)
+      return (
+        Date.now().toString(16) + '-' + Math.random().toString(16).slice(2) + '-' + Math.random().toString(16).slice(2)
+      );
+    }
+
+    function enterReasoningRun() {
+      skolemRunDepth += 1;
+      if (skolemRunDepth === 1) {
+        skolemCache.clear();
+        skolemRunSalt = deterministicSkolemAcrossRuns ? '' : makeSkolemRunSalt();
       }
     }
 
-    // Open list vs concrete list
-    if (a instanceof OpenListTerm && b instanceof ListTerm) {
-      return unifyOpenWithListTrail(a.prefix, a.tailVar, b.elems);
-    }
-    if (a instanceof ListTerm && b instanceof OpenListTerm) {
-      return unifyOpenWithListTrail(b.prefix, b.tailVar, a.elems);
-    }
-
-    // Open list vs open list
-    if (a instanceof OpenListTerm && b instanceof OpenListTerm) {
-      if (a.tailVar !== b.tailVar || a.prefix.length !== b.prefix.length) return false;
-      for (let i = 0; i < a.prefix.length; i++) {
-        if (!unifyTermTrail(a.prefix[i], b.prefix[i])) return false;
+    function exitReasoningRun() {
+      if (skolemRunDepth > 0) skolemRunDepth -= 1;
+      if (skolemRunDepth === 0) {
+        // Clear the salt so a future top-level run gets a fresh one (default mode).
+        skolemRunSalt = null;
       }
-      return true;
     }
 
-    // List terms
-    if (a instanceof ListTerm && b instanceof ListTerm) {
-      if (a.elems.length !== b.elems.length) return false;
-      for (let i = 0; i < a.elems.length; i++) {
-        if (!unifyTermTrail(a.elems[i], b.elems[i])) return false;
+    function skolemIdForKey(key) {
+      if (deterministicSkolemAcrossRuns) return deterministicSkolemIdFromKey(key);
+      // Ensure we have a run salt even if log:skolem is invoked outside forwardChain().
+      if (skolemRunSalt === null) {
+        skolemCache.clear();
+        skolemRunSalt = makeSkolemRunSalt();
       }
-      return true;
+      return deterministicSkolemIdFromKey(skolemRunSalt + '|' + key);
     }
 
-    // Graphs
-    if (a instanceof GraphTerm && b instanceof GraphTerm) {
-      const protectedNames = collectProtectedNamesFromSubst(substMut);
-      if (
-        alphaEqGraphTriples(a.triples, b.triples, {
-          protectedVarsA: protectedNames.protectedVars,
-          protectedVarsB: protectedNames.protectedVars,
-          protectedBlanksA: protectedNames.protectedBlanks,
-          protectedBlanksB: protectedNames.protectedBlanks,
-        })
-      ) {
+    function getDeterministicSkolemEnabled() {
+      return deterministicSkolemAcrossRuns;
+    }
+
+    function setDeterministicSkolemEnabled(v) {
+      deterministicSkolemAcrossRuns = !!v;
+      // Reset per-run state so the new mode takes effect immediately for the next run.
+      if (skolemRunDepth === 0) {
+        skolemRunSalt = null;
+        skolemCache.clear();
+      }
+    }
+
+    // -----------------------------------------------------------------------------
+    // Structural checks
+    // -----------------------------------------------------------------------------
+    // "Strict ground" means the term contains no variables *anywhere*, even inside
+    // quoted formulas. This can be used to cache rule properties safely.
+    function __isStrictGroundTerm(t) {
+      if (t instanceof Var) return false;
+      if (t instanceof Blank) return false;
+      if (t instanceof OpenListTerm) return false;
+
+      if (t instanceof ListTerm) {
+        for (const e of t.elems) if (!__isStrictGroundTerm(e)) return false;
         return true;
       }
-      // Fallback: reuse allocation-heavy graph unifier rarely hit in typical workloads.
-      const delta = unifyGraphTriples(a.triples, b.triples, {});
-      if (delta === null) return false;
-      const mark = trail.length;
-      for (const k in delta) {
-        if (!Object.prototype.hasOwnProperty.call(delta, k)) continue;
-        if (!bindVarTrail(k, delta[k])) {
-          undoTo(mark);
-          return false;
+      if (t instanceof GraphTerm) {
+        for (const tr of t.triples) if (!__isStrictGroundTriple(tr)) return false;
+        return true;
+      }
+      return true; // Iri/Literal and any other atomic terms
+    }
+
+    function __isStrictGroundTriple(tr) {
+      return __isStrictGroundTerm(tr.s) && __isStrictGroundTerm(tr.p) && __isStrictGroundTerm(tr.o);
+    }
+
+    // -----------------------------------------------------------------------------
+    // Rule identity / firing keys
+    // -----------------------------------------------------------------------------
+    // Used to maintain O(1) membership sets for dynamically promoted rules, and to
+    // memoize per-firing head-blank skolemization.
+    function __ruleKey(isForward, isFuse, premise, conclusion, dynamicConclusionTerm /* optional */) {
+      let out = (isForward ? 'F' : 'B') + (isFuse ? '!' : '') + '|P|';
+      for (let i = 0; i < premise.length; i++) {
+        const tr = premise[i];
+        if (i) out += '\n';
+        out += skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
+      }
+      out += '|C|';
+      for (let i = 0; i < conclusion.length; i++) {
+        const tr = conclusion[i];
+        if (i) out += '\n';
+        out += skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
+      }
+      if (dynamicConclusionTerm) {
+        out += '|T|' + skolemKeyFromTerm(dynamicConclusionTerm);
+      }
+      return out;
+    }
+
+    function __firingKey(ruleIndex, instantiatedPremises) {
+      // Deterministic key derived from the instantiated body (ground per substitution).
+      let out = `R${ruleIndex}|`;
+      for (let i = 0; i < instantiatedPremises.length; i++) {
+        const tr = instantiatedPremises[i];
+        if (i) out += '\n';
+        out += skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
+      }
+      return out;
+    }
+
+    // -----------------------------------------------------------------------------
+    // Rule metadata helpers
+    // -----------------------------------------------------------------------------
+    function __ensureRuleKeySet(rules) {
+      if (!hasOwn.call(rules, '__ruleKeySet')) {
+        Object.defineProperty(rules, '__ruleKeySet', {
+          value: new Set(
+            rules.map((r) =>
+              __ruleKey(r.isForward, r.isFuse, r.premise, r.conclusion, r.__dynamicConclusionTerm || null),
+            ),
+          ),
+          enumerable: false,
+          writable: false,
+          configurable: true,
+        });
+      }
+      return rules.__ruleKeySet;
+    }
+
+    function __computeHeadIsStrictGround(r) {
+      if (r.isFuse) return false;
+      // Dynamic heads depend on runtime bindings; treat as non-ground.
+      if (r.__dynamicConclusionTerm) return false;
+      if (r.__fromRulePromotion) return false;
+      if (r.headBlankLabels && r.headBlankLabels.size) return false;
+      for (const tr of r.conclusion) if (!__isStrictGroundTriple(tr)) return false;
+      return true;
+    }
+
+    function __prepareForwardRule(r) {
+      if (!hasOwn.call(r, '__scopedSkipInfo')) {
+        const info = __computeForwardRuleScopedSkipInfo(r);
+        Object.defineProperty(r, '__scopedSkipInfo', {
+          value: info,
+          enumerable: false,
+          writable: false,
+          configurable: true,
+        });
+      }
+      if (!hasOwn.call(r, '__headIsStrictGround')) {
+        Object.defineProperty(r, '__headIsStrictGround', {
+          value: __computeHeadIsStrictGround(r),
+          enumerable: false,
+          writable: false,
+          configurable: true,
+        });
+      }
+    }
+
+    function __graphTriplesOrTrue(term) {
+      if (term instanceof GraphTerm) return term.triples;
+      if (term instanceof Literal && term.value === 'true') return [];
+      return null;
+    }
+
+    // -----------------------------------------------------------------------------
+    // Scoped-closure helpers (log:* builtins)
+    // -----------------------------------------------------------------------------
+    // Parse a 'naturalPriority' used by log:* scoped-closure builtins (e.g., log:collectAllIn).
+    // Accept non-negative integral numeric literals; return null if not parseable.
+    function __logNaturalPriorityFromTerm(t) {
+      if (!(t instanceof Literal)) return null;
+      const info = parseNumericLiteralInfo(t);
+      if (!info) return null;
+
+      if (info.kind === 'integer') {
+        const bi = info.value; // BigInt
+        if (bi < 0n) return null;
+        // clamp to MAX_SAFE_INTEGER (priorities are expected to be small)
+        const max = BigInt(Number.MAX_SAFE_INTEGER);
+        return Number(bi > max ? max : bi);
+      }
+
+      if (info.kind === 'decimal') {
+        const n = info.value; // number
+        if (!Number.isFinite(n)) return null;
+        if (Math.floor(n) !== n) return null;
+        if (n < 0) return null;
+        return n;
+      }
+
+      return null;
+    }
+
+    function __computeMaxScopedClosurePriorityNeeded(forwardRules, backRules) {
+      let maxP = 0;
+
+      function scanTriple(tr) {
+        if (!(tr && tr.p instanceof Iri)) return;
+        const pv = tr.p.value;
+
+        // log:collectAllIn / log:forAllIn use the object position for the priority.
+        if (pv === LOG_NS + 'collectAllIn' || pv === LOG_NS + 'forAllIn') {
+          // Explicit scope graphs are immediate and do not require a closure.
+          if (tr.o instanceof GraphTerm) return;
+          // Variable or non-numeric object => default priority 1 (if used).
+          if (tr.o instanceof Var) {
+            if (maxP < 1) maxP = 1;
+            return;
+          }
+          const p0 = __logNaturalPriorityFromTerm(tr.o);
+          if (p0 !== null) {
+            if (p0 > maxP) maxP = p0;
+          } else {
+            if (maxP < 1) maxP = 1;
+          }
+          return;
         }
+
+        // log:includes / log:notIncludes use the subject position for the priority.
+        if (pv === LOG_NS + 'includes' || pv === LOG_NS + 'notIncludes') {
+          // Explicit scope graphs are immediate and do not require a closure.
+          if (tr.s instanceof GraphTerm) return;
+          // Variable or non-numeric subject => default priority 1 (if used).
+          if (tr.s instanceof Var) {
+            if (maxP < 1) maxP = 1;
+            return;
+          }
+          const p0 = __logNaturalPriorityFromTerm(tr.s);
+          if (p0 !== null) {
+            if (p0 > maxP) maxP = p0;
+          } else {
+            if (maxP < 1) maxP = 1;
+          }
+        }
+      }
+
+      for (const r of forwardRules) {
+        for (const tr of r.premise) scanTriple(tr);
+      }
+      for (const r of backRules) {
+        for (const tr of r.premise) scanTriple(tr);
+      }
+      return maxP;
+    }
+
+    function __termContainsVarName(t, name) {
+      if (t instanceof Var) return t.name === name;
+      if (t instanceof ListTerm) return t.elems.some((e) => __termContainsVarName(e, name));
+      if (t instanceof OpenListTerm) return t.tailVar === name || t.prefix.some((e) => __termContainsVarName(e, name));
+      if (t instanceof GraphTerm)
+        return t.triples.some(
+          (tr) =>
+            __termContainsVarName(tr.s, name) || __termContainsVarName(tr.p, name) || __termContainsVarName(tr.o, name),
+        );
+      return false;
+    }
+
+    function __varOccursElsewhereInPremise(premise, name, idx, field) {
+      for (let i = 0; i < premise.length; i++) {
+        const tr = premise[i];
+        if (!(tr && tr.s && tr.p && tr.o)) continue;
+
+        // Skip the specific scope/priority occurrence we are analyzing.
+        if (!(i === idx && field === 's') && __termContainsVarName(tr.s, name)) return true;
+        if (!(i === idx && field === 'p') && __termContainsVarName(tr.p, name)) return true;
+        if (!(i === idx && field === 'o') && __termContainsVarName(tr.o, name)) return true;
+      }
+      return false;
+    }
+
+    function __computeForwardRuleScopedSkipInfo(rule) {
+      let needsSnap = false;
+      let requiredLevel = 0;
+
+      for (let i = 0; i < rule.premise.length; i++) {
+        const tr = rule.premise[i];
+        if (!(tr && tr.p instanceof Iri)) continue;
+        const pv = tr.p.value;
+
+        if (pv === LOG_NS + 'collectAllIn' || pv === LOG_NS + 'forAllIn') {
+          if (tr.o instanceof GraphTerm) continue; // explicit scope
+          // If scope term is a Var that appears elsewhere, it might be bound to a GraphTerm.
+          // Be conservative and do not skip in that case.
+          if (tr.o instanceof Var) {
+            if (__varOccursElsewhereInPremise(rule.premise, tr.o.name, i, 'o')) return null;
+            needsSnap = true;
+            requiredLevel = Math.max(requiredLevel, 1);
+          } else {
+            needsSnap = true;
+            let prio = 1;
+            const p0 = __logNaturalPriorityFromTerm(tr.o);
+            if (p0 !== null) prio = p0;
+            requiredLevel = Math.max(requiredLevel, prio);
+          }
+          continue;
+        }
+
+        if (pv === LOG_NS + 'includes' || pv === LOG_NS + 'notIncludes') {
+          if (tr.s instanceof GraphTerm) continue; // explicit scope
+          if (tr.s instanceof Var) {
+            if (__varOccursElsewhereInPremise(rule.premise, tr.s.name, i, 's')) return null;
+            needsSnap = true;
+            requiredLevel = Math.max(requiredLevel, 1);
+          } else {
+            needsSnap = true;
+            let prio = 1;
+            const p0 = __logNaturalPriorityFromTerm(tr.s);
+            if (p0 !== null) prio = p0;
+            requiredLevel = Math.max(requiredLevel, prio);
+          }
+        }
+      }
+
+      if (!needsSnap) return { needsSnap: false, requiredLevel: 0 };
+      return { needsSnap: true, requiredLevel };
+    }
+
+    // -----------------------------------------------------------------------------
+    // log:conclusion cache
+    // -----------------------------------------------------------------------------
+    // Cache deductive closure for log:conclusion
+    const __logConclusionCache = new WeakMap(); // GraphTerm -> GraphTerm (deductive closure)
+
+    function __makeRuleFromTerms(left, right, isForward) {
+      // Mirror Parser.makeRule, but usable at runtime (e.g., log:conclusion).
+      let premiseTerm, conclTerm;
+
+      if (isForward) {
+        premiseTerm = left;
+        conclTerm = right;
+      } else {
+        premiseTerm = right;
+        conclTerm = left;
+      }
+
+      let isFuse = false;
+      if (isForward) {
+        if (conclTerm instanceof Literal && conclTerm.value === 'false') {
+          isFuse = true;
+        }
+      }
+
+      // Premise/conclusion terms must be formulas ({ ... }) to contribute triples.
+      // true/false in either position simply means “no triples”.
+      const rawPremise = premiseTerm instanceof GraphTerm ? premiseTerm.triples : [];
+      const rawConclusion = conclTerm instanceof GraphTerm ? conclTerm.triples : [];
+
+      const headBlankLabels = collectBlankLabelsInTriples(rawConclusion);
+      const [premise, conclusion] = liftBlankRuleVars(rawPremise, rawConclusion);
+      return new Rule(premise, conclusion, isForward, isFuse, headBlankLabels);
+    }
+
+    function __computeConclusionFromFormula(formula) {
+      if (!(formula instanceof GraphTerm)) return null;
+
+      const cached = __logConclusionCache.get(formula);
+      if (cached) return cached;
+
+      // Facts start as *all* triples in the formula, including rule triples.
+      const facts2 = formula.triples.slice();
+
+      // Extract rules from rule-triples present inside the formula.
+      const fw = [];
+      const bw = [];
+
+      for (const tr of formula.triples) {
+        // Treat {A} => {B} as a forward rule.
+        if (isLogImplies(tr.p)) {
+          fw.push(__makeRuleFromTerms(tr.s, tr.o, true));
+          continue;
+        }
+
+        // Treat {A} <= {B} as the same rule in the other direction, i.e., {B} => {A},
+        // so it participates in deductive closure even if only <= is used.
+        if (isLogImpliedBy(tr.p)) {
+          fw.push(__makeRuleFromTerms(tr.o, tr.s, true));
+          // Also index it as a backward rule for completeness (helps proveGoals in some cases).
+          bw.push(__makeRuleFromTerms(tr.s, tr.o, false));
+          continue;
+        }
+      }
+
+      // Saturate within this local formula only.
+      forwardChain(facts2, fw, bw);
+
+      const out = new GraphTerm(facts2.slice());
+      __logConclusionCache.set(formula, out);
+      return out;
+    }
+
+    // Controls whether human-readable proof comments are printed.
+    let proofCommentsEnabled = false;
+    // Super restricted mode: disable *all* builtins except => / <= (log:implies / log:impliedBy)
+    let superRestrictedMode = false;
+
+    // Initialize builtin evaluation (implemented in lib/builtins.js).
+    const { evalBuiltin, isBuiltinPred } = makeBuiltins({
+      applySubstTerm,
+      applySubstTriple,
+      unifyTerm,
+      unifyTermListAppend,
+      termsEqual,
+      proveGoals,
+      isGroundTerm,
+      iriValue,
+      skolemIriFromGroundTerm,
+      computeConclusionFromFormula: __computeConclusionFromFormula,
+      getSuperRestrictedMode: () => superRestrictedMode,
+      termFastKey,
+      ensureFactIndexes,
+      termsEqualNoIntDecimal,
+    });
+
+    try {
+      registerBuiltinModule(require('./builtin-sudoku'), './builtin-sudoku');
+    } catch (_) {}
+
+    // Initialize proof/output helpers (implemented in lib/explain.js).
+    const { printExplanation, collectOutputStringsFromFacts } = makeExplain({
+      applySubstTerm,
+      skolemKeyFromTerm,
+    });
+
+    function skolemizeTermForHeadBlanks(t, headBlankLabels, mapping, skCounter, firingKey, globalMap) {
+      if (t instanceof Blank) {
+        const label = t.label;
+        // Only skolemize blanks that occur explicitly in the rule head
+        if (!headBlankLabels || !headBlankLabels.has(label)) {
+          return t; // this is a data blank (e.g. bound via ?X), keep it
+        }
+
+        if (!Object.prototype.hasOwnProperty.call(mapping, label)) {
+          // If we have a global cache keyed by firingKey, use it to ensure
+          // deterministic blank IDs for the same rule+substitution instance.
+          if (globalMap && firingKey) {
+            const gk = `${firingKey}|${label}`;
+            let sk = globalMap.get(gk);
+            if (!sk) {
+              const idx = skCounter[0];
+              skCounter[0] += 1;
+              sk = `_:sk_${idx}`;
+              globalMap.set(gk, sk);
+            }
+            mapping[label] = sk;
+          } else {
+            const idx = skCounter[0];
+            skCounter[0] += 1;
+            mapping[label] = `_:sk_${idx}`;
+          }
+        }
+        return new Blank(mapping[label]);
+      }
+
+      if (t instanceof ListTerm) {
+        return new ListTerm(
+          t.elems.map((e) => skolemizeTermForHeadBlanks(e, headBlankLabels, mapping, skCounter, firingKey, globalMap)),
+        );
+      }
+
+      if (t instanceof OpenListTerm) {
+        return new OpenListTerm(
+          t.prefix.map((e) => skolemizeTermForHeadBlanks(e, headBlankLabels, mapping, skCounter, firingKey, globalMap)),
+          t.tailVar,
+        );
+      }
+
+      if (t instanceof GraphTerm) {
+        return new GraphTerm(
+          t.triples.map((tr) =>
+            skolemizeTripleForHeadBlanks(tr, headBlankLabels, mapping, skCounter, firingKey, globalMap),
+          ),
+        );
+      }
+
+      return t;
+    }
+
+    function skolemizeTripleForHeadBlanks(tr, headBlankLabels, mapping, skCounter, firingKey, globalMap) {
+      return new Triple(
+        skolemizeTermForHeadBlanks(tr.s, headBlankLabels, mapping, skCounter, firingKey, globalMap),
+        skolemizeTermForHeadBlanks(tr.p, headBlankLabels, mapping, skCounter, firingKey, globalMap),
+        skolemizeTermForHeadBlanks(tr.o, headBlankLabels, mapping, skCounter, firingKey, globalMap),
+      );
+    }
+
+    // ===========================================================================
+    // Alpha equivalence helpers
+    // ===========================================================================
+
+    function termsEqual(a, b) {
+      if (a === b) return true;
+      if (!a || !b) return false;
+      if (a.__tid && b.__tid && a.__tid === b.__tid) return true;
+
+      // rdf:nil is equivalent to the empty list ()
+      if (a instanceof Iri && a.value === RDF_NIL_IRI && b instanceof ListTerm && b.elems.length === 0) return true;
+      if (b instanceof Iri && b.value === RDF_NIL_IRI && a instanceof ListTerm && a.elems.length === 0) return true;
+      if (a.constructor !== b.constructor) return false;
+
+      if (a instanceof Iri) return a.value === b.value;
+
+      if (a instanceof Literal) {
+        if (a.value === b.value) return true;
+
+        // Plain "abc" == "abc"^^xsd:string (but not language-tagged strings)
+        if (literalsEquivalentAsXsdString(a.value, b.value)) return true;
+
+        // Keep in sync with unifyTerm(): numeric-value equality, datatype-aware.
+        const ai = parseNumericLiteralInfo(a);
+        const bi = parseNumericLiteralInfo(b);
+
+        if (ai && bi) {
+          // Same datatype => compare values
+          if (ai.dt === bi.dt) {
+            if (ai.kind === 'bigint' && bi.kind === 'bigint') return ai.value === bi.value;
+
+            const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
+            const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
+            return !Number.isNaN(an) && !Number.isNaN(bn) && an === bn;
+          }
+        }
+
+        return false;
+      }
+
+      if (a instanceof Var) return a.name === b.name;
+      if (a instanceof Blank) return a.label === b.label;
+
+      if (a instanceof ListTerm) {
+        if (a.elems.length !== b.elems.length) return false;
+        for (let i = 0; i < a.elems.length; i++) {
+          if (!termsEqual(a.elems[i], b.elems[i])) return false;
+        }
+        return true;
+      }
+
+      if (a instanceof OpenListTerm) {
+        if (a.tailVar !== b.tailVar) return false;
+        if (a.prefix.length !== b.prefix.length) return false;
+        for (let i = 0; i < a.prefix.length; i++) {
+          if (!termsEqual(a.prefix[i], b.prefix[i])) return false;
+        }
+        return true;
+      }
+
+      if (a instanceof GraphTerm) {
+        return alphaEqGraphTriples(a.triples, b.triples);
+      }
+
+      return false;
+    }
+
+    function termsEqualNoIntDecimal(a, b) {
+      if (a === b) return true;
+      if (!a || !b) return false;
+      if (a.__tid && b.__tid && a.__tid === b.__tid) return true;
+
+      // rdf:nil is equivalent to the empty list ()
+      if (a instanceof Iri && a.value === RDF_NIL_IRI && b instanceof ListTerm && b.elems.length === 0) return true;
+      if (b instanceof Iri && b.value === RDF_NIL_IRI && a instanceof ListTerm && a.elems.length === 0) return true;
+      if (a.constructor !== b.constructor) return false;
+
+      if (a instanceof Iri) return a.value === b.value;
+
+      if (a instanceof Literal) {
+        if (a.value === b.value) return true;
+
+        // Plain "abc" == "abc"^^xsd:string (but not language-tagged)
+        if (literalsEquivalentAsXsdString(a.value, b.value)) return true;
+
+        // Numeric equality ONLY when datatypes agree (no integer<->decimal here)
+        const ai = parseNumericLiteralInfo(a);
+        const bi = parseNumericLiteralInfo(b);
+        if (ai && bi && ai.dt === bi.dt) {
+          // integer: exact bigint
+          if (ai.kind === 'bigint' && bi.kind === 'bigint') return ai.value === bi.value;
+
+          // decimal: compare exactly via num/scale if possible
+          if (ai.dt === XSD_NS + 'decimal') {
+            const da = parseXsdDecimalToBigIntScale(ai.lexStr);
+            const db = parseXsdDecimalToBigIntScale(bi.lexStr);
+            if (da && db) {
+              const scale = Math.max(da.scale, db.scale);
+              const na = da.num * pow10n(scale - da.scale);
+              const nb = db.num * pow10n(scale - db.scale);
+              return na === nb;
+            }
+          }
+
+          // double/float-ish: JS number (same as your normal same-dt path)
+          const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
+          const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
+          return !Number.isNaN(an) && !Number.isNaN(bn) && an === bn;
+        }
+
+        return false;
+      }
+
+      if (a instanceof Var) return a.name === b.name;
+      if (a instanceof Blank) return a.label === b.label;
+
+      if (a instanceof ListTerm) {
+        if (a.elems.length !== b.elems.length) return false;
+        for (let i = 0; i < a.elems.length; i++) {
+          if (!termsEqualNoIntDecimal(a.elems[i], b.elems[i])) return false;
+        }
+        return true;
+      }
+
+      if (a instanceof OpenListTerm) {
+        if (a.tailVar !== b.tailVar) return false;
+        if (a.prefix.length !== b.prefix.length) return false;
+        for (let i = 0; i < a.prefix.length; i++) {
+          if (!termsEqualNoIntDecimal(a.prefix[i], b.prefix[i])) return false;
+        }
+        return true;
+      }
+
+      if (a instanceof GraphTerm) {
+        return alphaEqGraphTriples(a.triples, b.triples);
+      }
+
+      return false;
+    }
+
+    function triplesEqual(a, b) {
+      return termsEqual(a.s, b.s) && termsEqual(a.p, b.p) && termsEqual(a.o, b.o);
+    }
+
+    function triplesListEqual(xs, ys) {
+      if (xs.length !== ys.length) return false;
+      for (let i = 0; i < xs.length; i++) {
+        if (!triplesEqual(xs[i], ys[i])) return false;
       }
       return true;
     }
 
-    return false;
-  }
-
-  function unifyTripleTrail(pat, fact) {
-    // Predicates are usually the cheapest and most selective
-    if (!unifyTermTrail(pat.p, fact.p)) return false;
-    if (!unifyTermTrail(pat.s, fact.s)) return false;
-    if (!unifyTermTrail(pat.o, fact.o)) return false;
-    return true;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Iterative DFS execution
-  // ---------------------------------------------------------------------------
-  // Frame kinds:
-  //  - node: process a goal list
-  //  - undo: backtrack to a prior (subst trail mark, visited mark)
-  //  - ruleIter: iterate candidate backward rules for one goal
-  //  - factIter: iterate candidate facts for one goal
-  //  - deltaIter: iterate builtin deltas for one goal
-  const stack = [];
-  stack.push({
-    kind: 'node',
-    goalsNow: initialGoals,
-    curDepth: depth || 0,
-    canDeferBuiltins: allowDeferredBuiltins,
-    deferCount: 0,
-  });
-
-  while (stack.length && results.length < max) {
-    const frame = stack.pop();
-
-    if (frame.kind === 'undo') {
-      undoTo(frame.substMark);
-      undoVisitedKeysTo(frame.visitedMark);
-      continue;
-    }
-
-    if (frame.kind === 'deltaIter') {
-      const deltas = frame.deltas;
-      while (frame.idx < deltas.length && results.length < max) {
-        const delta = deltas[frame.idx++];
-        const mark = trail.length;
-        if (!applyDeltaToSubst(delta)) {
-          undoTo(mark);
-          continue;
-        }
-
-        if (!frame.restGoals.length) {
-          results.push(gcCompactForGoals(substMut, [], answerVars));
-          undoTo(mark);
-          if (results.length >= max) return results;
-          continue;
-        }
-
-        // Continue with remaining goals under this delta, then backtrack, then resume delta iteration.
-        stack.push(frame);
-        stack.push({ kind: 'undo', substMark: mark, visitedMark: visitedTrail.length });
-        stack.push({
-          kind: 'node',
-          goalsNow: frame.restGoals,
-          curDepth: frame.curDepth + 1,
-          canDeferBuiltins: frame.canDeferBuiltins,
-          deferCount: 0,
-        });
-        break;
+    function collectProtectedNamesInTerm(t, protectedVars, protectedBlanks) {
+      if (t instanceof Var) {
+        protectedVars.add(t.name);
+        return;
       }
-      continue;
+      if (t instanceof Blank) {
+        protectedBlanks.add(t.label);
+        return;
+      }
+      if (t instanceof ListTerm) {
+        for (const e of t.elems) collectProtectedNamesInTerm(e, protectedVars, protectedBlanks);
+        return;
+      }
+      if (t instanceof OpenListTerm) {
+        for (const e of t.prefix) collectProtectedNamesInTerm(e, protectedVars, protectedBlanks);
+        protectedVars.add(t.tailVar);
+        return;
+      }
+      if (t instanceof GraphTerm) {
+        for (const tr of t.triples) {
+          collectProtectedNamesInTerm(tr.s, protectedVars, protectedBlanks);
+          collectProtectedNamesInTerm(tr.p, protectedVars, protectedBlanks);
+          collectProtectedNamesInTerm(tr.o, protectedVars, protectedBlanks);
+        }
+      }
     }
 
-    if (frame.kind === 'ruleIter') {
-      const rules = frame.rules;
-      while (frame.idx < rules.length && results.length < max) {
-        const r = rules[frame.idx++];
-        if (r.conclusion.length !== 1) continue;
-        const rawHead = r.conclusion[0];
-        if (rawHead.p instanceof Iri && rawHead.p.__tid !== frame.goalPtid) continue;
+    function collectProtectedNamesFromSubst(subst) {
+      const protectedVars = new Set();
+      const protectedBlanks = new Set();
+      if (!subst) return { protectedVars, protectedBlanks };
+      for (const k in subst) {
+        if (!Object.prototype.hasOwnProperty.call(subst, k)) continue;
+        collectProtectedNamesInTerm(subst[k], protectedVars, protectedBlanks);
+      }
+      return { protectedVars, protectedBlanks };
+    }
 
-        const rStd = standardizeRule(r, varGen);
-        const head = rStd.conclusion[0];
+    // Alpha-equivalence for quoted formulas, up to *local* variable and blank-node renaming.
+    // Terms that originate from the surrounding substitution are treated as fixed and are
+    // therefore not alpha-renamable inside the quoted formula.
+    // Treats a formula as an unordered set of triples (order-insensitive match).
+    function alphaEqVarName(x, y, vmap, protectedVarsA, protectedVarsB) {
+      const xProtected = protectedVarsA && protectedVarsA.has(x);
+      const yProtected = protectedVarsB && protectedVarsB.has(y);
+      if (xProtected || yProtected) return xProtected && yProtected && x === y;
+      if (Object.prototype.hasOwnProperty.call(vmap, x)) return vmap[x] === y;
+      vmap[x] = y;
+      return true;
+    }
 
-        const mark = trail.length;
-        if (!unifyTripleTrail(head, frame.goal0)) {
-          undoTo(mark);
+    function alphaEqBlankLabel(x, y, bmap, protectedBlanksA, protectedBlanksB) {
+      const xProtected = protectedBlanksA && protectedBlanksA.has(x);
+      const yProtected = protectedBlanksB && protectedBlanksB.has(y);
+      if (xProtected || yProtected) return xProtected && yProtected && x === y;
+      if (Object.prototype.hasOwnProperty.call(bmap, x)) return bmap[x] === y;
+      bmap[x] = y;
+      return true;
+    }
+
+    function alphaEqTermInGraph(a, b, vmap, bmap, opts) {
+      const protectedVarsA = opts && opts.protectedVarsA;
+      const protectedVarsB = opts && opts.protectedVarsB;
+      const protectedBlanksA = opts && opts.protectedBlanksA;
+      const protectedBlanksB = opts && opts.protectedBlanksB;
+
+      // Blank nodes: renamable only when they are local to the formula.
+      if (a instanceof Blank && b instanceof Blank) {
+        return alphaEqBlankLabel(a.label, b.label, bmap, protectedBlanksA, protectedBlanksB);
+      }
+
+      // Variables: renamable only when they are local to the formula.
+      if (a instanceof Var && b instanceof Var) {
+        return alphaEqVarName(a.name, b.name, vmap, protectedVarsA, protectedVarsB);
+      }
+
+      if (a instanceof Iri && b instanceof Iri) return a.value === b.value;
+      if (a instanceof Literal && b instanceof Literal) return a.value === b.value;
+
+      if (a instanceof ListTerm && b instanceof ListTerm) {
+        if (a.elems.length !== b.elems.length) return false;
+        for (let i = 0; i < a.elems.length; i++) {
+          if (!alphaEqTermInGraph(a.elems[i], b.elems[i], vmap, bmap, opts)) return false;
+        }
+        return true;
+      }
+
+      if (a instanceof OpenListTerm && b instanceof OpenListTerm) {
+        if (a.prefix.length !== b.prefix.length) return false;
+        for (let i = 0; i < a.prefix.length; i++) {
+          if (!alphaEqTermInGraph(a.prefix[i], b.prefix[i], vmap, bmap, opts)) return false;
+        }
+        // tailVar is a var-name string, so treat it as renamable too when local.
+        return alphaEqVarName(a.tailVar, b.tailVar, vmap, protectedVarsA, protectedVarsB);
+      }
+
+      // Nested formulas: compare with fresh maps (separate scope), but keep the same
+      // protected outer names so already-substituted terms stay fixed everywhere.
+      if (a instanceof GraphTerm && b instanceof GraphTerm) {
+        return alphaEqGraphTriples(a.triples, b.triples, opts);
+      }
+
+      return false;
+    }
+
+    function alphaEqTripleInGraph(a, b, vmap, bmap, opts) {
+      return (
+        alphaEqTermInGraph(a.s, b.s, vmap, bmap, opts) &&
+        alphaEqTermInGraph(a.p, b.p, vmap, bmap, opts) &&
+        alphaEqTermInGraph(a.o, b.o, vmap, bmap, opts)
+      );
+    }
+
+    function alphaEqGraphTriples(xs, ys, opts) {
+      if (xs.length !== ys.length) return false;
+      // Fast path: exact same sequence.
+      if (triplesListEqual(xs, ys)) return true;
+
+      // Order-insensitive backtracking match, threading var/blank mappings.
+      const used = new Array(ys.length).fill(false);
+
+      function step(i, vmap, bmap) {
+        if (i >= xs.length) return true;
+        const x = xs[i];
+        for (let j = 0; j < ys.length; j++) {
+          if (used[j]) continue;
+          const y = ys[j];
+          // Cheap pruning when both predicates are IRIs.
+          if (x.p instanceof Iri && y.p instanceof Iri && x.p.value !== y.p.value) continue;
+
+          const v2 = { ...vmap };
+          const b2 = { ...bmap };
+          if (!alphaEqTripleInGraph(x, y, v2, b2, opts)) continue;
+
+          used[j] = true;
+          if (step(i + 1, v2, b2)) return true;
+          used[j] = false;
+        }
+        return false;
+      }
+
+      return step(0, {}, {});
+    }
+
+    // ===========================================================================
+    // Indexes (facts + backward rules)
+    // ===========================================================================
+    //
+    // Facts:
+    //   - __byPred: Map<predicateId, number[]>   (indices into facts array)
+    //   - __byPS:   Map<predicateId, Map<subjectId, number[]>>
+    //   - __byPO:   Map<predicateId, Map<objectId, number[]>>
+    //   - __keySet: Set<"S\tP\tO"> for Iri/Literal/Blank-only triples (fast dup check)
+    //
+    // Backward rules:
+    //   - __byHeadPred:   Map<headPredicateId, Rule[]>
+    //   - __wildHeadPred: Rule[] (non-IRI head predicate)
+
+    // Compound-term fast-key interning.
+    // Used to index strict-ground list literals without relying on object identity.
+    //
+    // This is a major performance win for N3 programs that use compound terms
+    // (especially lists) as subjects/objects, e.g. tabling-style encodings.
+    const __compoundKeyToTid = new Map();
+    // Use a negative id space so we never collide with __tid (which is positive).
+    let __nextCompoundTid = -1;
+
+    function __internCompoundTid(key) {
+      const hit = __compoundKeyToTid.get(key);
+      if (hit !== undefined) return hit;
+      const id = __nextCompoundTid--;
+      __compoundKeyToTid.set(key, id);
+      return id;
+    }
+
+    function termFastKey(t) {
+      // Atomic terms that already have a stable id.
+      if (t instanceof Iri || t instanceof Blank) return t.__tid;
+
+      if (t instanceof Literal) {
+        // Very large literals intentionally skip global interning in prelude.js to
+        // avoid retaining huge strings forever. Their per-object __tid is therefore
+        // not value-stable, so using it here breaks duplicate detection for facts
+        // such as long log:outputString blocks that are re-derived during forward
+        // chaining. Fall back to a value-based key in that case.
+        const norm = normalizeLiteralForTid(t.value);
+        if (typeof norm === 'string' && norm.length > MAX_LITERAL_TID_LEN) return 'L:' + norm;
+        return t.__tid;
+      }
+
+      // Structural fast key for strict-ground list terms.
+      // We only index when every element has a fast key; otherwise return null.
+      if (t instanceof ListTerm) {
+        const cached = t.__ftid;
+        if (cached !== undefined) return cached;
+
+        const xs = t.elems;
+        const parts = new Array(xs.length);
+        for (let i = 0; i < xs.length; i++) {
+          const k = termFastKey(xs[i]);
+          if (k === null) return null;
+          parts[i] = k;
+        }
+
+        // Use a compact separator; include length to avoid edge-case collisions.
+        const key = 'L' + xs.length + '\u0001' + parts.join('\u0001');
+        const id = __internCompoundTid(key);
+
+        // Cache on the list object itself (lists are immutable in Eyeling).
+        Object.defineProperty(t, '__ftid', { value: id, enumerable: false });
+        return id;
+      }
+
+      return null;
+    }
+
+    function tripleFastKey(tr) {
+      const ks = termFastKey(tr.s);
+      const kp = termFastKey(tr.p);
+      const ko = termFastKey(tr.o);
+      if (ks === null || kp === null || ko === null) return null;
+      return ks + '\t' + kp + '\t' + ko;
+    }
+
+    function ensureFactIndexes(facts) {
+      if (
+        facts.__byPred &&
+        facts.__byPS &&
+        facts.__byPO &&
+        facts.__wildPred &&
+        facts.__wildPS &&
+        facts.__wildPO &&
+        facts.__keySet
+      )
+        return;
+
+      Object.defineProperty(facts, '__byPred', {
+        value: new Map(),
+        enumerable: false,
+        writable: true,
+      });
+      Object.defineProperty(facts, '__byPS', {
+        value: new Map(),
+        enumerable: false,
+        writable: true,
+      });
+      Object.defineProperty(facts, '__byPO', {
+        value: new Map(),
+        enumerable: false,
+        writable: true,
+      });
+      Object.defineProperty(facts, '__wildPred', {
+        value: [],
+        enumerable: false,
+        writable: true,
+      });
+      Object.defineProperty(facts, '__wildPS', {
+        value: new Map(),
+        enumerable: false,
+        writable: true,
+      });
+      Object.defineProperty(facts, '__wildPO', {
+        value: new Map(),
+        enumerable: false,
+        writable: true,
+      });
+      Object.defineProperty(facts, '__keySet', {
+        value: new Set(),
+        enumerable: false,
+        writable: true,
+      });
+
+      for (let i = 0; i < facts.length; i++) indexFact(facts, facts[i], i);
+    }
+
+    function indexFact(facts, tr, idx) {
+      const sk = termFastKey(tr.s);
+      const ok = termFastKey(tr.o);
+
+      if (tr.p instanceof Iri) {
+        // Use predicate term id as the primary key to avoid hashing long IRI strings.
+        const pk = tr.p.__tid;
+
+        let pb = facts.__byPred.get(pk);
+        if (!pb) {
+          pb = [];
+          facts.__byPred.set(pk, pb);
+        }
+        pb.push(idx);
+
+        if (sk !== null) {
+          let ps = facts.__byPS.get(pk);
+          if (!ps) {
+            ps = new Map();
+            facts.__byPS.set(pk, ps);
+          }
+          let psb = ps.get(sk);
+          if (!psb) {
+            psb = [];
+            ps.set(sk, psb);
+          }
+          psb.push(idx);
+        }
+
+        if (ok !== null) {
+          let po = facts.__byPO.get(pk);
+          if (!po) {
+            po = new Map();
+            facts.__byPO.set(pk, po);
+          }
+          let pob = po.get(ok);
+          if (!pob) {
+            pob = [];
+            po.set(ok, pob);
+          }
+          pob.push(idx);
+        }
+      } else {
+        facts.__wildPred.push(idx);
+
+        if (sk !== null) {
+          let psb = facts.__wildPS.get(sk);
+          if (!psb) {
+            psb = [];
+            facts.__wildPS.set(sk, psb);
+          }
+          psb.push(idx);
+        }
+
+        if (ok !== null) {
+          let pob = facts.__wildPO.get(ok);
+          if (!pob) {
+            pob = [];
+            facts.__wildPO.set(ok, pob);
+          }
+          pob.push(idx);
+        }
+      }
+
+      const key = tripleFastKey(tr);
+      if (key !== null) facts.__keySet.add(key);
+    }
+
+    function candidateFacts(facts, goal) {
+      ensureFactIndexes(facts);
+
+      if (goal.p instanceof Iri) {
+        const pk = goal.p.__tid;
+
+        const sk = termFastKey(goal.s);
+        const ok = termFastKey(goal.o);
+
+        /** @type {number[] | null} */
+        let byPS = null;
+        if (sk !== null) {
+          const ps = facts.__byPS.get(pk);
+          if (ps) byPS = ps.get(sk) || null;
+        }
+
+        /** @type {number[] | null} */
+        let byPO = null;
+        if (ok !== null) {
+          const po = facts.__byPO.get(pk);
+          if (po) byPO = po.get(ok) || null;
+        }
+
+        let exact = null;
+        if (byPS && byPO) exact = byPS.length <= byPO.length ? byPS : byPO;
+        else if (byPS) exact = byPS;
+        else if (byPO) exact = byPO;
+        else exact = facts.__byPred.get(pk) || null;
+
+        /** @type {number[] | null} */
+        let wildPS = null;
+        if (sk !== null) wildPS = facts.__wildPS.get(sk) || null;
+
+        /** @type {number[] | null} */
+        let wildPO = null;
+        if (ok !== null) wildPO = facts.__wildPO.get(ok) || null;
+
+        let wild = null;
+        if (wildPS && wildPO) wild = wildPS.length <= wildPO.length ? wildPS : wildPO;
+        else if (wildPS) wild = wildPS;
+        else if (wildPO) wild = wildPO;
+        else wild = facts.__wildPred.length ? facts.__wildPred : null;
+
+        return {
+          exact: exact || null,
+          wild: wild || null,
+          exactLen: exact ? exact.length : 0,
+          wildLen: wild ? wild.length : 0,
+          totalLen: (exact ? exact.length : 0) + (wild ? wild.length : 0),
+        };
+      }
+
+      return null;
+    }
+
+    function hasFactIndexed(facts, tr) {
+      ensureFactIndexes(facts);
+
+      const key = tripleFastKey(tr);
+      if (key !== null) return facts.__keySet.has(key);
+
+      if (tr.p instanceof Iri) {
+        const pk = tr.p.__tid;
+
+        const ok = termFastKey(tr.o);
+        if (ok !== null) {
+          const po = facts.__byPO.get(pk);
+          if (po) {
+            const pob = po.get(ok) || [];
+            // Facts are all in the same graph. Different blank node labels represent
+            // different existentials unless explicitly connected. Do NOT treat
+            // triples as duplicates modulo blank renaming, or you'll incorrectly
+            // drop facts like: _:sk_0 :x 8.0  (because _:b8 :x 8.0 exists).
+            return pob.some((i) => triplesEqual(facts[i], tr));
+          }
+        }
+
+        const pb = facts.__byPred.get(pk) || [];
+        return pb.some((i) => triplesEqual(facts[i], tr));
+      }
+
+      // Non-IRI predicate: fall back to strict triple equality.
+      return facts.some((t) => triplesEqual(t, tr));
+    }
+
+    function pushFactIndexed(facts, tr) {
+      ensureFactIndexes(facts);
+      const idx = facts.length;
+      facts.push(tr);
+      indexFact(facts, tr, idx);
+    }
+
+    function makeDerivedRecord(fact, rule, premises, subst, captureExplanations) {
+      if (captureExplanations === false) return { fact };
+      return new DerivedFact(fact, rule, premises.slice(), { ...subst });
+    }
+
+    function ensureBackRuleIndexes(backRules) {
+      if (backRules.__byHeadPred && backRules.__wildHeadPred) return;
+
+      Object.defineProperty(backRules, '__byHeadPred', {
+        value: new Map(),
+        enumerable: false,
+        writable: true,
+      });
+      Object.defineProperty(backRules, '__wildHeadPred', {
+        value: [],
+        enumerable: false,
+        writable: true,
+      });
+
+      for (const r of backRules) indexBackRule(backRules, r);
+    }
+
+    function indexBackRule(backRules, r) {
+      if (!r || !r.conclusion || r.conclusion.length !== 1) return;
+      const head = r.conclusion[0];
+      if (head && head.p instanceof Iri) {
+        const k = head.p.__tid;
+        let bucket = backRules.__byHeadPred.get(k);
+        if (!bucket) {
+          bucket = [];
+          backRules.__byHeadPred.set(k, bucket);
+        }
+        bucket.push(r);
+      } else {
+        backRules.__wildHeadPred.push(r);
+      }
+    }
+
+    function isSinglePremiseAgendaRuleSafe(r, backRules) {
+      if (!r || r.isFuse || !Array.isArray(r.premise) || r.premise.length !== 1) return false;
+
+      // Keep agenda firing restricted to rules whose observable output order is
+      // already stable in the legacy engine. Dynamic heads and head-blank
+      // skolemization are deliberately left on the old path so example outputs keep
+      // the same derived blank labels and rule-promotion behavior.
+      if (r.__dynamicConclusionTerm) return false;
+      if (r.__fromRulePromotion) return false;
+      if (r.headBlankLabels && r.headBlankLabels.size) return false;
+
+      const goal = r.premise[0];
+
+      // Builtin-only bodies need the normal proveGoals path because they can
+      // succeed without matching an extensional fact and may depend on scoped state.
+      if (isBuiltinPred(goal.p)) return false;
+
+      // Safe only when the sole premise cannot be satisfied via backward rules.
+      // Otherwise matching just against newly-seen facts would be incomplete.
+      ensureBackRuleIndexes(backRules);
+      if (goal.p instanceof Iri) {
+        if ((backRules.__byHeadPred.get(goal.p.__tid) || []).length) return false;
+        if (backRules.__wildHeadPred.length) return false;
+        return true;
+      }
+
+      return backRules.__wildHeadPred.length === 0;
+    }
+
+    function mergeSinglePremiseAgendaBuckets() {
+      let out = null;
+      let seen = null;
+
+      for (let i = 0; i < arguments.length; i++) {
+        const bucket = arguments[i];
+        if (!bucket || bucket.length === 0) continue;
+
+        if (out === null) {
+          out = bucket.length === 1 ? [bucket[0]] : bucket.slice();
+          if (bucket.length > 1) seen = new Set(out);
           continue;
         }
 
-        // If this goal is already on the ancestor chain, avoid picking rules
-        // whose premises would immediately re-enter any already-visited goal.
-        // This cheap guard restores completeness for cases like issue #9 while
-        // still preventing trivial non-termination in mutually recursive rule
-        // cycles.
-        if (frame.goalWasVisited && rStd.premise && rStd.premise.length) {
-          let hasCycle = false;
-          for (let i = 0; i < rStd.premise.length; i++) {
-            const premKey = tripleKeyForVisited(applySubstTriple(rStd.premise[i], substMut));
-            if (visitedCounts.has(premKey)) {
-              hasCycle = true;
+        if (!seen) seen = new Set(out);
+        for (let j = 0; j < bucket.length; j++) {
+          const entry = bucket[j];
+          if (seen.has(entry)) continue;
+          seen.add(entry);
+          out.push(entry);
+        }
+      }
+
+      return out;
+    }
+
+    function makeSinglePremiseAgendaIndex(forwardRules, backRules) {
+      const index = {
+        byPred: new Map(),
+        byPS: new Map(),
+        byPO: new Map(),
+        wildPred: [],
+        wildPS: new Map(),
+        wildPO: new Map(),
+        indexed: new Set(),
+        size: 0,
+      };
+
+      function addToMapArray(m, k, v) {
+        let bucket = m.get(k);
+        if (!bucket) {
+          bucket = [];
+          m.set(k, bucket);
+        }
+        bucket.push(v);
+      }
+
+      for (let i = 0; i < forwardRules.length; i++) {
+        const r = forwardRules[i];
+        if (!isSinglePremiseAgendaRuleSafe(r, backRules)) continue;
+
+        const goal = r.premise[0];
+        const entry = {
+          rule: r,
+          ruleIndex: i,
+          goal,
+          goalPredTid: goal.p instanceof Iri ? goal.p.__tid : null,
+          goalSKey: termFastKey(goal.s),
+          goalOKey: termFastKey(goal.o),
+        };
+
+        index.indexed.add(r);
+        index.size += 1;
+
+        if (entry.goalPredTid !== null) {
+          if (entry.goalSKey === null && entry.goalOKey === null) addToMapArray(index.byPred, entry.goalPredTid, entry);
+          if (entry.goalSKey !== null) {
+            let ps = index.byPS.get(entry.goalPredTid);
+            if (!ps) {
+              ps = new Map();
+              index.byPS.set(entry.goalPredTid, ps);
+            }
+            addToMapArray(ps, entry.goalSKey, entry);
+          }
+          if (entry.goalOKey !== null) {
+            let po = index.byPO.get(entry.goalPredTid);
+            if (!po) {
+              po = new Map();
+              index.byPO.set(entry.goalPredTid, po);
+            }
+            addToMapArray(po, entry.goalOKey, entry);
+          }
+        } else {
+          if (entry.goalSKey === null && entry.goalOKey === null) index.wildPred.push(entry);
+          if (entry.goalSKey !== null) addToMapArray(index.wildPS, entry.goalSKey, entry);
+          if (entry.goalOKey !== null) addToMapArray(index.wildPO, entry.goalOKey, entry);
+        }
+      }
+
+      return index;
+    }
+
+    function getSinglePremiseAgendaCandidates(index, fact) {
+      if (!index || index.size === 0) return null;
+
+      const sk = termFastKey(fact.s);
+      const ok = termFastKey(fact.o);
+
+      let exact = null;
+      if (fact.p instanceof Iri) {
+        const pk = fact.p.__tid;
+        const byPred = index.byPred.get(pk) || null;
+        let byPS = null;
+        if (sk !== null) {
+          const ps = index.byPS.get(pk);
+          if (ps) byPS = ps.get(sk) || null;
+        }
+        let byPO = null;
+        if (ok !== null) {
+          const po = index.byPO.get(pk);
+          if (po) byPO = po.get(ok) || null;
+        }
+
+        exact = mergeSinglePremiseAgendaBuckets(byPred, byPS, byPO);
+      }
+
+      const wildPred = index.wildPred.length ? index.wildPred : null;
+      let wildPS = null;
+      if (sk !== null) wildPS = index.wildPS.get(sk) || null;
+
+      let wildPO = null;
+      if (ok !== null) wildPO = index.wildPO.get(ok) || null;
+
+      const wild = mergeSinglePremiseAgendaBuckets(wildPred, wildPS, wildPO);
+
+      if (!exact && !wild) return null;
+      return { exact, wild, exactLen: exact ? exact.length : 0, wildLen: wild ? wild.length : 0 };
+    }
+
+    // ===========================================================================
+    // Special predicate helpers
+    // ===========================================================================
+
+    function isLogImplies(p) {
+      return p instanceof Iri && p.value === LOG_NS + 'implies';
+    }
+
+    function isLogImpliedBy(p) {
+      return p instanceof Iri && p.value === LOG_NS + 'impliedBy';
+    }
+
+    // ===========================================================================
+    // Completed-goal answer tables (minimal tabling)
+    // ===========================================================================
+    //
+    // This is intentionally conservative:
+    //   - only *completed* answer sets are cached
+    //   - pending goals are never exposed
+    //   - cache entries are invalidated whenever facts, backward rules, or the
+    //     scoped-snapshot context change
+    //
+    // So this improves reuse across repeated backward proofs without changing the
+    // semantics of recursive goals.
+
+    function goalTableScopeVersion(facts, backRules) {
+      const factCount = Array.isArray(facts) ? facts.length : 0;
+      const backRuleCount = Array.isArray(backRules) ? backRules.length : 0;
+      const scopedLevel = facts && typeof facts.__scopedClosureLevel === 'number' ? facts.__scopedClosureLevel : 0;
+      const hasScopedSnapshot = facts && facts.__scopedSnapshot ? 1 : 0;
+      return `${factCount}|${backRuleCount}|${scopedLevel}|${hasScopedSnapshot}`;
+    }
+
+    function __makeGoalTable() {
+      return {
+        scopeVersion: null,
+        entries: new Map(),
+      };
+    }
+
+    function __attachGoalTable(scopeCarrier, goalTable) {
+      if (!scopeCarrier) return goalTable;
+      if (!hasOwn.call(scopeCarrier, 'goalTable')) {
+        Object.defineProperty(scopeCarrier, 'goalTable', {
+          value: goalTable,
+          enumerable: false,
+          writable: true,
+          configurable: true,
+        });
+      } else {
+        scopeCarrier.goalTable = goalTable;
+      }
+      return goalTable;
+    }
+
+    function __ensureGoalTable(facts, backRules) {
+      let table = (facts && facts.goalTable) || (backRules && backRules.goalTable) || null;
+      if (!table) table = __makeGoalTable();
+      __attachGoalTable(facts, table);
+      __attachGoalTable(backRules, table);
+
+      const version = goalTableScopeVersion(facts, backRules);
+      if (table.scopeVersion !== version) {
+        table.scopeVersion = version;
+        table.entries.clear();
+      }
+      return table;
+    }
+
+    function __goalMemoTripleKey(tr) {
+      return skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
+    }
+
+    function __goalMemoKey(goals, subst, facts, opts) {
+      const parts = new Array(goals.length);
+      for (let i = 0; i < goals.length; i++) parts[i] = __goalMemoTripleKey(applySubstTriple(goals[i], subst || {}));
+      const mode = opts && opts.deferBuiltins ? 'D1' : 'D0';
+      const scopedLevel = facts && typeof facts.__scopedClosureLevel === 'number' ? facts.__scopedClosureLevel : 0;
+      const scopedTag = facts && facts.__scopedSnapshot ? 'S' : 'N';
+      let keepVarsTag = '';
+      if (opts && opts.keepVars) {
+        const keepVars = Array.isArray(opts.keepVars) ? opts.keepVars.slice() : Array.from(opts.keepVars);
+        keepVars.sort();
+        keepVarsTag = `|K:${keepVars.join(',')}`;
+      }
+      return `${mode}|${scopedTag}|${scopedLevel}${keepVarsTag}|${parts.join('\n')}`;
+    }
+
+    function __cloneGoalSolutions(solutions) {
+      const out = new Array(solutions.length);
+      for (let i = 0; i < solutions.length; i++) out[i] = { ...solutions[i] };
+      return out;
+    }
+
+    function __canLookupGoalMemo(visited) {
+      return !visited || visited.length === 0;
+    }
+
+    function __canStoreGoalMemo(visited, maxResults) {
+      return (!visited || visited.length === 0) && !(typeof maxResults === 'number' && maxResults > 0);
+    }
+
+    // ===========================================================================
+    // Unification + substitution
+    // ===========================================================================
+
+    function containsVarTerm(t, v) {
+      if (t instanceof Iri || t instanceof Literal || t instanceof Blank) return false;
+      if (t instanceof Var) return t.name === v;
+      if (t instanceof ListTerm) return t.elems.some((e) => containsVarTerm(e, v));
+      if (t instanceof OpenListTerm) return t.prefix.some((e) => containsVarTerm(e, v)) || t.tailVar === v;
+      if (t instanceof GraphTerm)
+        return t.triples.some((tr) => containsVarTerm(tr.s, v) || containsVarTerm(tr.p, v) || containsVarTerm(tr.o, v));
+      return false;
+    }
+
+    function isGroundTermInGraph(t) {
+      // variables inside graph terms are treated as local placeholders,
+      // so they don't make the *surrounding triple* non-ground.
+      if (t instanceof OpenListTerm) return false;
+      if (t instanceof ListTerm) return t.elems.every((e) => isGroundTermInGraph(e));
+      if (t instanceof GraphTerm) return t.triples.every((tr) => isGroundTripleInGraph(tr));
+      // Iri/Literal/Blank/Var are all OK inside formulas
+      return true;
+    }
+
+    function isGroundTripleInGraph(tr) {
+      return isGroundTermInGraph(tr.s) && isGroundTermInGraph(tr.p) && isGroundTermInGraph(tr.o);
+    }
+
+    function isGroundTerm(t) {
+      if (t instanceof Iri || t instanceof Literal || t instanceof Blank) return true;
+      if (t instanceof Var) return false;
+      if (t instanceof ListTerm) return t.elems.every((e) => isGroundTerm(e));
+      if (t instanceof OpenListTerm) return false;
+      if (t instanceof GraphTerm) return t.triples.every((tr) => isGroundTripleInGraph(tr));
+      return true;
+    }
+
+    function isGroundTriple(tr) {
+      return isGroundTerm(tr.s) && isGroundTerm(tr.p) && isGroundTerm(tr.o);
+    }
+
+    // Canonical JSON-ish encoding for use as a Skolem cache key.
+    // We only *call* this on ground terms in log:skolem, but it is
+    // robust to seeing vars/open lists anyway.
+    function skolemKeyFromTerm(t) {
+      function enc(u) {
+        if (u instanceof Iri) return ['I', u.value];
+        if (u instanceof Literal) return ['L', u.value];
+        if (u instanceof Blank) return ['B', u.label];
+        if (u instanceof Var) return ['V', u.name];
+        if (u instanceof ListTerm) return ['List', u.elems.map(enc)];
+        if (u instanceof OpenListTerm) return ['OpenList', u.prefix.map(enc), u.tailVar];
+        if (u instanceof GraphTerm) return ['Graph', u.triples.map((tr) => [enc(tr.s), enc(tr.p), enc(tr.o)])];
+        return ['Other', String(u)];
+      }
+      return JSON.stringify(enc(t));
+    }
+
+    function skolemIriFromGroundTerm(t) {
+      // t must be ground (checked by caller).
+      const key = skolemKeyFromTerm(t);
+      let iri = skolemCache.get(key);
+      if (!iri) {
+        const id = skolemIdForKey(key);
+        iri = internIri(SKOLEM_NS + id);
+        skolemCache.set(key, iri);
+      }
+      return iri;
+    }
+
+    function applySubstTerm(t, s) {
+      // Hot fast path: most terms are already-ground atomic terms.
+      if (t instanceof Iri || t instanceof Literal || t instanceof Blank) return t;
+
+      // Common case: variable
+      if (t instanceof Var) {
+        const first = s[t.name];
+        if (first === undefined) return t;
+
+        // Follow chains X -> Y -> ... until we hit a non-var or a cycle.
+        // Avoid allocating a Set in the common case (short chains).
+        let cur = first;
+        const seen0 = t.name;
+        let seen1 = null;
+        let seen2 = null;
+        let seenSet = null;
+        let steps = 0;
+
+        while (cur instanceof Var) {
+          const name = cur.name;
+
+          // Cycle check
+          if (name === seen0 || name === seen1 || name === seen2 || (seenSet && seenSet.has(name))) {
+            return cur;
+          }
+
+          if (steps == 0) {
+            seen1 = name;
+          } else if (steps == 1) {
+            seen2 = name;
+          } else if (steps == 2) {
+            seenSet = new Set([seen0, seen1, seen2]);
+            seenSet.add(name);
+          } else if (seenSet) {
+            seenSet.add(name);
+          }
+
+          const nxt = s[name];
+          if (nxt === undefined) break;
+          cur = nxt;
+
+          steps += 1;
+          // Safety guard against pathological substitutions
+          if (steps > 1024) break;
+        }
+
+        if (cur instanceof Var) return cur;
+        // Bound to a non-var term: apply substitution recursively in case it contains variables inside.
+        return applySubstTerm(cur, s);
+      }
+
+      // Non-variable terms
+      if (t instanceof ListTerm) {
+        const xs = t.elems;
+        let out = null;
+        for (let i = 0; i < xs.length; i++) {
+          const v = applySubstTerm(xs[i], s);
+          if (out) {
+            out.push(v);
+          } else if (v !== xs[i]) {
+            out = xs.slice(0, i);
+            out.push(v);
+          }
+        }
+        return out ? new ListTerm(out) : t;
+      }
+
+      if (t instanceof OpenListTerm) {
+        const xs = t.prefix;
+        let newPrefix = null;
+        for (let i = 0; i < xs.length; i++) {
+          const v = applySubstTerm(xs[i], s);
+          if (newPrefix) {
+            newPrefix.push(v);
+          } else if (v !== xs[i]) {
+            newPrefix = xs.slice(0, i);
+            newPrefix.push(v);
+          }
+        }
+        const prefixApplied = newPrefix || xs;
+
+        const tailTerm = s[t.tailVar];
+        if (tailTerm === undefined) {
+          return prefixApplied === xs ? t : new OpenListTerm(prefixApplied, t.tailVar);
+        }
+
+        const tailApplied = applySubstTerm(tailTerm, s);
+        if (tailApplied instanceof ListTerm) {
+          if (prefixApplied.length === 0) return tailApplied;
+          return new ListTerm(prefixApplied.concat(tailApplied.elems));
+        } else if (tailApplied instanceof OpenListTerm) {
+          if (prefixApplied.length === 0) return tailApplied;
+          return new OpenListTerm(prefixApplied.concat(tailApplied.prefix), tailApplied.tailVar);
+        } else {
+          // Non-list tail binding: keep as open list (matches existing behavior).
+          return prefixApplied === xs ? t : new OpenListTerm(prefixApplied, t.tailVar);
+        }
+      }
+
+      if (t instanceof GraphTerm) {
+        const xs = t.triples;
+        let out = null;
+        for (let i = 0; i < xs.length; i++) {
+          const v = applySubstTriple(xs[i], s);
+          if (out) {
+            out.push(v);
+          } else if (v !== xs[i]) {
+            out = xs.slice(0, i);
+            out.push(v);
+          }
+        }
+        return out ? new GraphTerm(out) : t;
+      }
+
+      return t;
+    }
+
+    function applySubstTriple(tr, s) {
+      const s2 = applySubstTerm(tr.s, s);
+      const p2 = applySubstTerm(tr.p, s);
+      const o2 = applySubstTerm(tr.o, s);
+      if (s2 === tr.s && p2 === tr.p && o2 === tr.o) return tr;
+      return new Triple(s2, p2, o2);
+    }
+
+    function iriValue(t) {
+      return t instanceof Iri ? t.value : null;
+    }
+
+    function unifyOpenWithList(prefix, tailv, ys, subst) {
+      if (ys.length < prefix.length) return null;
+      let s2 = subst;
+      for (let i = 0; i < prefix.length; i++) {
+        s2 = unifyTerm(prefix[i], ys[i], s2);
+        if (s2 === null) return null;
+      }
+      const rest = new ListTerm(ys.slice(prefix.length));
+      s2 = unifyTerm(new Var(tailv), rest, s2);
+      if (s2 === null) return null;
+      return s2;
+    }
+
+    function unifyGraphTriples(xs, ys, subst) {
+      if (xs.length !== ys.length) return null;
+
+      // Fast path: exact same sequence.
+      if (triplesListEqual(xs, ys)) return subst;
+
+      // Backtracking match (order-insensitive), *threading* the substitution through.
+      const used = new Array(ys.length).fill(false);
+
+      function step(i, s) {
+        if (i >= xs.length) return s;
+        const x = xs[i];
+
+        for (let j = 0; j < ys.length; j++) {
+          if (used[j]) continue;
+          const y = ys[j];
+
+          // Cheap pruning when both predicates are IRIs.
+          if (x.p instanceof Iri && y.p instanceof Iri && x.p.value !== y.p.value) continue;
+
+          const s2 = unifyTriple(x, y, s); // IMPORTANT: use `s`, not {}
+          if (s2 === null) continue;
+
+          used[j] = true;
+          const s3 = step(i + 1, s2);
+          if (s3 !== null) return s3;
+          used[j] = false;
+        }
+        return null;
+      }
+
+      return step(0, subst); // IMPORTANT: start from the incoming subst
+    }
+
+    function unifyTerm(a, b, subst) {
+      return unifyTermWithOptions(a, b, subst, {
+        boolValueEq: true,
+        intDecimalEq: false,
+      });
+    }
+
+    function unifyTermListAppend(a, b, subst) {
+      // Keep list:append behavior: allow integer<->decimal exact equality,
+      // but do NOT add boolean-value equivalence (preserves current semantics).
+      return unifyTermWithOptions(a, b, subst, {
+        boolValueEq: false,
+        intDecimalEq: true,
+      });
+    }
+
+    function unifyTermWithOptions(a, b, subst, opts) {
+      a = applySubstTerm(a, subst);
+      b = applySubstTerm(b, subst);
+
+      // Normalize rdf:nil IRI to the empty list term, so it unifies with () and
+      // list builtins treat it consistently.
+      if (a instanceof Iri && a.value === RDF_NIL_IRI) a = EMPTY_LIST_TERM;
+      if (b instanceof Iri && b.value === RDF_NIL_IRI) b = EMPTY_LIST_TERM;
+
+      // Variable binding
+      if (a instanceof Var) {
+        const v = a.name;
+        const t = b;
+        if (t instanceof Var && t.name === v) return subst;
+        if (containsVarTerm(t, v)) return null;
+        const s2 = { ...subst };
+        s2[v] = t;
+        return s2;
+      }
+      if (b instanceof Var) {
+        return unifyTermWithOptions(b, a, subst, opts);
+      }
+
+      // Fast path: identical atomic term ids (covers IRI, blank, and string/xsd:string equivalence)
+      if (a.__tid && b.__tid && a.__tid === b.__tid) return subst;
+
+      // Exact matches
+      if (a instanceof Iri && b instanceof Iri && a.value === b.value) return subst;
+      if (a instanceof Literal && b instanceof Literal && a.value === b.value) return subst;
+      if (a instanceof Blank && b instanceof Blank && a.label === b.label) return subst;
+
+      // Plain string vs xsd:string equivalence
+      if (a instanceof Literal && b instanceof Literal) {
+        if (literalsEquivalentAsXsdString(a.value, b.value)) return subst;
+      }
+
+      // Boolean-value equivalence (ONLY for normal unifyTerm)
+      if (opts.boolValueEq && a instanceof Literal && b instanceof Literal) {
+        const ai = parseBooleanLiteralInfo(a);
+        const bi = parseBooleanLiteralInfo(b);
+        if (ai && bi && ai.value === bi.value) return subst;
+      }
+
+      // Numeric-value match:
+      // - always allow equality when datatype matches (existing behavior)
+      // - optionally allow integer<->decimal exact equality (list:append only)
+      if (a instanceof Literal && b instanceof Literal) {
+        const ai = parseNumericLiteralInfo(a);
+        const bi = parseNumericLiteralInfo(b);
+        if (ai && bi) {
+          if (ai.dt === bi.dt) {
+            if (ai.kind === 'bigint' && bi.kind === 'bigint') {
+              if (ai.value === bi.value) return subst;
+            } else {
+              const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
+              const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
+              if (!Number.isNaN(an) && !Number.isNaN(bn) && an === bn) return subst;
+            }
+          }
+
+          if (opts.intDecimalEq) {
+            const intDt = XSD_NS + 'integer';
+            const decDt = XSD_NS + 'decimal';
+            if ((ai.dt === intDt && bi.dt === decDt) || (ai.dt === decDt && bi.dt === intDt)) {
+              const intInfo = ai.dt === intDt ? ai : bi; // bigint
+              const decInfo = ai.dt === decDt ? ai : bi; // number + lexStr
+              const dec = parseXsdDecimalToBigIntScale(decInfo.lexStr);
+              if (dec) {
+                const scaledInt = intInfo.value * pow10n(dec.scale);
+                if (scaledInt === dec.num) return subst;
+              }
+            }
+          }
+        }
+      }
+
+      // Open list vs concrete list
+      if (a instanceof OpenListTerm && b instanceof ListTerm) {
+        return unifyOpenWithList(a.prefix, a.tailVar, b.elems, subst);
+      }
+      if (a instanceof ListTerm && b instanceof OpenListTerm) {
+        return unifyOpenWithList(b.prefix, b.tailVar, a.elems, subst);
+      }
+
+      // Open list vs open list
+      if (a instanceof OpenListTerm && b instanceof OpenListTerm) {
+        if (a.tailVar !== b.tailVar || a.prefix.length !== b.prefix.length) return null;
+        let s2 = subst;
+        for (let i = 0; i < a.prefix.length; i++) {
+          s2 = unifyTermWithOptions(a.prefix[i], b.prefix[i], s2, opts);
+          if (s2 === null) return null;
+        }
+        return s2;
+      }
+
+      // List terms
+      if (a instanceof ListTerm && b instanceof ListTerm) {
+        if (a.elems.length !== b.elems.length) return null;
+        let s2 = subst;
+        for (let i = 0; i < a.elems.length; i++) {
+          s2 = unifyTermWithOptions(a.elems[i], b.elems[i], s2, opts);
+          if (s2 === null) return null;
+        }
+        return s2;
+      }
+
+      // Graphs
+      if (a instanceof GraphTerm && b instanceof GraphTerm) {
+        const protectedNames = collectProtectedNamesFromSubst(subst);
+        if (
+          alphaEqGraphTriples(a.triples, b.triples, {
+            protectedVarsA: protectedNames.protectedVars,
+            protectedVarsB: protectedNames.protectedVars,
+            protectedBlanksA: protectedNames.protectedBlanks,
+            protectedBlanksB: protectedNames.protectedBlanks,
+          })
+        ) {
+          return subst;
+        }
+        return unifyGraphTriples(a.triples, b.triples, subst);
+      }
+
+      return null;
+    }
+
+    function unifyTriple(pat, fact, subst) {
+      // Predicates are usually the cheapest and most selective
+      const s1 = unifyTerm(pat.p, fact.p, subst);
+      if (s1 === null) return null;
+
+      const s2 = unifyTerm(pat.s, fact.s, s1);
+      if (s2 === null) return null;
+
+      const s3 = unifyTerm(pat.o, fact.o, s2);
+      return s3;
+    }
+
+    // Strategy: when the substitution is "large" or search depth is high,
+    // keep only bindings that are still relevant to:
+    //   - variables appearing in the remaining goals
+    //   - variables from the original goals (answer vars)
+    // plus the transitive closure of variables that appear inside kept bindings.
+    //
+    // This is semantics-preserving for the ongoing proof state.
+
+    function gcCollectVarsInTerm(t, out) {
+      if (t instanceof Var) {
+        out.add(t.name);
+        return;
+      }
+      if (t instanceof ListTerm) {
+        for (const e of t.elems) gcCollectVarsInTerm(e, out);
+        return;
+      }
+      if (t instanceof OpenListTerm) {
+        for (const e of t.prefix) gcCollectVarsInTerm(e, out);
+        out.add(t.tailVar);
+        return;
+      }
+      if (t instanceof GraphTerm) {
+        for (const tr of t.triples) gcCollectVarsInTriple(tr, out);
+        return;
+      }
+    }
+
+    function gcCollectVarsInTriple(tr, out) {
+      gcCollectVarsInTerm(tr.s, out);
+      gcCollectVarsInTerm(tr.p, out);
+      gcCollectVarsInTerm(tr.o, out);
+    }
+
+    function gcCollectVarsInGoals(goals, out) {
+      for (const g of goals) gcCollectVarsInTriple(g, out);
+    }
+
+    function gcCompactForGoals(subst, goals, answerVars) {
+      const keep = new Set(answerVars);
+      gcCollectVarsInGoals(goals, keep);
+
+      const expanded = new Set();
+      const queue = Array.from(keep);
+
+      while (queue.length) {
+        const v = queue.pop();
+        if (expanded.has(v)) continue;
+        expanded.add(v);
+
+        const bound = subst[v];
+        if (bound === undefined) continue;
+
+        const before = keep.size;
+        gcCollectVarsInTerm(bound, keep);
+        if (keep.size !== before) {
+          for (const nv of keep) {
+            if (!expanded.has(nv)) queue.push(nv);
+          }
+        }
+      }
+
+      const out = {};
+      for (const k of Object.keys(subst)) {
+        if (keep.has(k)) out[k] = subst[k];
+      }
+      return out;
+    }
+
+    // Helpers used by proveGoals() when deferring builtins.
+    // Pure checks are kept at module scope to avoid per-call allocations.
+    function __termHasVarOrBlank(t) {
+      if (t instanceof Var || t instanceof Blank) return true;
+      if (t instanceof ListTerm) return t.elems.some(__termHasVarOrBlank);
+      if (t instanceof OpenListTerm) return true;
+      if (t instanceof GraphTerm) return t.triples.some(__tripleHasVarOrBlank);
+      return false;
+    }
+
+    function __tripleHasVarOrBlank(tr) {
+      return __termHasVarOrBlank(tr.s) || __termHasVarOrBlank(tr.p) || __termHasVarOrBlank(tr.o);
+    }
+
+    function __builtinIsSatisfiableWhenFullyUnbound(pIriVal) {
+      return (
+        pIriVal === MATH_NS + 'sin' ||
+        pIriVal === MATH_NS + 'cos' ||
+        pIriVal === MATH_NS + 'tan' ||
+        pIriVal === MATH_NS + 'asin' ||
+        pIriVal === MATH_NS + 'acos' ||
+        pIriVal === MATH_NS + 'atan' ||
+        pIriVal === MATH_NS + 'sinh' ||
+        pIriVal === MATH_NS + 'cosh' ||
+        pIriVal === MATH_NS + 'tanh' ||
+        pIriVal === MATH_NS + 'degrees' ||
+        pIriVal === MATH_NS + 'negation'
+      );
+    }
+
+    function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxResults, opts) {
+      const goalTable = __canLookupGoalMemo(visited) ? __ensureGoalTable(facts, backRules) : null;
+      const goalMemoKeyNow = goalTable ? __goalMemoKey(goals, subst, facts, opts) : null;
+      if (goalTable && goalTable.entries.has(goalMemoKeyNow)) {
+        const cached = goalTable.entries.get(goalMemoKeyNow) || [];
+        const cloned = __cloneGoalSolutions(cached);
+        if (typeof maxResults === 'number' && maxResults > 0 && cloned.length > maxResults)
+          return cloned.slice(0, maxResults);
+        return cloned;
+      }
+
+      // Depth-first search with a single mutable substitution and a trail.
+      // This avoids cloning the whole substitution object at each unification step
+      // (Prolog-style: bind + trail, then undo on backtrack).
+      //
+      // IMPORTANT: This implementation is fully iterative (no JS recursion), so
+      // extremely deep backward proofs (e.g. examples/ackermann.n3) do not overflow
+      // the JavaScript call stack.
+      const results = [];
+      const max = typeof maxResults === 'number' && maxResults > 0 ? maxResults : Infinity;
+
+      // IMPORTANT: Goal reordering / deferral is only enabled when explicitly
+      // requested by the caller (used for forward rules).
+      const allowDeferredBuiltins = !!(opts && opts.deferBuiltins);
+
+      const initialGoals = Array.isArray(goals) ? goals.slice() : [];
+      const substMut = subst ? { ...subst } : {};
+      const initialVisited = visited ? visited.slice() : [];
+
+      // Variables from the original goal list (needed by the caller to instantiate conclusions)
+      const answerVars = new Set();
+      gcCollectVarsInGoals(initialGoals, answerVars);
+      if (opts && opts.keepVars) {
+        for (const v of opts.keepVars) answerVars.add(v);
+      }
+
+      if (!initialGoals.length) {
+        results.push(gcCompactForGoals(substMut, [], answerVars));
+        if (goalTable && __canStoreGoalMemo(visited, maxResults)) {
+          goalTable.entries.set(goalMemoKeyNow, __cloneGoalSolutions(results));
+        }
+        return results;
+      }
+
+      // Trail of variable names that were newly bound in substMut.
+      const trail = [];
+
+      function applyDeltaToSubst(delta) {
+        for (const k in delta) {
+          if (!Object.prototype.hasOwnProperty.call(delta, k)) continue;
+          const v = delta[k];
+
+          if (Object.prototype.hasOwnProperty.call(substMut, k)) {
+            if (!termsEqual(substMut[k], v)) return false;
+          } else {
+            substMut[k] = v;
+            trail.push(k);
+          }
+        }
+        return true;
+      }
+
+      function undoTo(mark) {
+        for (let i = trail.length - 1; i >= mark; i--) {
+          delete substMut[trail[i]];
+        }
+        trail.length = mark;
+      }
+
+      // ---------------------------------------------------------------------------
+      // Visited set (loop check) implemented as a trail-backed multiset
+      // ---------------------------------------------------------------------------
+      // The previous implementation used an array + concat at each step:
+      //   visitedForRules = visitedNow.concat([goal0]);
+      // which becomes O(n^2) for very deep proofs. Here we use a Map-backed multiset
+      // with backtracking support (like the substitution trail).
+      const visitedCounts = new Map(); // key -> count
+      const visitedTrail = []; // stack of keys in insertion order
+
+      const termKeyCache = typeof WeakMap === 'function' ? new WeakMap() : null;
+
+      function termKeyForVisited(t) {
+        if (t instanceof Iri && t.value === RDF_NIL_IRI) return '()';
+        if (t instanceof ListTerm && t.elems.length === 0) return '()';
+
+        if (termKeyCache && t && typeof t === 'object') {
+          const cached = termKeyCache.get(t);
+          if (cached) return cached;
+        }
+
+        let out;
+        if (t instanceof Var) {
+          out = 'V:' + t.name;
+        } else if (t instanceof Literal) {
+          // Match termsEqual() semantics for booleans and numerics where possible.
+          const bi = parseBooleanLiteralInfo(t);
+          if (bi) {
+            out = 'LB:' + (bi.value ? '1' : '0');
+          } else {
+            const ni = parseNumericLiteralInfo(t);
+            if (ni) {
+              if (ni.kind === 'bigint') {
+                out = 'LN:' + ni.dt + ':' + ni.value.toString();
+              } else if (typeof ni.value === 'number' && Number.isNaN(ni.value)) {
+                // NaN is never equal to NaN under termsEqual numeric comparison.
+                out = 'L#' + (t.__tid || String(t.value));
+              } else {
+                out = 'LN:' + ni.dt + ':' + String(ni.value);
+              }
+            } else {
+              out = 'L#' + (t.__tid || String(t.value));
+            }
+          }
+        } else if (t && t.__tid) {
+          // Iri / Blank and other atomic interned terms
+          out = 'T' + t.__tid;
+        } else if (t instanceof ListTerm) {
+          out = '[' + t.elems.map(termKeyForVisited).join(',') + ']';
+        } else if (t instanceof OpenListTerm) {
+          out = '[open:' + t.prefix.map(termKeyForVisited).join(',') + '|tail:' + t.tailVar + ']';
+        } else if (t instanceof GraphTerm) {
+          out =
+            '{' +
+            t.triples
+              .map((tr) => termKeyForVisited(tr.s) + ' ' + termKeyForVisited(tr.p) + ' ' + termKeyForVisited(tr.o))
+              .join(';') +
+            '}';
+        } else {
+          // Fallback (rare)
+          out = skolemKeyFromTerm(t);
+        }
+
+        if (termKeyCache && t && typeof t === 'object') termKeyCache.set(t, out);
+        return out;
+      }
+
+      function tripleKeyForVisited(tr) {
+        return termKeyForVisited(tr.s) + '\t' + termKeyForVisited(tr.p) + '\t' + termKeyForVisited(tr.o);
+      }
+
+      function pushVisitedKey(key) {
+        visitedTrail.push(key);
+        visitedCounts.set(key, (visitedCounts.get(key) || 0) + 1);
+      }
+
+      function undoVisitedKeysTo(mark) {
+        for (let i = visitedTrail.length - 1; i >= mark; i--) {
+          const k = visitedTrail[i];
+          const c = visitedCounts.get(k);
+          if (c === 1) visitedCounts.delete(k);
+          else visitedCounts.set(k, c - 1);
+        }
+        visitedTrail.length = mark;
+      }
+
+      for (const tr of initialVisited) pushVisitedKey(tripleKeyForVisited(tr));
+
+      // ---------------------------------------------------------------------------
+      // In-place unification into the mutable substitution + trail.
+      // ---------------------------------------------------------------------------
+      function bindVarTrail(varName, t) {
+        // t is assumed already substitution-applied (or at least safe to bind).
+        if (Object.prototype.hasOwnProperty.call(substMut, varName)) {
+          return unifyTermTrail(substMut[varName], t);
+        }
+        if (t instanceof Var && t.name === varName) return true;
+        if (containsVarTerm(t, varName)) return false;
+        substMut[varName] = t;
+        trail.push(varName);
+        return true;
+      }
+
+      function unifyOpenWithListTrail(prefix, tailVar, elems) {
+        if (prefix.length > elems.length) return false;
+        for (let i = 0; i < prefix.length; i++) {
+          if (!unifyTermTrail(prefix[i], elems[i])) return false;
+        }
+        const rest = new ListTerm(elems.slice(prefix.length));
+        return bindVarTrail(tailVar, rest);
+      }
+
+      function unifyTermTrail(a, b) {
+        a = applySubstTerm(a, substMut);
+        b = applySubstTerm(b, substMut);
+
+        // Normalize rdf:nil IRI to the empty list term, so it unifies with () and
+        // list builtins treat it consistently.
+        if (a instanceof Iri && a.value === RDF_NIL_IRI) a = EMPTY_LIST_TERM;
+        if (b instanceof Iri && b.value === RDF_NIL_IRI) b = EMPTY_LIST_TERM;
+
+        if (a === b) return true;
+
+        // Variable binding
+        if (a instanceof Var) return bindVarTrail(a.name, b);
+        if (b instanceof Var) return bindVarTrail(b.name, a);
+
+        // Fast path: identical atomic term ids (covers IRI, blank, and string/xsd:string equivalence)
+        if (a.__tid && b.__tid && a.__tid === b.__tid) return true;
+
+        // Exact matches
+        if (a instanceof Iri && b instanceof Iri && a.value === b.value) return true;
+        if (a instanceof Literal && b instanceof Literal && a.value === b.value) return true;
+        if (a instanceof Blank && b instanceof Blank && a.label === b.label) return true;
+
+        // Plain string vs xsd:string equivalence
+        if (a instanceof Literal && b instanceof Literal) {
+          if (literalsEquivalentAsXsdString(a.value, b.value)) return true;
+        }
+
+        // Boolean-value equivalence (matches unifyTerm semantics)
+        if (a instanceof Literal && b instanceof Literal) {
+          const ai = parseBooleanLiteralInfo(a);
+          const bi = parseBooleanLiteralInfo(b);
+          if (ai && bi && ai.value === bi.value) return true;
+        }
+
+        // Numeric-value match (datatype must match; no int<->decimal equivalence here)
+        if (a instanceof Literal && b instanceof Literal) {
+          const ai = parseNumericLiteralInfo(a);
+          const bi = parseNumericLiteralInfo(b);
+          if (ai && bi && ai.dt === bi.dt) {
+            if (ai.kind === 'bigint' && bi.kind === 'bigint') {
+              if (ai.value === bi.value) return true;
+            } else {
+              const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
+              const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
+              if (!Number.isNaN(an) && !Number.isNaN(bn) && an === bn) return true;
+            }
+          }
+        }
+
+        // Open list vs concrete list
+        if (a instanceof OpenListTerm && b instanceof ListTerm) {
+          return unifyOpenWithListTrail(a.prefix, a.tailVar, b.elems);
+        }
+        if (a instanceof ListTerm && b instanceof OpenListTerm) {
+          return unifyOpenWithListTrail(b.prefix, b.tailVar, a.elems);
+        }
+
+        // Open list vs open list
+        if (a instanceof OpenListTerm && b instanceof OpenListTerm) {
+          if (a.tailVar !== b.tailVar || a.prefix.length !== b.prefix.length) return false;
+          for (let i = 0; i < a.prefix.length; i++) {
+            if (!unifyTermTrail(a.prefix[i], b.prefix[i])) return false;
+          }
+          return true;
+        }
+
+        // List terms
+        if (a instanceof ListTerm && b instanceof ListTerm) {
+          if (a.elems.length !== b.elems.length) return false;
+          for (let i = 0; i < a.elems.length; i++) {
+            if (!unifyTermTrail(a.elems[i], b.elems[i])) return false;
+          }
+          return true;
+        }
+
+        // Graphs
+        if (a instanceof GraphTerm && b instanceof GraphTerm) {
+          const protectedNames = collectProtectedNamesFromSubst(substMut);
+          if (
+            alphaEqGraphTriples(a.triples, b.triples, {
+              protectedVarsA: protectedNames.protectedVars,
+              protectedVarsB: protectedNames.protectedVars,
+              protectedBlanksA: protectedNames.protectedBlanks,
+              protectedBlanksB: protectedNames.protectedBlanks,
+            })
+          ) {
+            return true;
+          }
+          // Fallback: reuse allocation-heavy graph unifier rarely hit in typical workloads.
+          const delta = unifyGraphTriples(a.triples, b.triples, {});
+          if (delta === null) return false;
+          const mark = trail.length;
+          for (const k in delta) {
+            if (!Object.prototype.hasOwnProperty.call(delta, k)) continue;
+            if (!bindVarTrail(k, delta[k])) {
+              undoTo(mark);
+              return false;
+            }
+          }
+          return true;
+        }
+
+        return false;
+      }
+
+      function unifyTripleTrail(pat, fact) {
+        // Predicates are usually the cheapest and most selective
+        if (!unifyTermTrail(pat.p, fact.p)) return false;
+        if (!unifyTermTrail(pat.s, fact.s)) return false;
+        if (!unifyTermTrail(pat.o, fact.o)) return false;
+        return true;
+      }
+
+      // ---------------------------------------------------------------------------
+      // Iterative DFS execution
+      // ---------------------------------------------------------------------------
+      // Frame kinds:
+      //  - node: process a goal list
+      //  - undo: backtrack to a prior (subst trail mark, visited mark)
+      //  - ruleIter: iterate candidate backward rules for one goal
+      //  - factIter: iterate candidate facts for one goal
+      //  - deltaIter: iterate builtin deltas for one goal
+      const stack = [];
+      stack.push({
+        kind: 'node',
+        goalsNow: initialGoals,
+        curDepth: depth || 0,
+        canDeferBuiltins: allowDeferredBuiltins,
+        deferCount: 0,
+      });
+
+      while (stack.length && results.length < max) {
+        const frame = stack.pop();
+
+        if (frame.kind === 'undo') {
+          undoTo(frame.substMark);
+          undoVisitedKeysTo(frame.visitedMark);
+          continue;
+        }
+
+        if (frame.kind === 'deltaIter') {
+          const deltas = frame.deltas;
+          while (frame.idx < deltas.length && results.length < max) {
+            const delta = deltas[frame.idx++];
+            const mark = trail.length;
+            if (!applyDeltaToSubst(delta)) {
+              undoTo(mark);
+              continue;
+            }
+
+            if (!frame.restGoals.length) {
+              results.push(gcCompactForGoals(substMut, [], answerVars));
+              undoTo(mark);
+              if (results.length >= max) return results;
+              continue;
+            }
+
+            // Continue with remaining goals under this delta, then backtrack, then resume delta iteration.
+            stack.push(frame);
+            stack.push({ kind: 'undo', substMark: mark, visitedMark: visitedTrail.length });
+            stack.push({
+              kind: 'node',
+              goalsNow: frame.restGoals,
+              curDepth: frame.curDepth + 1,
+              canDeferBuiltins: frame.canDeferBuiltins,
+              deferCount: 0,
+            });
+            break;
+          }
+          continue;
+        }
+
+        if (frame.kind === 'ruleIter') {
+          const rules = frame.rules;
+          while (frame.idx < rules.length && results.length < max) {
+            const r = rules[frame.idx++];
+            if (r.conclusion.length !== 1) continue;
+            const rawHead = r.conclusion[0];
+            if (rawHead.p instanceof Iri && rawHead.p.__tid !== frame.goalPtid) continue;
+
+            const rStd = standardizeRule(r, varGen);
+            const head = rStd.conclusion[0];
+
+            const mark = trail.length;
+            if (!unifyTripleTrail(head, frame.goal0)) {
+              undoTo(mark);
+              continue;
+            }
+
+            // If this goal is already on the ancestor chain, avoid picking rules
+            // whose premises would immediately re-enter any already-visited goal.
+            // This cheap guard restores completeness for cases like issue #9 while
+            // still preventing trivial non-termination in mutually recursive rule
+            // cycles.
+            if (frame.goalWasVisited && rStd.premise && rStd.premise.length) {
+              let hasCycle = false;
+              for (let i = 0; i < rStd.premise.length; i++) {
+                const premKey = tripleKeyForVisited(applySubstTriple(rStd.premise[i], substMut));
+                if (visitedCounts.has(premKey)) {
+                  hasCycle = true;
+                  break;
+                }
+              }
+              if (hasCycle) {
+                undoTo(mark);
+                continue;
+              }
+            }
+
+            const newGoals = rStd.premise.concat(frame.restGoals);
+
+            const vMark = visitedTrail.length;
+            pushVisitedKey(frame.goalKey);
+
+            // Explore the rule body; then undo; then resume trying further rules.
+            stack.push(frame);
+            stack.push({ kind: 'undo', substMark: mark, visitedMark: vMark });
+            stack.push({
+              kind: 'node',
+              goalsNow: newGoals,
+              curDepth: frame.curDepth + 1,
+              canDeferBuiltins: false,
+              deferCount: 0,
+            });
+            break;
+          }
+          continue;
+        }
+
+        if (frame.kind === 'factIter') {
+          const factsList = frame.factsList;
+          const candidates = frame.candidates;
+          const isIndexed = !!candidates;
+
+          while (frame.idx < (isIndexed ? candidates.totalLen : factsList.length) && results.length < max) {
+            let f;
+            if (isIndexed) {
+              const idxNow = frame.idx++;
+              if (idxNow < candidates.exactLen) f = factsList[candidates.exact[idxNow]];
+              else f = factsList[candidates.wild[idxNow - candidates.exactLen]];
+            } else {
+              f = factsList[frame.idx++];
+            }
+
+            const mark = trail.length;
+            if (!unifyTripleTrail(frame.goal0, f)) {
+              undoTo(mark);
+              continue;
+            }
+
+            if (!frame.restGoals.length) {
+              results.push(gcCompactForGoals(substMut, [], answerVars));
+              undoTo(mark);
+              if (results.length >= max) return results;
+              continue;
+            }
+
+            // Explore remaining goals; then undo; then resume trying further facts.
+            stack.push(frame);
+            stack.push({ kind: 'undo', substMark: mark, visitedMark: visitedTrail.length });
+            stack.push({
+              kind: 'node',
+              goalsNow: frame.restGoals,
+              curDepth: frame.curDepth + 1,
+              canDeferBuiltins: frame.canDeferBuiltins,
+              deferCount: 0,
+            });
+            break;
+          }
+
+          continue;
+        }
+
+        // frame.kind === 'node'
+        const goalsNow = frame.goalsNow;
+        if (!goalsNow.length) {
+          results.push(gcCompactForGoals(substMut, [], answerVars));
+          continue;
+        }
+
+        const rawGoal = goalsNow[0];
+        const restGoals = goalsNow.length > 1 ? goalsNow.slice(1) : [];
+        const goal0 = applySubstTriple(rawGoal, substMut);
+
+        // 1) Builtins
+        const goalPredicateIri = goal0.p instanceof Iri ? goal0.p.value : null;
+        const isRdfFirstOrRest = goalPredicateIri === RDF_NS + 'first' || goalPredicateIri === RDF_NS + 'rest';
+        const shouldTreatAsBuiltin =
+          isBuiltinPred(goal0.p) &&
+          !(isRdfFirstOrRest && !(goal0.s instanceof ListTerm || goal0.s instanceof OpenListTerm));
+
+        if (shouldTreatAsBuiltin) {
+          const remaining = max - results.length;
+          if (remaining <= 0) continue;
+          const builtinMax = Number.isFinite(remaining) && !restGoals.length ? remaining : undefined;
+
+          let deltas = evalBuiltin(goal0, {}, facts, backRules, frame.curDepth, varGen, builtinMax);
+
+          const dc = typeof frame.deferCount === 'number' ? frame.deferCount : 0;
+          const builtinDeltasAreVacuous = deltas.length > 0 && deltas.every((d) => Object.keys(d).length === 0);
+
+          if (
+            frame.canDeferBuiltins &&
+            (!deltas.length || builtinDeltasAreVacuous) &&
+            restGoals.length &&
+            __tripleHasVarOrBlank(goal0) &&
+            dc < goalsNow.length
+          ) {
+            // Rotate this goal to the end and try others first.
+            stack.push({
+              kind: 'node',
+              goalsNow: restGoals.concat([rawGoal]),
+              curDepth: frame.curDepth,
+              canDeferBuiltins: frame.canDeferBuiltins,
+              deferCount: dc + 1,
+            });
+            continue;
+          }
+
+          const subjectAndObjectAreFullyUnbound =
+            (goal0.s instanceof Var || goal0.s instanceof Blank) &&
+            (goal0.o instanceof Var || goal0.o instanceof Blank);
+
+          if (
+            frame.canDeferBuiltins &&
+            !deltas.length &&
+            __builtinIsSatisfiableWhenFullyUnbound(goalPredicateIri) &&
+            subjectAndObjectAreFullyUnbound &&
+            (!restGoals.length || dc >= goalsNow.length)
+          ) {
+            deltas = [{}];
+          }
+
+          if (deltas.length) {
+            stack.push({
+              kind: 'deltaIter',
+              deltas,
+              idx: 0,
+              restGoals,
+              curDepth: frame.curDepth,
+              canDeferBuiltins: frame.canDeferBuiltins,
+            });
+          }
+          continue;
+        }
+
+        // 2) Loop check for backward reasoning
+        //
+        // A strict ancestor loop check ("if visited then fail") is fast but
+        // incomplete. It breaks common Horn patterns where a goal appears again in
+        // a sibling branch and can still succeed via a different (non-cyclic) rule.
+        //
+        // Example (issue #9):
+        //   Human <= Woman.
+        //   Animal <= Human.
+        //   label <= Human, Animal.
+        // While proving Animal we need to re-prove Human, even though Human is an
+        // ancestor goal. EYE succeeds; a strict loop check prunes it.
+        //
+        // We therefore *allow* re-entering a visited goal, but when a goal is
+        // already visited we avoid applying backward rules whose premises would
+        // immediately re-enter any visited goal again (a cheap cycle guard).
+        const goalKey = tripleKeyForVisited(goal0);
+        const goalWasVisited = visitedCounts.has(goalKey);
+
+        // 3) Backward rules (indexed by head predicate) — explored first
+        if (goal0.p instanceof Iri) {
+          ensureBackRuleIndexes(backRules);
+          const candRules = (backRules.__byHeadPred.get(goal0.p.__tid) || []).concat(backRules.__wildHeadPred);
+
+          // facts should be tried *after* rules; push fact iterator first (below rules on the stack)
+          const candidates = candidateFacts(facts, goal0);
+          stack.push({
+            kind: 'factIter',
+            factsList: facts,
+            candidates,
+            idx: 0,
+            goal0,
+            restGoals,
+            curDepth: frame.curDepth,
+            canDeferBuiltins: frame.canDeferBuiltins,
+          });
+
+          // Then push rule iterator
+          if (candRules.length) {
+            stack.push({
+              kind: 'ruleIter',
+              rules: candRules,
+              idx: 0,
+              goal0,
+              restGoals,
+              curDepth: frame.curDepth,
+              goalKey,
+              goalPtid: goal0.p.__tid,
+              goalWasVisited,
+            });
+          }
+        } else {
+          // No IRI predicate: rule indexing doesn't apply; only try all facts.
+          stack.push({
+            kind: 'factIter',
+            factsList: facts,
+            candidates: null,
+            idx: 0,
+            goal0,
+            restGoals,
+            curDepth: frame.curDepth,
+            canDeferBuiltins: frame.canDeferBuiltins,
+          });
+        }
+      }
+
+      if (goalTable && __canStoreGoalMemo(visited, maxResults)) {
+        goalTable.entries.set(goalMemoKeyNow, __cloneGoalSolutions(results));
+      }
+
+      return results;
+    }
+
+    // ===========================================================================
+    // Forward chaining to fixpoint
+    // ===========================================================================
+
+    function __defaultFusePrefixEnv() {
+      return {
+        shrinkIri() {
+          return null;
+        },
+      };
+    }
+
+    function __serializeFuseFormulaTriples(triples, prefixes) {
+      if (!Array.isArray(triples) || triples.length === 0) return '{ }';
+      return `{
+${triples.map((tr) => `  ${tripleToN3(tr, prefixes)}`).join('\n')}
+}`;
+    }
+
+    function __serializeFuseRule(rule, prefixes, subst /* optional */) {
+      const pref = prefixes && typeof prefixes.shrinkIri === 'function' ? prefixes : __defaultFusePrefixEnv();
+      const premise = Array.isArray(rule.premise)
+        ? subst
+          ? rule.premise.map((tr) => applySubstTriple(tr, subst))
+          : rule.premise
+        : [];
+
+      const premiseText = premise.length ? __serializeFuseFormulaTriples(premise, pref) : 'true';
+
+      let headText = 'true';
+      if (rule.isFuse) {
+        headText = 'false';
+      } else if (rule.__dynamicConclusionTerm) {
+        const dyn = subst ? applySubstTerm(rule.__dynamicConclusionTerm, subst) : rule.__dynamicConclusionTerm;
+        headText = termToN3(dyn, pref);
+      } else {
+        const conclusion = Array.isArray(rule.conclusion)
+          ? subst
+            ? rule.conclusion.map((tr) => applySubstTriple(tr, subst))
+            : rule.conclusion
+          : [];
+        headText = conclusion.length ? __serializeFuseFormulaTriples(conclusion, pref) : 'true';
+      }
+
+      const arrow = rule.isForward === false ? '<=' : '=>';
+      return `${premiseText} ${arrow} ${headText} .`;
+    }
+
+    function __printTriggeredFuse(rule, prefixes, subst /* optional */, extraNote /* optional */) {
+      console.log('# Inference fuse triggered.');
+      if (extraNote) console.log(`# ${extraNote}`);
+
+      const schematic = __serializeFuseRule(rule, prefixes, null);
+      console.log('# Fired rule:');
+      for (const line of schematic.split(/\r?\n/)) console.log('#   ' + line);
+
+      if (subst) {
+        const instantiated = __serializeFuseRule(rule, prefixes, subst);
+        if (instantiated !== schematic) {
+          console.log('# Matched instance:');
+          for (const line of instantiated.split(/\r?\n/)) console.log('#   ' + line);
+        }
+      }
+    }
+
+    function __exitReasoning(code, message /* optional */) {
+      if (typeof process !== 'undefined' && process && typeof process.exit === 'function') {
+        process.exit(code);
+        return;
+      }
+
+      const err = new Error(message || `Process exited with code ${code}`);
+      err.__eyelingExit = true;
+      err.code = code;
+      throw err;
+    }
+
+    function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, opts = {}) {
+      enterReasoningRun();
+      try {
+        ensureFactIndexes(facts);
+        ensureBackRuleIndexes(backRules);
+
+        const goalTable = __makeGoalTable();
+        __attachGoalTable(facts, goalTable);
+        __attachGoalTable(backRules, goalTable);
+
+        const captureExplanations = !(opts && opts.captureExplanations === false);
+        const derivedForward = [];
+        const varGen = [0];
+        const skCounter = [0];
+
+        // Speed up dynamic rule promotion by maintaining O(1) membership sets.
+        // (Some workloads derive many rule-producing triples.)
+
+        __ensureRuleKeySet(forwardRules);
+        __ensureRuleKeySet(backRules);
+
+        // Cache head blank-node skolemization per (rule firing, head blank label).
+        // This prevents repeatedly generating fresh _:sk_N blanks for the *same*
+        // rule+substitution instance across outer fixpoint iterations.
+        const headSkolemCache = new Map();
+
+        // Pre-compute per-rule metadata once (new forward rules are prepared on insertion).
+        for (let i = 0; i < forwardRules.length; i++) __prepareForwardRule(forwardRules[i]);
+
+        // Make rules visible to introspection builtins
+        backRules.__allForwardRules = forwardRules;
+        backRules.__allBackwardRules = backRules;
+
+        // Closure level counter used by log:collectAllIn/log:forAllIn priority gating.
+        // Level 0 means "no frozen snapshot" (during Phase A of each outer iteration).
+        let scopedClosureLevel = 0;
+
+        // Scan known rules for the maximum requested closure priority in scoped log:* goals.
+        let maxScopedClosurePriorityNeeded = __computeMaxScopedClosurePriorityNeeded(forwardRules, backRules);
+
+        // Conservative fast-skip for forward rules that cannot possibly succeed
+        // until a scoped snapshot exists (or a given closure level is reached).
+        // Helper functions are module-scoped: __computeForwardRuleScopedSkipInfo, etc.
+        function setScopedSnapshot(snap, level) {
+          if (!hasOwn.call(facts, '__scopedSnapshot')) {
+            Object.defineProperty(facts, '__scopedSnapshot', {
+              value: snap,
+              enumerable: false,
+              writable: true,
+              configurable: true,
+            });
+          } else {
+            facts.__scopedSnapshot = snap;
+          }
+
+          if (!hasOwn.call(facts, '__scopedClosureLevel')) {
+            Object.defineProperty(facts, '__scopedClosureLevel', {
+              value: level,
+              enumerable: false,
+              writable: true,
+              configurable: true,
+            });
+          } else {
+            facts.__scopedClosureLevel = level;
+          }
+        }
+
+        function makeScopedSnapshot() {
+          const snap = facts.slice();
+          ensureFactIndexes(snap);
+          Object.defineProperty(snap, '__scopedSnapshot', {
+            value: snap,
+            enumerable: false,
+            writable: true,
+            configurable: true,
+          });
+          // Propagate closure level so nested scoped builtins can see it.
+          Object.defineProperty(snap, '__scopedClosureLevel', {
+            value: scopedClosureLevel,
+            enumerable: false,
+            writable: true,
+            configurable: true,
+          });
+          return snap;
+        }
+
+        function __skipForwardRuleNow(r) {
+          // Skip forward rules that are guaranteed to "delay" due to scoped
+          // builtins (log:collectAllIn / log:forAllIn / log:includes / log:notIncludes)
+          // until a snapshot exists (and a certain closure level is reached).
+          // This prevents expensive proofs that will definitely fail in Phase A
+          // and in early closure levels.
+          const info = r.__scopedSkipInfo;
+          if (info && info.needsSnap) {
+            const snapHere = facts.__scopedSnapshot || null;
+            const lvlHere =
+              (facts && typeof facts.__scopedClosureLevel === 'number' && facts.__scopedClosureLevel) || 0;
+            if (!snapHere) return true;
+            if (lvlHere < info.requiredLevel) return true;
+          }
+
+          // Optimization: if the rule head is **structurally ground** (no vars anywhere, even inside
+          // quoted formulas) and has no head blanks, then the head does not depend on which body
+          // solution we pick. In that case, we only need *one* proof of the body, and once all head
+          // triples are already known we can skip proving the body entirely.
+          const headIsStrictGround = r.__headIsStrictGround;
+          if (headIsStrictGround) {
+            let allKnown = true;
+            for (const tr of r.conclusion) {
+              if (!hasFactIndexed(facts, tr)) {
+                allKnown = false;
+                break;
+              }
+            }
+            if (allKnown) return true;
+          }
+
+          return false;
+        }
+
+        function __emitForwardRuleSolution(r, ruleIndex, s) {
+          let changedHere = false;
+          let rulesChanged = false;
+
+          // IMPORTANT: one skolem map per *rule firing*
+          const skMap = {};
+          const instantiatedPremises = r.premise.map((b) => applySubstTriple(b, s));
+          const fireKey = __firingKey(ruleIndex, instantiatedPremises);
+
+          // Support "dynamic" rule heads where the consequent is a term that
+          // (after substitution) evaluates to a quoted formula.
+          // Example: { :a :b ?C } => ?C.
+          let dynamicHeadTriples = null;
+          let headBlankLabelsHere = r.headBlankLabels;
+          if (r.__dynamicConclusionTerm) {
+            const dynTerm = applySubstTerm(r.__dynamicConclusionTerm, s);
+
+            // Allow dynamic fuses: ... => ?X. where ?X becomes false
+            if (dynTerm instanceof Literal && dynTerm.value === 'false') {
+              __printTriggeredFuse(r, opts && opts.prefixes, s, 'Dynamic head resolved to false.');
+              __exitReasoning(2, 'Inference fuse triggered.');
+            }
+
+            const dynTriples = __graphTriplesOrTrue(dynTerm);
+            dynamicHeadTriples = dynTriples !== null ? dynTriples : [];
+
+            // If the dynamic head contains explicit blank nodes, treat them as
+            // head blanks for skolemization.
+            const dynHeadBlankLabels =
+              dynamicHeadTriples && dynamicHeadTriples.length ? collectBlankLabelsInTriples(dynamicHeadTriples) : null;
+            if (dynHeadBlankLabels && dynHeadBlankLabels.size) {
+              headBlankLabelsHere = new Set([...headBlankLabelsHere, ...dynHeadBlankLabels]);
+            }
+          }
+
+          const headPatterns =
+            dynamicHeadTriples && dynamicHeadTriples.length ? r.conclusion.concat(dynamicHeadTriples) : r.conclusion;
+
+          for (const cpat of headPatterns) {
+            const instantiated = applySubstTriple(cpat, s);
+
+            const subj = instantiated.s;
+            const obj = instantiated.o;
+
+            const subjIsGraph = subj instanceof GraphTerm;
+            const objIsGraph = obj instanceof GraphTerm;
+            const subjIsTrue = subj instanceof Literal && subj.value === 'true';
+            const objIsTrue = obj instanceof Literal && obj.value === 'true';
+            const objIsFalse = obj instanceof Literal && obj.value === 'false';
+
+            const isFwRuleTriple =
+              isLogImplies(instantiated.p) && (subjIsGraph || subjIsTrue) && (objIsGraph || objIsTrue || objIsFalse);
+
+            const isBwRuleTriple =
+              isLogImpliedBy(instantiated.p) &&
+              ((subjIsGraph && objIsGraph) || (subjIsGraph && objIsTrue) || (subjIsTrue && objIsGraph));
+
+            if (isFwRuleTriple || isBwRuleTriple) {
+              if (!hasFactIndexed(facts, instantiated)) {
+                pushFactIndexed(facts, instantiated);
+                const df = makeDerivedRecord(instantiated, r, instantiatedPremises, s, captureExplanations);
+                derivedForward.push(df);
+                if (typeof onDerived === 'function') onDerived(df);
+                changedHere = true;
+              }
+
+              // Promote rule-producing triples to live rules, treating literal true as {}
+              // and literal false as a fuse head.
+              if (isFwRuleTriple) {
+                const newRule = __makeRuleFromTerms(subj, obj, true);
+                __prepareForwardRule(newRule);
+
+                const key = __ruleKey(
+                  newRule.isForward,
+                  newRule.isFuse,
+                  newRule.premise,
+                  newRule.conclusion,
+                  newRule.__dynamicConclusionTerm || null,
+                );
+                if (!forwardRules.__ruleKeySet.has(key)) {
+                  forwardRules.__ruleKeySet.add(key);
+                  forwardRules.push(newRule);
+                  rulesChanged = true;
+                }
+              } else if (isBwRuleTriple) {
+                const newRule = __makeRuleFromTerms(subj, obj, false);
+
+                const key = __ruleKey(
+                  newRule.isForward,
+                  newRule.isFuse,
+                  newRule.premise,
+                  newRule.conclusion,
+                  newRule.__dynamicConclusionTerm || null,
+                );
+                if (!backRules.__ruleKeySet.has(key)) {
+                  backRules.__ruleKeySet.add(key);
+                  backRules.push(newRule);
+                  indexBackRule(backRules, newRule);
+                  rulesChanged = true;
+                }
+              }
+
+              continue; // skip normal fact handling
+            }
+
+            // Only skolemize blank nodes that occur explicitly in the rule head
+            const inst = skolemizeTripleForHeadBlanks(
+              instantiated,
+              headBlankLabelsHere,
+              skMap,
+              skCounter,
+              fireKey,
+              headSkolemCache,
+            );
+
+            if (!isGroundTriple(inst)) continue;
+            if (hasFactIndexed(facts, inst)) continue;
+
+            pushFactIndexed(facts, inst);
+            const df = makeDerivedRecord(inst, r, instantiatedPremises, s, captureExplanations);
+            derivedForward.push(df);
+            if (typeof onDerived === 'function') onDerived(df);
+
+            changedHere = true;
+          }
+
+          return { changedHere, rulesChanged };
+        }
+
+        function runFixpoint() {
+          let anyChange = false;
+          let agendaIndex = makeSinglePremiseAgendaIndex(forwardRules, backRules);
+          let agendaCursor = 0;
+
+          while (true) {
+            let changed = false;
+
+            while (agendaCursor < facts.length && agendaIndex.size) {
+              const fact = facts[agendaCursor++];
+              const candidates = getSinglePremiseAgendaCandidates(agendaIndex, fact);
+              if (!candidates) continue;
+
+              const total = candidates.exactLen + candidates.wildLen;
+              for (let ci = 0; ci < total; ci++) {
+                const entry =
+                  ci < candidates.exactLen ? candidates.exact[ci] : candidates.wild[ci - candidates.exactLen];
+                const r = entry.rule;
+                if (__skipForwardRuleNow(r)) continue;
+
+                const s = unifyTriple(entry.goal, fact, {});
+                if (s === null) continue;
+
+                const outcome = __emitForwardRuleSolution(r, entry.ruleIndex, s);
+                if (outcome.rulesChanged) {
+                  agendaIndex = makeSinglePremiseAgendaIndex(forwardRules, backRules);
+                  agendaCursor = 0;
+                }
+                if (outcome.changedHere) {
+                  changed = true;
+                  anyChange = true;
+                }
+              }
+            }
+
+            for (let i = 0; i < forwardRules.length; i++) {
+              const r = forwardRules[i];
+              if (agendaIndex.indexed.has(r)) continue;
+              if (__skipForwardRuleNow(r)) continue;
+
+              const headIsStrictGround = r.__headIsStrictGround;
+              const maxSols = r.isFuse || headIsStrictGround ? 1 : undefined;
+              // Enable builtin deferral / goal reordering for forward rules only.
+              // This keeps forward-chaining conjunctions order-insensitive while
+              // preserving left-to-right evaluation inside backward rules (<=),
+              // which is important for termination on some programs (e.g., dijkstra).
+              const sols = proveGoals(r.premise, null, facts, backRules, 0, null, varGen, maxSols, {
+                deferBuiltins: true,
+              });
+
+              // Inference fuse
+              if (r.isFuse && sols.length) {
+                __printTriggeredFuse(r, opts && opts.prefixes, sols[0]);
+                __exitReasoning(2, 'Inference fuse triggered.');
+              }
+
+              for (const s of sols) {
+                const outcome = __emitForwardRuleSolution(r, i, s);
+                if (outcome.rulesChanged) {
+                  agendaIndex = makeSinglePremiseAgendaIndex(forwardRules, backRules);
+                  agendaCursor = 0;
+                }
+                if (outcome.changedHere) {
+                  changed = true;
+                  anyChange = true;
+                }
+              }
+            }
+
+            if (!changed) {
+              if (agendaCursor < facts.length && agendaIndex.size) continue;
               break;
             }
           }
-          if (hasCycle) {
-            undoTo(mark);
-            continue;
-          }
+
+          return anyChange;
         }
 
-        const newGoals = rStd.premise.concat(frame.restGoals);
+        while (true) {
+          // Phase A: scoped builtins disabled => they “delay” (fail) during saturation
+          setScopedSnapshot(null, 0);
+          const changedA = runFixpoint();
 
-        const vMark = visitedTrail.length;
-        pushVisitedKey(frame.goalKey);
+          // Rules may have been added dynamically (rule-producing triples), possibly
+          // introducing scoped builtins and/or higher closure priorities.
+          maxScopedClosurePriorityNeeded = Math.max(
+            maxScopedClosurePriorityNeeded,
+            __computeMaxScopedClosurePriorityNeeded(forwardRules, backRules),
+          );
 
-        // Explore the rule body; then undo; then resume trying further rules.
-        stack.push(frame);
-        stack.push({ kind: 'undo', substMark: mark, visitedMark: vMark });
-        stack.push({
-          kind: 'node',
-          goalsNow: newGoals,
-          curDepth: frame.curDepth + 1,
-          canDeferBuiltins: false,
-          deferCount: 0,
-        });
-        break;
-      }
-      continue;
-    }
+          // If there are no scoped builtins in the entire program, Phase B is pure
+          // overhead: it would just re-run the forward fixpoint and can double the
+          // cost of expensive "query-like" forward rules.
+          if (maxScopedClosurePriorityNeeded === 0) break;
 
-    if (frame.kind === 'factIter') {
-      const factsList = frame.factsList;
-      const candidates = frame.candidates;
-      const isIndexed = !!candidates;
+          // Freeze saturated scope
+          scopedClosureLevel += 1;
+          const snap = makeScopedSnapshot();
 
-      while (frame.idx < (isIndexed ? candidates.totalLen : factsList.length) && results.length < max) {
-        let f;
-        if (isIndexed) {
-          const idxNow = frame.idx++;
-          if (idxNow < candidates.exactLen) f = factsList[candidates.exact[idxNow]];
-          else f = factsList[candidates.wild[idxNow - candidates.exactLen]];
-        } else {
-          f = factsList[frame.idx++];
+          // Phase B: scoped builtins enabled, but they query only `snap`
+          setScopedSnapshot(snap, scopedClosureLevel);
+          const changedB = runFixpoint();
+
+          // Phase B can also derive rule-producing triples.
+          maxScopedClosurePriorityNeeded = Math.max(
+            maxScopedClosurePriorityNeeded,
+            __computeMaxScopedClosurePriorityNeeded(forwardRules, backRules),
+          );
+
+          if (!changedA && !changedB && scopedClosureLevel >= maxScopedClosurePriorityNeeded) break;
         }
 
-        const mark = trail.length;
-        if (!unifyTripleTrail(frame.goal0, f)) {
-          undoTo(mark);
-          continue;
-        }
+        setScopedSnapshot(null, 0);
 
-        if (!frame.restGoals.length) {
-          results.push(gcCompactForGoals(substMut, [], answerVars));
-          undoTo(mark);
-          if (results.length >= max) return results;
-          continue;
-        }
-
-        // Explore remaining goals; then undo; then resume trying further facts.
-        stack.push(frame);
-        stack.push({ kind: 'undo', substMark: mark, visitedMark: visitedTrail.length });
-        stack.push({
-          kind: 'node',
-          goalsNow: frame.restGoals,
-          curDepth: frame.curDepth + 1,
-          canDeferBuiltins: frame.canDeferBuiltins,
-          deferCount: 0,
-        });
-        break;
-      }
-
-      continue;
-    }
-
-    // frame.kind === 'node'
-    const goalsNow = frame.goalsNow;
-    if (!goalsNow.length) {
-      results.push(gcCompactForGoals(substMut, [], answerVars));
-      continue;
-    }
-
-    const rawGoal = goalsNow[0];
-    const restGoals = goalsNow.length > 1 ? goalsNow.slice(1) : [];
-    const goal0 = applySubstTriple(rawGoal, substMut);
-
-    // 1) Builtins
-    const goalPredicateIri = goal0.p instanceof Iri ? goal0.p.value : null;
-    const isRdfFirstOrRest = goalPredicateIri === RDF_NS + 'first' || goalPredicateIri === RDF_NS + 'rest';
-    const shouldTreatAsBuiltin =
-      isBuiltinPred(goal0.p) &&
-      !(isRdfFirstOrRest && !(goal0.s instanceof ListTerm || goal0.s instanceof OpenListTerm));
-
-    if (shouldTreatAsBuiltin) {
-      const remaining = max - results.length;
-      if (remaining <= 0) continue;
-      const builtinMax = Number.isFinite(remaining) && !restGoals.length ? remaining : undefined;
-
-      let deltas = evalBuiltin(goal0, {}, facts, backRules, frame.curDepth, varGen, builtinMax);
-
-      const dc = typeof frame.deferCount === 'number' ? frame.deferCount : 0;
-      const builtinDeltasAreVacuous = deltas.length > 0 && deltas.every((d) => Object.keys(d).length === 0);
-
-      if (
-        frame.canDeferBuiltins &&
-        (!deltas.length || builtinDeltasAreVacuous) &&
-        restGoals.length &&
-        __tripleHasVarOrBlank(goal0) &&
-        dc < goalsNow.length
-      ) {
-        // Rotate this goal to the end and try others first.
-        stack.push({
-          kind: 'node',
-          goalsNow: restGoals.concat([rawGoal]),
-          curDepth: frame.curDepth,
-          canDeferBuiltins: frame.canDeferBuiltins,
-          deferCount: dc + 1,
-        });
-        continue;
-      }
-
-      const subjectAndObjectAreFullyUnbound =
-        (goal0.s instanceof Var || goal0.s instanceof Blank) && (goal0.o instanceof Var || goal0.o instanceof Blank);
-
-      if (
-        frame.canDeferBuiltins &&
-        !deltas.length &&
-        __builtinIsSatisfiableWhenFullyUnbound(goalPredicateIri) &&
-        subjectAndObjectAreFullyUnbound &&
-        (!restGoals.length || dc >= goalsNow.length)
-      ) {
-        deltas = [{}];
-      }
-
-      if (deltas.length) {
-        stack.push({
-          kind: 'deltaIter',
-          deltas,
-          idx: 0,
-          restGoals,
-          curDepth: frame.curDepth,
-          canDeferBuiltins: frame.canDeferBuiltins,
-        });
-      }
-      continue;
-    }
-
-    // 2) Loop check for backward reasoning
-    //
-    // A strict ancestor loop check ("if visited then fail") is fast but
-    // incomplete. It breaks common Horn patterns where a goal appears again in
-    // a sibling branch and can still succeed via a different (non-cyclic) rule.
-    //
-    // Example (issue #9):
-    //   Human <= Woman.
-    //   Animal <= Human.
-    //   label <= Human, Animal.
-    // While proving Animal we need to re-prove Human, even though Human is an
-    // ancestor goal. EYE succeeds; a strict loop check prunes it.
-    //
-    // We therefore *allow* re-entering a visited goal, but when a goal is
-    // already visited we avoid applying backward rules whose premises would
-    // immediately re-enter any visited goal again (a cheap cycle guard).
-    const goalKey = tripleKeyForVisited(goal0);
-    const goalWasVisited = visitedCounts.has(goalKey);
-
-    // 3) Backward rules (indexed by head predicate) — explored first
-    if (goal0.p instanceof Iri) {
-      ensureBackRuleIndexes(backRules);
-      const candRules = (backRules.__byHeadPred.get(goal0.p.__tid) || []).concat(backRules.__wildHeadPred);
-
-      // facts should be tried *after* rules; push fact iterator first (below rules on the stack)
-      const candidates = candidateFacts(facts, goal0);
-      stack.push({
-        kind: 'factIter',
-        factsList: facts,
-        candidates,
-        idx: 0,
-        goal0,
-        restGoals,
-        curDepth: frame.curDepth,
-        canDeferBuiltins: frame.canDeferBuiltins,
-      });
-
-      // Then push rule iterator
-      if (candRules.length) {
-        stack.push({
-          kind: 'ruleIter',
-          rules: candRules,
-          idx: 0,
-          goal0,
-          restGoals,
-          curDepth: frame.curDepth,
-          goalKey,
-          goalPtid: goal0.p.__tid,
-          goalWasVisited,
-        });
-      }
-    } else {
-      // No IRI predicate: rule indexing doesn't apply; only try all facts.
-      stack.push({
-        kind: 'factIter',
-        factsList: facts,
-        candidates: null,
-        idx: 0,
-        goal0,
-        restGoals,
-        curDepth: frame.curDepth,
-        canDeferBuiltins: frame.canDeferBuiltins,
-      });
-    }
-  }
-
-  if (goalTable && __canStoreGoalMemo(visited, maxResults)) {
-    goalTable.entries.set(goalMemoKeyNow, __cloneGoalSolutions(results));
-  }
-
-  return results;
-}
-
-// ===========================================================================
-// Forward chaining to fixpoint
-// ===========================================================================
-
-function __defaultFusePrefixEnv() {
-  return {
-    shrinkIri() {
-      return null;
-    },
-  };
-}
-
-function __serializeFuseFormulaTriples(triples, prefixes) {
-  if (!Array.isArray(triples) || triples.length === 0) return '{ }';
-  return `{
-${triples.map((tr) => `  ${tripleToN3(tr, prefixes)}`).join('\n')}
-}`;
-}
-
-function __serializeFuseRule(rule, prefixes, subst /* optional */) {
-  const pref = prefixes && typeof prefixes.shrinkIri === 'function' ? prefixes : __defaultFusePrefixEnv();
-  const premise = Array.isArray(rule.premise)
-    ? subst
-      ? rule.premise.map((tr) => applySubstTriple(tr, subst))
-      : rule.premise
-    : [];
-
-  const premiseText = premise.length ? __serializeFuseFormulaTriples(premise, pref) : 'true';
-
-  let headText = 'true';
-  if (rule.isFuse) {
-    headText = 'false';
-  } else if (rule.__dynamicConclusionTerm) {
-    const dyn = subst ? applySubstTerm(rule.__dynamicConclusionTerm, subst) : rule.__dynamicConclusionTerm;
-    headText = termToN3(dyn, pref);
-  } else {
-    const conclusion = Array.isArray(rule.conclusion)
-      ? subst
-        ? rule.conclusion.map((tr) => applySubstTriple(tr, subst))
-        : rule.conclusion
-      : [];
-    headText = conclusion.length ? __serializeFuseFormulaTriples(conclusion, pref) : 'true';
-  }
-
-  const arrow = rule.isForward === false ? '<=' : '=>';
-  return `${premiseText} ${arrow} ${headText} .`;
-}
-
-function __printTriggeredFuse(rule, prefixes, subst /* optional */, extraNote /* optional */) {
-  console.log('# Inference fuse triggered.');
-  if (extraNote) console.log(`# ${extraNote}`);
-
-  const schematic = __serializeFuseRule(rule, prefixes, null);
-  console.log('# Fired rule:');
-  for (const line of schematic.split(/\r?\n/)) console.log('#   ' + line);
-
-  if (subst) {
-    const instantiated = __serializeFuseRule(rule, prefixes, subst);
-    if (instantiated !== schematic) {
-      console.log('# Matched instance:');
-      for (const line of instantiated.split(/\r?\n/)) console.log('#   ' + line);
-    }
-  }
-}
-
-function __exitReasoning(code, message /* optional */) {
-  if (typeof process !== 'undefined' && process && typeof process.exit === 'function') {
-    process.exit(code);
-    return;
-  }
-
-  const err = new Error(message || `Process exited with code ${code}`);
-  err.__eyelingExit = true;
-  err.code = code;
-  throw err;
-}
-
-function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, opts = {}) {
-  enterReasoningRun();
-  try {
-    ensureFactIndexes(facts);
-    ensureBackRuleIndexes(backRules);
-
-    const goalTable = __makeGoalTable();
-    __attachGoalTable(facts, goalTable);
-    __attachGoalTable(backRules, goalTable);
-
-    const captureExplanations = !(opts && opts.captureExplanations === false);
-    const derivedForward = [];
-    const varGen = [0];
-    const skCounter = [0];
-
-    // Speed up dynamic rule promotion by maintaining O(1) membership sets.
-    // (Some workloads derive many rule-producing triples.)
-
-    __ensureRuleKeySet(forwardRules);
-    __ensureRuleKeySet(backRules);
-
-    // Cache head blank-node skolemization per (rule firing, head blank label).
-    // This prevents repeatedly generating fresh _:sk_N blanks for the *same*
-    // rule+substitution instance across outer fixpoint iterations.
-    const headSkolemCache = new Map();
-
-    // Pre-compute per-rule metadata once (new forward rules are prepared on insertion).
-    for (let i = 0; i < forwardRules.length; i++) __prepareForwardRule(forwardRules[i]);
-
-    // Make rules visible to introspection builtins
-    backRules.__allForwardRules = forwardRules;
-    backRules.__allBackwardRules = backRules;
-
-    // Closure level counter used by log:collectAllIn/log:forAllIn priority gating.
-    // Level 0 means "no frozen snapshot" (during Phase A of each outer iteration).
-    let scopedClosureLevel = 0;
-
-    // Scan known rules for the maximum requested closure priority in scoped log:* goals.
-    let maxScopedClosurePriorityNeeded = __computeMaxScopedClosurePriorityNeeded(forwardRules, backRules);
-
-    // Conservative fast-skip for forward rules that cannot possibly succeed
-    // until a scoped snapshot exists (or a given closure level is reached).
-    // Helper functions are module-scoped: __computeForwardRuleScopedSkipInfo, etc.
-    function setScopedSnapshot(snap, level) {
-      if (!hasOwn.call(facts, '__scopedSnapshot')) {
-        Object.defineProperty(facts, '__scopedSnapshot', {
-          value: snap,
-          enumerable: false,
-          writable: true,
-          configurable: true,
-        });
-      } else {
-        facts.__scopedSnapshot = snap;
-      }
-
-      if (!hasOwn.call(facts, '__scopedClosureLevel')) {
-        Object.defineProperty(facts, '__scopedClosureLevel', {
-          value: level,
-          enumerable: false,
-          writable: true,
-          configurable: true,
-        });
-      } else {
-        facts.__scopedClosureLevel = level;
+        return derivedForward;
+      } finally {
+        exitReasoningRun();
       }
     }
 
-    function makeScopedSnapshot() {
+    // ---------------------------------------------------------------------------
+    // log:query output selection
+    // ---------------------------------------------------------------------------
+    // A top-level directive of the form:
+    //   { premise } log:query { conclusion }.
+    // does not add facts to the closure. Instead, when one or more such directives
+    // are present in the input, eyeling outputs only the **unique instantiated**
+    // conclusion triples for each solution of the premise (similar to a forward
+    // rule head projection).
+
+    function __tripleKeyForOutput(tr) {
+      // Use a canonical structural encoding (covers lists and quoted graphs).
+      // Note: this is used only for de-duplication of output triples.
+      return skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
+    }
+
+    function __withScopedSnapshotForQueries(facts, fn) {
+      // Some scoped log:* builtins "delay" unless a frozen snapshot exists.
+      // After forwardChain completes, we create a snapshot of the saturated
+      // closure so query premises can use scoped builtins reliably.
+      const oldSnap = hasOwn.call(facts, '__scopedSnapshot') ? facts.__scopedSnapshot : undefined;
+      const oldLvl = hasOwn.call(facts, '__scopedClosureLevel') ? facts.__scopedClosureLevel : undefined;
+
+      // Create a frozen snapshot of the saturated closure.
       const snap = facts.slice();
       ensureFactIndexes(snap);
       Object.defineProperty(snap, '__scopedSnapshot', {
@@ -8231,4549 +8575,4248 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
         writable: true,
         configurable: true,
       });
-      // Propagate closure level so nested scoped builtins can see it.
       Object.defineProperty(snap, '__scopedClosureLevel', {
-        value: scopedClosureLevel,
+        value: Number.MAX_SAFE_INTEGER,
         enumerable: false,
         writable: true,
         configurable: true,
       });
-      return snap;
+
+      // Ensure the live facts array exposes the snapshot/level for builtins.
+      if (!hasOwn.call(facts, '__scopedSnapshot')) {
+        Object.defineProperty(facts, '__scopedSnapshot', {
+          value: null,
+          enumerable: false,
+          writable: true,
+          configurable: true,
+        });
+      }
+      if (!hasOwn.call(facts, '__scopedClosureLevel')) {
+        Object.defineProperty(facts, '__scopedClosureLevel', {
+          value: 0,
+          enumerable: false,
+          writable: true,
+          configurable: true,
+        });
+      }
+
+      facts.__scopedSnapshot = snap;
+      facts.__scopedClosureLevel = Number.MAX_SAFE_INTEGER;
+
+      try {
+        return fn();
+      } finally {
+        facts.__scopedSnapshot = oldSnap === undefined ? null : oldSnap;
+        facts.__scopedClosureLevel = oldLvl === undefined ? 0 : oldLvl;
+      }
     }
 
-    function __skipForwardRuleNow(r) {
-      // Skip forward rules that are guaranteed to "delay" due to scoped
-      // builtins (log:collectAllIn / log:forAllIn / log:includes / log:notIncludes)
-      // until a snapshot exists (and a certain closure level is reached).
-      // This prevents expensive proofs that will definitely fail in Phase A
-      // and in early closure levels.
-      const info = r.__scopedSkipInfo;
-      if (info && info.needsSnap) {
-        const snapHere = facts.__scopedSnapshot || null;
-        const lvlHere = (facts && typeof facts.__scopedClosureLevel === 'number' && facts.__scopedClosureLevel) || 0;
-        if (!snapHere) return true;
-        if (lvlHere < info.requiredLevel) return true;
+    function collectLogQueryConclusions(logQueryRules, facts, backRules, opts = {}) {
+      const queryTriples = [];
+      const queryDerived = [];
+      const seen = new Set();
+
+      if (!Array.isArray(logQueryRules) || logQueryRules.length === 0) {
+        return { queryTriples, queryDerived };
       }
 
-      // Optimization: if the rule head is **structurally ground** (no vars anywhere, even inside
-      // quoted formulas) and has no head blanks, then the head does not depend on which body
-      // solution we pick. In that case, we only need *one* proof of the body, and once all head
-      // triples are already known we can skip proving the body entirely.
-      const headIsStrictGround = r.__headIsStrictGround;
-      if (headIsStrictGround) {
-        let allKnown = true;
-        for (const tr of r.conclusion) {
-          if (!hasFactIndexed(facts, tr)) {
-            allKnown = false;
-            break;
-          }
-        }
-        if (allKnown) return true;
-      }
+      ensureFactIndexes(facts);
+      ensureBackRuleIndexes(backRules);
 
-      return false;
-    }
+      const goalTable = __makeGoalTable();
+      __attachGoalTable(facts, goalTable);
+      __attachGoalTable(backRules, goalTable);
 
-    function __emitForwardRuleSolution(r, ruleIndex, s) {
-      let changedHere = false;
-      let rulesChanged = false;
+      const captureExplanations = !(opts && opts.captureExplanations === false);
 
-      // IMPORTANT: one skolem map per *rule firing*
-      const skMap = {};
-      const instantiatedPremises = r.premise.map((b) => applySubstTriple(b, s));
-      const fireKey = __firingKey(ruleIndex, instantiatedPremises);
+      // Shared state across all query firings (mirrors forwardChain()).
+      const varGen = [0];
+      const skCounter = [0];
+      const headSkolemCache = new Map();
 
-      // Support "dynamic" rule heads where the consequent is a term that
-      // (after substitution) evaluates to a quoted formula.
-      // Example: { :a :b ?C } => ?C.
-      let dynamicHeadTriples = null;
-      let headBlankLabelsHere = r.headBlankLabels;
-      if (r.__dynamicConclusionTerm) {
-        const dynTerm = applySubstTerm(r.__dynamicConclusionTerm, s);
+      return __withScopedSnapshotForQueries(facts, () => {
+        for (let qi = 0; qi < logQueryRules.length; qi++) {
+          const r = logQueryRules[qi];
+          if (!r || !Array.isArray(r.premise) || !Array.isArray(r.conclusion)) continue;
 
-        // Allow dynamic fuses: ... => ?X. where ?X becomes false
-        if (dynTerm instanceof Literal && dynTerm.value === 'false') {
-          __printTriggeredFuse(r, opts && opts.prefixes, s, 'Dynamic head resolved to false.');
-          __exitReasoning(2, 'Inference fuse triggered.');
-        }
-
-        const dynTriples = __graphTriplesOrTrue(dynTerm);
-        dynamicHeadTriples = dynTriples !== null ? dynTriples : [];
-
-        // If the dynamic head contains explicit blank nodes, treat them as
-        // head blanks for skolemization.
-        const dynHeadBlankLabels =
-          dynamicHeadTriples && dynamicHeadTriples.length ? collectBlankLabelsInTriples(dynamicHeadTriples) : null;
-        if (dynHeadBlankLabels && dynHeadBlankLabels.size) {
-          headBlankLabelsHere = new Set([...headBlankLabelsHere, ...dynHeadBlankLabels]);
-        }
-      }
-
-      const headPatterns =
-        dynamicHeadTriples && dynamicHeadTriples.length ? r.conclusion.concat(dynamicHeadTriples) : r.conclusion;
-
-      for (const cpat of headPatterns) {
-        const instantiated = applySubstTriple(cpat, s);
-
-        const subj = instantiated.s;
-        const obj = instantiated.o;
-
-        const subjIsGraph = subj instanceof GraphTerm;
-        const objIsGraph = obj instanceof GraphTerm;
-        const subjIsTrue = subj instanceof Literal && subj.value === 'true';
-        const objIsTrue = obj instanceof Literal && obj.value === 'true';
-        const objIsFalse = obj instanceof Literal && obj.value === 'false';
-
-        const isFwRuleTriple =
-          isLogImplies(instantiated.p) && (subjIsGraph || subjIsTrue) && (objIsGraph || objIsTrue || objIsFalse);
-
-        const isBwRuleTriple =
-          isLogImpliedBy(instantiated.p) &&
-          ((subjIsGraph && objIsGraph) || (subjIsGraph && objIsTrue) || (subjIsTrue && objIsGraph));
-
-        if (isFwRuleTriple || isBwRuleTriple) {
-          if (!hasFactIndexed(facts, instantiated)) {
-            pushFactIndexed(facts, instantiated);
-            const df = makeDerivedRecord(instantiated, r, instantiatedPremises, s, captureExplanations);
-            derivedForward.push(df);
-            if (typeof onDerived === 'function') onDerived(df);
-            changedHere = true;
-          }
-
-          // Promote rule-producing triples to live rules, treating literal true as {}
-          // and literal false as a fuse head.
-          if (isFwRuleTriple) {
-            const newRule = __makeRuleFromTerms(subj, obj, true);
-            __prepareForwardRule(newRule);
-
-            const key = __ruleKey(
-              newRule.isForward,
-              newRule.isFuse,
-              newRule.premise,
-              newRule.conclusion,
-              newRule.__dynamicConclusionTerm || null,
-            );
-            if (!forwardRules.__ruleKeySet.has(key)) {
-              forwardRules.__ruleKeySet.add(key);
-              forwardRules.push(newRule);
-              rulesChanged = true;
-            }
-          } else if (isBwRuleTriple) {
-            const newRule = __makeRuleFromTerms(subj, obj, false);
-
-            const key = __ruleKey(
-              newRule.isForward,
-              newRule.isFuse,
-              newRule.premise,
-              newRule.conclusion,
-              newRule.__dynamicConclusionTerm || null,
-            );
-            if (!backRules.__ruleKeySet.has(key)) {
-              backRules.__ruleKeySet.add(key);
-              backRules.push(newRule);
-              indexBackRule(backRules, newRule);
-              rulesChanged = true;
-            }
-          }
-
-          continue; // skip normal fact handling
-        }
-
-        // Only skolemize blank nodes that occur explicitly in the rule head
-        const inst = skolemizeTripleForHeadBlanks(
-          instantiated,
-          headBlankLabelsHere,
-          skMap,
-          skCounter,
-          fireKey,
-          headSkolemCache,
-        );
-
-        if (!isGroundTriple(inst)) continue;
-        if (hasFactIndexed(facts, inst)) continue;
-
-        pushFactIndexed(facts, inst);
-        const df = makeDerivedRecord(inst, r, instantiatedPremises, s, captureExplanations);
-        derivedForward.push(df);
-        if (typeof onDerived === 'function') onDerived(df);
-
-        changedHere = true;
-      }
-
-      return { changedHere, rulesChanged };
-    }
-
-    function runFixpoint() {
-      let anyChange = false;
-      let agendaIndex = makeSinglePremiseAgendaIndex(forwardRules, backRules);
-      let agendaCursor = 0;
-
-      while (true) {
-        let changed = false;
-
-        while (agendaCursor < facts.length && agendaIndex.size) {
-          const fact = facts[agendaCursor++];
-          const candidates = getSinglePremiseAgendaCandidates(agendaIndex, fact);
-          if (!candidates) continue;
-
-          const total = candidates.exactLen + candidates.wildLen;
-          for (let ci = 0; ci < total; ci++) {
-            const entry = ci < candidates.exactLen ? candidates.exact[ci] : candidates.wild[ci - candidates.exactLen];
-            const r = entry.rule;
-            if (__skipForwardRuleNow(r)) continue;
-
-            const s = unifyTriple(entry.goal, fact, {});
-            if (s === null) continue;
-
-            const outcome = __emitForwardRuleSolution(r, entry.ruleIndex, s);
-            if (outcome.rulesChanged) {
-              agendaIndex = makeSinglePremiseAgendaIndex(forwardRules, backRules);
-              agendaCursor = 0;
-            }
-            if (outcome.changedHere) {
-              changed = true;
-              anyChange = true;
-            }
-          }
-        }
-
-        for (let i = 0; i < forwardRules.length; i++) {
-          const r = forwardRules[i];
-          if (agendaIndex.indexed.has(r)) continue;
-          if (__skipForwardRuleNow(r)) continue;
-
-          const headIsStrictGround = r.__headIsStrictGround;
-          const maxSols = r.isFuse || headIsStrictGround ? 1 : undefined;
-          // Enable builtin deferral / goal reordering for forward rules only.
-          // This keeps forward-chaining conjunctions order-insensitive while
-          // preserving left-to-right evaluation inside backward rules (<=),
-          // which is important for termination on some programs (e.g., dijkstra).
-          const sols = proveGoals(r.premise, null, facts, backRules, 0, null, varGen, maxSols, {
+          const sols = proveGoals(r.premise, null, facts, backRules, 0, null, varGen, undefined, {
             deferBuiltins: true,
           });
 
-          // Inference fuse
-          if (r.isFuse && sols.length) {
-            __printTriggeredFuse(r, opts && opts.prefixes, sols[0]);
-            __exitReasoning(2, 'Inference fuse triggered.');
-          }
-
           for (const s of sols) {
-            const outcome = __emitForwardRuleSolution(r, i, s);
-            if (outcome.rulesChanged) {
-              agendaIndex = makeSinglePremiseAgendaIndex(forwardRules, backRules);
-              agendaCursor = 0;
+            const skMap = {};
+            const instantiatedPremises = r.premise.map((b) => applySubstTriple(b, s));
+            const fireKey = __firingKey(1000000 + qi, instantiatedPremises);
+
+            // Support dynamic heads (same semantics as forwardChain).
+            let dynamicHeadTriples = null;
+            let headBlankLabelsHere = r.headBlankLabels;
+            if (r.__dynamicConclusionTerm) {
+              const dynTerm = applySubstTerm(r.__dynamicConclusionTerm, s);
+              const dynTriples = __graphTriplesOrTrue(dynTerm);
+              dynamicHeadTriples = dynTriples !== null ? dynTriples : [];
+              const dynHeadBlankLabels =
+                dynamicHeadTriples && dynamicHeadTriples.length
+                  ? collectBlankLabelsInTriples(dynamicHeadTriples)
+                  : null;
+              if (dynHeadBlankLabels && dynHeadBlankLabels.size) {
+                headBlankLabelsHere = new Set([...headBlankLabelsHere, ...dynHeadBlankLabels]);
+              }
             }
-            if (outcome.changedHere) {
-              changed = true;
-              anyChange = true;
+
+            const headPatterns =
+              dynamicHeadTriples && dynamicHeadTriples.length ? r.conclusion.concat(dynamicHeadTriples) : r.conclusion;
+
+            for (const cpat of headPatterns) {
+              const instantiated = applySubstTriple(cpat, s);
+              const inst = skolemizeTripleForHeadBlanks(
+                instantiated,
+                headBlankLabelsHere,
+                skMap,
+                skCounter,
+                fireKey,
+                headSkolemCache,
+              );
+              if (!isGroundTriple(inst)) continue;
+              const k = __tripleKeyForOutput(inst);
+              if (seen.has(k)) continue;
+              seen.add(k);
+              queryTriples.push(inst);
+              queryDerived.push(makeDerivedRecord(inst, r, instantiatedPremises, s, captureExplanations));
             }
           }
         }
 
-        if (!changed) {
-          if (agendaCursor < facts.length && agendaIndex.size) continue;
-          break;
-        }
-      }
-
-      return anyChange;
-    }
-
-    while (true) {
-      // Phase A: scoped builtins disabled => they “delay” (fail) during saturation
-      setScopedSnapshot(null, 0);
-      const changedA = runFixpoint();
-
-      // Rules may have been added dynamically (rule-producing triples), possibly
-      // introducing scoped builtins and/or higher closure priorities.
-      maxScopedClosurePriorityNeeded = Math.max(
-        maxScopedClosurePriorityNeeded,
-        __computeMaxScopedClosurePriorityNeeded(forwardRules, backRules),
-      );
-
-      // If there are no scoped builtins in the entire program, Phase B is pure
-      // overhead: it would just re-run the forward fixpoint and can double the
-      // cost of expensive "query-like" forward rules.
-      if (maxScopedClosurePriorityNeeded === 0) break;
-
-      // Freeze saturated scope
-      scopedClosureLevel += 1;
-      const snap = makeScopedSnapshot();
-
-      // Phase B: scoped builtins enabled, but they query only `snap`
-      setScopedSnapshot(snap, scopedClosureLevel);
-      const changedB = runFixpoint();
-
-      // Phase B can also derive rule-producing triples.
-      maxScopedClosurePriorityNeeded = Math.max(
-        maxScopedClosurePriorityNeeded,
-        __computeMaxScopedClosurePriorityNeeded(forwardRules, backRules),
-      );
-
-      if (!changedA && !changedB && scopedClosureLevel >= maxScopedClosurePriorityNeeded) break;
-    }
-
-    setScopedSnapshot(null, 0);
-
-    return derivedForward;
-  } finally {
-    exitReasoningRun();
-  }
-}
-
-// ---------------------------------------------------------------------------
-// log:query output selection
-// ---------------------------------------------------------------------------
-// A top-level directive of the form:
-//   { premise } log:query { conclusion }.
-// does not add facts to the closure. Instead, when one or more such directives
-// are present in the input, eyeling outputs only the **unique instantiated**
-// conclusion triples for each solution of the premise (similar to a forward
-// rule head projection).
-
-function __tripleKeyForOutput(tr) {
-  // Use a canonical structural encoding (covers lists and quoted graphs).
-  // Note: this is used only for de-duplication of output triples.
-  return skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
-}
-
-function __withScopedSnapshotForQueries(facts, fn) {
-  // Some scoped log:* builtins "delay" unless a frozen snapshot exists.
-  // After forwardChain completes, we create a snapshot of the saturated
-  // closure so query premises can use scoped builtins reliably.
-  const oldSnap = hasOwn.call(facts, '__scopedSnapshot') ? facts.__scopedSnapshot : undefined;
-  const oldLvl = hasOwn.call(facts, '__scopedClosureLevel') ? facts.__scopedClosureLevel : undefined;
-
-  // Create a frozen snapshot of the saturated closure.
-  const snap = facts.slice();
-  ensureFactIndexes(snap);
-  Object.defineProperty(snap, '__scopedSnapshot', {
-    value: snap,
-    enumerable: false,
-    writable: true,
-    configurable: true,
-  });
-  Object.defineProperty(snap, '__scopedClosureLevel', {
-    value: Number.MAX_SAFE_INTEGER,
-    enumerable: false,
-    writable: true,
-    configurable: true,
-  });
-
-  // Ensure the live facts array exposes the snapshot/level for builtins.
-  if (!hasOwn.call(facts, '__scopedSnapshot')) {
-    Object.defineProperty(facts, '__scopedSnapshot', {
-      value: null,
-      enumerable: false,
-      writable: true,
-      configurable: true,
-    });
-  }
-  if (!hasOwn.call(facts, '__scopedClosureLevel')) {
-    Object.defineProperty(facts, '__scopedClosureLevel', {
-      value: 0,
-      enumerable: false,
-      writable: true,
-      configurable: true,
-    });
-  }
-
-  facts.__scopedSnapshot = snap;
-  facts.__scopedClosureLevel = Number.MAX_SAFE_INTEGER;
-
-  try {
-    return fn();
-  } finally {
-    facts.__scopedSnapshot = oldSnap === undefined ? null : oldSnap;
-    facts.__scopedClosureLevel = oldLvl === undefined ? 0 : oldLvl;
-  }
-}
-
-function collectLogQueryConclusions(logQueryRules, facts, backRules, opts = {}) {
-  const queryTriples = [];
-  const queryDerived = [];
-  const seen = new Set();
-
-  if (!Array.isArray(logQueryRules) || logQueryRules.length === 0) {
-    return { queryTriples, queryDerived };
-  }
-
-  ensureFactIndexes(facts);
-  ensureBackRuleIndexes(backRules);
-
-  const goalTable = __makeGoalTable();
-  __attachGoalTable(facts, goalTable);
-  __attachGoalTable(backRules, goalTable);
-
-  const captureExplanations = !(opts && opts.captureExplanations === false);
-
-  // Shared state across all query firings (mirrors forwardChain()).
-  const varGen = [0];
-  const skCounter = [0];
-  const headSkolemCache = new Map();
-
-  return __withScopedSnapshotForQueries(facts, () => {
-    for (let qi = 0; qi < logQueryRules.length; qi++) {
-      const r = logQueryRules[qi];
-      if (!r || !Array.isArray(r.premise) || !Array.isArray(r.conclusion)) continue;
-
-      const sols = proveGoals(r.premise, null, facts, backRules, 0, null, varGen, undefined, {
-        deferBuiltins: true,
+        return { queryTriples, queryDerived };
       });
-
-      for (const s of sols) {
-        const skMap = {};
-        const instantiatedPremises = r.premise.map((b) => applySubstTriple(b, s));
-        const fireKey = __firingKey(1000000 + qi, instantiatedPremises);
-
-        // Support dynamic heads (same semantics as forwardChain).
-        let dynamicHeadTriples = null;
-        let headBlankLabelsHere = r.headBlankLabels;
-        if (r.__dynamicConclusionTerm) {
-          const dynTerm = applySubstTerm(r.__dynamicConclusionTerm, s);
-          const dynTriples = __graphTriplesOrTrue(dynTerm);
-          dynamicHeadTriples = dynTriples !== null ? dynTriples : [];
-          const dynHeadBlankLabels =
-            dynamicHeadTriples && dynamicHeadTriples.length ? collectBlankLabelsInTriples(dynamicHeadTriples) : null;
-          if (dynHeadBlankLabels && dynHeadBlankLabels.size) {
-            headBlankLabelsHere = new Set([...headBlankLabelsHere, ...dynHeadBlankLabels]);
-          }
-        }
-
-        const headPatterns =
-          dynamicHeadTriples && dynamicHeadTriples.length ? r.conclusion.concat(dynamicHeadTriples) : r.conclusion;
-
-        for (const cpat of headPatterns) {
-          const instantiated = applySubstTriple(cpat, s);
-          const inst = skolemizeTripleForHeadBlanks(
-            instantiated,
-            headBlankLabelsHere,
-            skMap,
-            skCounter,
-            fireKey,
-            headSkolemCache,
-          );
-          if (!isGroundTriple(inst)) continue;
-          const k = __tripleKeyForOutput(inst);
-          if (seen.has(k)) continue;
-          seen.add(k);
-          queryTriples.push(inst);
-          queryDerived.push(makeDerivedRecord(inst, r, instantiatedPremises, s, captureExplanations));
-        }
-      }
     }
 
-    return { queryTriples, queryDerived };
-  });
-}
-
-function forwardChainAndCollectLogQueryConclusions(
-  facts,
-  forwardRules,
-  backRules,
-  logQueryRules,
-  onDerived,
-  opts = {},
-) {
-  enterReasoningRun();
-  try {
-    // Forward chain first (saturates `facts`).
-    const derived = forwardChain(facts, forwardRules, backRules, onDerived, opts);
-    // Then collect query conclusions against the saturated closure.
-    const { queryTriples, queryDerived } = collectLogQueryConclusions(logQueryRules, facts, backRules, opts);
-    return { derived, queryTriples, queryDerived };
-  } finally {
-    exitReasoningRun();
-  }
-}
-
-// (proof printing + log:outputString moved to lib/explain.js)
-
-function isUnsupportedRdfJsConversionError(err) {
-  return (
-    err instanceof TypeError &&
-    typeof err.message === 'string' &&
-    err.message.startsWith('Cannot convert N3-only term ')
-  );
-}
-
-function maybeTripleToRdfJsQuad(triple, rdfFactory, skipUnsupportedRdfJs) {
-  try {
-    return internalTripleToRdfJsQuad(triple, rdfFactory);
-  } catch (err) {
-    if (skipUnsupportedRdfJs && isUnsupportedRdfJsConversionError(err)) return null;
-    throw err;
-  }
-}
-
-function reasonStream(input, opts = {}) {
-  const {
-    baseIri = null,
-    proof = false,
-    onDerived = null,
-    includeInputFactsInClosure = true,
-    enforceHttps = false,
-    rdfjs = false,
-    dataFactory = null,
-    skipUnsupportedRdfJs = false,
-    builtinModules = null,
-  } = opts;
-
-  const parsedInput = normalizeParsedReasonerInputSync(input);
-  const rdfFactory = rdfjs ? getDataFactory(dataFactory) : null;
-
-  const __oldEnforceHttps = deref.getEnforceHttpsEnabled();
-  deref.setEnforceHttpsEnabled(!!enforceHttps);
-  proofCommentsEnabled = !!proof;
-
-  if (Array.isArray(builtinModules)) {
-    for (const spec of builtinModules) loadBuiltinModule(spec);
-  } else if (typeof builtinModules === 'string' && builtinModules) {
-    loadBuiltinModule(builtinModules);
-  }
-
-  let prefixes, triples, frules, brules, logQueryRules;
-
-  if (parsedInput) {
-    prefixes = parsedInput.prefixes;
-    triples = parsedInput.triples;
-    frules = parsedInput.frules;
-    brules = parsedInput.brules;
-    logQueryRules = parsedInput.logQueryRules;
-    if (baseIri) prefixes.setBase(baseIri);
-  } else {
-    const n3Text = normalizeReasonerInputSync(input);
-    const toks = lex(n3Text);
-    const parser = new Parser(toks);
-    if (baseIri) parser.prefixes.setBase(baseIri);
-
-    [prefixes, triples, frules, brules, logQueryRules] = parser.parseDocument();
-  }
-  // Make the parsed prefixes available to log:trace output
-  trace.setTracePrefixes(prefixes);
-
-  // Materialize anonymous rdf:first/rdf:rest collections into list terms.
-  // Named list nodes keep identity; list:* builtins can traverse them.
-  materializeRdfLists(triples, frules.concat(logQueryRules || []), brules);
-
-  // facts becomes the saturated closure because pushFactIndexed(...) appends into it
-  // Keep non-ground top-level facts (e.g., universally-quantified N3 variables)
-  // so they can participate in rule matching. Derived/output facts remain ground-gated elsewhere.
-  const facts = triples.slice();
-
-  let derived = [];
-  let queryTriples = [];
-  let queryDerived = [];
-
-  if (Array.isArray(logQueryRules) && logQueryRules.length) {
-    // Query-selection mode: derive full closure, then output only the unique
-    // instantiated conclusion triples of the log:query directives.
-    const res = forwardChainAndCollectLogQueryConclusions(facts, frules, brules, logQueryRules, { prefixes });
-    derived = res.derived;
-    queryTriples = res.queryTriples;
-    queryDerived = res.queryDerived;
-
-    // For compatibility with the streaming callback signature, we emit the
-    // query-selected triples (not all derived facts).
-    if (typeof onDerived === 'function') {
-      for (const qdf of queryDerived) {
-        const payload = { triple: tripleToN3(qdf.fact, prefixes), df: qdf };
-        if (rdfFactory) {
-          const quad = maybeTripleToRdfJsQuad(qdf.fact, rdfFactory, skipUnsupportedRdfJs);
-          if (quad) payload.quad = quad;
-        }
-        onDerived(payload);
-      }
-    }
-  } else {
-    // Default mode: output only newly derived forward facts.
-    derived = forwardChain(
+    function forwardChainAndCollectLogQueryConclusions(
       facts,
-      frules,
-      brules,
-      (df) => {
-        if (typeof onDerived === 'function') {
-          const payload = {
-            triple: tripleToN3(df.fact, prefixes),
-            df,
-          };
-          if (rdfFactory) {
-            const quad = maybeTripleToRdfJsQuad(df.fact, rdfFactory, skipUnsupportedRdfJs);
-            if (quad) payload.quad = quad;
-          }
-          onDerived(payload);
-        }
-      },
-      { prefixes },
-    );
-  }
-
-  const closureTriples =
-    Array.isArray(logQueryRules) && logQueryRules.length
-      ? queryTriples
-      : includeInputFactsInClosure
-        ? facts
-        : derived.map((d) => d.fact);
-
-  const closureN3 =
-    Array.isArray(logQueryRules) && logQueryRules.length && !proof
-      ? prettyPrintQueryTriples(closureTriples, prefixes)
-      : closureTriples.map((t) => tripleToN3(t, prefixes)).join('\n');
-
-  const __out = {
-    prefixes,
-    facts, // saturated closure (Triple[])
-    derived, // DerivedFact[]
-    queryMode: Array.isArray(logQueryRules) && logQueryRules.length ? true : false,
-    queryTriples,
-    queryDerived,
-    closureN3,
-  };
-
-  if (rdfFactory) {
-    __out.closureQuads = closureTriples
-      .map((t) => maybeTripleToRdfJsQuad(t, rdfFactory, skipUnsupportedRdfJs))
-      .filter(Boolean);
-    __out.queryQuads = queryTriples
-      .map((t) => maybeTripleToRdfJsQuad(t, rdfFactory, skipUnsupportedRdfJs))
-      .filter(Boolean);
-  }
-  deref.setEnforceHttpsEnabled(__oldEnforceHttps);
-  return __out;
-}
-
-function reasonRdfJs(input, opts = {}) {
-  const { dataFactory = null, skipUnsupportedRdfJs = false, ...restOpts } = opts || {};
-  const rdfFactory = getDataFactory(dataFactory);
-
-  const queue = [];
-  const waiters = [];
-  let done = false;
-  let failure = null;
-
-  const flush = () => {
-    while (waiters.length && (queue.length || done)) {
-      const resolve = waiters.shift();
-      if (queue.length) resolve({ value: queue.shift(), done: false });
-      else if (failure) resolve(Promise.reject(failure));
-      else resolve({ value: undefined, done: true });
-    }
-  };
-
-  Promise.resolve().then(async () => {
-    try {
-      const normalizedInput = await normalizeReasonerInputAsync(input);
-      reasonStream(normalizedInput, {
-        ...restOpts,
-        rdfjs: false,
-        onDerived: ({ df }) => {
-          const quad = maybeTripleToRdfJsQuad(df.fact, rdfFactory, skipUnsupportedRdfJs);
-          if (quad) {
-            queue.push(quad);
-            flush();
-          }
-        },
-      });
-    } catch (e) {
-      failure = e;
-    } finally {
-      done = true;
-      flush();
-    }
-  });
-
-  return {
-    [Symbol.asyncIterator]() {
-      return this;
-    },
-    next() {
-      if (queue.length) return Promise.resolve({ value: queue.shift(), done: false });
-      if (failure) return Promise.reject(failure);
-      if (done) return Promise.resolve({ value: undefined, done: true });
-      return new Promise((resolve) => waiters.push(resolve));
-    },
-  };
-}
-
-// Minimal export surface for Node + browser/worker
-function main() {
-  // Lazily require to avoid hard cycles in the module graph.
-  return require('./cli').main();
-}
-
-// ---------------------------------------------------------------------------
-// Internals (exposed for demo.html)
-// ---------------------------------------------------------------------------
-// The original monolithic eyeling.js exposed many internal functions and flags
-// as globals. demo.html (web worker) still relies on a subset of these.
-
-function getEnforceHttpsEnabled() {
-  return deref.getEnforceHttpsEnabled();
-}
-
-function setEnforceHttpsEnabled(v) {
-  deref.setEnforceHttpsEnabled(!!v);
-}
-
-function getProofCommentsEnabled() {
-  return proofCommentsEnabled;
-}
-
-function setProofCommentsEnabled(v) {
-  proofCommentsEnabled = !!v;
-}
-
-function getSuperRestrictedMode() {
-  return superRestrictedMode;
-}
-
-function setSuperRestrictedMode(v) {
-  superRestrictedMode = !!v;
-}
-
-function getTracePrefixes() {
-  return trace.getTracePrefixes();
-}
-
-function setTracePrefixes(v) {
-  trace.setTracePrefixes(v);
-}
-
-module.exports = {
-  reasonStream,
-  reasonRdfJs,
-  collectLogQueryConclusions,
-  forwardChainAndCollectLogQueryConclusions,
-  collectOutputStringsFromFacts,
-  main,
-  version,
-  N3SyntaxError,
-  Parser,
-  lex,
-  // demo internals
-  forwardChain,
-  materializeRdfLists,
-  isGroundTriple,
-  printExplanation,
-  // used by demo worker to stringify derived triples with prefixes
-  tripleToN3,
-  // pretty log:query output (when proof comments are disabled)
-  prettyPrintQueryTriples,
-  getEnforceHttpsEnabled,
-  setEnforceHttpsEnabled,
-  getProofCommentsEnabled,
-  setProofCommentsEnabled,
-  getSuperRestrictedMode,
-  setSuperRestrictedMode,
-  getTracePrefixes,
-  setTracePrefixes,
-  getDeterministicSkolemEnabled,
-  setDeterministicSkolemEnabled,
-  registerBuiltin,
-  unregisterBuiltin,
-  registerBuiltinModule,
-  loadBuiltinModule,
-  listBuiltinIris,
-};
-
-  };
-  __modules["lib/entry.js"] = function(require, module, exports){
-/**
- * Eyeling Reasoner — entry
- *
- * Package entry module used by the bundler and runtime entrypoints.
- * Keeps exports wiring separate from the core engine implementation.
- */
-
-'use strict';
-
-// Entry point for the bundled eyeling.js.
-// We intentionally re-export a small set of internals so demo.html (worker)
-// can call into the reasoner like the original monolithic build did.
-
-const engine = require('./engine');
-const { dataFactory } = require('./rdfjs');
-
-module.exports = {
-  // public
-  reasonStream: engine.reasonStream,
-  reasonRdfJs: engine.reasonRdfJs,
-  rdfjs: dataFactory,
-  main: engine.main,
-  version: engine.version,
-
-  // internals for demo.html
-  lex: engine.lex,
-  Parser: engine.Parser,
-  forwardChain: engine.forwardChain,
-  collectLogQueryConclusions: engine.collectLogQueryConclusions,
-  forwardChainAndCollectLogQueryConclusions: engine.forwardChainAndCollectLogQueryConclusions,
-  materializeRdfLists: engine.materializeRdfLists,
-  isGroundTriple: engine.isGroundTriple,
-  printExplanation: engine.printExplanation,
-  tripleToN3: engine.tripleToN3,
-  collectOutputStringsFromFacts: engine.collectOutputStringsFromFacts,
-  prettyPrintQueryTriples: engine.prettyPrintQueryTriples,
-  getEnforceHttpsEnabled: engine.getEnforceHttpsEnabled,
-  setEnforceHttpsEnabled: engine.setEnforceHttpsEnabled,
-  getProofCommentsEnabled: engine.getProofCommentsEnabled,
-  setProofCommentsEnabled: engine.setProofCommentsEnabled,
-  getTracePrefixes: engine.getTracePrefixes,
-  setTracePrefixes: engine.setTracePrefixes,
-};
-
-  };
-  __modules["lib/explain.js"] = function(require, module, exports){
-/**
- * Eyeling Reasoner — explain/output
- *
- * Pretty-printing of proofs and log:outputString aggregation.
- * Extracted from engine.js to keep the core engine focused on inference/search.
- */
-'use strict';
-
-const { LOG_NS, Literal, Iri, Blank, Var, varsInRule, literalParts } = require('./prelude');
-
-const { termToN3, tripleToN3 } = require('./printing');
-const { parseNumericLiteralInfo, termToJsString } = require('./builtins');
-
-function makeExplain(deps) {
-  const applySubstTerm = deps.applySubstTerm;
-  const skolemKeyFromTerm = deps.skolemKeyFromTerm;
-
-  function printExplanation(df, prefixes) {
-    console.log('# ----------------------------------------------------------------------');
-    console.log('# Proof for derived triple:');
-
-    // Fact line(s), indented 2 spaces after '# '
-    for (const line of tripleToN3(df.fact, prefixes).split(/\r?\n/)) {
-      const stripped = line.replace(/\s+$/, '');
-      if (stripped) {
-        console.log('#   ' + stripped);
+      forwardRules,
+      backRules,
+      logQueryRules,
+      onDerived,
+      opts = {},
+    ) {
+      enterReasoningRun();
+      try {
+        // Forward chain first (saturates `facts`).
+        const derived = forwardChain(facts, forwardRules, backRules, onDerived, opts);
+        // Then collect query conclusions against the saturated closure.
+        const { queryTriples, queryDerived } = collectLogQueryConclusions(logQueryRules, facts, backRules, opts);
+        return { derived, queryTriples, queryDerived };
+      } finally {
+        exitReasoningRun();
       }
     }
 
-    if (!df.premises.length) {
-      console.log('# This triple is the head of a forward rule with an empty premise,');
-      console.log('# so it holds unconditionally whenever the program is loaded.');
-    } else {
-      console.log('# It holds because the following instance of the rule body is provable:');
+    // (proof printing + log:outputString moved to lib/explain.js)
 
-      // Premises, also indented 2 spaces after '# '
-      for (const prem of df.premises) {
-        for (const line of tripleToN3(prem, prefixes).split(/\r?\n/)) {
+    function isUnsupportedRdfJsConversionError(err) {
+      return (
+        err instanceof TypeError &&
+        typeof err.message === 'string' &&
+        err.message.startsWith('Cannot convert N3-only term ')
+      );
+    }
+
+    function maybeTripleToRdfJsQuad(triple, rdfFactory, skipUnsupportedRdfJs) {
+      try {
+        return internalTripleToRdfJsQuad(triple, rdfFactory);
+      } catch (err) {
+        if (skipUnsupportedRdfJs && isUnsupportedRdfJsConversionError(err)) return null;
+        throw err;
+      }
+    }
+
+    function reasonStream(input, opts = {}) {
+      const {
+        baseIri = null,
+        proof = false,
+        onDerived = null,
+        includeInputFactsInClosure = true,
+        enforceHttps = false,
+        rdfjs = false,
+        dataFactory = null,
+        skipUnsupportedRdfJs = false,
+        builtinModules = null,
+      } = opts;
+
+      const parsedInput = normalizeParsedReasonerInputSync(input);
+      const rdfFactory = rdfjs ? getDataFactory(dataFactory) : null;
+
+      const __oldEnforceHttps = deref.getEnforceHttpsEnabled();
+      deref.setEnforceHttpsEnabled(!!enforceHttps);
+      proofCommentsEnabled = !!proof;
+
+      if (Array.isArray(builtinModules)) {
+        for (const spec of builtinModules) loadBuiltinModule(spec);
+      } else if (typeof builtinModules === 'string' && builtinModules) {
+        loadBuiltinModule(builtinModules);
+      }
+
+      let prefixes, triples, frules, brules, logQueryRules;
+
+      if (parsedInput) {
+        prefixes = parsedInput.prefixes;
+        triples = parsedInput.triples;
+        frules = parsedInput.frules;
+        brules = parsedInput.brules;
+        logQueryRules = parsedInput.logQueryRules;
+        if (baseIri) prefixes.setBase(baseIri);
+      } else {
+        const n3Text = normalizeReasonerInputSync(input);
+        const toks = lex(n3Text);
+        const parser = new Parser(toks);
+        if (baseIri) parser.prefixes.setBase(baseIri);
+
+        [prefixes, triples, frules, brules, logQueryRules] = parser.parseDocument();
+      }
+      // Make the parsed prefixes available to log:trace output
+      trace.setTracePrefixes(prefixes);
+
+      // Materialize anonymous rdf:first/rdf:rest collections into list terms.
+      // Named list nodes keep identity; list:* builtins can traverse them.
+      materializeRdfLists(triples, frules.concat(logQueryRules || []), brules);
+
+      // facts becomes the saturated closure because pushFactIndexed(...) appends into it
+      // Keep non-ground top-level facts (e.g., universally-quantified N3 variables)
+      // so they can participate in rule matching. Derived/output facts remain ground-gated elsewhere.
+      const facts = triples.slice();
+
+      let derived = [];
+      let queryTriples = [];
+      let queryDerived = [];
+
+      if (Array.isArray(logQueryRules) && logQueryRules.length) {
+        // Query-selection mode: derive full closure, then output only the unique
+        // instantiated conclusion triples of the log:query directives.
+        const res = forwardChainAndCollectLogQueryConclusions(facts, frules, brules, logQueryRules, { prefixes });
+        derived = res.derived;
+        queryTriples = res.queryTriples;
+        queryDerived = res.queryDerived;
+
+        // For compatibility with the streaming callback signature, we emit the
+        // query-selected triples (not all derived facts).
+        if (typeof onDerived === 'function') {
+          for (const qdf of queryDerived) {
+            const payload = { triple: tripleToN3(qdf.fact, prefixes), df: qdf };
+            if (rdfFactory) {
+              const quad = maybeTripleToRdfJsQuad(qdf.fact, rdfFactory, skipUnsupportedRdfJs);
+              if (quad) payload.quad = quad;
+            }
+            onDerived(payload);
+          }
+        }
+      } else {
+        // Default mode: output only newly derived forward facts.
+        derived = forwardChain(
+          facts,
+          frules,
+          brules,
+          (df) => {
+            if (typeof onDerived === 'function') {
+              const payload = {
+                triple: tripleToN3(df.fact, prefixes),
+                df,
+              };
+              if (rdfFactory) {
+                const quad = maybeTripleToRdfJsQuad(df.fact, rdfFactory, skipUnsupportedRdfJs);
+                if (quad) payload.quad = quad;
+              }
+              onDerived(payload);
+            }
+          },
+          { prefixes },
+        );
+      }
+
+      const closureTriples =
+        Array.isArray(logQueryRules) && logQueryRules.length
+          ? queryTriples
+          : includeInputFactsInClosure
+            ? facts
+            : derived.map((d) => d.fact);
+
+      const closureN3 =
+        Array.isArray(logQueryRules) && logQueryRules.length && !proof
+          ? prettyPrintQueryTriples(closureTriples, prefixes)
+          : closureTriples.map((t) => tripleToN3(t, prefixes)).join('\n');
+
+      const __out = {
+        prefixes,
+        facts, // saturated closure (Triple[])
+        derived, // DerivedFact[]
+        queryMode: Array.isArray(logQueryRules) && logQueryRules.length ? true : false,
+        queryTriples,
+        queryDerived,
+        closureN3,
+      };
+
+      if (rdfFactory) {
+        __out.closureQuads = closureTriples
+          .map((t) => maybeTripleToRdfJsQuad(t, rdfFactory, skipUnsupportedRdfJs))
+          .filter(Boolean);
+        __out.queryQuads = queryTriples
+          .map((t) => maybeTripleToRdfJsQuad(t, rdfFactory, skipUnsupportedRdfJs))
+          .filter(Boolean);
+      }
+      deref.setEnforceHttpsEnabled(__oldEnforceHttps);
+      return __out;
+    }
+
+    function reasonRdfJs(input, opts = {}) {
+      const { dataFactory = null, skipUnsupportedRdfJs = false, ...restOpts } = opts || {};
+      const rdfFactory = getDataFactory(dataFactory);
+
+      const queue = [];
+      const waiters = [];
+      let done = false;
+      let failure = null;
+
+      const flush = () => {
+        while (waiters.length && (queue.length || done)) {
+          const resolve = waiters.shift();
+          if (queue.length) resolve({ value: queue.shift(), done: false });
+          else if (failure) resolve(Promise.reject(failure));
+          else resolve({ value: undefined, done: true });
+        }
+      };
+
+      Promise.resolve().then(async () => {
+        try {
+          const normalizedInput = await normalizeReasonerInputAsync(input);
+          reasonStream(normalizedInput, {
+            ...restOpts,
+            rdfjs: false,
+            onDerived: ({ df }) => {
+              const quad = maybeTripleToRdfJsQuad(df.fact, rdfFactory, skipUnsupportedRdfJs);
+              if (quad) {
+                queue.push(quad);
+                flush();
+              }
+            },
+          });
+        } catch (e) {
+          failure = e;
+        } finally {
+          done = true;
+          flush();
+        }
+      });
+
+      return {
+        [Symbol.asyncIterator]() {
+          return this;
+        },
+        next() {
+          if (queue.length) return Promise.resolve({ value: queue.shift(), done: false });
+          if (failure) return Promise.reject(failure);
+          if (done) return Promise.resolve({ value: undefined, done: true });
+          return new Promise((resolve) => waiters.push(resolve));
+        },
+      };
+    }
+
+    // Minimal export surface for Node + browser/worker
+    function main() {
+      // Lazily require to avoid hard cycles in the module graph.
+      return require('./cli').main();
+    }
+
+    // ---------------------------------------------------------------------------
+    // Internals (exposed for demo.html)
+    // ---------------------------------------------------------------------------
+    // The original monolithic eyeling.js exposed many internal functions and flags
+    // as globals. demo.html (web worker) still relies on a subset of these.
+
+    function getEnforceHttpsEnabled() {
+      return deref.getEnforceHttpsEnabled();
+    }
+
+    function setEnforceHttpsEnabled(v) {
+      deref.setEnforceHttpsEnabled(!!v);
+    }
+
+    function getProofCommentsEnabled() {
+      return proofCommentsEnabled;
+    }
+
+    function setProofCommentsEnabled(v) {
+      proofCommentsEnabled = !!v;
+    }
+
+    function getSuperRestrictedMode() {
+      return superRestrictedMode;
+    }
+
+    function setSuperRestrictedMode(v) {
+      superRestrictedMode = !!v;
+    }
+
+    function getTracePrefixes() {
+      return trace.getTracePrefixes();
+    }
+
+    function setTracePrefixes(v) {
+      trace.setTracePrefixes(v);
+    }
+
+    module.exports = {
+      reasonStream,
+      reasonRdfJs,
+      collectLogQueryConclusions,
+      forwardChainAndCollectLogQueryConclusions,
+      collectOutputStringsFromFacts,
+      main,
+      version,
+      N3SyntaxError,
+      Parser,
+      lex,
+      // demo internals
+      forwardChain,
+      materializeRdfLists,
+      isGroundTriple,
+      printExplanation,
+      // used by demo worker to stringify derived triples with prefixes
+      tripleToN3,
+      // pretty log:query output (when proof comments are disabled)
+      prettyPrintQueryTriples,
+      getEnforceHttpsEnabled,
+      setEnforceHttpsEnabled,
+      getProofCommentsEnabled,
+      setProofCommentsEnabled,
+      getSuperRestrictedMode,
+      setSuperRestrictedMode,
+      getTracePrefixes,
+      setTracePrefixes,
+      getDeterministicSkolemEnabled,
+      setDeterministicSkolemEnabled,
+      registerBuiltin,
+      unregisterBuiltin,
+      registerBuiltinModule,
+      loadBuiltinModule,
+      listBuiltinIris,
+    };
+  };
+  __modules['lib/entry.js'] = function (require, module, exports) {
+    /**
+     * Eyeling Reasoner — entry
+     *
+     * Package entry module used by the bundler and runtime entrypoints.
+     * Keeps exports wiring separate from the core engine implementation.
+     */
+
+    'use strict';
+
+    // Entry point for the bundled eyeling.js.
+    // We intentionally re-export a small set of internals so demo.html (worker)
+    // can call into the reasoner like the original monolithic build did.
+
+    const engine = require('./engine');
+    const { dataFactory } = require('./rdfjs');
+
+    module.exports = {
+      // public
+      reasonStream: engine.reasonStream,
+      reasonRdfJs: engine.reasonRdfJs,
+      rdfjs: dataFactory,
+      main: engine.main,
+      version: engine.version,
+
+      // internals for demo.html
+      lex: engine.lex,
+      Parser: engine.Parser,
+      forwardChain: engine.forwardChain,
+      collectLogQueryConclusions: engine.collectLogQueryConclusions,
+      forwardChainAndCollectLogQueryConclusions: engine.forwardChainAndCollectLogQueryConclusions,
+      materializeRdfLists: engine.materializeRdfLists,
+      isGroundTriple: engine.isGroundTriple,
+      printExplanation: engine.printExplanation,
+      tripleToN3: engine.tripleToN3,
+      collectOutputStringsFromFacts: engine.collectOutputStringsFromFacts,
+      prettyPrintQueryTriples: engine.prettyPrintQueryTriples,
+      getEnforceHttpsEnabled: engine.getEnforceHttpsEnabled,
+      setEnforceHttpsEnabled: engine.setEnforceHttpsEnabled,
+      getProofCommentsEnabled: engine.getProofCommentsEnabled,
+      setProofCommentsEnabled: engine.setProofCommentsEnabled,
+      getTracePrefixes: engine.getTracePrefixes,
+      setTracePrefixes: engine.setTracePrefixes,
+    };
+  };
+  __modules['lib/explain.js'] = function (require, module, exports) {
+    /**
+     * Eyeling Reasoner — explain/output
+     *
+     * Pretty-printing of proofs and log:outputString aggregation.
+     * Extracted from engine.js to keep the core engine focused on inference/search.
+     */
+    'use strict';
+
+    const { LOG_NS, Literal, Iri, Blank, Var, varsInRule, literalParts } = require('./prelude');
+
+    const { termToN3, tripleToN3 } = require('./printing');
+    const { parseNumericLiteralInfo, termToJsString } = require('./builtins');
+
+    function makeExplain(deps) {
+      const applySubstTerm = deps.applySubstTerm;
+      const skolemKeyFromTerm = deps.skolemKeyFromTerm;
+
+      function printExplanation(df, prefixes) {
+        console.log('# ----------------------------------------------------------------------');
+        console.log('# Proof for derived triple:');
+
+        // Fact line(s), indented 2 spaces after '# '
+        for (const line of tripleToN3(df.fact, prefixes).split(/\r?\n/)) {
           const stripped = line.replace(/\s+$/, '');
           if (stripped) {
             console.log('#   ' + stripped);
           }
         }
-      }
 
-      console.log('# via the schematic forward rule:');
-
-      // Rule pretty-printed
-      console.log('#   {');
-      for (const tr of df.rule.premise) {
-        for (const line of tripleToN3(tr, prefixes).split(/\r?\n/)) {
-          const stripped = line.replace(/\s+$/, '');
-          if (stripped) {
-            console.log('#     ' + stripped);
-          }
-        }
-      }
-      console.log('#   } => {');
-      for (const tr of df.rule.conclusion) {
-        for (const line of tripleToN3(tr, prefixes).split(/\r?\n/)) {
-          const stripped = line.replace(/\s+$/, '');
-          if (stripped) {
-            console.log('#     ' + stripped);
-          }
-        }
-      }
-      console.log('#   } .');
-    }
-
-    // Substitution block
-    const ruleVars = varsInRule(df.rule);
-    const visibleNames = Object.keys(df.subst)
-      .filter((name) => ruleVars.has(name))
-      .sort();
-
-    if (visibleNames.length) {
-      console.log('# with substitution (on rule variables):');
-      for (const v of visibleNames) {
-        const fullTerm = applySubstTerm(new Var(v), df.subst);
-        const rendered = termToN3(fullTerm, prefixes);
-        const lines = rendered.split(/\r?\n/);
-
-        if (lines.length === 1) {
-          // single-line term
-          const stripped = lines[0].replace(/\s+$/, '');
-          if (stripped) {
-            console.log('#   ?' + v + ' = ' + stripped);
-          }
+        if (!df.premises.length) {
+          console.log('# This triple is the head of a forward rule with an empty premise,');
+          console.log('# so it holds unconditionally whenever the program is loaded.');
         } else {
-          // multi-line term (e.g. a formula)
-          const first = lines[0].trimEnd(); // usually "{"
-          if (first) {
-            console.log('#   ?' + v + ' = ' + first);
+          console.log('# It holds because the following instance of the rule body is provable:');
+
+          // Premises, also indented 2 spaces after '# '
+          for (const prem of df.premises) {
+            for (const line of tripleToN3(prem, prefixes).split(/\r?\n/)) {
+              const stripped = line.replace(/\s+$/, '');
+              if (stripped) {
+                console.log('#   ' + stripped);
+              }
+            }
           }
-          for (let i = 1; i < lines.length; i++) {
-            const stripped = lines[i].trim();
-            if (!stripped) continue;
-            if (i === lines.length - 1) {
-              // closing brace
-              console.log('#   ' + stripped);
+
+          console.log('# via the schematic forward rule:');
+
+          // Rule pretty-printed
+          console.log('#   {');
+          for (const tr of df.rule.premise) {
+            for (const line of tripleToN3(tr, prefixes).split(/\r?\n/)) {
+              const stripped = line.replace(/\s+$/, '');
+              if (stripped) {
+                console.log('#     ' + stripped);
+              }
+            }
+          }
+          console.log('#   } => {');
+          for (const tr of df.rule.conclusion) {
+            for (const line of tripleToN3(tr, prefixes).split(/\r?\n/)) {
+              const stripped = line.replace(/\s+$/, '');
+              if (stripped) {
+                console.log('#     ' + stripped);
+              }
+            }
+          }
+          console.log('#   } .');
+        }
+
+        // Substitution block
+        const ruleVars = varsInRule(df.rule);
+        const visibleNames = Object.keys(df.subst)
+          .filter((name) => ruleVars.has(name))
+          .sort();
+
+        if (visibleNames.length) {
+          console.log('# with substitution (on rule variables):');
+          for (const v of visibleNames) {
+            const fullTerm = applySubstTerm(new Var(v), df.subst);
+            const rendered = termToN3(fullTerm, prefixes);
+            const lines = rendered.split(/\r?\n/);
+
+            if (lines.length === 1) {
+              // single-line term
+              const stripped = lines[0].replace(/\s+$/, '');
+              if (stripped) {
+                console.log('#   ?' + v + ' = ' + stripped);
+              }
             } else {
-              // inner triple lines
-              console.log('#     ' + stripped);
+              // multi-line term (e.g. a formula)
+              const first = lines[0].trimEnd(); // usually "{"
+              if (first) {
+                console.log('#   ?' + v + ' = ' + first);
+              }
+              for (let i = 1; i < lines.length; i++) {
+                const stripped = lines[i].trim();
+                if (!stripped) continue;
+                if (i === lines.length - 1) {
+                  // closing brace
+                  console.log('#   ' + stripped);
+                } else {
+                  // inner triple lines
+                  console.log('#     ' + stripped);
+                }
+              }
             }
           }
         }
+
+        console.log('# Therefore the derived triple above is entailed by the rules and facts.');
+        console.log('# ----------------------------------------------------------------------\n');
       }
-    }
 
-    console.log('# Therefore the derived triple above is entailed by the rules and facts.');
-    console.log('# ----------------------------------------------------------------------\n');
-  }
+      // ===========================================================================
+      // CLI entry point
+      // ===========================================================================
+      // ===========================================================================
+      // log:outputString support
+      // ===========================================================================
 
-  // ===========================================================================
-  // CLI entry point
-  // ===========================================================================
-  // ===========================================================================
-  // log:outputString support
-  // ===========================================================================
+      function compareOutputStringKeys(a, b) {
+        // Deterministic ordering of keys. The spec only requires "order of the subject keys"
+        // and leaves concrete term ordering reasoner-dependent. We implement:
+        //   1) numeric literals (numeric value)
+        //   2) plain literals (lexical form)
+        //   3) IRIs
+        //   4) blank nodes (label)
+        //   5) fallback: skolemKeyFromTerm
+        const aNum = parseNumericLiteralInfo(a);
+        const bNum = parseNumericLiteralInfo(b);
+        if (aNum && bNum) {
+          // bigint or number
+          if (aNum.kind === 'bigint' && bNum.kind === 'bigint') {
+            if (aNum.value < bNum.value) return -1;
+            if (aNum.value > bNum.value) return 1;
+            return 0;
+          }
+          const av = Number(aNum.value);
+          const bv = Number(bNum.value);
+          if (av < bv) return -1;
+          if (av > bv) return 1;
+          return 0;
+        }
+        if (aNum && !bNum) return -1;
+        if (!aNum && bNum) return 1;
 
-  function compareOutputStringKeys(a, b) {
-    // Deterministic ordering of keys. The spec only requires "order of the subject keys"
-    // and leaves concrete term ordering reasoner-dependent. We implement:
-    //   1) numeric literals (numeric value)
-    //   2) plain literals (lexical form)
-    //   3) IRIs
-    //   4) blank nodes (label)
-    //   5) fallback: skolemKeyFromTerm
-    const aNum = parseNumericLiteralInfo(a);
-    const bNum = parseNumericLiteralInfo(b);
-    if (aNum && bNum) {
-      // bigint or number
-      if (aNum.kind === 'bigint' && bNum.kind === 'bigint') {
-        if (aNum.value < bNum.value) return -1;
-        if (aNum.value > bNum.value) return 1;
+        // Plain literal ordering (lexical)
+        if (a instanceof Literal && b instanceof Literal) {
+          const [alex] = literalParts(a.value);
+          const [blex] = literalParts(b.value);
+          if (alex < blex) return -1;
+          if (alex > blex) return 1;
+          return 0;
+        }
+        if (a instanceof Literal && !(b instanceof Literal)) return -1;
+        if (!(a instanceof Literal) && b instanceof Literal) return 1;
+
+        // IRIs
+        if (a instanceof Iri && b instanceof Iri) {
+          if (a.value < b.value) return -1;
+          if (a.value > b.value) return 1;
+          return 0;
+        }
+        if (a instanceof Iri && !(b instanceof Iri)) return -1;
+        if (!(a instanceof Iri) && b instanceof Iri) return 1;
+
+        // Blank nodes
+        if (a instanceof Blank && b instanceof Blank) {
+          if (a.label < b.label) return -1;
+          if (a.label > b.label) return 1;
+          return 0;
+        }
+        if (a instanceof Blank && !(b instanceof Blank)) return -1;
+        if (!(a instanceof Blank) && b instanceof Blank) return 1;
+
+        // Fallback
+        const ak = skolemKeyFromTerm(a);
+        const bk = skolemKeyFromTerm(b);
+        if (ak < bk) return -1;
+        if (ak > bk) return 1;
         return 0;
       }
-      const av = Number(aNum.value);
-      const bv = Number(bNum.value);
-      if (av < bv) return -1;
-      if (av > bv) return 1;
-      return 0;
-    }
-    if (aNum && !bNum) return -1;
-    if (!aNum && bNum) return 1;
 
-    // Plain literal ordering (lexical)
-    if (a instanceof Literal && b instanceof Literal) {
-      const [alex] = literalParts(a.value);
-      const [blex] = literalParts(b.value);
-      if (alex < blex) return -1;
-      if (alex > blex) return 1;
-      return 0;
-    }
-    if (a instanceof Literal && !(b instanceof Literal)) return -1;
-    if (!(a instanceof Literal) && b instanceof Literal) return 1;
+      function collectOutputStringsFromFacts(facts, prefixes) {
+        // Gather all (key, string) pairs from the saturated fact store.
+        const pairs = [];
+        for (const tr of facts) {
+          if (!(tr && tr.p instanceof Iri)) continue;
+          if (tr.p.value !== LOG_NS + 'outputString') continue;
+          if (!(tr.o instanceof Literal)) continue;
 
-    // IRIs
-    if (a instanceof Iri && b instanceof Iri) {
-      if (a.value < b.value) return -1;
-      if (a.value > b.value) return 1;
-      return 0;
-    }
-    if (a instanceof Iri && !(b instanceof Iri)) return -1;
-    if (!(a instanceof Iri) && b instanceof Iri) return 1;
+          const s = termToJsString(tr.o);
+          if (s === null) continue;
 
-    // Blank nodes
-    if (a instanceof Blank && b instanceof Blank) {
-      if (a.label < b.label) return -1;
-      if (a.label > b.label) return 1;
-      return 0;
-    }
-    if (a instanceof Blank && !(b instanceof Blank)) return -1;
-    if (!(a instanceof Blank) && b instanceof Blank) return 1;
+          pairs.push({ key: tr.s, text: s, idx: pairs.length });
+        }
 
-    // Fallback
-    const ak = skolemKeyFromTerm(a);
-    const bk = skolemKeyFromTerm(b);
-    if (ak < bk) return -1;
-    if (ak > bk) return 1;
-    return 0;
-  }
+        pairs.sort((a, b) => {
+          const c = compareOutputStringKeys(a.key, b.key, prefixes);
+          if (c !== 0) return c;
+          return a.idx - b.idx; // stable tie-breaker
+        });
 
-  function collectOutputStringsFromFacts(facts, prefixes) {
-    // Gather all (key, string) pairs from the saturated fact store.
-    const pairs = [];
-    for (const tr of facts) {
-      if (!(tr && tr.p instanceof Iri)) continue;
-      if (tr.p.value !== LOG_NS + 'outputString') continue;
-      if (!(tr.o instanceof Literal)) continue;
+        return pairs.map((p) => p.text).join('');
+      }
 
-      const s = termToJsString(tr.o);
-      if (s === null) continue;
-
-      pairs.push({ key: tr.s, text: s, idx: pairs.length });
+      return { printExplanation, collectOutputStringsFromFacts };
     }
 
-    pairs.sort((a, b) => {
-      const c = compareOutputStringKeys(a.key, b.key, prefixes);
-      if (c !== 0) return c;
-      return a.idx - b.idx; // stable tie-breaker
-    });
-
-    return pairs.map((p) => p.text).join('');
-  }
-
-  return { printExplanation, collectOutputStringsFromFacts };
-}
-
-module.exports = { makeExplain };
-
+    module.exports = { makeExplain };
   };
-  __modules["lib/lexer.js"] = function(require, module, exports){
-/**
- * Eyeling Reasoner — lexer
- *
- * Tokenizer for the supported N3/Turtle-like syntax. Produces a token stream
- * consumed by lib/parser.js.
- */
+  __modules['lib/lexer.js'] = function (require, module, exports) {
+    /**
+     * Eyeling Reasoner — lexer
+     *
+     * Tokenizer for the supported N3/Turtle-like syntax. Produces a token stream
+     * consumed by lib/parser.js.
+     */
 
-'use strict';
+    'use strict';
 
-class Token {
-  constructor(typ, value = null, offset = null) {
-    this.typ = typ;
-    this.value = value;
-    // Codepoint offset in the original source (Array.from(text) index).
-    this.offset = offset;
-  }
-  toString() {
-    const loc = typeof this.offset === 'number' ? `@${this.offset}` : '';
-    if (this.value == null) return `Token(${this.typ}${loc})`;
-    return `Token(${this.typ}${loc}, ${JSON.stringify(this.value)})`;
-  }
-}
-
-class N3SyntaxError extends SyntaxError {
-  constructor(message, offset = null) {
-    super(message);
-    this.name = 'N3SyntaxError';
-    this.offset = offset;
-  }
-}
-
-function isWs(c) {
-  return /\s/.test(c);
-}
-
-// Turtle/N3 prefixed names (PNAME_*) allow many Unicode letters and certain
-// punctuation, plus %-escapes and backslash escapes in PN_LOCAL.
-//
-// The original lexer only accepted ASCII in identifiers, which incorrectly
-// rejected valid N3 such as:
-//   res:COUNTRY_United%20States rdfs:label "United States".
-//   res:CITY_Chañaral rdfs:label "Chañaral".
-//
-// We implement a grammar-aligned matcher for PN_CHARS* and PLX fragments.
-function isHexDigit(c) {
-  return c !== null && /^[0-9A-Fa-f]$/.test(c);
-}
-
-function isPnCharsBase(c) {
-  // Approximation of PN_CHARS_BASE from the N3 grammar using Unicode properties.
-  // Covers most letters used in practice (including ñ) and common scripts.
-  return c !== null && /[A-Za-z]|\p{L}|\p{Nl}/u.test(c);
-}
-
-function isPnCharsU(c) {
-  // PN_CHARS_U ::= PN_CHARS_BASE | '_'
-  return c === '_' || isPnCharsBase(c);
-}
-
-function isPnChars(c) {
-  // PN_CHARS ::= PN_CHARS_U | '-' | [0-9] | U+00B7 | [U+0300-U+036F] | [U+203F-U+2040]
-  if (c === null) return false;
-  if (isPnCharsU(c)) return true;
-  if (c === '-' || /[0-9]/.test(c) || c === '\u00B7') return true;
-  const cp = c.codePointAt(0);
-  return (cp >= 0x0300 && cp <= 0x036f) || (cp >= 0x203f && cp <= 0x2040);
-}
-
-// PN_LOCAL_ESC from the N3/Turtle grammar.
-const PN_LOCAL_ESC_SET = new Set([
-  '_',
-  '~',
-  '.',
-  '-',
-  '!',
-  '$',
-  '&',
-  "'",
-  '(',
-  ')',
-  '*',
-  '+',
-  ',',
-  ';',
-  '=',
-  '/',
-  '?',
-  '#',
-  '@',
-  '%',
-]);
-
-function isIdentChar(c) {
-  // Allowed raw chars in PNAME tokens beyond PN_CHARS*: ':' is allowed in PN_LOCAL.
-  return c === ':' || isPnChars(c);
-}
-
-function canContinueAfterDot(next) {
-  // PN_LOCAL allows '.' but it cannot appear at the end.
-  // We include '.' only if it is followed by something that could continue a name.
-  if (next === null) return false;
-  if (isIdentChar(next)) return true;
-  if (next === '%' || next === '\\') return true;
-  return false;
-}
-
-function isForbiddenNoncharacterCodePoint(cp) {
-  return (cp & 0xffff) === 0xfffe || (cp & 0xffff) === 0xffff;
-}
-
-function validateEscapedCodePoint(cp, offset = null, escapeKind = 'escape') {
-  if (cp === 0x0000) {
-    throw new N3SyntaxError(`Invalid string literal: ${escapeKind} U+0000 is not allowed`, offset);
-  }
-  if (cp >= 0xd800 && cp <= 0xdfff) {
-    throw new N3SyntaxError(`Invalid string literal: ${escapeKind} surrogate code points are not allowed`, offset);
-  }
-  if (isForbiddenNoncharacterCodePoint(cp)) {
-    throw new N3SyntaxError(
-      `Invalid string literal: ${escapeKind} noncharacter U+${cp
-        .toString(16)
-        .toUpperCase()
-        .padStart(cp <= 0xffff ? 4 : 6, '0')} is not allowed`,
-      offset,
-    );
-  }
-}
-
-function decodeN3StringEscapes(s, offset = null) {
-  let out = '';
-  for (let i = 0; i < s.length; i++) {
-    const c = s[i];
-    if (c !== '\\') {
-      out += c;
-      continue;
-    }
-    if (i + 1 >= s.length) {
-      out += '\\';
-      continue;
-    }
-    const e = s[++i];
-    switch (e) {
-      case 't':
-        out += '\t';
-        break;
-      case 'n':
-        out += '\n';
-        break;
-      case 'r':
-        out += '\r';
-        break;
-      case 'b':
-        out += '\b';
-        break;
-      case 'f':
-        out += '\f';
-        break;
-      case '"':
-        out += '"';
-        break;
-      case "'":
-        out += "'";
-        break;
-      case '\\':
-        out += '\\';
-        break;
-
-      case 'u': {
-        const hex = s.slice(i + 1, i + 5);
-        if (/^[0-9A-Fa-f]{4}$/.test(hex)) {
-          const cp = parseInt(hex, 16);
-          validateEscapedCodePoint(cp, offset, '\\u');
-          out += String.fromCharCode(cp);
-          i += 4;
-        } else {
-          out += '\\u';
-        }
-        break;
+    class Token {
+      constructor(typ, value = null, offset = null) {
+        this.typ = typ;
+        this.value = value;
+        // Codepoint offset in the original source (Array.from(text) index).
+        this.offset = offset;
       }
-
-      case 'U': {
-        const hex = s.slice(i + 1, i + 9);
-        if (/^[0-9A-Fa-f]{8}$/.test(hex)) {
-          const cp = parseInt(hex, 16);
-          if (cp >= 0 && cp <= 0x10ffff) {
-            validateEscapedCodePoint(cp, offset, '\\U');
-            out += String.fromCodePoint(cp);
-          } else out += '\\U' + hex;
-          i += 8;
-        } else {
-          out += '\\U';
-        }
-        break;
+      toString() {
+        const loc = typeof this.offset === 'number' ? `@${this.offset}` : '';
+        if (this.value == null) return `Token(${this.typ}${loc})`;
+        return `Token(${this.typ}${loc}, ${JSON.stringify(this.value)})`;
       }
-
-      default:
-        // preserve unknown escapes
-        out += '\\' + e;
     }
-  }
-  return out;
-}
 
-function formatCodePoint(cp) {
-  return cp
-    .toString(16)
-    .toUpperCase()
-    .padStart(cp <= 0xffff ? 4 : 6, '0');
-}
+    class N3SyntaxError extends SyntaxError {
+      constructor(message, offset = null) {
+        super(message);
+        this.name = 'N3SyntaxError';
+        this.offset = offset;
+      }
+    }
 
-function isForbiddenIriRefChar(c) {
-  return (
-    c === '<' || c === '>' || c === '"' || c === '{' || c === '}' || c === '|' || c === '^' || c === '`' || c === '\\'
-  );
-}
+    function isWs(c) {
+      return /\s/.test(c);
+    }
 
-function assertValidIriRefCodePoint(cp, offset = null) {
-  if (cp <= 0x20) {
-    throw new N3SyntaxError(`Invalid IRIREF: character U+${formatCodePoint(cp)} is not allowed inside <...>`, offset);
-  }
+    // Turtle/N3 prefixed names (PNAME_*) allow many Unicode letters and certain
+    // punctuation, plus %-escapes and backslash escapes in PN_LOCAL.
+    //
+    // The original lexer only accepted ASCII in identifiers, which incorrectly
+    // rejected valid N3 such as:
+    //   res:COUNTRY_United%20States rdfs:label "United States".
+    //   res:CITY_Chañaral rdfs:label "Chañaral".
+    //
+    // We implement a grammar-aligned matcher for PN_CHARS* and PLX fragments.
+    function isHexDigit(c) {
+      return c !== null && /^[0-9A-Fa-f]$/.test(c);
+    }
 
-  if (cp >= 0xd800 && cp <= 0xdfff) {
-    throw new N3SyntaxError(
-      `Invalid IRIREF: surrogate code point U+${formatCodePoint(cp)} is not allowed inside <...>`,
-      offset,
-    );
-  }
+    function isPnCharsBase(c) {
+      // Approximation of PN_CHARS_BASE from the N3 grammar using Unicode properties.
+      // Covers most letters used in practice (including ñ) and common scripts.
+      return c !== null && /[A-Za-z]|\p{L}|\p{Nl}/u.test(c);
+    }
 
-  if (isForbiddenNoncharacterCodePoint(cp)) {
-    throw new N3SyntaxError(
-      `Invalid IRIREF: noncharacter U+${formatCodePoint(cp)} is not allowed inside <...>`,
-      offset,
-    );
-  }
+    function isPnCharsU(c) {
+      // PN_CHARS_U ::= PN_CHARS_BASE | '_'
+      return c === '_' || isPnCharsBase(c);
+    }
 
-  const c = String.fromCodePoint(cp);
-  if (isForbiddenIriRefChar(c)) {
-    throw new N3SyntaxError(`Invalid IRIREF: character ${JSON.stringify(c)} is not allowed inside <...>`, offset);
-  }
-}
-
-function decodeIriRefEscapes(s, offset = null) {
-  let out = '';
-  for (let i = 0; i < s.length; i++) {
-    const c = s[i];
-    if (c !== '\\') {
+    function isPnChars(c) {
+      // PN_CHARS ::= PN_CHARS_U | '-' | [0-9] | U+00B7 | [U+0300-U+036F] | [U+203F-U+2040]
+      if (c === null) return false;
+      if (isPnCharsU(c)) return true;
+      if (c === '-' || /[0-9]/.test(c) || c === '\u00B7') return true;
       const cp = c.codePointAt(0);
-      assertValidIriRefCodePoint(cp, offset);
-      out += c;
-      continue;
+      return (cp >= 0x0300 && cp <= 0x036f) || (cp >= 0x203f && cp <= 0x2040);
     }
 
-    if (i + 1 >= s.length) {
-      throw new N3SyntaxError('Invalid IRIREF: bare backslash is not allowed inside <...>', offset);
+    // PN_LOCAL_ESC from the N3/Turtle grammar.
+    const PN_LOCAL_ESC_SET = new Set([
+      '_',
+      '~',
+      '.',
+      '-',
+      '!',
+      '$',
+      '&',
+      "'",
+      '(',
+      ')',
+      '*',
+      '+',
+      ',',
+      ';',
+      '=',
+      '/',
+      '?',
+      '#',
+      '@',
+      '%',
+    ]);
+
+    function isIdentChar(c) {
+      // Allowed raw chars in PNAME tokens beyond PN_CHARS*: ':' is allowed in PN_LOCAL.
+      return c === ':' || isPnChars(c);
     }
 
-    const e = s[++i];
-    if (e === 'u') {
-      const hex = s.slice(i + 1, i + 5);
-      if (!/^[0-9A-Fa-f]{4}$/.test(hex)) {
-        throw new N3SyntaxError('Invalid IRIREF: malformed \\u escape inside <...>', offset);
+    function canContinueAfterDot(next) {
+      // PN_LOCAL allows '.' but it cannot appear at the end.
+      // We include '.' only if it is followed by something that could continue a name.
+      if (next === null) return false;
+      if (isIdentChar(next)) return true;
+      if (next === '%' || next === '\\') return true;
+      return false;
+    }
+
+    function isForbiddenNoncharacterCodePoint(cp) {
+      return (cp & 0xffff) === 0xfffe || (cp & 0xffff) === 0xffff;
+    }
+
+    function validateEscapedCodePoint(cp, offset = null, escapeKind = 'escape') {
+      if (cp === 0x0000) {
+        throw new N3SyntaxError(`Invalid string literal: ${escapeKind} U+0000 is not allowed`, offset);
       }
-      const cp = parseInt(hex, 16);
-      assertValidIriRefCodePoint(cp, offset);
-      out += String.fromCodePoint(cp);
-      i += 4;
-      continue;
-    }
-
-    if (e === 'U') {
-      const hex = s.slice(i + 1, i + 9);
-      if (!/^[0-9A-Fa-f]{8}$/.test(hex)) {
-        throw new N3SyntaxError('Invalid IRIREF: malformed \\U escape inside <...>', offset);
+      if (cp >= 0xd800 && cp <= 0xdfff) {
+        throw new N3SyntaxError(`Invalid string literal: ${escapeKind} surrogate code points are not allowed`, offset);
       }
-      const cp = parseInt(hex, 16);
-      if (cp < 0 || cp > 0x10ffff) {
-        throw new N3SyntaxError(`Invalid IRIREF: code point U+${hex.toUpperCase()} is out of range`, offset);
-      }
-      assertValidIriRefCodePoint(cp, offset);
-      out += String.fromCodePoint(cp);
-      i += 8;
-      continue;
-    }
-
-    throw new N3SyntaxError(
-      `Invalid IRIREF: character ${JSON.stringify('\\' + e)} is not allowed inside <...>`,
-      offset,
-    );
-  }
-  return out;
-}
-
-function assertValidStringLiteralValue(s, offset = null) {
-  for (let i = 0; i < s.length; i++) {
-    const cu = s.charCodeAt(i);
-
-    if (cu === 0x0000) {
-      throw new N3SyntaxError('Invalid string literal: U+0000 is not allowed', offset);
-    }
-
-    // Reject lone UTF-16 surrogates. Valid astral characters appear as a
-    // well-formed high+low surrogate pair and are accepted.
-    if (cu >= 0xd800 && cu <= 0xdbff) {
-      const next = i + 1 < s.length ? s.charCodeAt(i + 1) : -1;
-      if (!(next >= 0xdc00 && next <= 0xdfff)) {
-        throw new N3SyntaxError('Invalid string literal: unpaired high surrogate is not allowed', offset);
-      }
-      const cp = ((cu - 0xd800) << 10) + (next - 0xdc00) + 0x10000;
       if (isForbiddenNoncharacterCodePoint(cp)) {
         throw new N3SyntaxError(
-          `Invalid string literal: noncharacter U+${cp.toString(16).toUpperCase().padStart(6, '0')} is not allowed`,
+          `Invalid string literal: ${escapeKind} noncharacter U+${cp
+            .toString(16)
+            .toUpperCase()
+            .padStart(cp <= 0xffff ? 4 : 6, '0')} is not allowed`,
           offset,
         );
       }
-      i += 1;
-      continue;
     }
 
-    if (cu >= 0xdc00 && cu <= 0xdfff) {
-      throw new N3SyntaxError('Invalid string literal: unpaired low surrogate is not allowed', offset);
-    }
-
-    if (isForbiddenNoncharacterCodePoint(cu)) {
-      throw new N3SyntaxError(
-        `Invalid string literal: noncharacter U+${cu.toString(16).toUpperCase().padStart(4, '0')} is not allowed`,
-        offset,
-      );
-    }
-  }
-}
-
-// In the monolithic build, stripQuotes() is defined later in the file and
-// function-hoisting makes it available to lex(). In the modular build the
-// lexer must provide it locally.
-function stripQuotes(lex) {
-  if (typeof lex !== 'string') return lex;
-  // Handle both short ('...' / "...") and long ('''...''' / """...""") forms.
-  if (lex.length >= 6) {
-    if (lex.startsWith('"""') && lex.endsWith('"""')) return lex.slice(3, -3);
-    if (lex.startsWith("'''") && lex.endsWith("'''")) return lex.slice(3, -3);
-  }
-  if (lex.length >= 2) {
-    const a = lex[0];
-    const b = lex[lex.length - 1];
-    if ((a === '"' && b === '"') || (a === "'" && b === "'")) return lex.slice(1, -1);
-  }
-  return lex;
-}
-
-function lex(inputText) {
-  const chars = Array.from(inputText);
-  const n = chars.length;
-  let i = 0;
-  const tokens = [];
-
-  function peek(offset = 0) {
-    const j = i + offset;
-    return j >= 0 && j < n ? chars[j] : null;
-  }
-
-  // Read an identifier-like token (prefixed name / blank node id / keyword).
-  // Implements the relevant bits of the N3/Turtle grammar for PNAME_*:
-  // - Accepts Unicode PN_CHARS*, ':' in local part, and '_' etc.
-  // - Accepts percent escapes (%HH) as PLX fragments.
-  // - Accepts PN_LOCAL_ESC backslash escapes and decodes them ("\\." -> ".").
-  // - Accepts '.' inside a name only when it is not terminal.
-  function readIdentText(startOffsetForErrors) {
-    const out = [];
-    while (i < n) {
-      const cc = peek();
-      if (cc === null || isWs(cc)) break;
-
-      // Hard stops: delimiters cannot appear unescaped inside PNAME tokens.
-      if ('{}()[];,'.includes(cc)) break;
-
-      // Dot is allowed inside PN_LOCAL, but not at the end.
-      if (cc === '.') {
-        if (!canContinueAfterDot(peek(1))) break;
-        out.push('.');
-        i++;
-        continue;
-      }
-
-      // Percent escape: %HH
-      if (cc === '%') {
-        const h1 = peek(1);
-        const h2 = peek(2);
-        if (!isHexDigit(h1) || !isHexDigit(h2)) {
-          throw new N3SyntaxError(
-            'Invalid percent escape in prefixed name (expected %HH)',
-            typeof startOffsetForErrors === 'number' ? startOffsetForErrors : i,
-          );
-        }
-        out.push('%', h1, h2);
-        i += 3;
-        continue;
-      }
-
-      // Backslash escape in PN_LOCAL (PN_LOCAL_ESC)
-      if (cc === '\\') {
-        const esc = peek(1);
-        if (esc !== null && PN_LOCAL_ESC_SET.has(esc)) {
-          out.push(esc); // decoded form
-          i += 2;
+    function decodeN3StringEscapes(s, offset = null) {
+      let out = '';
+      for (let i = 0; i < s.length; i++) {
+        const c = s[i];
+        if (c !== '\\') {
+          out += c;
           continue;
         }
+        if (i + 1 >= s.length) {
+          out += '\\';
+          continue;
+        }
+        const e = s[++i];
+        switch (e) {
+          case 't':
+            out += '\t';
+            break;
+          case 'n':
+            out += '\n';
+            break;
+          case 'r':
+            out += '\r';
+            break;
+          case 'b':
+            out += '\b';
+            break;
+          case 'f':
+            out += '\f';
+            break;
+          case '"':
+            out += '"';
+            break;
+          case "'":
+            out += "'";
+            break;
+          case '\\':
+            out += '\\';
+            break;
+
+          case 'u': {
+            const hex = s.slice(i + 1, i + 5);
+            if (/^[0-9A-Fa-f]{4}$/.test(hex)) {
+              const cp = parseInt(hex, 16);
+              validateEscapedCodePoint(cp, offset, '\\u');
+              out += String.fromCharCode(cp);
+              i += 4;
+            } else {
+              out += '\\u';
+            }
+            break;
+          }
+
+          case 'U': {
+            const hex = s.slice(i + 1, i + 9);
+            if (/^[0-9A-Fa-f]{8}$/.test(hex)) {
+              const cp = parseInt(hex, 16);
+              if (cp >= 0 && cp <= 0x10ffff) {
+                validateEscapedCodePoint(cp, offset, '\\U');
+                out += String.fromCodePoint(cp);
+              } else out += '\\U' + hex;
+              i += 8;
+            } else {
+              out += '\\U';
+            }
+            break;
+          }
+
+          default:
+            // preserve unknown escapes
+            out += '\\' + e;
+        }
+      }
+      return out;
+    }
+
+    function formatCodePoint(cp) {
+      return cp
+        .toString(16)
+        .toUpperCase()
+        .padStart(cp <= 0xffff ? 4 : 6, '0');
+    }
+
+    function isForbiddenIriRefChar(c) {
+      return (
+        c === '<' ||
+        c === '>' ||
+        c === '"' ||
+        c === '{' ||
+        c === '}' ||
+        c === '|' ||
+        c === '^' ||
+        c === '`' ||
+        c === '\\'
+      );
+    }
+
+    function assertValidIriRefCodePoint(cp, offset = null) {
+      if (cp <= 0x20) {
         throw new N3SyntaxError(
-          'Invalid local name escape (use \\_ \\~ \\. \\- ... per N3 grammar)',
-          typeof startOffsetForErrors === 'number' ? startOffsetForErrors : i,
+          `Invalid IRIREF: character U+${formatCodePoint(cp)} is not allowed inside <...>`,
+          offset,
         );
       }
 
-      if (isIdentChar(cc)) {
-        out.push(cc);
-        i++;
-        continue;
+      if (cp >= 0xd800 && cp <= 0xdfff) {
+        throw new N3SyntaxError(
+          `Invalid IRIREF: surrogate code point U+${formatCodePoint(cp)} is not allowed inside <...>`,
+          offset,
+        );
       }
 
-      break;
-    }
-    return out.join('');
-  }
+      if (isForbiddenNoncharacterCodePoint(cp)) {
+        throw new N3SyntaxError(
+          `Invalid IRIREF: noncharacter U+${formatCodePoint(cp)} is not allowed inside <...>`,
+          offset,
+        );
+      }
 
-  while (i < n) {
-    const c = peek();
-    if (c === null) break;
-
-    // 1) Whitespace
-    if (isWs(c)) {
-      i++;
-      continue;
-    }
-
-    // 2) Comments starting with '#'
-    if (c === '#') {
-      while (i < n && chars[i] !== '\n' && chars[i] !== '\r') i++;
-      continue;
-    }
-
-    // 3) Two-character operators: => and <=
-    if (c === '=') {
-      if (peek(1) === '>') {
-        tokens.push(new Token('OpImplies', null, i));
-        i += 2;
-        continue;
-      } else {
-        // N3 syntactic sugar: '=' means owl:sameAs
-        tokens.push(new Token('Equals', null, i));
-        i += 1;
-        continue;
+      const c = String.fromCodePoint(cp);
+      if (isForbiddenIriRefChar(c)) {
+        throw new N3SyntaxError(`Invalid IRIREF: character ${JSON.stringify(c)} is not allowed inside <...>`, offset);
       }
     }
 
-    if (c === '<') {
-      if (peek(1) === '=') {
-        tokens.push(new Token('OpImpliedBy', null, i));
-        i += 2;
-        continue;
+    function decodeIriRefEscapes(s, offset = null) {
+      let out = '';
+      for (let i = 0; i < s.length; i++) {
+        const c = s[i];
+        if (c !== '\\') {
+          const cp = c.codePointAt(0);
+          assertValidIriRefCodePoint(cp, offset);
+          out += c;
+          continue;
+        }
+
+        if (i + 1 >= s.length) {
+          throw new N3SyntaxError('Invalid IRIREF: bare backslash is not allowed inside <...>', offset);
+        }
+
+        const e = s[++i];
+        if (e === 'u') {
+          const hex = s.slice(i + 1, i + 5);
+          if (!/^[0-9A-Fa-f]{4}$/.test(hex)) {
+            throw new N3SyntaxError('Invalid IRIREF: malformed \\u escape inside <...>', offset);
+          }
+          const cp = parseInt(hex, 16);
+          assertValidIriRefCodePoint(cp, offset);
+          out += String.fromCodePoint(cp);
+          i += 4;
+          continue;
+        }
+
+        if (e === 'U') {
+          const hex = s.slice(i + 1, i + 9);
+          if (!/^[0-9A-Fa-f]{8}$/.test(hex)) {
+            throw new N3SyntaxError('Invalid IRIREF: malformed \\U escape inside <...>', offset);
+          }
+          const cp = parseInt(hex, 16);
+          if (cp < 0 || cp > 0x10ffff) {
+            throw new N3SyntaxError(`Invalid IRIREF: code point U+${hex.toUpperCase()} is out of range`, offset);
+          }
+          assertValidIriRefCodePoint(cp, offset);
+          out += String.fromCodePoint(cp);
+          i += 8;
+          continue;
+        }
+
+        throw new N3SyntaxError(
+          `Invalid IRIREF: character ${JSON.stringify('\\' + e)} is not allowed inside <...>`,
+          offset,
+        );
       }
-      // N3 predicate inversion: "<-" (swap subject/object for this predicate)
-      if (peek(1) === '-') {
-        tokens.push(new Token('OpPredInvert', null, i));
-        i += 2;
-        continue;
-      }
-      // Otherwise IRIREF <...>
-      const start = i;
-      i++; // skip '<'
-      const iriChars = [];
-      while (i < n && chars[i] !== '>') {
-        iriChars.push(chars[i]);
-        i++;
-      }
-      if (i >= n || chars[i] !== '>') {
-        throw new N3SyntaxError('Unterminated IRI <...>', start);
-      }
-      i++; // skip '>'
-      const iri = decodeIriRefEscapes(iriChars.join(''), start);
-      tokens.push(new Token('IriRef', iri, start));
-      continue;
+      return out;
     }
 
-    // 4) Path + datatype operators: !, ^, ^^
-    if (c === '!') {
-      tokens.push(new Token('OpPathFwd', null, i));
-      i += 1;
-      continue;
-    }
-    if (c === '^') {
-      if (peek(1) === '^') {
-        tokens.push(new Token('HatHat', null, i));
-        i += 2;
-        continue;
+    function assertValidStringLiteralValue(s, offset = null) {
+      for (let i = 0; i < s.length; i++) {
+        const cu = s.charCodeAt(i);
+
+        if (cu === 0x0000) {
+          throw new N3SyntaxError('Invalid string literal: U+0000 is not allowed', offset);
+        }
+
+        // Reject lone UTF-16 surrogates. Valid astral characters appear as a
+        // well-formed high+low surrogate pair and are accepted.
+        if (cu >= 0xd800 && cu <= 0xdbff) {
+          const next = i + 1 < s.length ? s.charCodeAt(i + 1) : -1;
+          if (!(next >= 0xdc00 && next <= 0xdfff)) {
+            throw new N3SyntaxError('Invalid string literal: unpaired high surrogate is not allowed', offset);
+          }
+          const cp = ((cu - 0xd800) << 10) + (next - 0xdc00) + 0x10000;
+          if (isForbiddenNoncharacterCodePoint(cp)) {
+            throw new N3SyntaxError(
+              `Invalid string literal: noncharacter U+${cp.toString(16).toUpperCase().padStart(6, '0')} is not allowed`,
+              offset,
+            );
+          }
+          i += 1;
+          continue;
+        }
+
+        if (cu >= 0xdc00 && cu <= 0xdfff) {
+          throw new N3SyntaxError('Invalid string literal: unpaired low surrogate is not allowed', offset);
+        }
+
+        if (isForbiddenNoncharacterCodePoint(cu)) {
+          throw new N3SyntaxError(
+            `Invalid string literal: noncharacter U+${cu.toString(16).toUpperCase().padStart(4, '0')} is not allowed`,
+            offset,
+          );
+        }
       }
-      tokens.push(new Token('OpPathRev', null, i));
-      i += 1;
-      continue;
     }
 
-    // 5) Single-character punctuation
-    if ('{}()[];,.'.includes(c)) {
-      const mapping = {
-        '{': 'LBrace',
-        '}': 'RBrace',
-        '(': 'LParen',
-        ')': 'RParen',
-        '[': 'LBracket',
-        ']': 'RBracket',
-        ';': 'Semicolon',
-        ',': 'Comma',
-        '.': 'Dot',
-      };
-      tokens.push(new Token(mapping[c], null, i));
-      i++;
-      continue;
+    // In the monolithic build, stripQuotes() is defined later in the file and
+    // function-hoisting makes it available to lex(). In the modular build the
+    // lexer must provide it locally.
+    function stripQuotes(lex) {
+      if (typeof lex !== 'string') return lex;
+      // Handle both short ('...' / "...") and long ('''...''' / """...""") forms.
+      if (lex.length >= 6) {
+        if (lex.startsWith('"""') && lex.endsWith('"""')) return lex.slice(3, -3);
+        if (lex.startsWith("'''") && lex.endsWith("'''")) return lex.slice(3, -3);
+      }
+      if (lex.length >= 2) {
+        const a = lex[0];
+        const b = lex[lex.length - 1];
+        if ((a === '"' && b === '"') || (a === "'" && b === "'")) return lex.slice(1, -1);
+      }
+      return lex;
     }
 
-    // String literal: short "..." or long """..."""
-    if (c === '"') {
-      const start = i;
+    function lex(inputText) {
+      const chars = Array.from(inputText);
+      const n = chars.length;
+      let i = 0;
+      const tokens = [];
 
-      // Long string literal """ ... """
-      if (peek(1) === '"' && peek(2) === '"') {
-        i += 3; // consume opening """
-        const sChars = [];
-        let closed = false;
+      function peek(offset = 0) {
+        const j = i + offset;
+        return j >= 0 && j < n ? chars[j] : null;
+      }
+
+      // Read an identifier-like token (prefixed name / blank node id / keyword).
+      // Implements the relevant bits of the N3/Turtle grammar for PNAME_*:
+      // - Accepts Unicode PN_CHARS*, ':' in local part, and '_' etc.
+      // - Accepts percent escapes (%HH) as PLX fragments.
+      // - Accepts PN_LOCAL_ESC backslash escapes and decodes them ("\\." -> ".").
+      // - Accepts '.' inside a name only when it is not terminal.
+      function readIdentText(startOffsetForErrors) {
+        const out = [];
         while (i < n) {
-          const cc = chars[i];
+          const cc = peek();
+          if (cc === null || isWs(cc)) break;
 
-          // Preserve escapes verbatim (same behavior as short strings)
+          // Hard stops: delimiters cannot appear unescaped inside PNAME tokens.
+          if ('{}()[];,'.includes(cc)) break;
+
+          // Dot is allowed inside PN_LOCAL, but not at the end.
+          if (cc === '.') {
+            if (!canContinueAfterDot(peek(1))) break;
+            out.push('.');
+            i++;
+            continue;
+          }
+
+          // Percent escape: %HH
+          if (cc === '%') {
+            const h1 = peek(1);
+            const h2 = peek(2);
+            if (!isHexDigit(h1) || !isHexDigit(h2)) {
+              throw new N3SyntaxError(
+                'Invalid percent escape in prefixed name (expected %HH)',
+                typeof startOffsetForErrors === 'number' ? startOffsetForErrors : i,
+              );
+            }
+            out.push('%', h1, h2);
+            i += 3;
+            continue;
+          }
+
+          // Backslash escape in PN_LOCAL (PN_LOCAL_ESC)
           if (cc === '\\') {
+            const esc = peek(1);
+            if (esc !== null && PN_LOCAL_ESC_SET.has(esc)) {
+              out.push(esc); // decoded form
+              i += 2;
+              continue;
+            }
+            throw new N3SyntaxError(
+              'Invalid local name escape (use \\_ \\~ \\. \\- ... per N3 grammar)',
+              typeof startOffsetForErrors === 'number' ? startOffsetForErrors : i,
+            );
+          }
+
+          if (isIdentChar(cc)) {
+            out.push(cc);
             i++;
-            if (i < n) {
-              const esc = chars[i];
-              i++;
-              sChars.push('\\');
-              sChars.push(esc);
-            } else {
-              sChars.push('\\');
-            }
             continue;
           }
 
-          // In long strings, a run of >= 3 delimiter quotes terminates the literal.
-          // Any extra quotes beyond the final 3 are part of the content.
-          if (cc === '"') {
-            let run = 0;
-            while (i + run < n && chars[i + run] === '"') run++;
-
-            if (run >= 3) {
-              for (let k = 0; k < run - 3; k++) sChars.push('"');
-              i += run; // consume content quotes (if any) + closing delimiter
-              closed = true;
-              break;
-            }
-
-            for (let k = 0; k < run; k++) sChars.push('"');
-            i += run;
-            continue;
-          }
-
-          sChars.push(cc);
-          i++;
+          break;
         }
-        if (!closed) throw new N3SyntaxError('Unterminated long string literal """..."""', start);
-        const raw = '"""' + sChars.join('') + '"""';
-        const decoded = decodeN3StringEscapes(stripQuotes(raw), start);
-        assertValidStringLiteralValue(decoded, start);
-        const s = JSON.stringify(decoded); // canonical short quoted form
-        tokens.push(new Token('Literal', s, start));
-        continue;
+        return out.join('');
       }
 
-      // Short string literal " ... "
-      i++; // consume opening "
-      const sChars = [];
       while (i < n) {
-        const cc = chars[i];
-        i++;
-        if (cc === '\\') {
-          if (i < n) {
-            const esc = chars[i];
-            i++;
-            sChars.push('\\');
-            sChars.push(esc);
-          }
-          continue;
-        }
-        if (cc === '"') break;
-        sChars.push(cc);
-      }
-      const raw = '"' + sChars.join('') + '"';
-      const decoded = decodeN3StringEscapes(stripQuotes(raw), start);
-      assertValidStringLiteralValue(decoded, start);
-      const s = JSON.stringify(decoded); // canonical short quoted form
-      tokens.push(new Token('Literal', s, start));
-      continue;
-    }
+        const c = peek();
+        if (c === null) break;
 
-    // String literal: short '...' or long '''...'''
-    if (c === "'") {
-      const start = i;
-
-      // Long string literal ''' ... '''
-      if (peek(1) === "'" && peek(2) === "'") {
-        i += 3; // consume opening '''
-        const sChars = [];
-        let closed = false;
-        while (i < n) {
-          const cc = chars[i];
-
-          // Preserve escapes verbatim (same behavior as short strings)
-          if (cc === '\\') {
-            i++;
-            if (i < n) {
-              const esc = chars[i];
-              i++;
-              sChars.push('\\');
-              sChars.push(esc);
-            } else {
-              sChars.push('\\');
-            }
-            continue;
-          }
-
-          // In long strings, a run of >= 3 delimiter quotes terminates the literal.
-          // Any extra quotes beyond the final 3 are part of the content.
-          if (cc === "'") {
-            let run = 0;
-            while (i + run < n && chars[i + run] === "'") run++;
-
-            if (run >= 3) {
-              for (let k = 0; k < run - 3; k++) sChars.push("'");
-              i += run; // consume content quotes (if any) + closing delimiter
-              closed = true;
-              break;
-            }
-
-            for (let k = 0; k < run; k++) sChars.push("'");
-            i += run;
-            continue;
-          }
-
-          sChars.push(cc);
-          i++;
-        }
-        if (!closed) throw new N3SyntaxError("Unterminated long string literal '''...'''", start);
-        const raw = "'''" + sChars.join('') + "'''";
-        const decoded = decodeN3StringEscapes(stripQuotes(raw), start);
-        assertValidStringLiteralValue(decoded, start);
-        const s = JSON.stringify(decoded); // canonical short quoted form
-        tokens.push(new Token('Literal', s, start));
-        continue;
-      }
-
-      // Short string literal ' ... '
-      i++; // consume opening '
-      const sChars = [];
-      while (i < n) {
-        const cc = chars[i];
-        i++;
-        if (cc === '\\') {
-          if (i < n) {
-            const esc = chars[i];
-            i++;
-            sChars.push('\\');
-            sChars.push(esc);
-          }
-          continue;
-        }
-        if (cc === "'") break;
-        sChars.push(cc);
-      }
-      const raw = "'" + sChars.join('') + "'";
-      const decoded = decodeN3StringEscapes(stripQuotes(raw), start);
-      assertValidStringLiteralValue(decoded, start);
-      const s = JSON.stringify(decoded); // canonical short quoted form
-      tokens.push(new Token('Literal', s, start));
-      continue;
-    }
-
-    // Variable ?name
-    if (c === '?') {
-      const start = i;
-      i++;
-      const name = readIdentText(start);
-      if (!name) {
-        throw new N3SyntaxError("Expected variable name after '?'.", start);
-      }
-      tokens.push(new Token('Var', name, start));
-      continue;
-    }
-
-    // Directives: @prefix, @base (and language tags after string literals)
-    if (c === '@') {
-      const start = i;
-      const prevTok = tokens.length ? tokens[tokens.length - 1] : null;
-      const prevWasQuotedLiteral =
-        prevTok && prevTok.typ === 'Literal' && typeof prevTok.value === 'string' && prevTok.value.startsWith('"');
-
-      i++; // consume '@'
-
-      if (prevWasQuotedLiteral) {
-        // N3 grammar production LANGTAG:
-        //   "@" [a-zA-Z]+ ("-" [a-zA-Z0-9]+)*
-        const tagChars = [];
-        let cc = peek();
-        if (cc === null || !/[A-Za-z]/.test(cc)) {
-          throw new N3SyntaxError("Invalid language tag (expected [A-Za-z] after '@')", start);
-        }
-        while ((cc = peek()) !== null && /[A-Za-z]/.test(cc)) {
-          tagChars.push(cc);
-          i++;
-        }
-        while (peek() === '-') {
-          tagChars.push('-');
-          i++; // consume '-'
-          const segChars = [];
-          while ((cc = peek()) !== null && /[A-Za-z0-9]/.test(cc)) {
-            segChars.push(cc);
-            i++;
-          }
-          if (!segChars.length) {
-            throw new N3SyntaxError("Invalid language tag (expected [A-Za-z0-9]+ after '-')", start);
-          }
-          tagChars.push(...segChars);
-        }
-        tokens.push(new Token('LangTag', tagChars.join(''), start));
-        continue;
-      }
-
-      // Otherwise, treat as a directive (@prefix, @base)
-      const wordChars = [];
-      let cc;
-      while ((cc = peek()) !== null && /[A-Za-z]/.test(cc)) {
-        wordChars.push(cc);
-        i++;
-      }
-      const word = wordChars.join('');
-      if (word === 'prefix') tokens.push(new Token('AtPrefix', null, start));
-      else if (word === 'base') tokens.push(new Token('AtBase', null, start));
-      else throw new N3SyntaxError(`Unknown directive @${word}`, start);
-      continue;
-    }
-
-    // 6) Numeric literal (integer or float)
-    if (/[0-9]/.test(c) || (c === '-' && peek(1) !== null && /[0-9]/.test(peek(1)))) {
-      const start = i;
-      const numChars = [c];
-      i++;
-      while (i < n) {
-        const cc = chars[i];
-        if (/[0-9]/.test(cc)) {
-          numChars.push(cc);
+        // 1) Whitespace
+        if (isWs(c)) {
           i++;
           continue;
         }
-        if (cc === '.') {
-          if (i + 1 < n && /[0-9]/.test(chars[i + 1])) {
-            numChars.push('.');
-            i++;
+
+        // 2) Comments starting with '#'
+        if (c === '#') {
+          while (i < n && chars[i] !== '\n' && chars[i] !== '\r') i++;
+          continue;
+        }
+
+        // 3) Two-character operators: => and <=
+        if (c === '=') {
+          if (peek(1) === '>') {
+            tokens.push(new Token('OpImplies', null, i));
+            i += 2;
             continue;
           } else {
+            // N3 syntactic sugar: '=' means owl:sameAs
+            tokens.push(new Token('Equals', null, i));
+            i += 1;
+            continue;
+          }
+        }
+
+        if (c === '<') {
+          if (peek(1) === '=') {
+            tokens.push(new Token('OpImpliedBy', null, i));
+            i += 2;
+            continue;
+          }
+          // N3 predicate inversion: "<-" (swap subject/object for this predicate)
+          if (peek(1) === '-') {
+            tokens.push(new Token('OpPredInvert', null, i));
+            i += 2;
+            continue;
+          }
+          // Otherwise IRIREF <...>
+          const start = i;
+          i++; // skip '<'
+          const iriChars = [];
+          while (i < n && chars[i] !== '>') {
+            iriChars.push(chars[i]);
+            i++;
+          }
+          if (i >= n || chars[i] !== '>') {
+            throw new N3SyntaxError('Unterminated IRI <...>', start);
+          }
+          i++; // skip '>'
+          const iri = decodeIriRefEscapes(iriChars.join(''), start);
+          tokens.push(new Token('IriRef', iri, start));
+          continue;
+        }
+
+        // 4) Path + datatype operators: !, ^, ^^
+        if (c === '!') {
+          tokens.push(new Token('OpPathFwd', null, i));
+          i += 1;
+          continue;
+        }
+        if (c === '^') {
+          if (peek(1) === '^') {
+            tokens.push(new Token('HatHat', null, i));
+            i += 2;
+            continue;
+          }
+          tokens.push(new Token('OpPathRev', null, i));
+          i += 1;
+          continue;
+        }
+
+        // 5) Single-character punctuation
+        if ('{}()[];,.'.includes(c)) {
+          const mapping = {
+            '{': 'LBrace',
+            '}': 'RBrace',
+            '(': 'LParen',
+            ')': 'RParen',
+            '[': 'LBracket',
+            ']': 'RBracket',
+            ';': 'Semicolon',
+            ',': 'Comma',
+            '.': 'Dot',
+          };
+          tokens.push(new Token(mapping[c], null, i));
+          i++;
+          continue;
+        }
+
+        // String literal: short "..." or long """..."""
+        if (c === '"') {
+          const start = i;
+
+          // Long string literal """ ... """
+          if (peek(1) === '"' && peek(2) === '"') {
+            i += 3; // consume opening """
+            const sChars = [];
+            let closed = false;
+            while (i < n) {
+              const cc = chars[i];
+
+              // Preserve escapes verbatim (same behavior as short strings)
+              if (cc === '\\') {
+                i++;
+                if (i < n) {
+                  const esc = chars[i];
+                  i++;
+                  sChars.push('\\');
+                  sChars.push(esc);
+                } else {
+                  sChars.push('\\');
+                }
+                continue;
+              }
+
+              // In long strings, a run of >= 3 delimiter quotes terminates the literal.
+              // Any extra quotes beyond the final 3 are part of the content.
+              if (cc === '"') {
+                let run = 0;
+                while (i + run < n && chars[i + run] === '"') run++;
+
+                if (run >= 3) {
+                  for (let k = 0; k < run - 3; k++) sChars.push('"');
+                  i += run; // consume content quotes (if any) + closing delimiter
+                  closed = true;
+                  break;
+                }
+
+                for (let k = 0; k < run; k++) sChars.push('"');
+                i += run;
+                continue;
+              }
+
+              sChars.push(cc);
+              i++;
+            }
+            if (!closed) throw new N3SyntaxError('Unterminated long string literal """..."""', start);
+            const raw = '"""' + sChars.join('') + '"""';
+            const decoded = decodeN3StringEscapes(stripQuotes(raw), start);
+            assertValidStringLiteralValue(decoded, start);
+            const s = JSON.stringify(decoded); // canonical short quoted form
+            tokens.push(new Token('Literal', s, start));
+            continue;
+          }
+
+          // Short string literal " ... "
+          i++; // consume opening "
+          const sChars = [];
+          while (i < n) {
+            const cc = chars[i];
+            i++;
+            if (cc === '\\') {
+              if (i < n) {
+                const esc = chars[i];
+                i++;
+                sChars.push('\\');
+                sChars.push(esc);
+              }
+              continue;
+            }
+            if (cc === '"') break;
+            sChars.push(cc);
+          }
+          const raw = '"' + sChars.join('') + '"';
+          const decoded = decodeN3StringEscapes(stripQuotes(raw), start);
+          assertValidStringLiteralValue(decoded, start);
+          const s = JSON.stringify(decoded); // canonical short quoted form
+          tokens.push(new Token('Literal', s, start));
+          continue;
+        }
+
+        // String literal: short '...' or long '''...'''
+        if (c === "'") {
+          const start = i;
+
+          // Long string literal ''' ... '''
+          if (peek(1) === "'" && peek(2) === "'") {
+            i += 3; // consume opening '''
+            const sChars = [];
+            let closed = false;
+            while (i < n) {
+              const cc = chars[i];
+
+              // Preserve escapes verbatim (same behavior as short strings)
+              if (cc === '\\') {
+                i++;
+                if (i < n) {
+                  const esc = chars[i];
+                  i++;
+                  sChars.push('\\');
+                  sChars.push(esc);
+                } else {
+                  sChars.push('\\');
+                }
+                continue;
+              }
+
+              // In long strings, a run of >= 3 delimiter quotes terminates the literal.
+              // Any extra quotes beyond the final 3 are part of the content.
+              if (cc === "'") {
+                let run = 0;
+                while (i + run < n && chars[i + run] === "'") run++;
+
+                if (run >= 3) {
+                  for (let k = 0; k < run - 3; k++) sChars.push("'");
+                  i += run; // consume content quotes (if any) + closing delimiter
+                  closed = true;
+                  break;
+                }
+
+                for (let k = 0; k < run; k++) sChars.push("'");
+                i += run;
+                continue;
+              }
+
+              sChars.push(cc);
+              i++;
+            }
+            if (!closed) throw new N3SyntaxError("Unterminated long string literal '''...'''", start);
+            const raw = "'''" + sChars.join('') + "'''";
+            const decoded = decodeN3StringEscapes(stripQuotes(raw), start);
+            assertValidStringLiteralValue(decoded, start);
+            const s = JSON.stringify(decoded); // canonical short quoted form
+            tokens.push(new Token('Literal', s, start));
+            continue;
+          }
+
+          // Short string literal ' ... '
+          i++; // consume opening '
+          const sChars = [];
+          while (i < n) {
+            const cc = chars[i];
+            i++;
+            if (cc === '\\') {
+              if (i < n) {
+                const esc = chars[i];
+                i++;
+                sChars.push('\\');
+                sChars.push(esc);
+              }
+              continue;
+            }
+            if (cc === "'") break;
+            sChars.push(cc);
+          }
+          const raw = "'" + sChars.join('') + "'";
+          const decoded = decodeN3StringEscapes(stripQuotes(raw), start);
+          assertValidStringLiteralValue(decoded, start);
+          const s = JSON.stringify(decoded); // canonical short quoted form
+          tokens.push(new Token('Literal', s, start));
+          continue;
+        }
+
+        // Variable ?name
+        if (c === '?') {
+          const start = i;
+          i++;
+          const name = readIdentText(start);
+          if (!name) {
+            throw new N3SyntaxError("Expected variable name after '?'.", start);
+          }
+          tokens.push(new Token('Var', name, start));
+          continue;
+        }
+
+        // Directives: @prefix, @base (and language tags after string literals)
+        if (c === '@') {
+          const start = i;
+          const prevTok = tokens.length ? tokens[tokens.length - 1] : null;
+          const prevWasQuotedLiteral =
+            prevTok && prevTok.typ === 'Literal' && typeof prevTok.value === 'string' && prevTok.value.startsWith('"');
+
+          i++; // consume '@'
+
+          if (prevWasQuotedLiteral) {
+            // N3 grammar production LANGTAG:
+            //   "@" [a-zA-Z]+ ("-" [a-zA-Z0-9]+)*
+            const tagChars = [];
+            let cc = peek();
+            if (cc === null || !/[A-Za-z]/.test(cc)) {
+              throw new N3SyntaxError("Invalid language tag (expected [A-Za-z] after '@')", start);
+            }
+            while ((cc = peek()) !== null && /[A-Za-z]/.test(cc)) {
+              tagChars.push(cc);
+              i++;
+            }
+            while (peek() === '-') {
+              tagChars.push('-');
+              i++; // consume '-'
+              const segChars = [];
+              while ((cc = peek()) !== null && /[A-Za-z0-9]/.test(cc)) {
+                segChars.push(cc);
+                i++;
+              }
+              if (!segChars.length) {
+                throw new N3SyntaxError("Invalid language tag (expected [A-Za-z0-9]+ after '-')", start);
+              }
+              tagChars.push(...segChars);
+            }
+            tokens.push(new Token('LangTag', tagChars.join(''), start));
+            continue;
+          }
+
+          // Otherwise, treat as a directive (@prefix, @base)
+          const wordChars = [];
+          let cc;
+          while ((cc = peek()) !== null && /[A-Za-z]/.test(cc)) {
+            wordChars.push(cc);
+            i++;
+          }
+          const word = wordChars.join('');
+          if (word === 'prefix') tokens.push(new Token('AtPrefix', null, start));
+          else if (word === 'base') tokens.push(new Token('AtBase', null, start));
+          else throw new N3SyntaxError(`Unknown directive @${word}`, start);
+          continue;
+        }
+
+        // 6) Numeric literal (integer or float)
+        if (/[0-9]/.test(c) || (c === '-' && peek(1) !== null && /[0-9]/.test(peek(1)))) {
+          const start = i;
+          const numChars = [c];
+          i++;
+          while (i < n) {
+            const cc = chars[i];
+            if (/[0-9]/.test(cc)) {
+              numChars.push(cc);
+              i++;
+              continue;
+            }
+            if (cc === '.') {
+              if (i + 1 < n && /[0-9]/.test(chars[i + 1])) {
+                numChars.push('.');
+                i++;
+                continue;
+              } else {
+                break;
+              }
+            }
             break;
           }
+
+          // Optional exponent part: e.g., 1e0, 1.1e-3, 1.1E+0
+          if (i < n && (chars[i] === 'e' || chars[i] === 'E')) {
+            let j = i + 1;
+            if (j < n && (chars[j] === '+' || chars[j] === '-')) j++;
+            if (j < n && /[0-9]/.test(chars[j])) {
+              numChars.push(chars[i]); // e/E
+              i++;
+              if (i < n && (chars[i] === '+' || chars[i] === '-')) {
+                numChars.push(chars[i]);
+                i++;
+              }
+              while (i < n && /[0-9]/.test(chars[i])) {
+                numChars.push(chars[i]);
+                i++;
+              }
+            }
+          }
+
+          tokens.push(new Token('Literal', numChars.join(''), start));
+          continue;
         }
-        break;
+
+        // 7) Identifiers / keywords / QNames
+        const start = i;
+        const word = readIdentText(start);
+        if (!word) {
+          throw new N3SyntaxError(`Unexpected char: ${JSON.stringify(c)}`, i);
+        }
+        if (word === 'true' || word === 'false') {
+          tokens.push(new Token('Literal', word, start));
+        } else if ([...word].every((ch) => /[0-9.-]/.test(ch))) {
+          tokens.push(new Token('Literal', word, start));
+        } else {
+          tokens.push(new Token('Ident', word, start));
+        }
       }
 
-      // Optional exponent part: e.g., 1e0, 1.1e-3, 1.1E+0
-      if (i < n && (chars[i] === 'e' || chars[i] === 'E')) {
-        let j = i + 1;
-        if (j < n && (chars[j] === '+' || chars[j] === '-')) j++;
-        if (j < n && /[0-9]/.test(chars[j])) {
-          numChars.push(chars[i]); // e/E
-          i++;
-          if (i < n && (chars[i] === '+' || chars[i] === '-')) {
-            numChars.push(chars[i]);
-            i++;
-          }
-          while (i < n && /[0-9]/.test(chars[i])) {
-            numChars.push(chars[i]);
-            i++;
-          }
-        }
-      }
-
-      tokens.push(new Token('Literal', numChars.join(''), start));
-      continue;
+      tokens.push(new Token('EOF', null, n));
+      return tokens;
     }
 
-    // 7) Identifiers / keywords / QNames
-    const start = i;
-    const word = readIdentText(start);
-    if (!word) {
-      throw new N3SyntaxError(`Unexpected char: ${JSON.stringify(c)}`, i);
-    }
-    if (word === 'true' || word === 'false') {
-      tokens.push(new Token('Literal', word, start));
-    } else if ([...word].every((ch) => /[0-9.-]/.test(ch))) {
-      tokens.push(new Token('Literal', word, start));
-    } else {
-      tokens.push(new Token('Ident', word, start));
-    }
-  }
-
-  tokens.push(new Token('EOF', null, n));
-  return tokens;
-}
-
-module.exports = { Token, N3SyntaxError, lex, decodeN3StringEscapes };
-
+    module.exports = { Token, N3SyntaxError, lex, decodeN3StringEscapes };
   };
-  __modules["lib/parser.js"] = function(require, module, exports){
-/**
- * Eyeling Reasoner — parser
- *
- * Parser for the supported N3 syntax. Turns tokens into the internal term and
- * formula representation used by the engine.
- */
+  __modules['lib/parser.js'] = function (require, module, exports) {
+    /**
+     * Eyeling Reasoner — parser
+     *
+     * Parser for the supported N3 syntax. Turns tokens into the internal term and
+     * formula representation used by the engine.
+     */
 
-'use strict';
+    'use strict';
 
-const {
-  RDF_NS,
-  OWL_NS,
-  LOG_NS,
-  resolveIriRef,
-  Literal,
-  Var,
-  Blank,
-  ListTerm,
-  GraphTerm,
-  Triple,
-  Rule,
-  internIri,
-  internLiteral,
-  PrefixEnv,
-  collectBlankLabelsInTriples,
-  isLogImplies,
-  isLogImpliedBy,
-  isLogQuery,
-} = require('./prelude');
+    const {
+      RDF_NS,
+      OWL_NS,
+      LOG_NS,
+      resolveIriRef,
+      Literal,
+      Var,
+      Blank,
+      ListTerm,
+      GraphTerm,
+      Triple,
+      Rule,
+      internIri,
+      internLiteral,
+      PrefixEnv,
+      collectBlankLabelsInTriples,
+      isLogImplies,
+      isLogImpliedBy,
+      isLogQuery,
+    } = require('./prelude');
 
-const { N3SyntaxError } = require('./lexer');
-const { liftBlankRuleVars } = require('./rules');
+    const { N3SyntaxError } = require('./lexer');
+    const { liftBlankRuleVars } = require('./rules');
 
-function assertValidQNamePrefix(prefixName, fail, tok, context = 'prefixed name') {
-  if (typeof prefixName === 'string' && prefixName.endsWith('.')) {
-    fail(`Invalid ${context}: prefix names cannot end with '.'`, tok);
-  }
-}
-
-function failInvalidKeywordLikeIdent(fail, tok, name) {
-  fail(`invalid_keyword(${name})`, tok);
-}
-
-class Parser {
-  constructor(tokens) {
-    this.toks = tokens;
-    this.pos = 0;
-    this.prefixes = PrefixEnv.newDefault();
-    this.blankCounter = 0;
-    // Helper triples that must be emitted *before* the triple that consumes them.
-    // Used primarily for N3 path expansion (e.g. :a :p/:q :b .).
-    this.pendingTriples = [];
-
-    // Helper triples that should be emitted *after* the triple that references
-    // the described term (used for [...] blank-node / IRI property lists). This
-    // makes derived output read naturally, e.g. ':s :p _:b.' preceding
-    // '_:b :q :r.'
-    this.pendingTriplesAfter = [];
-  }
-
-  peek() {
-    return this.toks[this.pos];
-  }
-
-  next() {
-    const tok = this.toks[this.pos];
-    this.pos += 1;
-    return tok;
-  }
-
-  fail(message, tok = this.peek()) {
-    const off = tok && typeof tok.offset === 'number' ? tok.offset : null;
-    throw new N3SyntaxError(message, off);
-  }
-
-  expectDot() {
-    const tok = this.next();
-    if (tok.typ !== 'Dot') {
-      this.fail(`Expected '.', got ${tok.toString()}`, tok);
+    function assertValidQNamePrefix(prefixName, fail, tok, context = 'prefixed name') {
+      if (typeof prefixName === 'string' && prefixName.endsWith('.')) {
+        fail(`Invalid ${context}: prefix names cannot end with '.'`, tok);
+      }
     }
-  }
 
-  peekAt(offset) {
-    return this.toks[this.pos + offset];
-  }
-
-  isIdentKeyword(tok, keyword) {
-    return tok && tok.typ === 'Ident' && typeof tok.value === 'string' && tok.value.toLowerCase() === keyword;
-  }
-
-  canStartSparqlPrefixDirective() {
-    const prefixNameTok = this.peekAt(1);
-    const iriTok = this.peekAt(2);
-    return (
-      this.isIdentKeyword(this.peek(), 'prefix') &&
-      prefixNameTok &&
-      prefixNameTok.typ === 'Ident' &&
-      typeof prefixNameTok.value === 'string' &&
-      prefixNameTok.value.endsWith(':') &&
-      iriTok &&
-      (iriTok.typ === 'IriRef' || iriTok.typ === 'Ident')
-    );
-  }
-
-  canStartSparqlBaseDirective(allowIdentIri = false) {
-    const iriTok = this.peekAt(1);
-    return (
-      this.isIdentKeyword(this.peek(), 'base') &&
-      iriTok &&
-      (iriTok.typ === 'IriRef' || (allowIdentIri && iriTok.typ === 'Ident'))
-    );
-  }
-
-  parseDirectiveIfPresent({ allowIdentBaseIri = false } = {}) {
-    if (this.peek().typ === 'AtPrefix') {
-      this.next();
-      this.parsePrefixDirective();
-      return true;
+    function failInvalidKeywordLikeIdent(fail, tok, name) {
+      fail(`invalid_keyword(${name})`, tok);
     }
-    if (this.peek().typ === 'AtBase') {
-      this.next();
-      this.parseBaseDirective();
-      return true;
-    }
-    if (this.canStartSparqlPrefixDirective()) {
-      this.next();
-      this.parseSparqlPrefixDirective();
-      return true;
-    }
-    if (this.canStartSparqlBaseDirective(allowIdentBaseIri)) {
-      this.next();
-      this.parseSparqlBaseDirective();
-      return true;
-    }
-    return false;
-  }
 
-  flushPendingTriples(out, { includeBefore = true, includeAfter = true } = {}) {
-    if (includeBefore && this.pendingTriples.length > 0) {
-      out.push(...this.pendingTriples);
-      this.pendingTriples = [];
-    }
-    if (includeAfter && this.pendingTriplesAfter.length > 0) {
-      out.push(...this.pendingTriplesAfter);
-      this.pendingTriplesAfter = [];
-    }
-  }
+    class Parser {
+      constructor(tokens) {
+        this.toks = tokens;
+        this.pos = 0;
+        this.prefixes = PrefixEnv.newDefault();
+        this.blankCounter = 0;
+        // Helper triples that must be emitted *before* the triple that consumes them.
+        // Used primarily for N3 path expansion (e.g. :a :p/:q :b .).
+        this.pendingTriples = [];
 
-  parseDocument() {
-    const triples = [];
-    const forwardRules = [];
-    const backwardRules = [];
-    const logQueries = [];
-
-    while (this.peek().typ !== 'EOF') {
-      if (this.parseDirectiveIfPresent({ allowIdentBaseIri: true })) {
-        continue;
+        // Helper triples that should be emitted *after* the triple that references
+        // the described term (used for [...] blank-node / IRI property lists). This
+        // makes derived output read naturally, e.g. ':s :p _:b.' preceding
+        // '_:b :q :r.'
+        this.pendingTriplesAfter = [];
       }
 
-      const first = this.parseTerm();
-      if (this.peek().typ === 'OpImplies') {
-        this.next();
-        const second = this.parseTerm();
-        this.expectDot();
-        forwardRules.push(this.makeRule(first, second, true));
-      } else if (this.peek().typ === 'OpImpliedBy') {
-        this.next();
-        const second = this.parseTerm();
-        this.expectDot();
-        backwardRules.push(this.makeRule(first, second, false));
-      } else {
-        let more;
+      peek() {
+        return this.toks[this.pos];
+      }
+
+      next() {
+        const tok = this.toks[this.pos];
+        this.pos += 1;
+        return tok;
+      }
+
+      fail(message, tok = this.peek()) {
+        const off = tok && typeof tok.offset === 'number' ? tok.offset : null;
+        throw new N3SyntaxError(message, off);
+      }
+
+      expectDot() {
+        const tok = this.next();
+        if (tok.typ !== 'Dot') {
+          this.fail(`Expected '.', got ${tok.toString()}`, tok);
+        }
+      }
+
+      peekAt(offset) {
+        return this.toks[this.pos + offset];
+      }
+
+      isIdentKeyword(tok, keyword) {
+        return tok && tok.typ === 'Ident' && typeof tok.value === 'string' && tok.value.toLowerCase() === keyword;
+      }
+
+      canStartSparqlPrefixDirective() {
+        const prefixNameTok = this.peekAt(1);
+        const iriTok = this.peekAt(2);
+        return (
+          this.isIdentKeyword(this.peek(), 'prefix') &&
+          prefixNameTok &&
+          prefixNameTok.typ === 'Ident' &&
+          typeof prefixNameTok.value === 'string' &&
+          prefixNameTok.value.endsWith(':') &&
+          iriTok &&
+          (iriTok.typ === 'IriRef' || iriTok.typ === 'Ident')
+        );
+      }
+
+      canStartSparqlBaseDirective(allowIdentIri = false) {
+        const iriTok = this.peekAt(1);
+        return (
+          this.isIdentKeyword(this.peek(), 'base') &&
+          iriTok &&
+          (iriTok.typ === 'IriRef' || (allowIdentIri && iriTok.typ === 'Ident'))
+        );
+      }
+
+      parseDirectiveIfPresent({ allowIdentBaseIri = false } = {}) {
+        if (this.peek().typ === 'AtPrefix') {
+          this.next();
+          this.parsePrefixDirective();
+          return true;
+        }
+        if (this.peek().typ === 'AtBase') {
+          this.next();
+          this.parseBaseDirective();
+          return true;
+        }
+        if (this.canStartSparqlPrefixDirective()) {
+          this.next();
+          this.parseSparqlPrefixDirective();
+          return true;
+        }
+        if (this.canStartSparqlBaseDirective(allowIdentBaseIri)) {
+          this.next();
+          this.parseSparqlBaseDirective();
+          return true;
+        }
+        return false;
+      }
+
+      flushPendingTriples(out, { includeBefore = true, includeAfter = true } = {}) {
+        if (includeBefore && this.pendingTriples.length > 0) {
+          out.push(...this.pendingTriples);
+          this.pendingTriples = [];
+        }
+        if (includeAfter && this.pendingTriplesAfter.length > 0) {
+          out.push(...this.pendingTriplesAfter);
+          this.pendingTriplesAfter = [];
+        }
+      }
+
+      parseDocument() {
+        const triples = [];
+        const forwardRules = [];
+        const backwardRules = [];
+        const logQueries = [];
+
+        while (this.peek().typ !== 'EOF') {
+          if (this.parseDirectiveIfPresent({ allowIdentBaseIri: true })) {
+            continue;
+          }
+
+          const first = this.parseTerm();
+          if (this.peek().typ === 'OpImplies') {
+            this.next();
+            const second = this.parseTerm();
+            this.expectDot();
+            forwardRules.push(this.makeRule(first, second, true));
+          } else if (this.peek().typ === 'OpImpliedBy') {
+            this.next();
+            const second = this.parseTerm();
+            this.expectDot();
+            backwardRules.push(this.makeRule(first, second, false));
+          } else {
+            let more;
+
+            if (this.peek().typ === 'Dot') {
+              // N3 grammar allows: triples ::= subject predicateObjectList?
+              // So a bare subject followed by '.' is syntactically valid.
+              // If the subject was a path / property-list that generated helper triples,
+              // we emit those; otherwise this statement contributes no triples.
+              more = [];
+              this.flushPendingTriples(more);
+              this.next(); // consume '.'
+            } else {
+              more = this.parsePredicateObjectList(first);
+              this.expectDot();
+            }
+
+            // normalize explicit log:implies / log:impliedBy at top-level
+            for (const tr of more) {
+              if (isLogImplies(tr.p) && tr.s instanceof GraphTerm && tr.o instanceof GraphTerm) {
+                forwardRules.push(this.makeRule(tr.s, tr.o, true));
+              } else if (isLogImpliedBy(tr.p) && tr.s instanceof GraphTerm && tr.o instanceof GraphTerm) {
+                backwardRules.push(this.makeRule(tr.s, tr.o, false));
+              } else if (isLogQuery(tr.p) && tr.s instanceof GraphTerm && tr.o instanceof GraphTerm) {
+                // Output-selection directive: { premise } log:query { conclusion }.
+                // When present at top-level, eyeling prints only the instantiated conclusion
+                // triples (unique) instead of all newly derived facts.
+                logQueries.push(this.makeRule(tr.s, tr.o, true));
+              } else {
+                triples.push(tr);
+              }
+            }
+          }
+        }
+
+        return [this.prefixes, triples, forwardRules, backwardRules, logQueries];
+      }
+
+      parsePrefixDirective() {
+        const tok = this.next();
+        if (tok.typ !== 'Ident') {
+          this.fail(`Expected prefix name, got ${tok.toString()}`, tok);
+        }
+        const pref = tok.value || '';
+        if (!pref.endsWith(':')) {
+          this.fail("Invalid @prefix directive: prefix name must end with ':'", tok);
+        }
+        const prefName = pref.endsWith(':') ? pref.slice(0, -1) : pref;
+        assertValidQNamePrefix(prefName, this.fail.bind(this), tok, '@prefix directive');
 
         if (this.peek().typ === 'Dot') {
-          // N3 grammar allows: triples ::= subject predicateObjectList?
-          // So a bare subject followed by '.' is syntactically valid.
-          // If the subject was a path / property-list that generated helper triples,
-          // we emit those; otherwise this statement contributes no triples.
-          more = [];
-          this.flushPendingTriples(more);
-          this.next(); // consume '.'
-        } else {
-          more = this.parsePredicateObjectList(first);
-          this.expectDot();
+          this.next();
+          if (!Object.prototype.hasOwnProperty.call(this.prefixes.map, prefName)) {
+            this.prefixes.set(prefName, '');
+          }
+          return;
         }
 
-        // normalize explicit log:implies / log:impliedBy at top-level
-        for (const tr of more) {
-          if (isLogImplies(tr.p) && tr.s instanceof GraphTerm && tr.o instanceof GraphTerm) {
-            forwardRules.push(this.makeRule(tr.s, tr.o, true));
-          } else if (isLogImpliedBy(tr.p) && tr.s instanceof GraphTerm && tr.o instanceof GraphTerm) {
-            backwardRules.push(this.makeRule(tr.s, tr.o, false));
-          } else if (isLogQuery(tr.p) && tr.s instanceof GraphTerm && tr.o instanceof GraphTerm) {
-            // Output-selection directive: { premise } log:query { conclusion }.
-            // When present at top-level, eyeling prints only the instantiated conclusion
-            // triples (unique) instead of all newly derived facts.
-            logQueries.push(this.makeRule(tr.s, tr.o, true));
+        const tok2 = this.next();
+        let iri;
+        if (tok2.typ === 'IriRef') {
+          iri = resolveIriRef(tok2.value || '', this.prefixes.baseIri || '');
+        } else if (tok2.typ === 'Ident') {
+          const qn = tok2.value || '';
+          if (!qn.includes(':')) failInvalidKeywordLikeIdent(this.fail.bind(this), tok2, qn);
+          assertValidQNamePrefix(qn.split(':', 1)[0], this.fail.bind(this), tok2, '@prefix directive IRI');
+          iri = this.prefixes.expandQName(qn);
+        } else {
+          this.fail(`Expected IRI after @prefix, got ${tok2.toString()}`, tok2);
+        }
+        this.expectDot();
+        this.prefixes.set(prefName, iri);
+      }
+
+      parseBaseDirective() {
+        const tok = this.next();
+        let iri;
+        if (tok.typ === 'IriRef') {
+          iri = resolveIriRef(tok.value || '', this.prefixes.baseIri || '');
+        } else if (tok.typ === 'Ident') {
+          const qn = tok.value || '';
+          if (!qn.includes(':')) failInvalidKeywordLikeIdent(this.fail.bind(this), tok, qn);
+          assertValidQNamePrefix(qn.split(':', 1)[0], this.fail.bind(this), tok, '@base directive IRI');
+          iri = this.prefixes.expandQName(qn);
+        } else {
+          this.fail(`Expected IRI after @base, got ${tok.toString()}`, tok);
+        }
+        this.expectDot();
+        this.prefixes.setBase(iri);
+      }
+
+      parseSparqlPrefixDirective() {
+        // SPARQL/Turtle-style PREFIX directive: PREFIX pfx: <iri>  (no trailing '.')
+        const tok = this.next();
+        if (tok.typ !== 'Ident') {
+          this.fail(`Expected prefix name after PREFIX, got ${tok.toString()}`, tok);
+        }
+        const pref = tok.value || '';
+        if (!pref.endsWith(':')) {
+          this.fail("Invalid PREFIX directive: prefix name must end with ':'", tok);
+        }
+        const prefName = pref.endsWith(':') ? pref.slice(0, -1) : pref;
+        assertValidQNamePrefix(prefName, this.fail.bind(this), tok, 'PREFIX directive');
+
+        const tok2 = this.next();
+        let iri;
+        if (tok2.typ === 'IriRef') {
+          iri = resolveIriRef(tok2.value || '', this.prefixes.baseIri || '');
+        } else if (tok2.typ === 'Ident') {
+          const qn = tok2.value || '';
+          if (!qn.includes(':')) failInvalidKeywordLikeIdent(this.fail.bind(this), tok2, qn);
+          assertValidQNamePrefix(qn.split(':', 1)[0], this.fail.bind(this), tok2, '@prefix directive IRI');
+          iri = this.prefixes.expandQName(qn);
+        } else {
+          this.fail(`Expected IRI after PREFIX, got ${tok2.toString()}`, tok2);
+        }
+
+        // N3/Turtle: PREFIX directives do not have a trailing '.', but accept it permissively.
+        if (this.peek().typ === 'Dot') this.next();
+
+        this.prefixes.set(prefName, iri);
+      }
+
+      parseSparqlBaseDirective() {
+        // SPARQL/Turtle-style BASE directive: BASE <iri>  (no trailing '.')
+        const tok = this.next();
+        let iri;
+        if (tok.typ === 'IriRef') {
+          iri = resolveIriRef(tok.value || '', this.prefixes.baseIri || '');
+        } else if (tok.typ === 'Ident') {
+          const qn = tok.value || '';
+          if (!qn.includes(':')) failInvalidKeywordLikeIdent(this.fail.bind(this), tok, qn);
+          assertValidQNamePrefix(qn.split(':', 1)[0], this.fail.bind(this), tok, 'BASE directive IRI');
+          iri = this.prefixes.expandQName(qn);
+        } else {
+          this.fail(`Expected IRI after BASE, got ${tok.toString()}`, tok);
+        }
+
+        // N3/Turtle: BASE directives do not have a trailing '.', but accept it permissively.
+        if (this.peek().typ === 'Dot') this.next();
+
+        this.prefixes.setBase(iri);
+      }
+
+      parseTerm() {
+        let t = this.parsePathItem();
+
+        while (this.peek().typ === 'OpPathFwd' || this.peek().typ === 'OpPathRev') {
+          const dir = this.next().typ; // OpPathFwd | OpPathRev
+          const pred = this.parsePathItem();
+
+          this.blankCounter += 1;
+          const bn = new Blank(`_:b${this.blankCounter}`);
+
+          this.pendingTriples.push(dir === 'OpPathFwd' ? new Triple(t, pred, bn) : new Triple(bn, pred, t));
+
+          t = bn;
+        }
+
+        return t;
+      }
+
+      parsePathItem() {
+        const tok = this.next();
+        const typ = tok.typ;
+        const val = tok.value;
+
+        if (typ === 'Equals') {
+          return internIri(OWL_NS + 'sameAs');
+        }
+
+        if (typ === 'IriRef') {
+          const base = this.prefixes.baseIri || '';
+          return internIri(resolveIriRef(val || '', base));
+        }
+        if (typ === 'Ident') {
+          const name = val || '';
+          if (name === 'a') {
+            return internIri(RDF_NS + 'type');
+          } else if (name.startsWith('_:')) {
+            return new Blank(name);
+          } else if (name.includes(':')) {
+            assertValidQNamePrefix(name.split(':', 1)[0], this.fail.bind(this), tok);
+            return internIri(this.prefixes.expandQName(name));
           } else {
-            triples.push(tr);
+            failInvalidKeywordLikeIdent(this.fail.bind(this), tok, name);
+          }
+        }
+
+        if (typ === 'Literal') {
+          let s = val || '';
+
+          // Optional language tag: "..."@en, per N3 LANGTAG production.
+          if (this.peek().typ === 'LangTag') {
+            // Only quoted string literals can carry a language tag.
+            if (!(s.startsWith('"') && s.endsWith('"'))) {
+              this.fail('Language tag is only allowed on quoted string literals', this.peek());
+            }
+            const langTok = this.next();
+            const lang = langTok.value || '';
+            s = `${s}@${lang}`;
+
+            // N3/Turtle: language tags and datatypes are mutually exclusive.
+            if (this.peek().typ === 'HatHat') {
+              this.fail('A literal cannot have both a language tag (@...) and a datatype (^^...)', this.peek());
+            }
+          }
+
+          if (this.peek().typ === 'HatHat') {
+            this.next();
+            const dtTok = this.next();
+            let dtIri;
+            if (dtTok.typ === 'IriRef') {
+              dtIri = dtTok.value || '';
+            } else if (dtTok.typ === 'Ident') {
+              const qn = dtTok.value || '';
+              if (!qn.includes(':')) failInvalidKeywordLikeIdent(this.fail.bind(this), dtTok, qn);
+              assertValidQNamePrefix(qn.split(':', 1)[0], this.fail.bind(this), dtTok, 'datatype prefixed name');
+              dtIri = this.prefixes.expandQName(qn);
+            } else {
+              this.fail(`Expected datatype after ^^, got ${dtTok.toString()}`, dtTok);
+            }
+            s = `${s}^^<${dtIri}>`;
+          }
+          return internLiteral(s);
+        }
+
+        if (typ === 'Var') return new Var(val || '');
+        if (typ === 'LParen') return this.parseList();
+        if (typ === 'LBracket') return this.parseBlank();
+        if (typ === 'LBrace') return this.parseGraph();
+
+        this.fail(`Unexpected term token: ${tok.toString()}`, tok);
+      }
+
+      parseList() {
+        const elems = [];
+        while (this.peek().typ !== 'RParen') {
+          elems.push(this.parseTerm());
+        }
+        this.next(); // consume ')'
+        return new ListTerm(elems);
+      }
+
+      parseBlank() {
+        // [] or [ ... ] property list
+        if (this.peek().typ === 'RBracket') {
+          this.next();
+          this.blankCounter += 1;
+          return new Blank(`_:b${this.blankCounter}`);
+        }
+
+        // IRI property list: [ id <IRI> predicateObjectList? ]
+        // Lets you embed descriptions of an IRI directly in object position.
+        if (this.peek().typ === 'Ident' && (this.peek().value || '') === 'id') {
+          const iriTok = this.next(); // consume 'id'
+          const iriTerm = this.parseTerm();
+
+          // N3 note: 'id' form is not meant to be used with blank node identifiers.
+          if (iriTerm instanceof Blank && iriTerm.label.startsWith('_:')) {
+            this.fail("Cannot use 'id' keyword with a blank node identifier inside [...]", iriTok);
+          }
+
+          // Optional ';' right after the id IRI (tolerated).
+          if (this.peek().typ === 'Semicolon') this.next();
+
+          // Empty IRI property list: [ id :iri ]
+          if (this.peek().typ === 'RBracket') {
+            this.next();
+            return iriTerm;
+          }
+
+          const localTriples = this.parsePropertyListTriples(iriTerm, 'RBracket', 'IRI property list');
+
+          // Defer the embedded description until after the triple that references the IRI.
+          if (localTriples.length) this.pendingTriplesAfter.push(...localTriples);
+          return iriTerm;
+        }
+
+        // [ predicateObjectList ]
+        this.blankCounter += 1;
+        const id = `_:b${this.blankCounter}`;
+        const subj = new Blank(id);
+        const localTriples = this.parsePropertyListTriples(subj, 'RBracket', 'blank node property list');
+
+        // Defer the blank-node description until after the triple that references it.
+        if (localTriples.length) this.pendingTriplesAfter.push(...localTriples);
+        return new Blank(id);
+      }
+
+      parsePropertyVerb() {
+        let pred;
+        let invert = false;
+
+        if (this.peek().typ === 'Ident' && (this.peek().value || '') === 'a') {
+          this.next();
+          pred = internIri(RDF_NS + 'type');
+        } else if (this.peek().typ === 'OpPredInvert') {
+          this.next();
+          pred = this.parseTerm();
+          invert = true;
+        } else {
+          pred = this.parseTerm();
+        }
+
+        return { pred, invert };
+      }
+
+      parsePropertyListTriples(subject, closingTyp, contextLabel) {
+        const localTriples = [];
+
+        while (true) {
+          const { pred, invert } = this.parsePropertyVerb();
+
+          // If a pathological predicate term produced post-triples, don't let them leak.
+          this.flushPendingTriples(localTriples, { includeBefore: false, includeAfter: true });
+
+          const objs = [];
+          const readObj = () => {
+            const term = this.parseTerm();
+            const postTriples = this.pendingTriplesAfter;
+            this.pendingTriplesAfter = [];
+            objs.push({ term, postTriples });
+          };
+
+          readObj();
+          while (this.peek().typ === 'Comma') {
+            this.next();
+            readObj();
+          }
+
+          for (const { term: o, postTriples } of objs) {
+            // Path helper triples must come before the triple that consumes the path result.
+            this.flushPendingTriples(localTriples, { includeBefore: true, includeAfter: false });
+            localTriples.push(invert ? new Triple(o, pred, subject) : new Triple(subject, pred, o));
+            if (postTriples && postTriples.length) localTriples.push(...postTriples);
+          }
+
+          if (this.peek().typ === 'Semicolon') {
+            this.next();
+            if (this.peek().typ === closingTyp) break;
+            continue;
+          }
+          break;
+        }
+
+        if (this.peek().typ !== closingTyp) {
+          this.fail(`Expected ']' at end of ${contextLabel}, got ${this.peek().toString()}`);
+        }
+        this.next();
+
+        return localTriples;
+      }
+
+      parseGraph() {
+        const triples = [];
+        while (this.peek().typ !== 'RBrace') {
+          // N3 allows @prefix/@base and SPARQL-style PREFIX/BASE directives anywhere
+          // outside of a triple. This includes inside quoted graph terms.
+          // These directives affect parsing (prefix/base resolution) but do not emit triples.
+          if (this.parseDirectiveIfPresent()) {
+            continue;
+          }
+
+          const left = this.parseTerm();
+          if (this.peek().typ === 'OpImplies') {
+            this.next();
+            const right = this.parseTerm();
+            const pred = internIri(LOG_NS + 'implies');
+            triples.push(new Triple(left, pred, right));
+            if (this.peek().typ === 'Dot') this.next();
+            else if (this.peek().typ === 'RBrace') {
+              // ok
+            } else {
+              this.fail(`Expected '.' or '}', got ${this.peek().toString()}`);
+            }
+          } else if (this.peek().typ === 'OpImpliedBy') {
+            this.next();
+            const right = this.parseTerm();
+            const pred = internIri(LOG_NS + 'impliedBy');
+            triples.push(new Triple(left, pred, right));
+            if (this.peek().typ === 'Dot') this.next();
+            else if (this.peek().typ === 'RBrace') {
+              // ok
+            } else {
+              this.fail(`Expected '.' or '}', got ${this.peek().toString()}`);
+            }
+          } else {
+            // N3 grammar allows: triples ::= subject predicateObjectList?
+            // So a bare subject (optionally producing helper triples) is allowed inside formulas as well.
+            if (this.peek().typ === 'Dot' || this.peek().typ === 'RBrace') {
+              this.flushPendingTriples(triples);
+              if (this.peek().typ === 'Dot') this.next();
+              continue;
+            }
+
+            triples.push(...this.parsePredicateObjectList(left));
+            if (this.peek().typ === 'Dot') this.next();
+            else if (this.peek().typ === 'RBrace') {
+              // ok
+            } else {
+              this.fail(`Expected '.' or '}', got ${this.peek().toString()}`);
+            }
+          }
+        }
+        this.next(); // consume '}'
+        return new GraphTerm(triples);
+      }
+
+      parseStatementVerb() {
+        let verb;
+        let invert = false;
+
+        if (this.peek().typ === 'Ident' && (this.peek().value || '') === 'a') {
+          this.next();
+          verb = internIri(RDF_NS + 'type');
+        } else if (this.peek().typ === 'Ident' && (this.peek().value || '') === 'has') {
+          // N3 syntactic sugar: "S has P O." means "S P O."
+          this.next();
+          verb = this.parseTerm();
+        } else if (this.peek().typ === 'Ident' && (this.peek().value || '') === 'is') {
+          // N3 syntactic sugar: "S is P of O." means "O P S." (inverse; equivalent to "<-")
+          this.next();
+          verb = this.parseTerm();
+          if (!(this.peek().typ === 'Ident' && (this.peek().value || '') === 'of')) {
+            this.fail(`Expected 'of' after 'is <expr>', got ${this.peek().toString()}`);
+          }
+          this.next();
+          invert = true;
+        } else if (this.peek().typ === 'OpPredInvert') {
+          this.next();
+          verb = this.parseTerm();
+          invert = true;
+        } else {
+          verb = this.parseTerm();
+        }
+
+        return { verb, invert };
+      }
+
+      parsePredicateObjectList(subject) {
+        const out = [];
+
+        // If the SUBJECT was a path or property-list, emit its helper triples first.
+        this.flushPendingTriples(out);
+
+        while (true) {
+          const { verb, invert } = this.parseStatementVerb();
+          const objects = this.parseObjectList();
+
+          // If VERB or OBJECTS contained paths, their helper triples must come
+          // before the triples that consume the path results (Easter depends on this).
+          this.flushPendingTriples(out);
+
+          for (const { term: o, postTriples } of objects) {
+            out.push(new Triple(invert ? o : subject, verb, invert ? subject : o));
+            if (postTriples && postTriples.length) out.push(...postTriples);
+          }
+
+          if (this.peek().typ === 'Semicolon') {
+            this.next();
+            if (this.peek().typ === 'Dot') break;
+            continue;
+          }
+          break;
+        }
+
+        return out;
+      }
+
+      parseObjectList() {
+        // Capture any trailing property-list triples produced while parsing each
+        // object term so we can emit them *after* the triple that references the
+        // term. (See pendingTriplesAfter in the constructor.)
+
+        const objs = [];
+        const readObj = () => {
+          const o = this.parseTerm();
+          const post = this.pendingTriplesAfter;
+          this.pendingTriplesAfter = [];
+          objs.push({ term: o, postTriples: post });
+        };
+
+        readObj();
+        while (this.peek().typ === 'Comma') {
+          this.next();
+          readObj();
+        }
+        return objs;
+      }
+
+      makeRule(left, right, isForward) {
+        let premiseTerm, conclTerm;
+
+        if (isForward) {
+          premiseTerm = left;
+          conclTerm = right;
+        } else {
+          premiseTerm = right;
+          conclTerm = left;
+        }
+
+        let isFuse = false;
+        if (isForward) {
+          if (conclTerm instanceof Literal && conclTerm.value === 'false') {
+            isFuse = true;
+          }
+        }
+
+        let rawPremise;
+        if (premiseTerm instanceof GraphTerm) {
+          rawPremise = premiseTerm.triples;
+        } else if (premiseTerm instanceof Literal && premiseTerm.value === 'true') {
+          rawPremise = [];
+        } else {
+          rawPremise = [];
+        }
+
+        // In standard N3, the right-hand side of a rule is a formula term.
+        // Eyeling primarily supports an explicit quoted formula `{ ... }` (GraphTerm)
+        // or the special literals true/false.
+        //
+        // However, some programs use a *variable* in rule head position to mean:
+        // "prove the body, bind ?C to a quoted formula, and then assert that formula".
+        // Example:
+        //   { :a :b ?C } => ?C.
+        //
+        // To support this, we allow a forward rule to carry a dynamic head term.
+        // The engine will resolve it per-solution and, if it becomes a GraphTerm,
+        // will emit its triples as the instantiated head.
+        let rawConclusion;
+        let dynamicConclusionTerm = null;
+        if (conclTerm instanceof GraphTerm) {
+          rawConclusion = conclTerm.triples;
+        } else if (conclTerm instanceof Literal && conclTerm.value === 'false') {
+          rawConclusion = [];
+        } else if (conclTerm instanceof Literal && conclTerm.value === 'true') {
+          // `=> true.` is a no-op (empty head)
+          rawConclusion = [];
+        } else {
+          rawConclusion = [];
+          // Only forward rules can meaningfully "emit" a dynamic head.
+          // Backward rules with dynamic heads are not supported.
+          if (isForward && conclTerm) dynamicConclusionTerm = conclTerm;
+        }
+
+        // Blank nodes that occur explicitly in the head (conclusion)
+        const headBlankLabels = collectBlankLabelsInTriples(rawConclusion);
+
+        const [premise0, conclusion] = liftBlankRuleVars(rawPremise, rawConclusion);
+
+        // Keep premise order as written; the engine may defer some builtins in
+        // forward rules when they cannot yet run due to unbound variables.
+        const premise = premise0;
+
+        const r = new Rule(premise, conclusion, isForward, isFuse, headBlankLabels);
+
+        if (dynamicConclusionTerm) {
+          // Non-enumerable to keep AST output stable unless explicitly requested.
+          Object.defineProperty(r, '__dynamicConclusionTerm', {
+            value: dynamicConclusionTerm,
+            enumerable: false,
+            writable: false,
+            configurable: true,
+          });
+        }
+
+        return r;
+      }
+    }
+
+    module.exports = { Parser };
+  };
+  __modules['lib/prelude.js'] = function (require, module, exports) {
+    /**
+     * Eyeling Reasoner — prelude
+     *
+     * Core data model and shared utilities: Term/Triple/Formula types, namespaces,
+     * and prefix environment helpers used throughout the project.
+     */
+
+    'use strict';
+
+    // ===========================================================================
+    // Namespace constants
+    // ===========================================================================
+
+    const RDF_NS = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
+    const RDFS_NS = 'http://www.w3.org/2000/01/rdf-schema#';
+    const OWL_NS = 'http://www.w3.org/2002/07/owl#';
+    const XSD_NS = 'http://www.w3.org/2001/XMLSchema#';
+    const CRYPTO_NS = 'http://www.w3.org/2000/10/swap/crypto#';
+    const MATH_NS = 'http://www.w3.org/2000/10/swap/math#';
+    const TIME_NS = 'http://www.w3.org/2000/10/swap/time#';
+    const LIST_NS = 'http://www.w3.org/2000/10/swap/list#';
+    const LOG_NS = 'http://www.w3.org/2000/10/swap/log#';
+    const STRING_NS = 'http://www.w3.org/2000/10/swap/string#';
+    const SKOLEM_NS = 'https://eyereasoner.github.io/.well-known/genid/';
+    const RDF_JSON_DT = RDF_NS + 'JSON';
+
+    function resolveIriRef(ref, base) {
+      if (!base) return ref;
+      if (/^[A-Za-z][A-Za-z0-9+.-]*:/.test(ref)) return ref; // already absolute
+      try {
+        return new URL(ref, base).toString();
+      } catch {
+        return ref;
+      }
+    }
+
+    // -----------------------------------------------------------------------------
+    // Literal helpers
+    // -----------------------------------------------------------------------------
+
+    // Hot cache used by literalParts().
+    const MAX_LITERAL_PARTS_CACHE_LEN = 1024;
+
+    const __literalPartsCache = new Map(); // lit string -> [lex, dt]
+
+    function literalParts(lit) {
+      // Avoid caching extremely large literals (notably huge numeric intermediates)
+      // to prevent unbounded memory growth.
+      const useCache = typeof lit === 'string' && lit.length <= MAX_LITERAL_PARTS_CACHE_LEN;
+
+      if (useCache) {
+        const cached = __literalPartsCache.get(lit);
+        if (cached) return cached;
+      }
+
+      // Split a literal into lexical form and datatype IRI (if any).
+      // Also strip an optional language tag from the lexical form:
+      //   "\"hello\"@en"  -> "\"hello\""
+      //   "\"hello\"@en^^<...>" is rejected earlier in the parser.
+      const idx = lit.indexOf('^^');
+      let lex = lit;
+      let dt = null;
+
+      if (idx >= 0) {
+        lex = lit.slice(0, idx);
+        dt = lit.slice(idx + 2).trim();
+        if (dt.startsWith('<') && dt.endsWith('>')) {
+          dt = dt.slice(1, -1);
+        }
+      }
+
+      // Strip LANGTAG from the lexical form when present.
+      if (lex.length >= 2 && lex[0] === '"') {
+        const lastQuote = lex.lastIndexOf('"');
+        if (lastQuote > 0 && lastQuote < lex.length - 1 && lex[lastQuote + 1] === '@') {
+          const lang = lex.slice(lastQuote + 2);
+          if (/^[A-Za-z]+(?:-[A-Za-z0-9]+)*$/.test(lang)) {
+            lex = lex.slice(0, lastQuote + 1);
           }
         }
       }
+
+      const res = [lex, dt];
+      if (useCache) __literalPartsCache.set(lit, res);
+      return res;
     }
 
-    return [this.prefixes, triples, forwardRules, backwardRules, logQueries];
-  }
+    // -----------------------------------------------------------------------------
+    // Global stable term IDs (performance)
+    // -----------------------------------------------------------------------------
+    // A small integer ID is assigned per *value-based* key, and stored on each term
+    // as non-enumerable property `__tid`. This enables cheaper indexing and
+    // equality fast-paths than repeated string key construction.
 
-  parsePrefixDirective() {
-    const tok = this.next();
-    if (tok.typ !== 'Ident') {
-      this.fail(`Expected prefix name, got ${tok.toString()}`, tok);
-    }
-    const pref = tok.value || '';
-    if (!pref.endsWith(':')) {
-      this.fail("Invalid @prefix directive: prefix name must end with ':'", tok);
-    }
-    const prefName = pref.endsWith(':') ? pref.slice(0, -1) : pref;
-    assertValidQNamePrefix(prefName, this.fail.bind(this), tok, '@prefix directive');
+    let __nextTid = 1;
+    const __tidIntern = new Map(); // string key -> number
 
-    if (this.peek().typ === 'Dot') {
-      this.next();
-      if (!Object.prototype.hasOwnProperty.call(this.prefixes.map, prefName)) {
-        this.prefixes.set(prefName, '');
+    // Avoid storing extremely large literal keys in the global term-id intern map.
+    // For huge literals we still assign a unique __tid, but we do not intern the key.
+    const MAX_LITERAL_TID_LEN = 1024;
+
+    function __getTid(key) {
+      let id = __tidIntern.get(key);
+      if (!id) {
+        id = __nextTid++;
+        __tidIntern.set(key, id);
       }
-      return;
+      return id;
     }
 
-    const tok2 = this.next();
-    let iri;
-    if (tok2.typ === 'IriRef') {
-      iri = resolveIriRef(tok2.value || '', this.prefixes.baseIri || '');
-    } else if (tok2.typ === 'Ident') {
-      const qn = tok2.value || '';
-      if (!qn.includes(':')) failInvalidKeywordLikeIdent(this.fail.bind(this), tok2, qn);
-      assertValidQNamePrefix(qn.split(':', 1)[0], this.fail.bind(this), tok2, '@prefix directive IRI');
-      iri = this.prefixes.expandQName(qn);
-    } else {
-      this.fail(`Expected IRI after @prefix, got ${tok2.toString()}`, tok2);
-    }
-    this.expectDot();
-    this.prefixes.set(prefName, iri);
-  }
-
-  parseBaseDirective() {
-    const tok = this.next();
-    let iri;
-    if (tok.typ === 'IriRef') {
-      iri = resolveIriRef(tok.value || '', this.prefixes.baseIri || '');
-    } else if (tok.typ === 'Ident') {
-      const qn = tok.value || '';
-      if (!qn.includes(':')) failInvalidKeywordLikeIdent(this.fail.bind(this), tok, qn);
-      assertValidQNamePrefix(qn.split(':', 1)[0], this.fail.bind(this), tok, '@base directive IRI');
-      iri = this.prefixes.expandQName(qn);
-    } else {
-      this.fail(`Expected IRI after @base, got ${tok.toString()}`, tok);
-    }
-    this.expectDot();
-    this.prefixes.setBase(iri);
-  }
-
-  parseSparqlPrefixDirective() {
-    // SPARQL/Turtle-style PREFIX directive: PREFIX pfx: <iri>  (no trailing '.')
-    const tok = this.next();
-    if (tok.typ !== 'Ident') {
-      this.fail(`Expected prefix name after PREFIX, got ${tok.toString()}`, tok);
-    }
-    const pref = tok.value || '';
-    if (!pref.endsWith(':')) {
-      this.fail("Invalid PREFIX directive: prefix name must end with ':'", tok);
-    }
-    const prefName = pref.endsWith(':') ? pref.slice(0, -1) : pref;
-    assertValidQNamePrefix(prefName, this.fail.bind(this), tok, 'PREFIX directive');
-
-    const tok2 = this.next();
-    let iri;
-    if (tok2.typ === 'IriRef') {
-      iri = resolveIriRef(tok2.value || '', this.prefixes.baseIri || '');
-    } else if (tok2.typ === 'Ident') {
-      const qn = tok2.value || '';
-      if (!qn.includes(':')) failInvalidKeywordLikeIdent(this.fail.bind(this), tok2, qn);
-      assertValidQNamePrefix(qn.split(':', 1)[0], this.fail.bind(this), tok2, '@prefix directive IRI');
-      iri = this.prefixes.expandQName(qn);
-    } else {
-      this.fail(`Expected IRI after PREFIX, got ${tok2.toString()}`, tok2);
+    function __isQuotedLexical(lit) {
+      if (typeof lit !== 'string') return false;
+      if (lit.length >= 6) {
+        if (lit.startsWith('"""') && lit.endsWith('"""')) return true;
+        if (lit.startsWith("'''") && lit.endsWith("'''")) return true;
+      }
+      if (lit.length >= 2) {
+        const a = lit[0];
+        const b = lit[lit.length - 1];
+        if ((a === '"' && b === '"') || (a === "'" && b === "'")) return true;
+      }
+      return false;
     }
 
-    // N3/Turtle: PREFIX directives do not have a trailing '.', but accept it permissively.
-    if (this.peek().typ === 'Dot') this.next();
-
-    this.prefixes.set(prefName, iri);
-  }
-
-  parseSparqlBaseDirective() {
-    // SPARQL/Turtle-style BASE directive: BASE <iri>  (no trailing '.')
-    const tok = this.next();
-    let iri;
-    if (tok.typ === 'IriRef') {
-      iri = resolveIriRef(tok.value || '', this.prefixes.baseIri || '');
-    } else if (tok.typ === 'Ident') {
-      const qn = tok.value || '';
-      if (!qn.includes(':')) failInvalidKeywordLikeIdent(this.fail.bind(this), tok, qn);
-      assertValidQNamePrefix(qn.split(':', 1)[0], this.fail.bind(this), tok, 'BASE directive IRI');
-      iri = this.prefixes.expandQName(qn);
-    } else {
-      this.fail(`Expected IRI after BASE, got ${tok.toString()}`, tok);
-    }
-
-    // N3/Turtle: BASE directives do not have a trailing '.', but accept it permissively.
-    if (this.peek().typ === 'Dot') this.next();
-
-    this.prefixes.setBase(iri);
-  }
-
-  parseTerm() {
-    let t = this.parsePathItem();
-
-    while (this.peek().typ === 'OpPathFwd' || this.peek().typ === 'OpPathRev') {
-      const dir = this.next().typ; // OpPathFwd | OpPathRev
-      const pred = this.parsePathItem();
-
-      this.blankCounter += 1;
-      const bn = new Blank(`_:b${this.blankCounter}`);
-
-      this.pendingTriples.push(dir === 'OpPathFwd' ? new Triple(t, pred, bn) : new Triple(bn, pred, t));
-
-      t = bn;
-    }
-
-    return t;
-  }
-
-  parsePathItem() {
-    const tok = this.next();
-    const typ = tok.typ;
-    const val = tok.value;
-
-    if (typ === 'Equals') {
-      return internIri(OWL_NS + 'sameAs');
-    }
-
-    if (typ === 'IriRef') {
-      const base = this.prefixes.baseIri || '';
-      return internIri(resolveIriRef(val || '', base));
-    }
-    if (typ === 'Ident') {
-      const name = val || '';
-      if (name === 'a') {
-        return internIri(RDF_NS + 'type');
-      } else if (name.startsWith('_:')) {
-        return new Blank(name);
-      } else if (name.includes(':')) {
-        assertValidQNamePrefix(name.split(':', 1)[0], this.fail.bind(this), tok);
-        return internIri(this.prefixes.expandQName(name));
+    function __literalHasLangTag(lit) {
+      if (typeof lit !== 'string' || !__isQuotedLexical(lit)) return false;
+      let end = -1;
+      let qlen = 1;
+      if (lit.startsWith('"""')) {
+        end = lit.lastIndexOf('"""');
+        qlen = 3;
+      } else if (lit.startsWith("'''")) {
+        end = lit.lastIndexOf("'''");
+        qlen = 3;
       } else {
-        failInvalidKeywordLikeIdent(this.fail.bind(this), tok, name);
+        end = lit.lastIndexOf(lit[0]);
+        qlen = 1;
+      }
+      if (end < 0) return false;
+      const after = lit.slice(end + qlen);
+      if (!after.startsWith('@')) return false;
+      const lang = after.slice(1);
+      return /^[A-Za-z]+(?:-[A-Za-z0-9]+)*$/.test(lang);
+    }
+
+    function __isPlainStringLiteralValue(lit) {
+      if (typeof lit !== 'string') return false;
+      if (lit.indexOf('^^') >= 0) return false;
+      if (!__isQuotedLexical(lit)) return false;
+      return !__literalHasLangTag(lit);
+    }
+
+    function normalizeLiteralForTid(lit) {
+      // Canonicalize so that plain string and explicit xsd:string share the same id.
+      if (typeof lit !== 'string') return lit;
+      const [lex, dt] = literalParts(lit);
+      if (dt === XSD_NS + 'string') return `${lex}^^<${XSD_NS}string>`;
+      if (dt === null && __isPlainStringLiteralValue(lit)) return `${lex}^^<${XSD_NS}string>`;
+      return lit;
+    }
+
+    // ===========================================================================
+    // AST (Abstract Syntax Tree)
+    // ===========================================================================
+
+    class Term {}
+
+    class Iri extends Term {
+      constructor(value) {
+        super();
+        this.value = value;
+        Object.defineProperty(this, '__tid', {
+          value: __getTid('I:' + value),
+          enumerable: false,
+        });
       }
     }
 
-    if (typ === 'Literal') {
-      let s = val || '';
+    class Literal extends Term {
+      constructor(value) {
+        super();
+        this.value = value; // raw lexical form, e.g. "foo", 12, true, or "\"1944-08-21\"^^..."
+        const norm = normalizeLiteralForTid(value);
+        const useIntern = typeof norm === 'string' && norm.length <= MAX_LITERAL_TID_LEN;
+        const tid = useIntern ? __getTid('L:' + norm) : __nextTid++;
+        Object.defineProperty(this, '__tid', {
+          value: tid,
+          enumerable: false,
+        });
+      }
+    }
 
-      // Optional language tag: "..."@en, per N3 LANGTAG production.
-      if (this.peek().typ === 'LangTag') {
-        // Only quoted string literals can carry a language tag.
-        if (!(s.startsWith('"') && s.endsWith('"'))) {
-          this.fail('Language tag is only allowed on quoted string literals', this.peek());
+    class Var extends Term {
+      constructor(name) {
+        super();
+        this.name = name; // without leading '?'
+      }
+    }
+
+    class Blank extends Term {
+      constructor(label) {
+        super();
+        this.label = label; // _:b1, etc.
+        Object.defineProperty(this, '__tid', {
+          value: __getTid('B:' + label),
+          enumerable: false,
+        });
+      }
+    }
+
+    class ListTerm extends Term {
+      constructor(elems) {
+        super();
+        this.elems = elems; // Term[]
+      }
+    }
+
+    class OpenListTerm extends Term {
+      constructor(prefix, tailVar) {
+        super();
+        this.prefix = prefix; // Term[]
+        this.tailVar = tailVar; // string
+      }
+    }
+
+    class GraphTerm extends Term {
+      constructor(triples) {
+        super();
+        this.triples = triples; // Triple[]
+      }
+    }
+
+    class Triple {
+      constructor(s, p, o) {
+        this.s = s;
+        this.p = p;
+        this.o = o;
+      }
+    }
+
+    class Rule {
+      constructor(premise, conclusion, isForward, isFuse, headBlankLabels) {
+        this.premise = premise; // Triple[]
+        this.conclusion = conclusion; // Triple[]
+        this.isForward = isForward; // boolean
+        this.isFuse = isFuse; // boolean
+        // Set<string> of blank-node labels that occur explicitly in the rule head
+        this.headBlankLabels = headBlankLabels || new Set();
+      }
+    }
+
+    class DerivedFact {
+      constructor(fact, rule, premises, subst) {
+        this.fact = fact; // Triple
+        this.rule = rule; // Rule
+        this.premises = premises; // Triple[]
+        this.subst = subst; // { varName: Term }
+      }
+    }
+
+    // ===========================================================================
+    // Term interning
+    // ===========================================================================
+
+    // Intern IRIs and literals by their raw lexical string.
+    // This reduces allocations when the same terms repeat and can improve performance.
+    //
+    // NOTE: Terms are treated as immutable. Do NOT mutate .value on interned objects.
+    const __iriIntern = new Map();
+    const __literalIntern = new Map();
+
+    // Do not intern extremely large literal strings (e.g., huge numeric intermediates).
+    // Interning them creates global strong references that prevent GC.
+    const MAX_LITERAL_INTERN_LEN = 1024;
+
+    /** @param {string} value */
+    function internIri(value) {
+      let t = __iriIntern.get(value);
+      if (!t) {
+        t = new Iri(value);
+        __iriIntern.set(value, t);
+      }
+      return t;
+    }
+
+    /** @param {string} value */
+    function internLiteral(value) {
+      if (typeof value === 'string' && value.length > MAX_LITERAL_INTERN_LEN) {
+        // Skip global interning for huge literals to avoid retaining them forever.
+        return new Literal(value);
+      }
+      let t = __literalIntern.get(value);
+      if (!t) {
+        t = new Literal(value);
+        __literalIntern.set(value, t);
+      }
+      return t;
+    }
+
+    // ===========================================================================
+    // Special predicate helpers (kept here because PrefixEnv needs them)
+    // ===========================================================================
+
+    function isRdfTypePred(p) {
+      return p instanceof Iri && p.value === RDF_NS + 'type';
+    }
+
+    function isOwlSameAsPred(p) {
+      return p instanceof Iri && p.value === OWL_NS + 'sameAs';
+    }
+
+    function isLogImplies(p) {
+      return p instanceof Iri && p.value === LOG_NS + 'implies';
+    }
+
+    function isLogImpliedBy(p) {
+      return p instanceof Iri && p.value === LOG_NS + 'impliedBy';
+    }
+
+    function isLogQuery(p) {
+      return p instanceof Iri && p.value === LOG_NS + 'query';
+    }
+
+    // ===========================================================================
+    // PREFIX ENVIRONMENT
+    // ===========================================================================
+
+    // Conservative check for whether a candidate local part can be safely serialized as a prefixed name.
+    // If false, we fall back to <IRI> to guarantee syntactically valid N3/Turtle output.
+    function isValidQNameLocal(local) {
+      if (typeof local !== 'string' || local.length === 0) return false;
+      // Disallow characters that would break PN_LOCAL unless escaped (we keep this conservative).
+      if (/[#:/?\s]/.test(local)) return false;
+      // Allow a safe ASCII subset.
+      if (/[^A-Za-z0-9._-]/.test(local)) return false;
+      // Avoid edge cases that typically require escaping.
+      if (local.endsWith('.')) return false;
+      if (/^[.-]/.test(local)) return false;
+      return true;
+    }
+
+    class PrefixEnv {
+      constructor(map, baseIri) {
+        this.map = map || {}; // prefix -> IRI (including "" for @prefix :)
+        this.baseIri = baseIri || ''; // base IRI for resolving <relative>
+      }
+
+      static newDefault() {
+        const m = {};
+        m['rdf'] = RDF_NS;
+        m['rdfs'] = RDFS_NS;
+        m['xsd'] = XSD_NS;
+        m['log'] = LOG_NS;
+        m['math'] = MATH_NS;
+        m['string'] = STRING_NS;
+        m['list'] = LIST_NS;
+        m['time'] = TIME_NS;
+        m['genid'] = SKOLEM_NS;
+        m[''] = ''; // empty prefix default namespace
+        return new PrefixEnv(m, ''); // base IRI starts empty
+      }
+
+      set(pref, base) {
+        this.map[pref] = base;
+      }
+
+      setBase(baseIri) {
+        this.baseIri = baseIri || '';
+      }
+
+      expandQName(q) {
+        if (q.includes(':')) {
+          const [p, local] = q.split(':', 2);
+          const base = this.map[p] || '';
+          if (base) return base + local;
+          return q;
         }
-        const langTok = this.next();
-        const lang = langTok.value || '';
-        s = `${s}@${lang}`;
+        return q;
+      }
 
-        // N3/Turtle: language tags and datatypes are mutually exclusive.
-        if (this.peek().typ === 'HatHat') {
-          this.fail('A literal cannot have both a language tag (@...) and a datatype (^^...)', this.peek());
+      shrinkIri(iri) {
+        let best = null; // [prefix, local]
+        for (const [p, base] of Object.entries(this.map)) {
+          if (!base) continue;
+          if (iri.startsWith(base)) {
+            const local = iri.slice(base.length);
+            if (!local) continue;
+            // Only emit a QName when the local part is safe to serialize without escaping.
+            if (!isValidQNameLocal(local)) continue;
+            const cand = [p, local];
+            if (best === null || cand[1].length < best[1].length) best = cand;
+          }
+        }
+        if (best === null) return null;
+        const [p, local] = best;
+        if (p === '') return `:${local}`;
+        return `${p}:${local}`;
+      }
+
+      prefixesUsedForOutput(triples) {
+        const used = new Set();
+        for (const t of triples) {
+          const iris = [];
+          iris.push(...collectIrisInTerm(t.s));
+          if (!isRdfTypePred(t.p)) {
+            iris.push(...collectIrisInTerm(t.p));
+          }
+          iris.push(...collectIrisInTerm(t.o));
+          for (const iri of iris) {
+            for (const [p, base] of Object.entries(this.map)) {
+              if (base && iri.startsWith(base)) used.add(p);
+            }
+          }
+        }
+        const v = [];
+        for (const p of used) {
+          if (Object.prototype.hasOwnProperty.call(this.map, p)) v.push([p, this.map[p]]);
+        }
+        v.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+        return v;
+      }
+    }
+
+    function collectIrisInTerm(t) {
+      const out = [];
+      if (t instanceof Iri) {
+        out.push(t.value);
+      } else if (t instanceof Literal) {
+        const [, dt] = literalParts(t.value);
+        if (dt) out.push(dt); // so rdf/xsd prefixes are emitted when only used in ^^...
+      } else if (t instanceof ListTerm) {
+        for (const x of t.elems) out.push(...collectIrisInTerm(x));
+      } else if (t instanceof OpenListTerm) {
+        for (const x of t.prefix) out.push(...collectIrisInTerm(x));
+      } else if (t instanceof GraphTerm) {
+        for (const tr of t.triples) {
+          out.push(...collectIrisInTerm(tr.s));
+          out.push(...collectIrisInTerm(tr.p));
+          out.push(...collectIrisInTerm(tr.o));
+        }
+      }
+      return out;
+    }
+
+    function collectVarsInTerm(t, acc) {
+      if (t instanceof Var) {
+        acc.add(t.name);
+      } else if (t instanceof ListTerm) {
+        for (const x of t.elems) collectVarsInTerm(x, acc);
+      } else if (t instanceof OpenListTerm) {
+        for (const x of t.prefix) collectVarsInTerm(x, acc);
+        acc.add(t.tailVar);
+      } else if (t instanceof GraphTerm) {
+        for (const tr of t.triples) {
+          collectVarsInTerm(tr.s, acc);
+          collectVarsInTerm(tr.p, acc);
+          collectVarsInTerm(tr.o, acc);
+        }
+      }
+    }
+
+    function varsInRule(rule) {
+      const acc = new Set();
+      for (const tr of rule.premise) {
+        collectVarsInTerm(tr.s, acc);
+        collectVarsInTerm(tr.p, acc);
+        collectVarsInTerm(tr.o, acc);
+      }
+      for (const tr of rule.conclusion) {
+        collectVarsInTerm(tr.s, acc);
+        collectVarsInTerm(tr.p, acc);
+        collectVarsInTerm(tr.o, acc);
+      }
+      return acc;
+    }
+
+    function collectBlankLabelsInTerm(t, acc) {
+      if (t instanceof Blank) {
+        acc.add(t.label);
+      } else if (t instanceof ListTerm) {
+        for (const x of t.elems) collectBlankLabelsInTerm(x, acc);
+      } else if (t instanceof OpenListTerm) {
+        for (const x of t.prefix) collectBlankLabelsInTerm(x, acc);
+      } else if (t instanceof GraphTerm) {
+        for (const tr of t.triples) {
+          collectBlankLabelsInTerm(tr.s, acc);
+          collectBlankLabelsInTerm(tr.p, acc);
+          collectBlankLabelsInTerm(tr.o, acc);
+        }
+      }
+    }
+
+    function collectBlankLabelsInTriples(triples) {
+      const acc = new Set();
+      for (const tr of triples) {
+        collectBlankLabelsInTerm(tr.s, acc);
+        collectBlankLabelsInTerm(tr.p, acc);
+        collectBlankLabelsInTerm(tr.o, acc);
+      }
+      return acc;
+    }
+
+    module.exports = {
+      RDF_NS,
+      RDFS_NS,
+      OWL_NS,
+      XSD_NS,
+      CRYPTO_NS,
+      MATH_NS,
+      TIME_NS,
+      LIST_NS,
+      LOG_NS,
+      STRING_NS,
+      SKOLEM_NS,
+      RDF_JSON_DT,
+      resolveIriRef,
+      literalParts,
+      normalizeLiteralForTid,
+      MAX_LITERAL_TID_LEN,
+      Term,
+      Iri,
+      Literal,
+      Var,
+      Blank,
+      ListTerm,
+      OpenListTerm,
+      GraphTerm,
+      Triple,
+      Rule,
+      DerivedFact,
+      internIri,
+      internLiteral,
+      isRdfTypePred,
+      isOwlSameAsPred,
+      isLogImplies,
+      isLogImpliedBy,
+      isLogQuery,
+      PrefixEnv,
+      collectIrisInTerm,
+      varsInRule,
+      collectBlankLabelsInTriples,
+    };
+  };
+  __modules['lib/printing.js'] = function (require, module, exports) {
+    /**
+     * Eyeling Reasoner — printing
+     *
+     * Pretty-printing / serialization helpers for terms, triples, and formulas.
+     * Used by the CLI, demo, and explanations.
+     */
+
+    'use strict';
+
+    const {
+      XSD_NS,
+      Iri,
+      Literal,
+      Var,
+      Blank,
+      ListTerm,
+      OpenListTerm,
+      GraphTerm,
+      literalParts,
+      isRdfTypePred,
+      isOwlSameAsPred,
+      isLogImplies,
+      isLogImpliedBy,
+    } = require('./prelude');
+
+    function stripQuotes(lex) {
+      if (typeof lex !== 'string') return lex;
+      // Handle both short ('...' / "...") and long ('''...''' / """...""") forms.
+      if (lex.length >= 6) {
+        if (lex.startsWith('"""') && lex.endsWith('"""')) return lex.slice(3, -3);
+        if (lex.startsWith("'''") && lex.endsWith("'''")) return lex.slice(3, -3);
+      }
+      if (lex.length >= 2) {
+        const a = lex[0];
+        const b = lex[lex.length - 1];
+        if ((a === '"' && b === '"') || (a === "'" && b === "'")) return lex.slice(1, -1);
+      }
+      return lex;
+    }
+
+    function termToN3(t, pref) {
+      if (t instanceof Iri) {
+        const i = t.value;
+        const q = pref.shrinkIri(i);
+        if (q !== null) return q;
+        if (i.startsWith('_:')) return i;
+        return `<${i}>`;
+      }
+      if (t instanceof Literal) {
+        const [lex, dt] = literalParts(t.value);
+
+        // Pretty-print xsd:boolean as bare true/false
+        if (dt === XSD_NS + 'boolean') {
+          const v = stripQuotes(lex);
+          if (v === 'true' || v === 'false') return v;
+          // optional: normalize 1/0 too
+          if (v === '1') return 'true';
+          if (v === '0') return 'false';
+        }
+
+        if (!dt) return t.value; // keep numbers, booleans, lang-tagged strings, etc.
+
+        // xsd:decimal does not allow exponent notation in its lexical space.
+        // Internal numeric evaluation may still carry such literals around; when
+        // serializing, normalize only the *printed datatype* to xsd:double so the
+        // emitted N3 stays valid without changing internal reasoning behavior.
+        const outDt = dt === XSD_NS + 'decimal' && /[eE]/.test(stripQuotes(lex)) ? XSD_NS + 'double' : dt;
+        const qdt = pref.shrinkIri(outDt);
+        if (qdt !== null) return `${lex}^^${qdt}`; // e.g. ^^rdf:JSON
+        return `${lex}^^<${outDt}>`; // fallback
+      }
+      if (t instanceof Var) return `?${t.name}`;
+      if (t instanceof Blank) return t.label;
+      if (t instanceof ListTerm) {
+        const inside = t.elems.map((e) => termToN3(e, pref));
+        return '(' + inside.join(' ') + ')';
+      }
+      if (t instanceof OpenListTerm) {
+        const inside = t.prefix.map((e) => termToN3(e, pref));
+        inside.push('?' + t.tailVar);
+        return '(' + inside.join(' ') + ')';
+      }
+      if (t instanceof GraphTerm) {
+        const indent = '    ';
+        const indentBlock = (str) =>
+          str
+            .split(/\r?\n/)
+            .map((ln) => (ln.length ? indent + ln : ln))
+            .join('\n');
+
+        let s = '{\n';
+        for (const tr of t.triples) {
+          const block = tripleToN3(tr, pref).trimEnd();
+          if (block) s += indentBlock(block) + '\n';
+        }
+        s += '}';
+        return s;
+      }
+      return JSON.stringify(t);
+    }
+
+    // Query-mode variant: pretty-print blank nodes *inside* graph terms, too.
+    // This is intentionally used only by prettyPrintQueryTriples (i.e., log:query output
+    // when proof comments are disabled). It should not affect normal closure/proof output.
+    function termToN3Query(t, pref) {
+      if (t instanceof GraphTerm) {
+        const indent = '    ';
+        const indentBlock = (str) =>
+          str
+            .split(/\r?\n/)
+            .map((ln) => (ln.length ? indent + ln : ln))
+            .join('\n');
+
+        let s = '{\n';
+        const inner = prettyPrintQueryTriples(t.triples, pref);
+        if (inner.trim().length) s += indentBlock(inner.trimEnd()) + '\n';
+        s += '}';
+        return s;
+      }
+      // Everything else delegates to the normal printer.
+      return termToN3(t, pref);
+    }
+
+    function tripleToN3(tr, prefixes) {
+      // log:implies / log:impliedBy as => / <= syntactic sugar everywhere
+      if (isLogImplies(tr.p)) {
+        const s = termToN3(tr.s, prefixes);
+        const o = termToN3(tr.o, prefixes);
+        return `${s} => ${o} .`;
+      }
+
+      if (isLogImpliedBy(tr.p)) {
+        const s = termToN3(tr.s, prefixes);
+        const o = termToN3(tr.o, prefixes);
+        return `${s} <= ${o} .`;
+      }
+
+      const s = termToN3(tr.s, prefixes);
+      const p = isRdfTypePred(tr.p) ? 'a' : isOwlSameAsPred(tr.p) ? '=' : termToN3(tr.p, prefixes);
+      const o = termToN3(tr.o, prefixes);
+
+      return `${s} ${p} ${o} .`;
+    }
+
+    // Query-mode variant: uses termToN3Query so graph terms get pretty-printed too.
+    function tripleToN3Query(tr, prefixes) {
+      if (isLogImplies(tr.p)) {
+        const s = termToN3Query(tr.s, prefixes);
+        const o = termToN3Query(tr.o, prefixes);
+        return `${s} => ${o} .`;
+      }
+
+      if (isLogImpliedBy(tr.p)) {
+        const s = termToN3Query(tr.s, prefixes);
+        const o = termToN3Query(tr.o, prefixes);
+        return `${s} <= ${o} .`;
+      }
+
+      const s = termToN3Query(tr.s, prefixes);
+      const p = isRdfTypePred(tr.p) ? 'a' : isOwlSameAsPred(tr.p) ? '=' : termToN3Query(tr.p, prefixes);
+      const o = termToN3Query(tr.o, prefixes);
+      return `${s} ${p} ${o} .`;
+    }
+
+    // ---------------------------------------------------------------------------
+    // log:query output pretty-printing (blank node property lists)
+    // ---------------------------------------------------------------------------
+
+    function isBNodeTerm(t) {
+      // Blank() terms, or IRI terms that encode a blank node label like "_:b0".
+      if (t instanceof Blank) return true;
+      if (t instanceof Iri && typeof t.value === 'string' && t.value.startsWith('_:')) return true;
+      return false;
+    }
+
+    function termId(t) {
+      // Stable-ish key used only for internal maps.
+      if (t instanceof Iri) return `I:${t.value}`;
+      if (t instanceof Blank) return `B:${t.label}`;
+      if (t instanceof Literal) return `L:${t.value}`;
+      if (t instanceof Var) return `V:${t.name}`;
+      if (t instanceof ListTerm) return `LIST:${t.elems.map(termId).join(' ')}`;
+      if (t instanceof OpenListTerm) return `OLIST:${t.prefix.map(termId).join(' ')}|?${t.tailVar}`;
+      if (t instanceof GraphTerm)
+        return `G:{${t.triples.map((tr) => `${termId(tr.s)} ${termId(tr.p)} ${termId(tr.o)}`).join('|')}}`;
+      return `T:${String(t)}`;
+    }
+
+    function predToN3(p, prefixes) {
+      return isRdfTypePred(p) ? 'a' : isOwlSameAsPred(p) ? '=' : termToN3(p, prefixes);
+    }
+
+    /**
+     * Pretty-print a set of (ground) query-selected triples, collapsing eligible blank node
+     * subjects into Turtle-style property lists ("[ ... ] .") and inlining singly-referenced
+     * blank node objects as nested "[ ... ]" blocks.
+     *
+     * Intended for log:query output when proof comments are disabled.
+     */
+    function prettyPrintQueryTriples(triples, prefixes) {
+      const indentStep = '  ';
+
+      // Index by subject (only for blank node subjects).
+      const bySubj = new Map(); // id -> { term, triples: [] }
+      const bnodeRef = new Map(); // bnodeId -> count as object
+
+      for (const tr of triples) {
+        // object ref count
+        if (isBNodeTerm(tr.o)) {
+          const oid = termId(tr.o);
+          bnodeRef.set(oid, (bnodeRef.get(oid) || 0) + 1);
+        }
+        // subject index
+        if (isBNodeTerm(tr.s)) {
+          const sid = termId(tr.s);
+          let rec = bySubj.get(sid);
+          if (!rec) {
+            rec = { term: tr.s, triples: [] };
+            bySubj.set(sid, rec);
+          }
+          rec.triples.push(tr);
         }
       }
 
-      if (this.peek().typ === 'HatHat') {
-        this.next();
-        const dtTok = this.next();
-        let dtIri;
-        if (dtTok.typ === 'IriRef') {
-          dtIri = dtTok.value || '';
-        } else if (dtTok.typ === 'Ident') {
-          const qn = dtTok.value || '';
-          if (!qn.includes(':')) failInvalidKeywordLikeIdent(this.fail.bind(this), dtTok, qn);
-          assertValidQNamePrefix(qn.split(':', 1)[0], this.fail.bind(this), dtTok, 'datatype prefixed name');
-          dtIri = this.prefixes.expandQName(qn);
+      const inlineable = new Set();
+      for (const [bid, n] of bnodeRef.entries()) {
+        if (n === 1 && bySubj.has(bid)) inlineable.add(bid);
+      }
+
+      const consumedBNodes = new Set();
+
+      function groupByPredicate(bid) {
+        const rec = bySubj.get(bid);
+        if (!rec) return [];
+        const m = new Map();
+        for (const tr of rec.triples) {
+          const ps = predToN3(tr.p, prefixes);
+          let g = m.get(ps);
+          if (!g) {
+            g = { predStr: ps, objs: [] };
+            m.set(ps, g);
+          }
+          g.objs.push(tr.o);
+        }
+        const groups = Array.from(m.values());
+        groups.sort((a, b) => a.predStr.localeCompare(b.predStr));
+        for (const g of groups) {
+          g.objs.sort((x, y) => termToN3Query(x, prefixes).localeCompare(termToN3Query(y, prefixes)));
+        }
+        return groups;
+      }
+
+      function renderBNodePredicateObjects(bid, level, visiting) {
+        const lines = [];
+        const groups = groupByPredicate(bid);
+        const indent = indentStep.repeat(level);
+
+        for (let i = 0; i < groups.length; i++) {
+          const g = groups[i];
+          const isLastPred = i === groups.length - 1;
+
+          // Inline a child blank node only when it's the sole object for that predicate.
+          if (g.objs.length === 1 && isBNodeTerm(g.objs[0])) {
+            const childId = termId(g.objs[0]);
+            const canInline = inlineable.has(childId) && !visiting.has(childId);
+
+            if (canInline) {
+              visiting.add(childId);
+              consumedBNodes.add(childId);
+
+              lines.push(`${indent}${g.predStr} [`);
+              lines.push(...renderBNodePredicateObjects(childId, level + 1, visiting));
+              lines.push(`${indent}]${isLastPred ? '' : ' ;'}`);
+
+              visiting.delete(childId);
+              continue;
+            }
+          }
+
+          const objs = g.objs.map((o) => termToN3Query(o, prefixes)).join(', ');
+          lines.push(`${indent}${g.predStr} ${objs}${isLastPred ? '' : ' ;'}`);
+        }
+
+        return lines;
+      }
+
+      function renderRootBNode(bid) {
+        const visiting = new Set([bid]);
+        const lines = ['['];
+        lines.push(...renderBNodePredicateObjects(bid, 1, visiting));
+        lines.push('] .');
+        return lines.join('\n');
+      }
+
+      function renderInlineBNodeObjectTriple(tr, bid) {
+        // Render: S P [ ... ] .   (multi-line)
+        const s = termToN3Query(tr.s, prefixes);
+
+        // Respect => / <= sugar for log:* if it ever appears here.
+        if (isLogImplies(tr.p) || isLogImpliedBy(tr.p)) return tripleToN3Query(tr, prefixes);
+
+        const p = predToN3(tr.p, prefixes);
+
+        const visiting = new Set([bid]);
+        const lines = [`${s} ${p} [`];
+        lines.push(...renderBNodePredicateObjects(bid, 1, visiting));
+        lines.push('] .');
+        return lines.join('\n');
+      }
+
+      // Root blank nodes: blank node subjects that are never referenced as an object.
+      const rootBNodes = [];
+      for (const [bid, rec] of bySubj.entries()) {
+        const refs = bnodeRef.get(bid) || 0;
+        if (refs === 0) rootBNodes.push({ bid, term: rec.term });
+      }
+      rootBNodes.sort((a, b) => termToN3(a.term, prefixes).localeCompare(termToN3(b.term, prefixes)));
+
+      const blocks = [];
+      for (const r of rootBNodes) {
+        consumedBNodes.add(r.bid);
+        blocks.push(renderRootBNode(r.bid));
+      }
+
+      // Remaining triples: keep the traditional one-triple-per-line format.
+      const remaining = [];
+      for (const tr of triples) {
+        const sid = isBNodeTerm(tr.s) ? termId(tr.s) : null;
+        // Skip subject-triples for bnodes that will be inlined at their single reference.
+        if (sid && (consumedBNodes.has(sid) || inlineable.has(sid))) continue;
+        remaining.push(tr);
+      }
+
+      // Deterministic order: sort by the fallback single-line serialization.
+      remaining.sort((a, b) => tripleToN3Query(a, prefixes).localeCompare(tripleToN3Query(b, prefixes)));
+
+      for (const tr of remaining) {
+        // Inline blank node *objects* when the bnode is defined and referenced exactly once.
+        if (isBNodeTerm(tr.o)) {
+          const oid = termId(tr.o);
+          if (inlineable.has(oid) && !consumedBNodes.has(oid)) {
+            consumedBNodes.add(oid);
+            blocks.push(renderInlineBNodeObjectTriple(tr, oid));
+            continue;
+          }
+        }
+        blocks.push(tripleToN3Query(tr, prefixes));
+      }
+
+      return blocks.join('\n');
+    }
+
+    module.exports = { termToN3, tripleToN3, prettyPrintQueryTriples };
+  };
+  __modules['lib/rdfjs.js'] = function (require, module, exports) {
+    /**
+     * Eyeling Reasoner — RDF/JS compatibility helpers
+     *
+     * A lightweight RDF/JS DataFactory plus adapters between Eyeling's internal
+     * N3 term model and RDF/JS terms/quads.
+     */
+
+    'use strict';
+
+    const {
+      XSD_NS,
+      Literal: InternalLiteral,
+      Iri,
+      Blank,
+      Var,
+      ListTerm,
+      OpenListTerm,
+      GraphTerm,
+      Triple,
+      Rule,
+      PrefixEnv,
+      literalParts,
+    } = require('./prelude');
+    const { termToN3, tripleToN3 } = require('./printing');
+
+    function isObject(value) {
+      return value != null && typeof value === 'object';
+    }
+
+    function isIterable(value) {
+      return value != null && typeof value[Symbol.iterator] === 'function';
+    }
+
+    function isAsyncIterable(value) {
+      return value != null && typeof value[Symbol.asyncIterator] === 'function';
+    }
+
+    function getTypeTag(value) {
+      if (!isObject(value)) return '';
+      if (typeof value._type === 'string' && value._type) return value._type;
+      if (value.constructor && typeof value.constructor.name === 'string' && value.constructor.name)
+        return value.constructor.name;
+      return '';
+    }
+
+    function isRdfJsTerm(value) {
+      return isObject(value) && typeof value.termType === 'string' && typeof value.value === 'string';
+    }
+
+    function isRdfJsQuad(value) {
+      return (
+        isObject(value) &&
+        value.termType === 'Quad' &&
+        isRdfJsTerm(value.subject) &&
+        isRdfJsTerm(value.predicate) &&
+        isRdfJsTerm(value.object) &&
+        isRdfJsTerm(value.graph)
+      );
+    }
+
+    function isEyelingPrefixEnvLike(value) {
+      if (value instanceof PrefixEnv) return true;
+      return isObject(value) && (getTypeTag(value) === 'PrefixEnv' || (isObject(value.map) && 'baseIri' in value));
+    }
+
+    function isEyelingTripleLike(value) {
+      if (value instanceof Triple) return true;
+      return isObject(value) && (getTypeTag(value) === 'Triple' || ('s' in value && 'p' in value && 'o' in value));
+    }
+
+    function isEyelingRuleLike(value) {
+      if (value instanceof Rule) return true;
+      return (
+        isObject(value) &&
+        (getTypeTag(value) === 'Rule' || (Array.isArray(value.premise) && Array.isArray(value.conclusion)))
+      );
+    }
+
+    function isEyelingAstBundleLike(value) {
+      return (
+        Array.isArray(value) &&
+        value.length >= 4 &&
+        value.length <= 5 &&
+        (value[0] == null || isEyelingPrefixEnvLike(value[0])) &&
+        Array.isArray(value[1]) &&
+        Array.isArray(value[2]) &&
+        Array.isArray(value[3])
+      );
+    }
+
+    function termEquals(self, other) {
+      if (!other || typeof other !== 'object') return false;
+      if (self.termType !== other.termType) return false;
+      if (self.value !== other.value) return false;
+
+      if (self.termType === 'Literal') {
+        return (
+          !!self.datatype &&
+          typeof self.datatype.equals === 'function' &&
+          self.datatype.equals(other.datatype) &&
+          self.language === (other.language || '')
+        );
+      }
+
+      if (self.termType === 'Quad') {
+        return (
+          self.subject.equals(other.subject) &&
+          self.predicate.equals(other.predicate) &&
+          self.object.equals(other.object) &&
+          self.graph.equals(other.graph)
+        );
+      }
+
+      return true;
+    }
+
+    class NamedNode {
+      constructor(value) {
+        this.termType = 'NamedNode';
+        this.value = String(value);
+      }
+
+      equals(other) {
+        return termEquals(this, other);
+      }
+    }
+
+    class BlankNode {
+      constructor(value) {
+        this.termType = 'BlankNode';
+        this.value = String(value);
+      }
+
+      equals(other) {
+        return termEquals(this, other);
+      }
+    }
+
+    class Variable {
+      constructor(value) {
+        this.termType = 'Variable';
+        this.value = String(value);
+      }
+
+      equals(other) {
+        return termEquals(this, other);
+      }
+    }
+
+    class DefaultGraph {
+      constructor() {
+        this.termType = 'DefaultGraph';
+        this.value = '';
+      }
+
+      equals(other) {
+        return termEquals(this, other);
+      }
+    }
+
+    class Literal {
+      constructor(value, languageOrDatatype) {
+        this.termType = 'Literal';
+        this.value = String(value);
+        this.language = '';
+        this.datatype = null;
+
+        if (typeof languageOrDatatype === 'string') {
+          this.language = languageOrDatatype;
+          this.datatype = new NamedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#langString');
+        } else if (isRdfJsTerm(languageOrDatatype)) {
+          this.datatype = languageOrDatatype;
         } else {
-          this.fail(`Expected datatype after ^^, got ${dtTok.toString()}`, dtTok);
-        }
-        s = `${s}^^<${dtIri}>`;
-      }
-      return internLiteral(s);
-    }
-
-    if (typ === 'Var') return new Var(val || '');
-    if (typ === 'LParen') return this.parseList();
-    if (typ === 'LBracket') return this.parseBlank();
-    if (typ === 'LBrace') return this.parseGraph();
-
-    this.fail(`Unexpected term token: ${tok.toString()}`, tok);
-  }
-
-  parseList() {
-    const elems = [];
-    while (this.peek().typ !== 'RParen') {
-      elems.push(this.parseTerm());
-    }
-    this.next(); // consume ')'
-    return new ListTerm(elems);
-  }
-
-  parseBlank() {
-    // [] or [ ... ] property list
-    if (this.peek().typ === 'RBracket') {
-      this.next();
-      this.blankCounter += 1;
-      return new Blank(`_:b${this.blankCounter}`);
-    }
-
-    // IRI property list: [ id <IRI> predicateObjectList? ]
-    // Lets you embed descriptions of an IRI directly in object position.
-    if (this.peek().typ === 'Ident' && (this.peek().value || '') === 'id') {
-      const iriTok = this.next(); // consume 'id'
-      const iriTerm = this.parseTerm();
-
-      // N3 note: 'id' form is not meant to be used with blank node identifiers.
-      if (iriTerm instanceof Blank && iriTerm.label.startsWith('_:')) {
-        this.fail("Cannot use 'id' keyword with a blank node identifier inside [...]", iriTok);
-      }
-
-      // Optional ';' right after the id IRI (tolerated).
-      if (this.peek().typ === 'Semicolon') this.next();
-
-      // Empty IRI property list: [ id :iri ]
-      if (this.peek().typ === 'RBracket') {
-        this.next();
-        return iriTerm;
-      }
-
-      const localTriples = this.parsePropertyListTriples(iriTerm, 'RBracket', 'IRI property list');
-
-      // Defer the embedded description until after the triple that references the IRI.
-      if (localTriples.length) this.pendingTriplesAfter.push(...localTriples);
-      return iriTerm;
-    }
-
-    // [ predicateObjectList ]
-    this.blankCounter += 1;
-    const id = `_:b${this.blankCounter}`;
-    const subj = new Blank(id);
-    const localTriples = this.parsePropertyListTriples(subj, 'RBracket', 'blank node property list');
-
-    // Defer the blank-node description until after the triple that references it.
-    if (localTriples.length) this.pendingTriplesAfter.push(...localTriples);
-    return new Blank(id);
-  }
-
-  parsePropertyVerb() {
-    let pred;
-    let invert = false;
-
-    if (this.peek().typ === 'Ident' && (this.peek().value || '') === 'a') {
-      this.next();
-      pred = internIri(RDF_NS + 'type');
-    } else if (this.peek().typ === 'OpPredInvert') {
-      this.next();
-      pred = this.parseTerm();
-      invert = true;
-    } else {
-      pred = this.parseTerm();
-    }
-
-    return { pred, invert };
-  }
-
-  parsePropertyListTriples(subject, closingTyp, contextLabel) {
-    const localTriples = [];
-
-    while (true) {
-      const { pred, invert } = this.parsePropertyVerb();
-
-      // If a pathological predicate term produced post-triples, don't let them leak.
-      this.flushPendingTriples(localTriples, { includeBefore: false, includeAfter: true });
-
-      const objs = [];
-      const readObj = () => {
-        const term = this.parseTerm();
-        const postTriples = this.pendingTriplesAfter;
-        this.pendingTriplesAfter = [];
-        objs.push({ term, postTriples });
-      };
-
-      readObj();
-      while (this.peek().typ === 'Comma') {
-        this.next();
-        readObj();
-      }
-
-      for (const { term: o, postTriples } of objs) {
-        // Path helper triples must come before the triple that consumes the path result.
-        this.flushPendingTriples(localTriples, { includeBefore: true, includeAfter: false });
-        localTriples.push(invert ? new Triple(o, pred, subject) : new Triple(subject, pred, o));
-        if (postTriples && postTriples.length) localTriples.push(...postTriples);
-      }
-
-      if (this.peek().typ === 'Semicolon') {
-        this.next();
-        if (this.peek().typ === closingTyp) break;
-        continue;
-      }
-      break;
-    }
-
-    if (this.peek().typ !== closingTyp) {
-      this.fail(`Expected ']' at end of ${contextLabel}, got ${this.peek().toString()}`);
-    }
-    this.next();
-
-    return localTriples;
-  }
-
-  parseGraph() {
-    const triples = [];
-    while (this.peek().typ !== 'RBrace') {
-      // N3 allows @prefix/@base and SPARQL-style PREFIX/BASE directives anywhere
-      // outside of a triple. This includes inside quoted graph terms.
-      // These directives affect parsing (prefix/base resolution) but do not emit triples.
-      if (this.parseDirectiveIfPresent()) {
-        continue;
-      }
-
-      const left = this.parseTerm();
-      if (this.peek().typ === 'OpImplies') {
-        this.next();
-        const right = this.parseTerm();
-        const pred = internIri(LOG_NS + 'implies');
-        triples.push(new Triple(left, pred, right));
-        if (this.peek().typ === 'Dot') this.next();
-        else if (this.peek().typ === 'RBrace') {
-          // ok
-        } else {
-          this.fail(`Expected '.' or '}', got ${this.peek().toString()}`);
-        }
-      } else if (this.peek().typ === 'OpImpliedBy') {
-        this.next();
-        const right = this.parseTerm();
-        const pred = internIri(LOG_NS + 'impliedBy');
-        triples.push(new Triple(left, pred, right));
-        if (this.peek().typ === 'Dot') this.next();
-        else if (this.peek().typ === 'RBrace') {
-          // ok
-        } else {
-          this.fail(`Expected '.' or '}', got ${this.peek().toString()}`);
-        }
-      } else {
-        // N3 grammar allows: triples ::= subject predicateObjectList?
-        // So a bare subject (optionally producing helper triples) is allowed inside formulas as well.
-        if (this.peek().typ === 'Dot' || this.peek().typ === 'RBrace') {
-          this.flushPendingTriples(triples);
-          if (this.peek().typ === 'Dot') this.next();
-          continue;
-        }
-
-        triples.push(...this.parsePredicateObjectList(left));
-        if (this.peek().typ === 'Dot') this.next();
-        else if (this.peek().typ === 'RBrace') {
-          // ok
-        } else {
-          this.fail(`Expected '.' or '}', got ${this.peek().toString()}`);
+          this.datatype = new NamedNode(XSD_NS + 'string');
         }
       }
-    }
-    this.next(); // consume '}'
-    return new GraphTerm(triples);
-  }
 
-  parseStatementVerb() {
-    let verb;
-    let invert = false;
-
-    if (this.peek().typ === 'Ident' && (this.peek().value || '') === 'a') {
-      this.next();
-      verb = internIri(RDF_NS + 'type');
-    } else if (this.peek().typ === 'Ident' && (this.peek().value || '') === 'has') {
-      // N3 syntactic sugar: "S has P O." means "S P O."
-      this.next();
-      verb = this.parseTerm();
-    } else if (this.peek().typ === 'Ident' && (this.peek().value || '') === 'is') {
-      // N3 syntactic sugar: "S is P of O." means "O P S." (inverse; equivalent to "<-")
-      this.next();
-      verb = this.parseTerm();
-      if (!(this.peek().typ === 'Ident' && (this.peek().value || '') === 'of')) {
-        this.fail(`Expected 'of' after 'is <expr>', got ${this.peek().toString()}`);
+      equals(other) {
+        return termEquals(this, other);
       }
-      this.next();
-      invert = true;
-    } else if (this.peek().typ === 'OpPredInvert') {
-      this.next();
-      verb = this.parseTerm();
-      invert = true;
-    } else {
-      verb = this.parseTerm();
     }
 
-    return { verb, invert };
-  }
-
-  parsePredicateObjectList(subject) {
-    const out = [];
-
-    // If the SUBJECT was a path or property-list, emit its helper triples first.
-    this.flushPendingTriples(out);
-
-    while (true) {
-      const { verb, invert } = this.parseStatementVerb();
-      const objects = this.parseObjectList();
-
-      // If VERB or OBJECTS contained paths, their helper triples must come
-      // before the triples that consume the path results (Easter depends on this).
-      this.flushPendingTriples(out);
-
-      for (const { term: o, postTriples } of objects) {
-        out.push(new Triple(invert ? o : subject, verb, invert ? subject : o));
-        if (postTriples && postTriples.length) out.push(...postTriples);
+    class Quad {
+      constructor(subject, predicate, object, graph) {
+        this.termType = 'Quad';
+        this.value = '';
+        this.subject = subject;
+        this.predicate = predicate;
+        this.object = object;
+        this.graph = graph || new DefaultGraph();
       }
 
-      if (this.peek().typ === 'Semicolon') {
-        this.next();
-        if (this.peek().typ === 'Dot') break;
-        continue;
+      equals(other) {
+        return termEquals(this, other);
       }
-      break;
     }
 
-    return out;
-  }
+    const defaultGraphSingleton = new DefaultGraph();
 
-  parseObjectList() {
-    // Capture any trailing property-list triples produced while parsing each
-    // object term so we can emit them *after* the triple that references the
-    // term. (See pendingTriplesAfter in the constructor.)
-
-    const objs = [];
-    const readObj = () => {
-      const o = this.parseTerm();
-      const post = this.pendingTriplesAfter;
-      this.pendingTriplesAfter = [];
-      objs.push({ term: o, postTriples: post });
+    const dataFactory = {
+      namedNode(value) {
+        return new NamedNode(value);
+      },
+      blankNode(value) {
+        return new BlankNode(value == null ? '' : value);
+      },
+      literal(value, languageOrDatatype) {
+        return new Literal(value, languageOrDatatype);
+      },
+      variable(value) {
+        return new Variable(value);
+      },
+      defaultGraph() {
+        return defaultGraphSingleton;
+      },
+      quad(subject, predicate, object, graph) {
+        return new Quad(subject, predicate, object, graph || defaultGraphSingleton);
+      },
     };
 
-    readObj();
-    while (this.peek().typ === 'Comma') {
-      this.next();
-      readObj();
-    }
-    return objs;
-  }
-
-  makeRule(left, right, isForward) {
-    let premiseTerm, conclTerm;
-
-    if (isForward) {
-      premiseTerm = left;
-      conclTerm = right;
-    } else {
-      premiseTerm = right;
-      conclTerm = left;
+    function getDataFactory(factory) {
+      return factory && typeof factory.quad === 'function' ? factory : dataFactory;
     }
 
-    let isFuse = false;
-    if (isForward) {
-      if (conclTerm instanceof Literal && conclTerm.value === 'false') {
-        isFuse = true;
+    function getLiteralLexicalKind(value) {
+      if (typeof value !== 'string' || value.length === 0) return 'typed';
+      if (value === 'true' || value === 'false') return 'boolean';
+      if (/^[+-]?[0-9]+$/.test(value)) return 'integer';
+      if (/^[+-]?(?:[0-9]*\.[0-9]+|[0-9]+\.)$/.test(value)) return 'decimal';
+      if (/^[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)[eE][+-]?[0-9]+$/.test(value)) return 'double';
+      return 'typed';
+    }
+
+    function inferDatatypeForLexical(value) {
+      switch (getLiteralLexicalKind(value)) {
+        case 'boolean':
+          return XSD_NS + 'boolean';
+        case 'integer':
+          return XSD_NS + 'integer';
+        case 'decimal':
+          return XSD_NS + 'decimal';
+        case 'double':
+          return XSD_NS + 'double';
+        default:
+          return XSD_NS + 'string';
       }
     }
 
-    let rawPremise;
-    if (premiseTerm instanceof GraphTerm) {
-      rawPremise = premiseTerm.triples;
-    } else if (premiseTerm instanceof Literal && premiseTerm.value === 'true') {
-      rawPremise = [];
-    } else {
-      rawPremise = [];
-    }
-
-    // In standard N3, the right-hand side of a rule is a formula term.
-    // Eyeling primarily supports an explicit quoted formula `{ ... }` (GraphTerm)
-    // or the special literals true/false.
-    //
-    // However, some programs use a *variable* in rule head position to mean:
-    // "prove the body, bind ?C to a quoted formula, and then assert that formula".
-    // Example:
-    //   { :a :b ?C } => ?C.
-    //
-    // To support this, we allow a forward rule to carry a dynamic head term.
-    // The engine will resolve it per-solution and, if it becomes a GraphTerm,
-    // will emit its triples as the instantiated head.
-    let rawConclusion;
-    let dynamicConclusionTerm = null;
-    if (conclTerm instanceof GraphTerm) {
-      rawConclusion = conclTerm.triples;
-    } else if (conclTerm instanceof Literal && conclTerm.value === 'false') {
-      rawConclusion = [];
-    } else if (conclTerm instanceof Literal && conclTerm.value === 'true') {
-      // `=> true.` is a no-op (empty head)
-      rawConclusion = [];
-    } else {
-      rawConclusion = [];
-      // Only forward rules can meaningfully "emit" a dynamic head.
-      // Backward rules with dynamic heads are not supported.
-      if (isForward && conclTerm) dynamicConclusionTerm = conclTerm;
-    }
-
-    // Blank nodes that occur explicitly in the head (conclusion)
-    const headBlankLabels = collectBlankLabelsInTriples(rawConclusion);
-
-    const [premise0, conclusion] = liftBlankRuleVars(rawPremise, rawConclusion);
-
-    // Keep premise order as written; the engine may defer some builtins in
-    // forward rules when they cannot yet run due to unbound variables.
-    const premise = premise0;
-
-    const r = new Rule(premise, conclusion, isForward, isFuse, headBlankLabels);
-
-    if (dynamicConclusionTerm) {
-      // Non-enumerable to keep AST output stable unless explicitly requested.
-      Object.defineProperty(r, '__dynamicConclusionTerm', {
-        value: dynamicConclusionTerm,
-        enumerable: false,
-        writable: false,
-        configurable: true,
-      });
-    }
-
-    return r;
-  }
-}
-
-module.exports = { Parser };
-
-  };
-  __modules["lib/prelude.js"] = function(require, module, exports){
-/**
- * Eyeling Reasoner — prelude
- *
- * Core data model and shared utilities: Term/Triple/Formula types, namespaces,
- * and prefix environment helpers used throughout the project.
- */
-
-'use strict';
-
-// ===========================================================================
-// Namespace constants
-// ===========================================================================
-
-const RDF_NS = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
-const RDFS_NS = 'http://www.w3.org/2000/01/rdf-schema#';
-const OWL_NS = 'http://www.w3.org/2002/07/owl#';
-const XSD_NS = 'http://www.w3.org/2001/XMLSchema#';
-const CRYPTO_NS = 'http://www.w3.org/2000/10/swap/crypto#';
-const MATH_NS = 'http://www.w3.org/2000/10/swap/math#';
-const TIME_NS = 'http://www.w3.org/2000/10/swap/time#';
-const LIST_NS = 'http://www.w3.org/2000/10/swap/list#';
-const LOG_NS = 'http://www.w3.org/2000/10/swap/log#';
-const STRING_NS = 'http://www.w3.org/2000/10/swap/string#';
-const SKOLEM_NS = 'https://eyereasoner.github.io/.well-known/genid/';
-const RDF_JSON_DT = RDF_NS + 'JSON';
-
-function resolveIriRef(ref, base) {
-  if (!base) return ref;
-  if (/^[A-Za-z][A-Za-z0-9+.-]*:/.test(ref)) return ref; // already absolute
-  try {
-    return new URL(ref, base).toString();
-  } catch {
-    return ref;
-  }
-}
-
-// -----------------------------------------------------------------------------
-// Literal helpers
-// -----------------------------------------------------------------------------
-
-// Hot cache used by literalParts().
-const MAX_LITERAL_PARTS_CACHE_LEN = 1024;
-
-const __literalPartsCache = new Map(); // lit string -> [lex, dt]
-
-function literalParts(lit) {
-  // Avoid caching extremely large literals (notably huge numeric intermediates)
-  // to prevent unbounded memory growth.
-  const useCache = typeof lit === 'string' && lit.length <= MAX_LITERAL_PARTS_CACHE_LEN;
-
-  if (useCache) {
-    const cached = __literalPartsCache.get(lit);
-    if (cached) return cached;
-  }
-
-  // Split a literal into lexical form and datatype IRI (if any).
-  // Also strip an optional language tag from the lexical form:
-  //   "\"hello\"@en"  -> "\"hello\""
-  //   "\"hello\"@en^^<...>" is rejected earlier in the parser.
-  const idx = lit.indexOf('^^');
-  let lex = lit;
-  let dt = null;
-
-  if (idx >= 0) {
-    lex = lit.slice(0, idx);
-    dt = lit.slice(idx + 2).trim();
-    if (dt.startsWith('<') && dt.endsWith('>')) {
-      dt = dt.slice(1, -1);
-    }
-  }
-
-  // Strip LANGTAG from the lexical form when present.
-  if (lex.length >= 2 && lex[0] === '"') {
-    const lastQuote = lex.lastIndexOf('"');
-    if (lastQuote > 0 && lastQuote < lex.length - 1 && lex[lastQuote + 1] === '@') {
-      const lang = lex.slice(lastQuote + 2);
-      if (/^[A-Za-z]+(?:-[A-Za-z0-9]+)*$/.test(lang)) {
-        lex = lex.slice(0, lastQuote + 1);
+    function quotedLexicalToValue(lexical) {
+      if (
+        typeof lexical !== 'string' ||
+        lexical.length < 2 ||
+        lexical[0] !== '"' ||
+        lexical[lexical.length - 1] !== '"'
+      ) {
+        return lexical;
+      }
+      try {
+        return JSON.parse(lexical);
+      } catch {
+        return lexical.slice(1, -1);
       }
     }
-  }
 
-  const res = [lex, dt];
-  if (useCache) __literalPartsCache.set(lit, res);
-  return res;
-}
-
-// -----------------------------------------------------------------------------
-// Global stable term IDs (performance)
-// -----------------------------------------------------------------------------
-// A small integer ID is assigned per *value-based* key, and stored on each term
-// as non-enumerable property `__tid`. This enables cheaper indexing and
-// equality fast-paths than repeated string key construction.
-
-let __nextTid = 1;
-const __tidIntern = new Map(); // string key -> number
-
-// Avoid storing extremely large literal keys in the global term-id intern map.
-// For huge literals we still assign a unique __tid, but we do not intern the key.
-const MAX_LITERAL_TID_LEN = 1024;
-
-function __getTid(key) {
-  let id = __tidIntern.get(key);
-  if (!id) {
-    id = __nextTid++;
-    __tidIntern.set(key, id);
-  }
-  return id;
-}
-
-function __isQuotedLexical(lit) {
-  if (typeof lit !== 'string') return false;
-  if (lit.length >= 6) {
-    if (lit.startsWith('"""') && lit.endsWith('"""')) return true;
-    if (lit.startsWith("'''") && lit.endsWith("'''")) return true;
-  }
-  if (lit.length >= 2) {
-    const a = lit[0];
-    const b = lit[lit.length - 1];
-    if ((a === '"' && b === '"') || (a === "'" && b === "'")) return true;
-  }
-  return false;
-}
-
-function __literalHasLangTag(lit) {
-  if (typeof lit !== 'string' || !__isQuotedLexical(lit)) return false;
-  let end = -1;
-  let qlen = 1;
-  if (lit.startsWith('"""')) {
-    end = lit.lastIndexOf('"""');
-    qlen = 3;
-  } else if (lit.startsWith("'''")) {
-    end = lit.lastIndexOf("'''");
-    qlen = 3;
-  } else {
-    end = lit.lastIndexOf(lit[0]);
-    qlen = 1;
-  }
-  if (end < 0) return false;
-  const after = lit.slice(end + qlen);
-  if (!after.startsWith('@')) return false;
-  const lang = after.slice(1);
-  return /^[A-Za-z]+(?:-[A-Za-z0-9]+)*$/.test(lang);
-}
-
-function __isPlainStringLiteralValue(lit) {
-  if (typeof lit !== 'string') return false;
-  if (lit.indexOf('^^') >= 0) return false;
-  if (!__isQuotedLexical(lit)) return false;
-  return !__literalHasLangTag(lit);
-}
-
-function normalizeLiteralForTid(lit) {
-  // Canonicalize so that plain string and explicit xsd:string share the same id.
-  if (typeof lit !== 'string') return lit;
-  const [lex, dt] = literalParts(lit);
-  if (dt === XSD_NS + 'string') return `${lex}^^<${XSD_NS}string>`;
-  if (dt === null && __isPlainStringLiteralValue(lit)) return `${lex}^^<${XSD_NS}string>`;
-  return lit;
-}
-
-// ===========================================================================
-// AST (Abstract Syntax Tree)
-// ===========================================================================
-
-class Term {}
-
-class Iri extends Term {
-  constructor(value) {
-    super();
-    this.value = value;
-    Object.defineProperty(this, '__tid', {
-      value: __getTid('I:' + value),
-      enumerable: false,
-    });
-  }
-}
-
-class Literal extends Term {
-  constructor(value) {
-    super();
-    this.value = value; // raw lexical form, e.g. "foo", 12, true, or "\"1944-08-21\"^^..."
-    const norm = normalizeLiteralForTid(value);
-    const useIntern = typeof norm === 'string' && norm.length <= MAX_LITERAL_TID_LEN;
-    const tid = useIntern ? __getTid('L:' + norm) : __nextTid++;
-    Object.defineProperty(this, '__tid', {
-      value: tid,
-      enumerable: false,
-    });
-  }
-}
-
-class Var extends Term {
-  constructor(name) {
-    super();
-    this.name = name; // without leading '?'
-  }
-}
-
-class Blank extends Term {
-  constructor(label) {
-    super();
-    this.label = label; // _:b1, etc.
-    Object.defineProperty(this, '__tid', {
-      value: __getTid('B:' + label),
-      enumerable: false,
-    });
-  }
-}
-
-class ListTerm extends Term {
-  constructor(elems) {
-    super();
-    this.elems = elems; // Term[]
-  }
-}
-
-class OpenListTerm extends Term {
-  constructor(prefix, tailVar) {
-    super();
-    this.prefix = prefix; // Term[]
-    this.tailVar = tailVar; // string
-  }
-}
-
-class GraphTerm extends Term {
-  constructor(triples) {
-    super();
-    this.triples = triples; // Triple[]
-  }
-}
-
-class Triple {
-  constructor(s, p, o) {
-    this.s = s;
-    this.p = p;
-    this.o = o;
-  }
-}
-
-class Rule {
-  constructor(premise, conclusion, isForward, isFuse, headBlankLabels) {
-    this.premise = premise; // Triple[]
-    this.conclusion = conclusion; // Triple[]
-    this.isForward = isForward; // boolean
-    this.isFuse = isFuse; // boolean
-    // Set<string> of blank-node labels that occur explicitly in the rule head
-    this.headBlankLabels = headBlankLabels || new Set();
-  }
-}
-
-class DerivedFact {
-  constructor(fact, rule, premises, subst) {
-    this.fact = fact; // Triple
-    this.rule = rule; // Rule
-    this.premises = premises; // Triple[]
-    this.subst = subst; // { varName: Term }
-  }
-}
-
-// ===========================================================================
-// Term interning
-// ===========================================================================
-
-// Intern IRIs and literals by their raw lexical string.
-// This reduces allocations when the same terms repeat and can improve performance.
-//
-// NOTE: Terms are treated as immutable. Do NOT mutate .value on interned objects.
-const __iriIntern = new Map();
-const __literalIntern = new Map();
-
-// Do not intern extremely large literal strings (e.g., huge numeric intermediates).
-// Interning them creates global strong references that prevent GC.
-const MAX_LITERAL_INTERN_LEN = 1024;
-
-/** @param {string} value */
-function internIri(value) {
-  let t = __iriIntern.get(value);
-  if (!t) {
-    t = new Iri(value);
-    __iriIntern.set(value, t);
-  }
-  return t;
-}
-
-/** @param {string} value */
-function internLiteral(value) {
-  if (typeof value === 'string' && value.length > MAX_LITERAL_INTERN_LEN) {
-    // Skip global interning for huge literals to avoid retaining them forever.
-    return new Literal(value);
-  }
-  let t = __literalIntern.get(value);
-  if (!t) {
-    t = new Literal(value);
-    __literalIntern.set(value, t);
-  }
-  return t;
-}
-
-// ===========================================================================
-// Special predicate helpers (kept here because PrefixEnv needs them)
-// ===========================================================================
-
-function isRdfTypePred(p) {
-  return p instanceof Iri && p.value === RDF_NS + 'type';
-}
-
-function isOwlSameAsPred(p) {
-  return p instanceof Iri && p.value === OWL_NS + 'sameAs';
-}
-
-function isLogImplies(p) {
-  return p instanceof Iri && p.value === LOG_NS + 'implies';
-}
-
-function isLogImpliedBy(p) {
-  return p instanceof Iri && p.value === LOG_NS + 'impliedBy';
-}
-
-function isLogQuery(p) {
-  return p instanceof Iri && p.value === LOG_NS + 'query';
-}
-
-// ===========================================================================
-// PREFIX ENVIRONMENT
-// ===========================================================================
-
-// Conservative check for whether a candidate local part can be safely serialized as a prefixed name.
-// If false, we fall back to <IRI> to guarantee syntactically valid N3/Turtle output.
-function isValidQNameLocal(local) {
-  if (typeof local !== 'string' || local.length === 0) return false;
-  // Disallow characters that would break PN_LOCAL unless escaped (we keep this conservative).
-  if (/[#:/?\s]/.test(local)) return false;
-  // Allow a safe ASCII subset.
-  if (/[^A-Za-z0-9._-]/.test(local)) return false;
-  // Avoid edge cases that typically require escaping.
-  if (local.endsWith('.')) return false;
-  if (/^[.-]/.test(local)) return false;
-  return true;
-}
-
-class PrefixEnv {
-  constructor(map, baseIri) {
-    this.map = map || {}; // prefix -> IRI (including "" for @prefix :)
-    this.baseIri = baseIri || ''; // base IRI for resolving <relative>
-  }
-
-  static newDefault() {
-    const m = {};
-    m['rdf'] = RDF_NS;
-    m['rdfs'] = RDFS_NS;
-    m['xsd'] = XSD_NS;
-    m['log'] = LOG_NS;
-    m['math'] = MATH_NS;
-    m['string'] = STRING_NS;
-    m['list'] = LIST_NS;
-    m['time'] = TIME_NS;
-    m['genid'] = SKOLEM_NS;
-    m[''] = ''; // empty prefix default namespace
-    return new PrefixEnv(m, ''); // base IRI starts empty
-  }
-
-  set(pref, base) {
-    this.map[pref] = base;
-  }
-
-  setBase(baseIri) {
-    this.baseIri = baseIri || '';
-  }
-
-  expandQName(q) {
-    if (q.includes(':')) {
-      const [p, local] = q.split(':', 2);
-      const base = this.map[p] || '';
-      if (base) return base + local;
-      return q;
-    }
-    return q;
-  }
-
-  shrinkIri(iri) {
-    let best = null; // [prefix, local]
-    for (const [p, base] of Object.entries(this.map)) {
-      if (!base) continue;
-      if (iri.startsWith(base)) {
-        const local = iri.slice(base.length);
-        if (!local) continue;
-        // Only emit a QName when the local part is safe to serialize without escaping.
-        if (!isValidQNameLocal(local)) continue;
-        const cand = [p, local];
-        if (best === null || cand[1].length < best[1].length) best = cand;
+    function splitLiteralLexAndLang(value) {
+      if (typeof value !== 'string') return { lexical: value, language: '' };
+      if (!(value.startsWith('"') && value.length >= 2)) return { lexical: value, language: '' };
+      const lastQuote = value.lastIndexOf('"');
+      if (lastQuote <= 0 || lastQuote >= value.length - 1 || value[lastQuote + 1] !== '@') {
+        return { lexical: value, language: '' };
       }
-    }
-    if (best === null) return null;
-    const [p, local] = best;
-    if (p === '') return `:${local}`;
-    return `${p}:${local}`;
-  }
-
-  prefixesUsedForOutput(triples) {
-    const used = new Set();
-    for (const t of triples) {
-      const iris = [];
-      iris.push(...collectIrisInTerm(t.s));
-      if (!isRdfTypePred(t.p)) {
-        iris.push(...collectIrisInTerm(t.p));
+      const language = value.slice(lastQuote + 2);
+      if (!/^[A-Za-z]+(?:-[A-Za-z0-9]+)*$/.test(language)) {
+        return { lexical: value, language: '' };
       }
-      iris.push(...collectIrisInTerm(t.o));
-      for (const iri of iris) {
-        for (const [p, base] of Object.entries(this.map)) {
-          if (base && iri.startsWith(base)) used.add(p);
-        }
+      return { lexical: value.slice(0, lastQuote + 1), language };
+    }
+
+    function internalLiteralToRdfJs(term, factory) {
+      const rdfFactory = getDataFactory(factory);
+      const [lexicalWithMaybeLang, datatypeIri] = literalParts(term.value);
+      const { lexical, language } = splitLiteralLexAndLang(lexicalWithMaybeLang);
+      const isQuotedLexical =
+        typeof lexical === 'string' && lexical.length >= 2 && lexical[0] === '"' && lexical[lexical.length - 1] === '"';
+      const value = isQuotedLexical ? quotedLexicalToValue(lexical) : lexical;
+
+      if (language) return rdfFactory.literal(value, language);
+      if (datatypeIri) return rdfFactory.literal(value, rdfFactory.namedNode(datatypeIri));
+      return rdfFactory.literal(value, rdfFactory.namedNode(inferDatatypeForLexical(lexical)));
+    }
+
+    function unsupportedRdfJsTerm(term, position) {
+      const kind = term && term.constructor && term.constructor.name ? term.constructor.name : typeof term;
+      const where = position ? ` in ${position}` : '';
+      throw new TypeError(`Cannot convert N3-only term ${kind}${where} to RDF/JS`);
+    }
+
+    function internalTermToRdfJs(term, factory, position) {
+      const rdfFactory = getDataFactory(factory);
+      if (term instanceof Iri) return rdfFactory.namedNode(term.value);
+      if (term instanceof Blank) {
+        const label = typeof term.label === 'string' && term.label.startsWith('_:') ? term.label.slice(2) : term.label;
+        return rdfFactory.blankNode(label);
       }
-    }
-    const v = [];
-    for (const p of used) {
-      if (Object.prototype.hasOwnProperty.call(this.map, p)) v.push([p, this.map[p]]);
-    }
-    v.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
-    return v;
-  }
-}
-
-function collectIrisInTerm(t) {
-  const out = [];
-  if (t instanceof Iri) {
-    out.push(t.value);
-  } else if (t instanceof Literal) {
-    const [, dt] = literalParts(t.value);
-    if (dt) out.push(dt); // so rdf/xsd prefixes are emitted when only used in ^^...
-  } else if (t instanceof ListTerm) {
-    for (const x of t.elems) out.push(...collectIrisInTerm(x));
-  } else if (t instanceof OpenListTerm) {
-    for (const x of t.prefix) out.push(...collectIrisInTerm(x));
-  } else if (t instanceof GraphTerm) {
-    for (const tr of t.triples) {
-      out.push(...collectIrisInTerm(tr.s));
-      out.push(...collectIrisInTerm(tr.p));
-      out.push(...collectIrisInTerm(tr.o));
-    }
-  }
-  return out;
-}
-
-function collectVarsInTerm(t, acc) {
-  if (t instanceof Var) {
-    acc.add(t.name);
-  } else if (t instanceof ListTerm) {
-    for (const x of t.elems) collectVarsInTerm(x, acc);
-  } else if (t instanceof OpenListTerm) {
-    for (const x of t.prefix) collectVarsInTerm(x, acc);
-    acc.add(t.tailVar);
-  } else if (t instanceof GraphTerm) {
-    for (const tr of t.triples) {
-      collectVarsInTerm(tr.s, acc);
-      collectVarsInTerm(tr.p, acc);
-      collectVarsInTerm(tr.o, acc);
-    }
-  }
-}
-
-function varsInRule(rule) {
-  const acc = new Set();
-  for (const tr of rule.premise) {
-    collectVarsInTerm(tr.s, acc);
-    collectVarsInTerm(tr.p, acc);
-    collectVarsInTerm(tr.o, acc);
-  }
-  for (const tr of rule.conclusion) {
-    collectVarsInTerm(tr.s, acc);
-    collectVarsInTerm(tr.p, acc);
-    collectVarsInTerm(tr.o, acc);
-  }
-  return acc;
-}
-
-function collectBlankLabelsInTerm(t, acc) {
-  if (t instanceof Blank) {
-    acc.add(t.label);
-  } else if (t instanceof ListTerm) {
-    for (const x of t.elems) collectBlankLabelsInTerm(x, acc);
-  } else if (t instanceof OpenListTerm) {
-    for (const x of t.prefix) collectBlankLabelsInTerm(x, acc);
-  } else if (t instanceof GraphTerm) {
-    for (const tr of t.triples) {
-      collectBlankLabelsInTerm(tr.s, acc);
-      collectBlankLabelsInTerm(tr.p, acc);
-      collectBlankLabelsInTerm(tr.o, acc);
-    }
-  }
-}
-
-function collectBlankLabelsInTriples(triples) {
-  const acc = new Set();
-  for (const tr of triples) {
-    collectBlankLabelsInTerm(tr.s, acc);
-    collectBlankLabelsInTerm(tr.p, acc);
-    collectBlankLabelsInTerm(tr.o, acc);
-  }
-  return acc;
-}
-
-module.exports = {
-  RDF_NS,
-  RDFS_NS,
-  OWL_NS,
-  XSD_NS,
-  CRYPTO_NS,
-  MATH_NS,
-  TIME_NS,
-  LIST_NS,
-  LOG_NS,
-  STRING_NS,
-  SKOLEM_NS,
-  RDF_JSON_DT,
-  resolveIriRef,
-  literalParts,
-  normalizeLiteralForTid,
-  MAX_LITERAL_TID_LEN,
-  Term,
-  Iri,
-  Literal,
-  Var,
-  Blank,
-  ListTerm,
-  OpenListTerm,
-  GraphTerm,
-  Triple,
-  Rule,
-  DerivedFact,
-  internIri,
-  internLiteral,
-  isRdfTypePred,
-  isOwlSameAsPred,
-  isLogImplies,
-  isLogImpliedBy,
-  isLogQuery,
-  PrefixEnv,
-  collectIrisInTerm,
-  varsInRule,
-  collectBlankLabelsInTriples,
-};
-
-  };
-  __modules["lib/printing.js"] = function(require, module, exports){
-/**
- * Eyeling Reasoner — printing
- *
- * Pretty-printing / serialization helpers for terms, triples, and formulas.
- * Used by the CLI, demo, and explanations.
- */
-
-'use strict';
-
-const {
-  XSD_NS,
-  Iri,
-  Literal,
-  Var,
-  Blank,
-  ListTerm,
-  OpenListTerm,
-  GraphTerm,
-  literalParts,
-  isRdfTypePred,
-  isOwlSameAsPred,
-  isLogImplies,
-  isLogImpliedBy,
-} = require('./prelude');
-
-function stripQuotes(lex) {
-  if (typeof lex !== 'string') return lex;
-  // Handle both short ('...' / "...") and long ('''...''' / """...""") forms.
-  if (lex.length >= 6) {
-    if (lex.startsWith('"""') && lex.endsWith('"""')) return lex.slice(3, -3);
-    if (lex.startsWith("'''") && lex.endsWith("'''")) return lex.slice(3, -3);
-  }
-  if (lex.length >= 2) {
-    const a = lex[0];
-    const b = lex[lex.length - 1];
-    if ((a === '"' && b === '"') || (a === "'" && b === "'")) return lex.slice(1, -1);
-  }
-  return lex;
-}
-
-function termToN3(t, pref) {
-  if (t instanceof Iri) {
-    const i = t.value;
-    const q = pref.shrinkIri(i);
-    if (q !== null) return q;
-    if (i.startsWith('_:')) return i;
-    return `<${i}>`;
-  }
-  if (t instanceof Literal) {
-    const [lex, dt] = literalParts(t.value);
-
-    // Pretty-print xsd:boolean as bare true/false
-    if (dt === XSD_NS + 'boolean') {
-      const v = stripQuotes(lex);
-      if (v === 'true' || v === 'false') return v;
-      // optional: normalize 1/0 too
-      if (v === '1') return 'true';
-      if (v === '0') return 'false';
+      if (term instanceof Var) return rdfFactory.variable(term.name);
+      if (term instanceof InternalLiteral) return internalLiteralToRdfJs(term, rdfFactory);
+      return unsupportedRdfJsTerm(term, position);
     }
 
-    if (!dt) return t.value; // keep numbers, booleans, lang-tagged strings, etc.
-
-    // xsd:decimal does not allow exponent notation in its lexical space.
-    // Internal numeric evaluation may still carry such literals around; when
-    // serializing, normalize only the *printed datatype* to xsd:double so the
-    // emitted N3 stays valid without changing internal reasoning behavior.
-    const outDt = dt === XSD_NS + 'decimal' && /[eE]/.test(stripQuotes(lex)) ? XSD_NS + 'double' : dt;
-    const qdt = pref.shrinkIri(outDt);
-    if (qdt !== null) return `${lex}^^${qdt}`; // e.g. ^^rdf:JSON
-    return `${lex}^^<${outDt}>`; // fallback
-  }
-  if (t instanceof Var) return `?${t.name}`;
-  if (t instanceof Blank) return t.label;
-  if (t instanceof ListTerm) {
-    const inside = t.elems.map((e) => termToN3(e, pref));
-    return '(' + inside.join(' ') + ')';
-  }
-  if (t instanceof OpenListTerm) {
-    const inside = t.prefix.map((e) => termToN3(e, pref));
-    inside.push('?' + t.tailVar);
-    return '(' + inside.join(' ') + ')';
-  }
-  if (t instanceof GraphTerm) {
-    const indent = '    ';
-    const indentBlock = (str) =>
-      str
-        .split(/\r?\n/)
-        .map((ln) => (ln.length ? indent + ln : ln))
-        .join('\n');
-
-    let s = '{\n';
-    for (const tr of t.triples) {
-      const block = tripleToN3(tr, pref).trimEnd();
-      if (block) s += indentBlock(block) + '\n';
-    }
-    s += '}';
-    return s;
-  }
-  return JSON.stringify(t);
-}
-
-// Query-mode variant: pretty-print blank nodes *inside* graph terms, too.
-// This is intentionally used only by prettyPrintQueryTriples (i.e., log:query output
-// when proof comments are disabled). It should not affect normal closure/proof output.
-function termToN3Query(t, pref) {
-  if (t instanceof GraphTerm) {
-    const indent = '    ';
-    const indentBlock = (str) =>
-      str
-        .split(/\r?\n/)
-        .map((ln) => (ln.length ? indent + ln : ln))
-        .join('\n');
-
-    let s = '{\n';
-    const inner = prettyPrintQueryTriples(t.triples, pref);
-    if (inner.trim().length) s += indentBlock(inner.trimEnd()) + '\n';
-    s += '}';
-    return s;
-  }
-  // Everything else delegates to the normal printer.
-  return termToN3(t, pref);
-}
-
-function tripleToN3(tr, prefixes) {
-  // log:implies / log:impliedBy as => / <= syntactic sugar everywhere
-  if (isLogImplies(tr.p)) {
-    const s = termToN3(tr.s, prefixes);
-    const o = termToN3(tr.o, prefixes);
-    return `${s} => ${o} .`;
-  }
-
-  if (isLogImpliedBy(tr.p)) {
-    const s = termToN3(tr.s, prefixes);
-    const o = termToN3(tr.o, prefixes);
-    return `${s} <= ${o} .`;
-  }
-
-  const s = termToN3(tr.s, prefixes);
-  const p = isRdfTypePred(tr.p) ? 'a' : isOwlSameAsPred(tr.p) ? '=' : termToN3(tr.p, prefixes);
-  const o = termToN3(tr.o, prefixes);
-
-  return `${s} ${p} ${o} .`;
-}
-
-// Query-mode variant: uses termToN3Query so graph terms get pretty-printed too.
-function tripleToN3Query(tr, prefixes) {
-  if (isLogImplies(tr.p)) {
-    const s = termToN3Query(tr.s, prefixes);
-    const o = termToN3Query(tr.o, prefixes);
-    return `${s} => ${o} .`;
-  }
-
-  if (isLogImpliedBy(tr.p)) {
-    const s = termToN3Query(tr.s, prefixes);
-    const o = termToN3Query(tr.o, prefixes);
-    return `${s} <= ${o} .`;
-  }
-
-  const s = termToN3Query(tr.s, prefixes);
-  const p = isRdfTypePred(tr.p) ? 'a' : isOwlSameAsPred(tr.p) ? '=' : termToN3Query(tr.p, prefixes);
-  const o = termToN3Query(tr.o, prefixes);
-  return `${s} ${p} ${o} .`;
-}
-
-// ---------------------------------------------------------------------------
-// log:query output pretty-printing (blank node property lists)
-// ---------------------------------------------------------------------------
-
-function isBNodeTerm(t) {
-  // Blank() terms, or IRI terms that encode a blank node label like "_:b0".
-  if (t instanceof Blank) return true;
-  if (t instanceof Iri && typeof t.value === 'string' && t.value.startsWith('_:')) return true;
-  return false;
-}
-
-function termId(t) {
-  // Stable-ish key used only for internal maps.
-  if (t instanceof Iri) return `I:${t.value}`;
-  if (t instanceof Blank) return `B:${t.label}`;
-  if (t instanceof Literal) return `L:${t.value}`;
-  if (t instanceof Var) return `V:${t.name}`;
-  if (t instanceof ListTerm) return `LIST:${t.elems.map(termId).join(' ')}`;
-  if (t instanceof OpenListTerm) return `OLIST:${t.prefix.map(termId).join(' ')}|?${t.tailVar}`;
-  if (t instanceof GraphTerm)
-    return `G:{${t.triples.map((tr) => `${termId(tr.s)} ${termId(tr.p)} ${termId(tr.o)}`).join('|')}}`;
-  return `T:${String(t)}`;
-}
-
-function predToN3(p, prefixes) {
-  return isRdfTypePred(p) ? 'a' : isOwlSameAsPred(p) ? '=' : termToN3(p, prefixes);
-}
-
-/**
- * Pretty-print a set of (ground) query-selected triples, collapsing eligible blank node
- * subjects into Turtle-style property lists ("[ ... ] .") and inlining singly-referenced
- * blank node objects as nested "[ ... ]" blocks.
- *
- * Intended for log:query output when proof comments are disabled.
- */
-function prettyPrintQueryTriples(triples, prefixes) {
-  const indentStep = '  ';
-
-  // Index by subject (only for blank node subjects).
-  const bySubj = new Map(); // id -> { term, triples: [] }
-  const bnodeRef = new Map(); // bnodeId -> count as object
-
-  for (const tr of triples) {
-    // object ref count
-    if (isBNodeTerm(tr.o)) {
-      const oid = termId(tr.o);
-      bnodeRef.set(oid, (bnodeRef.get(oid) || 0) + 1);
-    }
-    // subject index
-    if (isBNodeTerm(tr.s)) {
-      const sid = termId(tr.s);
-      let rec = bySubj.get(sid);
-      if (!rec) {
-        rec = { term: tr.s, triples: [] };
-        bySubj.set(sid, rec);
-      }
-      rec.triples.push(tr);
-    }
-  }
-
-  const inlineable = new Set();
-  for (const [bid, n] of bnodeRef.entries()) {
-    if (n === 1 && bySubj.has(bid)) inlineable.add(bid);
-  }
-
-  const consumedBNodes = new Set();
-
-  function groupByPredicate(bid) {
-    const rec = bySubj.get(bid);
-    if (!rec) return [];
-    const m = new Map();
-    for (const tr of rec.triples) {
-      const ps = predToN3(tr.p, prefixes);
-      let g = m.get(ps);
-      if (!g) {
-        g = { predStr: ps, objs: [] };
-        m.set(ps, g);
-      }
-      g.objs.push(tr.o);
-    }
-    const groups = Array.from(m.values());
-    groups.sort((a, b) => a.predStr.localeCompare(b.predStr));
-    for (const g of groups) {
-      g.objs.sort((x, y) => termToN3Query(x, prefixes).localeCompare(termToN3Query(y, prefixes)));
-    }
-    return groups;
-  }
-
-  function renderBNodePredicateObjects(bid, level, visiting) {
-    const lines = [];
-    const groups = groupByPredicate(bid);
-    const indent = indentStep.repeat(level);
-
-    for (let i = 0; i < groups.length; i++) {
-      const g = groups[i];
-      const isLastPred = i === groups.length - 1;
-
-      // Inline a child blank node only when it's the sole object for that predicate.
-      if (g.objs.length === 1 && isBNodeTerm(g.objs[0])) {
-        const childId = termId(g.objs[0]);
-        const canInline = inlineable.has(childId) && !visiting.has(childId);
-
-        if (canInline) {
-          visiting.add(childId);
-          consumedBNodes.add(childId);
-
-          lines.push(`${indent}${g.predStr} [`);
-          lines.push(...renderBNodePredicateObjects(childId, level + 1, visiting));
-          lines.push(`${indent}]${isLastPred ? '' : ' ;'}`);
-
-          visiting.delete(childId);
-          continue;
-        }
-      }
-
-      const objs = g.objs.map((o) => termToN3Query(o, prefixes)).join(', ');
-      lines.push(`${indent}${g.predStr} ${objs}${isLastPred ? '' : ' ;'}`);
-    }
-
-    return lines;
-  }
-
-  function renderRootBNode(bid) {
-    const visiting = new Set([bid]);
-    const lines = ['['];
-    lines.push(...renderBNodePredicateObjects(bid, 1, visiting));
-    lines.push('] .');
-    return lines.join('\n');
-  }
-
-  function renderInlineBNodeObjectTriple(tr, bid) {
-    // Render: S P [ ... ] .   (multi-line)
-    const s = termToN3Query(tr.s, prefixes);
-
-    // Respect => / <= sugar for log:* if it ever appears here.
-    if (isLogImplies(tr.p) || isLogImpliedBy(tr.p)) return tripleToN3Query(tr, prefixes);
-
-    const p = predToN3(tr.p, prefixes);
-
-    const visiting = new Set([bid]);
-    const lines = [`${s} ${p} [`];
-    lines.push(...renderBNodePredicateObjects(bid, 1, visiting));
-    lines.push('] .');
-    return lines.join('\n');
-  }
-
-  // Root blank nodes: blank node subjects that are never referenced as an object.
-  const rootBNodes = [];
-  for (const [bid, rec] of bySubj.entries()) {
-    const refs = bnodeRef.get(bid) || 0;
-    if (refs === 0) rootBNodes.push({ bid, term: rec.term });
-  }
-  rootBNodes.sort((a, b) => termToN3(a.term, prefixes).localeCompare(termToN3(b.term, prefixes)));
-
-  const blocks = [];
-  for (const r of rootBNodes) {
-    consumedBNodes.add(r.bid);
-    blocks.push(renderRootBNode(r.bid));
-  }
-
-  // Remaining triples: keep the traditional one-triple-per-line format.
-  const remaining = [];
-  for (const tr of triples) {
-    const sid = isBNodeTerm(tr.s) ? termId(tr.s) : null;
-    // Skip subject-triples for bnodes that will be inlined at their single reference.
-    if (sid && (consumedBNodes.has(sid) || inlineable.has(sid))) continue;
-    remaining.push(tr);
-  }
-
-  // Deterministic order: sort by the fallback single-line serialization.
-  remaining.sort((a, b) => tripleToN3Query(a, prefixes).localeCompare(tripleToN3Query(b, prefixes)));
-
-  for (const tr of remaining) {
-    // Inline blank node *objects* when the bnode is defined and referenced exactly once.
-    if (isBNodeTerm(tr.o)) {
-      const oid = termId(tr.o);
-      if (inlineable.has(oid) && !consumedBNodes.has(oid)) {
-        consumedBNodes.add(oid);
-        blocks.push(renderInlineBNodeObjectTriple(tr, oid));
-        continue;
-      }
-    }
-    blocks.push(tripleToN3Query(tr, prefixes));
-  }
-
-  return blocks.join('\n');
-}
-
-module.exports = { termToN3, tripleToN3, prettyPrintQueryTriples };
-
-  };
-  __modules["lib/rdfjs.js"] = function(require, module, exports){
-/**
- * Eyeling Reasoner — RDF/JS compatibility helpers
- *
- * A lightweight RDF/JS DataFactory plus adapters between Eyeling's internal
- * N3 term model and RDF/JS terms/quads.
- */
-
-'use strict';
-
-const {
-  XSD_NS,
-  Literal: InternalLiteral,
-  Iri,
-  Blank,
-  Var,
-  ListTerm,
-  OpenListTerm,
-  GraphTerm,
-  Triple,
-  Rule,
-  PrefixEnv,
-  literalParts,
-} = require('./prelude');
-const { termToN3, tripleToN3 } = require('./printing');
-
-function isObject(value) {
-  return value != null && typeof value === 'object';
-}
-
-function isIterable(value) {
-  return value != null && typeof value[Symbol.iterator] === 'function';
-}
-
-function isAsyncIterable(value) {
-  return value != null && typeof value[Symbol.asyncIterator] === 'function';
-}
-
-function getTypeTag(value) {
-  if (!isObject(value)) return '';
-  if (typeof value._type === 'string' && value._type) return value._type;
-  if (value.constructor && typeof value.constructor.name === 'string' && value.constructor.name)
-    return value.constructor.name;
-  return '';
-}
-
-function isRdfJsTerm(value) {
-  return isObject(value) && typeof value.termType === 'string' && typeof value.value === 'string';
-}
-
-function isRdfJsQuad(value) {
-  return (
-    isObject(value) &&
-    value.termType === 'Quad' &&
-    isRdfJsTerm(value.subject) &&
-    isRdfJsTerm(value.predicate) &&
-    isRdfJsTerm(value.object) &&
-    isRdfJsTerm(value.graph)
-  );
-}
-
-function isEyelingPrefixEnvLike(value) {
-  if (value instanceof PrefixEnv) return true;
-  return isObject(value) && (getTypeTag(value) === 'PrefixEnv' || (isObject(value.map) && 'baseIri' in value));
-}
-
-function isEyelingTripleLike(value) {
-  if (value instanceof Triple) return true;
-  return isObject(value) && (getTypeTag(value) === 'Triple' || ('s' in value && 'p' in value && 'o' in value));
-}
-
-function isEyelingRuleLike(value) {
-  if (value instanceof Rule) return true;
-  return (
-    isObject(value) &&
-    (getTypeTag(value) === 'Rule' || (Array.isArray(value.premise) && Array.isArray(value.conclusion)))
-  );
-}
-
-function isEyelingAstBundleLike(value) {
-  return (
-    Array.isArray(value) &&
-    value.length >= 4 &&
-    value.length <= 5 &&
-    (value[0] == null || isEyelingPrefixEnvLike(value[0])) &&
-    Array.isArray(value[1]) &&
-    Array.isArray(value[2]) &&
-    Array.isArray(value[3])
-  );
-}
-
-function termEquals(self, other) {
-  if (!other || typeof other !== 'object') return false;
-  if (self.termType !== other.termType) return false;
-  if (self.value !== other.value) return false;
-
-  if (self.termType === 'Literal') {
-    return (
-      !!self.datatype &&
-      typeof self.datatype.equals === 'function' &&
-      self.datatype.equals(other.datatype) &&
-      self.language === (other.language || '')
-    );
-  }
-
-  if (self.termType === 'Quad') {
-    return (
-      self.subject.equals(other.subject) &&
-      self.predicate.equals(other.predicate) &&
-      self.object.equals(other.object) &&
-      self.graph.equals(other.graph)
-    );
-  }
-
-  return true;
-}
-
-class NamedNode {
-  constructor(value) {
-    this.termType = 'NamedNode';
-    this.value = String(value);
-  }
-
-  equals(other) {
-    return termEquals(this, other);
-  }
-}
-
-class BlankNode {
-  constructor(value) {
-    this.termType = 'BlankNode';
-    this.value = String(value);
-  }
-
-  equals(other) {
-    return termEquals(this, other);
-  }
-}
-
-class Variable {
-  constructor(value) {
-    this.termType = 'Variable';
-    this.value = String(value);
-  }
-
-  equals(other) {
-    return termEquals(this, other);
-  }
-}
-
-class DefaultGraph {
-  constructor() {
-    this.termType = 'DefaultGraph';
-    this.value = '';
-  }
-
-  equals(other) {
-    return termEquals(this, other);
-  }
-}
-
-class Literal {
-  constructor(value, languageOrDatatype) {
-    this.termType = 'Literal';
-    this.value = String(value);
-    this.language = '';
-    this.datatype = null;
-
-    if (typeof languageOrDatatype === 'string') {
-      this.language = languageOrDatatype;
-      this.datatype = new NamedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#langString');
-    } else if (isRdfJsTerm(languageOrDatatype)) {
-      this.datatype = languageOrDatatype;
-    } else {
-      this.datatype = new NamedNode(XSD_NS + 'string');
-    }
-  }
-
-  equals(other) {
-    return termEquals(this, other);
-  }
-}
-
-class Quad {
-  constructor(subject, predicate, object, graph) {
-    this.termType = 'Quad';
-    this.value = '';
-    this.subject = subject;
-    this.predicate = predicate;
-    this.object = object;
-    this.graph = graph || new DefaultGraph();
-  }
-
-  equals(other) {
-    return termEquals(this, other);
-  }
-}
-
-const defaultGraphSingleton = new DefaultGraph();
-
-const dataFactory = {
-  namedNode(value) {
-    return new NamedNode(value);
-  },
-  blankNode(value) {
-    return new BlankNode(value == null ? '' : value);
-  },
-  literal(value, languageOrDatatype) {
-    return new Literal(value, languageOrDatatype);
-  },
-  variable(value) {
-    return new Variable(value);
-  },
-  defaultGraph() {
-    return defaultGraphSingleton;
-  },
-  quad(subject, predicate, object, graph) {
-    return new Quad(subject, predicate, object, graph || defaultGraphSingleton);
-  },
-};
-
-function getDataFactory(factory) {
-  return factory && typeof factory.quad === 'function' ? factory : dataFactory;
-}
-
-function getLiteralLexicalKind(value) {
-  if (typeof value !== 'string' || value.length === 0) return 'typed';
-  if (value === 'true' || value === 'false') return 'boolean';
-  if (/^[+-]?[0-9]+$/.test(value)) return 'integer';
-  if (/^[+-]?(?:[0-9]*\.[0-9]+|[0-9]+\.)$/.test(value)) return 'decimal';
-  if (/^[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)[eE][+-]?[0-9]+$/.test(value)) return 'double';
-  return 'typed';
-}
-
-function inferDatatypeForLexical(value) {
-  switch (getLiteralLexicalKind(value)) {
-    case 'boolean':
-      return XSD_NS + 'boolean';
-    case 'integer':
-      return XSD_NS + 'integer';
-    case 'decimal':
-      return XSD_NS + 'decimal';
-    case 'double':
-      return XSD_NS + 'double';
-    default:
-      return XSD_NS + 'string';
-  }
-}
-
-function quotedLexicalToValue(lexical) {
-  if (typeof lexical !== 'string' || lexical.length < 2 || lexical[0] !== '"' || lexical[lexical.length - 1] !== '"') {
-    return lexical;
-  }
-  try {
-    return JSON.parse(lexical);
-  } catch {
-    return lexical.slice(1, -1);
-  }
-}
-
-function splitLiteralLexAndLang(value) {
-  if (typeof value !== 'string') return { lexical: value, language: '' };
-  if (!(value.startsWith('"') && value.length >= 2)) return { lexical: value, language: '' };
-  const lastQuote = value.lastIndexOf('"');
-  if (lastQuote <= 0 || lastQuote >= value.length - 1 || value[lastQuote + 1] !== '@') {
-    return { lexical: value, language: '' };
-  }
-  const language = value.slice(lastQuote + 2);
-  if (!/^[A-Za-z]+(?:-[A-Za-z0-9]+)*$/.test(language)) {
-    return { lexical: value, language: '' };
-  }
-  return { lexical: value.slice(0, lastQuote + 1), language };
-}
-
-function internalLiteralToRdfJs(term, factory) {
-  const rdfFactory = getDataFactory(factory);
-  const [lexicalWithMaybeLang, datatypeIri] = literalParts(term.value);
-  const { lexical, language } = splitLiteralLexAndLang(lexicalWithMaybeLang);
-  const isQuotedLexical =
-    typeof lexical === 'string' && lexical.length >= 2 && lexical[0] === '"' && lexical[lexical.length - 1] === '"';
-  const value = isQuotedLexical ? quotedLexicalToValue(lexical) : lexical;
-
-  if (language) return rdfFactory.literal(value, language);
-  if (datatypeIri) return rdfFactory.literal(value, rdfFactory.namedNode(datatypeIri));
-  return rdfFactory.literal(value, rdfFactory.namedNode(inferDatatypeForLexical(lexical)));
-}
-
-function unsupportedRdfJsTerm(term, position) {
-  const kind = term && term.constructor && term.constructor.name ? term.constructor.name : typeof term;
-  const where = position ? ` in ${position}` : '';
-  throw new TypeError(`Cannot convert N3-only term ${kind}${where} to RDF/JS`);
-}
-
-function internalTermToRdfJs(term, factory, position) {
-  const rdfFactory = getDataFactory(factory);
-  if (term instanceof Iri) return rdfFactory.namedNode(term.value);
-  if (term instanceof Blank) {
-    const label = typeof term.label === 'string' && term.label.startsWith('_:') ? term.label.slice(2) : term.label;
-    return rdfFactory.blankNode(label);
-  }
-  if (term instanceof Var) return rdfFactory.variable(term.name);
-  if (term instanceof InternalLiteral) return internalLiteralToRdfJs(term, rdfFactory);
-  return unsupportedRdfJsTerm(term, position);
-}
-
-function internalTripleToRdfJsQuad(triple, factory) {
-  const rdfFactory = getDataFactory(factory);
-  return rdfFactory.quad(
-    internalTermToRdfJs(triple.s, rdfFactory, 'subject'),
-    internalTermToRdfJs(triple.p, rdfFactory, 'predicate'),
-    internalTermToRdfJs(triple.o, rdfFactory, 'object'),
-    rdfFactory.defaultGraph(),
-  );
-}
-
-function escapeStringForN3(value) {
-  return JSON.stringify(String(value));
-}
-
-function assertSupportedRdfJsTerm(term, position) {
-  if (!isRdfJsTerm(term)) {
-    throw new TypeError(`Expected an RDF/JS term in ${position}`);
-  }
-}
-
-function rdfJsTermToN3(term, position = 'term') {
-  assertSupportedRdfJsTerm(term, position);
-
-  switch (term.termType) {
-    case 'NamedNode':
-      return `<${term.value}>`;
-    case 'BlankNode':
-      return `_:${term.value}`;
-    case 'Variable':
-      return `?${term.value}`;
-    case 'DefaultGraph':
-      throw new TypeError(`DefaultGraph is not a valid standalone N3 term in ${position}`);
-    case 'Literal': {
-      const lang = typeof term.language === 'string' ? term.language : '';
-      const datatype = term.datatype && term.datatype.termType === 'NamedNode' ? term.datatype.value : null;
-      const lexical = escapeStringForN3(term.value);
-      if (lang) return `${lexical}@${lang}`;
-      if (!datatype || datatype === XSD_NS + 'string') return lexical;
-      return `${lexical}^^<${datatype}>`;
-    }
-    case 'Quad':
-      throw new TypeError(`Quoted triple terms are not supported in ${position}`);
-    default:
-      throw new TypeError(`Unsupported RDF/JS termType ${JSON.stringify(term.termType)} in ${position}`);
-  }
-}
-
-function rdfJsTermToInternal(term, position = 'term') {
-  assertSupportedRdfJsTerm(term, position);
-
-  switch (term.termType) {
-    case 'NamedNode':
-      return new Iri(term.value);
-    case 'BlankNode':
-      return new Blank(`_:${term.value}`);
-    case 'Variable':
-      return new Var(term.value);
-    case 'Literal':
-      return new InternalLiteral(rdfJsTermToN3(term, position));
-    case 'DefaultGraph':
-      throw new TypeError(`DefaultGraph is not a valid standalone N3 term in ${position}`);
-    case 'Quad':
-      throw new TypeError(`Quoted triple terms are not supported in ${position}`);
-    default:
-      throw new TypeError(`Unsupported RDF/JS termType ${JSON.stringify(term.termType)} in ${position}`);
-  }
-}
-
-function rdfJsQuadToInternalTriple(quad) {
-  if (!isRdfJsQuad(quad)) throw new TypeError('Expected an RDF/JS Quad');
-  if (quad.graph.termType !== 'DefaultGraph') {
-    throw new TypeError('Named graph quads are not supported by Eyeling input; use the default graph only');
-  }
-  return new Triple(
-    rdfJsTermToInternal(quad.subject, 'quad.subject'),
-    rdfJsTermToInternal(quad.predicate, 'quad.predicate'),
-    rdfJsTermToInternal(quad.object, 'quad.object'),
-  );
-}
-
-function rdfJsQuadToN3(quad) {
-  if (!isRdfJsQuad(quad)) throw new TypeError('Expected an RDF/JS Quad');
-  if (quad.graph.termType !== 'DefaultGraph') {
-    throw new TypeError('Named graph quads are not supported by Eyeling input; use the default graph only');
-  }
-  return `${rdfJsTermToN3(quad.subject, 'quad.subject')} ${rdfJsTermToN3(quad.predicate, 'quad.predicate')} ${rdfJsTermToN3(quad.object, 'quad.object')}.`;
-}
-
-function collectIterableToArray(iterable, label) {
-  if (!isIterable(iterable)) throw new TypeError(`${label} must be an iterable of RDF/JS quads`);
-  return Array.from(iterable);
-}
-
-async function collectAsyncIterableToArray(iterable, label) {
-  if (isIterable(iterable)) return Array.from(iterable);
-  if (!isAsyncIterable(iterable)) throw new TypeError(`${label} must be an iterable or async iterable of RDF/JS quads`);
-  const out = [];
-  for await (const item of iterable) out.push(item);
-  return out;
-}
-
-function pickInputQuadIterable(input) {
-  if (!isObject(input)) return null;
-  if (input.quads != null) return { value: input.quads, label: 'input.quads' };
-  if (input.dataset != null) return { value: input.dataset, label: 'input.dataset' };
-  if (input.facts != null) return { value: input.facts, label: 'input.facts' };
-  return null;
-}
-
-function getRulesText(input) {
-  if (!isObject(input)) return '';
-  return '';
-}
-
-function getFactsText(input) {
-  if (!isObject(input)) return '';
-  for (const key of ['factsN3', 'n3Facts']) {
-    if (typeof input[key] === 'string') return input[key];
-  }
-  return '';
-}
-
-function getPrefixesText(input) {
-  if (!isObject(input)) return '';
-  for (const key of ['prefixesN3', 'n3Prefixes']) {
-    if (typeof input[key] === 'string') return input[key];
-  }
-  return '';
-}
-
-function joinN3Sections(parts) {
-  return parts
-    .filter((part) => typeof part === 'string' && part.length > 0)
-    .map((part) => (part.endsWith('\n') ? part : part + '\n'))
-    .join('');
-}
-
-function reviveHeadBlankLabels(value) {
-  if (value instanceof Set) return new Set(value);
-  if (Array.isArray(value)) return new Set(value.map((item) => String(item)));
-  return new Set();
-}
-
-function reviveEyelingTerm(value) {
-  if (value instanceof Iri || value instanceof InternalLiteral || value instanceof Var || value instanceof Blank)
-    return value;
-  if (value instanceof ListTerm || value instanceof OpenListTerm || value instanceof GraphTerm) return value;
-
-  const tag = getTypeTag(value);
-
-  switch (tag) {
-    case 'Iri':
-      return new Iri(value.value);
-    case 'Literal':
-      return new InternalLiteral(value.value);
-    case 'Var':
-      return new Var(value.name);
-    case 'Blank':
-      return new Blank(value.label);
-    case 'ListTerm':
-      return new ListTerm((value.elems || []).map((item) => reviveEyelingTerm(item)));
-    case 'OpenListTerm':
-      return new OpenListTerm(
-        (value.prefix || []).map((item) => reviveEyelingTerm(item)),
-        value.tailVar,
+    function internalTripleToRdfJsQuad(triple, factory) {
+      const rdfFactory = getDataFactory(factory);
+      return rdfFactory.quad(
+        internalTermToRdfJs(triple.s, rdfFactory, 'subject'),
+        internalTermToRdfJs(triple.p, rdfFactory, 'predicate'),
+        internalTermToRdfJs(triple.o, rdfFactory, 'object'),
+        rdfFactory.defaultGraph(),
       );
-    case 'GraphTerm':
-      return new GraphTerm((value.triples || []).map((item) => reviveEyelingTriple(item)));
-    default:
-      break;
-  }
+    }
 
-  if (isRdfJsTerm(value)) return rdfJsTermToInternal(value);
-  throw new TypeError(`Unsupported Eyeling term object: ${JSON.stringify(tag || value)}`);
-}
+    function escapeStringForN3(value) {
+      return JSON.stringify(String(value));
+    }
 
-function reviveEyelingTriple(value) {
-  if (value instanceof Triple) return value;
-  if (!isEyelingTripleLike(value)) throw new TypeError('Expected an Eyeling Triple-like object');
-  return new Triple(reviveEyelingTerm(value.s), reviveEyelingTerm(value.p), reviveEyelingTerm(value.o));
-}
+    function assertSupportedRdfJsTerm(term, position) {
+      if (!isRdfJsTerm(term)) {
+        throw new TypeError(`Expected an RDF/JS term in ${position}`);
+      }
+    }
 
-function reviveEyelingRule(value) {
-  if (value instanceof Rule) return value;
-  if (!isEyelingRuleLike(value)) throw new TypeError('Expected an Eyeling Rule-like object');
+    function rdfJsTermToN3(term, position = 'term') {
+      assertSupportedRdfJsTerm(term, position);
 
-  const rule = new Rule(
-    (value.premise || []).map((item) => reviveEyelingTriple(item)),
-    (value.conclusion || []).map((item) => reviveEyelingTriple(item)),
-    value.isForward !== false,
-    !!value.isFuse,
-    reviveHeadBlankLabels(value.headBlankLabels),
-  );
+      switch (term.termType) {
+        case 'NamedNode':
+          return `<${term.value}>`;
+        case 'BlankNode':
+          return `_:${term.value}`;
+        case 'Variable':
+          return `?${term.value}`;
+        case 'DefaultGraph':
+          throw new TypeError(`DefaultGraph is not a valid standalone N3 term in ${position}`);
+        case 'Literal': {
+          const lang = typeof term.language === 'string' ? term.language : '';
+          const datatype = term.datatype && term.datatype.termType === 'NamedNode' ? term.datatype.value : null;
+          const lexical = escapeStringForN3(term.value);
+          if (lang) return `${lexical}@${lang}`;
+          if (!datatype || datatype === XSD_NS + 'string') return lexical;
+          return `${lexical}^^<${datatype}>`;
+        }
+        case 'Quad':
+          throw new TypeError(`Quoted triple terms are not supported in ${position}`);
+        default:
+          throw new TypeError(`Unsupported RDF/JS termType ${JSON.stringify(term.termType)} in ${position}`);
+      }
+    }
 
-  if (value.__dynamicConclusionTerm != null) {
-    Object.defineProperty(rule, '__dynamicConclusionTerm', {
-      value: reviveEyelingTerm(value.__dynamicConclusionTerm),
-      enumerable: false,
-      writable: false,
-      configurable: true,
-    });
-  }
+    function rdfJsTermToInternal(term, position = 'term') {
+      assertSupportedRdfJsTerm(term, position);
 
-  return rule;
-}
+      switch (term.termType) {
+        case 'NamedNode':
+          return new Iri(term.value);
+        case 'BlankNode':
+          return new Blank(`_:${term.value}`);
+        case 'Variable':
+          return new Var(term.value);
+        case 'Literal':
+          return new InternalLiteral(rdfJsTermToN3(term, position));
+        case 'DefaultGraph':
+          throw new TypeError(`DefaultGraph is not a valid standalone N3 term in ${position}`);
+        case 'Quad':
+          throw new TypeError(`Quoted triple terms are not supported in ${position}`);
+        default:
+          throw new TypeError(`Unsupported RDF/JS termType ${JSON.stringify(term.termType)} in ${position}`);
+      }
+    }
 
-function revivePrefixEnv(value) {
-  if (value instanceof PrefixEnv) return value;
-  if (!isEyelingPrefixEnvLike(value)) return PrefixEnv.newDefault();
-  return new PrefixEnv({ ...(value.map || {}) }, value.baseIri || '');
-}
+    function rdfJsQuadToInternalTriple(quad) {
+      if (!isRdfJsQuad(quad)) throw new TypeError('Expected an RDF/JS Quad');
+      if (quad.graph.termType !== 'DefaultGraph') {
+        throw new TypeError('Named graph quads are not supported by Eyeling input; use the default graph only');
+      }
+      return new Triple(
+        rdfJsTermToInternal(quad.subject, 'quad.subject'),
+        rdfJsTermToInternal(quad.predicate, 'quad.predicate'),
+        rdfJsTermToInternal(quad.object, 'quad.object'),
+      );
+    }
 
-function reviveRuleArray(value, label) {
-  if (value == null) return [];
-  if (!Array.isArray(value)) throw new TypeError(`${label} must be an array of Eyeling Rule objects`);
-  return value.map((item) => reviveEyelingRule(item));
-}
+    function rdfJsQuadToN3(quad) {
+      if (!isRdfJsQuad(quad)) throw new TypeError('Expected an RDF/JS Quad');
+      if (quad.graph.termType !== 'DefaultGraph') {
+        throw new TypeError('Named graph quads are not supported by Eyeling input; use the default graph only');
+      }
+      return `${rdfJsTermToN3(quad.subject, 'quad.subject')} ${rdfJsTermToN3(quad.predicate, 'quad.predicate')} ${rdfJsTermToN3(quad.object, 'quad.object')}.`;
+    }
 
-function reviveTripleArray(value, label) {
-  if (value == null) return [];
-  if (!Array.isArray(value)) throw new TypeError(`${label} must be an array of Eyeling Triple objects`);
-  return value.map((item) => reviveEyelingTriple(item));
-}
+    function collectIterableToArray(iterable, label) {
+      if (!isIterable(iterable)) throw new TypeError(`${label} must be an iterable of RDF/JS quads`);
+      return Array.from(iterable);
+    }
 
-function serializePrefixEnv(prefixes) {
-  const pref = revivePrefixEnv(prefixes);
-  const out = [];
+    async function collectAsyncIterableToArray(iterable, label) {
+      if (isIterable(iterable)) return Array.from(iterable);
+      if (!isAsyncIterable(iterable))
+        throw new TypeError(`${label} must be an iterable or async iterable of RDF/JS quads`);
+      const out = [];
+      for await (const item of iterable) out.push(item);
+      return out;
+    }
 
-  if (pref.baseIri) out.push(`@base <${pref.baseIri}> .`);
+    function pickInputQuadIterable(input) {
+      if (!isObject(input)) return null;
+      if (input.quads != null) return { value: input.quads, label: 'input.quads' };
+      if (input.dataset != null) return { value: input.dataset, label: 'input.dataset' };
+      if (input.facts != null) return { value: input.facts, label: 'input.facts' };
+      return null;
+    }
 
-  for (const [name, iri] of Object.entries(pref.map || {})) {
-    if (!iri) continue;
-    out.push(`@prefix ${name ? `${name}:` : ':'} <${iri}> .`);
-  }
+    function getRulesText(input) {
+      if (!isObject(input)) return '';
+      return '';
+    }
 
-  return out.join('\n');
-}
+    function getFactsText(input) {
+      if (!isObject(input)) return '';
+      for (const key of ['factsN3', 'n3Facts']) {
+        if (typeof input[key] === 'string') return input[key];
+      }
+      return '';
+    }
 
-function serializeFormulaTriples(triples, prefixes) {
-  if (!Array.isArray(triples) || triples.length === 0) return '{ }';
-  return `{
+    function getPrefixesText(input) {
+      if (!isObject(input)) return '';
+      for (const key of ['prefixesN3', 'n3Prefixes']) {
+        if (typeof input[key] === 'string') return input[key];
+      }
+      return '';
+    }
+
+    function joinN3Sections(parts) {
+      return parts
+        .filter((part) => typeof part === 'string' && part.length > 0)
+        .map((part) => (part.endsWith('\n') ? part : part + '\n'))
+        .join('');
+    }
+
+    function reviveHeadBlankLabels(value) {
+      if (value instanceof Set) return new Set(value);
+      if (Array.isArray(value)) return new Set(value.map((item) => String(item)));
+      return new Set();
+    }
+
+    function reviveEyelingTerm(value) {
+      if (value instanceof Iri || value instanceof InternalLiteral || value instanceof Var || value instanceof Blank)
+        return value;
+      if (value instanceof ListTerm || value instanceof OpenListTerm || value instanceof GraphTerm) return value;
+
+      const tag = getTypeTag(value);
+
+      switch (tag) {
+        case 'Iri':
+          return new Iri(value.value);
+        case 'Literal':
+          return new InternalLiteral(value.value);
+        case 'Var':
+          return new Var(value.name);
+        case 'Blank':
+          return new Blank(value.label);
+        case 'ListTerm':
+          return new ListTerm((value.elems || []).map((item) => reviveEyelingTerm(item)));
+        case 'OpenListTerm':
+          return new OpenListTerm(
+            (value.prefix || []).map((item) => reviveEyelingTerm(item)),
+            value.tailVar,
+          );
+        case 'GraphTerm':
+          return new GraphTerm((value.triples || []).map((item) => reviveEyelingTriple(item)));
+        default:
+          break;
+      }
+
+      if (isRdfJsTerm(value)) return rdfJsTermToInternal(value);
+      throw new TypeError(`Unsupported Eyeling term object: ${JSON.stringify(tag || value)}`);
+    }
+
+    function reviveEyelingTriple(value) {
+      if (value instanceof Triple) return value;
+      if (!isEyelingTripleLike(value)) throw new TypeError('Expected an Eyeling Triple-like object');
+      return new Triple(reviveEyelingTerm(value.s), reviveEyelingTerm(value.p), reviveEyelingTerm(value.o));
+    }
+
+    function reviveEyelingRule(value) {
+      if (value instanceof Rule) return value;
+      if (!isEyelingRuleLike(value)) throw new TypeError('Expected an Eyeling Rule-like object');
+
+      const rule = new Rule(
+        (value.premise || []).map((item) => reviveEyelingTriple(item)),
+        (value.conclusion || []).map((item) => reviveEyelingTriple(item)),
+        value.isForward !== false,
+        !!value.isFuse,
+        reviveHeadBlankLabels(value.headBlankLabels),
+      );
+
+      if (value.__dynamicConclusionTerm != null) {
+        Object.defineProperty(rule, '__dynamicConclusionTerm', {
+          value: reviveEyelingTerm(value.__dynamicConclusionTerm),
+          enumerable: false,
+          writable: false,
+          configurable: true,
+        });
+      }
+
+      return rule;
+    }
+
+    function revivePrefixEnv(value) {
+      if (value instanceof PrefixEnv) return value;
+      if (!isEyelingPrefixEnvLike(value)) return PrefixEnv.newDefault();
+      return new PrefixEnv({ ...(value.map || {}) }, value.baseIri || '');
+    }
+
+    function reviveRuleArray(value, label) {
+      if (value == null) return [];
+      if (!Array.isArray(value)) throw new TypeError(`${label} must be an array of Eyeling Rule objects`);
+      return value.map((item) => reviveEyelingRule(item));
+    }
+
+    function reviveTripleArray(value, label) {
+      if (value == null) return [];
+      if (!Array.isArray(value)) throw new TypeError(`${label} must be an array of Eyeling Triple objects`);
+      return value.map((item) => reviveEyelingTriple(item));
+    }
+
+    function serializePrefixEnv(prefixes) {
+      const pref = revivePrefixEnv(prefixes);
+      const out = [];
+
+      if (pref.baseIri) out.push(`@base <${pref.baseIri}> .`);
+
+      for (const [name, iri] of Object.entries(pref.map || {})) {
+        if (!iri) continue;
+        out.push(`@prefix ${name ? `${name}:` : ':'} <${iri}> .`);
+      }
+
+      return out.join('\n');
+    }
+
+    function serializeFormulaTriples(triples, prefixes) {
+      if (!Array.isArray(triples) || triples.length === 0) return '{ }';
+      return `{
 ${triples.map((tr) => `  ${tripleToN3(tr, prefixes)}`).join('\n')}
 }`;
-}
-
-function serializeRuleHead(rule, prefixes) {
-  if (rule.isFuse) return 'false';
-  if (rule.__dynamicConclusionTerm) return termToN3(rule.__dynamicConclusionTerm, prefixes);
-  if (!Array.isArray(rule.conclusion) || rule.conclusion.length === 0) return 'true';
-  return serializeFormulaTriples(rule.conclusion, prefixes);
-}
-
-function serializeRulePremise(rule, prefixes) {
-  if (!Array.isArray(rule.premise) || rule.premise.length === 0) return 'true';
-  return serializeFormulaTriples(rule.premise, prefixes);
-}
-
-function serializeRule(rule, prefixes) {
-  if (rule.isForward === false) {
-    const head =
-      rule.conclusion && rule.conclusion.length ? serializeFormulaTriples(rule.conclusion, prefixes) : 'true';
-    return `${head} <= ${serializeRulePremise(rule, prefixes)} .`;
-  }
-  return `${serializeRulePremise(rule, prefixes)} => ${serializeRuleHead(rule, prefixes)} .`;
-}
-
-function serializeQueryRule(rule, prefixes) {
-  return `${serializeRulePremise(rule, prefixes)} log:query ${serializeRuleHead(rule, prefixes)} .`;
-}
-
-function serializeEyelingDocument(doc) {
-  const prefixes = revivePrefixEnv(doc.prefixes);
-  const prefixText = serializePrefixEnv(prefixes);
-  const tripleText = (doc.triples || []).map((tr) => tripleToN3(tr, prefixes)).join('\n');
-  const fruleText = (doc.frules || []).map((rule) => serializeRule(rule, prefixes)).join('\n');
-  const bruleText = (doc.brules || []).map((rule) => serializeRule(rule, prefixes)).join('\n');
-  const qruleText = (doc.logQueryRules || []).map((rule) => serializeQueryRule(rule, prefixes)).join('\n');
-  return joinN3Sections([prefixText, tripleText, fruleText, bruleText, qruleText]);
-}
-
-function parseAstBundle(bundle) {
-  if (!isEyelingAstBundleLike(bundle))
-    throw new TypeError('Expected an Eyeling AST bundle [prefixes, triples, forwardRules, backwardRules,? queryRules]');
-  return {
-    prefixes: revivePrefixEnv(bundle[0]),
-    triples: reviveTripleArray(bundle[1], 'ast[1]'),
-    frules: reviveRuleArray(bundle[2], 'ast[2]'),
-    brules: reviveRuleArray(bundle[3], 'ast[3]'),
-    logQueryRules: reviveRuleArray(bundle[4] || [], 'ast[4]'),
-  };
-}
-
-function combineDocuments(base, extra) {
-  return {
-    prefixes: extra.prefixes || base.prefixes,
-    triples: base.triples.concat(extra.triples || []),
-    frules: base.frules.concat(extra.frules || []),
-    brules: base.brules.concat(extra.brules || []),
-    logQueryRules: base.logQueryRules.concat(extra.logQueryRules || []),
-  };
-}
-
-function emptyDocument() {
-  return {
-    prefixes: PrefixEnv.newDefault(),
-    triples: [],
-    frules: [],
-    brules: [],
-    logQueryRules: [],
-  };
-}
-
-function hasEyelingObjectInput(input) {
-  if (isEyelingAstBundleLike(input)) return true;
-  if (!isObject(input)) return false;
-  if (
-    isEyelingAstBundleLike(input.ast) ||
-    isEyelingAstBundleLike(input.document) ||
-    isEyelingAstBundleLike(input.rules)
-  )
-    return true;
-  if (isEyelingPrefixEnvLike(input.prefixes)) return true;
-  if (Array.isArray(input.triples) || Array.isArray(input.forwardRules) || Array.isArray(input.frules)) return true;
-  if (Array.isArray(input.backwardRules) || Array.isArray(input.brules)) return true;
-  if (Array.isArray(input.queryRules) || Array.isArray(input.logQueryRules) || Array.isArray(input.qrules)) return true;
-  if (Array.isArray(input.rules) && input.rules.some((item) => isEyelingRuleLike(item))) return true;
-  return false;
-}
-
-function parseEyelingDocumentBase(input) {
-  if (isEyelingAstBundleLike(input)) return parseAstBundle(input);
-  if (!isObject(input)) return null;
-
-  let doc = emptyDocument();
-  let found = false;
-
-  const embeddedAst = input.ast || input.document;
-  if (isEyelingAstBundleLike(embeddedAst)) {
-    doc = combineDocuments(doc, parseAstBundle(embeddedAst));
-    found = true;
-  }
-
-  if (isEyelingAstBundleLike(input.rules)) {
-    doc = combineDocuments(doc, parseAstBundle(input.rules));
-    found = true;
-  } else if (Array.isArray(input.rules) && input.rules.some((item) => isEyelingRuleLike(item))) {
-    doc.frules = doc.frules.concat(reviveRuleArray(input.rules, 'input.rules'));
-    found = true;
-  }
-
-  if (isEyelingPrefixEnvLike(input.prefixes)) {
-    doc.prefixes = revivePrefixEnv(input.prefixes);
-    found = true;
-  }
-
-  if (Array.isArray(input.triples)) {
-    doc.triples = doc.triples.concat(reviveTripleArray(input.triples, 'input.triples'));
-    found = true;
-  }
-
-  if (Array.isArray(input.forwardRules)) {
-    doc.frules = doc.frules.concat(reviveRuleArray(input.forwardRules, 'input.forwardRules'));
-    found = true;
-  }
-  if (Array.isArray(input.frules)) {
-    doc.frules = doc.frules.concat(reviveRuleArray(input.frules, 'input.frules'));
-    found = true;
-  }
-  if (Array.isArray(input.backwardRules)) {
-    doc.brules = doc.brules.concat(reviveRuleArray(input.backwardRules, 'input.backwardRules'));
-    found = true;
-  }
-  if (Array.isArray(input.brules)) {
-    doc.brules = doc.brules.concat(reviveRuleArray(input.brules, 'input.brules'));
-    found = true;
-  }
-  if (Array.isArray(input.queryRules)) {
-    doc.logQueryRules = doc.logQueryRules.concat(reviveRuleArray(input.queryRules, 'input.queryRules'));
-    found = true;
-  }
-  if (Array.isArray(input.logQueryRules)) {
-    doc.logQueryRules = doc.logQueryRules.concat(reviveRuleArray(input.logQueryRules, 'input.logQueryRules'));
-    found = true;
-  }
-  if (Array.isArray(input.qrules)) {
-    doc.logQueryRules = doc.logQueryRules.concat(reviveRuleArray(input.qrules, 'input.qrules'));
-    found = true;
-  }
-
-  return found ? doc : null;
-}
-
-function appendSyncQuadFacts(doc, input) {
-  const quadsInfo = pickInputQuadIterable(input);
-  if (!quadsInfo) return doc;
-  const quads = collectIterableToArray(quadsInfo.value, quadsInfo.label);
-  return {
-    ...doc,
-    triples: doc.triples.concat(quads.map((quad) => rdfJsQuadToInternalTriple(quad))),
-  };
-}
-
-async function appendAsyncQuadFacts(doc, input) {
-  const quadsInfo = pickInputQuadIterable(input);
-  if (!quadsInfo) return doc;
-  const quads = await collectAsyncIterableToArray(quadsInfo.value, quadsInfo.label);
-  return {
-    ...doc,
-    triples: doc.triples.concat(quads.map((quad) => rdfJsQuadToInternalTriple(quad))),
-  };
-}
-
-function normalizeParsedReasonerInputSync(input) {
-  const baseDoc = parseEyelingDocumentBase(input);
-  if (!baseDoc) return null;
-  return appendSyncQuadFacts(baseDoc, input);
-}
-
-async function normalizeParsedReasonerInputAsync(input) {
-  const baseDoc = parseEyelingDocumentBase(input);
-  if (!baseDoc) return null;
-  return appendAsyncQuadFacts(baseDoc, input);
-}
-
-function normalizeReasonerInputSync(input) {
-  if (typeof input === 'string') return input;
-  const parsed = normalizeParsedReasonerInputSync(input);
-  if (parsed) return serializeEyelingDocument(parsed);
-  if (!isObject(input)) {
-    throw new TypeError(
-      'Reasoner input must be an N3 string, an Eyeling AST/rule object, or an object containing RDF/JS quads plus optional rules',
-    );
-  }
-  if (typeof input.n3 === 'string') return input.n3;
-
-  const quadsInfo = pickInputQuadIterable(input);
-  const rulesText = getRulesText(input);
-  const factsText = getFactsText(input);
-  const prefixesText = getPrefixesText(input);
-
-  if (!quadsInfo) {
-    if (rulesText || factsText || prefixesText) return joinN3Sections([prefixesText, factsText, rulesText]);
-    throw new TypeError('Input object must provide n3 text, Eyeling AST/rule objects, or RDF/JS quads/facts/dataset');
-  }
-
-  const quads = collectIterableToArray(quadsInfo.value, quadsInfo.label);
-  const quadText = quads.map((quad) => rdfJsQuadToN3(quad)).join('\n');
-  return joinN3Sections([prefixesText, factsText, quadText, rulesText]);
-}
-
-async function normalizeReasonerInputAsync(input) {
-  if (typeof input === 'string') return input;
-  const parsed = await normalizeParsedReasonerInputAsync(input);
-  if (parsed) return serializeEyelingDocument(parsed);
-  if (!isObject(input)) {
-    throw new TypeError(
-      'Reasoner input must be an N3 string, an Eyeling AST/rule object, or an object containing RDF/JS quads plus optional rules',
-    );
-  }
-  if (typeof input.n3 === 'string') return input.n3;
-
-  const quadsInfo = pickInputQuadIterable(input);
-  const rulesText = getRulesText(input);
-  const factsText = getFactsText(input);
-  const prefixesText = getPrefixesText(input);
-
-  if (!quadsInfo) {
-    if (rulesText || factsText || prefixesText) return joinN3Sections([prefixesText, factsText, rulesText]);
-    throw new TypeError('Input object must provide n3 text, Eyeling AST/rule objects, or RDF/JS quads/facts/dataset');
-  }
-
-  const quads = await collectAsyncIterableToArray(quadsInfo.value, quadsInfo.label);
-  const quadText = quads.map((quad) => rdfJsQuadToN3(quad)).join('\n');
-  return joinN3Sections([prefixesText, factsText, quadText, rulesText]);
-}
-
-module.exports = {
-  dataFactory,
-  getDataFactory,
-  isRdfJsTerm,
-  isRdfJsQuad,
-  rdfJsTermToN3,
-  rdfJsQuadToN3,
-  rdfJsQuadToInternalTriple,
-  internalTermToRdfJs,
-  internalTripleToRdfJsQuad,
-  normalizeParsedReasonerInputSync,
-  normalizeReasonerInputSync,
-  normalizeReasonerInputAsync,
-  hasEyelingObjectInput,
-};
-
-  };
-  __modules["lib/rules.js"] = function(require, module, exports){
-/**
- * Eyeling Reasoner — rules
- *
- * Built-in rule helpers and utilities used by the engine. This is not the
- * inference engine itself, but shared rule-related machinery.
- */
-
-'use strict';
-
-const { Var, Blank, ListTerm, OpenListTerm, GraphTerm, Triple } = require('./prelude');
-
-function liftBlankRuleVars(premise, conclusion) {
-  // Map blank labels to stable rule-local variable names.
-  // This runs at rule construction time; keep it simple and allocation-light.
-  const mapping = Object.create(null);
-  let counter = 0;
-
-  function blankToVar(label) {
-    let name = mapping[label];
-    if (name === undefined) {
-      counter += 1;
-      name = `_b${counter}`;
-      mapping[label] = name;
     }
-    return new Var(name);
-  }
 
-  function convertTerm(t) {
-    if (t instanceof Blank) return blankToVar(t.label);
-    if (t instanceof ListTerm) return new ListTerm(t.elems.map(convertTerm));
-    if (t instanceof OpenListTerm) return new OpenListTerm(t.prefix.map(convertTerm), t.tailVar);
-    if (t instanceof GraphTerm) {
-      const triples = t.triples.map((tr) => new Triple(convertTerm(tr.s), convertTerm(tr.p), convertTerm(tr.o)));
-      return new GraphTerm(triples);
+    function serializeRuleHead(rule, prefixes) {
+      if (rule.isFuse) return 'false';
+      if (rule.__dynamicConclusionTerm) return termToN3(rule.__dynamicConclusionTerm, prefixes);
+      if (!Array.isArray(rule.conclusion) || rule.conclusion.length === 0) return 'true';
+      return serializeFormulaTriples(rule.conclusion, prefixes);
     }
-    return t;
-  }
 
-  const newPremise = premise.map((tr) => new Triple(convertTerm(tr.s), convertTerm(tr.p), convertTerm(tr.o)));
-  return [newPremise, conclusion];
-}
-
-module.exports = {
-  liftBlankRuleVars,
-};
-
-  };
-  __modules["lib/skolem.js"] = function(require, module, exports){
-/**
- * Eyeling Reasoner — skolem
- *
- * Deterministic skolemization utilities: stable key generation and skolem term
- * construction used by the engine and parser.
- */
-
-'use strict';
-
-// Deterministic pseudo-UUID from a string key (for log:skolem).
-// Not cryptographically strong, but stable and platform-independent.
-
-function deterministicSkolemIdFromKey(key) {
-  // Four 32-bit FNV-1a style accumulators with slight variation
-  let h1 = 0x811c9dc5;
-  let h2 = 0x811c9dc5;
-  let h3 = 0x811c9dc5;
-  let h4 = 0x811c9dc5;
-
-  for (let i = 0; i < key.length; i++) {
-    const c = key.charCodeAt(i);
-
-    h1 ^= c;
-    h1 = (h1 * 0x01000193) >>> 0;
-
-    h2 ^= c + 1;
-    h2 = (h2 * 0x01000193) >>> 0;
-
-    h3 ^= c + 2;
-    h3 = (h3 * 0x01000193) >>> 0;
-
-    h4 ^= c + 3;
-    h4 = (h4 * 0x01000193) >>> 0;
-  }
-
-  const hex = [h1, h2, h3, h4].map((h) => h.toString(16).padStart(8, '0')).join(''); // 32 hex chars
-
-  // Format like a UUID: 8-4-4-4-12
-  return (
-    hex.slice(0, 8) + '-' + hex.slice(8, 12) + '-' + hex.slice(12, 16) + '-' + hex.slice(16, 20) + '-' + hex.slice(20)
-  );
-}
-
-module.exports = {
-  deterministicSkolemIdFromKey,
-};
-
-  };
-  __modules["lib/time.js"] = function(require, module, exports){
-/**
- * Eyeling Reasoner — time
- *
- * Date/time parsing and formatting helpers (e.g., xsd:dateTime handling) used
- * by time-related builtins and normalization code.
- */
-
-'use strict';
-
-// Deterministic time support used by time:* builtins.
-// This logic is kept in its own module so the core engine stays focused.
-
-// If set, overrides time:localTime across the whole run.
-// Store as xsd:dateTime *lexical* string (no quotes).
-let fixedNowLex = null;
-
-// If not fixed, memoize one value per run to avoid re-firing rules.
-let runNowLex = null;
-
-function localIsoDateTimeString(d) {
-  function pad(n, width = 2) {
-    return String(n).padStart(width, '0');
-  }
-  const year = d.getFullYear();
-  const month = d.getMonth() + 1;
-  const day = d.getDate();
-  const hour = d.getHours();
-  const min = d.getMinutes();
-  const sec = d.getSeconds();
-  const ms = d.getMilliseconds();
-  const offsetMin = -d.getTimezoneOffset(); // minutes east of UTC
-  const sign = offsetMin >= 0 ? '+' : '-';
-  const abs = Math.abs(offsetMin);
-  const oh = Math.floor(abs / 60);
-  const om = abs % 60;
-  const msPart = ms ? '.' + String(ms).padStart(3, '0') : '';
-  return (
-    pad(year, 4) +
-    '-' +
-    pad(month) +
-    '-' +
-    pad(day) +
-    'T' +
-    pad(hour) +
-    ':' +
-    pad(min) +
-    ':' +
-    pad(sec) +
-    msPart +
-    sign +
-    pad(oh) +
-    ':' +
-    pad(om)
-  );
-}
-
-function utcIsoDateTimeStringFromEpochSeconds(sec) {
-  const ms = sec * 1000;
-  const d = new Date(ms);
-  function pad(n, w = 2) {
-    return String(n).padStart(w, '0');
-  }
-  const year = d.getUTCFullYear();
-  const month = d.getUTCMonth() + 1;
-  const day = d.getUTCDate();
-  const hour = d.getUTCHours();
-  const min = d.getUTCMinutes();
-  const s2 = d.getUTCSeconds();
-  const ms2 = d.getUTCMilliseconds();
-  const msPart = ms2 ? '.' + String(ms2).padStart(3, '0') : '';
-  return (
-    pad(year, 4) +
-    '-' +
-    pad(month) +
-    '-' +
-    pad(day) +
-    'T' +
-    pad(hour) +
-    ':' +
-    pad(min) +
-    ':' +
-    pad(s2) +
-    msPart +
-    '+00:00'
-  );
-}
-
-function getNowLex() {
-  if (fixedNowLex) return fixedNowLex;
-  if (runNowLex) return runNowLex;
-  runNowLex = localIsoDateTimeString(new Date());
-  return runNowLex;
-}
-
-function setFixedNowLex(v) {
-  fixedNowLex = v ? String(v) : null;
-  // When fixed changes, clear memoized run value.
-  runNowLex = null;
-}
-
-function resetRunNowLex() {
-  runNowLex = null;
-}
-
-module.exports = {
-  getNowLex,
-  setFixedNowLex,
-  resetRunNowLex,
-  utcIsoDateTimeStringFromEpochSeconds,
-};
-
-  };
-  __modules["lib/trace.js"] = function(require, module, exports){
-/**
- * Eyeling Reasoner — trace
- *
- * Debugging/tracing utilities used to record and inspect reasoning steps.
- */
-
-'use strict';
-
-// Small module for debug/trace printing (log:trace) and its run-level state.
-// Kept separate from engine.js so browser demo + CLI can share behavior.
-
-let tracePrefixes = null;
-
-function getTracePrefixes() {
-  return tracePrefixes;
-}
-
-function setTracePrefixes(v) {
-  tracePrefixes = v;
-}
-
-function writeTraceLine(line) {
-  // Prefer stderr in Node, fall back to console.error elsewhere.
-  try {
-    if (typeof process !== 'undefined' && process.stderr && typeof process.stderr.write === 'function') {
-      process.stderr.write(String(line) + '\n');
-      return;
+    function serializeRulePremise(rule, prefixes) {
+      if (!Array.isArray(rule.premise) || rule.premise.length === 0) return 'true';
+      return serializeFormulaTriples(rule.premise, prefixes);
     }
-  } catch (_) {}
-  try {
-    if (typeof console !== 'undefined' && typeof console.error === 'function') console.error(line);
-  } catch (_) {}
-}
 
-module.exports = {
-  getTracePrefixes,
-  setTracePrefixes,
-  writeTraceLine,
-};
+    function serializeRule(rule, prefixes) {
+      if (rule.isForward === false) {
+        const head =
+          rule.conclusion && rule.conclusion.length ? serializeFormulaTriples(rule.conclusion, prefixes) : 'true';
+        return `${head} <= ${serializeRulePremise(rule, prefixes)} .`;
+      }
+      return `${serializeRulePremise(rule, prefixes)} => ${serializeRuleHead(rule, prefixes)} .`;
+    }
 
+    function serializeQueryRule(rule, prefixes) {
+      return `${serializeRulePremise(rule, prefixes)} log:query ${serializeRuleHead(rule, prefixes)} .`;
+    }
+
+    function serializeEyelingDocument(doc) {
+      const prefixes = revivePrefixEnv(doc.prefixes);
+      const prefixText = serializePrefixEnv(prefixes);
+      const tripleText = (doc.triples || []).map((tr) => tripleToN3(tr, prefixes)).join('\n');
+      const fruleText = (doc.frules || []).map((rule) => serializeRule(rule, prefixes)).join('\n');
+      const bruleText = (doc.brules || []).map((rule) => serializeRule(rule, prefixes)).join('\n');
+      const qruleText = (doc.logQueryRules || []).map((rule) => serializeQueryRule(rule, prefixes)).join('\n');
+      return joinN3Sections([prefixText, tripleText, fruleText, bruleText, qruleText]);
+    }
+
+    function parseAstBundle(bundle) {
+      if (!isEyelingAstBundleLike(bundle))
+        throw new TypeError(
+          'Expected an Eyeling AST bundle [prefixes, triples, forwardRules, backwardRules,? queryRules]',
+        );
+      return {
+        prefixes: revivePrefixEnv(bundle[0]),
+        triples: reviveTripleArray(bundle[1], 'ast[1]'),
+        frules: reviveRuleArray(bundle[2], 'ast[2]'),
+        brules: reviveRuleArray(bundle[3], 'ast[3]'),
+        logQueryRules: reviveRuleArray(bundle[4] || [], 'ast[4]'),
+      };
+    }
+
+    function combineDocuments(base, extra) {
+      return {
+        prefixes: extra.prefixes || base.prefixes,
+        triples: base.triples.concat(extra.triples || []),
+        frules: base.frules.concat(extra.frules || []),
+        brules: base.brules.concat(extra.brules || []),
+        logQueryRules: base.logQueryRules.concat(extra.logQueryRules || []),
+      };
+    }
+
+    function emptyDocument() {
+      return {
+        prefixes: PrefixEnv.newDefault(),
+        triples: [],
+        frules: [],
+        brules: [],
+        logQueryRules: [],
+      };
+    }
+
+    function hasEyelingObjectInput(input) {
+      if (isEyelingAstBundleLike(input)) return true;
+      if (!isObject(input)) return false;
+      if (
+        isEyelingAstBundleLike(input.ast) ||
+        isEyelingAstBundleLike(input.document) ||
+        isEyelingAstBundleLike(input.rules)
+      )
+        return true;
+      if (isEyelingPrefixEnvLike(input.prefixes)) return true;
+      if (Array.isArray(input.triples) || Array.isArray(input.forwardRules) || Array.isArray(input.frules)) return true;
+      if (Array.isArray(input.backwardRules) || Array.isArray(input.brules)) return true;
+      if (Array.isArray(input.queryRules) || Array.isArray(input.logQueryRules) || Array.isArray(input.qrules))
+        return true;
+      if (Array.isArray(input.rules) && input.rules.some((item) => isEyelingRuleLike(item))) return true;
+      return false;
+    }
+
+    function parseEyelingDocumentBase(input) {
+      if (isEyelingAstBundleLike(input)) return parseAstBundle(input);
+      if (!isObject(input)) return null;
+
+      let doc = emptyDocument();
+      let found = false;
+
+      const embeddedAst = input.ast || input.document;
+      if (isEyelingAstBundleLike(embeddedAst)) {
+        doc = combineDocuments(doc, parseAstBundle(embeddedAst));
+        found = true;
+      }
+
+      if (isEyelingAstBundleLike(input.rules)) {
+        doc = combineDocuments(doc, parseAstBundle(input.rules));
+        found = true;
+      } else if (Array.isArray(input.rules) && input.rules.some((item) => isEyelingRuleLike(item))) {
+        doc.frules = doc.frules.concat(reviveRuleArray(input.rules, 'input.rules'));
+        found = true;
+      }
+
+      if (isEyelingPrefixEnvLike(input.prefixes)) {
+        doc.prefixes = revivePrefixEnv(input.prefixes);
+        found = true;
+      }
+
+      if (Array.isArray(input.triples)) {
+        doc.triples = doc.triples.concat(reviveTripleArray(input.triples, 'input.triples'));
+        found = true;
+      }
+
+      if (Array.isArray(input.forwardRules)) {
+        doc.frules = doc.frules.concat(reviveRuleArray(input.forwardRules, 'input.forwardRules'));
+        found = true;
+      }
+      if (Array.isArray(input.frules)) {
+        doc.frules = doc.frules.concat(reviveRuleArray(input.frules, 'input.frules'));
+        found = true;
+      }
+      if (Array.isArray(input.backwardRules)) {
+        doc.brules = doc.brules.concat(reviveRuleArray(input.backwardRules, 'input.backwardRules'));
+        found = true;
+      }
+      if (Array.isArray(input.brules)) {
+        doc.brules = doc.brules.concat(reviveRuleArray(input.brules, 'input.brules'));
+        found = true;
+      }
+      if (Array.isArray(input.queryRules)) {
+        doc.logQueryRules = doc.logQueryRules.concat(reviveRuleArray(input.queryRules, 'input.queryRules'));
+        found = true;
+      }
+      if (Array.isArray(input.logQueryRules)) {
+        doc.logQueryRules = doc.logQueryRules.concat(reviveRuleArray(input.logQueryRules, 'input.logQueryRules'));
+        found = true;
+      }
+      if (Array.isArray(input.qrules)) {
+        doc.logQueryRules = doc.logQueryRules.concat(reviveRuleArray(input.qrules, 'input.qrules'));
+        found = true;
+      }
+
+      return found ? doc : null;
+    }
+
+    function appendSyncQuadFacts(doc, input) {
+      const quadsInfo = pickInputQuadIterable(input);
+      if (!quadsInfo) return doc;
+      const quads = collectIterableToArray(quadsInfo.value, quadsInfo.label);
+      return {
+        ...doc,
+        triples: doc.triples.concat(quads.map((quad) => rdfJsQuadToInternalTriple(quad))),
+      };
+    }
+
+    async function appendAsyncQuadFacts(doc, input) {
+      const quadsInfo = pickInputQuadIterable(input);
+      if (!quadsInfo) return doc;
+      const quads = await collectAsyncIterableToArray(quadsInfo.value, quadsInfo.label);
+      return {
+        ...doc,
+        triples: doc.triples.concat(quads.map((quad) => rdfJsQuadToInternalTriple(quad))),
+      };
+    }
+
+    function normalizeParsedReasonerInputSync(input) {
+      const baseDoc = parseEyelingDocumentBase(input);
+      if (!baseDoc) return null;
+      return appendSyncQuadFacts(baseDoc, input);
+    }
+
+    async function normalizeParsedReasonerInputAsync(input) {
+      const baseDoc = parseEyelingDocumentBase(input);
+      if (!baseDoc) return null;
+      return appendAsyncQuadFacts(baseDoc, input);
+    }
+
+    function normalizeReasonerInputSync(input) {
+      if (typeof input === 'string') return input;
+      const parsed = normalizeParsedReasonerInputSync(input);
+      if (parsed) return serializeEyelingDocument(parsed);
+      if (!isObject(input)) {
+        throw new TypeError(
+          'Reasoner input must be an N3 string, an Eyeling AST/rule object, or an object containing RDF/JS quads plus optional rules',
+        );
+      }
+      if (typeof input.n3 === 'string') return input.n3;
+
+      const quadsInfo = pickInputQuadIterable(input);
+      const rulesText = getRulesText(input);
+      const factsText = getFactsText(input);
+      const prefixesText = getPrefixesText(input);
+
+      if (!quadsInfo) {
+        if (rulesText || factsText || prefixesText) return joinN3Sections([prefixesText, factsText, rulesText]);
+        throw new TypeError(
+          'Input object must provide n3 text, Eyeling AST/rule objects, or RDF/JS quads/facts/dataset',
+        );
+      }
+
+      const quads = collectIterableToArray(quadsInfo.value, quadsInfo.label);
+      const quadText = quads.map((quad) => rdfJsQuadToN3(quad)).join('\n');
+      return joinN3Sections([prefixesText, factsText, quadText, rulesText]);
+    }
+
+    async function normalizeReasonerInputAsync(input) {
+      if (typeof input === 'string') return input;
+      const parsed = await normalizeParsedReasonerInputAsync(input);
+      if (parsed) return serializeEyelingDocument(parsed);
+      if (!isObject(input)) {
+        throw new TypeError(
+          'Reasoner input must be an N3 string, an Eyeling AST/rule object, or an object containing RDF/JS quads plus optional rules',
+        );
+      }
+      if (typeof input.n3 === 'string') return input.n3;
+
+      const quadsInfo = pickInputQuadIterable(input);
+      const rulesText = getRulesText(input);
+      const factsText = getFactsText(input);
+      const prefixesText = getPrefixesText(input);
+
+      if (!quadsInfo) {
+        if (rulesText || factsText || prefixesText) return joinN3Sections([prefixesText, factsText, rulesText]);
+        throw new TypeError(
+          'Input object must provide n3 text, Eyeling AST/rule objects, or RDF/JS quads/facts/dataset',
+        );
+      }
+
+      const quads = await collectAsyncIterableToArray(quadsInfo.value, quadsInfo.label);
+      const quadText = quads.map((quad) => rdfJsQuadToN3(quad)).join('\n');
+      return joinN3Sections([prefixesText, factsText, quadText, rulesText]);
+    }
+
+    module.exports = {
+      dataFactory,
+      getDataFactory,
+      isRdfJsTerm,
+      isRdfJsQuad,
+      rdfJsTermToN3,
+      rdfJsQuadToN3,
+      rdfJsQuadToInternalTriple,
+      internalTermToRdfJs,
+      internalTripleToRdfJsQuad,
+      normalizeParsedReasonerInputSync,
+      normalizeReasonerInputSync,
+      normalizeReasonerInputAsync,
+      hasEyelingObjectInput,
+    };
+  };
+  __modules['lib/rules.js'] = function (require, module, exports) {
+    /**
+     * Eyeling Reasoner — rules
+     *
+     * Built-in rule helpers and utilities used by the engine. This is not the
+     * inference engine itself, but shared rule-related machinery.
+     */
+
+    'use strict';
+
+    const { Var, Blank, ListTerm, OpenListTerm, GraphTerm, Triple } = require('./prelude');
+
+    function liftBlankRuleVars(premise, conclusion) {
+      // Map blank labels to stable rule-local variable names.
+      // This runs at rule construction time; keep it simple and allocation-light.
+      const mapping = Object.create(null);
+      let counter = 0;
+
+      function blankToVar(label) {
+        let name = mapping[label];
+        if (name === undefined) {
+          counter += 1;
+          name = `_b${counter}`;
+          mapping[label] = name;
+        }
+        return new Var(name);
+      }
+
+      function convertTerm(t) {
+        if (t instanceof Blank) return blankToVar(t.label);
+        if (t instanceof ListTerm) return new ListTerm(t.elems.map(convertTerm));
+        if (t instanceof OpenListTerm) return new OpenListTerm(t.prefix.map(convertTerm), t.tailVar);
+        if (t instanceof GraphTerm) {
+          const triples = t.triples.map((tr) => new Triple(convertTerm(tr.s), convertTerm(tr.p), convertTerm(tr.o)));
+          return new GraphTerm(triples);
+        }
+        return t;
+      }
+
+      const newPremise = premise.map((tr) => new Triple(convertTerm(tr.s), convertTerm(tr.p), convertTerm(tr.o)));
+      return [newPremise, conclusion];
+    }
+
+    module.exports = {
+      liftBlankRuleVars,
+    };
+  };
+  __modules['lib/skolem.js'] = function (require, module, exports) {
+    /**
+     * Eyeling Reasoner — skolem
+     *
+     * Deterministic skolemization utilities: stable key generation and skolem term
+     * construction used by the engine and parser.
+     */
+
+    'use strict';
+
+    // Deterministic pseudo-UUID from a string key (for log:skolem).
+    // Not cryptographically strong, but stable and platform-independent.
+
+    function deterministicSkolemIdFromKey(key) {
+      // Four 32-bit FNV-1a style accumulators with slight variation
+      let h1 = 0x811c9dc5;
+      let h2 = 0x811c9dc5;
+      let h3 = 0x811c9dc5;
+      let h4 = 0x811c9dc5;
+
+      for (let i = 0; i < key.length; i++) {
+        const c = key.charCodeAt(i);
+
+        h1 ^= c;
+        h1 = (h1 * 0x01000193) >>> 0;
+
+        h2 ^= c + 1;
+        h2 = (h2 * 0x01000193) >>> 0;
+
+        h3 ^= c + 2;
+        h3 = (h3 * 0x01000193) >>> 0;
+
+        h4 ^= c + 3;
+        h4 = (h4 * 0x01000193) >>> 0;
+      }
+
+      const hex = [h1, h2, h3, h4].map((h) => h.toString(16).padStart(8, '0')).join(''); // 32 hex chars
+
+      // Format like a UUID: 8-4-4-4-12
+      return (
+        hex.slice(0, 8) +
+        '-' +
+        hex.slice(8, 12) +
+        '-' +
+        hex.slice(12, 16) +
+        '-' +
+        hex.slice(16, 20) +
+        '-' +
+        hex.slice(20)
+      );
+    }
+
+    module.exports = {
+      deterministicSkolemIdFromKey,
+    };
+  };
+  __modules['lib/time.js'] = function (require, module, exports) {
+    /**
+     * Eyeling Reasoner — time
+     *
+     * Date/time parsing and formatting helpers (e.g., xsd:dateTime handling) used
+     * by time-related builtins and normalization code.
+     */
+
+    'use strict';
+
+    // Deterministic time support used by time:* builtins.
+    // This logic is kept in its own module so the core engine stays focused.
+
+    // If set, overrides time:localTime across the whole run.
+    // Store as xsd:dateTime *lexical* string (no quotes).
+    let fixedNowLex = null;
+
+    // If not fixed, memoize one value per run to avoid re-firing rules.
+    let runNowLex = null;
+
+    function localIsoDateTimeString(d) {
+      function pad(n, width = 2) {
+        return String(n).padStart(width, '0');
+      }
+      const year = d.getFullYear();
+      const month = d.getMonth() + 1;
+      const day = d.getDate();
+      const hour = d.getHours();
+      const min = d.getMinutes();
+      const sec = d.getSeconds();
+      const ms = d.getMilliseconds();
+      const offsetMin = -d.getTimezoneOffset(); // minutes east of UTC
+      const sign = offsetMin >= 0 ? '+' : '-';
+      const abs = Math.abs(offsetMin);
+      const oh = Math.floor(abs / 60);
+      const om = abs % 60;
+      const msPart = ms ? '.' + String(ms).padStart(3, '0') : '';
+      return (
+        pad(year, 4) +
+        '-' +
+        pad(month) +
+        '-' +
+        pad(day) +
+        'T' +
+        pad(hour) +
+        ':' +
+        pad(min) +
+        ':' +
+        pad(sec) +
+        msPart +
+        sign +
+        pad(oh) +
+        ':' +
+        pad(om)
+      );
+    }
+
+    function utcIsoDateTimeStringFromEpochSeconds(sec) {
+      const ms = sec * 1000;
+      const d = new Date(ms);
+      function pad(n, w = 2) {
+        return String(n).padStart(w, '0');
+      }
+      const year = d.getUTCFullYear();
+      const month = d.getUTCMonth() + 1;
+      const day = d.getUTCDate();
+      const hour = d.getUTCHours();
+      const min = d.getUTCMinutes();
+      const s2 = d.getUTCSeconds();
+      const ms2 = d.getUTCMilliseconds();
+      const msPart = ms2 ? '.' + String(ms2).padStart(3, '0') : '';
+      return (
+        pad(year, 4) +
+        '-' +
+        pad(month) +
+        '-' +
+        pad(day) +
+        'T' +
+        pad(hour) +
+        ':' +
+        pad(min) +
+        ':' +
+        pad(s2) +
+        msPart +
+        '+00:00'
+      );
+    }
+
+    function getNowLex() {
+      if (fixedNowLex) return fixedNowLex;
+      if (runNowLex) return runNowLex;
+      runNowLex = localIsoDateTimeString(new Date());
+      return runNowLex;
+    }
+
+    function setFixedNowLex(v) {
+      fixedNowLex = v ? String(v) : null;
+      // When fixed changes, clear memoized run value.
+      runNowLex = null;
+    }
+
+    function resetRunNowLex() {
+      runNowLex = null;
+    }
+
+    module.exports = {
+      getNowLex,
+      setFixedNowLex,
+      resetRunNowLex,
+      utcIsoDateTimeStringFromEpochSeconds,
+    };
+  };
+  __modules['lib/trace.js'] = function (require, module, exports) {
+    /**
+     * Eyeling Reasoner — trace
+     *
+     * Debugging/tracing utilities used to record and inspect reasoning steps.
+     */
+
+    'use strict';
+
+    // Small module for debug/trace printing (log:trace) and its run-level state.
+    // Kept separate from engine.js so browser demo + CLI can share behavior.
+
+    let tracePrefixes = null;
+
+    function getTracePrefixes() {
+      return tracePrefixes;
+    }
+
+    function setTracePrefixes(v) {
+      tracePrefixes = v;
+    }
+
+    function writeTraceLine(line) {
+      // Prefer stderr in Node, fall back to console.error elsewhere.
+      try {
+        if (typeof process !== 'undefined' && process.stderr && typeof process.stderr.write === 'function') {
+          process.stderr.write(String(line) + '\n');
+          return;
+        }
+      } catch (_) {}
+      try {
+        if (typeof console !== 'undefined' && typeof console.error === 'function') console.error(line);
+      } catch (_) {}
+    }
+
+    module.exports = {
+      getTracePrefixes,
+      setTracePrefixes,
+      writeTraceLine,
+    };
   };
 
-  function __normPath(p){
+  function __normPath(p) {
     const segs = [];
-    for (const part of p.split("/")) {
-      if (!part || part === ".") continue;
-      if (part === "..") segs.pop();
+    for (const part of p.split('/')) {
+      if (!part || part === '.') continue;
+      if (part === '..') segs.pop();
       else segs.push(part);
     }
-    return segs.join("/");
+    return segs.join('/');
   }
-  function __resolve(fromId, req){
-    if (!(req && (req.startsWith("./") || req.startsWith("../")))) return req;
-    const base = fromId.split("/").slice(0, -1).join("/");
-    let p = base ? (base + "/" + req) : req;
+  function __resolve(fromId, req) {
+    if (!(req && (req.startsWith('./') || req.startsWith('../')))) return req;
+    const base = fromId.split('/').slice(0, -1).join('/');
+    let p = base ? base + '/' + req : req;
     p = __normPath(p);
-    if (!p.endsWith(".js") && !p.endsWith(".json")) p += ".js";
+    if (!p.endsWith('.js') && !p.endsWith('.json')) p += '.js';
     return p;
   }
-  function __makeRequire(fromId){
-    function r(req){
-      if (!(req && (req.startsWith("./") || req.startsWith("../")))) {
+  function __makeRequire(fromId) {
+    function r(req) {
+      if (!(req && (req.startsWith('./') || req.startsWith('../')))) {
         if (__outerRequire) return __outerRequire(req);
-        throw new Error("Cannot require external module: " + req);
+        throw new Error('Cannot require external module: ' + req);
       }
       const id = __resolve(fromId, req);
       if (!__modules[id]) {
         if (__outerRequire) return __outerRequire(req);
-        throw new Error("Cannot find bundled module: " + id);
+        throw new Error('Cannot find bundled module: ' + id);
       }
       if (__cache[id]) return __cache[id].exports;
       const m = { exports: {} };
@@ -12781,13 +12824,13 @@ module.exports = {
       __modules[id](__makeRequire(id), m, m.exports);
       return m.exports;
     }
-    r.main = (__outerRequire && __outerRequire.main) ? __outerRequire.main : null;
+    r.main = __outerRequire && __outerRequire.main ? __outerRequire.main : null;
     return r;
   }
 
-  function __loadEntry(){
-    const id = "lib/entry.js";
-    if (!__modules[id]) throw new Error("Missing entry module: " + id);
+  function __loadEntry() {
+    const id = 'lib/entry.js';
+    if (!__modules[id]) throw new Error('Missing entry module: ' + id);
     if (__cache[id]) return __cache[id].exports;
     const m = { exports: {} };
     __cache[id] = m;
@@ -12797,42 +12840,48 @@ module.exports = {
   const __entry = __loadEntry();
   const __api = __entry;
 
-  try { if (__outerModule && __outerModule.exports) __outerModule.exports = __api; } catch (ignoredError) {}
-  try { if (__outerSelf) __outerSelf.eyeling = __api; } catch (ignoredError) {}
+  try {
+    if (__outerModule && __outerModule.exports) __outerModule.exports = __api;
+  } catch (ignoredError) {}
+  try {
+    if (__outerSelf) __outerSelf.eyeling = __api;
+  } catch (ignoredError) {}
 
   // ---- demo.html compatibility ----
   // The original monolithic eyeling.js exposed internal functions/flags as globals.
   // demo.html still uses these via importScripts(...) inside a web worker.
   try {
     if (__outerSelf && __entry) {
-      if (typeof __entry.lex === "function") __outerSelf.lex = __entry.lex;
-      if (typeof __entry.Parser === "function") __outerSelf.Parser = __entry.Parser;
-      if (typeof __entry.forwardChain === "function") __outerSelf.forwardChain = __entry.forwardChain;
-      if (typeof __entry.materializeRdfLists === "function") __outerSelf.materializeRdfLists = __entry.materializeRdfLists;
-      if (typeof __entry.isGroundTriple === "function") __outerSelf.isGroundTriple = __entry.isGroundTriple;
-      if (typeof __entry.printExplanation === "function") __outerSelf.printExplanation = __entry.printExplanation;
-      if (typeof __entry.tripleToN3 === "function") __outerSelf.tripleToN3 = __entry.tripleToN3;
-      if (typeof __entry.collectOutputStringsFromFacts === "function") __outerSelf.collectOutputStringsFromFacts = __entry.collectOutputStringsFromFacts;
-      if (typeof __entry.prettyPrintQueryTriples === "function") __outerSelf.prettyPrintQueryTriples = __entry.prettyPrintQueryTriples;
+      if (typeof __entry.lex === 'function') __outerSelf.lex = __entry.lex;
+      if (typeof __entry.Parser === 'function') __outerSelf.Parser = __entry.Parser;
+      if (typeof __entry.forwardChain === 'function') __outerSelf.forwardChain = __entry.forwardChain;
+      if (typeof __entry.materializeRdfLists === 'function')
+        __outerSelf.materializeRdfLists = __entry.materializeRdfLists;
+      if (typeof __entry.isGroundTriple === 'function') __outerSelf.isGroundTriple = __entry.isGroundTriple;
+      if (typeof __entry.printExplanation === 'function') __outerSelf.printExplanation = __entry.printExplanation;
+      if (typeof __entry.tripleToN3 === 'function') __outerSelf.tripleToN3 = __entry.tripleToN3;
+      if (typeof __entry.collectOutputStringsFromFacts === 'function')
+        __outerSelf.collectOutputStringsFromFacts = __entry.collectOutputStringsFromFacts;
+      if (typeof __entry.prettyPrintQueryTriples === 'function')
+        __outerSelf.prettyPrintQueryTriples = __entry.prettyPrintQueryTriples;
 
       const def = (name, getFn, setFn) => {
         try {
-          if (typeof Object.defineProperty === "function") {
+          if (typeof Object.defineProperty === 'function') {
             Object.defineProperty(__outerSelf, name, {
               configurable: true,
-              get: (typeof getFn === "function") ? getFn : undefined,
-              set: (typeof setFn === "function") ? setFn : undefined,
+              get: typeof getFn === 'function' ? getFn : undefined,
+              set: typeof setFn === 'function' ? setFn : undefined,
             });
           } else {
-            if (typeof getFn === "function") __outerSelf[name] = getFn();
+            if (typeof getFn === 'function') __outerSelf[name] = getFn();
           }
         } catch (ignoredError) {}
       };
 
-      def("enforceHttpsEnabled", __entry.getEnforceHttpsEnabled, __entry.setEnforceHttpsEnabled);
-      def("proofCommentsEnabled", __entry.getProofCommentsEnabled, __entry.setProofCommentsEnabled);
-      def("__tracePrefixes", __entry.getTracePrefixes, __entry.setTracePrefixes);
+      def('enforceHttpsEnabled', __entry.getEnforceHttpsEnabled, __entry.setEnforceHttpsEnabled);
+      def('proofCommentsEnabled', __entry.getProofCommentsEnabled, __entry.setProofCommentsEnabled);
+      def('__tracePrefixes', __entry.getTracePrefixes, __entry.setTracePrefixes);
     }
   } catch (ignoredError) {}
-
 })();
