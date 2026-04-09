@@ -6,7 +6,9 @@
     "gridStress": true,
     "activeNeedCount": 3,
     "needsRetoolingPulse": true,
-    "eligiblePackageIds": ["pkg:RET_FLEX_120"],
+    "eligiblePackageIds": [
+      "pkg:RET_FLEX_120"
+    ],
     "recommendedPackageId": "pkg:RET_FLEX_120",
     "recommendedPackageName": "Flandor Retooling Pulse"
   },
@@ -56,8 +58,8 @@
   },
   "integrity": {
     "canonicalEnvelope": "{\"insight\":{\"createdAt\":\"2026-04-08T07:00:00+00:00\",\"expiresAt\":\"2026-04-08T19:00:00+00:00\",\"id\":\"https://example.org/insight/flandor\",\"metric\":\"regional_retooling_priority\",\"region\":\"Flanders\",\"scopeDevice\":\"economic-resilience-board\",\"scopeEvent\":\"budget-prep-window\",\"suggestionPolicy\":\"lowest_cost_package_covering_all_active_needs\",\"threshold\":3,\"type\":\"ins:Insight\"},\"policy\":{\"duty\":{\"action\":\"odrl:delete\",\"constraint\":{\"leftOperand\":\"odrl:dateTime\",\"operator\":\"odrl:eq\",\"rightOperand\":\"2026-04-08T19:00:00+00:00\"}},\"permission\":{\"action\":\"odrl:use\",\"constraint\":{\"leftOperand\":\"odrl:purpose\",\"operator\":\"odrl:eq\",\"rightOperand\":\"regional_stabilization\"},\"target\":\"https://example.org/insight/flandor\"},\"profile\":\"Flandor-Insight-Policy\",\"prohibition\":{\"action\":\"odrl:distribute\",\"constraint\":{\"leftOperand\":\"odrl:purpose\",\"operator\":\"odrl:eq\",\"rightOperand\":\"firm_surveillance\"},\"target\":\"https://example.org/insight/flandor\"},\"type\":\"odrl:Policy\"}}",
-    "payloadHashSHA256": "718f5b17d07ab6a95503bc04a1000ddb132409f600659c03d21def81914b780b",
-    "envelopeHmacSHA256": "955968ca99a191783bc00cba068128ccb9ff40a5e6114fda13a52c74ee27329e",
+    "payloadHashSHA256": "78d840cbc98e98d07d97498e8bc1bab716df0fc0c7c221aeaa86644157cfcfb8",
+    "envelopeHmacSHA256": "a907547046c46af6550635d786c1ea82c05e8c119c0c302c132eb799710df96e",
     "verificationMode": "trustedPrecomputedInput"
   },
   "answer": {
@@ -69,15 +71,15 @@
     "recommendedPackage": "Flandor Retooling Pulse",
     "budgetCapMEUR": 140,
     "packageCostMEUR": 120,
-    "payloadHashSHA256": "718f5b17d07ab6a95503bc04a1000ddb132409f600659c03d21def81914b780b",
-    "envelopeHmacSHA256": "955968ca99a191783bc00cba068128ccb9ff40a5e6114fda13a52c74ee27329e"
+    "payloadHashSHA256": "78d840cbc98e98d07d97498e8bc1bab716df0fc0c7c221aeaa86644157cfcfb8",
+    "envelopeHmacSHA256": "a907547046c46af6550635d786c1ea82c05e8c119c0c302c132eb799710df96e"
   },
   "reasonWhy": [
     "ExportWeakness holds because at least one cluster has exportOrdersIndex < 90 (Antwerp chemicals=84, Ghent manufacturing=87).",
     "SkillsStrain holds because the technical vacancy rate is 4.6% and the threshold is > 3.9%.",
     "GridStress holds because congestion hours = 19 and the threshold is > 11.",
     "The recommendation rule selects the least-cost package that covers every active need and remains within budget.",
-    "The selected package is \"Flandor Retooling Pulse\" with cost \u20ac120M, workerCoverage=1200, gridReliefMW=85.",
+    "The selected package is \"Flandor Retooling Pulse\" with cost €120M, workerCoverage=1200, gridReliefMW=85.",
     "Use is permitted only for purpose \"regional_stabilization\" and expires at 2026-04-08T19:00:00+00:00."
   ],
   "checks": {
@@ -94,5 +96,5 @@
     "lowestCostEligiblePackageChosen": true
   },
   "allChecksPass": true,
-  "arcText": "=== Answer ===\nName: Flandor\nRegion: Flanders\nMetric: regional_retooling_priority\nActive need count: 3/3\nRecommended package: Flandor Retooling Pulse\nBudget cap: \u20ac140M\nPackage cost: \u20ac120M\nPayload SHA-256: 718f5b17d07ab6a95503bc04a1000ddb132409f600659c03d21def81914b780b\nEnvelope HMAC-SHA-256: 955968ca99a191783bc00cba068128ccb9ff40a5e6114fda13a52c74ee27329e\n\n=== Reason Why ===\nExportWeakness holds because at least one cluster has exportOrdersIndex < 90 (Antwerp chemicals=84, Ghent manufacturing=87).\nSkillsStrain holds because the technical vacancy rate is 4.6% and the threshold is > 3.9%.\nGridStress holds because congestion hours = 19 and the threshold is > 11.\nThe recommendation rule selects the least-cost package that covers every active need and remains within budget.\nThe selected package is \"Flandor Retooling Pulse\" with cost \u20ac120M, workerCoverage=1200, gridReliefMW=85.\nUse is permitted only for purpose \"regional_stabilization\" and expires at 2026-04-08T19:00:00+00:00.\n\n=== Check ===\n- PASS: payloadHashMatches\n- PASS: signatureVerifies\n- PASS: thresholdReached\n- PASS: scopeComplete\n- PASS: minimizationRespected\n- PASS: authorizationAllowed\n- PASS: dutyTimely\n- PASS: surveillanceReuseProhibited\n- PASS: packageWithinBudget\n- PASS: packageCoversAllActiveNeeds\n- PASS: lowestCostEligiblePackageChosen"
+  "arcText": "=== Answer ===\nName: Flandor\nRegion: Flanders\nMetric: regional_retooling_priority\nActive need count: 3/3\nRecommended package: Flandor Retooling Pulse\nBudget cap: €140M\nPackage cost: €120M\nPayload SHA-256: 78d840cbc98e98d07d97498e8bc1bab716df0fc0c7c221aeaa86644157cfcfb8\nEnvelope HMAC-SHA-256: a907547046c46af6550635d786c1ea82c05e8c119c0c302c132eb799710df96e\n\n=== Reason Why ===\nExportWeakness holds because at least one cluster has exportOrdersIndex < 90 (Antwerp chemicals=84, Ghent manufacturing=87).\nSkillsStrain holds because the technical vacancy rate is 4.6% and the threshold is > 3.9%.\nGridStress holds because congestion hours = 19 and the threshold is > 11.\nThe recommendation rule selects the least-cost package that covers every active need and remains within budget.\nThe selected package is \"Flandor Retooling Pulse\" with cost €120M, workerCoverage=1200, gridReliefMW=85.\nUse is permitted only for purpose \"regional_stabilization\" and expires at 2026-04-08T19:00:00+00:00.\n\n=== Check ===\n- PASS: payloadHashMatches\n- PASS: signatureVerifies\n- PASS: thresholdReached\n- PASS: scopeComplete\n- PASS: minimizationRespected\n- PASS: authorizationAllowed\n- PASS: dutyTimely\n- PASS: surveillanceReuseProhibited\n- PASS: packageWithinBudget\n- PASS: packageCoversAllActiveNeeds\n- PASS: lowestCostEligiblePackageChosen"
 }

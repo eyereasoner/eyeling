@@ -6,8 +6,8 @@ Active need count: 3/3
 Recommended package: Flandor Retooling Pulse
 Budget cap: €140M
 Package cost: €120M
-Payload SHA-256: 718f5b17d07ab6a95503bc04a1000ddb132409f600659c03d21def81914b780b
-Envelope HMAC-SHA-256: 955968ca99a191783bc00cba068128ccb9ff40a5e6114fda13a52c74ee27329e
+Payload SHA-256: 78d840cbc98e98d07d97498e8bc1bab716df0fc0c7c221aeaa86644157cfcfb8
+Envelope HMAC-SHA-256: a907547046c46af6550635d786c1ea82c05e8c119c0c302c132eb799710df96e
 
 === Reason Why ===
 Export weakness is active because at least one cluster has exportOrdersIndex < 90 (Antwerp chemicals=84, Ghent manufacturing=87).
