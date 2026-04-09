@@ -1,15 +1,31 @@
-# Inference fuse triggered.
-# Fired rule:
-#   {
-#     :envelope :canonicalJson ?json .
-#     ?json crypto:sha256 ?actual .
-#     :signature :payloadHashSHA256 ?expected .
-#     ?actual log:notEqualTo ?expected .
-#   } => false .
-# Matched instance:
-#   {
-#     :envelope :canonicalJson "{\"insight\":{\"createdAt\":\"2026-04-08T07:00:00+00:00\",\"expiresAt\":\"2026-04-08T19:00:00+00:00\",\"id\":\"https://example.org/insight/flandor\",\"metric\":\"regional_retooling_priority\",\"region\":\"Flanders\",\"scopeDevice\":\"economic-resilience-board\",\"scopeEvent\":\"budget-prep-window\",\"suggestionPolicy\":\"lowest_cost_package_covering_all_active_needs\",\"threshold\":3,\"type\":\"ins:Insight\"},\"policy\":{\"duty\":{\"action\":\"odrl:delete\",\"constraint\":{\"leftOperand\":\"odrl:dateTime\",\"operator\":\"odrl:eq\",\"rightOperand\":\"2026-04-08T19:00:00+00:00\"}},\"permission\":{\"action\":\"odrl:use\",\"constraint\":{\"leftOperand\":\"odrl:purpose\",\"operator\":\"odrl:eq\",\"rightOperand\":\"regional_stabilization\"},\"target\":\"https://example.org/insight/flandor\"},\"profile\":\"Flandor-Insight-Policy\",\"prohibition\":{\"action\":\"odrl:distribute\",\"constraint\":{\"leftOperand\":\"odrl:purpose\",\"operator\":\"odrl:eq\",\"rightOperand\":\"firm_surveillance\"},\"target\":\"https://example.org/insight/flandor\"},\"type\":\"odrl:Policy\"}}" .
-#     "{\"insight\":{\"createdAt\":\"2026-04-08T07:00:00+00:00\",\"expiresAt\":\"2026-04-08T19:00:00+00:00\",\"id\":\"https://example.org/insight/flandor\",\"metric\":\"regional_retooling_priority\",\"region\":\"Flanders\",\"scopeDevice\":\"economic-resilience-board\",\"scopeEvent\":\"budget-prep-window\",\"suggestionPolicy\":\"lowest_cost_package_covering_all_active_needs\",\"threshold\":3,\"type\":\"ins:Insight\"},\"policy\":{\"duty\":{\"action\":\"odrl:delete\",\"constraint\":{\"leftOperand\":\"odrl:dateTime\",\"operator\":\"odrl:eq\",\"rightOperand\":\"2026-04-08T19:00:00+00:00\"}},\"permission\":{\"action\":\"odrl:use\",\"constraint\":{\"leftOperand\":\"odrl:purpose\",\"operator\":\"odrl:eq\",\"rightOperand\":\"regional_stabilization\"},\"target\":\"https://example.org/insight/flandor\"},\"profile\":\"Flandor-Insight-Policy\",\"prohibition\":{\"action\":\"odrl:distribute\",\"constraint\":{\"leftOperand\":\"odrl:purpose\",\"operator\":\"odrl:eq\",\"rightOperand\":\"firm_surveillance\"},\"target\":\"https://example.org/insight/flandor\"},\"type\":\"odrl:Policy\"}}" crypto:sha256 "10a85e861075bef2a96c01c7f3238735f82b8f368deb62eafcedd1c4b7f7c707" .
-#     :signature :payloadHashSHA256 "4b7a1401f8470b2f00545d179d4677791c889df2b19724552568b377a3856dd4" .
-#     "10a85e861075bef2a96c01c7f3238735f82b8f368deb62eafcedd1c4b7f7c707" log:notEqualTo "4b7a1401f8470b2f00545d179d4677791c889df2b19724552568b377a3856dd4" .
-#   } => false .
+=== Answer ===
+Name: Flandor
+Region: Flanders
+Metric: regional_retooling_priority
+Active need count: 3/3
+Recommended package: Flandor Retooling Pulse
+Budget cap: €140M
+Package cost: €120M
+Payload SHA-256: 718f5b17d07ab6a95503bc04a1000ddb132409f600659c03d21def81914b780b
+Envelope HMAC-SHA-256: 955968ca99a191783bc00cba068128ccb9ff40a5e6114fda13a52c74ee27329e
+
+=== Reason Why ===
+Export weakness is active because at least one cluster has exportOrdersIndex < 90 (Antwerp chemicals=84, Ghent manufacturing=87).
+Skills strain is active because technical vacancy rate is 4.6% (threshold > 3.9%).
+Grid stress is active because congestion hours = 19 (threshold > 11).
+The recommendation policy is "lowest_cost_package_covering_all_active_needs", so the cheapest package that covers all active needs within budget is selected.
+Selected package "Flandor Retooling Pulse" covers export=true, skills=true, grid=true, cost=€120M.
+Usage is permitted only for purpose "regional_stabilization" and the envelope expires at 2026-04-08T19:00:00+00:00.
+
+=== Check ===
+- PASS: payload hash matches
+- PASS: hmac matches
+- PASS: threshold reached
+- PASS: scope complete
+- PASS: minimization respected
+- PASS: authorized purpose allowed
+- PASS: deletion duty still on time
+- PASS: surveillance reuse prohibited
+- PASS: package exists within budget
+- PASS: package covers all active needs
+- PASS: lowest-cost eligible package chosen

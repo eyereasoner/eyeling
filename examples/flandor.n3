@@ -171,7 +171,7 @@
   :alg "HMAC-SHA256" ;
   :keyid "demo-shared-secret" ;
   :created "2026-04-08T07:00:00+00:00"^^xsd:dateTime ;
-  :payloadHashSHA256 "4b7a1401f8470b2f00545d179d4677791c889df2b19724552568b377a3856dd4" ;
+  :payloadHashSHA256 "10a85e861075bef2a96c01c7f3238735f82b8f368deb62eafcedd1c4b7f7c707" ;
   :displayPayloadHashSHA256 "718f5b17d07ab6a95503bc04a1000ddb132409f600659c03d21def81914b780b" ;
   :signatureHMAC "955968ca99a191783bc00cba068128ccb9ff40a5e6114fda13a52c74ee27329e" ;
   :hmacVerificationMode :trustedPrecomputedInput .
