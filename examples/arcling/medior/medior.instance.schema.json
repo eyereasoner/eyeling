@@ -1,0 +1,313 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schema/medior.instance.schema.json",
+  "title": "Arcling Medior instance",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "caseName",
+    "region",
+    "question",
+    "timestamps",
+    "evaluationContext",
+    "thresholds",
+    "signals",
+    "budget",
+    "packages",
+    "insightPolicy",
+    "integrity"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "caseName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "region": {
+      "type": "string",
+      "minLength": 1
+    },
+    "question": {
+      "type": "string",
+      "minLength": 1
+    },
+    "timestamps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "createdAt",
+        "expiresAt",
+        "authorizedAt",
+        "dutyPerformedAt"
+      ],
+      "properties": {
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "authorizedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "dutyPerformedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "evaluationContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scopeDevice",
+        "scopeEvent",
+        "purpose",
+        "prohibitedReusePurpose"
+      ],
+      "properties": {
+        "scopeDevice": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scopeEvent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "prohibitedReusePurpose": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "thresholds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "egfrBelow",
+        "activeMedicationCountAtLeast",
+        "admissionsLast180DaysAtLeast",
+        "hoursSinceDischargeAtMost",
+        "activeNeedCountAtLeast"
+      ],
+      "properties": {
+        "egfrBelow": {
+          "type": "number"
+        },
+        "activeMedicationCountAtLeast": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "admissionsLast180DaysAtLeast": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "hoursSinceDischargeAtMost": {
+          "type": "number",
+          "minimum": 0
+        },
+        "activeNeedCountAtLeast": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "signals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lab",
+        "medications",
+        "history",
+        "discharge"
+      ],
+      "properties": {
+        "lab": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "egfr"
+          ],
+          "properties": {
+            "egfr": {
+              "type": "number"
+            }
+          }
+        },
+        "medications": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "activeMedicationCount"
+          ],
+          "properties": {
+            "activeMedicationCount": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "history": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "admissionsLast180Days"
+          ],
+          "properties": {
+            "admissionsLast180Days": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "discharge": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "hoursSinceDischarge"
+          ],
+          "properties": {
+            "hoursSinceDischarge": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "windowName",
+        "maxEUR"
+      ],
+      "properties": {
+        "windowName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "maxEUR": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      }
+    },
+    "packages": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "costEUR",
+          "touches",
+          "coversRenalSafetyConcern",
+          "coversPolypharmacyRisk",
+          "coversReadmissionHistory",
+          "coversRecentDischargeWindow"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "costEUR": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "touches": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "coversRenalSafetyConcern": {
+            "type": "boolean"
+          },
+          "coversPolypharmacyRisk": {
+            "type": "boolean"
+          },
+          "coversReadmissionHistory": {
+            "type": "boolean"
+          },
+          "coversRecentDischargeWindow": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "insightPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "metric",
+        "suggestionPolicy",
+        "type",
+        "policyProfile",
+        "policyType"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "metric": {
+          "type": "string",
+          "minLength": 1
+        },
+        "suggestionPolicy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policyProfile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policyType": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "secret",
+        "verificationMode"
+      ],
+      "properties": {
+        "secret": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verificationMode": {
+          "type": "string",
+          "enum": [
+            "trustedPrecomputedInput"
+          ]
+        }
+      }
+    }
+  }
+}
