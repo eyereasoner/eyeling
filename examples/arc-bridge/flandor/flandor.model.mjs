@@ -30,13 +30,7 @@ async function sha256Hex(text) {
 }
 
 async function hmacSha256Hex(secret, text) {
-  const key = await subtle.importKey(
-    'raw',
-    encoder.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
+  const key = await subtle.importKey('raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const signature = await subtle.sign('HMAC', key, encoder.encode(text));
   return Array.from(new Uint8Array(signature), (b) => b.toString(16).padStart(2, '0')).join('');
 }
@@ -172,7 +166,9 @@ export async function clauseM3_hmac(data) {
 }
 
 export function clauseM4_minimizationRespected(insight) {
-  return !JSON.stringify(insight).toLowerCase().match(/salary|payroll|invoice|medical|firmname/);
+  return !JSON.stringify(insight)
+    .toLowerCase()
+    .match(/salary|payroll|invoice|medical|firmname/);
 }
 
 export function clauseM5_scopeComplete(insight) {
@@ -199,10 +195,10 @@ export async function evaluate(data) {
   const scopeComplete = clauseM5_scopeComplete(insight);
 
   const checks = {
-    payloadHashMatches: payloadHashSHA256 === await sha256Hex(canonicalEnvelope),
+    payloadHashMatches: payloadHashSHA256 === (await sha256Hex(canonicalEnvelope)),
     signatureVerifies:
       data.integrity.verificationMode === 'trustedPrecomputedInput' &&
-      envelopeHmacSHA256 === await hmacSha256Hex(data.integrity.secret, canonicalEnvelope),
+      envelopeHmacSHA256 === (await hmacSha256Hex(data.integrity.secret, canonicalEnvelope)),
     thresholdReached: needsRetoolingPulse,
     scopeComplete,
     minimizationRespected,
@@ -210,7 +206,8 @@ export async function evaluate(data) {
     dutyTimely,
     surveillanceReuseProhibited,
     packageWithinBudget: Boolean(recommended) && recommended.costMEUR <= data.budget.maxMEUR,
-    packageCoversAllActiveNeeds: Boolean(recommended) && packageCoversAllActiveNeeds(recommended, { exportWeakness, skillsStrain, gridStress }),
+    packageCoversAllActiveNeeds:
+      Boolean(recommended) && packageCoversAllActiveNeeds(recommended, { exportWeakness, skillsStrain, gridStress }),
     lowestCostEligiblePackageChosen: Boolean(recommended) && recommended.id === (eligible[0]?.id ?? null),
   };
 

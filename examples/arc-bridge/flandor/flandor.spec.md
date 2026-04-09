@@ -1,26 +1,20 @@
-# Flandor — Semi-Formal ARC Specification
+# Flandor — ARC Specification
 
 ## Status
 
-This document is the **normative specification** for the Flandor case.
-The file `flandor.model.mjs` is the **reference ECMAScript implementation** of these clauses.
-The file `flandor.data.json` is the **instance** evaluated in this bundle.
-The file `flandor.expected.json` is the **conformance vector** for that instance.
+This document is the **normative specification** for the Flandor case. The file `flandor.model.mjs` is the **reference ECMAScript implementation** of these clauses. The file `flandor.data.json` is the **instance** evaluated in this bundle. The file `flandor.expected.json` is the **conformance vector** for that instance.
 
 ## Aha
 
 Nobody has to reveal their books for the region to coordinate.
 
-Firm-side, labour-side, and grid-side evidence remain local. What crosses the policy boundary is a narrow,
-signed, expiring conclusion: Flanders presently faces enough combined pressure to justify a temporary
-retooling response. The traded product is not raw data, but a permissioned conclusion.
+Firm-side, labour-side, and grid-side evidence remain local. What crosses the policy boundary is a narrow, signed, expiring conclusion: Flanders presently faces enough combined pressure to justify a temporary retooling response. The traded product is not raw data, but a permissioned conclusion.
 
 ## Conventions
 
 - “iff” means “if and only if”.
 - A clause identifier such as `R1` or `M3` is normative.
-- A conforming implementation may be written in any language, but it shall produce the same derived
-  values and pass/fail outcomes for the supplied instance.
+- A conforming implementation may be written in any language, but it shall produce the same derived values and pass/fail outcomes for the supplied instance.
 - The reference implementation uses ECMAScript because you preferred an international-standard JS language.
 
 ## Vocabulary
@@ -72,6 +66,7 @@ retooling response. The traded product is not raw data, but a permissioned concl
 
 **S1. Eligible(p).**  
 A package `p` is eligible iff:
+
 1. `p.costMEUR ≤ budget.maxMEUR`; and
 2. for every active need, `p` covers that need.
 
@@ -85,6 +80,7 @@ If no eligible package exists, the recommendation is `None`.
 
 **G1. AuthorizedUse.**  
 `AuthorizedUse` holds iff:
+
 1. the requested action is `odrl:use`;
 2. the requested purpose is `regional_stabilization`; and
 3. the authorization time is not later than the expiry time.
@@ -98,8 +94,7 @@ If no eligible package exists, the recommendation is `None`.
 ## Integrity and minimization clauses
 
 **M1. CanonicalEnvelope.**  
-The canonical envelope string is the stable JSON serialization of the ordered pair `(insight, policy)`,
-with object keys sorted lexicographically at every level.
+The canonical envelope string is the stable JSON serialization of the ordered pair `(insight, policy)`, with object keys sorted lexicographically at every level.
 
 **M2. PayloadHashMatches.**  
 `PayloadHashMatches` holds iff `SHA-256(CanonicalEnvelope) = declaredPayloadHashSHA256`.
@@ -108,8 +103,7 @@ with object keys sorted lexicographically at every level.
 `SignatureVerifies` holds iff the declared HMAC verifies under the agreed verification mode.
 
 **M4. MinimizationRespected.**  
-`MinimizationRespected` holds iff the serialized insight contains none of the forbidden terms:
-`salary`, `payroll`, `invoice`, `medical`, `firmname`.
+`MinimizationRespected` holds iff the serialized insight contains none of the forbidden terms: `salary`, `payroll`, `invoice`, `medical`, `firmname`.
 
 **M5. ScopeComplete.**  
 `ScopeComplete` holds iff the insight contains `scopeDevice`, `scopeEvent`, and `expiresAt`.
@@ -118,6 +112,7 @@ with object keys sorted lexicographically at every level.
 
 **O1. Answer.**  
 A conforming renderer shall expose:
+
 - case name
 - region
 - metric
@@ -134,6 +129,7 @@ A conforming renderer shall explain which predicates hold and why the package wa
 
 **O3. Check.**  
 A conforming renderer shall expose a named PASS/FAIL outcome for each of:
+
 - payloadHashMatches
 - signatureVerifies
 - thresholdReached
@@ -149,6 +145,7 @@ A conforming renderer shall expose a named PASS/FAIL outcome for each of:
 ## Reference outcome for this instance
 
 For the supplied instance:
+
 - `ExportWeakness = true`
 - `SkillsStrain = true`
 - `GridStress = true`

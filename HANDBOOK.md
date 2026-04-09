@@ -1573,6 +1573,10 @@ A tiny `sprintf` subset:
 - Supports only `%s` and `%%`.
 - Any other specifier (`%d`, `%f`, …) causes the builtin to fail.
 - Missing arguments are treated as empty strings.
+- The format string `fmt` itself must be string-castable.
+- Each `%s` argument may be any bound non-variable term:
+  - string-castable terms (IRIs and literals) use their direct string value;
+  - other bound terms (blank nodes, lists, quoted formulas, …) are rendered as N3.
 
 ### Length and character utilities (Eyeling extensions)
 

@@ -3,10 +3,7 @@
   "derived": {
     "needsLowSugar": true,
     "highSugarScanned": true,
-    "lowerSugarCandidateIds": [
-      "prod:BIS_101",
-      "prod:CHOC_150"
-    ],
+    "lowerSugarCandidateIds": ["prod:BIS_101", "prod:CHOC_150"],
     "recommendedAlternativeId": "prod:BIS_101",
     "recommendedAlternativeName": "Low-Sugar Tea Biscuits",
     "alternativeLowersSugar": true

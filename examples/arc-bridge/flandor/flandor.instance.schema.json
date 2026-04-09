@@ -37,12 +37,7 @@
     "timestamps": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "createdAt",
-        "expiresAt",
-        "authorizedAt",
-        "dutyPerformedAt"
-      ],
+      "required": ["createdAt", "expiresAt", "authorizedAt", "dutyPerformedAt"],
       "properties": {
         "createdAt": {
           "type": "string",
@@ -65,12 +60,7 @@
     "evaluationContext": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "scopeDevice",
-        "scopeEvent",
-        "purpose",
-        "prohibitedReusePurpose"
-      ],
+      "required": ["scopeDevice", "scopeEvent", "purpose", "prohibitedReusePurpose"],
       "properties": {
         "scopeDevice": {
           "type": "string",
@@ -118,11 +108,7 @@
     "signals": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "clusters",
-        "labourMarket",
-        "grid"
-      ],
+      "required": ["clusters", "labourMarket", "grid"],
       "properties": {
         "clusters": {
           "type": "array",
@@ -130,12 +116,7 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": [
-              "id",
-              "name",
-              "exportOrdersIndex",
-              "energyIntensity"
-            ],
+            "required": ["id", "name", "exportOrdersIndex", "energyIntensity"],
             "properties": {
               "id": {
                 "type": "string",
@@ -157,9 +138,7 @@
         "labourMarket": {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "technicalVacancyRatePct"
-          ],
+          "required": ["technicalVacancyRatePct"],
           "properties": {
             "technicalVacancyRatePct": {
               "type": "number",
@@ -170,10 +149,7 @@
         "grid": {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "congestionHours",
-            "renewableCurtailmentMWh"
-          ],
+          "required": ["congestionHours", "renewableCurtailmentMWh"],
           "properties": {
             "congestionHours": {
               "type": "number",
@@ -190,10 +166,7 @@
     "budget": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "windowName",
-        "maxMEUR"
-      ],
+      "required": ["windowName", "maxMEUR"],
       "properties": {
         "windowName": {
           "type": "string",
@@ -257,14 +230,7 @@
     "insightPolicy": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "id",
-        "metric",
-        "type",
-        "suggestionPolicy",
-        "policyType",
-        "policyProfile"
-      ],
+      "required": ["id", "metric", "type", "suggestionPolicy", "policyType", "policyProfile"],
       "properties": {
         "id": {
           "type": "string",
@@ -295,12 +261,7 @@
     "integrity": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "hashAlgorithm",
-        "macAlgorithm",
-        "secret",
-        "verificationMode"
-      ],
+      "required": ["hashAlgorithm", "macAlgorithm", "secret", "verificationMode"],
       "properties": {
         "hashAlgorithm": {
           "type": "string",

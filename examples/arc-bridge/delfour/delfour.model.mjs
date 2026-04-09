@@ -19,13 +19,7 @@ async function sha256Hex(text) {
 }
 
 async function hmacSha256Hex(secret, text) {
-  const key = await subtle.importKey(
-    'raw',
-    encoder.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
+  const key = await subtle.importKey('raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const signature = await subtle.sign('HMAC', key, encoder.encode(text));
   return Array.from(new Uint8Array(signature), (b) => b.toString(16).padStart(2, '0')).join('');
 }
@@ -125,8 +119,7 @@ export function clauseG1_authorizedUse(data) {
 
 export function clauseG2_marketingProhibited(policy) {
   return (
-    policy.prohibition?.action === 'odrl:distribute' &&
-    policy.prohibition?.constraint?.rightOperand === 'marketing'
+    policy.prohibition?.action === 'odrl:distribute' && policy.prohibition?.constraint?.rightOperand === 'marketing'
   );
 }
 
@@ -138,8 +131,7 @@ export function clauseM1_canonicalEnvelope(data) {
   const insight = deriveInsight(data);
   const policy = derivePolicy(data);
   const envelope = { insight, policy };
-  const canonicalEnvelope =
-    `{"insight":{"createdAt":"${insight.createdAt}","expiresAt":"${insight.expiresAt}","id":"${insight.id}","metric":"${insight.metric}","retailer":"${insight.retailer}","scopeDevice":"${insight.scopeDevice}","scopeEvent":"${insight.scopeEvent}","suggestionPolicy":"${insight.suggestionPolicy}","threshold":10.0,"type":"${insight.type}"},"policy":{"duty":{"action":"${policy.duty.action}","constraint":{"leftOperand":"${policy.duty.constraint.leftOperand}","operator":"${policy.duty.constraint.operator}","rightOperand":"${policy.duty.constraint.rightOperand}"}},"permission":{"action":"${policy.permission.action}","constraint":{"leftOperand":"${policy.permission.constraint.leftOperand}","operator":"${policy.permission.constraint.operator}","rightOperand":"${policy.permission.constraint.rightOperand}"},"target":"${policy.permission.target}"},"profile":"${policy.profile}","prohibition":{"action":"${policy.prohibition.action}","constraint":{"leftOperand":"${policy.prohibition.constraint.leftOperand}","operator":"${policy.prohibition.constraint.operator}","rightOperand":"${policy.prohibition.constraint.rightOperand}"},"target":"${policy.prohibition.target}"},"type":"${policy.type}"}}`;
+  const canonicalEnvelope = `{"insight":{"createdAt":"${insight.createdAt}","expiresAt":"${insight.expiresAt}","id":"${insight.id}","metric":"${insight.metric}","retailer":"${insight.retailer}","scopeDevice":"${insight.scopeDevice}","scopeEvent":"${insight.scopeEvent}","suggestionPolicy":"${insight.suggestionPolicy}","threshold":10.0,"type":"${insight.type}"},"policy":{"duty":{"action":"${policy.duty.action}","constraint":{"leftOperand":"${policy.duty.constraint.leftOperand}","operator":"${policy.duty.constraint.operator}","rightOperand":"${policy.duty.constraint.rightOperand}"}},"permission":{"action":"${policy.permission.action}","constraint":{"leftOperand":"${policy.permission.constraint.leftOperand}","operator":"${policy.permission.constraint.operator}","rightOperand":"${policy.permission.constraint.rightOperand}"},"target":"${policy.permission.target}"},"profile":"${policy.profile}","prohibition":{"action":"${policy.prohibition.action}","constraint":{"leftOperand":"${policy.prohibition.constraint.leftOperand}","operator":"${policy.prohibition.constraint.operator}","rightOperand":"${policy.prohibition.constraint.rightOperand}"},"target":"${policy.prohibition.target}"},"type":"${policy.type}"}}`;
   return { envelope, canonicalEnvelope };
 }
 
@@ -156,7 +148,9 @@ export async function clauseM3_hmac(data) {
 }
 
 export function clauseM4_minimizationRespected(insight) {
-  return !JSON.stringify(insight).toLowerCase().match(/diabetes|medical/);
+  return !JSON.stringify(insight)
+    .toLowerCase()
+    .match(/diabetes|medical/);
 }
 
 export function clauseM5_scopeComplete(insight) {
@@ -186,8 +180,8 @@ export async function evaluate(data) {
   const checks = {
     signatureVerifies:
       data.integrity.verificationMode === 'trustedPrecomputedInput' &&
-      envelopeHmacSHA256 === await hmacSha256Hex(data.integrity.secret, canonicalEnvelope),
-    payloadHashMatches: payloadHashSHA256 === await sha256Hex(canonicalEnvelope),
+      envelopeHmacSHA256 === (await hmacSha256Hex(data.integrity.secret, canonicalEnvelope)),
+    payloadHashMatches: payloadHashSHA256 === (await sha256Hex(canonicalEnvelope)),
     minimizationRespected,
     scopeComplete,
     authorizationAllowed,
@@ -197,7 +191,8 @@ export async function evaluate(data) {
     marketingProhibited,
   };
 
-  const answerSentence = 'The scanner is allowed to use a neutral shopping insight and recommends Low-Sugar Tea Biscuits instead of Classic Tea Biscuits.';
+  const answerSentence =
+    'The scanner is allowed to use a neutral shopping insight and recommends Low-Sugar Tea Biscuits instead of Classic Tea Biscuits.';
   const reasonWhy = [
     'The phone desensitizes a diabetes-related household condition into a scoped low-sugar need, wraps it in an expiring Insight+Policy envelope, and signs it.',
     `scanned product : ${scannedProduct.name}`,

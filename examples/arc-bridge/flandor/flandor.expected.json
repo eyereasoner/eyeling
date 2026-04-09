@@ -6,9 +6,7 @@
     "gridStress": true,
     "activeNeedCount": 3,
     "needsRetoolingPulse": true,
-    "eligiblePackageIds": [
-      "pkg:RET_FLEX_120"
-    ],
+    "eligiblePackageIds": ["pkg:RET_FLEX_120"],
     "recommendedPackageId": "pkg:RET_FLEX_120",
     "recommendedPackageName": "Flandor Retooling Pulse"
   },

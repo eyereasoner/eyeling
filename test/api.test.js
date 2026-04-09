@@ -1219,6 +1219,55 @@ _:l2 rdf:rest rdf:nil.
   },
 
   {
+    name: '51b string:format: bound blank nodes in %s placeholders render instead of failing the whole rule',
+    opt: ['-n'],
+    input: `@prefix odrl: <http://www.w3.org/ns/odrl/2/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix : <http://example.org/>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+
+:policy1
+    a odrl:Agreement ;
+    odrl:permission [
+        odrl:target <http://example.com/asset:9898.movie> ;
+        odrl:action odrl:play ;
+        odrl:duty [
+            odrl:action [
+                rdf:value odrl:compensate ;
+                odrl:refinement [
+                    odrl:leftOperand :payAmount ;
+                    odrl:operator odrl:eq ;
+                    odrl:rightOperand 5
+                ]
+            ]
+        ]
+    ].
+
+{
+  ?P a odrl:Agreement .
+  ?P odrl:permission [
+      odrl:target ?T ;
+      odrl:action ?Ignore ;
+      odrl:duty [ odrl:action ?A ]
+  ].
+  ( "%% Duty_(a,t)(action:%s)\n%% => ~Possible_(a,t)(~action:%s)\n" ?A ?A ) string:format ?Str.
+}
+=>
+{
+  [] log:outputString ?Str.
+}.
+`,
+    check(out) {
+      const m = String(out).match(
+        /^% Duty_\(a,t\)\(action:(_:[^)]+)\)\n% => ~Possible_\(a,t\)\(~action:(_:[^)]+)\)\n?$/,
+      );
+      assert.ok(m, `Expected formatted blank-node output, got: ${String(out)}`);
+      assert.equal(m[1], m[2], 'Expected both %s placeholders to render the same blank node id');
+    },
+  },
+
+  {
     name: '52 --ast: prints parse result as JSON array [prefixes, triples, frules, brules]',
     opt: ['--ast'],
     input: `@prefix ex: <http://example.org/>.

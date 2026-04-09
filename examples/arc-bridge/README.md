@@ -17,19 +17,16 @@ In one line:
 
 Eyeling already has two valuable ways to present a case.
 
-The files in `examples/` are ideal for seeing the logic in open declarative form.
-The files in `examples/extra/` are ideal when a case has already been shaped and we want a compact executable artifact that runs quickly.
+The files in `examples/` are ideal for seeing the logic in open declarative form. The files in `examples/extra/` are ideal when a case has already been shaped and we want a compact executable artifact that runs quickly.
 
-ARC Bridge exists for the middle layer.
-It gives each case:
+ARC Bridge exists for the middle layer. It gives each case:
 
 - a **normative statement** in controlled mathematical English,
 - a **reference realization** in ECMAScript,
 - a **concrete instance** in JSON, and
 - an **expected result** for comparison and regression testing.
 
-So ARC Bridge is not a replacement for either of the existing collections.
-It is a bridge between them.
+So ARC Bridge is not a replacement for either of the existing collections. It is a bridge between them.
 
 ## The ARC part
 
@@ -90,23 +87,24 @@ examples/arc-bridge/
 Each ARC Bridge case should contain these files.
 
 ### 1. `name.spec.md`
+
 The normative case description.
 
-This file should use **controlled mathematical English**.
-It should define the vocabulary, the inputs, the derived predicates, the decision rule, the governance rule, the checks, and the output contract.
+This file should use **controlled mathematical English**. It should define the vocabulary, the inputs, the derived predicates, the decision rule, the governance rule, the checks, and the output contract.
 
 The spec should be written so that a careful reader can understand the case without reading the ECMAScript source first.
 
 ### 2. `name.data.json`
+
 The concrete instance data.
 
 This file contains the facts for the case: entities, thresholds, observed values, policies, timestamps, candidate actions, and any other case inputs.
 
 ### 3. `name.model.mjs`
+
 The reference ECMAScript realization.
 
-This file should implement the case directly and clearly.
-A good pattern is to map named clauses in the spec to named functions in the model.
+This file should implement the case directly and clearly. A good pattern is to map named clauses in the spec to named functions in the model.
 
 For example:
 
@@ -115,20 +113,19 @@ For example:
 - `clauseG1_authorizedUse`
 - `clauseM2_payloadHash`
 
-The model is not the normative source.
-It is the **reference realization** of the normative source.
+The model is not the normative source. It is the **reference realization** of the normative source.
 
 ### 4. `name.expected.json`
+
 The expected derived result.
 
-This file is the conformance vector for the case.
-It should capture the main derived predicates, the selected answer, the visible checks, and any stable integrity values needed for regression testing.
+This file is the conformance vector for the case. It should capture the main derived predicates, the selected answer, the visible checks, and any stable integrity values needed for regression testing.
 
 ### 5. `name.instance.schema.json`
+
 The instance schema.
 
-This file defines the required structure of the input JSON.
-It should be strict enough to catch malformed case instances before evaluation.
+This file defines the required structure of the input JSON. It should be strict enough to catch malformed case instances before evaluation.
 
 ## How to read an ARC Bridge case
 
@@ -161,21 +158,23 @@ So the three collections are complementary:
 When adding a case here, prefer the following.
 
 ### 1. Keep the spec normative
-The spec should say what the case means.
-It should not merely paraphrase the code.
+
+The spec should say what the case means. It should not merely paraphrase the code.
 
 ### 2. Keep the code direct
-The ECMAScript model should say what it does and do what it says.
-Avoid unnecessary framework machinery.
+
+The ECMAScript model should say what it does and do what it says. Avoid unnecessary framework machinery.
 
 ### 3. Keep the data separate
+
 Case facts belong in JSON, not hard-coded into the prose.
 
 ### 4. Keep checks substantive
-A check should add confidence.
-It should not only restate the answer.
+
+A check should add confidence. It should not only restate the answer.
 
 ### 5. Keep names aligned
+
 If a case is called `delfour` in `examples/` and `examples/extra/`, the ARC Bridge case should use the same base name.
 
 ## Suggested workflow for a new case

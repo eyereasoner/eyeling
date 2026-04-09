@@ -1012,6 +1012,13 @@ function simpleStringFormat(fmt, args) {
   return out;
 }
 
+function termToFormatArgString(t) {
+  const s = termToJsString(t);
+  if (s !== null) return s;
+  if (t instanceof Var) return null;
+  return termToN3(t, PrefixEnv.newDefault());
+}
+
 // -----------------------------------------------------------------------------
 // SWAP/N3 regex compatibility helper
 // -----------------------------------------------------------------------------
@@ -4182,6 +4189,10 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
 
   // string:format
   // (limited: only %s and %% are supported, anything else ⇒ builtin fails)
+  // The format string itself must be string-castable, but placeholder arguments
+  // are allowed to be any bound non-variable term. Plain strings/IRIs keep their
+  // direct string value; other terms fall back to N3 rendering so formatting a
+  // bound blank node, list, or quoted formula does not make the whole builtin fail.
   if (pv === STRING_NS + 'format') {
     if (!(g.s instanceof ListTerm) || g.s.elems.length < 1) return [];
     const fmtStr = termToJsString(g.s.elems[0]);
@@ -4189,7 +4200,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
 
     const args = [];
     for (let i = 1; i < g.s.elems.length; i++) {
-      const aStr = termToJsString(g.s.elems[i]);
+      const aStr = termToFormatArgString(g.s.elems[i]);
       if (aStr === null) return [];
       args.push(aStr);
     }

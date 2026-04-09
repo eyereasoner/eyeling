@@ -37,12 +37,7 @@
     "timestamps": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "createdAt",
-        "expiresAt",
-        "authorizedAt",
-        "dutyPerformedAt"
-      ],
+      "required": ["createdAt", "expiresAt", "authorizedAt", "dutyPerformedAt"],
       "properties": {
         "createdAt": {
           "type": "string",
@@ -65,13 +60,7 @@
     "evaluationContext": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "scopeDevice",
-        "scopeEvent",
-        "purpose",
-        "prohibitedReusePurpose",
-        "requestAction"
-      ],
+      "required": ["scopeDevice", "scopeEvent", "purpose", "prohibitedReusePurpose", "requestAction"],
       "properties": {
         "scopeDevice": {
           "type": "string",
@@ -98,9 +87,7 @@
     "thresholds": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "sugarPerServingGAtLeast"
-      ],
+      "required": ["sugarPerServingGAtLeast"],
       "properties": {
         "sugarPerServingGAtLeast": {
           "type": "number"
@@ -110,9 +97,7 @@
     "householdProfile": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "condition"
-      ],
+      "required": ["condition"],
       "properties": {
         "condition": {
           "type": "string",
@@ -126,12 +111,7 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "id",
-          "name",
-          "sugarTenths",
-          "sugarPerServing"
-        ],
+        "required": ["id", "name", "sugarTenths", "sugarPerServing"],
         "properties": {
           "id": {
             "type": "string",
@@ -155,9 +135,7 @@
     "scan": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "scannedProductId"
-      ],
+      "required": ["scannedProductId"],
       "properties": {
         "scannedProductId": {
           "type": "string",
@@ -168,14 +146,7 @@
     "insightPolicy": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "id",
-        "metric",
-        "type",
-        "suggestionPolicy",
-        "policyType",
-        "policyProfile"
-      ],
+      "required": ["id", "metric", "type", "suggestionPolicy", "policyType", "policyProfile"],
       "properties": {
         "id": {
           "type": "string",
@@ -206,12 +177,7 @@
     "integrity": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "hashAlgorithm",
-        "macAlgorithm",
-        "secret",
-        "verificationMode"
-      ],
+      "required": ["hashAlgorithm", "macAlgorithm", "secret", "verificationMode"],
       "properties": {
         "hashAlgorithm": {
           "type": "string",

@@ -204,9 +204,7 @@ function runDemo() {
   const recommended = choice.recommended;
 
   const scopeComplete =
-    insightJson.includes('scopeDevice') &&
-    insightJson.includes('scopeEvent') &&
-    insightJson.includes('expiresAt');
+    insightJson.includes('scopeDevice') && insightJson.includes('scopeEvent') && insightJson.includes('expiresAt');
 
   const minimizationOk =
     !insightJson.includes('firmName') &&
@@ -227,9 +225,7 @@ function runDemo() {
   const packageWithinBudget = Boolean(recommended) && recommended.costMEUR <= BUDGET.maxMEUR;
   const packageCoversNeeds = Boolean(recommended) && packageCoversAllNeeds(recommended, needs);
   const cheapestEligibleChosen =
-    Boolean(recommended) &&
-    choice.eligible.length > 0 &&
-    recommended.id === choice.eligible[0].id;
+    Boolean(recommended) && choice.eligible.length > 0 && recommended.id === choice.eligible[0].id;
 
   return {
     exportWeakness,
@@ -279,30 +275,27 @@ function renderReasonWhy(state) {
   lines.push('=== Reason Why ===');
   lines.push(
     `Export weakness is active because at least one cluster has exportOrdersIndex < 90 ` +
-      `(${CLUSTERS.map((c) => `${c.name}=${c.exportOrdersIndex}`).join(', ')}).`
+      `(${CLUSTERS.map((c) => `${c.name}=${c.exportOrdersIndex}`).join(', ')}).`,
   );
   lines.push(
     `Skills strain is active because technical vacancy rate is ${LABOUR_MARKET.technicalVacancyRatePct}% ` +
-      `(threshold > 3.9%).`
+      `(threshold > 3.9%).`,
   );
-  lines.push(
-    `Grid stress is active because congestion hours = ${GRID.congestionHours} ` +
-      `(threshold > 11).`
-  );
+  lines.push(`Grid stress is active because congestion hours = ${GRID.congestionHours} ` + `(threshold > 11).`);
   lines.push(
     `The recommendation policy is "${state.insight.suggestionPolicy}", so the cheapest package that ` +
-      `covers all active needs within budget is selected.`
+      `covers all active needs within budget is selected.`,
   );
   if (state.recommended) {
     lines.push(
       `Selected package "${state.recommended.name}" covers export=${state.recommended.coversExportWeakness}, ` +
         `skills=${state.recommended.coversSkillsStrain}, grid=${state.recommended.coversGridStress}, ` +
-        `cost=€${state.recommended.costMEUR}M.`
+        `cost=€${state.recommended.costMEUR}M.`,
     );
   }
   lines.push(
     `Usage is permitted only for purpose "${state.policy.permission.constraint.rightOperand}" and ` +
-      `the envelope expires at ${state.insight.expiresAt}.`
+      `the envelope expires at ${state.insight.expiresAt}.`,
   );
   return lines.join('\n');
 }
