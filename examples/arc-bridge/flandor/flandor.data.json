@@ -1,0 +1,107 @@
+{
+  "$schema": "./flandor.instance.schema.json",
+  "caseName": "Flandor",
+  "region": "Flanders",
+  "question": "Is the Flemish Economic Resilience Board allowed to use a neutral macro-economic insight for regional stabilization, and if so which package should it activate for Flanders?",
+  "timestamps": {
+    "createdAt": "2026-04-08T07:00:00+00:00",
+    "expiresAt": "2026-04-08T19:00:00+00:00",
+    "authorizedAt": "2026-04-08T09:15:00+00:00",
+    "dutyPerformedAt": "2026-04-08T18:30:00+00:00"
+  },
+  "evaluationContext": {
+    "scopeDevice": "economic-resilience-board",
+    "scopeEvent": "budget-prep-window",
+    "purpose": "regional_stabilization",
+    "prohibitedReusePurpose": "firm_surveillance"
+  },
+  "thresholds": {
+    "exportOrdersIndexBelow": 90,
+    "technicalVacancyRatePctAbove": 3.9,
+    "gridCongestionHoursAbove": 11,
+    "activeNeedCountAtLeast": 3
+  },
+  "signals": {
+    "clusters": [
+      {
+        "id": "cluster:ANT_CHEM",
+        "name": "Antwerp chemicals",
+        "exportOrdersIndex": 84,
+        "energyIntensity": 92
+      },
+      {
+        "id": "cluster:GNT_MFG",
+        "name": "Ghent manufacturing",
+        "exportOrdersIndex": 87,
+        "energyIntensity": 76
+      }
+    ],
+    "labourMarket": {
+      "technicalVacancyRatePct": 4.6
+    },
+    "grid": {
+      "congestionHours": 19,
+      "renewableCurtailmentMWh": 240
+    }
+  },
+  "budget": {
+    "windowName": "Q2 resilience window",
+    "maxMEUR": 140
+  },
+  "packages": [
+    {
+      "id": "pkg:TRAIN_070",
+      "name": "Flanders Skills Sprint",
+      "costMEUR": 70,
+      "workerCoverage": 900,
+      "gridReliefMW": 0,
+      "coversExportWeakness": false,
+      "coversSkillsStrain": true,
+      "coversGridStress": false
+    },
+    {
+      "id": "pkg:PORT_095",
+      "name": "Schelde Trade Buffer",
+      "costMEUR": 95,
+      "workerCoverage": 300,
+      "gridReliefMW": 10,
+      "coversExportWeakness": true,
+      "coversSkillsStrain": false,
+      "coversGridStress": false
+    },
+    {
+      "id": "pkg:RET_FLEX_120",
+      "name": "Flandor Retooling Pulse",
+      "costMEUR": 120,
+      "workerCoverage": 1200,
+      "gridReliefMW": 85,
+      "coversExportWeakness": true,
+      "coversSkillsStrain": true,
+      "coversGridStress": true
+    },
+    {
+      "id": "pkg:CORRIDOR_165",
+      "name": "Full Corridor Shock Shield",
+      "costMEUR": 165,
+      "workerCoverage": 1600,
+      "gridReliefMW": 110,
+      "coversExportWeakness": true,
+      "coversSkillsStrain": true,
+      "coversGridStress": true
+    }
+  ],
+  "insightPolicy": {
+    "id": "https://example.org/insight/flandor",
+    "metric": "regional_retooling_priority",
+    "type": "ins:Insight",
+    "suggestionPolicy": "lowest_cost_package_covering_all_active_needs",
+    "policyType": "odrl:Policy",
+    "policyProfile": "Flandor-Insight-Policy"
+  },
+  "integrity": {
+    "hashAlgorithm": "SHA-256",
+    "macAlgorithm": "HMAC-SHA-256",
+    "secret": "flandor-demo-shared-secret",
+    "verificationMode": "trustedPrecomputedInput"
+  }
+}

@@ -1,9 +1,9 @@
 === Answer ===
-Name: Scheldesprong
+Name: Flandor
 Region: Flanders
 Metric: regional_retooling_priority
 Active need count: 3/3
-Recommended package: Scheldesprong Retooling Pulse
+Recommended package: Flandor Retooling Pulse
 Budget cap: €140M
 Package cost: €120M
 Payload SHA-256: 718f5b17d07ab6a95503bc04a1000ddb132409f600659c03d21def81914b780b
@@ -14,7 +14,7 @@ Export weakness is active because at least one cluster has exportOrdersIndex < 9
 Skills strain is active because technical vacancy rate is 4.6% (threshold > 3.9%).
 Grid stress is active because congestion hours = 19 (threshold > 11).
 The recommendation policy is "lowest_cost_package_covering_all_active_needs", so the cheapest package that covers all active needs within budget is selected.
-Selected package "Scheldesprong Retooling Pulse" covers export=true, skills=true, grid=true, cost=€120M.
+Selected package "Flandor Retooling Pulse" covers export=true, skills=true, grid=true, cost=€120M.
 Usage is permitted only for purpose "regional_stabilization" and the envelope expires at 2026-04-08T19:00:00+00:00.
 
 === Check ===

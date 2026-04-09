@@ -3,7 +3,7 @@
 'use strict';
 
 /**
- * Scheldesprong — a macro-economic Insight Economy case for Flanders.
+ * Flandor — a macro-economic Insight Economy case for Flanders.
  *
  * The aha: nobody has to reveal their books for the region to coordinate.
  *
@@ -32,7 +32,7 @@
 
 const crypto = require('node:crypto');
 
-const SECRET = 'scheldesprong-demo-shared-secret';
+const SECRET = 'flandor-demo-shared-secret';
 
 const HUB_CREATED_AT = '2026-04-08T07:00:00+00:00';
 const HUB_EXPIRES_AT = '2026-04-08T19:00:00+00:00';
@@ -84,7 +84,7 @@ const PACKAGES = [
   },
   {
     id: 'pkg:RET_FLEX_120',
-    name: 'Scheldesprong Retooling Pulse',
+    name: 'Flandor Retooling Pulse',
     costMEUR: 120,
     workerCoverage: 1200,
     gridReliefMW: 85,
@@ -143,7 +143,7 @@ function runDemo() {
 
   const activeNeedCount = countTrue([exportWeakness, skillsStrain, gridStress]);
 
-  const insightId = 'https://example.org/insight/scheldesprong';
+  const insightId = 'https://example.org/insight/flandor';
   const insight = {
     createdAt: HUB_CREATED_AT,
     expiresAt: HUB_EXPIRES_AT,
@@ -175,7 +175,7 @@ function runDemo() {
       },
       target: insightId,
     },
-    profile: 'Scheldesprong-Insight-Policy',
+    profile: 'Flandor-Insight-Policy',
     prohibition: {
       action: 'odrl:distribute',
       constraint: {
@@ -262,7 +262,7 @@ function runDemo() {
 function renderAnswer(state) {
   const lines = [];
   lines.push('=== Answer ===');
-  lines.push(`Name: Scheldesprong`);
+  lines.push(`Name: Flandor`);
   lines.push(`Region: ${state.insight.region}`);
   lines.push(`Metric: ${state.insight.metric}`);
   lines.push(`Active need count: ${state.activeNeedCount}/${state.insight.threshold}`);

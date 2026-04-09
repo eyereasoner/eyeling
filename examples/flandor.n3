@@ -1,5 +1,5 @@
 # ============================================================================
-# Scheldesprong — a macro-economic Insight Economy case for Flanders.
+# Flandor — a macro-economic Insight Economy case for Flanders.
 #
 # The aha: nobody has to reveal their books for the region to coordinate.
 #
@@ -26,7 +26,7 @@
 # explicitly forbidden.
 # ============================================================================
 
-@prefix : <https://example.org/insight/scheldesprong/> .
+@prefix : <https://example.org/insight/flandor/> .
 @prefix arc: <https://example.org/arc#> .
 @prefix ins: <https://example.org/insight-economy#> .
 @prefix odrl: <http://www.w3.org/ns/odrl/2/> .
@@ -41,7 +41,7 @@
 # -----
 
 :case a arc:Case ;
-  :caseName "scheldesprong" ;
+  :caseName "flandor" ;
   arc:question "Is the Flemish Economic Resilience Board allowed to use a neutral macro-economic insight for regional stabilization, and if so which package should it activate for Flanders?" ;
   :expectedFilesWritten 6 ;
   :requestPurpose "regional_stabilization" ;
@@ -100,9 +100,9 @@
   :gridReliefMW 10 ;
   :coversExportWeakness true .
 
-:pkg_scheldesprong a :PolicyPackage ;
+:pkg_flandor a :PolicyPackage ;
   :packageId "pkg:RET_FLEX_120" ;
-  :packageName "Scheldesprong Retooling Pulse" ;
+  :packageName "Flandor Retooling Pulse" ;
   :costMEUR 120 ;
   :workerCoverage 1200 ;
   :gridReliefMW 85 ;
@@ -121,7 +121,7 @@
   :coversGridStress true .
 
 :macroInsight a ins:Insight ;
-  :id <https://example.org/insight/scheldesprong> ;
+  :id <https://example.org/insight/flandor> ;
   :metric "regional_retooling_priority" ;
   :thresholdScore 3 ;
   :thresholdDisplay "3 active needs" ;
@@ -131,13 +131,13 @@
   :region "Flanders" ;
   :createdAt "2026-04-08T07:00:00+00:00"^^xsd:dateTime ;
   :expiresAt "2026-04-08T19:00:00+00:00"^^xsd:dateTime ;
-  :serializedLowercase """{"createdat":"2026-04-08t07:00:00+00:00","expiresat":"2026-04-08t19:00:00+00:00","id":"https://example.org/insight/scheldesprong","metric":"regional_retooling_priority","region":"flanders","scopedevice":"economic-resilience-board","scopeevent":"budget-prep-window","suggestionpolicy":"lowest_cost_package_covering_all_active_needs","threshold":3,"type":"ins:insight"}""" .
+  :serializedLowercase """{"createdat":"2026-04-08t07:00:00+00:00","expiresat":"2026-04-08t19:00:00+00:00","id":"https://example.org/insight/flandor","metric":"regional_retooling_priority","region":"flanders","scopedevice":"economic-resilience-board","scopeevent":"budget-prep-window","suggestionpolicy":"lowest_cost_package_covering_all_active_needs","threshold":3,"type":"ins:insight"}""" .
 
 :policy a odrl:Policy ;
-  :profile "Scheldesprong-Insight-Policy" ;
+  :profile "Flandor-Insight-Policy" ;
   odrl:permission [
     odrl:action odrl:use ;
-    odrl:target <https://example.org/insight/scheldesprong> ;
+    odrl:target <https://example.org/insight/flandor> ;
     odrl:constraint [
       odrl:leftOperand odrl:purpose ;
       odrl:operator odrl:eq ;
@@ -146,7 +146,7 @@
   ] ;
   odrl:prohibition [
     odrl:action odrl:distribute ;
-    odrl:target <https://example.org/insight/scheldesprong> ;
+    odrl:target <https://example.org/insight/flandor> ;
     odrl:constraint [
       odrl:leftOperand odrl:purpose ;
       odrl:operator odrl:eq ;
@@ -165,7 +165,7 @@
 :envelope
   :insight :macroInsight ;
   :policy :policy ;
-  :canonicalJson """{"insight":{"createdAt":"2026-04-08T07:00:00+00:00","expiresAt":"2026-04-08T19:00:00+00:00","id":"https://example.org/insight/scheldesprong","metric":"regional_retooling_priority","region":"Flanders","scopeDevice":"economic-resilience-board","scopeEvent":"budget-prep-window","suggestionPolicy":"lowest_cost_package_covering_all_active_needs","threshold":3,"type":"ins:Insight"},"policy":{"duty":{"action":"odrl:delete","constraint":{"leftOperand":"odrl:dateTime","operator":"odrl:eq","rightOperand":"2026-04-08T19:00:00+00:00"}},"permission":{"action":"odrl:use","constraint":{"leftOperand":"odrl:purpose","operator":"odrl:eq","rightOperand":"regional_stabilization"},"target":"https://example.org/insight/scheldesprong"},"profile":"Scheldesprong-Insight-Policy","prohibition":{"action":"odrl:distribute","constraint":{"leftOperand":"odrl:purpose","operator":"odrl:eq","rightOperand":"firm_surveillance"},"target":"https://example.org/insight/scheldesprong"},"type":"odrl:Policy"}}""" .
+  :canonicalJson """{"insight":{"createdAt":"2026-04-08T07:00:00+00:00","expiresAt":"2026-04-08T19:00:00+00:00","id":"https://example.org/insight/flandor","metric":"regional_retooling_priority","region":"Flanders","scopeDevice":"economic-resilience-board","scopeEvent":"budget-prep-window","suggestionPolicy":"lowest_cost_package_covering_all_active_needs","threshold":3,"type":"ins:Insight"},"policy":{"duty":{"action":"odrl:delete","constraint":{"leftOperand":"odrl:dateTime","operator":"odrl:eq","rightOperand":"2026-04-08T19:00:00+00:00"}},"permission":{"action":"odrl:use","constraint":{"leftOperand":"odrl:purpose","operator":"odrl:eq","rightOperand":"regional_stabilization"},"target":"https://example.org/insight/flandor"},"profile":"Flandor-Insight-Policy","prohibition":{"action":"odrl:distribute","constraint":{"leftOperand":"odrl:purpose","operator":"odrl:eq","rightOperand":"firm_surveillance"},"target":"https://example.org/insight/flandor"},"type":"odrl:Policy"}}""" .
 
 :signature
   :alg "HMAC-SHA256" ;
@@ -223,7 +223,7 @@
 # authorization
 { :policy odrl:permission [
       odrl:action odrl:use ;
-      odrl:target <https://example.org/insight/scheldesprong> ;
+      odrl:target <https://example.org/insight/flandor> ;
       odrl:constraint [
         odrl:leftOperand odrl:purpose ;
         odrl:operator odrl:eq ;
@@ -236,7 +236,7 @@
 } => {
   :decision :at "2026-04-08T09:15:00+00:00"^^xsd:dateTime ;
             :outcome "Allowed" ;
-            :target <https://example.org/insight/scheldesprong> .
+            :target <https://example.org/insight/flandor> .
   :check :authorizationAllowed true .
 } .
 
@@ -372,7 +372,7 @@
 # --------------------------------------
 
 :out01 log:outputString "=== Answer ===\n" .
-:out02 log:outputString "Name: Scheldesprong\n" .
+:out02 log:outputString "Name: Flandor\n" .
 :out03 log:outputString "Region: Flanders\n" .
 :out04 log:outputString "Metric: regional_retooling_priority\n" .
 { :answer :activeNeedCount ?count ; :activeNeedThreshold ?threshold .
@@ -397,7 +397,7 @@
 :out13 log:outputString "Skills strain is active because technical vacancy rate is 4.6% (threshold > 3.9%).\n" .
 :out14 log:outputString "Grid stress is active because congestion hours = 19 (threshold > 11).\n" .
 :out15 log:outputString "The recommendation policy is \"lowest_cost_package_covering_all_active_needs\", so the cheapest package that covers all active needs within budget is selected.\n" .
-:out16 log:outputString "Selected package \"Scheldesprong Retooling Pulse\" covers export=true, skills=true, grid=true, cost=€120M.\n" .
+:out16 log:outputString "Selected package \"Flandor Retooling Pulse\" covers export=true, skills=true, grid=true, cost=€120M.\n" .
 :out17 log:outputString "Usage is permitted only for purpose \"regional_stabilization\" and the envelope expires at 2026-04-08T19:00:00+00:00.\n" .
 
 :out18 log:outputString "\n=== Check ===\n" .

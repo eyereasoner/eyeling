@@ -1,0 +1,324 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schema/flandor.instance.schema.json",
+  "title": "ARC Bridge Flandor instance",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "caseName",
+    "region",
+    "question",
+    "timestamps",
+    "evaluationContext",
+    "thresholds",
+    "signals",
+    "budget",
+    "packages",
+    "insightPolicy",
+    "integrity"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "caseName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "region": {
+      "type": "string",
+      "minLength": 1
+    },
+    "question": {
+      "type": "string",
+      "minLength": 1
+    },
+    "timestamps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "createdAt",
+        "expiresAt",
+        "authorizedAt",
+        "dutyPerformedAt"
+      ],
+      "properties": {
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "authorizedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "dutyPerformedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "evaluationContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scopeDevice",
+        "scopeEvent",
+        "purpose",
+        "prohibitedReusePurpose"
+      ],
+      "properties": {
+        "scopeDevice": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scopeEvent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "prohibitedReusePurpose": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "thresholds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exportOrdersIndexBelow",
+        "technicalVacancyRatePctAbove",
+        "gridCongestionHoursAbove",
+        "activeNeedCountAtLeast"
+      ],
+      "properties": {
+        "exportOrdersIndexBelow": {
+          "type": "number"
+        },
+        "technicalVacancyRatePctAbove": {
+          "type": "number"
+        },
+        "gridCongestionHoursAbove": {
+          "type": "number"
+        },
+        "activeNeedCountAtLeast": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "signals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "clusters",
+        "labourMarket",
+        "grid"
+      ],
+      "properties": {
+        "clusters": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "exportOrdersIndex",
+              "energyIntensity"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "exportOrdersIndex": {
+                "type": "number"
+              },
+              "energyIntensity": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "labourMarket": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "technicalVacancyRatePct"
+          ],
+          "properties": {
+            "technicalVacancyRatePct": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "grid": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "congestionHours",
+            "renewableCurtailmentMWh"
+          ],
+          "properties": {
+            "congestionHours": {
+              "type": "number",
+              "minimum": 0
+            },
+            "renewableCurtailmentMWh": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "windowName",
+        "maxMEUR"
+      ],
+      "properties": {
+        "windowName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "maxMEUR": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      }
+    },
+    "packages": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "costMEUR",
+          "workerCoverage",
+          "gridReliefMW",
+          "coversExportWeakness",
+          "coversSkillsStrain",
+          "coversGridStress"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "costMEUR": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "workerCoverage": {
+            "type": "number",
+            "minimum": 0
+          },
+          "gridReliefMW": {
+            "type": "number",
+            "minimum": 0
+          },
+          "coversExportWeakness": {
+            "type": "boolean"
+          },
+          "coversSkillsStrain": {
+            "type": "boolean"
+          },
+          "coversGridStress": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "insightPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "metric",
+        "type",
+        "suggestionPolicy",
+        "policyType",
+        "policyProfile"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uri"
+        },
+        "metric": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "type": "string",
+          "const": "ins:Insight"
+        },
+        "suggestionPolicy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policyType": {
+          "type": "string",
+          "const": "odrl:Policy"
+        },
+        "policyProfile": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hashAlgorithm",
+        "macAlgorithm",
+        "secret",
+        "verificationMode"
+      ],
+      "properties": {
+        "hashAlgorithm": {
+          "type": "string",
+          "const": "SHA-256"
+        },
+        "macAlgorithm": {
+          "type": "string",
+          "const": "HMAC-SHA-256"
+        },
+        "secret": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verificationMode": {
+          "type": "string",
+          "const": "trustedPrecomputedInput"
+        }
+      }
+    }
+  }
+}
