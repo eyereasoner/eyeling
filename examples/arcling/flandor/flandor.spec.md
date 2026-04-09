@@ -10,12 +10,6 @@ This case is the macro-economic reading of Ruben Verborgh’s [Inside the Insigh
 
 The product being traded is therefore not raw data, and not even a general forecast, but a context-bound permissioned conclusion: a policy-grade insight for regional stabilization, with reuse for firm surveillance explicitly forbidden.
 
-## Aha
-
-Nobody has to reveal their books for the region to coordinate.
-
-Firm-side, labour-side, and grid-side evidence remain local. What crosses the policy boundary is a narrow, signed, expiring conclusion: Flanders presently faces enough combined pressure to justify a temporary retooling response. The traded product is not raw data, but a permissioned conclusion.
-
 ## Conventions
 
 - “iff” means “if and only if”.

@@ -10,12 +10,6 @@ This case is the household-scale reading of Ruben Verborgh’s [Inside the Insig
 
 The scanner may use that insight to suggest a better product, but not for unrelated purposes such as marketing. The scanner does not need the diagnosis. It only needs the right shopping conclusion.
 
-## Aha
-
-The scanner does not need the diagnosis. It only needs the right shopping conclusion.
-
-A household-level medical condition remains private on the phone. What crosses the store boundary is a narrow, signed, expiring shopping insight: prefer lower-sugar products while scanning. The scanner receives enough truth to help with the purchase, but not enough detail to infer or reuse the underlying condition for marketing.
-
 ## Conventions
 
 - “iff” means “if and only if”.
