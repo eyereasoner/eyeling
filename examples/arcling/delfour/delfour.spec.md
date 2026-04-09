@@ -4,6 +4,12 @@
 
 This document is the **normative specification** for the Delfour case. The file `delfour.model.mjs` is the **reference ECMAScript implementation** of these clauses. The file `delfour.data.json` is the **instance** evaluated in this bundle. The file `delfour.expected.json` is the **conformance vector** for that instance.
 
+## Insight Economy context
+
+This case is the household-scale reading of Ruben Verborgh’s [Inside the Insight Economy](https://ruben.verborgh.org/blog/2025/08/12/inside-the-insight-economy/). Its core claim is that a person can share a useful shopping hint without exposing sensitive health details. A phone turns a private condition into a neutral, limited insight such as "prefer lower-sugar products", attaches clear usage rules and an expiry time, and sends it to a store scanner.
+
+The scanner may use that insight to suggest a better product, but not for unrelated purposes such as marketing. The scanner does not need the diagnosis. It only needs the right shopping conclusion.
+
 ## Aha
 
 The scanner does not need the diagnosis. It only needs the right shopping conclusion.

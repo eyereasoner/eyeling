@@ -8,6 +8,17 @@ In one line:
 
 > `examples/arcling/` presents ARC cases in mathematical English with reference ECMAScript realizations and JSON test vectors.
 
+## Insight Economy context
+
+The `delfour` and `flandor` cases are concrete Arcling readings of Ruben Verborgh’s [Inside the Insight Economy](https://ruben.verborgh.org/blog/2025/08/12/inside-the-insight-economy/). The central move is the same in both cases: what gets traded is not risky raw data, but a narrow, expiring, purpose-bound insight that is useful enough to trigger action. In Ruben’s phrasing, the goal is to “don’t exchange raw data” and to prefer “meaningful insights, not risky raw data”.
+
+In this directory, the two cases show that pattern at two scales:
+
+- **Delfour** keeps a household-level medical condition private and turns it into a neutral shopping insight such as “prefer lower-sugar products” for shopping assistance.
+- **Flandor** keeps exporter, labour-market, and grid evidence local and turns it into a regional macro-economic insight that justifies a temporary retooling response.
+
+That pairing is intentional: `delfour` is the micro case and `flandor` is the macro case. Both are easier to understand if read next to their declarative Eyeling counterparts: `examples/delfour.n3` and `examples/flandor.n3`.
+
 ## Why this directory exists
 
 Eyeling already has a strong way to present a case in declarative N3. Arcling adds a second presentation layer for cases that benefit from a normative mathematical-English statement plus a compact reference model.

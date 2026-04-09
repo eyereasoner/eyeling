@@ -4,6 +4,12 @@
 
 This document is the **normative specification** for the Flandor case. The file `flandor.model.mjs` is the **reference ECMAScript implementation** of these clauses. The file `flandor.data.json` is the **instance** evaluated in this bundle. The file `flandor.expected.json` is the **conformance vector** for that instance.
 
+## Insight Economy context
+
+This case is the macro-economic reading of Ruben Verborgh’s [Inside the Insight Economy](https://ruben.verborgh.org/blog/2025/08/12/inside-the-insight-economy/). Its core claim is that nobody has to reveal their books for the region to coordinate. Exporters, training actors, and grid operators each keep their sensitive data local. What crosses the policy boundary is not the underlying evidence, but a narrow, signed, expiring insight: Flanders presently faces enough combined pressure to justify a temporary retooling response.
+
+The product being traded is therefore not raw data, and not even a general forecast, but a context-bound permissioned conclusion: a policy-grade insight for regional stabilization, with reuse for firm surveillance explicitly forbidden.
+
 ## Aha
 
 Nobody has to reveal their books for the region to coordinate.
