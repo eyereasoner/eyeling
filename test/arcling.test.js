@@ -9,6 +9,7 @@ const TTY = process.stdout.isTTY;
 const C = TTY
   ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', dim: '\x1b[2m', n: '\x1b[0m' }
   : { g: '', r: '', y: '', dim: '', n: '' };
+const msTag = (ms) => `${C.dim}(${ms} ms)${C.n}`;
 
 function ok(msg) {
   console.log(`${C.g}OK ${C.n} ${msg}`);
@@ -90,15 +91,14 @@ async function runCase(caseDir) {
   const actual = await evaluate(data);
 
   assert.equal(actual.allChecksPass, true, `${base}: expected allChecksPass === true`);
-
   assertArcTextShape(actual.arcText, base);
-
   assert.deepStrictEqual(actual, expected, `${base}: actual result does not match expected JSON`);
 
   return base;
 }
 
 async function main() {
+  const suiteStart = Date.now();
   const caseDirs = listCaseDirs(ARCLING_DIR);
 
   if (caseDirs.length === 0) {
@@ -110,6 +110,7 @@ async function main() {
   let passed = 0;
 
   for (let i = 0; i < caseDirs.length; i += 1) {
+    const start = Date.now();
     const caseDir = caseDirs[i];
     const n = i + 1;
     const label = path.basename(caseDir);
@@ -117,14 +118,17 @@ async function main() {
     try {
       await runCase(caseDir);
       passed += 1;
-      ok(`${n}. ${label}`);
+      ok(`${n}. ${label} ${msTag(Date.now() - start)}`);
     } catch (error) {
-      fail(`${n}. ${label}`);
+      fail(`${n}. ${label} ${msTag(Date.now() - start)}`);
       fail(error.stack || String(error));
       process.exit(2);
     }
   }
 
+  console.log('');
+  const suiteMs = Date.now() - suiteStart;
+  info(`Total elapsed: ${suiteMs} ms (${(suiteMs / 1000).toFixed(2)} s)`);
   info(`all ${passed} arcling test(s) passed`);
 }
 
