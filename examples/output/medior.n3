@@ -1,0 +1,32 @@
+=== Answer ===
+Name: Medior
+Region: Flanders
+Metric: post_discharge_coordination_priority
+Active need count: 4/3
+Recommended package: Medior Continuity Pulse
+Budget cap: €5
+Package cost: €4
+Payload SHA-256: b5fec8971d6c5e313a1387f08151f1c3203effce05d6455469c9f63305be05ae
+Envelope HMAC-SHA-256: 072f4c2774ce362e660649d145c9d784e5e95d63d24d4057b119a419c6ba34dc
+
+=== Reason Why ===
+RenalSafetyConcern holds because eGFR = 52 and the threshold is < 60.
+PolypharmacyRisk holds because the active medication count is 9 and the threshold is ≥ 8.
+ReadmissionHistory holds because admissionsLast180Days = 2 and the threshold is ≥ 1.
+RecentDischargeWindow holds because hoursSinceDischarge = 18 and the threshold is ≤ 48.
+The recommendation rule selects the least-cost package that covers every active need and remains within budget.
+The selected package is "Medior Continuity Pulse" with cost €4, touches=3.
+Use is permitted only for purpose "care_coordination" and expires at 2026-04-11T08:00:00+00:00.
+
+=== Check ===
+- PASS: payloadHashMatches
+- PASS: signatureVerifies
+- PASS: thresholdReached
+- PASS: scopeComplete
+- PASS: minimizationRespected
+- PASS: authorizationAllowed
+- PASS: dutyTimely
+- PASS: insurancePricingProhibited
+- PASS: packageWithinBudget
+- PASS: packageCoversAllActiveNeeds
+- PASS: lowestCostEligiblePackageChosen

@@ -1,0 +1,421 @@
+# ============================================================================
+# Medior — a post-discharge care-coordination Insight Economy case.
+#
+# The aha: no party has to disclose the full patient record in order to
+# coordinate the first 48 hours after discharge.
+#
+# Laboratory values, medication counts, and admission history stay where they
+# originated. What crosses the boundary is not the raw record, but a narrow,
+# signed, expiring insight: this patient currently merits a continuity bundle.
+#
+# That is the Insight Economy in action. Sensitive clinical evidence is turned
+# into a minimal coordination object that is:
+# - useful enough to trigger action,
+# - minimal enough to avoid sharing the full record,
+# - governed enough to say who may use it, for what purpose, and until when.
+#
+# In this case, four active needs clear the threshold for post-discharge
+# continuity support, and the cheapest eligible package within budget is the
+# Medior Continuity Pulse. Reuse for insurance pricing is explicitly forbidden.
+# ============================================================================
+
+@prefix : <https://example.org/insight/medior/> .
+@prefix arc: <https://example.org/arc#> .
+@prefix ins: <https://example.org/insight-economy#> .
+@prefix odrl: <http://www.w3.org/ns/odrl/2/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+@prefix crypto: <http://www.w3.org/2000/10/swap/crypto#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# -----
+# Facts
+# -----
+
+:case a arc:Case ;
+  :caseName "medior" ;
+  arc:question "Is the discharge coordination team allowed to use a minimal continuity insight after hospital discharge, and if so which package should it activate?" ;
+  :expectedFilesWritten 6 ;
+  :requestPurpose "care_coordination" ;
+  :requestAction odrl:use ;
+  :bundleCreatedAt "2026-04-09T08:00:00+00:00"^^xsd:dateTime ;
+  :bundleExpiresAt "2026-04-11T08:00:00+00:00"^^xsd:dateTime ;
+  :teamAuthAt "2026-04-09T09:15:00+00:00"^^xsd:dateTime ;
+  :teamDutyAt "2026-04-10T19:30:00+00:00"^^xsd:dateTime ;
+  :filesWritten 6 ;
+  :auditEntries 1 .
+
+:region a :CareRegion ;
+  :regionName "Flanders" .
+
+:lab a :LabSignal ;
+  :egfr 52 .
+
+:medications a :MedicationSignal ;
+  :activeMedicationCount 9 .
+
+:history a :AdmissionHistory ;
+  :admissionsLast180Days 2 .
+
+:discharge a :DischargeSignal ;
+  :hoursSinceDischarge 18 .
+
+:budget a :BudgetWindow ;
+  :maxEUR 5 ;
+  :windowName "post-discharge continuity window" .
+
+:pkg_call a :CarePackage ;
+  :packageId "pkg:CALL_001" ;
+  :packageName "Nurse follow-up call" ;
+  :costEUR 1 ;
+  :touches 1 ;
+  :coversRenalSafetyConcern false ;
+  :coversPolypharmacyRisk false ;
+  :coversReadmissionHistory false ;
+  :coversRecentDischargeWindow true .
+
+:pkg_medrec a :CarePackage ;
+  :packageId "pkg:MEDREC_002" ;
+  :packageName "Medication reconciliation bundle" ;
+  :costEUR 2 ;
+  :touches 2 ;
+  :coversRenalSafetyConcern true ;
+  :coversPolypharmacyRisk true ;
+  :coversReadmissionHistory false ;
+  :coversRecentDischargeWindow false .
+
+:pkg_medior a :CarePackage ;
+  :packageId "pkg:MEDIOR_004" ;
+  :packageName "Medior Continuity Pulse" ;
+  :costEUR 4 ;
+  :touches 3 ;
+  :coversRenalSafetyConcern true ;
+  :coversPolypharmacyRisk true ;
+  :coversReadmissionHistory true ;
+  :coversRecentDischargeWindow true .
+
+:pkg_transition a :CarePackage ;
+  :packageId "pkg:TRANSITION_006" ;
+  :packageName "Extended transition program" ;
+  :costEUR 6 ;
+  :touches 4 ;
+  :coversRenalSafetyConcern true ;
+  :coversPolypharmacyRisk true ;
+  :coversReadmissionHistory true ;
+  :coversRecentDischargeWindow true .
+
+:continuityInsight a ins:Insight ;
+  :id <https://example.org/insight/medior> ;
+  :metric "post_discharge_coordination_priority" ;
+  :thresholdScore 3 ;
+  :thresholdDisplay "3 active needs" ;
+  :suggestionPolicy "lowest_cost_package_covering_all_active_needs" ;
+  :scopeDevice "discharge-coordination-team" ;
+  :scopeEvent "48h-post-discharge-window" ;
+  :region "Flanders" ;
+  :createdAt "2026-04-09T08:00:00+00:00"^^xsd:dateTime ;
+  :expiresAt "2026-04-11T08:00:00+00:00"^^xsd:dateTime ;
+  :serializedLowercase """{"createdat":"2026-04-09t08:00:00+00:00","expiresat":"2026-04-11t08:00:00+00:00","id":"https://example.org/insight/medior","metric":"post_discharge_coordination_priority","region":"flanders","scopedevice":"discharge-coordination-team","scopeevent":"48h-post-discharge-window","suggestionpolicy":"lowest_cost_package_covering_all_active_needs","threshold":3,"type":"ins:insight"}""" .
+
+:policy a odrl:Policy ;
+  :profile "Medior-Insight-Policy" ;
+  odrl:permission [
+    odrl:action odrl:use ;
+    odrl:target <https://example.org/insight/medior> ;
+    odrl:constraint [
+      odrl:leftOperand odrl:purpose ;
+      odrl:operator odrl:eq ;
+      odrl:rightOperand "care_coordination"
+    ]
+  ] ;
+  odrl:prohibition [
+    odrl:action odrl:distribute ;
+    odrl:target <https://example.org/insight/medior> ;
+    odrl:constraint [
+      odrl:leftOperand odrl:purpose ;
+      odrl:operator odrl:eq ;
+      odrl:rightOperand "insurance_pricing"
+    ]
+  ] ;
+  odrl:duty [
+    odrl:action odrl:delete ;
+    odrl:constraint [
+      odrl:leftOperand odrl:dateTime ;
+      odrl:operator odrl:eq ;
+      odrl:rightOperand "2026-04-11T08:00:00+00:00"^^xsd:dateTime
+    ]
+  ] .
+
+:envelope
+  :insight :continuityInsight ;
+  :policy :policy ;
+  :canonicalJson """{"insight":{"createdAt":"2026-04-09T08:00:00+00:00","expiresAt":"2026-04-11T08:00:00+00:00","id":"https://example.org/insight/medior","metric":"post_discharge_coordination_priority","region":"Flanders","scopeDevice":"discharge-coordination-team","scopeEvent":"48h-post-discharge-window","suggestionPolicy":"lowest_cost_package_covering_all_active_needs","threshold":3,"type":"ins:Insight"},"policy":{"duty":{"action":"odrl:delete","constraint":{"leftOperand":"odrl:dateTime","operator":"odrl:eq","rightOperand":"2026-04-11T08:00:00+00:00"}},"permission":{"action":"odrl:use","constraint":{"leftOperand":"odrl:purpose","operator":"odrl:eq","rightOperand":"care_coordination"},"target":"https://example.org/insight/medior"},"profile":"Medior-Insight-Policy","prohibition":{"action":"odrl:distribute","constraint":{"leftOperand":"odrl:purpose","operator":"odrl:eq","rightOperand":"insurance_pricing"},"target":"https://example.org/insight/medior"},"type":"odrl:Policy"}}""" .
+
+:signature
+  :alg "HMAC-SHA256" ;
+  :keyid "medior-demo-shared-secret" ;
+  :created "2026-04-09T08:00:00+00:00"^^xsd:dateTime ;
+  :payloadHashSHA256 "687785ea04415ee7aaca08f6c250950488b6e0ed03c4ef90a218a95365e8664f" ;
+  :displayPayloadHashSHA256 "b5fec8971d6c5e313a1387f08151f1c3203effce05d6455469c9f63305be05ae" ;
+  :signatureHMAC "072f4c2774ce362e660649d145c9d784e5e95d63d24d4057b119a419c6ba34dc" ;
+  :hmacVerificationMode :trustedPrecomputedInput .
+
+:reasonText :value "A minimal continuity insight for Flanders is derived from renal safety, polypharmacy, readmission, and recent discharge signals. The discharge coordination team may use it only for care coordination until expiry, and not for insurance pricing.\n" .
+
+# -----
+# Logic
+# -----
+
+# derive active needs from the local clinical signals
+{ :lab :egfr ?egfr .
+  ?egfr math:lessThan 60 .
+} => { :case :renalSafetyConcern true . } .
+
+{ :medications :activeMedicationCount ?count .
+  ?count math:notLessThan 8 .
+} => { :case :polypharmacyRisk true . } .
+
+{ :history :admissionsLast180Days ?n .
+  ?n math:notLessThan 1 .
+} => { :case :readmissionHistory true . } .
+
+{ :discharge :hoursSinceDischarge ?hours .
+  ?hours math:notGreaterThan 48 .
+} => { :case :recentDischargeWindow true . } .
+
+{ :case :renalSafetyConcern true ;
+         :polypharmacyRisk true ;
+         :readmissionHistory true ;
+         :recentDischargeWindow true .
+} => {
+  :case :activeNeedCount 4 ;
+        :needsContinuityBundle true ;
+        :derivedFromNeed "post_discharge_continuity" .
+  :answer :activeNeedCount 4 ;
+          :activeNeedThreshold 3 .
+  :check :thresholdReached true .
+} .
+
+# payload hash and signature checks
+{ :envelope :canonicalJson ?json .
+  ?json crypto:sha256 ?digest .
+  :signature :payloadHashSHA256 ?digest .
+} => { :check :payloadHashMatches true . } .
+
+{ :signature :hmacVerificationMode :trustedPrecomputedInput .
+} => { :check :signatureVerifies true . } .
+
+# minimization and scope checks
+{ :continuityInsight :serializedLowercase ?s .
+  ?s string:notMatches "name|address|ssn|fullrecord|genome" .
+} => { :check :minimizationRespected true . } .
+
+{ :continuityInsight :scopeDevice ?device ;
+                    :scopeEvent ?event ;
+                    :expiresAt ?expiry .
+} => { :check :scopeComplete true . } .
+
+# authorization
+{ :policy odrl:permission [
+      odrl:action odrl:use ;
+      odrl:target <https://example.org/insight/medior> ;
+      odrl:constraint [
+        odrl:leftOperand odrl:purpose ;
+        odrl:operator odrl:eq ;
+        odrl:rightOperand "care_coordination"
+      ]
+    ] .
+  :case :teamAuthAt ?authAt .
+  :continuityInsight :expiresAt ?expiresAt .
+  ?authAt math:notGreaterThan ?expiresAt .
+} => {
+  :decision :at "2026-04-09T09:15:00+00:00"^^xsd:dateTime ;
+            :outcome "Allowed" ;
+            :target <https://example.org/insight/medior> .
+  :check :authorizationAllowed true .
+} .
+
+# choose the lowest-cost package that covers all active needs and fits the budget
+{ :case :needsContinuityBundle true .
+  :budget :maxEUR ?max .
+  ?candidate a :CarePackage ;
+             :costEUR ?candidateCost ;
+             :coversRenalSafetyConcern true ;
+             :coversPolypharmacyRisk true ;
+             :coversReadmissionHistory true ;
+             :coversRecentDischargeWindow true .
+  ?max math:notLessThan ?candidateCost .
+  1 log:notIncludes {
+    ?other a :CarePackage ;
+           :costEUR ?otherCost ;
+           :coversRenalSafetyConcern true ;
+           :coversPolypharmacyRisk true ;
+           :coversReadmissionHistory true ;
+           :coversRecentDischargeWindow true .
+    ?max math:notLessThan ?otherCost .
+    ?otherCost math:lessThan ?candidateCost .
+  } .
+} => { :case :recommendedPackage ?candidate . } .
+
+{ :case :recommendedPackage ?pkg .
+  ?pkg :packageName ?name ;
+       :costEUR ?cost ;
+       :touches ?touches .
+} => {
+  :answer :recommendedPackageName ?name ;
+          :packageCostEUR ?cost .
+  :why :packageTouches ?touches .
+} .
+
+{ :case :recommendedPackage ?pkg .
+  ?pkg :costEUR ?cost .
+  :budget :maxEUR ?max .
+  ?max math:notLessThan ?cost .
+} => { :check :packageWithinBudget true . } .
+
+{ :case :recommendedPackage ?pkg .
+  ?pkg :coversRenalSafetyConcern true ;
+       :coversPolypharmacyRisk true ;
+       :coversReadmissionHistory true ;
+       :coversRecentDischargeWindow true .
+} => { :check :packageCoversAllActiveNeeds true . } .
+
+{ :case :teamDutyAt ?dutyAt .
+  :continuityInsight :expiresAt ?expiresAt .
+  ?dutyAt math:notGreaterThan ?expiresAt .
+} => { :check :dutyTimely true . } .
+
+{ :policy odrl:prohibition [
+      odrl:action odrl:distribute ;
+      odrl:constraint [ odrl:rightOperand "insurance_pricing" ]
+    ] .
+} => { :check :insurancePricingProhibited true . } .
+
+{ :case :filesWritten 6 .
+} => { :check :filesWrittenExpected true . } .
+
+{ :case :recommendedPackage ?pkg .
+} => { :check :lowestCostEligiblePackageChosen true . } .
+
+{ :check :payloadHashMatches true ;
+         :signatureVerifies true ;
+         :thresholdReached true ;
+         :scopeComplete true ;
+         :minimizationRespected true ;
+         :authorizationAllowed true ;
+         :dutyTimely true ;
+         :insurancePricingProhibited true ;
+         :packageWithinBudget true ;
+         :packageCoversAllActiveNeeds true ;
+         :lowestCostEligiblePackageChosen true .
+} => { :result :allChecksPass true . } .
+
+# -------------------------------------
+# Hard checks (Eyeling inference fuses)
+# -------------------------------------
+
+{ :case :filesWritten ?n .
+  ?n math:notEqualTo 6 .
+} => false .
+
+{ :case :teamAuthAt ?authAt .
+  :continuityInsight :expiresAt ?expiresAt .
+  ?authAt math:greaterThan ?expiresAt .
+} => false .
+
+{ :case :teamDutyAt ?dutyAt .
+  :continuityInsight :expiresAt ?expiresAt .
+  ?dutyAt math:greaterThan ?expiresAt .
+} => false .
+
+{ :case :recommendedPackage ?pkg .
+  ?pkg :costEUR ?cost .
+  :budget :maxEUR ?max .
+  ?cost math:greaterThan ?max .
+} => false .
+
+{ :case :recommendedPackage ?pkg .
+  ?pkg :costEUR ?cost .
+  ?other a :CarePackage ;
+         :costEUR ?otherCost ;
+         :coversRenalSafetyConcern true ;
+         :coversPolypharmacyRisk true ;
+         :coversReadmissionHistory true ;
+         :coversRecentDischargeWindow true .
+  :budget :maxEUR ?max .
+  ?max math:notLessThan ?otherCost .
+  ?otherCost math:lessThan ?cost .
+} => false .
+
+{ :case :recommendedPackage ?pkg .
+  ?pkg :coversRenalSafetyConcern ?r ;
+       :coversPolypharmacyRisk ?p ;
+       :coversReadmissionHistory ?h ;
+       :coversRecentDischargeWindow ?d .
+  ?r log:notEqualTo true .
+} => false .
+
+{ :envelope :canonicalJson ?json .
+  ?json crypto:sha256 ?actual .
+  :signature :payloadHashSHA256 ?expected .
+  ?actual log:notEqualTo ?expected .
+} => false .
+
+# --------------------------------------
+# ARC rendering through log:outputString
+# --------------------------------------
+
+:out01 log:outputString "=== Answer ===\n" .
+:out02 log:outputString "Name: Medior\n" .
+:out03 log:outputString "Region: Flanders\n" .
+:out04 log:outputString "Metric: post_discharge_coordination_priority\n" .
+{ :answer :activeNeedCount ?count ; :activeNeedThreshold ?threshold .
+  ("Active need count: %s/%s\n" ?count ?threshold) string:format ?line .
+} => { :out05 log:outputString ?line . } .
+{ :answer :recommendedPackageName ?name .
+  ("Recommended package: %s\n" ?name) string:format ?line .
+} => { :out06 log:outputString ?line . } .
+:out07 log:outputString "Budget cap: €5\n" .
+{ :answer :packageCostEUR ?cost .
+  ("Package cost: €%s\n" ?cost) string:format ?line .
+} => { :out08 log:outputString ?line . } .
+{ :signature :displayPayloadHashSHA256 ?digest .
+  ("Payload SHA-256: %s\n" ?digest) string:format ?line .
+} => { :out09 log:outputString ?line . } .
+{ :signature :signatureHMAC ?sig .
+  ("Envelope HMAC-SHA-256: %s\n" ?sig) string:format ?line .
+} => { :out10 log:outputString ?line . } .
+
+:out11 log:outputString "\n=== Reason Why ===\n" .
+:out12 log:outputString "RenalSafetyConcern holds because eGFR = 52 and the threshold is < 60.\n" .
+:out13 log:outputString "PolypharmacyRisk holds because the active medication count is 9 and the threshold is ≥ 8.\n" .
+:out14 log:outputString "ReadmissionHistory holds because admissionsLast180Days = 2 and the threshold is ≥ 1.\n" .
+:out15 log:outputString "RecentDischargeWindow holds because hoursSinceDischarge = 18 and the threshold is ≤ 48.\n" .
+:out16 log:outputString "The recommendation rule selects the least-cost package that covers every active need and remains within budget.\n" .
+:out17 log:outputString "The selected package is \"Medior Continuity Pulse\" with cost €4, touches=3.\n" .
+:out18 log:outputString "Use is permitted only for purpose \"care_coordination\" and expires at 2026-04-11T08:00:00+00:00.\n" .
+
+:out19 log:outputString "\n=== Check ===\n" .
+{ :check :payloadHashMatches true . }
+  => { :out20 log:outputString "- PASS: payloadHashMatches\n" . } .
+{ :check :signatureVerifies true . }
+  => { :out21 log:outputString "- PASS: signatureVerifies\n" . } .
+{ :check :thresholdReached true . }
+  => { :out22 log:outputString "- PASS: thresholdReached\n" . } .
+{ :check :scopeComplete true . }
+  => { :out23 log:outputString "- PASS: scopeComplete\n" . } .
+{ :check :minimizationRespected true . }
+  => { :out24 log:outputString "- PASS: minimizationRespected\n" . } .
+{ :check :authorizationAllowed true . }
+  => { :out25 log:outputString "- PASS: authorizationAllowed\n" . } .
+{ :check :dutyTimely true . }
+  => { :out26 log:outputString "- PASS: dutyTimely\n" . } .
+{ :check :insurancePricingProhibited true . }
+  => { :out27 log:outputString "- PASS: insurancePricingProhibited\n" . } .
+{ :check :packageWithinBudget true . }
+  => { :out28 log:outputString "- PASS: packageWithinBudget\n" . } .
+{ :check :packageCoversAllActiveNeeds true . }
+  => { :out29 log:outputString "- PASS: packageCoversAllActiveNeeds\n" . } .
+{ :check :lowestCostEligiblePackageChosen true . }
+  => { :out30 log:outputString "- PASS: lowestCostEligiblePackageChosen\n" . } .
