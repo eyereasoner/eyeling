@@ -1568,15 +1568,17 @@ Casts each element to a string and concatenates.
 
 **Shape:** `( fmt a1 a2 ... ) string:format out`
 
-A tiny `sprintf` subset:
+A small `printf`/`sprintf` subset:
 
-- Supports only `%s` and `%%`.
-- Any other specifier (`%d`, `%f`, …) causes the builtin to fail.
-- Missing arguments are treated as empty strings.
+- Supports `%%`, `%s`, `%d`/`%i`/`%u`, `%f`/`%F`, `%e`/`%E`, `%g`/`%G`, and `%c`.
+- Supports width and precision, plus the `-` and `0` flags.
+- Unsupported flags/specifiers cause the builtin to fail.
+- Missing `%s` arguments are treated as empty strings.
 - The format string `fmt` itself must be string-castable.
 - Each `%s` argument may be any bound non-variable term:
   - string-castable terms (IRIs and literals) use their direct string value;
   - other bound terms (blank nodes, lists, quoted formulas, …) are rendered as N3.
+- Numeric directives require numerically parseable literals.
 
 ### Length and character utilities (Eyeling extensions)
 

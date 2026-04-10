@@ -332,7 +332,7 @@ string:scrape a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Regex scrape: subject list (data pattern) -> first capturing group (as string literal) if match succeeds." .
 
 string:format a ex:Builtin ; ex:kind ex:Function ;
-  rdfs:comment "Simple formatter: (fmt arg1 ... argN) -> output string. Only %s and %% are supported; other specifiers fail." .
+  rdfs:comment "Simple formatter: (fmt arg1 ... argN) -> output string. Supports %% , %s, %d/%i/%u, %f/%F, %e/%E, %g/%G, %c, width/precision, and - / 0 flags; unsupported specifiers fail." .
 
 string:length a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Function: binds/unifies object with the character length of the subject after string-casting. Output is an integer literal token." .

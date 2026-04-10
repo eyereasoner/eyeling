@@ -7,9 +7,7 @@
     "recentDischargeWindow": true,
     "activeNeedCount": 4,
     "needsContinuityBundle": true,
-    "eligiblePackageIds": [
-      "pkg:MEDIOR_004"
-    ],
+    "eligiblePackageIds": ["pkg:MEDIOR_004"],
     "recommendedPackageId": "pkg:MEDIOR_004",
     "recommendedPackageName": "Medior Continuity Pulse"
   },

@@ -37,12 +37,7 @@
     "timestamps": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "createdAt",
-        "expiresAt",
-        "authorizedAt",
-        "dutyPerformedAt"
-      ],
+      "required": ["createdAt", "expiresAt", "authorizedAt", "dutyPerformedAt"],
       "properties": {
         "createdAt": {
           "type": "string",
@@ -65,12 +60,7 @@
     "evaluationContext": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "scopeDevice",
-        "scopeEvent",
-        "purpose",
-        "prohibitedReusePurpose"
-      ],
+      "required": ["scopeDevice", "scopeEvent", "purpose", "prohibitedReusePurpose"],
       "properties": {
         "scopeDevice": {
           "type": "string",
@@ -125,19 +115,12 @@
     "signals": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "lab",
-        "medications",
-        "history",
-        "discharge"
-      ],
+      "required": ["lab", "medications", "history", "discharge"],
       "properties": {
         "lab": {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "egfr"
-          ],
+          "required": ["egfr"],
           "properties": {
             "egfr": {
               "type": "number"
@@ -147,9 +130,7 @@
         "medications": {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "activeMedicationCount"
-          ],
+          "required": ["activeMedicationCount"],
           "properties": {
             "activeMedicationCount": {
               "type": "integer",
@@ -160,9 +141,7 @@
         "history": {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "admissionsLast180Days"
-          ],
+          "required": ["admissionsLast180Days"],
           "properties": {
             "admissionsLast180Days": {
               "type": "integer",
@@ -173,9 +152,7 @@
         "discharge": {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "hoursSinceDischarge"
-          ],
+          "required": ["hoursSinceDischarge"],
           "properties": {
             "hoursSinceDischarge": {
               "type": "number",
@@ -188,10 +165,7 @@
     "budget": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "windowName",
-        "maxEUR"
-      ],
+      "required": ["windowName", "maxEUR"],
       "properties": {
         "windowName": {
           "type": "string",
@@ -254,14 +228,7 @@
     "insightPolicy": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "id",
-        "metric",
-        "suggestionPolicy",
-        "type",
-        "policyProfile",
-        "policyType"
-      ],
+      "required": ["id", "metric", "suggestionPolicy", "type", "policyProfile", "policyType"],
       "properties": {
         "id": {
           "type": "string",
@@ -292,10 +259,7 @@
     "integrity": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "secret",
-        "verificationMode"
-      ],
+      "required": ["secret", "verificationMode"],
       "properties": {
         "secret": {
           "type": "string",
@@ -303,9 +267,7 @@
         },
         "verificationMode": {
           "type": "string",
-          "enum": [
-            "trustedPrecomputedInput"
-          ]
+          "enum": ["trustedPrecomputedInput"]
         }
       }
     }

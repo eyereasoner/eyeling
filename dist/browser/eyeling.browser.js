@@ -983,34 +983,213 @@
       return stripQuotes(lex);
     }
 
-    // Tiny subset of sprintf: supports only %s and %%.
-    // Good enough for most N3 string:format use cases that just splice strings.
-    function simpleStringFormat(fmt, args) {
+    // Small printf/sprintf subset for string:format.
+    // Supports: %% , %s, %d/%i/%u, %f/%F, %e/%E, %g/%G, %c and width/precision
+    // with - and 0 flags. Unsupported specifiers/flags fail the builtin.
+    function padLeft(str, width, ch) {
+      return width > str.length ? ch.repeat(width - str.length) + str : str;
+    }
+
+    function padRight(str, width, ch) {
+      return width > str.length ? str + ch.repeat(width - str.length) : str;
+    }
+
+    function applyPrintfWidth(str, width, left, ch) {
+      if (width == null || width <= str.length) return str;
+      return left ? padRight(str, width, ch) : padLeft(str, width, ch);
+    }
+
+    function applyPrintfNumericWidth(str, width, left, zero) {
+      if (width == null || width <= str.length) return str;
+      if (left) return padRight(str, width, ' ');
+      const padChar = zero ? '0' : ' ';
+      if (padChar === '0' && (str.startsWith('-') || str.startsWith('+'))) {
+        return str[0] + padLeft(str.slice(1), width - 1, '0');
+      }
+      return padLeft(str, width, padChar);
+    }
+
+    function parsePrintfSpec(fmt, percentIndex) {
+      let i = percentIndex + 1;
+      if (i >= fmt.length) return null;
+      if (fmt[i] === '%') return { conv: '%', next: i + 1 };
+
+      let left = false;
+      let zero = false;
+      while (i < fmt.length) {
+        const ch = fmt[i];
+        if (ch === '-') {
+          left = true;
+          i++;
+          continue;
+        }
+        if (ch === '0') {
+          zero = true;
+          i++;
+          continue;
+        }
+        break;
+      }
+
+      let width = null;
+      let widthStr = '';
+      while (i < fmt.length && /[0-9]/.test(fmt[i])) widthStr += fmt[i++];
+      if (widthStr) width = Number(widthStr);
+
+      let precision = null;
+      if (fmt[i] === '.') {
+        i++;
+        let p = '';
+        while (i < fmt.length && /[0-9]/.test(fmt[i])) p += fmt[i++];
+        precision = p === '' ? 0 : Number(p);
+      }
+
+      while (i < fmt.length && /[hlLztj]/.test(fmt[i])) i++;
+      if (i >= fmt.length) return null;
+
+      const conv = fmt[i];
+      if (!'sdiufFeEgGc'.includes(conv)) return null;
+      return { left, zero, width, precision, conv, next: i + 1 };
+    }
+
+    function trimPrintfGeneralLex(str) {
+      return str
+        .replace(/(\.\d*?[1-9])0+(e|$)/i, '$1$2')
+        .replace(/\.0+(e|$)/i, '$1')
+        .replace(/\.(e|$)/i, '$1');
+    }
+
+    function termToPrintfInteger(t) {
+      const bi = parseIntLiteral(t);
+      if (bi !== null) return bi;
+      const info = parseNumericLiteralInfo(t);
+      if (!info || info.kind !== 'number') return null;
+      if (!Number.isFinite(info.value) || !Number.isInteger(info.value)) return null;
+      return BigInt(info.value);
+    }
+
+    function termToPrintfNumber(t) {
+      const info = parseNumericLiteralInfo(t);
+      if (!info) return null;
+      if (info.kind === 'bigint') return Number(info.value);
+      return info.value;
+    }
+
+    function formatPrintfStringTerm(t, spec) {
+      const value = t === undefined ? '' : termToFormatArgString(t);
+      if (value === null) return null;
+      const str = spec.precision == null ? value : value.slice(0, spec.precision);
+      return applyPrintfWidth(str, spec.width, spec.left, ' ');
+    }
+
+    function formatPrintfIntegerTerm(t, spec, unsigned) {
+      if (t === undefined) return null;
+      let value = termToPrintfInteger(t);
+      if (value === null) return null;
+      if (unsigned && value < 0n) return null;
+      const negative = value < 0n;
+      if (negative) value = -value;
+      let digits = value.toString();
+      if (spec.precision != null) digits = digits.padStart(spec.precision, '0');
+      const out = (negative ? '-' : '') + digits;
+      return applyPrintfNumericWidth(out, spec.width, spec.left, spec.zero && spec.precision == null);
+    }
+
+    function formatPrintfFloatTerm(t, spec) {
+      if (t === undefined) return null;
+      const value = termToPrintfNumber(t);
+      if (value === null || Number.isNaN(value)) return null;
+      if (!Number.isFinite(value)) return applyPrintfNumericWidth(String(value), spec.width, spec.left, false);
+
+      let out;
+      switch (spec.conv) {
+        case 'f':
+        case 'F': {
+          const precision = spec.precision == null ? 6 : spec.precision;
+          out = value.toFixed(precision);
+          break;
+        }
+        case 'e':
+        case 'E': {
+          const precision = spec.precision == null ? 6 : spec.precision;
+          out = value.toExponential(precision);
+          break;
+        }
+        case 'g':
+        case 'G': {
+          const precision = spec.precision == null ? 6 : Math.max(spec.precision, 1);
+          out = trimPrintfGeneralLex(value.toPrecision(precision));
+          break;
+        }
+        default:
+          return null;
+      }
+      if (spec.conv === 'E' || spec.conv === 'F' || spec.conv === 'G') out = out.toUpperCase();
+      return applyPrintfNumericWidth(out, spec.width, spec.left, spec.zero);
+    }
+
+    function formatPrintfCharTerm(t, spec) {
+      if (t === undefined) return null;
+      const value = termToPrintfInteger(t);
+      if (value === null) return null;
+      const codePoint = Number(value);
+      if (!Number.isInteger(codePoint) || codePoint < 0 || !Number.isFinite(codePoint)) return null;
+      try {
+        return applyPrintfWidth(String.fromCodePoint(codePoint), spec.width, spec.left, ' ');
+      } catch {
+        return null;
+      }
+    }
+
+    function simpleStringFormat(fmt, argTerms) {
       let out = '';
       let argIndex = 0;
 
-      for (let i = 0; i < fmt.length; i++) {
-        const ch = fmt[i];
-        if (ch === '%' && i + 1 < fmt.length) {
-          const spec = fmt[i + 1];
-
-          if (spec === 's') {
-            const arg = argIndex < args.length ? args[argIndex++] : '';
-            out += arg;
-            i++;
-            continue;
-          }
-
-          if (spec === '%') {
-            out += '%';
-            i++;
-            continue;
-          }
-
-          // Unsupported specifier (like %d, %f, …) ⇒ fail the builtin.
-          return null;
+      for (let i = 0; i < fmt.length; ) {
+        if (fmt[i] !== '%') {
+          out += fmt[i++];
+          continue;
         }
-        out += ch;
+
+        const spec = parsePrintfSpec(fmt, i);
+        if (!spec) return null;
+        i = spec.next;
+
+        if (spec.conv === '%') {
+          out += '%';
+          continue;
+        }
+
+        const term = argIndex < argTerms.length ? argTerms[argIndex++] : undefined;
+        let piece = null;
+        switch (spec.conv) {
+          case 's':
+            piece = formatPrintfStringTerm(term, spec);
+            break;
+          case 'd':
+          case 'i':
+            piece = formatPrintfIntegerTerm(term, spec, false);
+            break;
+          case 'u':
+            piece = formatPrintfIntegerTerm(term, spec, true);
+            break;
+          case 'f':
+          case 'F':
+          case 'e':
+          case 'E':
+          case 'g':
+          case 'G':
+            piece = formatPrintfFloatTerm(term, spec);
+            break;
+          case 'c':
+            piece = formatPrintfCharTerm(term, spec);
+            break;
+          default:
+            return null;
+        }
+
+        if (piece === null) return null;
+        out += piece;
       }
 
       return out;
@@ -4201,24 +4380,18 @@
       }
 
       // string:format
-      // (limited: only %s and %% are supported, anything else ⇒ builtin fails)
-      // The format string itself must be string-castable, but placeholder arguments
-      // are allowed to be any bound non-variable term. Plain strings/IRIs keep their
-      // direct string value; other terms fall back to N3 rendering so formatting a
-      // bound blank node, list, or quoted formula does not make the whole builtin fail.
+      // Supports a small printf/sprintf subset: %% , %s, %d/%i/%u, %f/%F,
+      // %e/%E, %g/%G, %c plus width/precision and - / 0 flags.
+      // The format string itself must be string-castable. %s accepts any bound
+      // non-variable term: plain strings/IRIs keep their direct string value;
+      // other bound terms fall back to N3 rendering. Numeric directives require
+      // numerically parseable literals and otherwise make the builtin fail.
       if (pv === STRING_NS + 'format') {
         if (!(g.s instanceof ListTerm) || g.s.elems.length < 1) return [];
         const fmtStr = termToJsString(g.s.elems[0]);
         if (fmtStr === null) return [];
 
-        const args = [];
-        for (let i = 1; i < g.s.elems.length; i++) {
-          const aStr = termToFormatArgString(g.s.elems[i]);
-          if (aStr === null) return [];
-          args.push(aStr);
-        }
-
-        const formatted = simpleStringFormat(fmtStr, args);
+        const formatted = simpleStringFormat(fmtStr, g.s.elems.slice(1));
         if (formatted === null) return []; // unsupported format specifier(s)
 
         const lit = makeStringLiteral(formatted);

@@ -39,9 +39,18 @@ function validateInstance(data) {
   assert(typeof data?.caseName === 'string' && data.caseName.length > 0, 'caseName is required');
   assert(typeof data?.region === 'string' && data.region.length > 0, 'region is required');
   assert(typeof data?.signals?.lab?.egfr === 'number', 'signals.lab.egfr is required');
-  assert(typeof data?.signals?.medications?.activeMedicationCount === 'number', 'signals.medications.activeMedicationCount is required');
-  assert(typeof data?.signals?.history?.admissionsLast180Days === 'number', 'signals.history.admissionsLast180Days is required');
-  assert(typeof data?.signals?.discharge?.hoursSinceDischarge === 'number', 'signals.discharge.hoursSinceDischarge is required');
+  assert(
+    typeof data?.signals?.medications?.activeMedicationCount === 'number',
+    'signals.medications.activeMedicationCount is required',
+  );
+  assert(
+    typeof data?.signals?.history?.admissionsLast180Days === 'number',
+    'signals.history.admissionsLast180Days is required',
+  );
+  assert(
+    typeof data?.signals?.discharge?.hoursSinceDischarge === 'number',
+    'signals.discharge.hoursSinceDischarge is required',
+  );
   assert(Array.isArray(data?.packages) && data.packages.length > 0, 'packages is required');
 }
 
@@ -62,7 +71,12 @@ export function clauseR4_recentDischargeWindow(data) {
 }
 
 export function clauseR5_activeNeedCount(state) {
-  return countTrue([state.renalSafetyConcern, state.polypharmacyRisk, state.readmissionHistory, state.recentDischargeWindow]);
+  return countTrue([
+    state.renalSafetyConcern,
+    state.polypharmacyRisk,
+    state.readmissionHistory,
+    state.recentDischargeWindow,
+  ]);
 }
 
 export function clauseR6_needsContinuityBundle(data, state) {
@@ -190,13 +204,23 @@ export async function evaluate(data) {
   const polypharmacyRisk = clauseR2_polypharmacyRisk(data);
   const readmissionHistory = clauseR3_readmissionHistory(data);
   const recentDischargeWindow = clauseR4_recentDischargeWindow(data);
-  const activeNeedCount = clauseR5_activeNeedCount({ renalSafetyConcern, polypharmacyRisk, readmissionHistory, recentDischargeWindow });
+  const activeNeedCount = clauseR5_activeNeedCount({
+    renalSafetyConcern,
+    polypharmacyRisk,
+    readmissionHistory,
+    recentDischargeWindow,
+  });
   const needsContinuityBundle = clauseR6_needsContinuityBundle(data, { activeNeedCount });
 
   const insight = deriveInsight(data);
   const policy = derivePolicy(data);
   const { canonicalEnvelope, payloadHashSHA256, envelopeHmacSHA256 } = await clauseM3_hmac(data);
-  const { eligible, recommended } = clauseS2_recommendedPackage(data, { renalSafetyConcern, polypharmacyRisk, readmissionHistory, recentDischargeWindow });
+  const { eligible, recommended } = clauseS2_recommendedPackage(data, {
+    renalSafetyConcern,
+    polypharmacyRisk,
+    readmissionHistory,
+    recentDischargeWindow,
+  });
   const authorizedUse = clauseG1_authorizedUse(data);
   const insurancePricingProhibited = clauseG2_insurancePricingProhibited(data);
   const dutyTimely = clauseG3_dutyTimely(data);
@@ -216,7 +240,13 @@ export async function evaluate(data) {
     insurancePricingProhibited,
     packageWithinBudget: Boolean(recommended) && recommended.costEUR <= data.budget.maxEUR,
     packageCoversAllActiveNeeds:
-      Boolean(recommended) && packageCoversAllActiveNeeds(recommended, { renalSafetyConcern, polypharmacyRisk, readmissionHistory, recentDischargeWindow }),
+      Boolean(recommended) &&
+      packageCoversAllActiveNeeds(recommended, {
+        renalSafetyConcern,
+        polypharmacyRisk,
+        readmissionHistory,
+        recentDischargeWindow,
+      }),
     lowestCostEligiblePackageChosen: Boolean(recommended) && recommended.id === (eligible[0]?.id ?? null),
   };
 

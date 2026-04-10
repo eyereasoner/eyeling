@@ -6,17 +6,9 @@ This document is the **normative specification** for the Medior case. The file `
 
 ## Insight Economy context
 
-This case is a care-coordination reading of Ruben Verborgh’s
-[Inside the Insight Economy](https://ruben.verborgh.org/blog/2025/08/12/inside-the-insight-economy/).
-Its core move is that no party has to disclose the full patient record in order
-to coordinate after discharge. The laboratory, medication list, and admission
-history remain where they are. What crosses the coordination boundary is a
-narrow, signed, expiring insight: this patient presently merits a continuity
-bundle in the early post-discharge window.
+This case is a care-coordination reading of Ruben Verborgh’s [Inside the Insight Economy](https://ruben.verborgh.org/blog/2025/08/12/inside-the-insight-economy/). Its core move is that no party has to disclose the full patient record in order to coordinate after discharge. The laboratory, medication list, and admission history remain where they are. What crosses the coordination boundary is a narrow, signed, expiring insight: this patient presently merits a continuity bundle in the early post-discharge window.
 
-The product being shared is therefore not a raw record, but a permissioned,
-minimal conclusion for care coordination, with reuse for insurance pricing
-explicitly forbidden.
+The product being shared is therefore not a raw record, but a permissioned, minimal conclusion for care coordination, with reuse for insurance pricing explicitly forbidden.
 
 ## Conventions
 

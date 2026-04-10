@@ -64,7 +64,6 @@
 } .
 
 # string:format
-# (eyeling implementation: only %s and %% are required / used here)
 
 {
     ("%s://%s/%s" "https" "w3c.github.io" "N3/spec/")
@@ -73,6 +72,46 @@
 =>
 {
     :ok_string_format_1 a :Pass .
+} .
+
+{
+    ("%5s" "x") string:format "    x" .
+}
+=>
+{
+    :ok_string_format_2 a :Pass .
+} .
+
+{
+    ("%-5s" "x") string:format "x    " .
+}
+=>
+{
+    :ok_string_format_3 a :Pass .
+} .
+
+{
+    ("%.3s" "abcdef") string:format "abc" .
+}
+=>
+{
+    :ok_string_format_4 a :Pass .
+} .
+
+{
+    ("%05d" 42) string:format "00042" .
+}
+=>
+{
+    :ok_string_format_5 a :Pass .
+} .
+
+{
+    ("%5.1f" 12.0) string:format " 12.0" .
+}
+=>
+{
+    :ok_string_format_6 a :Pass .
 } .
 
 # string:greaterThan
