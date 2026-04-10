@@ -1,4 +1,4 @@
-# ============================================================================
+# =============================================================================
 # Medior — a post-discharge care-coordination Insight Economy case.
 #
 # The aha: no party has to disclose the full patient record in order to
@@ -17,7 +17,7 @@
 # In this case, four active needs clear the threshold for post-discharge
 # continuity support, and the cheapest eligible package within budget is the
 # Medior Continuity Pulse. Reuse for insurance pricing is explicitly forbidden.
-# ============================================================================
+# =============================================================================
 
 @prefix : <https://example.org/insight/medior/> .
 @prefix arc: <https://example.org/arc#> .
