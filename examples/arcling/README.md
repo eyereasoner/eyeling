@@ -10,14 +10,15 @@ In one line:
 
 ## Insight Economy context
 
-The `delfour` and `flandor` cases are concrete Arcling readings of Ruben Verborgh’s [Inside the Insight Economy](https://ruben.verborgh.org/blog/2025/08/12/inside-the-insight-economy/). The central move is the same in both cases: what gets traded is not risky raw data, but a narrow, expiring, purpose-bound insight that is useful enough to trigger action. In Ruben’s phrasing, the goal is to “don’t exchange raw data” and to prefer “meaningful insights, not risky raw data”.
+The `delfour`, `medior`, and `flandor` cases are concrete Arcling readings of Ruben Verborgh’s [Inside the Insight Economy](https://ruben.verborgh.org/blog/2025/08/12/inside-the-insight-economy/). The central move is the same in all three cases: what gets traded is not risky raw data, but a narrow, expiring, purpose-bound insight that is useful enough to trigger action. In Ruben’s phrasing, the goal is to “don’t exchange raw data” and to prefer “meaningful insights, not risky raw data”.
 
-In this directory, the two cases show that pattern at two scales:
+In this directory, the three cases show that pattern across three settings:
 
 - **Delfour** keeps a household-level medical condition private and turns it into a neutral shopping insight such as “prefer lower-sugar products” for shopping assistance.
+- **Medior** keeps laboratory, medication, and readmission evidence local and turns it into a minimal post-discharge coordination insight that can justify activating a continuity bundle.
 - **Flandor** keeps exporter, labour-market, and grid evidence local and turns it into a regional macro-economic insight that justifies a temporary retooling response.
 
-That pairing is intentional: `delfour` is the micro case and `flandor` is the macro case. Both are easier to understand if read next to their declarative Eyeling counterparts: `examples/delfour.n3` and `examples/flandor.n3`.
+That progression is intentional: `delfour` is the micro case, `medior` is the care-coordination case, and `flandor` is the macro case. They are easiest to read next to their declarative Eyeling counterparts: `examples/delfour.n3`, `examples/medior.n3`, and `examples/flandor.n3`.
 
 ## Why this directory exists
 
@@ -155,7 +156,7 @@ A check should add confidence. It should not only restate the answer.
 
 ### 5. Keep names aligned
 
-If a case is called `delfour` or `flandor` in `examples/`, the Arcling case should use the same base name.
+If a case is called `delfour`, `medior`, or `flandor` in `examples/`, the Arcling case should use the same base name.
 
 ## Suggested workflow for a new case
 
