@@ -307,6 +307,31 @@ This avoids the “existential in the body” trap and matches how most rule aut
 
 Blanks in the **conclusion** are _not_ lifted — they remain blanks and later become existentials (Chapter 9).
 
+### 5.1.1 Quoted formulas keep their own blank-node scope
+
+There is one important exception to the “lift blanks in rule bodies” rule: **do not descend into a quoted formula** (`GraphTerm`) and lift the blanks that appear _inside_ it.
+
+So this rule body:
+
+```n3
+{
+  ( { ?S a :Subject } { [] a :Thing } ) log:conjunction ?Z.
+} => { ... }.
+```
+
+must keep the inner `[]` as a **formula-local blank node**. Eyeling should treat it as belonging to the quoted graph, not as a rule-body variable that escapes into the surrounding rule.
+
+That distinction matters because quoted formulas play **two different roles** in Eyeling:
+
+1. **Formula as data** — for example when constructing a formula with `log:conjunction` or storing `{ ... }` in a triple. In this role, local blanks stay blanks. They print as blank nodes and participate in alpha-equivalence only within that quoted formula.
+2. **Formula as a query pattern** — for example when `log:includes`, `log:notIncludes`, `log:collectAllIn`, or `log:forAllIn` prove a quoted formula. In that role, the builtin may treat the formula’s **local blanks existentially** while matching.
+
+The practical rule is:
+
+> **Rule normalization preserves blank-node scope inside quoted formulas; builtins may later interpret those preserved blanks as existential query placeholders when the formula is used as a pattern.**
+
+This separation is deliberate. It keeps `log:conjunction` and formula printing honest, while still allowing query-like builtins to match formulas containing local `[]` placeholders.
+
 ### 5.2 Builtin deferral in forward-rule bodies
 
 In a depth-first proof, the order of goals matters. Many built-ins only become informative once parts of the triple are **already instantiated** (for example comparisons, pattern tests, and other built-ins that don’t normally create bindings).
@@ -1481,6 +1506,24 @@ Also supported:
 
 - The object may be the literal `true`, meaning the empty formula, which is always included (subject to the priority gating above).
 
+**Important blank-node note:** when the goal formula is used as a **pattern**, Eyeling treats blank nodes that are **local to that quoted formula** as existential placeholders during the proof.
+
+So a pattern such as:
+
+```n3
+{ ?x :p [] }
+```
+
+means “find an `?x` that has some `:p` value”, not “find the specific blank node label printed here”.
+
+But that existential behavior is intentionally limited:
+
+- it applies only to blanks that are **owned by the quoted formula being proved**
+- it does **not** rename or relax terms that were already supplied by an outer substitution
+- it does **not** turn concrete members of already-bound lists or other already-ground structures into fresh variables
+
+That last point is easy to miss. A builtin may receive a formula after part of it has already been instantiated from outer bindings. Those substituted-in terms are fixed data, not fresh existential placeholders. Keeping that boundary sharp prevents accidental overmatching and keeps numeric/list-oriented examples stable.
+
 #### `log:notIncludes` (test)
 
 Negation-as-failure version: it succeeds iff `log:includes` would yield no solutions (under the same scoping rules).
@@ -1493,6 +1536,8 @@ Negation-as-failure version: it succeeds iff `log:includes` would yield no solut
 - For each solution, applies it to `ValueTemplate` and collects the instantiated terms into a list.
 - Unifies `OutList` with that list.
 - If `OutList` is a blank node, Eyeling just checks satisfiable without binding/collecting.
+
+As with `log:includes`, blank nodes that are local to `WhereFormula` behave as existential query placeholders while that formula is being proved. But blanks that came from already-bound outer data remain fixed.
 
 This is essentially a list-producing “findall”.
 
