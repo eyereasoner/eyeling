@@ -809,6 +809,56 @@ function __builtinCollectVarsInTriples(triples, out) {
   for (const tr of triples) __builtinCollectVarsInTriple(tr, out);
 }
 
+function __existentializeBlankTerm(t, mapping, varGen) {
+  if (t instanceof Blank) {
+    let v = mapping[t.label];
+    if (v === undefined) {
+      const n = Array.isArray(varGen) && typeof varGen[0] === 'number' ? varGen[0]++ : Object.keys(mapping).length + 1;
+      v = new Var(`__qb_${n}`);
+      mapping[t.label] = v;
+    }
+    return v;
+  }
+  if (t instanceof ListTerm) return t;
+  if (t instanceof OpenListTerm) return t;
+  if (t instanceof GraphTerm) {
+    let changed = false;
+    const triples = t.triples.map((tr) => {
+      const s2 = __existentializeBlankTerm(tr.s, mapping, varGen);
+      const p2 = __existentializeBlankTerm(tr.p, mapping, varGen);
+      const o2 = __existentializeBlankTerm(tr.o, mapping, varGen);
+      if (s2 !== tr.s || p2 !== tr.p || o2 !== tr.o) changed = true;
+      return s2 === tr.s && p2 === tr.p && o2 === tr.o ? tr : new Triple(s2, p2, o2);
+    });
+    return changed ? new GraphTerm(triples) : t;
+  }
+  return t;
+}
+
+function __existentializeBlankTriples(triples, varGen) {
+  const mapping = Object.create(null);
+  let changed = false;
+  const out = triples.map((tr) => {
+    const s2 = __existentializeBlankTerm(tr.s, mapping, varGen);
+    const p2 = __existentializeBlankTerm(tr.p, mapping, varGen);
+    const o2 = __existentializeBlankTerm(tr.o, mapping, varGen);
+    if (s2 !== tr.s || p2 !== tr.p || o2 !== tr.o) changed = true;
+    return s2 === tr.s && p2 === tr.p && o2 === tr.o ? tr : new Triple(s2, p2, o2);
+  });
+  return changed ? out : triples;
+}
+
+function __prepareQuotedPatternTriples(rawTriples, subst, varGen) {
+  const ex = __existentializeBlankTriples(Array.from(rawTriples), varGen);
+  let changed = false;
+  const out = ex.map((tr) => {
+    const tr2 = applySubstTriple(tr, subst);
+    if (tr2 !== tr) changed = true;
+    return tr2;
+  });
+  return changed ? out : ex;
+}
+
 function literalHasLangTag(lit) {
   // True iff the literal is a quoted string literal with a language tag suffix,
   // e.g. "hello"@en or """hello"""@en.
@@ -4001,7 +4051,8 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const keepVars = new Set();
     if (g.s instanceof GraphTerm) __builtinCollectVarsInTriples(g.s.triples, keepVars);
 
-    const goalVariants = __expandScopedVarPredicateGoals(Array.from(g.o.triples));
+    const goalTriples = __prepareQuotedPatternTriples(goal.o.triples, subst, varGen);
+    const goalVariants = __expandScopedVarPredicateGoals(goalTriples);
     const out = [];
     for (const variant of goalVariants) {
       const sols = proveGoals(
@@ -4083,7 +4134,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
 
     const visited2 = [];
     const sols = proveGoals(
-      Array.from(g.o.triples),
+      __prepareQuotedPatternTriples(goal.o.triples, subst, varGen),
       { ...subst },
       scopeFacts,
       scopeBackRules,
@@ -4177,15 +4228,12 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     }
 
     const visited2 = [];
-    const sols = proveGoals(
-      Array.from(clauseTerm.triples),
-      {},
-      scopeFacts,
-      scopeBackRules,
-      depth + 1,
-      visited2,
-      varGen,
-    );
+    const rawClauseTerm = goal.s instanceof ListTerm ? goal.s.elems[1] : clauseTerm;
+    const clauseGoals =
+      rawClauseTerm instanceof GraphTerm
+        ? __prepareQuotedPatternTriples(rawClauseTerm.triples, subst, varGen)
+        : __prepareQuotedPatternTriples(clauseTerm.triples, subst, varGen);
+    const sols = proveGoals(clauseGoals, {}, scopeFacts, scopeBackRules, depth + 1, visited2, varGen);
 
     const collected = sols.map((sBody) => applySubstTerm(valueTempl, sBody));
     const collectedList = new ListTerm(collected);
@@ -4238,28 +4286,23 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       scopeFacts = snap;
     }
 
+    const rawWhereClause = goal.s instanceof ListTerm ? goal.s.elems[0] : whereClause;
+    const rawThenClause = goal.s instanceof ListTerm ? goal.s.elems[1] : thenClause;
+    const whereGoals =
+      rawWhereClause instanceof GraphTerm
+        ? __prepareQuotedPatternTriples(rawWhereClause.triples, subst, varGen)
+        : __prepareQuotedPatternTriples(whereClause.triples, subst, varGen);
+    const thenGoals =
+      rawThenClause instanceof GraphTerm
+        ? __prepareQuotedPatternTriples(rawThenClause.triples, subst, varGen)
+        : __prepareQuotedPatternTriples(thenClause.triples, subst, varGen);
+
     const visited1 = [];
-    const sols1 = proveGoals(
-      Array.from(whereClause.triples),
-      {},
-      scopeFacts,
-      scopeBackRules,
-      depth + 1,
-      visited1,
-      varGen,
-    );
+    const sols1 = proveGoals(whereGoals, {}, scopeFacts, scopeBackRules, depth + 1, visited1, varGen);
 
     for (const s1 of sols1) {
       const visited2 = [];
-      const sols2 = proveGoals(
-        Array.from(thenClause.triples),
-        s1,
-        scopeFacts,
-        scopeBackRules,
-        depth + 1,
-        visited2,
-        varGen,
-      );
+      const sols2 = proveGoals(thenGoals, s1, scopeFacts, scopeBackRules, depth + 1, visited2, varGen);
       if (!sols2.length) return [];
     }
     return [outSubst];
@@ -12696,14 +12739,26 @@ function liftBlankRuleVars(premise, conclusion) {
     return new Var(name);
   }
 
+  function copyQuotedTerm(t) {
+    // Quoted formulas are data terms with their own local blank scope.
+    // Copy them structurally so later in-place rewrites cannot mutate shared AST,
+    // but do not lift their blank nodes into rule-body variables.
+    if (t instanceof ListTerm) return new ListTerm(t.elems.map(copyQuotedTerm));
+    if (t instanceof OpenListTerm) return new OpenListTerm(t.prefix.map(copyQuotedTerm), t.tailVar);
+    if (t instanceof GraphTerm) {
+      const triples = t.triples.map(
+        (tr) => new Triple(copyQuotedTerm(tr.s), copyQuotedTerm(tr.p), copyQuotedTerm(tr.o)),
+      );
+      return new GraphTerm(triples);
+    }
+    return t;
+  }
+
   function convertTerm(t) {
     if (t instanceof Blank) return blankToVar(t.label);
     if (t instanceof ListTerm) return new ListTerm(t.elems.map(convertTerm));
     if (t instanceof OpenListTerm) return new OpenListTerm(t.prefix.map(convertTerm), t.tailVar);
-    if (t instanceof GraphTerm) {
-      const triples = t.triples.map((tr) => new Triple(convertTerm(tr.s), convertTerm(tr.p), convertTerm(tr.o)));
-      return new GraphTerm(triples);
-    }
+    if (t instanceof GraphTerm) return copyQuotedTerm(t);
     return t;
   }
 

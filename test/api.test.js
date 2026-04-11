@@ -2035,6 +2035,123 @@ _:x :hates { _:foo :making :mess }.
     },
     expect: [/:x :value "world" \./m],
   },
+
+  {
+    name: '241 regression: quoted-formula blanks in rule bodies stay blank through log:conjunction',
+    opt: { proofComments: false },
+    input: `@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix : <http://example.org/ns#> .
+
+{
+  ( { ?S a :Subject } { [] a :Thing } ) log:conjunction ?Z.
+}
+=>
+{
+  :result :is ?Z.
+}.
+`,
+    expect: [/:result\s+:is\s+\{[\s\S]*\?S\s+a\s+:Subject\s*\.[\s\S]*_:(?:b\d+)\s+a\s+:Thing\s*\.[\s\S]*\}\s*\./m],
+    notExpect: [/\?_b\d+\s+a\s+:Thing\s*\./],
+  },
+  {
+    name: '242 regression: log:includes existentializes blank nodes inside quoted formula patterns',
+    opt: { proofComments: false },
+    input: `@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+:doc :graph {
+  :perm :duty [
+    :action :inform ;
+    :constraint [
+      :kind :notice ;
+      :days 3
+    ]
+  ]
+} .
+
+{
+  :doc :graph ?G .
+  ?G log:includes {
+    :perm :duty [
+      :action :inform ;
+      :constraint [
+        :kind :notice ;
+        :days ?D
+      ]
+    ]
+  } .
+}
+=>
+{
+  :result :days ?D ;
+          :status :matched .
+}.
+`,
+    expect: [
+      /:result\s+:days\s+3(?:\s*\^\^<http:\/\/www\.w3\.org\/2001\/XMLSchema#integer>)?\s*\./,
+      /:result\s+:status\s+:matched\s*\./,
+    ],
+  },
+  {
+    name: '243a regression: collectAllIn treats quoted-formula blanks existentially',
+    opt: { proofComments: false },
+    input: `@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+:a :p [ :q 1 ] .
+:b :p [ :q 2 ] .
+
+{
+  ( ?s { ?s :p [ :q 1 ] . } ?xs ) log:collectAllIn _:scope .
+  ?xs log:equalTo ( :a ) .
+}
+=>
+{
+  :test :is true .
+}.
+`,
+    expect: [/:(?:test)\s+:(?:is)\s+true\s*\./],
+  },
+
+  {
+    name: '243 regression: quoted formulas remain isolated from collectAllIn rule-body rewrites',
+    opt: { proofComments: false },
+    input: `@prefix :     <http://example.org/jade-eigen-loom#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix log:  <http://www.w3.org/2000/10/swap/log#> .
+
+:PCA1 :points (
+  [ :id 1 ; :x 2.0  ; :y 1.0  ]
+  [ :id 2 ; :x 3.0  ; :y 2.0  ]
+  [ :id 3 ; :x 4.0  ; :y 3.2  ]
+  [ :id 4 ; :x 5.0  ; :y 5.1  ]
+  [ :id 5 ; :x 6.0  ; :y 7.9  ]
+  [ :id 6 ; :x 7.0  ; :y 13.0 ]
+  [ :id 7 ; :x 20.0 ; :y -3.0 ]
+) .
+
+{
+  :PCA1 :points ?pts .
+  ?pts list:length ?n .
+  ( ?x { ?pts list:member ?p . ?p :x ?x . } ?xs ) log:collectAllIn _:m1 .
+  ?xs math:sum ?sumX .
+  (?sumX ?n) math:quotient ?meanX .
+}
+=>
+{
+  :result :xs ?xs ; :sumX ?sumX ; :meanX ?meanX .
+}.
+`,
+    expect: [
+      /:result\s+:xs\s+\(2\.0 3\.0 4\.0 5\.0 6\.0 7\.0 20\.0\)\s*\./,
+      /:result\s+:sumX\s+"47"\^\^xsd:decimal\s*\./,
+      /:result\s+:meanX\s+"6\.714285714285714"\^\^xsd:decimal\s*\./,
+    ],
+    notExpect: [/:result\s+:sumX\s+"329"\^\^xsd:decimal\s*\./, /:result\s+:meanX\s+"47"\^\^xsd:decimal\s*\./],
+  },
 ];
 
 let passed = 0;
