@@ -11057,13 +11057,14 @@ ${triples.map((tr) => `  ${tripleToN3(tr, prefixes)}`).join('\n')}
       // Also strip an optional language tag from the lexical form:
       //   "\"hello\"@en"  -> "\"hello\""
       //   "\"hello\"@en^^<...>" is rejected earlier in the parser.
-      const idx = lit.indexOf('^^');
       let lex = lit;
       let dt = null;
 
-      if (idx >= 0) {
-        lex = lit.slice(0, idx);
-        dt = lit.slice(idx + 2).trim();
+      const re = /^(['"]{1,3})([\s\S]*?)\1\^\^(.+)$/;
+      const match = lit.match(re);
+      if (match) {
+        lex = match[1] + match[2] + match[1];
+        dt = match[3];
         if (dt.startsWith('<') && dt.endsWith('>')) {
           dt = dt.slice(1, -1);
         }
