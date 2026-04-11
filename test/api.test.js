@@ -259,6 +259,35 @@ ${U('c')} ${U('friend')} ${U('d')}.
 
 const cases = [
   {
+    name: '00 parsing untyped literal ^^',
+    opt: { proofComments: false },
+    input: `
+  @prefix : <http://example.org/> .
+  @prefix log: <http://www.w3.org/2000/10/swap/log#>.
+
+  { ?s :p ?o } => { ?s log:outputString ?o } .
+  :s :p "^^" .
+  `,
+    check(out) {
+      assert.equal(String(out).trimEnd(), '^^');
+    },
+  },
+  {
+    name: '00b parsing typed literal ^^',
+    opt: { proofComments: false },
+    input: `
+  @prefix : <http://example.org/> .
+  @prefix log: <http://www.w3.org/2000/10/swap/log#>.
+  @prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
+
+  { ?s :p ?o } => { ?s log:outputString ?o } .
+  :s :p "^^"^^xsd:string .
+  `,
+    check(out) {
+      assert.equal(String(out).trimEnd(), '^^');
+    },
+  },
+  {
     name: '01 forward rule: p -> q',
     opt: { proofComments: false },
     input: `
