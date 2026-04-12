@@ -1,5 +1,4 @@
 {
-  "$schema": "./delfour.instance.schema.json",
   "caseName": "Delfour",
   "retailer": "Delfour",
   "question": "Is the Delfour self-scanner allowed to use a neutral shopping insight for shopping assistance, and if so what lower-sugar alternative should it suggest?",

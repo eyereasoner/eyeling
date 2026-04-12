@@ -6,21 +6,29 @@ const assert = require('node:assert/strict');
 const { execFileSync } = require('node:child_process');
 
 const TTY = process.stdout.isTTY;
-const C = TTY ? { g: '[32m', r: '[31m', y: '[33m', dim: '[2m', n: '[0m' } : { g: '', r: '', y: '', dim: '', n: '' };
-const msTag = (ms) => `${C.dim}(${ms} ms)${C.n}`;
+const C = TTY
+  ? { g: '\u001b[32m', r: '\u001b[31m', y: '\u001b[33m', dim: '\u001b[2m', n: '\u001b[0m' }
+  : { g: '', r: '', y: '', dim: '', n: '' };
+
+const ROOT = path.resolve(__dirname, '..');
+const ARCLING_DIR = path.join(ROOT, 'examples', 'arcling');
+const BIN_DIR_NAME = '.arcling-bin';
+
+function msTag(ms) {
+  return `${C.dim}(${ms} ms)${C.n}`;
+}
 
 function ok(msg) {
   console.log(`${C.g}OK ${C.n} ${msg}`);
 }
+
 function info(msg) {
   console.log(`${C.y}==${C.n} ${msg}`);
 }
+
 function fail(msg) {
   console.error(`${C.r}FAIL${C.n} ${msg}`);
 }
-
-const ROOT = path.resolve(__dirname, '..');
-const ARCLING_DIR = path.join(ROOT, 'examples', 'arcling');
 
 function isDirectory(p) {
   try {
@@ -71,12 +79,41 @@ function findCaseFiles(caseDir) {
   return { base, modelPath, dataPath, expectedPath };
 }
 
-function runModelJson(modelPath, dataPath) {
+function binaryExtension() {
+  return process.platform === 'win32' ? '.exe' : '';
+}
+
+function binaryPathFor(caseDir, base) {
+  return path.join(caseDir, BIN_DIR_NAME, `${base}.model${binaryExtension()}`);
+}
+
+function ensureGoBinary(modelPath, caseDir, base) {
+  const outDir = path.join(caseDir, BIN_DIR_NAME);
+  const outPath = binaryPathFor(caseDir, base);
+
+  fs.mkdirSync(outDir, { recursive: true });
+
+  const modelStat = fs.statSync(modelPath);
+  const needsBuild = !fs.existsSync(outPath) || fs.statSync(outPath).mtimeMs < modelStat.mtimeMs;
+
+  if (needsBuild) {
+    execFileSync('go', ['build', '-o', outPath, modelPath], {
+      cwd: caseDir,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      encoding: 'utf8',
+    });
+  }
+
+  return outPath;
+}
+
+function runModelJson(modelPath, dataPath, caseDir, base) {
   const ext = path.extname(modelPath);
 
   if (ext === '.go') {
-    const stdout = execFileSync('go', ['run', modelPath, dataPath, '--json'], {
-      cwd: path.dirname(modelPath),
+    const binaryPath = ensureGoBinary(modelPath, caseDir, base);
+    const stdout = execFileSync(binaryPath, [dataPath, '--json'], {
+      cwd: caseDir,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -85,7 +122,7 @@ function runModelJson(modelPath, dataPath) {
 
   if (ext === '.mjs') {
     const stdout = execFileSync(process.execPath, [modelPath, dataPath, '--json'], {
-      cwd: path.dirname(modelPath),
+      cwd: caseDir,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -104,15 +141,14 @@ function assertArcTextShape(arcText, label) {
 
 async function runCase(caseDir) {
   const { base, modelPath, dataPath, expectedPath } = findCaseFiles(caseDir);
-  const data = readJson(dataPath);
   const expected = readJson(expectedPath);
-  const actual = runModelJson(modelPath, dataPath);
+  const actual = runModelJson(modelPath, dataPath, caseDir, base);
 
   assert.equal(actual.allChecksPass, true, `${base}: expected allChecksPass === true`);
   assertArcTextShape(actual.arcText, base);
   assert.deepStrictEqual(actual, expected, `${base}: actual result does not match expected JSON`);
 
-  return { base, caseName: data.caseName, modelPath };
+  return { base, modelPath };
 }
 
 async function main() {
@@ -130,15 +166,14 @@ async function main() {
   for (let i = 0; i < caseDirs.length; i += 1) {
     const start = Date.now();
     const caseDir = caseDirs[i];
-    const n = i + 1;
     const label = path.basename(caseDir);
 
     try {
       await runCase(caseDir);
       passed += 1;
-      ok(`${n}. ${label} ${msTag(Date.now() - start)}`);
+      ok(`${i + 1}. ${label} ${msTag(Date.now() - start)}`);
     } catch (error) {
-      fail(`${n}. ${label} ${msTag(Date.now() - start)}`);
+      fail(`${i + 1}. ${label} ${msTag(Date.now() - start)}`);
       fail(error.stack || String(error));
       process.exit(2);
     }

@@ -1,5 +1,4 @@
 {
-  "$schema": "./flandor.instance.schema.json",
   "caseName": "Flandor",
   "region": "Flanders",
   "question": "Is the Flemish Economic Resilience Board allowed to use a neutral macro-economic insight for regional stabilization, and if so which package should it activate for Flanders?",

@@ -1,5 +1,4 @@
 {
-  "$schema": "./medior.instance.schema.json",
   "caseName": "Medior",
   "region": "Flanders",
   "question": "Is the discharge coordination team allowed to use a minimal continuity insight after hospital discharge, and if so which package should it activate?",
