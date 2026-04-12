@@ -1,5 +1,9 @@
 package main
 
+// Flandor is a reference Arcling model for the regional retooling-pulse case.
+// It evaluates whether a region needs intervention, selects the lowest-cost
+// eligible package, and emits ARC text or a JSON report.
+
 import (
 	"crypto/hmac"
 	"crypto/sha256"
@@ -13,6 +17,7 @@ import (
 	"time"
 )
 
+// Data mirrors the input instance shape from flandor.data.json.
 type Data struct {
 	CaseName          string            `json:"caseName"`
 	Region            string            `json:"region"`
@@ -233,6 +238,8 @@ func parseTime(value string) time.Time {
 	return t
 }
 
+// stableStringify recursively sorts map keys so the canonical envelope is
+// deterministic across runs and implementations.
 func stableStringify(value any) string {
 	switch v := value.(type) {
 	case nil:
@@ -260,6 +267,8 @@ func stableStringify(value any) string {
 	}
 }
 
+// canonicalValue converts typed structs into generic JSON-like values before
+// stable stringification.
 func canonicalValue(value any) any {
 	b, _ := json.Marshal(value)
 	var out any
@@ -267,6 +276,7 @@ func canonicalValue(value any) any {
 	return out
 }
 
+// validateInstance performs the structural checks for the 4-file bundle.
 func validateInstance(data Data) error {
 	if err := assertTrue(data.CaseName != "", "caseName is required"); err != nil {
 		return err
@@ -283,6 +293,7 @@ func validateInstance(data Data) error {
 	return nil
 }
 
+// countTrue is used for the active-need threshold logic in the spec.
 func countTrue(values ...bool) int {
 	total := 0
 	for _, value := range values {
@@ -293,6 +304,7 @@ func countTrue(values ...bool) int {
 	return total
 }
 
+// The R* helpers map directly to named derivation clauses in flandor.spec.md.
 func clauseR1ExportWeakness(data Data) bool {
 	for _, cluster := range data.Signals.Clusters {
 		if cluster.ExportOrdersIndex < data.Thresholds.ExportOrdersIndexBelow {
@@ -318,6 +330,7 @@ func clauseR5NeedsRetoolingPulse(data Data, activeNeedCount int) bool {
 	return activeNeedCount >= data.Thresholds.ActiveNeedCountAtLeast
 }
 
+// deriveInsight produces the minimized regional signal shared with the recipient.
 func deriveInsight(data Data) Insight {
 	return Insight{
 		CreatedAt:        data.Timestamps.CreatedAt,
@@ -333,6 +346,7 @@ func deriveInsight(data Data) Insight {
 	}
 }
 
+// derivePolicy constructs the usage restrictions paired with the insight.
 func derivePolicy(data Data) Policy {
 	return Policy{
 		Duty: Duty{
@@ -366,12 +380,16 @@ func derivePolicy(data Data) Policy {
 	}
 }
 
+// packageCoversAllActiveNeeds checks whether a candidate package addresses every
+// need that is active for this specific instance.
 func packageCoversAllActiveNeeds(pkg Package, exportWeakness, skillsStrain, gridStress bool) bool {
 	return (!exportWeakness || pkg.CoversExportWeakness) &&
 		(!skillsStrain || pkg.CoversSkillsStrain) &&
 		(!gridStress || pkg.CoversGridStress)
 }
 
+// clauseS1EligiblePackages filters to packages that both fit the budget and
+// cover the active needs.
 func clauseS1EligiblePackages(data Data, exportWeakness, skillsStrain, gridStress bool) []Package {
 	eligible := make([]Package, 0)
 	for _, pkg := range data.Packages {
@@ -383,6 +401,8 @@ func clauseS1EligiblePackages(data Data, exportWeakness, skillsStrain, gridStres
 	return eligible
 }
 
+// clauseS2RecommendedPackage applies the tie-breaker: choose the lowest-cost
+// eligible package after sorting by cost.
 func clauseS2RecommendedPackage(data Data, exportWeakness, skillsStrain, gridStress bool) ([]Package, *Package) {
 	eligible := clauseS1EligiblePackages(data, exportWeakness, skillsStrain, gridStress)
 	if len(eligible) == 0 {
@@ -404,6 +424,8 @@ func clauseG3DutyTimely(data Data) bool {
 	return !parseTime(data.Timestamps.DutyPerformedAt).After(parseTime(data.Timestamps.ExpiresAt))
 }
 
+// clauseM1CanonicalEnvelope returns both the structured envelope and the
+// deterministic string hashed/signed by the integrity clauses.
 func clauseM1CanonicalEnvelope(data Data) (Envelope, string) {
 	envelope := Envelope{Insight: deriveInsight(data), Policy: derivePolicy(data)}
 	return envelope, stableStringify(canonicalValue(envelope))
@@ -437,6 +459,8 @@ func yesNo(value bool) string {
 	return "FAIL"
 }
 
+// evaluate computes all derived facts, governance checks, integrity values,
+// and presentation fields expected by flandor.expected.json.
 func evaluate(data Data) (Result, error) {
 	if err := validateInstance(data); err != nil {
 		return Result{}, err
@@ -593,6 +617,7 @@ func derefIntString(value *int) string {
 	return fmt.Sprintf("%d", *value)
 }
 
+// main is the CLI entry point used by the Arcling test runner.
 func main() {
 	inputPath := "flandor.data.json"
 	jsonMode := false

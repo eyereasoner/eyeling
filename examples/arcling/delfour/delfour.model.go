@@ -1,5 +1,10 @@
 package main
 
+// Delfour is a reference Arcling model written as a small CLI program.
+// It reads delfour.data.json, derives the neutral shopping insight,
+// computes the canonical envelope/hash/HMAC values, and emits either
+// ARC text or a JSON result object.
+
 import (
 	"crypto/hmac"
 	"crypto/sha256"
@@ -13,6 +18,7 @@ import (
 	"time"
 )
 
+// Data mirrors the input instance shape from delfour.data.json.
 type Data struct {
 	CaseName          string            `json:"caseName"`
 	Retailer          string            `json:"retailer"`
@@ -77,6 +83,7 @@ type Integrity struct {
 	VerificationMode string `json:"verificationMode"`
 }
 
+// Insight is the minimized payload shared with the retailer.
 type Insight struct {
 	CreatedAt        string  `json:"createdAt"`
 	ExpiresAt        string  `json:"expiresAt"`
@@ -191,6 +198,7 @@ func readJSON(path string) (Data, error) {
 	return data, err
 }
 
+// validate performs the structural checks that used to live in JSON Schema.
 func validate(data Data) error {
 	if err := must(data.CaseName != "", "caseName is required"); err != nil {
 		return err
@@ -234,6 +242,7 @@ func validate(data Data) error {
 	return nil
 }
 
+// parseTime accepts RFC3339Nano timestamps from the case instance.
 func parseTime(s string) time.Time {
 	t, err := time.Parse(time.RFC3339Nano, s)
 	if err != nil {
@@ -242,6 +251,7 @@ func parseTime(s string) time.Time {
 	return t
 }
 
+// findProduct resolves the scanned or recommended product by its catalog id.
 func findProduct(data Data, id string) *Product {
 	for i := range data.Catalog {
 		if data.Catalog[i].ID == id {
@@ -251,6 +261,7 @@ func findProduct(data Data, id string) *Product {
 	return nil
 }
 
+// deriveInsight strips the household condition down to the neutral shopping insight.
 func deriveInsight(data Data) Insight {
 	return Insight{
 		CreatedAt:        data.Timestamps.CreatedAt,
@@ -266,6 +277,7 @@ func deriveInsight(data Data) Insight {
 	}
 }
 
+// derivePolicy builds the companion ODRL-style policy used for governance checks.
 func derivePolicy(data Data) Policy {
 	return Policy{
 		Duty: Duty{
@@ -299,6 +311,8 @@ func derivePolicy(data Data) Policy {
 	}
 }
 
+// canonicalEnvelope returns the exact byte string used for the integrity vector.
+// The field order and the lexical form of threshold (10.0) are intentional.
 func canonicalEnvelope(insight Insight, policy Policy) string {
 	return fmt.Sprintf(
 		"{\"insight\":{\"createdAt\":\"%s\",\"expiresAt\":\"%s\",\"id\":\"%s\",\"metric\":\"%s\",\"retailer\":\"%s\",\"scopeDevice\":\"%s\",\"scopeEvent\":\"%s\",\"suggestionPolicy\":\"%s\",\"threshold\":10.0,\"type\":\"%s\"},\"policy\":{\"duty\":{\"action\":\"%s\",\"constraint\":{\"leftOperand\":\"%s\",\"operator\":\"%s\",\"rightOperand\":\"%s\"}},\"permission\":{\"action\":\"%s\",\"constraint\":{\"leftOperand\":\"%s\",\"operator\":\"%s\",\"rightOperand\":\"%s\"},\"target\":\"%s\"},\"profile\":\"%s\",\"prohibition\":{\"action\":\"%s\",\"constraint\":{\"leftOperand\":\"%s\",\"operator\":\"%s\",\"rightOperand\":\"%s\"},\"target\":\"%s\"},\"type\":\"%s\"}}",
@@ -348,6 +362,8 @@ func yesNo(v bool) string {
 	return "no"
 }
 
+// evaluate runs the full Arcling pipeline: derive facts, select the recommendation,
+// build the envelope, verify integrity values, and render the final report.
 func evaluate(data Data) (Result, error) {
 	var result Result
 	if err := validate(data); err != nil {
@@ -508,6 +524,8 @@ func evaluate(data Data) (Result, error) {
 	return result, nil
 }
 
+// main is a tiny CLI wrapper around evaluate. It defaults to delfour.data.json,
+// prints ARC text, and switches to JSON output when --json is supplied.
 func main() {
 	inputPath := "delfour.data.json"
 	jsonMode := false
