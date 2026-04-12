@@ -3,11 +3,11 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
-const { pathToFileURL } = require('node:url');
+const { execFileSync } = require('node:child_process');
 
 const TTY = process.stdout.isTTY;
 const C = TTY
-  ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', dim: '\x1b[2m', n: '\x1b[0m' }
+  ? { g: '[32m', r: '[31m', y: '[33m', dim: '[2m', n: '[0m' }
   : { g: '', r: '', y: '', dim: '', n: '' };
 const msTag = (ms) => `${C.dim}(${ms} ms)${C.n}`;
 
@@ -48,10 +48,22 @@ function listCaseDirs(baseDir) {
     .sort();
 }
 
+function findModelPath(caseDir, base) {
+  const candidates = [
+    path.join(caseDir, `${base}.model.go`),
+    path.join(caseDir, `${base}.model.mjs`),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+
+  throw new Error(`Missing required arcling model artifact for ${base}`);
+}
+
 function findCaseFiles(caseDir) {
   const base = path.basename(caseDir);
-
-  const modelPath = path.join(caseDir, `${base}.model.mjs`);
+  const modelPath = findModelPath(caseDir, base);
   const dataPath = path.join(caseDir, `${base}.data.json`);
   const expectedPath = path.join(caseDir, `${base}.expected.json`);
 
@@ -64,15 +76,28 @@ function findCaseFiles(caseDir) {
   return { base, modelPath, dataPath, expectedPath };
 }
 
-async function loadEvaluate(modelPath) {
-  const moduleUrl = pathToFileURL(modelPath).href;
-  const mod = await import(moduleUrl);
+function runModelJson(modelPath, dataPath) {
+  const ext = path.extname(modelPath);
 
-  if (typeof mod.evaluate !== 'function') {
-    throw new Error(`Model does not export evaluate(data): ${modelPath}`);
+  if (ext === '.go') {
+    const stdout = execFileSync('go', ['run', modelPath, dataPath, '--json'], {
+      cwd: path.dirname(modelPath),
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    return JSON.parse(stdout);
   }
 
-  return mod.evaluate;
+  if (ext === '.mjs') {
+    const stdout = execFileSync(process.execPath, [modelPath, dataPath, '--json'], {
+      cwd: path.dirname(modelPath),
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    return JSON.parse(stdout);
+  }
+
+  throw new Error(`Unsupported arcling model extension: ${modelPath}`);
 }
 
 function assertArcTextShape(arcText, label) {
@@ -84,17 +109,15 @@ function assertArcTextShape(arcText, label) {
 
 async function runCase(caseDir) {
   const { base, modelPath, dataPath, expectedPath } = findCaseFiles(caseDir);
-
-  const evaluate = await loadEvaluate(modelPath);
   const data = readJson(dataPath);
   const expected = readJson(expectedPath);
-  const actual = await evaluate(data);
+  const actual = runModelJson(modelPath, dataPath);
 
   assert.equal(actual.allChecksPass, true, `${base}: expected allChecksPass === true`);
   assertArcTextShape(actual.arcText, base);
   assert.deepStrictEqual(actual, expected, `${base}: actual result does not match expected JSON`);
 
-  return base;
+  return { base, caseName: data.caseName, modelPath };
 }
 
 async function main() {

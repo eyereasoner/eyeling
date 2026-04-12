@@ -6,7 +6,7 @@ An Arcling case sits alongside the declarative N3 cases in `examples/`. Its purp
 
 In one line:
 
-> `examples/arcling/` presents ARC cases in mathematical English with reference ECMAScript realizations and JSON test vectors.
+> `examples/arcling/` presents ARC cases in mathematical English with reference Go realizations and JSON test vectors.
 
 ## Insight Economy context
 
@@ -27,7 +27,7 @@ Eyeling already has a strong way to present a case in declarative N3. Arcling ad
 Each Arcling case gives you:
 
 - a **normative statement** in mathematical English,
-- a **reference realization** in ECMAScript,
+- a **reference realization** in Go,
 - a **concrete instance** in JSON,
 - and an **expected result** for comparison and regression testing.
 
@@ -65,7 +65,7 @@ Typical uses:
 - cases with a stable logical core and a small executable shell,
 - cases that benefit from conformance-style testing.
 
-## The five files
+## The four files
 
 Each Arcling case should contain these files.
 
@@ -75,7 +75,7 @@ The normative case description.
 
 This file should use **mathematical English**. It should define the vocabulary, the inputs, the derived predicates, the decision rule, the governance rule, the checks, and the output contract.
 
-The spec should be written so that a careful reader can understand the case without reading the ECMAScript source first.
+The spec should be written so that a careful reader can understand the case without reading the Go source first.
 
 ### 2. `name.data.json`
 
@@ -83,20 +83,22 @@ The concrete instance data.
 
 This file contains the facts for the case: entities, thresholds, observed values, policies, timestamps, candidate actions, and any other case inputs.
 
-### 3. `name.model.mjs`
+### 3. `name.model.go`
 
-The reference ECMAScript realization.
+The reference Go realization.
 
 This file should implement the case directly and clearly. A good pattern is to map named clauses in the spec to named functions in the model.
 
 For example:
 
-- `clauseR1_exportWeakness`
-- `clauseS2_recommendedPackage`
-- `clauseG1_authorizedUse`
-- `clauseM2_payloadHash`
+- `clauseR1ExportWeakness`
+- `clauseS2RecommendedPackage`
+- `clauseG1AuthorizedUse`
+- `clauseM2PayloadHash`
 
 The model is not the normative source. It is the **reference realization** of the normative source.
+
+Input validation is part of the reference model. A malformed instance should fail before evaluation rather than requiring a separate schema artifact.
 
 ### 4. `name.expected.json`
 
@@ -104,19 +106,13 @@ The expected derived result.
 
 This file is the conformance vector for the case. It should capture the main derived predicates, the selected answer, the visible checks, and any stable integrity values needed for regression testing.
 
-### 5. `name.instance.schema.json`
-
-The instance schema.
-
-This file defines the required structure of the input JSON. It should be strict enough to catch malformed case instances before evaluation.
-
 ## How to read an Arcling case
 
 A good reading order is:
 
 1. start with `name.spec.md`,
 2. inspect `name.data.json`,
-3. run `name.model.mjs`,
+3. run `go run name.model.go --json`,
 4. compare the result with `name.expected.json`,
 5. then relate the case back to its N3 counterpart.
 
@@ -127,7 +123,7 @@ That order keeps the meaning visible before the operational details.
 A useful mental model is:
 
 - `examples/` shows ARC cases in **declarative Eyeling form**,
-- `examples/arcling/` shows the same kind of cases in **mathematical-English specification plus reference ECMAScript form**.
+- `examples/arcling/` shows the same kind of cases in **mathematical-English specification plus reference Go form**.
 
 So the two collections are complementary:
 
@@ -144,7 +140,7 @@ The spec should say what the case means. It should not merely paraphrase the cod
 
 ### 2. Keep the code direct
 
-The ECMAScript model should say what it does and do what it says. Avoid unnecessary framework machinery.
+The Go model should say what it does and do what it says. Avoid unnecessary framework machinery.
 
 ### 3. Keep the data separate
 
@@ -163,7 +159,7 @@ If a case is called `delfour`, `medior`, or `flandor` in `examples/`, the Arclin
 1. Start from a strong ARC-style N3 example.
 2. Write a mathematical-English specification of the case.
 3. Move the concrete instance into JSON.
-4. Implement a small ECMAScript reference model.
+4. Implement a small Go reference model.
 5. Capture the expected result in JSON.
 6. Keep the visible output in Answer / Reason Why / Check shape.
 7. Link the Arcling case to its N3 counterpart.
@@ -186,4 +182,4 @@ It exists to make a case simultaneously:
 
 ## In one line
 
-`examples/arcling/` presents ARC cases in mathematical English with reference ECMAScript realizations, JSON instances, and expected results, alongside declarative Eyeling examples.
+`examples/arcling/` presents ARC cases in mathematical English with reference Go realizations, JSON instances, and expected results, alongside declarative Eyeling examples.

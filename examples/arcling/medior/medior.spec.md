@@ -2,7 +2,7 @@
 
 ## Status
 
-This document is the **normative specification** for the Medior case. The file `medior.model.mjs` is the **reference ECMAScript implementation** of these clauses. The file `medior.data.json` is the **instance** evaluated in this bundle. The file `medior.expected.json` is the **conformance vector** for that instance.
+This document is the **normative specification** for the Medior case. The file `medior.model.go` is the **reference Go implementation** of these clauses. The file `medior.data.json` is the **instance** evaluated in this bundle. The file `medior.expected.json` is the **conformance vector** for that instance.
 
 ## Insight Economy context
 
@@ -15,7 +15,6 @@ The product being shared is therefore not a raw record, but a permissioned, mini
 - “iff” means “if and only if”.
 - A clause identifier such as `R1` or `M3` is normative.
 - A conforming implementation may be written in any language, but it shall produce the same derived values and pass/fail outcomes for the supplied instance.
-- The reference implementation uses ECMAScript because you preferred an international-standard JS language.
 
 ## Vocabulary
 
