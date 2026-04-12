@@ -1,0 +1,29 @@
+=== Answer ===
+The city is allowed to use a narrow heatwave-response insight and recommends Calidor Priority Cooling Bundle for this household.
+case                 : calidor
+decision             : Allowed
+municipality         : Calidor
+recommended package  : Calidor Priority Cooling Bundle
+
+=== Reason Why ===
+The gateway desensitizes local heat, vulnerability, and prepaid-energy stress into an expiring municipal support insight, and the city consumes that envelope only for heatwave response.
+metric               : active_need_count
+threshold            : 3.0
+scope                : household-gateway @ heat-alert-window
+required capabilities: bill_credit, cooling_kit, transport, welfare_check
+signature alg        : HMAC-SHA256
+expires at           : 2026-07-18T21:00:00+00:00
+reason.txt           : The gateway keeps raw indoor heat, vulnerability, and prepaid-energy data local, derives a priority-support signal, and shares only a scoped heatwave-response envelope with expiry.
+dispatches logged    : 1
+
+=== Check ===
+signature verifies              : yes
+payload hash matches            : yes
+minimization strips sensitive terms: yes
+scope complete                  : yes
+authorization allowed           : yes
+heat-alert active               : yes
+unsafe indoor heat              : yes
+recommended package eligible    : yes
+duty timing consistent          : yes
+tenant screening prohibited     : yes

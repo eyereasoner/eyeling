@@ -1,0 +1,500 @@
+# ==============================================================================
+# Calidor — Ruben Verborgh's "Inside the Insight Economy" case.
+# See https://ruben.verborgh.org/blog/2025/08/12/inside-the-insight-economy/
+#
+# This example shows how a city can deliver urgent heatwave support without
+# collecting raw household heat, vulnerability, or prepaid-energy data. A local
+# gateway turns those private signals into a narrow, expiring insight such as
+# "priority cooling support needed", attaches clear usage rules and an expiry
+# time, and sends that envelope to the municipal heat-response system. The city
+# may use the insight for heatwave response, but not for unrelated purposes such
+# as tenant screening.
+# ==============================================================================
+
+@prefix : <https://example.org/calidor#> .
+@prefix arc: <https://josd.github.io/arc/terms#> .
+@prefix ins: <https://example.org/insight#> .
+@prefix odrl: <http://www.w3.org/ns/odrl/2/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+@prefix crypto: <http://www.w3.org/2000/10/swap/crypto#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# -----
+# Facts
+# -----
+
+:case
+    a arc:Case ;
+    :caseName "calidor" ;
+    arc:question "Is the Calidor heat-response system allowed to use a narrow household support insight for heatwave response, and if so which support package should it recommend?" ;
+    :requestPurpose "heatwave_response" ;
+    :requestAction odrl:use ;
+    :gatewayCreatedAt "2026-07-18T09:00:00+00:00"^^xsd:dateTime ;
+    :gatewayExpiresAt "2026-07-18T21:00:00+00:00"^^xsd:dateTime ;
+    :cityAuthAt "2026-07-18T09:05:00+00:00"^^xsd:dateTime ;
+    :cityDutyAt "2026-07-18T20:30:00+00:00"^^xsd:dateTime ;
+    :currentAlertLevel 4 ;
+    :alertLevelAtLeast 3 ;
+    :currentIndoorTempC 31.4 ;
+    :indoorTempCAtLeast 30.0 ;
+    :hoursAtOrAboveThreshold 9 ;
+    :hoursAtOrAboveThresholdAtLeast 6 ;
+    :remainingPrepaidCreditEur 3.2 ;
+    :energyCreditEurAtMost 5.0 ;
+    :minimumActiveNeedCount 3 ;
+    :maxPackageCostEur 20 ;
+    :dispatchesLogged 1 .
+
+:localProfile
+    :vulnerabilityFlag "heat_sensitive_condition" ;
+    :vulnerabilityFlag "mobility_limitation" .
+
+:pkg_CHECK
+    a :SupportPackage ;
+    :packageId "pkg:CHECK" ;
+    :packageName "Cooling Check Call" ;
+    :costEur 8 ;
+    :capability :welfare_check .
+
+:pkg_VOUCHER
+    a :SupportPackage ;
+    :packageId "pkg:VOUCHER" ;
+    :packageName "Cooling Center Transport Voucher" ;
+    :costEur 12 ;
+    :capability :transport ;
+    :capability :welfare_check .
+
+:pkg_BUNDLE
+    a :SupportPackage ;
+    :packageId "pkg:BUNDLE" ;
+    :packageName "Calidor Priority Cooling Bundle" ;
+    :costEur 18 ;
+    :capability :cooling_kit ;
+    :capability :welfare_check ;
+    :capability :transport ;
+    :capability :bill_credit .
+
+:pkg_DELUXE
+    a :SupportPackage ;
+    :packageId "pkg:DELUXE" ;
+    :packageName "Extended Resilience Package" ;
+    :costEur 28 ;
+    :capability :cooling_kit ;
+    :capability :welfare_check ;
+    :capability :transport ;
+    :capability :bill_credit ;
+    :capability :followup_visit .
+
+<https://example.org/insight/calidor>
+    a ins:Insight ;
+    :metric "active_need_count" ;
+    :thresholdCount 3 ;
+    :thresholdDisplay "3.0" ;
+    :supportPolicy "lowest_cost_covering_package" ;
+    :scopeDevice "household-gateway" ;
+    :scopeEvent "heat-alert-window" ;
+    :municipality "Calidor" ;
+    :createdAt "2026-07-18T09:00:00+00:00"^^xsd:dateTime ;
+    :expiresAt "2026-07-18T21:00:00+00:00"^^xsd:dateTime ;
+    :serializedLowercase "{\"createdat\":\"2026-07-18t09:00:00+00:00\",\"expiresat\":\"2026-07-18t21:00:00+00:00\",\"id\":\"https://example.org/insight/calidor\",\"metric\":\"active_need_count\",\"municipality\":\"calidor\",\"scopedevice\":\"household-gateway\",\"scopeevent\":\"heat-alert-window\",\"supportpolicy\":\"lowest_cost_covering_package\",\"threshold\":3,\"type\":\"ins:insight\"}" .
+
+:policy
+    a odrl:Policy ;
+    :profile "Calidor-Heatwave-Policy" ;
+    odrl:permission [
+        odrl:action odrl:use ;
+        odrl:target <https://example.org/insight/calidor> ;
+        odrl:constraint [
+            odrl:leftOperand odrl:purpose ;
+            odrl:operator odrl:eq ;
+            odrl:rightOperand "heatwave_response"
+        ]
+    ] ;
+    odrl:prohibition [
+        odrl:action odrl:distribute ;
+        odrl:target <https://example.org/insight/calidor> ;
+        odrl:constraint [
+            odrl:leftOperand odrl:purpose ;
+            odrl:operator odrl:eq ;
+            odrl:rightOperand "tenant_screening"
+        ]
+    ] ;
+    odrl:duty [
+        odrl:action odrl:delete ;
+        odrl:constraint [
+            odrl:leftOperand odrl:dateTime ;
+            odrl:operator odrl:eq ;
+            odrl:rightOperand "2026-07-18T21:00:00+00:00"^^xsd:dateTime
+        ]
+    ] .
+
+:envelope
+    :insight <https://example.org/insight/calidor> ;
+    :policy :policy ;
+    :canonicalJson "{\"insight\":{\"createdAt\":\"2026-07-18T09:00:00+00:00\",\"expiresAt\":\"2026-07-18T21:00:00+00:00\",\"id\":\"https://example.org/insight/calidor\",\"metric\":\"active_need_count\",\"municipality\":\"Calidor\",\"scopeDevice\":\"household-gateway\",\"scopeEvent\":\"heat-alert-window\",\"supportPolicy\":\"lowest_cost_covering_package\",\"threshold\":3.0,\"type\":\"ins:Insight\"},\"policy\":{\"duty\":{\"action\":\"odrl:delete\",\"constraint\":{\"leftOperand\":\"odrl:dateTime\",\"operator\":\"odrl:eq\",\"rightOperand\":\"2026-07-18T21:00:00+00:00\"}},\"permission\":{\"action\":\"odrl:use\",\"constraint\":{\"leftOperand\":\"odrl:purpose\",\"operator\":\"odrl:eq\",\"rightOperand\":\"heatwave_response\"},\"target\":\"https://example.org/insight/calidor\"},\"profile\":\"Calidor-Heatwave-Policy\",\"prohibition\":{\"action\":\"odrl:distribute\",\"constraint\":{\"leftOperand\":\"odrl:purpose\",\"operator\":\"odrl:eq\",\"rightOperand\":\"tenant_screening\"},\"target\":\"https://example.org/insight/calidor\"},\"type\":\"odrl:Policy\"}}" .
+
+:signature
+    :alg "HMAC-SHA256" ;
+    :keyid "calidor-demo-shared-secret" ;
+    :created "2026-07-18T09:00:00+00:00"^^xsd:dateTime ;
+    :payloadHashSHA256 "3780df1071b0f2eec8a881ffd48425c3a1a60738d11cc2ba7debdf1cea992d63" ;
+    :signatureHMAC "e635c7c1991742a5c36992fc0da32a7abc80b32aa5777a1142adaab55183681c" ;
+    :hmacVerificationMode :trustedPrecomputedInput .
+
+:reasonText
+    :value "The gateway keeps raw indoor heat, vulnerability, and prepaid-energy data local, derives a priority-support signal, and shares only a scoped heatwave-response envelope with expiry.\n" .
+
+# -----
+# Logic
+# -----
+
+# heat_alert_active
+{
+    :case :currentAlertLevel ?current ;
+        :alertLevelAtLeast ?threshold .
+    ?current math:notLessThan ?threshold .
+} => {
+    :case :heatAlertActive true .
+} .
+
+# unsafe_indoor_heat
+{
+    :case :currentIndoorTempC ?temp ;
+        :indoorTempCAtLeast ?tempThreshold ;
+        :hoursAtOrAboveThreshold ?hours ;
+        :hoursAtOrAboveThresholdAtLeast ?hoursThreshold .
+    ?temp math:notLessThan ?tempThreshold .
+    ?hours math:notLessThan ?hoursThreshold .
+} => {
+    :case :unsafeIndoorHeat true .
+} .
+
+# vulnerability_present
+{
+    :localProfile :vulnerabilityFlag ?flag .
+} => {
+    :case :vulnerabilityPresent true .
+} .
+
+# energy_constraint
+{
+    :case :remainingPrepaidCreditEur ?credit ;
+        :energyCreditEurAtMost ?limit .
+    ?limit math:notLessThan ?credit .
+} => {
+    :case :energyConstraint true .
+} .
+
+# derive_insight(...)
+{
+    :case :heatAlertActive true ;
+        :unsafeIndoorHeat true ;
+        :vulnerabilityPresent true ;
+        :energyConstraint true .
+} => {
+    <https://example.org/insight/calidor> :derivedFromNeed "priority_cooling_support" .
+} .
+
+# active_need_count via score collection
+{ :case :heatAlertActive true . } => { :score_heatAlert :value 1 . } .
+{ :case :unsafeIndoorHeat true . } => { :score_indoorHeat :value 1 . } .
+{ :case :vulnerabilityPresent true . } => { :score_vulnerability :value 1 . } .
+{ :case :energyConstraint true . } => { :score_energy :value 1 . } .
+
+{
+    ( ?n { ?scoreNode :value ?n . } ?scores ) log:collectAllIn _:countScope .
+    ?scores math:sum ?total .
+} => {
+    :case :activeNeedCount ?total .
+} .
+
+# priority_cooling_support_needed
+{
+    :case :activeNeedCount ?count ;
+        :minimumActiveNeedCount ?threshold .
+    ?count math:notLessThan ?threshold .
+} => {
+    :case :priorityCoolingSupportNeeded true .
+} .
+
+# required capabilities follow from the active needs
+{
+    :case :heatAlertActive true ;
+        :unsafeIndoorHeat true .
+} => {
+    :case :requiredCapability :cooling_kit .
+} .
+
+{
+    :case :vulnerabilityPresent true .
+} => {
+    :case :requiredCapability :welfare_check .
+    :case :requiredCapability :transport .
+} .
+
+{
+    :case :energyConstraint true .
+} => {
+    :case :requiredCapability :bill_credit .
+} .
+
+# payload_hash_matches
+{
+    :envelope :canonicalJson ?json .
+    ?json crypto:sha256 ?digest .
+    :signature :payloadHashSHA256 ?digest .
+} => {
+    :check :payloadHashMatches true .
+} .
+
+# signature_verified
+{
+    :signature :hmacVerificationMode :trustedPrecomputedInput .
+} => {
+    :check :signatureVerifies true .
+} .
+
+# minimization_no_sensitive_terms
+{
+    <https://example.org/insight/calidor> :serializedLowercase ?s .
+    ?s string:notMatches "heat_sensitive_condition|mobility_limitation|credit|meter_trace" .
+} => {
+    :check :minimizationStripsSensitiveTerms true .
+} .
+
+# scope_complete
+{
+    <https://example.org/insight/calidor> :scopeDevice ?device ;
+        :scopeEvent ?event ;
+        :expiresAt ?expiry .
+} => {
+    :check :scopeComplete true .
+} .
+
+# authorization_allowed
+{
+    :policy odrl:permission [
+        odrl:action odrl:use ;
+        odrl:target <https://example.org/insight/calidor> ;
+        odrl:constraint [
+            odrl:leftOperand odrl:purpose ;
+            odrl:operator odrl:eq ;
+            odrl:rightOperand "heatwave_response"
+        ]
+    ] .
+    :case :cityAuthAt ?authAt .
+    <https://example.org/insight/calidor> :expiresAt ?expiresAt .
+    ?authAt math:notGreaterThan ?expiresAt .
+} => {
+    :decision
+        :at "2026-07-18T09:05:00+00:00"^^xsd:dateTime ;
+        :outcome "Allowed" ;
+        :target <https://example.org/insight/calidor> .
+    :check :authorizationAllowed true .
+} .
+
+# eligible package = within budget and covers every required capability
+{
+    ?pkg a :SupportPackage ;
+        :costEur ?cost .
+    :case :maxPackageCostEur ?budget .
+    ?budget math:notLessThan ?cost .
+    1 log:notIncludes {
+        :case :requiredCapability ?cap .
+        1 log:notIncludes { ?pkg :capability ?cap . } .
+    } .
+} => {
+    :case :eligiblePackage ?pkg .
+} .
+
+# recommend the lowest-cost eligible package
+{
+    :case :eligiblePackage ?candidate .
+    ?candidate :costEur ?candidateCost .
+    1 log:notIncludes {
+        :case :eligiblePackage ?other .
+        ?other :costEur ?otherCost .
+        ?otherCost math:lessThan ?candidateCost .
+    } .
+} => {
+    :case :recommendedPackage ?candidate .
+} .
+
+{
+    :case :recommendedPackage ?pkg .
+    ?pkg :packageName ?name .
+} => {
+    :decision :recommendedPackageName ?name .
+} .
+
+# recommended_package_eligible
+{
+    :case :recommendedPackage ?pkg .
+    :case :eligiblePackage ?pkg .
+} => {
+    :check :recommendedPackageEligible true .
+} .
+
+# duty_timing_consistent
+{
+    :case :cityDutyAt ?dutyAt .
+    <https://example.org/insight/calidor> :expiresAt ?expiresAt .
+    ?dutyAt math:notGreaterThan ?expiresAt .
+} => {
+    :check :dutyTimingConsistent true .
+} .
+
+# tenant_screening_prohibited
+{
+    :policy odrl:prohibition [
+        odrl:action odrl:distribute ;
+        odrl:constraint [
+            odrl:rightOperand "tenant_screening"
+        ]
+    ] .
+} => {
+    :check :tenantScreeningProhibited true .
+} .
+
+# visible support checks
+{ :case :heatAlertActive true . } => { :check :heatAlertActive true . } .
+{ :case :unsafeIndoorHeat true . } => { :check :unsafeIndoorHeat true . } .
+{ :case :priorityCoolingSupportNeeded true . } => { :check :priorityCoolingSupportNeeded true . } .
+
+{
+    :check :signatureVerifies true ;
+        :payloadHashMatches true ;
+        :minimizationStripsSensitiveTerms true ;
+        :scopeComplete true ;
+        :authorizationAllowed true ;
+        :heatAlertActive true ;
+        :unsafeIndoorHeat true ;
+        :priorityCoolingSupportNeeded true ;
+        :recommendedPackageEligible true ;
+        :dutyTimingConsistent true ;
+        :tenantScreeningProhibited true .
+} => {
+    :result :allChecksPass true .
+} .
+
+# -------------------------------------
+# Hard checks (Eyeling inference fuses)
+# -------------------------------------
+
+{
+    :case :cityAuthAt ?authAt .
+    <https://example.org/insight/calidor> :expiresAt ?expiresAt .
+    ?authAt math:greaterThan ?expiresAt .
+} => false .
+
+{
+    :case :cityDutyAt ?dutyAt .
+    <https://example.org/insight/calidor> :expiresAt ?expiresAt .
+    ?dutyAt math:greaterThan ?expiresAt .
+} => false .
+
+{
+    :envelope :canonicalJson ?json .
+    ?json crypto:sha256 ?actual .
+    :signature :payloadHashSHA256 ?expected .
+    ?actual log:notEqualTo ?expected .
+} => false .
+
+{
+    :case :recommendedPackage ?pkg .
+    ?pkg :costEur ?cost .
+    :case :maxPackageCostEur ?budget .
+    ?cost math:greaterThan ?budget .
+} => false .
+
+{
+    :case :recommendedPackage ?pkg .
+    :case :requiredCapability ?cap .
+    1 log:notIncludes { ?pkg :capability ?cap . } .
+} => false .
+
+# --------------------------------------
+# ARC rendering through log:outputString
+# --------------------------------------
+
+:out01 log:outputString "=== Answer ===\n" .
+
+{
+    :case :recommendedPackage ?pkg .
+    ?pkg :packageName ?name .
+    ("The city is allowed to use a narrow heatwave-response insight and recommends %s for this household.\n" ?name) string:format ?line .
+} => {
+    :out02 log:outputString ?line .
+} .
+
+:out03 log:outputString "case                 : calidor\n" .
+:out04 log:outputString "decision             : Allowed\n" .
+:out05 log:outputString "municipality         : Calidor\n" .
+
+{
+    :case :recommendedPackage ?pkg .
+    ?pkg :packageName ?name .
+    ("recommended package  : %s\n" ?name) string:format ?line .
+} => {
+    :out06 log:outputString ?line .
+} .
+
+:out07 log:outputString "\n=== Reason Why ===\n" .
+:out08 log:outputString "The gateway desensitizes local heat, vulnerability, and prepaid-energy stress into an expiring municipal support insight, and the city consumes that envelope only for heatwave response.\n" .
+:out09 log:outputString "metric               : active_need_count\n" .
+
+{
+    <https://example.org/insight/calidor> :thresholdDisplay ?threshold .
+    ("threshold            : %s\n" ?threshold) string:format ?line .
+} => {
+    :out10 log:outputString ?line .
+} .
+
+:out11 log:outputString "scope                : household-gateway @ heat-alert-window\n" .
+:out12 log:outputString "required capabilities: bill_credit, cooling_kit, transport, welfare_check\n" .
+
+{
+    :case :activeNeedCount ?count .
+    ("active need count    : %s\n" ?count) string:format ?line .
+} => {
+    :out13 log:outputString ?line .
+} .
+
+{
+    :signature :alg ?alg .
+    ("signature alg        : %s\n" ?alg) string:format ?line .
+} => {
+    :out14 log:outputString ?line .
+} .
+
+:out15 log:outputString "expires at           : 2026-07-18T21:00:00+00:00\n" .
+
+{
+    :reasonText :value ?reason .
+    ("reason.txt           : %s" ?reason) string:format ?line .
+} => {
+    :out16 log:outputString ?line .
+} .
+
+{
+    :case :dispatchesLogged ?n .
+    ("dispatches logged    : %s\n" ?n) string:format ?line .
+} => {
+    :out17 log:outputString ?line .
+} .
+
+:out18 log:outputString "\n=== Check ===\n" .
+
+{ :check :signatureVerifies true . } => { :out19 log:outputString "signature verifies              : yes\n" . } .
+{ :check :payloadHashMatches true . } => { :out20 log:outputString "payload hash matches            : yes\n" . } .
+{ :check :minimizationStripsSensitiveTerms true . } => { :out21 log:outputString "minimization strips sensitive terms: yes\n" . } .
+{ :check :scopeComplete true . } => { :out22 log:outputString "scope complete                  : yes\n" . } .
+{ :check :authorizationAllowed true . } => { :out23 log:outputString "authorization allowed           : yes\n" . } .
+{ :check :heatAlertActive true . } => { :out24 log:outputString "heat-alert active               : yes\n" . } .
+{ :check :unsafeIndoorHeat true . } => { :out25 log:outputString "unsafe indoor heat              : yes\n" . } .
+{ :check :priorityCoolingSupportNeeded true . } => { :out26 log:outputString "priority cooling support needed : yes\n" . } .
+{ :check :recommendedPackageEligible true . } => { :out27 log:outputString "recommended package eligible    : yes\n" . } .
+{ :check :dutyTimingConsistent true . } => { :out28 log:outputString "duty timing consistent          : yes\n" . } .
+{ :check :tenantScreeningProhibited true . } => { :out29 log:outputString "tenant screening prohibited     : yes\n" . } .
