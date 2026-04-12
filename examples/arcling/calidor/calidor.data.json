@@ -23,10 +23,7 @@
     "minimumActiveNeedCount": 3
   },
   "localProfile": {
-    "vulnerabilityFlags": [
-      "heat_sensitive_condition",
-      "mobility_limitation"
-    ]
+    "vulnerabilityFlags": ["heat_sensitive_condition", "mobility_limitation"]
   },
   "heatStatus": {
     "currentAlertLevel": 4,

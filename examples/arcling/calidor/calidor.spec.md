@@ -2,20 +2,13 @@
 
 ## Status
 
-This document is the normative specification for the Calidor case.
-The file `calidor.model.go` is the reference Go implementation of these clauses.
-The file `calidor.data.json` is the instance evaluated in this bundle.
-The file `calidor.expected.json` is the conformance vector for that instance.
+This document is the normative specification for the Calidor case. The file `calidor.model.go` is the reference Go implementation of these clauses. The file `calidor.data.json` is the instance evaluated in this bundle. The file `calidor.expected.json` is the conformance vector for that instance.
 
 ## Insight Economy context
 
-This case models municipal heatwave support.
-A household gateway observes local indoor heat stress, local vulnerability signals, and local prepaid-energy stress.
-Those raw details remain local.
-The system shares only a narrow, expiring insight that the household qualifies for priority cooling support during the current heat-alert window.
+This case models municipal heatwave support. A household gateway observes local indoor heat stress, local vulnerability signals, and local prepaid-energy stress. Those raw details remain local. The system shares only a narrow, expiring insight that the household qualifies for priority cooling support during the current heat-alert window.
 
-The city may use that insight for heatwave response.
-It may not reuse it for unrelated purposes such as tenant screening.
+The city may use that insight for heatwave response. It may not reuse it for unrelated purposes such as tenant screening.
 
 ## Conventions
 

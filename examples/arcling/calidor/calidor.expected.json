@@ -7,15 +7,8 @@
     "energyConstraint": true,
     "activeNeedCount": 4,
     "priorityCoolingSupportNeeded": true,
-    "requiredCapabilities": [
-      "bill_credit",
-      "cooling_kit",
-      "transport",
-      "welfare_check"
-    ],
-    "eligiblePackageIds": [
-      "pkg:BUNDLE"
-    ],
+    "requiredCapabilities": ["bill_credit", "cooling_kit", "transport", "welfare_check"],
+    "eligiblePackageIds": ["pkg:BUNDLE"],
     "recommendedPackageId": "pkg:BUNDLE",
     "recommendedPackageName": "Calidor Priority Cooling Bundle"
   },
@@ -72,12 +65,7 @@
   "answer": {
     "sentence": "The city is allowed to use a narrow heatwave-response insight and recommends Calidor Priority Cooling Bundle for this household.",
     "recommendedPackage": "Calidor Priority Cooling Bundle",
-    "requiredCapabilities": [
-      "bill_credit",
-      "cooling_kit",
-      "transport",
-      "welfare_check"
-    ],
+    "requiredCapabilities": ["bill_credit", "cooling_kit", "transport", "welfare_check"],
     "payloadHashSHA256": "1bf53a644fa39f5a1dd324f24872767f04379656e888fd456f4d498e12f1a65c",
     "envelopeHmacSHA256": "e635c7c1991742a5c36992fc0da32a7abc80b32aa5777a1142adaab55183681c"
   },
