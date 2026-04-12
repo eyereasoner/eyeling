@@ -6,9 +6,7 @@ const assert = require('node:assert/strict');
 const { execFileSync } = require('node:child_process');
 
 const TTY = process.stdout.isTTY;
-const C = TTY
-  ? { g: '[32m', r: '[31m', y: '[33m', dim: '[2m', n: '[0m' }
-  : { g: '', r: '', y: '', dim: '', n: '' };
+const C = TTY ? { g: '[32m', r: '[31m', y: '[33m', dim: '[2m', n: '[0m' } : { g: '', r: '', y: '', dim: '', n: '' };
 const msTag = (ms) => `${C.dim}(${ms} ms)${C.n}`;
 
 function ok(msg) {
@@ -49,10 +47,7 @@ function listCaseDirs(baseDir) {
 }
 
 function findModelPath(caseDir, base) {
-  const candidates = [
-    path.join(caseDir, `${base}.model.go`),
-    path.join(caseDir, `${base}.model.mjs`),
-  ];
+  const candidates = [path.join(caseDir, `${base}.model.go`), path.join(caseDir, `${base}.model.mjs`)];
 
   for (const candidate of candidates) {
     if (fs.existsSync(candidate)) return candidate;
