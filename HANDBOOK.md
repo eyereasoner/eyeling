@@ -3131,29 +3131,69 @@ Sometimes that means recomputing a quantity from another angle. Sometimes it mea
 
 The point is not to make checks large. The point is to make them real.
 
-### F.6 Examples in `examples/` that read well in ARC style
+### F.6 ARC and the Insight Economy
 
-The following examples are especially good places to see this style in practice.
+One reason ARC matters beyond pedagogy is that it matches a broader way of thinking about data and computation that Ruben Verborgh has called the **Insight Economy**.
 
-- [`examples/delfour.n3`](examples/delfour.n3) — privacy-preserving shopping assistance with a concrete recommendation, an explanation, and policy checks. Expected output: [`examples/output/delfour.n3`](examples/output/delfour.n3)
-- [`examples/control-system.n3`](examples/control-system.n3) — derives actuator decisions, explains the control basis, and checks the result. Expected output: [`examples/output/control-system.n3`](examples/output/control-system.n3)
-- [`examples/deep-taxonomy-100000.n3`](examples/deep-taxonomy-100000.n3) — a deep classification stress test whose answer is whether the final goal class is reached. Expected output: [`examples/output/deep-taxonomy-100000.n3`](examples/output/deep-taxonomy-100000.n3)
-- [`examples/gps.n3`](examples/gps.n3) — route planning with readable route output. Expected output: [`examples/output/gps.n3`](examples/output/gps.n3)
-- [`examples/sudoku.n3`](examples/sudoku.n3) — solver output plus legality and consistency checks. Expected output: [`examples/output/sudoku.n3`](examples/output/sudoku.n3)
+The basic claim is simple: raw data is usually the wrong thing to exchange directly. A better system refines source data into a **specific, purpose-limited, time-bound insight** that is useful in one context, loses much of its value when copied without that context, and can be governed more safely than an unrestricted dump of the original data.
 
-### F.7 How to read an ARC-style example
+That fits Eyeling remarkably well. Eyeling can derive narrow conclusions explicitly, show why they follow, and attach checks that make sure a decision still respects policy, scope, thresholds, or consistency constraints. In other words, an Eyeling program can act as a small governed insight refinery rather than as a black box that merely emits a verdict.
+
+This is also why ARC is a good mental model here. The **Answer** is the bounded insight. The **Reason Why** makes the governing basis visible. The **Check** ensures the result can be trusted for the stated purpose instead of silently drifting beyond it.
+
+### F.7 ARC-style examples in `examples/`
+
+The following examples are especially useful if you want to see Eyeling files that derive an answer, expose the key reason, and include meaningful checks. Each entry links to both the source example and the corresponding generated output in [`examples/output/`](examples/output/).
+
+#### Insight Economy and governed-data cases
+
+- [`examples/auroracare.n3`](examples/auroracare.n3) · [`examples/output/auroracare.txt`](examples/output/auroracare.txt) — purpose-based medical data exchange with explicit allow/deny reasoning and checks around role, purpose, and conditions.
+- [`examples/calidor.n3`](examples/calidor.n3) · [`examples/output/calidor.txt`](examples/output/calidor.txt) — heatwave-response case where private household signals become a narrow, expiring cooling-support insight.
+- [`examples/delfour.n3`](examples/delfour.n3) · [`examples/output/delfour.txt`](examples/output/delfour.txt) — shopping-assistance case where a private condition becomes a bounded “prefer lower-sugar products” insight.
+- [`examples/flandor.n3`](examples/flandor.n3) · [`examples/output/flandor.txt`](examples/output/flandor.txt) — macro-economic coordination case for Flanders that turns sensitive local signals into a regional retooling insight.
+- [`examples/medior.n3`](examples/medior.n3) · [`examples/output/medior.txt`](examples/output/medior.txt) — post-discharge care-coordination case that derives a minimal continuity-bundle insight without sharing the full record.
+- [`examples/parcellocker.n3`](examples/parcellocker.n3) · [`examples/output/parcellocker.txt`](examples/output/parcellocker.txt) — one-time parcel pickup authorization with a clear permit decision, justification, and misuse checks.
+
+#### Core ARC-style walkthroughs
+
+- [`examples/bmi.n3`](examples/bmi.n3) · [`examples/output/bmi.txt`](examples/output/bmi.txt) — Body Mass Index calculation with normalization, WHO category assignment, and boundary checks.
+- [`examples/control-system.n3`](examples/control-system.n3) · [`examples/output/control-system.txt`](examples/output/control-system.txt) — small control-system example that derives actuator commands and explains feedforward and feedback contributions.
+- [`examples/easter.n3`](examples/easter.n3) · [`examples/output/easter.txt`](examples/output/easter.txt) — Gregorian Easter computus with a readable explanation and date-window checks.
+- [`examples/french-cities.n3`](examples/french-cities.n3) · [`examples/output/french-cities.txt`](examples/output/french-cities.txt) — graph reachability over French cities with explicit path reasoning.
+- [`examples/gps.n3`](examples/gps.n3) · [`examples/output/gps.txt`](examples/output/gps.txt) — tiny route-planning example for western Belgium with route comparison and metric checks.
+- [`examples/resto.n3`](examples/resto.n3) · [`examples/output/resto.txt`](examples/output/resto.txt) — RESTdesc-style service composition from person and date to a concrete restaurant reservation.
+- [`examples/sudoku.n3`](examples/sudoku.n3) · [`examples/output/sudoku.txt`](examples/output/sudoku.txt) — Sudoku solver and report generator with consistency checks over the solved grid.
+- [`examples/wind-turbine.n3`](examples/wind-turbine.n3) · [`examples/output/wind-turbine.txt`](examples/output/wind-turbine.txt) — predictive-maintenance example that turns sensor readings into an auditable inspection decision.
+
+#### Technical and scientific ARC demos
+
+- [`examples/matrix-mechanics.n3`](examples/matrix-mechanics.n3) · [`examples/output/matrix-mechanics.txt`](examples/output/matrix-mechanics.txt) — small 2×2 matrix example deriving trace, determinant, products, and a non-zero commutator.
+- [`examples/pn-junction-tunneling.n3`](examples/pn-junction-tunneling.n3) · [`examples/output/pn-junction-tunneling.txt`](examples/output/pn-junction-tunneling.txt) — semiconductor toy model that explains current-proxy behavior across bias points.
+- [`examples/transistor-switch.n3`](examples/transistor-switch.n3) · [`examples/output/transistor-switch.txt`](examples/output/transistor-switch.txt) — NPN low-side switch model with exact arithmetic and cutoff-versus-saturation checks.
+
+#### Deep-classification stress tests
+
+- [`examples/deep-taxonomy-10.n3`](examples/deep-taxonomy-10.n3) · [`examples/output/deep-taxonomy-10.txt`](examples/output/deep-taxonomy-10.txt) — ARC-style deep-taxonomy benchmark at depth 10.
+- [`examples/deep-taxonomy-100.n3`](examples/deep-taxonomy-100.n3) · [`examples/output/deep-taxonomy-100.txt`](examples/output/deep-taxonomy-100.txt) — ARC-style deep-taxonomy benchmark at depth 100.
+- [`examples/deep-taxonomy-1000.n3`](examples/deep-taxonomy-1000.n3) · [`examples/output/deep-taxonomy-1000.txt`](examples/output/deep-taxonomy-1000.txt) — ARC-style deep-taxonomy benchmark at depth 1000.
+- [`examples/deep-taxonomy-10000.n3`](examples/deep-taxonomy-10000.n3) · [`examples/output/deep-taxonomy-10000.txt`](examples/output/deep-taxonomy-10000.txt) — ARC-style deep-taxonomy benchmark at depth 10000.
+- [`examples/deep-taxonomy-100000.n3`](examples/deep-taxonomy-100000.n3) · [`examples/output/deep-taxonomy-100000.txt`](examples/output/deep-taxonomy-100000.txt) — ARC-style deep-taxonomy benchmark at depth 100000.
+
+These files fit together because they all present reasoning in a recognizably ARC-like way: they derive an answer, make the reason visible in a compact report, and include checks that are meant to catch real mistakes. Some are classical logic or numeric examples; others show how Eyeling can express policy-aware, insight-oriented decision flows without collapsing everything into opaque application code.
+
+### F.8 How to read an ARC-style example
 
 A good way to read one of these files is to start with the question in the comments or input facts. Then find the part that gives the answer. Then trace the few rules that explain why that answer follows. Finally, look for the checks: the validation facts, the recomputation, or the `=> false` fuse that would stop the run if something important were wrong.
 
 That reading order keeps the example grounded in observable behavior rather than in source code alone.
 
-### F.8 What ARC is not
+### F.9 What ARC is not
 
 ARC does not mean wrapping every file in ceremony. It does not mean long prose explanations. It does not mean hiding important assumptions in comments while the executable part stays thin. And it does not mean replacing checks with a confident tone.
 
 A file really follows ARC only when the answer, the explanation, and the validation all live in the program itself.
 
-### F.9 Why this style is worth using
+### F.10 Why this style is worth using
 
 This style is worth using because it makes an Eyeling file easier to run, easier to inspect, and easier to trust. The result is visible. The key reason is visible. The check is visible. That makes examples better teaching material, makes policy or computation examples easier to audit, and makes the whole file more reusable as a small reasoning artifact instead of an opaque session transcript.
 
