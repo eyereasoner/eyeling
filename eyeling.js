@@ -1338,6 +1338,15 @@ function parseXsdFloatSpecialLex(s) {
   return null;
 }
 
+function inferDatatypeForShorthandLexical(lex) {
+  if (typeof lex !== 'string' || isQuotedLexical(lex)) return null;
+  if (lex === 'true' || lex === 'false') return XSD_NS + 'boolean';
+  if (/^[+-]?\d+$/.test(lex)) return XSD_NS + 'integer';
+  if (/^[+-]?(?:\d+\.\d*|\.\d+)$/.test(lex)) return XSD_NS + 'decimal';
+  if (/^[+-]?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][+-]?\d+)$/.test(lex)) return XSD_NS + 'double';
+  return null;
+}
+
 // ===========================================================================
 // Math builtin helpers
 // ===========================================================================
@@ -3850,6 +3859,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       if (oDt === null) {
         if (literalHasLangTag(g.o.value)) oDt = RDF_NS + 'langString';
         else if (isPlainStringLiteralValue(g.o.value)) oDt = XSD_NS + 'string';
+        else oDt = inferDatatypeForShorthandLexical(oLex);
       }
 
       if (oDt !== null) {

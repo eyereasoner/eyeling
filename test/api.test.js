@@ -2152,6 +2152,32 @@ _:x :hates { _:foo :making :mess }.
     ],
     notExpect: [/:result\s+:sumX\s+"329"\^\^xsd:decimal\s*\./, /:result\s+:meanX\s+"47"\^\^xsd:decimal\s*\./],
   },
+  {
+    name: '244 regression: log:dtlit recognizes shorthand numeric and boolean literals',
+    opt: { proofComments: false },
+    input: `@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix : <http://example.org#> .
+
+:let :term 4, 2.5, 3e1, true, "3"^^xsd:integer .
+
+{
+  :let :term ?term .
+  (?text ?datatype) log:dtlit ?term .
+}
+=>
+{
+  ?term :is (?text ?datatype) .
+}.
+`,
+    expect: [
+      /^4\s+:is\s+\("4"\s+xsd:integer\)\s*\./m,
+      /^2\.5\s+:is\s+\("2\.5"\s+xsd:decimal\)\s*\./m,
+      /^3e1\s+:is\s+\("3e1"\s+xsd:double\)\s*\./m,
+      /^true\s+:is\s+\("true"\s+xsd:boolean\)\s*\./m,
+      /^"3"\^\^xsd:integer\s+:is\s+\("3"\s+xsd:integer\)\s*\./m,
+    ],
+  },
 ];
 
 let passed = 0;
