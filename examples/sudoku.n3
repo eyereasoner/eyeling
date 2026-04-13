@@ -114,8 +114,8 @@
                      log:outputString ?puzzleText ;
                      log:outputString "\n" ;
                      log:outputString "Completed grid\n" ;
-                     log:outputString ?solutionText ;
-                     log:outputString "\n\n" .
+                     log:outputString ?solutionText .
+         :01b-answer log:outputString "\n" .
          :02-reason log:outputString "=== Reason Why ===\n" ;
                     log:outputString ?reasonText ;
                     log:outputString "\n\n" .
