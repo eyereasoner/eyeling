@@ -3143,7 +3143,7 @@ This is also why ARC is a good mental model here. The **Answer** is the bounded 
 
 ### F.7 ARC-style examples in `examples/`
 
-The following examples are especially useful if you want to see Eyeling files that derive an answer, expose the key reason, and include meaningful checks. Each entry links to both the source example and the corresponding generated output in [`examples/output/`](examples/output/).
+The following examples are especially useful if you want to see Eyeling files that derive an answer, expose the key reason, and include meaningful checks. Each entry links to both the source example and the corresponding generated output file in `examples/output/`.
 
 #### Insight Economy and governed-data cases
 
