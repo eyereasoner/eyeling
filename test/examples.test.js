@@ -78,6 +78,24 @@ function showDiff({ examplesDir, expectedPath, generatedPath }) {
   if (d.stderr) process.stderr.write(d.stderr);
 }
 
+function resolveExpectedPath(outputDir, inputFile) {
+  const exactPath = path.join(outputDir, inputFile);
+  if (fs.existsSync(exactPath)) return exactPath;
+
+  const stem = path.basename(inputFile, path.extname(inputFile));
+  const candidates = fs
+    .readdirSync(outputDir)
+    .filter((name) => path.basename(name, path.extname(name)) === stem)
+    .sort((a, b) => {
+      if (path.extname(a) === '.txt' && path.extname(b) !== '.txt') return -1;
+      if (path.extname(a) !== '.txt' && path.extname(b) === '.txt') return 1;
+      return a.localeCompare(b);
+    });
+
+  if (candidates.length === 0) return null;
+  return path.join(outputDir, candidates[0]);
+}
+
 function main() {
   const suiteStart = Date.now();
 
@@ -123,7 +141,7 @@ function main() {
     const start = Date.now();
 
     const filePath = path.join(examplesDir, file);
-    const expectedPath = path.join(outputDir, file);
+    const expectedPath = resolveExpectedPath(outputDir, file);
 
     let n3Text;
     try {
@@ -144,7 +162,7 @@ function main() {
     if (!fs.existsSync(expectedPath)) {
       const ms = Date.now() - start;
       fail(`${idx} ${file} ${msTag(ms)}`);
-      fail(`Missing expected output/${file}`);
+      fail(`Missing expected output for ${path.basename(file, path.extname(file))}.*`);
       failed++;
       continue;
     }

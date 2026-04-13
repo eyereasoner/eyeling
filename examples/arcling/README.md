@@ -20,37 +20,37 @@ Each entry links to both the source example and the corresponding generated outp
 
 ### Insight Economy and governed-data cases
 
-- [`../auroracare.n3`](../auroracare.n3) · [`../output/auroracare.n3`](../output/auroracare.n3) — Purpose-based medical data exchange with explicit allow/deny reasoning and checks around role, purpose, and conditions.
-- [`../calidor.n3`](../calidor.n3) · [`../output/calidor.n3`](../output/calidor.n3) — Heatwave-response case where private household signals become a narrow, expiring cooling-support insight.
-- [`../delfour.n3`](../delfour.n3) · [`../output/delfour.n3`](../output/delfour.n3) — Shopping-assistance case where a private condition becomes a bounded “prefer lower-sugar products” insight.
-- [`../flandor.n3`](../flandor.n3) · [`../output/flandor.n3`](../output/flandor.n3) — Macro-economic coordination case for Flanders that turns sensitive local signals into a regional retooling insight.
-- [`../medior.n3`](../medior.n3) · [`../output/medior.n3`](../output/medior.n3) — Post-discharge care-coordination case that derives a minimal continuity-bundle insight without sharing the full record.
-- [`../parcellocker.n3`](../parcellocker.n3) · [`../output/parcellocker.n3`](../output/parcellocker.n3) — One-time parcel pickup authorization with a clear permit decision, justification, and misuse checks.
+- [`../auroracare.n3`](../auroracare.n3) · [`../output/auroracare.txt`](../output/auroracare.txt) — Purpose-based medical data exchange with explicit allow/deny reasoning and checks around role, purpose, and conditions.
+- [`../calidor.n3`](../calidor.n3) · [`../output/calidor.txt`](../output/calidor.txt) — Heatwave-response case where private household signals become a narrow, expiring cooling-support insight.
+- [`../delfour.n3`](../delfour.n3) · [`../output/delfour.txt`](../output/delfour.txt) — Shopping-assistance case where a private condition becomes a bounded “prefer lower-sugar products” insight.
+- [`../flandor.n3`](../flandor.n3) · [`../output/flandor.txt`](../output/flandor.txt) — Macro-economic coordination case for Flanders that turns sensitive local signals into a regional retooling insight.
+- [`../medior.n3`](../medior.n3) · [`../output/medior.txt`](../output/medior.txt) — Post-discharge care-coordination case that derives a minimal continuity-bundle insight without sharing the full record.
+- [`../parcellocker.n3`](../parcellocker.n3) · [`../output/parcellocker.txt`](../output/parcellocker.txt) — One-time parcel pickup authorization with a clear permit decision, justification, and misuse checks.
 
 ### Core ARC-style walkthroughs
 
-- [`../bmi.n3`](../bmi.n3) · [`../output/bmi.n3`](../output/bmi.n3) — Body Mass Index calculation with normalization, WHO category assignment, and boundary checks.
-- [`../control-system.n3`](../control-system.n3) · [`../output/control-system.n3`](../output/control-system.n3) — Small control-system example that derives actuator commands and explains feedforward and feedback contributions.
-- [`../easter.n3`](../easter.n3) · [`../output/easter.n3`](../output/easter.n3) — Gregorian Easter computus with a readable explanation and date-window checks.
-- [`../french-cities.n3`](../french-cities.n3) · [`../output/french-cities.n3`](../output/french-cities.n3) — Graph reachability over French cities with explicit path reasoning.
-- [`../gps.n3`](../gps.n3) · [`../output/gps.n3`](../output/gps.n3) — Tiny route-planning example for western Belgium with route comparison and metric checks.
-- [`../resto.n3`](../resto.n3) · [`../output/resto.n3`](../output/resto.n3) — RESTdesc-style service composition from person and date to a concrete restaurant reservation.
-- [`../sudoku.n3`](../sudoku.n3) · [`../output/sudoku.n3`](../output/sudoku.n3) — Sudoku solver and report generator with consistency checks over the solved grid.
-- [`../wind-turbine.n3`](../wind-turbine.n3) · [`../output/wind-turbine.n3`](../output/wind-turbine.n3) — Predictive-maintenance example that turns sensor readings into an auditable inspection decision.
+- [`../bmi.n3`](../bmi.n3) · [`../output/bmi.txt`](../output/bmi.txt) — Body Mass Index calculation with normalization, WHO category assignment, and boundary checks.
+- [`../control-system.n3`](../control-system.n3) · [`../output/control-system.txt`](../output/control-system.txt) — Small control-system example that derives actuator commands and explains feedforward and feedback contributions.
+- [`../easter.n3`](../easter.n3) · [`../output/easter.txt`](../output/easter.txt) — Gregorian Easter computus with a readable explanation and date-window checks.
+- [`../french-cities.n3`](../french-cities.n3) · [`../output/french-cities.txt`](../output/french-cities.txt) — Graph reachability over French cities with explicit path reasoning.
+- [`../gps.n3`](../gps.n3) · [`../output/gps.txt`](../output/gps.txt) — Tiny route-planning example for western Belgium with route comparison and metric checks.
+- [`../resto.n3`](../resto.n3) · [`../output/resto.txt`](../output/resto.txt) — RESTdesc-style service composition from person and date to a concrete restaurant reservation.
+- [`../sudoku.n3`](../sudoku.n3) · [`../output/sudoku.txt`](../output/sudoku.txt) — Sudoku solver and report generator with consistency checks over the solved grid.
+- [`../wind-turbine.n3`](../wind-turbine.n3) · [`../output/wind-turbine.txt`](../output/wind-turbine.txt) — Predictive-maintenance example that turns sensor readings into an auditable inspection decision.
 
 ### Technical and scientific ARC demos
 
-- [`../matrix-mechanics.n3`](../matrix-mechanics.n3) · [`../output/matrix-mechanics.n3`](../output/matrix-mechanics.n3) — Small 2×2 matrix example deriving trace, determinant, products, and a non-zero commutator.
-- [`../pn-junction-tunneling.n3`](../pn-junction-tunneling.n3) · [`../output/pn-junction-tunneling.n3`](../output/pn-junction-tunneling.n3) — Semiconductor toy model that explains current-proxy behavior across bias points.
-- [`../transistor-switch.n3`](../transistor-switch.n3) · [`../output/transistor-switch.n3`](../output/transistor-switch.n3) — NPN low-side switch model with exact arithmetic and cutoff-versus-saturation checks.
+- [`../matrix-mechanics.n3`](../matrix-mechanics.n3) · [`../output/matrix-mechanics.txt`](../output/matrix-mechanics.txt) — Small 2×2 matrix example deriving trace, determinant, products, and a non-zero commutator.
+- [`../pn-junction-tunneling.n3`](../pn-junction-tunneling.n3) · [`../output/pn-junction-tunneling.txt`](../output/pn-junction-tunneling.txt) — Semiconductor toy model that explains current-proxy behavior across bias points.
+- [`../transistor-switch.n3`](../transistor-switch.n3) · [`../output/transistor-switch.txt`](../output/transistor-switch.txt) — NPN low-side switch model with exact arithmetic and cutoff-versus-saturation checks.
 
 ### Deep-classification stress tests
 
-- [`../deep-taxonomy-10.n3`](../deep-taxonomy-10.n3) · [`../output/deep-taxonomy-10.n3`](../output/deep-taxonomy-10.n3) — ARC-style deep-taxonomy benchmark at depth 10.
-- [`../deep-taxonomy-100.n3`](../deep-taxonomy-100.n3) · [`../output/deep-taxonomy-100.n3`](../output/deep-taxonomy-100.n3) — ARC-style deep-taxonomy benchmark at depth 100.
-- [`../deep-taxonomy-1000.n3`](../deep-taxonomy-1000.n3) · [`../output/deep-taxonomy-1000.n3`](../output/deep-taxonomy-1000.n3) — ARC-style deep-taxonomy benchmark at depth 1000.
-- [`../deep-taxonomy-10000.n3`](../deep-taxonomy-10000.n3) · [`../output/deep-taxonomy-10000.n3`](../output/deep-taxonomy-10000.n3) — ARC-style deep-taxonomy benchmark at depth 10000.
-- [`../deep-taxonomy-100000.n3`](../deep-taxonomy-100000.n3) · [`../output/deep-taxonomy-100000.n3`](../output/deep-taxonomy-100000.n3) — ARC-style deep-taxonomy benchmark at depth 100000.
+- [`../deep-taxonomy-10.n3`](../deep-taxonomy-10.n3) · [`../output/deep-taxonomy-10.txt`](../output/deep-taxonomy-10.txt) — ARC-style deep-taxonomy benchmark at depth 10.
+- [`../deep-taxonomy-100.n3`](../deep-taxonomy-100.n3) · [`../output/deep-taxonomy-100.txt`](../output/deep-taxonomy-100.txt) — ARC-style deep-taxonomy benchmark at depth 100.
+- [`../deep-taxonomy-1000.n3`](../deep-taxonomy-1000.n3) · [`../output/deep-taxonomy-1000.txt`](../output/deep-taxonomy-1000.txt) — ARC-style deep-taxonomy benchmark at depth 1000.
+- [`../deep-taxonomy-10000.n3`](../deep-taxonomy-10000.n3) · [`../output/deep-taxonomy-10000.txt`](../output/deep-taxonomy-10000.txt) — ARC-style deep-taxonomy benchmark at depth 10000.
+- [`../deep-taxonomy-100000.n3`](../deep-taxonomy-100000.n3) · [`../output/deep-taxonomy-100000.txt`](../output/deep-taxonomy-100000.txt) — ARC-style deep-taxonomy benchmark at depth 100000.
 
 ## Why these examples fit together
 
