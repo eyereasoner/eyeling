@@ -3184,6 +3184,7 @@ The following examples are especially useful if you want to see Eyeling files th
 
 - [`examples/alarm-bit-interoperability.n3`](examples/alarm-bit-interoperability.n3) · [`examples/output/alarm-bit-interoperability.txt`](examples/output/alarm-bit-interoperability.txt) — constructor-theory information example showing interoperability of an alarm bit across unlike media together with a no-cloning contrast for a quantum token.
 - [`examples/constructor-theory-docking-abort.n3`](examples/constructor-theory-docking-abort.n3) · [`examples/output/constructor-theory-docking-abort.txt`](examples/output/constructor-theory-docking-abort.txt) — constructor-theory ARC case for a spacecraft docking-abort token covering permutation, copying, measurement, serial and parallel composition, and the impossibility of cloning a quantum seal.
+- [`examples/constructor-theory-isolation-breach.n3`](examples/constructor-theory-isolation-breach.n3) · [`examples/output/constructor-theory-isolation-breach.txt`](examples/output/constructor-theory-isolation-breach.txt — constructor-theory ARC case for a biosafety isolation-breach token covering preparation, distinguishability, reversible permutation, copying, measurement, composition, and no-cloning.
 
 #### Deep-classification stress tests
 
