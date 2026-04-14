@@ -3159,6 +3159,8 @@ The following examples are especially useful if you want to see Eyeling files th
 - [`examples/parcellocker.n3`](examples/parcellocker.n3) · [`examples/output/parcellocker.txt`](examples/output/parcellocker.txt) — one-time parcel pickup authorization with a clear permit decision, justification, and misuse checks.
 - [`examples/harborsmr.n3`](examples/harborsmr.n3) · [`examples/output/harborsmr.txt`](examples/output/harborsmr.txt) — SMR flexibility case where private plant telemetry becomes a narrow, expiring electrolysis-dispatch insight with policy and safety checks.
 
+ - [`examples/transistor-switch.n3`](examples/transistor-switch.n3) · [`examples/output/transistor-switch.txt`](examples/output/transistor-switch.txt) — NPN low-side switch model with exact arithmetic and cutoff-versus-saturation checks.
+
 #### Core ARC-style walkthroughs
 
 - [`examples/bmi.n3`](examples/bmi.n3) · [`examples/output/bmi.txt`](examples/output/bmi.txt) — Body Mass Index calculation with normalization, WHO category assignment, and boundary checks.
@@ -3177,6 +3179,11 @@ The following examples are especially useful if you want to see Eyeling files th
 - [`examples/matrix-mechanics.n3`](examples/matrix-mechanics.n3) · [`examples/output/matrix-mechanics.txt`](examples/output/matrix-mechanics.txt) — small 2×2 matrix example deriving trace, determinant, products, and a non-zero commutator.
 - [`examples/pn-junction-tunneling.n3`](examples/pn-junction-tunneling.n3) · [`examples/output/pn-junction-tunneling.txt`](examples/output/pn-junction-tunneling.txt) — semiconductor toy model that explains current-proxy behavior across bias points.
 - [`examples/transistor-switch.n3`](examples/transistor-switch.n3) · [`examples/output/transistor-switch.txt`](examples/output/transistor-switch.txt) — NPN low-side switch model with exact arithmetic and cutoff-versus-saturation checks.
+
+#### Constructor-theory ARC examples
+
+- [`examples/alarm-bit-interoperability.n3`](examples/alarm-bit-interoperability.n3) · [`examples/output/alarm-bit-interoperability.txt`](examples/output/alarm-bit-interoperability.txt) — constructor-theory information example showing interoperability of an alarm bit across unlike media together with a no-cloning contrast for a quantum token.
+- [`examples/constructor-theory-docking-abort.n3`](examples/constructor-theory-docking-abort.n3) · [`examples/output/constructor-theory-docking-abort.txt`](examples/output/constructor-theory-docking-abort.txt) — constructor-theory ARC case for a spacecraft docking-abort token covering permutation, copying, measurement, serial and parallel composition, and the impossibility of cloning a quantum seal.
 
 #### Deep-classification stress tests
 
