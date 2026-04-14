@@ -1,0 +1,244 @@
+# ============================================================================
+# Fundamental Theorem of Arithmetic — ARC-style
+#
+# Single scenario:
+#   n = 202692987 = 3^2 * 7 * 829 * 3881
+#
+# This example translates the Eyelet/Prolog ARC example into Notation3 for
+# Eyeling. It computes the prime factors of one target integer by repeated
+# smallest-divisor decomposition, reports the result in ARC form, and includes
+# independent checks for product reconstruction, primality, and uniqueness up
+# to order.
+# ============================================================================
+
+@prefix : <https://example.org/fundamental-theorem-arithmetic#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+
+# --------------
+# Editable input
+# --------------
+
+:Case
+  :n 202692987;
+  :expectedSmallestFactors (3 3 7 829 3881);
+  :expectedPrimePower "3^2 * 7 * 829 * 3881";
+  :expectedFlat "3 * 3 * 7 * 829 * 3881";
+  :expectedLargestFlat "3881 * 829 * 7 * 3 * 3".
+
+# -------------------------
+# Backward helper relations
+# -------------------------
+
+# divides0(A,B): A divides B in the positive integers.
+{ (?A ?B) :divides0 true }
+<=
+{ ?A math:greaterThan 0.
+  ?B math:greaterThan 0.
+  (?B ?A) math:remainder 0. } .
+
+# trialPrime(P): simple trial-division primality for individual numbers.
+{ 2 :trialPrime true } <= true.
+{ 3 :trialPrime true } <= true.
+
+{ ?P :trialPrime true }
+<=
+{ ?P math:greaterThan 3.
+  (?P 2) :smallestDivisorFrom ?P. } .
+
+# smallestDivisorFrom(N,D,S): S is the smallest divisor of N starting from D.
+{ (?N ?D) :smallestDivisorFrom ?D }
+<=
+{ (?D ?N) :divides0 true. } .
+
+{ (?N ?D) :smallestDivisorFrom ?N }
+<=
+{ (?D ?D) math:product ?D2.
+  ?D2 math:greaterThan ?N. } .
+
+{ (?N ?D) :smallestDivisorFrom ?S }
+<=
+{ 1 log:notIncludes { (?D ?N) :divides0 true. }.
+  (?D ?D) math:product ?D2.
+  ?D2 math:notGreaterThan ?N.
+  (?D 1) math:sum ?D1.
+  (?N ?D1) :smallestDivisorFrom ?S. } .
+
+# factorSmallest(N,Fs): prime factors of N in nondecreasing order.
+{ ?N :factorSmallest () }
+<=
+{ ?N math:lessThan 2. } .
+
+{ ?N :factorSmallest (?N) }
+<=
+{ ?N math:notLessThan 2.
+  (?N 2) :smallestDivisorFrom ?D.
+  ?D math:equalTo ?N. } .
+
+{ ?N :factorSmallest ?Fs }
+<=
+{ ?N math:notLessThan 2.
+  (?N 2) :smallestDivisorFrom ?D.
+  ?D math:notEqualTo ?N.
+  (?N ?D) math:integerQuotient ?N1.
+  ?D :factorSmallest ?Fs1.
+  ?N1 :factorSmallest ?Fs2.
+  (?Fs1 ?Fs2) list:append ?Fs. } .
+
+# factorLargest(N,Fs): same factors in reverse order.
+{ ?N :factorLargest ?Fs }
+<=
+{ ?N :factorSmallest ?Small.
+  ?Small list:reverse ?Fs. } .
+
+# product(Fs,P): product of all numbers in an RDF list.
+{ () :product 1 }
+<=
+true .
+
+{ ?Fs :product ?P }
+<=
+{ ?Fs list:firstRest (?X ?Rest).
+  ?Rest :product ?P0.
+  (?X ?P0) math:product ?P. } .
+
+# ---------------------------
+# Materialized scenario facts
+# ---------------------------
+
+{ :Case :n ?N.
+  ?N :factorSmallest ?Fs.
+  ?N :factorLargest ?Fr.
+  ?Fs :product ?P.
+  ?Fs list:sort ?SortedS.
+  ?Fr list:sort ?SortedL.
+  ?Fs list:first ?Smallest.
+  ?Fs list:last ?Largest. }
+=>
+{ :Case :factorsSmallest ?Fs;
+        :factorsLargest ?Fr;
+        :product ?P;
+        :sortedSmallest ?SortedS;
+        :sortedLargest ?SortedL;
+        :smallestPrimeFactor ?Smallest;
+        :largestPrimeFactor ?Largest. } .
+
+{ :Case :factorsSmallest ?Fs; :expectedSmallestFactors ?Fs. }
+=>
+{ :Case :flatFactorString "3 * 3 * 7 * 829 * 3881";
+        :primePowerString "3^2 * 7 * 829 * 3881";
+        :distinctPrimeCount 4;
+        :largestFlatFactorString "3881 * 829 * 7 * 3 * 3". } .
+
+# ------------------
+# Independent checks
+# ------------------
+
+{ :Case :factorsSmallest ?Fs; :expectedSmallestFactors ?Fs. }
+=>
+{ :Check :c1 "OK - repeated smallest-divisor decomposition produced the expected smallest-first factor list (3 3 7 829 3881).". } .
+
+{ :Case :n ?N; :product ?N. }
+=>
+{ :Check :c2 "OK - the product of the computed factors reconstructs n = 202692987.". } .
+
+{ 3 :trialPrime true.
+  7 :trialPrime true.
+  829 :trialPrime true.
+  3881 :trialPrime true. }
+=>
+{ :Check :c3 "OK - every distinct factor in the decomposition is prime by trial division.". } .
+
+{ :Case :primePowerString ?S; :expectedPrimePower ?S. }
+=>
+{ :Check :c4 "OK - the prime-power form matches 3^2 * 7 * 829 * 3881.". } .
+
+{ :Case :sortedSmallest ?S; :sortedLargest ?S. }
+=>
+{ :Check :c5 "OK - smallest-first and largest-first traversals have the same multiset of primes, so the factorization agrees up to order.". } .
+
+{ :Case :smallestPrimeFactor 3; :largestPrimeFactor 3881. }
+=>
+{ :Check :c6 "OK - the smallest and largest prime factors are 3 and 3881.". } .
+
+# -----
+# Fuses
+# -----
+
+{ :Case :n ?N; :product ?P.
+  ?P log:notEqualTo ?N. }
+=> false .
+
+{ :Case :factorsSmallest ?Fs; :expectedSmallestFactors ?Expected.
+  ?Fs log:notEqualTo ?Expected. }
+=> false .
+
+{ :Case :sortedSmallest ?A; :sortedLargest ?B.
+  ?A log:notEqualTo ?B. }
+=> false .
+
+{ 1 log:notIncludes { 3 :trialPrime true. }. }
+=> false .
+
+{ 1 log:notIncludes { 7 :trialPrime true. }. }
+=> false .
+
+{ 1 log:notIncludes { 829 :trialPrime true. }. }
+=> false .
+
+{ 1 log:notIncludes { 3881 :trialPrime true. }. }
+=> false .
+
+{ :Case :smallestPrimeFactor ?S.
+  ?S log:notEqualTo 3. }
+=> false .
+
+{ :Case :largestPrimeFactor ?L.
+  ?L log:notEqualTo 3881. }
+=> false .
+
+{ :Case :factorsSmallest ?A, ?B.
+  ?A log:notEqualTo ?B. }
+=> false .
+
+# ---------------------
+# Answer and reason why
+# ---------------------
+
+{ :Case :n ?N;
+        :flatFactorString ?Flat;
+        :primePowerString ?PrimePower;
+        :largestFlatFactorString ?LargestFlat;
+        :distinctPrimeCount ?Distinct;
+        :smallestPrimeFactor ?Smallest;
+        :largestPrimeFactor ?Largest.
+  :Check :c1 ?C1.
+  :Check :c2 ?C2.
+  :Check :c3 ?C3.
+  :Check :c4 ?C4.
+  :Check :c5 ?C5.
+  :Check :c6 ?C6.
+  (
+    "Fundamental Theorem of Arithmetic — ARC-style\n\n"
+    "Answer\n"
+    "For n = " ?N ", the prime factors are " ?Flat ", the prime-power form is " ?PrimePower
+    ", and the product of these factors is " ?N " with " ?Distinct " distinct primes.\n\n"
+    "Reason Why\n"
+    "Existence in this run comes from repeated smallest-divisor decomposition: " ?N
+    " factors as " ?Flat ". Each distinct factor is prime. "
+    "For uniqueness up to order, the reverse traversal gives " ?LargestFlat
+    ", and both traversals sort to the same multiset of primes. "
+    "So this concrete case exhibits the Fundamental Theorem of Arithmetic for " ?N
+    ": a prime factorization exists and is unique up to order. The extreme prime factors are " ?Smallest " and " ?Largest ".\n\n"
+    "Check\n"
+    "C1 " ?C1 "\n"
+    "C2 " ?C2 "\n"
+    "C3 " ?C3 "\n"
+    "C4 " ?C4 "\n"
+    "C5 " ?C5 "\n"
+    "C6 " ?C6 "\n"
+  ) string:concatenation ?Block. }
+=>
+{ :report log:outputString ?Block. } .

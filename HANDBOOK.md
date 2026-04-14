@@ -3171,6 +3171,7 @@ The following examples are especially useful if you want to see Eyeling files th
 
 #### Technical and scientific ARC demos
 
+- [`examples/fundamental-theorem-arithmetic.n3`](examples/fundamental-theorem-arithmetic.n3) · [`examples/output/fundamental-theorem-arithmetic.txt`](examples/output/fundamental-theorem-arithmetic.txt) — smallest-divisor prime factorization of 202692987 with ARC-style existence, uniqueness-up-to-order, and primality checks.
 - [`examples/matrix-mechanics.n3`](examples/matrix-mechanics.n3) · [`examples/output/matrix-mechanics.txt`](examples/output/matrix-mechanics.txt) — small 2×2 matrix example deriving trace, determinant, products, and a non-zero commutator.
 - [`examples/pn-junction-tunneling.n3`](examples/pn-junction-tunneling.n3) · [`examples/output/pn-junction-tunneling.txt`](examples/output/pn-junction-tunneling.txt) — semiconductor toy model that explains current-proxy behavior across bias points.
 - [`examples/transistor-switch.n3`](examples/transistor-switch.n3) · [`examples/output/transistor-switch.txt`](examples/output/transistor-switch.txt) — NPN low-side switch model with exact arithmetic and cutoff-versus-saturation checks.
