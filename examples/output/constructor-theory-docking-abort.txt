@@ -1,0 +1,19 @@
+Docking abort token — constructor-theory coverage case
+
+Answer
+YES for the classical abort token, NO for universal cloning of the quantum seal.
+
+Reason Why
+The docking-abort token is treated as an abstract information variable carried by unlike classical media: lamp state, PLC register, radio frame, and audit display. Because those substrates are information media for the same variable, the token can be permuted locally, cloned locally, copied across media, measured into an output record, and embedded in both serial and parallel task networks. By contrast, the quantum authenticity seal is treated as a superinformation medium, so cloning all of its states is impossible.
+
+Check
+C1  OK - the abort lamp is a computation medium
+C2  OK - the abort lamp distinguishes the abort bit
+C3  OK - permutation of the abort bit is possible on the abort lamp
+C4  OK - local cloning of the abort bit is possible on the PLC register
+C5  OK - the abort bit can be copied from lamp to PLC
+C6  OK - the abort bit can be copied from PLC to radio frame
+C7  OK - the abort bit can be measured from radio frame into the audit display
+C8  OK - a serial network from lamp via PLC to audit display is possible
+C9  OK - a parallel network from PLC to radio frame and audit display is possible
+C10 OK - cloning all states of the quantum seal is impossible

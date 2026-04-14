@@ -1,0 +1,132 @@
+# ===============================================================================
+# Harbor alarm bit — interoperability of information media
+#
+# Concrete topic from the book "The Science of Can and Can't" of Chiara Marletto:
+# information is substrate-independent when the relevant copying/permutation
+# tasks are possible. Two unlike substrates can carry the same bit.
+# But a superinformation medium cannot have all of its states cloned.
+# ===============================================================================
+
+@prefix : <http://example.org/alarm-bit/> .
+@prefix arc: <https://example.org/arc#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+:case a arc:Case ;
+  arc:question "Can the harbor alarm bit be copied between an optical beacon and a relay register, and can all states of a quantum token be cloned too?" .
+
+:opticalBeacon a :InformationMedium ;
+  :encodes :AlarmBit ;
+  :zeroState :BlueLamp ;
+  :oneState :RedLamp .
+
+:relayRegister a :InformationMedium ;
+  :encodes :AlarmBit ;
+  :zeroState :LowVoltage ;
+  :oneState :HighVoltage .
+
+:quantumToken a :SuperinformationMedium ;
+  :encodes :PolarizationVariable ;
+  :state :Horizontal ;
+  :state :Vertical ;
+  :state :Diagonal ;
+  :state :AntiDiagonal .
+
+{ ?M a :InformationMedium ;
+     :encodes ?V ;
+     :zeroState ?Z ;
+     :oneState ?O . }
+=>
+{ [ a :PossibleTask ;
+    :taskType :Permute ;
+    :on ?M ;
+    :variable ?V ;
+    :fromState ?Z ;
+    :toState ?O ] . } .
+
+{ ?A a :InformationMedium ; :encodes ?V .
+  ?B a :InformationMedium ; :encodes ?V . }
+=>
+{ [ a :PossibleTask ;
+    :taskType :Copy ;
+    :from ?A ;
+    :to ?B ;
+    :variable ?V ] . } .
+
+{ ?M a :SuperinformationMedium ; :encodes ?V . }
+=>
+{ [ a :ImpossibleTask ;
+    :taskType :CloneAllStates ;
+    :on ?M ;
+    :variable ?V ] . } .
+
+{ :opticalBeacon a :InformationMedium . }
+=> { :case :checkC1 :Passed . } .
+
+{ :relayRegister a :InformationMedium . }
+=> { :case :checkC2 :Passed . } .
+
+{ :opticalBeacon :encodes :AlarmBit .
+  :relayRegister :encodes :AlarmBit . }
+=> { :case :checkC3 :Passed . } .
+
+{ ?T a :PossibleTask ;
+     :taskType :Copy ;
+     :from :opticalBeacon ;
+     :to :relayRegister ;
+     :variable :AlarmBit . }
+=> { :case :checkC4 :Passed . } .
+
+{ ?T a :PossibleTask ;
+     :taskType :Copy ;
+     :from :relayRegister ;
+     :to :opticalBeacon ;
+     :variable :AlarmBit . }
+=> { :case :checkC5 :Passed . } .
+
+{ ?T a :PossibleTask ;
+     :taskType :Permute ;
+     :on :opticalBeacon ;
+     :variable :AlarmBit . }
+=> { :case :checkC6 :Passed . } .
+
+{ ?T a :PossibleTask ;
+     :taskType :Permute ;
+     :on :relayRegister ;
+     :variable :AlarmBit . }
+=> { :case :checkC7 :Passed . } .
+
+{ ?T a :ImpossibleTask ;
+     :taskType :CloneAllStates ;
+     :on :quantumToken ;
+     :variable :PolarizationVariable . }
+=> { :case :checkC8 :Passed . } .
+
+{ :case :checkC1 :Passed .
+  :case :checkC2 :Passed .
+  :case :checkC3 :Passed .
+  :case :checkC4 :Passed .
+  :case :checkC5 :Passed .
+  :case :checkC6 :Passed .
+  :case :checkC7 :Passed .
+  :case :checkC8 :Passed . }
+=>
+{
+  :out log:outputString """Harbor alarm bit interoperability
+
+Answer
+YES for the alarm bit, NO for universal cloning of the quantum token.
+
+Reason Why
+The alarm state is an abstract bit carried by two unlike substrates. Because both the optical beacon and the relay register are information media for the same variable, copying the bit between them is possible in both directions, and local permutations are possible on each medium. By contrast, the quantum token is treated here as a superinformation medium, so cloning all of its states is impossible.
+
+Check
+C1  OK - optical beacon is an information medium
+C2  OK - relay register is an information medium
+C3  OK - both substrates encode the same abstract variable: AlarmBit
+C4  OK - copying AlarmBit from optical beacon to relay register is possible
+C5  OK - copying AlarmBit from relay register to optical beacon is possible
+C6  OK - local permutation of AlarmBit is possible on the optical beacon
+C7  OK - local permutation of AlarmBit is possible on the relay register
+C8  OK - cloning all states of the quantum token is impossible
+""" .
+} .

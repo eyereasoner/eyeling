@@ -1,0 +1,253 @@
+# ===========================================================================
+# Docking abort token — a compact constructor-theory case
+#
+# Concrete topic:
+# A spacecraft docking bay has an emergency abort bit that must be propagated
+# across unlike classical media and recorded for audit. The classical token
+# can be permuted, copied, measured, and composed into larger task networks.
+# A quantum authenticity seal, however, cannot have all of its states cloned.
+# ===========================================================================
+
+@prefix : <http://example.org/docking-abort/> .
+@prefix arc: <https://example.org/arc#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+:case a arc:Case ;
+  arc:question "Can a docking-abort token be propagated, permuted, measured and audited across unlike classical media, while its quantum authenticity seal remains unclonable?" .
+
+# --------------------------------------------------------------------
+# Classical substrates carrying the same abstract variable
+# --------------------------------------------------------------------
+
+:abortLamp a :InformationMedium ;
+  :encodes :AbortBit ;
+  :zeroState :Green ;
+  :oneState :Red .
+
+:flightPLC a :InformationMedium ;
+  :encodes :AbortBit ;
+  :zeroState :LowVoltage ;
+  :oneState :HighVoltage .
+
+:radioFrame a :InformationMedium ;
+  :encodes :AbortBit ;
+  :zeroState :Frame0 ;
+  :oneState :Frame1 .
+
+:auditDisplay a :InformationMedium ;
+  :encodes :AbortBit ;
+  :zeroState :DisplayOK ;
+  :oneState :DisplayABORT .
+
+# A contrasting substrate with superinformation-like behavior
+:quantumSeal a :SuperinformationMedium ;
+  :encodes :SealVariable .
+
+# --------------------------------
+# Core constructor-theoretic rules
+# --------------------------------
+
+# Information media are also treated here as computation media for the same variable.
+# They support permutation of the variable, local cloning, and distinguishability.
+{ ?M a :InformationMedium ;
+     :encodes ?V ;
+     :zeroState ?Z ;
+     :oneState ?O . }
+=>
+{
+  ?M a :ComputationMedium .
+  ?M :distinguishes ?V .
+
+  [ a :PossibleTask ;
+    :kind :Permute ;
+    :on ?M ;
+    :variable ?V ;
+    :fromState ?Z ;
+    :toState ?O ] .
+
+  [ a :PossibleTask ;
+    :kind :CloneLocal ;
+    :on ?M ;
+    :variable ?V ] .
+} .
+
+# Interoperability-like copying across unlike media carrying the same variable.
+{ ?A a :InformationMedium ; :encodes ?V .
+  ?B a :InformationMedium ; :encodes ?V . }
+=>
+{
+  [ a :PossibleTask ;
+    :kind :Copy ;
+    :from ?A ;
+    :to ?B ;
+    :variable ?V ] .
+} .
+
+# Measurement: if a substrate distinguishes a variable, it can be measured into
+# an information medium carrying that same variable.
+{ ?A :distinguishes ?V .
+  ?B a :InformationMedium ; :encodes ?V . }
+=>
+{
+  [ a :PossibleTask ;
+    :kind :Measure ;
+    :from ?A ;
+    :to ?B ;
+    :variable ?V ] .
+} .
+
+# Serial composition: copy into an intermediate medium, then measure from there.
+{ [ a :PossibleTask ;
+      :kind :Copy ;
+      :from ?A ;
+      :to ?B ;
+      :variable ?V ] .
+  [ a :PossibleTask ;
+      :kind :Measure ;
+      :from ?B ;
+      :to ?C ;
+      :variable ?V ] . }
+=>
+{
+  [ a :PossibleTask ;
+    :kind :SerialNetwork ;
+    :from ?A ;
+    :via ?B ;
+    :to ?C ;
+    :variable ?V ] .
+} .
+
+# Parallel composition: fan out the same variable into two target media.
+{ [ a :PossibleTask ;
+      :kind :Copy ;
+      :from ?A ;
+      :to ?B ;
+      :variable ?V ] .
+  [ a :PossibleTask ;
+      :kind :Copy ;
+      :from ?A ;
+      :to ?C ;
+      :variable ?V ] . }
+=>
+{
+  [ a :PossibleTask ;
+    :kind :ParallelNetwork ;
+    :source ?A ;
+    :left ?B ;
+    :right ?C ;
+    :variable ?V ] .
+} .
+
+# Superinformation-like restriction: cloning all states is impossible.
+{ ?M a :SuperinformationMedium ;
+     :encodes ?V . }
+=>
+{
+  [ a :ImpossibleTask ;
+    :kind :CloneAllStates ;
+    :on ?M ;
+    :variable ?V ] .
+} .
+
+# ------
+# Checks
+# ------
+
+{ :abortLamp a :ComputationMedium . }
+=> { :case :checkC1 :Passed . } .
+
+{ :abortLamp :distinguishes :AbortBit . }
+=> { :case :checkC2 :Passed . } .
+
+{ [ a :PossibleTask ;
+    :kind :Permute ;
+    :on :abortLamp ;
+    :variable :AbortBit ] . }
+=> { :case :checkC3 :Passed . } .
+
+{ [ a :PossibleTask ;
+    :kind :CloneLocal ;
+    :on :flightPLC ;
+    :variable :AbortBit ] . }
+=> { :case :checkC4 :Passed . } .
+
+{ [ a :PossibleTask ;
+    :kind :Copy ;
+    :from :abortLamp ;
+    :to :flightPLC ;
+    :variable :AbortBit ] . }
+=> { :case :checkC5 :Passed . } .
+
+{ [ a :PossibleTask ;
+    :kind :Copy ;
+    :from :flightPLC ;
+    :to :radioFrame ;
+    :variable :AbortBit ] . }
+=> { :case :checkC6 :Passed . } .
+
+{ [ a :PossibleTask ;
+    :kind :Measure ;
+    :from :radioFrame ;
+    :to :auditDisplay ;
+    :variable :AbortBit ] . }
+=> { :case :checkC7 :Passed . } .
+
+{ [ a :PossibleTask ;
+    :kind :SerialNetwork ;
+    :from :abortLamp ;
+    :via :flightPLC ;
+    :to :auditDisplay ;
+    :variable :AbortBit ] . }
+=> { :case :checkC8 :Passed . } .
+
+{ [ a :PossibleTask ;
+    :kind :ParallelNetwork ;
+    :source :flightPLC ;
+    :left :radioFrame ;
+    :right :auditDisplay ;
+    :variable :AbortBit ] . }
+=> { :case :checkC9 :Passed . } .
+
+{ [ a :ImpossibleTask ;
+    :kind :CloneAllStates ;
+    :on :quantumSeal ;
+    :variable :SealVariable ] . }
+=> { :case :checkC10 :Passed . } .
+
+# ----------------
+# ARC-style report
+# ----------------
+
+{ :case :checkC1 :Passed .
+  :case :checkC2 :Passed .
+  :case :checkC3 :Passed .
+  :case :checkC4 :Passed .
+  :case :checkC5 :Passed .
+  :case :checkC6 :Passed .
+  :case :checkC7 :Passed .
+  :case :checkC8 :Passed .
+  :case :checkC9 :Passed .
+  :case :checkC10 :Passed . }
+=>
+{
+  :out log:outputString """Docking abort token — constructor-theory coverage case
+
+Answer
+YES for the classical abort token, NO for universal cloning of the quantum seal.
+
+Reason Why
+The docking-abort token is treated as an abstract information variable carried by unlike classical media: lamp state, PLC register, radio frame, and audit display. Because those substrates are information media for the same variable, the token can be permuted locally, cloned locally, copied across media, measured into an output record, and embedded in both serial and parallel task networks. By contrast, the quantum authenticity seal is treated as a superinformation medium, so cloning all of its states is impossible.
+
+Check
+C1  OK - the abort lamp is a computation medium
+C2  OK - the abort lamp distinguishes the abort bit
+C3  OK - permutation of the abort bit is possible on the abort lamp
+C4  OK - local cloning of the abort bit is possible on the PLC register
+C5  OK - the abort bit can be copied from lamp to PLC
+C6  OK - the abort bit can be copied from PLC to radio frame
+C7  OK - the abort bit can be measured from radio frame into the audit display
+C8  OK - a serial network from lamp via PLC to audit display is possible
+C9  OK - a parallel network from PLC to radio frame and audit display is possible
+C10 OK - cloning all states of the quantum seal is impossible
+""" .
+} .
