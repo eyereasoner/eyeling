@@ -1,0 +1,14 @@
+Complex Matrix Stability — ARC-style
+
+Answer
+We compare three diagonal 2x2 complex matrices for discrete-time stability: A_unstable = [[(1,1),(0,0)],[(0,0),(2,0)]], A_stable = [[(1,0),(0,0)],[(0,0),(-1,0)]], and A_damped = [[(0,0),(0,0)],[(0,0),(0,0)]]. Their spectral radii are ρ(A_unstable) = 2, ρ(A_stable) = 1, and ρ(A_damped) = 0. So A_unstable is unstable, A_stable is marginally stable, and A_damped is damped.
+
+Reason Why
+For a discrete-time linear system x_{k+1} = A x_k, the eigenvalues of A govern the behaviour of the modes. Because these matrices are diagonal, the eigenvalues are just the diagonal entries. The spectral radius is the maximum modulus of the eigenvalues: if it is greater than 1 a mode grows, if it equals 1 the modes remain bounded without decaying, and if it is less than 1 all modes decay to zero. Here the diagonal entries give radii 2, 1, and 0 respectively, which explains the three classifications.
+
+Check
+C1 OK - A_unstable has eigenvalues (1,1) and (2,0) with spectral radius 2, so it is unstable.
+C2 OK - A_stable has eigenvalues (1,0) and (-1,0) with spectral radius 1, so it is marginally stable.
+C3 OK - A_damped has eigenvalues (0,0) and (0,0) with spectral radius 0, so every mode decays to zero.
+C4 OK - for z = (1,2) and w = (0,1), the squared modulus of z*w equals the product of the squared moduli.
+C5 OK - the spectral-radius-squared of 2*A_unstable is four times that of A_unstable.

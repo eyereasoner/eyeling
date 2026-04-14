@@ -1,0 +1,288 @@
+# ==========================================================================
+# Complex Matrix Stability — ARC-style
+#
+# Single scenario:
+#   A_unstable = diag(1+i, 2)
+#   A_stable   = diag(1, -1)
+#   A_damped   = diag(0, 0)
+#
+# This example translates the Eyelet/Prolog ARC example into Notation3 for
+# Eyeling. It computes spectral-radius-squared values for three diagonal 2x2
+# complex matrices, classifies them for discrete-time dynamics, and includes
+# checks for the eigenvalues, modulus arithmetic, and scaling behaviour.
+# ==========================================================================
+
+@prefix : <https://example.org/complex-matrix-stability#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+
+# --------------
+# Editable input
+# --------------
+
+:Case
+  :unstableMatrix :A_unstable;
+  :stableMatrix :A_stable;
+  :dampedMatrix :A_damped.
+
+:Scale2 :k 2.
+
+# ----------------------
+# Complex-number constants
+# ----------------------
+
+:c_0_0  :re 0;  :im 0;  :pretty "(0,0)".
+:c_0_1  :re 0;  :im 1;  :pretty "(0,1)".
+:c_1_0  :re 1;  :im 0;  :pretty "(1,0)".
+:c_m1_0 :re -1; :im 0;  :pretty "(-1,0)".
+:c_1_1  :re 1;  :im 1;  :pretty "(1,1)".
+:c_1_2  :re 1;  :im 2;  :pretty "(1,2)".
+:c_2_0  :re 2;  :im 0;  :pretty "(2,0)".
+
+# --------
+# Matrices
+# --------
+
+:A_unstable
+  :a11 :c_1_1;
+  :a12 :c_0_0;
+  :a21 :c_0_0;
+  :a22 :c_2_0;
+  :pretty "[[(1,1),(0,0)],[(0,0),(2,0)]]".
+
+:A_stable
+  :a11 :c_1_0;
+  :a12 :c_0_0;
+  :a21 :c_0_0;
+  :a22 :c_m1_0;
+  :pretty "[[(1,0),(0,0)],[(0,0),(-1,0)]]".
+
+:A_damped
+  :a11 :c_0_0;
+  :a12 :c_0_0;
+  :a21 :c_0_0;
+  :a22 :c_0_0;
+  :pretty "[[(0,0),(0,0)],[(0,0),(0,0)]]".
+
+# -------------------------
+# Backward helper relations
+# -------------------------
+
+# |z|^2 = Re^2 + Im^2
+{ ?Z :abs2 ?A2 }
+<=
+{ ?Z :re ?R; :im ?I.
+  (?R ?R) math:product ?R2.
+  (?I ?I) math:product ?I2.
+  (?R2 ?I2) math:sum ?A2. } .
+
+# Detect zero complex numbers.
+{ ?Z :isZero true }
+<=
+{ ?Z :re 0; :im 0. } .
+
+# Eigenvalues of a diagonal 2x2 complex matrix are its diagonal entries.
+{ ?M :eigenvalue1 ?L1 }
+<=
+{ ?M :a11 ?L1; :a12 ?Z1; :a21 ?Z2; :a22 ?L2.
+  ?Z1 :isZero true.
+  ?Z2 :isZero true. } .
+
+{ ?M :eigenvalue2 ?L2 }
+<=
+{ ?M :a11 ?L1; :a12 ?Z1; :a21 ?Z2; :a22 ?L2.
+  ?Z1 :isZero true.
+  ?Z2 :isZero true. } .
+
+# Spectral radius squared is the maximum squared modulus of the eigenvalues.
+{ ?M :spectralRadiusSq ?A1 }
+<=
+{ ?M :eigenvalue1 ?L1; :eigenvalue2 ?L2.
+  ?L1 :abs2 ?A1.
+  ?L2 :abs2 ?A2.
+  ?A1 math:notLessThan ?A2. } .
+
+{ ?M :spectralRadiusSq ?A2 }
+<=
+{ ?M :eigenvalue1 ?L1; :eigenvalue2 ?L2.
+  ?L1 :abs2 ?A1.
+  ?L2 :abs2 ?A2.
+  ?A2 math:greaterThan ?A1. } .
+
+# Exact radii for the three scenario outcomes we need.
+{ ?M :spectralRadius 2 }
+<=
+{ ?M :spectralRadiusSq 4. } .
+
+{ ?M :spectralRadius 1 }
+<=
+{ ?M :spectralRadiusSq 1. } .
+
+{ ?M :spectralRadius 0 }
+<=
+{ ?M :spectralRadiusSq 0. } .
+
+# Discrete-time stability classification.
+{ ?M :classification :unstable }
+<=
+{ ?M :spectralRadiusSq ?R2.
+  ?R2 math:greaterThan 1. } .
+
+{ ?M :classification :stable }
+<=
+{ ?M :spectralRadiusSq 1. } .
+
+{ ?M :classification :damped }
+<=
+{ ?M :spectralRadiusSq ?R2.
+  ?R2 math:lessThan 1. } .
+
+# A concrete complex product for the modulus-multiplication check.
+{ :sampleProduct :re ?Cr }
+<=
+{ :c_1_2 :re ?Ar; :im ?Ai.
+  :c_0_1 :re ?Br; :im ?Bi.
+  (?Ar ?Br) math:product ?P1.
+  (?Ai ?Bi) math:product ?P2.
+  (?P1 ?P2) math:difference ?Cr.
+  (?Ar ?Bi) math:product ?P3.
+  (?Ai ?Br) math:product ?P4.
+  (?P3 ?P4) math:sum ?Ci. } .
+
+{ :sampleProduct :im ?Ci }
+<=
+{ :c_1_2 :re ?Ar; :im ?Ai.
+  :c_0_1 :re ?Br; :im ?Bi.
+  (?Ar ?Br) math:product ?P1.
+  (?Ai ?Bi) math:product ?P2.
+  (?P1 ?P2) math:difference ?Cr.
+  (?Ar ?Bi) math:product ?P3.
+  (?Ai ?Br) math:product ?P4.
+  (?P3 ?P4) math:sum ?Ci. } .
+
+# Spectral-radius-squared for 2*A_unstable, derived from the scaled eigenvalue moduli.
+{ :A_unstable :scaledRadiusSq ?S2 }
+<=
+{ :Scale2 :k ?K.
+  (?K ?K) math:product ?K2.
+  (?K2 2) math:product ?S1.
+  (?K2 4) math:product ?S2.
+  ?S2 math:greaterThan ?S1. } .
+
+# ---------------------------
+# Materialized scenario facts
+# ---------------------------
+
+{ :Case :unstableMatrix ?Mu; :stableMatrix ?Ms; :dampedMatrix ?Md.
+  ?Mu :classification :unstable; :spectralRadius 2.
+  ?Ms :classification :stable; :spectralRadius 1.
+  ?Md :classification :damped; :spectralRadius 0. }
+=>
+{ :Case :scenarioOk true. } .
+
+# ------
+# Checks
+# ------
+
+{ :A_unstable :eigenvalue1 :c_1_1; :eigenvalue2 :c_2_0; :spectralRadiusSq 4; :spectralRadius 2; :classification :unstable. }
+=>
+{ :Check :c1 "OK - A_unstable has eigenvalues (1,1) and (2,0) with spectral radius 2, so it is unstable.". } .
+
+{ :A_stable :eigenvalue1 :c_1_0; :eigenvalue2 :c_m1_0; :spectralRadiusSq 1; :spectralRadius 1; :classification :stable. }
+=>
+{ :Check :c2 "OK - A_stable has eigenvalues (1,0) and (-1,0) with spectral radius 1, so it is marginally stable.". } .
+
+{ :A_damped :eigenvalue1 :c_0_0; :eigenvalue2 :c_0_0; :spectralRadiusSq 0; :spectralRadius 0; :classification :damped. }
+=>
+{ :Check :c3 "OK - A_damped has eigenvalues (0,0) and (0,0) with spectral radius 0, so every mode decays to zero.". } .
+
+{ :c_1_2 :abs2 ?AZ2.
+  :c_0_1 :abs2 ?AW2.
+  :sampleProduct :abs2 ?AZW2.
+  (?AZ2 ?AW2) math:product ?Target.
+  ?AZW2 math:equalTo ?Target. }
+=>
+{ :Check :c4 "OK - for z = (1,2) and w = (0,1), the squared modulus of z*w equals the product of the squared moduli.". } .
+
+{ :A_unstable :spectralRadiusSq ?Ru2.
+  :A_unstable :scaledRadiusSq ?Ru2Scaled.
+  (4 ?Ru2) math:product ?Target.
+  ?Ru2Scaled math:equalTo ?Target. }
+=>
+{ :Check :c5 "OK - the spectral-radius-squared of 2*A_unstable is four times that of A_unstable.". } .
+
+# -----
+# Fuses
+# -----
+
+{ 1 log:notIncludes { :Case :scenarioOk true. }. }
+=> false .
+
+{ 1 log:notIncludes { :Check :c1 ?C. }. }
+=> false .
+
+{ 1 log:notIncludes { :Check :c2 ?C. }. }
+=> false .
+
+{ 1 log:notIncludes { :Check :c3 ?C. }. }
+=> false .
+
+{ 1 log:notIncludes { :Check :c4 ?C. }. }
+=> false .
+
+{ 1 log:notIncludes { :Check :c5 ?C. }. }
+=> false .
+
+# ---------------------
+# Answer and reason why
+# ---------------------
+
+{ :Case :scenarioOk true;
+        :unstableMatrix ?Mu;
+        :stableMatrix ?Ms;
+        :dampedMatrix ?Md.
+  ?Mu :pretty ?MuS; :spectralRadius ?Ru.
+  ?Ms :pretty ?MsS; :spectralRadius ?Rs.
+  ?Md :pretty ?MdS; :spectralRadius ?Rd.
+  :Check :c1 ?C1.
+  :Check :c2 ?C2.
+  :Check :c3 ?C3.
+  :Check :c4 ?C4.
+  :Check :c5 ?C5.
+  (
+    "Complex Matrix Stability — ARC-style
+
+"
+    "Answer
+"
+    "We compare three diagonal 2x2 complex matrices for discrete-time stability: "
+    "A_unstable = " ?MuS ", A_stable = " ?MsS ", and A_damped = " ?MdS ". "
+    "Their spectral radii are ρ(A_unstable) = " ?Ru ", ρ(A_stable) = " ?Rs ", and ρ(A_damped) = " ?Rd ". "
+    "So A_unstable is unstable, A_stable is marginally stable, and A_damped is damped.
+
+"
+    "Reason Why
+"
+    "For a discrete-time linear system x_{k+1} = A x_k, the eigenvalues of A govern the behaviour of the modes. "
+    "Because these matrices are diagonal, the eigenvalues are just the diagonal entries. "
+    "The spectral radius is the maximum modulus of the eigenvalues: if it is greater than 1 a mode grows, "
+    "if it equals 1 the modes remain bounded without decaying, and if it is less than 1 all modes decay to zero. "
+    "Here the diagonal entries give radii 2, 1, and 0 respectively, which explains the three classifications.
+
+"
+    "Check
+"
+    "C1 " ?C1 "
+"
+    "C2 " ?C2 "
+"
+    "C3 " ?C3 "
+"
+    "C4 " ?C4 "
+"
+    "C5 " ?C5 "
+"
+  ) string:concatenation ?Block. }
+=>
+{ :report log:outputString ?Block. } .
