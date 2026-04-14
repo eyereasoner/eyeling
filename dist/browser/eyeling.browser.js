@@ -3988,6 +3988,23 @@
           results.push(s2);
         }
 
+        // Also match quoted log:implies triples present as data in the current scope.
+        if (facts && typeof facts.length === 'number') {
+          ensureFactIndexes(facts);
+          const pb = facts.__byPred.get(goal.p.__tid) || [];
+          for (const idx of pb) {
+            const tr = facts[idx];
+
+            let s2 = unifyTerm(goal.s, tr.s, subst);
+            if (s2 === null) continue;
+
+            s2 = unifyTerm(goal.o, tr.o, s2);
+            if (s2 === null) continue;
+
+            results.push(s2);
+          }
+        }
+
         return results;
       }
 
@@ -4015,6 +4032,23 @@
           if (s2 === null) continue;
 
           results.push(s2);
+        }
+
+        // Also match quoted log:impliedBy triples present as data in the current scope.
+        if (facts && typeof facts.length === 'number') {
+          ensureFactIndexes(facts);
+          const pb = facts.__byPred.get(goal.p.__tid) || [];
+          for (const idx of pb) {
+            const tr = facts[idx];
+
+            let s2 = unifyTerm(goal.s, tr.s, subst);
+            if (s2 === null) continue;
+
+            s2 = unifyTerm(goal.o, tr.o, s2);
+            if (s2 === null) continue;
+
+            results.push(s2);
+          }
         }
 
         return results;

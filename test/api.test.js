@@ -2178,6 +2178,64 @@ _:x :hates { _:foo :making :mess }.
       /^"3"\^\^xsd:integer\s+:is\s+\("3"\s+xsd:integer\)\s*\./m,
     ],
   },
+  {
+    name: '245 regression: log:includes sees quoted log:implies triples as data',
+    opt: { proofComments: false },
+    input: `@prefix : <http://example.org/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+<> :data {
+    {
+        ?A a ?B .
+        ?B rdfs:subClassOf ?C.
+    }
+    =>
+    {
+        ?A a ?C .
+    }.
+}.
+
+{
+    ?W :data ?F.
+    ?F log:includes { ?X log:implies ?Y }.
+}
+=>
+{
+    :result :is ?X .
+}.
+`,
+    expect: [/^:result\s+:is\s+\{[\s\S]*\?A\s+a\s+\?B\s*\.[\s\S]*\?B\s+rdfs:subClassOf\s+\?C\s*\.[\s\S]*\}\s*\./m],
+  },
+  {
+    name: '246 regression: log:includes sees quoted log:impliedBy triples as data',
+    opt: { proofComments: false },
+    input: `@prefix : <http://example.org/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+<> :data {
+    {
+        ?A a ?C .
+    }
+    <=
+    {
+        ?A a ?B .
+        ?B rdfs:subClassOf ?C.
+    }.
+}.
+
+{
+    ?W :data ?F.
+    ?F log:includes { ?Y <= ?X }.
+}
+=>
+{
+    :result :is ?X .
+}.
+`,
+    expect: [/^:result\s+:is\s+\{[\s\S]*\?A\s+a\s+\?B\s*\.[\s\S]*\?B\s+rdfs:subClassOf\s+\?C\s*\.[\s\S]*\}\s*\./m],
+  },
 ];
 
 let passed = 0;
