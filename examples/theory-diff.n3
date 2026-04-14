@@ -1,0 +1,125 @@
+# =======================================================
+# Theory diff for quoted rule sets
+#
+# Compares two quoted theories and reports:
+# - forward rules missing from the candidate
+# - backward rules missing from the candidate
+# - extra forward rules in the candidate
+# - extra backward rules in the candidate
+#
+# It exercises:
+# - multiple quoted formulas as first-class values
+# - log:includes on quoted => and <=
+# - log:notIncludes for structural diffing
+# - matching quoted rule bodies and heads across formulas
+# =======================================================
+
+@prefix : <http://example.org/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+<> :base {
+    {
+        ?X a ?C .
+        ?C rdfs:subClassOf ?D .
+    }
+    =>
+    {
+        ?X a ?D .
+    }.
+
+    {
+        ?P :parentOf ?Q .
+    }
+    =>
+    {
+        ?Q :childOf ?P .
+    }.
+
+    {
+        ?P :worksFor ?Org .
+    }
+    <=
+    {
+        ?Org :employs ?P .
+    }.
+}.
+
+<> :candidate {
+    {
+        ?X a ?C .
+        ?C rdfs:subClassOf ?D .
+    }
+    =>
+    {
+        ?X a ?D .
+    }.
+
+    {
+        ?Org :employs ?P .
+    }
+    =>
+    {
+        ?P :worksFor ?Org .
+    }.
+
+    {
+        ?P :mentors ?Q .
+    }
+    =>
+    {
+        ?Q :menteeOf ?P .
+    }.
+}.
+
+# --------------------
+# Missing in candidate
+# --------------------
+
+{
+    ?W :base ?Base.
+    ?W :candidate ?Cand.
+    ?Base log:includes { ?B log:implies ?H }.
+    ?Cand log:notIncludes { ?B log:implies ?H }.
+}
+=>
+{
+    ?B :missingForwardRule ?H .
+}.
+
+{
+    ?W :base ?Base.
+    ?W :candidate ?Cand.
+    ?Base log:includes { ?H log:impliedBy ?B }.
+    ?Cand log:notIncludes { ?H log:impliedBy ?B }.
+}
+=>
+{
+    ?B :missingBackwardRule ?H .
+}.
+
+# ------------------
+# Extra in candidate
+# ------------------
+
+{
+    ?W :base ?Base.
+    ?W :candidate ?Cand.
+    ?Cand log:includes { ?B log:implies ?H }.
+    ?Base log:notIncludes { ?B log:implies ?H }.
+}
+=>
+{
+    ?B :extraForwardRule ?H .
+}.
+
+{
+    ?W :base ?Base.
+    ?W :candidate ?Cand.
+    ?Cand log:includes { ?H log:impliedBy ?B }.
+    ?Base log:notIncludes { ?H log:impliedBy ?B }.
+}
+=>
+{
+    ?B :extraBackwardRule ?H .
+}.

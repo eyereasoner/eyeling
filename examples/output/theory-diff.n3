@@ -1,0 +1,22 @@
+@prefix : <http://example.org/> .
+
+{
+    ?P :parentOf ?Q .
+} :missingForwardRule {
+    ?Q :childOf ?P .
+} .
+{
+    ?Org :employs ?P .
+} :missingBackwardRule {
+    ?P :worksFor ?Org .
+} .
+{
+    ?Org :employs ?P .
+} :extraForwardRule {
+    ?P :worksFor ?Org .
+} .
+{
+    ?P :mentors ?Q .
+} :extraForwardRule {
+    ?Q :menteeOf ?P .
+} .
