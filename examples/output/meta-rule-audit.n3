@@ -1,0 +1,44 @@
+@prefix : <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+{
+    ?X a ?C .
+    ?C rdfs:subClassOf ?D .
+} :ruleStatus :Bidirectional .
+{
+    ?X a ?C .
+    ?C rdfs:subClassOf ?D .
+} :ruleHead {
+    ?X a ?D .
+} .
+{
+    ?P :parentOf ?Q .
+} :ruleStatus :ForwardOnly .
+{
+    ?P :parentOf ?Q .
+} :ruleHead {
+    ?Q :childOf ?P .
+} .
+{
+    ?Org :employs ?P .
+} :ruleStatus :BackwardOnly .
+{
+    ?Org :employs ?P .
+} :ruleHead {
+    ?P :worksFor ?Org .
+} .
+{
+    :alice a :Student .
+    :Student rdfs:subClassOf :Person .
+} :activeAs :ForwardBody .
+{
+    :alice :parentOf :bob .
+} :activeAs :ForwardBody .
+{
+    :alice a :Student .
+    :Student rdfs:subClassOf :Person .
+} :activeAs :BackwardBody .
+{
+    :acme :employs :carol .
+} :activeAs :BackwardBody .

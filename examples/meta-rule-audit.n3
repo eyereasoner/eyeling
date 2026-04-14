@@ -1,0 +1,135 @@
+# =====================================================================
+# Meta-rule audit with quoted =>, <=, includes
+#
+# This example audits a quoted theory that mixes:
+# - a bidirectional rule pair,
+# - a forward-only rule,
+# - a backward-only rule,
+# and checks which rule bodies are currently active.
+#
+# It exercises:
+# - quoted formulas as first-class terms
+# - log:includes with { ?B log:implies ?H }
+# - log:includes with { ?H log:impliedBy ?B }
+# - log:notIncludes to detect missing dual rules
+# - reusing a bound quoted body formula as the argument of log:includes
+#
+# Expected highlights:
+# - subclass lifting is bidirectional and active
+# - parentOf -> childOf is forward-only and active
+# - worksFor <= employs is backward-only and active
+# =====================================================================
+
+@prefix : <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+<> :theory {
+
+    # Bidirectional pair
+    {
+        ?X a ?C .
+        ?C rdfs:subClassOf ?D .
+    }
+    =>
+    {
+        ?X a ?D .
+    }.
+
+    {
+        ?X a ?D .
+    }
+    <=
+    {
+        ?X a ?C .
+        ?C rdfs:subClassOf ?D .
+    }.
+
+    # Forward-only rule
+    {
+        ?P :parentOf ?Q .
+    }
+    =>
+    {
+        ?Q :childOf ?P .
+    }.
+
+    # Backward-only rule
+    {
+        ?P :worksFor ?Org .
+    }
+    <=
+    {
+        ?Org :employs ?P .
+    }.
+
+    # Facts that activate all three bodies
+    :alice a :Student .
+    :Student rdfs:subClassOf :Person .
+
+    :alice :parentOf :bob .
+
+    :acme :employs :carol .
+}.
+
+# --------------------------------------------------
+# Audit the quoted theory for forward/backward pairs
+# --------------------------------------------------
+
+{
+    ?W :theory ?F.
+    ?F log:includes { ?B log:implies ?H }.
+    ?F log:includes { ?H log:impliedBy ?B }.
+}
+=>
+{
+    ?B :ruleStatus :Bidirectional .
+    ?B :ruleHead ?H .
+}.
+
+{
+    ?W :theory ?F.
+    ?F log:includes { ?B log:implies ?H }.
+    ?F log:notIncludes { ?H log:impliedBy ?B }.
+}
+=>
+{
+    ?B :ruleStatus :ForwardOnly .
+    ?B :ruleHead ?H .
+}.
+
+{
+    ?W :theory ?F.
+    ?F log:includes { ?H log:impliedBy ?B }.
+    ?F log:notIncludes { ?B log:implies ?H }.
+}
+=>
+{
+    ?B :ruleStatus :BackwardOnly .
+    ?B :ruleHead ?H .
+}.
+
+# --------------------------------------
+# Check which rule bodies are active now
+# --------------------------------------
+
+{
+    ?W :theory ?F.
+    ?F log:includes { ?B log:implies ?H }.
+    ?F log:includes ?B.
+}
+=>
+{
+    ?B :activeAs :ForwardBody .
+}.
+
+{
+    ?W :theory ?F.
+    ?F log:includes { ?H log:impliedBy ?B }.
+    ?F log:includes ?B.
+}
+=>
+{
+    ?B :activeAs :BackwardBody .
+}.
