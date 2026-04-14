@@ -1,0 +1,20 @@
+HarborSMR — bounded flexible-export insight for port electrolysis
+
+Answer
+PERMIT
+The port hydrogen hub may use the SMR insight to run PEM electrolyzer train 2 at 16 MW from 14:00 to 18:00.
+
+Reason Why
+The operator shares only a narrow, expiring insight that a temporary 18 MW flexible-export window is available. The request is for electrolysis dispatch only, the requested 16 MW fits inside the permitted window, safety margins are above threshold, no outage blocks the window, and the policy forbids redistribution for market resale. Raw reactor telemetry stays local.
+
+Check
+C1  OK - reserve margin exceeds the dispatch threshold
+C2  OK - cooling margin exceeds the dispatch threshold
+C3  OK - no planned outage blocks the window
+C4  OK - requested MW fits within the export window
+C5  OK - serialized insight omits sensitive telemetry terms
+C6  OK - aggregate excludes core temperature, rod position, neutron flux, and operator IDs
+C7  OK - policy allows use for electrolysis dispatch before expiry
+C8  OK - policy prohibits redistribution for market resale
+C9  OK - scope is explicit: device, event, start, and expiry
+C10 OK - dispatch plan matches the requested load and power

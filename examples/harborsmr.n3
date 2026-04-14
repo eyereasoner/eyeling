@@ -1,0 +1,233 @@
+# ===========================================================================
+# HarborSMR — bounded flexible-export insight for port electrolysis.
+#
+# The port hydrogen hub does not need raw reactor telemetry in order
+# to schedule one electrolyzer train for a short window.
+#
+# The SMR operator keeps detailed plant data local. What crosses the boundary
+# is a narrow, expiring insight: a temporary flexible-export window of 18 MW,
+# scoped to the port hydrogen hub and usable only for electrolysis dispatch.
+#
+# That is the Insight Economy in action. The hub receives a permissioned
+# decision object rather than control-rod positions, neutron flux traces,
+# or other sensitive operational telemetry.
+# ===========================================================================
+
+@prefix : <https://example.org/insight/harborsmr/> .
+@prefix arc: <https://example.org/arc#> .
+@prefix ins: <https://example.org/insight-economy#> .
+@prefix odrl: <http://www.w3.org/ns/odrl/2/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# -----
+# Facts
+# -----
+
+:case a arc:Case ;
+  :caseName "harborsmr" ;
+  arc:question "May the port hydrogen hub use a temporary SMR flexible-export insight to schedule electrolysis for the next four-hour balancing window?" ;
+  :requestPurpose "electrolysis_dispatch" ;
+  :requestAction odrl:use ;
+  :hubAuthAt "2026-06-18T13:10:00+00:00"^^xsd:dateTime .
+
+:portHydrogenHub a :IndustrialOfftaker ;
+  :hubName "North Quay Hydrogen Hub" .
+
+:secureAggregate a :SecureAggregate ;
+  :availableFlexibleExportMW 18 ;
+  :reserveMarginMW 24 ;
+  :coolingMarginPct 18 ;
+  :plannedOutage false ;
+  :containsCoreTemperature false ;
+  :containsRodPosition false ;
+  :containsNeutronFlux false ;
+  :containsOperatorBadgeIds false .
+
+:flexInsight a ins:Insight ;
+  :id <https://example.org/insight/harborsmr> ;
+  :metric "temporary_flexible_export_window" ;
+  :targetLoad "PEM_electrolyzer_train_2" ;
+  :exportMW 18 ;
+  :windowStart "2026-06-18T14:00:00+00:00"^^xsd:dateTime ;
+  :expiresAt "2026-06-18T18:00:00+00:00"^^xsd:dateTime ;
+  :scopeDevice "port-hydrogen-hub" ;
+  :scopeEvent "day_ahead_balancing" ;
+  :serializedLowercase """{"createdat":"2026-06-18t13:00:00+00:00","expiresat":"2026-06-18t18:00:00+00:00","exportmw":18,"id":"https://example.org/insight/harborsmr","metric":"temporary_flexible_export_window","scopedevice":"port-hydrogen-hub","scopeevent":"day_ahead_balancing","targetload":"pem_electrolyzer_train_2","type":"ins:insight"}""" .
+
+:electrolyzerRequest a :Request ;
+  :requester :portHydrogenHub ;
+  :requestedMW 16 ;
+  :purpose "electrolysis_dispatch" ;
+  :targetLoad "PEM_electrolyzer_train_2" .
+
+:dispatchPlan a :DispatchPlan ;
+  :dispatchMW 16 ;
+  :windowStart "2026-06-18T14:00:00+00:00"^^xsd:dateTime ;
+  :windowEnd "2026-06-18T18:00:00+00:00"^^xsd:dateTime ;
+  :forLoad "PEM_electrolyzer_train_2" .
+
+:policy a odrl:Policy ;
+  :profile "HarborSMR-Insight-Policy" ;
+  odrl:permission [
+    odrl:action odrl:use ;
+    odrl:target <https://example.org/insight/harborsmr> ;
+    odrl:constraint [
+      odrl:leftOperand odrl:purpose ;
+      odrl:operator odrl:eq ;
+      odrl:rightOperand "electrolysis_dispatch"
+    ]
+  ] ;
+  odrl:prohibition [
+    odrl:action odrl:distribute ;
+    odrl:target <https://example.org/insight/harborsmr> ;
+    odrl:constraint [
+      odrl:leftOperand odrl:purpose ;
+      odrl:operator odrl:eq ;
+      odrl:rightOperand "market_resale"
+    ]
+  ] .
+
+# -----
+# Logic
+# -----
+
+{ :secureAggregate :reserveMarginMW ?mw .
+  ?mw math:greaterThan 19 .
+} => { :case :checkC1 :Passed . } .
+
+{ :secureAggregate :coolingMarginPct ?pct .
+  ?pct math:greaterThan 14 .
+} => { :case :checkC2 :Passed . } .
+
+{ :secureAggregate :plannedOutage false .
+} => { :case :checkC3 :Passed . } .
+
+{ :electrolyzerRequest :requestedMW ?req .
+  :flexInsight :exportMW ?cap .
+  ?req math:notGreaterThan ?cap .
+} => { :case :checkC4 :Passed . } .
+
+{ :flexInsight :serializedLowercase ?s .
+  ?s string:notMatches "coretemp|rodposition|neutronflux|operatorbadge" .
+} => { :case :checkC5 :Passed . } .
+
+{ :secureAggregate
+    :containsCoreTemperature false ;
+    :containsRodPosition false ;
+    :containsNeutronFlux false ;
+    :containsOperatorBadgeIds false .
+} => { :case :checkC6 :Passed . } .
+
+{ :policy odrl:permission [
+      odrl:action odrl:use ;
+      odrl:target <https://example.org/insight/harborsmr> ;
+      odrl:constraint [
+        odrl:leftOperand odrl:purpose ;
+        odrl:operator odrl:eq ;
+        odrl:rightOperand "electrolysis_dispatch"
+      ]
+    ] .
+  :case :hubAuthAt ?authAt .
+  :flexInsight :expiresAt ?expiresAt .
+  ?authAt math:notGreaterThan ?expiresAt .
+} => { :case :checkC7 :Passed . } .
+
+{ :policy odrl:prohibition [
+      odrl:action odrl:distribute ;
+      odrl:target <https://example.org/insight/harborsmr> ;
+      odrl:constraint [
+        odrl:leftOperand odrl:purpose ;
+        odrl:operator odrl:eq ;
+        odrl:rightOperand "market_resale"
+      ]
+    ] .
+} => { :case :checkC8 :Passed . } .
+
+{ :flexInsight
+    :scopeDevice ?device ;
+    :scopeEvent ?event ;
+    :windowStart ?start ;
+    :expiresAt ?end .
+} => { :case :checkC9 :Passed . } .
+
+{ :dispatchPlan :dispatchMW ?mw .
+  :electrolyzerRequest :requestedMW ?req .
+  :dispatchPlan :forLoad ?load .
+  :electrolyzerRequest :targetLoad ?load .
+  ?req math:notGreaterThan ?mw .
+} => { :case :checkC10 :Passed . } .
+
+{ :case :checkC1 :Passed .
+  :case :checkC2 :Passed .
+  :case :checkC3 :Passed .
+  :case :checkC4 :Passed .
+  :case :checkC5 :Passed .
+  :case :checkC6 :Passed .
+  :case :checkC7 :Passed .
+  :case :checkC8 :Passed .
+  :case :checkC9 :Passed .
+  :case :checkC10 :Passed .
+} => {
+  :case :decision :Permit .
+  :decision :target <https://example.org/insight/harborsmr> ;
+            :outcome "Allowed" .
+} .
+
+# ------------------
+# Presentation (ARC)
+# ------------------
+
+{ :case :decision :Permit . }
+=> {
+  :out log:outputString """HarborSMR — bounded flexible-export insight for port electrolysis
+
+Answer
+PERMIT
+The port hydrogen hub may use the SMR insight to run PEM electrolyzer train 2 at 16 MW from 14:00 to 18:00.
+
+Reason Why
+The operator shares only a narrow, expiring insight that a temporary 18 MW flexible-export window is available. The request is for electrolysis dispatch only, the requested 16 MW fits inside the permitted window, safety margins are above threshold, no outage blocks the window, and the policy forbids redistribution for market resale. Raw reactor telemetry stays local.
+
+Check
+C1  OK - reserve margin exceeds the dispatch threshold
+C2  OK - cooling margin exceeds the dispatch threshold
+C3  OK - no planned outage blocks the window
+C4  OK - requested MW fits within the export window
+C5  OK - serialized insight omits sensitive telemetry terms
+C6  OK - aggregate excludes core temperature, rod position, neutron flux, and operator IDs
+C7  OK - policy allows use for electrolysis dispatch before expiry
+C8  OK - policy prohibits redistribution for market resale
+C9  OK - scope is explicit: device, event, start, and expiry
+C10 OK - dispatch plan matches the requested load and power
+""" .
+} .
+
+# ----------------
+# Fail-loud checks
+# ----------------
+
+{ :case :decision :Permit .
+  :electrolyzerRequest :requestedMW ?req .
+  :flexInsight :exportMW ?cap .
+  ?req math:greaterThan ?cap .
+} => false .
+
+{ :case :decision :Permit .
+  :secureAggregate :plannedOutage ?x .
+  ?x log:notEqualTo false .
+} => false .
+
+{ :case :decision :Permit .
+  :case :hubAuthAt ?authAt .
+  :flexInsight :expiresAt ?expiresAt .
+  ?authAt math:greaterThan ?expiresAt .
+} => false .
+
+{ :case :decision :Permit .
+  :dispatchPlan :forLoad ?planLoad .
+  :electrolyzerRequest :targetLoad ?requestLoad .
+  ?planLoad log:notEqualTo ?requestLoad .
+} => false .

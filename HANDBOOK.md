@@ -3157,6 +3157,7 @@ The following examples are especially useful if you want to see Eyeling files th
 - [`examples/flandor.n3`](examples/flandor.n3) · [`examples/output/flandor.txt`](examples/output/flandor.txt) — macro-economic coordination case for Flanders that turns sensitive local signals into a regional retooling insight.
 - [`examples/medior.n3`](examples/medior.n3) · [`examples/output/medior.txt`](examples/output/medior.txt) — post-discharge care-coordination case that derives a minimal continuity-bundle insight without sharing the full record.
 - [`examples/parcellocker.n3`](examples/parcellocker.n3) · [`examples/output/parcellocker.txt`](examples/output/parcellocker.txt) — one-time parcel pickup authorization with a clear permit decision, justification, and misuse checks.
+- [`examples/harborsmr.n3`](examples/harborsmr.n3) · [`examples/output/harborsmr.txt`](examples/output/harborsmr.txt) — SMR flexibility case where private plant telemetry becomes a narrow, expiring electrolysis-dispatch insight with policy and safety checks.
 
 #### Core ARC-style walkthroughs
 
