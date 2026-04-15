@@ -1,0 +1,190 @@
+# ======================================================================
+# ACT sensor memory reset
+#
+# Applied constructor-theory case:
+# A radiation alarm sensor has a one-bit memory latch that must be reset
+# before the device can be reused.
+#
+# The eye-opener:
+#   - with a work-like resource, reliable reset CAN be done;
+#   - with only a heat-like resource, the same reliable reset task CAN'T
+#     be done in this model.
+#
+# This is inspired by constructor-theory thermodynamics:
+# exact work/heat distinction, irreversibility, and the link between
+# information tasks and thermodynamic laws.
+# ======================================================================
+
+@prefix : <http://example.org/act/memory-reset/> .
+@prefix arc: <https://example.org/arc#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+:case a arc:Case ;
+  arc:question "Can a radiation sensor's alarm memory be reliably reset with a battery pack, and can the same reset be done using only an ambient heat bath?" .
+
+# -------------------
+# Application context
+# -------------------
+
+:alarmSensor a :RadiationSensor ;
+  :hasMemory :alarmLatch ;
+  :needs :ReliableResetForReuse .
+
+:alarmLatch a :OneBitMemory ;
+  :zeroState :Clear ;
+  :oneState :Alarm ;
+  :currentState :Alarm .
+
+# A work-like resource.
+:batteryPack a :WorkMedium ;
+  :chargeState :Charged ;
+  :canSupply :DirectedEnergyTransfer .
+
+# A heat-like resource.
+:ambientBath a :HeatMedium ;
+  :temperatureBand :RoomTemperature ;
+  :provides :UndirectedThermalContact .
+
+# ----------------------------
+# CAN rules — what is possible
+# ----------------------------
+
+# A work medium with directed energy transfer can drive a controlled reset.
+{ ?W a :WorkMedium ;
+     :chargeState :Charged ;
+     :canSupply :DirectedEnergyTransfer .
+  ?M a :OneBitMemory . }
+=>
+{ ?W :can :DriveControlledReset .
+  ?M :can :ReliableResetFromWork . } .
+
+# If the memory can be reliably reset from work, it can be prepared in
+# the standard reusable state.
+{ ?M :can :ReliableResetFromWork ;
+     :zeroState ?Z . }
+=>
+{ ?M :can :PrepareStandardState .
+  ?M :standardState ?Z . } .
+
+# If the sensor memory can be prepared in the standard state, the sensor
+# can be reused.
+{ :alarmSensor :hasMemory ?M .
+  ?M :can :PrepareStandardState . }
+=>
+{ :alarmSensor :can :ReadyForReuse . } .
+
+# Using a charged work medium to reset a memory produces a degradation path:
+# useful work can be spent and end up as dissipated heat.
+{ ?W a :WorkMedium ;
+     :chargeState :Charged .
+  ?M :can :ReliableResetFromWork . }
+=>
+{ ?W :can :DegradeToHeatDuringReset . } .
+
+# --------------------------------
+# CAN'T rules — what is impossible
+# --------------------------------
+
+# Heat alone is not a directed reset resource for this memory task.
+{ ?H a :HeatMedium ;
+     :provides :UndirectedThermalContact .
+  ?M a :OneBitMemory . }
+=>
+{ ?H :cannot :DriveControlledReset .
+  ?M :cannot :ReliableResetFromHeatAlone . } .
+
+# If controlled reset is unavailable, preparation of the standard state
+# is unavailable in the required reliable sense.
+{ ?M :cannot :ReliableResetFromHeatAlone . }
+=>
+{ ?M :cannot :PrepareStandardStateFromHeatAlone . } .
+
+# If the standard state cannot be prepared from heat alone, the sensor
+# cannot be made ready for reuse by heat alone.
+{ :alarmSensor :hasMemory ?M .
+  ?M :cannot :PrepareStandardStateFromHeatAlone . }
+=>
+{ :alarmSensor :cannot :ReadyForReuseFromHeatAlone . } .
+
+# Constructor-theoretic irreversibility pattern:
+# if work can degrade to heat during reset, the exact transpose task of
+# reconstructing the charged work resource from ambient heat alone is not allowed.
+{ ?W :can :DegradeToHeatDuringReset .
+  ?H a :HeatMedium . }
+=>
+{ ?H :cannot :ReconstructChargedWorkMediumByItself . } .
+
+# ------
+# Checks
+# ------
+
+# Positive checks.
+{ :batteryPack :can :DriveControlledReset . }
+=> { :case :checkC1 :Passed . } .
+
+{ :alarmLatch :can :ReliableResetFromWork . }
+=> { :case :checkC2 :Passed . } .
+
+{ :alarmLatch :can :PrepareStandardState . }
+=> { :case :checkC3 :Passed . } .
+
+{ :alarmSensor :can :ReadyForReuse . }
+=> { :case :checkC4 :Passed . } .
+
+{ :batteryPack :can :DegradeToHeatDuringReset . }
+=> { :case :checkC5 :Passed . } .
+
+# Negative checks.
+{ :ambientBath :cannot :DriveControlledReset . }
+=> { :case :checkC6 :Passed . } .
+
+{ :alarmLatch :cannot :ReliableResetFromHeatAlone . }
+=> { :case :checkC7 :Passed . } .
+
+{ :alarmLatch :cannot :PrepareStandardStateFromHeatAlone . }
+=> { :case :checkC8 :Passed . } .
+
+{ :alarmSensor :cannot :ReadyForReuseFromHeatAlone . }
+=> { :case :checkC9 :Passed . } .
+
+{ :ambientBath :cannot :ReconstructChargedWorkMediumByItself . }
+=> { :case :checkC10 :Passed . } .
+
+# --------------------------------------------------------------------
+# ARC-style output
+# --------------------------------------------------------------------
+
+{ :case :checkC1 :Passed .
+  :case :checkC2 :Passed .
+  :case :checkC3 :Passed .
+  :case :checkC4 :Passed .
+  :case :checkC5 :Passed .
+  :case :checkC6 :Passed .
+  :case :checkC7 :Passed .
+  :case :checkC8 :Passed .
+  :case :checkC9 :Passed .
+  :case :checkC10 :Passed . }
+=>
+{
+  :out log:outputString """ACT sensor memory reset
+
+Answer
+YES with the battery pack.
+NO with the ambient heat bath alone.
+
+Reason Why
+The alarm latch is a one-bit memory that must be reset to its standard clear state before the radiation sensor can be reused. In this case, the charged battery pack is treated as a work medium, so it can drive a controlled reset and prepare the latch in its reusable standard state. The ambient bath is treated as a heat medium, so by itself it cannot perform the same reliable directed reset. The example also shows an irreversibility pattern: useful work can be degraded into dissipated heat during reset, but the ambient heat bath alone cannot reconstruct the charged work resource.
+
+Check
+C1  OK - the battery pack can drive a controlled reset
+C2  OK - the alarm latch can be reliably reset from work
+C3  OK - the latch can be prepared in its standard reusable state
+C4  OK - the sensor can be made ready for reuse
+C5  OK - the work resource can degrade to heat during reset
+C6  OK - the ambient heat bath cannot drive a controlled reset
+C7  OK - the latch cannot be reliably reset from heat alone
+C8  OK - the latch cannot be prepared in its standard state from heat alone
+C9  OK - the sensor cannot be made ready for reuse from heat alone
+C10 OK - the ambient heat bath cannot reconstruct the charged work resource by itself
+""" .
+} .
