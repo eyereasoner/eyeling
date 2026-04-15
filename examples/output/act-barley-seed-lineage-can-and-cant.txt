@@ -1,0 +1,25 @@
+ACT barley seed lineage — can and can't
+
+Answer
+YES for the viable barley lineage.
+NO for the contrast lineages when digital heredity, repair, protected dormancy, or heritable variation are missing.
+
+Reason Why
+The main lineage can achieve genome copying under no-design laws because its hereditary information is digitally instantiated. It can also pass through protected dormancy, germinate, produce propagules, reproduce accurately, close its life cycle, and adaptively persist under saline selection. But the contrast lineages show the "can't" side: non-digital heredity blocks accurate genome copying under no-design laws, lack of repair blocks accurate self-reproduction, lack of dormancy protection blocks lineage closure through a protected seed phase, and lack of heritable variation blocks adaptive evolution and thus blocks evolvability.
+
+Check
+C1  OK - no-design laws are assumed
+C2  OK - the viable genome can be copied under no-design laws
+C3  OK - the viable seed can achieve protected dormancy
+C4  OK - the viable seed can germinate
+C5  OK - the viable adult can produce propagules
+C6  OK - the viable lineage can achieve accurate self-reproduction
+C7  OK - the viable lineage can achieve lineage closure
+C8  OK - the viable lineage can exhibit heritable variation
+C9  OK - the viable lineage can adaptively persist
+C10 OK - the viable lineage is evolvable
+C11 OK - the non-digital lineage cannot achieve accurate self-reproduction
+C12 OK - the repair-deficient lineage cannot achieve accurate self-reproduction
+C13 OK - the coatless lineage cannot achieve lineage closure through protected dormancy
+C14 OK - the static lineage cannot achieve adaptive evolution
+C15 OK - the static lineage cannot be an evolvable lineage
