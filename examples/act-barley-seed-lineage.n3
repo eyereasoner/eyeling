@@ -1,0 +1,269 @@
+# ===================================================================
+# ACT barley seed lineage
+#
+# A more complex constructor-theory-of-life case:
+# a salt-tolerant barley line persists through dormancy, germination,
+# development, reproduction, repair, and selection.
+# ===================================================================
+
+@prefix : <http://example.org/act/barley/> .
+@prefix arc: <https://example.org/arc#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+:case a arc:Case ;
+  arc:question "Can a salt-tolerant barley seed lineage sustain accurate self-reproduction, protected dormancy, development, repair, and adaptive persistence under no-design laws?" .
+
+:world :obeys :NoDesignLaws .
+
+:dnaRegister a :DigitalInformationMedium .
+
+:barleyGenome a :Replicator ;
+  :accuracy :High ;
+  :storedIn :dnaRegister ;
+  :variant :SaltTolerant .
+
+:zygote a :DevelopmentalBottleneck .
+
+:meristemRepair a :RepairVehicle .
+
+:embryoVehicle a :Vehicle ;
+  :function :Metabolism ;
+  :function :Development ;
+  :function :CopyingSupport ;
+  :function :CompartmentControl ;
+  :usesRepair :meristemRepair .
+
+:adultPlantVehicle a :Vehicle ;
+  :function :Metabolism ;
+  :function :Development ;
+  :function :GameteProduction ;
+  :function :SeedConstruction .
+
+:seedCoat a :Compartment ;
+  :function :DormancyProtection .
+
+:barleySeed a :Organism ;
+  :lifeStage :DormantSeed ;
+  :hasReplicator :barleyGenome ;
+  :hasVehicle :embryoVehicle ;
+  :hasCompartment :seedCoat .
+
+:adultBarley a :Organism ;
+  :lifeStage :AdultPlant ;
+  :hasReplicator :barleyGenome ;
+  :hasVehicle :adultPlantVehicle .
+
+:greenhouse a :GrowthEnvironment ;
+  :condition :WarmthAvailable ;
+  :condition :MoistureAvailable ;
+  :condition :LightAvailable .
+
+:nutrientBed a :RawMaterialSupply .
+:pollinationLoop a :ReproductionSupport .
+:mutationSource a :VariationSource .
+
+:salineBench a :SelectionEnvironment ;
+  :favours :SaltTolerant .
+
+# ---------------------------
+# Constructor-theoretic rules
+# ---------------------------
+
+{ :world :obeys :NoDesignLaws .
+  :dnaRegister a :DigitalInformationMedium . }
+=>
+{ :DigitalReplicationUnderNoDesignLaws a :PossibleTask . } .
+
+{ :barleyGenome a :Replicator .
+  :barleyGenome :storedIn :dnaRegister .
+  :DigitalReplicationUnderNoDesignLaws a :PossibleTask . }
+=>
+{ :GenomeCopying a :PossibleTask . } .
+
+{ :embryoVehicle a :Vehicle ;
+    :function :Metabolism ;
+    :function :CopyingSupport . }
+=>
+{ :VehicleSupport a :PossibleTask . } .
+
+{ :embryoVehicle :usesRepair :meristemRepair .
+  :meristemRepair a :RepairVehicle . }
+=>
+{ :DamageCorrection a :PossibleTask . } .
+
+{ :barleySeed :lifeStage :DormantSeed .
+  :barleySeed :hasCompartment :seedCoat .
+  :seedCoat :function :DormancyProtection . }
+=>
+{ :ProtectedDormancy a :PossibleTask . } .
+
+{ :barleySeed :lifeStage :DormantSeed .
+  :greenhouse :condition :WarmthAvailable .
+  :greenhouse :condition :MoistureAvailable .
+  :nutrientBed a :RawMaterialSupply . }
+=>
+{ :Germination a :PossibleTask . } .
+
+{ :zygote a :DevelopmentalBottleneck .
+  :barleyGenome a :Replicator .
+  :embryoVehicle a :Vehicle ;
+    :function :Development . }
+=>
+{ :BottleneckedDevelopment a :PossibleTask . } .
+
+{ :BottleneckedDevelopment a :PossibleTask .
+  :adultPlantVehicle a :Vehicle ;
+    :function :GameteProduction ;
+    :function :SeedConstruction . }
+=>
+{ :AdultReconstruction a :PossibleTask . } .
+
+{ :adultBarley :lifeStage :AdultPlant .
+  :pollinationLoop a :ReproductionSupport .
+  :greenhouse :condition :LightAvailable . }
+=>
+{ :PropaguleProduction a :PossibleTask . } .
+
+{ :GenomeCopying a :PossibleTask .
+  :VehicleSupport a :PossibleTask .
+  :ProtectedDormancy a :PossibleTask .
+  :Germination a :PossibleTask .
+  :AdultReconstruction a :PossibleTask .
+  :PropaguleProduction a :PossibleTask . }
+=>
+{ :LineageClosure a :PossibleTask . } .
+
+{ :GenomeCopying a :PossibleTask .
+  :DamageCorrection a :PossibleTask .
+  :BottleneckedDevelopment a :PossibleTask . }
+=>
+{ :AccurateSelfReproduction a :PossibleTask . } .
+
+{ :barleyGenome a :Replicator .
+  :mutationSource a :VariationSource . }
+=>
+{ :HeritableVariation a :PossibleTask . } .
+
+{ :AccurateSelfReproduction a :PossibleTask .
+  :HeritableVariation a :PossibleTask .
+  :salineBench a :SelectionEnvironment ;
+    :favours :SaltTolerant .
+  :barleyGenome :variant :SaltTolerant . }
+=>
+{
+  :AdaptiveLineagePersistence a :PossibleTask .
+  :barleyGenome :selectedIn :salineBench .
+} .
+
+{ :LineageClosure a :PossibleTask .
+  :AccurateSelfReproduction a :PossibleTask . }
+=>
+{ :barleyLine a :SelfReproducer . } .
+
+{ :barleyLine a :SelfReproducer .
+  :HeritableVariation a :PossibleTask . }
+=>
+{ :barleyLine a :EvolvableLineage . } .
+
+# ------
+# Checks
+# ------
+
+{ :world :obeys :NoDesignLaws . }
+=> { :case :checkC1 :Passed . } .
+
+{ :dnaRegister a :DigitalInformationMedium . }
+=> { :case :checkC2 :Passed . } .
+
+{ :barleyGenome a :Replicator . }
+=> { :case :checkC3 :Passed . } .
+
+{ :zygote a :DevelopmentalBottleneck . }
+=> { :case :checkC4 :Passed . } .
+
+{ :DamageCorrection a :PossibleTask . }
+=> { :case :checkC5 :Passed . } .
+
+{ :ProtectedDormancy a :PossibleTask . }
+=> { :case :checkC6 :Passed . } .
+
+{ :Germination a :PossibleTask . }
+=> { :case :checkC7 :Passed . } .
+
+{ :GenomeCopying a :PossibleTask . }
+=> { :case :checkC8 :Passed . } .
+
+{ :BottleneckedDevelopment a :PossibleTask . }
+=> { :case :checkC9 :Passed . } .
+
+{ :PropaguleProduction a :PossibleTask . }
+=> { :case :checkC10 :Passed . } .
+
+{ :LineageClosure a :PossibleTask . }
+=> { :case :checkC11 :Passed . } .
+
+{ :AccurateSelfReproduction a :PossibleTask . }
+=> { :case :checkC12 :Passed . } .
+
+{ :HeritableVariation a :PossibleTask . }
+=> { :case :checkC13 :Passed . } .
+
+{ :AdaptiveLineagePersistence a :PossibleTask . }
+=> { :case :checkC14 :Passed . } .
+
+{ :barleyLine a :SelfReproducer . }
+=> { :case :checkC15 :Passed . } .
+
+{ :barleyLine a :EvolvableLineage . }
+=> { :case :checkC16 :Passed . } .
+
+# ----------------
+# ARC-style output
+# ----------------
+
+{ :case :checkC1 :Passed .
+  :case :checkC2 :Passed .
+  :case :checkC3 :Passed .
+  :case :checkC4 :Passed .
+  :case :checkC5 :Passed .
+  :case :checkC6 :Passed .
+  :case :checkC7 :Passed .
+  :case :checkC8 :Passed .
+  :case :checkC9 :Passed .
+  :case :checkC10 :Passed .
+  :case :checkC11 :Passed .
+  :case :checkC12 :Passed .
+  :case :checkC13 :Passed .
+  :case :checkC14 :Passed .
+  :case :checkC15 :Passed .
+  :case :checkC16 :Passed . }
+=>
+{
+  :out log:outputString """ACT barley seed lineage
+
+Answer
+YES.
+This barley seed line is a viable constructor-theory-of-life case of accurate self-reproduction with dormancy, development, repair, variation, and selection.
+
+Reason Why
+The barley genome is treated as a replicator storing digital hereditary information, while embryo and adult plant machinery act as vehicles supporting metabolism, development, copying support, gamete production, and seed construction. A developmental bottleneck, a repair mechanism, and a protected dormant seed stage make accurate lineage persistence possible across generations. Because heritable variation is available and the saline bench favours the salt-tolerant variant, adaptive persistence is also possible. The result is not just a self-reproducer but an evolvable lineage.
+
+Check
+C1  OK - no-design laws are assumed
+C2  OK - digital hereditary information is physically instantiated
+C3  OK - a replicator is present
+C4  OK - a developmental bottleneck is present
+C5  OK - repair is supported
+C6  OK - protected dormancy is possible
+C7  OK - germination is possible
+C8  OK - genome copying is possible
+C9  OK - bottlenecked development is possible
+C10 OK - propagule production is possible
+C11 OK - lineage closure is possible
+C12 OK - accurate self-reproduction is possible
+C13 OK - heritable variation is possible
+C14 OK - adaptive persistence under saline selection is possible
+C15 OK - the barley line qualifies as a self-reproducer
+C16 OK - the barley line qualifies as an evolvable lineage
+""" .
+} .

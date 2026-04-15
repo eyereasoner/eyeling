@@ -1,0 +1,26 @@
+ACT barley seed lineage
+
+Answer
+YES.
+This barley seed line is a viable constructor-theory-of-life case of accurate self-reproduction with dormancy, development, repair, variation, and selection.
+
+Reason Why
+The barley genome is treated as a replicator storing digital hereditary information, while embryo and adult plant machinery act as vehicles supporting metabolism, development, copying support, gamete production, and seed construction. A developmental bottleneck, a repair mechanism, and a protected dormant seed stage make accurate lineage persistence possible across generations. Because heritable variation is available and the saline bench favours the salt-tolerant variant, adaptive persistence is also possible. The result is not just a self-reproducer but an evolvable lineage.
+
+Check
+C1  OK - no-design laws are assumed
+C2  OK - digital hereditary information is physically instantiated
+C3  OK - a replicator is present
+C4  OK - a developmental bottleneck is present
+C5  OK - repair is supported
+C6  OK - protected dormancy is possible
+C7  OK - germination is possible
+C8  OK - genome copying is possible
+C9  OK - bottlenecked development is possible
+C10 OK - propagule production is possible
+C11 OK - lineage closure is possible
+C12 OK - accurate self-reproduction is possible
+C13 OK - heritable variation is possible
+C14 OK - adaptive persistence under saline selection is possible
+C15 OK - the barley line qualifies as a self-reproducer
+C16 OK - the barley line qualifies as an evolvable lineage
