@@ -1,24 +1,45 @@
-# ==========================================================================
-# ACT yeast self-reproduction
+# ============================================================================
+# ACT yeast self-reproduction — explicit can and can't version
 #
 # Applied constructor-theory case:
 # A yeast starter culture is modeled as a self-reproducer.
-# - the genome is the replicator
-# - the cell machinery is the vehicle
-# - a nutrient bath supplies raw materials
-# - a fermenter provides a selection environment
+#   - the genome is the replicator
+#   - the cell machinery is the vehicle
+#   - a nutrient bath supplies raw materials
+#   - a fermenter provides a selection environment
 #
-# This encodes Marletto's constructor-theoretic logic:
-# accurate replication under no-design laws requires digital information and
-# a replicator-plus-vehicle architecture.
-# ==========================================================================
+# This example therefore includes both sides:
+#   - CAN   : accurate replication, self-reproduction, heritable variation,
+#             and natural selection for a digitally encoded starter lineage
+#   - CAN'T : accurate self-reproduction for a contrast lineage whose heredity
+#             is not digitally instantiated under no-design laws
+# ============================================================================
 
 @prefix : <http://example.org/act/yeast/> .
+@prefix arc: <https://example.org/arc#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+:case a arc:Case ;
+  arc:question "Can a yeast starter culture self-reproduce accurately under no-design laws, and what exactly can't happen for a non-digital contrast lineage?" .
+
+# --------------------------------------
+# Shared world assumptions and resources
+# --------------------------------------
 
 :world :obeys :NoDesignLaws .
 
 :dnaRegister a :DigitalInformationMedium .
+:analogRegister a :NonDigitalInformationMedium .
+
+:nutrientBath a :RawMaterialSupply .
+:mutationSource a :VariationSource .
+
+:fermenter a :SelectionEnvironment ;
+  :favours :RespireFast .
+
+# ------------------------
+# Positive starter lineage
+# ------------------------
 
 :starterGenome a :Replicator ;
   :accuracy :High ;
@@ -33,66 +54,114 @@
   :hasReplicator :starterGenome ;
   :hasVehicle :starterVehicle .
 
-:nutrientBath a :RawMaterialSupply .
+# ------------------------------------------
+# Contrast lineage with non-digital heredity
+# ------------------------------------------
 
-:mutationSource a :VariationSource .
+:contrastGenome a :Replicator ;
+  :accuracy :High ;
+  :variant :RespireFast ;
+  :storedIn :analogRegister .
 
-:fermenter a :SelectionEnvironment ;
-  :favours :RespireFast .
+:contrastVehicle a :Vehicle ;
+  :function :Metabolism ;
+  :function :CopyingSupport .
 
-# ---------------------------
-# Constructor-theoretic rules
-# ---------------------------
+:contrastCell a :Cell ;
+  :hasReplicator :contrastGenome ;
+  :hasVehicle :contrastVehicle .
 
+# -----------------------------------------------------------
+# CAN rules — what is possible for the viable starter culture
+# -----------------------------------------------------------
+
+# Under no-design laws, digitally instantiated hereditary information makes
+# accurate genome copying possible in principle.
 { :world :obeys :NoDesignLaws .
-  :dnaRegister a :DigitalInformationMedium . }
+  ?Medium a :DigitalInformationMedium . }
 =>
-{ :ReplicationUnderNoDesignLaws a :PossibleTask . } .
+{ ?Medium :can :SupportReplicationUnderNoDesignLaws .
+  :ReplicationUnderNoDesignLaws a :PossibleTask . } .
 
-{ :starterGenome a :Replicator .
-  :starterGenome :storedIn :dnaRegister .
-  :ReplicationUnderNoDesignLaws a :PossibleTask . }
+# A replicator stored in a digital medium can be accurately copied.
+{ ?Genome a :Replicator ;
+          :storedIn ?Medium .
+  ?Medium :can :SupportReplicationUnderNoDesignLaws . }
 =>
-{ :GenomeCopying a :PossibleTask . } .
+{ ?Genome :can :AccurateGenomeCopyUnderNoDesignLaws .
+  :GenomeCopying a :PossibleTask . } .
 
-{ :starterGenome :accuracy :High .
-  :starterCell :hasReplicator :starterGenome .
-  :starterCell :hasVehicle :starterVehicle .
-  :starterVehicle a :Vehicle . }
+# A replicator-plus-vehicle architecture supports accurate replication.
+{ ?Genome :accuracy :High .
+  ?Cell :hasReplicator ?Genome .
+  ?Cell :hasVehicle ?Vehicle .
+  ?Vehicle a :Vehicle . }
 =>
-{ :AccurateReplicationArchitecture a :PossibleTask . } .
+{ ?Cell :can :AccurateReplicationArchitecture .
+  :AccurateReplicationArchitecture a :PossibleTask . } .
 
-{ :GenomeCopying a :PossibleTask .
-  :AccurateReplicationArchitecture a :PossibleTask .
+# Genome copying plus architecture plus raw materials makes self-reproduction possible.
+{ ?Cell :hasReplicator ?Genome .
+  ?Genome :can :AccurateGenomeCopyUnderNoDesignLaws .
+  ?Cell :can :AccurateReplicationArchitecture .
   :nutrientBath a :RawMaterialSupply . }
 =>
-{ :starterCell a :SelfReproducer . } .
+{ ?Cell a :SelfReproducer .
+  ?Cell :can :SelfReproduce .
+  :SelfReproduction a :PossibleTask . } .
 
-{ :starterCell a :SelfReproducer . }
-=>
-{ :SelfReproduction a :PossibleTask . } .
-
-{ :starterGenome a :Replicator .
+# Variation plus a selection environment makes natural selection possible.
+{ ?Genome a :Replicator .
   :mutationSource a :VariationSource . }
 =>
-{ :HeritableVariation a :PossibleTask . } .
+{ ?Genome :can :HeritableVariation .
+  :HeritableVariation a :PossibleTask . } .
 
-{ :SelfReproduction a :PossibleTask .
-  :HeritableVariation a :PossibleTask .
+{ ?Cell :hasReplicator ?Genome .
+  ?Cell :can :SelfReproduce .
+  ?Genome :can :HeritableVariation .
   :fermenter a :SelectionEnvironment . }
 =>
-{ :NaturalSelection a :PossibleTask . } .
+{ ?Cell :can :NaturalSelectionLineage .
+  :NaturalSelection a :PossibleTask . } .
 
-{ :NaturalSelection a :PossibleTask .
-  :starterGenome :variant ?V .
+{ ?Cell :hasReplicator ?Genome .
+  ?Cell :can :NaturalSelectionLineage .
+  ?Genome :variant ?V .
   :fermenter :favours ?V . }
 =>
-{ :starterGenome :selectedIn :fermenter . } .
+{ ?Genome :selectedIn :fermenter . } .
+
+# ---------------------------------------------------------------------
+# CAN'T rules — what is impossible for the non-digital contrast lineage
+# ---------------------------------------------------------------------
+
+# Under no-design laws, a non-digital hereditary medium cannot support the same
+# accurate genome-copying task.
+{ :world :obeys :NoDesignLaws .
+  ?Genome a :Replicator ;
+          :storedIn ?Medium .
+  ?Medium a :NonDigitalInformationMedium . }
+=>
+{ ?Genome :cannot :AccurateGenomeCopyUnderNoDesignLaws . } .
+
+# If accurate genome copying is unavailable, accurate self-reproduction is unavailable.
+{ ?Cell :hasReplicator ?Genome .
+  ?Genome :cannot :AccurateGenomeCopyUnderNoDesignLaws . }
+=>
+{ ?Cell :cannot :AccurateSelfReproduction . } .
+
+# If accurate self-reproduction is unavailable, the contrast lineage cannot support
+# the same natural-selection story as the viable starter lineage.
+{ ?Cell :cannot :AccurateSelfReproduction . }
+=>
+{ ?Cell :cannot :NaturalSelectionLineage . } .
 
 # ------
 # Checks
 # ------
 
+# Positive checks for the viable starter culture.
 { :world :obeys :NoDesignLaws . }
 => { :case :checkC1 :Passed . } .
 
@@ -105,27 +174,37 @@
 { :starterVehicle a :Vehicle . }
 => { :case :checkC4 :Passed . } .
 
-{ :AccurateReplicationArchitecture a :PossibleTask . }
+{ :starterGenome :can :AccurateGenomeCopyUnderNoDesignLaws . }
 => { :case :checkC5 :Passed . } .
 
-{ :GenomeCopying a :PossibleTask . }
+{ :starterCell :can :AccurateReplicationArchitecture . }
 => { :case :checkC6 :Passed . } .
 
 { :starterCell a :SelfReproducer . }
 => { :case :checkC7 :Passed . } .
 
-{ :HeritableVariation a :PossibleTask . }
+{ :starterGenome :can :HeritableVariation . }
 => { :case :checkC8 :Passed . } .
 
-{ :NaturalSelection a :PossibleTask . }
+{ :starterCell :can :NaturalSelectionLineage . }
 => { :case :checkC9 :Passed . } .
 
 { :starterGenome :selectedIn :fermenter . }
 => { :case :checkC10 :Passed . } .
 
-# ------
-# Output
-# ------
+# Negative checks for the contrast lineage.
+{ :contrastGenome :cannot :AccurateGenomeCopyUnderNoDesignLaws . }
+=> { :case :checkC11 :Passed . } .
+
+{ :contrastCell :cannot :AccurateSelfReproduction . }
+=> { :case :checkC12 :Passed . } .
+
+{ :contrastCell :cannot :NaturalSelectionLineage . }
+=> { :case :checkC13 :Passed . } .
+
+# ----------------
+# ARC-style output
+# ----------------
 
 { :case :checkC1 :Passed .
   :case :checkC2 :Passed .
@@ -136,28 +215,34 @@
   :case :checkC7 :Passed .
   :case :checkC8 :Passed .
   :case :checkC9 :Passed .
-  :case :checkC10 :Passed . }
+  :case :checkC10 :Passed .
+  :case :checkC11 :Passed .
+  :case :checkC12 :Passed .
+  :case :checkC13 :Passed . }
 =>
 {
   :out log:outputString """ACT yeast self-reproduction
 
 Answer
-YES.
-This yeast starter culture is a viable applied constructor-theory case of accurate self-reproduction under no-design laws.
+YES for the viable starter culture.
+NO for accurate self-reproduction in the non-digital contrast lineage.
 
 Reason Why
-The genome is treated as a replicator storing digital information, while the cell machinery is treated as the vehicle that enables metabolism and copying support. Under no-design laws, digital information makes genome copying possible. Because the replicator is accurate and paired with a vehicle, the whole cell qualifies as a self-reproducer. With a variation source and a selection environment, natural selection also becomes possible.
+The starter genome is treated as a replicator storing digital hereditary information, while the cell machinery is treated as the vehicle that enables metabolism and copying support. Under no-design laws, digital information makes accurate genome copying possible. Because the replicator is accurate and paired with a vehicle, the whole starter cell qualifies as a self-reproducer. With a variation source and a selection environment, natural selection also becomes possible. By contrast, the non-digital lineage cannot support accurate genome copying under the same no-design-laws assumption, so it cannot sustain the same accurate self-reproduction or natural-selection story.
 
 Check
 C1  OK - no-design laws are assumed
-C2  OK - digital information is physically instantiated
-C3  OK - a replicator is present
-C4  OK - a vehicle is present
-C5  OK - accurate replication is supported by a replicator-plus-vehicle architecture
-C6  OK - genome copying is possible
+C2  OK - digital information is physically instantiated for the viable lineage
+C3  OK - a viable replicator is present
+C4  OK - a viable vehicle is present
+C5  OK - accurate genome copying is possible for the viable lineage
+C6  OK - the viable lineage has a replicator-plus-vehicle architecture
 C7  OK - the starter cell qualifies as a self-reproducer
-C8  OK - heritable variation is possible
-C9  OK - natural selection is possible
-C10 OK - the fitter variant is selected in the fermenter
+C8  OK - heritable variation is possible for the viable lineage
+C9  OK - the viable starter culture can support a natural-selection lineage
+C10 OK - the fitter viable variant is selected in the fermenter
+C11 OK - the non-digital contrast genome cannot be copied accurately under no-design laws
+C12 OK - the non-digital contrast cell cannot achieve accurate self-reproduction
+C13 OK - the non-digital contrast cell cannot support the same natural-selection lineage
 """ .
 } .

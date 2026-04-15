@@ -1,23 +1,27 @@
-# ===========================================================================
-# Docking abort token — a compact constructor-theory case
+# ============================================================================
+# ACT docking abort token — broad constructor-theory coverage with can't-rules
 #
 # Concrete topic:
 # A spacecraft docking bay has an emergency abort bit that must be propagated
-# across unlike classical media and recorded for audit. The classical token
-# can be permuted, copied, measured, and composed into larger task networks.
-# A quantum authenticity seal, however, cannot have all of its states cloned.
-# ===========================================================================
+# across unlike classical media and recorded for audit.
+#
+# This example therefore includes both sides:
+#   - CAN   : the classical abort token can be permuted, copied, measured,
+#             cloned locally, and composed into serial and parallel networks
+#   - CAN'T : the quantum authenticity seal cannot be universally cloned and
+#             therefore cannot be used as an unrestricted fan-out audit token
+# ============================================================================
 
 @prefix : <http://example.org/docking-abort/> .
 @prefix arc: <https://example.org/arc#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 
 :case a arc:Case ;
-  arc:question "Can a docking-abort token be propagated, permuted, measured and audited across unlike classical media, while its quantum authenticity seal remains unclonable?" .
+  arc:question "Can a docking-abort token be propagated, permuted, measured and audited across unlike classical media, and what exactly can't be done with the quantum authenticity seal?" .
 
-# --------------------------------------------------------------------
+# --------------------------------------------------------
 # Classical substrates carrying the same abstract variable
-# --------------------------------------------------------------------
+# --------------------------------------------------------
 
 :abortLamp a :InformationMedium ;
   :encodes :AbortBit ;
@@ -39,15 +43,18 @@
   :zeroState :DisplayOK ;
   :oneState :DisplayABORT .
 
-# A contrasting substrate with superinformation-like behavior
+# ------------------------------------------------------
+# Contrast substrate with superinformation-like behavior
+# ------------------------------------------------------
+
 :quantumSeal a :SuperinformationMedium ;
   :encodes :SealVariable .
 
-# --------------------------------
-# Core constructor-theoretic rules
-# --------------------------------
+# ---------------------------------------------------------------
+# CAN rules — what becomes possible for the classical abort token
+# ---------------------------------------------------------------
 
-# Information media are also treated here as computation media for the same variable.
+# Information media are treated here as computation media for the same variable.
 # They support permutation of the variable, local cloning, and distinguishability.
 { ?M a :InformationMedium ;
      :encodes ?V ;
@@ -57,6 +64,8 @@
 {
   ?M a :ComputationMedium .
   ?M :distinguishes ?V .
+  ?M :can :LocalPermutation .
+  ?M :can :LocalClone .
 
   [ a :PossibleTask ;
     :kind :Permute ;
@@ -138,21 +147,32 @@
     :variable ?V ] .
 } .
 
-# Superinformation-like restriction: cloning all states is impossible.
+# ----------------------------------------------------------
+# CAN'T rules — what becomes impossible for the quantum seal
+# ----------------------------------------------------------
+
+# A superinformation medium cannot have all of its states universally cloned.
 { ?M a :SuperinformationMedium ;
      :encodes ?V . }
 =>
 {
+  ?M :cannot :UniversalClone .
   [ a :ImpossibleTask ;
     :kind :CloneAllStates ;
     :on ?M ;
     :variable ?V ] .
 } .
 
+# If universal cloning is unavailable, unrestricted audit fan-out is unavailable.
+{ ?M :cannot :UniversalClone . }
+=>
+{ ?M :cannot :UnrestrictedAuditFanOut . } .
+
 # ------
 # Checks
 # ------
 
+# Positive checks for the classical abort token.
 { :abortLamp a :ComputationMedium . }
 => { :case :checkC1 :Passed . } .
 
@@ -208,11 +228,18 @@
     :variable :AbortBit ] . }
 => { :case :checkC9 :Passed . } .
 
+# Negative checks for the quantum seal.
 { [ a :ImpossibleTask ;
     :kind :CloneAllStates ;
     :on :quantumSeal ;
     :variable :SealVariable ] . }
 => { :case :checkC10 :Passed . } .
+
+{ :quantumSeal :cannot :UniversalClone . }
+=> { :case :checkC11 :Passed . } .
+
+{ :quantumSeal :cannot :UnrestrictedAuditFanOut . }
+=> { :case :checkC12 :Passed . } .
 
 # ----------------
 # ARC-style report
@@ -227,16 +254,19 @@
   :case :checkC7 :Passed .
   :case :checkC8 :Passed .
   :case :checkC9 :Passed .
-  :case :checkC10 :Passed . }
+  :case :checkC10 :Passed .
+  :case :checkC11 :Passed .
+  :case :checkC12 :Passed . }
 =>
 {
-  :out log:outputString """Docking abort token — constructor-theory coverage case
+  :out log:outputString """ACT docking abort token — constructor-theory coverage case
 
 Answer
-YES for the classical abort token, NO for universal cloning of the quantum seal.
+YES for the classical abort token.
+NO for universal cloning and unrestricted audit fan-out of the quantum seal.
 
 Reason Why
-The docking-abort token is treated as an abstract information variable carried by unlike classical media: lamp state, PLC register, radio frame, and audit display. Because those substrates are information media for the same variable, the token can be permuted locally, cloned locally, copied across media, measured into an output record, and embedded in both serial and parallel task networks. By contrast, the quantum authenticity seal is treated as a superinformation medium, so cloning all of its states is impossible.
+The docking-abort token is treated as an abstract information variable carried by unlike classical media: lamp state, PLC register, radio frame, and audit display. Because those substrates are information media for the same variable, the token can be permuted locally, cloned locally, copied across media, measured into an output record, and embedded in serial and parallel task networks. By contrast, the quantum authenticity seal is treated as a superinformation medium, so cloning all of its states is impossible and unrestricted audit fan-out is blocked.
 
 Check
 C1  OK - the abort lamp is a computation medium
@@ -248,6 +278,8 @@ C6  OK - the abort bit can be copied from PLC to radio frame
 C7  OK - the abort bit can be measured from radio frame into the audit display
 C8  OK - a serial network from lamp via PLC to audit display is possible
 C9  OK - a parallel network from PLC to radio frame and audit display is possible
-C10 OK - cloning all states of the quantum seal is impossible
+C10 OK - cloning all states of the quantum seal is an impossible task
+C11 OK - the quantum seal cannot be universally cloned
+C12 OK - the quantum seal cannot be used for unrestricted audit fan-out
 """ .
 } .

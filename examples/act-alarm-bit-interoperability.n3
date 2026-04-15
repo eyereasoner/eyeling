@@ -1,18 +1,26 @@
-# ===============================================================================
-# Harbor alarm bit — interoperability of information media
+# =====================================================================================
+# ACT harbor alarm bit — interoperability of information media
 #
-# Concrete topic from the book "The Science of Can and Can't" of Chiara Marletto:
-# information is substrate-independent when the relevant copying/permutation
-# tasks are possible. Two unlike substrates can carry the same bit.
-# But a superinformation medium cannot have all of its states cloned.
-# ===============================================================================
+# Concrete topic from "The Science of Can and Can't":
+# the same abstract bit can be carried by unlike physical substrates when the
+# relevant information tasks are possible. Constructor theory expresses that in
+# terms of tasks such as permutation, copying, and cloning.
+#
+# This example therefore has both sides:
+#   - CAN   : a classical alarm bit can be permuted and copied between unlike media
+#   - CAN'T : a superinformation token cannot have all of its states universally cloned
+# =====================================================================================
 
 @prefix : <http://example.org/alarm-bit/> .
 @prefix arc: <https://example.org/arc#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 
 :case a arc:Case ;
-  arc:question "Can the harbor alarm bit be copied between an optical beacon and a relay register, and can all states of a quantum token be cloned too?" .
+  arc:question "Can the harbor alarm bit be copied between an optical beacon and a relay register, and what exactly can't be done for a quantum-like token?" .
+
+# --------------------------------------------------------
+# Classical substrates carrying the same abstract variable
+# --------------------------------------------------------
 
 :opticalBeacon a :InformationMedium ;
   :encodes :AlarmBit ;
@@ -24,6 +32,10 @@
   :zeroState :LowVoltage ;
   :oneState :HighVoltage .
 
+# ------------------------------------------------------
+# Contrast substrate with superinformation-like behavior
+# ------------------------------------------------------
+
 :quantumToken a :SuperinformationMedium ;
   :encodes :PolarizationVariable ;
   :state :Horizontal ;
@@ -31,34 +43,60 @@
   :state :Diagonal ;
   :state :AntiDiagonal .
 
+# -------------------------------------------------------
+# CAN rules — what becomes possible for information media
+# -------------------------------------------------------
+
+# Any information medium supports a local permutation of its designated variable.
 { ?M a :InformationMedium ;
      :encodes ?V ;
      :zeroState ?Z ;
      :oneState ?O . }
 =>
-{ [ a :PossibleTask ;
+{ ?M :can :LocalPermutation .
+  [ a :PossibleTask ;
     :taskType :Permute ;
     :on ?M ;
     :variable ?V ;
     :fromState ?Z ;
     :toState ?O ] . } .
 
+# Two unlike information media that encode the same variable can interoperate.
 { ?A a :InformationMedium ; :encodes ?V .
   ?B a :InformationMedium ; :encodes ?V . }
 =>
-{ [ a :PossibleTask ;
+{ ?A :can :InteroperateForVariable .
+  ?B :can :InteroperateForVariable .
+  [ a :PossibleTask ;
     :taskType :Copy ;
     :from ?A ;
     :to ?B ;
     :variable ?V ] . } .
 
+# ------------------------------------------------------------------
+# CAN'T rules — what becomes impossible for a superinformation token
+# ------------------------------------------------------------------
+
+# A superinformation medium cannot have all of its states universally cloned.
 { ?M a :SuperinformationMedium ; :encodes ?V . }
 =>
-{ [ a :ImpossibleTask ;
+{ ?M :cannot :UniversalClone .
+  [ a :ImpossibleTask ;
     :taskType :CloneAllStates ;
     :on ?M ;
     :variable ?V ] . } .
 
+# If universal cloning is unavailable, unrestricted classical-style fan-out of
+# the entire state space is unavailable too.
+{ ?M :cannot :UniversalClone . }
+=>
+{ ?M :cannot :UnrestrictedStateFanOut . } .
+
+# ------
+# Checks
+# ------
+
+# Positive checks for the classical alarm bit.
 { :opticalBeacon a :InformationMedium . }
 => { :case :checkC1 :Passed . } .
 
@@ -83,23 +121,28 @@
      :variable :AlarmBit . }
 => { :case :checkC5 :Passed . } .
 
-{ ?T a :PossibleTask ;
-     :taskType :Permute ;
-     :on :opticalBeacon ;
-     :variable :AlarmBit . }
+{ :opticalBeacon :can :LocalPermutation . }
 => { :case :checkC6 :Passed . } .
 
-{ ?T a :PossibleTask ;
-     :taskType :Permute ;
-     :on :relayRegister ;
-     :variable :AlarmBit . }
+{ :relayRegister :can :LocalPermutation . }
 => { :case :checkC7 :Passed . } .
 
+# Negative checks for the superinformation token.
 { ?T a :ImpossibleTask ;
      :taskType :CloneAllStates ;
      :on :quantumToken ;
      :variable :PolarizationVariable . }
 => { :case :checkC8 :Passed . } .
+
+{ :quantumToken :cannot :UniversalClone . }
+=> { :case :checkC9 :Passed . } .
+
+{ :quantumToken :cannot :UnrestrictedStateFanOut . }
+=> { :case :checkC10 :Passed . } .
+
+# ----------------
+# ARC-style output
+# ----------------
 
 { :case :checkC1 :Passed .
   :case :checkC2 :Passed .
@@ -108,25 +151,30 @@
   :case :checkC5 :Passed .
   :case :checkC6 :Passed .
   :case :checkC7 :Passed .
-  :case :checkC8 :Passed . }
+  :case :checkC8 :Passed .
+  :case :checkC9 :Passed .
+  :case :checkC10 :Passed . }
 =>
 {
-  :out log:outputString """Harbor alarm bit interoperability
+  :out log:outputString """ACT harbor alarm bit interoperability
 
 Answer
-YES for the alarm bit, NO for universal cloning of the quantum token.
+YES for the classical alarm bit.
+NO for universal cloning and unrestricted fan-out of the quantum-like token.
 
 Reason Why
-The alarm state is an abstract bit carried by two unlike substrates. Because both the optical beacon and the relay register are information media for the same variable, copying the bit between them is possible in both directions, and local permutations are possible on each medium. By contrast, the quantum token is treated here as a superinformation medium, so cloning all of its states is impossible.
+The alarm state is modeled as an abstract bit carried by two unlike classical substrates. Because both the optical beacon and the relay register are information media for the same variable, local permutation and copying in both directions are possible. By contrast, the quantum-like token is treated as a superinformation medium, so universal cloning of all of its states is impossible, and unrestricted classical-style fan-out is blocked as well.
 
 Check
-C1  OK - optical beacon is an information medium
-C2  OK - relay register is an information medium
+C1  OK - the optical beacon is an information medium
+C2  OK - the relay register is an information medium
 C3  OK - both substrates encode the same abstract variable: AlarmBit
-C4  OK - copying AlarmBit from optical beacon to relay register is possible
-C5  OK - copying AlarmBit from relay register to optical beacon is possible
+C4  OK - AlarmBit can be copied from optical beacon to relay register
+C5  OK - AlarmBit can be copied from relay register to optical beacon
 C6  OK - local permutation of AlarmBit is possible on the optical beacon
 C7  OK - local permutation of AlarmBit is possible on the relay register
-C8  OK - cloning all states of the quantum token is impossible
+C8  OK - cloning all states of the quantum token is an impossible task
+C9  OK - the quantum token cannot be universally cloned
+C10 OK - the quantum token cannot support unrestricted classical-style fan-out
 """ .
 } .

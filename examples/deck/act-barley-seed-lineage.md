@@ -1,517 +1,593 @@
-# ACT barley seed lineage
+# ACT barley seed lineage — can and can't
 
-This deck explains the example `act-barley-seed-lineage.n3`.
+This deck explains the example `act-barley-seed-lineage-can-and-cant.n3`.
 
-The aim is to show how **Applied Constructor Theory** can be used to describe a concrete biological case in Notation3: a **salt-tolerant barley lineage** that persists through dormancy, germination, development, repair, reproduction, variation, and selection.
+The aim is to show how **Applied Constructor Theory** can describe a concrete biological case in Notation3 while doing both sides of Chiara Marletto’s formula:
 
-The file is not trying to simulate plant biochemistry in detail.
+- the **science of can**
+- and the **science of can’t**
 
-Instead, it expresses a more abstract claim:
+The example models a **barley seed lineage** and compares one viable lineage with several contrast lineages that are missing a crucial ingredient.
 
-> Under suitable physical conditions, a barley lineage can count as a **self-reproducer** and also as an **evolvable lineage**.
+So the file does not only ask:
 
-That is exactly the kind of question constructor theory is designed to express.
+> What can a lineage do when the right structure is present?
+
+It also asks:
+
+> What can a lineage _not_ do when digital heredity, repair, protected dormancy, or heritable variation are missing?
+
+That makes it a more explicitly constructor-theoretic example than the earlier `act-barley-seed-lineage.n3`, because impossibility is derived by rules rather than just mentioned informally.
 
 ---
 
 ## What “Applied Constructor Theory” means here
 
-Constructor theory describes physics in terms of **which transformations are possible, which are impossible, and why**.
+Constructor theory describes nature in terms of **tasks**:
 
-In Chiara Marletto’s work, this style of explanation is applied to several domains, including **theoretical biology**. In the constructor theory of life, the key biological processes are described as tasks:
+- tasks that are **possible**,
+- tasks that are **impossible**,
+- and the physical reasons why.
 
-- **replication**,
-- **self-reproduction**,
-- **repair**,
-- **variation**,
-- **selection**,
-- and the persistence of a lineage over generations.
+In Marletto’s constructor theory of life, the key biological processes are not described first as trajectories or differential equations, but as transformations that can or cannot be carried out under suitable laws and resources.
+
+That means questions like these become central:
+
+- Can hereditary information be copied accurately?
+- Can a system reproduce itself?
+- Can a lineage survive through dormancy and then restart development?
+- Can heritable variation occur?
+- Can natural selection act on that variation?
+- And just as importantly: **what cannot happen when key ingredients are absent?**
 
 So in this example, “Applied Constructor Theory” means:
 
-- taking a real biological topic,
-- expressing it in constructor-theoretic terms,
-- and turning it into a set of explicit N3 rules that derive the final biological claim.
-
-The example follows the constructor-theory-of-life viewpoint that:
-
-- hereditary information must be physically instantiated,
-- accurate reproduction requires a **replicator + vehicle** architecture,
-- and selection becomes possible when variation and environmental filtering are available.
+- taking a recognizable biological topic,
+- expressing it as a network of possible and impossible tasks,
+- and using N3 rules to derive those outcomes explicitly.
 
 ---
 
 ## The biological story in plain language
 
-The file models a simplified barley life cycle.
+The file models four different barley-like lineages.
 
-It contains:
+### 1. `:mainLine`
 
-- a **genome** that carries hereditary information,
-- an **embryo vehicle** that supports metabolism, development, and copying support,
-- an **adult plant vehicle** that supports flowering, gamete production, and seed construction,
-- a **repair subsystem**,
-- a **dormant seed stage** protected by a seed coat,
-- a **growth environment** that permits germination,
-- a **variation source**,
-- and a **selection environment** that favours salt tolerance.
+This is the viable lineage.
 
-The question is not whether a particular seed actually germinates on a particular day.
+It has:
 
-The question is broader:
+- a genome stored in a **digital hereditary medium**,
+- a repair-capable embryo vehicle,
+- a protective seed coat for dormancy,
+- an adult stage that can produce propagules,
+- a variation source,
+- and a saline selection environment that favours its variant.
 
-> Does the structure of this system make accurate self-reproduction and adaptive lineage persistence possible?
+This lineage is the positive case.
 
-That is why the conclusions are things like:
+### 2. `:analogLine`
 
-- `:GenomeCopying a :PossibleTask`
-- `:AccurateSelfReproduction a :PossibleTask`
-- `:barleyLine a :SelfReproducer`
-- `:barleyLine a :EvolvableLineage`
+This lineage looks similar, but its hereditary information is stored in a **non-digital medium**.
+
+It is there to show that under no-design laws, accurate genome copying **cannot** be derived.
+
+### 3. `:fragileLine`
+
+This lineage uses a digital hereditary medium, but lacks **repair support**.
+
+It is there to show that accurate self-reproduction is blocked if reliable damage correction is unavailable.
+
+### 4. `:coatlessLine`
+
+This lineage has digital heredity and repair, but no protected dormant compartment.
+
+It is there to show that **protected dormancy** and therefore one form of **lineage closure** cannot be achieved.
+
+### 5. `:staticLine`
+
+This lineage has digital heredity, repair, and protected dormancy, but no heritable variation.
+
+It is there to show that a lineage can reproduce and persist in some sense while still **failing to be evolvable**.
 
 ---
 
-## The main entities in the file
+## The constructor-theoretic point of the example
 
-Before looking at the rules, it helps to understand the main objects.
+The example is built around a simple but powerful pattern:
 
-### The replicator
+- when the right structural ingredients are present, a lineage **can** perform certain tasks;
+- when one of those ingredients is missing, some tasks **cannot** be performed.
 
-` :barleyGenome ` is the **replicator**.
+So the file is not saying:
 
-It is marked as:
+> barley always does X.
 
-- a `:Replicator`,
-- highly accurate,
-- stored in `:dnaRegister`,
-- and carrying the variant `:SaltTolerant`.
+It is saying:
 
-This is the hereditary information-bearing part of the system.
+> given these conditions, X is possible; given these missing ingredients, Y is impossible.
 
-### The vehicles
+That distinction is exactly the constructor-theoretic style.
 
-There are two vehicles:
+---
 
-- `:embryoVehicle`
-- `:adultPlantVehicle`
+## Main entities in the file
 
-The embryo vehicle supports:
+Before looking at the rules, it helps to know what the main objects represent.
 
-- metabolism,
-- development,
-- copying support,
-- compartment control,
-- and repair.
+### The world assumption
 
-The adult vehicle supports:
+```n3
+:world :obeys :NoDesignLaws .
+```
 
-- metabolism,
-- development,
-- gamete production,
-- and seed construction.
+This is the background assumption shared by all lineages.
 
-Together they implement the **vehicle side** of the constructor-theory-of-life picture.
+It says that the laws of nature are not secretly pre-loaded with biological design. The biological organization must therefore be explainable through the physical possibility of the relevant tasks.
 
-### The bottleneck
+### The hereditary media
 
-` :zygote ` is typed as a `:DevelopmentalBottleneck`.
+There are two contrasting hereditary media:
 
-This captures the idea that a lineage does not continue as a diffuse cloud of material, but through a narrow hereditary bottleneck that anchors the next generation.
+- `:dnaRegister a :DigitalInformationMedium`
+- `:analogRegister a :NonDigitalInformationMedium`
 
-### Dormancy and protection
+This contrast drives one of the strongest “can’t” conclusions in the file.
 
-` :barleySeed ` is the dormant stage.
+### The developmental bottleneck
 
-It is protected by `:seedCoat`, which has the function `:DormancyProtection`.
+```n3
+:zygote a :DevelopmentalBottleneck .
+```
 
-This lets the example model not just reproduction, but also **persistence through a protected inactive stage**.
+This represents the narrow hereditary stage through which the lineage passes from generation to generation.
 
-### Variation and selection
+### The environments and shared resources
 
 The file includes:
 
-- `:mutationSource` as a `:VariationSource`
-- `:salineBench` as a `:SelectionEnvironment`
+- a `:greenhouse` with warmth, moisture, and light,
+- a `:nutrientBed` as a raw material supply,
+- a `:pollinationLoop` for reproduction support,
+- a `:mutationSource` for heritable variation,
+- and a `:salineBench` as the selection environment.
 
-The saline bench favours `:SaltTolerant`, so the example can derive not only reproduction, but also **adaptive persistence** under environmental filtering.
+These do not simulate chemistry in detail. They provide the structural conditions needed for the relevant tasks to be derived.
+
+---
+
+## The positive lineage: what `:mainLine` can do
+
+The positive lineage contains all the key ingredients.
+
+Its genome is a replicator stored digitally:
+
+```n3
+:mainGenome a :Replicator ;
+  :accuracy :High ;
+  :storedIn :dnaRegister ;
+  :variant :SaltTolerant .
+```
+
+Its embryo vehicle supports metabolism, development, copying support, compartment control, and repair. Its adult vehicle supports metabolism, development, gamete production, and seed construction. Its seed has a protective seed coat. Its lineage is marked as having variation present.
+
+That lets the file derive the following `:can` conclusions:
+
+- genome copying under no-design laws
+- protected dormancy
+- germination
+- propagule production
+- accurate self-reproduction
+- lineage closure
+- heritable variation
+- adaptive persistence
+- evolvable lineage status
+
+---
+
+## The contrast lineages: what they can’t do
+
+The four contrast lineages are not there as decoration. Each one is built to fail for a specific reason.
+
+### `:analogLine`
+
+The analog line stores hereditary information in a non-digital medium.
+
+Its role is to show:
+
+- no digital hereditary medium u2192 no accurate genome copying under no-design laws u2192 no accurate self-reproduction
+
+### `:fragileLine`
+
+The fragile line lacks repair.
+
+Its role is to show:
+
+- no reliable damage correction u2192 no accurate self-reproduction
+
+### `:coatlessLine`
+
+The coatless line lacks a protective dormant compartment.
+
+Its role is to show:
+
+- no protected dormancy u2192 no lineage closure through the protected seed stage
+
+### `:staticLine`
+
+The static line has no heritable variation.
+
+Its role is to show:
+
+- no adaptive evolution u2192 no adaptive persistence u2192 no evolvable lineage
+
+This is especially useful because it separates **mere reproduction** from **evolvability**.
 
 ---
 
 ## What the rules are doing
 
-This is the heart of the example.
+This is the core of the example.
 
-Each rule says:
+The rules are grouped into two large parts:
 
-- **if** some structural conditions hold,
-- **then** a certain task or lineage-level property is possible.
+- **CAN rules**
+- **CAN’T rules**
 
-The file builds its final claim step by step.
+The first group derives possible tasks and positive lineage properties. The second group derives blocked tasks and impossible lineage properties.
 
-### 1. Digital hereditary information under no-design laws
+---
+
+## Part 1 — CAN rules
+
+### Rule group 1: digital heredity makes genome copying possible
 
 ```n3
 { :world :obeys :NoDesignLaws .
-  :dnaRegister a :DigitalInformationMedium . }
+  ?Genome a :Replicator ;
+          :storedIn ?Medium .
+  ?Medium a :DigitalInformationMedium . }
 =>
-{ :DigitalReplicationUnderNoDesignLaws a :PossibleTask . } .
+{ ?Genome :can :GenomeCopyUnderNoDesignLaws . } .
 ```
 
-This rule establishes the basic constructor-theoretic backdrop.
+This rule is the positive starting point.
 
 It says:
 
-- the world is governed by **no-design laws**, and
-- hereditary information is stored in a **digital medium**.
+- if the world obeys no-design laws,
+- and a replicator is stored in a digital hereditary medium,
+- then accurate genome copying is physically possible in principle.
 
-From that, the file concludes that **digital replication under no-design laws is possible**.
+This is the constructor-theory-of-life analogue of saying:
 
-This is the starting point for all later biology-specific conclusions.
+> digital hereditary information makes faithful replication physically available.
 
-### 2. Genome copying becomes possible
+### Rule group 2: a seed coat makes protected dormancy possible
 
 ```n3
-{ :barleyGenome a :Replicator .
-  :barleyGenome :storedIn :dnaRegister .
-  :DigitalReplicationUnderNoDesignLaws a :PossibleTask . }
+{ ?Seed a :Organism ;
+        :lifeStage :DormantSeed ;
+        :hasCompartment ?Compartment .
+  ?Compartment :function :DormancyProtection . }
 =>
-{ :GenomeCopying a :PossibleTask . } .
+{ ?Seed :can :ProtectedDormancy . } .
 ```
 
-This rule ties the abstract background to the concrete genome.
+This rule converts a structural feature into a task capability.
 
-It says that if the barley genome is a replicator, is stored in the digital register, and digital replication is physically allowed, then **copying the genome is a possible task**.
+It says that a dormant seed with a protective compartment can enter and sustain **protected dormancy**.
 
-This is the first genuinely biological task derived in the file.
-
-### 3. The embryo vehicle provides the support layer
+### Rule group 3: environmental support makes germination possible
 
 ```n3
-{ :embryoVehicle a :Vehicle ;
-    :function :Metabolism ;
-    :function :CopyingSupport . }
-=>
-{ :VehicleSupport a :PossibleTask . } .
-```
-
-This rule says that the embryo is not just inert packaging.
-
-Because it is a vehicle with metabolism and copying support, it can supply the machinery needed to make replication operational.
-
-In plain terms, the rule says:
-
-> the support machinery required by the replicator exists.
-
-### 4. Repair is available
-
-```n3
-{ :embryoVehicle :usesRepair :meristemRepair .
-  :meristemRepair a :RepairVehicle . }
-=>
-{ :DamageCorrection a :PossibleTask . } .
-```
-
-This rule adds robustness.
-
-It says that because the embryo vehicle uses a repair subsystem, **damage correction is possible**.
-
-That matters because the example is not only about bare copying, but about **accurate** lineage persistence.
-
-### 5. Protected dormancy is possible
-
-```n3
-{ :barleySeed :lifeStage :DormantSeed .
-  :barleySeed :hasCompartment :seedCoat .
-  :seedCoat :function :DormancyProtection . }
-=>
-{ :ProtectedDormancy a :PossibleTask . } .
-```
-
-This rule turns the seed stage into a constructor-theoretic capability.
-
-It says that when a dormant seed has a protective compartment with the right function, **protected dormancy** is a possible task.
-
-This is an important step because it treats dormancy not as an accident, but as a stable, describable capability of the system.
-
-### 6. Germination is possible in the right environment
-
-```n3
-{ :barleySeed :lifeStage :DormantSeed .
+{ ?Seed a :Organism ;
+        :lifeStage :DormantSeed .
   :greenhouse :condition :WarmthAvailable .
   :greenhouse :condition :MoistureAvailable .
   :nutrientBed a :RawMaterialSupply . }
 =>
-{ :Germination a :PossibleTask . } .
+{ ?Seed :can :Germinate . } .
 ```
 
-This rule introduces the environment.
+This rule says the dormant seed can restart active development when the environment supplies the right enabling conditions.
 
-Dormancy alone is not enough. The seed must also be able to leave dormancy.
-
-So the rule says that if:
-
-- the seed is dormant,
-- warmth is present,
-- moisture is present,
-- and raw materials are available,
-
-then **germination is possible**.
-
-### 7. Development proceeds through a bottleneck
+### Rule group 4: the adult stage can generate propagules
 
 ```n3
-{ :zygote a :DevelopmentalBottleneck .
-  :barleyGenome a :Replicator .
-  :embryoVehicle a :Vehicle ;
-    :function :Development . }
-=>
-{ :BottleneckedDevelopment a :PossibleTask . } .
-```
-
-This rule captures one of the more interesting ideas in the example.
-
-It says that development is not modeled as a vague expansion of tissue. Instead, it is routed through a **developmental bottleneck** tied to the replicator and a developmental vehicle.
-
-The result is the task:
-
-- `:BottleneckedDevelopment a :PossibleTask`
-
-This is the rule that gives the lineage a well-defined generational structure.
-
-### 8. Adult reconstruction becomes possible
-
-```n3
-{ :BottleneckedDevelopment a :PossibleTask .
-  :adultPlantVehicle a :Vehicle ;
-    :function :GameteProduction ;
-    :function :SeedConstruction . }
-=>
-{ :AdultReconstruction a :PossibleTask . } .
-```
-
-This rule says that once bottlenecked development is possible, and the adult vehicle supports gamete production and seed construction, the lineage can rebuild the adult reproductive stage.
-
-So it derives:
-
-- `:AdultReconstruction a :PossibleTask`
-
-### 9. Propagule production is possible
-
-```n3
-{ :adultBarley :lifeStage :AdultPlant .
+{ ?Adult a :Organism ;
+         :lifeStage :AdultPlant ;
+         :hasVehicle ?Vehicle .
+  ?Vehicle :function :GameteProduction .
+  ?Vehicle :function :SeedConstruction .
   :pollinationLoop a :ReproductionSupport .
   :greenhouse :condition :LightAvailable . }
 =>
-{ :PropaguleProduction a :PossibleTask . } .
+{ ?Adult :can :PropaguleProduction . } .
 ```
 
-This rule describes the outward reproductive step.
+This rule says the adult stage is reproductively productive.
 
-It says that an adult plant with reproduction support and suitable growth conditions can produce the next generation’s propagules.
+It can create the next generation’s starting units.
 
-So this rule connects the adult stage back toward seed formation.
-
-### 10. The full life cycle closes into a lineage
+### Rule group 5: accurate self-reproduction needs copying, repair, and a bottleneck
 
 ```n3
-{ :GenomeCopying a :PossibleTask .
-  :VehicleSupport a :PossibleTask .
-  :ProtectedDormancy a :PossibleTask .
-  :Germination a :PossibleTask .
-  :AdultReconstruction a :PossibleTask .
-  :PropaguleProduction a :PossibleTask . }
+{ ?Line a :Lineage ;
+        :seedStage ?Seed ;
+        :replicator ?Genome .
+  ?Genome :can :GenomeCopyUnderNoDesignLaws .
+  ?Seed :hasVehicle ?Vehicle .
+  ?Vehicle :usesRepair ?Repair .
+  ?Repair a :RepairVehicle .
+  :zygote a :DevelopmentalBottleneck . }
 =>
-{ :LineageClosure a :PossibleTask . } .
+{ ?Line :can :AccurateSelfReproduction . } .
 ```
 
-This is one of the central rules in the file.
+This is one of the main biological rules.
 
-It gathers together all the earlier life-cycle components and says:
+It says accurate self-reproduction is not obtained from copying alone. It also needs:
 
-- copying exists,
-- vehicle support exists,
-- dormancy exists,
-- germination exists,
-- the adult stage can be rebuilt,
-- and propagules can be produced.
-
-Therefore the cycle **closes**.
-
-This means the system is not just doing isolated tasks. It can sustain a lineage through a whole generational loop.
-
-### 11. Accurate self-reproduction is derived
-
-```n3
-{ :GenomeCopying a :PossibleTask .
-  :DamageCorrection a :PossibleTask .
-  :BottleneckedDevelopment a :PossibleTask . }
-=>
-{ :AccurateSelfReproduction a :PossibleTask . } .
-```
-
-This is the rule that upgrades crude reproduction into **accurate** self-reproduction.
-
-The idea is:
-
-- copying alone is not enough,
-- repair alone is not enough,
-- development alone is not enough.
-
-But together they support accurate reproduction across generations.
-
-### 12. Heritable variation is possible
-
-```n3
-{ :barleyGenome a :Replicator .
-  :mutationSource a :VariationSource . }
-=>
-{ :HeritableVariation a :PossibleTask . } .
-```
-
-This rule adds evolvability.
-
-It says that once there is a replicator and a variation source, **heritable variation** is physically available.
-
-Without this rule, the file could still describe reproduction, but not adaptive evolution.
-
-### 13. Selection yields adaptive persistence
-
-```n3
-{ :AccurateSelfReproduction a :PossibleTask .
-  :HeritableVariation a :PossibleTask .
-  :salineBench a :SelectionEnvironment ;
-    :favours :SaltTolerant .
-  :barleyGenome :variant :SaltTolerant . }
-=>
-{
-  :AdaptiveLineagePersistence a :PossibleTask .
-  :barleyGenome :selectedIn :salineBench .
-} .
-```
-
-This rule is where ecology enters.
-
-It says that if:
-
-- accurate reproduction is possible,
-- heritable variation is possible,
-- the environment selects for a trait,
-- and the lineage carries that trait,
-
-then **adaptive lineage persistence** is possible.
-
-This is not just survival. It is survival with a trait that the environment systematically favours.
-
-### 14. The line is classified as a self-reproducer
-
-```n3
-{ :LineageClosure a :PossibleTask .
-  :AccurateSelfReproduction a :PossibleTask . }
-=>
-{ :barleyLine a :SelfReproducer . } .
-```
-
-This rule turns a collection of tasks into a classification.
-
-It says that when the life cycle closes and reproduction is accurate, the barley line qualifies as a **self-reproducer**.
-
-That is one of the file’s main biological conclusions.
-
-### 15. The line is classified as evolvable
-
-```n3
-{ :barleyLine a :SelfReproducer .
-  :HeritableVariation a :PossibleTask . }
-=>
-{ :barleyLine a :EvolvableLineage . } .
-```
-
-This final conceptual step says:
-
-- self-reproduction + heritable variation = evolvable lineage.
-
-That is the rule that moves the example from “this system can reproduce” to “this system can participate in Darwinian-style adaptive evolution.”
-
----
-
-## What the ARC checks are doing
-
-The checks at the end do not create the biology.
-
-They **audit** the biological story that the earlier rules derived.
-
-They verify, in order, that the example contains:
-
-1. no-design laws,
-2. digital hereditary information,
-3. a replicator,
-4. a developmental bottleneck,
-5. repair,
-6. dormancy,
-7. germination,
-8. genome copying,
-9. bottlenecked development,
-10. propagule production,
-11. lineage closure,
-12. accurate self-reproduction,
-13. heritable variation,
-14. adaptive persistence,
-15. self-reproducer status,
-16. evolvable-lineage status.
-
-Only when all of those are present does the file produce the final `log:outputString` report.
-
-So the ARC part is acting like a **human-readable proof summary**.
-
----
-
-## Why this is a good Applied Constructor Theory case
-
-This example works well as an ACT case because it does three things at once.
-
-### It stays biological
-
-The subject is concrete and recognizable:
-
-- barley seeds,
-- dormancy,
-- germination,
 - repair,
-- variation,
-- saline selection.
+- and a developmental bottleneck.
 
-### It stays constructor-theoretic
+So the rule captures a more realistic constructor-theory-of-life claim:
 
-The file never falls back to “just simulate the chemistry.”
+> accurate reproduction requires organized architecture, not just template duplication.
 
-Instead it keeps the constructor-theory style:
+### Rule group 6: lineage closure needs the whole life-cycle loop
 
-- what tasks are possible,
-- what structural ingredients make them possible,
-- and what higher-order biological categories follow from that.
+```n3
+{ ?Line a :Lineage ;
+        :seedStage ?Seed ;
+        :adultStage ?Adult .
+  ?Seed :can :ProtectedDormancy .
+  ?Seed :can :Germinate .
+  ?Adult :can :PropaguleProduction . }
+=>
+{ ?Line :can :LineageClosure . } .
+```
 
-### It stays rule-explanatory
+This rule says the lineage can close its life cycle only if the key stages connect:
 
-The example is not just a data dump.
+- the seed can survive,
+- the seed can restart,
+- and the adult can produce new seeds.
 
-Its rules form a narrative ladder:
+### Rule group 7: variation enables evolvable behavior
 
-- digital information,
-- copying,
-- support,
-- repair,
-- dormancy,
-- germination,
-- development,
-- reproduction,
-- lineage closure,
-- selection,
-- evolvability.
+```n3
+{ ?Line a :Lineage ;
+        :variationStatus :Present . }
+=>
+{ ?Line :can :HeritableVariation . } .
+```
 
-That makes it a strong teaching example as well as a reasoning example.
+This rule is deliberately simple. It marks the lineage as one in which heritable variation is possible.
+
+### Rule group 8: adaptive persistence needs both reproduction and variation
+
+```n3
+{ ?Line a :Lineage ;
+        :variant ?Variant .
+  ?Line :can :AccurateSelfReproduction .
+  ?Line :can :HeritableVariation .
+  :salineBench :favours ?Variant . }
+=>
+{ ?Line :can :AdaptivePersistence . } .
+```
+
+This rule joins three ideas:
+
+- reliable reproduction,
+- heritable variation,
+- and environmental selection.
+
+That is what turns a merely surviving line into an adaptively persistent one.
+
+### Rule group 9: evolvability is a higher-level outcome
+
+```n3
+{ ?Line :can :LineageClosure .
+  ?Line :can :AdaptivePersistence . }
+=>
+{ ?Line a :EvolvableLineage . } .
+```
+
+This final positive rule says that evolvability is a composite property. It is not assumed. It is derived from lower-level task capabilities.
 
 ---
 
-## One-sentence summary
+## Part 2 — CAN’T rules
 
-This N3 file shows how a barley lineage can be described in Applied Constructor Theory as a system in which **digital hereditary information, vehicles, repair, dormancy, development, reproduction, variation, and selection together make self-reproduction and evolvability possible**.
+Now the file does something especially constructor-theoretic: it derives impossibility claims explicitly.
+
+### Rule group 10: non-digital heredity blocks accurate copying under no-design laws
+
+```n3
+{ :world :obeys :NoDesignLaws .
+  ?Genome a :Replicator ;
+          :storedIn ?Medium .
+  ?Medium a :NonDigitalInformationMedium . }
+=>
+{ ?Genome :cannot :AccurateGenomeCopyUnderNoDesignLaws . } .
+```
+
+This is the negative mirror of the first positive rule.
+
+It says that when the hereditary medium is not digital, accurate genome copying under no-design laws is not available.
+
+This is the key reason `:analogLine` fails.
+
+### Rule group 11: if accurate copying is blocked, accurate self-reproduction is blocked
+
+```n3
+{ ?Line :replicator ?Genome .
+  ?Genome :cannot :AccurateGenomeCopyUnderNoDesignLaws . }
+=>
+{ ?Line :cannot :AccurateSelfReproduction . } .
+```
+
+This rule propagates the impossibility from the genome level to the lineage level.
+
+### Rule group 12: no repair means no reliable damage correction
+
+```n3
+{ ?Line a :Lineage ;
+        :lacksRepair true . }
+=>
+{ ?Line :cannot :ReliableDamageCorrection . } .
+```
+
+This rule is used for `:fragileLine`. It says that the absence of repair is not a minor defect; it blocks a crucial task.
+
+### Rule group 13: no damage correction means no accurate self-reproduction
+
+```n3
+{ ?Line :cannot :ReliableDamageCorrection . }
+=>
+{ ?Line :cannot :AccurateSelfReproduction . } .
+```
+
+This rule turns that missing subsystem into a biological impossibility claim.
+
+### Rule group 14: no seed protection means no protected dormancy
+
+```n3
+{ ?Line a :Lineage ;
+        :lacksDormancyProtection true . }
+=>
+{ ?Line :cannot :ProtectedDormancy . } .
+```
+
+This is the core negative rule for `:coatlessLine`.
+
+### Rule group 15: no protected dormancy blocks lineage closure
+
+```n3
+{ ?Line :cannot :ProtectedDormancy . }
+=>
+{ ?Line :cannot :LineageClosure . } .
+```
+
+This rule is important because it shows how one missing capability can break a larger life-cycle property.
+
+### Rule group 16: no heritable variation blocks adaptive evolution
+
+```n3
+{ ?Line a :Lineage ;
+        :variationStatus :None . }
+=>
+{ ?Line :cannot :AdaptiveEvolution . } .
+```
+
+This is the key negative rule for `:staticLine`.
+
+It says that even if reproduction works, the lineage still cannot count as adaptively evolving without heritable variation.
+
+### Rule group 17: if adaptive evolution is blocked, adaptive persistence is blocked
+
+```n3
+{ ?Line :cannot :AdaptiveEvolution . }
+=>
+{ ?Line :cannot :AdaptivePersistence . } .
+```
+
+This rule pushes the impossibility upward to a broader lineage property.
+
+### Rule group 18: blocked reproduction, persistence, or closure blocks evolvability
+
+```n3
+{ ?Line :cannot :AccurateSelfReproduction . }
+=>
+{ ?Line :cannot :EvolvableLineage . } .
+
+{ ?Line :cannot :AdaptivePersistence . }
+=>
+{ ?Line :cannot :EvolvableLineage . } .
+
+{ ?Line :cannot :LineageClosure . }
+=>
+{ ?Line :cannot :EvolvableLineage . } .
+```
+
+These are the final negative rules.
+
+They say that evolvability is fragile in a structured way. If any of the major task clusters fail, the lineage cannot count as evolvable.
+
+---
+
+## What the checks are proving
+
+The check section is divided into two halves.
+
+### Positive checks
+
+These confirm that the viable lineage really does derive the intended positive conclusions:
+
+- genome copying under no-design laws
+- protected dormancy
+- germination
+- propagule production
+- accurate self-reproduction
+- lineage closure
+- heritable variation
+- adaptive persistence
+- evolvable lineage status
+
+### Negative checks
+
+These confirm that the contrast lineages derive the intended impossibility results:
+
+- `:analogLine` cannot achieve accurate self-reproduction
+- `:fragileLine` cannot achieve accurate self-reproduction
+- `:coatlessLine` cannot achieve lineage closure
+- `:staticLine` cannot achieve adaptive evolution
+- `:staticLine` cannot be an evolvable lineage
+
+So the ARC output is not just a narrative summary. It is backed by explicit derivations of both possible and impossible outcomes.
+
+---
+
+## Why this example is stronger than the earlier barley case
+
+The earlier barley example focused mainly on the **can** side:
+
+- what tasks become possible,
+- and how those tasks accumulate into self-reproduction and evolvability.
+
+This version keeps that structure, but adds a second layer:
+
+- contrasting lineages,
+- explicit `:cannot` derivations,
+- and causal explanations of failure.
+
+That makes it more faithful to the slogan **“the science of can and can’t.”**
+
+It also makes the biological reasoning more informative. Instead of only learning that the main lineage succeeds, we learn _why the others fail_.
+
+---
+
+## The key lesson
+
+The file’s main lesson is this:
+
+> Constructor theory of life is not just about describing successful life-like systems. It is also about identifying which life-like tasks become impossible when specific structural ingredients are absent.
+
+In this example:
+
+- digital hereditary information matters,
+- repair matters,
+- protected dormancy matters,
+- and heritable variation matters.
+
+Each missing ingredient removes a capability. And those lost capabilities propagate upward into lost lineage-level properties.
+
+That is exactly the kind of explanation constructor theory is good at:
+
+- not just what happens,
+- but what can happen,
+- what cannot happen,
+- and why.

@@ -1,20 +1,23 @@
 ACT yeast self-reproduction
 
 Answer
-YES.
-This yeast starter culture is a viable applied constructor-theory case of accurate self-reproduction under no-design laws.
+YES for the viable starter culture.
+NO for accurate self-reproduction in the non-digital contrast lineage.
 
 Reason Why
-The genome is treated as a replicator storing digital information, while the cell machinery is treated as the vehicle that enables metabolism and copying support. Under no-design laws, digital information makes genome copying possible. Because the replicator is accurate and paired with a vehicle, the whole cell qualifies as a self-reproducer. With a variation source and a selection environment, natural selection also becomes possible.
+The starter genome is treated as a replicator storing digital hereditary information, while the cell machinery is treated as the vehicle that enables metabolism and copying support. Under no-design laws, digital information makes accurate genome copying possible. Because the replicator is accurate and paired with a vehicle, the whole starter cell qualifies as a self-reproducer. With a variation source and a selection environment, natural selection also becomes possible. By contrast, the non-digital lineage cannot support accurate genome copying under the same no-design-laws assumption, so it cannot sustain the same accurate self-reproduction or natural-selection story.
 
 Check
 C1  OK - no-design laws are assumed
-C2  OK - digital information is physically instantiated
-C3  OK - a replicator is present
-C4  OK - a vehicle is present
-C5  OK - accurate replication is supported by a replicator-plus-vehicle architecture
-C6  OK - genome copying is possible
+C2  OK - digital information is physically instantiated for the viable lineage
+C3  OK - a viable replicator is present
+C4  OK - a viable vehicle is present
+C5  OK - accurate genome copying is possible for the viable lineage
+C6  OK - the viable lineage has a replicator-plus-vehicle architecture
 C7  OK - the starter cell qualifies as a self-reproducer
-C8  OK - heritable variation is possible
-C9  OK - natural selection is possible
-C10 OK - the fitter variant is selected in the fermenter
+C8  OK - heritable variation is possible for the viable lineage
+C9  OK - the viable starter culture can support a natural-selection lineage
+C10 OK - the fitter viable variant is selected in the fermenter
+C11 OK - the non-digital contrast genome cannot be copied accurately under no-design laws
+C12 OK - the non-digital contrast cell cannot achieve accurate self-reproduction
+C13 OK - the non-digital contrast cell cannot support the same natural-selection lineage

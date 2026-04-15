@@ -1,20 +1,24 @@
 ACT gravity mediator witness
 
 Answer
-YES.
-If locality and interoperability hold, and the two quantum systems become entangled only through the gravitational mediator, then the mediator must be non-classical.
+YES for the mediator-only witness run.
+NO for a purely classical mediator model under the same mediator-only conditions.
 
 Reason Why
-The run assumes locality and interoperability, excludes direct coupling between the two quantum systems, and records an entanglement witness after interaction through the mediator alone. Under those constructor-theoretic conditions, the mediator cannot be purely classical. Since the mediator in this run is gravitational, the result supports the conclusion that the gravitational mediator is non-classical.
+The positive run assumes locality and interoperability, excludes direct coupling between the two quantum systems, and records an entanglement witness after interaction through the mediator alone. Under those constructor-theoretic conditions, the mediator must be non-classical, so the run rules out a purely classical mediator model. The contrast run keeps the same locality, interoperability, and mediator-only structure but assigns the mediator a purely classical model. In that case the mediator-only entanglement witness is blocked, so the run cannot support the same non-classicality conclusion.
 
 Check
-C1  OK - locality is assumed
-C2  OK - interoperability is assumed
+C1  OK - locality is assumed in the positive run
+C2  OK - interoperability is assumed in the positive run
 C3  OK - direct coupling between the two quantum systems is excluded
-C4  OK - the interaction path is mediator-only
-C5  OK - an entanglement witness is observed
-C6  OK - the run supports an information-transfer interface
-C7  OK - the run supports local readout
-C8  OK - the mediator is derived to be non-classical
-C9  OK - a purely classical mediator model is ruled out
-C10 OK - the non-classicality conclusion applies to the gravitational mediator in this run
+C4  OK - the positive run has a mediator-only interaction path
+C5  OK - an entanglement witness is observed in the positive run
+C6  OK - the positive run supports an information-transfer interface
+C7  OK - the positive run supports local readout
+C8  OK - the positive mediator is derived to be non-classical
+C9  OK - a purely classical mediator model is ruled out by the positive run
+C10 OK - the non-classicality conclusion applies to the gravitational mediator
+C11 OK - the contrast run is also mediator-only
+C12 OK - the contrast run cannot support a mediator-only entanglement witness
+C13 OK - the purely classical gravitational mediator cannot mediate entanglement under the witness conditions
+C14 OK - the contrast run cannot support the non-classicality conclusion

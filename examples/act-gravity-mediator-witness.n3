@@ -1,12 +1,15 @@
 # ==============================================================================
-# ACT gravity mediator witness
+# ACT gravity mediator witness — explicit can and can't version
 #
 # Concrete applied-constructor-theory case:
 # Two quantum sensors become entangled even though they have no direct coupling.
 # They interact only through a mediator interpreted as gravitational.
 #
-# Under the constructor-theoretic principles of locality and interoperability,
-# that forces the mediator to be non-classical.
+# This example therefore includes both sides:
+#   - CAN   : a mediator-only entanglement witness is possible when the mediator
+#             is treated as non-classical under locality and interoperability
+#   - CAN'T : a purely classical mediator model cannot generate the same witness
+#             under the same mediator-only conditions
 # ==============================================================================
 
 @prefix : <http://example.org/act-gravity/> .
@@ -14,13 +17,22 @@
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 
 :case a arc:Case ;
-  arc:question "If two quantum sensors become entangled only through a gravitational mediator, while locality and interoperability hold, must the mediator be non-classical?" .
+  arc:question "If two quantum sensors become entangled only through a gravitational mediator, while locality and interoperability hold, what can be concluded, and what can't a purely classical mediator model do?" .
+
+# -----------------------
+# Shared physical systems
+# -----------------------
 
 :leftSensor a :QuantumSystem .
 :rightSensor a :QuantumSystem .
 
+# ----------------------------------
+# Positive mediator and positive run
+# ----------------------------------
+
 :gravityMediator a :Mediator ;
-  :couplingMode :Gravitational .
+  :couplingMode :Gravitational ;
+  :mediatorModel :NonClassicalCandidate .
 
 :run a :ExperimentRun ;
   :leftSystem :leftSensor ;
@@ -34,9 +46,29 @@
   :controlStatus :CopyLikeControlPresent .
 
 # ----------------------------------
-# Constructor-theoretic helper rules
+# Contrast mediator and contrast run
 # ----------------------------------
 
+:classicalGravityMediator a :Mediator ;
+  :couplingMode :Gravitational ;
+  :mediatorModel :PurelyClassical .
+
+:contrastRun a :ExperimentRun ;
+  :leftSystem :leftSensor ;
+  :rightSystem :rightSensor ;
+  :usesMediator :classicalGravityMediator ;
+  :assumes :Locality ;
+  :assumes :Interoperability ;
+  :directCouplingStatus :NoDirectCoupling ;
+  :observed :NoEntanglementWitness ;
+  :probeStatus :LocalProbeReadoutPresent ;
+  :controlStatus :CopyLikeControlPresent .
+
+# -------------------------------------------------------------
+# CAN rules — what becomes possible in the positive witness run
+# -------------------------------------------------------------
+
+# Under locality and no direct coupling, interaction is mediated only through M.
 { ?R a :ExperimentRun ;
      :assumes :Locality ;
      :directCouplingStatus :NoDirectCoupling ;
@@ -45,12 +77,14 @@
 { ?R :interactionPath :MediatorOnlyPath .
   ?R :pathMediator ?M . } .
 
+# Interoperability plus copy-like control gives an information-transfer interface.
 { ?R a :ExperimentRun ;
      :assumes :Interoperability ;
      :controlStatus :CopyLikeControlPresent . }
 =>
 { ?R :supports :InformationTransferInterface . } .
 
+# Local probe readout provides a local measurement interface.
 { ?R a :ExperimentRun ;
      :probeStatus :LocalProbeReadoutPresent . }
 =>
@@ -67,6 +101,7 @@
      :observed :EntanglementWitnessPassed . }
 =>
 { ?M a :NonClassicalMediator .
+  ?R :can :SupportMediatorOnlyEntanglementWitness .
   ?R :supportsConclusion :MediatorNonClassical . } .
 
 # If the mediator is non-classical, a purely classical mediator model is ruled out.
@@ -83,10 +118,32 @@
 =>
 { ?R :supportsConclusion :GravityMediatorNonClassical . } .
 
+# --------------------------------------------------------------
+# CAN'T rules — what a purely classical mediator model cannot do
+# --------------------------------------------------------------
+
+# Under the same locality/interoperability/mediator-only conditions, a purely
+# classical mediator model cannot support the mediator-only entanglement witness.
+{ ?R a :ExperimentRun ;
+     :assumes :Locality ;
+     :assumes :Interoperability ;
+     :interactionPath :MediatorOnlyPath ;
+     :usesMediator ?M .
+  ?M :mediatorModel :PurelyClassical . }
+=>
+{ ?R :cannot :SupportMediatorOnlyEntanglementWitness .
+  ?M :cannot :MediateEntanglementUnderWitnessConditions . } .
+
+# If the witness cannot be supported, the run cannot justify a non-classicality conclusion.
+{ ?R :cannot :SupportMediatorOnlyEntanglementWitness . }
+=>
+{ ?R :cannot :SupportMediatorNonClassicalConclusion . } .
+
 # ------
 # Checks
 # ------
 
+# Positive checks for the successful witness run.
 { :run :assumes :Locality . }
 => { :case :checkC1 :Passed . } .
 
@@ -117,6 +174,19 @@
 { :run :supportsConclusion :GravityMediatorNonClassical . }
 => { :case :checkC10 :Passed . } .
 
+# Negative checks for the purely classical contrast model.
+{ :contrastRun :interactionPath :MediatorOnlyPath . }
+=> { :case :checkC11 :Passed . } .
+
+{ :contrastRun :cannot :SupportMediatorOnlyEntanglementWitness . }
+=> { :case :checkC12 :Passed . } .
+
+{ :classicalGravityMediator :cannot :MediateEntanglementUnderWitnessConditions . }
+=> { :case :checkC13 :Passed . } .
+
+{ :contrastRun :cannot :SupportMediatorNonClassicalConclusion . }
+=> { :case :checkC14 :Passed . } .
+
 # ----------------
 # ARC-style output
 # ----------------
@@ -130,28 +200,36 @@
   :case :checkC7 :Passed .
   :case :checkC8 :Passed .
   :case :checkC9 :Passed .
-  :case :checkC10 :Passed . }
+  :case :checkC10 :Passed .
+  :case :checkC11 :Passed .
+  :case :checkC12 :Passed .
+  :case :checkC13 :Passed .
+  :case :checkC14 :Passed . }
 =>
 {
   :out log:outputString """ACT gravity mediator witness
 
 Answer
-YES.
-If locality and interoperability hold, and the two quantum systems become entangled only through the gravitational mediator, then the mediator must be non-classical.
+YES for the mediator-only witness run.
+NO for a purely classical mediator model under the same mediator-only conditions.
 
 Reason Why
-The run assumes locality and interoperability, excludes direct coupling between the two quantum systems, and records an entanglement witness after interaction through the mediator alone. Under those constructor-theoretic conditions, the mediator cannot be purely classical. Since the mediator in this run is gravitational, the result supports the conclusion that the gravitational mediator is non-classical.
+The positive run assumes locality and interoperability, excludes direct coupling between the two quantum systems, and records an entanglement witness after interaction through the mediator alone. Under those constructor-theoretic conditions, the mediator must be non-classical, so the run rules out a purely classical mediator model. The contrast run keeps the same locality, interoperability, and mediator-only structure but assigns the mediator a purely classical model. In that case the mediator-only entanglement witness is blocked, so the run cannot support the same non-classicality conclusion.
 
 Check
-C1  OK - locality is assumed
-C2  OK - interoperability is assumed
+C1  OK - locality is assumed in the positive run
+C2  OK - interoperability is assumed in the positive run
 C3  OK - direct coupling between the two quantum systems is excluded
-C4  OK - the interaction path is mediator-only
-C5  OK - an entanglement witness is observed
-C6  OK - the run supports an information-transfer interface
-C7  OK - the run supports local readout
-C8  OK - the mediator is derived to be non-classical
-C9  OK - a purely classical mediator model is ruled out
-C10 OK - the non-classicality conclusion applies to the gravitational mediator in this run
+C4  OK - the positive run has a mediator-only interaction path
+C5  OK - an entanglement witness is observed in the positive run
+C6  OK - the positive run supports an information-transfer interface
+C7  OK - the positive run supports local readout
+C8  OK - the positive mediator is derived to be non-classical
+C9  OK - a purely classical mediator model is ruled out by the positive run
+C10 OK - the non-classicality conclusion applies to the gravitational mediator
+C11 OK - the contrast run is also mediator-only
+C12 OK - the contrast run cannot support a mediator-only entanglement witness
+C13 OK - the purely classical gravitational mediator cannot mediate entanglement under the witness conditions
+C14 OK - the contrast run cannot support the non-classicality conclusion
 """ .
 } .

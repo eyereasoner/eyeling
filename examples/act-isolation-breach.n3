@@ -1,22 +1,24 @@
-# ============================================================================
-# Isolation-breach token — broad constructor-theory coverage
+# ===============================================================================
+# ACT isolation-breach token — broad constructor-theory coverage with can't-rules
 #
 # Concrete topic:
 # A biosafety lab has an isolation-breach token that must be propagated across
 # unlike classical media: a door beacon, a containment PLC, a nurse pager, and
-# an incident board. The classical token can be prepared, permuted, copied,
-# measured, and composed into serial and parallel task networks.
+# an incident board.
 #
-# A quantum provenance seal on a specimen tag is treated as a superinformation
-# medium, so cloning all of its states is impossible.
-# ============================================================================
+# This example therefore includes both sides:
+#   - CAN   : the classical breach token can be prepared, permuted, copied,
+#             measured, and composed into serial and parallel networks
+#   - CAN'T : the quantum provenance seal cannot be universally cloned and
+#             therefore cannot be turned into an unrestricted fan-out token
+# ===============================================================================
 
 @prefix : <http://example.org/isolation-breach/> .
 @prefix arc: <https://example.org/arc#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 
 :case a arc:Case ;
-  arc:question "Can an isolation-breach token be prepared, permuted, copied, measured, and audited across unlike classical media, while the quantum provenance seal remains unclonable?" .
+  arc:question "Can an isolation-breach token be prepared, permuted, copied, measured, and audited across unlike classical media, and what exactly can't be done with the quantum provenance seal?" .
 
 # ---------------------------------------------------
 # Classical media carrying the same abstract variable
@@ -42,19 +44,22 @@
   :zeroState :BoardNormal ;
   :oneState :BoardBreach .
 
-# Contrasting medium with superinformation-like behavior
+# ---------------------------------------------------
+# Contrast medium with superinformation-like behavior
+# ---------------------------------------------------
+
 :specimenSeal a :SuperinformationMedium ;
   :encodes :SealVariable ;
   :state :SealAlpha ;
   :state :SealBeta ;
   :state :SealGamma .
 
-# -----------------------------
-# Core constructor-theory rules
-# -----------------------------
+# ----------------------------------------------------------------
+# CAN rules — what becomes possible for the classical breach token
+# ----------------------------------------------------------------
 
-# Information media support computation-like permutations, distinguishability,
-# and local preparation/cloning for the designated information variable.
+# Information media support computation-like preparation, permutation,
+# distinguishability, and local cloning for the designated variable.
 { ?M a :InformationMedium ;
      :encodes ?V ;
      :zeroState ?Z ;
@@ -63,6 +68,9 @@
 {
   ?M a :ComputationMedium .
   ?M :distinguishes ?V .
+  ?M :can :PrepareInformationStates .
+  ?M :can :LocalPermutation .
+  ?M :can :LocalClone .
 
   [ a :PossibleTask ;
     :kind :Prepare ;
@@ -110,37 +118,31 @@
       :fromState ?Y ;
       :toState ?X ] . }
 =>
-{
-  [ a :PossibleTask ;
+{ [ a :PossibleTask ;
     :kind :ReversePermute ;
     :on ?M ;
-    :variable ?V ] .
-} .
+    :variable ?V ] . } .
 
 # Interoperability-style copying across unlike media carrying the same variable.
 { ?A a :InformationMedium ; :encodes ?V .
   ?B a :InformationMedium ; :encodes ?V . }
 =>
-{
-  [ a :PossibleTask ;
+{ [ a :PossibleTask ;
     :kind :Copy ;
     :from ?A ;
     :to ?B ;
-    :variable ?V ] .
-} .
+    :variable ?V ] . } .
 
 # Measurement into any information medium that carries the same variable.
 { ?A :distinguishes ?V .
   ?B a :InformationMedium ;
      :encodes ?V . }
 =>
-{
-  [ a :PossibleTask ;
+{ [ a :PossibleTask ;
     :kind :Measure ;
     :from ?A ;
     :to ?B ;
-    :variable ?V ] .
-} .
+    :variable ?V ] . } .
 
 # Serial composition of possible tasks.
 { [ a :PossibleTask ;
@@ -154,14 +156,12 @@
       :to ?C ;
       :variable ?V ] . }
 =>
-{
-  [ a :PossibleTask ;
+{ [ a :PossibleTask ;
     :kind :SerialNetwork ;
     :from ?A ;
     :via ?B ;
     :to ?C ;
-    :variable ?V ] .
-} .
+    :variable ?V ] . } .
 
 # Parallel composition of possible tasks.
 { [ a :PossibleTask ;
@@ -175,30 +175,39 @@
       :to ?C ;
       :variable ?V ] . }
 =>
-{
-  [ a :PossibleTask ;
+{ [ a :PossibleTask ;
     :kind :ParallelNetwork ;
     :source ?A ;
     :left ?B ;
     :right ?C ;
-    :variable ?V ] .
-} .
+    :variable ?V ] . } .
 
-# Superinformation-like restriction.
+# -------------------------------------------------------------
+# CAN'T rules — what becomes impossible for the provenance seal
+# -------------------------------------------------------------
+
+# A superinformation medium cannot have all of its states universally cloned.
 { ?M a :SuperinformationMedium ;
      :encodes ?V . }
 =>
 {
+  ?M :cannot :UniversalClone .
   [ a :ImpossibleTask ;
     :kind :CloneAllStates ;
     :on ?M ;
     :variable ?V ] .
 } .
 
+# If universal cloning is unavailable, unrestricted parallel fan-out is unavailable.
+{ ?M :cannot :UniversalClone . }
+=>
+{ ?M :cannot :UnrestrictedParallelFanOut . } .
+
 # ------
 # Checks
 # ------
 
+# Positive checks for the classical breach token.
 { :doorBeacon a :InformationMedium . }
 => { :case :checkC1 :Passed . } .
 
@@ -278,11 +287,18 @@
     :variable :BreachBit ] . }
 => { :case :checkC14 :Passed . } .
 
+# Negative checks for the provenance seal.
 { [ a :ImpossibleTask ;
     :kind :CloneAllStates ;
     :on :specimenSeal ;
     :variable :SealVariable ] . }
 => { :case :checkC15 :Passed . } .
+
+{ :specimenSeal :cannot :UniversalClone . }
+=> { :case :checkC16 :Passed . } .
+
+{ :specimenSeal :cannot :UnrestrictedParallelFanOut . }
+=> { :case :checkC17 :Passed . } .
 
 # ----------------
 # ARC-style report
@@ -302,16 +318,19 @@
   :case :checkC12 :Passed .
   :case :checkC13 :Passed .
   :case :checkC14 :Passed .
-  :case :checkC15 :Passed . }
+  :case :checkC15 :Passed .
+  :case :checkC16 :Passed .
+  :case :checkC17 :Passed . }
 =>
 {
-  :out log:outputString """Isolation-breach token — broad constructor-theory coverage case
+  :out log:outputString """ACT isolation-breach token — broad constructor-theory coverage case
 
 Answer
-YES for the classical isolation-breach token, NO for universal cloning of the quantum provenance seal.
+YES for the classical isolation-breach token.
+NO for universal cloning and unrestricted fan-out of the quantum provenance seal.
 
 Reason Why
-The isolation-breach token is treated as an abstract information variable carried by several unlike classical media: a door beacon, a containment PLC, a nurse pager, and an incident board. Because those substrates are information media for the same variable, the token can be prepared, permuted, reversed, cloned locally, copied across media, measured into an output record, and composed into both serial and parallel task networks. By contrast, the specimen seal is treated as a superinformation medium, so cloning all of its states is impossible.
+The isolation-breach token is treated as an abstract information variable carried by unlike classical media: a door beacon, a containment PLC, a nurse pager, and an incident board. Because those substrates are information media for the same variable, the token can be prepared, permuted, reversed, cloned locally, copied across media, measured into an output record, and composed into serial and parallel task networks. By contrast, the specimen seal is treated as a superinformation medium, so cloning all of its states is impossible and unrestricted parallel fan-out is blocked.
 
 Check
 C1  OK - the door beacon is an information medium
@@ -328,6 +347,8 @@ C11 OK - the breach bit can be copied from containment PLC to nurse pager
 C12 OK - the breach bit can be measured from nurse pager into the incident board
 C13 OK - a serial network from door beacon via containment PLC to incident board is possible
 C14 OK - a parallel network from containment PLC to nurse pager and incident board is possible
-C15 OK - cloning all states of the specimen seal is impossible
+C15 OK - cloning all states of the specimen seal is an impossible task
+C16 OK - the specimen seal cannot be universally cloned
+C17 OK - the specimen seal cannot support unrestricted parallel fan-out
 """ .
 } .
