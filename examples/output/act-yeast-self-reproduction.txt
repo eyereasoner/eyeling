@@ -1,0 +1,20 @@
+ACT yeast self-reproduction
+
+Answer
+YES.
+This yeast starter culture is a viable applied constructor-theory case of accurate self-reproduction under no-design laws.
+
+Reason Why
+The genome is treated as a replicator storing digital information, while the cell machinery is treated as the vehicle that enables metabolism and copying support. Under no-design laws, digital information makes genome copying possible. Because the replicator is accurate and paired with a vehicle, the whole cell qualifies as a self-reproducer. With a variation source and a selection environment, natural selection also becomes possible.
+
+Check
+C1  OK - no-design laws are assumed
+C2  OK - digital information is physically instantiated
+C3  OK - a replicator is present
+C4  OK - a vehicle is present
+C5  OK - accurate replication is supported by a replicator-plus-vehicle architecture
+C6  OK - genome copying is possible
+C7  OK - the starter cell qualifies as a self-reproducer
+C8  OK - heritable variation is possible
+C9  OK - natural selection is possible
+C10 OK - the fitter variant is selected in the fermenter

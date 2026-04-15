@@ -1,0 +1,163 @@
+# ==========================================================================
+# ACT yeast self-reproduction
+#
+# Applied constructor-theory case:
+# A yeast starter culture is modeled as a self-reproducer.
+# - the genome is the replicator
+# - the cell machinery is the vehicle
+# - a nutrient bath supplies raw materials
+# - a fermenter provides a selection environment
+#
+# This encodes Marletto's constructor-theoretic logic:
+# accurate replication under no-design laws requires digital information and
+# a replicator-plus-vehicle architecture.
+# ==========================================================================
+
+@prefix : <http://example.org/act/yeast/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+:world :obeys :NoDesignLaws .
+
+:dnaRegister a :DigitalInformationMedium .
+
+:starterGenome a :Replicator ;
+  :accuracy :High ;
+  :variant :RespireFast ;
+  :storedIn :dnaRegister .
+
+:starterVehicle a :Vehicle ;
+  :function :Metabolism ;
+  :function :CopyingSupport .
+
+:starterCell a :Cell ;
+  :hasReplicator :starterGenome ;
+  :hasVehicle :starterVehicle .
+
+:nutrientBath a :RawMaterialSupply .
+
+:mutationSource a :VariationSource .
+
+:fermenter a :SelectionEnvironment ;
+  :favours :RespireFast .
+
+# ---------------------------
+# Constructor-theoretic rules
+# ---------------------------
+
+{ :world :obeys :NoDesignLaws .
+  :dnaRegister a :DigitalInformationMedium . }
+=>
+{ :ReplicationUnderNoDesignLaws a :PossibleTask . } .
+
+{ :starterGenome a :Replicator .
+  :starterGenome :storedIn :dnaRegister .
+  :ReplicationUnderNoDesignLaws a :PossibleTask . }
+=>
+{ :GenomeCopying a :PossibleTask . } .
+
+{ :starterGenome :accuracy :High .
+  :starterCell :hasReplicator :starterGenome .
+  :starterCell :hasVehicle :starterVehicle .
+  :starterVehicle a :Vehicle . }
+=>
+{ :AccurateReplicationArchitecture a :PossibleTask . } .
+
+{ :GenomeCopying a :PossibleTask .
+  :AccurateReplicationArchitecture a :PossibleTask .
+  :nutrientBath a :RawMaterialSupply . }
+=>
+{ :starterCell a :SelfReproducer . } .
+
+{ :starterCell a :SelfReproducer . }
+=>
+{ :SelfReproduction a :PossibleTask . } .
+
+{ :starterGenome a :Replicator .
+  :mutationSource a :VariationSource . }
+=>
+{ :HeritableVariation a :PossibleTask . } .
+
+{ :SelfReproduction a :PossibleTask .
+  :HeritableVariation a :PossibleTask .
+  :fermenter a :SelectionEnvironment . }
+=>
+{ :NaturalSelection a :PossibleTask . } .
+
+{ :NaturalSelection a :PossibleTask .
+  :starterGenome :variant ?V .
+  :fermenter :favours ?V . }
+=>
+{ :starterGenome :selectedIn :fermenter . } .
+
+# ------
+# Checks
+# ------
+
+{ :world :obeys :NoDesignLaws . }
+=> { :case :checkC1 :Passed . } .
+
+{ :dnaRegister a :DigitalInformationMedium . }
+=> { :case :checkC2 :Passed . } .
+
+{ :starterGenome a :Replicator . }
+=> { :case :checkC3 :Passed . } .
+
+{ :starterVehicle a :Vehicle . }
+=> { :case :checkC4 :Passed . } .
+
+{ :AccurateReplicationArchitecture a :PossibleTask . }
+=> { :case :checkC5 :Passed . } .
+
+{ :GenomeCopying a :PossibleTask . }
+=> { :case :checkC6 :Passed . } .
+
+{ :starterCell a :SelfReproducer . }
+=> { :case :checkC7 :Passed . } .
+
+{ :HeritableVariation a :PossibleTask . }
+=> { :case :checkC8 :Passed . } .
+
+{ :NaturalSelection a :PossibleTask . }
+=> { :case :checkC9 :Passed . } .
+
+{ :starterGenome :selectedIn :fermenter . }
+=> { :case :checkC10 :Passed . } .
+
+# ------
+# Output
+# ------
+
+{ :case :checkC1 :Passed .
+  :case :checkC2 :Passed .
+  :case :checkC3 :Passed .
+  :case :checkC4 :Passed .
+  :case :checkC5 :Passed .
+  :case :checkC6 :Passed .
+  :case :checkC7 :Passed .
+  :case :checkC8 :Passed .
+  :case :checkC9 :Passed .
+  :case :checkC10 :Passed . }
+=>
+{
+  :out log:outputString """ACT yeast self-reproduction
+
+Answer
+YES.
+This yeast starter culture is a viable applied constructor-theory case of accurate self-reproduction under no-design laws.
+
+Reason Why
+The genome is treated as a replicator storing digital information, while the cell machinery is treated as the vehicle that enables metabolism and copying support. Under no-design laws, digital information makes genome copying possible. Because the replicator is accurate and paired with a vehicle, the whole cell qualifies as a self-reproducer. With a variation source and a selection environment, natural selection also becomes possible.
+
+Check
+C1  OK - no-design laws are assumed
+C2  OK - digital information is physically instantiated
+C3  OK - a replicator is present
+C4  OK - a vehicle is present
+C5  OK - accurate replication is supported by a replicator-plus-vehicle architecture
+C6  OK - genome copying is possible
+C7  OK - the starter cell qualifies as a self-reproducer
+C8  OK - heritable variation is possible
+C9  OK - natural selection is possible
+C10 OK - the fitter variant is selected in the fermenter
+""" .
+} .
