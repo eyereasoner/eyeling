@@ -1,0 +1,225 @@
+# =================================================================================
+# ACT tunnel-junction wake switch
+#
+# Applied constructor-theory case:
+# A remote leak-alarm node must wake up under a very small forward-bias regime.
+#
+# We compare two devices:
+#   - tunnelJunction   : a heavily doped narrow PN junction with overlapping states
+#   - ordinaryJunction : a conventional PN junction without that overlap
+#
+# The aim is to express the application in "can / can't" form:
+#   what the tunnel junction can do,
+#   and what the conventional junction can't do,
+# under the same low-bias operating requirement.
+# =================================================================================
+
+@prefix : <http://example.org/act/tunnel-junction/> .
+@prefix arc: <https://example.org/arc#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+:case a arc:Case ;
+  arc:question "Can a tunnel-junction wake switch trigger a low-bias leak alarm in a regime where a conventional PN junction cannot?" .
+
+# -------------------
+# Application context
+# -------------------
+
+:leakAlarmNode a :EdgeSensor ;
+  :needs :MicrowattWakeSwitching ;
+  :application :PipeLeakAlarm .
+
+# ----------------------------------
+# Device A: tunnel-style PN junction
+# ----------------------------------
+
+# This junction is modeled with the structural conditions associated here
+# with quantum-tunneling transfer across the barrier.
+:tunnelJunction a :PNJunction ;
+  :junctionKind :TunnelDiode ;
+  :doping :Heavy ;
+  :depletionWidth :Narrow ;
+  :stateAlignment :Overlap ;
+  :biasRegime :LowForwardBias ;
+  :scanProfile :PeakToValley ;
+  :deviceRole :WakeSwitch .
+
+# ----------------------------------
+# Device B: conventional PN junction
+# ----------------------------------
+
+# This junction is modeled as lacking the conditions needed for the same
+# low-bias transfer mode.
+:ordinaryJunction a :PNJunction ;
+  :junctionKind :ConventionalDiode ;
+  :doping :Standard ;
+  :depletionWidth :Wide ;
+  :stateAlignment :NoOverlap ;
+  :biasRegime :LowForwardBias ;
+  :scanProfile :MonotoneForward ;
+  :deviceRole :WakeSwitch .
+
+# ---------------------------------
+# CAN rules — what becomes possible
+# ---------------------------------
+
+# A heavily doped, narrow junction with overlapping states
+# can support quantum transfer across the barrier.
+{ ?J a :PNJunction ;
+     :doping :Heavy ;
+     :depletionWidth :Narrow ;
+     :stateAlignment :Overlap . }
+=>
+{ ?J :can :QuantumBarrierTransfer .
+  ?J :transportMode :TunnelingDominant . } .
+
+# If quantum barrier transfer is available in the low-bias
+# regime, then sub-threshold current is possible.
+{ ?J :can :QuantumBarrierTransfer ;
+     :biasRegime :LowForwardBias . }
+=>
+{ ?J :can :SubThresholdCurrent . } .
+
+# If the device has quantum barrier transfer and is scanned
+# through the peak-to-valley operating region, then a
+# negative differential response is possible.
+{ ?J :can :QuantumBarrierTransfer ;
+     :scanProfile :PeakToValley . }
+=>
+{ ?J :can :NegativeDifferentialResponse . } .
+
+# If sub-threshold current is possible and the device is
+# being used as a wake switch, then ultra-low-bias switching
+# is possible.
+{ ?J :can :SubThresholdCurrent ;
+     :deviceRole :WakeSwitch . }
+=>
+{ ?J :can :UltraLowBiasSwitching . } .
+
+# If ultra-low-bias switching is possible and the node needs
+# that capability, then the device can serve the wake circuit.
+{ ?J :can :UltraLowBiasSwitching .
+  :leakAlarmNode :needs :MicrowattWakeSwitching . }
+=>
+{ ?J :can :ServeLeakAlarmWakeCircuit . } .
+
+# -------------------------------------
+# CAN'T rules — what becomes impossible
+# -------------------------------------
+
+# A conventional low-bias junction with wide depletion and
+# no state overlap cannot provide the same quantum transfer.
+{ ?J a :PNJunction ;
+     :doping :Standard ;
+     :depletionWidth :Wide ;
+     :stateAlignment :NoOverlap . }
+=>
+{ ?J :cannot :QuantumBarrierTransfer . } .
+
+# If quantum barrier transfer is unavailable in the same
+# low-bias regime, then sub-threshold current is unavailable.
+{ ?J :cannot :QuantumBarrierTransfer ;
+     :biasRegime :LowForwardBias . }
+=>
+{ ?J :cannot :SubThresholdCurrent . } .
+
+# Without the quantum transfer mode, the negative
+# differential response of the tunnel-style operating window
+# is unavailable too.
+{ ?J :cannot :QuantumBarrierTransfer . }
+=>
+{ ?J :cannot :NegativeDifferentialResponse . } .
+
+# If sub-threshold current is unavailable for a wake switch,
+# then ultra-low-bias switching is unavailable.
+{ ?J :cannot :SubThresholdCurrent ;
+     :deviceRole :WakeSwitch . }
+=>
+{ ?J :cannot :UltraLowBiasSwitching . } .
+
+# If ultra-low-bias switching is unavailable, then the device
+# cannot serve the leak-alarm wake circuit.
+{ ?J :cannot :UltraLowBiasSwitching .
+  :leakAlarmNode :needs :MicrowattWakeSwitching . }
+=>
+{ ?J :cannot :ServeLeakAlarmWakeCircuit . } .
+
+# ------
+# Checks
+# ------
+
+# Positive checks for the tunnel junction.
+{ :tunnelJunction :can :QuantumBarrierTransfer . }
+=> { :case :checkC1 :Passed . } .
+
+{ :tunnelJunction :transportMode :TunnelingDominant . }
+=> { :case :checkC2 :Passed . } .
+
+{ :tunnelJunction :can :SubThresholdCurrent . }
+=> { :case :checkC3 :Passed . } .
+
+{ :tunnelJunction :can :NegativeDifferentialResponse . }
+=> { :case :checkC4 :Passed . } .
+
+{ :tunnelJunction :can :UltraLowBiasSwitching . }
+=> { :case :checkC5 :Passed . } .
+
+{ :tunnelJunction :can :ServeLeakAlarmWakeCircuit . }
+=> { :case :checkC6 :Passed . } .
+
+# Negative checks for the conventional junction.
+{ :ordinaryJunction :cannot :QuantumBarrierTransfer . }
+=> { :case :checkC7 :Passed . } .
+
+{ :ordinaryJunction :cannot :SubThresholdCurrent . }
+=> { :case :checkC8 :Passed . } .
+
+{ :ordinaryJunction :cannot :NegativeDifferentialResponse . }
+=> { :case :checkC9 :Passed . } .
+
+{ :ordinaryJunction :cannot :UltraLowBiasSwitching . }
+=> { :case :checkC10 :Passed . } .
+
+{ :ordinaryJunction :cannot :ServeLeakAlarmWakeCircuit . }
+=> { :case :checkC11 :Passed . } .
+
+# ----------------
+# ARC-style output
+# ----------------
+
+{ :case :checkC1 :Passed .
+  :case :checkC2 :Passed .
+  :case :checkC3 :Passed .
+  :case :checkC4 :Passed .
+  :case :checkC5 :Passed .
+  :case :checkC6 :Passed .
+  :case :checkC7 :Passed .
+  :case :checkC8 :Passed .
+  :case :checkC9 :Passed .
+  :case :checkC10 :Passed .
+  :case :checkC11 :Passed . }
+=>
+{
+  :out log:outputString """ACT tunnel-junction wake switch
+
+Answer
+YES for the tunnel junction.
+NO for the conventional low-bias PN junction in the same wake-switch regime.
+
+Reason Why
+The tunnel junction is modeled as a heavily doped narrow PN junction with overlapping states, so quantum barrier transfer is possible. That makes sub-threshold current possible in the low-forward-bias regime, which in turn makes ultra-low-bias switching possible for the wake circuit. Because the device is also scanned through a peak-to-valley window, a negative differential response is possible as well. By contrast, the conventional junction lacks the structural conditions for the same transfer mode, so it cannot deliver the same low-bias switching task in this case.
+
+Check
+C1  OK - the tunnel junction can support quantum barrier transfer
+C2  OK - the tunnel junction is classified as tunneling-dominant
+C3  OK - the tunnel junction can deliver sub-threshold current
+C4  OK - the tunnel junction can show negative differential response
+C5  OK - the tunnel junction can perform ultra-low-bias switching
+C6  OK - the tunnel junction can serve the leak-alarm wake circuit
+C7  OK - the conventional junction cannot support the same quantum barrier transfer
+C8  OK - the conventional junction cannot deliver sub-threshold current in this regime
+C9  OK - the conventional junction cannot show the tunnel-style negative differential response
+C10 OK - the conventional junction cannot perform ultra-low-bias switching here
+C11 OK - the conventional junction cannot serve the leak-alarm wake circuit in this case
+""" .
+} .
