@@ -32,6 +32,7 @@
 - [Appendix E — How Eyeling reaches 100% on `notation3tests`](#app-e)
 - [Appendix F — The ARC approach: Answer • Reason Why • Check](#app-f)
 - [Appendix G — Eyeling and the W3C CG Notation3 Semantics](#app-g)
+- [Appendix H — Applied Constructor-Theory and the N3 ARC examples](#app-h)
 
 ---
 
@@ -3277,3 +3278,231 @@ A good short summary is this:
 - Eyeling also defines a wider operational language than the current semantics document, especially through builtins and scoped proof/query features.
 
 So the handbook and the semantics document are best read as complementary. The semantics document explains the abstract shape of Notation3. The handbook explains how a compact working reasoner realizes that shape, and where it chooses a practical execution model over a purely model-theoretic presentation.
+
+<a id="app-h"></a>
+
+## Appendix H — Applied Constructor-Theory and the N3 ARC examples
+
+This appendix explains the idea behind the **Applied Constructor-Theory** examples collected in the `examples/act-*` files.
+
+The short version is:
+
+> Appendix F explains the **presentation style** of ARC.  
+> This appendix explains the **scientific style** of the ACT examples.
+
+In this handbook, **ACT** is used as a practical label for examples that take constructor-theoretic ideas and turn them into concrete, runnable N3 programs. The label is local to this handbook: it is a convenient way to group examples that are about constructor theory in action, not a claim that there is one official file format or one officially standardized subfield called “ACT”.
+
+### H.1 What constructor theory is trying to do
+
+Constructor theory is a proposal for formulating physics in terms of **which transformations are possible, which are impossible, and why**, rather than only in terms of trajectories and initial conditions.
+
+That shift matters because many scientifically important statements already have that shape:
+
+- information can be copied from one medium to another
+- an accurate self-reproducer can exist under no-design laws
+- a work medium can reset a memory in a way that heat alone cannot
+- a mediator that can entangle two quantum systems cannot be purely classical
+
+Those are not merely predictions of one trajectory. They are statements about a space of **allowed and forbidden tasks**. Constructor theory is designed to make such statements fundamental rather than secondary.
+
+### H.2 Why this matters for applied examples
+
+The constructor-theory programme is often presented through applications and research themes rather than as a closed symbolic calculus. In practice, that makes it a good fit for example-driven reasoning in Eyeling.
+
+An Eyeling ACT example does not try to reproduce the full mathematical machinery of a physics paper. Instead, it extracts the **task structure** of the claim:
+
+- what is being attempted
+- which resources or media are available
+- which structural conditions make the task possible
+- which missing conditions make the task impossible
+- what small set of checks would make the conclusion auditable
+
+That is exactly the kind of thing N3 rules are good at expressing.
+
+### H.3 Why N3 fits constructor-theoretic reasoning unusually well
+
+Notation3 is a good match for constructor-theoretic examples for four reasons.
+
+First, N3 rules are naturally relational. They can say:
+
+```n3
+{ ?system :has ?property . } => { ?system :can ?task . } .
+```
+
+and just as naturally:
+
+```n3
+{ ?system :lacks ?property . } => { ?system :cannot ?task . } .
+```
+
+That is already close to the “science of can and can’t” idiom.
+
+Second, N3 can keep the explanation close to the answer. The conditions, the derived `:can` / `:cannot` facts, and the final human-readable report can all live in one file.
+
+Third, Eyeling supports `log:outputString`, so the result can be rendered as a compact ARC report rather than as a raw closure dump.
+
+Fourth, Eyeling supports rule-based checks and hard fuses (`=> false`), so the example can state not only the claim but also what would count as a contradiction of the claim.
+
+That combination makes N3 a strong medium for **pedagogical applied constructor theory**: it is executable, inspectable, and naturally counterfactual.
+
+### H.4 What these ACT examples are — and what they are not
+
+These examples are **not** microscopic simulations.
+
+They do not solve Schrödinger equations, semiconductor transport equations, or full biochemical kinetics. They are closer to **task-logic models**. They capture the counterfactual structure of a scientific claim:
+
+- if these conditions hold, then this task is possible
+- if these conditions are absent, then that task is impossible
+- if the task is possible, what larger conclusion follows
+- if the task is impossible, what stronger claim is ruled out
+
+That is why an ACT example often looks more like a carefully structured scientific argument than like a numerical simulator.
+
+This is a feature, not a bug. The point is to model the **explanatory logic** of the claim in constructor-theoretic form.
+
+### H.5 The recurring shape of an ACT file in Eyeling
+
+Most of the ACT files in this repository follow the same skeleton.
+
+#### H.5.1 A concrete scenario
+
+Each file starts with a scenario that is tangible enough to picture:
+
+- an alarm bit crossing unlike media
+- a docking abort token
+- a biosafety isolation-breach signal
+- a gravitational mediator witness
+- a yeast or barley lineage
+- a tunnel-junction wake switch
+- a photosynthetic transfer complex
+- a sensor memory that must be reset
+
+The point of the scenario is to stop constructor theory from floating away into abstract slogans.
+
+#### H.5.2 Positive rules: what the system can do
+
+The positive rules derive facts such as:
+
+- `:can :Copy`
+- `:can :Measure`
+- `:can :AccurateSelfReproduction`
+- `:can :EfficientExcitonTransfer`
+- `:can :ReliableResetFromWork`
+
+These are the constructor-theoretic heart of the file. They say which tasks become possible when the right structural conditions are present.
+
+#### H.5.3 Negative rules: what the system cannot do
+
+The negative rules derive facts such as:
+
+- `:cannot :CloneAllStates`
+- `:cannot :AccurateSelfReproduction`
+- `:cannot :AdaptivePersistence`
+- `:cannot :ServeLeakAlarmWakeCircuit`
+- `:cannot :ReadyForReuseFromHeatAlone`
+
+These rules matter just as much as the positive ones. A constructor-theoretic explanation is incomplete if it says only what works and never says what is ruled out.
+
+In practice, the negative rules often provide the sharpest insight in the file.
+
+#### H.5.4 An ARC report
+
+The final rule usually emits a `log:outputString` report with three parts:
+
+- **Answer**
+- **Reason Why**
+- **Check**
+
+That is the Appendix F layer. ARC gives the file a readable surface. Constructor theory gives it the inner scientific logic.
+
+#### H.5.5 Comments that explain the scientific role of each rule block
+
+The better ACT examples are heavily commented. The comments should say not just what the syntax is doing, but what scientific role the block plays:
+
+- interoperability
+- locality
+- no-cloning
+- replicator–vehicle logic
+- work versus heat
+- irreversibility
+- short-lived quantum assistance
+- blocked lineage closure
+
+That is important because these examples are meant to teach a way of thinking, not only to demonstrate parser coverage.
+
+### H.6 The main constructor-theory themes represented in the examples
+
+The current ACT examples are listed in Appendix F’s example catalog. This appendix is the conceptual companion to that list.
+
+Here are the main themes those files illustrate.
+
+#### H.6.1 Information as a task-level notion
+
+The alarm-bit, docking-abort, and isolation-breach examples treat information as something that can be copied, permuted, measured, and moved between unlike media.
+
+#### H.6.2 Life as accurate self-reproduction under no-design laws
+
+The yeast and barley files follow the constructor-theory-of-life pattern: replication, self-reproduction, and natural selection are treated as tasks that can be possible under no-design laws when the right structural conditions are present.
+
+These examples are especially good for N3 because the logic is already rule-shaped:
+
+- digital heredity enables accurate copying
+- vehicle structure enables construction and repair
+- variation plus selection enables adaptive persistence
+- missing ingredients block those tasks
+
+#### H.6.3 Thermodynamics as possible and impossible tasks
+
+The sensor-memory-reset example is a compact way to express constructor-theoretic thermodynamics: a work-like resource can drive a reliable reset task that heat alone cannot, and an irreversible degradation path need not have the exact reverse available.
+
+#### H.6.4 Non-classicality witnesses in hybrid systems
+
+The gravity-mediator example shows how a constructor-theoretic application can be expressed as a chain of constraints: if locality and interoperability hold, and a mediator can entangle two quantum systems, then that mediator cannot be purely classical.
+
+That kind of claim is perfect for N3 because it is already naturally expressed as a chain of conditions and consequences rather than as a trajectory simulation.
+
+#### H.6.5 Quantum effects in practical settings
+
+The tunnel-junction and photosynthetic-transfer files show how ACT examples can model quantum effects without pretending to be full microscopic calculations. They capture the counterfactual claim that certain structural conditions make a task possible, while contrast conditions block it.
+
+This is often the right level of abstraction for a reasoning example: detailed enough to be about a real scientific idea, but explicit enough to stay executable and inspectable.
+
+### H.7 How to read an ACT example well
+
+A good reading order is:
+
+1. identify the concrete application scenario
+2. identify the `:can` facts the file is trying to establish
+3. identify the `:cannot` facts that provide the contrast
+4. read the final ARC report
+5. go back and inspect the rule blocks that justify that report
+6. check whether the file includes explicit validation or a fuse
+
+That order preserves the scientific meaning of the example. You first see the task. Then you see the allowed and forbidden transformations. Only then do you look at the syntax in detail.
+
+### H.8 What makes a strong ACT example in this repository
+
+A strong ACT example in Eyeling usually has five traits.
+
+It is **concrete**. The reader can picture the system.
+
+It is **counterfactual**. The file derives both a meaningful `:can` and a meaningful `:cannot`.
+
+It is **commented at the scientific level**. The comments explain principles, not just syntax.
+
+It is **ARC-shaped**. The answer, reason, and checks are visible.
+
+And it is **honest about scope**. It does not pretend to be a full physical simulation when it is really a task-logic model.
+
+### H.9 Why keep these examples in the handbook at all
+
+Because constructor theory can otherwise seem either too abstract or too grand.
+
+The ACT examples solve that by making the ideas runnable. They let a reader see, in a small executable artifact, how a principle about possible and impossible tasks can be turned into explicit rules, explicit contrasts, and explicit checks.
+
+That is valuable even for readers who do not plan to work on constructor theory itself. It shows a wider lesson:
+
+> some scientific explanations are best understood not as “what happened once,” but as “what could be made to happen, what could not, and what structural features make the difference.”
+
+That is exactly the sort of explanation that N3, and Eyeling in particular, can make unusually clear.
+
