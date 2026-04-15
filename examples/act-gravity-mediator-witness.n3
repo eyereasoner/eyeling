@@ -1,0 +1,157 @@
+# ==============================================================================
+# ACT gravity mediator witness
+#
+# Concrete applied-constructor-theory case:
+# Two quantum sensors become entangled even though they have no direct coupling.
+# They interact only through a mediator interpreted as gravitational.
+#
+# Under the constructor-theoretic principles of locality and interoperability,
+# that forces the mediator to be non-classical.
+# ==============================================================================
+
+@prefix : <http://example.org/act-gravity/> .
+@prefix arc: <https://example.org/arc#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+:case a arc:Case ;
+  arc:question "If two quantum sensors become entangled only through a gravitational mediator, while locality and interoperability hold, must the mediator be non-classical?" .
+
+:leftSensor a :QuantumSystem .
+:rightSensor a :QuantumSystem .
+
+:gravityMediator a :Mediator ;
+  :couplingMode :Gravitational .
+
+:run a :ExperimentRun ;
+  :leftSystem :leftSensor ;
+  :rightSystem :rightSensor ;
+  :usesMediator :gravityMediator ;
+  :assumes :Locality ;
+  :assumes :Interoperability ;
+  :directCouplingStatus :NoDirectCoupling ;
+  :observed :EntanglementWitnessPassed ;
+  :probeStatus :LocalProbeReadoutPresent ;
+  :controlStatus :CopyLikeControlPresent .
+
+# ----------------------------------
+# Constructor-theoretic helper rules
+# ----------------------------------
+
+{ ?R a :ExperimentRun ;
+     :assumes :Locality ;
+     :directCouplingStatus :NoDirectCoupling ;
+     :usesMediator ?M . }
+=>
+{ ?R :interactionPath :MediatorOnlyPath .
+  ?R :pathMediator ?M . } .
+
+{ ?R a :ExperimentRun ;
+     :assumes :Interoperability ;
+     :controlStatus :CopyLikeControlPresent . }
+=>
+{ ?R :supports :InformationTransferInterface . } .
+
+{ ?R a :ExperimentRun ;
+     :probeStatus :LocalProbeReadoutPresent . }
+=>
+{ ?R :supports :LocalReadoutInterface . } .
+
+# Core ACT witness rule:
+# locality + interoperability + mediator-only interaction + observed entanglement
+# imply a non-classical mediator.
+{ ?R a :ExperimentRun ;
+     :assumes :Locality ;
+     :assumes :Interoperability ;
+     :interactionPath :MediatorOnlyPath ;
+     :usesMediator ?M ;
+     :observed :EntanglementWitnessPassed . }
+=>
+{ ?M a :NonClassicalMediator .
+  ?R :supportsConclusion :MediatorNonClassical . } .
+
+# If the mediator is non-classical, a purely classical mediator model is ruled out.
+{ ?R :supportsConclusion :MediatorNonClassical ;
+     :usesMediator ?M .
+  ?M a :NonClassicalMediator . }
+=>
+{ ?R :rulesOut :PurelyClassicalMediatorModel . } .
+
+# The witness is specifically about the gravitational mediator in this run.
+{ ?R :usesMediator ?M .
+  ?M :couplingMode :Gravitational .
+  ?M a :NonClassicalMediator . }
+=>
+{ ?R :supportsConclusion :GravityMediatorNonClassical . } .
+
+# ------
+# Checks
+# ------
+
+{ :run :assumes :Locality . }
+=> { :case :checkC1 :Passed . } .
+
+{ :run :assumes :Interoperability . }
+=> { :case :checkC2 :Passed . } .
+
+{ :run :directCouplingStatus :NoDirectCoupling . }
+=> { :case :checkC3 :Passed . } .
+
+{ :run :interactionPath :MediatorOnlyPath . }
+=> { :case :checkC4 :Passed . } .
+
+{ :run :observed :EntanglementWitnessPassed . }
+=> { :case :checkC5 :Passed . } .
+
+{ :run :supports :InformationTransferInterface . }
+=> { :case :checkC6 :Passed . } .
+
+{ :run :supports :LocalReadoutInterface . }
+=> { :case :checkC7 :Passed . } .
+
+{ :gravityMediator a :NonClassicalMediator . }
+=> { :case :checkC8 :Passed . } .
+
+{ :run :rulesOut :PurelyClassicalMediatorModel . }
+=> { :case :checkC9 :Passed . } .
+
+{ :run :supportsConclusion :GravityMediatorNonClassical . }
+=> { :case :checkC10 :Passed . } .
+
+# ----------------
+# ARC-style output
+# ----------------
+
+{ :case :checkC1 :Passed .
+  :case :checkC2 :Passed .
+  :case :checkC3 :Passed .
+  :case :checkC4 :Passed .
+  :case :checkC5 :Passed .
+  :case :checkC6 :Passed .
+  :case :checkC7 :Passed .
+  :case :checkC8 :Passed .
+  :case :checkC9 :Passed .
+  :case :checkC10 :Passed . }
+=>
+{
+  :out log:outputString """ACT gravity mediator witness
+
+Answer
+YES.
+If locality and interoperability hold, and the two quantum systems become entangled only through the gravitational mediator, then the mediator must be non-classical.
+
+Reason Why
+The run assumes locality and interoperability, excludes direct coupling between the two quantum systems, and records an entanglement witness after interaction through the mediator alone. Under those constructor-theoretic conditions, the mediator cannot be purely classical. Since the mediator in this run is gravitational, the result supports the conclusion that the gravitational mediator is non-classical.
+
+Check
+C1  OK - locality is assumed
+C2  OK - interoperability is assumed
+C3  OK - direct coupling between the two quantum systems is excluded
+C4  OK - the interaction path is mediator-only
+C5  OK - an entanglement witness is observed
+C6  OK - the run supports an information-transfer interface
+C7  OK - the run supports local readout
+C8  OK - the mediator is derived to be non-classical
+C9  OK - a purely classical mediator model is ruled out
+C10 OK - the non-classicality conclusion applies to the gravitational mediator in this run
+""" .
+} .
