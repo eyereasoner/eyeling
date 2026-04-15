@@ -1,0 +1,245 @@
+# =========================================================================
+# ACT photosynthetic exciton transfer
+#
+# Applied constructor-theory case:
+# A photosynthetic antenna must deliver an electronic excitation to a
+# reaction center before it is lost.
+#
+# This example is intentionally careful:
+# it does NOT assume that long-lived electronic coherence is required.
+# Instead it models a more modest and defensible claim:
+#
+#   - a tuned complex CAN exploit short-lived excitonic/vibronic assistance
+#     to make reaction-center delivery possible;
+#   - a detuned, strongly decohered contrast complex CAN'T achieve the
+#     same transfer task efficiently in the same regime.
+#
+# The example is ACT-style because it expresses the application in terms
+# of possible and impossible tasks.
+# =========================================================================
+
+@prefix : <http://example.org/act/photosynthesis/> .
+@prefix arc: <https://example.org/arc#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+:case a arc:Case ;
+  arc:question "Can a tuned photosynthetic antenna deliver excitation efficiently to a reaction center by short-lived quantum-assisted transfer, while a detuned contrast complex cannot?" .
+
+# -------------------------
+# Shared application target
+# -------------------------
+
+:reactionCenter a :ReactionCenter .
+:harvestTask a :ExcitationDeliveryTask ;
+  :target :reactionCenter ;
+  :lossChannel :ExcitonRecombination .
+
+# -------------------------------
+# Device A: tuned antenna complex
+# -------------------------------
+
+# This complex has the structural ingredients usually invoked in careful,
+# modern discussions of quantum-assisted transfer:
+# - coupled excitonic states
+# - some delocalization
+# - a vibronic bridge
+# - a downhill energetic route
+# - short, not long-lived, coherence
+# - moderate rather than overwhelming dephasing
+:tunedAntenna a :LightHarvestingComplex ;
+  :encodes :ExcitonPathway ;
+  :excitonCoupling :Strong ;
+  :stateDelocalization :Present ;
+  :vibronicBridge :Tuned ;
+  :energyLandscape :DownhillToReactionCenter ;
+  :electronicCoherenceLifetime :Short ;
+  :dephasing :Moderate ;
+  :connectedTo :reactionCenter .
+
+# ----------------------------------
+# Device B: detuned contrast complex
+# ----------------------------------
+
+# This one lacks the helpful alignment:
+# - weaker coupling
+# - no useful delocalization
+# - no vibronic bridge
+# - a trapping mismatch
+# - strong dephasing
+:detunedAntenna a :LightHarvestingComplex ;
+  :encodes :ExcitonPathway ;
+  :excitonCoupling :Weak ;
+  :stateDelocalization :Absent ;
+  :vibronicBridge :Absent ;
+  :energyLandscape :TrappingMismatch ;
+  :electronicCoherenceLifetime :VeryShort ;
+  :dephasing :Strong ;
+  :connectedTo :reactionCenter .
+
+# ---------------------------------
+# CAN rules — what becomes possible
+# ---------------------------------
+
+# Strong excitonic coupling plus some delocalization makes
+# coherent pathway sampling possible.
+{ ?C a :LightHarvestingComplex ;
+     :excitonCoupling :Strong ;
+     :stateDelocalization :Present . }
+=>
+{ ?C :can :CoherentPathwaySampling . } .
+
+# A tuned vibronic bridge plus non-overwhelming dephasing
+# makes vibronically assisted transfer possible.
+{ ?C a :LightHarvestingComplex ;
+     :vibronicBridge :Tuned ;
+     :dephasing :Moderate . }
+=>
+{ ?C :can :VibronicallyAssistedTransfer . } .
+
+# This is the careful "science of can" claim:
+# short-lived electronic coherence is enough for a useful
+# transfer contribution when the bridge and landscape are
+# favorable. Long-lived coherence is not required here.
+{ ?C a :LightHarvestingComplex ;
+     :electronicCoherenceLifetime :Short ;
+     :energyLandscape :DownhillToReactionCenter . }
+=>
+{ ?C :can :ShortLivedQuantumAssistance . } .
+
+# Efficient exciton transfer is possible when coherent
+# pathway sampling, vibronic assistance, and a downhill
+# energetic route are all available.
+{ ?C :can :CoherentPathwaySampling .
+  ?C :can :VibronicallyAssistedTransfer .
+  ?C :can :ShortLivedQuantumAssistance .
+  ?C :energyLandscape :DownhillToReactionCenter . }
+=>
+{ ?C :can :EfficientExcitonTransfer . } .
+
+# If efficient transfer is possible and the antenna is
+# connected to the reaction center, reaction-center delivery
+# is possible.
+{ ?C :can :EfficientExcitonTransfer ;
+     :connectedTo ?RC .
+  ?RC a :ReactionCenter . }
+=>
+{ ?C :can :DeliverExcitationToReactionCenter . } .
+
+# -------------------------------------
+# CAN'T rules — what becomes impossible
+# -------------------------------------
+
+# Weak coupling and absent delocalization block coherent
+# pathway sampling.
+{ ?C a :LightHarvestingComplex ;
+     :excitonCoupling :Weak ;
+     :stateDelocalization :Absent . }
+=>
+{ ?C :cannot :CoherentPathwaySampling . } .
+
+# No vibronic bridge and strong dephasing block vibronically
+# assisted transfer.
+{ ?C a :LightHarvestingComplex ;
+     :vibronicBridge :Absent ;
+     :dephasing :Strong . }
+=>
+{ ?C :cannot :VibronicallyAssistedTransfer . } .
+
+# A trapping mismatch blocks directed downhill delivery.
+{ ?C a :LightHarvestingComplex ;
+     :energyLandscape :TrappingMismatch . }
+=>
+{ ?C :cannot :DirectedReactionCenterTransfer . } .
+
+# If the complex cannot sample pathways coherently and
+# cannot use vibronic assistance, efficient transfer is not
+# achievable in this operating picture.
+{ ?C :cannot :CoherentPathwaySampling .
+  ?C :cannot :VibronicallyAssistedTransfer . }
+=>
+{ ?C :cannot :EfficientExcitonTransfer . } .
+
+# Even if some transfer happens, a trapping mismatch blocks
+# efficient delivery to the reaction center in this case.
+{ ?C :cannot :DirectedReactionCenterTransfer . }
+=>
+{ ?C :cannot :DeliverExcitationToReactionCenter . } .
+
+{ ?C :cannot :EfficientExcitonTransfer . }
+=>
+{ ?C :cannot :DeliverExcitationToReactionCenter . } .
+
+# ------
+# Checks
+# ------
+
+# Positive checks for the tuned complex.
+{ :tunedAntenna :can :CoherentPathwaySampling . }
+=> { :case :checkC1 :Passed . } .
+
+{ :tunedAntenna :can :VibronicallyAssistedTransfer . }
+=> { :case :checkC2 :Passed . } .
+
+{ :tunedAntenna :can :ShortLivedQuantumAssistance . }
+=> { :case :checkC3 :Passed . } .
+
+{ :tunedAntenna :can :EfficientExcitonTransfer . }
+=> { :case :checkC4 :Passed . } .
+
+{ :tunedAntenna :can :DeliverExcitationToReactionCenter . }
+=> { :case :checkC5 :Passed . } .
+
+# Negative checks for the detuned complex.
+{ :detunedAntenna :cannot :CoherentPathwaySampling . }
+=> { :case :checkC6 :Passed . } .
+
+{ :detunedAntenna :cannot :VibronicallyAssistedTransfer . }
+=> { :case :checkC7 :Passed . } .
+
+{ :detunedAntenna :cannot :DirectedReactionCenterTransfer . }
+=> { :case :checkC8 :Passed . } .
+
+{ :detunedAntenna :cannot :EfficientExcitonTransfer . }
+=> { :case :checkC9 :Passed . } .
+
+{ :detunedAntenna :cannot :DeliverExcitationToReactionCenter . }
+=> { :case :checkC10 :Passed . } .
+
+# ----------------
+# ARC-style output
+# ----------------
+
+{ :case :checkC1 :Passed .
+  :case :checkC2 :Passed .
+  :case :checkC3 :Passed .
+  :case :checkC4 :Passed .
+  :case :checkC5 :Passed .
+  :case :checkC6 :Passed .
+  :case :checkC7 :Passed .
+  :case :checkC8 :Passed .
+  :case :checkC9 :Passed .
+  :case :checkC10 :Passed . }
+=>
+{
+  :out log:outputString """ACT photosynthetic exciton transfer
+
+Answer
+YES for the tuned antenna complex.
+NO for the detuned, strongly decohered contrast complex.
+
+Reason Why
+The tuned complex can sample exciton pathways coherently, use vibronically assisted transfer, and exploit short-lived quantum assistance along a downhill route to the reaction center. That makes efficient exciton transfer and reaction-center delivery possible in this case. The detuned contrast complex lacks the same alignment: coherent pathway sampling is blocked, vibronic assistance is unavailable, and the energy landscape is mismatched, so efficient reaction-center delivery is not possible in the same operating picture.
+
+Check
+C1  OK - the tuned complex can sample exciton pathways coherently
+C2  OK - the tuned complex can use vibronically assisted transfer
+C3  OK - short-lived quantum assistance is enough in the tuned downhill regime
+C4  OK - efficient exciton transfer is possible in the tuned complex
+C5  OK - the tuned complex can deliver excitation to the reaction center
+C6  OK - the detuned complex cannot sample pathways coherently
+C7  OK - the detuned complex cannot use vibronically assisted transfer
+C8  OK - the detuned complex cannot achieve directed reaction-center transfer
+C9  OK - the detuned complex cannot achieve efficient exciton transfer
+C10 OK - the detuned complex cannot deliver excitation efficiently to the reaction center
+""" .
+} .
