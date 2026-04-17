@@ -511,6 +511,7 @@
       internLiteral,
       PrefixEnv,
       literalParts,
+      copyQuotedGraphMetadata,
     } = require('./prelude');
 
     const { decodeN3StringEscapes } = require('./lexer');
@@ -813,8 +814,9 @@
       for (const tr of triples) __builtinCollectVarsInTriple(tr, out);
     }
 
-    function __existentializeBlankTerm(t, mapping, varGen) {
+    function __existentializeBlankTerm(t, mapping, varGen, localBlankLabels) {
       if (t instanceof Blank) {
+        if (localBlankLabels instanceof Set && !localBlankLabels.has(t.label)) return t;
         let v = mapping[t.label];
         if (v === undefined) {
           const n =
@@ -827,34 +829,48 @@
       if (t instanceof ListTerm) return t;
       if (t instanceof OpenListTerm) return t;
       if (t instanceof GraphTerm) {
+        const nestedLocalBlankLabels =
+          Object.prototype.hasOwnProperty.call(t, '__quotedLocalBlankLabels') &&
+          t.__quotedLocalBlankLabels instanceof Set
+            ? t.__quotedLocalBlankLabels
+            : localBlankLabels;
         let changed = false;
         const triples = t.triples.map((tr) => {
-          const s2 = __existentializeBlankTerm(tr.s, mapping, varGen);
-          const p2 = __existentializeBlankTerm(tr.p, mapping, varGen);
-          const o2 = __existentializeBlankTerm(tr.o, mapping, varGen);
+          const s2 = __existentializeBlankTerm(tr.s, mapping, varGen, nestedLocalBlankLabels);
+          const p2 = __existentializeBlankTerm(tr.p, mapping, varGen, nestedLocalBlankLabels);
+          const o2 = __existentializeBlankTerm(tr.o, mapping, varGen, nestedLocalBlankLabels);
           if (s2 !== tr.s || p2 !== tr.p || o2 !== tr.o) changed = true;
           return s2 === tr.s && p2 === tr.p && o2 === tr.o ? tr : new Triple(s2, p2, o2);
         });
-        return changed ? new GraphTerm(triples) : t;
+        return changed ? copyQuotedGraphMetadata(t, new GraphTerm(triples)) : t;
       }
       return t;
     }
 
-    function __existentializeBlankTriples(triples, varGen) {
+    function __existentializeBlankTriples(rawGraphOrTriples, varGen) {
+      const triples =
+        rawGraphOrTriples instanceof GraphTerm ? Array.from(rawGraphOrTriples.triples) : Array.from(rawGraphOrTriples);
+      const localBlankLabels =
+        rawGraphOrTriples instanceof GraphTerm &&
+        Object.prototype.hasOwnProperty.call(rawGraphOrTriples, '__quotedLocalBlankLabels') &&
+        rawGraphOrTriples.__quotedLocalBlankLabels instanceof Set
+          ? rawGraphOrTriples.__quotedLocalBlankLabels
+          : null;
+
       const mapping = Object.create(null);
       let changed = false;
       const out = triples.map((tr) => {
-        const s2 = __existentializeBlankTerm(tr.s, mapping, varGen);
-        const p2 = __existentializeBlankTerm(tr.p, mapping, varGen);
-        const o2 = __existentializeBlankTerm(tr.o, mapping, varGen);
+        const s2 = __existentializeBlankTerm(tr.s, mapping, varGen, localBlankLabels);
+        const p2 = __existentializeBlankTerm(tr.p, mapping, varGen, localBlankLabels);
+        const o2 = __existentializeBlankTerm(tr.o, mapping, varGen, localBlankLabels);
         if (s2 !== tr.s || p2 !== tr.p || o2 !== tr.o) changed = true;
         return s2 === tr.s && p2 === tr.p && o2 === tr.o ? tr : new Triple(s2, p2, o2);
       });
       return changed ? out : triples;
     }
 
-    function __prepareQuotedPatternTriples(rawTriples, subst, varGen) {
-      const ex = __existentializeBlankTriples(Array.from(rawTriples), varGen);
+    function __prepareQuotedPatternTriples(rawGraphOrTriples, subst, varGen) {
+      const ex = __existentializeBlankTriples(rawGraphOrTriples, varGen);
       let changed = false;
       const out = ex.map((tr) => {
         const tr2 = applySubstTriple(tr, subst);
@@ -4126,7 +4142,7 @@
         const keepVars = new Set();
         if (g.s instanceof GraphTerm) __builtinCollectVarsInTriples(g.s.triples, keepVars);
 
-        const goalTriples = __prepareQuotedPatternTriples(goal.o.triples, subst, varGen);
+        const goalTriples = __prepareQuotedPatternTriples(goal.o, subst, varGen);
         const goalVariants = __expandScopedVarPredicateGoals(goalTriples);
         const out = [];
         for (const variant of goalVariants) {
@@ -4209,7 +4225,7 @@
 
         const visited2 = [];
         const sols = proveGoals(
-          __prepareQuotedPatternTriples(goal.o.triples, subst, varGen),
+          __prepareQuotedPatternTriples(goal.o, subst, varGen),
           { ...subst },
           scopeFacts,
           scopeBackRules,
@@ -4306,8 +4322,8 @@
         const rawClauseTerm = goal.s instanceof ListTerm ? goal.s.elems[1] : clauseTerm;
         const clauseGoals =
           rawClauseTerm instanceof GraphTerm
-            ? __prepareQuotedPatternTriples(rawClauseTerm.triples, subst, varGen)
-            : __prepareQuotedPatternTriples(clauseTerm.triples, subst, varGen);
+            ? __prepareQuotedPatternTriples(rawClauseTerm, subst, varGen)
+            : __prepareQuotedPatternTriples(clauseTerm, subst, varGen);
         const sols = proveGoals(clauseGoals, {}, scopeFacts, scopeBackRules, depth + 1, visited2, varGen);
 
         const collected = sols.map((sBody) => applySubstTerm(valueTempl, sBody));
@@ -4365,12 +4381,12 @@
         const rawThenClause = goal.s instanceof ListTerm ? goal.s.elems[1] : thenClause;
         const whereGoals =
           rawWhereClause instanceof GraphTerm
-            ? __prepareQuotedPatternTriples(rawWhereClause.triples, subst, varGen)
-            : __prepareQuotedPatternTriples(whereClause.triples, subst, varGen);
+            ? __prepareQuotedPatternTriples(rawWhereClause, subst, varGen)
+            : __prepareQuotedPatternTriples(whereClause, subst, varGen);
         const thenGoals =
           rawThenClause instanceof GraphTerm
-            ? __prepareQuotedPatternTriples(rawThenClause.triples, subst, varGen)
-            : __prepareQuotedPatternTriples(thenClause.triples, subst, varGen);
+            ? __prepareQuotedPatternTriples(rawThenClause, subst, varGen)
+            : __prepareQuotedPatternTriples(thenClause, subst, varGen);
 
         const visited1 = [];
         const sols1 = proveGoals(whereGoals, {}, scopeFacts, scopeBackRules, depth + 1, visited1, varGen);
@@ -4777,7 +4793,7 @@
             if (s2 !== tr.s || p2 !== tr.p || o2 !== tr.o) changed = true;
             return s2 === tr.s && p2 === tr.p && o2 === tr.o ? tr : new Triple(s2, p2, o2);
           });
-          return changed ? new GraphTerm(triples2) : t;
+          return changed ? copyQuotedGraphMetadata(t, new GraphTerm(triples2)) : t;
         }
         return t;
       }
@@ -4835,7 +4851,7 @@
             if (s2 !== tr.s || p2 !== tr.p || o2 !== tr.o) changed = true;
             return s2 === tr.s && p2 === tr.p && o2 === tr.o ? tr : new Triple(s2, p2, o2);
           });
-          return changed ? new GraphTerm(triples2) : t;
+          return changed ? copyQuotedGraphMetadata(t, new GraphTerm(triples2)) : t;
         }
         return t;
       }
@@ -5839,6 +5855,7 @@
       DerivedFact,
       internIri,
       collectBlankLabelsInTriples,
+      copyQuotedGraphMetadata,
     } = require('./prelude');
 
     // In N3/Turtle, rdf:nil is the canonical IRI for the empty RDF list.
@@ -7577,7 +7594,7 @@
             out.push(v);
           }
         }
-        return out ? new GraphTerm(out) : t;
+        return out ? copyQuotedGraphMetadata(t, new GraphTerm(out)) : t;
       }
 
       return t;
@@ -10526,6 +10543,7 @@ ${triples.map((tr) => `  ${tripleToN3(tr, prefixes)}`).join('\n')}
       isLogImplies,
       isLogImpliedBy,
       isLogQuery,
+      annotateQuotedGraphTerm,
     } = require('./prelude');
 
     const { N3SyntaxError } = require('./lexer');
@@ -11073,7 +11091,7 @@ ${triples.map((tr) => `  ${tripleToN3(tr, prefixes)}`).join('\n')}
           }
         }
         this.next(); // consume '}'
-        return new GraphTerm(triples);
+        return annotateQuotedGraphTerm(new GraphTerm(triples));
       }
 
       parseStatementVerb() {
@@ -11744,6 +11762,32 @@ ${triples.map((tr) => `  ${tripleToN3(tr, prefixes)}`).join('\n')}
       return acc;
     }
 
+    function annotateQuotedGraphTerm(graph) {
+      if (!(graph instanceof GraphTerm)) return graph;
+      const labels = collectBlankLabelsInTriples(graph.triples);
+      Object.defineProperty(graph, '__quotedLocalBlankLabels', {
+        value: labels,
+        enumerable: false,
+        writable: true,
+        configurable: true,
+      });
+      return graph;
+    }
+
+    function copyQuotedGraphMetadata(src, dst) {
+      if (!(src instanceof GraphTerm) || !(dst instanceof GraphTerm)) return dst;
+      if (!Object.prototype.hasOwnProperty.call(src, '__quotedLocalBlankLabels')) return dst;
+
+      const labels = src.__quotedLocalBlankLabels;
+      Object.defineProperty(dst, '__quotedLocalBlankLabels', {
+        value: labels instanceof Set ? new Set(labels) : labels,
+        enumerable: false,
+        writable: true,
+        configurable: true,
+      });
+      return dst;
+    }
+
     module.exports = {
       RDF_NS,
       RDFS_NS,
@@ -11783,6 +11827,8 @@ ${triples.map((tr) => `  ${tripleToN3(tr, prefixes)}`).join('\n')}
       collectIrisInTerm,
       varsInRule,
       collectBlankLabelsInTriples,
+      annotateQuotedGraphTerm,
+      copyQuotedGraphMetadata,
     };
   };
   __modules['lib/printing.js'] = function (require, module, exports) {
@@ -12960,7 +13006,7 @@ ${triples.map((tr) => `  ${tripleToN3(tr, prefixes)}`).join('\n')}
 
     'use strict';
 
-    const { Var, Blank, ListTerm, OpenListTerm, GraphTerm, Triple } = require('./prelude');
+    const { Var, Blank, ListTerm, OpenListTerm, GraphTerm, Triple, copyQuotedGraphMetadata } = require('./prelude');
 
     function liftBlankRuleVars(premise, conclusion) {
       // Map blank labels to stable rule-local variable names.
@@ -12988,7 +13034,7 @@ ${triples.map((tr) => `  ${tripleToN3(tr, prefixes)}`).join('\n')}
           const triples = t.triples.map(
             (tr) => new Triple(copyQuotedTerm(tr.s), copyQuotedTerm(tr.p), copyQuotedTerm(tr.o)),
           );
-          return new GraphTerm(triples);
+          return copyQuotedGraphMetadata(t, new GraphTerm(triples));
         }
         return t;
       }

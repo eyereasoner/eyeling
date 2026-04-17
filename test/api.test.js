@@ -2095,6 +2095,29 @@ _:x :hates { _:foo :making :mess }.
       /:result\s+:status\s+:matched\s*\./,
     ],
   },
+
+  {
+    name: '243aa regression: collectAllIn keeps outer blank-node bindings fixed in quoted formulas',
+    opt: { proofComments: false },
+    input: `@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix ex: <http://example.org/> .
+
+ex:a a ex:Person ; ex:name "A" .
+_:b a ex:Person ; ex:name "B" .
+
+{
+  ?person a ex:Person .
+  (?x { ?person ex:name ?x } ?xs) log:collectAllIn ?SCOPE .
+}
+=>
+{
+  ?person ex:names ?xs .
+} .
+`,
+    expect: [/ex:a\s+ex:names\s+\("A"\)\s*\./, /_:[^\s]+\s+ex:names\s+\("B"\)\s*\./],
+    notExpect: [/_:[^\s]+\s+ex:names\s+\("A"\s+"B"\)\s*\./, /_:[^\s]+\s+ex:names\s+\("B"\s+"A"\)\s*\./],
+  },
+
   {
     name: '243a regression: collectAllIn treats quoted-formula blanks existentially',
     opt: { proofComments: false },
