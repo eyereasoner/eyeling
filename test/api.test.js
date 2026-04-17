@@ -2305,6 +2305,37 @@ _:x :hates { _:foo :making :mess }.
       }
     },
   },
+  {
+    name: 'regression: unrelated blank bindings must not block alpha-equivalent quoted-formula matches',
+    opt: { proofComments: false },
+    input: `@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix : <http://example.org/ns#> .
+
+{
+    _:b1 a :Mortal .
+} :because {
+    :Socrates a :Human .
+    :Human rdfs:subClassOf :Mortal .
+} .
+
+<> :step {
+  [ a :Mortal ].
+}.
+
+{
+   ?A :step ?B .
+   ?B log:includes { ?S ?P ?O }.
+   { _:b2 a :Mortal } :because ?Y.
+}
+=>
+{
+  :test :is true .
+}.
+`,
+    expect: [/^:test\s+:is\s+true\s*\./m],
+  },
 ];
 
 let passed = 0;

@@ -6035,8 +6035,7 @@ function __keyFromTermForRuleIdentity(term) {
         inQuotedFormula ? ['TailVQ', canonQuotedVar(u.tailVar)] : ['TailV', u.tailVar],
       ];
     }
-    if (u instanceof GraphTerm)
-      return ['Graph', u.triples.map((tr) => [enc(tr.s, true), enc(tr.p, true), enc(tr.o, true)])];
+    if (u instanceof GraphTerm) return ['Graph', u.triples.map((tr) => [enc(tr.s, true), enc(tr.p, true), enc(tr.o, true)])];
     return ['Other', String(u)];
   }
 
@@ -6049,22 +6048,14 @@ function __ruleKey(isForward, isFuse, premise, conclusion, dynamicConclusionTerm
     const tr = premise[i];
     if (i) out += '\n';
     out +=
-      __keyFromTermForRuleIdentity(tr.s) +
-      '\t' +
-      __keyFromTermForRuleIdentity(tr.p) +
-      '\t' +
-      __keyFromTermForRuleIdentity(tr.o);
+      __keyFromTermForRuleIdentity(tr.s) + '\t' + __keyFromTermForRuleIdentity(tr.p) + '\t' + __keyFromTermForRuleIdentity(tr.o);
   }
   out += '|C|';
   for (let i = 0; i < conclusion.length; i++) {
     const tr = conclusion[i];
     if (i) out += '\n';
     out +=
-      __keyFromTermForRuleIdentity(tr.s) +
-      '\t' +
-      __keyFromTermForRuleIdentity(tr.p) +
-      '\t' +
-      __keyFromTermForRuleIdentity(tr.o);
+      __keyFromTermForRuleIdentity(tr.s) + '\t' + __keyFromTermForRuleIdentity(tr.p) + '\t' + __keyFromTermForRuleIdentity(tr.o);
   }
   if (dynamicConclusionTerm) {
     out += '|T|' + __keyFromTermForRuleIdentity(dynamicConclusionTerm);
@@ -6079,11 +6070,7 @@ function __firingKey(ruleIndex, instantiatedPremises) {
     const tr = instantiatedPremises[i];
     if (i) out += '\n';
     out +=
-      __keyFromTermForRuleIdentity(tr.s) +
-      '\t' +
-      __keyFromTermForRuleIdentity(tr.p) +
-      '\t' +
-      __keyFromTermForRuleIdentity(tr.o);
+      __keyFromTermForRuleIdentity(tr.s) + '\t' + __keyFromTermForRuleIdentity(tr.p) + '\t' + __keyFromTermForRuleIdentity(tr.o);
   }
   return out;
 }
@@ -6649,6 +6636,45 @@ function collectProtectedNamesFromSubst(subst) {
     if (!Object.prototype.hasOwnProperty.call(subst, k)) continue;
     collectProtectedNamesInTerm(subst[k], protectedVars, protectedBlanks);
   }
+  return { protectedVars, protectedBlanks };
+}
+
+function collectProtectedNamesFromTermViaSubst(term, subst, protectedVars, protectedBlanks, seenVarNames) {
+  if (term instanceof Var) {
+    if (!subst || !Object.prototype.hasOwnProperty.call(subst, term.name)) return;
+    if (seenVarNames.has(term.name)) return;
+    seenVarNames.add(term.name);
+    collectProtectedNamesInTerm(subst[term.name], protectedVars, protectedBlanks);
+    return;
+  }
+
+  if (term instanceof ListTerm) {
+    for (const e of term.elems) collectProtectedNamesFromTermViaSubst(e, subst, protectedVars, protectedBlanks, seenVarNames);
+    return;
+  }
+
+  if (term instanceof OpenListTerm) {
+    for (const e of term.prefix) collectProtectedNamesFromTermViaSubst(e, subst, protectedVars, protectedBlanks, seenVarNames);
+    if (subst && Object.prototype.hasOwnProperty.call(subst, term.tailVar) && !seenVarNames.has(term.tailVar)) {
+      seenVarNames.add(term.tailVar);
+      collectProtectedNamesInTerm(subst[term.tailVar], protectedVars, protectedBlanks);
+    }
+    return;
+  }
+
+  if (term instanceof GraphTerm) {
+    for (const tr of term.triples) {
+      collectProtectedNamesFromTermViaSubst(tr.s, subst, protectedVars, protectedBlanks, seenVarNames);
+      collectProtectedNamesFromTermViaSubst(tr.p, subst, protectedVars, protectedBlanks, seenVarNames);
+      collectProtectedNamesFromTermViaSubst(tr.o, subst, protectedVars, protectedBlanks, seenVarNames);
+    }
+  }
+}
+
+function collectProtectedNamesForTerm(term, subst) {
+  const protectedVars = new Set();
+  const protectedBlanks = new Set();
+  collectProtectedNamesFromTermViaSubst(term, subst, protectedVars, protectedBlanks, new Set());
   return { protectedVars, protectedBlanks };
 }
 
@@ -7610,6 +7636,9 @@ function unifyTermListAppend(a, b, subst) {
 }
 
 function unifyTermWithOptions(a, b, subst, opts) {
+  const aRaw = a;
+  const bRaw = b;
+
   a = applySubstTerm(a, subst);
   b = applySubstTerm(b, subst);
 
@@ -7717,13 +7746,14 @@ function unifyTermWithOptions(a, b, subst, opts) {
 
   // Graphs
   if (a instanceof GraphTerm && b instanceof GraphTerm) {
-    const protectedNames = collectProtectedNamesFromSubst(subst);
+    const protectedNamesA = collectProtectedNamesForTerm(aRaw, subst);
+    const protectedNamesB = collectProtectedNamesForTerm(bRaw, subst);
     if (
       alphaEqGraphTriples(a.triples, b.triples, {
-        protectedVarsA: protectedNames.protectedVars,
-        protectedVarsB: protectedNames.protectedVars,
-        protectedBlanksA: protectedNames.protectedBlanks,
-        protectedBlanksB: protectedNames.protectedBlanks,
+        protectedVarsA: protectedNamesA.protectedVars,
+        protectedVarsB: protectedNamesB.protectedVars,
+        protectedBlanksA: protectedNamesA.protectedBlanks,
+        protectedBlanksB: protectedNamesB.protectedBlanks,
       })
     ) {
       return subst;
@@ -8027,6 +8057,9 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
   }
 
   function unifyTermTrail(a, b) {
+    const aRaw = a;
+    const bRaw = b;
+
     a = applySubstTerm(a, substMut);
     b = applySubstTerm(b, substMut);
 
@@ -8104,24 +8137,25 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
 
     // Graphs
     if (a instanceof GraphTerm && b instanceof GraphTerm) {
-      const protectedNames = collectProtectedNamesFromSubst(substMut);
+      const protectedNamesA = collectProtectedNamesForTerm(aRaw, substMut);
+      const protectedNamesB = collectProtectedNamesForTerm(bRaw, substMut);
       if (
         alphaEqGraphTriples(a.triples, b.triples, {
-          protectedVarsA: protectedNames.protectedVars,
-          protectedVarsB: protectedNames.protectedVars,
-          protectedBlanksA: protectedNames.protectedBlanks,
-          protectedBlanksB: protectedNames.protectedBlanks,
+          protectedVarsA: protectedNamesA.protectedVars,
+          protectedVarsB: protectedNamesB.protectedVars,
+          protectedBlanksA: protectedNamesA.protectedBlanks,
+          protectedBlanksB: protectedNamesB.protectedBlanks,
         })
       ) {
         return true;
       }
-      // Fallback: reuse allocation-heavy graph unifier rarely hit in typical workloads.
-      const delta = unifyGraphTriples(a.triples, b.triples, {});
-      if (delta === null) return false;
+      const merged = unifyGraphTriples(a.triples, b.triples, substMut);
+      if (merged === null) return false;
       const mark = trail.length;
-      for (const k in delta) {
-        if (!Object.prototype.hasOwnProperty.call(delta, k)) continue;
-        if (!bindVarTrail(k, delta[k])) {
+      for (const k in merged) {
+        if (!Object.prototype.hasOwnProperty.call(merged, k)) continue;
+        if (Object.prototype.hasOwnProperty.call(substMut, k)) continue;
+        if (!bindVarTrail(k, merged[k])) {
           undoTo(mark);
           return false;
         }
