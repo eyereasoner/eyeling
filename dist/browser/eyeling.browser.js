@@ -6660,17 +6660,6 @@
       }
     }
 
-    function collectProtectedNamesFromSubst(subst) {
-      const protectedVars = new Set();
-      const protectedBlanks = new Set();
-      if (!subst) return { protectedVars, protectedBlanks };
-      for (const k in subst) {
-        if (!Object.prototype.hasOwnProperty.call(subst, k)) continue;
-        collectProtectedNamesInTerm(subst[k], protectedVars, protectedBlanks);
-      }
-      return { protectedVars, protectedBlanks };
-    }
-
     function collectProtectedNamesFromTermViaSubst(term, subst, protectedVars, protectedBlanks, seenVarNames) {
       if (term instanceof Var) {
         if (!subst || !Object.prototype.hasOwnProperty.call(subst, term.name)) return;
