@@ -6035,7 +6035,8 @@ function __keyFromTermForRuleIdentity(term) {
         inQuotedFormula ? ['TailVQ', canonQuotedVar(u.tailVar)] : ['TailV', u.tailVar],
       ];
     }
-    if (u instanceof GraphTerm) return ['Graph', u.triples.map((tr) => [enc(tr.s, true), enc(tr.p, true), enc(tr.o, true)])];
+    if (u instanceof GraphTerm)
+      return ['Graph', u.triples.map((tr) => [enc(tr.s, true), enc(tr.p, true), enc(tr.o, true)])];
     return ['Other', String(u)];
   }
 
@@ -6048,14 +6049,22 @@ function __ruleKey(isForward, isFuse, premise, conclusion, dynamicConclusionTerm
     const tr = premise[i];
     if (i) out += '\n';
     out +=
-      __keyFromTermForRuleIdentity(tr.s) + '\t' + __keyFromTermForRuleIdentity(tr.p) + '\t' + __keyFromTermForRuleIdentity(tr.o);
+      __keyFromTermForRuleIdentity(tr.s) +
+      '\t' +
+      __keyFromTermForRuleIdentity(tr.p) +
+      '\t' +
+      __keyFromTermForRuleIdentity(tr.o);
   }
   out += '|C|';
   for (let i = 0; i < conclusion.length; i++) {
     const tr = conclusion[i];
     if (i) out += '\n';
     out +=
-      __keyFromTermForRuleIdentity(tr.s) + '\t' + __keyFromTermForRuleIdentity(tr.p) + '\t' + __keyFromTermForRuleIdentity(tr.o);
+      __keyFromTermForRuleIdentity(tr.s) +
+      '\t' +
+      __keyFromTermForRuleIdentity(tr.p) +
+      '\t' +
+      __keyFromTermForRuleIdentity(tr.o);
   }
   if (dynamicConclusionTerm) {
     out += '|T|' + __keyFromTermForRuleIdentity(dynamicConclusionTerm);
@@ -6070,7 +6079,11 @@ function __firingKey(ruleIndex, instantiatedPremises) {
     const tr = instantiatedPremises[i];
     if (i) out += '\n';
     out +=
-      __keyFromTermForRuleIdentity(tr.s) + '\t' + __keyFromTermForRuleIdentity(tr.p) + '\t' + __keyFromTermForRuleIdentity(tr.o);
+      __keyFromTermForRuleIdentity(tr.s) +
+      '\t' +
+      __keyFromTermForRuleIdentity(tr.p) +
+      '\t' +
+      __keyFromTermForRuleIdentity(tr.o);
   }
   return out;
 }
@@ -6649,12 +6662,14 @@ function collectProtectedNamesFromTermViaSubst(term, subst, protectedVars, prote
   }
 
   if (term instanceof ListTerm) {
-    for (const e of term.elems) collectProtectedNamesFromTermViaSubst(e, subst, protectedVars, protectedBlanks, seenVarNames);
+    for (const e of term.elems)
+      collectProtectedNamesFromTermViaSubst(e, subst, protectedVars, protectedBlanks, seenVarNames);
     return;
   }
 
   if (term instanceof OpenListTerm) {
-    for (const e of term.prefix) collectProtectedNamesFromTermViaSubst(e, subst, protectedVars, protectedBlanks, seenVarNames);
+    for (const e of term.prefix)
+      collectProtectedNamesFromTermViaSubst(e, subst, protectedVars, protectedBlanks, seenVarNames);
     if (subst && Object.prototype.hasOwnProperty.call(subst, term.tailVar) && !seenVarNames.has(term.tailVar)) {
       seenVarNames.add(term.tailVar);
       collectProtectedNamesInTerm(subst[term.tailVar], protectedVars, protectedBlanks);
