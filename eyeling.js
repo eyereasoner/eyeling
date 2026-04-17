@@ -842,7 +842,8 @@ function __existentializeBlankTerm(t, mapping, varGen, localBlankLabels) {
 }
 
 function __existentializeBlankTriples(rawGraphOrTriples, varGen) {
-  const triples = rawGraphOrTriples instanceof GraphTerm ? Array.from(rawGraphOrTriples.triples) : Array.from(rawGraphOrTriples);
+  const triples =
+    rawGraphOrTriples instanceof GraphTerm ? Array.from(rawGraphOrTriples.triples) : Array.from(rawGraphOrTriples);
   const localBlankLabels =
     rawGraphOrTriples instanceof GraphTerm &&
     Object.prototype.hasOwnProperty.call(rawGraphOrTriples, '__quotedLocalBlankLabels') &&

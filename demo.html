@@ -231,6 +231,26 @@
         margin-top: 0.25rem;
       }
 
+      .uri-mode-row,
+      .background-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem;
+        margin-top: 0.65rem;
+      }
+
+      .background-status {
+        flex: 1 1 22rem;
+      }
+
+      .mini-button {
+        min-height: 36px;
+        padding: 0.35rem 0.9rem;
+        font-size: 0.8rem;
+        box-shadow: none;
+      }
+
       .uri-input-row input[type='text'] {
         flex: 1;
         border-radius: 999px;
@@ -333,6 +353,12 @@
 
         /* Stack URL input + button (no squishing) */
         .uri-input-row {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .uri-mode-row,
+        .background-row {
           flex-direction: column;
           align-items: stretch;
         }
@@ -509,6 +535,20 @@
                 value="https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/witch.n3" />
               <button id="load-uri-btn" type="button">Load from URL</button>
             </div>
+            <div class="uri-mode-row">
+              <label
+                class="toggle"
+                title="Keep the loaded N3 separate from the editor and merge it in only when reasoning runs.">
+                <input id="load-as-background" type="checkbox" />
+                Load into background knowledge instead of overwriting the editor
+              </label>
+            </div>
+            <div class="background-row">
+              <span id="background-status" class="hint background-status"> No background knowledge loaded. </span>
+              <button id="clear-background-btn" type="button" class="secondary mini-button" disabled>
+                Clear background
+              </button>
+            </div>
             <span class="hint"> Enter any N3 file URL (raw GitHub URLs work well) and click “Load from URL”. </span>
           </div>
 
@@ -573,6 +613,9 @@
         const statusEl = document.getElementById('status');
         const uriInput = document.getElementById('n3-uri');
         const loadUriBtn = document.getElementById('load-uri-btn');
+        const loadAsBackgroundCheckbox = document.getElementById('load-as-background');
+        const backgroundStatusEl = document.getElementById('background-status');
+        const clearBackgroundBtn = document.getElementById('clear-background-btn');
         const proofCheckbox = document.getElementById('proof-comments');
         const enforceHttpsCheckbox = document.getElementById('enforce-https');
         const versionEl = document.getElementById('eyeling-version');
@@ -591,6 +634,8 @@
 
         let eyelingVersion = 'unknown';
         let versionPromise = null;
+        let backgroundKnowledgeText = '';
+        let backgroundKnowledgeSource = '';
 
         // --- Unified background streaming runner (shared with the Streaming demo tab) ---
         // Exposes: window.__eyelingUnified.startStreamRun({
@@ -642,42 +687,94 @@
             return { line, col };
           }
 
-          function formatN3SyntaxError(err, text, label) {
+          function resolveSyntaxSourceLocation(globalLine, sourceMap, fallbackLabel) {
+            if (!sourceMap || !Number.isFinite(globalLine) || globalLine < 1) {
+              return {
+                source: 'input',
+                label: fallbackLabel || 'input.n3',
+                line: globalLine,
+              };
+            }
+
+            const backgroundStartLine = sourceMap.backgroundStartLine || 1;
+            const backgroundEndLine = sourceMap.backgroundEndLine || 0;
+            const editorStartLine = sourceMap.editorStartLine || 1;
+
+            if (sourceMap.hasBackground && globalLine >= backgroundStartLine && globalLine <= backgroundEndLine) {
+              return {
+                source: 'background',
+                label: sourceMap.backgroundLabel || 'background knowledge',
+                line: globalLine - backgroundStartLine + 1,
+              };
+            }
+
+            if (globalLine >= editorStartLine) {
+              return {
+                source: 'editor',
+                label: sourceMap.editorLabel || fallbackLabel || 'editable program',
+                line: globalLine - editorStartLine + 1,
+              };
+            }
+
+            return {
+              source: 'input',
+              label: fallbackLabel || 'input.n3',
+              line: globalLine,
+            };
+          }
+
+          function formatN3SyntaxError(err, text, label, sourceMap) {
             const off = err && typeof err.offset === 'number' ? err.offset : null;
             const lbl = label ? String(label) : '';
             if (off === null) {
-              return 'Syntax error in ' + lbl + ': ' + (err && err.message ? err.message : String(err));
+              return {
+                message: 'Syntax error in ' + lbl + ': ' + (err && err.message ? err.message : String(err)),
+                source: null,
+                line: null,
+                col: null,
+              };
             }
             const lc = offsetToLineCol(text, off);
             const lines = String(text || '').split(/\r\n|\n|\r/);
             const lineText = lines[lc.line - 1] ?? '';
             const caret = ' '.repeat(Math.max(0, lc.col - 1)) + '^';
-            return (
-              'Syntax error in ' +
-              lbl +
-              ':' +
-              lc.line +
-              ':' +
-              lc.col +
-              ': ' +
-              (err && err.message ? err.message : 'Syntax error') +
-              '\n' +
-              lineText +
-              '\n' +
-              caret
-            );
+            const loc = resolveSyntaxSourceLocation(lc.line, sourceMap, lbl);
+            return {
+              message:
+                'Syntax error in ' +
+                loc.label +
+                ':' +
+                loc.line +
+                ':' +
+                lc.col +
+                ': ' +
+                (err && err.message ? err.message : 'Syntax error') +
+                '\n' +
+                lineText +
+                '\n' +
+                caret,
+              source: loc.source,
+              line: loc.line,
+              col: lc.col,
+            };
           }
 
-          function formatMaybeSyntaxError(err, text, label) {
+          function formatMaybeSyntaxError(err, text, label, sourceMap) {
             if (err && err.name === 'N3SyntaxError') {
-              return formatN3SyntaxError(err, text, label);
+              return formatN3SyntaxError(err, text, label, sourceMap);
             }
-            return err && err.message ? err.message : String(err);
+            return {
+              message: err && err.message ? err.message : String(err),
+              source: null,
+              line: null,
+              col: null,
+            };
           }
 
           // Start a run. Creates/terminates workers as needed (single active run at a time).
           U.startStreamRun = function startStreamRun(args) {
             const program = String(args && args.program ? args.program : '');
+            const sourceMap = args && args.sourceMap ? args.sourceMap : null;
             const enforceHttps = !!(args && args.enforceHttps);
             const proof = !!(args && args.proof);
             const onBatch = args && typeof args.onBatch === 'function' ? args.onBatch : null;
@@ -731,7 +828,7 @@
                 flush(true);
                 onDone && onDone({ runId, exitCode: msg.exitCode || 0, message: msg.message || '' });
               } catch (e) {
-                onError && onError(formatMaybeSyntaxError(e, program, 'input.n3'));
+                onError && onError(formatMaybeSyntaxError(e, program, 'input.n3', sourceMap));
               }
 
               return { runId, cancel: () => {} };
@@ -776,6 +873,89 @@
 
             const now = () => (self.performance && performance.now) ? performance.now() : Date.now();
 
+            function __offsetToLineCol(text, offset) {
+              const chars = Array.from(String(text || ""));
+              const n = Math.max(0, Math.min(typeof offset === "number" ? offset : 0, chars.length));
+              let line = 1;
+              let col = 1;
+              for (let i = 0; i < n; i++) {
+                const c = chars[i];
+                if (c === "\\n") {
+                  line++;
+                  col = 1;
+                } else if (c === "\\r") {
+                  line++;
+                  col = 1;
+                  if (i + 1 < n && chars[i + 1] === "\\n") i++;
+                } else {
+                  col++;
+                }
+              }
+              return { line, col };
+            }
+
+            function __resolveSyntaxSourceLocation(globalLine, sourceMap) {
+              if (!sourceMap || !Number.isFinite(globalLine) || globalLine < 1) {
+                return { source: null, label: "input.n3", line: globalLine };
+              }
+
+              const backgroundStartLine = sourceMap.backgroundStartLine || 1;
+              const backgroundEndLine = sourceMap.backgroundEndLine || 0;
+              const editorStartLine = sourceMap.editorStartLine || 1;
+
+              if (sourceMap.hasBackground && globalLine >= backgroundStartLine && globalLine <= backgroundEndLine) {
+                return {
+                  source: "background",
+                  label: sourceMap.backgroundLabel || "background knowledge",
+                  line: globalLine - backgroundStartLine + 1,
+                };
+              }
+
+              if (globalLine >= editorStartLine) {
+                return {
+                  source: "editor",
+                  label: sourceMap.editorLabel || "editable program",
+                  line: globalLine - editorStartLine + 1,
+                };
+              }
+
+              return { source: null, label: "input.n3", line: globalLine };
+            }
+
+            function __formatMaybeSyntaxError(err, text, sourceMap) {
+              if (err && err.name === "N3SyntaxError" && typeof err.offset === "number") {
+                const lc = __offsetToLineCol(text, err.offset);
+                const loc = __resolveSyntaxSourceLocation(lc.line, sourceMap);
+                const progLines = String(text || "").split(/\\r\\n|\\n|\\r/);
+                const lineText = progLines[lc.line - 1] ?? "";
+                const caret = " ".repeat(Math.max(0, lc.col - 1)) + "^";
+                return {
+                  message:
+                    "Syntax error in " +
+                    loc.label +
+                    ":" +
+                    loc.line +
+                    ":" +
+                    lc.col +
+                    ": " +
+                    (err.message || "Syntax error") +
+                    "\\n" +
+                    lineText +
+                    "\\n" +
+                    caret,
+                  source: loc.source,
+                  line: loc.line,
+                  col: lc.col,
+                };
+              }
+              return {
+                message: (err && err.message) ? err.message : String(err),
+                source: null,
+                line: null,
+                col: null,
+              };
+            }
+
             self.onmessage = async (ev) => {
               const msg = ev && ev.data ? ev.data : {};
               if (msg.type !== "run") return;
@@ -784,6 +964,7 @@
 
               const runId = msg.runId;
               const program = String(msg.program || "");
+              const sourceMap = msg.sourceMap || null;
               const enforceHttps = !!msg.enforceHttps;
               const proof = !!msg.proof;
 
@@ -978,30 +1159,14 @@ const batch = [];
                   return;
                 }
 
-                let msgText = (e && e.message) ? e.message : String(e);
-                try {
-                  if (e && e.name === "N3SyntaxError" && typeof e.offset === "number") {
-                    const chars = Array.from(String(program || ""));
-                    const n = Math.max(0, Math.min(e.offset, chars.length));
-                    let line = 1;
-                    let col = 1;
-                    for (let i = 0; i < n; i++) {
-                      const c = chars[i];
-                      if (c === "\\n") { line++; col = 1; }
-                      else if (c === "\\r") { line++; col = 1; if (i + 1 < n && chars[i + 1] === "\\n") i++; }
-                      else { col++; }
-                    }
-                    const progLines = String(program || "").split(/\\r\\n|\\n|\\r/);
-                    const lineText = (progLines[line - 1] ?? "");
-                    const caret = " ".repeat(Math.max(0, col - 1)) + "^";
-                    msgText = "Syntax error in input.n3:" + line + ":" + col + ": " + (e.message || "Syntax error") +
-                              "\\n" + lineText + "\\n" + caret;
-                  }
-                } catch (_e2) {}
+                const errInfo = __formatMaybeSyntaxError(e, program, sourceMap);
                 self.postMessage({
                   type: "error",
                   runId,
-                  message: msgText,
+                  message: errInfo.message,
+                  errorSource: errInfo.source,
+                  errorLine: errInfo.line,
+                  errorCol: errInfo.col,
                 });
               } finally {
                 try { console.log = __origLog; } catch (_) {}
@@ -1043,7 +1208,13 @@ const batch = [];
                 onDone && onDone({ runId });
               } else if (msg.type === 'error') {
                 cleanup();
-                onError && onError(msg.message || 'Unknown error');
+                onError &&
+                  onError({
+                    message: msg.message || 'Unknown error',
+                    source: msg.errorSource || null,
+                    line: msg.errorLine || null,
+                    col: msg.errorCol || null,
+                  });
               }
             };
 
@@ -1057,6 +1228,7 @@ const batch = [];
               type: 'run',
               runId,
               program,
+              sourceMap,
               enforceHttps,
               proof,
             });
@@ -1221,6 +1393,19 @@ const batch = [];
           errorLineHandle = null;
         }
 
+        function highlightEditorError(line1, col1) {
+          clearErrorHighlight();
+
+          const line = Number.isFinite(line1) ? Math.max(0, line1 - 1) : 0;
+          const ch = Number.isFinite(col1) ? Math.max(0, col1 - 1) : 0;
+          if (line < 0 || line >= editor.lineCount()) return;
+
+          errorLineHandle = editor.getLineHandle(line);
+          editor.addLineClass(errorLineHandle, 'background', 'cm-error-line');
+          editor.scrollIntoView({ line, ch }, 80);
+          editor.setCursor({ line, ch });
+        }
+
         function highlightErrorFromOutput(outputText) {
           if (!outputText) return;
 
@@ -1269,24 +1454,11 @@ const batch = [];
 
           if (!m) return;
 
-          // Clear any previous highlight now that we found a concrete line/col.
-          clearErrorHighlight();
-
           const line1 = parseInt(m[1], 10);
           const col1 = parseInt(m[2], 10);
           if (!Number.isFinite(line1) || line1 < 0) return;
 
-          // Eyeling reports line/col as 1-based in most cases, but some builds report 0-based.
-          const line = line1 > 0 ? line1 - 1 : 0;
-          const ch = Number.isFinite(col1) ? (col1 > 0 ? col1 - 1 : 0) : 0;
-          if (line < 0 || line >= editor.lineCount()) return;
-
-          errorLineHandle = editor.getLineHandle(line);
-          editor.addLineClass(errorLineHandle, 'background', 'cm-error-line');
-
-          // Nudge the editor to the error location.
-          editor.scrollIntoView({ line, ch }, 80);
-          editor.setCursor({ line, ch });
+          highlightEditorError(line1, col1);
         }
 
         editor.setValue(initialN3);
@@ -1473,7 +1645,9 @@ const batch = [];
         }
 
         async function runReasoner() {
-          const programText = editor.getValue();
+          const editorProgramText = editor.getValue();
+          const effectiveProgram = buildEffectiveProgram(editorProgramText);
+          const programText = effectiveProgram.program;
           const isRenderedOutputMode = programMentionsOutputStrings(programText);
           const isLogQueryMode = /\blog:query\b/.test(programText) || /swap\/log#query/.test(programText);
           const usesRenderedText = isRenderedOutputMode || (isLogQueryMode && !proofCheckbox.checked);
@@ -1525,6 +1699,7 @@ const batch = [];
 
           const { cancel } = U.startStreamRun({
             program: programText,
+            sourceMap: effectiveProgram.sourceMap,
             enforceHttps: enforceHttpsCheckbox.checked,
             proof: proofCheckbox.checked,
             onRenderedText: (text, countTriples) => {
@@ -1616,19 +1791,25 @@ const batch = [];
               }
               runBtn.disabled = false;
             },
-            onError: (msg) => {
+            onError: (err) => {
               appender.flushNow();
               activePlayCancel = null;
               enablePlayControls(false);
               setPlayPaused(false);
               playPausedBuffer = [];
 
+              const message = err && typeof err === 'object' && 'message' in err ? String(err.message) : String(err);
+
               const mh = currentMaxHeights();
-              outputEl.setValue('Reasoning error: ' + msg);
+              outputEl.setValue('Reasoning error: ' + message);
               autoResizeCodeMirror(outputEl, 80, mh.output);
 
               try {
-                highlightErrorFromOutput('Reasoning error: ' + msg);
+                if (err && err.source === 'editor' && Number.isFinite(err.line)) {
+                  highlightEditorError(err.line, err.col);
+                } else {
+                  highlightErrorFromOutput('Reasoning error: ' + message);
+                }
               } catch (_) {}
 
               statusEl.textContent = 'Error.';
@@ -1637,6 +1818,109 @@ const batch = [];
           });
 
           activePlayCancel = cancel;
+        }
+
+        function countLines(text) {
+          return String(text || '').split(/\r\n|\n|\r/).length;
+        }
+
+        function shortenMiddle(text, maxLen) {
+          const value = String(text || '');
+          const limit = Number.isFinite(maxLen) ? Math.max(8, maxLen) : 80;
+          if (value.length <= limit) return value;
+          const keep = Math.max(3, Math.floor((limit - 1) / 2));
+          return value.slice(0, keep) + '…' + value.slice(value.length - keep);
+        }
+
+        function updateBackgroundStatus() {
+          const hasBackground = !!backgroundKnowledgeText;
+          if (clearBackgroundBtn) clearBackgroundBtn.disabled = !hasBackground;
+          if (!backgroundStatusEl) return;
+
+          if (!hasBackground) {
+            backgroundStatusEl.textContent = 'No background knowledge loaded.';
+            return;
+          }
+
+          const sourceLabel = backgroundKnowledgeSource
+            ? shortenMiddle(backgroundKnowledgeSource, 96)
+            : 'loaded source';
+          backgroundStatusEl.textContent =
+            'Background knowledge ready from ' +
+            sourceLabel +
+            '. It will be merged with the editor when reasoning runs.';
+        }
+
+        function clearBackgroundKnowledge() {
+          backgroundKnowledgeText = '';
+          backgroundKnowledgeSource = '';
+          updateBackgroundStatus();
+        }
+
+        function currentPageBaseDirective() {
+          try {
+            const url = new URL(window.location.href);
+            url.search = '';
+            url.hash = '';
+            return `@base <${url.toString()}> .`;
+          } catch (_) {
+            return '';
+          }
+        }
+
+        function buildEffectiveProgram(editorProgramText) {
+          const editorText = String(editorProgramText || '');
+          if (!backgroundKnowledgeText) {
+            return {
+              program: editorText,
+              sourceMap: {
+                hasBackground: false,
+                backgroundStartLine: 0,
+                backgroundEndLine: 0,
+                backgroundLabel: 'background knowledge',
+                editorStartLine: 1,
+                editorLabel: 'editable program',
+              },
+            };
+          }
+
+          if (!editorText.trim()) {
+            return {
+              program: backgroundKnowledgeText,
+              sourceMap: {
+                hasBackground: true,
+                backgroundStartLine: 1,
+                backgroundEndLine: countLines(backgroundKnowledgeText),
+                backgroundLabel: backgroundKnowledgeSource ? 'background knowledge from URL' : 'background knowledge',
+                editorStartLine: countLines(backgroundKnowledgeText) + 1,
+                editorLabel: 'editable program',
+              },
+            };
+          }
+
+          const parts = [];
+          parts.push('# Background knowledge loaded from URL');
+          const backgroundStartLine = parts.length + 1;
+          parts.push(backgroundKnowledgeText);
+          const backgroundEndLine = countLines(parts.join('\n'));
+          parts.push('');
+          parts.push('# Editable N3 program');
+          const editorBase = currentPageBaseDirective();
+          if (editorBase) parts.push(editorBase);
+          const editorStartLine = countLines(parts.join('\n')) + 1;
+          parts.push(editorText);
+
+          return {
+            program: parts.join('\n'),
+            sourceMap: {
+              hasBackground: true,
+              backgroundStartLine,
+              backgroundEndLine,
+              backgroundLabel: backgroundKnowledgeSource ? 'background knowledge from URL' : 'background knowledge',
+              editorStartLine,
+              editorLabel: 'editable program',
+            },
+          };
         }
 
         function injectBaseDirective(text, fetchedUrl) {
@@ -1684,14 +1968,20 @@ const batch = [];
             // ✅ IMPORTANT: preserve base for <#...> by injecting @base <finalURL> .
             text = injectBaseDirective(text, resp.url || uri);
 
-            editor.setValue(text);
             clearErrorHighlight();
 
-            const mh = currentMaxHeights();
-            autoResizeCodeMirror(editor, 220, mh.editor);
-
-            statusEl.textContent = 'Loaded N3 from URL (base preserved).';
-            if (hashSyncEnabled) updateShareUrl();
+            if (loadAsBackgroundCheckbox && loadAsBackgroundCheckbox.checked) {
+              backgroundKnowledgeText = text;
+              backgroundKnowledgeSource = resp.url || uri;
+              updateBackgroundStatus();
+              statusEl.textContent = 'Loaded N3 as background knowledge. The editor was left unchanged.';
+            } else {
+              editor.setValue(text);
+              const mh = currentMaxHeights();
+              autoResizeCodeMirror(editor, 220, mh.editor);
+              statusEl.textContent = 'Loaded N3 into the editor (base preserved).';
+              if (hashSyncEnabled) updateShareUrl();
+            }
           } catch (e) {
             statusEl.textContent = 'Failed to load URL.';
             const mh = currentMaxHeights();
@@ -1704,6 +1994,13 @@ const batch = [];
 
         runBtn.addEventListener('click', runReasoner);
         loadUriBtn.addEventListener('click', loadFromUri);
+        if (clearBackgroundBtn) {
+          clearBackgroundBtn.addEventListener('click', () => {
+            clearBackgroundKnowledge();
+            statusEl.textContent = 'Background knowledge cleared.';
+          });
+        }
+        updateBackgroundStatus();
 
         // Initialize URL hash with whatever we started with (unless we're in URL-load mode)
         if (hashSyncEnabled) updateShareUrl();
