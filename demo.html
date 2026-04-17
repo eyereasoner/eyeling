@@ -708,7 +708,7 @@
               };
             }
 
-            if (globalLine >= editorStartLine) {
+            if (sourceMap.hasBackground && globalLine >= editorStartLine) {
               return {
                 source: 'editor',
                 label: sourceMap.editorLabel || fallbackLabel || 'editable program',
@@ -911,7 +911,7 @@
                 };
               }
 
-              if (globalLine >= editorStartLine) {
+              if (sourceMap.hasBackground && globalLine >= editorStartLine) {
                 return {
                   source: "editor",
                   label: sourceMap.editorLabel || "editable program",
