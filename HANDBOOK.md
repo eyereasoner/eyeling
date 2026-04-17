@@ -3505,4 +3505,3 @@ That is valuable even for readers who do not plan to work on constructor theory 
 > some scientific explanations are best understood not as “what happened once,” but as “what could be made to happen, what could not, and what structural features make the difference.”
 
 That is exactly the sort of explanation that N3, and Eyeling in particular, can make unusually clear.
-

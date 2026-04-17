@@ -2354,6 +2354,23 @@ function __logNaturalPriorityFromTerm(t) {
 // ===========================================================================
 // Backward proof & builtins mutual recursion — declarations first
 
+function __varCameFromBoundSubstitution(goalTerm, subst) {
+  if (!(goalTerm instanceof Var)) return false;
+  if (!subst || !Object.prototype.hasOwnProperty.call(subst, goalTerm.name)) return false;
+
+  let cur = subst[goalTerm.name];
+  const seen = new Set([goalTerm.name]);
+
+  while (cur instanceof Var) {
+    if (seen.has(cur.name)) return true;
+    seen.add(cur.name);
+    if (!Object.prototype.hasOwnProperty.call(subst, cur.name)) return true;
+    cur = subst[cur.name];
+  }
+
+  return false;
+}
+
 function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   const g = applySubstTriple(goal, subst);
   const pv = iriValue(g.p);
@@ -3820,7 +3837,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   // Schema: $s+ log:rawType $o-
   // Returns one of log:Formula, log:Literal, rdf:List, or log:Other.
   if (pv === LOG_NS + 'rawType') {
-    if (g.s instanceof Var) return [];
+    if (g.s instanceof Var && !__varCameFromBoundSubstitution(goal.s, subst)) return [];
 
     let ty;
     if (g.s instanceof GraphTerm) ty = internIri(LOG_NS + 'Formula');
@@ -4870,7 +4887,11 @@ module.exports = {
 
 'use strict';
 
+const path = require('node:path');
+const { pathToFileURL } = require('node:url');
+
 const engine = require('./engine');
+const deref = require('./deref');
 const { PrefixEnv } = require('./prelude');
 
 function offsetToLineCol(text, offset) {
@@ -4911,6 +4932,29 @@ function formatN3SyntaxError(err, text, path) {
 function readTextFromStdinSync() {
   const fs = require('node:fs');
   return fs.readFileSync(0, { encoding: 'utf8' });
+}
+
+function __isNetworkOrFileIri(s) {
+  return typeof s === 'string' && /^(https?:|file:\/\/)/i.test(s);
+}
+
+function __sourceLabelToBaseIri(sourceLabel) {
+  if (!sourceLabel || sourceLabel === '<stdin>') return '';
+  if (__isNetworkOrFileIri(sourceLabel)) return deref.stripFragment(sourceLabel);
+  return pathToFileURL(path.resolve(sourceLabel)).toString();
+}
+
+function __readInputSourceSync(sourceLabel) {
+  if (sourceLabel === '<stdin>') return readTextFromStdinSync();
+
+  if (__isNetworkOrFileIri(sourceLabel)) {
+    const txt = deref.derefTextSync(sourceLabel);
+    if (typeof txt !== 'string') throw new Error(`Failed to dereference ${sourceLabel}`);
+    return txt;
+  }
+
+  const fs = require('node:fs');
+  return fs.readFileSync(sourceLabel, { encoding: 'utf8' });
 }
 
 function main() {
@@ -5026,13 +5070,11 @@ function main() {
   }
 
   const sourceLabel = useImplicitStdin || positional[0] === '-' ? '<stdin>' : positional[0];
+  const baseIri = __sourceLabelToBaseIri(sourceLabel);
+
   let text;
   try {
-    if (sourceLabel === '<stdin>') text = readTextFromStdinSync();
-    else {
-      const fs = require('node:fs');
-      text = fs.readFileSync(sourceLabel, { encoding: 'utf8' });
-    }
+    text = __readInputSourceSync(sourceLabel);
   } catch (e) {
     if (sourceLabel === '<stdin>') console.error(`Error reading stdin: ${e.message}`);
     else console.error(`Error reading file ${JSON.stringify(sourceLabel)}: ${e.message}`);
@@ -5044,6 +5086,7 @@ function main() {
   try {
     toks = engine.lex(text);
     const parser = new engine.Parser(toks);
+    if (baseIri) parser.prefixes.setBase(baseIri);
     [prefixes, triples, frules, brules, qrules] = parser.parseDocument();
     // Make the parsed prefixes available to log:trace output (CLI path)
     engine.setTracePrefixes(prefixes);
@@ -5951,21 +5994,80 @@ function __isStrictGroundTriple(tr) {
 // -----------------------------------------------------------------------------
 // Used to maintain O(1) membership sets for dynamically promoted rules, and to
 // memoize per-firing head-blank skolemization.
+//
+// Important: variables and blank nodes *inside quoted formulas* are local to the
+// formula. Canonicalize those labels by first occurrence so alpha-equivalent
+// formulas (for example the repeated results of log:semantics after
+// standardize-apart) get the same identity key. Keep top-level blank labels
+// untouched so distinct existential witnesses in the global fact set do not
+// collapse together.
+function __keyFromTermForRuleIdentity(term) {
+  const ctx = { quotedVar: new Map(), quotedBlank: new Map() };
+
+  function canonQuotedVar(name) {
+    let out = ctx.quotedVar.get(name);
+    if (!out) {
+      out = `v${ctx.quotedVar.size}`;
+      ctx.quotedVar.set(name, out);
+    }
+    return out;
+  }
+
+  function canonQuotedBlank(label) {
+    let out = ctx.quotedBlank.get(label);
+    if (!out) {
+      out = `b${ctx.quotedBlank.size}`;
+      ctx.quotedBlank.set(label, out);
+    }
+    return out;
+  }
+
+  function enc(u, inQuotedFormula) {
+    if (u instanceof Iri) return ['I', u.value];
+    if (u instanceof Literal) return ['L', u.value];
+    if (u instanceof Blank) return inQuotedFormula ? ['BQ', canonQuotedBlank(u.label)] : ['B', u.label];
+    if (u instanceof Var) return inQuotedFormula ? ['VQ', canonQuotedVar(u.name)] : ['V', u.name];
+    if (u instanceof ListTerm) return ['List', u.elems.map((e) => enc(e, inQuotedFormula))];
+    if (u instanceof OpenListTerm) {
+      return [
+        'OpenList',
+        u.prefix.map((e) => enc(e, inQuotedFormula)),
+        inQuotedFormula ? ['TailVQ', canonQuotedVar(u.tailVar)] : ['TailV', u.tailVar],
+      ];
+    }
+    if (u instanceof GraphTerm)
+      return ['Graph', u.triples.map((tr) => [enc(tr.s, true), enc(tr.p, true), enc(tr.o, true)])];
+    return ['Other', String(u)];
+  }
+
+  return JSON.stringify(enc(term, false));
+}
+
 function __ruleKey(isForward, isFuse, premise, conclusion, dynamicConclusionTerm /* optional */) {
   let out = (isForward ? 'F' : 'B') + (isFuse ? '!' : '') + '|P|';
   for (let i = 0; i < premise.length; i++) {
     const tr = premise[i];
     if (i) out += '\n';
-    out += skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
+    out +=
+      __keyFromTermForRuleIdentity(tr.s) +
+      '\t' +
+      __keyFromTermForRuleIdentity(tr.p) +
+      '\t' +
+      __keyFromTermForRuleIdentity(tr.o);
   }
   out += '|C|';
   for (let i = 0; i < conclusion.length; i++) {
     const tr = conclusion[i];
     if (i) out += '\n';
-    out += skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
+    out +=
+      __keyFromTermForRuleIdentity(tr.s) +
+      '\t' +
+      __keyFromTermForRuleIdentity(tr.p) +
+      '\t' +
+      __keyFromTermForRuleIdentity(tr.o);
   }
   if (dynamicConclusionTerm) {
-    out += '|T|' + skolemKeyFromTerm(dynamicConclusionTerm);
+    out += '|T|' + __keyFromTermForRuleIdentity(dynamicConclusionTerm);
   }
   return out;
 }
@@ -5976,7 +6078,12 @@ function __firingKey(ruleIndex, instantiatedPremises) {
   for (let i = 0; i < instantiatedPremises.length; i++) {
     const tr = instantiatedPremises[i];
     if (i) out += '\n';
-    out += skolemKeyFromTerm(tr.s) + '\t' + skolemKeyFromTerm(tr.p) + '\t' + skolemKeyFromTerm(tr.o);
+    out +=
+      __keyFromTermForRuleIdentity(tr.s) +
+      '\t' +
+      __keyFromTermForRuleIdentity(tr.p) +
+      '\t' +
+      __keyFromTermForRuleIdentity(tr.o);
   }
   return out;
 }
@@ -8216,7 +8323,17 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
       if (remaining <= 0) continue;
       const builtinMax = Number.isFinite(remaining) && !restGoals.length ? remaining : undefined;
 
-      let deltas = evalBuiltin(goal0, {}, facts, backRules, frame.curDepth, varGen, builtinMax);
+      const builtinGoalForEval = goalPredicateIri === LOG_NS + 'rawType' ? rawGoal : goal0;
+      const builtinSubstForEval = goalPredicateIri === LOG_NS + 'rawType' ? substMut : {};
+      let deltas = evalBuiltin(
+        builtinGoalForEval,
+        builtinSubstForEval,
+        facts,
+        backRules,
+        frame.curDepth,
+        varGen,
+        builtinMax,
+      );
 
       const dc = typeof frame.deferCount === 'number' ? frame.deferCount : 0;
       const builtinDeltasAreVacuous = deltas.length > 0 && deltas.every((d) => Object.keys(d).length === 0);

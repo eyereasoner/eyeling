@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const ROOT = path.resolve(__dirname, '..');
@@ -2235,6 +2236,74 @@ _:x :hates { _:foo :making :mess }.
 }.
 `,
     expect: [/^:result\s+:is\s+\{[\s\S]*\?A\s+a\s+\?B\s*\.[\s\S]*\?B\s+rdfs:subClassOf\s+\?C\s*\.[\s\S]*\}\s*\./m],
+  },
+  {
+    name: 'regression: log:rawType accepts quoted variables found via log:includes',
+    opt: { proofComments: false },
+    input: `@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix : <http://example.org/ns#> .
+
+{ ?X :likes ?Y } <= { ?X :loves ?Y }.
+
+{
+  ?X log:impliedBy ?Y .
+  ?X log:includes { ?Z1 :likes ?Z2 }.
+  ?Z1 log:rawType ?T.
+}
+=>
+{
+  :test :is true .
+}.
+`,
+    expect: [/^:test\s+:is\s+true\s*\./m],
+  },
+  {
+    name: 'regression: log:semantics body alpha-renaming does not refire blank-head rule forever',
+    async run() {
+      const os = require('node:os');
+      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'eyeling-alpha-fire-'));
+      const mainPath = path.join(tmp, 'main.n3');
+      const examplePath = path.join(tmp, 'example.n3');
+
+      fs.writeFileSync(
+        mainPath,
+        `@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix : <urn:test#>.
+
+<> :facts <./example.n3> .
+
+{ ?X :load ?S } <= { <> :facts ?F . ?F log:semantics ?S . }.
+
+{ ?This :load ?S . } => { [] a :Test . }.
+`,
+        'utf8',
+      );
+
+      fs.writeFileSync(
+        examplePath,
+        `@prefix : <urn:test#>.
+{ ?A :p ?B } <= { ?A :q ?B }.
+`,
+        'utf8',
+      );
+
+      try {
+        const r = spawnSync(process.execPath, [path.join(ROOT, 'bin', 'eyeling.cjs'), mainPath], {
+          cwd: ROOT,
+          encoding: 'utf8',
+          maxBuffer: DEFAULT_MAX_BUFFER,
+          timeout: 5000,
+        });
+
+        if (r.error) throw r.error;
+        assert.equal(r.status, 0, r.stderr || `unexpected exit ${r.status}`);
+        mustOccurExactly(r.stdout, /^_:sk_\d+\s+a\s+:Test\s*\.$/gm, 1, 'expected exactly one derived :Test witness');
+        return r.stdout;
+      } finally {
+        fs.rmSync(tmp, { recursive: true, force: true });
+      }
+    },
   },
 ];
 
