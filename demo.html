@@ -1296,7 +1296,7 @@ const batch = [];
           autoResizeCodeMirror(outputEl, 80, mh.output);
         }
 
-        // --- INITIAL CONTENT FROM HASH OR DEFAULT ---
+        // --- INITIAL CONTENT + SHAREABLE QUERY PARAMS ---
         function getProgramFromHash() {
           const hash = window.location.hash || '';
           if (!hash) return null;
@@ -1309,40 +1309,73 @@ const batch = [];
           }
         }
 
-        // --- Prefill + auto-load "Load N3 from URL" via query string ---
-        // Usage:
-        //   demo?url=https://example.com/file.n3
-        // Notes:
-        //   - If a #fragment is present, it takes precedence (existing behavior).
-        //   - When loading from ?url=..., we avoid rewriting the hash until the user edits,
-        //     so you can keep sharing a clean ?url=... link.
-        function getN3UriFromQuery() {
+        function getSearchParams() {
           try {
-            const url = new URL(window.location.href);
-            // support a few aliases, but "url" is the main one
-            return (
-              url.searchParams.get('url') ||
-              url.searchParams.get('n3url') ||
-              url.searchParams.get('n3') ||
-              url.searchParams.get('load') ||
-              null
-            );
+            return new URL(window.location.href).searchParams;
           } catch (e) {
             return null;
           }
         }
 
-        const paramProgram = getProgramFromHash();
+        function getFirstQueryParam(names) {
+          const params = getSearchParams();
+          if (!params) return null;
+          for (const name of names) {
+            const value = params.get(name);
+            if (value !== null) return value;
+          }
+          return null;
+        }
+
+        function parseBooleanParam(value) {
+          if (value === null || value === undefined) return null;
+          const normalized = String(value).trim().toLowerCase();
+          if (!normalized) return null;
+          if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
+          if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
+          return null;
+        }
+
+        function getProgramFromQuery() {
+          return getFirstQueryParam(['edit', 'program']);
+        }
+
+        function getN3UriFromQuery() {
+          return getFirstQueryParam(['url', 'n3url', 'n3', 'load']);
+        }
+
+        const paramProgramFromQuery = getProgramFromQuery();
+        const paramProgramFromHash = paramProgramFromQuery === null ? getProgramFromHash() : null;
+        const paramProgram = paramProgramFromQuery !== null ? paramProgramFromQuery : paramProgramFromHash;
         const paramN3Uri = getN3UriFromQuery();
+        const paramLoadBg = parseBooleanParam(getFirstQueryParam(['loadbg', 'background', 'bg']));
+        const paramProofComments = parseBooleanParam(getFirstQueryParam(['proofcomments', 'proof']));
+        const paramHttpsDeref = parseBooleanParam(getFirstQueryParam(['httpsderef', 'enforcehttps']));
 
         if (paramN3Uri) {
           uriInput.value = paramN3Uri;
         }
+        if (paramLoadBg !== null && loadAsBackgroundCheckbox) {
+          loadAsBackgroundCheckbox.checked = paramLoadBg;
+        }
+        if (paramProofComments !== null && proofCheckbox) {
+          proofCheckbox.checked = paramProofComments;
+        }
+        if (paramHttpsDeref !== null && enforceHttpsCheckbox) {
+          enforceHttpsCheckbox.checked = paramHttpsDeref;
+        }
 
-        // In "URL-load mode" (no fragment, but ?url=...), don't start syncing to #hash
-        // until the user actually edits the editor.
-        let hashSyncEnabled = paramProgram !== null || !paramN3Uri;
+        const hasInitialShareState =
+          paramProgramFromQuery !== null ||
+          paramProgramFromHash !== null ||
+          paramN3Uri !== null ||
+          paramLoadBg !== null ||
+          paramProofComments !== null ||
+          paramHttpsDeref !== null;
 
+        let shareUrlSyncEnabled = hasInitialShareState;
+
+        const shouldAutoLoadFromQueryUrl = !!paramN3Uri && (paramLoadBg === true || paramProgram === null);
         const initialN3 = paramProgram !== null ? paramProgram : defaultN3;
 
         // CodeMirror editors (syntax-highlighted)
@@ -1476,14 +1509,34 @@ const batch = [];
         // --- URL SHARING SUPPORT ---
         let shareUrlUpdateTimeout = null;
 
+        function enableShareUrlSync() {
+          shareUrlSyncEnabled = true;
+        }
+
         function updateShareUrl() {
+          if (!shareUrlSyncEnabled) return;
+
           try {
-            const encoded = encodeURIComponent(editor.getValue());
             const url = new URL(window.location.href);
-            url.hash = encoded;
+            const params = url.searchParams;
+
+            const uriValue = (uriInput && uriInput.value ? uriInput.value : '').trim();
+            const editorValue = editor.getValue();
+
+            if (uriValue) params.set('url', uriValue);
+            else params.delete('url');
+
+            params.set('loadbg', loadAsBackgroundCheckbox && loadAsBackgroundCheckbox.checked ? 'true' : 'false');
+            params.set('proofcomments', proofCheckbox && proofCheckbox.checked ? 'true' : 'false');
+            params.set('httpsderef', enforceHttpsCheckbox && enforceHttpsCheckbox.checked ? 'true' : 'false');
+
+            if (editorValue) params.set('edit', editorValue);
+            else params.delete('edit');
+
+            url.hash = '';
             window.history.replaceState(null, '', url.toString());
           } catch (e) {
-            console && console.warn && console.warn('Failed to update URL hash:', e);
+            console && console.warn && console.warn('Failed to update URL query params:', e);
           }
         }
 
@@ -1498,17 +1551,40 @@ const batch = [];
           const mh = currentMaxHeights();
           autoResizeCodeMirror(editor, 220, mh.editor);
 
-          if (!hashSyncEnabled) {
-            // Only start syncing once the user actually edits (not programmatic setValue).
-            if (changeObj && changeObj.origin && changeObj.origin !== 'setValue') {
-              hashSyncEnabled = true;
-            } else {
-              return;
-            }
+          if (changeObj && changeObj.origin && changeObj.origin !== 'setValue') {
+            enableShareUrlSync();
           }
 
           scheduleUpdateShareUrl();
         });
+
+        if (uriInput) {
+          uriInput.addEventListener('input', () => {
+            enableShareUrlSync();
+            scheduleUpdateShareUrl();
+          });
+        }
+
+        if (loadAsBackgroundCheckbox) {
+          loadAsBackgroundCheckbox.addEventListener('change', () => {
+            enableShareUrlSync();
+            updateShareUrl();
+          });
+        }
+
+        if (proofCheckbox) {
+          proofCheckbox.addEventListener('change', () => {
+            enableShareUrlSync();
+            updateShareUrl();
+          });
+        }
+
+        if (enforceHttpsCheckbox) {
+          enforceHttpsCheckbox.addEventListener('change', () => {
+            enableShareUrlSync();
+            updateShareUrl();
+          });
+        }
 
         // --- EYELING VERSION (UI + runner) ---
         function ensureEyelingVersion() {
@@ -1675,7 +1751,7 @@ const batch = [];
             autoResizeCodeMirror(outputEl, 80, mh.output);
           }
 
-          if (hashSyncEnabled) updateShareUrl();
+          updateShareUrl();
 
           await new Promise(requestAnimationFrame);
 
@@ -1980,7 +2056,7 @@ const batch = [];
               const mh = currentMaxHeights();
               autoResizeCodeMirror(editor, 220, mh.editor);
               statusEl.textContent = 'Loaded N3 into the editor (base preserved).';
-              if (hashSyncEnabled) updateShareUrl();
+              updateShareUrl();
             }
           } catch (e) {
             statusEl.textContent = 'Failed to load URL.';
@@ -2002,11 +2078,12 @@ const batch = [];
         }
         updateBackgroundStatus();
 
-        // Initialize URL hash with whatever we started with (unless we're in URL-load mode)
-        if (hashSyncEnabled) updateShareUrl();
+        // If the page was opened with share-state params, normalize them into the canonical query format.
+        if (shareUrlSyncEnabled) updateShareUrl();
 
-        // If ?url=... is present (and there's no #fragment), auto-load it.
-        if (paramN3Uri && paramProgram === null) {
+        // Auto-load from ?url=... when it is meant to populate background knowledge,
+        // or when no explicit editor content was provided.
+        if (shouldAutoLoadFromQueryUrl) {
           loadFromUri();
         }
       })();
