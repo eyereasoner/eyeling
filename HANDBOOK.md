@@ -3555,7 +3555,7 @@ A key recent addition is **background knowledge mode**. When enabled, the N3 loa
 - keep the local editor small and focused,
 - iterate on local rules, queries, or reporting logic without repeatedly copying the larger imported source.
 
-That separation is helpful both pedagogically and practically. It mirrors real reasoning work, where a user often reasons *over* a fixed body of data rather than constantly rewriting it.
+That separation is helpful both pedagogically and practically. It mirrors real reasoning work, where a user often reasons _over_ a fixed body of data rather than constantly rewriting it.
 
 ### I.3 Execution behavior
 
