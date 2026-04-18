@@ -33,6 +33,7 @@
 - [Appendix F — The ARC approach: Answer • Reason Why • Check](#app-f)
 - [Appendix G — Eyeling and the W3C CG Notation3 Semantics](#app-g)
 - [Appendix H — Applied Constructor-Theory and the N3 ARC examples](#app-h)
+- [Appendix I — The Eyeling Playground](#app-i)
 
 ---
 
@@ -3519,3 +3520,116 @@ That is valuable even for readers who do not plan to work on constructor theory 
 > some scientific explanations are best understood not as “what happened once,” but as “what could be made to happen, what could not, and what structural features make the difference.”
 
 That is exactly the sort of explanation that N3, and Eyeling in particular, can make unusually clear.
+
+<a id="app-i"></a>
+
+## Appendix I — The Eyeling Playground
+
+The **Eyeling Playground** is the browser-based front end for experimenting with Eyeling without a local install or command-line workflow. It is meant for teaching, quick debugging, live demos, and shareable reasoning examples. Rather than treating reasoning as an offline batch process, the playground makes it interactive: users can edit N3 directly in the browser, load remote N3 from a URL, run reasoning, inspect streamed output, and share the current state through a link.
+
+This appendix explains what the playground is for, how it is structured, and why it matters in practice.
+
+### I.1 Why the playground exists
+
+Notation3 is expressive, compact, and unusually good at mixing RDF-style data with rules, but the first contact experience can still be awkward for many users. Command-line tools are powerful, but they are not always the best entry point for small experiments, teaching sessions, or public demonstrations.
+
+The playground exists to lower that initial friction. It lets a user:
+
+- open a page,
+- edit or paste a small N3 program,
+- run reasoning immediately,
+- inspect output and errors in place,
+- and share the exact setup with a URL.
+
+That makes the playground useful not only for newcomers, but also for experienced users who want a fast feedback loop for small examples.
+
+### I.2 Core interaction model
+
+At the center of the playground is an **editable N3 program**. This is the main authoring area for facts, rules, and output-oriented directives.
+
+Alongside that editor is a **Load from URL** field. A remote N3 document can be fetched directly into the playground, which makes it easy to reuse examples stored in a repository or a raw hosted file.
+
+A key recent addition is **background knowledge mode**. When enabled, the N3 loaded from a URL is not written into the editor. Instead, it is stored separately as background knowledge and merged with the editable program only when reasoning runs. This supports a very common workflow:
+
+- keep a stable imported dataset or rule base,
+- keep the local editor small and focused,
+- iterate on local rules, queries, or reporting logic without repeatedly copying the larger imported source.
+
+That separation is helpful both pedagogically and practically. It mirrors real reasoning work, where a user often reasons *over* a fixed body of data rather than constantly rewriting it.
+
+### I.3 Execution behavior
+
+The playground is designed to feel responsive even when reasoning is not trivial. To do that, it uses a browser execution model that can run inference in a worker rather than blocking the main UI thread. Output is then surfaced back into the page.
+
+The user-facing controls support three main actions:
+
+- **Run reasoning**,
+- **Pause/Resume**,
+- **Stop**.
+
+This matters because the playground is not just a text box plus a submit button. It treats reasoning as a process that can be observed while it happens.
+
+The output behavior also adapts to the kind of N3 program being run. In some cases the natural result is a streamed list of derived triples. In others, such as programs using output-oriented constructs like `log:outputString`, a rendered text result is more appropriate. The playground supports both styles.
+
+### I.4 Error handling and explainability
+
+For an interactive reasoning environment, error behavior matters almost as much as successful output. The playground therefore gives particular attention to syntax and runtime feedback.
+
+When an N3 syntax error occurs, the output pane shows the error with line and column information, and the editor highlights the offending line. This shortens the distance between the parser’s complaint and the place where the user needs to fix the program.
+
+The playground also exposes two configuration toggles that are especially useful for explanation and browser safety:
+
+- **proof comments**, which make reasoning output more explanatory,
+- **HTTPS dereferencing enforcement**, which helps avoid mixed-content problems when dereferencing from the browser.
+
+Together these choices make the playground better suited to live explanation, teaching, and debugging than a minimal browser wrapper would be.
+
+### I.5 Shareable state through URLs
+
+One of the most practical features of the playground is that its state can be encoded in the page URL.
+
+The canonical query parameters are:
+
+- `edit` — sets the editor content,
+- `url` — fills the URL field,
+- `loadbg` — determines whether the URL should be loaded as background knowledge,
+- `proofcomments` — initializes the proof-comments checkbox,
+- `httpsderef` — initializes the HTTPS dereferencing checkbox.
+
+This makes the playground particularly strong for tutorials and demos. A link can specify not just a program, but a whole configuration: an imported resource, whether it belongs in background knowledge, a small editable overlay, and the relevant runtime toggles.
+
+Older hash-based links are still accepted as a fallback, but new state updates are written using query parameters because they scale better as the UI grows beyond a single editor field.
+
+### I.6 What the playground is good for
+
+The playground is especially valuable in four settings.
+
+#### I.6.1 Teaching
+
+Students can begin with a small example and see what changes immediately when they edit a fact or rule. This is a much more direct way to learn N3 than starting from installation instructions.
+
+#### I.6.2 Live demos
+
+A presenter can preload a scenario, show a compact local rule set, run inference, and then share a reproducible link afterward. Background knowledge mode is particularly helpful here because it keeps the visible editor small while still grounding the run in a richer imported source.
+
+#### I.6.3 Debugging small programs
+
+For short reasoning tasks, the playground can be a faster debugging surface than a command-line loop. It is well suited to checking syntax, validating a rule pattern, or inspecting a small proof-oriented run.
+
+#### I.6.4 Sharing examples
+
+A single link can capture enough context for another person to reproduce an example quickly. This is valuable in issue reports, discussions, teaching material, and public-facing demonstrations.
+
+### I.7 Limits of the playground
+
+The playground is intentionally lightweight, and it should be understood in that role.
+
+It is not meant to replace the command line for large-scale workloads, benchmarking, or repository-scale automation. Browser memory and execution limits still matter. Likewise, loading remote resources depends on ordinary web constraints such as network access and cross-origin availability.
+
+In short: the playground is best thought of as a compact interactive front end for exploration, communication, and small-to-medium experiments.
+
+### I.8 Why it matters
+
+The Eyeling Playground shows that N3 reasoning can be made substantially more approachable without flattening the underlying logic into a toy interface. A relatively small set of features — an editor, a URL loader, background knowledge mode, responsive execution, proof toggles, and shareable query parameters — is enough to support serious educational and exploratory work.
+
+That is the main value of the playground. It gives Eyeling a public-facing, browser-native environment where reasoning is not hidden behind setup overhead, and where examples can move easily between author, teacher, student, and reviewer.
