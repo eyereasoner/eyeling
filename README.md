@@ -18,10 +18,3 @@ echo '@prefix : <http://example.org/> .
 - **Playground:** [eyereasoner.github.io/eyeling/demo](https://eyereasoner.github.io/eyeling/demo)
 - **Conformance report:** [codeberg.org/phochste/notation3tests/.../report.md](https://codeberg.org/phochste/notation3tests/src/branch/main/reports/report.md)
 
-## Playground URL parameters
-
-- `edit` sets the editor content.
-- `url` fills the URL field.
-- `url` auto-loads when `loadbg=true`, or when no explicit `edit` was provided.
-- `proofcomments` and `httpsderef` initialize the two checkboxes.
-- Existing hash-based links are still read as a fallback, but new state updates write query parameters.
