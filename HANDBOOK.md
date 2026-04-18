@@ -3421,8 +3421,7 @@ The better ACT examples are heavily commented. The comments should say not just 
 
 #### H.5.6 Editorial conventions for ACT files
 
-For this repository, the ACT examples should stay visibly **Eyeling-native**.
-They should read as compact N3 task-logic models rather than as a second language layer.
+For this repository, the ACT examples should stay visibly **Eyeling-native**. They should read as compact N3 task-logic models rather than as a second language layer.
 
 A good default order is:
 
@@ -3433,7 +3432,6 @@ A good default order is:
 5. the final ARC report.
 
 The ARC report should make the decisive contrast explicit: what task is possible, what task is impossible, and which missing ingredient or witness explains the contrast.
-
 
 - interoperability
 - locality
