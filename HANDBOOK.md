@@ -34,6 +34,7 @@
 - [Appendix G — Eyeling and the W3C CG Notation3 Semantics](#app-g)
 - [Appendix H — Applied Constructor-Theory and the N3 ARC examples](#app-h)
 - [Appendix I — The Eyeling Playground](#app-i)
+- [Appendix J — Formalism Is Fine](#app-j)
 
 ---
 
@@ -3633,3 +3634,21 @@ In short: the playground is best thought of as a compact interactive front end f
 The Eyeling Playground shows that N3 reasoning can be made substantially more approachable without flattening the underlying logic into a toy interface. A relatively small set of features — an editor, a URL loader, background knowledge mode, responsive execution, proof toggles, and shareable query parameters — is enough to support serious educational and exploratory work.
 
 That is the main value of the playground. It gives Eyeling a public-facing, browser-native environment where reasoning is not hidden behind setup overhead, and where examples can move easily between author, teacher, student, and reviewer.
+
+<a id="app-j"></a>
+
+## Appendix J — Formalism Is Fine
+
+For Eyeling, formal methods are not a liability but a strength. The project does not need to apologize for being logical, explicit, or semantically disciplined. On the contrary, its value depends on those qualities. A reasoner earns trust not by sounding intelligent, but by making its operations inspectable: what counted as a fact, what matched a rule, what was derived, and why. Formalism is what makes that possible.
+
+Horn logic is fine because it gives a usable core. It does not try to express everything. It gives up some expressive power in exchange for clarity, tractability, and a well-understood operational shape. That trade is not a weakness. It is one of the reasons a reasoner can remain small enough to understand and still strong enough to do real work. In that sense, Horn-style discipline is not merely a technical choice; it is an architectural virtue.
+
+Notation3 is fine because logic needs a surface. A formalism that cannot be read, written, debugged, and exchanged by ordinary humans will not travel very far. N3 matters because it keeps one foot in machine processability and the other in human legibility. Facts, rules, quoted formulas, and built-ins remain close enough to the page that a person can still follow the movement of the program. For a system like Eyeling, that matters. The notation is not decoration around the logic. It is part of how the logic becomes usable.
+
+Executable specification is fine because there is no shame in wanting a specification to run. In a system like Eyeling, the distance between semantics and implementation should be as small as possible. When a specification can be executed, one can test whether it actually says something definite, observe how rules behave on concrete inputs, and expose mismatches between intention and mechanism early. Execution does not cheapen semantics. It disciplines it. It forces the abstract account to cash out in behavior.
+
+Herbrand semantics is fine because it offers a sober account of meaning for symbolic systems. It tells us that one does not need to begin with a mysterious external domain in order to reason soundly about terms and consequences. One can begin with the symbolic constructions themselves and ask what follows from them under the rules. That is especially fitting for Eyeling, where reasoning is carried by terms, triples, formulas, substitutions, and proof search. Herbrand-style thinking does not eliminate meaning; it gives it a concrete logical home.
+
+Gödel incompleteness is fine because limits do not discredit formality. If anything, Gödel shows the opposite: once a formal system becomes rich enough, its limits become deep and structural rather than accidental. No sufficiently expressive system can fully close over its own truth. That is not an embarrassment for reason. It is a reminder that rigor does not abolish horizon. A mature formalism is not one that claims to say everything, but one that knows what it can say, how it says it, and where its own closure breaks down.
+
+Taken together, these positions amount to a calm defense of formal work. Eyeling does not need grand metaphysical excuses. It is enough to say: Horn logic is fine. Notation3 is fine. Executable specification is fine. Herbrand semantics is fine. Gödel incompleteness is fine. None of these make reasoning smaller. They make it clearer. And for a reasoner, clarity is not cosmetic. It is the thing itself.
