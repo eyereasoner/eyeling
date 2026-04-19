@@ -3,7 +3,7 @@
 ## A compact Notation3 reasoner in JavaScript — a handbook
 
 > This handbook is written for a computer science student who wants to understand Eyeling as _code_ and as a _reasoning machine_.  
-> It’s meant to be read linearly, but each chapter stands on its own.
+> It is meant to be read linearly, but each chapter stands on its own.
 
 ## Contents
 
@@ -49,7 +49,7 @@ Eyeling is a small Notation3 (N3) reasoner implemented in JavaScript. Its job is
 
 and compute consequences until nothing new follows.
 
-If you’ve seen Datalog or Prolog, the shape will feel familiar. Eyeling blends both:
+If you have seen Datalog or Prolog, the shape will feel familiar. Eyeling blends both:
 
 - **Forward chaining** (like Datalog saturation) for `=>` rules.
 - **Backward chaining** (like Prolog goal solving) for `<=` rules _and_ for built-in predicates.
@@ -140,7 +140,7 @@ If you want to follow the code in the same order Eyeling “thinks”, read:
 10. `lib/cli.js` + `lib/entry.js` — command-line wiring and bundle entry exports.
 11. `index.js` — the npm API wrapper (spawns the bundled CLI synchronously).
 
-This is almost literally a tiny compiler pipeline:
+This is very nearly a tiny compiler pipeline:
 
 ```
 
@@ -201,7 +201,7 @@ In addition, interned **Iri**/**Literal** terms (and generated **Blank** terms) 
 
 For blanks, the id is derived from the blank label (so different blank labels remain different existentials).
 
-Terms are treated as immutable: once interned/created, the code assumes you won’t mutate `.value` (or `.label` for blanks).
+Terms are treated as immutable: once interned/created, the code assumes you will not mutate `.value` (or `.label` for blanks).
 
 ### 3.4 Prefix environment
 
@@ -247,7 +247,7 @@ The parser supports:
 - keyword-ish sugar like `is ... of` and inverse arrows
 - path operators `!` and `^` that may generate helper triples via fresh blanks
 
-A nice detail: the parser maintains a `pendingTriples` list used when certain syntactic forms expand into helper triples (for example, some path/property-list expansions). It ensures the “surface statement” still emits all required triples even if the subject itself was syntactic sugar.
+A useful detail: the parser maintains a `pendingTriples` list used when certain syntactic forms expand into helper triples (for example, some path/property-list expansions). It ensures the “surface statement” still emits all required triples even if the subject itself was syntactic sugar.
 
 ### 4.3 Parsing rules: `=>`, `<=`, and log idioms
 
@@ -288,7 +288,7 @@ Internally:
 
 ## Chapter 5 — Rule normalization: “compile-time” semantics (`lib/rules.js`)
 
-Before rules hit the engine, Eyeling performs one lightweight transformation. A second “make it work” trick—deferring built-ins that can’t run yet—happens later inside the goal prover.
+Before rules hit the engine, Eyeling performs one lightweight transformation. A second “make it work” trick—deferring built-ins that cannot run yet—happens later inside the goal prover.
 
 ### 5.1 Lifting blank nodes in rule bodies into variables
 
@@ -337,9 +337,9 @@ This separation is deliberate. It keeps `log:conjunction` and formula printing h
 
 ### 5.2 Builtin deferral in forward-rule bodies
 
-In a depth-first proof, the order of goals matters. Many built-ins only become informative once parts of the triple are **already instantiated** (for example comparisons, pattern tests, and other built-ins that don’t normally create bindings).
+In a depth-first proof, the order of goals matters. Many built-ins only become informative once parts of the triple are **already instantiated** (for example comparisons, pattern tests, and other built-ins that do not normally create bindings).
 
-If such a builtin runs while its subject/object still contain variables or blanks, it may return **no solutions** (because it can’t decide yet) or only the **empty delta** (`{}`), even though it would succeed (or fail) once other goals have bound the needed values.
+If such a builtin runs while its subject/object still contain variables or blanks, it may return **no solutions** (because it cannot decide yet) or only the **empty delta** (`{}`), even though it would succeed (or fail) once other goals have bound the needed values.
 
 Eyeling supports a runtime deferral mechanism inside `proveGoals(...)`, enabled only when proving the bodies of forward rules.
 
@@ -352,9 +352,9 @@ What happens when `proveGoals(..., { deferBuiltins: true })` sees a builtin goal
   - the goal list hasn’t already been rotated too many times,
 - then Eyeling **rotates that builtin goal to the end** of the current goal list and continues with the next goal first.
 
-A small counter (`deferCount`) caps how many rotations can happen (at most the length of the current goal list), so the prover can’t loop forever by endlessly “trying later”.
+A small counter (`deferCount`) caps how many rotations can happen (at most the length of the current goal list), so the prover cannot loop forever by endlessly “trying later”.
 
-There is one extra guard for a small whitelist of built-ins that are considered satisfiable even when both subject and object are completely unbound (see `__builtinIsSatisfiableWhenFullyUnbound`). For these, if evaluation yields no deltas and there is nothing left to bind (either it is the last goal, or deferral has already been exhausted), Eyeling treats the builtin as a vacuous success (`[{}]`) so it doesn’t block the proof.
+There is one extra guard for a small whitelist of built-ins that are considered satisfiable even when both subject and object are completely unbound (see `__builtinIsSatisfiableWhenFullyUnbound`). For these, if evaluation yields no deltas and there is nothing left to bind (either it is the last goal, or deferral has already been exhausted), Eyeling treats the builtin as a vacuous success (`[{}]`) so it does not block the proof.
 
 This is intentionally enabled for **forward-chaining rule bodies only**. Backward rules keep their normal left-to-right goal order, which can be important for termination on some programs.
 
@@ -400,7 +400,7 @@ Eyeling has ordinary structural equality (term-by-term) for most terms.
 
 But **quoted formulas** (`GraphTerm`) demand something stronger. Two formulas should match even if their internal blank/variable names differ, as long as the structure is the same.
 
-That’s alpha-equivalence:
+That is alpha-equivalence:
 
 - `{ _:x :p ?y. }` should match `{ _:z :p ?w. }`
 
@@ -410,14 +410,14 @@ Important scope nuance: only blanks/variables that are local to the quoted formu
 
 So `{ _:x :p :o }` obtained by substituting `?A = _:x` into `{ ?A :p :o }` must not alpha-match `{ _:b :p :o }` by renaming `_:x` to `_:b`.
 
-### 6.2 Groundness: “variables inside formulas don’t leak”
+### 6.2 Groundness: “variables inside formulas do not leak”
 
 Eyeling makes a deliberate choice about _groundness_:
 
 - a triple is “ground” if it has no free variables in normal positions
 - **variables inside a `GraphTerm` do not make the surrounding triple non-ground**
 
-This is encoded in functions like `isGroundTermInGraph`. It’s what makes it possible to assert and store triples that _mention formulas with variables_ as data.
+This is encoded in functions like `isGroundTermInGraph`. It is what makes it possible to assert and store triples that _mention formulas with variables_ as data.
 
 ### 6.3 Substitutions: chaining and application
 
@@ -468,8 +468,8 @@ Unification is implemented in `unifyTerm` / `unifyTriple`, with support for:
 
 There are two key traits of Eyeling’s graph unification:
 
-1. It’s _set-like_: order doesn’t matter.
-2. It’s _substitution-threaded_: choices made while matching one triple restrict the remaining matches, just like Prolog.
+1. It is _set-like_: order does not matter.
+2. It is _substitution-threaded_: choices made while matching one triple restrict the remaining matches, just like Prolog.
 
 ### 6.5 Literals: lexical vs semantic equality
 
@@ -570,7 +570,7 @@ for delta in deltas:
   undoTo(mark)
 ```
 
-**Implementation note (performance):** in the core DFS, Eyeling applies builtin (and unification) deltas into a single mutable substitution and uses a **trail** to undo bindings on backtracking. This preserves the meaning of “threading substitutions through a proof”, but avoids allocating and copying full substitution objects on every branch. Empty deltas (`{}`) are genuinely cheap: they don’t touch the trail and only incur the control-flow overhead of exploring a branch.
+**Implementation note (performance):** in the core DFS, Eyeling applies builtin (and unification) deltas into a single mutable substitution and uses a **trail** to undo bindings on backtracking. This preserves the meaning of “threading substitutions through a proof”, but avoids allocating and copying full substitution objects on every branch. Empty deltas (`{}`) are genuinely cheap: they do not touch the trail and only incur the control-flow overhead of exploring a branch.
 
 **Implementation note (performance):** as of this version, Eyeling also avoids allocating short-lived substitution objects when matching goals against **facts** and when unifying a **backward-rule head** with the current goal. Instead of calling the pure `unifyTriple(..., subst)` (which clones the substitution on each variable bind), the prover performs an **in-place unification** directly into the mutable `substMut` store and records only the newly-bound variable names on the trail. This typically reduces GC pressure significantly on reachability / path-search workloads, where unification is executed extremely frequently.
 
@@ -578,9 +578,9 @@ So built-ins behave like relations that can generate zero, one, or many possible
 
 #### 8.3.1 Builtin deferral and “vacuous” solutions
 
-Conjunction in N3 is order-insensitive, but many builtins are only useful once some variables are bound by _other_ goals in the same body. When `proveGoals` is called from forward chaining, Eyeling enables **builtin deferral**: if a builtin goal can’t make progress yet, it is rotated to the end of the goal list and retried later (with a small cycle guard to avoid infinite rotation).
+Conjunction in N3 is order-insensitive, but many builtins are only useful once some variables are bound by _other_ goals in the same body. When `proveGoals` is called from forward chaining, Eyeling enables **builtin deferral**: if a builtin goal cannot make progress yet, it is rotated to the end of the goal list and retried later (with a small cycle guard to avoid infinite rotation).
 
-“Can’t make progress” includes both cases:
+“Cannot make progress” includes both cases:
 
 - the builtin returns **no solutions** (`[]`), and
 - the builtin returns only **vacuous solutions** (`[{}]`, i.e., success with _no new bindings_) while the goal still contains unbound vars/blanks.
@@ -717,7 +717,7 @@ Eyeling handles this by replacing head blank labels with fresh blank labels of t
 
 - `_:sk_0`, `_:sk_1`, …
 
-But it does something subtle and important: it caches skolemization per (rule firing, head blank label), so that the _same_ firing instance doesn’t keep generating new blanks across outer iterations.
+But it does something subtle and important: it caches skolemization per (rule firing, head blank label), so that the _same_ firing instance does not keep generating new blanks across outer iterations.
 
 The “firing instance” is keyed by a deterministic string derived from the instantiated body (“firingKey”). This stabilizes the closure and prevents “existential churn.”
 
@@ -804,7 +804,7 @@ Some built-ins interpret a positive integer literal as a requested priority:
 
 If a rule requests priority `N`, Eyeling delays that builtin until `scopedClosureLevel >= N`.
 
-In practice this allows rule authors to write “don’t run this scoped query until the closure is stable enough” and is what lets Eyeling iterate safely when rule-producing rules introduce new needs.
+In practice this allows rule authors to write “do not run this scoped query until the closure is stable enough” and is what lets Eyeling iterate safely when rule-producing rules introduce new needs.
 
 ### 10.3 `log:conclusion`: local deductive closure of a formula
 
@@ -815,7 +815,7 @@ In practice this allows rule authors to write “don’t run this scoped query u
   - extract rule triples inside it (`log:implies`, `log:impliedBy`)
   - run `forwardChain` locally over those triples
 
-- cache the result in a `WeakMap` so the same formula doesn’t get recomputed
+- cache the result in a `WeakMap` so the same formula does not get recomputed
 
 Notably, `log:impliedBy` inside the formula is treated as forward implication too for closure computation (and also indexed as backward to help proving).
 
@@ -883,7 +883,7 @@ The N3 Builtins tradition often describes builtins using “schema” annotation
 Eyeling is a little more pragmatic: it implements the spirit of these schemas, but it also has several “engineering” conventions that appear across many builtins:
 
 1. **Variables (`?X`) may be bound** by a builtin if the builtin is written to do so.
-2. **Blank nodes (`[]` / `_:`)** are frequently treated as “don’t care” placeholders. Many builtins accept a blank node in an output position and simply succeed without binding.
+2. **Blank nodes (`[]` / `_:`)** are frequently treated as “do not care” placeholders. Many builtins accept a blank node in an output position and simply succeed without binding.
 3. **Fully unbound relations are usually not enumerated.** If both sides are unbound and enumerating solutions would be infinite (or huge), a number of builtins treat that situation as “satisfiable” and succeed once without binding anything. (This is mainly to keep meta-tests and some N3 conformance cases happy.)
 
 With that, we can tour the builtin families as Eyeling actually implements them.
@@ -1007,7 +1007,7 @@ Eyeling supports:
 3. **DateTime minus duration**: `(dateTime durationOrSeconds) math:difference dateTime`
    - Subtracts a duration from a dateTime and yields a new dateTime.
 
-If the types don’t fit any supported case, the builtin fails.
+If the types do not fit any supported case, the builtin fails.
 
 #### `math:quotient`
 
@@ -1063,7 +1063,7 @@ The **BigInt exact-integer mode** exists specifically to avoid rule-level “rep
 
 #### Unary “math relations” (often invertible)
 
-Eyeling implements these as a shared pattern: if the subject is numeric, compute object; else if the object is numeric, compute subject via an inverse function; if both sides are unbound, succeed once (don’t enumerate).
+Eyeling implements these as a shared pattern: if the subject is numeric, compute object; else if the object is numeric, compute subject via an inverse function; if both sides are unbound, succeed once (do not enumerate).
 
 - `math:absoluteValue`
 - `math:negation`
@@ -1125,7 +1125,7 @@ Binds `?now` to the current local time as an `xsd:dateTime` literal.
 
 Two subtle but important engineering choices:
 
-1. Eyeling memoizes “now” per reasoning run so that repeated uses in one run don’t drift.
+1. Eyeling memoizes “now” per reasoning run so that repeated uses in one run do not drift.
 2. Eyeling supports a fixed “now” override (used for deterministic tests).
 
 ---
@@ -1254,7 +1254,7 @@ Reversible in the sense that either side may be the list:
 - If subject is a list, object becomes its reversal.
 - If object is a list, subject becomes its reversal.
 
-It does not enumerate arbitrary reversals; it’s a deterministic transform once one side is known.
+It does not enumerate arbitrary reversals; it is a deterministic transform once one side is known.
 
 #### `list:remove`
 
@@ -1272,7 +1272,7 @@ Succeeds iff the object cannot be unified with any element of the subject list. 
 
 #### `list:append`
 
-This is list concatenation, but Eyeling implements it in a pleasantly relational way.
+This is list concatenation, but Eyeling implements it in a usefully relational way.
 
 **Forward shape:** `( (a b) (c) (d e) ) list:append (a b c d e)`
 
@@ -1378,7 +1378,7 @@ These builtins reach outside the current fact set. They are synchronous by desig
 
 Dereferences and parses the remote/local resource as N3/Turtle-like syntax, returning a formula.
 
-A nice detail: top-level rules in the parsed document are represented _as data_ inside the returned formula using `log:implies` / `log:impliedBy` triples between formula terms. This means you can treat “a document plus its rules” as a single first-class formula object.
+A useful detail: top-level rules in the parsed document are represented _as data_ inside the returned formula using `log:implies` / `log:impliedBy` triples between formula terms. This means you can treat “a document plus its rules” as a single first-class formula object.
 
 #### `log:semanticsOrError`
 
@@ -1500,7 +1500,7 @@ Eyeling has **two modes**:
 
 2. **Priority-gated global scope**: otherwise
    - Eyeling uses a _frozen snapshot_ of the current global closure.
-   - The “priority” is read from the subject if it’s a positive integer literal `N`.
+   - The “priority” is read from the subject if it is a positive integer literal `N`.
    - If the closure level is below `N`, the builtin “delays” by failing at that point in the search.
 
 This priority mechanism exists because Eyeling’s forward chaining runs in outer iterations with a “freeze snapshot then evaluate scoped builtins” phase. The goal is to make scoped meta-builtins stable and deterministic: they query a fixed snapshot rather than chasing a fact store that is being mutated mid-iteration.
@@ -1566,7 +1566,7 @@ Bidirectional conversion between IRIs and their string form:
 
 - If subject is an IRI, object can be unified with a string literal of its IRI.
 - If object is a string literal, subject can be unified with the corresponding IRI — **but** Eyeling rejects strings that cannot be safely serialized as `<...>` in Turtle/N3, and it rejects `_:`-style strings to avoid confusing blank nodes with IRIs.
-- Some “fully unbound / don’t-care” combinations succeed once to avoid infinite enumeration.
+- Some “fully unbound / do not-care” combinations succeed once to avoid infinite enumeration.
 
 ### Side effects and output directives
 
@@ -1589,7 +1589,7 @@ As a goal, this builtin simply checks that the terms are sufficiently bound/usab
 - When the final closure contains any `log:outputString` triples, the CLI collects all of them from the _saturated_ closure and renders those strings instead of the default N3 output.
 - It sorts them deterministically by the subject “key” and concatenates the string values in that order.
 
-This is a pure test/side-effect marker (it shouldn’t drive search; it should merely validate that strings exist once other reasoning has produced them). In forward rules Eyeling may defer it if it is reached before the terms are usable.
+This is a pure test/side-effect marker (it should not drive search; it should merely validate that strings exist once other reasoning has produced them). In forward rules Eyeling may defer it if it is reached before the terms are usable.
 
 ---
 
@@ -1764,7 +1764,7 @@ Dereferencing is cached by IRI-without-fragment (fragments are stripped). There 
 - parsed semantics (GraphTerm)
 - semantics-or-error
 
-This is both a performance and a stability feature: repeated `log:semantics` calls in backward proofs won’t keep refetching.
+This is both a performance and a stability feature: repeated `log:semantics` calls in backward proofs will not keep refetching.
 
 ### 12.3 HTTPS enforcement
 
@@ -1797,7 +1797,7 @@ When enabled, Eyeling prints a compact comment block per derived triple:
 - the instantiated rule body that was provable
 - the schematic forward rule that produced it
 
-It’s a “why this triple holds” explanation, not a globally exported proof graph.
+It is a “why this triple holds” explanation, not a globally exported proof graph.
 
 Implementation note: the engine records lightweight `DerivedFact` objects during forward chaining, and `lib/explain.js` (via `makeExplain(...)`) is responsible for turning those objects into the human-readable proof comment blocks.
 
@@ -2130,7 +2130,7 @@ What Eyeling does:
 
 6. The triple is ground and not already present, so it is added and (optionally) printed.
 
-That’s the whole engine in miniature: unify, compose substitutions, emit head triples.
+That is the whole engine in miniature: unify, compose substitutions, emit head triples.
 
 ---
 
@@ -2660,7 +2660,7 @@ Example fuse:
 } => false.
 ```
 
-If you don’t want “stop the world”, derive a `:Violation` fact instead, and keep going.
+If you do not want “stop the world”, derive a `:Violation` fact instead, and keep going.
 
 ### 3) Make the workflow test-driven (golden closures)
 
@@ -2674,7 +2674,7 @@ This turns rule edits into a normal change-management loop: diffs are explicit, 
 
 ### 4) Use proofs/traces as the input to the LLM, not the other way around
 
-If you want a natural-language explanation, don’t ask the model to “explain the rules from memory”. Instead:
+If you want a natural-language explanation, do not ask the model to “explain the rules from memory”. Instead:
 
 1. Run Eyeling with proof/trace enabled (Eyeling has explicit tracing hooks and proof-comment support in its output pipeline).
 2. Give the LLM the **derived triples + proof comments** and ask it to summarize:
@@ -2707,7 +2707,7 @@ A simple structure that keeps the LLM honest:
 - “Include at least N minimal tests as facts in a separate block/file.”
 - “If something is unknown, emit a placeholder fact (`:needsFact`) rather than guessing.”
 
-The point isn’t that the LLM is “right”; it’s that **Eyeling makes the result checkable**, and the artifact becomes a maintainable program rather than a one-off generation.
+The point is not that the LLM is “right”; it is that **Eyeling makes the result checkable**, and the artifact becomes a maintainable program rather than a one-off generation.
 
 ---
 
@@ -3191,8 +3191,8 @@ The following examples are especially useful if you want to see Eyeling files th
 - [`examples/act-gravity-mediator-witness.n3`](examples/act-gravity-mediator-witness.n3) · [`examples/output/act-gravity-mediator-witness.txt`](examples/output/act-gravity-mediator-witness.txt) — applied constructor-theory witness showing that, under locality and interoperability, entanglement mediated only by gravity implies a non-classical gravitational mediator.
 - ['examples/act-yeast-self-reproduction.n3'](examples/act-yeast-self-reproduction.n3) · ['examples/output/act-yeast-self-reproduction.txt'](examples/output/act-yeast-self-reproduction.txt) — applied constructor-theory example of a yeast starter culture showing replicator, vehicle, self-reproduction, heritable variation, and natural selection under no-design laws.
 - ['examples/act-barley-seed-lineage.n3'](examples/act-barley-seed-lineage.n3) · ['examples/output/act-barley-seed-lineage.txt'](examples/output/act-barley-seed-lineage.txt) — applied constructor-theory ARC case showing both possible and impossible lineage tasks under no-design laws, including blocked reproduction, dormancy, and evolvability when key ingredients are missing.
-- ['examples/act-tunnel-junction-wake-switch.n3'](examples/act-tunnel-junction-wake-switch.n3) · ['examples/output/act-tunnel-junction-wake-switch.txt'](examples/output/act-tunnel-junction-wake-switch.txt) — applied constructor-theory ARC case comparing a tunnel-junction wake switch with a conventional PN junction via explicit can/can’t rules for tunneling, sub-threshold current, negative differential response, and low-bias switching.
-- ['examples/act-photosynthetic-exciton-transfer.n3'](examples/act-photosynthetic-exciton-transfer.n3) · ['examples/output/act-photosynthetic-exciton-transfer.txt'](examples/output/act-photosynthetic-exciton-transfer.txt) — applied constructor-theory ARC case for quantum-assisted exciton transfer in a photosynthetic antenna, contrasting a tuned complex with a detuned one via explicit can/can’t rules.
+- ['examples/act-tunnel-junction-wake-switch.n3'](examples/act-tunnel-junction-wake-switch.n3) · ['examples/output/act-tunnel-junction-wake-switch.txt'](examples/output/act-tunnel-junction-wake-switch.txt) — applied constructor-theory ARC case comparing a tunnel-junction wake switch with a conventional PN junction via explicit can/cannot rules for tunneling, sub-threshold current, negative differential response, and low-bias switching.
+- ['examples/act-photosynthetic-exciton-transfer.n3'](examples/act-photosynthetic-exciton-transfer.n3) · ['examples/output/act-photosynthetic-exciton-transfer.txt'](examples/output/act-photosynthetic-exciton-transfer.txt) — applied constructor-theory ARC case for quantum-assisted exciton transfer in a photosynthetic antenna, contrasting a tuned complex with a detuned one via explicit can/cannot rules.
 - ['examples/act-sensor-memory-reset.n3'](examples/act-sensor-memory-reset.n3) · ['examples/output/act-sensor-memory-reset.txt'](examples/output/act-sensor-memory-reset.txt) — applied constructor-theory ARC case showing that a sensor memory reset is possible with a work medium but not with heat alone, highlighting work/heat distinction and irreversibility.
 
 #### Deep-classification stress tests
@@ -3337,7 +3337,7 @@ and just as naturally:
 { ?system :lacks ?property . } => { ?system :cannot ?task . } .
 ```
 
-That is already close to the “science of can and can’t” idiom.
+That is already close to the “science of can and cannot” idiom.
 
 Second, N3 can keep the explanation close to the answer. The conditions, the derived `:can` / `:cannot` facts, and the final human-readable report can all live in one file.
 
@@ -3639,16 +3639,16 @@ That is the main value of the playground. It gives Eyeling a public-facing, brow
 
 ## Appendix J — Formalism Is Fine
 
-For Eyeling, formal methods are not a liability but a strength. The project does not need to apologize for being logical, explicit, or semantically disciplined. On the contrary, its value depends on those qualities. A reasoner earns trust not by sounding intelligent, but by making its operations inspectable: what counted as a fact, what matched a rule, what was derived, and why. Formalism is what makes that possible.
+For Eyeling, formal methods are not an obstacle to practical reasoning. They are part of what makes the system useful. A reasoner is easier to trust when its facts, rules, derivations, and limits can be stated explicitly rather than hidden in application code. That is the sense in which formalism matters here: not as ceremony, but as a way of keeping the behavior of the system inspectable.
 
-Horn logic is fine because it gives a usable core. It does not try to express everything. It gives up some expressive power in exchange for clarity, tractability, and a well-understood operational shape. That trade is not a weakness. It is one of the reasons a reasoner can remain small enough to understand and still strong enough to do real work. In that sense, Horn-style discipline is not merely a technical choice; it is an architectural virtue.
+Horn logic is fine because it gives a disciplined core. It does not try to express every possible form of reasoning. Instead, it offers a fragment that is small enough to implement clearly and strong enough to support a wide range of real tasks. That trade is often a good one. In a compact reasoner, expressiveness only helps when it does not destroy clarity or operational control.
 
-Notation3 is fine because logic needs a surface. A formalism that cannot be read, written, debugged, and exchanged by ordinary humans will not travel very far. N3 matters because it keeps one foot in machine processability and the other in human legibility. Facts, rules, quoted formulas, and built-ins remain close enough to the page that a person can still follow the movement of the program. For a system like Eyeling, that matters. The notation is not decoration around the logic. It is part of how the logic becomes usable.
+Notation3 is fine because a logic language also needs a readable surface. Eyeling works with terms, triples, formulas, and rules, but those structures still have to be written, reviewed, debugged, and shared. N3 matters because it keeps the logic close to the page. A rule still looks like something a person can follow. A quoted formula still looks like a graph that can be inspected. That readability is part of what makes the reasoner teachable and portable.
 
-Executable specification is fine because there is no shame in wanting a specification to run. In a system like Eyeling, the distance between semantics and implementation should be as small as possible. When a specification can be executed, one can test whether it actually says something definite, observe how rules behave on concrete inputs, and expose mismatches between intention and mechanism early. Execution does not cheapen semantics. It disciplines it. It forces the abstract account to cash out in behavior.
+Executable specification is fine because there is real value in keeping semantics and implementation close together. When a specification can be run, it becomes easier to test the intended behavior on concrete inputs, compare outcomes across examples, and find the points where an abstract account is still too vague. Execution does not replace semantics, but it is often the best way to expose whether the semantics is precise enough to guide an implementation.
 
-Herbrand semantics is fine because it offers a sober account of meaning for symbolic systems. It tells us that one does not need to begin with a mysterious external domain in order to reason soundly about terms and consequences. One can begin with the symbolic constructions themselves and ask what follows from them under the rules. That is especially fitting for Eyeling, where reasoning is carried by terms, triples, formulas, substitutions, and proof search. Herbrand-style thinking does not eliminate meaning; it gives it a concrete logical home.
+Herbrand semantics is fine because it gives symbolic reasoning a concrete semantic basis. Instead of beginning with an opaque external domain, it begins with the symbolic constructions themselves and asks what follows from them under the rules. That is a natural fit for Eyeling. The engine reasons over terms, substitutions, triples, formulas, and proof states. Herbrand-style semantics therefore does not feel like an imported philosophical story. It describes the level at which the system actually works.
 
-Gödel incompleteness is fine because limits do not discredit formality. If anything, Gödel shows the opposite: once a formal system becomes rich enough, its limits become deep and structural rather than accidental. No sufficiently expressive system can fully close over its own truth. That is not an embarrassment for reason. It is a reminder that rigor does not abolish horizon. A mature formalism is not one that claims to say everything, but one that knows what it can say, how it says it, and where its own closure breaks down.
+Gödel incompleteness is fine because the limits of formal systems are not a refutation of formal reasoning. They are part of its shape. Once a system becomes expressive enough, one should expect structural limits on what it can prove about itself. That does not make formal methods less serious. It shows that their boundaries are principled rather than accidental. For a handbook like this one, that is the right lesson: formal systems are valuable not because they say everything, but because they say some things clearly, explicitly, and in a form that can be checked.
 
-Taken together, these positions amount to a calm defense of formal work. Eyeling does not need grand metaphysical excuses. It is enough to say: Horn logic is fine. Notation3 is fine. Executable specification is fine. Herbrand semantics is fine. Gödel incompleteness is fine. None of these make reasoning smaller. They make it clearer. And for a reasoner, clarity is not cosmetic. It is the thing itself.
+Taken together, these positions support a straightforward attitude toward Eyeling. Horn logic is fine. Notation3 is fine. Executable specification is fine. Herbrand semantics is fine. Gödel incompleteness is fine. None of these commitments make the reasoner narrower in a harmful sense. They make it clearer, easier to inspect, and easier to trust. For this project, that is enough.
