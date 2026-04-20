@@ -310,9 +310,35 @@ This avoids the “existential in the body” trap and matches how most rule aut
 
 Blanks in the **conclusion** are _not_ lifted — they remain blanks and later become existentials (Chapter 9).
 
-### 5.1.1 Quoted formulas keep their own blank-node scope
+### 5.1.1 Quoted formulas in rule bodies: direct pattern positions vs nested data positions
 
-There is one important exception to the “lift blanks in rule bodies” rule: **do not descend into a quoted formula** (`GraphTerm`) and lift the blanks that appear _inside_ it.
+There is one important refinement to the “lift blanks in rule bodies” rule when a rule body mentions a quoted formula (`GraphTerm`).
+
+Eyeling now distinguishes **direct quoted-formula positions** from **nested quoted-formula data**.
+
+#### Direct quoted-formula positions in a premise triple
+
+When a quoted formula appears **directly** as the subject, predicate, or object term of a premise triple, Eyeling treats blank nodes inside that quoted formula as **rule-body placeholders** and lifts them to rule variables.
+
+Example:
+
+```n3
+{ :A :B :C } a :Statement.
+
+{
+  { _:X :B :C } a :Statement.
+} => {
+  :result :is true.
+}.
+```
+
+This matches and derives `:result :is true.` because the direct quoted formula `{ _:X :B :C }` is being used as a **pattern-bearing term** in the premise triple.
+
+This behavior is mainly for interoperability with engines that treat blank nodes in such direct quoted-formula premise positions as pattern placeholders.
+
+#### Nested quoted formulas remain data
+
+If the quoted formula is nested **inside another term** in the rule body — for example inside a list used by `log:conjunction` — Eyeling preserves the quoted formula’s own blank-node scope.
 
 So this rule body:
 
@@ -322,18 +348,18 @@ So this rule body:
 } => { ... }.
 ```
 
-must keep the inner `[]` as a **formula-local blank node**. Eyeling should treat it as belonging to the quoted graph, not as a rule-body variable that escapes into the surrounding rule.
+must keep the inner `[]` as a **formula-local blank node**. Eyeling treats it as belonging to the quoted graph, not as a rule-body variable that escapes into the surrounding rule.
 
-That distinction matters because quoted formulas play **two different roles** in Eyeling:
+That distinction matters because quoted formulas still play **two different roles** in Eyeling:
 
-1. **Formula as data** — for example when constructing a formula with `log:conjunction` or storing `{ ... }` in a triple. In this role, local blanks stay blanks. They print as blank nodes and participate in alpha-equivalence only within that quoted formula.
-2. **Formula as a query pattern** — for example when `log:includes`, `log:notIncludes`, `log:collectAllIn`, or `log:forAllIn` prove a quoted formula. In that role, the builtin may treat the formula’s **local blanks existentially** while matching.
+1. **Formula as data** — for example when constructing a formula with `log:conjunction` or storing `{ ... }` inside another data term. In this role, local blanks stay blanks. They print as blank nodes and participate in alpha-equivalence only within that quoted formula.
+2. **Formula as a query pattern** — either through query-like builtins such as `log:includes`, `log:notIncludes`, `log:collectAllIn`, or `log:forAllIn`, or through a **direct quoted-formula premise position** as described above. In that role, the formula’s local blanks may be treated existentially while matching.
 
 The practical rule is:
 
-> **Rule normalization preserves blank-node scope inside quoted formulas; builtins may later interpret those preserved blanks as existential query placeholders when the formula is used as a pattern.**
+> **Eyeling lifts blanks inside quoted formulas only when the quoted formula appears directly in a premise triple position. Nested quoted formulas remain scoped data unless a query-like builtin interprets them as patterns.**
 
-This separation is deliberate. It keeps `log:conjunction` and formula printing honest, while still allowing query-like builtins to match formulas containing local `[]` placeholders.
+This keeps `log:conjunction` and formula printing honest, while still allowing direct quoted-formula premise patterns such as `{ _:X :B :C } a :Statement.` to match interoperably.
 
 ### 5.2 Builtin deferral in forward-rule bodies
 
