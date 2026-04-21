@@ -1,0 +1,167 @@
+# =================================================================
+# This small Notation3 program models engineering iteration as a
+# process of becoming. A new design revision does not begin from
+# nothing: it inherits validated requirements from an earlier
+# baseline, responds to a new design goal, evaluates a feasible
+# option, and integrates that option into a new concrete design.
+# Once validated, the revision becomes an approved baseline for
+# future work. The logic below is therefore not a logic of static
+# objects, but of inheritance, constraint, adaptation, and renewal.
+# =================================================================
+
+@prefix : <http://example.org/engineering#>.
+
+# ----------
+# CATEGORIES
+# ----------
+
+:DesignRevision a :Category.
+:Requirement    a :Category.
+:DesignGoal     a :Category.
+:DesignOption   a :Category.
+
+# ------------
+# REQUIREMENTS
+# ------------
+
+:stiffnessReq a :Requirement.
+:thermalReq   a :Requirement.
+:assemblyReq  a :Requirement.
+
+# ------------
+# DESIGN GOALS
+# ------------
+
+:reduceWeight   a :DesignGoal.
+:improveCooling a :DesignGoal.
+
+# --------------
+# DESIGN OPTIONS
+# --------------
+
+:carbonFrame  a :DesignOption.
+:ribbedHousing a :DesignOption.
+
+:reduceWeight   :suggests :carbonFrame.
+:improveCooling :suggests :ribbedHousing.
+
+# Compatibility of options with requirements
+:carbonFrame   :compatibleWith :stiffnessReq, :assemblyReq.
+:ribbedHousing :compatibleWith :thermalReq, :assemblyReq.
+
+# ----------------
+# INITIAL BASELINE
+# ----------------
+
+:r1 a :DesignRevision;
+    :time 1;
+    :satisfies :stiffnessReq, :assemblyReq;
+    :realizes :aluminumFrame;
+    :achieves :approvedBaseline.
+
+:r2 a :DesignRevision;
+    :time 2;
+    :derivesFrom :r1;
+    :designGoal :reduceWeight.
+
+:r3 a :DesignRevision;
+    :time 3;
+    :derivesFrom :r2;
+    :designGoal :improveCooling.
+
+# ----------------------------------------------
+# RULE 1
+# A NEW REVISION INHERITS SATISFIED REQUIREMENTS
+# ----------------------------------------------
+
+{
+  ?later :derivesFrom ?earlier.
+  ?earlier :satisfies ?req.
+}
+=>
+{
+  ?later :inheritsRequirement ?req.
+}.
+
+# --------------------------------------
+# RULE 2
+# A DESIGN GOAL OPENS A CANDIDATE OPTION
+# --------------------------------------
+
+{
+  ?rev :designGoal ?goal.
+  ?goal :suggests ?opt.
+}
+=>
+{
+  ?rev :considers ?opt.
+}.
+
+# --------------------------------------------------------
+# RULE 3
+# A CANDIDATE OPTION CAN PRESERVE AN INHERITED REQUIREMENT
+# --------------------------------------------------------
+
+{
+  ?rev :inheritsRequirement ?req.
+  ?rev :considers ?opt.
+  ?opt :compatibleWith ?req.
+}
+=>
+{
+  ?rev :preserves ?req;
+       :integrates ?opt.
+}.
+
+# -----------------------------------------
+# RULE 4
+# WHAT IS PRESERVED BECOMES SATISFIED AGAIN
+# -----------------------------------------
+
+{
+  ?rev :preserves ?req.
+}
+=>
+{
+  ?rev :satisfies ?req.
+}.
+
+# -----------------------------------
+# RULE 5
+# WHAT IS INTEGRATED BECOMES REALIZED
+# -----------------------------------
+
+{
+  ?rev :integrates ?opt.
+}
+=>
+{
+  ?rev :realizes ?opt.
+}.
+
+# ---------------------------------------------------------
+# RULE 6
+# A REVISION THAT REALIZES AN OPTION BECOMES A NEW BASELINE
+# ---------------------------------------------------------
+
+{
+  ?rev :realizes ?opt.
+}
+=>
+{
+  ?rev :achieves :approvedBaseline;
+       :availableForFutureIteration :yes.
+}.
+
+# -------------------------------------------------------
+# RULE 7
+# APPROVED BASELINES ARE AVAILABLE FOR FURTHER DERIVATION
+# -------------------------------------------------------
+
+{
+  ?rev :achieves :approvedBaseline.
+}
+=>
+{
+  ?rev :status :approvedBaseline.
+}.

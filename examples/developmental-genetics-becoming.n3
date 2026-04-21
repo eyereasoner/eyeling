@@ -1,0 +1,204 @@
+# ================================================================
+# This small Notation3 program models developmental genetics as a
+# process of becoming. A cell state does not arise from nothing:
+# it inherits an expression pattern from an earlier lineage state,
+# responds to a developmental signal, activates a compatible
+# regulatory program, and stabilizes into a new differentiated
+# form. Once stabilized, that state becomes available for further
+# developmental transition. The logic below is therefore a logic
+# of lineage, inheritance, activation, and differentiation.
+# ================================================================
+
+@prefix : <http://example.org/genetics#>.
+
+# ----------
+# CATEGORIES
+# ----------
+
+:CellState         a :Category.
+:GeneMarker        a :Category.
+:Signal            a :Category.
+:RegulatoryProgram a :Category.
+
+# ------------
+# GENE MARKERS
+# ------------
+
+:Sox2    a :GeneMarker.
+:Pax6    a :GeneMarker.
+:NeuroD1 a :GeneMarker.
+:Tubb3   a :GeneMarker.
+
+# ---------------------
+# DEVELOPMENTAL SIGNALS
+# ---------------------
+
+:neurogenicSignal a :Signal.
+:maturationSignal a :Signal.
+
+:neurogenicSignal :suggests :proneuralProgram;
+                  :introducesMarker :NeuroD1.
+
+:maturationSignal :suggests :neuronalMaturationProgram;
+                  :introducesMarker :Tubb3.
+
+# -------------------
+# REGULATORY PROGRAMS
+# -------------------
+
+:proneuralProgram a :RegulatoryProgram.
+:neuronalMaturationProgram a :RegulatoryProgram.
+
+# A compatible program can preserve inherited markers
+# and enable a new marker of differentiation
+:proneuralProgram :compatibleWith :Sox2, :Pax6;
+                  :enables :NeuroD1.
+
+:neuronalMaturationProgram :compatibleWith :Pax6, :NeuroD1;
+                           :enables :Tubb3.
+
+# -----------------------
+# INITIAL LINEAGE HISTORY
+# -----------------------
+
+:s1 a :CellState;
+    :time 1;
+    :expresses :Sox2, :Pax6;
+    :achieves :stableCellState.
+
+:s2 a :CellState;
+    :time 2;
+    :derivesFrom :s1;
+    :receives :neurogenicSignal.
+
+:s3 a :CellState;
+    :time 3;
+    :derivesFrom :s2;
+    :receives :maturationSignal.
+
+# -------------------------------------------
+# RULE 1
+# A NEW CELL STATE INHERITS EXPRESSED MARKERS
+# -------------------------------------------
+
+{
+  ?later :derivesFrom ?earlier.
+  ?earlier :expresses ?marker.
+}
+=>
+{
+  ?later :inheritsMarker ?marker.
+}.
+
+# ---------------------------------------------
+# RULE 2
+# A SIGNAL OPENS A CANDIDATE REGULATORY PROGRAM
+# ---------------------------------------------
+
+{
+  ?cell :receives ?signal.
+  ?signal :suggests ?program.
+}
+=>
+{
+  ?cell :considers ?program.
+}.
+
+# --------------------------------------------
+# RULE 3
+# A SIGNAL ALSO INTRODUCES A NEW TARGET MARKER
+# --------------------------------------------
+
+{
+  ?cell :receives ?signal.
+  ?signal :introducesMarker ?marker.
+}
+=>
+{
+  ?cell :targetsMarker ?marker.
+}.
+
+# ------------------------------------------------
+# RULE 4
+# A COMPATIBLE PROGRAM PRESERVES INHERITED MARKERS
+# ------------------------------------------------
+
+{
+  ?cell :inheritsMarker ?marker.
+  ?cell :considers ?program.
+  ?program :compatibleWith ?marker.
+}
+=>
+{
+  ?cell :preservesMarker ?marker;
+        :integrates ?program.
+}.
+
+# ----------------------------------------------
+# RULE 5
+# A PROGRAM CAN ENABLE THE NEWLY TARGETED MARKER
+# ----------------------------------------------
+
+{
+  ?cell :targetsMarker ?marker.
+  ?cell :considers ?program.
+  ?program :enables ?marker.
+}
+=>
+{
+  ?cell :expresses ?marker;
+        :integrates ?program.
+}.
+
+# -----------------------------------
+# RULE 6
+# WHAT IS PRESERVED REMAINS EXPRESSED
+# -----------------------------------
+
+{
+  ?cell :preservesMarker ?marker.
+}
+=>
+{
+  ?cell :expresses ?marker.
+}.
+
+# --------------------------------------
+# RULE 7
+# AN INTEGRATED PROGRAM BECOMES REALIZED
+# --------------------------------------
+
+{
+  ?cell :integrates ?program.
+}
+=>
+{
+  ?cell :realizes ?program.
+}.
+
+# ------------------------------------------------
+# RULE 8
+# A REALIZED PROGRAM STABILIZES THE NEW CELL STATE
+# ------------------------------------------------
+
+{
+  ?cell :realizes ?program.
+}
+=>
+{
+  ?cell :achieves :stableCellState;
+        :availableForFurtherDifferentiation :yes.
+}.
+
+# ----------------------------------------------------------
+# RULE 9
+# STABLE STATES ARE AVAILABLE FOR FUTURE LINEAGE TRANSITIONS
+# ----------------------------------------------------------
+
+{
+  ?cell :achieves :stableCellState.
+}
+=>
+{
+  ?cell :status :stableCellState.
+}.

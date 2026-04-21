@@ -1,0 +1,203 @@
+# ===============================================================
+# This small Notation3 program models controller design as a
+# process of engineering becoming. A controller revision does not
+# arise from nothing: it inherits validated performance from an
+# earlier design, responds to a new control objective, selects a
+# compatible strategy, and integrates that strategy into a new
+# concrete controller. Once validated, the controller becomes a
+# new approved baseline for future tuning and extension.
+# ===============================================================
+
+@prefix : <http://example.org/control#>.
+
+# ----------
+# CATEGORIES
+# ----------
+
+:ControllerRevision a :Category.
+:Requirement        a :Category.
+:DesignGoal         a :Category.
+:ControlStrategy    a :Category.
+
+# ------------
+# REQUIREMENTS
+# ------------
+
+:stabilityReq             a :Requirement.
+:trackingReq              a :Requirement.
+:overshootReq             a :Requirement.
+:disturbanceRejectionReq  a :Requirement.
+
+# ------------
+# DESIGN GOALS
+# ------------
+
+:reduceOvershoot  a :DesignGoal.
+:rejectDisturbance a :DesignGoal.
+
+:reduceOvershoot  :suggests :leadCompensator;
+                  :introducesRequirement :overshootReq.
+
+:rejectDisturbance :suggests :integralAction;
+                   :introducesRequirement :disturbanceRejectionReq.
+
+# ------------------
+# CONTROL STRATEGIES
+# ------------------
+
+:leadCompensator a :ControlStrategy.
+:integralAction  a :ControlStrategy.
+
+# Strategy compatibility with inherited requirements
+:leadCompensator :compatibleWith :stabilityReq, :trackingReq;
+                 :enables :overshootReq.
+
+:integralAction  :compatibleWith :stabilityReq, :trackingReq, :overshootReq;
+                 :enables :disturbanceRejectionReq.
+
+# --------------------------
+# INITIAL CONTROLLER HISTORY
+# --------------------------
+
+:c1 a :ControllerRevision;
+    :time 1;
+    :satisfies :stabilityReq, :trackingReq;
+    :realizes :baselinePID;
+    :achieves :approvedController.
+
+:c2 a :ControllerRevision;
+    :time 2;
+    :derivesFrom :c1;
+    :designGoal :reduceOvershoot.
+
+:c3 a :ControllerRevision;
+    :time 3;
+    :derivesFrom :c2;
+    :designGoal :rejectDisturbance.
+
+# ---------------------------------------------------------
+# RULE 1
+# A NEW REVISION INHERITS PREVIOUSLY SATISFIED REQUIREMENTS
+# ---------------------------------------------------------
+
+{
+  ?later :derivesFrom ?earlier.
+  ?earlier :satisfies ?req.
+}
+=>
+{
+  ?later :inheritsRequirement ?req.
+}.
+
+# ------------------------------------------------
+# RULE 2
+# A DESIGN GOAL OPENS A CANDIDATE CONTROL STRATEGY
+# ------------------------------------------------
+
+{
+  ?ctrl :designGoal ?goal.
+  ?goal :suggests ?strategy.
+}
+=>
+{
+  ?ctrl :considers ?strategy.
+}.
+
+# ------------------------------------------------------
+# RULE 3
+# A DESIGN GOAL ALSO INTRODUCES A NEW TARGET REQUIREMENT
+# ------------------------------------------------------
+
+{
+  ?ctrl :designGoal ?goal.
+  ?goal :introducesRequirement ?req.
+}
+=>
+{
+  ?ctrl :targets ?req.
+}.
+
+# ------------------------------------------------------
+# RULE 4
+# A COMPATIBLE STRATEGY PRESERVES INHERITED REQUIREMENTS
+# ------------------------------------------------------
+
+{
+  ?ctrl :inheritsRequirement ?req.
+  ?ctrl :considers ?strategy.
+  ?strategy :compatibleWith ?req.
+}
+=>
+{
+  ?ctrl :preserves ?req;
+        :integrates ?strategy.
+}.
+
+# ---------------------------------------------------------
+# RULE 5
+# A STRATEGY CAN ALSO ENABLE THE NEWLY TARGETED REQUIREMENT
+# ---------------------------------------------------------
+
+{
+  ?ctrl :targets ?req.
+  ?ctrl :considers ?strategy.
+  ?strategy :enables ?req.
+}
+=>
+{
+  ?ctrl :satisfies ?req;
+        :integrates ?strategy.
+}.
+
+# ------------------------------------
+# RULE 6
+# WHAT IS PRESERVED IS SATISFIED AGAIN
+# ------------------------------------
+
+{
+  ?ctrl :preserves ?req.
+}
+=>
+{
+  ?ctrl :satisfies ?req.
+}.
+
+# --------------------------------------------------------------
+# RULE 7
+# AN INTEGRATED STRATEGY BECOMES PART OF THE REALIZED CONTROLLER
+# --------------------------------------------------------------
+
+{
+  ?ctrl :integrates ?strategy.
+}
+=>
+{
+  ?ctrl :realizes ?strategy.
+}.
+
+# ------------------------------------------------------------------
+# RULE 8
+# A CONTROLLER THAT REALIZES A STRATEGY BECOMES AN APPROVED BASELINE
+# ------------------------------------------------------------------
+
+{
+  ?ctrl :realizes ?strategy.
+}
+=>
+{
+  ?ctrl :achieves :approvedController;
+        :availableForFutureTuning :yes.
+}.
+
+# --------------------------------------------------------
+# RULE 9
+# APPROVED CONTROLLERS ARE AVAILABLE FOR FURTHER ITERATION
+# --------------------------------------------------------
+
+{
+  ?ctrl :achieves :approvedController.
+}
+=>
+{
+  ?ctrl :status :approvedController.
+}.
