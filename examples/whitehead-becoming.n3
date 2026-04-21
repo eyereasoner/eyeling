@@ -1,4 +1,4 @@
-#=================================================================
+# ================================================================
 # This program models becoming as a relational event. Each actual
 # occasion takes up a past, inherits what has been realized,
 # responds to a lure of possible form, and gathers these into a
