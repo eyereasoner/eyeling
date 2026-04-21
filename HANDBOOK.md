@@ -35,6 +35,7 @@
 - [Appendix H — Applied Constructor-Theory and the N3 ARC examples](#app-h)
 - [Appendix I — The Eyeling Playground](#app-i)
 - [Appendix J — Formalism Is Fine](#app-j)
+- [Appendix K — Whitehead-inspired becoming examples](#app-k)
 
 ---
 
@@ -3680,3 +3681,24 @@ Herbrand semantics is fine because it gives symbolic reasoning a concrete semant
 Gödel incompleteness is fine because the limits of formal systems are not a refutation of formal reasoning. They are part of its shape. Once a system becomes expressive enough, one should expect structural limits on what it can prove about itself. That does not make formal methods less serious. It shows that their boundaries are principled rather than accidental. For a handbook like this one, that is the right lesson: formal systems are valuable not because they say everything, but because they say some things clearly, explicitly, and in a form that can be checked.
 
 Taken together, these positions support a straightforward attitude toward Eyeling. Horn logic is fine. Notation3 is fine. Executable specification is fine. Herbrand semantics is fine. Gödel incompleteness is fine. None of these commitments make the reasoner narrower in a harmful sense. They make it clearer, easier to inspect, and easier to trust. For this project, that is enough.
+
+
+<a id="app-k"></a>
+
+## Appendix K — Whitehead-inspired becoming examples
+
+A small family of examples in the repository explores a common idea: that logic can describe not only what **is** the case, but what a thing, system, lineage, or device can **become**. The inspiration is Whiteheadian in a broad sense. The examples do not attempt to formalize Whitehead’s metaphysics as scholarship. Instead, they borrow one guiding intuition from it: reality is often better understood as a structured passage from one state to another than as a mere inventory of static objects.
+
+In N3 terms, this means the examples are written so that rules describe **state-transition potential**. Earlier examples in the handbook often use predicates such as `:can`, `:cannot`, `:supports`, or `:requires`. The becoming family shifts the emphasis toward predicates such as `:canBecome` and `:cannotBecome`, along with intermediate states such as protected dormancy, germination, negative differential response, or adaptive persistence. This is still ordinary Horn-style reasoning. The novelty is not in the engine, but in the modeling style.
+
+The seven current becoming examples span several domains. One is a pure Whiteheadian toy model, where actual occasions prehend a past, respond to a lure of possibility, and become objectively available for future occasions. Others translate the same pattern into engineering revision, developmental genetics, control-systems design, constructor-theoretic task transition, barley-seed lineage renewal, and tunnel-junction wake switching. The common thread is always the same: an entity inherits a prior condition, encounters some enabling or disabling structure, and either reaches a new stabilized state or fails to do so.
+
+That common pattern makes the examples useful pedagogically. They show that Eyeling is not limited to taxonomies, datatype checks, or one-step deductions. It can also express **process descriptions** in a compact symbolic form. A design revision can become a new approved baseline. A cell state can become a differentiated lineage state. A controller can become a validated closed-loop design. A substrate can become a new attribute-state under a possible task. A seed lineage can become a self-renewing cycle. A tunnel junction can become a low-bias wake-serving device.
+
+These examples are also helpful because they keep different levels of abstraction visible. Some of them are deliberately metaphysical, some quasi-biological, some engineering-oriented, and some constructor-theoretic. But they all run through the same reasoner, using the same underlying machinery: terms, triples, forward rules, and closure. That is a quiet but important point. Eyeling does not care whether the domain is philosophy, control theory, genetics, or device physics. What matters is whether the modeled transitions can be stated clearly enough as explicit conditions and consequences.
+
+The becoming examples should therefore be read as **executable schemata** rather than as complete scientific models. They intentionally simplify their domains. The engineering example does not replace design verification. The genetics example does not replace systems biology. The constructor-theory example does not replace the theory itself. And the Whitehead example is not a substitute for reading Whitehead. What the examples do show is that N3 can serve as a clean medium for expressing relational process in a way that remains inspectable, runnable, and easy to vary.
+
+For the handbook, these examples matter for two reasons. First, they provide a concrete demonstration that Eyeling can handle a style of reasoning that feels closer to **becoming, development, and transformation** than to static classification. Second, they show how expressive gains can come from modeling choices rather than from adding new machinery to the engine. The same forward-chaining core that proves `:Socrates a :Mortal` can also prove that a lineage becomes evolvable, that a controller becomes approved, or that a wake switch becomes serviceable under a low-bias regime.
+
+That is why this appendix belongs after Appendix J. “Formalism is fine” not only because it supports rigor, but because it can remain flexible enough to describe worlds in motion. The becoming examples are small demonstrations of that claim. They show that a compact N3 reasoner can host process-oriented models without ceasing to be simple, readable, and executable.
