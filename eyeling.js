@@ -7605,7 +7605,6 @@ function unifyOpenWithList(prefix, tailv, ys, subst) {
   return s2;
 }
 
-
 function graphTriplesContainVars(triples) {
   function termHasVar(t) {
     if (t instanceof Var) return true;

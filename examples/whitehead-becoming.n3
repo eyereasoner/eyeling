@@ -1,0 +1,155 @@
+#=================================================================
+# This program models becoming as a relational event. Each actual
+# occasion takes up a past, inherits what has been realized,
+# responds to a lure of possible form, and gathers these into a
+# new satisfaction. What becomes is never wholly lost: once
+# achieved, it stands available for future prehension. The logic
+# below is therefore not a logic of static things, but of process,
+# inheritance, and renewed concretion.
+# =========================================#======================
+
+@prefix : <http://example.org/whitehead#>.
+
+# ----------
+# CATEGORIES
+# ----------
+
+:ActualOccasion a :Category.
+:PurePotential  a :Category.
+:SubjectiveAim  a :Category.
+
+# ---------------
+# PURE POTENTIALS
+# ---------------
+
+:red      a :PurePotential.
+:warm     a :PurePotential.
+:bright   a :PurePotential.
+:dark     a :PurePotential.
+
+# -------------------------------
+# SUBJECTIVE AIMS AND THEIR LURES
+# -------------------------------
+
+:intensity a :SubjectiveAim.
+:contrast  a :SubjectiveAim.
+
+:intensity :lures :bright.
+:contrast  :lures :dark.
+
+# -------------
+# INITIAL WORLD
+# -------------
+
+:o1 a :ActualOccasion;
+    :time 1;
+    :realizes :red, :warm;
+    :achieves :satisfaction.
+
+:o2 a :ActualOccasion;
+    :time 2;
+    :prehends :o1;
+    :subjectiveAim :intensity.
+
+:o3 a :ActualOccasion;
+    :time 3;
+    :prehends :o2;
+    :subjectiveAim :contrast.
+
+# ---------------------------
+# RULE 1
+# PREHENSION AS BECOMING-FROM
+# ---------------------------
+
+{
+  ?later :prehends ?earlier.
+}
+=>
+{
+  ?later :becomesFrom ?earlier.
+}.
+
+# -----------------------------
+# RULE 2
+# INHERITANCE OF REALIZED FORMS
+# -----------------------------
+
+{
+  ?later :prehends ?earlier.
+  ?earlier :realizes ?form.
+}
+=>
+{
+  ?later :inherits ?form.
+}.
+
+# ---------------------------
+# RULE 3
+# SUBJECTIVE AIM OPENS A LURE
+# ---------------------------
+
+{
+  ?o :subjectiveAim ?aim.
+  ?aim :lures ?form.
+}
+=>
+{
+  ?o :mayRealize ?form.
+}.
+
+# --------------------------------------------
+# RULE 4
+# CONCRESCENCE INTEGRATES PAST AND POSSIBILITY
+# --------------------------------------------
+
+{
+  ?o :inherits ?pastForm.
+  ?o :mayRealize ?novelForm.
+}
+=>
+{
+  ?o :integrates ?pastForm, ?novelForm;
+     :achieves :satisfaction.
+}.
+
+# ---------------------------------
+# RULE 5
+# SATISFACTION MAKES FORMS REALIZED
+# ---------------------------------
+
+{
+  ?o :integrates ?form.
+  ?o :achieves :satisfaction.
+}
+=>
+{
+  ?o :realizes ?form.
+}.
+
+# -----------------------------
+# RULE 6
+# INGRESSION OF PURE POTENTIALS
+# -----------------------------
+
+{
+  ?o :realizes ?form.
+  ?form a :PurePotential.
+}
+=>
+{
+  ?o :ingresses ?form.
+}.
+
+# ---------------------
+# RULE 7
+# OBJECTIVELY AVAILABLE
+# ---------------------
+
+{
+  ?o :achieves :satisfaction.
+}
+=>
+{
+  ?o :status :objectivelyAvailable;
+     :availableForFuturePrehension :yes.
+}.
