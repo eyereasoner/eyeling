@@ -1,0 +1,216 @@
+# =================================================================================
+# tunnel-junction wake switch — becoming
+#
+# This example reframes the wake-switch case as a becoming example.
+# The device is not treated as a static component with capabilities, but as a
+# system that can or cannot pass into a low-bias wake-triggering state.
+#
+# We compare two devices:
+#   - tunnelJunction   : a heavily doped narrow PN junction with overlapping states
+#   - ordinaryJunction : a conventional PN junction without that overlap
+#
+# The point is to show:
+#   - what the tunnel junction can become under the low-bias requirement
+#   - what the conventional junction cannot become under the same requirement
+# =================================================================================
+
+@prefix : <http://example.org/tunnel-junction-wake-switch-becoming/> .
+@prefix arc: <https://example.org/arc#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+:case a arc:Case ;
+  arc:question "Can a tunnel-junction wake switch become a low-bias wake-triggering state in a regime where a conventional PN junction cannot?" .
+
+# -------------------
+# Application context
+# -------------------
+
+:leakAlarmNode a :EdgeSensor ;
+  :needs :MicrowattWakeSwitching ;
+  :application :PipeLeakAlarm .
+
+# ----------------------------------
+# Device A: tunnel-style PN junction
+# ----------------------------------
+
+:tunnelJunction a :PNJunction ;
+  :junctionKind :TunnelDiode ;
+  :doping :Heavy ;
+  :depletionWidth :Narrow ;
+  :stateAlignment :Overlap ;
+  :biasRegime :LowForwardBias ;
+  :scanProfile :PeakToValley ;
+  :deviceRole :WakeSwitch .
+
+# ----------------------------------
+# Device B: conventional PN junction
+# ----------------------------------
+
+:ordinaryJunction a :PNJunction ;
+  :junctionKind :ConventionalDiode ;
+  :doping :Standard ;
+  :depletionWidth :Wide ;
+  :stateAlignment :NoOverlap ;
+  :biasRegime :LowForwardBias ;
+  :scanProfile :MonotoneForward ;
+  :deviceRole :WakeSwitch .
+
+# -------------------------------------------
+# CAN-BECOME rules — viable state transitions
+# -------------------------------------------
+
+# A heavily doped, narrow junction with overlapping states can become a
+# quantum-transfer-supporting junction.
+{ ?J a :PNJunction ;
+     :doping :Heavy ;
+     :depletionWidth :Narrow ;
+     :stateAlignment :Overlap . }
+=>
+{ ?J :canBecome :QuantumTransferState ;
+     :transportMode :TunnelingDominant . } .
+
+# In the low-forward-bias regime, a junction in the quantum-transfer state can
+# become a sub-threshold current state.
+{ ?J :canBecome :QuantumTransferState ;
+     :biasRegime :LowForwardBias . }
+=>
+{ ?J :canBecome :SubThresholdCurrentState . } .
+
+# If the junction is scanned across the peak-to-valley window, it can become a
+# negative differential response state.
+{ ?J :canBecome :QuantumTransferState ;
+     :scanProfile :PeakToValley . }
+=>
+{ ?J :canBecome :NegativeDifferentialResponseState . } .
+
+# A wake-switch device that can become a sub-threshold current state can become
+# an ultra-low-bias switching state.
+{ ?J :canBecome :SubThresholdCurrentState ;
+     :deviceRole :WakeSwitch . }
+=>
+{ ?J :canBecome :UltraLowBiasSwitchingState . } .
+
+# If the device can become an ultra-low-bias switching state and the node needs
+# microwatt wake switching, it can become a wake-serving device.
+{ ?J :canBecome :UltraLowBiasSwitchingState .
+  :leakAlarmNode :needs :MicrowattWakeSwitching . }
+=>
+{ ?J :canBecome :LeakAlarmWakeServingState . } .
+
+# -----------------------------------------------
+# CANNOT-BECOME rules — blocked state transitions
+# -----------------------------------------------
+
+# A conventional wide-depletion low-bias junction without state overlap cannot
+# become a quantum-transfer-supporting junction.
+{ ?J a :PNJunction ;
+     :doping :Standard ;
+     :depletionWidth :Wide ;
+     :stateAlignment :NoOverlap . }
+=>
+{ ?J :cannotBecome :QuantumTransferState . } .
+
+# Without that quantum-transfer state, the junction cannot become a
+# sub-threshold current state in the same low-bias regime.
+{ ?J :cannotBecome :QuantumTransferState ;
+     :biasRegime :LowForwardBias . }
+=>
+{ ?J :cannotBecome :SubThresholdCurrentState . } .
+
+# Without quantum transfer, the tunnel-style negative differential state is
+# blocked as well.
+{ ?J :cannotBecome :QuantumTransferState . }
+=>
+{ ?J :cannotBecome :NegativeDifferentialResponseState . } .
+
+# Without sub-threshold current, the device cannot become an ultra-low-bias
+# switching state.
+{ ?J :cannotBecome :SubThresholdCurrentState ;
+     :deviceRole :WakeSwitch . }
+=>
+{ ?J :cannotBecome :UltraLowBiasSwitchingState . } .
+
+# Without ultra-low-bias switching, the device cannot become a wake-serving
+# device for the leak-alarm node.
+{ ?J :cannotBecome :UltraLowBiasSwitchingState .
+  :leakAlarmNode :needs :MicrowattWakeSwitching . }
+=>
+{ ?J :cannotBecome :LeakAlarmWakeServingState . } .
+
+# ------
+# Checks
+# ------
+
+{ :tunnelJunction :canBecome :QuantumTransferState . }
+=> { :case :checkB1 :Passed . } .
+
+{ :tunnelJunction :transportMode :TunnelingDominant . }
+=> { :case :checkB2 :Passed . } .
+
+{ :tunnelJunction :canBecome :SubThresholdCurrentState . }
+=> { :case :checkB3 :Passed . } .
+
+{ :tunnelJunction :canBecome :NegativeDifferentialResponseState . }
+=> { :case :checkB4 :Passed . } .
+
+{ :tunnelJunction :canBecome :UltraLowBiasSwitchingState . }
+=> { :case :checkB5 :Passed . } .
+
+{ :tunnelJunction :canBecome :LeakAlarmWakeServingState . }
+=> { :case :checkB6 :Passed . } .
+
+{ :ordinaryJunction :cannotBecome :QuantumTransferState . }
+=> { :case :checkB7 :Passed . } .
+
+{ :ordinaryJunction :cannotBecome :SubThresholdCurrentState . }
+=> { :case :checkB8 :Passed . } .
+
+{ :ordinaryJunction :cannotBecome :NegativeDifferentialResponseState . }
+=> { :case :checkB9 :Passed . } .
+
+{ :ordinaryJunction :cannotBecome :UltraLowBiasSwitchingState . }
+=> { :case :checkB10 :Passed . } .
+
+{ :ordinaryJunction :cannotBecome :LeakAlarmWakeServingState . }
+=> { :case :checkB11 :Passed . } .
+
+# ----------------
+# ARC-style output
+# ----------------
+
+{ :case :checkB1 :Passed .
+  :case :checkB2 :Passed .
+  :case :checkB3 :Passed .
+  :case :checkB4 :Passed .
+  :case :checkB5 :Passed .
+  :case :checkB6 :Passed .
+  :case :checkB7 :Passed .
+  :case :checkB8 :Passed .
+  :case :checkB9 :Passed .
+  :case :checkB10 :Passed .
+  :case :checkB11 :Passed . }
+=>
+{
+  :out log:outputString """tunnel-junction wake switch — becoming
+
+Answer
+YES for the tunnel junction.
+NO for the conventional low-bias PN junction in the same wake-switch regime.
+
+Reason Why
+The tunnel junction can be read as a becoming under low forward bias. Because it is modeled as a heavily doped narrow PN junction with overlapping states, it can become a quantum-transfer state. In that regime it can become a sub-threshold current state, and under peak-to-valley scanning it can also become a negative differential response state. As a wake-switch device, that lets it become an ultra-low-bias switching state and finally a leak-alarm wake-serving state. By contrast, the conventional junction lacks the structural conditions needed for the same transition into quantum transfer, so the later wake-serving becoming is blocked as well.
+
+Check
+B1  OK - the tunnel junction can become a quantum-transfer state
+B2  OK - the tunnel junction is classified as tunneling-dominant
+B3  OK - the tunnel junction can become a sub-threshold current state
+B4  OK - the tunnel junction can become a negative differential response state
+B5  OK - the tunnel junction can become an ultra-low-bias switching state
+B6  OK - the tunnel junction can become a leak-alarm wake-serving state
+B7  OK - the conventional junction cannot become a quantum-transfer state
+B8  OK - the conventional junction cannot become a sub-threshold current state
+B9  OK - the conventional junction cannot become the tunnel-style negative differential state
+B10 OK - the conventional junction cannot become an ultra-low-bias switching state here
+B11 OK - the conventional junction cannot become a leak-alarm wake-serving state in this case
+""" .
+} .
