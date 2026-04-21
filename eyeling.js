@@ -537,6 +537,19 @@ const MAX_NUMERIC_CACHE_KEY_LEN = 1024;
 // (Ackermann(4,2) is ~65k bits, so well below this.)
 const MAX_BIGINT_POW_RESULT_BITS = 2_000_000n;
 
+function __emptySubst() {
+  return Object.create(null);
+}
+
+function __cloneSubst(subst) {
+  if (!subst) return __emptySubst();
+  const out = Object.create(null);
+  for (const k in subst) {
+    if (Object.prototype.hasOwnProperty.call(subst, k)) out[k] = subst[k];
+  }
+  return out;
+}
+
 function __useNumericCacheKey(key) {
   return typeof key === 'string' && key.length <= MAX_NUMERIC_CACHE_KEY_LEN;
 }
@@ -1740,12 +1753,12 @@ function cmpNumericInfo(aInfo, bInfo, op) {
 function evalNumericComparisonBuiltin(g, subst, op) {
   const aInfo = parseNumericForCompareTerm(g.s);
   const bInfo = parseNumericForCompareTerm(g.o);
-  if (aInfo && bInfo && cmpNumericInfo(aInfo, bInfo, op)) return [{ ...subst }];
+  if (aInfo && bInfo && cmpNumericInfo(aInfo, bInfo, op)) return [__cloneSubst(subst)];
 
   if (g.s instanceof ListTerm && g.s.elems.length === 2) {
     const a2 = parseNumericForCompareTerm(g.s.elems[0]);
     const b2 = parseNumericForCompareTerm(g.s.elems[1]);
-    if (a2 && b2 && cmpNumericInfo(a2, b2, op)) return [{ ...subst }];
+    if (a2 && b2 && cmpNumericInfo(a2, b2, op)) return [__cloneSubst(subst)];
   }
   return [];
 }
@@ -1961,12 +1974,12 @@ function evalUnaryMathRel(g, subst, forwardFn, inverseFn /* may be null */) {
     if (outDt === XSD_INTEGER_DT && !Number.isInteger(outVal)) outDt = XSD_DECIMAL_DT;
 
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = makeNumericOutputLiteral(outVal, outDt);
       return [s2];
     }
-    if (g.o instanceof Blank) return [{ ...subst }];
-    if (numEqualTerm(g.o, outVal)) return [{ ...subst }];
+    if (g.o instanceof Blank) return [__cloneSubst(subst)];
+    if (numEqualTerm(g.o, outVal)) return [__cloneSubst(subst)];
     return [];
   }
 
@@ -1979,12 +1992,12 @@ function evalUnaryMathRel(g, subst, forwardFn, inverseFn /* may be null */) {
     if (inDt === XSD_INTEGER_DT && !Number.isInteger(inVal)) inDt = XSD_DECIMAL_DT;
 
     if (g.s instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.s.name] = makeNumericOutputLiteral(inVal, inDt);
       return [s2];
     }
-    if (g.s instanceof Blank) return [{ ...subst }];
-    if (numEqualTerm(g.s, inVal)) return [{ ...subst }];
+    if (g.s instanceof Blank) return [__cloneSubst(subst)];
+    if (numEqualTerm(g.s, inVal)) return [__cloneSubst(subst)];
     return [];
   }
 
@@ -2004,7 +2017,7 @@ function evalUnaryMathRel(g, subst, forwardFn, inverseFn /* may be null */) {
 
 function listAppendSplit(parts, resElems, subst) {
   if (!parts.length) {
-    if (!resElems.length) return [{ ...subst }];
+    if (!resElems.length) return [__cloneSubst(subst)];
     return [];
   }
   const out = [];
@@ -2332,7 +2345,7 @@ function evalCryptoHashBuiltin(g, subst, algo) {
   const lit = hashLiteralTerm(g.s, algo);
   if (!lit) return [];
   if (g.o instanceof Var) {
-    const s2 = { ...subst };
+    const s2 = __cloneSubst(subst);
     s2[g.o.name] = lit;
     return [s2];
   }
@@ -2464,7 +2477,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
           const lex = time.utcIsoDateTimeStringFromEpochSeconds(outSecs);
           const lit = internLiteral(`"${lex}"^^<${XSD_NS}dateTime>`);
           if (g.o instanceof Var) {
-            const s2 = { ...subst };
+            const s2 = __cloneSubst(subst);
             s2[g.o.name] = lit;
             return [s2];
           }
@@ -2480,7 +2493,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
           const lex = time.utcIsoDateTimeStringFromEpochSeconds(outSecs);
           const lit = internLiteral(`"${lex}"^^<${XSD_NS}dateTime>`);
           if (g.o instanceof Var) {
-            const s2 = { ...subst };
+            const s2 = __cloneSubst(subst);
             s2[g.o.name] = lit;
             return [s2];
           }
@@ -2502,17 +2515,17 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       }
 
       if (g.o instanceof Var) {
-        const s2 = { ...subst };
+        const s2 = __cloneSubst(subst);
         s2[g.o.name] = makeNumericOutputLiteral(total, XSD_INTEGER_DT);
         return [s2];
       }
-      if (g.o instanceof Blank) return [{ ...subst }];
+      if (g.o instanceof Blank) return [__cloneSubst(subst)];
 
       const oi = parseIntLiteral(g.o);
-      if (oi !== null && oi === total) return [{ ...subst }];
+      if (oi !== null && oi === total) return [__cloneSubst(subst)];
 
       // Fallback numeric compare
-      if (numEqualTerm(g.o, Number(total))) return [{ ...subst }];
+      if (numEqualTerm(g.o, Number(total))) return [__cloneSubst(subst)];
       return [];
     }
 
@@ -2529,12 +2542,12 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const lit = makeNumericOutputLiteral(total, dtOut);
 
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = lit;
       return [s2];
     }
-    if (g.o instanceof Blank) return [{ ...subst }];
-    if (numEqualTerm(g.o, total)) return [{ ...subst }];
+    if (g.o instanceof Blank) return [__cloneSubst(subst)];
+    if (numEqualTerm(g.o, total)) return [__cloneSubst(subst)];
     return [];
   }
 
@@ -2557,15 +2570,15 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       }
 
       if (g.o instanceof Var) {
-        const s2 = { ...subst };
+        const s2 = __cloneSubst(subst);
         s2[g.o.name] = makeNumericOutputLiteral(prod, XSD_INTEGER_DT);
         return [s2];
       }
-      if (g.o instanceof Blank) return [{ ...subst }];
+      if (g.o instanceof Blank) return [__cloneSubst(subst)];
 
       const oi = parseIntLiteral(g.o);
-      if (oi !== null && oi === prod) return [{ ...subst }];
-      if (numEqualTerm(g.o, Number(prod))) return [{ ...subst }];
+      if (oi !== null && oi === prod) return [__cloneSubst(subst)];
+      if (numEqualTerm(g.o, Number(prod))) return [__cloneSubst(subst)];
       return [];
     }
 
@@ -2582,12 +2595,12 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const lit = makeNumericOutputLiteral(prod, dtOut);
 
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = lit;
       return [s2];
     }
-    if (g.o instanceof Blank) return [{ ...subst }];
-    if (numEqualTerm(g.o, prod)) return [{ ...subst }];
+    if (g.o instanceof Blank) return [__cloneSubst(subst)];
+    if (numEqualTerm(g.o, prod)) return [__cloneSubst(subst)];
     return [];
   }
 
@@ -2611,7 +2624,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       const lit = formatDurationLiteralFromSeconds(diffSecs);
 
       if (g.o instanceof Var) {
-        const s2 = { ...subst };
+        const s2 = __cloneSubst(subst);
         s2[g.o.name] = lit;
         return [s2];
       }
@@ -2627,7 +2640,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
         const lex = time.utcIsoDateTimeStringFromEpochSeconds(outSecs);
         const lit = internLiteral(`"${lex}"^^<${XSD_NS}dateTime>`);
         if (g.o instanceof Var) {
-          const s2 = { ...subst };
+          const s2 = __cloneSubst(subst);
           s2[g.o.name] = lit;
           return [s2];
         }
@@ -2643,7 +2656,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       const ci = ai - bi;
       const lit = internLiteral(ci.toString());
       if (g.o instanceof Var) {
-        const s2 = { ...subst };
+        const s2 = __cloneSubst(subst);
         s2[g.o.name] = lit;
         return [s2];
       }
@@ -2666,19 +2679,19 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       const lit = makeNumericOutputLiteral(c, dtOut);
 
       if (g.o instanceof Var) {
-        const s2 = { ...subst };
+        const s2 = __cloneSubst(subst);
         s2[g.o.name] = lit;
         return [s2];
       }
-      if (g.o instanceof Blank) return [{ ...subst }];
-      if (numEqualTerm(g.o, c)) return [{ ...subst }];
+      if (g.o instanceof Blank) return [__cloneSubst(subst)];
+      if (numEqualTerm(g.o, c)) return [__cloneSubst(subst)];
       return [];
     }
 
     // Fallback (if you *don’t* have those helpers yet):
     const lit = internLiteral(formatNum(c));
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = lit;
       return [s2];
     }
@@ -2705,12 +2718,12 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const lit = makeNumericOutputLiteral(c, dtOut);
 
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = lit;
       return [s2];
     }
-    if (g.o instanceof Blank) return [{ ...subst }];
-    if (numEqualTerm(g.o, c)) return [{ ...subst }];
+    if (g.o instanceof Blank) return [__cloneSubst(subst)];
+    if (numEqualTerm(g.o, c)) return [__cloneSubst(subst)];
     return [];
   }
 
@@ -2729,19 +2742,19 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       const q = ai / bi; // BigInt division truncates toward zero
       const lit = internLiteral(q.toString());
       if (g.o instanceof Var) {
-        const s2 = { ...subst };
+        const s2 = __cloneSubst(subst);
         s2[g.o.name] = lit;
         return [s2];
       }
-      if (g.o instanceof Blank) return [{ ...subst }];
+      if (g.o instanceof Blank) return [__cloneSubst(subst)];
 
       const oi = parseIntLiteral(g.o);
-      if (oi !== null && oi === q) return [{ ...subst }];
+      if (oi !== null && oi === q) return [__cloneSubst(subst)];
 
       // Only do numeric compare when safe enough to convert
       const qNum = Number(q);
       if (Number.isFinite(qNum) && Math.abs(qNum) <= Number.MAX_SAFE_INTEGER) {
-        if (numEqualTerm(g.o, qNum)) return [{ ...subst }];
+        if (numEqualTerm(g.o, qNum)) return [__cloneSubst(subst)];
       }
 
       const s2 = unifyTerm(g.o, lit, subst);
@@ -2758,13 +2771,13 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const q = Math.trunc(a / b);
     const lit = internLiteral(String(q));
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = lit;
       return [s2];
     }
-    if (g.o instanceof Blank) return [{ ...subst }];
+    if (g.o instanceof Blank) return [__cloneSubst(subst)];
 
-    if (numEqualTerm(g.o, q)) return [{ ...subst }];
+    if (numEqualTerm(g.o, q)) return [__cloneSubst(subst)];
 
     const s2 = unifyTerm(g.o, lit, subst);
     return s2 !== null ? [s2] : [];
@@ -2797,14 +2810,14 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       const lit = makeNumericOutputLiteral(out, XSD_INTEGER_DT);
 
       if (g.o instanceof Var) {
-        const s2 = { ...subst };
+        const s2 = __cloneSubst(subst);
         s2[g.o.name] = lit;
         return [s2];
       }
-      if (g.o instanceof Blank) return [{ ...subst }];
+      if (g.o instanceof Blank) return [__cloneSubst(subst)];
 
       const oi = parseIntLiteral(g.o);
-      if (oi !== null && oi === out) return [{ ...subst }];
+      if (oi !== null && oi === out) return [__cloneSubst(subst)];
 
       const s2 = unifyTerm(g.o, lit, subst);
       return s2 !== null ? [s2] : [];
@@ -2824,12 +2837,12 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       const lit = makeNumericOutputLiteral(cVal, dtOut);
 
       if (g.o instanceof Var) {
-        const s2 = { ...subst };
+        const s2 = __cloneSubst(subst);
         s2[g.o.name] = lit;
         return [s2];
       }
-      if (g.o instanceof Blank) return [{ ...subst }];
-      if (numEqualTerm(g.o, cVal)) return [{ ...subst }];
+      if (g.o instanceof Blank) return [__cloneSubst(subst)];
+      if (numEqualTerm(g.o, cVal)) return [__cloneSubst(subst)];
     }
 
     // Inverse: solve exponent using logs (Number mode only)
@@ -2842,7 +2855,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
         let dtB = commonNumericDatatype([baseTerm, g.o], expTerm);
         if (dtB === XSD_INTEGER_DT && !Number.isInteger(bVal)) dtB = XSD_DECIMAL_DT;
 
-        const s2 = { ...subst };
+        const s2 = __cloneSubst(subst);
         s2[expTerm.name] = makeNumericOutputLiteral(bVal, dtB);
         return [s2];
       }
@@ -2858,15 +2871,15 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       const lit = makeNumericOutputLiteral(outVal, XSD_INTEGER_DT);
 
       if (g.o instanceof Var) {
-        const s2 = { ...subst };
+        const s2 = __cloneSubst(subst);
         s2[g.o.name] = lit;
         return [s2];
       }
-      if (g.o instanceof Blank) return [{ ...subst }];
+      if (g.o instanceof Blank) return [__cloneSubst(subst)];
 
       const oi = parseIntLiteral(g.o);
-      if (oi !== null && oi === outVal) return [{ ...subst }];
-      if (numEqualTerm(g.o, Number(outVal))) return [{ ...subst }];
+      if (oi !== null && oi === outVal) return [__cloneSubst(subst)];
+      if (numEqualTerm(g.o, Number(outVal))) return [__cloneSubst(subst)];
       return [];
     }
 
@@ -2880,12 +2893,12 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     if (dtOut === XSD_INTEGER_DT && !Number.isInteger(outVal)) dtOut = XSD_DECIMAL_DT;
 
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = makeNumericOutputLiteral(outVal, dtOut);
       return [s2];
     }
-    if (g.o instanceof Blank) return [{ ...subst }];
-    if (numEqualTerm(g.o, outVal)) return [{ ...subst }];
+    if (g.o instanceof Blank) return [__cloneSubst(subst)];
+    if (numEqualTerm(g.o, outVal)) return [__cloneSubst(subst)];
     return [];
   }
 
@@ -2947,14 +2960,14 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       const outVal = -si;
       const lit = makeNumericOutputLiteral(outVal, XSD_INTEGER_DT);
       if (g.o instanceof Var) {
-        const s2 = { ...subst };
+        const s2 = __cloneSubst(subst);
         s2[g.o.name] = lit;
         return [s2];
       }
-      if (g.o instanceof Blank) return [{ ...subst }];
+      if (g.o instanceof Blank) return [__cloneSubst(subst)];
       const oi = parseIntLiteral(g.o);
-      if (oi !== null && oi === outVal) return [{ ...subst }];
-      if (numEqualTerm(g.o, Number(outVal))) return [{ ...subst }];
+      if (oi !== null && oi === outVal) return [__cloneSubst(subst)];
+      if (numEqualTerm(g.o, Number(outVal))) return [__cloneSubst(subst)];
       return [];
     }
 
@@ -2963,14 +2976,14 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       const inVal = -oi;
       const lit = makeNumericOutputLiteral(inVal, XSD_INTEGER_DT);
       if (g.s instanceof Var) {
-        const s2 = { ...subst };
+        const s2 = __cloneSubst(subst);
         s2[g.s.name] = lit;
         return [s2];
       }
-      if (g.s instanceof Blank) return [{ ...subst }];
+      if (g.s instanceof Blank) return [__cloneSubst(subst)];
       const si2 = parseIntLiteral(g.s);
-      if (si2 !== null && si2 === inVal) return [{ ...subst }];
-      if (numEqualTerm(g.s, Number(inVal))) return [{ ...subst }];
+      if (si2 !== null && si2 === inVal) return [__cloneSubst(subst)];
+      if (numEqualTerm(g.s, Number(inVal))) return [__cloneSubst(subst)];
       return [];
     }
 
@@ -2994,15 +3007,15 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       const lit = makeNumericOutputLiteral(r, XSD_INTEGER_DT);
 
       if (g.o instanceof Var) {
-        const s2 = { ...subst };
+        const s2 = __cloneSubst(subst);
         s2[g.o.name] = lit;
         return [s2];
       }
-      if (g.o instanceof Blank) return [{ ...subst }];
+      if (g.o instanceof Blank) return [__cloneSubst(subst)];
 
       const oi = parseIntLiteral(g.o);
-      if (oi !== null && oi === r) return [{ ...subst }];
-      if (numEqualTerm(g.o, Number(r))) return [{ ...subst }];
+      if (oi !== null && oi === r) return [__cloneSubst(subst)];
+      if (numEqualTerm(g.o, Number(r))) return [__cloneSubst(subst)];
       return [];
     }
 
@@ -3017,12 +3030,12 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const lit = makeNumericOutputLiteral(rVal, XSD_INTEGER_DT);
 
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = lit;
       return [s2];
     }
-    if (g.o instanceof Blank) return [{ ...subst }];
-    if (numEqualTerm(g.o, rVal)) return [{ ...subst }];
+    if (g.o instanceof Blank) return [__cloneSubst(subst)];
+    if (numEqualTerm(g.o, rVal)) return [__cloneSubst(subst)];
     return [];
   }
 
@@ -3037,15 +3050,15 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       const lit = makeNumericOutputLiteral(ai, XSD_INTEGER_DT);
 
       if (g.o instanceof Var) {
-        const s2 = { ...subst };
+        const s2 = __cloneSubst(subst);
         s2[g.o.name] = lit;
         return [s2];
       }
-      if (g.o instanceof Blank) return [{ ...subst }];
+      if (g.o instanceof Blank) return [__cloneSubst(subst)];
 
       const oi = parseIntLiteral(g.o);
-      if (oi !== null && oi === ai) return [{ ...subst }];
-      if (numEqualTerm(g.o, Number(ai))) return [{ ...subst }];
+      if (oi !== null && oi === ai) return [__cloneSubst(subst)];
+      if (numEqualTerm(g.o, Number(ai))) return [__cloneSubst(subst)];
 
       const s2 = unifyTerm(g.o, lit, subst);
       return s2 !== null ? [s2] : [];
@@ -3059,14 +3072,14 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const lit = internLiteral(String(rVal)); // integer token
 
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = lit;
       return [s2];
     }
-    if (g.o instanceof Blank) return [{ ...subst }];
+    if (g.o instanceof Blank) return [__cloneSubst(subst)];
 
     // Accept typed numeric literals too (e.g., "3"^^xsd:float) if numerically equal.
-    if (numEqualTerm(g.o, rVal)) return [{ ...subst }];
+    if (numEqualTerm(g.o, rVal)) return [__cloneSubst(subst)];
 
     // Fallback to strict unification
     const s2 = unifyTerm(g.o, lit, subst);
@@ -3086,16 +3099,16 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const out = internLiteral(String(parts.day));
 
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = out;
       return [s2];
     }
-    if (g.o instanceof Blank) return [{ ...subst }];
+    if (g.o instanceof Blank) return [__cloneSubst(subst)];
 
     const oi = parseIntLiteral(g.o);
     if (oi !== null) {
       try {
-        if (oi === BigInt(parts.day)) return [{ ...subst }];
+        if (oi === BigInt(parts.day)) return [__cloneSubst(subst)];
       } catch {}
     }
 
@@ -3112,16 +3125,16 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const out = internLiteral(String(parts.hour));
 
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = out;
       return [s2];
     }
-    if (g.o instanceof Blank) return [{ ...subst }];
+    if (g.o instanceof Blank) return [__cloneSubst(subst)];
 
     const oi = parseIntLiteral(g.o);
     if (oi !== null) {
       try {
-        if (oi === BigInt(parts.hour)) return [{ ...subst }];
+        if (oi === BigInt(parts.hour)) return [__cloneSubst(subst)];
       } catch {}
     }
 
@@ -3138,16 +3151,16 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const out = internLiteral(String(parts.minute));
 
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = out;
       return [s2];
     }
-    if (g.o instanceof Blank) return [{ ...subst }];
+    if (g.o instanceof Blank) return [__cloneSubst(subst)];
 
     const oi = parseIntLiteral(g.o);
     if (oi !== null) {
       try {
-        if (oi === BigInt(parts.minute)) return [{ ...subst }];
+        if (oi === BigInt(parts.minute)) return [__cloneSubst(subst)];
       } catch {}
     }
 
@@ -3164,16 +3177,16 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const out = internLiteral(String(parts.month));
 
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = out;
       return [s2];
     }
-    if (g.o instanceof Blank) return [{ ...subst }];
+    if (g.o instanceof Blank) return [__cloneSubst(subst)];
 
     const oi = parseIntLiteral(g.o);
     if (oi !== null) {
       try {
-        if (oi === BigInt(parts.month)) return [{ ...subst }];
+        if (oi === BigInt(parts.month)) return [__cloneSubst(subst)];
       } catch {}
     }
 
@@ -3190,16 +3203,16 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const out = internLiteral(String(parts.second));
 
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = out;
       return [s2];
     }
-    if (g.o instanceof Blank) return [{ ...subst }];
+    if (g.o instanceof Blank) return [__cloneSubst(subst)];
 
     const oi = parseIntLiteral(g.o);
     if (oi !== null) {
       try {
-        if (oi === BigInt(parts.second)) return [{ ...subst }];
+        if (oi === BigInt(parts.second)) return [__cloneSubst(subst)];
       } catch {}
     }
 
@@ -3217,18 +3230,18 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const out = internLiteral(`"${parts.tz}"`);
 
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = out;
       return [s2];
     }
-    if (g.o instanceof Blank) return [{ ...subst }];
+    if (g.o instanceof Blank) return [__cloneSubst(subst)];
 
-    if (termsEqual(g.o, out)) return [{ ...subst }];
+    if (termsEqual(g.o, out)) return [__cloneSubst(subst)];
 
     // Also accept explicitly typed xsd:string literals.
     if (g.o instanceof Literal) {
       const [lexO, dtO] = literalParts(g.o.value);
-      if (dtO === XSD_NS + 'string' && stripQuotes(lexO) === parts.tz) return [{ ...subst }];
+      if (dtO === XSD_NS + 'string' && stripQuotes(lexO) === parts.tz) return [__cloneSubst(subst)];
     }
     return [];
   }
@@ -3242,16 +3255,16 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const out = internLiteral(String(parts.yearStr));
 
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = out;
       return [s2];
     }
-    if (g.o instanceof Blank) return [{ ...subst }];
+    if (g.o instanceof Blank) return [__cloneSubst(subst)];
 
     const oi = parseIntLiteral(g.o);
     if (oi !== null) {
       try {
-        if (oi === BigInt(parts.yearStr)) return [{ ...subst }];
+        if (oi === BigInt(parts.yearStr)) return [__cloneSubst(subst)];
       } catch {}
     }
 
@@ -3265,13 +3278,13 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const now = time.getNowLex();
 
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = internLiteral(`"${now}"^^<${XSD_NS}dateTime>`);
       return [s2];
     }
     if (g.o instanceof Literal) {
       const [lexO] = literalParts(g.o.value);
-      if (stripQuotes(lexO) === now) return [{ ...subst }];
+      if (stripQuotes(lexO) === now) return [__cloneSubst(subst)];
     }
     return [];
   }
@@ -3296,11 +3309,11 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     }
     const result = new ListTerm(outElems);
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = result;
       return [s2];
     }
-    if (termsEqual(g.o, result)) return [{ ...subst }];
+    if (termsEqual(g.o, result)) return [__cloneSubst(subst)];
     return [];
   }
 
@@ -3404,7 +3417,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       const idxPat2 = applySubstTerm(indexTerm, subst);
       if (isGroundTerm(idxPat2)) {
         if (!termsEqualNoIntDecimal(idxPat2, idxLit)) continue;
-        s1 = { ...subst };
+        s1 = __cloneSubst(subst);
       } else {
         s1 = unifyTerm(indexTerm, idxLit, subst);
         if (s1 === null) continue;
@@ -3479,7 +3492,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
 
     const o2 = applySubstTerm(g.o, subst);
     if (isGroundTerm(o2)) {
-      return termsEqualNoIntDecimal(o2, nTerm) ? [{ ...subst }] : [];
+      return termsEqualNoIntDecimal(o2, nTerm) ? [__cloneSubst(subst)] : [];
     }
 
     const s2 = unifyTerm(g.o, nTerm, subst);
@@ -3493,7 +3506,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     for (const el of xs) {
       if (unifyTerm(g.o, el, subst) !== null) return [];
     }
-    return [{ ...subst }];
+    return [__cloneSubst(subst)];
   }
 
   // list:reverse
@@ -3679,7 +3692,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   if (pv === LOG_NS + 'notEqualTo') {
     const s2 = unifyTerm(goal.s, goal.o, subst);
     if (s2 !== null) return [];
-    return [{ ...subst }];
+    return [__cloneSubst(subst)];
   }
 
   // log:conjunction
@@ -3728,7 +3741,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const outFormula = new GraphTerm(merged);
 
     // Allow blank nodes as a don't-care output (common in builtin schemas).
-    if (g.o instanceof Blank) return [{ ...subst }];
+    if (g.o instanceof Blank) return [__cloneSubst(subst)];
 
     const s2 = unifyTerm(g.o, outFormula, subst);
     return s2 !== null ? [s2] : [];
@@ -3748,11 +3761,11 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     if (!(conclusion instanceof GraphTerm)) return [];
 
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = conclusion;
       return [s2];
     }
-    if (g.o instanceof Blank) return [{ ...subst }];
+    if (g.o instanceof Blank) return [__cloneSubst(subst)];
 
     const s2 = unifyTerm(g.o, conclusion, subst);
     return s2 !== null ? [s2] : [];
@@ -3772,11 +3785,11 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const lit = internLiteral(`${JSON.stringify(text)}^^<${XSD_NS}string>`);
 
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = lit;
       return [s2];
     }
-    if (g.o instanceof Blank) return [{ ...subst }];
+    if (g.o instanceof Blank) return [__cloneSubst(subst)];
 
     const s2 = unifyTerm(g.o, lit, subst);
     return s2 !== null ? [s2] : [];
@@ -3796,7 +3809,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     // Avoid variable capture between the returned quoted formula and the
     // surrounding proof environment.
     const formulaStd = standardizeTermApart(formula, varGen);
-    if (g.o instanceof Blank) return [{ ...subst }];
+    if (g.o instanceof Blank) return [__cloneSubst(subst)];
 
     const s2 = unifyTerm(g.o, formulaStd, subst);
     return s2 !== null ? [s2] : [];
@@ -3816,7 +3829,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     // surrounding proof environment.
     if (term instanceof GraphTerm) term = standardizeTermApart(term, varGen);
 
-    if (g.o instanceof Blank) return [{ ...subst }];
+    if (g.o instanceof Blank) return [__cloneSubst(subst)];
 
     const s2 = unifyTerm(g.o, term, subst);
     return s2 !== null ? [s2] : [];
@@ -3842,7 +3855,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     // surrounding proof environment.
     formula = standardizeTermApart(formula, varGen);
 
-    if (g.o instanceof Blank) return [{ ...subst }];
+    if (g.o instanceof Blank) return [__cloneSubst(subst)];
 
     const s2 = unifyTerm(g.o, formula, subst);
     return s2 !== null ? [s2] : [];
@@ -3861,11 +3874,11 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     else ty = internIri(LOG_NS + 'Other');
 
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = ty;
       return [s2];
     }
-    if (g.o instanceof Blank) return [{ ...subst }];
+    if (g.o instanceof Blank) return [__cloneSubst(subst)];
 
     const s2 = unifyTerm(g.o, ty, subst);
     return s2 !== null ? [s2] : [];
@@ -3877,7 +3890,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   if (pv === LOG_NS + 'dtlit') {
     // Fully unbound (both arguments '?'-mode): treat as satisfiable, succeed once.
     // Required by notation3tests "success-fullUnbound-*".
-    if (g.s instanceof Var && g.o instanceof Var) return [{ ...subst }];
+    if (g.s instanceof Var && g.o instanceof Var) return [__cloneSubst(subst)];
 
     const results = [];
 
@@ -3930,7 +3943,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
   // true iff $o is a language-tagged literal with string value $s.1 and language tag $s.2
   if (pv === LOG_NS + 'langlit') {
     // Fully unbound (both arguments '?'-mode): treat as satisfiable, succeed once.
-    if (g.s instanceof Var && g.o instanceof Var) return [{ ...subst }];
+    if (g.s instanceof Var && g.o instanceof Var) return [__cloneSubst(subst)];
     const results = [];
     const LANG_RE = /^[A-Za-z]+(?:-[A-Za-z0-9]+)*$/; // (same notion as literalParts/literalHasLangTag)
 
@@ -4120,7 +4133,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     }
 
     // Empty formula is always included (but may be priority-gated above).
-    if (g.o instanceof Literal && g.o.value === 'true') return [{ ...subst }];
+    if (g.o instanceof Literal && g.o.value === 'true') return [__cloneSubst(subst)];
     if (!(g.o instanceof GraphTerm)) return [];
 
     const visited2 = [];
@@ -4133,7 +4146,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     for (const variant of goalVariants) {
       const sols = proveGoals(
         variant.goals,
-        { ...subst },
+        __cloneSubst(subst),
         scopeFacts,
         scopeBackRules,
         depth + 1,
@@ -4211,7 +4224,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const visited2 = [];
     const sols = proveGoals(
       __prepareQuotedPatternTriples(goal.o, subst, varGen),
-      { ...subst },
+      __cloneSubst(subst),
       scopeFacts,
       scopeBackRules,
       depth + 1,
@@ -4219,7 +4232,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       varGen,
       1,
     );
-    return sols.length ? [] : [{ ...subst }];
+    return sols.length ? [] : [__cloneSubst(subst)];
   }
 
   // log:trace
@@ -4233,7 +4246,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const yStr = termToN3(g.o, pref);
 
     trace.writeTraceLine(`${xStr} TRACE ${yStr}`);
-    return [{ ...subst }];
+    return [__cloneSubst(subst)];
   }
 
   // log:outputString
@@ -4247,7 +4260,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     if (g.o instanceof Var) return [];
     const s = termToJsString(g.o);
     if (s === null) return [];
-    return [{ ...subst }];
+    return [__cloneSubst(subst)];
   }
 
   // log:collectAllIn (scoped)
@@ -4262,7 +4275,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     //   - object = Var: treat as priority 1 (do not bind)
     //   - any other object: backward-compatible default priority 1
 
-    const outSubst = { ...subst };
+    const outSubst = __cloneSubst(subst);
     let scopeFacts = null;
     let scopeBackRules = backRules;
 
@@ -4309,7 +4322,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
       rawClauseTerm instanceof GraphTerm
         ? __prepareQuotedPatternTriples(rawClauseTerm, subst, varGen)
         : __prepareQuotedPatternTriples(clauseTerm, subst, varGen);
-    const sols = proveGoals(clauseGoals, {}, scopeFacts, scopeBackRules, depth + 1, visited2, varGen);
+    const sols = proveGoals(clauseGoals, __emptySubst(), scopeFacts, scopeBackRules, depth + 1, visited2, varGen);
 
     const collected = sols.map((sBody) => applySubstTerm(valueTempl, sBody));
     const collectedList = new ListTerm(collected);
@@ -4326,7 +4339,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
 
     // See log:collectAllIn above for the priority / closure semantics.
 
-    const outSubst = { ...subst };
+    const outSubst = __cloneSubst(subst);
     let scopeFacts = null;
     let scopeBackRules = backRules;
 
@@ -4374,7 +4387,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
         : __prepareQuotedPatternTriples(thenClause, subst, varGen);
 
     const visited1 = [];
-    const sols1 = proveGoals(whereGoals, {}, scopeFacts, scopeBackRules, depth + 1, visited1, varGen);
+    const sols1 = proveGoals(whereGoals, __emptySubst(), scopeFacts, scopeBackRules, depth + 1, visited1, varGen);
 
     for (const s1 of sols1) {
       const visited2 = [];
@@ -4426,7 +4439,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const sOk = g.s instanceof Var || g.s instanceof Blank || g.s instanceof Iri;
     const oOk = g.o instanceof Var || g.o instanceof Blank || g.o instanceof Literal;
     if (!sOk || !oOk) return [];
-    return [{ ...subst }];
+    return [__cloneSubst(subst)];
   }
 
   // -----------------------------------------------------------------
@@ -4445,7 +4458,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const lit = makeStringLiteral(parts.join(''));
 
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = lit;
       return [s2];
     }
@@ -4458,7 +4471,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const sStr = termToJsString(g.s);
     const oStr = termToJsString(g.o);
     if (sStr === null || oStr === null) return [];
-    return sStr.includes(oStr) ? [{ ...subst }] : [];
+    return sStr.includes(oStr) ? [__cloneSubst(subst)] : [];
   }
 
   // string:containsIgnoringCase
@@ -4466,7 +4479,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const sStr = termToJsString(g.s);
     const oStr = termToJsString(g.o);
     if (sStr === null || oStr === null) return [];
-    return sStr.toLowerCase().includes(oStr.toLowerCase()) ? [{ ...subst }] : [];
+    return sStr.toLowerCase().includes(oStr.toLowerCase()) ? [__cloneSubst(subst)] : [];
   }
 
   // string:endsWith
@@ -4474,7 +4487,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const sStr = termToJsString(g.s);
     const oStr = termToJsString(g.o);
     if (sStr === null || oStr === null) return [];
-    return sStr.endsWith(oStr) ? [{ ...subst }] : [];
+    return sStr.endsWith(oStr) ? [__cloneSubst(subst)] : [];
   }
 
   // string:equalIgnoringCase
@@ -4482,7 +4495,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const sStr = termToJsString(g.s);
     const oStr = termToJsString(g.o);
     if (sStr === null || oStr === null) return [];
-    return sStr.toLowerCase() === oStr.toLowerCase() ? [{ ...subst }] : [];
+    return sStr.toLowerCase() === oStr.toLowerCase() ? [__cloneSubst(subst)] : [];
   }
 
   // string:format
@@ -4502,7 +4515,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
 
     const lit = makeStringLiteral(formatted);
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = lit;
       return [s2];
     }
@@ -4515,7 +4528,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const sStr = termToJsString(g.s);
     const oStr = termToJsString(g.o);
     if (sStr === null || oStr === null) return [];
-    return sStr > oStr ? [{ ...subst }] : [];
+    return sStr > oStr ? [__cloneSubst(subst)] : [];
   }
 
   // string:lessThan
@@ -4523,7 +4536,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const sStr = termToJsString(g.s);
     const oStr = termToJsString(g.o);
     if (sStr === null || oStr === null) return [];
-    return sStr < oStr ? [{ ...subst }] : [];
+    return sStr < oStr ? [__cloneSubst(subst)] : [];
   }
 
   // string:matches
@@ -4533,7 +4546,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     if (sStr === null || pattern === null) return [];
     const re = compileSwapRegex(pattern, '');
     if (!re) return [];
-    return re.test(sStr) ? [{ ...subst }] : [];
+    return re.test(sStr) ? [__cloneSubst(subst)] : [];
   }
 
   // string:notEqualIgnoringCase
@@ -4541,7 +4554,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const sStr = termToJsString(g.s);
     const oStr = termToJsString(g.o);
     if (sStr === null || oStr === null) return [];
-    return sStr.toLowerCase() !== oStr.toLowerCase() ? [{ ...subst }] : [];
+    return sStr.toLowerCase() !== oStr.toLowerCase() ? [__cloneSubst(subst)] : [];
   }
 
   // string:notGreaterThan  (≤ in Unicode code order)
@@ -4549,7 +4562,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const sStr = termToJsString(g.s);
     const oStr = termToJsString(g.o);
     if (sStr === null || oStr === null) return [];
-    return sStr <= oStr ? [{ ...subst }] : [];
+    return sStr <= oStr ? [__cloneSubst(subst)] : [];
   }
 
   // string:notLessThan  (≥ in Unicode code order)
@@ -4557,7 +4570,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const sStr = termToJsString(g.s);
     const oStr = termToJsString(g.o);
     if (sStr === null || oStr === null) return [];
-    return sStr >= oStr ? [{ ...subst }] : [];
+    return sStr >= oStr ? [__cloneSubst(subst)] : [];
   }
 
   // string:notMatches
@@ -4567,7 +4580,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     if (sStr === null || pattern === null) return [];
     const re = compileSwapRegex(pattern, '');
     if (!re) return [];
-    return re.test(sStr) ? [] : [{ ...subst }];
+    return re.test(sStr) ? [] : [__cloneSubst(subst)];
   }
 
   // string:replace
@@ -4585,7 +4598,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const lit = makeStringLiteral(outStr);
 
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = lit;
       return [s2];
     }
@@ -4610,7 +4623,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const lit = makeStringLiteral(group);
 
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = lit;
       return [s2];
     }
@@ -4623,7 +4636,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const sStr = termToJsString(g.s);
     const oStr = termToJsString(g.o);
     if (sStr === null || oStr === null) return [];
-    return sStr.startsWith(oStr) ? [{ ...subst }] : [];
+    return sStr.startsWith(oStr) ? [__cloneSubst(subst)] : [];
   }
 
   // -----------------------------------------------------------------
@@ -4638,7 +4651,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     if (sStr === null) return [];
     const lit = internLiteral(String(sStr.length));
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = lit;
       return [s2];
     }
@@ -4658,7 +4671,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     const ch = idx < 0 || idx >= sStr.length ? '' : sStr.charAt(idx);
     const lit = makeStringLiteral(ch);
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = lit;
       return [s2];
     }
@@ -4681,7 +4694,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     if (idx >= 0 && idx < sStr.length) out = sStr.slice(0, idx) + rep + sStr.slice(idx + 1);
     const lit = makeStringLiteral(out);
     if (g.o instanceof Var) {
-      const s2 = { ...subst };
+      const s2 = __cloneSubst(subst);
       s2[g.o.name] = lit;
       return [s2];
     }
@@ -5885,6 +5898,19 @@ const { deterministicSkolemIdFromKey } = require('./skolem');
 const deref = require('./deref');
 
 const hasOwn = Object.prototype.hasOwnProperty;
+
+function __emptySubst() {
+  return Object.create(null);
+}
+
+function __cloneSubst(subst) {
+  if (!subst) return __emptySubst();
+  const out = Object.create(null);
+  for (const k in subst) {
+    if (hasOwn.call(subst, k)) out[k] = subst[k];
+  }
+  return out;
+}
 
 let version = 'dev';
 try {
@@ -7097,7 +7123,7 @@ function pushFactIndexed(facts, tr) {
 
 function makeDerivedRecord(fact, rule, premises, subst, captureExplanations) {
   if (captureExplanations === false) return { fact };
-  return new DerivedFact(fact, rule, premises.slice(), { ...subst });
+  return new DerivedFact(fact, rule, premises.slice(), __cloneSubst(subst));
 }
 
 function ensureBackRuleIndexes(backRules) {
@@ -7688,7 +7714,7 @@ function unifyTermWithOptions(a, b, subst, opts) {
     const t = b;
     if (t instanceof Var && t.name === v) return subst;
     if (containsVarTerm(t, v)) return null;
-    const s2 = { ...subst };
+    const s2 = __cloneSubst(subst);
     s2[v] = t;
     return s2;
   }
@@ -7878,7 +7904,7 @@ function gcCompactForGoals(subst, goals, answerVars) {
     }
   }
 
-  const out = {};
+  const out = __emptySubst();
   for (const k of Object.keys(subst)) {
     if (keep.has(k)) out[k] = subst[k];
   }
@@ -7941,7 +7967,7 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
   const allowDeferredBuiltins = !!(opts && opts.deferBuiltins);
 
   const initialGoals = Array.isArray(goals) ? goals.slice() : [];
-  const substMut = subst ? { ...subst } : {};
+  const substMut = subst ? __cloneSubst(subst) : {};
   const initialVisited = visited ? visited.slice() : [];
 
   // Variables from the original goal list (needed by the caller to instantiate conclusions)
@@ -8403,7 +8429,7 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
       const builtinMax = Number.isFinite(remaining) && !restGoals.length ? remaining : undefined;
 
       const builtinGoalForEval = goalPredicateIri === LOG_NS + 'rawType' ? rawGoal : goal0;
-      const builtinSubstForEval = goalPredicateIri === LOG_NS + 'rawType' ? substMut : {};
+      const builtinSubstForEval = goalPredicateIri === LOG_NS + 'rawType' ? substMut : __emptySubst();
       let deltas = evalBuiltin(
         builtinGoalForEval,
         builtinSubstForEval,
@@ -8445,7 +8471,7 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
         subjectAndObjectAreFullyUnbound &&
         (!restGoals.length || dc >= goalsNow.length)
       ) {
-        deltas = [{}];
+        deltas = [__emptySubst()];
       }
 
       if (deltas.length) {
@@ -8878,7 +8904,7 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
             const r = entry.rule;
             if (__skipForwardRuleNow(r)) continue;
 
-            const s = unifyTriple(entry.goal, fact, {});
+            const s = unifyTriple(entry.goal, fact, __emptySubst());
             if (s === null) continue;
 
             const outcome = __emitForwardRuleSolution(r, entry.ruleIndex, s);
