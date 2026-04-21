@@ -3686,7 +3686,7 @@ Taken together, these positions support a straightforward attitude toward Eyelin
 
 ## Appendix K — Whitehead-inspired becoming examples
 
-A small family of examples in the repository explores a common idea: that logic can describe not only what **is** the case, but what a thing, system, lineage, or device can **become**. The inspiration is Whiteheadian in a broad sense. The examples do not attempt to formalize Whitehead’s metaphysics as scholarship. Instead, they borrow one guiding intuition from it: reality is often better understood as a structured passage from one state to another than as a mere inventory of static objects.
+A small family of examples in the repository (examples/*-becoming.n3) explores a common idea: that logic can describe not only what **is** the case, but what a thing, system, lineage, or device can **become**. The inspiration is Whiteheadian in a broad sense. The examples do not attempt to formalize Whitehead’s metaphysics as scholarship. Instead, they borrow one guiding intuition from it: reality is often better understood as a structured passage from one state to another than as a mere inventory of static objects.
 
 In N3 terms, this means the examples are written so that rules describe **state-transition potential**. Earlier examples in the handbook often use predicates such as `:can`, `:cannot`, `:supports`, or `:requires`. The becoming family shifts the emphasis toward predicates such as `:canBecome` and `:cannotBecome`, along with intermediate states such as protected dormancy, germination, negative differential response, or adaptive persistence. This is still ordinary Horn-style reasoning. The novelty is not in the engine, but in the modeling style.
 
