@@ -1,0 +1,177 @@
+# ================================================================
+# This small Notation3 program models becoming in a
+# constructor-theoretic idiom. A substrate is described by an
+# attribute. A task specifies a transformation from one attribute
+# to another. A constructor is something that can bring about that
+# task while retaining the capacity to do so again. The program
+# below distinguishes possible from impossible tasks and shows how
+# a sequence of possible tasks yields a new substrate state.
+# ================================================================
+
+@prefix : <http://example.org/constructor#>.
+
+# ----------
+# CATEGORIES
+# ----------
+
+:SubstrateVersion a :Category.
+:Attribute        a :Category.
+:Task             a :Category.
+:Constructor      a :Category.
+:Principle        a :Category.
+
+# ----------
+# ATTRIBUTES
+# ----------
+
+:blankMemory      a :Attribute.
+:encodedMemory    a :Attribute.
+:stabilizedMemory a :Attribute.
+:damagedMemory    a :Attribute.
+:pristineMemory   a :Attribute.
+
+# -----
+# TASKS
+# -----
+
+:writeTask a :Task;
+    :input  :blankMemory;
+    :output :encodedMemory.
+
+:stabilizeTask a :Task;
+    :input  :encodedMemory;
+    :output :stabilizedMemory.
+
+:perfectRestoreTask a :Task;
+    :input  :damagedMemory;
+    :output :pristineMemory;
+    :forbiddenBy :noMiraclePrinciple.
+
+# ------------
+# CONSTRUCTORS
+# ------------
+
+:writer a :Constructor;
+    :canPerform :writeTask.
+
+:stabilizer a :Constructor;
+    :canPerform :stabilizeTask.
+
+# ----------
+# PRINCIPLES
+# ----------
+
+:noMiraclePrinciple a :Principle.
+
+# ---------------
+# INITIAL HISTORY
+# ---------------
+
+:v1 a :SubstrateVersion;
+    :time 1;
+    :hasAttribute :blankMemory.
+
+:v2 a :SubstrateVersion;
+    :time 2;
+    :derivesFrom :v1;
+    :intendsTask :writeTask.
+
+:v3 a :SubstrateVersion;
+    :time 3;
+    :derivesFrom :v2;
+    :intendsTask :stabilizeTask.
+
+:damaged1 a :SubstrateVersion;
+    :time 4;
+    :hasAttribute :damagedMemory.
+
+:vBad a :SubstrateVersion;
+    :time 5;
+    :derivesFrom :damaged1;
+    :intendsTask :perfectRestoreTask.
+
+# ---------------------------------------------
+# RULE 1
+# A TASK FORBIDDEN BY A PRINCIPLE IS IMPOSSIBLE
+# ---------------------------------------------
+
+{
+  ?task :forbiddenBy ?principle.
+}
+=>
+{
+  ?task :status :impossibleTask.
+}.
+
+# --------------------------------------------
+# RULE 2
+# A TASK WITH A CONSTRUCTOR IS A POSSIBLE TASK
+# --------------------------------------------
+
+{
+  ?constructor :canPerform ?task.
+}
+=>
+{
+  ?task :status :possibleTask.
+  ?constructor :retainsCapacityFor ?task.
+}.
+
+# ---------------------------------------------------------------
+# RULE 3
+# A POSSIBLE TASK CAN BE APPLIED WHEN THE INPUT ATTRIBUTE MATCHES
+# ---------------------------------------------------------------
+
+{
+  ?next :derivesFrom ?prev.
+  ?next :intendsTask ?task.
+  ?task :status :possibleTask.
+  ?task :input ?in.
+  ?prev :hasAttribute ?in.
+}
+=>
+{
+  ?next :canUndergo ?task;
+        :becomesFrom ?prev.
+}.
+
+# ---------------------------------------------------------
+# RULE 4
+# WHEN A TASK IS UNDERGONE, THE OUTPUT ATTRIBUTE IS REACHED
+# ---------------------------------------------------------
+
+{
+  ?next :canUndergo ?task.
+  ?task :output ?out.
+}
+=>
+{
+  ?next :hasAttribute ?out.
+}.
+
+# -------------------------------------
+# RULE 5
+# IMPOSSIBLE TASKS BLOCK THE TRANSITION
+# -------------------------------------
+
+{
+  ?next :intendsTask ?task.
+  ?task :status :impossibleTask.
+}
+=>
+{
+  ?next :status :blockedTransition.
+}.
+
+# ---------------------------------------------------------------
+# RULE 6
+# A SUCCESSFUL TRANSFORMATION BECOMES AVAILABLE FOR FURTHER TASKS
+# ---------------------------------------------------------------
+
+{
+  ?next :hasAttribute ?attr.
+}
+=>
+{
+  ?next :availableForFurtherTask :yes.
+}.
