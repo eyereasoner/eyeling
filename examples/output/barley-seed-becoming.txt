@@ -1,0 +1,25 @@
+Barley seed lineage — becoming
+
+Answer
+YES for the viable barley lineage.
+NO for the contrast lineages when digital heredity, repair, protected dormancy, or heritable variation are missing.
+
+Reason Why
+The main lineage can be read as a becoming: a protected dormant seed can germinate, an adult plant can become a next seed stage, and the lineage can therefore become a self-renewing cycle. Because its hereditary information is digitally instantiated and repair is available, it can also become an accurately reproduced next generation under no-design laws. And because heritable variation is present under a matching selection environment, it can become an adaptively persistent lineage. The contrast lineages mark blocked becomings: non-digital heredity blocks accurate copying, lack of repair blocks reliable renewal, lack of dormancy protection blocks closure through the seed phase, and lack of heritable variation blocks adaptive becoming.
+
+Check
+B1  OK - no-design laws are assumed
+B2  OK - the viable genome can become accurately copied
+B3  OK - the viable seed can become a protected dormant phase
+B4  OK - the viable seed can become a germinating stage
+B5  OK - the viable adult can become a next dormant seed stage
+B6  OK - the viable lineage can become an accurately reproduced next generation
+B7  OK - the viable lineage can become a closed life cycle
+B8  OK - the viable lineage can become a novel variant lineage
+B9  OK - the viable lineage can become adaptively persistent
+B10 OK - the viable lineage is an evolvable becoming
+B11 OK - the non-digital lineage cannot become an accurately reproduced next generation
+B12 OK - the repair-deficient lineage cannot become an accurately reproduced next generation
+B13 OK - the coatless lineage cannot become a closed life cycle
+B14 OK - the static lineage cannot become an adaptive lineage
+B15 OK - the static lineage cannot become an evolvable becoming

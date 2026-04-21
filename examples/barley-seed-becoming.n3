@@ -1,0 +1,497 @@
+# ==========================================================================
+# This example reframes the barley-seed example as a logic of becoming.
+# A lineage is treated not as a static object but as a repeatable passage:
+# dormant seed -> germination -> adult plant -> next protected seed.
+#
+# The viable lineage:
+#   mainLine
+#
+# The contrast lineages:
+#   analogLine   - hereditary information is not digitally instantiated
+#   fragileLine  - there is no repair support
+#   coatlessLine - there is no protected dormant stage
+#   staticLine   - there is no heritable variation
+#
+# The point is to show both:
+#   - what a viable barley lineage can become
+#   - what a contrast lineage cannot become when key ingredients are missing
+# ==========================================================================
+
+@prefix : <http://example.org/barley-seed-becoming/> .
+@prefix arc: <https://example.org/arc#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+:case a arc:Case ;
+  arc:question "Can a barley seed lineage become a self-renewing and adaptively persistent cycle under no-design laws — and what blocks that becoming when digital heredity, repair, protected dormancy, or variation are missing?" .
+
+# ------------------------
+# Shared world assumptions
+# ------------------------
+
+:world :obeys :NoDesignLaws .
+:zygote a :DevelopmentalBottleneck .
+
+:dnaRegister a :DigitalInformationMedium .
+:analogRegister a :NonDigitalInformationMedium .
+
+:greenhouse a :GrowthEnvironment ;
+  :condition :WarmthAvailable ;
+  :condition :MoistureAvailable ;
+  :condition :LightAvailable .
+
+:nutrientBed a :RawMaterialSupply .
+:pollinationLoop a :ReproductionSupport .
+:salineBench a :SelectionEnvironment ;
+  :favours :SaltTolerant .
+
+# ---------------------
+# 1. The viable lineage
+# ---------------------
+
+:mainGenome a :Replicator ;
+  :accuracy :High ;
+  :storedIn :dnaRegister ;
+  :variant :SaltTolerant .
+
+:mainRepair a :RepairVehicle .
+
+:mainEmbryoVehicle a :Vehicle ;
+  :function :Metabolism ;
+  :function :Development ;
+  :function :CopyingSupport ;
+  :function :CompartmentControl ;
+  :usesRepair :mainRepair .
+
+:mainAdultVehicle a :Vehicle ;
+  :function :Metabolism ;
+  :function :Development ;
+  :function :GameteProduction ;
+  :function :SeedConstruction .
+
+:mainSeedCoat a :Compartment ;
+  :function :DormancyProtection .
+
+:mainSeed a :Organism ;
+  :lifeStage :DormantSeed ;
+  :hasReplicator :mainGenome ;
+  :hasVehicle :mainEmbryoVehicle ;
+  :hasCompartment :mainSeedCoat .
+
+:mainAdult a :Organism ;
+  :lifeStage :AdultPlant ;
+  :hasReplicator :mainGenome ;
+  :hasVehicle :mainAdultVehicle .
+
+:mainLine a :Lineage ;
+  :seedStage :mainSeed ;
+  :adultStage :mainAdult ;
+  :replicator :mainGenome ;
+  :variant :SaltTolerant ;
+  :variationStatus :Present .
+
+# ----------------------------------------------
+# 2. Contrast lineages used for blocked becoming
+# ----------------------------------------------
+
+:analogGenome a :Replicator ;
+  :accuracy :High ;
+  :storedIn :analogRegister ;
+  :variant :SaltTolerant .
+
+:analogRepair a :RepairVehicle .
+
+:analogEmbryoVehicle a :Vehicle ;
+  :function :Metabolism ;
+  :function :Development ;
+  :function :CopyingSupport ;
+  :usesRepair :analogRepair .
+
+:analogAdultVehicle a :Vehicle ;
+  :function :Metabolism ;
+  :function :Development ;
+  :function :GameteProduction ;
+  :function :SeedConstruction .
+
+:analogSeedCoat a :Compartment ;
+  :function :DormancyProtection .
+
+:analogSeed a :Organism ;
+  :lifeStage :DormantSeed ;
+  :hasReplicator :analogGenome ;
+  :hasVehicle :analogEmbryoVehicle ;
+  :hasCompartment :analogSeedCoat .
+
+:analogAdult a :Organism ;
+  :lifeStage :AdultPlant ;
+  :hasReplicator :analogGenome ;
+  :hasVehicle :analogAdultVehicle .
+
+:analogLine a :Lineage ;
+  :seedStage :analogSeed ;
+  :adultStage :analogAdult ;
+  :replicator :analogGenome ;
+  :variant :SaltTolerant ;
+  :variationStatus :Present .
+
+:fragileGenome a :Replicator ;
+  :accuracy :High ;
+  :storedIn :dnaRegister ;
+  :variant :SaltTolerant .
+
+:fragileEmbryoVehicle a :Vehicle ;
+  :function :Metabolism ;
+  :function :Development ;
+  :function :CopyingSupport .
+
+:fragileAdultVehicle a :Vehicle ;
+  :function :Metabolism ;
+  :function :Development ;
+  :function :GameteProduction ;
+  :function :SeedConstruction .
+
+:fragileSeedCoat a :Compartment ;
+  :function :DormancyProtection .
+
+:fragileSeed a :Organism ;
+  :lifeStage :DormantSeed ;
+  :hasReplicator :fragileGenome ;
+  :hasVehicle :fragileEmbryoVehicle ;
+  :hasCompartment :fragileSeedCoat .
+
+:fragileAdult a :Organism ;
+  :lifeStage :AdultPlant ;
+  :hasReplicator :fragileGenome ;
+  :hasVehicle :fragileAdultVehicle .
+
+:fragileLine a :Lineage ;
+  :seedStage :fragileSeed ;
+  :adultStage :fragileAdult ;
+  :replicator :fragileGenome ;
+  :variant :SaltTolerant ;
+  :variationStatus :Present ;
+  :lacksRepair true .
+
+:coatlessGenome a :Replicator ;
+  :accuracy :High ;
+  :storedIn :dnaRegister ;
+  :variant :SaltTolerant .
+
+:coatlessRepair a :RepairVehicle .
+
+:coatlessEmbryoVehicle a :Vehicle ;
+  :function :Metabolism ;
+  :function :Development ;
+  :function :CopyingSupport ;
+  :usesRepair :coatlessRepair .
+
+:coatlessAdultVehicle a :Vehicle ;
+  :function :Metabolism ;
+  :function :Development ;
+  :function :GameteProduction ;
+  :function :SeedConstruction .
+
+:coatlessSeed a :Organism ;
+  :lifeStage :DormantSeed ;
+  :hasReplicator :coatlessGenome ;
+  :hasVehicle :coatlessEmbryoVehicle .
+
+:coatlessAdult a :Organism ;
+  :lifeStage :AdultPlant ;
+  :hasReplicator :coatlessGenome ;
+  :hasVehicle :coatlessAdultVehicle .
+
+:coatlessLine a :Lineage ;
+  :seedStage :coatlessSeed ;
+  :adultStage :coatlessAdult ;
+  :replicator :coatlessGenome ;
+  :variant :SaltTolerant ;
+  :variationStatus :Present ;
+  :lacksDormancyProtection true .
+
+:staticGenome a :Replicator ;
+  :accuracy :High ;
+  :storedIn :dnaRegister ;
+  :variant :SaltTolerant .
+
+:staticRepair a :RepairVehicle .
+
+:staticEmbryoVehicle a :Vehicle ;
+  :function :Metabolism ;
+  :function :Development ;
+  :function :CopyingSupport ;
+  :usesRepair :staticRepair .
+
+:staticAdultVehicle a :Vehicle ;
+  :function :Metabolism ;
+  :function :Development ;
+  :function :GameteProduction ;
+  :function :SeedConstruction .
+
+:staticSeedCoat a :Compartment ;
+  :function :DormancyProtection .
+
+:staticSeed a :Organism ;
+  :lifeStage :DormantSeed ;
+  :hasReplicator :staticGenome ;
+  :hasVehicle :staticEmbryoVehicle ;
+  :hasCompartment :staticSeedCoat .
+
+:staticAdult a :Organism ;
+  :lifeStage :AdultPlant ;
+  :hasReplicator :staticGenome ;
+  :hasVehicle :staticAdultVehicle .
+
+:staticLine a :Lineage ;
+  :seedStage :staticSeed ;
+  :adultStage :staticAdult ;
+  :replicator :staticGenome ;
+  :variant :SaltTolerant ;
+  :variationStatus :None .
+
+# --------------------------------------------
+# 3. CAN-BECOME rules — viable transformations
+# --------------------------------------------
+
+# Under no-design laws, digital hereditary information can be copied accurately.
+{ :world :obeys :NoDesignLaws .
+  ?Genome a :Replicator ;
+          :storedIn ?Medium .
+  ?Medium a :DigitalInformationMedium . }
+=>
+{ ?Genome :canBecome :AccuratelyCopiedGenome . } .
+
+# A protected seed can remain a protected dormant stage.
+{ ?Seed a :Organism ;
+        :lifeStage :DormantSeed ;
+        :hasCompartment ?Compartment .
+  ?Compartment :function :DormancyProtection . }
+=>
+{ ?Seed :canBecome :ProtectedDormantPhase . } .
+
+# A dormant seed can become a germinating stage when conditions are present.
+{ ?Seed a :Organism ;
+        :lifeStage :DormantSeed .
+  :greenhouse :condition :WarmthAvailable .
+  :greenhouse :condition :MoistureAvailable .
+  :nutrientBed a :RawMaterialSupply . }
+=>
+{ ?Seed :canBecome :GerminatingStage . } .
+
+# An adult plant can become a next protected seed stage when reproductive
+# vehicle functions and supports are present.
+{ ?Adult a :Organism ;
+         :lifeStage :AdultPlant ;
+         :hasVehicle ?Vehicle .
+  ?Vehicle :function :GameteProduction .
+  ?Vehicle :function :SeedConstruction .
+  :pollinationLoop a :ReproductionSupport .
+  :greenhouse :condition :LightAvailable . }
+=>
+{ ?Adult :canBecome :NextDormantSeedStage . } .
+
+# Accurate lineage renewal requires accurate copying, repair, and a bottleneck.
+{ ?Line a :Lineage ;
+        :seedStage ?Seed ;
+        :replicator ?Genome .
+  ?Genome :canBecome :AccuratelyCopiedGenome .
+  ?Seed :hasVehicle ?Vehicle .
+  ?Vehicle :usesRepair ?Repair .
+  ?Repair a :RepairVehicle .
+  :zygote a :DevelopmentalBottleneck . }
+=>
+{ ?Line :canBecome :AccuratelyReproducedNextGeneration . } .
+
+# A lineage closes as a becoming when it can pass through protected dormancy,
+# germination, and return to a next seed stage.
+{ ?Line a :Lineage ;
+        :seedStage ?Seed ;
+        :adultStage ?Adult .
+  ?Seed :canBecome :ProtectedDormantPhase .
+  ?Seed :canBecome :GerminatingStage .
+  ?Adult :canBecome :NextDormantSeedStage . }
+=>
+{ ?Line :canBecome :LifeCycleClosure . } .
+
+# Heritable variation enables becoming otherwise.
+{ ?Line a :Lineage ;
+        :variationStatus :Present . }
+=>
+{ ?Line :canBecome :NovelVariantLineage . } .
+
+# Adaptive persistence is a becoming that joins renewal, variation, and selection.
+{ ?Line a :Lineage ;
+        :variant ?Variant .
+  ?Line :canBecome :AccuratelyReproducedNextGeneration .
+  ?Line :canBecome :NovelVariantLineage .
+  :salineBench :favours ?Variant . }
+=>
+{ ?Line :canBecome :AdaptivelyPersistentLineage . } .
+
+# A lineage is an evolvable becoming when it can close and persist adaptively.
+{ ?Line :canBecome :LifeCycleClosure .
+  ?Line :canBecome :AdaptivelyPersistentLineage . }
+=>
+{ ?Line a :EvolvableBecoming . } .
+
+# ------------------------------------------------
+# 4. CANNOT-BECOME rules — blocked transformations
+# ------------------------------------------------
+
+# Non-digital heredity cannot become accurate copying under no-design laws.
+{ :world :obeys :NoDesignLaws .
+  ?Genome a :Replicator ;
+          :storedIn ?Medium .
+  ?Medium a :NonDigitalInformationMedium . }
+=>
+{ ?Genome :cannotBecome :AccuratelyCopiedGenome . } .
+
+# If the genome cannot become accurately copied, the lineage cannot become an
+# accurately reproduced next generation.
+{ ?Line :replicator ?Genome .
+  ?Genome :cannotBecome :AccuratelyCopiedGenome . }
+=>
+{ ?Line :cannotBecome :AccuratelyReproducedNextGeneration . } .
+
+# No repair blocks reliable correction.
+{ ?Line a :Lineage ;
+        :lacksRepair true . }
+=>
+{ ?Line :cannotBecome :ReliablyCorrectedLineage . } .
+
+# Without reliable correction, accurate renewal is blocked.
+{ ?Line :cannotBecome :ReliablyCorrectedLineage . }
+=>
+{ ?Line :cannotBecome :AccuratelyReproducedNextGeneration . } .
+
+# No protective compartment blocks protected dormancy.
+{ ?Line a :Lineage ;
+        :lacksDormancyProtection true . }
+=>
+{ ?Line :cannotBecome :ProtectedDormantPhase . } .
+
+# If protected dormancy is blocked, life-cycle closure is blocked.
+{ ?Line :cannotBecome :ProtectedDormantPhase . }
+=>
+{ ?Line :cannotBecome :LifeCycleClosure . } .
+
+# No heritable variation blocks adaptive becoming.
+{ ?Line a :Lineage ;
+        :variationStatus :None . }
+=>
+{ ?Line :cannotBecome :AdaptiveLineage . } .
+
+# If adaptive becoming is blocked, adaptive persistence is blocked.
+{ ?Line :cannotBecome :AdaptiveLineage . }
+=>
+{ ?Line :cannotBecome :AdaptivelyPersistentLineage . } .
+
+# If any major becoming is blocked, the lineage is not an evolvable becoming.
+{ ?Line :cannotBecome :AccuratelyReproducedNextGeneration . }
+=>
+{ ?Line :cannotBecome :EvolvableBecoming . } .
+
+{ ?Line :cannotBecome :AdaptivelyPersistentLineage . }
+=>
+{ ?Line :cannotBecome :EvolvableBecoming . } .
+
+{ ?Line :cannotBecome :LifeCycleClosure . }
+=>
+{ ?Line :cannotBecome :EvolvableBecoming . } .
+
+# ---------
+# 5. Checks
+# ---------
+
+{ :world :obeys :NoDesignLaws . }
+=> { :case :checkB1 :Passed . } .
+
+{ :mainGenome :canBecome :AccuratelyCopiedGenome . }
+=> { :case :checkB2 :Passed . } .
+
+{ :mainSeed :canBecome :ProtectedDormantPhase . }
+=> { :case :checkB3 :Passed . } .
+
+{ :mainSeed :canBecome :GerminatingStage . }
+=> { :case :checkB4 :Passed . } .
+
+{ :mainAdult :canBecome :NextDormantSeedStage . }
+=> { :case :checkB5 :Passed . } .
+
+{ :mainLine :canBecome :AccuratelyReproducedNextGeneration . }
+=> { :case :checkB6 :Passed . } .
+
+{ :mainLine :canBecome :LifeCycleClosure . }
+=> { :case :checkB7 :Passed . } .
+
+{ :mainLine :canBecome :NovelVariantLineage . }
+=> { :case :checkB8 :Passed . } .
+
+{ :mainLine :canBecome :AdaptivelyPersistentLineage . }
+=> { :case :checkB9 :Passed . } .
+
+{ :mainLine a :EvolvableBecoming . }
+=> { :case :checkB10 :Passed . } .
+
+{ :analogLine :cannotBecome :AccuratelyReproducedNextGeneration . }
+=> { :case :checkB11 :Passed . } .
+
+{ :fragileLine :cannotBecome :AccuratelyReproducedNextGeneration . }
+=> { :case :checkB12 :Passed . } .
+
+{ :coatlessLine :cannotBecome :LifeCycleClosure . }
+=> { :case :checkB13 :Passed . } .
+
+{ :staticLine :cannotBecome :AdaptiveLineage . }
+=> { :case :checkB14 :Passed . } .
+
+{ :staticLine :cannotBecome :EvolvableBecoming . }
+=> { :case :checkB15 :Passed . } .
+
+# -------------------
+# 6. ARC-style output
+# -------------------
+
+{ :case :checkB1 :Passed .
+  :case :checkB2 :Passed .
+  :case :checkB3 :Passed .
+  :case :checkB4 :Passed .
+  :case :checkB5 :Passed .
+  :case :checkB6 :Passed .
+  :case :checkB7 :Passed .
+  :case :checkB8 :Passed .
+  :case :checkB9 :Passed .
+  :case :checkB10 :Passed .
+  :case :checkB11 :Passed .
+  :case :checkB12 :Passed .
+  :case :checkB13 :Passed .
+  :case :checkB14 :Passed .
+  :case :checkB15 :Passed . }
+=>
+{
+  :out log:outputString """Barley seed lineage — becoming
+
+Answer
+YES for the viable barley lineage.
+NO for the contrast lineages when digital heredity, repair, protected dormancy, or heritable variation are missing.
+
+Reason Why
+The main lineage can be read as a becoming: a protected dormant seed can germinate, an adult plant can become a next seed stage, and the lineage can therefore become a self-renewing cycle. Because its hereditary information is digitally instantiated and repair is available, it can also become an accurately reproduced next generation under no-design laws. And because heritable variation is present under a matching selection environment, it can become an adaptively persistent lineage. The contrast lineages mark blocked becomings: non-digital heredity blocks accurate copying, lack of repair blocks reliable renewal, lack of dormancy protection blocks closure through the seed phase, and lack of heritable variation blocks adaptive becoming.
+
+Check
+B1  OK - no-design laws are assumed
+B2  OK - the viable genome can become accurately copied
+B3  OK - the viable seed can become a protected dormant phase
+B4  OK - the viable seed can become a germinating stage
+B5  OK - the viable adult can become a next dormant seed stage
+B6  OK - the viable lineage can become an accurately reproduced next generation
+B7  OK - the viable lineage can become a closed life cycle
+B8  OK - the viable lineage can become a novel variant lineage
+B9  OK - the viable lineage can become adaptively persistent
+B10 OK - the viable lineage is an evolvable becoming
+B11 OK - the non-digital lineage cannot become an accurately reproduced next generation
+B12 OK - the repair-deficient lineage cannot become an accurately reproduced next generation
+B13 OK - the coatless lineage cannot become a closed life cycle
+B14 OK - the static lineage cannot become an adaptive lineage
+B15 OK - the static lineage cannot become an evolvable becoming
+""" .
+} .
