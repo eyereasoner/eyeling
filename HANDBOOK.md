@@ -3682,7 +3682,6 @@ Gödel incompleteness is fine because the limits of formal systems are not a ref
 
 Taken together, these positions support a straightforward attitude toward Eyeling. Horn logic is fine. Notation3 is fine. Executable specification is fine. Herbrand semantics is fine. Gödel incompleteness is fine. None of these commitments make the reasoner narrower in a harmful sense. They make it clearer, easier to inspect, and easier to trust. For this project, that is enough.
 
-
 <a id="app-k"></a>
 
 ## Appendix K — Whitehead-inspired becoming examples
