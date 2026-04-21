@@ -7605,6 +7605,22 @@ function unifyOpenWithList(prefix, tailv, ys, subst) {
   return s2;
 }
 
+
+function graphTriplesContainVars(triples) {
+  function termHasVar(t) {
+    if (t instanceof Var) return true;
+    if (t instanceof ListTerm) return t.elems.some(termHasVar);
+    if (t instanceof OpenListTerm) return t.prefix.some(termHasVar) || true;
+    if (t instanceof GraphTerm) return t.triples.some((tr) => termHasVar(tr.s) || termHasVar(tr.p) || termHasVar(tr.o));
+    return false;
+  }
+
+  for (const tr of triples) {
+    if (termHasVar(tr.s) || termHasVar(tr.p) || termHasVar(tr.o)) return true;
+  }
+  return false;
+}
+
 function unifyGraphTriples(xs, ys, subst) {
   if (xs.length !== ys.length) return null;
 
@@ -7766,17 +7782,22 @@ function unifyTermWithOptions(a, b, subst, opts) {
 
   // Graphs
   if (a instanceof GraphTerm && b instanceof GraphTerm) {
-    const protectedNamesA = collectProtectedNamesForTerm(aRaw, subst);
-    const protectedNamesB = collectProtectedNamesForTerm(bRaw, subst);
-    if (
-      alphaEqGraphTriples(a.triples, b.triples, {
-        protectedVarsA: protectedNamesA.protectedVars,
-        protectedVarsB: protectedNamesB.protectedVars,
-        protectedBlanksA: protectedNamesA.protectedBlanks,
-        protectedBlanksB: protectedNamesB.protectedBlanks,
-      })
-    ) {
-      return subst;
+    // Only use alpha-equivalence as a binding-free fast path when both quoted
+    // formulas are variable-free after substitution. If unbound variables remain,
+    // they may be shared with the outer rule and must unify/bind structurally.
+    if (!graphTriplesContainVars(a.triples) && !graphTriplesContainVars(b.triples)) {
+      const protectedNamesA = collectProtectedNamesForTerm(aRaw, subst);
+      const protectedNamesB = collectProtectedNamesForTerm(bRaw, subst);
+      if (
+        alphaEqGraphTriples(a.triples, b.triples, {
+          protectedVarsA: protectedNamesA.protectedVars,
+          protectedVarsB: protectedNamesB.protectedVars,
+          protectedBlanksA: protectedNamesA.protectedBlanks,
+          protectedBlanksB: protectedNamesB.protectedBlanks,
+        })
+      ) {
+        return subst;
+      }
     }
     return unifyGraphTriples(a.triples, b.triples, subst);
   }
@@ -8157,17 +8178,22 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
 
     // Graphs
     if (a instanceof GraphTerm && b instanceof GraphTerm) {
-      const protectedNamesA = collectProtectedNamesForTerm(aRaw, substMut);
-      const protectedNamesB = collectProtectedNamesForTerm(bRaw, substMut);
-      if (
-        alphaEqGraphTriples(a.triples, b.triples, {
-          protectedVarsA: protectedNamesA.protectedVars,
-          protectedVarsB: protectedNamesB.protectedVars,
-          protectedBlanksA: protectedNamesA.protectedBlanks,
-          protectedBlanksB: protectedNamesB.protectedBlanks,
-        })
-      ) {
-        return true;
+      // Only use alpha-equivalence as a binding-free fast path when both quoted
+      // formulas are variable-free after substitution. If unbound variables remain,
+      // they may be shared with the outer rule and must unify/bind structurally.
+      if (!graphTriplesContainVars(a.triples) && !graphTriplesContainVars(b.triples)) {
+        const protectedNamesA = collectProtectedNamesForTerm(aRaw, substMut);
+        const protectedNamesB = collectProtectedNamesForTerm(bRaw, substMut);
+        if (
+          alphaEqGraphTriples(a.triples, b.triples, {
+            protectedVarsA: protectedNamesA.protectedVars,
+            protectedVarsB: protectedNamesB.protectedVars,
+            protectedBlanksA: protectedNamesA.protectedBlanks,
+            protectedBlanksB: protectedNamesB.protectedBlanks,
+          })
+        ) {
+          return true;
+        }
       }
       const merged = unifyGraphTriples(a.triples, b.triples, substMut);
       if (merged === null) return false;
@@ -13004,7 +13030,8 @@ function liftBlankRuleVars(premise, conclusion) {
     if (t instanceof OpenListTerm) return new OpenListTerm(t.prefix.map(convertQuotedPatternTerm), t.tailVar);
     if (t instanceof GraphTerm) {
       const triples = t.triples.map(
-        (tr) => new Triple(convertQuotedPatternTerm(tr.s), convertQuotedPatternTerm(tr.p), convertQuotedPatternTerm(tr.o)),
+        (tr) =>
+          new Triple(convertQuotedPatternTerm(tr.s), convertQuotedPatternTerm(tr.p), convertQuotedPatternTerm(tr.o)),
       );
       return copyQuotedGraphMetadata(t, new GraphTerm(triples));
     }
@@ -13014,13 +13041,17 @@ function liftBlankRuleVars(premise, conclusion) {
   function convertTerm(t, allowDirectQuotedPattern = false) {
     if (t instanceof Blank) return blankToVar(t.label);
     if (t instanceof ListTerm) return new ListTerm(t.elems.map((e) => convertTerm(e, false)));
-    if (t instanceof OpenListTerm) return new OpenListTerm(t.prefix.map((e) => convertTerm(e, false)), t.tailVar);
+    if (t instanceof OpenListTerm)
+      return new OpenListTerm(
+        t.prefix.map((e) => convertTerm(e, false)),
+        t.tailVar,
+      );
     if (t instanceof GraphTerm) return allowDirectQuotedPattern ? convertQuotedPatternTerm(t) : copyQuotedTerm(t);
     return t;
   }
 
-  const newPremise = premise.map((tr) =>
-    new Triple(convertTerm(tr.s, true), convertTerm(tr.p, true), convertTerm(tr.o, true)),
+  const newPremise = premise.map(
+    (tr) => new Triple(convertTerm(tr.s, true), convertTerm(tr.p, true), convertTerm(tr.o, true)),
   );
   return [newPremise, conclusion];
 }

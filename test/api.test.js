@@ -2282,6 +2282,34 @@ _:b a ex:Person ; ex:name "B" .
     expect: [/^:test\s+:is\s+true\s*\./m],
   },
   {
+    name: 'regression: quoted-formula backward-rule heads must bind shared variables for later goals',
+    opt: { proofComments: false },
+    input: `@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+{ :a :b :c } a :Statement .
+
+{ ?A :has { ?S ?P ?O } }
+<=
+{
+  ?A log:includes { ?S ?P ?O }.
+}.
+
+{
+  ?A a :Statement .
+  ?A :has { ?S ?P ?O }.
+  ?S log:rawType log:Other.
+  ?P log:rawType log:Other.
+  ?O log:rawType log:Other.
+}
+=>
+{
+  :test :is true .
+}.
+`,
+    expect: [/^:test\s+:is\s+true\s*\./m],
+  },
+  {
     name: 'regression: log:semantics body alpha-renaming does not refire blank-head rule forever',
     async run() {
       const os = require('node:os');

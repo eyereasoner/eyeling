@@ -436,6 +436,8 @@ Important scope nuance: only blanks/variables that are local to the quoted formu
 
 So `{ _:x :p :o }` obtained by substituting `?A = _:x` into `{ ?A :p :o }` must not alpha-match `{ _:b :p :o }` by renaming `_:x` to `_:b`.
 
+A related operational detail matters for rule execution: alpha-equivalence is only a **binding-free shortcut** when both quoted formulas are variable-free after substitution. If unbound variables still remain inside the formulas, Eyeling must fall back to structural quoted-formula unification so shared outer rule variables can actually bind. Otherwise a premise such as `?A :has { ?S ?P ?O }` could appear to match while leaving `?S ?P ?O` unbound for later goals.
+
 ### 6.2 Groundness: “variables inside formulas do not leak”
 
 Eyeling makes a deliberate choice about _groundness_:
