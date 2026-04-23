@@ -2633,76 +2633,67 @@ In that sense, N3 is less a bid to make the web “smarter” than a bid to make
 
 ## Appendix C — Why N3 fits the Eyeling examples
 
-The Eyeling examples do more than store data.
+The Eyeling examples combine several things at once. They contain facts about a situation, rules that derive new facts, checks that make the result testable, and an answer that can be shown to a human. That combination matters. It means that Eyeling is not only a data exercise and not only a logic exercise. It needs a notation in which data and rules can remain together.
 
-Each example combines several things:
+This raises a practical question: which language fits these examples best?
 
-* facts about a situation
-* rules that derive new facts
-* checks that make the result testable
-* an answer that can be shown to a human
+SQL is a natural candidate when the main task is storing data and querying it. Prolog is a natural candidate when the main task is writing rules and deriving consequences from facts. N3 is interesting because it tries to keep those two sides together. The point of this appendix is not to rank SQL, Prolog, and N3 in general. The point is to explain why N3 works especially well for Eyeling-style examples.
 
-That combination matters. It means that Eyeling is not only a data exercise and not only a logic exercise. It needs a notation in which data and rules can live together.
+### What the examples need
 
-This raises a practical question: **which language fits these examples best?**
+A typical Eyeling example is not just a small dataset. It is also not just a set of inference rules. It is a compact artifact in which several layers belong together.
 
-SQL is the obvious candidate if the focus is data and querying.
-Prolog is the obvious candidate if the focus is rules and inference.
-N3 is interesting because it tries to cover both.
+There is usually a description of a situation: products, airports, organisms, policies, signatures, dates, or other entities. There are rules that derive new facts from those inputs. There are explicit checks that say whether the intended conclusions hold. And there is often a final answer or explanation that is part of the example itself.
 
-This appendix compares those three options in the specific context of Eyeling. The question is not which language is best in general. The question is: **which language best fits examples that combine data, rules, checks, and explanations in a single artifact?**
+This is the real design problem. If the language handles only one of these layers well, then the example has to be split up. The data ends up in one notation, the rules in another, the checks somewhere else, and the final answer in yet another place. Once that happens, the example becomes harder to read and harder to maintain.
 
-Our conclusion is that N3 fits these examples unusually well. SQL separates data from rule logic. Prolog handles rules well, but it does not naturally carry RDF-style linked data, quoted graphs, and web identifiers in the same way. N3 sits between them. It keeps the graph-shaped data model of RDF, adds rules and builtins, and allows the examples to stay in one representation from input to answer.
+### What SQL contributes
 
----
+SQL is strong when the main task is structured data and queries over that data. It is excellent for tables, filtering, aggregation, joins, and efficient execution. When an Eyeling example is translated into DuckDB, SQL can do a surprising amount. Recursive queries can express route search. Views can express derived facts. Checks can be written as boolean queries. Output can be assembled from query results.
 
-Then I would make the rest very plain and linear, for example:
+That is useful, and it shows that the examples can be operationalized in a relational setting.
 
-## 1. What Eyeling examples need
+However, SQL is not the original shape of these examples. To get there, the graph-like source has to be mapped into tables, and the rule logic has to be reconstructed with joins, common table expressions, macros, and views. The result can work well, but the conceptual structure becomes more indirect. Data and reasoning are still connected, but they are no longer expressed in the same native form.
 
-The Eyeling examples are not simple databases. They are also not pure theorem-proving exercises.
+In other words, SQL is a good execution target, but it is not always the clearest authoring language for this kind of material.
 
-A typical example contains:
+### What Prolog contributes
 
-* entities and relations
-* inference rules
-* negative conditions or constraints
-* explicit checks
-* rendered output
+Prolog is strong when the main task is expressing facts and rules directly. An Eyeling example often looks much closer to Prolog than to SQL once the focus shifts to derivation. Facts become predicates. Rules become clauses. Recursive reasoning becomes natural. This makes Prolog a very good target when the aim is to express the logical behavior of an example clearly.
 
-This matters because a language that is good at only one of these tasks will force the example to be split across several layers.
+That is why Prolog translations of Eyeling examples often feel much cleaner than SQL translations. The rule layer fits naturally.
 
-## 2. What SQL does well and where it becomes awkward
+However, Prolog is not primarily a graph data notation. Eyeling examples often use a linked-data style in which named entities and relations remain visible as part of the knowledge representation. In Prolog this can certainly be modeled, but it is usually represented as application-specific predicates rather than as a graph-native notation. That means the rule side is natural, while the original data style becomes less central.
 
-SQL is strong when the main task is storing structured data and querying it efficiently.
+So Prolog captures the inference well, but it does not preserve the same linked-data feel as naturally as N3 does.
 
-In Eyeling, SQL works well once the data has already been mapped into tables. Recursive queries can also express part of the reasoning. We saw this in the DuckDB translations.
+### Why N3 fits these examples well
 
-However, SQL does not naturally treat the rules as first-class knowledge in the same way. The graph structure has to be flattened into tables, and the reasoning has to be reconstructed with joins, recursion, and views. The result can work, but the original shape of the example becomes less visible.
+N3 fits Eyeling well because it keeps the data model and the rule model close together.
 
-## 3. What Prolog does well and where it becomes awkward
+The facts remain graph-shaped. Entities and relations can be written directly. Rules can be added in the same notation. Checks can be expressed next to the derivations they depend on. Even the final answer can remain part of the same artifact. This allows an example to stay compact from beginning to end.
 
-Prolog is strong when the main task is expressing rules and deriving consequences from facts.
+That compactness is important. It means the reader can inspect one example and see the situation, the derivation, the checks, and the answer without mentally switching between several different layers of representation.
 
-That makes Prolog a natural target for Eyeling examples. Facts and rules map directly, and recursive reasoning is natural.
+This is the main reason N3 feels like a sweet spot in Eyeling. Compared with SQL, it avoids the split between graph-shaped knowledge and relational encoding. Compared with Prolog, it avoids the split between logic programming and linked-data representation. It keeps both sides close enough that the whole example can stay in one place.
 
-However, Eyeling examples are also linked-data style artifacts. They use graph-shaped data, named relations, and often a structure that is closer to RDF than to classic Prolog databases. In practice, this means that Prolog handles the rule side well, but the data representation is less native.
+### Where this matters in practice
 
-## 4. Why N3 fits these examples well
+This matters most in examples where the structure of the knowledge is part of the point.
 
-N3 keeps the graph-shaped data model and adds rules, variables, implication, and builtins.
+In the path-discovery example, the facts describe airports and routes, and the rule describes how a connection can be found through a bounded number of stopovers. In SQL, this becomes a recursive query over tables. In Prolog, it becomes a recursive predicate over facts. In N3, the graph and the rule remain in one notation.
 
-That is a good match for Eyeling. The facts remain in one graph-oriented notation. The rules stay next to the facts. Checks and rendered answers can also be expressed in the same environment.
+In the barley-seed-becoming example, the facts describe stages, transitions, and constraints, and the rules determine what can and cannot become something else. In SQL and Prolog, this can be translated, but N3 preserves the original structure more directly.
 
-This is why N3 feels like a good fit here. It avoids the SQL split between data and rules, and it avoids the Prolog split between logic and RDF-style graph representation.
+In the delfour example, the same pattern becomes even clearer. The example combines facts about products and household needs, rules about authorization and recommendation, checks over the derived conclusions, and a final human-readable answer. That kind of example is exactly where a language that keeps data, rules, checks, and answers together becomes valuable.
 
-## 5. Conclusion
+### Conclusion
 
-The value of N3 in Eyeling is not that it is magically better than SQL or Prolog in all cases.
+N3 is not the best language for every task. SQL is stronger as a database query language. Prolog is stronger as a pure rule language. But the Eyeling examples are not only database exercises and not only rule exercises.
 
-Its value is narrower and more practical. It fits examples in which data, rules, checks, and answers should remain together in one artifact.
+They are compact knowledge artifacts in which facts, rules, checks, and answers belong together.
 
-That is exactly the shape of many Eyeling examples. For that reason, N3 is not just an implementation choice. It is part of why the examples stay compact and readable.
+That is why N3 fits them so well. It is not because N3 wins an abstract language competition. It is because these examples need a form in which data and reasoning can remain unified. For Eyeling, that is exactly what N3 provides.
 
 ---
 
