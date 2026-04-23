@@ -27,7 +27,7 @@
 - [Epilogue](#epilogue)
 - [Appendix A — Eyeling user notes](#app-a)
 - [Appendix B — Notation3: when facts can carry their own logic](#app-b)
-- [Appendix C — N3 beyond Prolog: logic that survives the open web](#app-c)
+- [Appendix C — N3 as the Sweet Spot between SQL and Prolog](#app-c)
 - [Appendix D — LLM + Eyeling: A Repeatable Logic Toolchain](#app-d)
 - [Appendix E — How Eyeling reaches 100% on `notation3tests`](#app-e)
 - [Appendix F — The ARC approach: Answer • Reason Why • Check](#app-f)
@@ -2631,23 +2631,80 @@ In that sense, N3 is less a bid to make the web “smarter” than a bid to make
 
 <a id="app-c"></a>
 
-## Appendix C — N3 beyond Prolog: logic that survives the open web
+## Appendix C — N3 as the Sweet Spot between SQL and Prolog
 
-Notation3 and Prolog resemble each other at first glance. Both use variables, unification, and implication-shaped rules. Both can be used to derive consequences from a set of premises. But they were shaped for different native environments. Prolog was designed around executing logic programs. N3 was designed around expressing logic in the same world as RDF: a world of IRIs, triples, graphs, linked documents, and shared vocabularies. That difference in native setting gives N3 a wider built-in reach for web-scale knowledge work.
+Notation3 is easiest to understand when it is compared not only with Prolog, but also with SQL.
+That three-way comparison helps explain why N3 can feel like a sweet spot in the Eyeling examples.
+SQL is excellent when the world already fits stable tables and the task is to retrieve, aggregate, or recursively traverse that structured data.
+Prolog is excellent when the main problem is executable logic over symbolic terms and clauses.
+N3 sits in the middle of a different triangle: it keeps RDF’s graph-shaped data model, adds rules and quoted graphs, and still lets the derived result remain in the same representation.
+That matters in Eyeling because the artifacts are not only queries or only programs.
+They are small, inspectable bundles of facts, rules, constraints, and answer rendering.
 
-The first difference is the data model. In Prolog, the basic units are terms and clauses. In N3, the basic units are RDF-style triples and graphs, extended with variables, lists, graph terms, and logical implication. N3 is explicitly defined as an extension of RDF, not as a separate programming language that merely happens to manipulate graphs. That means identifiers, data, and inferred results all live in one interoperable form. A rule consumes graph patterns and produces graph patterns, so the output of reasoning can be published, merged, quoted, exchanged, and reasoned over again without changing representation.
+The first reason N3 works well here is representational continuity.
+In SQL, the usual pattern is: design tables, load data, then express logic as queries, views, recursive CTEs, triggers, or host-language code.
+In Prolog, the usual pattern is: encode data as facts and logic as clauses, often leaving interchange and publication to something outside the language.
+In N3, the facts are graph-shaped, the rules are graph-to-graph transformations, and the output of reasoning is again a graph.
+The same document can contain the vocabulary, the data, the rule set, the checks, and the answer projection.
+That makes the logic easier to inspect, version, exchange, and test as a single artifact.
 
-The second difference is more profound: N3 can treat graphs as first-class terms. A graph term is a quoted graph. It can appear in subject, predicate, or object position, and it does not automatically assert its contents as true. It is a resource in its own right. This makes it natural to represent claims, reports, beliefs, policies, source snapshots, and provenance. One can say not only “this is true,” but also “this document says this,” “this authority concludes that,” or “this rule applies to that quoted context.” In other words, N3 can reason about statements as statements, not only about the world those statements describe.
+The second reason is that N3 is graph-native without giving up logic.
+The N3 specification defines it as an extension of RDF with variables, formulae, implication, and other logic-oriented constructs.
+That means identifiers, relationships, and derived consequences all live in the same web-oriented data model.
+In the Eyeling examples, this is a practical advantage.
+The data is not naturally tabular in the SQL sense.
+It mixes products, policies, signatures, duties, lineages, transformations, checks, and rendered answers.
+SQL can still express such cases like the path-discovery example well, but the translation requires choosing tables, flattening graph structure, and re-expressing rules as joins, views, and recursive queries.
+Prolog can keep the rule structure compact, but the data then lives in a clause-oriented world rather than in RDF’s publishable graph form.
+N3 starts from the graph and keeps the logic in that same space.
 
-That leads directly to a third advantage: scope is part of the logic. In N3, implicit universal quantification is global, while implicit existential quantification is local to the graph in which it occurs. Once graphs can be nested and quoted, that distinction matters. It allows a reasoner to keep track of what is asserted here, what is asserted inside a quoted subgraph, and what variables belong to which level. This gives N3 a native way to express context-sensitive reasoning that would feel external or encoded-by-convention in classic Prolog.
+The third reason is quotation.
+N3 graph terms let one quote a graph and then talk about it.
+This is crucial whenever the problem is not just “what is true?” but also “what was said, signed, scoped, allowed, denied, or concluded in this context?”
+That is exactly the shape of examples such as `delfour.n3`, where an insight, a policy envelope, a signature, and a reasoned answer all belong to the same logical story.
+SQL has no native analogue of quoted graphs as first-class terms.
+One can simulate the effect with extra tables and conventions, but the representation is no longer direct.
+Prolog can encode such context, but usually by building a meta-representation on top of ordinary terms.
+In N3, quoted graphs are already part of the language.
 
-A fourth difference is that N3 connects logic to the web inside the language itself. The N3 vocabulary includes `log:semantics` and `log:conclusion` for retrieving and reasoning over local or online sources. It also includes scoped operators such as `log:forAllIn` and `log:notIncludes`, which support scoped universal reasoning and scoped negation-as-failure over a chosen graph or document. So web retrieval, source-bounded reasoning, and reasoning over quoted content are not afterthoughts. They are part of the logic vocabulary. This is one of the clearest senses in which N3 has greater inherent potential: it is not only a language for deriving consequences from facts, but a language for locating, quoting, constraining, and comparing the sources of those facts.
+The fourth reason is that built-in computation stays inside the declarative artifact.
+N3 builtins cover practical operations such as strings, lists, mathematics, time, logic, and cryptographic checks.
+That is important because real reasoning examples rarely remain pure graph matching.
+The Eyeling examples use small computations as part of the rule layer itself.
+For instance, checks around hashes, string constraints, scoped conditions, and output assembly can remain in N3 instead of escaping into JavaScript, SQL UDFs, shell scripts, or ad hoc helper code.
+SQL also has built-in computation, of course, but it is vendor-specific and usually tied to the relational execution model.
+Prolog systems also provide libraries, but those are implementation-specific and not part of a web-shaped interchange notation.
+N3’s builtins help keep the “small operations” close to the graph patterns they support.
 
-By contrast, classic Prolog is centered on a proof procedure over definite clauses. In the usual operational reading, Prolog applies a restricted form of SLD-resolution, chooses the leftmost goal, tries clauses top-to-bottom, and searches depth-first. Traditional negation is negation-as-failure, described in the SWI-Prolog glossary as a weak negation. This makes Prolog extremely effective as an executable logic language, but it also means that much of its practical power comes from the operational behavior of the engine, not from a web-native knowledge model.
+The fifth reason is that N3 is unusually good at keeping answers, reasons, and checks near each other.
+In the Eyeling examples, the point is often not merely to derive a boolean result.
+The artifact is expected to derive the result, expose the reason why, and support explicit checks.
+That is what makes the ARC-style examples work so well in N3.
+One can derive facts, derive intermediate explanations, test guard conditions, and then render a user-facing answer while still staying in the same formal space.
+SQL can produce the final rows very efficiently, but it tends to separate raw data retrieval from explanatory structure.
+Prolog can explain derivations more naturally than SQL, but it does not natively share RDF’s graph publication model or N3’s quoted-graph idiom.
+N3 keeps the result close to the proof story.
 
-This does not make Prolog inferior. Modern Prolog systems add important capabilities beyond the classic core, including tabling, which improves termination behavior and can make Prolog behave more like a bottom-up theorem prover for some classes of problems. But that actually sharpens the comparison: when Prolog needs to work more comfortably in graph-heavy or knowledge-integration settings, it typically gains that power through extensions, libraries, or host-environment choices. N3 starts there. Graphs, quoted formulas, scoped reasoning, and web-connected semantics are part of its native conceptual center.
+This is why N3 can feel like a sweet spot.
+It is not stronger than SQL at relational analytics, and it is not a universal replacement for Prolog as an executable logic language.
+Its advantage appears when the problem has all three of these properties at once:
 
-So the strongest claim is not that N3 replaces Prolog in every domain. The stronger and more precise claim is this: Prolog is a very strong language for executing logic programs, while N3 has greater inherent potential as a language for publishable, linkable, inspectable, and source-aware logic on the open web. It lets facts, rules, quoted claims, retrieved documents, and derived conclusions all live in one semantic space. For a system like Eyeling, that is not a cosmetic difference. It is the reason the language can scale from local inference to web-shaped reasoning without changing its basic form.
+1. the data is graph-shaped and web-identifiable;
+2. the logic should be explicit and inspectable;
+3. the artifact should carry not just data, but also rules, checks, and answer structure.
+
+That combination is exactly what the Eyeling examples highlight.
+They are not just datasets waiting for queries, and not just logic programs waiting for goals.
+They are publishable semantic artifacts.
+N3 works well because it lets facts, rules, quoted claims, built-in computations, and derived answers remain in one notation.
+That unification is easy to miss in abstract comparisons, but it becomes obvious as soon as one tries to port the same examples into SQL, Prolog, JavaScript, C, or DuckDB.
+The ports can work, and they are often useful.
+But each port makes a design decision that N3 did not have to make: how to split one semantic artifact into data structures, control flow, and output machinery.
+
+So the best claim is not “N3 is better than SQL” or “N3 is better than Prolog.”
+The better claim is narrower and more useful: SQL, Prolog, and N3 each have a natural home, and N3’s natural home is precisely the sort of graph-shaped, source-aware, rule-carrying artifact that Eyeling is built to execute.
+In that sense, N3 is not just “logic on the web.”
+It is a way to keep data, logic, context, and answer production in one publishable semantic form.
 
 ---
 
