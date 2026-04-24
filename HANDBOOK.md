@@ -1871,7 +1871,7 @@ echo '@prefix : <http://example.org/> .
 { ?x a :Man } => { ?x a :Mortal } .' | npx eyeling
 ```
 
-You can also pass a file path, or `-` to read explicitly from stdin.
+You can also pass one or more file paths/URLs, or `-` to read explicitly from stdin. When multiple inputs are given, Eyeling parses each source separately, merges the parsed ASTs, and then runs one reasoning pass over the combined facts and rules. This avoids constructing one giant N3 source string.
 
 Show the available options:
 
@@ -1895,7 +1895,7 @@ npx eyeling --builtin lib/builtin-sudoku.js examples/sudoku.n3
 
 The bundle contains the whole engine. The CLI path is the “canonical behavior”:
 
-- parse input file
+- parse one or more input sources; with multiple sources, parse each source independently and merge the ASTs
 - reason to closure
 - print derived triples, or render `log:outputString` strings when present
 - optional proof comments
@@ -1916,6 +1916,7 @@ The current CLI supports a small set of flags (see `lib/cli.js`):
 - `-h`, `--help` — show usage.
 - With no positional argument, Eyeling reads from stdin when input is piped.
 - Use `-` as the input path to read explicitly from stdin.
+- Multiple positional inputs are allowed, for example `eyeling facts.n3 rules.n3`; rules from any input can match facts from any other input after the merge.
 
 ### 14.3 Package entrypoint split for Node, browser, and CLI
 
@@ -2024,13 +2025,34 @@ Notes:
 
 #### 14.4.2 RDF-JS and Eyeling rule-object interoperability
 
-The JavaScript APIs accept three input styles:
+The JavaScript APIs accept four input styles:
 
 1. plain N3 text
-2. RDF/JS fact input (`quads`, `facts`, or `dataset`)
-3. Eyeling rule objects or full AST bundles
+2. a multi-source N3 object (`{ sources: [...] }`)
+3. RDF/JS fact input (`quads`, `facts`, or `dataset`)
+4. Eyeling rule objects or full AST bundles
 
-If you want to use N3 source text, pass the whole input as a plain string.
+If you want to use one N3 source text, pass the whole input as a plain string. If you want to avoid concatenating several N3 sources into one large string, pass them as a source list instead.
+
+For example:
+
+```js
+const { reason } = require('eyeling');
+
+const out = reason(
+  { proofComments: false },
+  {
+    sources: [
+      '@prefix : <http://example.org/> .\n:Socrates a :Man .\n',
+      '@prefix : <http://example.org/> .\n{ ?x a :Man } => { ?x a :Mortal } .\n',
+    ],
+  },
+);
+
+console.log(out);
+```
+
+In a source list, each source is parsed with its own blank-node scope and optional base IRI. That means the same explicit blank label, such as `_:x`, in two different sources does not accidentally become the same blank node after merging. Prefix declarations are merged mainly for readable output; IRI expansion has already happened while each source was parsed.
 
 For RDF/JS facts, the graph must be the default graph. Named-graph quads are rejected.
 
@@ -2467,6 +2489,12 @@ The authoritative list is always:
 eyeling --help
 ```
 
+Usage:
+
+```bash
+eyeling [options] [file-or-url.n3|- ...]
+```
+
 Options:
 
 ```
@@ -2480,6 +2508,8 @@ Options:
   -t, --stream                 Stream derived triples as soon as they are derived.
   -v, --version                Print version and exit.
 ```
+
+Input note: with multiple positional inputs, Eyeling reads and parses each source separately, then merges facts, forward rules, backward rules, and `log:query` directives before reasoning. Blank node labels are scoped per input document.
 
 Note: when `log:query` directives are present, or when the program may produce `log:outputString` facts, Eyeling cannot stream its final user-facing output from partial derivations, so `--stream` has no effect in those cases. In the latter case Eyeling saturates first and then renders the collected output strings.
 

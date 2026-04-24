@@ -120,6 +120,13 @@ declare module 'eyeling' {
 
   export type EyelingAstBundle = [EyelingPrefixEnv, EyelingTriple[], EyelingRule[], EyelingRule[], EyelingRule[]?];
 
+  export type N3Source = string | { n3?: string; text?: string; baseIri?: string; label?: string };
+
+  export interface N3SourceListInput {
+    sources: N3Source[];
+    scopeBlankNodes?: boolean;
+  }
+
   export interface RdfJsReasonInput {
     n3?: string;
     quads?: Iterable<RdfJsQuad> | AsyncIterable<RdfJsQuad>;
@@ -189,13 +196,16 @@ declare module 'eyeling' {
     queryQuads?: RdfJsQuad[];
   }
 
-  export function reason(opts: ReasonOptions, input: string | RdfJsReasonInput | EyelingAstBundle): string;
+  export function reason(
+    opts: ReasonOptions,
+    input: string | RdfJsReasonInput | EyelingAstBundle | N3SourceListInput,
+  ): string;
   export function reasonStream(
-    input: string | RdfJsReasonInput | EyelingAstBundle,
+    input: string | RdfJsReasonInput | EyelingAstBundle | N3SourceListInput,
     opts?: ReasonStreamOptions,
   ): ReasonStreamResult;
   export function reasonRdfJs(
-    input: string | RdfJsReasonInput | EyelingAstBundle,
+    input: string | RdfJsReasonInput | EyelingAstBundle | N3SourceListInput,
     opts?: Omit<ReasonStreamOptions, 'rdfjs' | 'onDerived'>,
   ): AsyncIterable<RdfJsQuad>;
 
@@ -212,16 +222,18 @@ declare module 'eyeling/browser' {
   export type RdfJsQuad = import('eyeling').RdfJsQuad;
   export type RdfJsReasonInput = import('eyeling').RdfJsReasonInput;
   export type EyelingAstBundle = import('eyeling').EyelingAstBundle;
+  export type N3Source = import('eyeling').N3Source;
+  export type N3SourceListInput = import('eyeling').N3SourceListInput;
   export type ReasonStreamOptions = import('eyeling').ReasonStreamOptions;
   export type ReasonStreamResult = import('eyeling').ReasonStreamResult;
   export type BuiltinHandler = import('eyeling').BuiltinHandler;
 
   export function reasonStream(
-    input: string | RdfJsReasonInput | EyelingAstBundle,
+    input: string | RdfJsReasonInput | EyelingAstBundle | N3SourceListInput,
     opts?: ReasonStreamOptions,
   ): ReasonStreamResult;
   export function reasonRdfJs(
-    input: string | RdfJsReasonInput | EyelingAstBundle,
+    input: string | RdfJsReasonInput | EyelingAstBundle | N3SourceListInput,
     opts?: Omit<ReasonStreamOptions, 'rdfjs' | 'onDerived'>,
   ): AsyncIterable<RdfJsQuad>;
 

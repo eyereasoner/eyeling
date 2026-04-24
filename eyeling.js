@@ -4921,6 +4921,7 @@ const { pathToFileURL } = require('node:url');
 const engine = require('./engine');
 const deref = require('./deref');
 const { PrefixEnv } = require('./prelude');
+const { parseN3Text, mergeParsedDocuments } = require('./multisource');
 
 function offsetToLineCol(text, offset) {
   const chars = Array.from(text);
@@ -5004,8 +5005,9 @@ function main() {
 
   function printHelp(toStderr = false) {
     const msg =
-      `Usage: ${prog} [options] [file.n3|-]\n\n` +
-      `When no file is given and stdin is piped, read N3 from stdin.\n\n` +
+      `Usage: ${prog} [options] [file-or-url.n3|- ...]\n\n` +
+      `When no file is given and stdin is piped, read N3 from stdin.\n` +
+      `When multiple inputs are given, parse each source separately, merge ASTs, then reason once.\n\n` +
       `Options:\n` +
       `  -a, --ast                    Print parsed AST as JSON and exit.\n` +
       `      --builtin <module.js>    Load a custom builtin module (repeatable).\n` +
@@ -5049,7 +5051,7 @@ function main() {
       builtinModules.push(a.slice('--builtin='.length));
       continue;
     }
-    if (!a.startsWith('-')) positional.push(a);
+    if (a === '-' || !a.startsWith('-')) positional.push(a);
   }
 
   const showAst = argv.includes('--ast') || argv.includes('-a');
@@ -5075,16 +5077,11 @@ function main() {
     if (typeof engine.setSuperRestrictedMode === 'function') engine.setSuperRestrictedMode(true);
   }
 
-  // Positional args (the N3 file)
+  // Positional args (one or more N3 sources).
   const useImplicitStdin = positional.length === 0 && !process.stdin.isTTY;
   if (positional.length === 0 && !useImplicitStdin) {
     printHelp(false);
     process.exit(0);
-  }
-  if (positional.length > 1) {
-    console.error('Error: expected at most one input [file.n3|-].');
-    printHelp(true);
-    process.exit(1);
   }
 
   for (const spec of builtinModules) {
@@ -5097,34 +5094,46 @@ function main() {
     }
   }
 
-  const sourceLabel = useImplicitStdin || positional[0] === '-' ? '<stdin>' : positional[0];
-  const baseIri = __sourceLabelToBaseIri(sourceLabel);
-
-  let text;
-  try {
-    text = __readInputSourceSync(sourceLabel);
-  } catch (e) {
-    if (sourceLabel === '<stdin>') console.error(`Error reading stdin: ${e.message}`);
-    else console.error(`Error reading file ${JSON.stringify(sourceLabel)}: ${e.message}`);
+  const sourceLabels = useImplicitStdin ? ['<stdin>'] : positional.map((item) => (item === '-' ? '<stdin>' : item));
+  if (sourceLabels.filter((item) => item === '<stdin>').length > 1) {
+    console.error('Error: stdin can only be used once.');
     process.exit(1);
   }
 
-  let toks;
-  let prefixes, triples, frules, brules, qrules;
-  try {
-    toks = engine.lex(text);
-    const parser = new engine.Parser(toks);
-    if (baseIri) parser.prefixes.setBase(baseIri);
-    [prefixes, triples, frules, brules, qrules] = parser.parseDocument();
-    // Make the parsed prefixes available to log:trace output (CLI path)
-    engine.setTracePrefixes(prefixes);
-  } catch (e) {
-    if (e && e.name === 'N3SyntaxError') {
-      console.error(formatN3SyntaxError(e, text, sourceLabel));
+  const parsedSources = [];
+  for (const sourceLabel of sourceLabels) {
+    let text;
+    try {
+      text = __readInputSourceSync(sourceLabel);
+    } catch (e) {
+      if (sourceLabel === '<stdin>') console.error(`Error reading stdin: ${e.message}`);
+      else console.error(`Error reading source ${JSON.stringify(sourceLabel)}: ${e.message}`);
       process.exit(1);
     }
-    throw e;
+
+    try {
+      parsedSources.push(
+        parseN3Text(text, {
+          baseIri: __sourceLabelToBaseIri(sourceLabel),
+          label: sourceLabel,
+        }),
+      );
+    } catch (e) {
+      if (e && e.name === 'N3SyntaxError') {
+        console.error(formatN3SyntaxError(e, text, sourceLabel));
+        process.exit(1);
+      }
+      throw e;
+    }
   }
+
+  const mergedDocument = mergeParsedDocuments(parsedSources);
+  const prefixes = mergedDocument.prefixes;
+  const triples = mergedDocument.triples;
+  const frules = mergedDocument.frules;
+  const brules = mergedDocument.brules;
+  const qrules = mergedDocument.logQueryRules;
+  const tokenSets = parsedSources.map((source) => ({ tokens: source.tokens, prefixes: source.prefixes }));
 
   if (showAst) {
     function astReplacer(unusedJsonKey, value) {
@@ -5267,7 +5276,10 @@ function main() {
   const mayAutoRenderOutputStrings = programMayProduceOutputStrings(triples, frules, qrules);
 
   if (streamMode && !hasQueries && !mayAutoRenderOutputStrings) {
-    const usedInInput = prefixesUsedInInputTokens(toks, prefixes);
+    const usedInInput = new Set();
+    for (const source of tokenSets) {
+      for (const pfx of prefixesUsedInInputTokens(source.tokens, source.prefixes)) usedInInput.add(pfx);
+    }
     const outPrefixes = restrictPrefixEnv(prefixes, usedInInput);
 
     // Ensure log:trace uses the same compact prefix set as the output.
@@ -5861,6 +5873,7 @@ const EMPTY_LIST_TERM = new ListTerm([]);
 const { lex, N3SyntaxError } = require('./lexer');
 const { Parser } = require('./parser');
 const { liftBlankRuleVars } = require('./rules');
+const { parseN3SourceList } = require('./multisource');
 
 const {
   makeBuiltins,
@@ -9202,7 +9215,8 @@ function reasonStream(input, opts = {}) {
     builtinModules = null,
   } = opts;
 
-  const parsedInput = normalizeParsedReasonerInputSync(input);
+  const parsedSourceList = parseN3SourceList(input, { baseIri });
+  const parsedInput = parsedSourceList || normalizeParsedReasonerInputSync(input);
   const rdfFactory = rdfjs ? getDataFactory(dataFactory) : null;
 
   const __oldEnforceHttps = deref.getEnforceHttpsEnabled();
@@ -9345,7 +9359,7 @@ function reasonRdfJs(input, opts = {}) {
 
   Promise.resolve().then(async () => {
     try {
-      const normalizedInput = await normalizeReasonerInputAsync(input);
+      const normalizedInput = parseN3SourceList(input, restOpts) || (await normalizeReasonerInputAsync(input));
       reasonStream(normalizedInput, {
         ...restOpts,
         rdfjs: false,
@@ -10531,6 +10545,213 @@ function lex(inputText) {
 }
 
 module.exports = { Token, N3SyntaxError, lex, decodeN3StringEscapes };
+
+  };
+  __modules["lib/multisource.js"] = function(require, module, exports){
+/**
+ * Eyeling Reasoner — multi-source parsing helpers
+ *
+ * These helpers let the CLI/API parse several N3 documents independently and
+ * merge their parsed ASTs before reasoning. This avoids building one giant N3
+ * string while preserving the existing lexer/parser/engine pipeline.
+ */
+
+'use strict';
+
+const { lex } = require('./lexer');
+const { Parser } = require('./parser');
+const {
+  Blank,
+  ListTerm,
+  OpenListTerm,
+  GraphTerm,
+  Triple,
+  Rule,
+  PrefixEnv,
+  annotateQuotedGraphTerm,
+} = require('./prelude');
+
+function emptyParsedDocument() {
+  return {
+    prefixes: PrefixEnv.newDefault(),
+    triples: [],
+    frules: [],
+    brules: [],
+    logQueryRules: [],
+  };
+}
+
+function parseN3Text(text, opts = {}) {
+  const { baseIri = '', label = '<input>' } = opts || {};
+  const tokens = lex(text);
+  const parser = new Parser(tokens);
+  if (baseIri) parser.prefixes.setBase(baseIri);
+  const [prefixes, triples, frules, brules, logQueryRules] = parser.parseDocument();
+  return { prefixes, triples, frules, brules, logQueryRules, tokens, text, label };
+}
+
+function sourceBlankPrefix(sourceIndex) {
+  return `_:src${sourceIndex}_`;
+}
+
+function scopedBlankLabel(label, sourceIndex, mapping) {
+  const key = String(label || '');
+  let out = mapping.get(key);
+  if (out) return out;
+
+  const bare = key.startsWith('_:') ? key.slice(2) : key;
+  out = sourceBlankPrefix(sourceIndex) + bare;
+  mapping.set(key, out);
+  return out;
+}
+
+function scopeBlankNodesInDocument(doc, sourceIndex) {
+  const mapping = new Map();
+
+  function cloneTerm(term) {
+    if (term instanceof Blank) return new Blank(scopedBlankLabel(term.label, sourceIndex, mapping));
+    if (term instanceof ListTerm) return new ListTerm(term.elems.map(cloneTerm));
+    if (term instanceof OpenListTerm) return new OpenListTerm(term.prefix.map(cloneTerm), term.tailVar);
+    if (term instanceof GraphTerm) return annotateQuotedGraphTerm(new GraphTerm(term.triples.map(cloneTriple)));
+    return term;
+  }
+
+  function cloneTriple(triple) {
+    return new Triple(cloneTerm(triple.s), cloneTerm(triple.p), cloneTerm(triple.o));
+  }
+
+  function cloneRule(rule) {
+    const headBlankLabels = new Set();
+    if (rule && rule.headBlankLabels instanceof Set) {
+      for (const label of rule.headBlankLabels) headBlankLabels.add(scopedBlankLabel(label, sourceIndex, mapping));
+    }
+
+    const out = new Rule(
+      (rule.premise || []).map(cloneTriple),
+      (rule.conclusion || []).map(cloneTriple),
+      rule.isForward,
+      rule.isFuse,
+      headBlankLabels,
+    );
+
+    if (rule && Object.prototype.hasOwnProperty.call(rule, '__dynamicConclusionTerm')) {
+      Object.defineProperty(out, '__dynamicConclusionTerm', {
+        value: cloneTerm(rule.__dynamicConclusionTerm),
+        enumerable: false,
+        writable: false,
+        configurable: true,
+      });
+    }
+
+    return out;
+  }
+
+  return {
+    prefixes: doc.prefixes,
+    triples: (doc.triples || []).map(cloneTriple),
+    frules: (doc.frules || []).map(cloneRule),
+    brules: (doc.brules || []).map(cloneRule),
+    logQueryRules: (doc.logQueryRules || []).map(cloneRule),
+    tokens: doc.tokens,
+    text: doc.text,
+    label: doc.label,
+  };
+}
+
+function mergePrefixEnvs(target, source) {
+  if (!source) return target;
+  const map = source.map || {};
+  for (const [prefix, iri] of Object.entries(map)) {
+    // Every parser starts with an empty default namespace. Do not let a later
+    // source that never declared ':' erase a useful default namespace from an
+    // earlier source; prefix merging is for output readability only.
+    if (iri || !Object.prototype.hasOwnProperty.call(target.map, prefix)) target.set(prefix, iri);
+  }
+  if (source.baseIri) target.setBase(source.baseIri);
+  return target;
+}
+
+function mergeParsedDocuments(docs, opts = {}) {
+  const documents = Array.isArray(docs) ? docs : [];
+  const scopeBlankNodes =
+    typeof opts.scopeBlankNodes === 'boolean' ? opts.scopeBlankNodes : documents.length > 1;
+
+  const merged = emptyParsedDocument();
+  const mergedSources = [];
+
+  for (let i = 0; i < documents.length; i++) {
+    const originalDoc = documents[i] || emptyParsedDocument();
+    const doc = scopeBlankNodes ? scopeBlankNodesInDocument(originalDoc, i + 1) : originalDoc;
+
+    mergePrefixEnvs(merged.prefixes, doc.prefixes);
+    merged.triples.push(...(doc.triples || []));
+    merged.frules.push(...(doc.frules || []));
+    merged.brules.push(...(doc.brules || []));
+    merged.logQueryRules.push(...(doc.logQueryRules || []));
+    mergedSources.push(doc);
+  }
+
+  Object.defineProperty(merged, 'sources', {
+    value: mergedSources,
+    enumerable: false,
+    writable: false,
+    configurable: true,
+  });
+
+  return merged;
+}
+
+function isN3SourceListInput(input) {
+  return !!(
+    input &&
+    typeof input === 'object' &&
+    !Array.isArray(input) &&
+    Array.isArray(input.sources)
+  );
+}
+
+function normalizeN3SourceItem(source, index) {
+  const sourceNumber = index + 1;
+  if (typeof source === 'string') {
+    return { text: source, label: `<source ${sourceNumber}>`, baseIri: '' };
+  }
+  if (!source || typeof source !== 'object' || Array.isArray(source)) {
+    throw new TypeError('Each N3 source must be a string or an object with an n3/text field');
+  }
+
+  const text = typeof source.n3 === 'string' ? source.n3 : typeof source.text === 'string' ? source.text : null;
+  if (text === null) throw new TypeError('Each N3 source object must provide an n3 or text string');
+
+  return {
+    text,
+    label: typeof source.label === 'string' && source.label ? source.label : `<source ${sourceNumber}>`,
+    baseIri: typeof source.baseIri === 'string' ? source.baseIri : '',
+  };
+}
+
+function parseN3SourceList(input, opts = {}) {
+  if (!isN3SourceListInput(input)) return null;
+  const sources = input.sources.map(normalizeN3SourceItem);
+  const defaultBaseIri = typeof opts.baseIri === 'string' ? opts.baseIri : '';
+  const parsed = sources.map((source, index) =>
+    parseN3Text(source.text, {
+      label: source.label,
+      baseIri: source.baseIri || (sources.length === 1 ? defaultBaseIri : ''),
+    }),
+  );
+  return mergeParsedDocuments(parsed, {
+    scopeBlankNodes: typeof input.scopeBlankNodes === 'boolean' ? input.scopeBlankNodes : parsed.length > 1,
+  });
+}
+
+module.exports = {
+  emptyParsedDocument,
+  parseN3Text,
+  mergeParsedDocuments,
+  scopeBlankNodesInDocument,
+  isN3SourceListInput,
+  parseN3SourceList,
+};
 
   };
   __modules["lib/parser.js"] = function(require, module, exports){

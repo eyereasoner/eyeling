@@ -2310,6 +2310,107 @@ _:b a ex:Person ; ex:name "B" .
     expect: [/^:test\s+:is\s+true\s*\./m],
   },
   {
+    name: '69 CLI multi-input: parses files separately and reasons over merged AST',
+    run() {
+      const os = require('node:os');
+      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'eyeling-multi-input-'));
+      const factsPath = path.join(tmp, 'facts.n3');
+      const rulesPath = path.join(tmp, 'rules.n3');
+
+      fs.writeFileSync(factsPath, '@prefix : <http://example.org/> .\n:Socrates a :Man .\n', 'utf8');
+      fs.writeFileSync(rulesPath, '@prefix : <http://example.org/> .\n{ ?x a :Man } => { ?x a :Mortal } .\n', 'utf8');
+
+      try {
+        const r = spawnSync(process.execPath, [path.join(ROOT, 'eyeling.js'), factsPath, rulesPath], {
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'pipe'],
+          maxBuffer: DEFAULT_MAX_BUFFER,
+        });
+        if (r.error) throw r.error;
+        if (r.status !== 0) {
+          const err = new Error(`CLI failed with exit ${r.status}`);
+          err.code = r.status;
+          err.stdout = r.stdout;
+          err.stderr = r.stderr;
+          throw err;
+        }
+        return r.stdout;
+      } finally {
+        fs.rmSync(tmp, { recursive: true, force: true });
+      }
+    },
+    expect: [/:(?:Socrates)\s+a\s+:(?:Mortal)\s*\./],
+  },
+  {
+    name: '70 CLI multi-input: scopes blank node labels per source',
+    run() {
+      const os = require('node:os');
+      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'eyeling-multi-blank-'));
+      const leftPath = path.join(tmp, 'left.n3');
+      const rightPath = path.join(tmp, 'right.n3');
+      const rulePath = path.join(tmp, 'rule.n3');
+
+      fs.writeFileSync(leftPath, '@prefix : <http://example.org/> .\n_:x :p :a .\n', 'utf8');
+      fs.writeFileSync(rightPath, '@prefix : <http://example.org/> .\n_:x :q :b .\n', 'utf8');
+      fs.writeFileSync(
+        rulePath,
+        '@prefix : <http://example.org/> .\n{ ?x :p :a . ?x :q :b . } => { :bad :merged true } .\n',
+        'utf8',
+      );
+
+      try {
+        const r = spawnSync(process.execPath, [path.join(ROOT, 'eyeling.js'), leftPath, rightPath, rulePath], {
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'pipe'],
+          maxBuffer: DEFAULT_MAX_BUFFER,
+        });
+        if (r.error) throw r.error;
+        if (r.status !== 0) {
+          const err = new Error(`CLI failed with exit ${r.status}`);
+          err.code = r.status;
+          err.stdout = r.stdout;
+          err.stderr = r.stderr;
+          throw err;
+        }
+        return r.stdout;
+      } finally {
+        fs.rmSync(tmp, { recursive: true, force: true });
+      }
+    },
+    notExpect: [/^:bad\s+:merged\s+true\s*\./m],
+  },
+  {
+    name: '71 API multi-source: reason() accepts source list input',
+    run() {
+      return reason(
+        { proofComments: false },
+        {
+          sources: [
+            '@prefix : <http://example.org/> .\n:Socrates a :Man .\n',
+            '@prefix : <http://example.org/> .\n{ ?x a :Man } => { ?x a :Mortal } .\n',
+          ],
+        },
+      );
+    },
+    expect: [/:(?:Socrates)\s+a\s+:(?:Mortal)\s*\./],
+  },
+  {
+    name: '72 API multi-source: reasonStream() accepts source list input',
+    run() {
+      const result = reasonStream(
+        {
+          sources: [
+            '@prefix : <http://example.org/> .\n:Socrates a :Man .\n',
+            '@prefix : <http://example.org/> .\n{ ?x a :Man } => { ?x a :Mortal } .\n',
+          ],
+        },
+        { proof: false },
+      );
+      return result.closureN3;
+    },
+    expect: [/:(?:Socrates)\s+a\s+:(?:Mortal)\s*\./],
+  },
+  {
     name: 'regression: log:semantics body alpha-renaming does not refire blank-head rule forever',
     async run() {
       const os = require('node:os');

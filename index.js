@@ -7,6 +7,7 @@ const cp = require('node:child_process');
 
 const bundleApi = require('./eyeling.js');
 const { dataFactory, normalizeReasonerInputSync } = require('./lib/rdfjs');
+const { isN3SourceListInput } = require('./lib/multisource');
 const engine = require('./lib/engine');
 
 function reason(opt = {}, input = '') {
@@ -15,11 +16,6 @@ function reason(opt = {}, input = '') {
   // allow passing an args array directly
   if (Array.isArray(opt)) opt = { args: opt };
   if (opt == null || typeof opt !== 'object') opt = {};
-
-  const n3Input = normalizeReasonerInputSync(input);
-  if (typeof n3Input !== 'string') {
-    throw new TypeError('reason(opt, input): input must resolve to an N3 string');
-  }
 
   const args = [];
 
@@ -53,13 +49,38 @@ function reason(opt = {}, input = '') {
   const maxBuffer = Number.isFinite(opt.maxBuffer) ? opt.maxBuffer : 50 * 1024 * 1024;
 
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'eyeling-'));
-  const inputFile = path.join(dir, 'input.n3');
+
+  function normalizeSourceForTempFile(source) {
+    if (typeof source === 'string') return source;
+    if (source && typeof source === 'object' && !Array.isArray(source)) {
+      const text = typeof source.n3 === 'string' ? source.n3 : typeof source.text === 'string' ? source.text : null;
+      if (text !== null) {
+        return typeof source.baseIri === 'string' && source.baseIri ? `@base <${source.baseIri}> .\n${text}` : text;
+      }
+    }
+    throw new TypeError('reason(opt, input): each source must be a string or an object with an n3/text field');
+  }
 
   try {
-    fs.writeFileSync(inputFile, n3Input, 'utf8');
+    const inputFiles = [];
+    if (isN3SourceListInput(input)) {
+      input.sources.forEach((source, index) => {
+        const inputFile = path.join(dir, `input-${index + 1}.n3`);
+        fs.writeFileSync(inputFile, normalizeSourceForTempFile(source), 'utf8');
+        inputFiles.push(inputFile);
+      });
+    } else {
+      const n3Input = normalizeReasonerInputSync(input);
+      if (typeof n3Input !== 'string') {
+        throw new TypeError('reason(opt, input): input must resolve to an N3 string');
+      }
+      const inputFile = path.join(dir, 'input.n3');
+      fs.writeFileSync(inputFile, n3Input, 'utf8');
+      inputFiles.push(inputFile);
+    }
 
     const eyelingPath = path.join(__dirname, 'eyeling.js');
-    const res = cp.spawnSync(process.execPath, [eyelingPath, ...args, inputFile], { encoding: 'utf8', maxBuffer });
+    const res = cp.spawnSync(process.execPath, [eyelingPath, ...args, ...inputFiles], { encoding: 'utf8', maxBuffer });
 
     if (res.error) throw res.error;
 
