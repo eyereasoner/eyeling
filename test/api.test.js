@@ -1644,6 +1644,30 @@ _:x :hates { _:foo :making :mess }.
   },
 
   {
+    name: '60a regression: log:includes explicit-scope blank node is returned as blank, not synthetic variable',
+    opt: { proofComments: false },
+    input: `@prefix : <http://example.org/ns#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+
+{
+  {
+    _:b1 a :Mortal .
+  } log:includes {
+    ?CS ?CP ?CO .
+  } .
+}
+=>
+{
+  _:b2 :conclusion {
+    ?CS ?CP ?CO .
+  } .
+} .
+`,
+    expect: [/_:sk_\d+\s+:(?:conclusion)\s+\{\s*_:b\d+\s+a\s+:(?:Mortal)\s*\.\s*\}\s*\./s],
+    notExpect: [/\?_b\d+\s+a\s+:(?:Mortal)/],
+  },
+
+  {
     name: '61 RDF/JS input + rule objects: reason() accepts quads with rules',
     run() {
       const ex = 'http://example.org/';

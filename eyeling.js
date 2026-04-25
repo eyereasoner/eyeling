@@ -10673,8 +10673,7 @@ function mergePrefixEnvs(target, source) {
 
 function mergeParsedDocuments(docs, opts = {}) {
   const documents = Array.isArray(docs) ? docs : [];
-  const scopeBlankNodes =
-    typeof opts.scopeBlankNodes === 'boolean' ? opts.scopeBlankNodes : documents.length > 1;
+  const scopeBlankNodes = typeof opts.scopeBlankNodes === 'boolean' ? opts.scopeBlankNodes : documents.length > 1;
 
   const merged = emptyParsedDocument();
   const mergedSources = [];
@@ -10702,12 +10701,7 @@ function mergeParsedDocuments(docs, opts = {}) {
 }
 
 function isN3SourceListInput(input) {
-  return !!(
-    input &&
-    typeof input === 'object' &&
-    !Array.isArray(input) &&
-    Array.isArray(input.sources)
-  );
+  return !!(input && typeof input === 'object' && !Array.isArray(input) && Array.isArray(input.sources));
 }
 
 function normalizeN3SourceItem(source, index) {
@@ -13237,9 +13231,13 @@ module.exports = {
 
 'use strict';
 
-const { Var, Blank, ListTerm, OpenListTerm, GraphTerm, Triple, copyQuotedGraphMetadata } = require('./prelude');
+const { LOG_NS, Iri, Var, Blank, ListTerm, OpenListTerm, GraphTerm, Triple, copyQuotedGraphMetadata } = require('./prelude');
 
 function liftBlankRuleVars(premise, conclusion) {
+  function isLogIncludesLikePredicate(p) {
+    return p instanceof Iri && (p.value === LOG_NS + 'includes' || p.value === LOG_NS + 'notIncludes');
+  }
+
   // Map blank labels to stable rule-local variable names.
   // This runs at rule construction time; keep it simple and allocation-light.
   const mapping = Object.create(null);
@@ -13296,9 +13294,19 @@ function liftBlankRuleVars(premise, conclusion) {
     return t;
   }
 
-  const newPremise = premise.map(
-    (tr) => new Triple(convertTerm(tr.s, true), convertTerm(tr.p, true), convertTerm(tr.o, true)),
-  );
+  const newPremise = premise.map((tr) => {
+    // In log:includes / log:notIncludes, quoted formula operands are formulas
+    // consumed by the builtin rather than ordinary triple patterns. Keep their
+    // local blank nodes as Blank terms so the builtin can treat them as local
+    // existentials, and bindings returned from an explicit scope are blank nodes
+    // instead of synthetic rule variables such as ?_b1.
+    const keepFormulaBlanks = isLogIncludesLikePredicate(tr.p);
+    return new Triple(
+      keepFormulaBlanks && tr.s instanceof GraphTerm ? copyQuotedTerm(tr.s) : convertTerm(tr.s, true),
+      convertTerm(tr.p, true),
+      keepFormulaBlanks && tr.o instanceof GraphTerm ? copyQuotedTerm(tr.o) : convertTerm(tr.o, true),
+    );
+  });
   return [newPremise, conclusion];
 }
 

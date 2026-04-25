@@ -358,7 +358,9 @@ That distinction matters because quoted formulas still play **two different role
 
 The practical rule is:
 
-> **Eyeling lifts blanks inside quoted formulas only when the quoted formula appears directly in a premise triple position. Nested quoted formulas remain scoped data unless a query-like builtin interprets them as patterns.**
+> **Eyeling lifts blanks inside quoted formulas only when the quoted formula appears directly in an ordinary premise triple position.**
+>
+> For `log:includes` and `log:notIncludes`, quoted formula operands keep their own blank-node scope. The builtin may treat blanks in the goal formula existentially while proving it, but blanks in an explicit scope graph remain formula-local blanks and may be returned as blank nodes rather than synthetic variables such as `?_b1`.
 
 This keeps `log:conjunction` and formula printing honest, while still allowing direct quoted-formula premise patterns such as `{ _:X :B :C } a :Statement.` to match interoperably.
 
@@ -1526,6 +1528,7 @@ Eyeling has **two modes**:
 1. **Explicit scope graph**: if `Scope` is a formula `{...}`
    - Eyeling reasons _only inside that formula_ (its triples are the fact store).
    - External rules are not used.
+   - Blank nodes inside the explicit scope graph are preserved as graph-local blanks; if a goal variable matches one, the binding is a blank node, not a lifted rule variable.
 
 2. **Priority-gated global scope**: otherwise
    - Eyeling uses a _frozen snapshot_ of the current global closure.
