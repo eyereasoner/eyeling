@@ -1874,7 +1874,7 @@ echo '@prefix : <http://example.org/> .
 { ?x a :Man } => { ?x a :Mortal } .' | npx eyeling
 ```
 
-You can also pass one or more file paths/URLs, or `-` to read explicitly from stdin. When multiple inputs are given, Eyeling parses each source separately, merges the parsed ASTs, and then runs one reasoning pass over the combined facts and rules. This avoids constructing one giant N3 source string.
+You can also pass one or more file paths/URLs, or `-` to read explicitly from stdin. When multiple inputs are given, Eyeling parses each source separately, merges the parsed ASTs, and then runs one reasoning pass over the combined facts and rules. This avoids constructing one giant N3 source string. During the merge path, parse-only artifacts such as source text and token arrays are discarded after the AST has been built, except while formatting syntax errors or when an internal caller explicitly asks to keep those artifacts for debugging.
 
 Show the available options:
 
@@ -2056,6 +2056,8 @@ console.log(out);
 ```
 
 In a source list, each source is parsed with its own blank-node scope and optional base IRI. That means the same explicit blank label, such as `_:x`, in two different sources does not accidentally become the same blank node after merging. Prefix declarations are merged mainly for readable output; IRI expansion has already happened while each source was parsed.
+
+For large inputs, the source-list path is also the preferred memory shape: each source is lexed and parsed independently, then Eyeling keeps the merged facts/rules rather than retaining the original source strings and token arrays. The parser still needs one JavaScript string per source, so source splitting is not a streaming parser, but it avoids both a single giant concatenated N3 string and long-lived token arrays after parsing.
 
 For RDF/JS facts, the graph must be the default graph. Named-graph quads are rejected.
 

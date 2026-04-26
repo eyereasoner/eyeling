@@ -5116,6 +5116,8 @@ function main() {
         parseN3Text(text, {
           baseIri: __sourceLabelToBaseIri(sourceLabel),
           label: sourceLabel,
+          collectUsedPrefixes: true,
+          keepSourceArtifacts: false,
         }),
       );
     } catch (e) {
@@ -5133,8 +5135,6 @@ function main() {
   const frules = mergedDocument.frules;
   const brules = mergedDocument.brules;
   const qrules = mergedDocument.logQueryRules;
-  const tokenSets = parsedSources.map((source) => ({ tokens: source.tokens, prefixes: source.prefixes }));
-
   if (showAst) {
     function astReplacer(unusedJsonKey, value) {
       if (value instanceof Set) return Array.from(value);
@@ -5190,75 +5190,6 @@ function main() {
   // In --stream mode we print prefixes *before* any derivations happen.
   // To keep the header small and stable, emit only prefixes that are actually
   // used (as QNames) in the *input* N3 program.
-  function prefixesUsedInInputTokens(toks2, prefEnv) {
-    const used = new Set();
-
-    function maybeAddFromQName(name) {
-      if (typeof name !== 'string') return;
-      if (!name.includes(':')) return;
-      if (name.startsWith('_:')) return; // blank node
-
-      // Split only on the first ':'
-      const idx = name.indexOf(':');
-      const p = name.slice(0, idx); // may be '' for ":foo"
-
-      // Ignore things like "http://..." unless that prefix is actually defined.
-      if (!Object.prototype.hasOwnProperty.call(prefEnv.map, p)) return;
-
-      used.add(p);
-    }
-
-    for (let i = 0; i < toks2.length; i++) {
-      const t = toks2[i];
-
-      // Skip @prefix ... .
-      if (t.typ === 'AtPrefix') {
-        while (i < toks2.length && toks2[i].typ !== 'Dot' && toks2[i].typ !== 'EOF') i++;
-        continue;
-      }
-      // Skip @base ... .
-      if (t.typ === 'AtBase') {
-        while (i < toks2.length && toks2[i].typ !== 'Dot' && toks2[i].typ !== 'EOF') i++;
-        continue;
-      }
-
-      // Skip SPARQL/Turtle PREFIX pfx: <iri>
-      if (
-        t.typ === 'Ident' &&
-        typeof t.value === 'string' &&
-        t.value.toLowerCase() === 'prefix' &&
-        toks2[i + 1] &&
-        toks2[i + 1].typ === 'Ident' &&
-        typeof toks2[i + 1].value === 'string' &&
-        toks2[i + 1].value.endsWith(':') &&
-        toks2[i + 2] &&
-        (toks2[i + 2].typ === 'IriRef' || toks2[i + 2].typ === 'Ident')
-      ) {
-        i += 2;
-        continue;
-      }
-
-      // Skip SPARQL BASE <iri>
-      if (
-        t.typ === 'Ident' &&
-        typeof t.value === 'string' &&
-        t.value.toLowerCase() === 'base' &&
-        toks2[i + 1] &&
-        toks2[i + 1].typ === 'IriRef'
-      ) {
-        i += 1;
-        continue;
-      }
-
-      // Count QNames in identifiers (including datatypes like xsd:integer).
-      if (t.typ === 'Ident') {
-        maybeAddFromQName(t.value);
-      }
-    }
-
-    return used;
-  }
-
   function restrictPrefixEnv(prefEnv, usedSet) {
     const m = {};
     for (const p of usedSet) {
@@ -5276,10 +5207,7 @@ function main() {
   const mayAutoRenderOutputStrings = programMayProduceOutputStrings(triples, frules, qrules);
 
   if (streamMode && !hasQueries && !mayAutoRenderOutputStrings) {
-    const usedInInput = new Set();
-    for (const source of tokenSets) {
-      for (const pfx of prefixesUsedInInputTokens(source.tokens, source.prefixes)) usedInInput.add(pfx);
-    }
+    const usedInInput = mergedDocument.usedPrefixes instanceof Set ? new Set(mergedDocument.usedPrefixes) : new Set();
     const outPrefixes = restrictPrefixEnv(prefixes, usedInInput);
 
     // Ensure log:trace uses the same compact prefix set as the output.
@@ -10581,13 +10509,101 @@ function emptyParsedDocument() {
   };
 }
 
+function prefixesUsedInTokens(tokens, prefEnv) {
+  const used = new Set();
+  const toks = Array.isArray(tokens) ? tokens : [];
+  const prefixes = prefEnv && prefEnv.map ? prefEnv.map : {};
+
+  function maybeAddFromQName(name) {
+    if (typeof name !== 'string') return;
+    if (!name.includes(':')) return;
+    if (name.startsWith('_:')) return; // blank node
+
+    // Split only on the first ':'; the empty prefix is valid for ":foo".
+    const idx = name.indexOf(':');
+    const p = name.slice(0, idx);
+
+    // Ignore strings like "http://..." unless that prefix is actually defined.
+    if (!Object.prototype.hasOwnProperty.call(prefixes, p)) return;
+
+    used.add(p);
+  }
+
+  for (let i = 0; i < toks.length; i++) {
+    const t = toks[i];
+    if (!t) continue;
+
+    // Skip @prefix ... .
+    if (t.typ === 'AtPrefix') {
+      while (i < toks.length && toks[i].typ !== 'Dot' && toks[i].typ !== 'EOF') i++;
+      continue;
+    }
+
+    // Skip @base ... .
+    if (t.typ === 'AtBase') {
+      while (i < toks.length && toks[i].typ !== 'Dot' && toks[i].typ !== 'EOF') i++;
+      continue;
+    }
+
+    // Skip SPARQL/Turtle PREFIX pfx: <iri>
+    if (
+      t.typ === 'Ident' &&
+      typeof t.value === 'string' &&
+      t.value.toLowerCase() === 'prefix' &&
+      toks[i + 1] &&
+      toks[i + 1].typ === 'Ident' &&
+      typeof toks[i + 1].value === 'string' &&
+      toks[i + 1].value.endsWith(':') &&
+      toks[i + 2] &&
+      (toks[i + 2].typ === 'IriRef' || toks[i + 2].typ === 'Ident')
+    ) {
+      i += 2;
+      continue;
+    }
+
+    // Skip SPARQL BASE <iri>
+    if (
+      t.typ === 'Ident' &&
+      typeof t.value === 'string' &&
+      t.value.toLowerCase() === 'base' &&
+      toks[i + 1] &&
+      toks[i + 1].typ === 'IriRef'
+    ) {
+      i += 1;
+      continue;
+    }
+
+    // Count QNames in identifiers, including datatypes like xsd:integer.
+    if (t.typ === 'Ident') maybeAddFromQName(t.value);
+  }
+
+  return used;
+}
+
 function parseN3Text(text, opts = {}) {
-  const { baseIri = '', label = '<input>' } = opts || {};
+  const { baseIri = '', label = '<input>', keepSourceArtifacts = true, collectUsedPrefixes = false } = opts || {};
   const tokens = lex(text);
   const parser = new Parser(tokens);
   if (baseIri) parser.prefixes.setBase(baseIri);
   const [prefixes, triples, frules, brules, logQueryRules] = parser.parseDocument();
-  return { prefixes, triples, frules, brules, logQueryRules, tokens, text, label };
+
+  const doc = { prefixes, triples, frules, brules, logQueryRules, label };
+
+  if (collectUsedPrefixes) {
+    Object.defineProperty(doc, 'usedPrefixes', {
+      value: prefixesUsedInTokens(tokens, prefixes),
+      enumerable: false,
+      writable: false,
+      configurable: true,
+    });
+  }
+
+  if (keepSourceArtifacts) {
+    doc.tokens = tokens;
+    doc.text = text;
+  }
+
+  return doc;
 }
 
 function sourceBlankPrefix(sourceIndex) {
@@ -10646,16 +10662,27 @@ function scopeBlankNodesInDocument(doc, sourceIndex) {
     return out;
   }
 
-  return {
+  const out = {
     prefixes: doc.prefixes,
     triples: (doc.triples || []).map(cloneTriple),
     frules: (doc.frules || []).map(cloneRule),
     brules: (doc.brules || []).map(cloneRule),
     logQueryRules: (doc.logQueryRules || []).map(cloneRule),
-    tokens: doc.tokens,
-    text: doc.text,
     label: doc.label,
   };
+
+  if (doc.usedPrefixes instanceof Set) {
+    Object.defineProperty(out, 'usedPrefixes', {
+      value: new Set(doc.usedPrefixes),
+      enumerable: false,
+      writable: false,
+      configurable: true,
+    });
+  }
+  if (Object.prototype.hasOwnProperty.call(doc, 'tokens')) out.tokens = doc.tokens;
+  if (Object.prototype.hasOwnProperty.call(doc, 'text')) out.text = doc.text;
+
+  return out;
 }
 
 function mergePrefixEnvs(target, source) {
@@ -10674,9 +10701,10 @@ function mergePrefixEnvs(target, source) {
 function mergeParsedDocuments(docs, opts = {}) {
   const documents = Array.isArray(docs) ? docs : [];
   const scopeBlankNodes = typeof opts.scopeBlankNodes === 'boolean' ? opts.scopeBlankNodes : documents.length > 1;
+  const keepSources = !!opts.keepSources || !!opts.keepSourceArtifacts;
 
   const merged = emptyParsedDocument();
-  const mergedSources = [];
+  const mergedSources = keepSources ? [] : null;
 
   for (let i = 0; i < documents.length; i++) {
     const originalDoc = documents[i] || emptyParsedDocument();
@@ -10687,15 +10715,30 @@ function mergeParsedDocuments(docs, opts = {}) {
     merged.frules.push(...(doc.frules || []));
     merged.brules.push(...(doc.brules || []));
     merged.logQueryRules.push(...(doc.logQueryRules || []));
-    mergedSources.push(doc);
+
+    if (doc.usedPrefixes instanceof Set) {
+      if (!(merged.usedPrefixes instanceof Set)) {
+        Object.defineProperty(merged, 'usedPrefixes', {
+          value: new Set(),
+          enumerable: false,
+          writable: false,
+          configurable: true,
+        });
+      }
+      for (const pfx of doc.usedPrefixes) merged.usedPrefixes.add(pfx);
+    }
+
+    if (keepSources) mergedSources.push(doc);
   }
 
-  Object.defineProperty(merged, 'sources', {
-    value: mergedSources,
-    enumerable: false,
-    writable: false,
-    configurable: true,
-  });
+  if (keepSources) {
+    Object.defineProperty(merged, 'sources', {
+      value: mergedSources,
+      enumerable: false,
+      writable: false,
+      configurable: true,
+    });
+  }
 
   return merged;
 }
@@ -10727,14 +10770,17 @@ function parseN3SourceList(input, opts = {}) {
   if (!isN3SourceListInput(input)) return null;
   const sources = input.sources.map(normalizeN3SourceItem);
   const defaultBaseIri = typeof opts.baseIri === 'string' ? opts.baseIri : '';
-  const parsed = sources.map((source, index) =>
+  const parsed = sources.map(source =>
     parseN3Text(source.text, {
       label: source.label,
       baseIri: source.baseIri || (sources.length === 1 ? defaultBaseIri : ''),
+      collectUsedPrefixes: true,
+      keepSourceArtifacts: !!opts.keepSourceArtifacts,
     }),
   );
   return mergeParsedDocuments(parsed, {
     scopeBlankNodes: typeof input.scopeBlankNodes === 'boolean' ? input.scopeBlankNodes : parsed.length > 1,
+    keepSources: !!opts.keepSourceArtifacts,
   });
 }
 
@@ -10743,6 +10789,7 @@ module.exports = {
   parseN3Text,
   mergeParsedDocuments,
   scopeBlankNodesInDocument,
+  prefixesUsedInTokens,
   isN3SourceListInput,
   parseN3SourceList,
 };
@@ -13231,7 +13278,17 @@ module.exports = {
 
 'use strict';
 
-const { LOG_NS, Iri, Var, Blank, ListTerm, OpenListTerm, GraphTerm, Triple, copyQuotedGraphMetadata } = require('./prelude');
+const {
+  LOG_NS,
+  Iri,
+  Var,
+  Blank,
+  ListTerm,
+  OpenListTerm,
+  GraphTerm,
+  Triple,
+  copyQuotedGraphMetadata,
+} = require('./prelude');
 
 function liftBlankRuleVars(premise, conclusion) {
   function isLogIncludesLikePredicate(p) {
