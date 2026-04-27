@@ -1,5 +1,20 @@
 'use strict';
 
+// Example-specific builtin module for examples/sudoku.n3.
+//
+// The N3 file keeps the Sudoku report declarative: it asks predicates in the
+// http://example.org/sudoku-builtin# namespace for facts such as the normalized
+// puzzle, solution, move counts, and validation checks.
+//
+// This JavaScript module supplies the specialized Sudoku search/verification
+// kernel. It is loaded by the examples test runner in the same uniform way as
+// examples/builtin/queens.js:
+//
+//   node eyeling.js --builtin examples/builtin/sudoku.js examples/sudoku.n3
+//
+// Keeping this under examples/builtin/ makes the example self-contained and
+// avoids registering example-specific predicates in the core runtime.
+
 module.exports = function registerSudokuBuiltins(api) {
   const { registerBuiltin, internLiteral, termToJsString, unifyTerm, terms } = api;
   const { Var } = terms;

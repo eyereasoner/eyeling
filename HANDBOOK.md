@@ -1891,8 +1891,16 @@ A few practical defaults are worth remembering:
 Custom builtins can be loaded explicitly from the CLI:
 
 ```bash
-npx eyeling --builtin lib/builtin-sudoku.js examples/sudoku.n3
+npx eyeling --builtin examples/builtin/sudoku.js examples/sudoku.n3
 ```
+
+Example-specific builtins live under `examples/builtin/`. When the examples test runner sees `examples/builtin/<stem>.js` next to `examples/<stem>.n3`, it auto-loads that builtin for the matching example by running the same command shape a user would run manually:
+
+```bash
+node eyeling.js --builtin examples/builtin/queens.js examples/queens.n3
+```
+
+Examples that do not need a custom builtin should not add a matching file under `examples/builtin/`. Examples that do need one should ship it there and let the examples test runner load it uniformly. For example, `examples/sudoku.n3` is paired with `examples/builtin/sudoku.js`, and `examples/queens.n3` is paired with `examples/builtin/queens.js`.
 
 ### 14.2 The bundled Node CLI/runtime (`eyeling.js`)
 
@@ -2376,13 +2384,15 @@ That API keeps the extension boundary explicit: custom builtins get the operatio
 
 ### 16.6 A shipped example: the Sudoku builtin
 
-The repository now ships a Sudoku builtin module (`lib/builtin-sudoku.js`) and a matching example program (`sudoku.n3`).
+The repository ships a Sudoku example program (`examples/sudoku.n3`) together with its example-specific builtin module (`examples/builtin/sudoku.js`).
 
-So this works out of the box:
+Run it explicitly like this:
 
 ```bash
-eyeling sudoku.n3
+eyeling --builtin examples/builtin/sudoku.js examples/sudoku.n3
 ```
+
+`npm run test:examples` uses the same convention automatically: when it sees `examples/builtin/sudoku.js` next to `examples/sudoku.n3`, it loads that module for the Sudoku example.
 
 That example is useful for two reasons:
 
@@ -2567,10 +2577,10 @@ It also supports **custom builtin modules**.
 - From JavaScript: `reason({ builtinModules: ['./my-builtins.js'] }, input)`
 - Programmatically in-process: `registerBuiltin(...)`, `registerBuiltinModule(...)`, `loadBuiltinModule(...)`
 
-A concrete shipped example is the Sudoku builtin and the root-level `sudoku.n3` program:
+A concrete shipped example is the Sudoku builtin paired with `examples/sudoku.n3`:
 
 ```bash
-eyeling sudoku.n3
+eyeling --builtin examples/builtin/sudoku.js examples/sudoku.n3
 ```
 
 References:

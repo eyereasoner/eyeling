@@ -96,6 +96,14 @@ function resolveExpectedPath(outputDir, inputFile) {
   return path.join(outputDir, candidates[0]);
 }
 
+function resolveExampleBuiltinPath(root, inputFile) {
+  const stem = path.basename(inputFile, path.extname(inputFile));
+  const rel = path.join('examples', 'builtin', `${stem}.js`);
+  const abs = path.join(root, rel);
+  if (!fs.existsSync(abs)) return null;
+  return { abs, rel };
+}
+
 function main() {
   const suiteStart = Date.now();
 
@@ -170,17 +178,32 @@ function main() {
     const tmpDir = mkTmpDir();
     const generatedPath = path.join(tmpDir, 'generated.n3');
 
-    // Run eyeling on this file (cwd examplesDir so relative behavior matches old script)
+    // Run eyeling on this file. If examples/builtin/<stem>.js exists,
+    // load it for the matching examples/<stem>.n3 file. Builtin-backed examples
+    // run from the repository root so the command shape matches documented usage:
+    //   node eyeling.js --builtin examples/builtin/foo.js examples/foo.n3
+    const builtin = resolveExampleBuiltinPath(root, file);
     const outFd = fs.openSync(generatedPath, 'w');
-
-    const r = cp.spawnSync(nodePath, [eyelingJsPath, '-d', file], {
-      cwd: examplesDir,
-      stdio: ['ignore', outFd, 'pipe'], // stdout -> file, stderr captured
-      maxBuffer: 200 * 1024 * 1024,
-      encoding: 'utf8',
-    });
-
-    fs.closeSync(outFd);
+    let r;
+    try {
+      if (builtin) {
+        r = cp.spawnSync(nodePath, [eyelingJsPath, '-d', '--builtin', builtin.rel, path.join('examples', file)], {
+          cwd: root,
+          stdio: ['ignore', outFd, 'pipe'], // stdout -> file, stderr captured
+          maxBuffer: 200 * 1024 * 1024,
+          encoding: 'utf8',
+        });
+      } else {
+        r = cp.spawnSync(nodePath, [eyelingJsPath, '-d', file], {
+          cwd: examplesDir,
+          stdio: ['ignore', outFd, 'pipe'], // stdout -> file, stderr captured
+          maxBuffer: 200 * 1024 * 1024,
+          encoding: 'utf8',
+        });
+      }
+    } finally {
+      fs.closeSync(outFd);
+    }
 
     const rc = r.status == null ? 1 : r.status;
 

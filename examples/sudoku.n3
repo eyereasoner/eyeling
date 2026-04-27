@@ -1,7 +1,13 @@
 # ==================================================
 # sudoku.n3
 #
-# A standalone Sudoku solver and report generator.
+# A Sudoku solver and report generator.
+#
+# Run:
+#   node eyeling.js --builtin examples/builtin/sudoku.js examples/sudoku.n3
+#
+# The specialized solver lives in examples/builtin/sudoku.js. The N3 below
+# describes the report and validation checks around that solver.
 #
 # Edit :case :puzzle to solve another puzzle.
 # Accepted blanks: 0, ., _

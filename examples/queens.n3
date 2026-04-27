@@ -1,0 +1,20 @@
+# N-Queens benchmark wrapper for Eyeling.
+#
+# Run:
+#   node eyeling.js --builtin examples/builtin/queens.js examples/queens.n3
+#
+# The tight bit-mask search kernel lives in examples/builtin/queens.js.
+# Pure N3 can express N-Queens declaratively, but a 16x16 exhaustive count is
+# not a practical pure-N3 benchmark for the current engine.
+
+@prefix : <http://example.org/queens#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+
+:run :n 14; :maxPrint 1.
+
+{
+  :run :n ?N; :maxPrint ?MaxPrint.
+  (?N ?MaxPrint) :render ?Report.
+} log:query {
+  :answer log:outputString ?Report.
+}.
