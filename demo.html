@@ -802,7 +802,12 @@
                 );
               };
               const cleanOrigin = String(origin || 'example-builtin.js').replace(/[\r\n]/g, '');
-              const fn = new Function('module', 'exports', 'require', String(source || '') + '\n//# sourceURL=' + cleanOrigin);
+              const fn = new Function(
+                'module',
+                'exports',
+                'require',
+                String(source || '') + '\n//# sourceURL=' + cleanOrigin,
+              );
               fn(module, exports, require);
               return module.exports;
             }
