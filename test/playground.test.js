@@ -488,6 +488,8 @@ async function main() {
     // Intercept CodeMirror + remote GitHub raw URLs (keep test deterministic).
     const localPkg = fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8');
     const localEyeling = fs.readFileSync(path.join(ROOT, 'eyeling.js'), 'utf8');
+    const localSudoku = fs.readFileSync(path.join(ROOT, 'examples', 'sudoku.n3'), 'utf8');
+    const localSudokuBuiltin = fs.readFileSync(path.join(ROOT, 'examples', 'builtin', 'sudoku.js'), 'utf8');
 
     const intercept = new Map([
       // CodeMirror assets (CDN)
@@ -516,6 +518,14 @@ async function main() {
       [
         'https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/eyeling.js',
         { ct: 'application/javascript', body: localEyeling },
+      ],
+      [
+        'https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/sudoku.n3',
+        { ct: 'text/plain', body: localSudoku },
+      ],
+      [
+        'https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/builtin/sudoku.js',
+        { ct: 'application/javascript', body: localSudokuBuiltin },
       ],
     ]);
 
@@ -641,6 +651,21 @@ async function main() {
       })()`);
     }
 
+    async function loadUrlIntoEditor(url) {
+      const payload = JSON.stringify(String(url));
+      await evalInPage(`(() => {
+        const input = document.getElementById('n3-uri');
+        const asBackground = document.getElementById('load-as-background');
+        const btn = document.getElementById('load-uri-btn');
+        if (!input) throw new Error('n3-uri input not found');
+        if (!btn) throw new Error('load-uri-btn not found');
+        input.value = ${payload};
+        if (asBackground) asBackground.checked = false;
+        btn.click();
+        return true;
+      })()`);
+    }
+
     async function waitForState(label, predicate, timeoutMs = 60000) {
       const deadline = Date.now() + timeoutMs;
       let last = { status: '', output: '', highlighted: [] };
@@ -730,6 +755,26 @@ ${JSON.stringify(last, null, 2)}`);
       'Expected clean rendered output without raw triples',
     );
     ok('playground renders log:outputString cleanly in Output');
+
+    // 5) URL-loaded repository examples should auto-load matching examples/builtin/<stem>.js.
+    await loadUrlIntoEditor('https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/sudoku.n3');
+    await waitForState(
+      'sudoku URL loaded with companion builtin',
+      (st) => /loaded n3 into the editor and loaded its example builtin/i.test(String(st.status || '')),
+      20000,
+    );
+    await clickRun();
+    const sudoku = await waitForState(
+      'URL-loaded Sudoku example completion',
+      (st) =>
+        String(st.status || '')
+          .trim()
+          .startsWith('Done') && /The puzzle is solved/i.test(String(st.output || '')),
+      60000,
+    );
+    assert.match(sudoku.output, /Completed grid/i, 'Expected Sudoku rendered output');
+    assert.match(sudoku.output, /unique valid Sudoku solution/i, 'Expected Sudoku builtin-backed result');
+    ok('playground auto-loads a companion example builtin for URL-loaded Sudoku');
 
     // Ensure no uncaught runtime exceptions.
     assert.equal(exceptions.length, 0, `Uncaught exceptions in demo.html: ${JSON.stringify(exceptions[0] || {})}`);

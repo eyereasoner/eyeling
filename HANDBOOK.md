@@ -1902,6 +1902,8 @@ node eyeling.js --builtin examples/builtin/queens.js examples/queens.n3
 
 Examples that do not need a custom builtin should not add a matching file under `examples/builtin/`. Examples that do need one should ship it there and let the examples test runner load it uniformly. For example, `examples/sudoku.n3` is paired with `examples/builtin/sudoku.js`, and `examples/queens.n3` is paired with `examples/builtin/queens.js`.
 
+The browser playground follows the same convention for URL-loaded repository examples: when a loaded URL looks like `.../examples/name.n3`, the playground tries to fetch `.../examples/builtin/name.js` and register it before reasoning. If no matching builtin file exists, the N3 program runs normally.
+
 ### 14.2 The bundled Node CLI/runtime (`eyeling.js`)
 
 The bundle contains the whole engine. The CLI path is the “canonical behavior”:
@@ -2392,7 +2394,7 @@ Run it explicitly like this:
 eyeling --builtin examples/builtin/sudoku.js examples/sudoku.n3
 ```
 
-`npm run test:examples` uses the same convention automatically: when it sees `examples/builtin/sudoku.js` next to `examples/sudoku.n3`, it loads that module for the Sudoku example.
+`npm run test:examples` uses the same convention automatically: when it sees `examples/builtin/sudoku.js` next to `examples/sudoku.n3`, it loads that module for the Sudoku example. The browser playground uses the convention too for URL-loaded repository examples, so loading the raw `examples/sudoku.n3` URL also fetches and registers the matching `examples/builtin/sudoku.js` module.
 
 That example is useful for two reasons:
 

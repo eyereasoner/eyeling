@@ -636,6 +636,8 @@
         let versionPromise = null;
         let backgroundKnowledgeText = '';
         let backgroundKnowledgeSource = '';
+        let backgroundBuiltinModules = [];
+        let editorBuiltinModules = [];
 
         // --- Unified background streaming runner (shared with the Streaming demo tab) ---
         // Exposes: window.__eyelingUnified.startStreamRun({
@@ -783,8 +785,41 @@
             const onStderr = args && typeof args.onStderr === 'function' ? args.onStderr : null;
             const onDone = args && typeof args.onDone === 'function' ? args.onDone : null;
             const onError = args && typeof args.onError === 'function' ? args.onError : null;
+            const builtinModules = args && Array.isArray(args.builtinModules) ? args.builtinModules : [];
 
             const runId = ++nextRunId;
+
+            function evalCommonJsBuiltinModule(source, origin) {
+              const module = { exports: {} };
+              const exports = module.exports;
+              const require = (specifier) => {
+                throw new Error(
+                  'Browser playground builtin ' +
+                    (origin || '<example-builtin>') +
+                    ' tried to require ' +
+                    specifier +
+                    '; browser-loaded example builtins must be self-contained.',
+                );
+              };
+              const cleanOrigin = String(origin || 'example-builtin.js').replace(/[\r\n]/g, '');
+              const fn = new Function('module', 'exports', 'require', String(source || '') + '\n//# sourceURL=' + cleanOrigin);
+              fn(module, exports, require);
+              return module.exports;
+            }
+
+            function registerBuiltinModuleSources(modules, api) {
+              if (!modules || !modules.length) return;
+              if (!api || typeof api.registerBuiltinModule !== 'function') {
+                throw new Error('Eyeling registerBuiltinModule API not available.');
+              }
+              for (let i = 0; i < modules.length; i += 1) {
+                const item = modules[i];
+                if (!item || typeof item.source !== 'string') continue;
+                const origin = item.url || '<example-builtin-' + i + '>';
+                const mod = evalCommonJsBuiltinModule(item.source, origin);
+                api.registerBuiltinModule(mod, origin);
+              }
+            }
 
             // Best-effort fallback for environments without Web Workers.
             if (typeof Worker === 'undefined') {
@@ -814,6 +849,7 @@
                 };
 
                 try {
+                  registerBuiltinModuleSources(builtinModules, window.eyeling);
                   window.eyeling.reasonStream(program, {
                     enforceHttps,
                     proof,
@@ -826,7 +862,7 @@
                   console.error = __origConsoleError;
                 }
                 flush(true);
-                onDone && onDone({ runId, exitCode: msg.exitCode || 0, message: msg.message || '' });
+                onDone && onDone({ runId, exitCode: 0, message: '' });
               } catch (e) {
                 onError && onError(formatMaybeSyntaxError(e, program, 'input.n3', sourceMap));
               }
@@ -872,6 +908,47 @@
             }
 
             const now = () => (self.performance && performance.now) ? performance.now() : Date.now();
+
+            function __evalCommonJsBuiltinModule(source, origin) {
+              const module = { exports: {} };
+              const exports = module.exports;
+              const require = (specifier) => {
+                throw new Error(
+                  "Browser playground builtin " +
+                    (origin || "<example-builtin>") +
+                    " tried to require " +
+                    specifier +
+                    "; browser-loaded example builtins must be self-contained."
+                );
+              };
+              const cleanOrigin = String(origin || "example-builtin.js").replace(/[\\r\\n]/g, "");
+              const fn = new Function("module", "exports", "require", String(source || "") + "\\n//# sourceURL=" + cleanOrigin);
+              fn(module, exports, require);
+              return module.exports;
+            }
+
+            function __registerBuiltinModuleSources(modules) {
+              if (!modules || !modules.length) return;
+              if (!self.eyeling || typeof self.eyeling.registerBuiltinModule !== "function") {
+                throw new Error("Eyeling registerBuiltinModule API not available.");
+              }
+              for (let i = 0; i < modules.length; i += 1) {
+                const item = modules[i];
+                if (!item || typeof item.source !== "string") continue;
+                const origin = item.url || ("<example-builtin-" + i + ">");
+                const mod = __evalCommonJsBuiltinModule(item.source, origin);
+                self.eyeling.registerBuiltinModule(mod, origin);
+              }
+            }
+
+            function __hasBuiltinModuleSources(modules) {
+              return Array.isArray(modules) && modules.some((item) => item && typeof item.source === "string");
+            }
+
+            function __builtinModulesForReasonStream(modules) {
+              if (!__hasBuiltinModuleSources(modules)) return undefined;
+              return modules.map((item, i) => __evalCommonJsBuiltinModule(item.source, item.url || ("<example-builtin-" + i + ">")));
+            }
 
             function __offsetToLineCol(text, offset) {
               const chars = Array.from(String(text || ""));
@@ -967,6 +1044,9 @@
               const sourceMap = msg.sourceMap || null;
               const enforceHttps = !!msg.enforceHttps;
               const proof = !!msg.proof;
+              const builtinModules = Array.isArray(msg.builtinModules) ? msg.builtinModules : [];
+
+              __registerBuiltinModuleSources(builtinModules);
 
               // Forward stdout/stderr to the main thread.
               // - stdout is used for proof comments (when enabled)
@@ -1231,6 +1311,7 @@ const batch = [];
               sourceMap,
               enforceHttps,
               proof,
+              builtinModules,
             });
 
             return {
@@ -1776,6 +1857,7 @@ const batch = [];
           const { cancel } = U.startStreamRun({
             program: programText,
             sourceMap: effectiveProgram.sourceMap,
+            builtinModules: effectiveProgram.builtinModules || [],
             enforceHttps: enforceHttpsCheckbox.checked,
             proof: proofCheckbox.checked,
             onRenderedText: (text, countTriples) => {
@@ -1908,6 +1990,44 @@ const batch = [];
           return value.slice(0, keep) + '…' + value.slice(value.length - keep);
         }
 
+        function dedupeBuiltinModules(modules) {
+          const out = [];
+          const seen = new Set();
+          for (const item of Array.isArray(modules) ? modules : []) {
+            if (!item || typeof item.source !== 'string') continue;
+            const key = item.url || item.source;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            out.push(item);
+          }
+          return out;
+        }
+
+        function deriveExampleBuiltinUrl(n3Url) {
+          try {
+            const u = new URL(n3Url, window.location.href);
+            if (!/\/examples\/[^/]+\.n3$/i.test(u.pathname)) return null;
+            u.pathname = u.pathname.replace(/\/examples\/([^/]+)\.n3$/i, '/examples/builtin/$1.js');
+            u.search = '';
+            u.hash = '';
+            return u.toString();
+          } catch (_) {
+            return null;
+          }
+        }
+
+        async function fetchCompanionExampleBuiltin(requestUrl, finalUrl) {
+          const candidate = deriveExampleBuiltinUrl(finalUrl || requestUrl) || deriveExampleBuiltinUrl(requestUrl);
+          if (!candidate) return [];
+          try {
+            const resp = await fetch(candidate);
+            if (!resp.ok) return [];
+            return [{ url: resp.url || candidate, source: await resp.text() }];
+          } catch (_) {
+            return [];
+          }
+        }
+
         function updateBackgroundStatus() {
           const hasBackground = !!backgroundKnowledgeText;
           if (clearBackgroundBtn) clearBackgroundBtn.disabled = !hasBackground;
@@ -1930,6 +2050,7 @@ const batch = [];
         function clearBackgroundKnowledge() {
           backgroundKnowledgeText = '';
           backgroundKnowledgeSource = '';
+          backgroundBuiltinModules = [];
           updateBackgroundStatus();
         }
 
@@ -1949,6 +2070,7 @@ const batch = [];
           if (!backgroundKnowledgeText) {
             return {
               program: editorText,
+              builtinModules: dedupeBuiltinModules(editorBuiltinModules),
               sourceMap: {
                 hasBackground: false,
                 backgroundStartLine: 0,
@@ -1963,6 +2085,7 @@ const batch = [];
           if (!editorText.trim()) {
             return {
               program: backgroundKnowledgeText,
+              builtinModules: dedupeBuiltinModules(backgroundBuiltinModules),
               sourceMap: {
                 hasBackground: true,
                 backgroundStartLine: 1,
@@ -1988,6 +2111,7 @@ const batch = [];
 
           return {
             program: parts.join('\n'),
+            builtinModules: dedupeBuiltinModules(backgroundBuiltinModules.concat(editorBuiltinModules)),
             sourceMap: {
               hasBackground: true,
               backgroundStartLine,
@@ -2041,21 +2165,31 @@ const batch = [];
             }
             let text = await resp.text();
 
+            const finalUrl = resp.url || uri;
+
             // ✅ IMPORTANT: preserve base for <#...> by injecting @base <finalURL> .
-            text = injectBaseDirective(text, resp.url || uri);
+            text = injectBaseDirective(text, finalUrl);
+
+            const companionBuiltins = await fetchCompanionExampleBuiltin(uri, finalUrl);
 
             clearErrorHighlight();
 
             if (loadAsBackgroundCheckbox && loadAsBackgroundCheckbox.checked) {
               backgroundKnowledgeText = text;
-              backgroundKnowledgeSource = resp.url || uri;
+              backgroundKnowledgeSource = finalUrl;
+              backgroundBuiltinModules = companionBuiltins;
               updateBackgroundStatus();
-              statusEl.textContent = 'Loaded N3 as background knowledge. The editor was left unchanged.';
+              statusEl.textContent = companionBuiltins.length
+                ? 'Loaded N3 as background knowledge and loaded its example builtin. The editor was left unchanged.'
+                : 'Loaded N3 as background knowledge. The editor was left unchanged.';
             } else {
               editor.setValue(text);
+              editorBuiltinModules = companionBuiltins;
               const mh = currentMaxHeights();
               autoResizeCodeMirror(editor, 220, mh.editor);
-              statusEl.textContent = 'Loaded N3 into the editor (base preserved).';
+              statusEl.textContent = companionBuiltins.length
+                ? 'Loaded N3 into the editor and loaded its example builtin (base preserved).'
+                : 'Loaded N3 into the editor (base preserved).';
               updateShareUrl();
             }
           } catch (e) {

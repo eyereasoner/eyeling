@@ -8679,10 +8679,21 @@ function reasonStream(input, opts = {}) {
   deref.setEnforceHttpsEnabled(!!enforceHttps);
   proofCommentsEnabled = !!proof;
 
+  function registerBuiltinModuleOption(mod, index) {
+    if (!mod) return;
+    if (typeof mod === 'string') {
+      loadBuiltinModule(mod);
+      return;
+    }
+    registerBuiltinModule(mod, `<reasonStream builtinModules[${index}]>`);
+  }
+
   if (Array.isArray(builtinModules)) {
-    for (const spec of builtinModules) loadBuiltinModule(spec);
-  } else if (typeof builtinModules === 'string' && builtinModules) {
-    loadBuiltinModule(builtinModules);
+    for (let i = 0; i < builtinModules.length; i += 1) {
+      registerBuiltinModuleOption(builtinModules[i], i);
+    }
+  } else {
+    registerBuiltinModuleOption(builtinModules, 0);
   }
 
   let prefixes, triples, frules, brules, logQueryRules;
@@ -8967,6 +8978,11 @@ module.exports = {
   tripleToN3: engine.tripleToN3,
   collectOutputStringsFromFacts: engine.collectOutputStringsFromFacts,
   prettyPrintQueryTriples: engine.prettyPrintQueryTriples,
+  registerBuiltin: engine.registerBuiltin,
+  unregisterBuiltin: engine.unregisterBuiltin,
+  registerBuiltinModule: engine.registerBuiltinModule,
+  loadBuiltinModule: engine.loadBuiltinModule,
+  listBuiltinIris: engine.listBuiltinIris,
   getEnforceHttpsEnabled: engine.getEnforceHttpsEnabled,
   setEnforceHttpsEnabled: engine.setEnforceHttpsEnabled,
   getProofCommentsEnabled: engine.getProofCommentsEnabled,
