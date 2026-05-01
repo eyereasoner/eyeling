@@ -1967,7 +1967,7 @@ It deliberately does **not** expose `loadBuiltinModule(...)`, because loading bu
 
 For browser apps, prefer running Eyeling in a **Web Worker** and importing `eyeling/browser` there.
 
-### 14.3 `lib/entry.js`: bundler-friendly exports
+### 14.4 `lib/entry.js`: bundler-friendly exports
 
 `lib/entry.js` exports:
 
@@ -1976,14 +1976,14 @@ For browser apps, prefer running Eyeling in a **Web Worker** and importing `eyel
 
 `rdfjs` is a small built-in RDF/JS `DataFactory`, so browser / worker code can construct quads without pulling in another package first.
 
-### 14.4 JavaScript API
+### 14.5 JavaScript API
 
 Eyeling exposes two JavaScript entry styles:
 
 - `reason(...)` from `index.js` when you want the same text output as the CLI
 - `reasonStream(...)` / `reasonRdfJs(...)` from the Node bundle or `eyeling/browser` when you want in-process reasoning and structured RDF/JS results
 
-#### 14.4.1 npm helper: `reason(...)`
+#### 14.5.1 npm helper: `reason(...)`
 
 The npm `reason(...)` function does something intentionally simple and robust:
 
@@ -2036,7 +2036,7 @@ Notes:
 - By default, the npm helper keeps output machine-friendly (`proofComments: false`).
 - Use this path when you want CLI-equivalent behavior inside JavaScript.
 
-#### 14.4.2 RDF-JS and Eyeling rule-object interoperability
+#### 14.5.2 RDF-JS and Eyeling rule-object interoperability
 
 The JavaScript APIs accept four input styles:
 
@@ -2114,7 +2114,7 @@ console.log(out);
 
 You can also pass a full AST bundle directly, for example `[prefixes, triples, forwardRules, backwardRules]`.
 
-#### 14.4.3 In-process bundle API: `reasonStream(...)` and `reasonRdfJs(...)`
+#### 14.5.3 In-process bundle API: `reasonStream(...)` and `reasonRdfJs(...)`
 
 Use the bundle entry if you want structured results while the engine is running instead of final CLI text after the fact.
 
@@ -2153,7 +2153,7 @@ Use these entry points when you need one or more of the following:
 - derived results consumed as RDF/JS quads
 - streaming derived RDF/JS quads during reasoning
 
-### 14.5 Choosing the right entry point
+### 14.6 Choosing the right entry point
 
 A practical rule of thumb:
 
