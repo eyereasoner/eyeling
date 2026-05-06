@@ -11130,6 +11130,37 @@ const MAX_LITERAL_PARTS_CACHE_LEN = 1024;
 
 const __literalPartsCache = new Map(); // lit string -> [lex, dt]
 
+function quotedLiteralEndIndex(str) {
+  if (typeof str !== 'string' || str.length < 2) return -1;
+
+  const quote = str[0];
+  if (quote !== '"' && quote !== "'") return -1;
+
+  const delimLen = str.startsWith(quote.repeat(3)) ? 3 : 1;
+  const delim = quote.repeat(delimLen);
+
+  let i = delimLen;
+  while (i < str.length) {
+    // Stored literals may contain escaped quotes, e.g. \"...\"^^xsd:dateTime
+    // inside a plain string. Those must not terminate the outer lexical form.
+    if (str[i] === '\\') {
+      i += 2;
+      continue;
+    }
+
+    if (delimLen === 1) {
+      if (str[i] === quote) return i + 1;
+      i += 1;
+      continue;
+    }
+
+    if (str.startsWith(delim, i)) return i + delimLen;
+    i += 1;
+  }
+
+  return -1;
+}
+
 function literalParts(lit) {
   // Avoid caching extremely large literals (notably huge numeric intermediates)
   // to prevent unbounded memory growth.
@@ -11147,24 +11178,21 @@ function literalParts(lit) {
   let lex = lit;
   let dt = null;
 
-  const re = /^(['"]{1,3})([\s\S]*?)\1\^\^(.+)$/;
-  const match = lit.match(re);
-  if (match) {
-    lex = match[1] + match[2] + match[1];
-    dt = match[3];
+  const lexEnd = quotedLiteralEndIndex(lit);
+  if (lexEnd > 0 && lit.startsWith('^^', lexEnd)) {
+    lex = lit.slice(0, lexEnd);
+    dt = lit.slice(lexEnd + 2);
     if (dt.startsWith('<') && dt.endsWith('>')) {
       dt = dt.slice(1, -1);
     }
   }
 
   // Strip LANGTAG from the lexical form when present.
-  if (lex.length >= 2 && lex[0] === '"') {
-    const lastQuote = lex.lastIndexOf('"');
-    if (lastQuote > 0 && lastQuote < lex.length - 1 && lex[lastQuote + 1] === '@') {
-      const lang = lex.slice(lastQuote + 2);
-      if (/^[A-Za-z]+(?:-[A-Za-z0-9]+)*$/.test(lang)) {
-        lex = lex.slice(0, lastQuote + 1);
-      }
+  const langLexEnd = quotedLiteralEndIndex(lex);
+  if (langLexEnd > 0 && lex[0] === '"' && langLexEnd < lex.length && lex[langLexEnd] === '@') {
+    const lang = lex.slice(langLexEnd + 1);
+    if (/^[A-Za-z]+(?:-[A-Za-z0-9]+)*$/.test(lang)) {
+      lex = lex.slice(0, langLexEnd);
     }
   }
 

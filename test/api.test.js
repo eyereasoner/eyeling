@@ -289,6 +289,33 @@ const cases = [
     },
   },
   {
+    name: '00c quoted string containing typed literal syntax remains plain string',
+    opt: { proofComments: false },
+    input: `
+@prefix : <http://example.org/>.
+
+:s :p """
+@prefix : <http://example.org/>.
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
+
+:Let :param \"2023-04-01T18:06:04Z\"^^xsd:dateTime .
+""".
+
+{
+  :s :p ?O.
+}
+=>
+{
+  :test :is ?O.
+}.
+`,
+    expect: [/^:test\s+:is\s+/m],
+    notExpect: [/\^\^<xsd:dateTime/],
+    check(out) {
+      assert.match(out, /\\"2023-04-01T18:06:04Z\\"\^\^xsd:dateTime \./);
+    },
+  },
+  {
     name: '01 forward rule: p -> q',
     opt: { proofComments: false },
     input: `
