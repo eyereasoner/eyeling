@@ -1,0 +1,113 @@
+# ==========================================================================
+# Complex Matrix Stability
+# ==========================================================================
+# Diagonal 2x2 complex matrices are classified for discrete-time stability.
+# This adapts the Eyeling complex matrix example as a committed SEE N3
+# source that compiles to a standalone JavaScript example.
+
+@prefix : <https://eyereasoner.github.io/see/examples/complex-matrix-stability#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix string: <http://www.w3.org/2000/10/swap/string#>.
+
+:Case :unstableMatrix :A_unstable;
+  :stableMatrix :A_stable;
+  :dampedMatrix :A_damped.
+
+:Scale2 :k 2.
+
+:c_0_0 :re 0; :im 0; :pretty "(0,0)".
+:c_0_1 :re 0; :im 1; :pretty "(0,1)".
+:c_1_0 :re 1; :im 0; :pretty "(1,0)".
+:c_m1_0 :re -1; :im 0; :pretty "(-1,0)".
+:c_1_1 :re 1; :im 1; :pretty "(1,1)".
+:c_1_2 :re 1; :im 2; :pretty "(1,2)".
+:c_2_0 :re 2; :im 0; :pretty "(2,0)".
+
+:A_unstable
+  :a11 :c_1_1; :a12 :c_0_0; :a21 :c_0_0; :a22 :c_2_0;
+  :pretty "[[(1,1),(0,0)],[(0,0),(2,0)]]".
+:A_stable
+  :a11 :c_1_0; :a12 :c_0_0; :a21 :c_0_0; :a22 :c_m1_0;
+  :pretty "[[(1,0),(0,0)],[(0,0),(-1,0)]]".
+:A_damped
+  :a11 :c_0_0; :a12 :c_0_0; :a21 :c_0_0; :a22 :c_0_0;
+  :pretty "[[(0,0),(0,0)],[(0,0),(0,0)]]".
+
+{ ?Z :abs2 ?A2 } <= {
+  ?Z :re ?R; :im ?I.
+  (?R ?R) math:product ?R2.
+  (?I ?I) math:product ?I2.
+  (?R2 ?I2) math:sum ?A2.
+}.
+
+{ ?Z :isZero true } <= { ?Z :re 0; :im 0. }.
+
+{ ?M :eigenvalue1 ?L1 } <= {
+  ?M :a11 ?L1; :a12 ?Z1; :a21 ?Z2; :a22 ?L2.
+  ?Z1 :isZero true.
+  ?Z2 :isZero true.
+}.
+{ ?M :eigenvalue2 ?L2 } <= {
+  ?M :a11 ?L1; :a12 ?Z1; :a21 ?Z2; :a22 ?L2.
+  ?Z1 :isZero true.
+  ?Z2 :isZero true.
+}.
+
+{ ?M :spectralRadiusSq ?A1 } <= {
+  ?M :eigenvalue1 ?L1; :eigenvalue2 ?L2.
+  ?L1 :abs2 ?A1.
+  ?L2 :abs2 ?A2.
+  ?A1 math:notLessThan ?A2.
+}.
+{ ?M :spectralRadiusSq ?A2 } <= {
+  ?M :eigenvalue1 ?L1; :eigenvalue2 ?L2.
+  ?L1 :abs2 ?A1.
+  ?L2 :abs2 ?A2.
+  ?A2 math:greaterThan ?A1.
+}.
+
+{ ?M :spectralRadius 2 } <= { ?M :spectralRadiusSq 4. }.
+{ ?M :spectralRadius 1 } <= { ?M :spectralRadiusSq 1. }.
+{ ?M :spectralRadius 0 } <= { ?M :spectralRadiusSq 0. }.
+
+{ ?M :classification :unstable } <= { ?M :spectralRadiusSq ?R2. ?R2 math:greaterThan 1. }.
+{ ?M :classification :stable } <= { ?M :spectralRadiusSq 1. }.
+{ ?M :classification :damped } <= { ?M :spectralRadiusSq ?R2. ?R2 math:lessThan 1. }.
+
+{ :sampleProduct :re ?Cr } <= {
+  :c_1_2 :re ?Ar; :im ?Ai.
+  :c_0_1 :re ?Br; :im ?Bi.
+  (?Ar ?Br) math:product ?P1.
+  (?Ai ?Bi) math:product ?P2.
+  (?P1 ?P2) math:difference ?Cr.
+}.
+{ :sampleProduct :im ?Ci } <= {
+  :c_1_2 :re ?Ar; :im ?Ai.
+  :c_0_1 :re ?Br; :im ?Bi.
+  (?Ar ?Bi) math:product ?P3.
+  (?Ai ?Br) math:product ?P4.
+  (?P3 ?P4) math:sum ?Ci.
+}.
+
+{ :A_unstable :scaledRadiusSq ?S2 } <= {
+  :Scale2 :k ?K.
+  (?K ?K) math:product ?K2.
+  (?K2 4) math:product ?S2.
+}.
+
+{
+  :Case :unstableMatrix ?Mu; :stableMatrix ?Ms; :dampedMatrix ?Md.
+  ?Mu :classification :unstable; :spectralRadius 2.
+  ?Ms :classification :stable; :spectralRadius 1.
+  ?Md :classification :damped; :spectralRadius 0.
+} => { :Case :scenarioOk true. }.
+
+
+{
+  :Case :scenarioOk true.
+  :A_unstable :pretty ?UnstableMatrix; :spectralRadius ?Ru.
+  :A_stable :pretty ?StableMatrix; :spectralRadius ?Rs.
+  :A_damped :pretty ?DampedMatrix; :spectralRadius ?Rd.
+  ("=== Answer ===\nA_unstable = %s has spectral radius %s and is unstable. A_stable = %s has spectral radius %s and is marginally stable. A_damped = %s has spectral radius %s and is damped.\n\n=== Explanation ===\nFor a discrete-time linear system x_{k+1} = A x_k, diagonal matrix eigenvalues are the diagonal entries. The largest squared complex modulus determines the spectral radius class. The N3 derivation also validates that |z*w|^2 = |z|^2*|w|^2 for a concrete complex product and that scaling A_unstable by 2 multiplies the squared spectral radius by 4." ?UnstableMatrix ?Ru ?StableMatrix ?Rs ?DampedMatrix ?Rd) string:format ?Block.
+} => { :report log:outputString ?Block. }.

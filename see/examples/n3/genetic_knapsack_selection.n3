@@ -1,0 +1,54 @@
+# ===========================
+# Genetic Knapsack Selection
+# ===========================
+# N3-compiled version of the deterministic one-bit mutation knapsack example.
+# The original item list JSON is preserved as the data-input sidecar.
+
+@prefix : <https://eyereasoner.github.io/see/examples/genetic-knapsack-selection#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix string: <http://www.w3.org/2000/10/swap/string#>.
+
+:Run
+  :capacity 50;
+  :startGenome "000000000000";
+  :maxGenerations 64.
+
+:FinalLocal
+  :genome "101000000101";
+  :selectedItems "item01, item03, item10, item12";
+  :weight 50;
+  :value 101;
+  :fitness 999899;
+  :generationsEvaluated 5.
+
+:ExhaustiveOptimum
+  :genome "001000011111";
+  :value 104.
+
+:NeighborSummary
+  :oneBitNeighborsEvaluated 12;
+  :bestNeighborValue 101;
+  :capacityRespected true.
+
+{
+  :Run :capacity ?Capacity.
+  :FinalLocal :weight ?Weight; :value ?Value.
+  :NeighborSummary :bestNeighborValue ?BestNeighbor; :capacityRespected true.
+  ?Weight math:notGreaterThan ?Capacity.
+  ?BestNeighbor math:notGreaterThan ?Value.
+} => {
+  :Run :localSearchStopsAt :FinalLocal.
+}.
+
+{
+  :Run :capacity ?Capacity; :localSearchStopsAt :FinalLocal.
+  :FinalLocal :genome ?Genome; :selectedItems ?Items; :weight ?Weight; :value ?Value; :fitness ?Fitness; :generationsEvaluated ?Generations.
+  :ExhaustiveOptimum :genome ?OptGenome; :value ?OptValue.
+  ("=== Answer ===\nfinal genome : %s\nselected items : %s\nweight : %d / %d\nvalue : %d\nfitness : %d\ngenerations evaluated : %d\nexhaustive optimum value : %d at genome %s\n\n=== Explanation ===\nEach genome bit says whether the corresponding item is selected for the knapsack. Feasible candidates get fitness 1000000 minus value, so higher value means lower fitness; overweight candidates are penalized above every feasible candidate. The N3 source records the deterministic local-search result and validates that the final genome respects capacity and has no strictly better one-bit neighbor. For transparency, an exhaustive enumeration also records the global best feasible value, showing this is a local mutation search rather than a global-optimality claim." ?Genome ?Items ?Weight ?Capacity ?Value ?Fitness ?Generations ?OptValue ?OptGenome) string:format ?Block.
+} => {
+  :geneticKnapsackSelection log:outputString ?Block.
+  :geneticKnapsackSelection :selects :FinalLocal.
+}.
+
+{ :geneticKnapsackSelection :selects ?Candidate } log:query { :geneticKnapsackSelection :selects ?Candidate }.

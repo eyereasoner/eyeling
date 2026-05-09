@@ -1,0 +1,85 @@
+# =====================
+# Wind Turbine Envelope
+# =====================
+# Classify wind-speed samples against a turbine operating envelope and compute
+# interval energy. The classification and cubic power curve are expressed in N3
+# rules and compiled into a standalone SEE JavaScript example.
+
+@prefix : <https://eyereasoner.github.io/see/examples/wind-turbine#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix string: <http://www.w3.org/2000/10/swap/string#>.
+
+:case
+  :cutInMS 3.5;
+  :ratedMS 12.0;
+  :cutOutMS 25.0;
+  :ratedPowerMW 3.2;
+  :intervalMinutes 10.0;
+  :sample :t1, :t2, :t3, :t4, :t5, :t6.
+
+:t1 :index 1; :speedMS 3.0.
+:t2 :index 2; :speedMS 6.5.
+:t3 :index 3; :speedMS 11.2.
+:t4 :index 4; :speedMS 15.0.
+:t5 :index 5; :speedMS 24.5.
+:t6 :index 6; :speedMS 27.0.
+
+{
+  :case :cutInMS ?CutIn.
+  ?Sample :speedMS ?Speed.
+  ?Speed math:lessThan ?CutIn.
+} => { ?Sample :status "stopped"; :powerMW 0.0. }.
+
+{
+  :case :cutOutMS ?CutOut.
+  ?Sample :speedMS ?Speed.
+  ?Speed math:notLessThan ?CutOut.
+} => { ?Sample :status "stopped"; :powerMW 0.0. }.
+
+{
+  :case :cutInMS ?CutIn; :ratedMS ?Rated; :ratedPowerMW ?RatedPower.
+  ?Sample :speedMS ?Speed.
+  ?Speed math:notLessThan ?CutIn.
+  ?Speed math:lessThan ?Rated.
+  (?Speed 3) math:exponentiation ?Speed3.
+  (?CutIn 3) math:exponentiation ?CutIn3.
+  (?Rated 3) math:exponentiation ?Rated3.
+  (?Speed3 ?CutIn3) math:difference ?Numerator.
+  (?Rated3 ?CutIn3) math:difference ?Denominator.
+  (?Numerator ?Denominator) math:quotient ?Fraction.
+  (?RatedPower ?Fraction) math:product ?Power.
+} => { ?Sample :status "partial"; :powerMW ?Power. }.
+
+{
+  :case :ratedMS ?Rated; :cutOutMS ?CutOut; :ratedPowerMW ?RatedPower.
+  ?Sample :speedMS ?Speed.
+  ?Speed math:notLessThan ?Rated.
+  ?Speed math:lessThan ?CutOut.
+} => { ?Sample :status "rated"; :powerMW ?RatedPower. }.
+
+{
+  :case :sample ?Sample.
+  ?Sample :status ?Status; :powerMW ?Power.
+  ?Power math:notLessThan 0.
+} => { ?Sample :nonNegativePower true. }.
+
+{
+  :case :ratedPowerMW ?RatedPower; :sample ?Sample.
+  ?Sample :powerMW ?Power.
+  ?Power math:notGreaterThan ?RatedPower.
+} => { ?Sample :withinRatedPower true. }.
+
+{
+  :t1 :speedMS ?S1; :status ?C1; :powerMW ?P1; :nonNegativePower true; :withinRatedPower true.
+  :t2 :speedMS ?S2; :status ?C2; :powerMW ?P2; :nonNegativePower true; :withinRatedPower true.
+  :t3 :speedMS ?S3; :status ?C3; :powerMW ?P3; :nonNegativePower true; :withinRatedPower true.
+  :t4 :speedMS ?S4; :status ?C4; :powerMW ?P4; :nonNegativePower true; :withinRatedPower true.
+  :t5 :speedMS ?S5; :status ?C5; :powerMW ?P5; :nonNegativePower true; :withinRatedPower true.
+  :t6 :speedMS ?S6; :status ?C6; :powerMW ?P6; :nonNegativePower true; :withinRatedPower true.
+  :case :cutInMS ?CutIn; :ratedMS ?Rated; :cutOutMS ?CutOut; :ratedPowerMW ?RatedPower; :intervalMinutes ?Minutes.
+  (?P1 ?P2 ?P3 ?P4 ?P5 ?P6) math:sum ?TotalPower.
+  (?Minutes 60.0) math:quotient ?Hours.
+  (?TotalPower ?Hours) math:product ?Energy.
+  ("=== Answer ===\noperating thresholds : cut-in %.1f m/s, rated %.1f m/s, cut-out %.1f m/s\nrated power : %.1f MW\ninterval classifications : t1 %.1f m/s %s %.3f MW; t2 %.1f m/s %s %.3f MW; t3 %.1f m/s %s %.3f MW; t4 %.1f m/s %s %.3f MW; t5 %.1f m/s %s %.3f MW; t6 %.1f m/s %s %.3f MW\nusable intervals : 4\ntotal energy : %.3f MWh\n\n=== Explanation ===\nWind below cut-in and at or above cut-out is stopped for production and safety. Wind between cut-in and rated speed follows a cubic power curve normalized to the rated point. Wind between rated speed and cut-out is capped at rated power. Energy is accumulated by multiplying each interval power by the ten-minute interval duration." ?CutIn ?Rated ?CutOut ?RatedPower ?S1 ?C1 ?P1 ?S2 ?C2 ?P2 ?S3 ?C3 ?P3 ?S4 ?C4 ?P4 ?S5 ?C5 ?P5 ?S6 ?C6 ?P6 ?Energy) string:format ?Block.
+} => { :report log:outputString ?Block. }.

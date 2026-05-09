@@ -1,0 +1,107 @@
+@prefix : <https://example.org/odrl-dpv-risk-ranked#> .
+@prefix odrl: <http://www.w3.org/ns/odrl/2/> .
+@prefix dpv: <https://w3id.org/dpv#> .
+@prefix risk: <https://w3id.org/dpv/risk#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix tosl: <https://example.org/tosl-profile#> .
+@prefix see: <https://example.org/see#> .
+@prefix in: <https://example.org/see/input#> .
+
+# Formal SEE input evidence in RDF 1.2 TriG.
+# The generated runner reads this TriG evidence directly.
+
+:ConsumerExample rdf:type :ConsumerProfile .
+:ConsumerExample rdf:type odrl:Party .
+:ConsumerExample dct:title "Example consumer profile" .
+:ConsumerExample :hasNeed :Need_DataCannotBeRemoved .
+:ConsumerExample :hasNeed :Need_ChangeOnlyWithPriorNotice .
+:ConsumerExample :hasNeed :Need_NoSharingWithoutConsent .
+:ConsumerExample :hasNeed :Need_DataPortability .
+:Need_DataCannotBeRemoved rdf:type :Need .
+:Need_DataCannotBeRemoved :importance 20 .
+:Need_DataCannotBeRemoved dct:description "Provider must not remove the consumer account/data." .
+:Need_ChangeOnlyWithPriorNotice rdf:type :Need .
+:Need_ChangeOnlyWithPriorNotice :importance 15 .
+:Need_ChangeOnlyWithPriorNotice :minNoticeDays 14 .
+:Need_ChangeOnlyWithPriorNotice dct:description "Agreement may change only with prior notice (>= 14 days)." .
+:Need_NoSharingWithoutConsent rdf:type :Need .
+:Need_NoSharingWithoutConsent :importance 12 .
+:Need_NoSharingWithoutConsent dct:description "No data sharing without explicit consent." .
+:Need_DataPortability rdf:type :Need .
+:Need_DataPortability :importance 10 .
+:Need_DataPortability dct:description "Consumer must be able to export their data." .
+:Agreement1 rdf:type :Agreement .
+:Agreement1 dct:title "Example Agreement" .
+:Agreement1 :policyGraph in:formula1 .
+:ClauseC1 rdf:type :Clause .
+:ClauseC1 :clauseId "C1" .
+:ClauseC1 :text "Provider may remove the user account (and associated data) at its discretion." .
+:ClauseC2 rdf:type :Clause .
+:ClauseC2 :clauseId "C2" .
+:ClauseC2 :text "Provider may change terms by informing users at least 3 days in advance." .
+:ClauseC3 rdf:type :Clause .
+:ClauseC3 :clauseId "C3" .
+:ClauseC3 :text "Provider may share user data with partners for business purposes." .
+:ClauseC4 rdf:type :Clause .
+:ClauseC4 :clauseId "C4" .
+:ClauseC4 :text "Users are not permitted to export their data." .
+:ProcessContext1 rdf:type dpv:Process .
+:ProcessContext1 dct:source :Agreement1 .
+:ProcessContext1 dct:title "Service operation under Agreement1" .
+
+in:formula1 {
+  :Policy1 rdf:type odrl:Policy .
+  :Policy1 odrl:permission :PermDeleteAccount .
+  :Policy1 odrl:permission :PermChangeTerms .
+  :Policy1 odrl:permission :PermShareData .
+  :Policy1 odrl:prohibition :ProhibitExportData .
+  :PermDeleteAccount rdf:type odrl:Permission .
+  :PermDeleteAccount odrl:assigner :Provider .
+  :PermDeleteAccount odrl:assignee :ConsumerExample .
+  :PermDeleteAccount odrl:action tosl:removeAccount .
+  :PermDeleteAccount odrl:target :UserAccount .
+  :PermDeleteAccount :clause :ClauseC1 .
+  :PermChangeTerms rdf:type odrl:Permission .
+  :PermChangeTerms odrl:assigner :Provider .
+  :PermChangeTerms odrl:assignee :ConsumerExample .
+  :PermChangeTerms odrl:action tosl:changeTerms .
+  :PermChangeTerms odrl:target :AgreementText .
+  _:blank1 rdf:type odrl:Duty .
+  _:blank1 odrl:action odrl:inform .
+  _:blank2 rdf:type odrl:Constraint .
+  _:blank2 odrl:leftOperand tosl:noticeDays .
+  _:blank2 odrl:operator odrl:gteq .
+  _:blank2 odrl:rightOperand 3 .
+  _:blank1 odrl:constraint _:blank2 .
+  :PermChangeTerms odrl:duty _:blank1 .
+  :PermChangeTerms :clause :ClauseC2 .
+  :PermShareData rdf:type odrl:Permission .
+  :PermShareData odrl:assigner :Provider .
+  :PermShareData odrl:assignee :ConsumerExample .
+  :PermShareData odrl:action tosl:shareData .
+  :PermShareData odrl:target :UserData .
+  :PermShareData :clause :ClauseC3 .
+  :ProhibitExportData rdf:type odrl:Prohibition .
+  :ProhibitExportData odrl:assigner :Provider .
+  :ProhibitExportData odrl:assignee :ConsumerExample .
+  :ProhibitExportData odrl:action tosl:exportData .
+  :ProhibitExportData odrl:target :UserData .
+  :ProhibitExportData :clause :ClauseC4 .
+}
+
+in:metadata {
+  in:run a see:InputDataset .
+  in:run see:name "odrl_dpv_risk_ranked" .
+  in:run see:title "ODRL + DPV risk assessment with ranked, explainable output." .
+  in:run see:sourceFile "examples/n3/odrl_dpv_risk_ranked.n3" .
+  in:run see:sourceSHA256 "e3360556d6e82bda9f502d362cc110e2cd681608ae1388cf8071660f6fbe6200" .
+  in:run see:description "What this file does\n- Models an agreement as an ODRL policy (odrl:Policy) containing permissions,\nprohibitions, duties, and constraints. ODRL is expressive enough to encode the\nnormative “may/must/must-not” structure of TOS clauses as RDF.\n- Links each ODRL rule to a clause resource (:Clause) to keep human-readable text\nwhile preserving machine-readable structure for reasoning.\n- Uses N3 rules with log:includes / log:notIncludes to detect missing safeguards\n(e.g., missing notice constraints, missing inform duties, missing consent constraints).\n- Generates DPV risks (dpv:Risk) and classifies them using DPV-RISK concepts:\nrisk:hasRiskSource, dpv:hasConsequence, dpv:hasImpact, dpv:hasSeverity, dpv:hasRiskLevel.\n- Produces mitigations as dpv:RiskMitigationMeasure resources and attaches them\nto risks with dpv:isMitigatedByMeasure.\n- Computes a numeric score for each risk and prints a ranked, explainable report.\nRanking / output\n- Output strings are emitted as log:outputString triples.\n- When running with Eyeling “strings” mode (-r), strings are printed in deterministic\norder based on their subject key. The program encodes ranking via an “inverse score”\nkey (e.g., 1000 - score) so higher-risk items appear first.\nReferences\n- N3 spec:          https://w3c.github.io/N3/spec/\n- Eyeling builtins: https://eyereasoner.github.io/eyeling/HANDBOOK#ch11\n- ODRL vocab:       https://www.w3.org/TR/odrl-vocab/\n- DPV risk module:  https://dev.dpvcg.org/dpv/modules/risk\n- DPV-RISK:         https://w3id.org/dpv/risk" .
+  in:run see:compiler "see.js N3-to-JS compiler" .
+  in:run see:inputFacts 38 .
+  in:run see:compiledRules 9 .
+  in:run see:compiledBackwardRules 0 .
+  in:run see:compiledFuses 0 .
+  in:run see:compiledQueries 3 .
+}

@@ -266,7 +266,7 @@ function isWs(c) {
   return /\s/.test(c);
 }
 function isNameChar(c) {
-  return /[0-9A-Za-z_\-:]/.test(c);
+  return /[\p{L}\p{N}_\-:%]/u.test(c);
 }
 
 function stripQuotes(s) {

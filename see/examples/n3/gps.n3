@@ -1,0 +1,70 @@
+# ==========================================================================
+# GPS route planning
+# ==========================================================================
+# Goal-driven path planning over a tiny western-Belgium map. The N3 source is
+# adapted from Eyeling's GPS example and compiles to a standalone SEE example.
+
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix list: <http://www.w3.org/2000/10/swap/list#>.
+@prefix string: <http://www.w3.org/2000/10/swap/string#>.
+@prefix gps: <https://eyereasoner.github.io/see/examples/gps#>.
+@prefix : <https://eyereasoner.github.io/see/examples/gps#>.
+
+:i1 :location :Gent.
+:question :text "Which route should we take from Gent to Oostende?".
+:routeDirect :label "Gent -> Brugge -> Oostende".
+:routeViaKortrijk :label "Gent -> Kortrijk -> Brugge -> Oostende".
+
+:mapBE gps:segment (:Gent :Brugge :drive_gent_brugge 1500.0 0.006 0.96 0.99).
+:mapBE gps:segment (:Gent :Kortrijk :drive_gent_kortrijk 1600.0 0.007 0.96 0.99).
+:mapBE gps:segment (:Kortrijk :Brugge :drive_kortrijk_brugge 1600.0 0.007 0.96 0.99).
+:mapBE gps:segment (:Brugge :Oostende :drive_brugge_oostende 900.0 0.004 0.98 1.0).
+
+{ (?From ?To (?Act) ?Dur ?Cost ?Belief ?Comfort) :path true } <= {
+  :mapBE gps:segment (?From ?To ?Act ?Dur ?Cost ?Belief ?Comfort).
+}.
+
+{ (?From ?To ?Actions ?Dur ?Cost ?Belief ?Comfort) :path true } <= {
+  :mapBE gps:segment (?From ?Mid ?Act ?Dur1 ?Cost1 ?Bel1 ?Comf1).
+  (?Mid ?To ?RestActs ?Dur2 ?Cost2 ?Bel2 ?Comf2) :path true.
+  ((?Act) ?RestActs) list:append ?Actions.
+  (?Dur1 ?Dur2) math:sum ?Dur.
+  (?Cost1 ?Cost2) math:sum ?Cost.
+  (?Bel1 ?Bel2) math:product ?Belief.
+  (?Comf1 ?Comf2) math:product ?Comfort.
+}.
+
+{
+  :i1 :location :Gent.
+  (:Gent :Oostende ?Acts ?Dur ?Cost ?Bel ?Comf) :path true.
+} => { :i1 gps:path (?Acts ?Dur ?Cost ?Bel ?Comf). }.
+
+{ :i1 gps:path ((:drive_gent_brugge :drive_brugge_oostende) ?Dur ?Cost ?Bel ?Comf). } => {
+  :routeDirect :duration ?Dur; :cost ?Cost; :belief ?Bel; :comfort ?Comf.
+}.
+
+{ :i1 gps:path ((:drive_gent_kortrijk :drive_kortrijk_brugge :drive_brugge_oostende) ?Dur ?Cost ?Bel ?Comf). } => {
+  :routeViaKortrijk :duration ?Dur; :cost ?Cost; :belief ?Bel; :comfort ?Comf.
+}.
+
+{
+  :routeDirect :duration ?D1; :cost ?C1; :belief ?B1; :comfort ?F1.
+  :routeViaKortrijk :duration ?D2; :cost ?C2; :belief ?B2; :comfort ?F2.
+  ?D1 math:lessThan ?D2.
+  ?C1 math:lessThan ?C2.
+  ?B1 math:greaterThan ?B2.
+  ?F1 math:greaterThan ?F2.
+} => { :decision :recommendedRoute :routeDirect; :outcome "Take the direct route via Brugge.". }.
+
+{
+  :decision :recommendedRoute :routeDirect; :outcome ?Outcome.
+  :routeDirect :label ?BestLabel; :duration ?BestDur; :cost ?BestCost; :belief ?BestBel; :comfort ?BestComf.
+  :routeViaKortrijk :label ?AltLabel; :duration ?AltDur; :cost ?AltCost; :belief ?AltBel; :comfort ?AltComf.
+  ("=== Answer ===\n%s\nRecommended route: %s\n\n=== Explanation ===\nFrom Gent to Oostende, the planner found two routes in this small map. The direct route (%s) takes %s seconds at cost %s, with belief %s and comfort %s. The alternative (%s) takes %s seconds at cost %s, with belief %s and comfort %s. So the direct route is faster, cheaper, more reliable, and slightly more comfortable." ?Outcome ?BestLabel ?BestLabel ?BestDur ?BestCost ?BestBel ?BestComf ?AltLabel ?AltDur ?AltCost ?AltBel ?AltComf) string:format ?Block.
+} => { :report log:outputString ?Block. }.
+
+{ :decision :recommendedRoute :routeDirect. :routeDirect :duration ?D1. :routeViaKortrijk :duration ?D2. ?D1 math:notLessThan ?D2. } => false.
+{ :decision :recommendedRoute :routeDirect. :routeDirect :cost ?C1. :routeViaKortrijk :cost ?C2. ?C1 math:notLessThan ?C2. } => false.
+{ :decision :recommendedRoute :routeDirect. :routeDirect :belief ?B1. :routeViaKortrijk :belief ?B2. ?B1 math:notGreaterThan ?B2. } => false.
+{ :decision :recommendedRoute :routeDirect. :routeDirect :comfort ?F1. :routeViaKortrijk :comfort ?F2. ?F1 math:notGreaterThan ?F2. } => false.

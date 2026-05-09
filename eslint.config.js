@@ -5,7 +5,7 @@
 module.exports = [
   // Ignore generated / vendor / coverage output
   {
-    ignores: ['node_modules/**', 'eyeling.js', 'coverage/**', 'dist/**', '*.min.js'],
+    ignores: ['node_modules/**', 'eyeling.js', 'coverage/**', 'dist/**', 'see/examples/**', '*.min.js'],
   },
 
   // Base config: Node/CommonJS code

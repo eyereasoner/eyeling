@@ -1,0 +1,143 @@
+# ============
+# RDF Messages
+# ============
+# This SEE example models the main idea from
+# https://pietercolpaert.be/papers/eswc2026-rdf-messages/:
+# a message stream/log is not just one freely mergeable RDF graph. It is an
+# ordered sequence of RDF Datasets that are interpreted atomically, one message
+# at a time. The middle message is deliberately empty to model a heartbeat, and
+# the local blank-node label "_:b0" is deliberately reused by two messages to
+# show message-scoped blank nodes.
+
+@prefix : <https://eyereasoner.github.io/see/examples/rdf-messages#>.
+@prefix msg: <https://w3c-cg.github.io/rsp/spec/messages#>.
+@prefix prov: <http://www.w3.org/ns/prov#>.
+@prefix sosa: <http://www.w3.org/ns/sosa/>.
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix list: <http://www.w3.org/2000/10/swap/list#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix string: <http://www.w3.org/2000/10/swap/string#>.
+
+:temperatureLog
+  a msg:MessageLog;
+  msg:orderedMessages (:m001 :m002 :m003);
+  msg:message :m001, :m002, :m003;
+  msg:profile :generatedAtTimeProfile;
+  msg:retentionPolicy "replayable archive".
+
+:m001
+  a msg:RDFMessage;
+  msg:offset 1;
+  prov:generatedAtTime "2026-05-12T18:20:00Z"^^xsd:dateTime;
+  msg:payloadKind :observation;
+  msg:localBlankLabel "_:b0";
+  msg:expectedResult 22;
+  msg:payload {
+    _:m001b0
+      a sosa:Observation;
+      sosa:madeBySensor :thermometerA;
+      sosa:resultTime "2026-05-12T18:20:00Z"^^xsd:dateTime;
+      sosa:hasSimpleResult 22.
+  }.
+
+# Empty RDF Message: a legal heartbeat/keep-alive event.
+:m002
+  a msg:RDFMessage;
+  msg:offset 2;
+  prov:generatedAtTime "2026-05-12T18:22:00Z"^^xsd:dateTime;
+  msg:payloadKind :heartbeat.
+
+:m003
+  a msg:RDFMessage;
+  msg:offset 3;
+  prov:generatedAtTime "2026-05-12T18:25:00Z"^^xsd:dateTime;
+  msg:payloadKind :observation;
+  msg:localBlankLabel "_:b0";
+  msg:expectedResult 23;
+  msg:payload {
+    _:m003b0
+      a sosa:Observation;
+      sosa:madeBySensor :thermometerA;
+      sosa:resultTime "2026-05-12T18:25:00Z"^^xsd:dateTime;
+      sosa:hasSimpleResult 23.
+  }.
+
+# A message with an offset inside a log has an explicit replay boundary.
+{
+  ?Log a msg:MessageLog;
+    msg:message ?Message.
+  ?Message a msg:RDFMessage;
+    msg:offset ?Offset.
+} => {
+  ?Message msg:boundaryExplicit true.
+  ?Log msg:replayContains ?Message.
+}.
+
+# The payload is a dataset-like formula. We can inspect it without merging it
+# into the global graph, preserving the message as the unit of interpretation.
+{
+  ?Message a msg:RDFMessage;
+    msg:expectedResult ?Result;
+    msg:payload ?Payload.
+  ?Payload log:includes { ?Observation sosa:hasSimpleResult ?Result. }.
+} => {
+  ?Message msg:payloadResult ?Result.
+}.
+
+# Heartbeat/keep-alive messages can be empty and still occupy a boundary.
+{
+  ?Message a msg:RDFMessage;
+    msg:payloadKind :heartbeat.
+} => {
+  ?Message msg:emptyMessageAllowed true.
+  :HeartbeatEvidence :accepted ?Message.
+}.
+
+# The same blank-node label may recur in a message log because blank nodes are
+# scoped to their RDF Message, not to the whole replay archive.
+{
+  ?First a msg:RDFMessage;
+    msg:localBlankLabel ?Label.
+  ?Second a msg:RDFMessage;
+    msg:localBlankLabel ?Label.
+  ?First log:notEqualTo ?Second.
+} => {
+  :BlankNodeScope :reusedLabel ?Label.
+  :BlankNodeScope :isPerMessage true.
+}.
+
+# Different observations from the same sensor are not a global contradiction:
+# each message is interpreted in its own communication context.
+{
+  ?First a msg:RDFMessage;
+    msg:payloadResult ?FirstResult.
+  ?Second a msg:RDFMessage;
+    msg:payloadResult ?SecondResult.
+  ?FirstResult math:notEqualTo ?SecondResult.
+  ?First log:notEqualTo ?Second.
+} => {
+  :MessageContext :differentObservationsStayContextual true.
+}.
+
+# The SEE verdict is emitted only when all message-specific validations have been
+# derived from the log, message metadata, payload formulas, and built-ins.
+{
+  :temperatureLog msg:orderedMessages ?Messages.
+  ?Messages list:length ?Count.
+  :m001 msg:boundaryExplicit true;
+    msg:payloadResult ?FirstResult.
+  :m002 msg:boundaryExplicit true;
+    msg:emptyMessageAllowed true.
+  :m003 msg:boundaryExplicit true;
+    msg:payloadResult ?SecondResult.
+  :BlankNodeScope :reusedLabel ?Label;
+    :isPerMessage true.
+  :MessageContext :differentObservationsStayContextual true.
+  ("=== Answer ===\nRDF Message log accepted: %d explicit message boundaries are preserved. Message :m002 is an empty heartbeat, and the local blank-node label %s is safely reused in separate messages.\n\n=== Explanation ===\nThe N3 source models an RDF Message Log as an ordered sequence of RDF Messages. Each non-empty message has a formula-valued payload that is inspected with log:includes, so the observation data stays inside the message boundary instead of being treated as one global graph. The two temperature results, %s and %s, are different observations from the same stream but are contextualized by their message boundaries." ?Count ?Label ?FirstResult ?SecondResult) string:format ?Block.
+} => {
+  :rdfMessagesExample log:outputString ?Block.
+  :rdfMessagesExample :demonstrates :ExplicitBoundaries, :AtomicMessageContext, :EmptyHeartbeat, :MessageScopedBlankNodes, :ReplayableMessageLog.
+}.
+
+{ :rdfMessagesExample :demonstrates ?Feature } log:query { :rdfMessagesExample :demonstrates ?Feature }.

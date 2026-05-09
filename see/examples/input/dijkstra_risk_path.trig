@@ -1,0 +1,46 @@
+@prefix : <https://eyereasoner.github.io/see/examples/dijkstra-risk-path#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+@prefix see: <https://example.org/see#> .
+@prefix in: <https://example.org/see/input#> .
+
+# Formal SEE input evidence in RDF 1.2 TriG.
+# The generated runner reads this TriG evidence directly.
+
+:Case :question "Which clinic-to-hub route has the lowest risk-adjusted score?" .
+:Case :start :ClinicA .
+:Case :goal :HubZ .
+:Case :riskWeight 2 .
+:pathB :routeText "ClinicA -> DepotB -> LabD -> HubZ" .
+:pathB :rawCost 10 .
+:pathB :riskSum 0.55 .
+:pathB :score 11.1 .
+:pathB :edgeCount 3 .
+:pathB :uses :ClinicA .
+:pathB :uses :DepotB .
+:pathB :uses :LabD .
+:pathB :uses :HubZ .
+:pathC :score 11.3 .
+:pathRelay :score 11.7 .
+:pathDirectC :rawCost 10 .
+:pathDirectC :score 11.6 .
+:pathDirectC :riskSum 0.8 .
+:pathViaC :rawCost 8 .
+:pathViaC :score 11.2 .
+:pathViaC :riskSum 1.6 .
+
+in:metadata {
+  in:run a see:InputDataset .
+  in:run see:name "dijkstra_risk_path" .
+  in:run see:title "Dijkstra Risk Path" .
+  in:run see:sourceFile "examples/n3/dijkstra_risk_path.n3" .
+  in:run see:sourceSHA256 "a11f23a58252e557817c5d26cabdfee5ce8c5c08a40a54ab680eaa8960c88937" .
+  in:run see:description "N3-compiled version of the risk-adjusted route example. The original JSON\ninput is preserved as the data-input sidecar; this source compiles the\nexecutable derivation and report." .
+  in:run see:compiler "see.js N3-to-JS compiler" .
+  in:run see:inputFacts 21 .
+  in:run see:compiledRules 3 .
+  in:run see:compiledBackwardRules 0 .
+  in:run see:compiledFuses 0 .
+  in:run see:compiledQueries 1 .
+}

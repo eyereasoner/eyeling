@@ -1,0 +1,29 @@
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix nepo: <http://neptune.aws.com/ontology/airroutes/> .
+@prefix res: <http://neptune.aws.com/ontology/airroutes/resource#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix : <http://example.org/#> .
+@prefix see: <https://example.org/see#> .
+@prefix in: <https://example.org/see/input#> .
+
+# Formal SEE input evidence in RDF 1.2 TriG.
+# The generated runner uses the N3 form produced from this file by tools/n3gen.js.
+
+# No source facts were present in the N3 program.
+
+in:metadata {
+  in:run a see:InputDataset .
+  in:run see:name "path_discovery" .
+  in:run see:title "Path Discovery" .
+  in:run see:sourceFile "examples/n3/path_discovery.n3" .
+  in:run see:sourceSHA256 "9481a2b27a6cae4d73f312c7d8403d1abd7beab573f627f591ea8301073fe4db" .
+  in:run see:description "SEE version of the Eyeling airport path-discovery example.\nThe full airroutes evidence is intentionally stored in\nexamples/input/path-discovery.trig, not in this source file. This file keeps\nonly the path-finding rules and the query shape from the upstream example." .
+  in:run see:compiler "see.js N3-to-JS compiler" .
+  in:run see:inputFacts 0 .
+  in:run see:compiledRules 1 .
+  in:run see:compiledBackwardRules 2 .
+  in:run see:compiledFuses 0 .
+  in:run see:compiledQueries 0 .
+}

@@ -1,0 +1,68 @@
+# Builtin coverage smoke
+# Exercises math, string, list, crypto, time, and log builtins in compiled JavaScript.
+
+@prefix : <urn:example#>.
+
+{
+  (2 3 4) math:sum ?sum.
+  (2 3 4) math:product ?product.
+  (9 4) math:difference ?difference.
+  (9 3) math:quotient ?quotient.
+  (9 4) math:integerQuotient ?iq.
+  (9 4) math:remainder ?rem.
+  3 math:negation ?neg.
+  -3 math:absoluteValue ?abs.
+  3.141592653589793 math:degrees ?deg.
+  "abc" string:length ?len.
+  ("a" "b" "c") string:concatenation ?cat.
+  ("item %s %d" "x" 7) string:format ?fmt.
+  "abcdef" string:contains "cd".
+  "Hello" string:containsIgnoringCase "he".
+  ("abcdef" "cd(ef)") string:scrape ?scrape.
+  ("abc" 1) string:charAt ?char.
+  ("abc" 1 "Z") string:setCharAt ?set.
+  "hello" crypto:sha256 ?sha.
+  ("a" "b" "c") list:first ?first.
+  ("a" "b" "c") list:rest ?rest.
+  ("a" "b" "c") list:last ?last.
+  ("a" "b" "c") list:length ?listLen.
+  ("a" "b" "c") list:reverse ?rev.
+  (("a" "b" "a") "a") list:remove ?removed.
+  (("a") ("b" "c")) list:append ?appended.
+  "b" list:in ("a" "b" "c").
+  ("a" "b" "c") list:member ?member.
+  "2024-01-02T03:04:05Z" time:year ?year.
+  "2024-01-02T03:04:05Z" time:month ?month.
+  ( { :x :p :y } { :a :b :c } ) log:conjunction ?formula.
+}
+=> {
+  :assurance :sum ?sum;
+    :product ?product;
+    :difference ?difference;
+    :quotient ?quotient;
+    :integerQuotient ?iq;
+    :remainder ?rem;
+    :negation ?neg;
+    :absoluteValue ?abs;
+    :degrees ?deg;
+    :stringLength ?len;
+    :concatenation ?cat;
+    :format ?fmt;
+    :scrape ?scrape;
+    :charAt ?char;
+    :setCharAt ?set;
+    :sha256 ?sha;
+    :first ?first;
+    :rest ?rest;
+    :last ?last;
+    :listLength ?listLen;
+    :reverse ?rev;
+    :removed ?removed;
+    :appended ?appended;
+    :member ?member;
+    :year ?year;
+    :month ?month;
+    :formula ?formula.
+}.
+
+{ :assurance ?p ?o } log:query { :assurance ?p ?o }.

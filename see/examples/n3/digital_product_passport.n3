@@ -1,0 +1,156 @@
+# ========================
+# Digital Product Passport
+# ========================
+# N3-compiled version of the smartphone Digital Product Passport example. The
+# rules fold component mass, recycled content, critical raw materials, public
+# documents, lifecycle footprint, and access-policy validations into a public PASS.
+
+@prefix : <https://eyereasoner.github.io/see/examples/digital-product-passport#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix list: <http://www.w3.org/2000/10/swap/list#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix string: <http://www.w3.org/2000/10/swap/string#>.
+
+:passport a :DigitalProductPassport;
+  :caseName "digital_product_passport";
+  :forProduct :ACME_X1000_SN123;
+  :publicEndpoint "https://example.org/dpp/ACME-X1000-SN123";
+  :publicSection "public";
+  :restrictedSection "restricted".
+
+:ACME_X1000_SN123 a :Product;
+  :model "ACME X1000";
+  :serialNumber "SN123";
+  :digitalLink "https://example.org/dpp/ACME-X1000-SN123";
+  :hasComponent :BatteryPack_01, :Chassis_01, :Mainboard_01.
+
+:BatteryPack_01 a :Component; :componentLabel "BatteryPack-01 Battery"; :type :Battery; :massG 48; :recycledMassG 0; :replaceable true; :containsMaterial :Lithium, :Cobalt, :Nickel.
+:Chassis_01 a :Component; :componentLabel "Chassis-01 Housing"; :type :Housing; :massG 32; :recycledMassG 12; :replaceable false; :containsMaterial :Aluminium.
+:Mainboard_01 a :Component; :componentLabel "Mainboard-01 Electronics"; :type :Electronics; :massG 25; :recycledMassG 2; :replaceable false; :containsMaterial :Copper, :GoldTrace.
+
+:Lithium a :Material; :criticalRawMaterial true; :materialName "Lithium".
+:Cobalt a :Material; :criticalRawMaterial true; :materialName "Cobalt".
+:Nickel a :Material; :criticalRawMaterial false; :materialName "Nickel".
+:Aluminium a :Material; :criticalRawMaterial false; :materialName "Aluminium".
+:Copper a :Material; :criticalRawMaterial false; :materialName "Copper".
+:GoldTrace a :Material; :criticalRawMaterial false; :materialName "GoldTrace".
+
+:Doc_UserManual a :Document; :docType :UserManual; :docTypeLabel "UserManual"; :section "public"; :url "https://example.org/manuals/acme-x1000".
+:Doc_RepairGuide a :Document; :docType :RepairGuide; :docTypeLabel "RepairGuide"; :section "public"; :url "https://example.org/repair/acme-x1000"; :declares :BatteryReplacementSupported.
+:Doc_SpareParts a :Document; :docType :SparePartsCatalog; :docTypeLabel "SparePartsCatalog"; :section "public"; :url "https://example.org/spares/acme-x1000".
+:Doc_DoC_CE a :Document; :docType :DeclarationOfConformity; :section "restricted".
+:Doc_SubstanceDeclaration a :Document; :docType :SubstanceDeclaration; :section "restricted".
+
+:Policy :publicDocType :UserManual, :RepairGuide, :SparePartsCatalog;
+  :restrictedDocType :DeclarationOfConformity, :SubstanceDeclaration;
+  :requiredPublicClaim :BatteryReplacementSupported.
+
+:Footprint :manufacturingGCO2e 32000; :transportGCO2e 2500; :usePhaseGCO2e 18000.
+:Lifecycle :orderedEvents (:Event_Mfg_01 :Event_Sale_01 :Event_Repair_01).
+:Event_Mfg_01 :onDate "2026-01-15".
+:Event_Sale_01 :onDate "2026-01-25".
+:Event_Repair_01 :onDate "2026-02-05".
+
+{
+  :ACME_X1000_SN123 :hasComponent ?c.
+  ?c :containsMaterial ?m.
+  ?m :criticalRawMaterial true.
+} => {
+  :passport :exposesCriticalMaterial ?m.
+}.
+{
+  :ACME_X1000_SN123 :hasComponent ?c.
+  ?c :massG ?m; :recycledMassG ?r.
+} => {
+  :MassRollup :componentMass ?m;
+    :componentRecycledMass ?r.
+}.
+{
+  (48 32 25) math:sum ?totalMass.
+  (0 12 2) math:sum ?recycledMass.
+  ( ?recycledMass 100 ) math:product ?pctNumerator.
+  ( ?pctNumerator ?totalMass ) math:integerQuotient ?recycledPct.
+} => {
+  :passport :totalMassG ?totalMass;
+    :recycledMassG ?recycledMass;
+    :recycledPct ?recycledPct.
+}.
+{
+  :Footprint :manufacturingGCO2e ?mfg; :transportGCO2e ?transport; :usePhaseGCO2e ?use.
+  ( ?mfg ?transport ?use ) math:sum ?total.
+} => {
+  :passport :lifecycleFootprintGCO2e ?total.
+}.
+{
+  :Policy :publicDocType ?docType.
+  ?doc a :Document; :docType ?docType; :section "public".
+} => {
+  :passport :hasRequiredPublicDocType ?docType.
+}.
+{
+  :Policy :restrictedDocType ?docType.
+  ?doc a :Document; :docType ?docType; :section "restricted".
+} => {
+  :passport :keepsRestrictedDocTypeRestricted ?docType.
+}.
+{
+  :ACME_X1000_SN123 :hasComponent ?battery.
+  ?battery :type :Battery; :replaceable true.
+  :Doc_RepairGuide :section "public"; :declares :BatteryReplacementSupported.
+  :passport :hasRequiredPublicDocType :UserManual, :RepairGuide, :SparePartsCatalog.
+} => {
+  :passport :repairFriendly true.
+}.
+{
+  :passport :publicEndpoint ?endpoint.
+  :ACME_X1000_SN123 :digitalLink ?endpoint.
+} => {
+  :passport :digitalLinkMatchesEndpoint true.
+}.
+{
+  :Event_Mfg_01 :onDate ?d1.
+  :Event_Sale_01 :onDate ?d2.
+  :Event_Repair_01 :onDate ?d3.
+  ?d1 string:notGreaterThan ?d2.
+  ?d2 string:notGreaterThan ?d3.
+} => {
+  :passport :lifecycleChronological true.
+}.
+{
+  :passport :totalMassG ?totalMass; :recycledMassG ?recycledMass.
+  ?totalMass math:greaterThan 0.
+  ?recycledMass math:notGreaterThan ?totalMass.
+} => {
+  :passport :massBalanced true.
+}.
+{
+  :passport :massBalanced true;
+    :recycledPct ?pct;
+    :lifecycleFootprintGCO2e ?footprint;
+    :exposesCriticalMaterial :Lithium, :Cobalt;
+    :repairFriendly true;
+    :hasRequiredPublicDocType :UserManual, :RepairGuide, :SparePartsCatalog;
+    :keepsRestrictedDocTypeRestricted :DeclarationOfConformity, :SubstanceDeclaration;
+    :digitalLinkMatchesEndpoint true;
+    :lifecycleChronological true.
+} => {
+  :passport :decision "PASS".
+}.
+
+{ :passport :decision ?decision. ?decision log:notEqualTo "PASS". } => false.
+{ :passport :recycledMassG ?r; :totalMassG ?t. ?r math:greaterThan ?t. } => false.
+
+{
+  :passport :decision "PASS";
+    :totalMassG ?mass;
+    :recycledPct ?pct;
+    :lifecycleFootprintGCO2e ?footprint;
+    :publicEndpoint ?endpoint.
+  :ACME_X1000_SN123 :model ?model; :serialNumber ?serial.
+  ("=== Answer ===\nPassport decision : PASS for %s %s.\nrecycled content : %d%%\nlifecycle footprint : %d gCO2e\ntotal component mass : %d g\ncritical raw materials : Lithium, Cobalt\ncircularity hint : repairFriendly\npublic endpoint : %s\n\n=== Explanation ===\nThe passport folds the explicit component list to derive total mass and recycled mass, then computes an integer recycled-content percentage. Lifecycle footprint is derived by summing manufacturing, transport, and use-phase emissions. The product is repair-friendly because the battery is replaceable and the public passport section exposes repair, spare-parts, and manual documentation. Restricted declarations remain in the restricted section.\n\nComponent roll-up:\nBatteryPack-01 Battery mass=48g recycled=0g materials=Lithium, Cobalt, Nickel replaceable=yes\nChassis-01 Housing mass=32g recycled=12g materials=Aluminium replaceable=no\nMainboard-01 Electronics mass=25g recycled=2g materials=Copper, GoldTrace replaceable=no\nPublic documents:\nDoc-UserManual UserManual https://example.org/manuals/acme-x1000\nDoc-RepairGuide RepairGuide https://example.org/repair/acme-x1000\nDoc-SpareParts SparePartsCatalog https://example.org/spares/acme-x1000" ?model ?serial ?pct ?footprint ?mass ?endpoint) string:format ?Block.
+} => {
+  :digitalProductPassport log:outputString ?Block.
+  :digitalProductPassport :decision "PASS".
+}.
+
+{ :digitalProductPassport :decision ?Decision } log:query { :digitalProductPassport :decision ?Decision }.

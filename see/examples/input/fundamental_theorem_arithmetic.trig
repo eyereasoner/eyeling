@@ -1,0 +1,42 @@
+@prefix : <https://eyereasoner.github.io/see/examples/fundamental-theorem-arithmetic#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+@prefix see: <https://example.org/see#> .
+@prefix in: <https://example.org/see/input#> .
+
+# Formal SEE input evidence in RDF 1.2 TriG.
+# The generated runner reads this TriG evidence directly.
+
+:Case :n 202692987 .
+:Case :factors (3 3 7 829 3881) .
+:Case :flatFactorString "3 * 3 * 7 * 829 * 3881" .
+:Case :primePowerString "3^2 * 7 * 829 * 3881" .
+:Case :largestFlatFactorString "3881 * 829 * 7 * 3 * 3" .
+:Case :sortedComparison "3 * 3 * 7 * 829 * 3881" .
+:Case :smallestTrace "  202692987 = 3 * 67564329\n  67564329 = 3 * 22521443\n  22521443 = 7 * 3217349\n  3217349 = 829 * 3881\n  3881 is prime" .
+:SampleSummary :sampleCount 6 .
+:SampleSummary :largestSample 600851475143 .
+:SampleSummary :totalFactorsWithMultiplicity 31 .
+:SampleSummary :distinctPrimesSeen 17 .
+:SampleSummary :sampleBlock "  360360 = 2^3 * 3^2 * 5 * 7 * 11 * 13\n  202692987 = 3^2 * 7 * 829 * 3881\n  4294967295 = 3 * 5 * 17 * 257 * 65537\n  600851475143 = 71 * 839 * 1471 * 6857\n  9876543210 = 2 * 3^2 * 5 * 17^2 * 379721\n  9999999967 = 9999999967" .
+3 :primeWitness true .
+7 :primeWitness true .
+829 :primeWitness true .
+3881 :primeWitness true .
+
+in:metadata {
+  in:run a see:InputDataset .
+  in:run see:name "fundamental_theorem_arithmetic" .
+  in:run see:title "Fundamental Theorem Arithmetic" .
+  in:run see:sourceFile "examples/n3/fundamental_theorem_arithmetic.n3" .
+  in:run see:sourceSHA256 "d88eca366c590d49544e49453cbe69ba38938f8bc23919278bfaadd0bed0cd2d" .
+  in:run see:description "N3-compiled version of the hand-written SEE example. The primary case mirrors\nEyeling's fundamental-theorem-arithmetic.n3: n = 202692987 is validated against\nthe factorization 3^2 * 7 * 829 * 3881. Extra sample summaries are kept as\ndata so the SEE report still documents the larger regression set." .
+  in:run see:compiler "see.js N3-to-JS compiler" .
+  in:run see:inputFacts 16 .
+  in:run see:compiledRules 4 .
+  in:run see:compiledBackwardRules 0 .
+  in:run see:compiledFuses 3 .
+  in:run see:compiledQueries 1 .
+}

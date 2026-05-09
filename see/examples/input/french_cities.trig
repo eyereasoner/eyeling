@@ -1,0 +1,38 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix : <https://eyereasoner.github.io/see/examples/french-cities#> .
+@prefix see: <https://example.org/see#> .
+@prefix in: <https://example.org/see/input#> .
+
+# Formal SEE input evidence in RDF 1.2 TriG.
+# The generated runner reads this TriG evidence directly.
+
+:paris :oneway :orleans .
+:paris :oneway :chartres .
+:paris :oneway :amiens .
+:orleans :oneway :blois .
+:orleans :oneway :bourges .
+:blois :oneway :tours .
+:chartres :oneway :lemans .
+:lemans :oneway :angers .
+:lemans :oneway :tours .
+:angers :oneway :nantes .
+:oneway rdfs:subPropertyOf :path .
+:path rdf:type owl:TransitiveProperty .
+
+in:metadata {
+  in:run a see:InputDataset .
+  in:run see:name "french_cities" .
+  in:run see:title "French cities — graph path traversal." .
+  in:run see:sourceFile "examples/n3/french_cities.n3" .
+  in:run see:sourceSHA256 "7e3672e6ab314845d44cdd16e7a91484c205de77ff8c9a06971f857612692be4" .
+  in:run see:description "Based on the EYE reasoning/graph example: graph.axiom.n3 plus graph.filter.n3.\nIt asks whether Paris can reach Nantes by following one-way links, using a\nsubproperty rule and a transitive-property rule." .
+  in:run see:compiler "see.js N3-to-JS compiler" .
+  in:run see:inputFacts 12 .
+  in:run see:compiledRules 2 .
+  in:run see:compiledBackwardRules 0 .
+  in:run see:compiledFuses 0 .
+  in:run see:compiledQueries 1 .
+}

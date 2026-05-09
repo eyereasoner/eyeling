@@ -1,0 +1,26 @@
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix complex: <https://eyereasoner.github.io/eye/complex#> .
+@prefix : <http://example.org/#> .
+@prefix see: <https://example.org/see#> .
+@prefix in: <https://example.org/see/input#> .
+
+# Formal SEE input evidence in RDF 1.2 TriG.
+# The generated runner reads this TriG evidence directly.
+
+# No source facts were present in the N3 program.
+
+in:metadata {
+  in:run a see:InputDataset .
+  in:run see:name "complex" .
+  in:run see:title "Complex numbers" .
+  in:run see:sourceFile "examples/n3/complex.n3" .
+  in:run see:sourceSHA256 "f06171b97fcf380a64522165c21d4544ef88af39e5f8a679aad2e51bcc63c2b6" .
+  in:run see:description "See https://en.wikipedia.org/wiki/Complex_number" .
+  in:run see:compiler "see.js N3-to-JS compiler" .
+  in:run see:inputFacts 0 .
+  in:run see:compiledRules 1 .
+  in:run see:compiledBackwardRules 8 .
+  in:run see:compiledFuses 0 .
+  in:run see:compiledQueries 0 .
+}

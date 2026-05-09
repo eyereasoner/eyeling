@@ -1,0 +1,36 @@
+# Fast exponentiation demo  
+
+## Insight  
+The derivation produced 0 new fact(s) from 0 stated fact(s).  
+
+## Explanation  
+Starts with 0 source fact(s), applies 8 rule(s), and reaches a fixpoint.  
+
+The selected facts are serialized in the Formal TriG Output section.  
+
+## Formal TriG Output  
+
+```trig  
+@prefix : <https://eyereasoner.github.io/see/examples/fastpow#> .  
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .  
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .  
+@prefix see: <https://example.org/see#> .  
+@prefix in: <https://example.org/see/input#> .  
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .  
+
+in:metadata {  
+  in:run a see:InputDataset .  
+  in:run see:name "fastpow" .  
+  in:run see:title "Fast exponentiation demo" .  
+  in:run see:sourceFile "examples/n3/fastpow.n3" .  
+  in:run see:sourceSHA256 "be6ae46e774f3887cf89f2302ba55a826a08d3c846b77dd3c78a90e32d0ebc14" .  
+  in:run see:description "" .  
+  in:run see:compiler "see.js N3-to-JS compiler" .  
+  in:run see:inputFacts 0 .  
+  in:run see:compiledRules 1 .  
+  in:run see:compiledBackwardRules 7 .  
+  in:run see:compiledFuses 0 .  
+  in:run see:compiledQueries 0 .  
+}  
+```  
+

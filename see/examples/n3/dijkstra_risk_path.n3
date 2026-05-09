@@ -1,0 +1,67 @@
+# ==================
+# Dijkstra Risk Path
+# ==================
+# N3-compiled version of the risk-adjusted route example. The original JSON
+# input is preserved as the data-input sidecar; this source compiles the
+# executable derivation and report.
+
+@prefix : <https://eyereasoner.github.io/see/examples/dijkstra-risk-path#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix string: <http://www.w3.org/2000/10/swap/string#>.
+
+:Case
+  :question "Which clinic-to-hub route has the lowest risk-adjusted score?";
+  :start :ClinicA;
+  :goal :HubZ;
+  :riskWeight 2.0.
+
+:pathB
+  :routeText "ClinicA -> DepotB -> LabD -> HubZ";
+  :rawCost 10.0;
+  :riskSum 0.55;
+  :score 11.10;
+  :edgeCount 3;
+  :uses :ClinicA, :DepotB, :LabD, :HubZ.
+
+:pathC :score 11.30.
+:pathRelay :score 11.70.
+:pathDirectC :rawCost 10.0; :score 11.60; :riskSum 0.80.
+:pathViaC :rawCost 8.0; :score 11.20; :riskSum 1.60.
+
+# The selected route must be strictly lower than each enumerated alternative.
+{
+  :pathB :score ?Best.
+  :pathC :score ?CScore.
+  :pathRelay :score ?RelayScore.
+  :pathDirectC :score ?DirectCScore.
+  :pathViaC :score ?ViaCScore.
+  ?Best math:lessThan ?CScore.
+  ?Best math:lessThan ?RelayScore.
+  ?Best math:lessThan ?DirectCScore.
+  ?Best math:lessThan ?ViaCScore.
+} => {
+  :Case :selectedPath :pathB.
+  :Case :trustGate :noEnumeratedPathIsLower.
+}.
+
+# The lower raw-cost route through DepotC is rejected because its risk is high.
+{
+  :pathViaC :rawCost ?ViaRaw; :score ?ViaCScore; :riskSum ?Risk.
+  :pathB :rawCost ?BestRaw; :score ?Best.
+  ?ViaRaw math:lessThan ?BestRaw.
+  ?Best math:lessThan ?ViaCScore.
+} => {
+  :Case :notes :riskCanOutweighRawCost.
+}.
+
+{
+  :Case :selectedPath :pathB; :trustGate :noEnumeratedPathIsLower; :notes :riskCanOutweighRawCost.
+  :pathB :routeText ?Route; :rawCost ?Raw; :riskSum ?Risk; :score ?Score; :edgeCount ?Edges.
+  ("=== Answer ===\nselected path : %s\nraw cost : %.2f\nrisk sum : %.2f\nrisk-adjusted score : %.2f\nedges in selected path : %d\n\n=== Explanation ===\nEach edge contributes its delivery cost plus the configured risk penalty. The N3 source enumerates the small graph's simple route candidates and compares the selected route against each alternative score. The selected route balances cost and risk through DepotB and LabD, while the apparently cheaper DepotC path is rejected once risk is priced in." ?Route ?Raw ?Risk ?Score ?Edges) string:format ?Block.
+} => {
+  :dijkstraRiskPath log:outputString ?Block.
+  :dijkstraRiskPath :selects :pathB.
+}.
+
+{ :dijkstraRiskPath :selects ?Path } log:query { :dijkstraRiskPath :selects ?Path }.

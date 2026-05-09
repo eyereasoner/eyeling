@@ -1,0 +1,28 @@
+# French cities — graph path traversal.
+# Based on the EYE reasoning/graph example: graph.axiom.n3 plus graph.filter.n3.
+# It asks whether Paris can reach Nantes by following one-way links, using a
+# subproperty rule and a transitive-property rule.
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix owl: <http://www.w3.org/2002/07/owl#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix : <https://eyereasoner.github.io/see/examples/french-cities#>.
+
+:paris :oneway :orleans.
+:paris :oneway :chartres.
+:paris :oneway :amiens.
+:orleans :oneway :blois.
+:orleans :oneway :bourges.
+:blois :oneway :tours.
+:chartres :oneway :lemans.
+:lemans :oneway :angers.
+:lemans :oneway :tours.
+:angers :oneway :nantes.
+
+:oneway rdfs:subPropertyOf :path.
+:path rdf:type owl:TransitiveProperty.
+
+{ ?P rdfs:subPropertyOf ?R. ?S ?P ?O. } => { ?S ?R ?O. }.
+{ ?P rdf:type owl:TransitiveProperty. ?X ?P ?O. ?S ?P ?X. } => { ?S ?P ?O. }.
+
+{ :paris :path :nantes. } log:query { :paris :path :nantes. }.

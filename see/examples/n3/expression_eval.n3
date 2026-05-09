@@ -1,0 +1,21 @@
+# ==============================================================================
+# A tiny expression evaluator in N3
+# ==============================================================================
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix : <https://eyereasoner.github.io/eye/reasoning#>.
+
+:n2 :n 2.
+:n3 :n 3.
+:n10 :n 10.
+:n4 :n 4.
+:eMul a :Expr; :op :mul; :left :n2; :right :n3.
+:eSub a :Expr; :op :sub; :left :n10; :right :n4.
+:eAdd a :Expr; :op :add; :left :eMul; :right :eSub.
+:Root :expr :eAdd.
+
+{ ?N :value ?V. } <= { ?N :n ?V. }.
+{ ?E :value ?V. } <= { ?E :op :add. ?E :left ?L. ?E :right ?R. ?L :value ?LV. ?R :value ?RV. (?LV ?RV) math:sum ?V. }.
+{ ?E :value ?V. } <= { ?E :op :sub. ?E :left ?L. ?E :right ?R. ?L :value ?LV. ?R :value ?RV. (?LV ?RV) math:difference ?V. }.
+{ ?E :value ?V. } <= { ?E :op :mul. ?E :left ?L. ?E :right ?R. ?L :value ?LV. ?R :value ?RV. (?LV ?RV) math:product ?V. }.
+
+{ :Root :expr ?E. ?E :value ?V. } => { :Root :result ?V. }.

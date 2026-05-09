@@ -1,0 +1,39 @@
+@prefix : <http://example.org/family#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix see: <https://example.org/see#> .
+@prefix in: <https://example.org/see/input#> .
+
+# Formal SEE input evidence in RDF 1.2 TriG.
+# The generated runner reads this TriG evidence directly.
+
+:Adam :parentOf :Bob .
+:Adam :parentOf :Carol .
+:Bob :parentOf :Dave .
+:Bob :parentOf :Eve .
+:Carol :parentOf :Frank .
+:Carol :parentOf :Grace .
+:Dave :parentOf :Heidi .
+:Eve :parentOf :Ivan .
+:Frank :parentOf :Judy .
+:Dave :branch :b .
+:Eve :branch :b .
+:Frank :branch :c .
+:Grace :branch :c .
+:b :differentFrom :c .
+:c :differentFrom :b .
+
+in:metadata {
+  in:run a see:InputDataset .
+  in:run see:name "family_cousins" .
+  in:run see:title "Family cousins" .
+  in:run see:sourceFile "examples/n3/family_cousins.n3" .
+  in:run see:sourceSHA256 "5254e987fd72e71aafad53c8e3e9eb91d034cfd06878fcd02f611539200ab3e4" .
+  in:run see:description "" .
+  in:run see:compiler "see.js N3-to-JS compiler" .
+  in:run see:inputFacts 15 .
+  in:run see:compiledRules 4 .
+  in:run see:compiledBackwardRules 0 .
+  in:run see:compiledFuses 0 .
+  in:run see:compiledQueries 0 .
+}

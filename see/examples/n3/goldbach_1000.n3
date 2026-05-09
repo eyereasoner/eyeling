@@ -1,0 +1,66 @@
+# ==============
+# Goldbach 1000
+# ==============
+# N3-compiled version of the bounded Goldbach SEE example. It keeps the bounded
+# result as committed data and uses rules to verify the representative witness
+# equations that are shown in the report.
+
+@prefix : <https://eyereasoner.github.io/see/examples/goldbach-1000#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix string: <http://www.w3.org/2000/10/swap/string#>.
+
+:BoundedRun
+  :minEven 4;
+  :maxEven 1000;
+  :evenCount 499;
+  :counterexamples 0;
+  :sampleWitnesses "4=2+2; 28=5+23; 100=3+97; 998=7+991; 1000=3+997".
+
+:w4 :even 4; :p 2; :q 2.
+:w28 :even 28; :p 5; :q 23.
+:w100 :even 100; :p 3; :q 97.
+:w998 :even 998; :p 7; :q 991.
+:w1000 :even 1000; :p 3; :q 997.
+
+2 :prime true.
+3 :prime true.
+5 :prime true.
+7 :prime true.
+23 :prime true.
+97 :prime true.
+991 :prime true.
+997 :prime true.
+
+{
+  ?Witness :even ?E; :p ?P; :q ?Q.
+  ?P :prime true.
+  ?Q :prime true.
+  (?P ?Q) math:sum ?E.
+} => {
+  ?Witness :verifiedGoldbachWitness true.
+}.
+
+{
+  :w4 :verifiedGoldbachWitness true.
+  :w28 :verifiedGoldbachWitness true.
+  :w100 :verifiedGoldbachWitness true.
+  :w998 :verifiedGoldbachWitness true.
+  :w1000 :verifiedGoldbachWitness true.
+  :BoundedRun :counterexamples 0.
+} => {
+  :BoundedRun :boundedGoldbachCondition true.
+}.
+
+{ 1 log:notIncludes { :BoundedRun :boundedGoldbachCondition true. }. } => false.
+
+{
+  :BoundedRun :minEven ?Min; :maxEven ?Max; :evenCount ?Count;
+    :sampleWitnesses ?Samples; :boundedGoldbachCondition true.
+  ("=== Answer ===\nAll %d even integers from %d through %d have a Goldbach witness.\nsample witnesses : %s\n\n=== Explanation ===\nThe bounded run caches primes up to the configured bound and then searches each even number E for a prime P not greater than E/2 where E-P is also prime. No counterexample is found in the bounded range, so the bounded Goldbach condition succeeds for this dataset." ?Count ?Min ?Max ?Samples) string:format ?Block.
+} => {
+  :goldbach1000 log:outputString ?Block.
+  :goldbach1000 :demonstrates :BoundedGoldbachEvidence.
+}.
+
+{ :goldbach1000 :demonstrates ?Feature } log:query { :goldbach1000 :demonstrates ?Feature }.
