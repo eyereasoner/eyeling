@@ -14,7 +14,7 @@ echo '@prefix : <http://example.org/> .
 
 ## Read more
 
-- **Handbook:** [eyereasoner.github.io/eyeling/HANDBOOK](https://eyereasoner.github.io/eyeling/HANDBOOK)
-- **Playground:** [eyereasoner.github.io/eyeling/demo](https://eyereasoner.github.io/eyeling/demo)
-- **SEE:** [Specialized Eyeling Executables](see/README.md) — compiled Notation3 examples as standalone JavaScript runners.
-- **Conformance report:** [codeberg.org/phochste/notation3tests/.../report.md](https://codeberg.org/phochste/notation3tests/src/branch/main/reports/report.md)
+- [Handbook](https://eyereasoner.github.io/eyeling/HANDBOOK)
+- [Playground](https://eyereasoner.github.io/eyeling/demo)
+- [SEE: Specialized Eyeling Executables](https://github.com/eyereasoner/eyeling/tree/main/see)
+- [Conformance report](https://codeberg.org/phochste/notation3tests/src/branch/main/reports/report.md)
