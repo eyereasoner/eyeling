@@ -25,4 +25,4 @@ The generated `examples/fibonacci.js` is a specialized JavaScript derivation pro
 
 ## Output model
 
-Running `node examples/fibonacci.js` produces a SEE-style Markdown report with a **Conclusion** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.
+Running `node examples/fibonacci.js` produces a SEE-style Markdown report with an **Entailment** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.

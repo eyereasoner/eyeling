@@ -1,10 +1,10 @@
 # Euler identity (exact, certificate-friendly):  
 
-## Conclusion  
+## Entailment  
 The compiled query selected 6 fact(s) after the rule closure was computed.  
-Main conclusion: **:result :identityHolds true.**  
+Main entailment: **:result :identityHolds true.**  
 
-Selected conclusions:  
+Selected entailments:  
 - :result :identityHolds true .  
 - :result :phaseModSqIsOne true .  
 - :result :phaseModSq 1 .  

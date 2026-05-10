@@ -1,10 +1,10 @@
 # French cities — graph path traversal.  
 
-## Conclusion  
+## Entailment  
 The compiled query selected 1 fact(s) after the rule closure was computed.  
-Main conclusion: **:paris :path :nantes.**  
+Main entailment: **:paris :path :nantes.**  
 
-Selected conclusions:  
+Selected entailments:  
 - :paris :path :nantes .  
 
 ## Explanation  

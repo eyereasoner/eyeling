@@ -1,10 +1,10 @@
 # Complex numbers  
 
-## Conclusion  
-The derivation produced 1 formula-valued conclusion(s).  
-Main conclusion: **:test is { ((-1 0) (0.5 0)) complex:exponentiation (-3.49148133884313e-15 1) . ((2.71828182845905 0) (0 3.14159265358979)) complex:exponentiation (-1 3.23108914886517e-15) . ((0 1) (0 1)) complex:exponentiation (0.207879576350761 0) . ((2.71828182845905 0) (-1.57079632679 0)) complex:exponentiation (0.207879576351779 0) . (2 0) complex:asin (1.5707963267949 1.31695789692482) . (2 0) complex:acos (0 -1.31695789692482) }.**  
+## Entailment  
+The derivation produced 1 formula-valued entailment(s).  
+Main entailment: **:test is { ((-1 0) (0.5 0)) complex:exponentiation (-3.49148133884313e-15 1) . ((2.71828182845905 0) (0 3.14159265358979)) complex:exponentiation (-1 3.23108914886517e-15) . ((0 1) (0 1)) complex:exponentiation (0.207879576350761 0) . ((2.71828182845905 0) (-1.57079632679 0)) complex:exponentiation (0.207879576351779 0) . (2 0) complex:asin (1.5707963267949 1.31695789692482) . (2 0) complex:acos (0 -1.31695789692482) }.**  
 
-Selected conclusions:  
+Selected entailments:  
 - :test :is { ((-1 0) (0.5 0)) complex:exponentiation (-3.49148133884313e-15 1) . ((2.71828182845905 0) (0 3.14159265358979)) complex:exponentiation (-1 3.23108914886517e-15) . ((0 1) (0 1)) complex:exponentiation (0.207879576350761 0) . ((2.71828182845905 0) (-1.57079632679 0)) complex:exponentiation (0.207879576351779 0) . (2 0) complex:asin (1.5707963267949 1.31695789692482) . (2 0) complex:acos (0 -1.31695789692482) } .  
 
 ## Explanation  

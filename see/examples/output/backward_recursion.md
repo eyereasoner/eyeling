@@ -1,10 +1,10 @@
 # Backward recursion coverage  
 
-## Conclusion  
+## Entailment  
 The compiled query selected 2 fact(s) after the rule closure was computed.  
-Main conclusion: **:a :reaches :c.**  
+Main entailment: **:a :reaches :c.**  
 
-Selected conclusions:  
+Selected entailments:  
 - :a :reaches :c .  
 - :a :reaches :b .  
 

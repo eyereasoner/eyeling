@@ -21,4 +21,4 @@ The generated `examples/greatest_lower_bound_uniqueness.js` is a specialized Jav
 
 ## Output model
 
-Running `node examples/greatest_lower_bound_uniqueness.js` produces a SEE-style Markdown report with a **Conclusion** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.
+Running `node examples/greatest_lower_bound_uniqueness.js` produces a SEE-style Markdown report with an **Entailment** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.

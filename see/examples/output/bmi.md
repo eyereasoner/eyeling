@@ -1,6 +1,6 @@
 # BMI — Body Mass Index example.  
 
-## Conclusion  
+## Entailment  
 BMI = 22.72  
 Category = Normal  
 At height 178 cm, a healthy-weight range is about 58.6–78.9 kg (BMI 18.5–24.9).  

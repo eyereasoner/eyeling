@@ -1,10 +1,10 @@
 # Builtin coverage smoke  
 
-## Conclusion  
+## Entailment  
 The compiled query selected 29 fact(s) after the rule closure was computed.  
-Main conclusion: **:assurance :member "c".**  
+Main entailment: **:assurance :member "c".**  
 
-Selected conclusions:  
+Selected entailments:  
 - :assurance :member "c" .  
 - :assurance :member "b" .  
 - :assurance :formula { :x :p :y . :a :b :c } .  

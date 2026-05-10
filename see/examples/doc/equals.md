@@ -23,4 +23,4 @@ The generated `examples/equals.js` is a specialized JavaScript derivation progra
 
 ## Output model
 
-Running `node examples/equals.js` produces a SEE-style Markdown report with a **Conclusion** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.
+Running `node examples/equals.js` produces a SEE-style Markdown report with an **Entailment** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.

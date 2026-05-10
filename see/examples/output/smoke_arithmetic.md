@@ -1,6 +1,6 @@
 # Smoke Arithmetic  
 
-## Conclusion  
+## Entailment  
 product = 42  
 
 ## Explanation  

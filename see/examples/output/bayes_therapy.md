@@ -1,6 +1,6 @@
 # Bayes Therapy  
 
-## Conclusion  
+## Entailment  
 Recommended therapy: Paxlovid (utility = 3.585174).  
 expected success : 0.388517  
 adverse probability : 0.100000  

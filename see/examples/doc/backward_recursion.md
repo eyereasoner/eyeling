@@ -23,4 +23,4 @@ The generated `examples/backward_recursion.js` is a specialized JavaScript deriv
 
 ## Output model
 
-Running `node examples/backward_recursion.js` produces a SEE-style Markdown report with a **Conclusion** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.
+Running `node examples/backward_recursion.js` produces a SEE-style Markdown report with an **Entailment** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.

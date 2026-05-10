@@ -1,6 +1,6 @@
 # Gray Code Counter  
 
-## Conclusion  
+## Entailment  
 bits : 4  
 states visited : 16  
 unique states : 16  

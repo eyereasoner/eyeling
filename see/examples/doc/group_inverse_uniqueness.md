@@ -21,4 +21,4 @@ The generated `examples/group_inverse_uniqueness.js` is a specialized JavaScript
 
 ## Output model
 
-Running `node examples/group_inverse_uniqueness.js` produces a SEE-style Markdown report with a **Conclusion** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.
+Running `node examples/group_inverse_uniqueness.js` produces a SEE-style Markdown report with an **Entailment** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.

@@ -1,10 +1,10 @@
 # In a group, the inverse of an element is unique.  
 
-## Conclusion  
+## Entailment  
 The compiled query selected 2 fact(s) after the rule closure was computed.  
-Main conclusion: **:result :sameInverse (:x :j :i).**  
+Main entailment: **:result :sameInverse (:x :j :i).**  
 
-Selected conclusions:  
+Selected entailments:  
 - :result :sameInverse (:x :j :i) .  
 - :result :sameInverse (:x :i :j) .  
 

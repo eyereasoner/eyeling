@@ -1,10 +1,10 @@
 # Socrates inference  
 
-## Conclusion  
+## Entailment  
 The compiled query selected 2 fact(s) after the rule closure was computed.  
-Main conclusion: **:Socrates is a :Mortal.**  
+Main entailment: **:Socrates is a :Mortal.**  
 
-Selected conclusions:  
+Selected entailments:  
 - :Socrates rdf:type :Mortal .  
 - :Socrates rdf:type :Human .  
 

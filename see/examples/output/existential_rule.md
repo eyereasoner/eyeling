@@ -1,10 +1,10 @@
 # Existential rule  
 
-## Conclusion  
+## Entailment  
 The derivation produced 2 new fact(s) from 2 stated fact(s).  
-Main conclusion: **:Plato is _:B.**  
+Main entailment: **:Plato is _:B.**  
 
-Selected conclusions:  
+Selected entailments:  
 - :Plato :is _:B .  
 - :Socrates :is _:B .  
 

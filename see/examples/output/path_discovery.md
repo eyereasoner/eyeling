@@ -1,10 +1,10 @@
 # Path Discovery  
 
-## Conclusion  
+## Entailment  
 The derivation produced 3 new fact(s) from 96420 stated fact(s).  
-Main conclusion: **:discovered :airroute ("Ostend-Bruges International Airport" "Liège Airport" "Palma De Mallorca Airport" "Václav Havel Airport Prague").**  
+Main entailment: **:discovered :airroute ("Ostend-Bruges International Airport" "Liège Airport" "Palma De Mallorca Airport" "Václav Havel Airport Prague").**  
 
-Selected conclusions:  
+Selected entailments:  
 - :discovered :airroute ("Ostend-Bruges International Airport" "Liège Airport" "Palma De Mallorca Airport" "Václav Havel Airport Prague") .  
 - :discovered :airroute ("Ostend-Bruges International Airport" "Liège Airport" "Diagoras Airport" "Václav Havel Airport Prague") .  
 - :discovered :airroute ("Ostend-Bruges International Airport" "Liège Airport" "Heraklion International Nikos Kazantzakis Airport" "Václav Havel Airport Prague") .  

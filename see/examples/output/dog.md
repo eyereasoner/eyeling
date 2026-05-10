@@ -1,10 +1,10 @@
 # Dog license example  
 
-## Conclusion  
+## Entailment  
 The derivation produced 1 new fact(s) from 7 stated fact(s).  
-Main conclusion: **:alice :mustHave :dogLicense.**  
+Main entailment: **:alice :mustHave :dogLicense.**  
 
-Selected conclusions:  
+Selected entailments:  
 - :alice :mustHave :dogLicense .  
 
 ## Explanation  

@@ -1,10 +1,10 @@
 # In a partial order, a greatest lower bound is unique.  
 
-## Conclusion  
+## Entailment  
 The compiled query selected 2 fact(s) after the rule closure was computed.  
-Main conclusion: **:result :sameGreatestLowerBound (:a :b :g2 :g1).**  
+Main entailment: **:result :sameGreatestLowerBound (:a :b :g2 :g1).**  
 
-Selected conclusions:  
+Selected entailments:  
 - :result :sameGreatestLowerBound (:a :b :g2 :g1) .  
 - :result :sameGreatestLowerBound (:a :b :g1 :g2) .  
 

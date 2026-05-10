@@ -1,10 +1,10 @@
 # Towers of Hanoi  
 
-## Conclusion  
+## Entailment  
 The derivation produced 1 new fact(s) from 0 stated fact(s).  
-Main conclusion: **3 :answer ((:left :right) (:left :center) (:right :center) (:left :right) (:center :left) (:center :right) (:left :right)).**  
+Main entailment: **3 :answer ((:left :right) (:left :center) (:right :center) (:left :right) (:center :left) (:center :right) (:left :right)).**  
 
-Selected conclusions:  
+Selected entailments:  
 - 3 :answer ((:left :right) (:left :center) (:right :center) (:left :right) (:center :left) (:center :right) (:left :right)) .  
 
 ## Explanation  

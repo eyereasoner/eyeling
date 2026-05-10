@@ -1,10 +1,10 @@
 # Equals test  
 
-## Conclusion  
+## Entailment  
 The derivation produced 1 new fact(s) from 1 stated fact(s).  
-Main conclusion: **:test is true.**  
+Main entailment: **:test is true.**  
 
-Selected conclusions:  
+Selected entailments:  
 - :test :is true .  
 
 ## Explanation  

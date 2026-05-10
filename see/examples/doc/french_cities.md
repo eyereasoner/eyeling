@@ -25,4 +25,4 @@ The generated `examples/french_cities.js` is a specialized JavaScript derivation
 
 ## Output model
 
-Running `node examples/french_cities.js` produces a SEE-style Markdown report with a **Conclusion** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.
+Running `node examples/french_cities.js` produces a SEE-style Markdown report with an **Entailment** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.

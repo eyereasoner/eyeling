@@ -1,10 +1,10 @@
 # Dijkstra's algorithm to find the shortest path  
 
-## Conclusion  
+## Entailment  
 The derivation produced 9 new fact(s) from 9 stated fact(s).  
-Main conclusion: **(:f :e) :edge 3.**  
+Main entailment: **(:f :e) :edge 3.**  
 
-Selected conclusions:  
+Selected entailments:  
 - (:f :e) :edge 3 .  
 - (:f :d) :edge 6 .  
 - (:e :d) :edge 2 .  

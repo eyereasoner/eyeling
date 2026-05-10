@@ -1,10 +1,10 @@
 # Backward rule example  
 
-## Conclusion  
+## Entailment  
 The derivation produced 1 new fact(s) from 0 stated fact(s).  
-Main conclusion: **5 :isIndeedMoreInterestingThan 3.**  
+Main entailment: **5 :isIndeedMoreInterestingThan 3.**  
 
-Selected conclusions:  
+Selected entailments:  
 - 5 :isIndeedMoreInterestingThan 3 .  
 
 ## Explanation  

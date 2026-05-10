@@ -36,4 +36,4 @@ The generated `examples/euler_identity.js` is a specialized JavaScript derivatio
 
 ## Output model
 
-Running `node examples/euler_identity.js` produces a SEE-style Markdown report with a **Conclusion** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.
+Running `node examples/euler_identity.js` produces a SEE-style Markdown report with an **Entailment** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.

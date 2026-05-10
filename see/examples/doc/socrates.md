@@ -21,4 +21,4 @@ The generated `examples/socrates.js` is a specialized JavaScript derivation prog
 
 ## Output model
 
-Running `node examples/socrates.js` produces a SEE-style Markdown report with a **Conclusion** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.
+Running `node examples/socrates.js` produces a SEE-style Markdown report with an **Entailment** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.

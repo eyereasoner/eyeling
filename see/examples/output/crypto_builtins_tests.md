@@ -1,10 +1,10 @@
 # crypto builtins tests  
 
-## Conclusion  
+## Entailment  
 The derivation produced 4 new fact(s) from 0 stated fact(s).  
-Main conclusion: **:ok_crypto_sha512_1 is a :Pass.**  
+Main entailment: **:ok_crypto_sha512_1 is a :Pass.**  
 
-Selected conclusions:  
+Selected entailments:  
 - :ok_crypto_sha512_1 rdf:type :Pass .  
 - :ok_crypto_sha256_1 rdf:type :Pass .  
 - :ok_crypto_md5_1 rdf:type :Pass .  

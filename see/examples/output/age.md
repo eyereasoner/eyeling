@@ -1,10 +1,10 @@
 # Age checker  
 
-## Conclusion  
+## Entailment  
 The compiled query selected 1 fact(s) after the rule closure was computed.  
-Main conclusion: **:test is true.**  
+Main entailment: **:test is true.**  
 
-Selected conclusions:  
+Selected entailments:  
 - :test :is true .  
 
 ## Explanation  

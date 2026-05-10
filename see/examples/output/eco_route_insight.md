@@ -1,7 +1,7 @@
-# Eco Route Conclusion  
+# Eco Route Insight  
 
-## Conclusion  
-conclusion status : issue  
+## Entailment  
+insight status : issue  
 show eco banner : yes  
 audience : Depot X  
 allowed use : ui.eco.banner  
@@ -73,10 +73,10 @@ Selected explanation support:
 in:metadata {  
   in:run a see:InputDataset .  
   in:run see:name "eco_route_insight" .  
-  in:run see:title "Eco Route Conclusion" .  
+  in:run see:title "Eco Route Insight" .  
   in:run see:sourceFile "examples/n3/eco_route_insight.n3" .  
-  in:run see:sourceSHA256 "26960757f085d1af99182a653e192c9256ced1a4940ff85718e17da13bee52fb" .  
-  in:run see:description "N3-compiled version of the privacy-preserving eco route conclusion. The JSON\ninput remains the data-input sidecar; this source compiles the local decision\nand signed-envelope explanation." .  
+  in:run see:sourceSHA256 "b5af0caa2e473b5957ba8cec647ee4e2edf4cdc2a5c28110e8536c19381b0bd3" .  
+  in:run see:description "N3-compiled version of the privacy-preserving eco route insight. The JSON\ninput remains the data-input sidecar; this source compiles the local decision\nand signed-envelope explanation." .  
   in:run see:compiler "see.js N3-to-JS compiler" .  
   in:run see:inputFacts 33 .  
   in:run see:compiledRules 2 .  

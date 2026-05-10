@@ -1,6 +1,6 @@
 # Bayes Diagnosis  
 
-## Conclusion  
+## Entailment  
 The most likely disease is COVID-19 (posterior = 0.941209).  
 
 Full posterior distribution:  

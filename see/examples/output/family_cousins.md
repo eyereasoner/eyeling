@@ -1,10 +1,10 @@
 # Family cousins  
 
-## Conclusion  
+## Entailment  
 The derivation produced 25 new fact(s) from 15 stated fact(s).  
-Main conclusion: **:Judy :cousin :Ivan.**  
+Main entailment: **:Judy :cousin :Ivan.**  
 
-Selected conclusions:  
+Selected entailments:  
 - :Judy :cousin :Ivan .  
 - :Judy :cousin :Heidi .  
 - :Ivan :cousin :Judy .  

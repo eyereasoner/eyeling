@@ -1,10 +1,10 @@
 # Annotation  
 
-## Conclusion  
-The derivation produced 1 formula-valued conclusion(s).  
-Main conclusion: **:t log:nameOf { :a :name "Alice" }.**  
+## Entailment  
+The derivation produced 1 formula-valued entailment(s).  
+Main entailment: **:t log:nameOf { :a :name "Alice" }.**  
 
-Selected conclusions:  
+Selected entailments:  
 - :t log:nameOf { :a :name "Alice" } .  
 
 ## Explanation  

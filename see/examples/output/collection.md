@@ -1,10 +1,10 @@
 # Collection  
 
-## Conclusion  
+## Entailment  
 The derivation produced 0 new fact(s) from 2 stated fact(s).  
-Main conclusion: **_:b2 :p :q.**  
+Main entailment: **_:b2 :p :q.**  
 
-Selected conclusions:  
+Selected entailments:  
 - _:b2 :p :q .  
 - (1 _:b2 (2)) :p2 :q2 .  
 

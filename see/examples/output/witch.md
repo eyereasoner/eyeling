@@ -1,10 +1,10 @@
 # Burn the witch  
 
-## Conclusion  
+## Entailment  
 The derivation produced 6 new fact(s) from 3 stated fact(s).  
-Main conclusion: **:GIRL is a :WITCH.**  
+Main entailment: **:GIRL is a :WITCH.**  
 
-Selected conclusions:  
+Selected entailments:  
 - :GIRL rdf:type :WITCH .  
 - :GIRL rdf:type :BURNS .  
 - :GIRL rdf:type :ISMADEOFWOOD .  

@@ -1,10 +1,10 @@
 # Good cobbler  
 
-## Conclusion  
-The derivation produced 1 formula-valued conclusion(s).  
-Main conclusion: **:test is { :joe :is (:good :Cobbler) }.**  
+## Entailment  
+The derivation produced 1 formula-valued entailment(s).  
+Main entailment: **:test is { :joe :is (:good :Cobbler) }.**  
 
-Selected conclusions:  
+Selected entailments:  
 - :test :is { :joe :is (:good :Cobbler) } .  
 
 ## Explanation  

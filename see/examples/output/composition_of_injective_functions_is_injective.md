@@ -1,10 +1,10 @@
 # Composition of injective functions is injective.  
 
-## Conclusion  
+## Entailment  
 The compiled query selected 2 fact(s) after the rule closure was computed.  
-Main conclusion: **:result :sameInputByCompositeInjectivity (:h :b :a).**  
+Main entailment: **:result :sameInputByCompositeInjectivity (:h :b :a).**  
 
-Selected conclusions:  
+Selected entailments:  
 - :result :sameInputByCompositeInjectivity (:h :b :a) .  
 - :result :sameInputByCompositeInjectivity (:h :a :b) .  
 

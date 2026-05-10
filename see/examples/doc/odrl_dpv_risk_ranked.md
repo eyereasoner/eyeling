@@ -54,4 +54,4 @@ The generated `examples/odrl_dpv_risk_ranked.js` is a specialized JavaScript der
 
 ## Output model
 
-Running `node examples/odrl_dpv_risk_ranked.js` produces a SEE-style Markdown report with a **Conclusion** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.
+Running `node examples/odrl_dpv_risk_ranked.js` produces a SEE-style Markdown report with an **Entailment** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.

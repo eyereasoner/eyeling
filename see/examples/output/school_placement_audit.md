@@ -1,6 +1,6 @@
 # School Placement Route Audit  
 
-## Conclusion  
+## Entailment  
 audit result : fail  
 children affected by straight-line rule : Ada, Björn, Davi  
 largest hidden detour : Ada, 3000 m  

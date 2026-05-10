@@ -1,6 +1,6 @@
 # Fundamental Theorem Arithmetic  
 
-## Conclusion  
+## Entailment  
 Primary N3 case: n = 202692987 has prime factors 3 * 3 * 7 * 829 * 3881.  
 primary prime-power form : 3^2 * 7 * 829 * 3881  
 sample count : 6  

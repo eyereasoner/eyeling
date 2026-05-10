@@ -24,4 +24,4 @@ The generated `examples/good_cobbler.js` is a specialized JavaScript derivation 
 
 ## Output model
 
-Running `node examples/good_cobbler.js` produces a SEE-style Markdown report with a **Conclusion** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.
+Running `node examples/good_cobbler.js` produces a SEE-style Markdown report with an **Entailment** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.

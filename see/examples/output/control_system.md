@@ -1,10 +1,10 @@
 # Control System  
 
-## Conclusion  
+## Entailment  
 The compiled query selected 2 fact(s) after the rule closure was computed.  
-Main conclusion: **:actuator2 :control1 26.08.**  
+Main entailment: **:actuator2 :control1 26.08.**  
 
-Selected conclusions:  
+Selected entailments:  
 - :actuator2 :control1 26.08 .  
 - :actuator1 :control1 39.2734619867828 .  
 

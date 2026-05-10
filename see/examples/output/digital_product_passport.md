@@ -1,6 +1,6 @@
 # Digital Product Passport  
 
-## Conclusion  
+## Entailment  
 Passport decision : PASS for ACME X1000 SN123.  
 recycled content : 13%  
 lifecycle footprint : 52500 gCO2e  

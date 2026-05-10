@@ -1,10 +1,10 @@
 # If two equivalence classes share an element, they are the same class.  
 
-## Conclusion  
+## Entailment  
 The compiled query selected 18 fact(s) after the rule closure was computed.  
-Main conclusion: **:result :sameClassBecauseOfSharedMember (:a :b :c).**  
+Main entailment: **:result :sameClassBecauseOfSharedMember (:a :b :c).**  
 
-Selected conclusions:  
+Selected entailments:  
 - :result :sameClassBecauseOfSharedMember (:a :b :c) .  
 - :result :sameClassBecauseOfSharedMember (:a :c :c) .  
 - :result :sameClassBecauseOfSharedMember (:c :b :a) .  

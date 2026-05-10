@@ -1,10 +1,10 @@
 # A tiny expression evaluator in N3  
 
-## Conclusion  
+## Entailment  
 The derivation produced 1 new fact(s) from 17 stated fact(s).  
-Main conclusion: **:Root :result 12.**  
+Main entailment: **:Root :result 12.**  
 
-Selected conclusions:  
+Selected entailments:  
 - :Root :result 12 .  
 
 ## Explanation  

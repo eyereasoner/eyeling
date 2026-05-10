@@ -28,4 +28,4 @@ The generated `examples/gray_code_counter.js` is a specialized JavaScript deriva
 
 ## Output model
 
-Running `node examples/gray_code_counter.js` produces a SEE-style Markdown report with a **Conclusion** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.
+Running `node examples/gray_code_counter.js` produces a SEE-style Markdown report with an **Entailment** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.
