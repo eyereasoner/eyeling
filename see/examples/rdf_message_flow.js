@@ -8,6 +8,7 @@ const crypto = require('crypto');
 
 function canonical(term) {
   if (term.kind === 'list') return ['list', term.items.map(canonical)];
+  if (term.kind === 'triple') return ['triple', canonical(term.s), canonical(term.p), canonical(term.o)];
   if (term.kind === 'formula') return ['formula', term.atoms.map((a) => [canonical(a.s), canonical(a.p), canonical(a.o)])];
   return [term.kind, term.value];
 }
@@ -17,6 +18,7 @@ function compoundIndexKey() { return Array.from(arguments).map(termIndexKey).joi
 function termIsConcrete(t) {
   if (!t || t.kind === 'var') return false;
   if (t.kind === 'list') return t.items.every(termIsConcrete);
+  if (t.kind === 'triple') return termIsConcrete(t.s) && termIsConcrete(t.p) && termIsConcrete(t.o);
   if (t.kind === 'formula') return t.atoms.every((a) => termIsConcrete(a.s) && termIsConcrete(a.p) && termIsConcrete(a.o));
   return true;
 }
@@ -32,6 +34,7 @@ function primitive(t) {
   if (t.kind === 'iri') return t.value.replace(/^:/, '');
   if (t.kind === 'blank') return t.value;
   if (t.kind === 'list') return t.items.map(primitive);
+  if (t.kind === 'triple') return termToN3(t);
   if (t.kind === 'formula') return termToN3(t);
   return undefined;
 }
@@ -52,6 +55,7 @@ function termToN3(t) {
   if (t.kind === 'var') return '?' + t.value;
   if (t.kind === 'blank') return t.value.startsWith('_:') ? t.value : '_:' + t.value.replace(/^_+/, '');
   if (t.kind === 'list') return '(' + t.items.map(termToN3).join(' ') + ')';
+  if (t.kind === 'triple') return '<<( ' + termToN3(t.s) + ' ' + termToN3(t.p) + ' ' + termToN3(t.o) + ' )>>';
   if (t.kind === 'formula') return '{ ' + t.atoms.map(atomToN3).join(' . ') + ' }';
   return String(t.value ?? t);
 }
@@ -74,6 +78,7 @@ function resolve(term, env, seen = new Set()) {
     return resolve(env[term.value], env, seen);
   }
   if (term.kind === 'list') return list(term.items.map((item) => resolve(item, env, seen)));
+  if (term.kind === 'triple') return { kind: 'triple', s: resolve(term.s, env), p: resolve(term.p, env), o: resolve(term.o, env) };
   if (term.kind === 'formula') return { kind: 'formula', atoms: term.atoms.map((a) => ({ s: resolve(a.s, env), p: resolve(a.p, env), o: resolve(a.o, env) })) };
   return term;
 }
@@ -91,6 +96,14 @@ function unify(a, b, env) {
     }
     return out;
   }
+  if (a.kind === 'triple' || b.kind === 'triple') {
+    if (a.kind !== 'triple' || b.kind !== 'triple') return null;
+    let out = unify(a.s, b.s, env);
+    if (!out) return null;
+    out = unify(a.p, b.p, out);
+    if (!out) return null;
+    return unify(a.o, b.o, out);
+  }
   return deepEqual(a, b) ? env : null;
 }
 function bind(pattern, value, env) { return unify(pattern, value, env); }
@@ -106,6 +119,7 @@ function termIsGround(t, env) {
   const r = resolve(t, env);
   if (r.kind === 'var') return false;
   if (r.kind === 'list') return r.items.every((item) => termIsGround(item, env));
+  if (r.kind === 'triple') return termIsGround(r.s, env) && termIsGround(r.p, env) && termIsGround(r.o, env);
   if (r.kind === 'formula') return r.atoms.every((atom) => atomIsGround(atom, env));
   return true;
 }
@@ -665,6 +679,7 @@ function instantiate(term, env, ruleId) {
   }
   if (term.kind === 'blank') return blank('_:r' + ruleId + '_' + envSignature(env) + '_' + term.value.replace(/^_/, ''));
   if (term.kind === 'list') return list(term.items.map((item) => instantiate(item, env, ruleId)));
+  if (term.kind === 'triple') return { kind: 'triple', s: instantiate(term.s, env, ruleId), p: instantiate(term.p, env, ruleId), o: instantiate(term.o, env, ruleId) };
   if (term.kind === 'formula') return { kind: 'formula', atoms: term.atoms.map((a) => ({ s: instantiate(a.s, env, ruleId), p: instantiate(a.p, env, ruleId), o: instantiate(a.o, env, ruleId) })) };
   return cloneTerm(term);
 }
@@ -2489,6 +2504,16 @@ function formalOutputFacts(graph, queries, rules, initialFacts) {
   }
   return out;
 }
+function termHasTripleTerm(term) {
+  if (!term) return false;
+  if (term.kind === 'triple') return true;
+  if (term.kind === 'list') return term.items.some(termHasTripleTerm);
+  if (term.kind === 'formula') return term.atoms.some(atomHasTripleTerm);
+  return false;
+}
+function atomHasTripleTerm(atom) { return termHasTripleTerm(atom.s) || termHasTripleTerm(atom.p) || termHasTripleTerm(atom.o); }
+function factsHaveTripleTerms(facts) { return (facts || []).some(atomHasTripleTerm); }
+function trigHasVersion12(trig) { return /^s*(?:@version|VERSION)s+["']1.2["']/mi.test(String(trig || '')); }
 function trigGraphBlock(label, atoms) {
   const lines = [label + ' {'];
   for (const atom of atoms || []) lines.push('  ' + atomToN3(atom) + ' .');
@@ -2536,7 +2561,8 @@ function formalOutputToTrig(facts, trig) {
   const prefixes = prefixLinesFromTrig(trig);
   if (state.needOutPrefix && !prefixes.some((line) => line.toLowerCase().startsWith('@prefix out:'))) prefixes.push('@prefix out: <https://example.org/see/output#> .');
   const nl = String.fromCharCode(10);
-  return prefixes.join(nl) + nl + nl + body.join(nl);
+  const version = factsHaveTripleTerms(facts) ? 'VERSION "1.2"' + nl + nl : '';
+  return version + prefixes.join(nl) + nl + nl + body.join(nl);
 }
 function appendFormalTrigOutput(markdown, graph, queries, rules, initialFacts, data) {
   const trig = formalOutputToTrig(formalOutputFacts(graph, queries, rules, initialFacts), data && data.trig);

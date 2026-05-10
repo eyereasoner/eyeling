@@ -9555,7 +9555,110 @@ function stripQuotes(lex) {
   return lex;
 }
 
+
+// RDF 1.2 triple terms use <<( s p o )>>. Eyeling's N3 engine does not
+// implement a new RDF 1.2 term kind; instead, it accepts this syntax as a
+// compatibility surface and normalizes it to the existing N3 singleton quoted
+// graph term { s p o }. This keeps ordinary N3 reasoning unchanged while making
+// RDF 1.2 examples parseable by the current engine.
+function normalizeRdf12TripleTerms(inputText) {
+  const text = String(inputText ?? '');
+  let i = 0;
+
+  function startsAt(needle, at = i) {
+    return text.startsWith(needle, at);
+  }
+
+  function readString() {
+    const quote = text[i];
+    let out = quote;
+    const long = text.startsWith(quote.repeat(3), i);
+    if (long) {
+      out = quote.repeat(3);
+      i += 3;
+      while (i < text.length) {
+        if (text.startsWith(quote.repeat(3), i)) {
+          out += quote.repeat(3);
+          i += 3;
+          return out;
+        }
+        if (text[i] === '\\' && i + 1 < text.length) {
+          out += text.slice(i, i + 2);
+          i += 2;
+        } else {
+          out += text[i++];
+        }
+      }
+      return out;
+    }
+    i += 1;
+    let escaped = false;
+    while (i < text.length) {
+      const ch = text[i++];
+      out += ch;
+      if (escaped) {
+        escaped = false;
+      } else if (ch === '\\') {
+        escaped = true;
+      } else if (ch === quote) {
+        break;
+      }
+    }
+    return out;
+  }
+
+  function readIri() {
+    let out = text[i++];
+    while (i < text.length) {
+      const ch = text[i++];
+      out += ch;
+      if (ch === '>') break;
+    }
+    return out;
+  }
+
+  function convertUntil(stopToken) {
+    let out = '';
+    while (i < text.length) {
+      if (stopToken && startsAt(stopToken)) {
+        i += stopToken.length;
+        return out;
+      }
+      if (startsAt('<<(')) {
+        i += 3;
+        out += '{ ' + convertUntil(')>>').trim() + ' }';
+        continue;
+      }
+      const ch = text[i];
+      if (ch === '"' || ch === "'") {
+        out += readString();
+        continue;
+      }
+      if (ch === '<') {
+        out += readIri();
+        continue;
+      }
+      if (ch === '#') {
+        while (i < text.length) {
+          const c = text[i++];
+          out += c;
+          if (c === '\n' || c === '\r') break;
+        }
+        continue;
+      }
+      out += ch;
+      i += 1;
+    }
+    if (stopToken) throw new N3SyntaxError(`Unterminated RDF 1.2 triple term, expected ${stopToken}`);
+    return out;
+  }
+
+  const converted = convertUntil(null);
+  return converted.replace(/^\s*(?:@version|VERSION)\s+(["'])1\.2\1\s*\.?\s*(?:#.*)?$/gim, '');
+}
+
 function lex(inputText) {
+  inputText = normalizeRdf12TripleTerms(inputText);
   const chars = Array.from(inputText);
   const n = chars.length;
   let i = 0;

@@ -2539,6 +2539,26 @@ _:b a ex:Person ; ex:name "B" .
 `,
     expect: [/^:test\s+:is\s+true\s*\./m],
   },
+
+  {
+    name: 'RDF 1.2 triple terms are accepted as N3 singleton graph terms',
+    opt: { proofComments: false },
+    input: `VERSION "1.2"
+@prefix : <http://example.org/triple-terms#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+:observation rdf:reifies <<( :sensor :reports :overheating )>> .
+:overheating :requires :inspection .
+
+{
+  ?observation rdf:reifies <<( ?device :reports ?condition )>> .
+  ?condition :requires ?action .
+} => {
+  ?observation :entails <<( ?device :needs ?action )>> .
+} .
+`,
+    expect: [/:observation\s+:entails\s+\{\s+:sensor\s+:needs\s+:inspection\s*\.\s*\}\s*\./m],
+  },
 ];
 
 let passed = 0;

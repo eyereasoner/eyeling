@@ -18,6 +18,8 @@ Each example starts from a Notation3 source and is compiled by `see.js` into a s
 
 The trust gate is executable verification. If a required fact is missing, the program fails instead of emitting an unsupported entailment.
 
+The `triple_terms` example uses RDF 1.2 `<<( ... )>>` triple-term syntax. Eyeling accepts that syntax by normalizing it to the existing N3 singleton graph term `{ ... }`; SEE keeps the committed `.trig` input and formal output in RDF 1.2 triple-term form.
+
 
 ## Run
 
@@ -141,5 +143,6 @@ The repository currently contains **50 N3-compiled SEE examples**. Each example 
 | <a id="example-school-placement-route-audit"></a>[School placement route audit](#example-school-placement-route-audit) | compiled from Notation3 by `see.js`; student, school, distance, and policy facts derive an auditable school-placement route decision. | [doc](examples/doc/school_placement_audit.md), [js](examples/school_placement_audit.js), [input](examples/input/school_placement_audit.trig), [output](examples/output/school_placement_audit.md), [n3](examples/n3/school_placement_audit.n3) |
 | <a id="example-smoke-arithmetic"></a>[Smoke Arithmetic](#example-smoke-arithmetic) | compiled from Notation3 by `see.js`; arithmetic compiler smoke test deriving 6 × 7 through rules and builtins. | [doc](examples/doc/smoke_arithmetic.md), [js](examples/smoke_arithmetic.js), [input](examples/input/smoke_arithmetic.trig), [output](examples/output/smoke_arithmetic.md), [n3](examples/n3/smoke_arithmetic.n3) |
 | <a id="example-socrates-inference"></a>[Socrates inference](#example-socrates-inference) | compiled from Notation3 by `see.js`; subclass closure with top-level `log:query` projection. | [doc](examples/doc/socrates.md), [js](examples/socrates.js), [input](examples/input/socrates.trig), [output](examples/output/socrates.md), [n3](examples/n3/socrates.n3) |
+| <a id="example-triple-terms"></a>[Triple terms](#example-triple-terms) | compiled from Notation3 by `see.js`; RDF 1.2 TriG triple terms are used as input evidence and as a derived entailment. | [doc](examples/doc/triple_terms.md), [js](examples/triple_terms.js), [input](examples/input/triple_terms.trig), [output](examples/output/triple_terms.md), [n3](examples/n3/triple_terms.n3) |
 | <a id="example-wind-turbine-envelope"></a>[Wind turbine envelope](#example-wind-turbine-envelope) | compiled from Notation3 by `see.js`; wind-speed samples are classified against cut-in, rated, and cut-out thresholds and accumulated into energy. | [doc](examples/doc/wind_turbine.md), [js](examples/wind_turbine.js), [input](examples/input/wind_turbine.trig), [output](examples/output/wind_turbine.md), [n3](examples/n3/wind_turbine.n3) |
 | <a id="example-burn-the-witch"></a>[Burn the witch](#example-burn-the-witch) | compiled from Notation3 by `see.js`; rule-chain explanation for the witch entailment. | [doc](examples/doc/witch.md), [js](examples/witch.js), [input](examples/input/witch.trig), [output](examples/output/witch.md), [n3](examples/n3/witch.n3) |

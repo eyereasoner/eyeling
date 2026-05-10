@@ -36,6 +36,7 @@
 - [Appendix I — The Eyeling Playground](#app-i)
 - [Appendix J — Formalism Is Fine](#app-j)
 - [Appendix K — Whitehead-inspired becoming examples](#app-k)
+- [Appendix L — SEE: Specialized Eyeling Executables](#app-l)
 
 ---
 
@@ -235,6 +236,20 @@ The lexer turns the input into tokens like:
 - `#` comments
 
 Parsing becomes dramatically simpler because tokenization already decided where strings end, where numbers are, and so on.
+
+One compatibility wrinkle is handled in the lexer before normal parsing: RDF 1.2 triple terms written as `<<( s p o )>>` are accepted and normalized to Eyeling's existing singleton quoted-formula term `{ s p o }`. A leading `VERSION "1.2"` or `@version "1.2"` directive is ignored for the same reason. This keeps Eyeling's N3 model stable while allowing small RDF 1.2 triple-term inputs to run through the existing `GraphTerm` machinery. For example:
+
+```n3
+:observation rdf:reifies <<( :sensor :reports :overheating )>> .
+```
+
+is treated internally like:
+
+```n3
+:observation rdf:reifies { :sensor :reports :overheating } .
+```
+
+This is intentionally a compatibility translation, not a new full RDF 1.2 parser layer. Nested or more exotic future triple-term forms should be added only if they can be mapped cleanly onto Eyeling's quoted-formula term model.
 
 ### 4.2 Parsing triples, with Turtle-style convenience
 
@@ -2561,6 +2576,8 @@ Quoted graphs/formulas use `{ ... }`. Inside a quoted formula, directive scope m
 
 - `@prefix/@base` and `PREFIX/BASE` directives may appear at top level **or inside `{ ... }`**, and apply to the formula they occur in (formula-local scoping).
 
+Eyeling also accepts the RDF 1.2 triple-term surface form `<<( s p o )>>` as a compatibility spelling for a singleton quoted formula `{ s p o }`. This is useful for inputs that use `rdf:reifies` or other predicates whose objects are RDF 1.2 triple terms, while keeping the rest of Eyeling on its N3 formula-term model.
+
 For the formal grammar, see the N3 spec grammar:
 
 - [https://w3c.github.io/N3/spec/#grammar](https://w3c.github.io/N3/spec/#grammar)
@@ -3794,3 +3811,84 @@ The becoming examples should therefore be read as **executable schemata** rather
 For the handbook, these examples matter for two reasons. First, they provide a concrete demonstration that Eyeling can handle a style of reasoning that feels closer to **becoming, development, and transformation** than to static classification. Second, they show how expressive gains can come from modeling choices rather than from adding new machinery to the engine. The same forward-chaining core that proves `:Socrates a :Mortal` can also prove that a lineage becomes evolvable, that a controller becomes approved, or that a wake switch becomes serviceable under a low-bias regime.
 
 That is why this appendix belongs after Appendix J. “Formalism is fine” not only because it supports rigor, but because it can remain flexible enough to describe worlds in motion. The becoming examples are small demonstrations of that claim. They show that a compact N3 reasoner can host process-oriented models without ceasing to be simple, readable, and executable.
+
+---
+
+<a id="app-l"></a>
+
+## Appendix L — SEE: Specialized Eyeling Executables
+
+SEE, **Specialized Eyeling Executables**, is the companion example system under `see/`. It compiles selected Eyeling-style N3 programs into small, standalone JavaScript runners. The goal is not to replace the main reasoner. The goal is to turn a particular reasoning task into an executable artifact that carries its input evidence, derivation logic, entailment, explanation, and reference output together.
+
+The short mental model is:
+
+```text
+N3 source + TriG evidence -> specialized JavaScript -> entailment + explanation
+```
+
+### L.1 Why SEE exists
+
+The normal Eyeling CLI is a general reasoner: it parses an input file, runs the engine, and prints the resulting closure, selected query output, or rendered `log:outputString` report.
+
+SEE is narrower and more packageable. For each committed example, `see.js` generates:
+
+- `see/examples/<name>.js` — a runnable JavaScript derivation program,
+- `see/examples/input/<name>.trig` — the RDF/TriG evidence read by the runner,
+- `see/examples/output/<name>.md` — the expected Markdown result,
+- `see/examples/doc/<name>.md` — a short generated explanation of the compiled example.
+
+That makes each example easier to audit. A reviewer can inspect the source N3, the generated runner, the input evidence, and the expected entailment/explanation without reconstructing the whole test setup.
+
+### L.2 Entailment plus explanation
+
+SEE reports use an **Entailment** section and an **Explanation** section. The entailment is the selected result of the reasoning task. The explanation records how the compiled runner reached it: source facts, rules, selected support trees, and the formal TriG output when relevant.
+
+This vocabulary is deliberately more precise than a generic “result”. It says: the program is not merely presenting a suggestion; it is presenting something that follows from the encoded facts, rules, gates, and query projection.
+
+### L.3 Direct TriG input
+
+Generated SEE runners read their committed `.trig` input directly. Earlier versions used an intermediate `.n3` conversion step, but the current design keeps the evidence in TriG and lets the runner parse that committed input. This matters for examples that are closer to RDF data exchange than to hand-written N3 rule files.
+
+SEE also includes a triple-term example. Its input can contain RDF 1.2 triple terms such as:
+
+```trig
+VERSION "1.2"
+
+:observation rdf:reifies <<( :sensor :reports :overheating )>> .
+```
+
+Eyeling accepts this surface form by translating the triple term to a singleton quoted formula internally:
+
+```n3
+:observation rdf:reifies { :sensor :reports :overheating } .
+```
+
+That is enough for the SEE example to demonstrate RDF 1.2-style triple terms as input and output without forcing Eyeling to implement a separate full RDF 1.2 syntax model.
+
+### L.4 Generation and tests
+
+The root package scripts treat SEE as part of the normal repository workflow:
+
+```bash
+npm run generate
+npm run test:see
+```
+
+`npm run generate` refreshes the generated SEE artifacts from `see/examples/n3/*.n3`. `npm run test:see` runs every generated SEE example and compares its Markdown output with the committed reference output.
+
+In the full test suite, this means SEE is not just documentation. It is executable regression coverage for a broad range of Eyeling behavior: forward rules, backward rules, builtins, fuses, queries, RDF lists, formula-valued terms, generated explanations, and RDF 1.2 triple-term compatibility.
+
+### L.5 When to add a SEE example
+
+A normal Eyeling example is best when you want to demonstrate a language feature or a compact reasoning pattern directly in N3.
+
+A SEE example is best when you want a more self-contained artifact:
+
+- the input evidence matters,
+- the final entailment should be explained in Markdown,
+- the example should be runnable without an external reasoner at runtime,
+- the generated JavaScript itself is worth inspecting,
+- or the example should become stable regression coverage for a specific reasoning workflow.
+
+In that sense, SEE is an executable publication format for selected Eyeling examples: small enough to read, deterministic enough to test, and explicit enough to audit.
+

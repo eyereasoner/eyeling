@@ -7,11 +7,31 @@ function lit(value) { return { kind: 'lit', value }; }
 function blank(value) { return { kind: 'blank', value }; }
 function list(items) { return { kind: 'list', items }; }
 function formula(atoms) { return { kind: 'formula', atoms }; }
+function triple(s, p, o) { return { kind: 'triple', s, p, o }; }
 
 function readTermToken(text, start = 0) {
   let i = start;
   while (/\s/.test(text[i])) i += 1;
   const begin = i;
+  if (text.startsWith('<<(', i)) {
+    let depth = 0;
+    while (i < text.length) {
+      if (text[i] === '"') {
+        const [, next] = readTermToken(text, i);
+        i = next;
+        continue;
+      }
+      if (text.startsWith('<<(', i)) { depth += 1; i += 3; continue; }
+      if (text.startsWith(')>>', i)) {
+        depth -= 1;
+        i += 3;
+        if (depth === 0) break;
+        continue;
+      }
+      i += 1;
+    }
+    return [text.slice(begin, i), i];
+  }
   if (text[i] === '"') {
     i += 1;
     let escaped = false;
@@ -60,7 +80,10 @@ function splitListItems(text) {
     while (/\s/.test(text[i])) i += 1;
     if (i >= text.length) break;
     const start = i;
-    if (text[i] === '"') {
+    if (text.startsWith('<<(', i)) {
+      const [, next] = readTermToken(text, i);
+      i = next;
+    } else if (text[i] === '"') {
       i += 1;
       let escaped = false;
       while (i < text.length) {
@@ -83,9 +106,17 @@ function splitListItems(text) {
   }
   return out;
 }
+function parseTripleTermBody(text) {
+  const [s, i1] = readTermToken(text, 0);
+  const [p, i2] = readTermToken(text, i1);
+  const [o, i3] = readTermToken(text, i2);
+  if (!s || !p || !o || text.slice(i3).trim()) throw new Error('bad triple term: ' + text);
+  return triple(parseTerm(s), parseTerm(p), parseTerm(o));
+}
 function parseTerm(text) {
   const t = String(text || '').trim();
   if (!t) throw new Error('empty term');
+  if (t.startsWith('<<(') && t.endsWith(')>>')) return parseTripleTermBody(t.slice(3, -3).trim());
   const first = t[0];
   if (first === '"') return lit(JSON.parse(t));
   if (first === '(' && t[t.length - 1] === ')') return list(splitListItems(t.slice(1, -1)).map(parseTerm));
@@ -112,7 +143,7 @@ function parseInputTrigFast(trig) {
   const lines = String(trig || '').split(/\r?\n/);
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i].trim();
-    if (!line || line.startsWith('#') || line.toLowerCase().startsWith('@prefix ')) continue;
+    if (!line || line.startsWith('#') || line.toLowerCase().startsWith('@prefix ') || /^(@version|version)\s+/i.test(line)) continue;
     const graphStart = line.match(/^(\S+)\s*\{\s*$/);
     if (graphStart) {
       const atoms = [];

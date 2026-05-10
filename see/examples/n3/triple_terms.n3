@@ -1,0 +1,23 @@
+# Triple terms
+#
+# Demonstrates RDF 1.2 TriG triple terms as input evidence and as a derived entailment.
+
+VERSION "1.2"
+
+@prefix : <https://eyereasoner.github.io/eyeling/see/examples/triple_terms#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+:observation rdf:reifies <<( :sensor :reports :overheating )>> .
+:overheating :requires :inspection .
+
+{
+  ?observation rdf:reifies <<( ?device :reports ?condition )>> .
+  ?condition :requires ?action .
+} => {
+  ?observation :entails <<( ?device :needs ?action )>> .
+} .
+
+{ ?observation :entails ?entailment }
+  log:query
+{ ?observation :entails ?entailment } .
