@@ -1,6 +1,6 @@
 # RC Discharge Envelope  
 
-## Insight  
+## Conclusion  
 exact decay symbol : exp(-1/4)  
 certified decay interval : [0.7788007830, 0.7788007831]  
 first below tolerance step : 13  

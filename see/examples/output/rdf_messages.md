@@ -1,6 +1,6 @@
 # RDF Messages  
 
-## Insight  
+## Conclusion  
 RDF Message log accepted: 3 explicit message boundaries are preserved. Message :m002 is an empty heartbeat, and the local blank-node label _:b0 is safely reused in separate messages.  
 
 ## Explanation  

@@ -1,6 +1,6 @@
 # Backward recursion coverage  
 
-## Insight  
+## Conclusion  
 The compiled query selected 2 fact(s) after the rule closure was computed.  
 Main conclusion: **:a :reaches :c.**  
 

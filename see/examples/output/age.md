@@ -1,6 +1,6 @@
 # Age checker  
 
-## Insight  
+## Conclusion  
 The compiled query selected 1 fact(s) after the rule closure was computed.  
 Main conclusion: **:test is true.**  
 

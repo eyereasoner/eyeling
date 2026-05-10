@@ -28,4 +28,4 @@ The generated `examples/school_placement_audit.js` is a specialized JavaScript d
 
 ## Output model
 
-Running `node examples/school_placement_audit.js` produces a SEE-style Markdown report with an **Insight** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.
+Running `node examples/school_placement_audit.js` produces a SEE-style Markdown report with a **Conclusion** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.

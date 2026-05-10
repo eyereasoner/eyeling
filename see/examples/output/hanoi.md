@@ -1,6 +1,6 @@
 # Towers of Hanoi  
 
-## Insight  
+## Conclusion  
 The derivation produced 1 new fact(s) from 0 stated fact(s).  
 Main conclusion: **3 :answer ((:left :right) (:left :center) (:right :center) (:left :right) (:center :left) (:center :right) (:left :right)).**  
 

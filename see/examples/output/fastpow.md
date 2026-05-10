@@ -1,6 +1,6 @@
 # Fast exponentiation demo  
 
-## Insight  
+## Conclusion  
 The derivation produced 0 new fact(s) from 0 stated fact(s).  
 
 ## Explanation  

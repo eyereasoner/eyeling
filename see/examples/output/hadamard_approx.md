@@ -1,6 +1,6 @@
 # Hadamard gate approximation  
 
-## Insight  
+## Conclusion  
 The compiled query selected 441 fact(s) after the rule closure was computed.  
 Main conclusion: **:result :HMidpointEntry (20 1 1 -0.707106733683605 0).**  
 

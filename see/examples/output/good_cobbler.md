@@ -1,6 +1,6 @@
 # Good cobbler  
 
-## Insight  
+## Conclusion  
 The derivation produced 1 formula-valued conclusion(s).  
 Main conclusion: **:test is { :joe :is (:good :Cobbler) }.**  
 

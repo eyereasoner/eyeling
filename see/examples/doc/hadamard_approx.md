@@ -29,4 +29,4 @@ The generated `examples/hadamard_approx.js` is a specialized JavaScript derivati
 
 ## Output model
 
-Running `node examples/hadamard_approx.js` produces a SEE-style Markdown report with an **Insight** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.
+Running `node examples/hadamard_approx.js` produces a SEE-style Markdown report with a **Conclusion** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.

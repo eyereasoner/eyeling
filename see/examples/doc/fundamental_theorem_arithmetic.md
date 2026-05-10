@@ -33,4 +33,4 @@ The generated `examples/fundamental_theorem_arithmetic.js` is a specialized Java
 
 ## Output model
 
-Running `node examples/fundamental_theorem_arithmetic.js` produces a SEE-style Markdown report with an **Insight** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.
+Running `node examples/fundamental_theorem_arithmetic.js` produces a SEE-style Markdown report with a **Conclusion** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.

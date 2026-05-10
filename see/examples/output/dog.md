@@ -1,6 +1,6 @@
 # Dog license example  
 
-## Insight  
+## Conclusion  
 The derivation produced 1 new fact(s) from 7 stated fact(s).  
 Main conclusion: **:alice :mustHave :dogLicense.**  
 

@@ -1,6 +1,6 @@
 # Builtin coverage smoke  
 
-## Insight  
+## Conclusion  
 The compiled query selected 29 fact(s) after the rule closure was computed.  
 Main conclusion: **:assurance :member "c".**  
 

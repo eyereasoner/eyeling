@@ -1,6 +1,6 @@
 # Dijkstra Risk Path  
 
-## Insight  
+## Conclusion  
 selected path : ClinicA -> DepotB -> LabD -> HubZ  
 raw cost : 10.00  
 risk sum : 0.55  

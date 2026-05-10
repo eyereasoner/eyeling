@@ -1,6 +1,6 @@
 # EV Roadtrip Planner  
 
-## Insight  
+## Conclusion  
 Select plan : drive_bru_liege -> drive_liege_aachen -> shuttle_aachen_cologne.  
 route result : Cologne battery=low pass=none  
 duration : 210.0 minutes  

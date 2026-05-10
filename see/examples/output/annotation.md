@@ -1,6 +1,6 @@
 # Annotation  
 
-## Insight  
+## Conclusion  
 The derivation produced 1 formula-valued conclusion(s).  
 Main conclusion: **:t log:nameOf { :a :name "Alice" }.**  
 

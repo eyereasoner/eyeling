@@ -1,6 +1,6 @@
 # In a group, the inverse of an element is unique.  
 
-## Insight  
+## Conclusion  
 The compiled query selected 2 fact(s) after the rule closure was computed.  
 Main conclusion: **:result :sameInverse (:x :j :i).**  
 

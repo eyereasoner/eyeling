@@ -23,4 +23,4 @@ The generated `examples/expression_eval.js` is a specialized JavaScript derivati
 
 ## Output model
 
-Running `node examples/expression_eval.js` produces a SEE-style Markdown report with an **Insight** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.
+Running `node examples/expression_eval.js` produces a SEE-style Markdown report with a **Conclusion** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.

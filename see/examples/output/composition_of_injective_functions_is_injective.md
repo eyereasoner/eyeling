@@ -1,6 +1,6 @@
 # Composition of injective functions is injective.  
 
-## Insight  
+## Conclusion  
 The compiled query selected 2 fact(s) after the rule closure was computed.  
 Main conclusion: **:result :sameInputByCompositeInjectivity (:h :b :a).**  
 

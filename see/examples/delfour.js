@@ -1040,7 +1040,7 @@ function renderStructuredOutput({ title, graph, queries = [], rules = [], initia
   const lines = [];
   lines.push('# ' + title);
   lines.push('');
-  lines.push('## Insight');
+  lines.push('## Conclusion');
   if (mode === 'query') {
     lines.push('The compiled query selected ' + selected.length + ' fact(s) after the rule closure was computed.');
   } else if (mode === 'formula') {
@@ -1114,15 +1114,16 @@ function dedupeExplanationHeadings(text) {
 function normalizePublicReport(markdown, title) {
   let text = String(markdown || '').trimEnd();
   if (!/^\s*#\s+/m.test(text)) text = '# ' + title + '\n\n' + text;
-  if (!/^##\s+Insight\s*$/mi.test(text)) {
-    text = text.replace(/^(#\s+[^\n]+\n*)/, '$1\n## Insight\n');
+  if (!/^##\s+Conclusion\s*$/mi.test(text) && !/^##\s+Insight\s*$/mi.test(text)) {
+    text = text.replace(/^(#\s+[^\n]+\n*)/, '$1\n## Conclusion\n');
   }
   if (!/^##\s+Explanation\s*$/mi.test(text)) {
     text += '\n\n## Explanation\nNo additional explanation was provided by the generated output.';
   }
   text = text.replace(/^##\s+([^\n]+?)\s*$/gm, (line, heading) => {
     const normalized = heading.trim().toLowerCase();
-    if (normalized === 'insight' || normalized === 'explanation') return '## ' + (normalized === 'insight' ? 'Insight' : 'Explanation');
+    if (normalized === 'insight' || normalized === 'conclusion') return '## Conclusion';
+    if (normalized === 'explanation') return '## Explanation';
     return '**' + heading.trim() + '**';
   });
   text = dedupeExplanationHeadings(text);
@@ -1131,13 +1132,13 @@ function normalizePublicReport(markdown, title) {
 function markdownize(raw, title) {
   let text = String(raw || '');
   text = text
-    .replace(/===\s*Answer\s*===/g, '## Insight')
+    .replace(/===\s*Answer\s*===/g, '## Conclusion')
     .replace(/===\s*Reason\s+Why\s*===/gi, '## Explanation')
     .replace(/===\s*Explanation\s*===/gi, '## Explanation')
     .replace(/===\s*([^=]+?)\s*===/g, (_, h) => '**' + h.trim() + '**');
   text = text.replace(/^C(\d+)\s+OK\s*-\s*/gm, 'C$1: ');
   text = dedupeExplanationHeadings(text);
-  if (!text.trim()) text = '## Insight\nNo log:outputString facts were derived.\n\n## Explanation\nThe compiled derivation did not produce authored report text.';
+  if (!text.trim()) text = '## Conclusion\nNo log:outputString facts were derived.\n\n## Explanation\nThe compiled derivation did not produce authored report text.';
   return normalizePublicReport(text, title);
 }
 function authoredSupportAppendix(graph, queries, rules, initialFacts, trace) {
@@ -2877,7 +2878,7 @@ const RULES = [
           "items": [
             {
               "kind": "lit",
-              "value": "=== Answer ===\nThe scanner is allowed to use a neutral shopping insight and recommends %s instead of %s.\ncase : %s\ndecision : Allowed\nscanned product : %s\nsuggested alternative: %s\n\n=== Explanation ===\nThe phone desensitizes a diabetes-related household condition into a scoped low-sugar need, wraps it in an expiring Insight + Policy envelope, and the scanner consumes that envelope for shopping assistance.\nmetric : %s\nthreshold : %s\nscope : %s @ %s\nretailer : %s\nsignature alg : %s\nbanner headline : %s\nexpires at : %s\naudit entries : %s\nbus files written : %s\n"
+              "value": "=== Answer ===\nThe scanner is allowed to use a neutral shopping conclusion and recommends %s instead of %s.\ncase : %s\ndecision : Allowed\nscanned product : %s\nsuggested alternative: %s\n\n=== Explanation ===\nThe phone desensitizes a diabetes-related household condition into a scoped low-sugar need, wraps it in an expiring conclusion + policy envelope, and the scanner consumes that envelope for shopping assistance.\nmetric : %s\nthreshold : %s\nscope : %s @ %s\nretailer : %s\nsignature alg : %s\nbanner headline : %s\nexpires at : %s\naudit entries : %s\nbus files written : %s\n"
             },
             {
               "kind": "var",
@@ -2998,7 +2999,7 @@ const RULES = [
       ":insight :expiresAt ?expiresAt",
       ":signature :alg ?alg",
       ":banner :headline ?headline",
-      "(\"=== Answer ===\\nThe scanner is allowed to use a neutral shopping insight and recommends %s instead of %s.\\ncase : %s\\ndecision : Allowed\\nscanned product : %s\\nsuggested alternative: %s\\n\\n=== Explanation ===\\nThe phone desensitizes a diabetes-related household condition into a scoped low-sugar need, wraps it in an expiring Insight + Policy envelope, and the scanner consumes that envelope for shopping assistance.\\nmetric : %s\\nthreshold : %s\\nscope : %s @ %s\\nretailer : %s\\nsignature alg : %s\\nbanner headline : %s\\nexpires at : %s\\naudit entries : %s\\nbus files written : %s\\n\" ?altName ?scannedName ?caseName ?scannedName ?altName ?metric ?threshold ?device ?event ?retailer ?alg ?headline ?expiresAt ?auditEntries ?filesWritten) string:format ?Block"
+      "(\"=== Answer ===\\nThe scanner is allowed to use a neutral shopping conclusion and recommends %s instead of %s.\\ncase : %s\\ndecision : Allowed\\nscanned product : %s\\nsuggested alternative: %s\\n\\n=== Explanation ===\\nThe phone desensitizes a diabetes-related household condition into a scoped low-sugar need, wraps it in an expiring conclusion + policy envelope, and the scanner consumes that envelope for shopping assistance.\\nmetric : %s\\nthreshold : %s\\nscope : %s @ %s\\nretailer : %s\\nsignature alg : %s\\nbanner headline : %s\\nexpires at : %s\\naudit entries : %s\\nbus files written : %s\\n\" ?altName ?scannedName ?caseName ?scannedName ?altName ?metric ?threshold ?device ?event ?retailer ?alg ?headline ?expiresAt ?auditEntries ?filesWritten) string:format ?Block"
     ],
     "headComment": [
       ":delfour log:outputString ?Block",
@@ -3049,9 +3050,9 @@ const QUERIES = [
     ]
   }
 ];
-const DOC_MARKDOWN = "# Delfour\n\nGenerated by `see.js` from a Notation3 source file.\n\nN3-compiled version of the Delfour insight-economy example. A private phone\ncondition is desensitized into a scoped low-sugar insight; the scanner may use\nit for shopping assistance, but not for marketing.\n\n## Compilation summary\n\n- Example name: `delfour`\n- Input facts emitted: 61\n- Forward rules compiled: 16\n- Backward predicate rules compiled: 0\n- Fuses compiled: 3\n- Predicate count: 62\n\n## Built-ins used\n\n- `crypto:sha256`\n- `log:notEqualTo`\n- `log:notIncludes`\n- `log:outputString`\n- `math:greaterThan`\n- `math:notEqualTo`\n- `math:notGreaterThan`\n- `math:notLessThan`\n- `string:format`\n- `string:notMatches`\n\n## Runtime model\n\nThe generated `examples/delfour.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/delfour.trig`. For rules-only sources, generation can reuse an existing external evidence file such as `examples/input/delfour.trig` or `examples/input/delfour.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.\n\n## Output model\n\nRunning `node examples/delfour.js` produces a SEE-style Markdown report with an **Insight** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.\n";
+const DOC_MARKDOWN = "# Delfour\n\nGenerated by `see.js` from a Notation3 source file.\n\nN3-compiled version of the Delfour shopping-assistance example. A private phone\ncondition is desensitized into a scoped low-sugar conclusion; the scanner may use\nit for shopping assistance, but not for marketing.\n\n## Compilation summary\n\n- Example name: `delfour`\n- Input facts emitted: 61\n- Forward rules compiled: 16\n- Backward predicate rules compiled: 0\n- Fuses compiled: 3\n- Predicate count: 62\n\n## Built-ins used\n\n- `crypto:sha256`\n- `log:notEqualTo`\n- `log:notIncludes`\n- `log:outputString`\n- `math:greaterThan`\n- `math:notEqualTo`\n- `math:notGreaterThan`\n- `math:notLessThan`\n- `string:format`\n- `string:notMatches`\n\n## Runtime model\n\nThe generated `examples/delfour.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/delfour.trig`. For rules-only sources, generation can reuse an existing external evidence file such as `examples/input/delfour.trig` or `examples/input/delfour.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.\n\n## Output model\n\nRunning `node examples/delfour.js` produces a SEE-style Markdown report with a **Conclusion** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.\n";
 function seeMetadata(data) { return (data && data.__see) || {}; }
-function trustedDerivation(data) { const meta = seeMetadata(data); const facts = data && Array.isArray(data.facts) ? data.facts : []; const expectedFacts = EXPECTED_INPUT_FACTS || Number(meta.InputFacts || 0); if (meta.SourceSHA256 && meta.SourceSHA256 !== "250631cb3de8addff7037b54789b63b2ea034eb6b579c61a9feca542efd584c1") throw new Error('input evidence does not match the N3 source compiled into this example'); const result = saturate(facts, RULES); const rawOutput = renderRawOutput(result.graph, QUERIES, RULES, facts); fail('Compiled N3 derivation failed', { 'input evidence metadata is present and matches compiled source': meta.SourceSHA256 === "250631cb3de8addff7037b54789b63b2ea034eb6b579c61a9feca542efd584c1", 'input evidence facts were loaded': expectedFacts > 0 ? facts.length === expectedFacts : facts.length >= 0, 'compiled rules were loaded': RULES.length === 19, 'compiled query directives were loaded': QUERIES.length === 1, 'a derivation fixpoint was reached': result.graph.facts.length >= facts.length, 'query or output facts were produced': rawOutput.length > 0 }); return { ...result, rawOutput, inputFacts: facts }; }
+function trustedDerivation(data) { const meta = seeMetadata(data); const facts = data && Array.isArray(data.facts) ? data.facts : []; const expectedFacts = EXPECTED_INPUT_FACTS || Number(meta.InputFacts || 0); if (meta.SourceSHA256 && meta.SourceSHA256 !== "28650ee53816f245164495cd1aa56181a8b830e70969c835489e7562525c9108") throw new Error('input evidence does not match the N3 source compiled into this example'); const result = saturate(facts, RULES); const rawOutput = renderRawOutput(result.graph, QUERIES, RULES, facts); fail('Compiled N3 derivation failed', { 'input evidence metadata is present and matches compiled source': meta.SourceSHA256 === "28650ee53816f245164495cd1aa56181a8b830e70969c835489e7562525c9108", 'input evidence facts were loaded': expectedFacts > 0 ? facts.length === expectedFacts : facts.length >= 0, 'compiled rules were loaded': RULES.length === 19, 'compiled query directives were loaded': QUERIES.length === 1, 'a derivation fixpoint was reached': result.graph.facts.length >= facts.length, 'query or output facts were produced': rawOutput.length > 0 }); return { ...result, rawOutput, inputFacts: facts }; }
 function snapshotMarkdown(markdown) { return markdown.split(/\n/).map((line) => line ? line + '  \n' : '\n').join(''); }
 function prefixLinesFromTrig(trig) {
   const out = [];

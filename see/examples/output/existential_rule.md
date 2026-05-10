@@ -1,6 +1,6 @@
 # Existential rule  
 
-## Insight  
+## Conclusion  
 The derivation produced 2 new fact(s) from 2 stated fact(s).  
 Main conclusion: **:Plato is _:B.**  
 

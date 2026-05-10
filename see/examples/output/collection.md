@@ -1,6 +1,6 @@
 # Collection  
 
-## Insight  
+## Conclusion  
 The derivation produced 0 new fact(s) from 2 stated fact(s).  
 Main conclusion: **_:b2 :p :q.**  
 

@@ -1,6 +1,6 @@
 # Backward rule example  
 
-## Insight  
+## Conclusion  
 The derivation produced 1 new fact(s) from 0 stated fact(s).  
 Main conclusion: **5 :isIndeedMoreInterestingThan 3.**  
 

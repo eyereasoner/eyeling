@@ -1,6 +1,6 @@
 # A tiny expression evaluator in N3  
 
-## Insight  
+## Conclusion  
 The derivation produced 1 new fact(s) from 17 stated fact(s).  
 Main conclusion: **:Root :result 12.**  
 

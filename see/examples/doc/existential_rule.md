@@ -21,4 +21,4 @@ The generated `examples/existential_rule.js` is a specialized JavaScript derivat
 
 ## Output model
 
-Running `node examples/existential_rule.js` produces a SEE-style Markdown report with an **Insight** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.
+Running `node examples/existential_rule.js` produces a SEE-style Markdown report with a **Conclusion** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.

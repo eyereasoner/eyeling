@@ -1,6 +1,6 @@
 # ODRL + DPV risk assessment with ranked, explainable output.  
 
-## Insight  
+## Conclusion  
 The compiled query selected 65 fact(s) after the rule closure was computed.  
 Main conclusion: **(:Agreement1 :ConsumerExample 1 930 "C4" 1 _:risk4 _:m14) log:outputString "  - mitigation for clause C4: Add a permission allowing data export (or remove the prohibition) to support portability.\n".**  
 

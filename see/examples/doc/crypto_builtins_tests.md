@@ -24,4 +24,4 @@ The generated `examples/crypto_builtins_tests.js` is a specialized JavaScript de
 
 ## Output model
 
-Running `node examples/crypto_builtins_tests.js` produces a SEE-style Markdown report with an **Insight** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.
+Running `node examples/crypto_builtins_tests.js` produces a SEE-style Markdown report with a **Conclusion** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.

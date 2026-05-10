@@ -1,6 +1,6 @@
 # Euler identity (exact, certificate-friendly):  
 
-## Insight  
+## Conclusion  
 The compiled query selected 6 fact(s) after the rule closure was computed.  
 Main conclusion: **:result :identityHolds true.**  
 

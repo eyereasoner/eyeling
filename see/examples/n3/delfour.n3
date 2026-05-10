@@ -1,8 +1,8 @@
 # =======
 # Delfour
 # =======
-# N3-compiled version of the Delfour insight-economy example. A private phone
-# condition is desensitized into a scoped low-sugar insight; the scanner may use
+# N3-compiled version of the Delfour shopping-assistance example. A private phone
+# condition is desensitized into a scoped low-sugar conclusion; the scanner may use
 # it for shopping assistance, but not for marketing.
 
 @prefix : <https://eyereasoner.github.io/see/examples/delfour#>.
@@ -141,14 +141,14 @@
   :signature :alg ?alg.
   :banner :headline ?headline.
   ("=== Answer ===
-The scanner is allowed to use a neutral shopping insight and recommends %s instead of %s.
+The scanner is allowed to use a neutral shopping conclusion and recommends %s instead of %s.
 case : %s
 decision : Allowed
 scanned product : %s
 suggested alternative: %s
 
 === Explanation ===
-The phone desensitizes a diabetes-related household condition into a scoped low-sugar need, wraps it in an expiring Insight + Policy envelope, and the scanner consumes that envelope for shopping assistance.
+The phone desensitizes a diabetes-related household condition into a scoped low-sugar need, wraps it in an expiring conclusion + policy envelope, and the scanner consumes that envelope for shopping assistance.
 metric : %s
 threshold : %s
 scope : %s @ %s

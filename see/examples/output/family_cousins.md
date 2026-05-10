@@ -1,6 +1,6 @@
 # Family cousins  
 
-## Insight  
+## Conclusion  
 The derivation produced 25 new fact(s) from 15 stated fact(s).  
 Main conclusion: **:Judy :cousin :Ivan.**  
 

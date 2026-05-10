@@ -1,6 +1,6 @@
 # Goldbach 1000  
 
-## Insight  
+## Conclusion  
 All 499 even integers from 4 through 1000 have a Goldbach witness.  
 sample witnesses : 4=2+2; 28=5+23; 100=3+97; 998=7+991; 1000=3+997  
 

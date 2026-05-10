@@ -34,4 +34,4 @@ The generated `examples/wind_turbine.js` is a specialized JavaScript derivation 
 
 ## Output model
 
-Running `node examples/wind_turbine.js` produces a SEE-style Markdown report with an **Insight** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.
+Running `node examples/wind_turbine.js` produces a SEE-style Markdown report with a **Conclusion** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.

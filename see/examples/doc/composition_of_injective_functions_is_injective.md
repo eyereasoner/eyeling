@@ -21,4 +21,4 @@ The generated `examples/composition_of_injective_functions_is_injective.js` is a
 
 ## Output model
 
-Running `node examples/composition_of_injective_functions_is_injective.js` produces a SEE-style Markdown report with an **Insight** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.
+Running `node examples/composition_of_injective_functions_is_injective.js` produces a SEE-style Markdown report with a **Conclusion** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.

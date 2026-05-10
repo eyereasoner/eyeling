@@ -1,6 +1,6 @@
 # Equals test  
 
-## Insight  
+## Conclusion  
 The derivation produced 1 new fact(s) from 1 stated fact(s).  
 Main conclusion: **:test is true.**  
 

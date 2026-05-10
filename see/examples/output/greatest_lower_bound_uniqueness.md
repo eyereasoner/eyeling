@@ -1,6 +1,6 @@
 # In a partial order, a greatest lower bound is unique.  
 
-## Insight  
+## Conclusion  
 The compiled query selected 2 fact(s) after the rule closure was computed.  
 Main conclusion: **:result :sameGreatestLowerBound (:a :b :g2 :g1).**  
 

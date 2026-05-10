@@ -1,6 +1,6 @@
 # crypto builtins tests  
 
-## Insight  
+## Conclusion  
 The derivation produced 4 new fact(s) from 0 stated fact(s).  
 Main conclusion: **:ok_crypto_sha512_1 is a :Pass.**  
 

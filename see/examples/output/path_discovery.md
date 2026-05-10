@@ -1,6 +1,6 @@
 # Path Discovery  
 
-## Insight  
+## Conclusion  
 The derivation produced 3 new fact(s) from 96420 stated fact(s).  
 Main conclusion: **:discovered :airroute ("Ostend-Bruges International Airport" "Liège Airport" "Palma De Mallorca Airport" "Václav Havel Airport Prague").**  
 

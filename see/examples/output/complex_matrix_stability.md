@@ -1,6 +1,6 @@
 # Complex Matrix Stability  
 
-## Insight  
+## Conclusion  
 A_unstable = [[(1,1),(0,0)],[(0,0),(2,0)]] has spectral radius 2 and is unstable. A_stable = [[(1,0),(0,0)],[(0,0),(-1,0)]] has spectral radius 1 and is marginally stable. A_damped = [[(0,0),(0,0)],[(0,0),(0,0)]] has spectral radius 0 and is damped.  
 
 ## Explanation  

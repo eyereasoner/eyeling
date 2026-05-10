@@ -1,6 +1,6 @@
 # Genetic Knapsack Selection  
 
-## Insight  
+## Conclusion  
 final genome : 101000000101  
 selected items : item01, item03, item10, item12  
 weight : 50 / 50  

@@ -1,6 +1,6 @@
 # Smoke Arithmetic  
 
-## Insight  
+## Conclusion  
 product = 42  
 
 ## Explanation  

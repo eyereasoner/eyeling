@@ -1,6 +1,6 @@
 # Burn the witch  
 
-## Insight  
+## Conclusion  
 The derivation produced 6 new fact(s) from 3 stated fact(s).  
 Main conclusion: **:GIRL is a :WITCH.**  
 

@@ -1,6 +1,6 @@
 # Dijkstra's algorithm to find the shortest path  
 
-## Insight  
+## Conclusion  
 The derivation produced 9 new fact(s) from 9 stated fact(s).  
 Main conclusion: **(:f :e) :edge 3.**  
 

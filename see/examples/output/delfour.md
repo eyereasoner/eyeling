@@ -1,14 +1,14 @@
 # Delfour  
 
-## Insight  
-The scanner is allowed to use a neutral shopping insight and recommends Low-Sugar Tea Biscuits instead of Classic Tea Biscuits.  
+## Conclusion  
+The scanner is allowed to use a neutral shopping conclusion and recommends Low-Sugar Tea Biscuits instead of Classic Tea Biscuits.  
 case : delfour  
 decision : Allowed  
 scanned product : Classic Tea Biscuits  
 suggested alternative: Low-Sugar Tea Biscuits  
 
 ## Explanation  
-The phone desensitizes a diabetes-related household condition into a scoped low-sugar need, wraps it in an expiring Insight + Policy envelope, and the scanner consumes that envelope for shopping assistance.  
+The phone desensitizes a diabetes-related household condition into a scoped low-sugar need, wraps it in an expiring conclusion + policy envelope, and the scanner consumes that envelope for shopping assistance.  
 metric : sugar_g_per_serving  
 threshold : 10.0  
 scope : self-scanner @ pick_up_scanner  
@@ -87,8 +87,8 @@ in:metadata {
   in:run see:name "delfour" .  
   in:run see:title "Delfour" .  
   in:run see:sourceFile "examples/n3/delfour.n3" .  
-  in:run see:sourceSHA256 "250631cb3de8addff7037b54789b63b2ea034eb6b579c61a9feca542efd584c1" .  
-  in:run see:description "N3-compiled version of the Delfour insight-economy example. A private phone\ncondition is desensitized into a scoped low-sugar insight; the scanner may use\nit for shopping assistance, but not for marketing." .  
+  in:run see:sourceSHA256 "28650ee53816f245164495cd1aa56181a8b830e70969c835489e7562525c9108" .  
+  in:run see:description "N3-compiled version of the Delfour shopping-assistance example. A private phone\ncondition is desensitized into a scoped low-sugar conclusion; the scanner may use\nit for shopping assistance, but not for marketing." .  
   in:run see:compiler "see.js N3-to-JS compiler" .  
   in:run see:inputFacts 61 .  
   in:run see:compiledRules 16 .  

@@ -1,6 +1,6 @@
 # GPS route planning  
 
-## Insight  
+## Conclusion  
 Take the direct route via Brugge.  
 Recommended route: Gent -> Brugge -> Oostende  
 
