@@ -1,0 +1,51 @@
+# ============================
+# School Placement Route Audit
+# ============================
+# N3 version of the school placement audit. The original student,
+# school, distance, and policy JSON is preserved as the data-input sidecar.
+
+@prefix : <https://eyereasoner.github.io/eyeling/examples/school-placement-audit#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix string: <http://www.w3.org/2000/10/swap/string#>.
+
+{
+  ?Student :provisional ?Provisional; :auditedBest ?Audited; :walkingMeters ?Walk.
+  :Policy :maxWalkingMeters ?MaxWalking.
+  ?Walk math:greaterThan ?MaxWalking.
+} => {
+  ?Student :auditFlag :walkingLimitExceeded.
+}.
+
+{
+  ?Student :provisional ?Provisional; :auditedBest ?Audited.
+  ?Provisional log:notEqualTo ?Audited.
+} => {
+  ?Student :auditFlag :assignmentDiffersFromAuditedBest.
+}.
+
+{
+  :Ada :auditFlag ?AdaFlag.
+  :Bjorn :auditFlag ?BjornFlag.
+  :Davi :auditFlag ?DaviFlag.
+  :Ada :hiddenDetour ?AdaDetour.
+  :Bjorn :hiddenDetour ?BjornDetour.
+  :Davi :hiddenDetour ?DaviDetour.
+  ?BjornDetour math:lessThan ?AdaDetour.
+  ?DaviDetour math:lessThan ?AdaDetour.
+} => {
+  :Audit :result "fail";
+    :affectedChildren "Ada, Björn, Davi";
+    :largestHiddenDetour "Ada, 3000 m";
+    :recommendedAssignments "Ada -> Lindholmen; Björn -> Backa; Clara -> Haga; Davi -> Haga".
+}.
+
+{
+  :Audit :result ?Result; :affectedChildren ?Affected; :largestHiddenDetour ?Detour; :recommendedAssignments ?Assignments.
+  ("=== Answer ===\naudit result : %s\nchildren affected by straight-line rule : %s\nlargest hidden detour : %s\nrecommended assignments : %s\nexplanation requested : yes\n\n=== Explanation ===\nThe support-tool rule chooses the school with the smallest straight-line distance, using preference rank only as a tie-breaker. The independent audit recomputes each candidate with walking-route distance plus 600 m per preference step. Any provisional assignment that is not the audited best, or that requires more than 2500 m of walking, is flagged. Ada and Björn look close to Centrum on a map, but their walking routes cross barriers and exceed the walking limit; Davi is also better served by the first-preference Haga route. This illustrates why a decision-support label is not enough: route geometry, preferences, and audit records must be inspectable." ?Result ?Affected ?Detour ?Assignments) string:format ?Block.
+} => {
+  :schoolPlacementAudit log:outputString ?Block.
+  :schoolPlacementAudit :reports :Audit.
+}.
+
+{ :schoolPlacementAudit :reports ?Audit } log:query { :schoolPlacementAudit :reports ?Audit }.

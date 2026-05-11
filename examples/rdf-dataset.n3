@@ -1,0 +1,25 @@
+# RDF dataset compatibility
+# RDF 1.1 named graph data and RDF 1.2 triple terms are normalized to ordinary N3 graph terms before Eyeling reads the derivation.
+
+VERSION "1.2"
+@prefix : <https://eyereasoner.github.io/eyeling/examples/rdf-dataset#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+{
+  :sensor :reports ?condition .
+  ?condition :requires ?action .
+  :maintenanceSystem :trusted true .
+} => {
+  :workOrder :entails <<( :sensor :needs ?action )>> .
+  :audit log:nameOf {
+    :workOrder :basedOn :factoryDataset .
+    :workOrder :checkedBy :maintenanceSystem .
+  } .
+} .
+
+{
+  :workOrder :entails <<( ?device :needs ?action )>> .
+} log:query {
+  :workOrder :entails <<( ?device :needs ?action )>> .
+} .

@@ -1,0 +1,43 @@
+# =================
+# Eco Route Insight
+# =================
+# N3 version of the privacy-preserving eco route insight. The JSON
+# input remains the data-input sidecar; this source compiles the local decision
+# and signed-envelope explanation.
+
+@prefix : <https://eyereasoner.github.io/eyeling/examples/eco-route-insight#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix string: <http://www.w3.org/2000/10/swap/string#>.
+
+{
+  :currentRoute :fuelIndex ?Current; :etaMinutes ?CurrentEta.
+  :altLowFuel :fuelIndex ?Alt; :etaMinutes ?AltEta.
+  :Policy :fuelIndexThreshold ?Threshold; :maxEtaDelayMinutes ?MaxDelay.
+  ?Current math:greaterThan ?Threshold.
+  ?Alt math:lessThan ?Current.
+  (?AltEta ?CurrentEta) math:difference ?Delay.
+  ?Delay math:notGreaterThan ?MaxDelay.
+  (?Current ?Alt) math:difference ?Saving.
+} => {
+  :Insight :status "issue";
+    :showEcoBanner "yes";
+    :suggestedRoute :altLowFuel;
+    :estimatedSaving ?Saving.
+}.
+
+{
+  :Insight :status "issue"; :showEcoBanner ?Show; :suggestedRoute :altLowFuel; :estimatedSaving ?Saving.
+  :Scenario :audience ?Audience; :allowedUse ?Use; :expiresAt ?Expiry.
+  :currentRoute :distanceKm ?CurrentDistance; :gradientFactor ?CurrentGradient; :fuelIndex ?CurrentIndex.
+  :altLowFuel :id ?AltId; :distanceKm ?AltDistance; :gradientFactor ?AltGradient; :fuelIndex ?AltIndex.
+  :Shipment :id ?ShipmentId; :payloadTons ?PayloadTons.
+  :Envelope :rawDataExported ?Raw; :payloadDigest ?Digest; :signatureKey ?Key; :signature ?Signature.
+  :Policy :fuelIndexThreshold ?Threshold; :signatureAlgorithm ?Algorithm.
+  ("=== Answer ===\ninsight status : issue\nshow eco banner : %s\naudience : %s\nallowed use : %s\nsuggested route : %s\ncurrent fuel index : %.2f\nsuggested fuel index : %.2f\nestimated saving : %.2f\nexpires at : %s\nraw data exported : %s\nsignature algorithm : %s\npayload digest : %s\nsignature key : %s\nsignature : %s\n\n=== Explanation ===\nThe current route uses fuel index = distanceKm × (payloadKg / 1000) × gradientFactor. For %s, Current urban route gives %.2f × %.2f × %.2f = %.2f. The policy threshold is %.2f, so a local eco banner is justified. The selected alternative %s gives %.2f × %.2f × %.2f = %.2f, saving %.2f while staying within the ETA delay limit. The signed envelope exposes audience, use, expiry, route suggestion, and compact fuel indices, but not raw payload, GPS trace, driver behavior, or raw telemetry." ?Show ?Audience ?Use ?AltId ?CurrentIndex ?AltIndex ?Saving ?Expiry ?Raw ?Algorithm ?Digest ?Key ?Signature ?ShipmentId ?CurrentDistance ?PayloadTons ?CurrentGradient ?CurrentIndex ?Threshold ?AltId ?AltDistance ?PayloadTons ?AltGradient ?AltIndex ?Saving) string:format ?Block.
+} => {
+  :ecoRouteInsight log:outputString ?Block.
+  :ecoRouteInsight :issues :Insight.
+}.
+
+{ :ecoRouteInsight :issues ?Insight } log:query { :ecoRouteInsight :issues ?Insight }.

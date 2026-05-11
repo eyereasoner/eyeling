@@ -17,5 +17,4 @@ echo '@prefix : <http://example.org/> .
 
 - [Handbook](https://eyereasoner.github.io/eyeling/HANDBOOK)
 - [Playground](https://eyereasoner.github.io/eyeling/demo)
-- [SEE: Specialized Eyeling Executables](https://github.com/eyereasoner/eyeling/tree/main/see)
 - [Conformance report](https://codeberg.org/phochste/notation3tests/src/branch/main/reports/report.md)

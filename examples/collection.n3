@@ -1,0 +1,3 @@
+@prefix : <https://eyereasoner.github.io/eyeling/examples/collection#>.
+(1 _:b2 (2)) :p2 :q2 .
+_:b2 :p :q .

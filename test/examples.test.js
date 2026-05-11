@@ -96,6 +96,14 @@ function resolveExpectedPath(outputDir, inputFile) {
   return path.join(outputDir, candidates[0]);
 }
 
+function resolveExampleTrigInput(root, inputFile) {
+  const stem = path.basename(inputFile, path.extname(inputFile));
+  const rel = path.join('input', `${stem}.trig`);
+  const abs = path.join(root, 'examples', rel);
+  if (!fs.existsSync(abs)) return null;
+  return { abs, rel };
+}
+
 function resolveExampleBuiltinPath(root, inputFile) {
   const stem = path.basename(inputFile, path.extname(inputFile));
   const rel = path.join('examples', 'builtin', `${stem}.js`);
@@ -182,19 +190,31 @@ function main() {
     // load it for the matching examples/<stem>.n3 file. Builtin-backed examples
     // run from the repository root so the command shape matches documented usage:
     //   node eyeling.js --builtin examples/builtin/foo.js examples/foo.n3
+    // A matching examples/input/<stem>.trig sidecar is external RDF/TriG
+    // evidence for this example, so include it and run in -r mode automatically.
     const builtin = resolveExampleBuiltinPath(root, file);
+    const trigInput = resolveExampleTrigInput(root, file);
+    const rdfMode = !!trigInput;
     const outFd = fs.openSync(generatedPath, 'w');
     let r;
     try {
       if (builtin) {
-        r = cp.spawnSync(nodePath, [eyelingJsPath, '-d', '--builtin', builtin.rel, path.join('examples', file)], {
+        const args = [eyelingJsPath, '-d'];
+        if (rdfMode) args.push('-r');
+        args.push('--builtin', builtin.rel, path.join('examples', file));
+        if (trigInput) args.push(path.join('examples', trigInput.rel));
+        r = cp.spawnSync(nodePath, args, {
           cwd: root,
           stdio: ['ignore', outFd, 'pipe'], // stdout -> file, stderr captured
           maxBuffer: 200 * 1024 * 1024,
           encoding: 'utf8',
         });
       } else {
-        r = cp.spawnSync(nodePath, [eyelingJsPath, '-d', file], {
+        const args = [eyelingJsPath, '-d'];
+        if (rdfMode) args.push('-r');
+        args.push(file);
+        if (trigInput) args.push(trigInput.rel);
+        r = cp.spawnSync(nodePath, args, {
           cwd: examplesDir,
           stdio: ['ignore', outFd, 'pipe'], // stdout -> file, stderr captured
           maxBuffer: 200 * 1024 * 1024,

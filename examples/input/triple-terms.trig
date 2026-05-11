@@ -1,0 +1,28 @@
+VERSION "1.2"
+
+@prefix : <https://eyereasoner.github.io/eyeling/examples/triple_terms#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix see: <https://example.org/see#> .
+@prefix in: <https://example.org/see/input#> .
+
+# Formal Eyeling input evidence in RDF 1.2 TriG.
+# The generated runner reads this TriG evidence directly.
+
+:observation rdf:reifies <<( :sensor :reports :overheating )>> .
+:overheating :requires :inspection .
+
+in:metadata {
+  in:run a see:InputDataset .
+  in:run see:name "triple_terms" .
+  in:run see:title "Triple terms" .
+  in:run see:sourceFile "examples/n3/triple_terms.n3" .
+  in:run see:sourceSHA256 "f94fae1b4087f790c085c4dd1570875694238a882213951b457480ee26c06944" .
+  in:run see:description "Demonstrates RDF 1.2 TriG triple terms as input evidence and as a derived entailment." .
+  in:run see:compiler "Eyeling RDF/TriG input sidecar" .
+  in:run see:inputFacts 2 .
+  in:run see:compiledRules 1 .
+  in:run see:compiledBackwardRules 0 .
+  in:run see:compiledFuses 0 .
+  in:run see:compiledQueries 1 .
+}

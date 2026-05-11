@@ -73,6 +73,14 @@ function expectedExitCode(n3Text) {
   return 0;
 }
 
+function resolveExampleTrigInput(examplesDir, inputFile) {
+  const stem = path.basename(inputFile, path.extname(inputFile));
+  const rel = path.join('input', `${stem}.trig`);
+  const abs = path.join(examplesDir, rel);
+  if (!fs.existsSync(abs)) return null;
+  return { abs, rel };
+}
+
 function hasGit() {
   const r = run('git', ['--version']);
   return r.status === 0;
@@ -174,7 +182,7 @@ function main() {
     if (!fs.existsSync(eyelingJsPath)) throw new Error(`Missing eyeling.js in installed package: ${eyelingJsPath}`);
 
     // Keep this fast: package.test.js is a smoke test. The full matrix is covered by test/examples.test.js in-repo.
-    const SMOKE_EXAMPLES = ['age.n3', 'basic-monadic.n3', 'family-cousins.n3', 'backward.n3'];
+    const SMOKE_EXAMPLES = ['age.n3', 'basic-monadic.n3', 'family-cousins.n3', 'backward.n3', 'context-association.n3'];
 
     const tmpExamplesOut = fs.mkdtempSync(path.join(os.tmpdir(), 'eyeling-pkg-examples-'));
     let smokeIdx = 1;
@@ -192,7 +200,13 @@ function main() {
         const n3Text = fs.readFileSync(inputPath, 'utf8');
         const expectedRc = expectedExitCode(n3Text);
 
-        const r = cp.spawnSync(process.execPath, [eyelingJsPath, '-d', file], {
+        const trigInput = resolveExampleTrigInput(examplesDir, file);
+        const args = [eyelingJsPath, '-d'];
+        if (trigInput) args.push('-r');
+        args.push(file);
+        if (trigInput) args.push(trigInput.rel);
+
+        const r = cp.spawnSync(process.execPath, args, {
           cwd: examplesDir,
           stdio: ['ignore', 'pipe', 'pipe'],
           maxBuffer: 200 * 1024 * 1024,

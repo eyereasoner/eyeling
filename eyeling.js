@@ -4249,6 +4249,12 @@ function isBuiltinPred(p) {
     return v === LOG_NS + 'implies' || v === LOG_NS + 'impliedBy';
   }
 
+  // log:nameOf is the ordinary fact predicate used by the RDF/TriG
+  // compatibility layer for named graph blocks. It must remain matchable
+  // against extensional facts instead of being swallowed as an unimplemented
+  // log:* builtin.
+  if (v === LOG_NS + 'nameOf') return false;
+
   // Treat RDF Collections as list-term builtins too.
   if (v === RDF_NS + 'first' || v === RDF_NS + 'rest') {
     return true;
