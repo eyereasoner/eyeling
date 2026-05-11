@@ -81,6 +81,14 @@ function fail(msg) {
   console.error(`${C.r}FAIL${C.n} ${msg}`);
 }
 
+function unnumberedName(name) {
+  return String(name).replace(/^\d+[a-z]*\s+/i, '');
+}
+
+function numberedName(index, name) {
+  return `${String(index + 1).padStart(3, '0')} ${unnumberedName(name)}`;
+}
+
 function msNow() {
   return Date.now();
 }
@@ -2664,6 +2672,14 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
       /:audit\s+\{[\s\S]*:workOrder\s+:basedOn\s+:factoryDataset\s*\.[\s\S]*\}/m,
     ],
   },
+  {
+    name: 'API empty input returns empty output',
+    opt: { proofComments: false },
+    input: '',
+    check(out) {
+      assert.equal(out, '');
+    },
+  },
 ];
 
 
@@ -2674,7 +2690,8 @@ let failed = 0;
   const suiteStart = Date.now();
   info(`Running ${cases.length} API tests (independent of examples/)`);
 
-  for (const tc of cases) {
+  for (const [index, tc] of cases.entries()) {
+    const testName = numberedName(index, tc.name);
     const start = msNow();
     try {
       const out = typeof tc.run === 'function' ? await tc.run() : reasonQuiet(tc.opt, tc.input);
@@ -2683,24 +2700,24 @@ let failed = 0;
         throw new Error(`Expected an error, but reason() returned output:\n${out}`);
       }
 
-      for (const re of tc.expect || []) mustMatch(out, re, `${tc.name}: missing expected pattern ${re}`);
-      for (const re of tc.notExpect || []) mustNotMatch(out, re, `${tc.name}: unexpected pattern ${re}`);
+      for (const re of tc.expect || []) mustMatch(out, re, `${testName}: missing expected pattern ${re}`);
+      for (const re of tc.notExpect || []) mustNotMatch(out, re, `${testName}: unexpected pattern ${re}`);
 
       if (typeof tc.check === 'function') tc.check(out, tc);
 
       const dur = msNow() - start;
-      ok(`${tc.name} ${C.dim}(${dur} ms)${C.n}`);
+      ok(`${testName} ${C.dim}(${dur} ms)${C.n}`);
       passed++;
     } catch (e) {
       const dur = msNow() - start;
 
       if (tc.expectErrorCode != null) {
         if (e && typeof e === 'object' && 'code' in e && e.code === tc.expectErrorCode) {
-          ok(`${tc.name} ${C.dim}(expected exit ${tc.expectErrorCode}, ${dur} ms)${C.n}`);
+          ok(`${testName} ${C.dim}(expected exit ${tc.expectErrorCode}, ${dur} ms)${C.n}`);
           passed++;
           continue;
         }
-        fail(`${tc.name} ${C.dim}(${dur} ms)${C.n}`);
+        fail(`${testName} ${C.dim}(${dur} ms)${C.n}`);
         fail(
           `Expected exit code ${tc.expectErrorCode}, got: ${e && e.code != null ? e.code : 'unknown'}\n${
             e && e.stderr ? e.stderr : e && e.stack ? e.stack : String(e)
@@ -2711,12 +2728,12 @@ let failed = 0;
       }
 
       if (tc.expectError) {
-        ok(`${tc.name} ${C.dim}(expected error, ${dur} ms)${C.n}`);
+        ok(`${testName} ${C.dim}(expected error, ${dur} ms)${C.n}`);
         passed++;
         continue;
       }
 
-      fail(`${tc.name} ${C.dim}(${dur} ms)${C.n}`);
+      fail(`${testName} ${C.dim}(${dur} ms)${C.n}`);
       fail(e && e.stack ? e.stack : String(e));
       failed++;
     }
