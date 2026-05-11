@@ -174,7 +174,7 @@ function main() {
     if (!fs.existsSync(eyelingJsPath)) throw new Error(`Missing eyeling.js in installed package: ${eyelingJsPath}`);
 
     // Keep this fast: package.test.js is a smoke test. The full matrix is covered by test/examples.test.js in-repo.
-    const SMOKE_EXAMPLES = ['age.n3', 'basic-monadic.n3', 'collection.n3', 'family-cousins.n3', 'backward.n3'];
+    const SMOKE_EXAMPLES = ['age.n3', 'basic-monadic.n3', 'family-cousins.n3', 'backward.n3'];
 
     const tmpExamplesOut = fs.mkdtempSync(path.join(os.tmpdir(), 'eyeling-pkg-examples-'));
     let smokeIdx = 1;
