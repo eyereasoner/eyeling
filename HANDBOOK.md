@@ -237,9 +237,9 @@ The lexer turns the input into tokens like:
 
 Parsing becomes dramatically simpler because tokenization already decided where strings end, where numbers are, and so on.
 
-One compatibility wrinkle is handled in the lexer before normal parsing: selected RDF/TriG surface syntax is normalized to ordinary N3 graph terms. Eyeling remains an N3 reasoner; this is syntax compatibility, not a separate RDF dataset reasoning model.
+By default, Eyeling parses ordinary N3. Selected RDF/TriG surface syntax is accepted only when RDF compatibility is explicitly enabled with `eyeling -r file.trig`, `eyeling --rdf file.trig`, or API option `{ rdf: true }`. In that mode, the lexer normalizes RDF/TriG input syntax to ordinary N3 graph terms before normal parsing, and the printer emits RDF/TriG-compatible output where feasible. Eyeling remains an N3 reasoner; this is syntax compatibility, not a separate RDF dataset reasoning model.
 
-RDF 1.2 triple terms written as `<<( s p o )>>` are normalized to Eyeling's existing singleton quoted-formula term `{ s p o }`. A leading `VERSION "1.2"` or `@version "1.2"` directive is ignored for the same reason. For example:
+In RDF compatibility mode, RDF 1.2 triple terms written as `<<( s p o )>>` are normalized to Eyeling's existing singleton quoted-formula term `{ s p o }`. A leading `VERSION "1.2"` or `@version "1.2"` directive is ignored for the same reason. On output, `--rdf` converts a singleton graph term back to `<<( ... )>>` only when its inner triple is valid as an RDF triple term; otherwise it stays in N3 graph-term form. It also prints `log:nameOf` graph-term triples back as TriG named graph blocks. For example:
 
 ```n3
 :observation rdf:reifies <<( :sensor :reports :overheating )>> .
@@ -267,7 +267,7 @@ is treated internally like:
 } .
 ```
 
-This keeps Eyeling's N3 model stable while allowing small RDF 1.1/RDF 1.2 dataset-shaped inputs to run through the existing `GraphTerm` machinery. More exotic future RDF forms should be added only if they can be mapped cleanly onto Eyeling's quoted-formula term model.
+This keeps Eyeling's N3 model stable while allowing small RDF 1.1/RDF 1.2 dataset-shaped inputs to run through the existing `GraphTerm` machinery when the caller opts in. More exotic future RDF forms should be added only if they can be mapped cleanly onto Eyeling's quoted-formula term model.
 
 ### 4.2 Parsing triples, with Turtle-style convenience
 
@@ -2594,7 +2594,7 @@ Quoted graphs/formulas use `{ ... }`. Inside a quoted formula, directive scope m
 
 - `@prefix/@base` and `PREFIX/BASE` directives may appear at top level **or inside `{ ... }`**, and apply to the formula they occur in (formula-local scoping).
 
-Eyeling also accepts the RDF 1.2 triple-term surface form `<<( s p o )>>` as a compatibility spelling for a singleton quoted formula `{ s p o }`. This is useful for inputs that use `rdf:reifies` or other predicates whose objects are RDF 1.2 triple terms, while keeping the rest of Eyeling on its N3 formula-term model.
+With `-r, --rdf` / `{ rdf: true }`, Eyeling also accepts the RDF 1.2 triple-term surface form `<<( s p o )>>` as a compatibility spelling for a singleton quoted formula `{ s p o }`. In the same mode, feasible singleton graph terms are printed back as RDF 1.2 triple terms, while invalid cases such as a literal subject remain ordinary N3 graph terms. This is useful for inputs that use `rdf:reifies` or other predicates whose objects are RDF 1.2 triple terms, while keeping the default language and the rest of Eyeling on its N3 formula-term model.
 
 For the formal grammar, see the N3 spec grammar:
 
@@ -3877,13 +3877,13 @@ VERSION "1.2"
 :observation rdf:reifies <<( :sensor :reports :overheating )>> .
 ```
 
-Eyeling accepts this surface form by translating the triple term to a singleton quoted formula internally:
+In RDF compatibility mode, Eyeling accepts this surface form by translating the triple term to a singleton quoted formula internally:
 
 ```n3
 :observation rdf:reifies { :sensor :reports :overheating } .
 ```
 
-The dataset example also accepts named graph syntax and normalizes it to `log:nameOf` graph terms, matching `tools/n3gen`:
+The dataset example also uses named graph syntax, which RDF compatibility mode normalizes to `log:nameOf` graph terms, matching `tools/n3gen`:
 
 ```trig
 :factoryDataset {
@@ -3899,7 +3899,7 @@ is compiled through the same internal N3 shape:
 } .
 ```
 
-That is enough for SEE to demonstrate RDF 1.1/RDF 1.2-style dataset input and triple-term output without forcing Eyeling to implement a separate full RDF dataset model.
+That is enough for SEE to demonstrate RDF 1.1/RDF 1.2-style dataset input and triple-term output without forcing Eyeling to implement a separate full RDF dataset model. The compatibility layer is explicit rather than default, so ordinary N3 files remain strict N3.
 
 ### L.4 Generation and tests
 
@@ -3912,7 +3912,7 @@ npm run test:see
 
 `npm run generate` refreshes the generated SEE artifacts from `see/examples/n3/*.n3`. `npm run test:see` runs every generated SEE example and compares its Markdown output with the committed reference output.
 
-In the full test suite, this means SEE is not just documentation. It is executable regression coverage for a broad range of Eyeling behavior: forward rules, backward rules, builtins, fuses, queries, RDF lists, formula-valued terms, generated explanations, RDF 1.2 triple-term compatibility, and RDF/TriG dataset-syntax compatibility.
+In the full test suite, this means SEE is not just documentation. It is executable regression coverage for a broad range of Eyeling behavior: forward rules, backward rules, builtins, fuses, queries, RDF lists, formula-valued terms, generated explanations, opt-in RDF 1.2 triple-term compatibility, and opt-in RDF/TriG dataset-syntax compatibility.
 
 ### L.5 When to add a SEE example
 

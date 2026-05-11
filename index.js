@@ -37,6 +37,8 @@ function reason(opt = {}, input = '') {
     else args.push('--no-proof-comments');
   }
 
+  if (opt.rdf) args.push('--rdf');
+
   if (Array.isArray(opt.args)) args.push(...opt.args);
 
   const builtinModules = Array.isArray(opt.builtinModules)

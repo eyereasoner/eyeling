@@ -4547,6 +4547,7 @@ function main() {
       `  -e, --enforce-https          Rewrite http:// IRIs to https:// for log dereferencing builtins.\n` +
       `  -h, --help                   Show this help and exit.\n` +
       `  -p, --proof-comments         Enable proof explanations.\n` +
+      `  -r, --rdf                    Enable RDF/TriG input/output compatibility.\n` +
       `  -s, --super-restricted       Disable all builtins except => and <=.\n` +
       `  -t, --stream                 Stream derived triples as soon as they are derived.\n` +
       `  -v, --version                Print version and exit.\n`;
@@ -4588,6 +4589,7 @@ function main() {
 
   const showAst = argv.includes('--ast') || argv.includes('-a');
   const streamMode = argv.includes('--stream') || argv.includes('-t');
+  const rdfMode = argv.includes('--rdf') || argv.includes('-r');
 
   // --enforce-https: rewrite http:// -> https:// for log dereferencing builtins
   if (argv.includes('--enforce-https') || argv.includes('-e')) {
@@ -4650,6 +4652,7 @@ function main() {
           label: sourceLabel,
           collectUsedPrefixes: true,
           keepSourceArtifacts: false,
+          rdf: rdfMode,
         }),
       );
     } catch (e) {
@@ -4762,10 +4765,10 @@ function main() {
       (df) => {
         if (engine.getProofCommentsEnabled()) {
           engine.printExplanation(df, outPrefixes);
-          console.log(engine.tripleToN3(df.fact, outPrefixes));
+          console.log(rdfMode ? engine.tripleToRdfCompatible(df.fact, outPrefixes) : engine.tripleToN3(df.fact, outPrefixes));
           console.log();
         } else {
-          console.log(engine.tripleToN3(df.fact, outPrefixes));
+          console.log(rdfMode ? engine.tripleToRdfCompatible(df.fact, outPrefixes) : engine.tripleToN3(df.fact, outPrefixes));
         }
       },
       { captureExplanations: engine.getProofCommentsEnabled(), prefixes: outPrefixes },
@@ -4801,7 +4804,24 @@ function main() {
     return;
   }
 
-  const usedPrefixes = prefixes.prefixesUsedForOutput(outTriples);
+  let bodyText = '';
+  if (rdfMode && !engine.getProofCommentsEnabled()) {
+    bodyText = outTriples.map((tr) => engine.tripleToRdfCompatible(tr, prefixes)).join('\n');
+  } else if (hasQueries && !engine.getProofCommentsEnabled()) {
+    // In log:query mode, when proof comments are disabled, pretty-print blank-node
+    // shaped outputs as Turtle property lists ("[ ... ] .") for readability.
+    bodyText = engine.prettyPrintQueryTriples(outTriples, prefixes);
+  }
+
+  let usedPrefixes = prefixes.prefixesUsedForOutput(outTriples);
+  if (rdfMode && bodyText) {
+    usedPrefixes = usedPrefixes.filter(([pfx]) => pfx === '' || bodyText.includes(pfx + ':'));
+  }
+
+  if (rdfMode && bodyText.includes('<<(')) {
+    console.log('VERSION "1.2"');
+    console.log();
+  }
 
   for (const [pfx, base] of usedPrefixes) {
     if (pfx === '') console.log(`@prefix : <${base}> .`);
@@ -4809,21 +4829,18 @@ function main() {
   }
   if (outTriples.length && usedPrefixes.length) console.log();
 
-  // In log:query mode, when proof comments are disabled, pretty-print blank-node
-  // shaped outputs as Turtle property lists ("[ ... ] .") for readability.
-  if (hasQueries && !engine.getProofCommentsEnabled()) {
-    const s = engine.prettyPrintQueryTriples(outTriples, prefixes);
-    if (s) process.stdout.write(String(s).replace(/\s*$/g, '') + '\n');
+  if (bodyText) {
+    process.stdout.write(String(bodyText).replace(/\s*$/g, '') + '\n');
     return;
   }
 
   for (const df of outDerived) {
     if (engine.getProofCommentsEnabled()) {
       engine.printExplanation(df, prefixes);
-      console.log(engine.tripleToN3(df.fact, prefixes));
+      console.log(rdfMode ? engine.tripleToRdfCompatible(df.fact, prefixes) : engine.tripleToN3(df.fact, prefixes));
       console.log();
     } else {
-      console.log(engine.tripleToN3(df.fact, prefixes));
+      console.log(rdfMode ? engine.tripleToRdfCompatible(df.fact, prefixes) : engine.tripleToN3(df.fact, prefixes));
     }
   }
 }
@@ -5356,7 +5373,12 @@ const {
 
 const { makeExplain } = require('./explain');
 
-const { termToN3, tripleToN3, prettyPrintQueryTriples } = require('./printing');
+const {
+  termToN3,
+  tripleToN3,
+  prettyPrintQueryTriples,
+  tripleToRdfCompatible,
+} = require('./printing');
 const {
   getDataFactory,
   internalTripleToRdfJsQuad,
@@ -8669,9 +8691,12 @@ function reasonStream(input, opts = {}) {
     dataFactory = null,
     skipUnsupportedRdfJs = false,
     builtinModules = null,
+    rdf = false,
   } = opts;
 
-  const parsedSourceList = parseN3SourceList(input, { baseIri });
+  const useRdfCompatibility = !!rdf;
+
+  const parsedSourceList = parseN3SourceList(input, { baseIri, rdf: useRdfCompatibility });
   const parsedInput = parsedSourceList || normalizeParsedReasonerInputSync(input);
   const rdfFactory = rdfjs ? getDataFactory(dataFactory) : null;
 
@@ -8707,7 +8732,7 @@ function reasonStream(input, opts = {}) {
     if (baseIri) prefixes.setBase(baseIri);
   } else {
     const n3Text = normalizeReasonerInputSync(input);
-    const toks = lex(n3Text);
+    const toks = lex(n3Text, { rdf: useRdfCompatibility });
     const parser = new Parser(toks);
     if (baseIri) parser.prefixes.setBase(baseIri);
 
@@ -8741,7 +8766,7 @@ function reasonStream(input, opts = {}) {
     // query-selected triples (not all derived facts).
     if (typeof onDerived === 'function') {
       for (const qdf of queryDerived) {
-        const payload = { triple: tripleToN3(qdf.fact, prefixes), df: qdf };
+        const payload = { triple: useRdfCompatibility ? tripleToRdfCompatible(qdf.fact, prefixes) : tripleToN3(qdf.fact, prefixes), df: qdf };
         if (rdfFactory) {
           const quad = maybeTripleToRdfJsQuad(qdf.fact, rdfFactory, skipUnsupportedRdfJs);
           if (quad) payload.quad = quad;
@@ -8758,7 +8783,7 @@ function reasonStream(input, opts = {}) {
       (df) => {
         if (typeof onDerived === 'function') {
           const payload = {
-            triple: tripleToN3(df.fact, prefixes),
+            triple: useRdfCompatibility ? tripleToRdfCompatible(df.fact, prefixes) : tripleToN3(df.fact, prefixes),
             df,
           };
           if (rdfFactory) {
@@ -8779,8 +8804,9 @@ function reasonStream(input, opts = {}) {
         ? facts
         : derived.map((d) => d.fact);
 
-  const closureN3 =
-    Array.isArray(logQueryRules) && logQueryRules.length && !proof
+  const closureN3 = useRdfCompatibility
+    ? closureTriples.map((t) => tripleToRdfCompatible(t, prefixes)).join('\n')
+    : Array.isArray(logQueryRules) && logQueryRules.length && !proof
       ? prettyPrintQueryTriples(closureTriples, prefixes)
       : closureTriples.map((t) => tripleToN3(t, prefixes)).join('\n');
 
@@ -8921,6 +8947,7 @@ module.exports = {
   printExplanation,
   // used by demo worker to stringify derived triples with prefixes
   tripleToN3,
+  tripleToRdfCompatible,
   // pretty log:query output (when proof comments are disabled)
   prettyPrintQueryTriples,
   getEnforceHttpsEnabled,
@@ -9556,8 +9583,8 @@ function stripQuotes(lex) {
 }
 
 
-// RDF/TriG compatibility is a small syntax-normalization layer, not a new
-// reasoning model.  Eyeling remains N3 internally:
+// RDF/TriG compatibility is an opt-in syntax-normalization layer, not a new
+// reasoning model. Eyeling remains strict N3 by default and N3 internally:
 //   - RDF 1.2 triple terms <<( s p o )>> become singleton graph terms { s p o }.
 //   - TriG named graph blocks g { ... } become g log:nameOf { ... } .
 //   - A top-level default graph block { ... } is unwrapped into ordinary triples.
@@ -9753,7 +9780,6 @@ function normalizeRdfCompatibility(inputText) {
 
     while (i < s.length) {
       if (statementStart && braceDepth === 0) {
-        const start = i;
         const termStart = skipWsAndComments(s, i);
         out += s.slice(i, termStart);
         i = termStart;
@@ -9847,8 +9873,9 @@ function normalizeRdfCompatibility(inputText) {
   return text;
 }
 
-function lex(inputText) {
-  inputText = normalizeRdfCompatibility(inputText);
+function lex(inputText, opts = {}) {
+  const rdf = !!(opts && opts.rdf);
+  if (rdf) inputText = normalizeRdfCompatibility(inputText);
   const chars = Array.from(inputText);
   const n = chars.length;
   let i = 0;
@@ -10309,7 +10336,7 @@ function lex(inputText) {
   return tokens;
 }
 
-module.exports = { Token, N3SyntaxError, lex, decodeN3StringEscapes };
+module.exports = { Token, N3SyntaxError, lex, normalizeRdfCompatibility, decodeN3StringEscapes };
 
   };
   __modules["lib/multisource.js"] = function(require, module, exports){
@@ -10418,8 +10445,14 @@ function prefixesUsedInTokens(tokens, prefEnv) {
 }
 
 function parseN3Text(text, opts = {}) {
-  const { baseIri = '', label = '<input>', keepSourceArtifacts = true, collectUsedPrefixes = false } = opts || {};
-  const tokens = lex(text);
+  const {
+    baseIri = '',
+    label = '<input>',
+    keepSourceArtifacts = true,
+    collectUsedPrefixes = false,
+    rdf = false,
+  } = opts || {};
+  const tokens = lex(text, { rdf });
   const parser = new Parser(tokens);
   if (baseIri) parser.prefixes.setBase(baseIri);
   const [prefixes, triples, frules, brules, logQueryRules] = parser.parseDocument();
@@ -10613,6 +10646,7 @@ function parseN3SourceList(input, opts = {}) {
       baseIri: source.baseIri || (sources.length === 1 ? defaultBaseIri : ''),
       collectUsedPrefixes: true,
       keepSourceArtifacts: !!opts.keepSourceArtifacts,
+      rdf: !!opts.rdf,
     }),
   );
   return mergeParsedDocuments(parsed, {
@@ -12003,6 +12037,7 @@ const {
   isOwlSameAsPred,
   isLogImplies,
   isLogImpliedBy,
+  LOG_NS,
 } = require('./prelude');
 
 function stripQuotes(lex) {
@@ -12332,7 +12367,111 @@ function prettyPrintQueryTriples(triples, prefixes) {
   return blocks.join('\n');
 }
 
-module.exports = { termToN3, tripleToN3, prettyPrintQueryTriples };
+
+// ---------------------------------------------------------------------------
+// RDF compatibility output
+// ---------------------------------------------------------------------------
+
+function isRdfTripleTermSubject(t) {
+  return t instanceof Iri || t instanceof Blank;
+}
+
+function isRdfTripleTermPredicate(t) {
+  return t instanceof Iri;
+}
+
+function isRdfTripleTermObject(t) {
+  return t instanceof Iri || t instanceof Blank || t instanceof Literal;
+}
+
+function isRdfTripleTermGraph(t) {
+  if (!(t instanceof GraphTerm)) return false;
+  if (!Array.isArray(t.triples) || t.triples.length !== 1) return false;
+  const tr = t.triples[0];
+  return isRdfTripleTermSubject(tr.s) && isRdfTripleTermPredicate(tr.p) && isRdfTripleTermObject(tr.o);
+}
+
+
+function isLogNameOfPred(p) {
+  return p instanceof Iri && p.value === LOG_NS + 'nameOf';
+}
+
+function isRdfNamedGraphLabel(t) {
+  return t instanceof Iri || t instanceof Blank;
+}
+
+function rdfCompatibleGraphBlock(graph, prefixes) {
+  const indent = '    ';
+  const indentBlock = (str) =>
+    str
+      .split(/\r?\n/)
+      .map((ln) => (ln.length ? indent + ln : ln))
+      .join('\n');
+
+  let s = '{\n';
+  for (const inner of graph.triples || []) {
+    const block = tripleToRdfCompatible(inner, prefixes).trimEnd();
+    if (block) s += indentBlock(block) + '\n';
+  }
+  s += '}';
+  return s;
+}
+
+function rdfPredicateToText(p, prefixes) {
+  return isRdfTypePred(p) ? 'a' : termToN3(p, prefixes);
+}
+
+function termToRdfCompatible(t, pref) {
+  if (isRdfTripleTermGraph(t)) {
+    const tr = t.triples[0];
+    const s = termToN3(tr.s, pref);
+    const p = rdfPredicateToText(tr.p, pref);
+    const o = termToN3(tr.o, pref);
+    return `<<( ${s} ${p} ${o} )>>`;
+  }
+  return termToN3(t, pref);
+}
+
+function tripleToRdfCompatible(tr, prefixes) {
+  if (isLogNameOfPred(tr.p) && isRdfNamedGraphLabel(tr.s) && tr.o instanceof GraphTerm) {
+    return `${termToN3(tr.s, prefixes)} ${rdfCompatibleGraphBlock(tr.o, prefixes)}`;
+  }
+
+  if (isLogImplies(tr.p)) {
+    const s = termToRdfCompatible(tr.s, prefixes);
+    const o = termToRdfCompatible(tr.o, prefixes);
+    return `${s} => ${o} .`;
+  }
+
+  if (isLogImpliedBy(tr.p)) {
+    const s = termToRdfCompatible(tr.s, prefixes);
+    const o = termToRdfCompatible(tr.o, prefixes);
+    return `${s} <= ${o} .`;
+  }
+
+  const s = termToRdfCompatible(tr.s, prefixes);
+  const p = isRdfTypePred(tr.p) ? 'a' : isOwlSameAsPred(tr.p) ? '=' : termToN3(tr.p, prefixes);
+  const o = termToRdfCompatible(tr.o, prefixes);
+  return `${s} ${p} ${o} .`;
+}
+
+function prettyPrintQueryTriplesRdfCompatible(triples, prefixes) {
+  return triples.map((tr) => tripleToRdfCompatible(tr, prefixes)).join('\n');
+}
+
+function needsRdf12Version(text) {
+  return typeof text === 'string' && text.includes('<<(');
+}
+
+module.exports = {
+  termToN3,
+  tripleToN3,
+  prettyPrintQueryTriples,
+  termToRdfCompatible,
+  tripleToRdfCompatible,
+  prettyPrintQueryTriplesRdfCompatible,
+  needsRdf12Version,
+};
 
   };
   __modules["lib/rdfjs.js"] = function(require, module, exports){

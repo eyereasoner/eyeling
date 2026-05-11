@@ -2541,8 +2541,20 @@ _:b a ex:Person ; ex:name "B" .
   },
 
   {
-    name: 'RDF 1.2 triple terms are accepted as N3 singleton graph terms',
+    name: 'RDF 1.2 triple terms require explicit RDF compatibility mode',
     opt: { proofComments: false },
+    input: `VERSION "1.2"
+@prefix : <http://example.org/triple-terms#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+:observation rdf:reifies <<( :sensor :reports :overheating )>> .
+`,
+    expectError: true,
+  },
+
+  {
+    name: 'RDF 1.2 triple terms are accepted in RDF compatibility mode',
+    opt: { proofComments: false, rdf: true },
     input: `VERSION "1.2"
 @prefix : <http://example.org/triple-terms#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
@@ -2557,12 +2569,32 @@ _:b a ex:Person ; ex:name "B" .
   ?observation :entails <<( ?device :needs ?action )>> .
 } .
 `,
-    expect: [/:observation\s+:entails\s+\{\s+:sensor\s+:needs\s+:inspection\s*\.\s*\}\s*\./m],
+    expect: [/:observation\s+:entails\s+<<\(\s+:sensor\s+:needs\s+:inspection\s*\)>>\s*\./m],
   },
 
   {
-    name: 'RDF dataset named graphs are accepted as N3 graph terms',
-    opt: { proofComments: false },
+    name: 'RDF mode serializes only valid triple terms as RDF 1.2 triple terms',
+    opt: { proofComments: false, rdf: true },
+    input: `@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix : <http://example.org/ns#> .
+
+{
+  (1 3) math:sum ?X .
+}
+=>
+{
+  <<(?X a :Answer)>> a :Result.
+}.
+`,
+    expect: [/\{\s*4\s+a\s+:Answer\s*\.\s*\}\s+a\s+:Result\s*\./m],
+    notExpect: [/<<\(\s*4\s+a\s+:Answer\s*\)>>/m],
+  },
+
+  {
+    name: 'RDF dataset named graphs round-trip as TriG in RDF compatibility mode',
+    opt: { proofComments: false, rdf: true },
     input: `VERSION "1.2"
 @prefix : <http://example.org/dataset#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
@@ -2588,8 +2620,8 @@ _:b a ex:Person ; ex:name "B" .
 } .
 `,
     expect: [
-      /:workOrder\s+:entails\s+\{\s+:sensor\s+:needs\s+:inspection\s*\.\s*\}\s*\./m,
-      /:audit\s+log:nameOf\s+\{\s+:workOrder\s+:basedOn\s+:factoryDataset\s*\.\s*\}\s*\./m,
+      /:workOrder\s+:entails\s+<<\(\s+:sensor\s+:needs\s+:inspection\s*\)>>\s*\./m,
+      /:audit\s+\{[\s\S]*:workOrder\s+:basedOn\s+:factoryDataset\s*\.[\s\S]*\}/m,
     ],
   },
 ];
