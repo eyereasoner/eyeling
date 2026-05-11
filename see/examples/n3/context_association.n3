@@ -1,0 +1,58 @@
+# Context association
+#
+# Uses an external RDF/TriG input dataset whose named graph blocks associate a
+# data graph, a signature graph, and a metadata graph. The compiled SEE example
+# verifies that the graph contexts form a signed association around Bob's data.
+
+@prefix foaf: <http://xmlns.com/foaf/0.1/>.
+@prefix sec: <https://w3id.org/security#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix : <http://example.org/#>.
+
+{
+  ?dataGraph log:nameOf ?dataContext.
+  ?dataContext log:includes { :Bob foaf:name "Bob" }.
+
+  ?signatureGraph log:nameOf ?signatureContext.
+  ?signatureContext log:includes {
+    ?dataGraph sec:proof ?dataSignature.
+    ?proof a sec:DataIntegrityProof.
+    ?proof sec:cryptosuite "ecdsa-rdfc-2019".
+    ?proof sec:issuer <https://university.example/issuers/14>.
+    ?proof sec:validUntil "2025-04-03T00:00:00.000Z".
+  }.
+
+  ?metadataGraph log:nameOf ?metadataContext.
+  ?metadataContext log:includes {
+    ?signatureGraph sec:proof ?metadataSignature.
+    ?metadataProof a sec:DataIntegrityProof.
+    ?metadataProof sec:proofPurpose "assertionMethod".
+  }.
+}
+=>
+{
+  :association :subject :Bob.
+  :association :dataGraph ?dataGraph.
+  :association :signatureGraph ?signatureGraph.
+  :association :metadataGraph ?metadataGraph.
+  :association :cryptosuite "ecdsa-rdfc-2019".
+  :association :issuer <https://university.example/issuers/14>.
+  :association :status :contextAssociationVerified.
+}.
+
+{
+  :association :status :contextAssociationVerified.
+}
+=>
+{
+  :report log:outputString "# Context association\n\n## Entailment\nThe RDF dataset associates Bob's data graph with a Data Integrity proof graph and a second metadata proof graph.\n\n## Explanation\nThe input TriG names three graph contexts. The data graph states Bob's name. The signature graph links to that data graph with a proof and records an ecdsa-rdfc-2019 Data Integrity proof from the university issuer. The metadata graph then signs the signature graph itself, giving a chained context association.".
+}.
+
+# query
+{
+  :association ?P ?O.
+}
+log:query
+{
+  :association ?P ?O.
+}.

@@ -30,7 +30,7 @@ show message-scoped blank nodes.
 
 ## Runtime model
 
-The generated `examples/rdf_messages.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/rdf_messages.trig`. For rules-only sources, generation can reuse an existing external evidence file such as `examples/input/rdf-messages.trig` or `examples/input/rdf_messages.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.
+The generated `examples/rdf_messages.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/rdf_messages.trig`. For rules-only sources, generation can reuse an existing external evidence file named `examples/input/rdf_messages.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.
 
 ## Output model
 

@@ -4,7 +4,7 @@
 # SEE version of the Eyeling airport path-discovery example.
 #
 # The full airroutes evidence is intentionally stored in
-# examples/input/path-discovery.trig, not in this source file. This file keeps
+# examples/input/path_discovery.trig, not in this source file. This file keeps
 # only the path-finding rules and the query shape from the upstream example.
 
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.

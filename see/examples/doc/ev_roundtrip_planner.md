@@ -25,7 +25,7 @@ the fastest acceptable route.
 
 ## Runtime model
 
-The generated `examples/ev_roundtrip_planner.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/ev_roundtrip_planner.trig`. For rules-only sources, generation can reuse an existing external evidence file such as `examples/input/ev-roundtrip-planner.trig` or `examples/input/ev_roundtrip_planner.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.
+The generated `examples/ev_roundtrip_planner.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/ev_roundtrip_planner.trig`. For rules-only sources, generation can reuse an existing external evidence file named `examples/input/ev_roundtrip_planner.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.
 
 ## Output model
 

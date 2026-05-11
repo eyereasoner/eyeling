@@ -50,7 +50,7 @@ References
 
 ## Runtime model
 
-The generated `examples/odrl_dpv_risk_ranked.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/odrl_dpv_risk_ranked.trig`. For rules-only sources, generation can reuse an existing external evidence file such as `examples/input/odrl-dpv-risk-ranked.trig` or `examples/input/odrl_dpv_risk_ranked.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.
+The generated `examples/odrl_dpv_risk_ranked.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/odrl_dpv_risk_ranked.trig`. For rules-only sources, generation can reuse an existing external evidence file named `examples/input/odrl_dpv_risk_ranked.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.
 
 ## Output model
 

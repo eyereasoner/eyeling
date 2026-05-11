@@ -30,7 +30,7 @@ rules and compiled into a standalone SEE JavaScript example.
 
 ## Runtime model
 
-The generated `examples/wind_turbine.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/wind_turbine.trig`. For rules-only sources, generation can reuse an existing external evidence file such as `examples/input/wind-turbine.trig` or `examples/input/wind_turbine.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.
+The generated `examples/wind_turbine.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/wind_turbine.trig`. For rules-only sources, generation can reuse an existing external evidence file named `examples/input/wind_turbine.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.
 
 ## Output model
 

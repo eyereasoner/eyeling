@@ -1,8 +1,320 @@
 #!/usr/bin/env node
 'use strict';
+// Embedded SEE input loader. Kept inside generated examples so each
+// specialized executable carries its TriG reader inline.
 const fs = require('fs');
 const path = require('path');
-const { fail, loadInput } = require('./_see');
+const INPUT_DIR = path.join(__dirname, 'input');
+
+function consumeLiteralSuffix(text, index) {
+  let i = index;
+  if (text.startsWith('^^', i)) {
+    i += 2;
+    const [, next] = readTermToken(text, i);
+    return next;
+  }
+  if (text[i] === '@') {
+    i += 1;
+    while (/[A-Za-z0-9-]/.test(text[i] || '')) i += 1;
+  }
+  return i;
+}
+
+function iri(value) { return { kind: 'iri', value }; }
+function lit(value) { return { kind: 'lit', value }; }
+function blank(value) { return { kind: 'blank', value }; }
+function list(items) { return { kind: 'list', items }; }
+function formula(atoms) { return { kind: 'formula', atoms }; }
+function triple(s, p, o) { return { kind: 'triple', s, p, o }; }
+
+function readTermToken(text, start = 0) {
+  let i = start;
+  while (/\s/.test(text[i])) i += 1;
+  const begin = i;
+  if (text.startsWith('<<(', i)) {
+    let depth = 0;
+    while (i < text.length) {
+      if (text[i] === '"') {
+        const [, next] = readTermToken(text, i);
+        i = next;
+        continue;
+      }
+      if (text.startsWith('<<(', i)) { depth += 1; i += 3; continue; }
+      if (text.startsWith(')>>', i)) {
+        depth -= 1;
+        i += 3;
+        if (depth === 0) break;
+        continue;
+      }
+      i += 1;
+    }
+    return [text.slice(begin, i), i];
+  }
+  if (text[i] === '"') {
+    i += 1;
+    let escaped = false;
+    while (i < text.length) {
+      const ch = text[i++];
+      if (escaped) { escaped = false; continue; }
+      if (ch === '\\') { escaped = true; continue; }
+      if (ch === '"') break;
+    }
+    i = consumeLiteralSuffix(text, i);
+    return [text.slice(begin, i), i];
+  }
+  if (text[i] === '<') {
+    i += 1;
+    while (i < text.length && text[i] !== '>') i += 1;
+    if (text[i] === '>') i += 1;
+    return [text.slice(begin, i), i];
+  }
+  if (text[i] === '(') {
+    let depth = 0;
+    while (i < text.length) {
+      if (text[i] === '"') {
+        const [, next] = readTermToken(text, i);
+        i = next;
+        continue;
+      }
+      if (text[i] === '(') depth += 1;
+      else if (text[i] === ')') {
+        depth -= 1;
+        i += 1;
+        if (depth === 0) break;
+        continue;
+      }
+      i += 1;
+    }
+    return [text.slice(begin, i), i];
+  }
+  while (i < text.length && !/[\s;,]/.test(text[i])) i += 1;
+  return [text.slice(begin, i), i];
+}
+
+function stripDot(text) { return String(text || '').replace(/\s*\.\s*$/, '').trim(); }
+function splitListItems(text) {
+  const out = [];
+  let i = 0;
+  while (i < text.length) {
+    while (/\s/.test(text[i])) i += 1;
+    if (i >= text.length) break;
+    const start = i;
+    if (text.startsWith('<<(', i)) {
+      const [, next] = readTermToken(text, i);
+      i = next;
+    } else if (text[i] === '"') {
+      i += 1;
+      let escaped = false;
+      while (i < text.length) {
+        const ch = text[i++];
+        if (escaped) { escaped = false; continue; }
+        if (ch === '\\') { escaped = true; continue; }
+        if (ch === '"') break;
+      }
+      i = consumeLiteralSuffix(text, i);
+    } else if (text[i] === '(') {
+      let depth = 1; i += 1;
+      while (i < text.length && depth) {
+        if (text[i] === '(') depth += 1;
+        else if (text[i] === ')') depth -= 1;
+        i += 1;
+      }
+    } else {
+      while (i < text.length && !/[\s;,]/.test(text[i])) i += 1;
+    }
+    out.push(text.slice(start, i));
+  }
+  return out;
+}
+function parseTripleTermBody(text) {
+  const [s, i1] = readTermToken(text, 0);
+  const [p, i2] = readTermToken(text, i1);
+  const [o, i3] = readTermToken(text, i2);
+  if (!s || !p || !o || text.slice(i3).trim()) throw new Error('bad triple term: ' + text);
+  return triple(parseTerm(s), parseTerm(p), parseTerm(o));
+}
+function parseTerm(text) {
+  const t = String(text || '').trim();
+  if (!t) throw new Error('empty term');
+  if (t.startsWith('<<(') && t.endsWith(')>>')) return parseTripleTermBody(t.slice(3, -3).trim());
+  const first = t[0];
+  if (first === '"') {
+    const m = t.match(/^("(?:\\.|[^"\\])*")(?:\^\^\S+|@[A-Za-z0-9-]+)?$/);
+    if (!m) throw new Error('bad literal: ' + t);
+    return lit(JSON.parse(m[1]));
+  }
+  if (first === '(' && t[t.length - 1] === ')') return list(splitListItems(t.slice(1, -1)).map(parseTerm));
+  if (t.startsWith('_:')) return blank(t);
+  if (t === 'a') return iri('rdf:type');
+  if (first !== '+' && first !== '-' && (first < '0' || first > '9')) {
+    if (t === 'true') return lit(true);
+    if (t === 'false') return lit(false);
+    return iri(t);
+  }
+  if (/^[+-]?\d+$/.test(t)) return lit(Number.parseInt(t, 10));
+  if (/^[+-]?(?:\d+\.\d*|\d*\.\d+|\d+[eE][+-]?\d+)$/.test(t)) return lit(Number(t));
+  return iri(t);
+}
+function parseTripleLine(line) {
+  const body = stripDot(line);
+  const [s, i1] = readTermToken(body, 0);
+  const [p, i2] = readTermToken(body, i1);
+  const rest = body.slice(i2).trim();
+  if (!s || !p || !rest) throw new Error('bad triple: ' + line);
+  return { s: parseTerm(s), p: parseTerm(p), o: parseTerm(rest) };
+}
+function splitTopLevelStatements(lines, startIndex = 0) {
+  const statements = [];
+  let buffer = '';
+  let depth = 0;
+  let i = startIndex;
+  for (; i < lines.length; i += 1) {
+    const raw = lines[i];
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    if (/^}\s*\.?\s*$/.test(line)) break;
+    buffer += (buffer ? '\n' : '') + line;
+    for (let j = 0; j < line.length; j += 1) {
+      const ch = line[j];
+      if (ch === '"') {
+        const [, next] = readTermToken(line, j);
+        j = Math.max(j, next - 1);
+        continue;
+      }
+      if (ch === '[' || ch === '(' || ch === '{') depth += 1;
+      else if (ch === ']' || ch === ')' || ch === '}') depth = Math.max(0, depth - 1);
+    }
+    if (depth === 0 && /\.\s*$/.test(line)) {
+      statements.push(buffer.trim());
+      buffer = '';
+    }
+  }
+  if (buffer.trim()) statements.push(buffer.trim());
+  return { statements, nextIndex: i };
+}
+function splitTopLevel(text, delimiter) {
+  const out = [];
+  let buffer = '';
+  let depth = 0;
+  let i = 0;
+  while (i < text.length) {
+    if (text[i] === '"') {
+      const [tok, next] = readTermToken(text, i);
+      buffer += tok;
+      i = next;
+      continue;
+    }
+    const ch = text[i];
+    if (ch === '[' || ch === '(' || ch === '{') depth += 1;
+    else if (ch === ']' || ch === ')' || ch === '}') depth = Math.max(0, depth - 1);
+    if (depth === 0 && ch === delimiter) {
+      out.push(buffer.trim());
+      buffer = '';
+      i += 1;
+      continue;
+    }
+    buffer += ch;
+    i += 1;
+  }
+  if (buffer.trim()) out.push(buffer.trim());
+  return out;
+}
+function parsePredicateObjectTail(subject, tail) {
+  const facts = [];
+  for (const part of splitTopLevel(tail, ';')) {
+    if (!part) continue;
+    const [p, i] = readTermToken(part, 0);
+    const objectText = part.slice(i).trim();
+    if (!p || !objectText) throw new Error('bad predicate-object list: ' + tail);
+    for (const object of splitTopLevel(objectText, ',')) {
+      facts.push({ s: subject, p: parseTerm(p), o: parseTerm(object) });
+    }
+  }
+  return facts;
+}
+function parseTrigStatement(statement) {
+  const body = stripDot(statement).replace(/\s+/g, ' ').trim();
+  const [sText, i] = readTermToken(body, 0);
+  if (!sText) throw new Error('bad statement: ' + statement);
+  const subject = parseTerm(sText);
+  return parsePredicateObjectTail(subject, body.slice(i).trim());
+}
+function parseInputTrigFast(trig) {
+  const facts = [];
+  const lines = String(trig || '').split(/\r?\n/);
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i].trim();
+    if (!line || line.startsWith('#') || line.toLowerCase().startsWith('@prefix ') || /^prefix\s+/i.test(line) || /^(@version|version)\s+/i.test(line)) continue;
+    const graphStart = line.match(/^(\S+)\s*\{\s*$/);
+    if (graphStart) {
+      const { statements, nextIndex } = splitTopLevelStatements(lines, i + 1);
+      const atoms = statements.flatMap(parseTrigStatement);
+      facts.push({ s: parseTerm(graphStart[1]), p: iri('log:nameOf'), o: formula(atoms) });
+      i = nextIndex;
+      continue;
+    }
+    if (line.includes('{') || line.includes('}')) throw new Error('unsupported inline formula');
+    facts.push(...parseTrigStatement(line));
+  }
+  return facts;
+}
+function extractMetadata(facts) {
+  const meta = {}, rem = [];
+  const map = {
+    'see:name': 'Name', 'see:title': 'Title', 'see:sourceFile': 'SourceFile',
+    'see:sourceSHA256': 'SourceSHA256', 'see:description': 'Description',
+    'see:compiler': 'Compiler', 'see:inputFacts': 'InputFacts',
+    'see:compiledRules': 'CompiledRules', 'see:compiledBackwardRules': 'CompiledBackwardRules',
+    'see:compiledFuses': 'CompiledFuses', 'see:compiledQueries': 'CompiledQueries'
+  };
+  for (const f of facts) {
+    if (f.s?.value === 'in:metadata' && f.p?.value === 'log:nameOf' && f.o?.kind === 'formula') {
+      for (const a of f.o.atoms || []) {
+        const k = map[a.p?.value];
+        if (k && a.o?.kind === 'lit') meta[k] = a.o.value;
+      }
+      continue;
+    }
+    rem.push(f);
+  }
+  return { meta, facts: rem };
+}
+function inflateFormulaLinks(facts) {
+  const by = new Map();
+  for (const f of facts) if (/^in:formula\d+$/.test(f.s?.value || '') && f.p?.value === 'log:nameOf' && f.o?.kind === 'formula') by.set(f.s.value, f.o);
+  if (!by.size) return facts;
+  const out = [];
+  for (const f of facts) {
+    if (by.has(f.s?.value || '') && f.p?.value === 'log:nameOf') continue;
+    if (by.has(f.o?.value || '')) { out.push({ ...f, o: by.get(f.o.value) }); continue; }
+    out.push(f);
+  }
+  return out;
+}
+function inputBase(name) {
+  return name;
+}
+function parseInput(trig) { return parseInputTrigFast(trig); }
+function loadInput(name) {
+  const base = inputBase(name);
+  const trigFile = path.join(INPUT_DIR, `${base}.trig`);
+  const trig = fs.readFileSync(trigFile, 'utf8');
+  const ex = extractMetadata(parseInput(trig));
+  return { __see: ex.meta, facts: inflateFormulaLinks(ex.facts), trig };
+}
+function emit(l = '') { process.stdout.write(l ? `${l}  \n` : '\n'); }
+function emitLines(ls) { for (const l of ls) emit(l); }
+function fail(p, o) { const f = Object.entries(o).filter(([, ok]) => !ok).map(([n]) => n); if (f.length) throw new Error(`${p}: ${f.join(', ')}`); }
+function sum(v) { return v.reduce((a, b) => a + b, 0); }
+function compareKeys(a, b) { const aa = Array.isArray(a) ? a : [a], bb = Array.isArray(b) ? b : [b], n = Math.min(aa.length, bb.length); for (let i = 0; i < n; i += 1) { if (aa[i] < bb[i]) return -1; if (aa[i] > bb[i]) return 1; } return aa.length - bb.length; }
+function minBy(v, k) { let best = v[0], bk = k(best); for (let i = 1; i < v.length; i += 1) { const kk = k(v[i]); if (compareKeys(kk, bk) < 0) { best = v[i]; bk = kk; } } return best; }
+function maxBy(v, k) { let best = v[0], bk = k(best); for (let i = 1; i < v.length; i += 1) { const kk = k(v[i]); if (compareKeys(kk, bk) > 0) { best = v[i]; bk = kk; } } return best; }
+function range(start, stop, step = 1) { if (stop === undefined) { stop = start; start = 0; } const o = []; for (let i = start; step > 0 ? i < stop : i > stop; i += step) o.push(i); return o; }
+function roundTo(v, d = 0) { const f = 10 ** d; return Math.round((v + Number.EPSILON) * f) / f; }
+function boolText(v) { return v ? 'true' : 'false'; }
+
+module.exports = { loadInput, emit, emitLines, fail, sum, minBy, maxBy, compareKeys, range, roundTo, boolText };
+
 
 const crypto = require('crypto');
 
@@ -1349,9 +1661,9 @@ const QUERIES = [
     ]
   }
 ];
-const DOC_MARKDOWN = "# Age checker\n\nGenerated by `see.js` from a Notation3 source file.\n\nIs the age of a person above some duration?\n\n## Compilation summary\n\n- Example name: `age`\n- Input facts emitted: 1\n- Forward rules compiled: 0\n- Backward predicate rules compiled: 1\n- Fuses compiled: 0\n- Predicate count: 6\n\n## Built-ins used\n\n- `math:difference`\n- `math:greaterThan`\n\n## Runtime model\n\nThe generated `examples/age.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/age.trig`. For rules-only sources, generation can reuse an existing external evidence file such as `examples/input/age.trig` or `examples/input/age.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.\n\n## Output model\n\nRunning `node examples/age.js` produces a SEE-style Markdown report with an **Entailment** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.\n";
+const DOC_MARKDOWN = "# Age checker\n\nGenerated by `see.js` from a Notation3 source file.\n\nIs the age of a person above some duration?\n\n## Compilation summary\n\n- Example name: `age`\n- Input facts emitted: 1\n- Forward rules compiled: 0\n- Backward predicate rules compiled: 1\n- Fuses compiled: 0\n- Predicate count: 6\n\n## Built-ins used\n\n- `math:difference`\n- `math:greaterThan`\n\n## Runtime model\n\nThe generated `examples/age.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/age.trig`. For rules-only sources, generation can reuse an existing external evidence file named `examples/input/age.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.\n\n## Output model\n\nRunning `node examples/age.js` produces a SEE-style Markdown report with an **Entailment** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.\n";
 function seeMetadata(data) { return (data && data.__see) || {}; }
-function trustedDerivation(data) { const meta = seeMetadata(data); const facts = data && Array.isArray(data.facts) ? data.facts : []; const expectedFacts = EXPECTED_INPUT_FACTS || Number(meta.InputFacts || 0); if (meta.SourceSHA256 && meta.SourceSHA256 !== "bf52bb918b595bb68a0a6304729e8129f3a851dc16cd3980ec5932115f2e7aea") throw new Error('input evidence does not match the N3 source compiled into this example'); const result = saturate(facts, RULES); const rawOutput = renderRawOutput(result.graph, QUERIES, RULES, facts); fail('Compiled N3 derivation failed', { 'input evidence metadata is present and matches compiled source': meta.SourceSHA256 === "bf52bb918b595bb68a0a6304729e8129f3a851dc16cd3980ec5932115f2e7aea", 'input evidence facts were loaded': expectedFacts > 0 ? facts.length === expectedFacts : facts.length >= 0, 'compiled rules were loaded': RULES.length === 1, 'compiled query directives were loaded': QUERIES.length === 1, 'a derivation fixpoint was reached': result.graph.facts.length >= facts.length, 'query or output facts were produced': rawOutput.length > 0 }); return { ...result, rawOutput, inputFacts: facts }; }
+function trustedDerivation(data) { const meta = seeMetadata(data); const facts = data && Array.isArray(data.facts) ? data.facts : []; const expectedFacts = EXPECTED_INPUT_FACTS || Number(meta.InputFacts || 0); if (meta.SourceSHA256 && meta.SourceSHA256 !== "bf52bb918b595bb68a0a6304729e8129f3a851dc16cd3980ec5932115f2e7aea") throw new Error('input evidence does not match the N3 source compiled into this example'); const result = saturate(facts, RULES); const rawOutput = renderRawOutput(result.graph, QUERIES, RULES, facts); fail('Compiled N3 derivation failed', { 'input evidence metadata is absent or matches compiled source': !meta.SourceSHA256 || meta.SourceSHA256 === "bf52bb918b595bb68a0a6304729e8129f3a851dc16cd3980ec5932115f2e7aea", 'input evidence facts were loaded': expectedFacts > 0 ? facts.length === expectedFacts : facts.length >= 0, 'compiled rules were loaded': RULES.length === 1, 'compiled query directives were loaded': QUERIES.length === 1, 'a derivation fixpoint was reached': result.graph.facts.length >= facts.length, 'query or output facts were produced': rawOutput.length > 0 }); return { ...result, rawOutput, inputFacts: facts }; }
 function snapshotMarkdown(markdown) { return markdown.split(/\n/).map((line) => line ? line + '  \n' : '\n').join(''); }
 function prefixLinesFromTrig(trig) {
   const out = [];

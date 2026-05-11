@@ -34,7 +34,7 @@ Values are illustrative only and are not medical advice.
 
 ## Runtime model
 
-The generated `examples/bayes_diagnosis.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/bayes_diagnosis.trig`. For rules-only sources, generation can reuse an existing external evidence file such as `examples/input/bayes-diagnosis.trig` or `examples/input/bayes_diagnosis.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.
+The generated `examples/bayes_diagnosis.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/bayes_diagnosis.trig`. For rules-only sources, generation can reuse an existing external evidence file named `examples/input/bayes_diagnosis.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.
 
 ## Output model
 

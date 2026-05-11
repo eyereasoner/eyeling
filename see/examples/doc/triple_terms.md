@@ -19,7 +19,7 @@ Demonstrates RDF 1.2 TriG triple terms as input evidence and as a derived entail
 
 ## Runtime model
 
-The generated `examples/triple_terms.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/triple_terms.trig`. For rules-only sources, generation can reuse an existing external evidence file such as `examples/input/triple-terms.trig` or `examples/input/triple_terms.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.
+The generated `examples/triple_terms.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/triple_terms.trig`. For rules-only sources, generation can reuse an existing external evidence file named `examples/input/triple_terms.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.
 
 ## Output model
 

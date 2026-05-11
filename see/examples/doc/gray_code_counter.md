@@ -24,7 +24,7 @@ SEE report.
 
 ## Runtime model
 
-The generated `examples/gray_code_counter.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/gray_code_counter.trig`. For rules-only sources, generation can reuse an existing external evidence file such as `examples/input/gray-code-counter.trig` or `examples/input/gray_code_counter.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.
+The generated `examples/gray_code_counter.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/gray_code_counter.trig`. For rules-only sources, generation can reuse an existing external evidence file named `examples/input/gray_code_counter.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.
 
 ## Output model
 

@@ -19,7 +19,7 @@ See https://www.w3.org/2000/10/swap/doc/tutorial-1.pdf page 17
 
 ## Runtime model
 
-The generated `examples/backward.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/backward.trig`. For rules-only sources, generation can reuse an existing external evidence file such as `examples/input/backward.trig` or `examples/input/backward.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.
+The generated `examples/backward.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/backward.trig`. For rules-only sources, generation can reuse an existing external evidence file named `examples/input/backward.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.
 
 ## Output model
 

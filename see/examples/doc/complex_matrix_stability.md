@@ -28,7 +28,7 @@ source that compiles to a standalone JavaScript example.
 
 ## Runtime model
 
-The generated `examples/complex_matrix_stability.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/complex_matrix_stability.trig`. For rules-only sources, generation can reuse an existing external evidence file such as `examples/input/complex-matrix-stability.trig` or `examples/input/complex_matrix_stability.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.
+The generated `examples/complex_matrix_stability.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/complex_matrix_stability.trig`. For rules-only sources, generation can reuse an existing external evidence file named `examples/input/complex_matrix_stability.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.
 
 ## Output model
 

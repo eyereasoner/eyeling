@@ -24,7 +24,7 @@ school, distance, and policy JSON is preserved as the data-input sidecar.
 
 ## Runtime model
 
-The generated `examples/school_placement_audit.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/school_placement_audit.trig`. For rules-only sources, generation can reuse an existing external evidence file such as `examples/input/school-placement-audit.trig` or `examples/input/school_placement_audit.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.
+The generated `examples/school_placement_audit.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/school_placement_audit.trig`. For rules-only sources, generation can reuse an existing external evidence file named `examples/input/school_placement_audit.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.
 
 ## Output model
 

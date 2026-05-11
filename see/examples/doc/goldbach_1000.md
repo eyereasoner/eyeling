@@ -24,7 +24,7 @@ equations that are shown in the report.
 
 ## Runtime model
 
-The generated `examples/goldbach_1000.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/goldbach_1000.trig`. For rules-only sources, generation can reuse an existing external evidence file such as `examples/input/goldbach-1000.trig` or `examples/input/goldbach_1000.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.
+The generated `examples/goldbach_1000.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/goldbach_1000.trig`. For rules-only sources, generation can reuse an existing external evidence file named `examples/input/goldbach_1000.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.
 
 ## Output model
 

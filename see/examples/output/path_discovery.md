@@ -52,7 +52,7 @@ in:metadata {
   in:run see:name "path_discovery" .  
   in:run see:title "Path Discovery" .  
   in:run see:sourceFile "examples/n3/path_discovery.n3" .  
-  in:run see:sourceSHA256 "9481a2b27a6cae4d73f312c7d8403d1abd7beab573f627f591ea8301073fe4db" .  
+  in:run see:sourceSHA256 "578f601e1cf33d790a8d44cc7b4e618837aa962a2170eb3af22527ba98164103" .  
   in:run see:description "Full upstream Eyeling path-discovery airroutes evidence converted to TriG; rules and query are kept in examples/n3/path_discovery.n3." .  
   in:run see:compiler "see.js N3-to-JS compiler" .  
   in:run see:inputFacts 96420 .  

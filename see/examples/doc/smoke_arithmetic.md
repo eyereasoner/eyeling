@@ -24,7 +24,7 @@ formatting instead of reading a prewritten conclusion.
 
 ## Runtime model
 
-The generated `examples/smoke_arithmetic.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/smoke_arithmetic.trig`. For rules-only sources, generation can reuse an existing external evidence file such as `examples/input/smoke-arithmetic.trig` or `examples/input/smoke_arithmetic.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.
+The generated `examples/smoke_arithmetic.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/smoke_arithmetic.trig`. For rules-only sources, generation can reuse an existing external evidence file named `examples/input/smoke_arithmetic.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.
 
 ## Output model
 
