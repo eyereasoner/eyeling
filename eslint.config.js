@@ -64,7 +64,7 @@ module.exports = [
 
       'prefer-const': 'warn', // avoids hard failures where auto-fix can’t rewrite safely
       eqeqeq: 'off',
-      'no-redeclare': 'off', // tools/n3gen.js currently triggers this
+      'no-redeclare': 'off',
 
       // light style
       semi: ['error', 'always'],

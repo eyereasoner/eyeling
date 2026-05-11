@@ -9,7 +9,7 @@
 @prefix in: <https://example.org/see/input#> .
 
 # Formal SEE input evidence in RDF 1.2 TriG.
-# The generated runner uses the N3 form produced from this file by tools/n3gen.js.
+# The generated runner reads this TriG evidence directly in RDF compatibility mode.
 
 # No source facts were present in the N3 program.
 

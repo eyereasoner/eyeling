@@ -554,7 +554,7 @@ function compilationStats(program) {
 
 // Source facts are emitted as RDF 1.2 TriG.  Formulas that appear as objects are
 // lifted into named graphs so the generated runner can load evidence directly
-// from .trig without going through an intermediate n3gen conversion step.
+// from .trig without going through an intermediate conversion step.
 function trigString(value) {
   return JSON.stringify(String(value));
 }

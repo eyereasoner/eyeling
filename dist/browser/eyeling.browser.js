@@ -9588,7 +9588,7 @@ function stripQuotes(lex) {
 //   - RDF 1.2 triple terms <<( s p o )>> become singleton graph terms { s p o }.
 //   - TriG named graph blocks g { ... } become g log:nameOf { ... } .
 //   - A top-level default graph block { ... } is unwrapped into ordinary triples.
-// This mirrors tools/n3gen.js and keeps all downstream parsing/reasoning N3-only.
+// This keeps all downstream parsing/reasoning N3-only.
 const LOG_NAME_OF_IRI = '<http://www.w3.org/2000/10/swap/log#nameOf>';
 
 function normalizeRdfCompatibility(inputText) {

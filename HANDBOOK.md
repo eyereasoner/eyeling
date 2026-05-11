@@ -251,7 +251,7 @@ is treated internally like:
 :observation rdf:reifies { :sensor :reports :overheating } .
 ```
 
-RDF/TriG named graph blocks are normalized in the same style as `tools/n3gen`:
+RDF/TriG named graph blocks are normalized to ordinary N3 graph terms:
 
 ```trig
 :factoryDataset {
@@ -3883,7 +3883,7 @@ In RDF compatibility mode, Eyeling accepts this surface form by translating the 
 :observation rdf:reifies { :sensor :reports :overheating } .
 ```
 
-The dataset example also uses named graph syntax, which RDF compatibility mode normalizes to `log:nameOf` graph terms, matching `tools/n3gen`:
+The dataset example also uses named graph syntax, which RDF compatibility mode normalizes to `log:nameOf` graph terms:
 
 ```trig
 :factoryDataset {
