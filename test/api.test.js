@@ -2559,7 +2559,41 @@ _:b a ex:Person ; ex:name "B" .
 `,
     expect: [/:observation\s+:entails\s+\{\s+:sensor\s+:needs\s+:inspection\s*\.\s*\}\s*\./m],
   },
+
+  {
+    name: 'RDF dataset named graphs are accepted as N3 graph terms',
+    opt: { proofComments: false },
+    input: `VERSION "1.2"
+@prefix : <http://example.org/dataset#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+# Ordinary TriG default-graph triples remain ordinary N3 facts.
+:sensor :reports :overheating .
+:overheating :requires :inspection .
+
+# A TriG named graph block is accepted and normalized to a graph term.
+:factoryDataset {
+  :observation rdf:reifies <<( :sensor :reports :overheating )>> .
+}
+
+{
+  :sensor :reports ?condition .
+  ?condition :requires ?action .
+} => {
+  :workOrder :entails <<( :sensor :needs ?action )>> .
+  :audit log:nameOf {
+    :workOrder :basedOn :factoryDataset .
+  } .
+} .
+`,
+    expect: [
+      /:workOrder\s+:entails\s+\{\s+:sensor\s+:needs\s+:inspection\s*\.\s*\}\s*\./m,
+      /:audit\s+log:nameOf\s+\{\s+:workOrder\s+:basedOn\s+:factoryDataset\s*\.\s*\}\s*\./m,
+    ],
+  },
 ];
+
 
 let passed = 0;
 let failed = 0;

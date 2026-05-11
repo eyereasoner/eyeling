@@ -1,676 +1,9 @@
 #!/usr/bin/env node
 'use strict';
-
-// SEE, Specialized Eyeling Executables, compiles a small, practical Notation3
-// subset into standalone JavaScript examples.  The compiler runs once at
-// generation time: it extracts source facts into formal TriG evidence and bakes
-// the supported rules, queries, and fuses into the generated runner.
-//
-// The generated examples intentionally do not call Eyeling or another reasoner
-// at runtime.  They read their .trig evidence directly and perform a local
-// fixpoint derivation, which makes the resulting programs easy to inspect,
-// snapshot, and publish as self-contained executable explanations.
-
-const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { spawnSync } = require('child_process');
+const { fail, loadInput } = require('./_see');
 
-// All SEE-owned artefacts stay below /see/examples so the directory can be
-// generated, tested, and documented from the eyeling repository root.
-const ROOT = __dirname;
-const EXAMPLES_DIR = path.join(ROOT, 'examples');
-const INPUT_DIR = path.join(EXAMPLES_DIR, 'input');
-const OUTPUT_DIR = path.join(EXAMPLES_DIR, 'output');
-const DOC_DIR = path.join(EXAMPLES_DIR, 'doc');
-
-function usage() {
-  return `SEE Notation3-to-JavaScript compiler
-
-Usage:
-  node see.js generate <example.n3> [--name <slug>] [--force]
-  node see.js render <example.n3>
-  node see.js inspect <example.n3>
-
-What generate writes:
-  examples/<name>.js              Specialized JavaScript derivation program
-  examples/input/<name>.trig      RDF 1.2 TriG input evidence dataset
-  examples/output/<name>.md       Snapshot produced by the specialized JS
-  examples/doc/<name>.md          Human-readable compilation notes
-
-This is intentionally not a reasoner bridge. see.js parses the program N3 once,
-emits its source facts as formal TriG evidence, compiles the supported
-rule/query/fuse subset into JavaScript, and the resulting examples/<name>.js
-loads the TriG evidence directly and performs the forward derivation itself.`;
-}
-
-function ensureDir(dir) {
-  fs.mkdirSync(dir, { recursive: true });
-}
-function readText(file) {
-  return fs.readFileSync(file, 'utf8');
-}
-function writeText(file, text, force) {
-  if (!force && fs.existsSync(file)) {
-    throw new Error(`${path.relative(ROOT, file)} already exists; pass --force to overwrite`);
-  }
-  ensureDir(path.dirname(file));
-  fs.writeFileSync(file, text, 'utf8');
-}
-function sha256(text) {
-  return crypto.createHash('sha256').update(text, 'utf8').digest('hex');
-}
-function js(value) {
-  return JSON.stringify(value, null, 2);
-}
-
-function slugify(value) {
-  const base = String(value || 'example')
-    .replace(/\.[^.]+$/, '')
-    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
-  return base || 'example';
-}
-function titleFromSlug(slug) {
-  return slug
-    .split(/[_-]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
-}
-
-// A leading comment block in each source .n3 file becomes the public example
-// title and description used in generated documentation and metadata.
-function stripComment(line) {
-  return line.replace(/^\s*#\s?/, '').trimEnd();
-}
-function isSeparator(line) {
-  const t = line.trim();
-  return /^[-=]{3,}$/.test(t) || t === '';
-}
-function parseHeader(n3, fallbackTitle) {
-  const raw = [];
-  for (const line of n3.split(/\r?\n/)) {
-    if (/^\s*#/.test(line)) {
-      raw.push(stripComment(line));
-      continue;
-    }
-    if (/^\s*$/.test(line) && raw.length) {
-      raw.push('');
-      continue;
-    }
-    if (/^\s*$/.test(line)) continue;
-    break;
-  }
-  const useful = raw.map((line) => line.trim()).filter((line) => !isSeparator(line));
-  return {
-    title: useful[0] || fallbackTitle,
-    description: useful
-      .slice(1)
-      .join('\n')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim(),
-    headerComments: raw,
-  };
-}
-
-function removeComments(n3) {
-  return n3
-    .split(/\r?\n/)
-    .map((line) => {
-      let inString = false,
-        escaped = false,
-        inIri = false;
-      for (let i = 0; i < line.length; i += 1) {
-        const ch = line[i];
-        if (escaped) {
-          escaped = false;
-          continue;
-        }
-        if (ch === '\\' && inString) {
-          escaped = true;
-          continue;
-        }
-        if (ch === '"' && !inIri) inString = !inString;
-        if (ch === '<' && !inString) inIri = true;
-        if (ch === '>' && inIri) inIri = false;
-        if (ch === '#' && !inString && !inIri) return line.slice(0, i);
-      }
-      return line;
-    })
-    .join('\n');
-}
-
-function decodeEscapes(value) {
-  return value.replace(/\\(u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8}|[nrtbf"'\\])/g, (all, esc) => {
-    if (esc === 'n') return '\n';
-    if (esc === 'r') return '\r';
-    if (esc === 't') return '\t';
-    if (esc === 'b') return '\b';
-    if (esc === 'f') return '\f';
-    if (esc === '"') return '"';
-    if (esc === "'") return "'";
-    if (esc === '\\') return '\\';
-    if (esc.startsWith('u')) return String.fromCharCode(Number.parseInt(esc.slice(1), 16));
-    if (esc.startsWith('U')) return String.fromCodePoint(Number.parseInt(esc.slice(1), 16));
-    return all;
-  });
-}
-
-// Internal terms use a tiny AST shared by the compiler and the generated
-// runtime.  Variables are stored without the leading '?'; IRIs and compact
-// QNames are preserved as source-facing strings for readable snapshots.
-function t(kind, value) {
-  return { kind, value };
-}
-function I(value) {
-  return t('iri', value);
-}
-function V(value) {
-  return t('var', value);
-}
-function L(value) {
-  return t('lit', value);
-}
-function List(items) {
-  return { kind: 'list', items };
-}
-function Blank(id) {
-  return { kind: 'blank', value: id };
-}
-
-// This tokenizer/parser is deliberately smaller than a complete N3 parser.  It
-// accepts the SEE example subset: triples, lists, blank-node property lists,
-// quoted formulas, RDF 1.2 triple terms, implication arrows, variables, literals, and prefix/version lines.
-function tokenize(source) {
-  const s = removeComments(source);
-  const tokens = [];
-  let i = 0;
-  const isWs = (ch) => /\s/.test(ch);
-  const one = new Set(['{', '}', '[', ']', '(', ')', ';', ',', '.']);
-  while (i < s.length) {
-    const ch = s[i];
-    if (isWs(ch)) {
-      i += 1;
-      continue;
-    }
-    if (s.startsWith('<<(', i)) {
-      tokens.push({ type: '<<(', value: '<<(' });
-      i += 3;
-      continue;
-    }
-    if (s.startsWith(')>>', i)) {
-      tokens.push({ type: ')>>', value: ')>>' });
-      i += 3;
-      continue;
-    }
-    if (s.startsWith('=>', i) || s.startsWith('<=', i) || s.startsWith('^^', i)) {
-      tokens.push({ type: s.slice(i, i + 2), value: s.slice(i, i + 2) });
-      i += 2;
-      continue;
-    }
-    if (/^[+-]?(?:\d+\.\d*|\d*\.\d+|\d+)(?:[eE][+-]?\d+)?/.test(s.slice(i)) && /[+\-0-9.]/.test(ch)) {
-      const m = s.slice(i).match(/^[+-]?(?:\d+\.\d*|\d*\.\d+|\d+)(?:[eE][+-]?\d+)?/)[0];
-      // Do not steal the dot that terminates a previous integer triple; this branch starts at the number itself.
-      tokens.push(classifyToken(m));
-      i += m.length;
-      continue;
-    }
-    if (one.has(ch)) {
-      tokens.push({ type: ch, value: ch });
-      i += 1;
-      continue;
-    }
-    if (ch === '"') {
-      let out = '',
-        escaped = false;
-      i += 1;
-      while (i < s.length) {
-        const c = s[i++];
-        if (escaped) {
-          out += `\\${c}`;
-          escaped = false;
-          continue;
-        }
-        if (c === '\\') {
-          escaped = true;
-          continue;
-        }
-        if (c === '"') break;
-        out += c;
-      }
-      tokens.push({ type: 'string', value: decodeEscapes(out) });
-      continue;
-    }
-    if (ch === '<') {
-      let out = '';
-      i += 1;
-      while (i < s.length && s[i] !== '>') out += s[i++];
-      if (s[i] !== '>') throw new Error('Unterminated IRI');
-      i += 1;
-      tokens.push({ type: 'iri', value: `<${out}>` });
-      continue;
-    }
-    let out = '';
-    while (i < s.length && !isWs(s[i]) && !one.has(s[i])) {
-      if (s.startsWith('=>', i) || s.startsWith('<=', i) || s.startsWith('^^', i)) break;
-      out += s[i++];
-    }
-    if (out.length) tokens.push(classifyToken(out));
-  }
-  return tokens;
-}
-
-function classifyToken(raw) {
-  if (raw === '@prefix') return { type: '@prefix', value: raw };
-  if (/^VERSION$/i.test(raw)) return { type: 'VERSION', value: raw };
-  if (raw === 'a') return { type: 'qname', value: 'rdf:type' };
-  if (raw.startsWith('?')) return { type: 'var', value: raw.slice(1) };
-  if (/^(true|false)$/i.test(raw)) return { type: 'boolean', value: /^true$/i.test(raw) };
-  if (/^[+-]?\d+$/.test(raw)) return { type: 'number', value: Number.parseInt(raw, 10) };
-  if (/^[+-]?(?:\d+\.\d*|\d*\.\d+)(?:[eE][+-]?\d+)?$/.test(raw) || /^[+-]?\d+[eE][+-]?\d+$/.test(raw))
-    return { type: 'number', value: Number(raw) };
-  return { type: 'qname', value: raw };
-}
-
-class Parser {
-  constructor(tokens) {
-    this.tokens = tokens;
-    this.pos = 0;
-    this.blankCounter = 0;
-  }
-  eof() {
-    return this.pos >= this.tokens.length;
-  }
-  peek(value = undefined, offset = 0) {
-    const tok = this.tokens[this.pos + offset];
-    if (value === undefined) return tok;
-    return tok && tok.type === value;
-  }
-  isTermToken(tok) {
-    return tok && ['qname', 'iri', 'var', 'string', 'number', 'boolean', '<<(', '(', '{', '['].includes(tok.type);
-  }
-  isNamedGraphStart() {
-    const tok = this.peek();
-    if (tok?.type === 'qname' && /^GRAPH$/i.test(tok.value)) {
-      return this.isTermToken(this.peek(undefined, 1)) && this.peek('{', 2);
-    }
-    return (tok?.type === 'qname' || tok?.type === 'iri') && this.peek('{', 1);
-  }
-  parseNamedGraphFact() {
-    if (this.peek()?.type === 'qname' && /^GRAPH$/i.test(this.peek().value)) this.next();
-    const name = this.parseTerm('fact', []);
-    const atoms = this.parseFormula('fact');
-    this.accept('.');
-    return { s: name, p: I('log:nameOf'), o: { kind: 'formula', atoms } };
-  }
-  next() {
-    if (this.eof()) throw new Error('Unexpected end of input');
-    return this.tokens[this.pos++];
-  }
-  accept(type) {
-    if (this.peek(type)) return this.next();
-    return null;
-  }
-  expect(type) {
-    const tok = this.next();
-    if (tok.type !== type) throw new Error(`Expected ${type}, got ${tok.type} (${tok.value})`);
-    return tok;
-  }
-  freshBlank(prefix = 'b') {
-    this.blankCounter += 1;
-    return `_${prefix}${this.blankCounter}`;
-  }
-  skipPrefix() {
-    this.expect('@prefix');
-    // Prefix declaration is irrelevant after QName compaction; skip until final dot.
-    while (!this.eof() && !this.accept('.')) this.next();
-  }
-  skipVersion() {
-    this.expect('VERSION');
-    if (this.peek('string')) this.next();
-    this.accept('.');
-  }
-  parseProgram() {
-    const facts = [],
-      rules = [],
-      queries = [],
-      prefixes = {};
-    while (!this.eof()) {
-      if (this.accept('@prefix')) {
-        this.pos -= 1;
-        const start = this.pos;
-        this.skipPrefix();
-        const slice = this.tokens
-          .slice(start, this.pos)
-          .map((tok) => tok.value)
-          .join(' ');
-        const m = slice.match(/@prefix\s+([^\s]*)\s+<([^>]+)>/);
-        if (m) prefixes[(m[1] || ':').replace(/:$/, '')] = m[2];
-        continue;
-      }
-      if (this.peek('VERSION')) {
-        this.skipVersion();
-        continue;
-      }
-      if (this.isNamedGraphStart()) {
-        facts.push(this.parseNamedGraphFact());
-        continue;
-      }
-      if (this.peek('{')) {
-        const lhs = this.parseFormula('body');
-        if (this.accept('=>')) {
-          if (
-            (this.peek('qname') && this.tokens[this.pos].value === 'false') ||
-            (this.peek('boolean') && this.tokens[this.pos].value === false)
-          ) {
-            this.next();
-            this.accept('.');
-            rules.push({ kind: 'fuse', id: rules.length + 1, body: lhs });
-          } else {
-            const head = this.parseFormula('head');
-            this.accept('.');
-            rules.push({ kind: 'rule', id: rules.length + 1, body: lhs, head });
-          }
-        } else if (this.accept('<=')) {
-          if (
-            (this.peek('qname') && this.tokens[this.pos].value === 'true') ||
-            (this.peek('boolean') && this.tokens[this.pos].value === true)
-          ) {
-            this.next();
-            this.accept('.');
-            rules.push({ kind: 'backward', id: rules.length + 1, body: [], head: lhs });
-          } else {
-            const rhs = this.parseFormula('body');
-            this.accept('.');
-            rules.push({ kind: 'backward', id: rules.length + 1, body: rhs, head: lhs });
-          }
-        } else if (this.peek('.') || this.eof()) {
-          this.accept('.');
-          facts.push(...lhs);
-        } else {
-          const subject = { kind: 'formula', atoms: lhs };
-          const triples = this.parseStatementRest('fact', subject);
-          this.accept('.');
-          for (const triple of triples) {
-            if (
-              triple.s?.kind === 'formula' &&
-              triple.p?.kind === 'iri' &&
-              triple.p.value === 'log:query' &&
-              triple.o?.kind === 'formula'
-            ) {
-              queries.push({ id: queries.length + 1, premise: triple.s.atoms, conclusion: triple.o.atoms });
-            } else {
-              facts.push(triple);
-            }
-          }
-        }
-      } else {
-        facts.push(...this.parseStatement('fact'));
-        this.accept('.');
-      }
-    }
-    return { facts, rules, queries, prefixes };
-  }
-  parseFormula(mode) {
-    this.expect('{');
-    const atoms = [];
-    while (!this.accept('}')) {
-      if (this.eof()) throw new Error('Unclosed formula');
-      atoms.push(...this.parseStatement(mode));
-      this.accept('.');
-    }
-    return atoms;
-  }
-  parseStatement(mode) {
-    const triples = [];
-    const subject = this.parseTerm(mode, triples);
-    return this.parseStatementRest(mode, subject, triples);
-  }
-  parseStatementRest(mode, subject, triples = []) {
-    while (!this.eof() && !['.', '}'].includes(this.peek()?.type)) {
-      if (this.accept(';')) {
-        if (['.', '}'].includes(this.peek()?.type)) break;
-      }
-      const predicate = this.parsePredicate();
-      while (true) {
-        const object = this.parseTerm(mode, triples);
-        triples.push({ s: subject, p: predicate, o: object });
-        if (!this.accept(',')) break;
-      }
-      if (!this.accept(';')) break;
-      if (['.', '}'].includes(this.peek()?.type)) break;
-    }
-    return triples;
-  }
-  parsePredicate() {
-    const tok = this.next();
-    if (tok.type === 'var') return V(tok.value);
-    if (tok.type !== 'qname' && tok.type !== 'iri') throw new Error(`Expected predicate, got ${tok.type}`);
-    if (tok.value === '=') return I('owl:sameAs');
-    return I(tok.value);
-  }
-  parseTerm(mode, sink) {
-    const tok = this.next();
-    if (tok.type === 'var') return V(tok.value);
-    if (tok.type === 'string') {
-      if (this.accept('^^')) this.next();
-      return L(tok.value);
-    }
-    if (tok.type === 'number' || tok.type === 'boolean') return L(tok.value);
-    if (tok.type === 'iri' || tok.type === 'qname') return I(tok.value);
-    if (tok.type === '<<(') {
-      const subject = this.parseTerm(mode, sink);
-      const predicate = this.parsePredicate();
-      const object = this.parseTerm(mode, sink);
-      this.expect(')>>');
-      return { kind: 'triple', s: subject, p: predicate, o: object };
-    }
-    if (tok.type === '(') {
-      const items = [];
-      while (!this.accept(')')) items.push(this.parseTerm(mode, sink));
-      return List(items);
-    }
-    if (tok.type === '{') {
-      const atoms = [];
-      while (!this.accept('}')) {
-        if (this.eof()) throw new Error('Unclosed nested formula');
-        atoms.push(...this.parseStatement(mode));
-        this.accept('.');
-      }
-      return { kind: 'formula', atoms };
-    }
-    if (tok.type === '[') {
-      const id =
-        mode === 'body'
-          ? V(this.freshBlank('bodyBlank'))
-          : Blank(this.freshBlank(mode === 'head' ? 'headBlank' : 'blank'));
-      if (!this.accept(']')) {
-        while (true) {
-          const predicate = this.parsePredicate();
-          while (true) {
-            const object = this.parseTerm(mode, sink);
-            sink.push({ s: id, p: predicate, o: object });
-            if (!this.accept(',')) break;
-          }
-          if (this.accept(']')) break;
-          this.expect(';');
-        }
-      }
-      return id;
-    }
-    throw new Error(`Expected term, got ${tok.type}`);
-  }
-}
-
-// parseN3 separates the source file into four compiler inputs:
-//   facts   -> serialized as examples/input/<name>.trig
-//   rules   -> compiled into JavaScript fixpoint code
-//   queries -> rendered as selected output checks
-//   prefixes -> carried into generated TriG evidence
-function parseN3(n3) {
-  const parser = new Parser(tokenize(n3));
-  return parser.parseProgram();
-}
-
-function termToJsComment(term) {
-  if (term.kind === 'iri') return term.value;
-  if (term.kind === 'lit') return JSON.stringify(term.value);
-  if (term.kind === 'var') return `?${term.value}`;
-  if (term.kind === 'blank') return term.value;
-  if (term.kind === 'list') return `(${term.items.map(termToJsComment).join(' ')})`;
-  if (term.kind === 'triple') return `<<( ${termToJsComment(term.s)} ${termToJsComment(term.p)} ${termToJsComment(term.o)} )>>`;
-  if (term.kind === 'formula') return `{ ${term.atoms.map(atomToComment).join(' . ')} }`;
-  return String(term.value ?? term);
-}
-function atomToComment(atom) {
-  return `${termToJsComment(atom.s)} ${termToJsComment(atom.p)} ${termToJsComment(atom.o)}`;
-}
-
-function compilationStats(program) {
-  const predicates = new Set();
-  const builtins = new Set();
-  for (const atom of [
-    ...program.facts,
-    ...program.rules.flatMap((r) => [...(r.body || []), ...(r.head || [])]),
-    ...(program.queries || []).flatMap((q) => [...(q.premise || []), ...(q.conclusion || [])]),
-  ]) {
-    const p = atom.p?.value;
-    if (p) predicates.add(p);
-    if (/^(math|string|list|log|crypto):/.test(p)) builtins.add(p);
-  }
-  return {
-    facts: program.facts.length,
-    rules: program.rules.filter((r) => r.kind === 'rule').length,
-    backwardRules: program.rules.filter((r) => r.kind === 'backward').length,
-    fuses: program.rules.filter((r) => r.kind === 'fuse').length,
-    queries: (program.queries || []).length,
-    predicates: predicates.size,
-    builtins: [...builtins].sort(),
-  };
-}
-
-// Source facts are emitted as RDF 1.2 TriG.  Formulas that appear as objects are
-// lifted into named graphs so the generated runner can load evidence directly
-// from .trig without going through an intermediate n3gen conversion step.
-function trigString(value) {
-  return JSON.stringify(String(value));
-}
-function trigNumber(value) {
-  if (Object.is(value, -0)) return '0';
-  if (Number.isInteger(value)) return String(value);
-  return Number(value.toPrecision(15)).toString();
-}
-function inputLiteralToN3(value) {
-  if (typeof value === 'string') return trigString(value);
-  if (typeof value === 'number') return trigNumber(value);
-  if (typeof value === 'boolean') return value ? 'true' : 'false';
-  return trigString(value);
-}
-function inputTermToN3(term) {
-  if (!term) return 'undefined';
-  if (term.kind === 'iri') return term.value;
-  if (term.kind === 'lit') return inputLiteralToN3(term.value);
-  if (term.kind === 'var') return '?' + term.value;
-  if (term.kind === 'blank') return term.value.startsWith('_:') ? term.value : '_:' + term.value.replace(/^_+/, '');
-  if (term.kind === 'list') return '(' + term.items.map(inputTermToN3).join(' ') + ')';
-  if (term.kind === 'triple') return '<<( ' + inputTermToN3(term.s) + ' ' + inputTermToN3(term.p) + ' ' + inputTermToN3(term.o) + ' )>>';
-  if (term.kind === 'formula') return '{ ' + term.atoms.map(inputAtomToN3).join(' . ') + ' }';
-  return String(term.value ?? term);
-}
-function inputAtomToN3(atom) {
-  return inputTermToN3(atom.s) + ' ' + inputTermToN3(atom.p) + ' ' + inputTermToN3(atom.o);
-}
-function inputTermHasTripleTerm(term) {
-  if (!term) return false;
-  if (term.kind === 'triple') return true;
-  if (term.kind === 'list') return term.items.some(inputTermHasTripleTerm);
-  if (term.kind === 'formula') return term.atoms.some(inputAtomHasTripleTerm);
-  return false;
-}
-function inputAtomHasTripleTerm(atom) {
-  return inputTermHasTripleTerm(atom.s) || inputTermHasTripleTerm(atom.p) || inputTermHasTripleTerm(atom.o);
-}
-function programHasTripleTerms(program) {
-  return [
-    ...(program.facts || []),
-    ...(program.rules || []).flatMap((r) => [...(r.body || []), ...(r.head || [])]),
-    ...(program.queries || []).flatMap((q) => [...(q.premise || []), ...(q.conclusion || [])]),
-  ].some(inputAtomHasTripleTerm);
-}
-function formulaBlock(label, atoms) {
-  const lines = [label + ' {'];
-  for (const atom of atoms) lines.push('  ' + inputAtomToN3(atom) + ' .');
-  lines.push('}');
-  return lines.join('\n');
-}
-function atomToTrig(atom, state) {
-  if (atom.o && atom.o.kind === 'formula') {
-    if (atom.p && atom.p.kind === 'iri' && atom.p.value === 'log:nameOf') {
-      state.graphs.push(formulaBlock(inputTermToN3(atom.s), atom.o.atoms));
-      return null;
-    }
-    state.formulaCounter += 1;
-    const label = `in:formula${state.formulaCounter}`;
-    state.graphs.push(formulaBlock(label, atom.o.atoms));
-    return inputTermToN3(atom.s) + ' ' + inputTermToN3(atom.p) + ' ' + label + ' .';
-  }
-  return inputAtomToN3(atom) + ' .';
-}
-function inputFactsToTrig(facts) {
-  const state = { formulaCounter: 0, graphs: [] };
-  const triples = [];
-  for (const atom of facts) {
-    const line = atomToTrig(atom, state);
-    if (line) triples.push(line);
-  }
-  return { triples, graphs: state.graphs };
-}
-function prefixLines(prefixes) {
-  const merged = { ...(prefixes || {}) };
-  if (!Object.hasOwn(merged, 'log')) merged.log = 'http://www.w3.org/2000/10/swap/log#';
-  if (!Object.hasOwn(merged, 'see')) merged.see = 'https://example.org/see#';
-  if (!Object.hasOwn(merged, 'in')) merged.in = 'https://example.org/see/input#';
-  return Object.entries(merged).map(([prefix, iri]) => `@prefix ${prefix ? prefix + ':' : ':'} <${iri}> .`);
-}
-function generateInputTrig(n3Path, name, title, header, stats, program) {
-  const { triples, graphs } = inputFactsToTrig(program.facts);
-  const metadata = [
-    'in:metadata {',
-    '  in:run a see:InputDataset .',
-    `  in:run see:name ${trigString(name)} .`,
-    `  in:run see:title ${trigString(title)} .`,
-    `  in:run see:sourceFile ${trigString(path.relative(ROOT, path.resolve(n3Path)))} .`,
-    `  in:run see:sourceSHA256 ${trigString(stats.sourceHash)} .`,
-    `  in:run see:description ${trigString(header.description || '')} .`,
-    '  in:run see:compiler "see.js N3-to-JS compiler" .',
-    `  in:run see:inputFacts ${stats.facts} .`,
-    `  in:run see:compiledRules ${stats.rules} .`,
-    `  in:run see:compiledBackwardRules ${stats.backwardRules} .`,
-    `  in:run see:compiledFuses ${stats.fuses} .`,
-    `  in:run see:compiledQueries ${stats.queries} .`,
-    '}',
-  ].join('\n');
-  const sections = [
-    ...(programHasTripleTerms(program) ? ['VERSION "1.2"', ''] : []),
-    ...prefixLines(program.prefixes),
-    '',
-    '# Formal SEE input evidence in RDF 1.2 TriG.',
-    '# The generated runner reads this TriG evidence directly.',
-    '',
-    triples.length ? triples.join('\n') : '# No source facts were present in the N3 program.',
-  ];
-  if (graphs.length) sections.push('', graphs.join('\n\n'));
-  sections.push('', metadata, '');
-  return sections.join('\n');
-}
-// The runtime below is copied verbatim into each generated example.  Keep it
-// dependency-light: generated examples should be executable with Node alone plus
-// the local examples/_see.js TriG loader.
-function runtimeSource() {
-  return String.raw`
 const crypto = require('crypto');
 
 function canonical(term) {
@@ -1871,35 +1204,208 @@ function renderPresentation(graph, queries, rules, initialFacts, title, trace) {
   if (graph.facts.some((f) => f.o && f.o.kind === 'formula')) return renderStructuredOutput({ title, graph, queries, rules, initialFacts, trace, mode: 'formula' });
   return renderStructuredOutput({ title, graph, queries, rules, initialFacts, trace, mode: 'derived' });
 }
-`;
-}
 
-function generateExampleJs(name, title, program, stats, doc) {
-  const rulesWithComments = program.rules.map((rule) => ({
-    ...rule,
-    bodyComment: (rule.body || []).map(atomToComment),
-    headComment: (rule.head || []).map(atomToComment),
-  }));
-  const queriesWithComments = (program.queries || []).map((query) => ({
-    ...query,
-    premiseComment: (query.premise || []).map(atomToComment),
-    conclusionComment: (query.conclusion || []).map(atomToComment),
-  }));
-  return `#!/usr/bin/env node
-'use strict';
-const fs = require('fs');
-const path = require('path');
-const { fail, loadInput } = require('./_see');
-${runtimeSource()}
-const NAME = ${JSON.stringify(name)};
-const TITLE = ${JSON.stringify(title)};
-const EXPECTED_INPUT_FACTS = ${stats.facts};
-const RULES = ${js(rulesWithComments)};
-const QUERIES = ${js(queriesWithComments)};
-const DOC_MARKDOWN = ${JSON.stringify(doc)};
+const NAME = "rdf_dataset";
+const TITLE = "RDF dataset compatibility";
+const EXPECTED_INPUT_FACTS = 4;
+const RULES = [
+  {
+    "kind": "rule",
+    "id": 1,
+    "body": [
+      {
+        "s": {
+          "kind": "iri",
+          "value": ":sensor"
+        },
+        "p": {
+          "kind": "iri",
+          "value": ":reports"
+        },
+        "o": {
+          "kind": "var",
+          "value": "condition"
+        }
+      },
+      {
+        "s": {
+          "kind": "var",
+          "value": "condition"
+        },
+        "p": {
+          "kind": "iri",
+          "value": ":requires"
+        },
+        "o": {
+          "kind": "var",
+          "value": "action"
+        }
+      },
+      {
+        "s": {
+          "kind": "iri",
+          "value": ":maintenanceSystem"
+        },
+        "p": {
+          "kind": "iri",
+          "value": ":trusted"
+        },
+        "o": {
+          "kind": "lit",
+          "value": true
+        }
+      }
+    ],
+    "head": [
+      {
+        "s": {
+          "kind": "iri",
+          "value": ":workOrder"
+        },
+        "p": {
+          "kind": "iri",
+          "value": ":entails"
+        },
+        "o": {
+          "kind": "triple",
+          "s": {
+            "kind": "iri",
+            "value": ":sensor"
+          },
+          "p": {
+            "kind": "iri",
+            "value": ":needs"
+          },
+          "o": {
+            "kind": "var",
+            "value": "action"
+          }
+        }
+      },
+      {
+        "s": {
+          "kind": "iri",
+          "value": ":audit"
+        },
+        "p": {
+          "kind": "iri",
+          "value": "log:nameOf"
+        },
+        "o": {
+          "kind": "formula",
+          "atoms": [
+            {
+              "s": {
+                "kind": "iri",
+                "value": ":workOrder"
+              },
+              "p": {
+                "kind": "iri",
+                "value": ":basedOn"
+              },
+              "o": {
+                "kind": "iri",
+                "value": ":factoryDataset"
+              }
+            },
+            {
+              "s": {
+                "kind": "iri",
+                "value": ":workOrder"
+              },
+              "p": {
+                "kind": "iri",
+                "value": ":checkedBy"
+              },
+              "o": {
+                "kind": "iri",
+                "value": ":maintenanceSystem"
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "bodyComment": [
+      ":sensor :reports ?condition",
+      "?condition :requires ?action",
+      ":maintenanceSystem :trusted true"
+    ],
+    "headComment": [
+      ":workOrder :entails <<( :sensor :needs ?action )>>",
+      ":audit log:nameOf { :workOrder :basedOn :factoryDataset . :workOrder :checkedBy :maintenanceSystem }"
+    ]
+  }
+];
+const QUERIES = [
+  {
+    "id": 1,
+    "premise": [
+      {
+        "s": {
+          "kind": "iri",
+          "value": ":workOrder"
+        },
+        "p": {
+          "kind": "iri",
+          "value": ":entails"
+        },
+        "o": {
+          "kind": "triple",
+          "s": {
+            "kind": "var",
+            "value": "device"
+          },
+          "p": {
+            "kind": "iri",
+            "value": ":needs"
+          },
+          "o": {
+            "kind": "var",
+            "value": "action"
+          }
+        }
+      }
+    ],
+    "conclusion": [
+      {
+        "s": {
+          "kind": "iri",
+          "value": ":workOrder"
+        },
+        "p": {
+          "kind": "iri",
+          "value": ":entails"
+        },
+        "o": {
+          "kind": "triple",
+          "s": {
+            "kind": "var",
+            "value": "device"
+          },
+          "p": {
+            "kind": "iri",
+            "value": ":needs"
+          },
+          "o": {
+            "kind": "var",
+            "value": "action"
+          }
+        }
+      }
+    ],
+    "premiseComment": [
+      ":workOrder :entails <<( ?device :needs ?action )>>"
+    ],
+    "conclusionComment": [
+      ":workOrder :entails <<( ?device :needs ?action )>>"
+    ]
+  }
+];
+const DOC_MARKDOWN = "# RDF dataset compatibility\n\nGenerated by `see.js` from a Notation3 source file.\n\nRDF 1.1 named graph data and RDF 1.2 triple terms are normalized to ordinary N3 graph terms before SEE compiles the derivation.\n\n## Compilation summary\n\n- Example name: `rdf_dataset`\n- Input facts emitted: 4\n- Forward rules compiled: 1\n- Backward predicate rules compiled: 0\n- Fuses compiled: 0\n- Predicate count: 5\n\n## Built-ins used\n\n- `log:nameOf`\n\n## Runtime model\n\nThe generated `examples/rdf_dataset.js` is a specialized JavaScript derivation program. For ordinary sources, `see.js` emits the source facts as `examples/input/rdf_dataset.trig`. For rules-only sources, generation can reuse an existing external evidence file such as `examples/input/rdf-dataset.trig` or `examples/input/rdf_dataset.trig`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.\n\n## Output model\n\nRunning `node examples/rdf_dataset.js` produces a SEE-style Markdown report with an **Entailment** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.\n";
 function seeMetadata(data) { return (data && data.__see) || {}; }
-function trustedDerivation(data) { const meta = seeMetadata(data); const facts = data && Array.isArray(data.facts) ? data.facts : []; const expectedFacts = EXPECTED_INPUT_FACTS || Number(meta.InputFacts || 0); if (meta.SourceSHA256 && meta.SourceSHA256 !== ${JSON.stringify(stats.sourceHash)}) throw new Error('input evidence does not match the N3 source compiled into this example'); const result = saturate(facts, RULES); const rawOutput = renderRawOutput(result.graph, QUERIES, RULES, facts); fail('Compiled N3 derivation failed', { 'input evidence metadata is present and matches compiled source': meta.SourceSHA256 === ${JSON.stringify(stats.sourceHash)}, 'input evidence facts were loaded': expectedFacts > 0 ? facts.length === expectedFacts : facts.length >= 0, 'compiled rules were loaded': RULES.length === ${stats.rules + stats.backwardRules + stats.fuses}, 'compiled query directives were loaded': QUERIES.length === ${stats.queries}, 'a derivation fixpoint was reached': result.graph.facts.length >= facts.length, 'query or output facts were produced': rawOutput.length > 0 }); return { ...result, rawOutput, inputFacts: facts }; }
-function snapshotMarkdown(markdown) { return markdown.split(/\\n/).map((line) => line ? line + '  \\n' : '\\n').join(''); }
+function trustedDerivation(data) { const meta = seeMetadata(data); const facts = data && Array.isArray(data.facts) ? data.facts : []; const expectedFacts = EXPECTED_INPUT_FACTS || Number(meta.InputFacts || 0); if (meta.SourceSHA256 && meta.SourceSHA256 !== "76035a24eb72fc1d28a5e1f3021baefee0dde667aa8fc9f2b0a111f9c773b744") throw new Error('input evidence does not match the N3 source compiled into this example'); const result = saturate(facts, RULES); const rawOutput = renderRawOutput(result.graph, QUERIES, RULES, facts); fail('Compiled N3 derivation failed', { 'input evidence metadata is present and matches compiled source': meta.SourceSHA256 === "76035a24eb72fc1d28a5e1f3021baefee0dde667aa8fc9f2b0a111f9c773b744", 'input evidence facts were loaded': expectedFacts > 0 ? facts.length === expectedFacts : facts.length >= 0, 'compiled rules were loaded': RULES.length === 1, 'compiled query directives were loaded': QUERIES.length === 1, 'a derivation fixpoint was reached': result.graph.facts.length >= facts.length, 'query or output facts were produced': rawOutput.length > 0 }); return { ...result, rawOutput, inputFacts: facts }; }
+function snapshotMarkdown(markdown) { return markdown.split(/\n/).map((line) => line ? line + '  \n' : '\n').join(''); }
 function prefixLinesFromTrig(trig) {
   const out = [];
   const seen = new Set();
@@ -1939,7 +1445,7 @@ function termHasTripleTerm(term) {
 }
 function atomHasTripleTerm(atom) { return termHasTripleTerm(atom.s) || termHasTripleTerm(atom.p) || termHasTripleTerm(atom.o); }
 function factsHaveTripleTerms(facts) { return (facts || []).some(atomHasTripleTerm); }
-function trigHasVersion12(trig) { return /^\s*(?:@version|VERSION)\s+["']1\.2["']/mi.test(String(trig || '')); }
+function trigHasVersion12(trig) { return /^s*(?:@version|VERSION)s+["']1.2["']/mi.test(String(trig || '')); }
 function trigGraphBlock(label, atoms) {
   const lines = [label + ' {'];
   for (const atom of atoms || []) lines.push('  ' + atomToN3(atom) + ' .');
@@ -1966,8 +1472,8 @@ function trigMetadataBlock(trig) {
     if (!active && !trimmed.startsWith('in:metadata')) continue;
     active = true;
     out.push(line.replace(String.fromCharCode(13), ''));
-    depth += (line.match(/\{/g) || []).length;
-    depth -= (line.match(/\}/g) || []).length;
+    depth += (line.match(/{/g) || []).length;
+    depth -= (line.match(/}/g) || []).length;
     if (active && depth <= 0) break;
   }
   return out.length ? out.join(String.fromCharCode(10)).trimEnd() : '';
@@ -1995,7 +1501,7 @@ function appendFormalTrigOutput(markdown, graph, queries, rules, initialFacts, d
   if (!trig) return markdown;
   const nl = String.fromCharCode(10);
   const fence = String.fromCharCode(96).repeat(3);
-  const fenced = trig.trimEnd().replace(new RegExp(fence, 'g'), '\` \` \`');
+  const fenced = trig.trimEnd().replace(new RegExp(fence, 'g'), '` ` `');
   return markdown.trimEnd() + nl + nl + '## Formal TriG Output' + nl + nl + fence + 'trig' + nl + fenced + nl + fence + nl;
 }
 function outputMarkdown() { const data = loadInput(NAME); const result = trustedDerivation(data); const markdown = renderPresentation(result.graph, QUERIES, RULES, result.inputFacts, TITLE, result.trace); return snapshotMarkdown(appendFormalTrigOutput(markdown, result.graph, QUERIES, RULES, result.inputFacts, data)); }
@@ -2004,176 +1510,3 @@ function writeArtefacts() { const outputDir = path.join(__dirname, 'output'); co
 function main(argv = process.argv.slice(2)) { if (argv.includes('--write') || argv.includes('--write-files') || argv.includes('--snapshot')) { writeArtefacts(); return; } if (argv.includes('--doc')) { process.stdout.write(documentationMarkdown()); return; } process.stdout.write(outputMarkdown()); }
 if (require.main === module) main();
 module.exports = { trustedDerivation, outputMarkdown, documentationMarkdown, writeArtefacts };
-`;
-}
-
-// Documentation is generated from compilation metadata rather than hand-written
-// per example, keeping examples/output and examples/doc reproducible snapshots.
-function generateDoc(name, title, header, stats) {
-  const description = header.description
-    ? `
-${header.description}
-`
-    : '';
-  const builtins = stats.builtins.length ? stats.builtins.map((b) => `- \`${b}\``).join('\n') : '- none';
-  return `# ${title}\n\nGenerated by \`see.js\` from a Notation3 source file.\n${description}\n## Compilation summary\n\n- Example name: \`${name}\`\n- Input facts emitted: ${stats.facts}\n- Forward rules compiled: ${stats.rules}\n- Backward predicate rules compiled: ${stats.backwardRules}\n- Fuses compiled: ${stats.fuses}\n- Predicate count: ${stats.predicates}\n\n## Built-ins used\n\n${builtins}\n\n## Runtime model\n\nThe generated \`examples/${name}.js\` is a specialized JavaScript derivation program. For ordinary sources, \`see.js\` emits the source facts as \`examples/input/${name}.trig\`. For rules-only sources, generation can reuse an existing external evidence file such as \`examples/input/${name.replace(/_/g, '-')}.trig\` or \`examples/input/${name}.trig\`. The runner reads that TriG evidence directly and performs a local fixpoint derivation; it does not parse the program source or call an external reasoner.\n\n## Output model\n\nRunning \`node examples/${name}.js\` produces a SEE-style Markdown report with an **Entailment** section, an **Explanation** section, and a **Formal TriG Output** section containing the selected derived/query facts.\n`;
-}
-
-function runNode(file, cwd = ROOT, args = []) {
-  const result = spawnSync(process.execPath, [file, ...args], { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
-  if (result.status !== 0)
-    throw new Error(`generated example failed:
-${result.stderr || result.stdout}`);
-  return result.stdout;
-}
-
-// compile is pure with respect to the repository: it reads one source .n3 file
-// and returns all generated text.  The generate/render commands decide whether
-// those artefacts are written to disk or executed from a temporary directory.
-function compile(n3Path, options = {}) {
-  const absolute = path.resolve(n3Path);
-  const n3 = readText(absolute);
-  const name = options.name || slugify(path.basename(absolute));
-  const title = parseHeader(n3, titleFromSlug(name)).title;
-  const header = parseHeader(n3, titleFromSlug(name));
-  const program = parseN3(n3);
-  const stats = compilationStats(program);
-  stats.sourceHash = sha256(n3);
-  const inputTrig = generateInputTrig(absolute, name, title, header, stats, program);
-  const doc = generateDoc(name, title, header, stats);
-  const exampleJs = generateExampleJs(name, title, program, stats, doc);
-  return { name, title, program, stats, inputTrig, exampleJs, doc };
-}
-
-function inputNameCandidates(name) {
-  const out = [name];
-  const dashed = name.replace(/_/g, '-');
-  if (!out.includes(dashed)) out.push(dashed);
-  return out;
-}
-function inputFactsFromTrigText(trig) {
-  const m = String(trig || '').match(/\bsee:inputFacts\s+([0-9]+)\s*\./);
-  return m ? Number.parseInt(m[1], 10) : null;
-}
-function inputCandidateScore(file) {
-  try {
-    const stat = fs.statSync(file);
-    const text = fs.readFileSync(file, 'utf8');
-    const facts = inputFactsFromTrigText(text);
-    return { facts: facts ?? -1, size: stat.size };
-  } catch (_) {
-    return { facts: -1, size: -1 };
-  }
-}
-// Rules-only examples can reuse an externally authored TriG evidence file.  The
-// scoring prefers the candidate that advertises the most input facts, then the
-// larger file, so dashed public datasets such as path-discovery.trig win over
-// empty generated placeholders.
-function existingExternalInputName(name) {
-  const candidates = inputNameCandidates(name)
-    .map((base, order) => ({ base, order, file: path.join(INPUT_DIR, `${base}.trig`) }))
-    .filter((c) => fs.existsSync(c.file))
-    .map((c) => ({ ...c, score: inputCandidateScore(c.file) }));
-  if (!candidates.length) return null;
-  candidates.sort((a, b) => b.score.facts - a.score.facts || b.score.size - a.score.size || a.order - b.order);
-  return candidates[0].base;
-}
-// generate writes the checked-in artefacts and immediately executes the new
-// example with --write so examples/output and examples/doc remain in sync.
-function generate(n3Path, options = {}) {
-  const compiled = compile(n3Path, options);
-  const jsFile = path.join(EXAMPLES_DIR, `${compiled.name}.js`);
-  const externalInputName = compiled.stats.facts === 0 ? existingExternalInputName(compiled.name) : null;
-  const inputBaseName = externalInputName || compiled.name;
-  const inputTrigFile = path.join(INPUT_DIR, `${inputBaseName}.trig`);
-  const outputFile = path.join(OUTPUT_DIR, `${compiled.name}.md`);
-  const docFile = path.join(DOC_DIR, `${compiled.name}.md`);
-  if (!options.force) {
-    const protectedInputs = externalInputName ? [] : [inputTrigFile];
-    for (const file of [outputFile, docFile, ...protectedInputs]) {
-      if (fs.existsSync(file))
-        throw new Error(`${path.relative(ROOT, file)} already exists; pass --force to overwrite`);
-    }
-  }
-  writeText(jsFile, compiled.exampleJs, options.force);
-  fs.chmodSync(jsFile, 0o755);
-  if (!externalInputName) writeText(inputTrigFile, compiled.inputTrig, true);
-  runNode(jsFile, ROOT, ['--write']);
-  const output = readText(outputFile);
-  return { ...compiled, files: { jsFile, inputTrigFile, outputFile, docFile }, output };
-}
-
-// render is the non-mutating companion to generate.  It compiles into a small
-// temporary /see-shaped tree, runs the generated example, and returns Markdown.
-function render(n3Path) {
-  const tmpName = `_see_tmp_${process.pid}`;
-  const compiled = compile(n3Path, { name: tmpName });
-  const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'see-compile-'));
-  const tmpSeeDir = path.join(tmpDir, 'see');
-  const examplesDir = path.join(tmpSeeDir, 'examples');
-  ensureDir(path.join(examplesDir, 'input'));
-  fs.copyFileSync(path.join(EXAMPLES_DIR, '_see.js'), path.join(examplesDir, '_see.js'));
-  fs.copyFileSync(path.join(ROOT, 'see.js'), path.join(tmpSeeDir, 'see.js'));
-  const jsFile = path.join(examplesDir, `${tmpName}.js`);
-  const trigFile = path.join(examplesDir, 'input', `${tmpName}.trig`);
-  fs.writeFileSync(jsFile, compiled.exampleJs, 'utf8');
-  fs.writeFileSync(trigFile, compiled.inputTrig, 'utf8');
-  try {
-    return runNode(jsFile, tmpSeeDir);
-  } finally {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-  }
-}
-
-function parseArgs(argv) {
-  const args = [...argv];
-  const opts = { force: false };
-  const command = args.shift();
-  const file = args.shift();
-  while (args.length) {
-    const arg = args.shift();
-    if (arg === '--force') opts.force = true;
-    else if (arg === '--name') opts.name = slugify(args.shift());
-    else throw new Error(`Unknown argument: ${arg}`);
-  }
-  return { command, file, opts };
-}
-
-function main() {
-  const { command, file, opts } = parseArgs(process.argv.slice(2));
-  if (!command || command === 'help' || command === '--help') {
-    console.log(usage());
-    return;
-  }
-  if (!file) throw new Error(`Missing <example.n3>\n\n${usage()}`);
-  if (command === 'generate') {
-    const result = generate(file, opts);
-    console.log(`generated ${path.relative(ROOT, result.files.jsFile)}`);
-    if (result.files.inputTrigFile) console.log(`generated ${path.relative(ROOT, result.files.inputTrigFile)}`);
-    console.log(`generated ${path.relative(ROOT, result.files.outputFile)}`);
-    console.log(`generated ${path.relative(ROOT, result.files.docFile)}`);
-    console.log(
-      `compiled ${result.stats.facts} facts, ${result.stats.rules} forward rules, ${result.stats.backwardRules} backward rules, ${result.stats.fuses} fuses, ${result.stats.queries} queries`,
-    );
-  } else if (command === 'render') {
-    process.stdout.write(render(file));
-  } else if (command === 'inspect') {
-    const result = compile(file, opts);
-    console.log(
-      `OK ${result.name}: ${result.stats.facts} facts, ${result.stats.rules} forward rules, ${result.stats.backwardRules} backward rules, ${result.stats.fuses} fuses, ${result.stats.queries} queries`,
-    );
-  } else {
-    throw new Error(`Unknown command: ${command}\n\n${usage()}`);
-  }
-}
-
-if (require.main === module) {
-  try {
-    main();
-  } catch (err) {
-    console.error(err.stack || err.message);
-    process.exit(1);
-  }
-}
-
-module.exports = { compile, generate, parseN3, render, tokenize };

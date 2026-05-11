@@ -9556,45 +9556,62 @@ function stripQuotes(lex) {
 }
 
 
-// RDF 1.2 triple terms use <<( s p o )>>. Eyeling's N3 engine does not
-// implement a new RDF 1.2 term kind; instead, it accepts this syntax as a
-// compatibility surface and normalizes it to the existing N3 singleton quoted
-// graph term { s p o }. This keeps ordinary N3 reasoning unchanged while making
-// RDF 1.2 examples parseable by the current engine.
-function normalizeRdf12TripleTerms(inputText) {
-  const text = String(inputText ?? '');
-  let i = 0;
+// RDF/TriG compatibility is a small syntax-normalization layer, not a new
+// reasoning model.  Eyeling remains N3 internally:
+//   - RDF 1.2 triple terms <<( s p o )>> become singleton graph terms { s p o }.
+//   - TriG named graph blocks g { ... } become g log:nameOf { ... } .
+//   - A top-level default graph block { ... } is unwrapped into ordinary triples.
+// This mirrors tools/n3gen.js and keeps all downstream parsing/reasoning N3-only.
+const LOG_NAME_OF_IRI = '<http://www.w3.org/2000/10/swap/log#nameOf>';
 
-  function startsAt(needle, at = i) {
-    return text.startsWith(needle, at);
+function normalizeRdfCompatibility(inputText) {
+  let text = String(inputText ?? '');
+
+  // Fast path: most Eyeling inputs are ordinary N3 and do not need RDF/TriG
+  // surface-syntax normalization. Avoid scanning large files character-by-character
+  // unless they actually contain RDF 1.2 triple terms, VERSION directives, or a
+  // plausible top-level TriG named graph block.
+  const hasTripleTerms = text.includes('<<(');
+  const hasVersionDirective = /^\s*(?:@version|VERSION)\s+(["'])1\.2\1\s*\.?\s*(?:#.*)?$/im.test(text);
+  const hasNamedGraphCandidate = /(?:^|[.\r\n])\s*(?:GRAPH\s+)?(?:<[^>\r\n]*>|_:[A-Za-z][A-Za-z0-9_-]*|[A-Za-z][A-Za-z0-9_-]*:[^\s{};,.()[\]]*)\s*\{/m.test(text);
+
+  if (!hasTripleTerms && !hasVersionDirective && !hasNamedGraphCandidate) return text;
+
+  function isWordChar(ch) {
+    return ch != null && /[A-Za-z0-9_:-]/.test(ch);
   }
 
-  function readString() {
-    const quote = text[i];
+  function startsWordAt(s, word, at) {
+    return s.startsWith(word, at) && !isWordChar(s[at - 1]) && !isWordChar(s[at + word.length]);
+  }
+
+  function readStringAt(s, at) {
+    const quote = s[at];
+    let i = at;
     let out = quote;
-    const long = text.startsWith(quote.repeat(3), i);
+    const long = s.startsWith(quote.repeat(3), i);
     if (long) {
       out = quote.repeat(3);
       i += 3;
-      while (i < text.length) {
-        if (text.startsWith(quote.repeat(3), i)) {
+      while (i < s.length) {
+        if (s.startsWith(quote.repeat(3), i)) {
           out += quote.repeat(3);
           i += 3;
-          return out;
+          return { text: out, end: i };
         }
-        if (text[i] === '\\' && i + 1 < text.length) {
-          out += text.slice(i, i + 2);
+        if (s[i] === '\\' && i + 1 < s.length) {
+          out += s.slice(i, i + 2);
           i += 2;
         } else {
-          out += text[i++];
+          out += s[i++];
         }
       }
-      return out;
+      return { text: out, end: i };
     }
     i += 1;
     let escaped = false;
-    while (i < text.length) {
-      const ch = text[i++];
+    while (i < s.length) {
+      const ch = s[i++];
       out += ch;
       if (escaped) {
         escaped = false;
@@ -9604,61 +9621,234 @@ function normalizeRdf12TripleTerms(inputText) {
         break;
       }
     }
-    return out;
+    return { text: out, end: i };
   }
 
-  function readIri() {
-    let out = text[i++];
-    while (i < text.length) {
-      const ch = text[i++];
+  function readIriAt(s, at) {
+    let i = at + 1;
+    let out = '<';
+    while (i < s.length) {
+      const ch = s[i++];
       out += ch;
       if (ch === '>') break;
     }
-    return out;
+    return { text: out, end: i };
   }
 
-  function convertUntil(stopToken) {
-    let out = '';
-    while (i < text.length) {
-      if (stopToken && startsAt(stopToken)) {
-        i += stopToken.length;
-        return out;
+  function convertTripleTerms(s) {
+    let i = 0;
+
+    function startsAt(needle, at = i) {
+      return s.startsWith(needle, at);
+    }
+
+    function convertUntil(stopToken) {
+      let out = '';
+      while (i < s.length) {
+        if (stopToken && startsAt(stopToken)) {
+          i += stopToken.length;
+          return out;
+        }
+        if (startsAt('<<(')) {
+          i += 3;
+          out += '{ ' + convertUntil(')>>').trim() + ' }';
+          continue;
+        }
+        const ch = s[i];
+        if (ch === '"' || ch === "'") {
+          const str = readStringAt(s, i);
+          out += str.text;
+          i = str.end;
+          continue;
+        }
+        if (ch === '<') {
+          const iri = readIriAt(s, i);
+          out += iri.text;
+          i = iri.end;
+          continue;
+        }
+        if (ch === '#') {
+          while (i < s.length) {
+            const c = s[i++];
+            out += c;
+            if (c === '\n' || c === '\r') break;
+          }
+          continue;
+        }
+        out += ch;
+        i += 1;
       }
-      if (startsAt('<<(')) {
-        i += 3;
-        out += '{ ' + convertUntil(')>>').trim() + ' }';
+      if (stopToken) throw new N3SyntaxError(`Unterminated RDF 1.2 triple term, expected ${stopToken}`);
+      return out;
+    }
+
+    return convertUntil(null);
+  }
+
+  function stripVersionDirectives(s) {
+    return s.replace(/^\s*(?:@version|VERSION)\s+(["'])1\.2\1\s*\.?\s*(?:#.*)?$/gim, '');
+  }
+
+  function skipWsAndComments(s, at) {
+    let i = at;
+    while (i < s.length) {
+      if (/\s/.test(s[i])) {
+        i += 1;
         continue;
       }
-      const ch = text[i];
+      if (s[i] === '#') {
+        while (i < s.length && s[i] !== '\n' && s[i] !== '\r') i += 1;
+        continue;
+      }
+      break;
+    }
+    return i;
+  }
+
+  function readTermAt(s, at) {
+    if (s[at] === '<') return readIriAt(s, at);
+    let i = at;
+    while (i < s.length && !/\s/.test(s[i]) && !'{}[](),;.'.includes(s[i])) i += 1;
+    if (i === at) return null;
+    const value = s.slice(at, i);
+    if (!value || value.startsWith('@')) return null;
+    return { text: value, end: i };
+  }
+
+  function readBalancedBlock(s, at) {
+    if (s[at] !== '{') return null;
+    let i = at;
+    let depth = 0;
+    while (i < s.length) {
+      const ch = s[i];
       if (ch === '"' || ch === "'") {
-        out += readString();
+        i = readStringAt(s, i).end;
         continue;
       }
       if (ch === '<') {
-        out += readIri();
+        i = readIriAt(s, i).end;
         continue;
       }
       if (ch === '#') {
-        while (i < text.length) {
-          const c = text[i++];
-          out += c;
-          if (c === '\n' || c === '\r') break;
-        }
+        while (i < s.length && s[i] !== '\n' && s[i] !== '\r') i += 1;
         continue;
       }
-      out += ch;
+      if (ch === '{') depth += 1;
+      if (ch === '}') {
+        depth -= 1;
+        i += 1;
+        if (depth === 0) return { text: s.slice(at, i), inner: s.slice(at + 1, i - 1), end: i };
+        continue;
+      }
       i += 1;
     }
-    if (stopToken) throw new N3SyntaxError(`Unterminated RDF 1.2 triple term, expected ${stopToken}`);
+    throw new N3SyntaxError('Unterminated RDF/TriG graph block, expected }');
+  }
+
+  function normalizeNamedGraphs(s) {
+    let out = '';
+    let i = 0;
+    let statementStart = true;
+    let braceDepth = 0;
+
+    while (i < s.length) {
+      if (statementStart && braceDepth === 0) {
+        const start = i;
+        const termStart = skipWsAndComments(s, i);
+        out += s.slice(i, termStart);
+        i = termStart;
+
+        // Top-level TriG default graph block: { ... } .
+        if (s[i] === '{') {
+          const block = readBalancedBlock(s, i);
+          const after = skipWsAndComments(s, block.end);
+          if (after >= s.length || s[after] === '.') {
+            out += block.inner.trim();
+            if (block.inner.trim() && !/\n$/.test(block.inner)) out += '\n';
+            i = after < s.length && s[after] === '.' ? after + 1 : after;
+            statementStart = true;
+            continue;
+          }
+          // It is an ordinary N3 formula subject, not a TriG default graph.
+          out += block.text;
+          i = block.end;
+          statementStart = false;
+          continue;
+        }
+
+        let graphKeyword = false;
+        if (startsWordAt(s, 'GRAPH', i)) {
+          graphKeyword = true;
+          i += 'GRAPH'.length;
+          i = skipWsAndComments(s, i);
+        }
+
+        const term = readTermAt(s, i);
+        if (term && !['@prefix', '@base', 'PREFIX', 'BASE', 'VERSION'].includes(term.text)) {
+          const afterTerm = skipWsAndComments(s, term.end);
+          if (s[afterTerm] === '{') {
+            const block = readBalancedBlock(s, afterTerm);
+            const afterBlock = skipWsAndComments(s, block.end);
+            out += `${term.text} ${LOG_NAME_OF_IRI} ${block.text} .`;
+            i = afterBlock < s.length && s[afterBlock] === '.' ? afterBlock + 1 : block.end;
+            statementStart = true;
+            continue;
+          }
+        }
+
+        // Not TriG named-graph syntax after all; copy the first character and
+        // continue as ordinary N3.
+        if (graphKeyword) {
+          out += 'GRAPH ';
+          statementStart = false;
+        } else if (i < s.length) {
+          const copied = s[i++];
+          out += copied;
+          if (!/\s/.test(copied)) statementStart = false;
+        }
+      } else {
+        const ch = s[i];
+        out += ch;
+        if (ch === '"' || ch === "'") {
+          const str = readStringAt(s, i);
+          out = out.slice(0, -1) + str.text;
+          i = str.end;
+          continue;
+        }
+        if (ch === '<') {
+          const iri = readIriAt(s, i);
+          out = out.slice(0, -1) + iri.text;
+          i = iri.end;
+          continue;
+        }
+        if (ch === '#') {
+          i += 1;
+          while (i < s.length) {
+            const c = s[i++];
+            out += c;
+            if (c === '\n' || c === '\r') break;
+          }
+          continue;
+        }
+        if (ch === '{') braceDepth += 1;
+        else if (ch === '}' && braceDepth > 0) braceDepth -= 1;
+        else if (ch === '.' && braceDepth === 0) statementStart = true;
+        else if (!/\s/.test(ch)) statementStart = false;
+        i += 1;
+      }
+    }
+
     return out;
   }
 
-  const converted = convertUntil(null);
-  return converted.replace(/^\s*(?:@version|VERSION)\s+(["'])1\.2\1\s*\.?\s*(?:#.*)?$/gim, '');
+  if (hasTripleTerms) text = convertTripleTerms(text);
+  if (hasVersionDirective) text = stripVersionDirectives(text);
+  if (hasVersionDirective || hasNamedGraphCandidate) text = normalizeNamedGraphs(text);
+  return text;
 }
 
 function lex(inputText) {
-  inputText = normalizeRdf12TripleTerms(inputText);
+  inputText = normalizeRdfCompatibility(inputText);
   const chars = Array.from(inputText);
   const n = chars.length;
   let i = 0;

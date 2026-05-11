@@ -237,7 +237,9 @@ The lexer turns the input into tokens like:
 
 Parsing becomes dramatically simpler because tokenization already decided where strings end, where numbers are, and so on.
 
-One compatibility wrinkle is handled in the lexer before normal parsing: RDF 1.2 triple terms written as `<<( s p o )>>` are accepted and normalized to Eyeling's existing singleton quoted-formula term `{ s p o }`. A leading `VERSION "1.2"` or `@version "1.2"` directive is ignored for the same reason. This keeps Eyeling's N3 model stable while allowing small RDF 1.2 triple-term inputs to run through the existing `GraphTerm` machinery. For example:
+One compatibility wrinkle is handled in the lexer before normal parsing: selected RDF/TriG surface syntax is normalized to ordinary N3 graph terms. Eyeling remains an N3 reasoner; this is syntax compatibility, not a separate RDF dataset reasoning model.
+
+RDF 1.2 triple terms written as `<<( s p o )>>` are normalized to Eyeling's existing singleton quoted-formula term `{ s p o }`. A leading `VERSION "1.2"` or `@version "1.2"` directive is ignored for the same reason. For example:
 
 ```n3
 :observation rdf:reifies <<( :sensor :reports :overheating )>> .
@@ -249,7 +251,23 @@ is treated internally like:
 :observation rdf:reifies { :sensor :reports :overheating } .
 ```
 
-This is intentionally a compatibility translation, not a new full RDF 1.2 parser layer. Nested or more exotic future triple-term forms should be added only if they can be mapped cleanly onto Eyeling's quoted-formula term model.
+RDF/TriG named graph blocks are normalized in the same style as `tools/n3gen`:
+
+```trig
+:factoryDataset {
+  :observation rdf:reifies <<( :sensor :reports :overheating )>> .
+}
+```
+
+is treated internally like:
+
+```n3
+:factoryDataset log:nameOf {
+  :observation rdf:reifies { :sensor :reports :overheating } .
+} .
+```
+
+This keeps Eyeling's N3 model stable while allowing small RDF 1.1/RDF 1.2 dataset-shaped inputs to run through the existing `GraphTerm` machinery. More exotic future RDF forms should be added only if they can be mapped cleanly onto Eyeling's quoted-formula term model.
 
 ### 4.2 Parsing triples, with Turtle-style convenience
 
@@ -3849,7 +3867,9 @@ This vocabulary is deliberately more precise than a generic “result”. It say
 
 Generated SEE runners read their committed `.trig` input directly. Earlier versions used an intermediate `.n3` conversion step, but the current design keeps the evidence in TriG and lets the runner parse that committed input. This matters for examples that are closer to RDF data exchange than to hand-written N3 rule files.
 
-SEE also includes a triple-term example. Its input can contain RDF 1.2 triple terms such as:
+SEE includes RDF compatibility examples. The `triple_terms` example uses RDF 1.2 triple terms, and the `rdf_dataset` example combines ordinary default-graph triples, an RDF/TriG named graph block, and RDF 1.2 triple terms.
+
+A triple-term input can contain:
 
 ```trig
 VERSION "1.2"
@@ -3863,7 +3883,23 @@ Eyeling accepts this surface form by translating the triple term to a singleton 
 :observation rdf:reifies { :sensor :reports :overheating } .
 ```
 
-That is enough for the SEE example to demonstrate RDF 1.2-style triple terms as input and output without forcing Eyeling to implement a separate full RDF 1.2 syntax model.
+The dataset example also accepts named graph syntax and normalizes it to `log:nameOf` graph terms, matching `tools/n3gen`:
+
+```trig
+:factoryDataset {
+  :observation rdf:reifies <<( :sensor :reports :overheating )>> .
+}
+```
+
+is compiled through the same internal N3 shape:
+
+```n3
+:factoryDataset log:nameOf {
+  :observation rdf:reifies { :sensor :reports :overheating } .
+} .
+```
+
+That is enough for SEE to demonstrate RDF 1.1/RDF 1.2-style dataset input and triple-term output without forcing Eyeling to implement a separate full RDF dataset model.
 
 ### L.4 Generation and tests
 
@@ -3876,7 +3912,7 @@ npm run test:see
 
 `npm run generate` refreshes the generated SEE artifacts from `see/examples/n3/*.n3`. `npm run test:see` runs every generated SEE example and compares its Markdown output with the committed reference output.
 
-In the full test suite, this means SEE is not just documentation. It is executable regression coverage for a broad range of Eyeling behavior: forward rules, backward rules, builtins, fuses, queries, RDF lists, formula-valued terms, generated explanations, and RDF 1.2 triple-term compatibility.
+In the full test suite, this means SEE is not just documentation. It is executable regression coverage for a broad range of Eyeling behavior: forward rules, backward rules, builtins, fuses, queries, RDF lists, formula-valued terms, generated explanations, RDF 1.2 triple-term compatibility, and RDF/TriG dataset-syntax compatibility.
 
 ### L.5 When to add a SEE example
 
