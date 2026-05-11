@@ -2573,6 +2573,46 @@ _:b a ex:Person ; ex:name "B" .
   },
 
   {
+    name: 'RDF mode accepts PREFIX and reified triple terms with reifiers',
+    opt: { proofComments: false, rdf: true },
+    input: `VERSION "1.2"
+
+PREFIX : <http://www.example.org/>
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+<<:employee38 :jobTitle "Assistant Designer" ~ _:id>> :accordingTo :employee22 .
+
+{ ?S ?P ?O } log:query { ?S ?P ?O } .
+`,
+    expect: [
+      /<<\(\s*:employee38\s+:jobTitle\s+"Assistant Designer"\s*\)>>\s+:accordingTo\s+:employee22\s*\./m,
+      /_:id\s+(?:rdf:reifies|<http:\/\/www\.w3\.org\/1999\/02\/22-rdf-syntax-ns#reifies>)\s+<<\(\s*:employee38\s+:jobTitle\s+"Assistant Designer"\s*\)>>\s*\./m,
+    ],
+  },
+
+  {
+    name: 'RDF mode accepts RDF 1.2 annotation syntax after objects',
+    opt: { proofComments: false, rdf: true },
+    input: `VERSION "1.2"
+
+PREFIX : <http://example.com/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+:a :name "Alice" ~ :t {| :statedBy :bob ; :recorded "2021-07-07"^^xsd:date |} .
+
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+
+{ ?S ?P ?O } log:query { ?S ?P ?O }.
+`,
+    expect: [
+      /:a\s+:name\s+"Alice"\s*\./m,
+      /:t\s+(?:rdf:reifies|<http:\/\/www\.w3\.org\/1999\/02\/22-rdf-syntax-ns#reifies>)\s+<<\(\s*:a\s+:name\s+"Alice"\s*\)>>\s*\./m,
+      /:t\s+:statedBy\s+:bob\s*\./m,
+      /:t\s+:recorded\s+"2021-07-07"\^\^xsd:date\s*\./m,
+    ],
+  },
+
+  {
     name: 'RDF mode serializes only valid triple terms as RDF 1.2 triple terms',
     opt: { proofComments: false, rdf: true },
     input: `@prefix log: <http://www.w3.org/2000/10/swap/log#> .

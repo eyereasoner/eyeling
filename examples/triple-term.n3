@@ -1,7 +1,0 @@
-@prefix : <http://www.example.org/> .
-@prefix skolem: <https://eyereasoner.github.io/.well-known/genid/3ce038d5-ea5f-5c1e-8635-dcdabec19d5f#> .
-@prefix log: <http://www.w3.org/2000/10/swap/log#> .
-
-skolem:e38 :familyName "Smith" .
-_:anno log:nameOf { skolem:e38 :jobTitle "Designer" . } .
-_:anno :accordingTo _:e22 .

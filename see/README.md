@@ -18,7 +18,7 @@ Each example starts from a Notation3 source and is compiled by `see.js` into a s
 
 The trust gate is executable verification. If a required fact is missing, the program fails instead of emitting an unsupported entailment.
 
-The `triple_terms` and `rdf_dataset` examples use RDF 1.2 `<<( ... )>>` triple-term syntax. Eyeling accepts that syntax only with `-r, --rdf`, where it normalizes triple terms to existing N3 singleton graph terms `{ ... }` and prints feasible output graph terms back as RDF 1.2 triple terms. The `rdf_dataset` example also uses an RDF/TriG named graph block, which RDF compatibility mode normalizes to the N3 `log:nameOf { ... }` graph-term shape and prints back as a TriG named graph block where feasible; SEE keeps the committed `.trig` input and formal output in RDF 1.2/TriG form.
+The `triple_terms` and `rdf_dataset` examples use RDF 1.2 triple-term syntax, including `<<( ... )>>` and the reified `<<s p o ~ r>>` form. Eyeling accepts that syntax only with `-r, --rdf`, where it normalizes triple terms to existing N3 singleton graph terms `{ ... }` and prints feasible output graph terms back as RDF 1.2 triple terms. The `rdf_dataset` example also uses an RDF/TriG named graph block, which RDF compatibility mode normalizes to the N3 `log:nameOf { ... }` graph-term shape and prints back as a TriG named graph block where feasible; SEE keeps the committed `.trig` input and formal output in RDF 1.2/TriG form.
 
 
 ## Run

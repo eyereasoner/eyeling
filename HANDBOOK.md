@@ -239,7 +239,7 @@ Parsing becomes dramatically simpler because tokenization already decided where 
 
 By default, Eyeling parses ordinary N3. Selected RDF/TriG surface syntax is accepted only when RDF compatibility is explicitly enabled with `eyeling -r file.trig`, `eyeling --rdf file.trig`, or API option `{ rdf: true }`. In that mode, the lexer normalizes RDF/TriG input syntax to ordinary N3 graph terms before normal parsing, and the printer emits RDF/TriG-compatible output where feasible. Eyeling remains an N3 reasoner; this is syntax compatibility, not a separate RDF dataset reasoning model.
 
-In RDF compatibility mode, RDF 1.2 triple terms written as `<<( s p o )>>` are normalized to Eyeling's existing singleton quoted-formula term `{ s p o }`. A leading `VERSION "1.2"` or `@version "1.2"` directive is ignored for the same reason. On output, `--rdf` converts a singleton graph term back to `<<( ... )>>` only when its inner triple is valid as an RDF triple term; otherwise it stays in N3 graph-term form. It also prints `log:nameOf` graph-term triples back as TriG named graph blocks. For example:
+In RDF compatibility mode, RDF 1.2 triple terms written as `<<( s p o )>>`, plus the reified triple form `<<s p o ~ r>>`, are normalized to Eyeling's existing singleton quoted-formula term `{ s p o }`. A reifier `r` is preserved as `r rdf:reifies { s p o }`. A leading `VERSION "1.2"` or `@version "1.2"` directive is ignored for the same reason. On output, `--rdf` converts a singleton graph term back to `<<( ... )>>` only when its inner triple is valid as an RDF triple term; otherwise it stays in N3 graph-term form. It also prints `log:nameOf` graph-term triples back as TriG named graph blocks. For example:
 
 ```n3
 :observation rdf:reifies <<( :sensor :reports :overheating )>> .
@@ -2594,7 +2594,7 @@ Quoted graphs/formulas use `{ ... }`. Inside a quoted formula, directive scope m
 
 - `@prefix/@base` and `PREFIX/BASE` directives may appear at top level **or inside `{ ... }`**, and apply to the formula they occur in (formula-local scoping).
 
-With `-r, --rdf` / `{ rdf: true }`, Eyeling also accepts the RDF 1.2 triple-term surface form `<<( s p o )>>` as a compatibility spelling for a singleton quoted formula `{ s p o }`. In the same mode, feasible singleton graph terms are printed back as RDF 1.2 triple terms, while invalid cases such as a literal subject remain ordinary N3 graph terms. This is useful for inputs that use `rdf:reifies` or other predicates whose objects are RDF 1.2 triple terms, while keeping the default language and the rest of Eyeling on its N3 formula-term model.
+With `-r, --rdf` / `{ rdf: true }`, Eyeling also accepts RDF 1.2 triple-term surface forms such as `<<( s p o )>>` and `<<s p o ~ r>>` as compatibility spellings for a singleton quoted formula `{ s p o }`. In the same mode, feasible singleton graph terms are printed back as RDF 1.2 triple terms, while invalid cases such as a literal subject remain ordinary N3 graph terms. This is useful for inputs that use `rdf:reifies` or other predicates whose objects are RDF 1.2 triple terms, while keeping the default language and the rest of Eyeling on its N3 formula-term model.
 
 For the formal grammar, see the N3 spec grammar:
 
