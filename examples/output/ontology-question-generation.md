@@ -1,6 +1,11 @@
 # ontology-question-generation  
 
-This example uses N3 rules to generate candidate competency questions from OWL/RDFS ontology patterns. The ontology lives in `examples/input/ontology-question-generation.trig`; the rules derive structured `q:CompetencyQuestion` resources and render this Markdown with `log:outputString`.  
+This example uses N3 rules to generate candidate competency questions from OWL/RDFS ontology patterns. The rules derive structured `q:CompetencyQuestion` resources and render this Markdown with `log:outputString`.  
+
+## Source files  
+
+- [N3 rules](../ontology-question-generation.n3)  
+- [Input ontology TriG](../input/ontology-question-generation.trig)  
 
 ## Detected competency questions  
 

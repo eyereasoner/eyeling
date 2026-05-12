@@ -25,7 +25,10 @@
     log:outputString "# ontology-question-generation\n\n".
 
 <urn:eyeling:oqg:010:intro>
-    log:outputString "This example uses N3 rules to generate candidate competency questions from OWL/RDFS ontology patterns. The ontology lives in `examples/input/ontology-question-generation.trig`; the rules derive structured `q:CompetencyQuestion` resources and render this Markdown with `log:outputString`.\n\n".
+    log:outputString "This example uses N3 rules to generate candidate competency questions from OWL/RDFS ontology patterns. The rules derive structured `q:CompetencyQuestion` resources and render this Markdown with `log:outputString`.\n\n".
+
+<urn:eyeling:oqg:015:sources>
+    log:outputString "## Source files\n\n- [N3 rules](../ontology-question-generation.n3)\n- [Input ontology TriG](../input/ontology-question-generation.trig)\n\n".
 
 <urn:eyeling:oqg:020:patterns>
     log:outputString "## Detected competency questions\n\n".
