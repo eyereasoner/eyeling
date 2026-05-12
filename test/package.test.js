@@ -69,23 +69,6 @@ function stripTrailingWhitespace(text) {
     .join('\n');
 }
 
-function markdownizeOutput(text, inputFile) {
-  const stem = path.basename(inputFile, path.extname(inputFile));
-  const body = stripTrailingWhitespace(text)
-    .trim()
-    .split('\n')
-    .filter((_, i, lines) => lines.length !== 1 || lines[0].length > 0)
-    .map((line) => {
-      const m = line.match(/^={2,}\s*(.*?)\s*={2,}\s*$/);
-      return m ? `## ${m[1].trim()}` : line;
-    })
-    .join('\n')
-    .trim();
-
-  if (body.startsWith('# ')) return `${body}\n`;
-  return body ? `# ${stem}\n\n${body}\n` : `# ${stem}\n`;
-}
-
 function normalizeTextForCompare(text) {
   return stripTrailingWhitespace(text).trim();
 }

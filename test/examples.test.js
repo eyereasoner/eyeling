@@ -41,23 +41,6 @@ function stripTrailingWhitespace(text) {
     .join('\n');
 }
 
-function markdownizeOutput(text, inputFile) {
-  const stem = path.basename(inputFile, path.extname(inputFile));
-  const body = stripTrailingWhitespace(text)
-    .trim()
-    .split('\n')
-    .filter((_, i, lines) => lines.length !== 1 || lines[0].length > 0)
-    .map((line) => {
-      const m = line.match(/^={2,}\s*(.*?)\s*={2,}\s*$/);
-      return m ? `## ${m[1].trim()}` : line;
-    })
-    .join('\n')
-    .trim();
-
-  if (body.startsWith('# ')) return `${body}\n`;
-  return body ? `# ${stem}\n\n${body}\n` : `# ${stem}\n`;
-}
-
 function normalizeTextForCompare(text) {
   return stripTrailingWhitespace(text).trim();
 }
@@ -77,7 +60,7 @@ function normalizeN3ForCompare(n3Text) {
     .join('\n');
 }
 
-function normalizeForCompare(text, expectedPath, inputFile, generated = false) {
+function normalizeForCompare(text, expectedPath) {
   const ext = path.extname(expectedPath);
   const value = text;
   if (ext === '.md') return normalizeMarkdownForCompare(value);
@@ -282,8 +265,8 @@ function main() {
       const generatedText = fs.readFileSync(generatedPath, 'utf8');
       if (expectedText == null) throw new Error('missing expected output');
       diffOk =
-        normalizeForCompare(expectedText, expectedPath, file, false) ===
-        normalizeForCompare(generatedText, expectedPath, file, true);
+        normalizeForCompare(expectedText, expectedPath) ===
+        normalizeForCompare(generatedText, expectedPath);
     } catch {
       diffOk = false;
     }
