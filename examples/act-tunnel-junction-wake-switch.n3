@@ -18,7 +18,7 @@
 @prefix arc: <https://example.org/arc#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 
-:000_md_title log:outputString "# act-tunnel-junction-wake-switch\n\n" .
+:000_md_title log:outputString "# act-tunnel-junction-wake-switch\n\n## Source files\n\n- [N3 rules](../act-tunnel-junction-wake-switch.n3)\n\n" .
 
 :case a arc:Case ;
   arc:question "Can a tunnel-junction wake switch trigger a low-bias leak alarm in a regime where a conventional PN junction cannot?" .
@@ -204,14 +204,14 @@
 {
   :out log:outputString """ACT tunnel-junction wake switch
 
-Answer
+## Answer
 YES for the tunnel junction.
 NO for the conventional low-bias PN junction in the same wake-switch regime.
 
-Reason Why
+## Reason Why
 The tunnel junction is modeled as a heavily doped narrow PN junction with overlapping states, so quantum barrier transfer is possible. That makes sub-threshold current possible in the low-forward-bias regime, which in turn makes ultra-low-bias switching possible for the wake circuit. Because the device is also scanned through a peak-to-valley window, a negative differential response is possible as well. By contrast, the conventional junction lacks the structural conditions for the same transfer mode, so it cannot deliver the same low-bias switching task in this case.
 
-Check
+## Check
 C1  OK - the tunnel junction can support quantum barrier transfer
 C2  OK - the tunnel junction is classified as tunneling-dominant
 C3  OK - the tunnel junction can deliver sub-threshold current

@@ -17,7 +17,7 @@
 @prefix math: <http://www.w3.org/2000/10/swap/math#> .
 @prefix string: <http://www.w3.org/2000/10/swap/string#> .
 
-:000_md_title log:outputString "# complex-matrix-stability\n\n" .
+:000_md_title log:outputString "# complex-matrix-stability\n\n## Source files\n\n- [N3 rules](../complex-matrix-stability.n3)\n\n" .
 
 # --------------
 # Editable input
@@ -256,7 +256,7 @@
     "Complex Matrix Stability — ARC-style
 
 "
-    "Answer
+    "## Answer
 "
     "We compare three diagonal 2x2 complex matrices for discrete-time stability: "
     "A_unstable = " ?MuS ", A_stable = " ?MsS ", and A_damped = " ?MdS ". "
@@ -264,7 +264,7 @@
     "So A_unstable is unstable, A_stable is marginally stable, and A_damped is damped.
 
 "
-    "Reason Why
+    "## Reason Why
 "
     "For a discrete-time linear system x_{k+1} = A x_k, the eigenvalues of A govern the behaviour of the modes. "
     "Because these matrices are diagonal, the eigenvalues are just the diagonal entries. "
@@ -273,7 +273,7 @@
     "Here the diagonal entries give radii 2, 1, and 0 respectively, which explains the three classifications.
 
 "
-    "Check
+    "## Check
 "
     "C1 " ?C1 "
 "

@@ -1,5 +1,9 @@
 # odrl-dpv-ehds-risk-ranked  
 
+## Source files  
+
+- [N3 rules](../odrl-dpv-ehds-risk-ranked.n3)  
+
 ## Ranked DPV Risk Report (EHDS-aligned)  
 Agreement: EHDS Secondary Use Agreement (example)  
 Profile: Example patient profile (EHDS rights expectations)  

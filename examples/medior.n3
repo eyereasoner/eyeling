@@ -366,7 +366,7 @@
 # ARC rendering through log:outputString
 # --------------------------------------
 
-:out01 log:outputString "# medior\n\n## Answer\n" .
+:out01 log:outputString "# medior\n\n## Source files\n\n- [N3 rules](../medior.n3)\n\n## Answer\n" .
 :out02 log:outputString "Name: Medior\n" .
 :out03 log:outputString "Region: Flanders\n" .
 :out04 log:outputString "Metric: post_discharge_coordination_priority\n" .

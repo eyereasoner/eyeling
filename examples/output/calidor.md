@@ -1,5 +1,9 @@
 # calidor  
 
+## Source files  
+
+- [N3 rules](../calidor.n3)  
+
 ## Answer  
 The city is allowed to use a narrow heatwave-response insight and recommends Calidor Priority Cooling Bundle for this household.  
 case                 : calidor  

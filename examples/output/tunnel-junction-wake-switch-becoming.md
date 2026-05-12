@@ -1,15 +1,19 @@
 # tunnel-junction-wake-switch-becoming  
 
+## Source files  
+
+- [N3 rules](../tunnel-junction-wake-switch-becoming.n3)  
+
 tunnel-junction wake switch — becoming  
 
-Answer  
+## Answer  
 YES for the tunnel junction.  
 NO for the conventional low-bias PN junction in the same wake-switch regime.  
 
-Reason Why  
+## Reason Why  
 The tunnel junction can be read as a becoming under low forward bias. Because it is modeled as a heavily doped narrow PN junction with overlapping states, it can become a quantum-transfer state. In that regime it can become a sub-threshold current state, and under peak-to-valley scanning it can also become a negative differential response state. As a wake-switch device, that lets it become an ultra-low-bias switching state and finally a leak-alarm wake-serving state. By contrast, the conventional junction lacks the structural conditions needed for the same transition into quantum transfer, so the later wake-serving becoming is blocked as well.  
 
-Check  
+## Check  
 B1  OK - the tunnel junction can become a quantum-transfer state  
 B2  OK - the tunnel junction is classified as tunneling-dominant  
 B3  OK - the tunnel junction can become a sub-threshold current state  

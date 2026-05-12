@@ -1,5 +1,9 @@
 # sqrt2-dedekind  
 
+## Source files  
+
+- [N3 rules](../sqrt2-dedekind.n3)  
+
 q=-2  q^2=4  => LEFT (q<0 OR q^2<2)  
 q=-1  q^2=1  => LEFT (q<0 OR q^2<2)  
 q=-0.5  q^2=0.25  => LEFT (q<0 OR q^2<2)  

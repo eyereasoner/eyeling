@@ -1,5 +1,9 @@
 # delfour  
 
+## Source files  
+
+- [N3 rules](../delfour.n3)  
+
 ## Answer  
 The scanner is allowed to use a neutral shopping insight and recommends Low-Sugar Tea Biscuits instead of Classic Tea Biscuits.  
 case                 : delfour  

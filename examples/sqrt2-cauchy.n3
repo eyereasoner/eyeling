@@ -13,7 +13,7 @@
 @prefix log:   <http://www.w3.org/2000/10/swap/log#>.
 @prefix string:<http://www.w3.org/2000/10/swap/string#>.
 
-:000_md_title log:outputString "# sqrt2-cauchy\n\n" .
+:000_md_title log:outputString "# sqrt2-cauchy\n\n## Source files\n\n- [N3 rules](../sqrt2-cauchy.n3)\n\n" .
 
 :sqrt2Real a :Real;
   :representedBy :sqrt2Seq.

@@ -69,5 +69,5 @@
 
 
 # Markdown rendering via log:outputString.
-:__md_output :text "# builtin-coverage\n" .
+:__md_output :text "# builtin-coverage\n\n## Source files\n\n- [N3 rules](../builtin-coverage.n3)\n- [Input TriG](../input/builtin-coverage.trig)\n\n" .
 { :__md_output :text ?text } log:query { :__md_output log:outputString ?text } .

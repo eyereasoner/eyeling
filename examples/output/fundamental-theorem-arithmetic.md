@@ -1,14 +1,18 @@
 # fundamental-theorem-arithmetic  
 
+## Source files  
+
+- [N3 rules](../fundamental-theorem-arithmetic.n3)  
+
 Fundamental Theorem of Arithmetic — ARC-style  
 
-Answer  
+## Answer  
 For n = 202692987, the prime factors are 3 * 3 * 7 * 829 * 3881, the prime-power form is 3^2 * 7 * 829 * 3881, and the product of these factors is 202692987 with 4 distinct primes.  
 
-Reason Why  
+## Reason Why  
 Existence in this run comes from repeated smallest-divisor decomposition: 202692987 factors as 3 * 3 * 7 * 829 * 3881. Each distinct factor is prime. For uniqueness up to order, the reverse traversal gives 3881 * 829 * 7 * 3 * 3, and both traversals sort to the same multiset of primes. So this concrete case exhibits the Fundamental Theorem of Arithmetic for 202692987: a prime factorization exists and is unique up to order. The extreme prime factors are 3 and 3881.  
 
-Check  
+## Check  
 C1 OK - repeated smallest-divisor decomposition produced the expected smallest-first factor list (3 3 7 829 3881).  
 C2 OK - the product of the computed factors reconstructs n = 202692987.  
 C3 OK - every distinct factor in the decomposition is prime by trial division.  

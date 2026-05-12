@@ -17,7 +17,7 @@
 @prefix list: <http://www.w3.org/2000/10/swap/list#> .
 @prefix string: <http://www.w3.org/2000/10/swap/string#> .
 
-:000_md_title log:outputString "# fundamental-theorem-arithmetic\n\n" .
+:000_md_title log:outputString "# fundamental-theorem-arithmetic\n\n## Source files\n\n- [N3 rules](../fundamental-theorem-arithmetic.n3)\n\n" .
 
 # --------------
 # Editable input
@@ -224,17 +224,17 @@ true .
   :Check :c6 ?C6.
   (
     "Fundamental Theorem of Arithmetic — ARC-style\n\n"
-    "Answer\n"
+    "## Answer\n"
     "For n = " ?N ", the prime factors are " ?Flat ", the prime-power form is " ?PrimePower
     ", and the product of these factors is " ?N " with " ?Distinct " distinct primes.\n\n"
-    "Reason Why\n"
+    "## Reason Why\n"
     "Existence in this run comes from repeated smallest-divisor decomposition: " ?N
     " factors as " ?Flat ". Each distinct factor is prime. "
     "For uniqueness up to order, the reverse traversal gives " ?LargestFlat
     ", and both traversals sort to the same multiset of primes. "
     "So this concrete case exhibits the Fundamental Theorem of Arithmetic for " ?N
     ": a prime factorization exists and is unique up to order. The extreme prime factors are " ?Smallest " and " ?Largest ".\n\n"
-    "Check\n"
+    "## Check\n"
     "C1 " ?C1 "\n"
     "C2 " ?C2 "\n"
     "C3 " ?C3 "\n"

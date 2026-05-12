@@ -1,15 +1,19 @@
 # act-sensor-memory-reset  
 
+## Source files  
+
+- [N3 rules](../act-sensor-memory-reset.n3)  
+
 ACT sensor memory reset  
 
-Answer  
+## Answer  
 YES with the battery pack.  
 NO with the ambient heat bath alone.  
 
-Reason Why  
+## Reason Why  
 The alarm latch is a one-bit memory that must be reset to its standard clear state before the radiation sensor can be reused. In this case, the charged battery pack is treated as a work medium, so it can drive a controlled reset and prepare the latch in its reusable standard state. The ambient bath is treated as a heat medium, so by itself it cannot perform the same reliable directed reset. The example also shows an irreversibility pattern: useful work can be degraded into dissipated heat during reset, but the ambient heat bath alone cannot reconstruct the charged work resource.  
 
-Check  
+## Check  
 C1  OK - the battery pack can drive a controlled reset  
 C2  OK - the alarm latch can be reliably reset from work  
 C3  OK - the latch can be prepared in its standard reusable state  

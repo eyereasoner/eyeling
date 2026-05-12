@@ -1,5 +1,10 @@
 # eco-route-insight  
 
+## Source files  
+
+- [N3 rules](../eco-route-insight.n3)  
+- [Input TriG](../input/eco-route-insight.trig)  
+
 ## Answer  
 insight status : issue  
 show eco banner : yes  

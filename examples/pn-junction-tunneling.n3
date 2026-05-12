@@ -136,7 +136,7 @@
   ( "peak current proxy            : %s\n" ?peakCurrent ) string:format ?peakCurrentLine .
 }
     => {
-         :01-answer-1 log:outputString "# pn-junction-tunneling\n\n## Answer\n" .
+         :01-answer-1 log:outputString "# pn-junction-tunneling\n\n## Source files\n\n- [N3 rules](../pn-junction-tunneling.n3)\n\n## Answer\n" .
          :01-answer-2 log:outputString "In this toy PN-junction tunneling model, heavy doping narrows the depletion region enough for a tunneling window that rises to a peak and then falls, producing a negative-differential region.\n" .
          :01-answer-3 log:outputString "case                          : pn-junction-tunneling\n" .
          :01-answer-4 log:outputString ?peakBiasLine .

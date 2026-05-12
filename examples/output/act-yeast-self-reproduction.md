@@ -1,15 +1,19 @@
 # act-yeast-self-reproduction  
 
+## Source files  
+
+- [N3 rules](../act-yeast-self-reproduction.n3)  
+
 ACT yeast self-reproduction  
 
-Answer  
+## Answer  
 YES for the viable starter culture.  
 NO for accurate self-reproduction in the non-digital contrast lineage.  
 
-Reason Why  
+## Reason Why  
 The starter genome is treated as a replicator storing digital hereditary information, while the cell machinery is treated as the vehicle that enables metabolism and copying support. Under no-design laws, digital information makes accurate genome copying possible. Because the replicator is accurate and paired with a vehicle, the whole starter cell qualifies as a self-reproducer. With a variation source and a selection environment, natural selection also becomes possible. By contrast, the non-digital lineage cannot support accurate genome copying under the same no-design-laws assumption, so it cannot sustain the same accurate self-reproduction or natural-selection story.  
 
-Check  
+## Check  
 C1  OK - no-design laws are assumed  
 C2  OK - digital information is physically instantiated for the viable lineage  
 C3  OK - a viable replicator is present  

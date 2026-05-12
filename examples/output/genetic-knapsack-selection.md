@@ -1,5 +1,10 @@
 # genetic-knapsack-selection  
 
+## Source files  
+
+- [N3 rules](../genetic-knapsack-selection.n3)  
+- [Input TriG](../input/genetic-knapsack-selection.trig)  
+
 ## Answer  
 final genome : 101000000101  
 selected items : item01, item03, item10, item12  

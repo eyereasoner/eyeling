@@ -112,7 +112,7 @@
     ?givens ?blanks ?forced ?guessed ?nodes ?backtracks ?moveSummary ) string:format ?reasonText .
 }
     => {
-         :01-answer log:outputString "# sudoku\n\n## Answer\n" ;
+         :01-answer log:outputString "# sudoku\n\n## Source files\n\n- [N3 rules](../sudoku.n3)\n\n## Answer\n" ;
                     log:outputString ?answerText .
          :01a-answer log:outputString "case              : sudoku\n" ;
                      log:outputString "default puzzle    : classic\n\n" ;
@@ -144,7 +144,7 @@
     ?givens ?blanks ?forced ?guessed ?nodes ?backtracks ?moveSummary ) string:format ?reasonText .
 }
     => {
-         :01-answer log:outputString "# sudoku\n\n## Answer\n" ;
+         :01-answer log:outputString "# sudoku\n\n## Source files\n\n- [N3 rules](../sudoku.n3)\n\n## Answer\n" ;
                     log:outputString ?answerText .
          :01a-answer log:outputString "case              : sudoku\n" ;
                      log:outputString "default puzzle    : classic\n\n" ;
@@ -164,7 +164,7 @@
   :case :error ?error .
 }
     => {
-         :01-answer log:outputString "# sudoku\n\n## Answer\n" ;
+         :01-answer log:outputString "# sudoku\n\n## Source files\n\n- [N3 rules](../sudoku.n3)\n\n## Answer\n" ;
                     log:outputString "The supplied puzzle is not well formed and cannot be parsed as a 9×9 Sudoku.\n" ;
                     log:outputString "case              : sudoku\n\n" .
          :02-reason log:outputString "## Reason Why\n" ;
@@ -178,7 +178,7 @@
         :error ?error .
 }
     => {
-         :01-answer log:outputString "# sudoku\n\n## Answer\n" ;
+         :01-answer log:outputString "# sudoku\n\n## Source files\n\n- [N3 rules](../sudoku.n3)\n\n## Answer\n" ;
                     log:outputString "The puzzle is invalid and cannot be solved as a standard Sudoku.\n" ;
                     log:outputString "case              : sudoku\n\n" ;
                     log:outputString "Puzzle\n" ;
@@ -200,7 +200,7 @@
     ?nodes ?backtracks ) string:format ?reasonText .
 }
     => {
-         :01-answer log:outputString "# sudoku\n\n## Answer\n" ;
+         :01-answer log:outputString "# sudoku\n\n## Source files\n\n- [N3 rules](../sudoku.n3)\n\n## Answer\n" ;
                     log:outputString "No valid Sudoku solution exists for the supplied puzzle.\n" ;
                     log:outputString "case                         : sudoku\n" ;
                     log:outputString "default puzzle               : classic\n" ;

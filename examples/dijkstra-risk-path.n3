@@ -43,7 +43,7 @@
 {
   :Case :selectedPath :pathB; :trustGate :noEnumeratedPathIsLower; :notes :riskCanOutweighRawCost.
   :pathB :routeText ?Route; :rawCost ?Raw; :riskSum ?Risk; :score ?Score; :edgeCount ?Edges.
-  ("# dijkstra-risk-path\n\n## Answer\nselected path : %s\nraw cost : %.2f\nrisk sum : %.2f\nrisk-adjusted score : %.2f\nedges in selected path : %d\n\n## Explanation\nEach edge contributes its delivery cost plus the configured risk penalty. The N3 source enumerates the small graph's simple route candidates and compares the selected route against each alternative score. The selected route balances cost and risk through DepotB and LabD, while the apparently cheaper DepotC path is rejected once risk is priced in." ?Route ?Raw ?Risk ?Score ?Edges) string:format ?Block.
+  ("# dijkstra-risk-path\n\n## Source files\n\n- [N3 rules](../dijkstra-risk-path.n3)\n- [Input TriG](../input/dijkstra-risk-path.trig)\n\n## Answer\nselected path : %s\nraw cost : %.2f\nrisk sum : %.2f\nrisk-adjusted score : %.2f\nedges in selected path : %d\n\n## Explanation\nEach edge contributes its delivery cost plus the configured risk penalty. The N3 source enumerates the small graph's simple route candidates and compares the selected route against each alternative score. The selected route balances cost and risk through DepotB and LabD, while the apparently cheaper DepotC path is rejected once risk is priced in." ?Route ?Raw ?Risk ?Score ?Edges) string:format ?Block.
 } => {
   :dijkstraRiskPath log:outputString ?Block.
   :dijkstraRiskPath :selects :pathB.

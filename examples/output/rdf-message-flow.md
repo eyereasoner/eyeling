@@ -1,5 +1,10 @@
 # rdf-message-flow  
 
+## Source files  
+
+- [N3 rules](../rdf-message-flow.n3)  
+- [Input TriG](../input/rdf-message-flow.trig)  
+
 ## Answer  
 Continuous RDF Message flow accepted: 5 ordered messages moved through the ingest → validate → interpret → route → sink pipeline. The threshold was 26, so results 21 and 22 were archived, the heartbeat kept the stream alive, and results 28 and 29 were emitted as alerts.  
 

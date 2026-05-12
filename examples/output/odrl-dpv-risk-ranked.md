@@ -1,5 +1,9 @@
 # odrl-dpv-risk-ranked  
 
+## Source files  
+
+- [N3 rules](../odrl-dpv-risk-ranked.n3)  
+
 ## Ranked DPV Risk Report  
 Agreement: Example Agreement  
 Profile: Example consumer profile  

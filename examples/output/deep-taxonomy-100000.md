@@ -1,14 +1,18 @@
 # deep-taxonomy-100000  
 
+## Source files  
+
+- [N3 rules](../deep-taxonomy-100000.n3)  
+
 Deep Taxonomy - very deep classification benchmark  
 
-Answer  
+## Answer  
 The test succeeds: starting from one individual classified as N0, the rules eventually classify it as N100000 and then as A2.  
 
-Reason Why  
+## Reason Why  
 Each rule moves the same individual one level deeper in the taxonomy and also adds two side labels. Because that chain continues all the way from N0 to N100000, the final rule deriving A2 fires, and that in turn makes the test true.  
 
-Check  
+## Check  
 C1 OK - the starting classification N0 is present.  
 C2 OK - the first expansion produced N1 together with side labels I1 and J1.  
 C3 OK - the chain reaches the midpoint N50000 and still carries both side-label branches.  

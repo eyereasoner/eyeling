@@ -1,5 +1,9 @@
 # n3-speaks-for-itself  
 
+## Source files  
+
+- [N3 rules](../n3-speaks-for-itself.n3)  
+
 @prefix : <https://example.org/n3-speaks#> .  
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .  
 @prefix id: <https://example.org/id/> .  

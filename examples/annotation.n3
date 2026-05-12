@@ -8,5 +8,5 @@
 
 
 # Markdown rendering via log:outputString.
-:__md_output :text "# annotation\n" .
+:__md_output :text "# annotation\n\n## Source files\n\n- [N3 rules](../annotation.n3)\n- [Input TriG](../input/annotation.trig)\n\n" .
 { :__md_output :text ?text } log:query { :__md_output log:outputString ?text } .

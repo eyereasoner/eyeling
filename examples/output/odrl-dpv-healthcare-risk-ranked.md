@@ -1,5 +1,9 @@
 # odrl-dpv-healthcare-risk-ranked  
 
+## Source files  
+
+- [N3 rules](../odrl-dpv-healthcare-risk-ranked.n3)  
+
 ## Ranked DPV Risk Report (Healthcare & Life Sciences)  
 Agreement: Example Healthcare & Life-Sciences Data Use Agreement  
 Profile: Example patient profile  

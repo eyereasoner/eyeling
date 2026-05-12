@@ -1,16 +1,20 @@
 # bmi  
 
+## Source files  
+
+- [N3 rules](../bmi.n3)  
+
 BMI — ARC-style Body Mass Index example  
 
-Answer  
+## Answer  
 BMI = 22.72  
 Category = Normal  
 At height 178 cm, a healthy-weight range is about 58.6–78.9 kg (BMI 18.5–24.9).  
 
-Reason Why  
+## Reason Why  
 BMI is defined as weight in kilograms divided by height in meters squared. This program first normalizes the input to SI units, computes BMI, and then applies WHO adult categories as half-open intervals. The healthy-weight band is the weight range at the same height that corresponds to BMI 18.5 through 24.9.  
 
-Check  
+## Check  
 C1 OK - the input was normalized into positive SI values.  
 C2 OK - height squared was reconstructed from the normalized height.  
 C3 OK - the BMI value matches the BMI = kg / m² formula.  

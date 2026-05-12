@@ -1,5 +1,9 @@
 # sqrt2-cauchy  
 
+## Source files  
+
+- [N3 rules](../sqrt2-cauchy.n3)  
+
 Approximation (at limit): sqrt2 ≈ 1.414213562373095  
 n=0  x=1.0  delta=seed  err=1  
 n=1  x=1.5  delta=0.5  err=0.25  

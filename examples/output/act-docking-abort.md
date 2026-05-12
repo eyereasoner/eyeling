@@ -1,15 +1,19 @@
 # act-docking-abort  
 
+## Source files  
+
+- [N3 rules](../act-docking-abort.n3)  
+
 ACT docking abort token — constructor-theory coverage case  
 
-Answer  
+## Answer  
 YES for the classical abort token.  
 NO for universal cloning and unrestricted audit fan-out of the quantum seal.  
 
-Reason Why  
+## Reason Why  
 The docking-abort token is treated as an abstract information variable carried by unlike classical media: lamp state, PLC register, radio frame, and audit display. Because those substrates are information media for the same variable, the token can be permuted locally, cloned locally, copied across media, measured into an output record, and embedded in serial and parallel task networks. By contrast, the quantum authenticity seal is treated as a superinformation medium, so cloning all of its states is impossible and unrestricted audit fan-out is blocked.  
 
-Check  
+## Check  
 C1  OK - the abort lamp is a computation medium  
 C2  OK - the abort lamp distinguishes the abort bit  
 C3  OK - permutation of the abort bit is possible on the abort lamp  

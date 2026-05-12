@@ -1,5 +1,10 @@
 # Context association  
 
+## Source files  
+
+- [N3 rules](../context-association.n3)  
+- [Input TriG](../input/context-association.trig)  
+
 ## Entailment  
 The RDF dataset associates Bob's data graph with a Data Integrity proof graph and a second metadata proof graph.  
 

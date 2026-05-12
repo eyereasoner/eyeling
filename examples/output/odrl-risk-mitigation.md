@@ -1,5 +1,9 @@
 # odrl-risk-mitigation  
 
+## Source files  
+
+- [N3 rules](../odrl-risk-mitigation.n3)  
+
 ## Risk report for Example Platform Agreement (with fixes) (profile: Carol (example consumer))  
 1) score=100 (https://example.org/odrl-mitigation-demo#High), clause D6 — Provider can delete user data. This clause is risky because it allows the provider to delete the consumer’s data. Clause D6: We may delete your data at our discretion.  
 2) score=93 (https://example.org/odrl-mitigation-demo#High), clause D5 — No data export / portability. This clause is risky because it prohibits exporting data, undermining portability. Clause D5: You may not export or download your data from the service.  

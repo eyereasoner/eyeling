@@ -16,5 +16,5 @@
 } .
 
 { :Case :product ?Product.
-  ("# smoke-arithmetic\n\n## Answer\nproduct = %s\n\n## Explanation\nThe compiled rule multiplies :x and :y using math:product." ?Product) string:format ?Block.
+  ("# smoke-arithmetic\n\n## Source files\n\n- [N3 rules](../smoke-arithmetic.n3)\n- [Input TriG](../input/smoke-arithmetic.trig)\n\n## Answer\nproduct = %s\n\n## Explanation\nThe compiled rule multiplies :x and :y using math:product." ?Product) string:format ?Block.
 } => { :out01 log:outputString ?Block. } .

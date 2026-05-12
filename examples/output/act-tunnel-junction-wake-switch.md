@@ -1,15 +1,19 @@
 # act-tunnel-junction-wake-switch  
 
+## Source files  
+
+- [N3 rules](../act-tunnel-junction-wake-switch.n3)  
+
 ACT tunnel-junction wake switch  
 
-Answer  
+## Answer  
 YES for the tunnel junction.  
 NO for the conventional low-bias PN junction in the same wake-switch regime.  
 
-Reason Why  
+## Reason Why  
 The tunnel junction is modeled as a heavily doped narrow PN junction with overlapping states, so quantum barrier transfer is possible. That makes sub-threshold current possible in the low-forward-bias regime, which in turn makes ultra-low-bias switching possible for the wake circuit. Because the device is also scanned through a peak-to-valley window, a negative differential response is possible as well. By contrast, the conventional junction lacks the structural conditions for the same transfer mode, so it cannot deliver the same low-bias switching task in this case.  
 
-Check  
+## Check  
 C1  OK - the tunnel junction can support quantum barrier transfer  
 C2  OK - the tunnel junction is classified as tunneling-dominant  
 C3  OK - the tunnel junction can deliver sub-threshold current  

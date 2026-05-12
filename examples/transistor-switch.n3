@@ -193,7 +193,7 @@
   ( "on-state load current            : %s\n\n" ?onCurrentText ) string:format ?onCurrentLine .
 }
     => {
-         :01-answer-1 log:outputString "# transistor-switch\n\n## Answer\n" .
+         :01-answer-1 log:outputString "# transistor-switch\n\n## Source files\n\n- [N3 rules](../transistor-switch.n3)\n\n## Answer\n" .
          :01-answer-2 log:outputString "In this toy transistor-switch model, a low input leaves the transistor in cutoff (OFF) and a high input drives it into saturation (ON), so the load behaves like an on/off branch rather than a linear amplifier.\n" .
          :01-answer-3 log:outputString "case                             : transistor-switch\n" .
          :01-answer-4 log:outputString ?lowStateLine .

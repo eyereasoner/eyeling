@@ -15,7 +15,7 @@
 @prefix string: <http://www.w3.org/2000/10/swap/string#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-:000_md_title log:outputString "# wind-turbine\n\n" .
+:000_md_title log:outputString "# wind-turbine\n\n## Source files\n\n- [N3 rules](../wind-turbine.n3)\n\n" .
 
 # --- Sensor data ---
 :turbine1
@@ -99,13 +99,13 @@
   :check :c1 ?C1; :c2 ?C2; :c3 ?C3; :c4 ?C4; :c5 ?C5; :c6 ?C6; :c7 ?C7; :c8 ?C8; :c9 ?C9.
   (
     "Wind turbine — Predictive maintenance\n\n"
-    "Answer\n"
+    "## Answer\n"
     ?Outcome "\n\n"
-    "Reason Why\n"
+    "## Reason Why\n"
     ?Label " reports vibration " ?V " against a threshold of " ?VT ", temperature " ?Temp
     " against a threshold of " ?TT ", and rotor speed " ?RPM " against a critical limit of " ?RT ". "
     ?Reason "\n\n"
-    "Check\n"
+    "## Check\n"
     "C1 " ?C1 "\n"
     "C2 " ?C2 "\n"
     "C3 " ?C3 "\n"

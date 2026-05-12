@@ -1,5 +1,9 @@
 # sudoku  
 
+## Source files  
+
+- [N3 rules](../sudoku.n3)  
+
 ## Answer  
 The puzzle is solved, and the completed grid is the unique valid Sudoku solution.  
 case              : sudoku  

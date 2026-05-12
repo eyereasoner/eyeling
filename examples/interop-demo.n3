@@ -14,7 +14,7 @@
 @prefix math: <http://www.w3.org/2000/10/swap/math#>.
 @prefix log:  <http://www.w3.org/2000/10/swap/log#>.
 
-"000" log:outputString "# interop-demo\n\n" .
+"000" log:outputString "# interop-demo\n\n## Source files\n\n- [N3 rules](../interop-demo.n3)\n\n" .
 
 # ---------------------------------------------
 # 1) Three independent apps (different schemas)

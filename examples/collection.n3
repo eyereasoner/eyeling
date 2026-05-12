@@ -4,5 +4,5 @@ _:b2 :p :q .
 
 
 # Markdown rendering via log:outputString.
-:__md_output :text "# collection\n" .
+:__md_output :text "# collection\n\n## Source files\n\n- [N3 rules](../collection.n3)\n- [Input TriG](../input/collection.trig)\n\n" .
 { :__md_output :text ?text } log:query { :__md_output log:outputString ?text } .

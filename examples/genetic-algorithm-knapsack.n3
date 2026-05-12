@@ -257,4 +257,4 @@
     ?Best ?Ok ?W ?V ?Gen ) string:format ?Line
 }
 log:query
-{ 0 log:outputString "# genetic-algorithm-knapsack\n\n". 1 log:outputString ?Line }.
+{ 0 log:outputString "# genetic-algorithm-knapsack\n\n## Source files\n\n- [N3 rules](../genetic-algorithm-knapsack.n3)\n\n". 1 log:outputString ?Line }.

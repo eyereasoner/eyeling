@@ -15,7 +15,7 @@
 @prefix math: <http://www.w3.org/2000/10/swap/math#> .
 @prefix string: <http://www.w3.org/2000/10/swap/string#> .
 
-:000_md_title log:outputString "# bmi\n\n" .
+:000_md_title log:outputString "# bmi\n\n## Source files\n\n- [N3 rules](../bmi.n3)\n\n" .
 
 # --------------
 # Editable input
@@ -198,15 +198,15 @@
   :Check :c9 ?C9.
   (
     "BMI — ARC-style Body Mass Index example\n\n"
-    "Answer\n"
+    "## Answer\n"
     "BMI = " ?BmiRounded "\n"
     "Category = " ?Category "\n"
     "At height " ?CmRounded " cm, a healthy-weight range is about " ?HealthyMinRounded "–" ?HealthyMaxRounded " kg (BMI 18.5–24.9).\n\n"
-    "Reason Why\n"
+    "## Reason Why\n"
     "BMI is defined as weight in kilograms divided by height in meters squared. "
     "This program first normalizes the input to SI units, computes BMI, and then applies WHO adult categories as half-open intervals. "
     "The healthy-weight band is the weight range at the same height that corresponds to BMI 18.5 through 24.9.\n\n"
-    "Check\n"
+    "## Check\n"
     "C1 " ?C1 "\n"
     "C2 " ?C2 "\n"
     "C3 " ?C3 "\n"

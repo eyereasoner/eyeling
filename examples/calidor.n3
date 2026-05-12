@@ -419,7 +419,7 @@
 # ARC rendering through log:outputString
 # --------------------------------------
 
-:out01 log:outputString "# calidor\n\n## Answer\n" .
+:out01 log:outputString "# calidor\n\n## Source files\n\n- [N3 rules](../calidor.n3)\n\n## Answer\n" .
 
 {
     :case :recommendedPackage ?pkg .

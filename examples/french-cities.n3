@@ -14,7 +14,7 @@
 @prefix string: <http://www.w3.org/2000/10/swap/string#>.
 @prefix : <https://example.org/french-cities#>.
 
-:000_md_title log:outputString "# french-cities\n\n" .
+:000_md_title log:outputString "# french-cities\n\n## Source files\n\n- [N3 rules](../french-cities.n3)\n\n" .
 
 # ---------------------------------------------------------------------------
 # Facts
@@ -130,16 +130,16 @@
   :check :c1 ?C1; :c2 ?C2; :c3 ?C3; :c4 ?C4.
   (
     "French cities — ARC style graph reachability\n\n"
-    "Answer\n"
+    "## Answer\n"
     ?Outcome "\n\n"
-    "Reason Why\n"
+    "## Reason Why\n"
     "The original example says that every :oneway link is also a :path, and that :path is transitive. "
     "So once Angers can reach Nantes directly, longer routes can be built by chaining earlier links. "
     ?Angers " reaches Nantes directly. "
     ?LeMans " reaches Nantes through Angers. "
     ?Chartres " reaches Nantes through Le Mans and Angers. "
     ?Paris " reaches Nantes through Chartres, Le Mans, and Angers.\n\n"
-    "Check\n"
+    "## Check\n"
     "C1 " ?C1 "\n"
     "C2 " ?C2 "\n"
     "C3 " ?C3 "\n"

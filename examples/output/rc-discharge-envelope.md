@@ -1,5 +1,10 @@
 # rc-discharge-envelope  
 
+## Source files  
+
+- [N3 rules](../rc-discharge-envelope.n3)  
+- [Input TriG](../input/rc-discharge-envelope.trig)  
+
 ## Answer  
 exact decay symbol : exp(-1/4)  
 certified decay interval : [0.7788007830, 0.7788007831]  

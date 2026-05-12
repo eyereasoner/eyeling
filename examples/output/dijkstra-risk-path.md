@@ -1,5 +1,10 @@
 # dijkstra-risk-path  
 
+## Source files  
+
+- [N3 rules](../dijkstra-risk-path.n3)  
+- [Input TriG](../input/dijkstra-risk-path.trig)  
+
 ## Answer  
 selected path : ClinicA -> DepotB -> LabD -> HubZ  
 raw cost : 10.00  

@@ -1,15 +1,19 @@
 # act-photosynthetic-exciton-transfer  
 
+## Source files  
+
+- [N3 rules](../act-photosynthetic-exciton-transfer.n3)  
+
 ACT photosynthetic exciton transfer  
 
-Answer  
+## Answer  
 YES for the tuned antenna complex.  
 NO for the detuned, strongly decohered contrast complex.  
 
-Reason Why  
+## Reason Why  
 The tuned complex can sample exciton pathways coherently, use vibronically assisted transfer, and exploit short-lived quantum assistance along a downhill route to the reaction center. That makes efficient exciton transfer and reaction-center delivery possible in this case. The detuned contrast complex lacks the same alignment: coherent pathway sampling is blocked, vibronic assistance is unavailable, and the energy landscape is mismatched, so efficient reaction-center delivery is not possible in the same operating picture.  
 
-Check  
+## Check  
 C1  OK - the tuned complex can sample exciton pathways coherently  
 C2  OK - the tuned complex can use vibronically assisted transfer  
 C3  OK - short-lived quantum assistance is enough in the tuned downhill regime  

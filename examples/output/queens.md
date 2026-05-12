@@ -1,5 +1,9 @@
 # queens  
 
+## Source files  
+
+- [N3 rules](../queens.n3)  
+
 Solving 14-Queens...  
 Printing at most 1 solution(s).  
 

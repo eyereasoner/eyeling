@@ -1,15 +1,19 @@
 # act-isolation-breach  
 
+## Source files  
+
+- [N3 rules](../act-isolation-breach.n3)  
+
 ACT isolation-breach token — broad constructor-theory coverage case  
 
-Answer  
+## Answer  
 YES for the classical isolation-breach token.  
 NO for universal cloning and unrestricted fan-out of the quantum provenance seal.  
 
-Reason Why  
+## Reason Why  
 The isolation-breach token is treated as an abstract information variable carried by unlike classical media: a door beacon, a containment PLC, a nurse pager, and an incident board. Because those substrates are information media for the same variable, the token can be prepared, permuted, reversed, cloned locally, copied across media, measured into an output record, and composed into serial and parallel task networks. By contrast, the specimen seal is treated as a superinformation medium, so cloning all of its states is impossible and unrestricted parallel fan-out is blocked.  
 
-Check  
+## Check  
 C1  OK - the door beacon is an information medium  
 C2  OK - the containment PLC is an information medium  
 C3  OK - the nurse pager is an information medium  

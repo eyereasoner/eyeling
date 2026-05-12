@@ -15,7 +15,7 @@
 @prefix gps: <https://example.org/gps#>.
 @prefix : <https://example.org/gps-case#>.
 
-:000_md_title log:outputString "# gps\n\n" .
+:000_md_title log:outputString "# gps\n\n## Source files\n\n- [N3 rules](../gps.n3)\n\n" .
 
 # -----
 # Facts
@@ -107,17 +107,17 @@
   :routeViaKortrijk :label ?AltLabel; :duration ?AltDur; :cost ?AltCost; :belief ?AltBel; :comfort ?AltComf.
   (
     "GPS — Goal driven route planning\n\n"
-    "Answer\n"
+    "## Answer\n"
     ?Outcome "\n"
     "Recommended route: " ?BestLabel "\n\n"
-    "Reason Why\n"
+    "## Reason Why\n"
     "From Gent to Oostende, the planner found two routes in this small map. "
     "The direct route (" ?BestLabel ") takes " ?BestDur " seconds at cost " ?BestCost
     ", with belief " ?BestBel " and comfort " ?BestComf ". "
     "The alternative (" ?AltLabel ") takes " ?AltDur " seconds at cost " ?AltCost
     ", with belief " ?AltBel " and comfort " ?AltComf ". "
     "So the direct route is faster, cheaper, more reliable, and slightly more comfortable.\n\n"
-    "Check\n"
+    "## Check\n"
     "C1 OK - the direct Gent → Brugge → Oostende route was derived.\n"
     "C2 OK - the alternative Gent → Kortrijk → Brugge → Oostende route was derived.\n"
     "C3 OK - the recommended route is faster than the alternative.\n"

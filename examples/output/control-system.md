@@ -1,16 +1,20 @@
 # control-system  
 
+## Source files  
+
+- [N3 rules](../control-system.n3)  
+
 Control System — ARC explanation of two control signals  
 
-Answer  
+## Answer  
 Send both actuator commands now.  
 Actuator 1 command: 39.27346198678276  
 Actuator 2 command: 26.08  
 
-Reason Why  
+## Reason Why  
 The first sensor pair is 6 and 11, so the reading is rising and the controller normalizes the gap 5 into 2.23606797749979. That normalized value creates a feedforward term of 43.82693235899588, while the known disturbance 35766 contributes a compensation term of 4.553470372213121. Subtracting that compensation gives actuator 1 the command 39.27346198678276. For actuator 2, the target is 5 units above the measured output, so the tracking error is positive. The observed state is -2 relative units below the measured output, so the differential correction is negative. That yields a proportional feedback part of 29, a nonlinear factor of 1.46, and a differential contribution of -2.92. Together they produce actuator 2 command 26.08.  
 
-Check  
+## Check  
 C1 OK - the first sensor pair is rising, so the normalization uses the rising-branch rule.  
 C2 OK - the normalized measurement is positive and smaller than the raw gap, which is consistent with a square-root normalization.  
 C3 OK - actuator 1 is lower than its proportional feedforward term because disturbance compensation is subtracted.  

@@ -11,5 +11,5 @@
 
 
 # Markdown rendering via log:outputString.
-:__md_output :text "# backward-recursion\n\n@prefix : <urn:example#> .\n\n:a :reaches :b .\n:a :reaches :c .\n" .
+:__md_output :text "# backward-recursion\n\n## Source files\n\n- [N3 rules](../backward-recursion.n3)\n- [Input TriG](../input/backward-recursion.trig)\n\n@prefix : <urn:example#> .\n\n:a :reaches :b .\n:a :reaches :c .\n" .
 { :__md_output :text ?text } log:query { :__md_output log:outputString ?text } .

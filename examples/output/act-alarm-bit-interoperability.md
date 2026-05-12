@@ -1,15 +1,19 @@
 # act-alarm-bit-interoperability  
 
+## Source files  
+
+- [N3 rules](../act-alarm-bit-interoperability.n3)  
+
 ACT harbor alarm bit interoperability  
 
-Answer  
+## Answer  
 YES for the classical alarm bit.  
 NO for universal cloning and unrestricted fan-out of the quantum-like token.  
 
-Reason Why  
+## Reason Why  
 The alarm state is modeled as an abstract bit carried by two unlike classical substrates. Because both the optical beacon and the relay register are information media for the same variable, local permutation and copying in both directions are possible. By contrast, the quantum-like token is treated as a superinformation medium, so universal cloning of all of its states is impossible, and unrestricted classical-style fan-out is blocked as well.  
 
-Check  
+## Check  
 C1  OK - the optical beacon is an information medium  
 C2  OK - the relay register is an information medium  
 C3  OK - both substrates encode the same abstract variable: AlarmBit  

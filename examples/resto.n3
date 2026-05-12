@@ -22,7 +22,7 @@
 @prefix string: <http://www.w3.org/2000/10/swap/string#>.
 @prefix log: <http://www.w3.org/2000/10/swap/log#>.
 
-:000_md_title log:outputString "# resto\n\n" .
+:000_md_title log:outputString "# resto\n\n## Source files\n\n- [N3 rules](../resto.n3)\n\n" .
 
 # ----------------
 # Initial question
@@ -290,15 +290,15 @@
   :Check :c8 ?C8.
   (
     "RESTdesc — Restaurant finder\n\n"
-    "Answer\n"
+    "## Answer\n"
     ?Outcome "\n"
     "Restaurant: " ?RestaurantName "\n"
     "Date: " ?Date "\n"
     "Seating: " ?Seating "\n\n"
-    "Reason Why\n"
+    "## Reason Why\n"
     "The plan resolved the person's address, turned it into a map point, checked the local weather, selected a suitable restaurant, and then created a reservation. "
     "Because the weather came back mild and stable (22 C and 1016 mbar), the chosen seating stayed outdoors.\n\n"
-    "Check\n"
+    "## Check\n"
     "C1 " ?C1 "\n"
     "C2 " ?C2 "\n"
     "C3 " ?C3 "\n"

@@ -22,7 +22,7 @@
 @prefix arc: <https://example.org/arc#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 
-:000_md_title log:outputString "# act-barley-seed-lineage\n\n" .
+:000_md_title log:outputString "# act-barley-seed-lineage\n\n## Source files\n\n- [N3 rules](../act-barley-seed-lineage.n3)\n\n" .
 
 :case a arc:Case ;
   arc:question "Can a barley seed lineage achieve accurate self-reproduction, dormancy, development, and adaptive persistence under no-design laws — and what exactly can't happen when key ingredients are missing?" .
@@ -540,14 +540,14 @@
 {
   :out log:outputString """ACT barley seed lineage — can and can't
 
-Answer
+## Answer
 YES for the viable barley lineage.
 NO for the contrast lineages when digital heredity, repair, protected dormancy, or heritable variation are missing.
 
-Reason Why
+## Reason Why
 The main lineage can achieve genome copying under no-design laws because its hereditary information is digitally instantiated. It can also pass through protected dormancy, germinate, produce propagules, reproduce accurately, close its life cycle, and adaptively persist under saline selection. But the contrast lineages show the "can't" side: non-digital heredity blocks accurate genome copying under no-design laws, lack of repair blocks accurate self-reproduction, lack of dormancy protection blocks lineage closure through a protected seed phase, and lack of heritable variation blocks adaptive evolution and thus blocks evolvability.
 
-Check
+## Check
 C1  OK - no-design laws are assumed
 C2  OK - the viable genome can be copied under no-design laws
 C3  OK - the viable seed can achieve protected dormancy

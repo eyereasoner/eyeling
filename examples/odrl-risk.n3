@@ -391,7 +391,7 @@
   ?agreement a :Agreement; :label ?alabel.
   ?profile a :ConsumerProfile; :label ?plabel.
 
-  ( "# odrl-risk\n\n## Risk report for %s (profile: %s)\n" ?alabel ?plabel ) string:format ?hdr.
+  ( "# odrl-risk\n\n## Source files\n\n- [N3 rules](../odrl-risk.n3)\n\n## Risk report for %s (profile: %s)\n" ?alabel ?plabel ) string:format ?hdr.
 }
 =>
 {

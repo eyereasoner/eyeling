@@ -241,7 +241,7 @@
 }
 =>
 {
-  :s01 log:outputString "# matrix-mechanics\n\n## Answer\n" .
+  :s01 log:outputString "# matrix-mechanics\n\n## Source files\n\n- [N3 rules](../matrix-mechanics.n3)\n\n## Answer\n" .
   :s02 log:outputString ?txt .
   :s03 log:outputString "\n\n## Reason Why\n" .
 } .

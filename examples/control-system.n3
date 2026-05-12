@@ -13,7 +13,7 @@
 @prefix string: <http://www.w3.org/2000/10/swap/string#>.
 @prefix : <https://example.org/control-system#>.
 
-:000_md_title log:outputString "# control-system\n\n" .
+:000_md_title log:outputString "# control-system\n\n## Source files\n\n- [N3 rules](../control-system.n3)\n\n" .
 
 # -----
 # Facts
@@ -157,11 +157,11 @@
        :feedbackDifferential ?FBDiff.
   (
     "Control System — ARC explanation of two control signals\n\n"
-    "Answer\n"
+    "## Answer\n"
     ?Answer "\n"
     "Actuator 1 command: " ?A1 "\n"
     "Actuator 2 command: " ?A2 "\n\n"
-    "Reason Why\n"
+    "## Reason Why\n"
     "The first sensor pair is " ?Low " and " ?High ", so the reading is " ?Trend
     " and the controller normalizes the gap " ?Gap " into " ?Norm ". "
     "That normalized value creates a feedforward term of " ?FFProp
@@ -171,7 +171,7 @@
     "The observed state is " ?DiffErr " relative units below the measured output, so the differential correction is negative. "
     "That yields a proportional feedback part of " ?FBProp ", a nonlinear factor of " ?FBFactor
     ", and a differential contribution of " ?FBDiff ". Together they produce actuator 2 command " ?A2 ".\n\n"
-    "Check\n"
+    "## Check\n"
     "C1 OK - the first sensor pair is rising, so the normalization uses the rising-branch rule.\n"
     "C2 OK - the normalized measurement is positive and smaller than the raw gap, which is consistent with a square-root normalization.\n"
     "C3 OK - actuator 1 is lower than its proportional feedforward term because disturbance compensation is subtracted.\n"

@@ -15,7 +15,7 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-:000_md_title log:outputString "# easter\n\n" .
+:000_md_title log:outputString "# easter\n\n## Source files\n\n- [N3 rules](../easter.n3)\n\n" .
 
 <> rdfs:comment """This ARC-style version keeps the Gregorian computus from the original example and reports, for each sample year, an Answer, a Reason Why, and a set of independent Checks.""" .
 
@@ -197,13 +197,13 @@
   (
     "Easter — Gregorian computus\n\n"
     "## " ?Y "\n"
-    "Answer\n"
+    "## Answer\n"
     "Easter Sunday falls on " ?Month " " ?Day ".\n\n"
-    "Reason Why\n"
+    "## Reason Why\n"
     "For year " ?Y ", the computus gives j=" ?J ", k=" ?K ", q=" ?Q
     ", r=" ?R ", v=" ?V ", and final month/day numbers x=" ?X ", z=" ?Z ". "
     "Because the day is z+1, the resulting Easter date is " ?Month " " ?Day ".\n\n"
-    "Check\n"
+    "## Check\n"
     ?C1 ?C2 ?C3 ?C4 ?C5
   ) string:concatenation ?Block. }
     =>

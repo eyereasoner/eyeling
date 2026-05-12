@@ -1,14 +1,18 @@
 # wind-turbine  
 
+## Source files  
+
+- [N3 rules](../wind-turbine.n3)  
+
 Wind turbine — Predictive maintenance  
 
-Answer  
+## Answer  
 Act now: schedule an urgent inspection and gearbox maintenance.  
 
-Reason Why  
+## Reason Why  
 North field turbine reports vibration 0.42 against a threshold of 0.35, temperature 78 against a threshold of 75, and rotor speed 1650 against a critical limit of 1800. Both vibration and temperature are above their safety thresholds, so the turbine shows a combined warning pattern. The gearbox is also degraded, so maintenance is needed even though the rotor speed is still below the critical RPM limit.  
 
-Check  
+## Check  
 C1 OK - measured vibration is above the vibration threshold.  
 C2 OK - measured temperature is above the temperature threshold.  
 C3 OK - a high-vibration anomaly was inferred from the readings.  

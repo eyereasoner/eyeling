@@ -1,5 +1,9 @@
 # pn-junction-tunneling  
 
+## Source files  
+
+- [N3 rules](../pn-junction-tunneling.n3)  
+
 ## Answer  
 In this toy PN-junction tunneling model, heavy doping narrows the depletion region enough for a tunneling window that rises to a peak and then falls, producing a negative-differential region.  
 case                          : pn-junction-tunneling  

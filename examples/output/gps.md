@@ -1,15 +1,19 @@
 # gps  
 
+## Source files  
+
+- [N3 rules](../gps.n3)  
+
 GPS — Goal driven route planning  
 
-Answer  
+## Answer  
 Take the direct route via Brugge.  
 Recommended route: Gent → Brugge → Oostende  
 
-Reason Why  
+## Reason Why  
 From Gent to Oostende, the planner found two routes in this small map. The direct route (Gent → Brugge → Oostende) takes 2400 seconds at cost 0.01, with belief 0.9408 and comfort 0.99. The alternative (Gent → Kortrijk → Brugge → Oostende) takes 4100 seconds at cost 0.018, with belief 0.903168 and comfort 0.9801. So the direct route is faster, cheaper, more reliable, and slightly more comfortable.  
 
-Check  
+## Check  
 C1 OK - the direct Gent → Brugge → Oostende route was derived.  
 C2 OK - the alternative Gent → Kortrijk → Brugge → Oostende route was derived.  
 C3 OK - the recommended route is faster than the alternative.  

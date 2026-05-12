@@ -1,15 +1,19 @@
 # parcellocker  
 
+## Source files  
+
+- [N3 rules](../parcellocker.n3)  
+
 ParcelLocker — One-time parcel pickup by a friend  
 
-Answer  
+## Answer  
 PERMIT  
 Noah may collect Maya's parcel from locker B17.  
 
-Reason Why  
+## Reason Why  
 Maya created a one-time authorization for Noah only, for this parcel only, at this locker only, and for pickup only. The token is active, the parcel is ready, and the same authorization does not reveal billing details or allow redirection.  
 
-Check  
+## Check  
 C1  OK - requester matches the named delegate  
 C2  OK - requested parcel matches the authorized parcel  
 C3  OK - requested locker matches the authorized locker  

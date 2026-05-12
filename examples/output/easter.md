@@ -1,15 +1,19 @@
 # easter  
 
+## Source files  
+
+- [N3 rules](../easter.n3)  
+
 Easter — Gregorian computus  
 
 ## 2026  
-Answer  
+## Answer  
 Easter Sunday falls on April 5.  
 
-Reason Why  
+## Reason Why  
 For year 2026, the computus gives j=12, k=20, q=6, r=12, v=2, and final month/day numbers x=4, z=4. Because the day is z+1, the resulting Easter date is April 5.  
 
-Check  
+## Check  
 C1 OK - the Golden Number remainder j is inside the 0–18 cycle.  
 C2 OK - the epact-style remainder r is inside the 0–29 cycle.  
 C3 OK - the weekday adjustment v is inside the 0–6 cycle.  
@@ -18,13 +22,13 @@ C5 OK - the final date is inside the legal Gregorian Easter window.
 Easter — Gregorian computus  
 
 ## 2027  
-Answer  
+## Answer  
 Easter Sunday falls on March 28.  
 
-Reason Why  
+## Reason Why  
 For year 2027, the computus gives j=13, k=20, q=6, r=1, v=5, and final month/day numbers x=3, z=27. Because the day is z+1, the resulting Easter date is March 28.  
 
-Check  
+## Check  
 C1 OK - the Golden Number remainder j is inside the 0–18 cycle.  
 C2 OK - the epact-style remainder r is inside the 0–29 cycle.  
 C3 OK - the weekday adjustment v is inside the 0–6 cycle.  
@@ -33,13 +37,13 @@ C5 OK - the final date is inside the legal Gregorian Easter window.
 Easter — Gregorian computus  
 
 ## 2028  
-Answer  
+## Answer  
 Easter Sunday falls on April 16.  
 
-Reason Why  
+## Reason Why  
 For year 2028, the computus gives j=14, k=20, q=6, r=20, v=5, and final month/day numbers x=4, z=15. Because the day is z+1, the resulting Easter date is April 16.  
 
-Check  
+## Check  
 C1 OK - the Golden Number remainder j is inside the 0–18 cycle.  
 C2 OK - the epact-style remainder r is inside the 0–29 cycle.  
 C3 OK - the weekday adjustment v is inside the 0–6 cycle.  
@@ -48,13 +52,13 @@ C5 OK - the final date is inside the legal Gregorian Easter window.
 Easter — Gregorian computus  
 
 ## 2029  
-Answer  
+## Answer  
 Easter Sunday falls on April 1.  
 
-Reason Why  
+## Reason Why  
 For year 2029, the computus gives j=15, k=20, q=6, r=9, v=1, and final month/day numbers x=4, z=0. Because the day is z+1, the resulting Easter date is April 1.  
 
-Check  
+## Check  
 C1 OK - the Golden Number remainder j is inside the 0–18 cycle.  
 C2 OK - the epact-style remainder r is inside the 0–29 cycle.  
 C3 OK - the weekday adjustment v is inside the 0–6 cycle.  
@@ -63,13 +67,13 @@ C5 OK - the final date is inside the legal Gregorian Easter window.
 Easter — Gregorian computus  
 
 ## 2030  
-Answer  
+## Answer  
 Easter Sunday falls on April 21.  
 
-Reason Why  
+## Reason Why  
 For year 2030, the computus gives j=16, k=20, q=6, r=28, v=2, and final month/day numbers x=4, z=20. Because the day is z+1, the resulting Easter date is April 21.  
 
-Check  
+## Check  
 C1 OK - the Golden Number remainder j is inside the 0–18 cycle.  
 C2 OK - the epact-style remainder r is inside the 0–29 cycle.  
 C3 OK - the weekday adjustment v is inside the 0–6 cycle.  
@@ -78,13 +82,13 @@ C5 OK - the final date is inside the legal Gregorian Easter window.
 Easter — Gregorian computus  
 
 ## 2031  
-Answer  
+## Answer  
 Easter Sunday falls on April 13.  
 
-Reason Why  
+## Reason Why  
 For year 2031, the computus gives j=17, k=20, q=6, r=17, v=5, and final month/day numbers x=4, z=12. Because the day is z+1, the resulting Easter date is April 13.  
 
-Check  
+## Check  
 C1 OK - the Golden Number remainder j is inside the 0–18 cycle.  
 C2 OK - the epact-style remainder r is inside the 0–29 cycle.  
 C3 OK - the weekday adjustment v is inside the 0–6 cycle.  
@@ -93,13 +97,13 @@ C5 OK - the final date is inside the legal Gregorian Easter window.
 Easter — Gregorian computus  
 
 ## 2032  
-Answer  
+## Answer  
 Easter Sunday falls on March 28.  
 
-Reason Why  
+## Reason Why  
 For year 2032, the computus gives j=18, k=20, q=6, r=6, v=0, and final month/day numbers x=3, z=27. Because the day is z+1, the resulting Easter date is March 28.  
 
-Check  
+## Check  
 C1 OK - the Golden Number remainder j is inside the 0–18 cycle.  
 C2 OK - the epact-style remainder r is inside the 0–29 cycle.  
 C3 OK - the weekday adjustment v is inside the 0–6 cycle.  
@@ -108,13 +112,13 @@ C5 OK - the final date is inside the legal Gregorian Easter window.
 Easter — Gregorian computus  
 
 ## 2033  
-Answer  
+## Answer  
 Easter Sunday falls on April 17.  
 
-Reason Why  
+## Reason Why  
 For year 2033, the computus gives j=0, k=20, q=6, r=24, v=2, and final month/day numbers x=4, z=16. Because the day is z+1, the resulting Easter date is April 17.  
 
-Check  
+## Check  
 C1 OK - the Golden Number remainder j is inside the 0–18 cycle.  
 C2 OK - the epact-style remainder r is inside the 0–29 cycle.  
 C3 OK - the weekday adjustment v is inside the 0–6 cycle.  
@@ -123,13 +127,13 @@ C5 OK - the final date is inside the legal Gregorian Easter window.
 Easter — Gregorian computus  
 
 ## 2034  
-Answer  
+## Answer  
 Easter Sunday falls on April 9.  
 
-Reason Why  
+## Reason Why  
 For year 2034, the computus gives j=1, k=20, q=6, r=13, v=5, and final month/day numbers x=4, z=8. Because the day is z+1, the resulting Easter date is April 9.  
 
-Check  
+## Check  
 C1 OK - the Golden Number remainder j is inside the 0–18 cycle.  
 C2 OK - the epact-style remainder r is inside the 0–29 cycle.  
 C3 OK - the weekday adjustment v is inside the 0–6 cycle.  
@@ -138,13 +142,13 @@ C5 OK - the final date is inside the legal Gregorian Easter window.
 Easter — Gregorian computus  
 
 ## 2035  
-Answer  
+## Answer  
 Easter Sunday falls on March 25.  
 
-Reason Why  
+## Reason Why  
 For year 2035, the computus gives j=2, k=20, q=6, r=2, v=1, and final month/day numbers x=3, z=24. Because the day is z+1, the resulting Easter date is March 25.  
 
-Check  
+## Check  
 C1 OK - the Golden Number remainder j is inside the 0–18 cycle.  
 C2 OK - the epact-style remainder r is inside the 0–29 cycle.  
 C3 OK - the weekday adjustment v is inside the 0–6 cycle.  

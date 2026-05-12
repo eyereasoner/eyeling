@@ -410,7 +410,7 @@
 {
   :AgreementEHDS1 dct:title ?alabel .
   :PatientProfileExample dct:title ?plabel .
-  ( "# odrl-dpv-ehds-risk-ranked\n\n## Ranked DPV Risk Report (EHDS-aligned)\nAgreement: %s\nProfile: %s\n\n"
+  ( "# odrl-dpv-ehds-risk-ranked\n\n## Source files\n\n- [N3 rules](../odrl-dpv-ehds-risk-ranked.n3)\n\n## Ranked DPV Risk Report (EHDS-aligned)\nAgreement: %s\nProfile: %s\n\n"
     ?alabel ?plabel ) string:format ?hdr .
 }
 log:query

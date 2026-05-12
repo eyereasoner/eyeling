@@ -1,5 +1,10 @@
 # school-placement-audit  
 
+## Source files  
+
+- [N3 rules](../school-placement-audit.n3)  
+- [Input TriG](../input/school-placement-audit.trig)  
+
 ## Answer  
 audit result : fail  
 children affected by straight-line rule : Ada, Björn, Davi  

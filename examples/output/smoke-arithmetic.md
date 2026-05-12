@@ -1,5 +1,10 @@
 # smoke-arithmetic  
 
+## Source files  
+
+- [N3 rules](../smoke-arithmetic.n3)  
+- [Input TriG](../input/smoke-arithmetic.trig)  
+
 ## Answer  
 product = 42  
 

@@ -1,17 +1,21 @@
 # auroracare  
 
+## Source files  
+
+- [N3 rules](../auroracare.n3)  
+
 AuroraCare — Purpose-based Medical Data Exchange  
 
 ## A – Primary care visit  
 Clinician in the patient's care team accessing the patient summary for primary care management.  
 
-Answer  
+## Answer  
 PERMIT  
 
-Reason Why  
+## Reason Why  
 Permitted: clinician in the patient's care team, and the primary-care policy matched.  
 
-Check  
+## Check  
 C1 SKIPPED - not a prohibited purpose  
 C2 OK - clinician  
 C3 OK - care-team linked  
@@ -26,13 +30,13 @@ C10 INFO - matched policy: urn:policy:primary-care-001
 ## B – Quality improvement (in scope)  
 QI analyst using lab results + summary in a secure environment.  
 
-Answer  
+## Answer  
 PERMIT  
 
-Reason Why  
+## Reason Why  
 Permitted: ODRL/DPV policy matched for secondary use.  
 
-Check  
+## Check  
 C1 SKIPPED - not a prohibited purpose  
 C2 SKIPPED  
 C3 SKIPPED  
@@ -47,13 +51,13 @@ C10 INFO - matched policy: urn:policy:qi-2025-aurora
 ## C – Quality improvement (out of scope)  
 QI analyst with only lab results; policy expects labs + summary.  
 
-Answer  
+## Answer  
 DENY  
 
-Reason Why  
+## Reason Why  
 Denied: no policy matched (purpose, environment, TOMs, or categories out of scope).  
 
-Check  
+## Check  
 C1 SKIPPED - not a prohibited purpose  
 C2 SKIPPED  
 C3 SKIPPED  
@@ -68,13 +72,13 @@ C10 SKIPPED - no matched policy
 ## D – Insurance management  
 Insurance bot attempting to use health data for insurance management (prohibited purpose).  
 
-Answer  
+## Answer  
 DENY  
 
-Reason Why  
+## Reason Why  
 Denied: the requested purpose (insurance management) is prohibited by policy.  
 
-Check  
+## Check  
 C1 OK - denied prohibited purpose  
 C2 SKIPPED  
 C3 SKIPPED  
@@ -89,13 +93,13 @@ C10 SKIPPED - no matched policy
 ## E – GP checks labs  
 GP for the same patient checking lab results via the API gateway.  
 
-Answer  
+## Answer  
 PERMIT  
 
-Reason Why  
+## Reason Why  
 Permitted: clinician in the patient's care team, and the primary-care policy matched.  
 
-Check  
+## Check  
 C1 SKIPPED - not a prohibited purpose  
 C2 OK - clinician  
 C3 OK - care-team linked  
@@ -110,13 +114,13 @@ C10 INFO - matched policy: urn:policy:primary-care-001
 ## F – Research on anonymised dataset  
 Researcher using anonymised labs + summary in a secure environment, with opt-in.  
 
-Answer  
+## Answer  
 PERMIT  
 
-Reason Why  
+## Reason Why  
 Permitted: subject opted in and an ODRL/DPV policy matched (anonymised dataset in secure environment).  
 
-Check  
+## Check  
 C1 SKIPPED - not a prohibited purpose  
 C2 SKIPPED  
 C3 SKIPPED  
@@ -131,13 +135,13 @@ C10 INFO - matched policy: urn:policy:research-aurora-diabetes
 ## G – AI training (opt-out)  
 Data user wants to train AI, but the subject opted out of AI training.  
 
-Answer  
+## Answer  
 DENY  
 
-Reason Why  
+## Reason Why  
 Denied: you opted out of your data being used to train AI systems.  
 
-Check  
+## Check  
 C1 SKIPPED - not a prohibited purpose  
 C2 SKIPPED  
 C3 SKIPPED  

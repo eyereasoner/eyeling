@@ -1,5 +1,9 @@
 # transistor-switch  
 
+## Source files  
+
+- [N3 rules](../transistor-switch.n3)  
+
 ## Answer  
 In this toy transistor-switch model, a low input leaves the transistor in cutoff (OFF) and a high input drives it into saturation (ON), so the load behaves like an on/off branch rather than a linear amplifier.  
 case                             : transistor-switch  

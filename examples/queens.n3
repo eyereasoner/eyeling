@@ -16,6 +16,6 @@
   :run :n ?N; :maxPrint ?MaxPrint.
   (?N ?MaxPrint) :render ?Report.
 } log:query {
-  :000_md_title log:outputString "# queens\n\n" .
+  :000_md_title log:outputString "# queens\n\n## Source files\n\n- [N3 rules](../queens.n3)\n\n" .
   :answer log:outputString ?Report.
 }.

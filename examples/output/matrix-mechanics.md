@@ -1,5 +1,9 @@
 # matrix-mechanics  
 
+## Source files  
+
+- [N3 rules](../matrix-mechanics.n3)  
+
 ## Answer  
 In this toy matrix-mechanics model, the Hamiltonian has two discrete energy levels and does not commute with a second observable.  
 

@@ -1,5 +1,9 @@
 # transcendental-numbers-stretched  
 
+## Source files  
+
+- [N3 rules](../transcendental-numbers-stretched.n3)  
+
 @prefix : <https://example.org/transcendental#> .  
 
 :report :concerns :prod_e_pi .  

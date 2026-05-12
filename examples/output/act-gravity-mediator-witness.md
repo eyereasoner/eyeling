@@ -1,15 +1,19 @@
 # act-gravity-mediator-witness  
 
+## Source files  
+
+- [N3 rules](../act-gravity-mediator-witness.n3)  
+
 ACT gravity mediator witness  
 
-Answer  
+## Answer  
 YES for the mediator-only witness run.  
 NO for a purely classical mediator model under the same mediator-only conditions.  
 
-Reason Why  
+## Reason Why  
 The positive run assumes locality and interoperability, excludes direct coupling between the two quantum systems, and records an entanglement witness after interaction through the mediator alone. Under those constructor-theoretic conditions, the mediator must be non-classical, so the run rules out a purely classical mediator model. The contrast run keeps the same locality, interoperability, and mediator-only structure but assigns the mediator a purely classical model. In that case the mediator-only entanglement witness is blocked, so the run cannot support the same non-classicality conclusion.  
 
-Check  
+## Check  
 C1  OK - locality is assumed in the positive run  
 C2  OK - interoperability is assumed in the positive run  
 C3  OK - direct coupling between the two quantum systems is excluded  

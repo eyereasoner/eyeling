@@ -331,7 +331,7 @@
 # ARC rendering through log:outputString
 # --------------------------------------
 
-:out01 log:outputString "# delfour\n\n## Answer\n" .
+:out01 log:outputString "# delfour\n\n## Source files\n\n- [N3 rules](../delfour.n3)\n\n## Answer\n" .
 :out02 log:outputString "The scanner is allowed to use a neutral shopping insight and recommends Low-Sugar Tea Biscuits instead of Classic Tea Biscuits.\n" .
 :out03 log:outputString "case                 : delfour\n" .
 :out04 log:outputString "decision             : Allowed\n" .
