@@ -1,0 +1,406 @@
+# Question generation from ontological patterns
+#
+# Run:
+#   npx eyeling -r examples/ontology-question-generation.n3 examples/input/ontology-question-generation.trig
+#
+# The input TriG file contains the ontology. These N3 rules detect common
+# OWL/RDFS modeling patterns, derive structured q:CompetencyQuestion nodes,
+# and render a Markdown report with log:outputString.
+
+@prefix :      <https://eyereasoner.github.io/eyeling/examples/ontology-question-generation#>.
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix owl:   <http://www.w3.org/2002/07/owl#>.
+@prefix log:   <http://www.w3.org/2000/10/swap/log#>.
+@prefix string:<http://www.w3.org/2000/10/swap/string#>.
+
+@prefix q:     <http://example.org/question#>.
+@prefix pat:   <http://example.org/question/pattern#>.
+
+#################################################################
+# Markdown frame
+#################################################################
+
+<urn:eyeling:oqg:000:title>
+    log:outputString "# ontology-question-generation\n\n".
+
+<urn:eyeling:oqg:010:intro>
+    log:outputString "This example uses N3 rules to generate candidate competency questions from OWL/RDFS ontology patterns. The ontology lives in `examples/input/ontology-question-generation.trig`; the rules derive structured `q:CompetencyQuestion` resources and render this Markdown with `log:outputString`.\n\n".
+
+<urn:eyeling:oqg:020:patterns>
+    log:outputString "## Detected competency questions\n\n".
+
+<urn:eyeling:oqg:900:shape-title>
+    log:outputString "\n## RDF shape behind the Markdown\n\n".
+
+<urn:eyeling:oqg:910:shape-body>
+    log:outputString "Each rendered line is backed by a structured generated resource with a pattern, slots, an answer shape, and priority. That means a later layer can verbalize the same generated questions as Markdown, SPARQL skeletons, SHACL prompts, UI forms, or documentation checks.\n".
+
+#################################################################
+# Helper classifications
+#################################################################
+
+{ ?class a owl:Class. }
+=>
+{ ?class q:isOntologicalClass true. }.
+
+{ ?class a rdfs:Class. }
+=>
+{ ?class q:isOntologicalClass true. }.
+
+{ ?property a owl:ObjectProperty. }
+=>
+{ ?property q:isObjectProperty true. }.
+
+{ ?property a owl:DatatypeProperty. }
+=>
+{ ?property q:isDatatypeProperty true. }.
+
+{ ?property rdfs:domain ?domain. ?property rdfs:range ?range. ?range q:isOntologicalClass true. }
+=>
+{ ?property q:isObjectProperty true. }.
+
+{ ?property rdfs:domain ?domain. ?property rdfs:range ?datatype. ?datatype a rdfs:Datatype. }
+=>
+{ ?property q:isDatatypeProperty true. }.
+
+#################################################################
+# 1. Class population pattern
+#################################################################
+
+{ ?class q:isOntologicalClass true. ?class rdfs:label ?classLabel. }
+=>
+{
+    [
+        a q:CompetencyQuestion;
+        q:pattern pat:ClassPopulationQuestion;
+        q:aboutClass ?class;
+        q:questionTemplate "Which things are instances of {class}?";
+        q:slot [ q:slotName "class"; q:slotValue ?class; q:slotLabel ?classLabel ];
+        q:expectedAnswerShape pat:SetOfIndividuals;
+        q:priority 3
+    ].
+}.
+
+{
+    ?class q:isOntologicalClass true.
+    ?class rdfs:label ?classLabel.
+    ?class log:uri ?classIri.
+    ("urn:eyeling:oqg:100:class:%s" ?classIri) string:format ?key.
+    ?out log:uri ?key.
+    ("- **Class population** — Which things are instances of `%s`?\n" ?classLabel) string:format ?line.
+}
+=>
+{ ?out log:outputString ?line. }.
+
+#################################################################
+# 2. Subclass distinction pattern
+#################################################################
+
+{ ?subClass rdfs:subClassOf ?superClass. ?subClass q:isOntologicalClass true. ?superClass q:isOntologicalClass true. }
+=>
+{
+    [
+        a q:CompetencyQuestion;
+        q:pattern pat:SubclassDistinctionQuestion;
+        q:sourcePattern rdfs:subClassOf;
+        q:aboutClass ?subClass;
+        q:questionTemplate "What distinguishes a {subClass} from a general {superClass}?";
+        q:slot [ q:slotName "subClass"; q:slotValue ?subClass ];
+        q:slot [ q:slotName "superClass"; q:slotValue ?superClass ];
+        q:expectedAnswerShape pat:DefinitionOrConstraint;
+        q:priority 4
+    ].
+}.
+
+{
+    ?subClass rdfs:subClassOf ?superClass.
+    ?subClass q:isOntologicalClass true.
+    ?superClass q:isOntologicalClass true.
+    ?subClass rdfs:label ?subLabel.
+    ?superClass rdfs:label ?superLabel.
+    ?subClass log:uri ?subIri.
+    ?superClass log:uri ?superIri.
+    ("urn:eyeling:oqg:200:subclass:%s:%s" ?subIri ?superIri) string:format ?key.
+    ?out log:uri ?key.
+    ("- **Subclass distinction** — What distinguishes `%s` from a general `%s`?\n" ?subLabel ?superLabel) string:format ?line.
+}
+=>
+{ ?out log:outputString ?line. }.
+
+#################################################################
+# 3. Object property domain/range pattern
+#################################################################
+
+{ ?property q:isObjectProperty true. ?property rdfs:domain ?domain. ?property rdfs:range ?range. }
+=>
+{
+    [
+        a q:CompetencyQuestion;
+        q:pattern pat:ObjectPropertyQuestion;
+        q:sourcePattern pat:DomainRangePattern;
+        q:aboutProperty ?property;
+        q:questionTemplate "For a given {domain}, which {range} is related by {property}?";
+        q:slot [ q:slotName "domain"; q:slotValue ?domain ];
+        q:slot [ q:slotName "property"; q:slotValue ?property ];
+        q:slot [ q:slotName "range"; q:slotValue ?range ];
+        q:expectedAnswerShape pat:SubjectPredicateObjectBindings;
+        q:priority 5
+    ].
+}.
+
+{
+    ?property q:isObjectProperty true.
+    ?property rdfs:domain ?domain.
+    ?property rdfs:range ?range.
+    ?property rdfs:label ?propertyLabel.
+    ?domain rdfs:label ?domainLabel.
+    ?range rdfs:label ?rangeLabel.
+    ?property log:uri ?propertyIri.
+    ("urn:eyeling:oqg:300:object-property:%s" ?propertyIri) string:format ?key.
+    ?out log:uri ?key.
+    ("- **Object property** — For a given `%s`, which `%s` is related by `%s`?\n" ?domainLabel ?rangeLabel ?propertyLabel) string:format ?line.
+}
+=>
+{ ?out log:outputString ?line. }.
+
+#################################################################
+# 4. Datatype property pattern
+#################################################################
+
+{ ?property q:isDatatypeProperty true. ?property rdfs:domain ?domain. ?property rdfs:range ?datatype. }
+=>
+{
+    [
+        a q:CompetencyQuestion;
+        q:pattern pat:DatatypePropertyQuestion;
+        q:sourcePattern pat:DomainDatatypeRangePattern;
+        q:aboutProperty ?property;
+        q:questionTemplate "What is the {property} value of a given {domain}?";
+        q:slot [ q:slotName "domain"; q:slotValue ?domain ];
+        q:slot [ q:slotName "property"; q:slotValue ?property ];
+        q:slot [ q:slotName "datatype"; q:slotValue ?datatype ];
+        q:expectedAnswerShape pat:LiteralValue;
+        q:priority 5
+    ].
+}.
+
+{
+    ?property q:isDatatypeProperty true.
+    ?property rdfs:domain ?domain.
+    ?property rdfs:range ?datatype.
+    ?property rdfs:label ?propertyLabel.
+    ?domain rdfs:label ?domainLabel.
+    ?property log:uri ?propertyIri.
+    ("urn:eyeling:oqg:400:datatype-property:%s" ?propertyIri) string:format ?key.
+    ?out log:uri ?key.
+    ("- **Datatype property** — What is the `%s` value of a given `%s`?\n" ?propertyLabel ?domainLabel) string:format ?line.
+}
+=>
+{ ?out log:outputString ?line. }.
+
+#################################################################
+# 5. Existential restriction pattern
+#################################################################
+
+{ ?class rdfs:subClassOf ?restriction. ?restriction a owl:Restriction. ?restriction owl:onProperty ?property. ?restriction owl:someValuesFrom ?filler. }
+=>
+{
+    [
+        a q:CompetencyQuestion;
+        q:pattern pat:ExistentialRestrictionQuestion;
+        q:sourcePattern owl:someValuesFrom;
+        q:aboutClass ?class;
+        q:aboutProperty ?property;
+        q:questionTemplate "For each {class}, which {filler} must exist via {property}?";
+        q:slot [ q:slotName "class"; q:slotValue ?class ];
+        q:slot [ q:slotName "property"; q:slotValue ?property ];
+        q:slot [ q:slotName "filler"; q:slotValue ?filler ];
+        q:expectedAnswerShape pat:RequiredExistentialWitness;
+        q:priority 8
+    ].
+}.
+
+{
+    ?class rdfs:subClassOf ?restriction.
+    ?restriction a owl:Restriction.
+    ?restriction owl:onProperty ?property.
+    ?restriction owl:someValuesFrom ?filler.
+    ?class rdfs:label ?classLabel.
+    ?property rdfs:label ?propertyLabel.
+    ?filler rdfs:label ?fillerLabel.
+    ?class log:uri ?classIri.
+    ?property log:uri ?propertyIri.
+    ?filler log:uri ?fillerIri.
+    ("urn:eyeling:oqg:500:some-values:%s:%s:%s" ?classIri ?propertyIri ?fillerIri) string:format ?key.
+    ?out log:uri ?key.
+    ("- **Existential restriction** — For each `%s`, which `%s` must exist via `%s`?\n" ?classLabel ?fillerLabel ?propertyLabel) string:format ?line.
+}
+=>
+{ ?out log:outputString ?line. }.
+
+#################################################################
+# 6. Minimum cardinality pattern
+#################################################################
+
+{ ?class rdfs:subClassOf ?restriction. ?restriction a owl:Restriction. ?restriction owl:onProperty ?property. ?restriction owl:minCardinality ?n. }
+=>
+{
+    [
+        a q:CompetencyQuestion;
+        q:pattern pat:MinimumCardinalityQuestion;
+        q:sourcePattern owl:minCardinality;
+        q:aboutClass ?class;
+        q:aboutProperty ?property;
+        q:questionTemplate "Does every {class} need at least {n} value(s) for {property}?";
+        q:slot [ q:slotName "class"; q:slotValue ?class ];
+        q:slot [ q:slotName "property"; q:slotValue ?property ];
+        q:slot [ q:slotName "n"; q:slotValue ?n ];
+        q:expectedAnswerShape pat:MinimumCardinalityConstraint;
+        q:priority 8
+    ].
+}.
+
+{
+    ?class rdfs:subClassOf ?restriction.
+    ?restriction a owl:Restriction.
+    ?restriction owl:onProperty ?property.
+    ?restriction owl:minCardinality ?n.
+    ?class rdfs:label ?classLabel.
+    ?property rdfs:label ?propertyLabel.
+    ?class log:uri ?classIri.
+    ?property log:uri ?propertyIri.
+    ("urn:eyeling:oqg:600:min-cardinality:%s:%s:%s" ?classIri ?propertyIri ?n) string:format ?key.
+    ?out log:uri ?key.
+    ("- **Minimum cardinality** — Does every `%s` need at least `%s` value for `%s`?\n" ?classLabel ?n ?propertyLabel) string:format ?line.
+}
+=>
+{ ?out log:outputString ?line. }.
+
+#################################################################
+# 7. Disjointness pattern
+#################################################################
+
+{ ?classA owl:disjointWith ?classB. }
+=>
+{
+    [
+        a q:CompetencyQuestion;
+        q:pattern pat:DisjointnessQuestion;
+        q:sourcePattern owl:disjointWith;
+        q:questionTemplate "Can something ever be both a {classA} and a {classB}?";
+        q:slot [ q:slotName "classA"; q:slotValue ?classA ];
+        q:slot [ q:slotName "classB"; q:slotValue ?classB ];
+        q:expectedAnswerShape pat:BooleanOrExceptionList;
+        q:priority 6
+    ].
+}.
+
+{
+    ?classA owl:disjointWith ?classB.
+    ?classA rdfs:label ?labelA.
+    ?classB rdfs:label ?labelB.
+    ?classA log:uri ?iriA.
+    ?classB log:uri ?iriB.
+    ("urn:eyeling:oqg:700:disjoint:%s:%s" ?iriA ?iriB) string:format ?key.
+    ?out log:uri ?key.
+    ("- **Disjointness** — Can something ever be both an `%s` and a `%s`?\n" ?labelA ?labelB) string:format ?line.
+}
+=>
+{ ?out log:outputString ?line. }.
+
+#################################################################
+# 8. Functional property pattern
+#################################################################
+
+{ ?property a owl:FunctionalProperty. }
+=>
+{
+    [
+        a q:CompetencyQuestion;
+        q:pattern pat:FunctionalPropertyQuestion;
+        q:sourcePattern owl:FunctionalProperty;
+        q:aboutProperty ?property;
+        q:questionTemplate "Can one subject have multiple values for {property}?";
+        q:slot [ q:slotName "property"; q:slotValue ?property ];
+        q:expectedAnswerShape pat:BooleanOrConstraint;
+        q:priority 6
+    ].
+}.
+
+{
+    ?property a owl:FunctionalProperty.
+    ?property rdfs:label ?propertyLabel.
+    ?property log:uri ?propertyIri.
+    ("urn:eyeling:oqg:800:functional:%s" ?propertyIri) string:format ?key.
+    ?out log:uri ?key.
+    ("- **Functional property** — Can one subject have multiple values for `%s`?\n" ?propertyLabel) string:format ?line.
+}
+=>
+{ ?out log:outputString ?line. }.
+
+#################################################################
+# 9. Inverse property pattern
+#################################################################
+
+{ ?property owl:inverseOf ?inverseProperty. }
+=>
+{
+    [
+        a q:CompetencyQuestion;
+        q:pattern pat:InversePropertyQuestion;
+        q:sourcePattern owl:inverseOf;
+        q:aboutProperty ?property;
+        q:questionTemplate "If {x} has {property} {y}, should {y} have {inverseProperty} {x}?";
+        q:slot [ q:slotName "property"; q:slotValue ?property ];
+        q:slot [ q:slotName "inverseProperty"; q:slotValue ?inverseProperty ];
+        q:expectedAnswerShape pat:InverseRelationCheck;
+        q:priority 5
+    ].
+}.
+
+{
+    ?property owl:inverseOf ?inverseProperty.
+    ?property rdfs:label ?propertyLabel.
+    ?inverseProperty rdfs:label ?inverseLabel.
+    ?property log:uri ?propertyIri.
+    ?inverseProperty log:uri ?inverseIri.
+    ("urn:eyeling:oqg:810:inverse:%s:%s" ?propertyIri ?inverseIri) string:format ?key.
+    ?out log:uri ?key.
+    ("- **Inverse property** — If `x` has `%s` `y`, should `y` have `%s` `x`?\n" ?propertyLabel ?inverseLabel) string:format ?line.
+}
+=>
+{ ?out log:outputString ?line. }.
+
+#################################################################
+# 10. Property hierarchy pattern
+#################################################################
+
+{ ?subProperty rdfs:subPropertyOf ?superProperty. }
+=>
+{
+    [
+        a q:CompetencyQuestion;
+        q:pattern pat:SubpropertyQuestion;
+        q:sourcePattern rdfs:subPropertyOf;
+        q:aboutProperty ?subProperty;
+        q:questionTemplate "When {subProperty} holds, should {superProperty} also hold?";
+        q:slot [ q:slotName "subProperty"; q:slotValue ?subProperty ];
+        q:slot [ q:slotName "superProperty"; q:slotValue ?superProperty ];
+        q:expectedAnswerShape pat:BooleanOrRule;
+        q:priority 4
+    ].
+}.
+
+{
+    ?subProperty rdfs:subPropertyOf ?superProperty.
+    ?subProperty rdfs:label ?subLabel.
+    ?superProperty rdfs:label ?superLabel.
+    ?subProperty log:uri ?subIri.
+    ?superProperty log:uri ?superIri.
+    ("urn:eyeling:oqg:820:subproperty:%s:%s" ?subIri ?superIri) string:format ?key.
+    ?out log:uri ?key.
+    ("- **Subproperty** — When `%s` holds, should `%s` also hold?\n" ?subLabel ?superLabel) string:format ?line.
+}
+=>
+{ ?out log:outputString ?line. }.

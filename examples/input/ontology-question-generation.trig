@@ -1,0 +1,79 @@
+@prefix ex:   <http://example.org/ontology-question-generation/domain#> .
+@prefix see:  <https://eyereasoner.github.io/eye/reasoning#> .
+@prefix in:   <http://example.org/eyeling/input#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+# A tiny ontology containing common OWL/RDFS patterns from which
+# competency questions can be generated.
+
+ex:Person a owl:Class ;
+    rdfs:label "person" .
+
+ex:Organization a owl:Class ;
+    rdfs:label "organization" .
+
+ex:Project a owl:Class ;
+    rdfs:label "project" .
+
+ex:Employee a owl:Class ;
+    rdfs:label "employee" ;
+    rdfs:subClassOf ex:Person ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty ex:worksFor ;
+        owl:someValuesFrom ex:Organization
+    ] ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty ex:assignedTo ;
+        owl:minCardinality 1
+    ] .
+
+ex:worksFor a owl:ObjectProperty ;
+    rdfs:label "works for" ;
+    rdfs:domain ex:Person ;
+    rdfs:range ex:Organization ;
+    owl:inverseOf ex:employs .
+
+ex:employs a owl:ObjectProperty ;
+    rdfs:label "employs" ;
+    rdfs:domain ex:Organization ;
+    rdfs:range ex:Person .
+
+ex:assignedTo a owl:ObjectProperty ;
+    rdfs:label "assigned to" ;
+    rdfs:domain ex:Employee ;
+    rdfs:range ex:Project .
+
+ex:birthDate a owl:DatatypeProperty, owl:FunctionalProperty ;
+    rdfs:label "birth date" ;
+    rdfs:domain ex:Person ;
+    rdfs:range xsd:date .
+
+ex:legalName a owl:DatatypeProperty ;
+    rdfs:label "legal name" ;
+    rdfs:domain ex:Organization ;
+    rdfs:range xsd:string .
+
+ex:Organization owl:disjointWith ex:Person .
+
+ex:principalEmployer rdfs:subPropertyOf ex:worksFor ;
+    rdfs:label "principal employer" .
+
+xsd:date a rdfs:Datatype ;
+    rdfs:label "date" .
+
+xsd:string a rdfs:Datatype ;
+    rdfs:label "string" .
+
+in:metadata {
+    in:run a see:InputDataset .
+    in:run see:name "ontology-question-generation" .
+    in:run see:title "Ontology Question Generation" .
+    in:run see:sourceFile "examples/ontology-question-generation.n3" .
+    in:run see:description "Small OWL/RDFS ontology used to generate Markdown competency questions from ontological patterns." .
+    in:run see:compiler "Eyeling RDF/TriG input sidecar" .
+}
