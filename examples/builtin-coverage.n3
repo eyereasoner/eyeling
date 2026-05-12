@@ -66,3 +66,8 @@
 }.
 
 { :assurance ?p ?o } log:query { :assurance ?p ?o }.
+
+
+# Markdown rendering via log:outputString.
+:__md_output :text "# builtin-coverage\n" .
+{ :__md_output :text ?text } log:query { :__md_output log:outputString ?text } .

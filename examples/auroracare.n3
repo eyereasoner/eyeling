@@ -350,10 +350,10 @@
 # Emit one complete output block per scenario to avoid ordering issues between
 # separately derived log:outputString facts.
 
-:out_000_intro log:outputString "AuroraCare — Purpose-based Medical Data Exchange\n\n" .
+:out_000_intro log:outputString "# auroracare\n\nAuroraCare — Purpose-based Medical Data Exchange\n\n" .
 
 { :scenario_A :decision "PERMIT" . } => {
-  :out_010_A log:outputString """=== A – Primary care visit ===
+  :out_010_A log:outputString """## A – Primary care visit
 Clinician in the patient's care team accessing the patient summary for primary care management.
 
 Answer
@@ -378,7 +378,7 @@ C10 INFO - matched policy: urn:policy:primary-care-001
 } .
 
 { :scenario_B :decision "PERMIT" . } => {
-  :out_020_B log:outputString """=== B – Quality improvement (in scope) ===
+  :out_020_B log:outputString """## B – Quality improvement (in scope)
 QI analyst using lab results + summary in a secure environment.
 
 Answer
@@ -403,7 +403,7 @@ C10 INFO - matched policy: urn:policy:qi-2025-aurora
 } .
 
 { :scenario_C :decision "DENY" . } => {
-  :out_030_C log:outputString """=== C – Quality improvement (out of scope) ===
+  :out_030_C log:outputString """## C – Quality improvement (out of scope)
 QI analyst with only lab results; policy expects labs + summary.
 
 Answer
@@ -428,7 +428,7 @@ C10 SKIPPED - no matched policy
 } .
 
 { :scenario_D :decision "DENY" . } => {
-  :out_040_D log:outputString """=== D – Insurance management ===
+  :out_040_D log:outputString """## D – Insurance management
 Insurance bot attempting to use health data for insurance management (prohibited purpose).
 
 Answer
@@ -453,7 +453,7 @@ C10 SKIPPED - no matched policy
 } .
 
 { :scenario_E :decision "PERMIT" . } => {
-  :out_050_E log:outputString """=== E – GP checks labs ===
+  :out_050_E log:outputString """## E – GP checks labs
 GP for the same patient checking lab results via the API gateway.
 
 Answer
@@ -478,7 +478,7 @@ C10 INFO - matched policy: urn:policy:primary-care-001
 } .
 
 { :scenario_F :decision "PERMIT" . } => {
-  :out_060_F log:outputString """=== F – Research on anonymised dataset ===
+  :out_060_F log:outputString """## F – Research on anonymised dataset
 Researcher using anonymised labs + summary in a secure environment, with opt-in.
 
 Answer
@@ -503,7 +503,7 @@ C10 INFO - matched policy: urn:policy:research-aurora-diabetes
 } .
 
 { :scenario_G :decision "DENY" . } => {
-  :out_070_G log:outputString """=== G – AI training (opt-out) ===
+  :out_070_G log:outputString """## G – AI training (opt-out)
 Data user wants to train AI, but the subject opted out of AI training.
 
 Answer

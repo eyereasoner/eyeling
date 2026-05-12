@@ -13,6 +13,8 @@
 @prefix string: <http://www.w3.org/2000/10/swap/string#>.
 @prefix : <https://example.org/control-system#>.
 
+:000_md_title log:outputString "# control-system\n\n" .
+
 # -----
 # Facts
 # -----

@@ -1,0 +1,3 @@
+# digital-product-passport  
+
+ACME X1000 SN123 | recycled=13% | lifecycle=52500 gCO2e | CRM=true | hint=http://example.org/dpp#repairFriendly  

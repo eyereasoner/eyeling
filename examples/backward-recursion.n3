@@ -8,3 +8,8 @@
 
 { :a :ancestor ?who } => { :a :reaches ?who }.
 { :a :reaches ?who } log:query { :a :reaches ?who }.
+
+
+# Markdown rendering via log:outputString.
+:__md_output :text "# backward-recursion\n\n@prefix : <urn:example#> .\n\n:a :reaches :b .\n:a :reaches :c .\n" .
+{ :__md_output :text ?text } log:query { :__md_output log:outputString ?text } .

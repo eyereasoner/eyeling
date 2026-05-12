@@ -21,6 +21,8 @@
 @prefix arc: <https://example.org/arc#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 
+:000_md_title log:outputString "# barley-seed-becoming\n\n" .
+
 :case a arc:Case ;
   arc:question "Can a barley seed lineage become a self-renewing and adaptively persistent cycle under no-design laws — and what blocks that becoming when digital heredity, repair, protected dormancy, or variation are missing?" .
 

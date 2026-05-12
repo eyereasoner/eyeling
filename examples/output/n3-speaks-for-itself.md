@@ -1,0 +1,54 @@
+# n3-speaks-for-itself  
+
+@prefix : <https://example.org/n3-speaks#> .  
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .  
+@prefix id: <https://example.org/id/> .  
+
+:report :aliceReaches id:bob .  
+:report :aliceReaches id:carol .  
+:report :aliceReaches id:dave .  
+:report :believes {  
+    id:alice foaf:knows id:bob .  
+} .  
+:report :believes {  
+    id:alice foaf:name "Alice" .  
+} .  
+:report :believes {  
+    id:bob foaf:knows id:carol .  
+} .  
+:report :believes {  
+    id:bob foaf:name "Bob" .  
+} .  
+:report :believes {  
+    id:carol foaf:knows id:dave .  
+} .  
+:report :believes {  
+    id:carol foaf:name "Carol" .  
+} .  
+:report :believes {  
+    id:dave foaf:name "Dave" .  
+} .  
+:report :trusts <https://alice.example/profile.n3> .  
+:report :trusts <https://bob.example/profile.n3> .  
+:report :trusts <https://carol.example/profile.n3> .  
+{  
+    id:alice foaf:knows id:bob .  
+} :believedFromDoc <https://alice.example/profile.n3> .  
+{  
+    id:alice foaf:name "Alice" .  
+} :believedFromDoc <https://alice.example/profile.n3> .  
+{  
+    id:bob foaf:knows id:carol .  
+} :believedFromDoc <https://bob.example/profile.n3> .  
+{  
+    id:bob foaf:name "Bob" .  
+} :believedFromDoc <https://bob.example/profile.n3> .  
+{  
+    id:carol foaf:knows id:dave .  
+} :believedFromDoc <https://carol.example/profile.n3> .  
+{  
+    id:carol foaf:name "Carol" .  
+} :believedFromDoc <https://carol.example/profile.n3> .  
+{  
+    id:dave foaf:name "Dave" .  
+} :believedFromDoc <https://carol.example/profile.n3> .  

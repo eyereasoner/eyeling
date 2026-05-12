@@ -9209,6 +9209,19 @@ function makeExplain(deps) {
     return 0;
   }
 
+  function addMarkdownHardBreaks(text) {
+    const normalized = String(text).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    if (!normalized.startsWith('# ')) return text;
+
+    return normalized
+      .split('\n')
+      .map((line) => {
+        if (line.length === 0) return line;
+        return line.replace(/[ \t]+$/g, '') + '  ';
+      })
+      .join('\n');
+  }
+
   function collectOutputStringsFromFacts(facts, prefixes) {
     // Gather all (key, string) pairs from the saturated fact store.
     const pairs = [];
@@ -9229,7 +9242,7 @@ function makeExplain(deps) {
       return a.idx - b.idx; // stable tie-breaker
     });
 
-    return pairs.map((p) => p.text).join('');
+    return addMarkdownHardBreaks(pairs.map((p) => p.text).join(''));
   }
 
   return { printExplanation, collectOutputStringsFromFacts };

@@ -217,4 +217,4 @@
     string:format ?Line
 }
 log:query
-{ 1 log:outputString ?Line }.
+{ 0 log:outputString "# genetic-algorithm\n\n". 1 log:outputString ?Line }.

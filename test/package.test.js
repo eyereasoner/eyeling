@@ -58,8 +58,40 @@ function runChecked(cmd, args, opts = {}) {
   return res;
 }
 
-function normalizeNewlines(s) {
-  return String(s).replace(/\r\n/g, '\n');
+function normalizeNewlines(text) {
+  return String(text).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+}
+
+function stripTrailingWhitespace(text) {
+  return normalizeNewlines(text)
+    .split('\n')
+    .map((line) => line.replace(/[\t ]+$/g, ''))
+    .join('\n');
+}
+
+function markdownizeOutput(text, inputFile) {
+  const stem = path.basename(inputFile, path.extname(inputFile));
+  const body = stripTrailingWhitespace(text)
+    .trim()
+    .split('\n')
+    .filter((_, i, lines) => lines.length !== 1 || lines[0].length > 0)
+    .map((line) => {
+      const m = line.match(/^={2,}\s*(.*?)\s*={2,}\s*$/);
+      return m ? `## ${m[1].trim()}` : line;
+    })
+    .join('\n')
+    .trim();
+
+  if (body.startsWith('# ')) return `${body}\n`;
+  return body ? `# ${stem}\n\n${body}\n` : `# ${stem}\n`;
+}
+
+function normalizeTextForCompare(text) {
+  return stripTrailingWhitespace(text).trim();
+}
+
+function normalizeMarkdownForCompare(text) {
+  return normalizeNewlines(text).replace(/^\n+|\n+$/g, '');
 }
 
 // Expectation logic (shared with test/examples.test.js):
@@ -79,6 +111,26 @@ function resolveExampleTrigInput(examplesDir, inputFile) {
   const abs = path.join(examplesDir, rel);
   if (!fs.existsSync(abs)) return null;
   return { abs, rel };
+}
+
+function resolveExpectedPath(outputDir, inputFile) {
+  const stem = path.basename(inputFile, path.extname(inputFile));
+  const preference = new Map([
+    ['.md', 0],
+    ['.txt', 1],
+    ['.n3', 2],
+  ]);
+  const candidates = fs
+    .readdirSync(outputDir)
+    .filter((name) => path.basename(name, path.extname(name)) === stem)
+    .sort((a, b) => {
+      const pa = preference.get(path.extname(a)) ?? 99;
+      const pb = preference.get(path.extname(b)) ?? 99;
+      return pa - pb || a.localeCompare(b);
+    });
+
+  if (candidates.length === 0) return null;
+  return path.join(outputDir, candidates[0]);
 }
 
 function hasGit() {
@@ -191,11 +243,11 @@ function main() {
     try {
       for (const file of SMOKE_EXAMPLES) {
         const inputPath = path.join(examplesDir, file);
-        const expectedPath = path.join(outputDir, file);
+        const expectedPath = resolveExpectedPath(outputDir, file);
 
         if (!fs.existsSync(inputPath)) throw new Error(`Missing example in installed package: ${inputPath}`);
-        if (!fs.existsSync(expectedPath))
-          throw new Error(`Missing golden output in installed package: ${expectedPath}`);
+        if (!expectedPath || !fs.existsSync(expectedPath))
+          throw new Error(`Missing golden output in installed package for ${file}`);
 
         const n3Text = fs.readFileSync(inputPath, 'utf8');
         const expectedRc = expectedExitCode(n3Text);
@@ -229,9 +281,10 @@ ${stderr}`
         // Normalize newlines so this is stable across platforms.
         const got = normalizeNewlines(r.stdout || '');
         const exp = normalizeNewlines(fs.readFileSync(expectedPath, 'utf8'));
+        const compare = path.extname(expectedPath) === '.md' ? normalizeMarkdownForCompare : normalizeTextForCompare;
 
-        if (got !== exp) {
-          const genPath = path.join(tmpExamplesOut, file);
+        if (compare(got) !== compare(exp)) {
+          const genPath = path.join(tmpExamplesOut, path.basename(expectedPath));
           fs.writeFileSync(genPath, got, 'utf8');
           console.error(`
 Output differs for ${file}:`);

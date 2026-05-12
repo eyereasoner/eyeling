@@ -193,7 +193,7 @@
   ( "on-state load current            : %s\n\n" ?onCurrentText ) string:format ?onCurrentLine .
 }
     => {
-         :01-answer-1 log:outputString "=== Answer ===\n" .
+         :01-answer-1 log:outputString "# transistor-switch\n\n## Answer\n" .
          :01-answer-2 log:outputString "In this toy transistor-switch model, a low input leaves the transistor in cutoff (OFF) and a high input drives it into saturation (ON), so the load behaves like an on/off branch rather than a linear amplifier.\n" .
          :01-answer-3 log:outputString "case                             : transistor-switch\n" .
          :01-answer-4 log:outputString ?lowStateLine .
@@ -223,7 +223,7 @@
   ( "high-input load limit            : %s\n" ?loadLimitText ) string:format ?loadLine .
 }
     => {
-         :02-why-01 log:outputString "=== Reason Why ===\n" .
+         :02-why-01 log:outputString "## Reason Why\n" .
          :02-why-02 log:outputString "We model an NPN low-side switch with exact millivolt and microamp arithmetic. The base current comes from (Vin - Vbe,on)/Rb when the base-emitter junction is forward biased, and the collector current is the smaller of beta * Ib and the load-limited current (Vcc - Vce,sat)/Rl.\n" .
          :02-why-03 log:outputString ?supplyLine .
          :02-why-04 log:outputString ?rbLine .
@@ -244,7 +244,7 @@
   :case :loadVoltageMatchesResistorDrop true .
 }
     => {
-         :03-check-1 log:outputString "=== Check ===\n" .
+         :03-check-1 log:outputString "## Check\n" .
          :03-check-2 log:outputString "low input stays in cutoff        : yes\n" .
          :03-check-3 log:outputString "high input reaches saturation    : yes\n" .
          :03-check-4 log:outputString "switching states differ          : yes\n" .

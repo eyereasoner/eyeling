@@ -19,6 +19,8 @@
 @prefix arc: <https://example.org/arc#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 
+:000_md_title log:outputString "# act-sensor-memory-reset\n\n" .
+
 :case a arc:Case ;
   arc:question "Can a radiation sensor's alarm memory be reliably reset with a battery pack, and can the same reset be done using only an ambient heat bath?" .
 

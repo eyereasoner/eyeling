@@ -22,6 +22,8 @@
 @prefix arc: <https://example.org/arc#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 
+:000_md_title log:outputString "# act-photosynthetic-exciton-transfer\n\n" .
+
 :case a arc:Case ;
   arc:question "Can a tuned photosynthetic antenna deliver excitation efficiently to a reaction center by short-lived quantum-assisted transfer, while a detuned contrast complex cannot?" .
 

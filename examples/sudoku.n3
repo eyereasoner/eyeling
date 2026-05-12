@@ -112,7 +112,7 @@
     ?givens ?blanks ?forced ?guessed ?nodes ?backtracks ?moveSummary ) string:format ?reasonText .
 }
     => {
-         :01-answer log:outputString "=== Answer ===\n" ;
+         :01-answer log:outputString "# sudoku\n\n## Answer\n" ;
                     log:outputString ?answerText .
          :01a-answer log:outputString "case              : sudoku\n" ;
                      log:outputString "default puzzle    : classic\n\n" ;
@@ -122,7 +122,7 @@
                      log:outputString "Completed grid\n" ;
                      log:outputString ?solutionText .
          :01b-answer log:outputString "\n" .
-         :02-reason log:outputString "=== Reason Why ===\n" ;
+         :02-reason log:outputString "## Reason Why\n" ;
                     log:outputString ?reasonText ;
                     log:outputString "\n\n" .
        } .
@@ -144,7 +144,7 @@
     ?givens ?blanks ?forced ?guessed ?nodes ?backtracks ?moveSummary ) string:format ?reasonText .
 }
     => {
-         :01-answer log:outputString "=== Answer ===\n" ;
+         :01-answer log:outputString "# sudoku\n\n## Answer\n" ;
                     log:outputString ?answerText .
          :01a-answer log:outputString "case              : sudoku\n" ;
                      log:outputString "default puzzle    : classic\n\n" ;
@@ -154,7 +154,7 @@
                      log:outputString "Completed grid\n" ;
                      log:outputString ?solutionText ;
                      log:outputString "\n" .
-         :02-reason log:outputString "=== Reason Why ===\n" ;
+         :02-reason log:outputString "## Reason Why\n" ;
                     log:outputString ?reasonText ;
                     log:outputString "\n\n" .
        } .
@@ -164,10 +164,10 @@
   :case :error ?error .
 }
     => {
-         :01-answer log:outputString "=== Answer ===\n" ;
+         :01-answer log:outputString "# sudoku\n\n## Answer\n" ;
                     log:outputString "The supplied puzzle is not well formed and cannot be parsed as a 9×9 Sudoku.\n" ;
                     log:outputString "case              : sudoku\n\n" .
-         :02-reason log:outputString "=== Reason Why ===\n" ;
+         :02-reason log:outputString "## Reason Why\n" ;
                     log:outputString ?error ;
                     log:outputString "\n\n" .
        } .
@@ -178,13 +178,13 @@
         :error ?error .
 }
     => {
-         :01-answer log:outputString "=== Answer ===\n" ;
+         :01-answer log:outputString "# sudoku\n\n## Answer\n" ;
                     log:outputString "The puzzle is invalid and cannot be solved as a standard Sudoku.\n" ;
                     log:outputString "case              : sudoku\n\n" ;
                     log:outputString "Puzzle\n" ;
                     log:outputString ?puzzleText ;
                     log:outputString "\n" .
-         :02-reason log:outputString "=== Reason Why ===\n" ;
+         :02-reason log:outputString "## Reason Why\n" ;
                     log:outputString ?error ;
                     log:outputString "\n\n" .
        } .
@@ -200,14 +200,14 @@
     ?nodes ?backtracks ) string:format ?reasonText .
 }
     => {
-         :01-answer log:outputString "=== Answer ===\n" ;
+         :01-answer log:outputString "# sudoku\n\n## Answer\n" ;
                     log:outputString "No valid Sudoku solution exists for the supplied puzzle.\n" ;
                     log:outputString "case                         : sudoku\n" ;
                     log:outputString "default puzzle               : classic\n" ;
                     log:outputString "\nPuzzle\n" ;
                     log:outputString ?puzzleText ;
                     log:outputString "\n" .
-         :02-reason log:outputString "=== Reason Why ===\n" ;
+         :02-reason log:outputString "## Reason Why\n" ;
                     log:outputString ?reasonText ;
                     log:outputString "\n\n" .
        } .
@@ -233,7 +233,7 @@
   ( "C7 %s - the search statistics and the successful proof path are internally consistent.\n" ?c7 ) string:format ?l7 .
 }
     => {
-         :03-check log:outputString "=== Check ===\n" ;
+         :03-check log:outputString "## Check\n" ;
                    log:outputString ?l1 ;
                    log:outputString ?l2 ;
                    log:outputString ?l3 ;
@@ -254,10 +254,10 @@
     => { :03a-check log:outputString "C8 INFO - a second search found another solution, so the puzzle is not unique.\n" . } .
 
 { :case :status "illegal-clues" . }
-    => { :03-check log:outputString "=== Check ===\nC1 failed - the given clues already violate Sudoku rules.\n" . } .
+    => { :03-check log:outputString "## Check\nC1 failed - the given clues already violate Sudoku rules.\n" . } .
 
 { :case :status "invalid-input" . }
-    => { :03-check log:outputString "=== Check ===\nC1 failed - the supplied text does not normalize to exactly 81 legal Sudoku cells.\n" . } .
+    => { :03-check log:outputString "## Check\nC1 failed - the supplied text does not normalize to exactly 81 legal Sudoku cells.\n" . } .
 
 { :case :status "unsatisfiable" . }
-    => { :03-check log:outputString "=== Check ===\nC1 OK - the given clues are internally consistent.\nC2 OK - every explored assignment respected row, column, and box legality.\nC3 failed - exhaustive search found no complete legal grid.\n" . } .
+    => { :03-check log:outputString "## Check\nC1 OK - the given clues are internally consistent.\nC2 OK - every explored assignment respected row, column, and box legality.\nC3 failed - exhaustive search found no complete legal grid.\n" . } .

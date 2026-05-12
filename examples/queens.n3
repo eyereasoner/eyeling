@@ -16,5 +16,6 @@
   :run :n ?N; :maxPrint ?MaxPrint.
   (?N ?MaxPrint) :render ?Report.
 } log:query {
+  :000_md_title log:outputString "# queens\n\n" .
   :answer log:outputString ?Report.
 }.

@@ -1,9 +1,0 @@
-@prefix : <http://example.org/#> .
-
-:association :subject :Bob .
-:association :dataGraph _:src2_g0 .
-:association :signatureGraph _:src2_g1 .
-:association :metadataGraph _:src2_g3 .
-:association :cryptosuite "ecdsa-rdfc-2019" .
-:association :issuer <https://university.example/issuers/14> .
-:association :status :contextAssociationVerified .

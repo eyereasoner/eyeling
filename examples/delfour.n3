@@ -331,7 +331,7 @@
 # ARC rendering through log:outputString
 # --------------------------------------
 
-:out01 log:outputString "=== Answer ===\n" .
+:out01 log:outputString "# delfour\n\n## Answer\n" .
 :out02 log:outputString "The scanner is allowed to use a neutral shopping insight and recommends Low-Sugar Tea Biscuits instead of Classic Tea Biscuits.\n" .
 :out03 log:outputString "case                 : delfour\n" .
 :out04 log:outputString "decision             : Allowed\n" .
@@ -345,7 +345,7 @@
     :out06 log:outputString ?line .
 } .
 
-:out07 log:outputString "\n=== Reason Why ===\n" .
+:out07 log:outputString "\n## Reason Why\n" .
 :out08 log:outputString "The phone desensitizes a diabetes-related household condition into a scoped low-sugar need, wraps it in an expiring Insight + Policy envelope, signs it, and the scanner consumes that envelope for shopping assistance.\n" .
 :out09 log:outputString "metric               : sugar_g_per_serving\n" .
 
@@ -396,7 +396,7 @@
     :out18 log:outputString ?line .
 } .
 
-:out19 log:outputString "\n=== Check ===\n" .
+:out19 log:outputString "\n## Check\n" .
 
 { :check :signatureVerifies true . } => { :out20 log:outputString "signature verifies              : yes\n" . } .
 { :check :payloadHashMatches true . } => { :out21 log:outputString "payload hash matches            : yes\n" . } .

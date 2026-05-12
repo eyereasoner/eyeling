@@ -23,10 +23,9 @@
   :Run :capacity ?Capacity; :localSearchStopsAt :FinalLocal.
   :FinalLocal :genome ?Genome; :selectedItems ?Items; :weight ?Weight; :value ?Value; :fitness ?Fitness; :generationsEvaluated ?Generations.
   :ExhaustiveOptimum :genome ?OptGenome; :value ?OptValue.
-  ("=== Answer ===\nfinal genome : %s\nselected items : %s\nweight : %d / %d\nvalue : %d\nfitness : %d\ngenerations evaluated : %d\nexhaustive optimum value : %d at genome %s\n\n=== Explanation ===\nEach genome bit says whether the corresponding item is selected for the knapsack. Feasible candidates get fitness 1000000 minus value, so higher value means lower fitness; overweight candidates are penalized above every feasible candidate. The N3 source records the deterministic local-search result and validates that the final genome respects capacity and has no strictly better one-bit neighbor. For transparency, an exhaustive enumeration also records the global best feasible value, showing this is a local mutation search rather than a global-optimality claim." ?Genome ?Items ?Weight ?Capacity ?Value ?Fitness ?Generations ?OptValue ?OptGenome) string:format ?Block.
+  ("# genetic-knapsack-selection\n\n## Answer\nfinal genome : %s\nselected items : %s\nweight : %d / %d\nvalue : %d\nfitness : %d\ngenerations evaluated : %d\nexhaustive optimum value : %d at genome %s\n\n## Explanation\nEach genome bit says whether the corresponding item is selected for the knapsack. Feasible candidates get fitness 1000000 minus value, so higher value means lower fitness; overweight candidates are penalized above every feasible candidate. The N3 source records the deterministic local-search result and validates that the final genome respects capacity and has no strictly better one-bit neighbor. For transparency, an exhaustive enumeration also records the global best feasible value, showing this is a local mutation search rather than a global-optimality claim." ?Genome ?Items ?Weight ?Capacity ?Value ?Fitness ?Generations ?OptValue ?OptGenome) string:format ?Block.
 } => {
   :geneticKnapsackSelection log:outputString ?Block.
   :geneticKnapsackSelection :selects :FinalLocal.
 }.
 
-{ :geneticKnapsackSelection :selects ?Candidate } log:query { :geneticKnapsackSelection :selects ?Candidate }.

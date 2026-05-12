@@ -16,5 +16,5 @@
 } .
 
 { :Case :product ?Product.
-  ("=== Answer ===\nproduct = %s\n\n=== Explanation ===\nThe compiled rule multiplies :x and :y using math:product." ?Product) string:format ?Block.
+  ("# smoke-arithmetic\n\n## Answer\nproduct = %s\n\n## Explanation\nThe compiled rule multiplies :x and :y using math:product." ?Product) string:format ?Block.
 } => { :out01 log:outputString ?Block. } .

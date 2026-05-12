@@ -5,3 +5,8 @@
 :t log:nameOf { :a :name "Alice" . } .
 :t :statedBy :bob .
 :t :recorded "2021-07-07"^^xsd:date .
+
+
+# Markdown rendering via log:outputString.
+:__md_output :text "# annotation\n" .
+{ :__md_output :text ?text } log:query { :__md_output log:outputString ?text } .

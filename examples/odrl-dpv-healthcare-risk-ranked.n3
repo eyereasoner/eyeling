@@ -527,7 +527,7 @@
 {
   :AgreementHC1 dct:title ?alabel .
   :PatientExample dct:title ?plabel .
-  ( "\n=== Ranked DPV Risk Report (Healthcare & Life Sciences) ===\nAgreement: %s\nProfile: %s\n\n"
+  ( "# odrl-dpv-healthcare-risk-ranked\n\n## Ranked DPV Risk Report (Healthcare & Life Sciences)\nAgreement: %s\nProfile: %s\n\n"
     ?alabel ?plabel ) string:format ?hdr .
 }
 =>

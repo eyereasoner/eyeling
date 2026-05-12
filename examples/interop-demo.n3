@@ -14,6 +14,8 @@
 @prefix math: <http://www.w3.org/2000/10/swap/math#>.
 @prefix log:  <http://www.w3.org/2000/10/swap/log#>.
 
+"000" log:outputString "# interop-demo\n\n" .
+
 # ---------------------------------------------
 # 1) Three independent apps (different schemas)
 # ---------------------------------------------
@@ -101,6 +103,6 @@
   ?c ex:recommendedAction ex:ApplyGoldDiscountAndSendInvoiceReminder.
 
   # Optional ordered console output for eyeling
-  "001" log:outputString "ACTION: apply GoldDiscount and send invoice reminder (opt-in confirmed).".
+  "001" log:outputString "ACTION: apply GoldDiscount and send invoice reminder (opt-in confirmed).\n".
 }.
 

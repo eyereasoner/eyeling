@@ -23,3 +23,8 @@ VERSION "1.2"
 } log:query {
   :workOrder :entails <<( ?device :needs ?action )>> .
 } .
+
+
+# Markdown rendering via log:outputString.
+:__md_output :text "# rdf-dataset\n\nVERSION \"1.2\"\n\n@prefix : <https://eyereasoner.github.io/eyeling/examples/rdf-dataset#> .\n\n:workOrder :entails <<( :sensor :needs :inspection )>> .\n" .
+{ :__md_output :text ?text } log:query { :__md_output log:outputString ?text } .

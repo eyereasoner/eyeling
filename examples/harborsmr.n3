@@ -22,6 +22,8 @@
 @prefix string: <http://www.w3.org/2000/10/swap/string#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
+:000_md_title log:outputString "# harborsmr\n\n" .
+
 # -----
 # Facts
 # -----

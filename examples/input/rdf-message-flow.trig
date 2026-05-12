@@ -13,7 +13,7 @@
 # Formal Eyeling input evidence in RDF 1.2 TriG.
 # The generated runner reads this TriG evidence directly.
 
-:temperatureFlow rdf:type msg:MessageStream .
+:temperatureFlow a msg:MessageStream .
 :temperatureFlow msg:orderedMessages (:m001 :m002 :m003 :m004 :m005) .
 :temperatureFlow msg:message :m001 .
 :temperatureFlow msg:message :m002 .
@@ -23,33 +23,33 @@
 :temperatureFlow :pipeline (:ingest :validate :interpret :route :sink) .
 :temperatureFlow :highThreshold 26 .
 :m001 :atStage :ingest .
-:m001 rdf:type msg:RDFMessage .
+:m001 a msg:RDFMessage .
 :m001 msg:offset 1 .
 :m001 msg:nextMessage :m002 .
 :m001 prov:generatedAtTime "2026-05-12T18:20:00Z" .
 :m001 msg:payloadKind :observation .
 :m001 msg:expectedResult 21 .
 :m001 msg:payload in:formula1 .
-:m002 rdf:type msg:RDFMessage .
+:m002 a msg:RDFMessage .
 :m002 msg:offset 2 .
 :m002 msg:nextMessage :m003 .
 :m002 prov:generatedAtTime "2026-05-12T18:21:00Z" .
 :m002 msg:payloadKind :observation .
 :m002 msg:expectedResult 22 .
 :m002 msg:payload in:formula2 .
-:m003 rdf:type msg:RDFMessage .
+:m003 a msg:RDFMessage .
 :m003 msg:offset 3 .
 :m003 msg:nextMessage :m004 .
 :m003 prov:generatedAtTime "2026-05-12T18:22:00Z" .
 :m003 msg:payloadKind :heartbeat .
-:m004 rdf:type msg:RDFMessage .
+:m004 a msg:RDFMessage .
 :m004 msg:offset 4 .
 :m004 msg:nextMessage :m005 .
 :m004 prov:generatedAtTime "2026-05-12T18:23:00Z" .
 :m004 msg:payloadKind :observation .
 :m004 msg:expectedResult 28 .
 :m004 msg:payload in:formula3 .
-:m005 rdf:type msg:RDFMessage .
+:m005 a msg:RDFMessage .
 :m005 msg:offset 5 .
 :m005 prov:generatedAtTime "2026-05-12T18:24:00Z" .
 :m005 msg:payloadKind :observation .
@@ -57,28 +57,28 @@
 :m005 msg:payload in:formula4 .
 
 in:formula1 {
-  _:m001b0 rdf:type sosa:Observation .
+  _:m001b0 a sosa:Observation .
   _:m001b0 sosa:madeBySensor :thermometerA .
   _:m001b0 sosa:resultTime "2026-05-12T18:20:00Z" .
   _:m001b0 sosa:hasSimpleResult 21 .
 }
 
 in:formula2 {
-  _:m002b0 rdf:type sosa:Observation .
+  _:m002b0 a sosa:Observation .
   _:m002b0 sosa:madeBySensor :thermometerA .
   _:m002b0 sosa:resultTime "2026-05-12T18:21:00Z" .
   _:m002b0 sosa:hasSimpleResult 22 .
 }
 
 in:formula3 {
-  _:m004b0 rdf:type sosa:Observation .
+  _:m004b0 a sosa:Observation .
   _:m004b0 sosa:madeBySensor :thermometerA .
   _:m004b0 sosa:resultTime "2026-05-12T18:23:00Z" .
   _:m004b0 sosa:hasSimpleResult 28 .
 }
 
 in:formula4 {
-  _:m005b0 rdf:type sosa:Observation .
+  _:m005b0 a sosa:Observation .
   _:m005b0 sosa:madeBySensor :thermometerA .
   _:m005b0 sosa:resultTime "2026-05-12T18:24:00Z" .
   _:m005b0 sosa:hasSimpleResult 29 .

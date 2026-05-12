@@ -30,16 +30,59 @@ function run(cmd, args, opts = {}) {
   });
 }
 
-// Normalize output for comparison.
+function normalizeNewlines(text) {
+  return String(text).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+}
+
+function stripTrailingWhitespace(text) {
+  return normalizeNewlines(text)
+    .split('\n')
+    .map((line) => line.replace(/[\t ]+$/g, ''))
+    .join('\n');
+}
+
+function markdownizeOutput(text, inputFile) {
+  const stem = path.basename(inputFile, path.extname(inputFile));
+  const body = stripTrailingWhitespace(text)
+    .trim()
+    .split('\n')
+    .filter((_, i, lines) => lines.length !== 1 || lines[0].length > 0)
+    .map((line) => {
+      const m = line.match(/^={2,}\s*(.*?)\s*={2,}\s*$/);
+      return m ? `## ${m[1].trim()}` : line;
+    })
+    .join('\n')
+    .trim();
+
+  if (body.startsWith('# ')) return `${body}\n`;
+  return body ? `# ${stem}\n\n${body}\n` : `# ${stem}\n`;
+}
+
+function normalizeTextForCompare(text) {
+  return stripTrailingWhitespace(text).trim();
+}
+
+function normalizeMarkdownForCompare(text) {
+  return normalizeNewlines(text).replace(/^\n+|\n+$/g, '');
+}
+
+// Normalize N3 output for comparison.
 // Eyeling (and other N3 tools) may emit the same closure with different
 // triple ordering. Examples tests should verify content, not presentation.
-function normalizeForCompare(n3Text) {
-  return String(n3Text)
-    .split(/\r?\n/)
-    .map((l) => l.replace(/[\t ]+$/g, '')) // trim trailing whitespace
+function normalizeN3ForCompare(n3Text) {
+  return stripTrailingWhitespace(n3Text)
+    .split('\n')
     .filter((l) => l.length > 0)
     .sort((a, b) => a.localeCompare(b))
     .join('\n');
+}
+
+function normalizeForCompare(text, expectedPath, inputFile, generated = false) {
+  const ext = path.extname(expectedPath);
+  const value = text;
+  if (ext === '.md') return normalizeMarkdownForCompare(value);
+  if (ext === '.txt') return normalizeTextForCompare(value);
+  return normalizeN3ForCompare(value);
 }
 
 // Expectation logic (robust, long-term):
@@ -79,22 +122,25 @@ function showDiff({ examplesDir, expectedPath, generatedPath }) {
 }
 
 function resolveExpectedPath(outputDir, inputFile) {
-  const exactPath = path.join(outputDir, inputFile);
-  if (fs.existsSync(exactPath)) return exactPath;
-
   const stem = path.basename(inputFile, path.extname(inputFile));
+  const preference = new Map([
+    ['.md', 0],
+    ['.txt', 1],
+    ['.n3', 2],
+  ]);
   const candidates = fs
     .readdirSync(outputDir)
     .filter((name) => path.basename(name, path.extname(name)) === stem)
     .sort((a, b) => {
-      if (path.extname(a) === '.txt' && path.extname(b) !== '.txt') return -1;
-      if (path.extname(a) !== '.txt' && path.extname(b) === '.txt') return 1;
-      return a.localeCompare(b);
+      const pa = preference.get(path.extname(a)) ?? 99;
+      const pb = preference.get(path.extname(b)) ?? 99;
+      return pa - pb || a.localeCompare(b);
     });
 
   if (candidates.length === 0) return null;
   return path.join(outputDir, candidates[0]);
 }
+
 
 function resolveExampleTrigInput(root, inputFile) {
   const stem = path.basename(inputFile, path.extname(inputFile));
@@ -229,13 +275,15 @@ function main() {
 
     const ms = Date.now() - start;
 
-    // Compare output (order-insensitive)
+    // Compare output. N3 outputs are order-insensitive; Markdown outputs are order-sensitive.
     let diffOk = false;
     try {
       const expectedText = fs.readFileSync(expectedPath, 'utf8');
       const generatedText = fs.readFileSync(generatedPath, 'utf8');
       if (expectedText == null) throw new Error('missing expected output');
-      diffOk = normalizeForCompare(expectedText) === normalizeForCompare(generatedText);
+      diffOk =
+        normalizeForCompare(expectedText, expectedPath, file, false) ===
+        normalizeForCompare(generatedText, expectedPath, file, true);
     } catch {
       diffOk = false;
     }

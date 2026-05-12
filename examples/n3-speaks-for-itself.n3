@@ -116,3 +116,8 @@ log:query
 {
   :report :aliceReaches ?Who.
 }.
+
+
+# Markdown rendering via log:outputString.
+:__md_output :text "# n3-speaks-for-itself\n\n@prefix : <https://example.org/n3-speaks#> .\n@prefix foaf: <http://xmlns.com/foaf/0.1/> .\n@prefix id: <https://example.org/id/> .\n\n:report :aliceReaches id:bob .\n:report :aliceReaches id:carol .\n:report :aliceReaches id:dave .\n:report :believes {\n    id:alice foaf:knows id:bob .\n} .\n:report :believes {\n    id:alice foaf:name \"Alice\" .\n} .\n:report :believes {\n    id:bob foaf:knows id:carol .\n} .\n:report :believes {\n    id:bob foaf:name \"Bob\" .\n} .\n:report :believes {\n    id:carol foaf:knows id:dave .\n} .\n:report :believes {\n    id:carol foaf:name \"Carol\" .\n} .\n:report :believes {\n    id:dave foaf:name \"Dave\" .\n} .\n:report :trusts <https://alice.example/profile.n3> .\n:report :trusts <https://bob.example/profile.n3> .\n:report :trusts <https://carol.example/profile.n3> .\n{\n    id:alice foaf:knows id:bob .\n} :believedFromDoc <https://alice.example/profile.n3> .\n{\n    id:alice foaf:name \"Alice\" .\n} :believedFromDoc <https://alice.example/profile.n3> .\n{\n    id:bob foaf:knows id:carol .\n} :believedFromDoc <https://bob.example/profile.n3> .\n{\n    id:bob foaf:name \"Bob\" .\n} :believedFromDoc <https://bob.example/profile.n3> .\n{\n    id:carol foaf:knows id:dave .\n} :believedFromDoc <https://carol.example/profile.n3> .\n{\n    id:carol foaf:name \"Carol\" .\n} :believedFromDoc <https://carol.example/profile.n3> .\n{\n    id:dave foaf:name \"Dave\" .\n} :believedFromDoc <https://carol.example/profile.n3> .\n" .
+{ :__md_output :text ?text } log:query { :__md_output log:outputString ?text } .

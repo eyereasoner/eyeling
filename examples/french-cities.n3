@@ -14,6 +14,8 @@
 @prefix string: <http://www.w3.org/2000/10/swap/string#>.
 @prefix : <https://example.org/french-cities#>.
 
+:000_md_title log:outputString "# french-cities\n\n" .
+
 # ---------------------------------------------------------------------------
 # Facts
 # ---------------------------------------------------------------------------

@@ -17,6 +17,8 @@
 @prefix arc: <https://example.org/arc#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 
+:000_md_title log:outputString "# act-isolation-breach\n\n" .
+
 :case a arc:Case ;
   arc:question "Can an isolation-breach token be prepared, permuted, copied, measured, and audited across unlike classical media, and what exactly can't be done with the quantum provenance seal?" .
 

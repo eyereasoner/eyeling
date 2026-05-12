@@ -1021,6 +1021,8 @@
 
 @prefix log: <http://www.w3.org/2000/10/swap/log#>.
 
+:000_md_title log:outputString "# deep-taxonomy-1000\n\n" .
+
 # ARC checks
 { :ind a :N0. }
     => { :arc :check1 "C1 OK - the starting classification N0 is present." . } .

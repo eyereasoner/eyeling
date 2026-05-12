@@ -1,0 +1,7 @@
+# smoke-arithmetic  
+
+## Answer  
+product = 42  
+
+## Explanation  
+The compiled rule multiplies :x and :y using math:product.  

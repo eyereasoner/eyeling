@@ -1,0 +1,19 @@
+# odrl-risk-mitigation  
+
+## Risk report for Example Platform Agreement (with fixes) (profile: Carol (example consumer))  
+1) score=100 (https://example.org/odrl-mitigation-demo#High), clause D6 — Provider can delete user data. This clause is risky because it allows the provider to delete the consumer’s data. Clause D6: We may delete your data at our discretion.  
+2) score=93 (https://example.org/odrl-mitigation-demo#High), clause D5 — No data export / portability. This clause is risky because it prohibits exporting data, undermining portability. Clause D5: You may not export or download your data from the service.  
+3) score=89 (https://example.org/odrl-mitigation-demo#High), clause D4 — Tracking without opt-in. This clause is risky because it permits tracking without explicit opt-in consent. Clause D4: We may track your activity to improve services.  
+4) score=85 (https://example.org/odrl-mitigation-demo#High), clause D2 — Auto-renewal without reminder. This clause is risky because it allows auto-renewal without a reminder. Consumer needs at least 7 days reminder. Clause D2: Your subscription renews automatically unless you cancel.  
+5) score=85 (https://example.org/odrl-mitigation-demo#High), clause D1 — Notice period too short. This clause is risky because the notice period (3 days) is below the consumer requirement (14 days). Clause D1: We may change these terms with notice. Notice may be as short as 3 days.  
+6) score=79 (https://example.org/odrl-mitigation-demo#Medium), clause D3 — Non-refundable fees. This clause is risky because it declares fees non-refundable, conflicting with a refund/cooling-off expectation (>= 14 days). Clause D3: All fees are non-refundable.  
+7) score=73 (https://example.org/odrl-mitigation-demo#Medium), clause D2 — Liability cap too low. This clause is risky because the liability cap (20 EUR) is below the consumer minimum (200 EUR). Clause D2: Your subscription renews automatically unless you cancel.  
+
+--- Suggested mitigations (highest risk first) ---  
+1) clause D6 — Provider can delete user data (score=100). Suggested fix: remove provider discretion to delete data; allow deletion only on consumer request or legal obligation.  
+2) clause D5 — No data export / portability (score=93). Suggested fix: add a permission to export/download user data (data portability).  
+3) clause D4 — Tracking without opt-in (score=89). Suggested fix: require opt-in consent for tracking (optInConsent=true).  
+4) clause D2 — Auto-renewal without reminder (score=85). Suggested fix: add a reminder duty for auto-renewal with reminderDays >= 7.  
+5) clause D1 — Notice period too short (score=85). Suggested fix: ensure prior-notice duty specifies noticeDays >= 14.  
+6) clause D3 — Non-refundable fees (score=79). Suggested fix: allow refunds (e.g., refundAllowed=true) or define a cooling-off period >= 14 days.  
+7) clause D2 — Liability cap too low (score=73). Suggested fix: raise liabilityCapEuro so it is >= 200 EUR (or remove the cap where inappropriate).  

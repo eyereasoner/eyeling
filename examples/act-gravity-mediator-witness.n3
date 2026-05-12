@@ -16,6 +16,8 @@
 @prefix arc: <https://example.org/arc#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 
+:000_md_title log:outputString "# act-gravity-mediator-witness\n\n" .
+
 :case a arc:Case ;
   arc:question "If two quantum sensors become entangled only through a gravitational mediator, while locality and interoperability hold, what can be concluded, and what can't a purely classical mediator model do?" .
 

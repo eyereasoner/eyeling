@@ -419,7 +419,7 @@
 # ARC rendering through log:outputString
 # --------------------------------------
 
-:out01 log:outputString "=== Answer ===\n" .
+:out01 log:outputString "# calidor\n\n## Answer\n" .
 
 {
     :case :recommendedPackage ?pkg .
@@ -441,7 +441,7 @@
     :out06 log:outputString ?line .
 } .
 
-:out07 log:outputString "\n=== Reason Why ===\n" .
+:out07 log:outputString "\n## Reason Why\n" .
 :out08 log:outputString "The gateway desensitizes local heat, vulnerability, and prepaid-energy stress into an expiring municipal support insight, and the city consumes that envelope only for heatwave response.\n" .
 :out09 log:outputString "metric               : active_need_count\n" .
 
@@ -485,7 +485,7 @@
     :out17 log:outputString ?line .
 } .
 
-:out18 log:outputString "\n=== Check ===\n" .
+:out18 log:outputString "\n## Check\n" .
 
 { :check :signatureVerifies true . } => { :out19 log:outputString "signature verifies              : yes\n" . } .
 { :check :payloadHashMatches true . } => { :out20 log:outputString "payload hash matches            : yes\n" . } .

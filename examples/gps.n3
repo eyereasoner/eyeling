@@ -15,6 +15,8 @@
 @prefix gps: <https://example.org/gps#>.
 @prefix : <https://example.org/gps-case#>.
 
+:000_md_title log:outputString "# gps\n\n" .
+
 # -----
 # Facts
 # -----

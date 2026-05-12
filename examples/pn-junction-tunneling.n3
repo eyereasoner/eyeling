@@ -136,7 +136,7 @@
   ( "peak current proxy            : %s\n" ?peakCurrent ) string:format ?peakCurrentLine .
 }
     => {
-         :01-answer-1 log:outputString "=== Answer ===\n" .
+         :01-answer-1 log:outputString "# pn-junction-tunneling\n\n## Answer\n" .
          :01-answer-2 log:outputString "In this toy PN-junction tunneling model, heavy doping narrows the depletion region enough for a tunneling window that rises to a peak and then falls, producing a negative-differential region.\n" .
          :01-answer-3 log:outputString "case                          : pn-junction-tunneling\n" .
          :01-answer-4 log:outputString ?peakBiasLine .
@@ -167,7 +167,7 @@
   ( "high-bias point               : %s -> %s\n" ?valleyBias ?valleyCurrent ) string:format ?valleyLine .
 }
     => {
-         :02-why-1 log:outputString "=== Reason Why ===\n" .
+         :02-why-1 log:outputString "## Reason Why\n" .
          :02-why-2 log:outputString "We model tunneling current as an exact overlap count between filled N-side states and empty P-side states while forward bias shifts the bands. Heavy doping is represented by a much narrower depletion region.\n" .
          :02-why-3 log:outputString ?ordinaryLine .
          :02-why-4 log:outputString ?tunnelLine .
@@ -187,7 +187,7 @@
   :case :peakMatchesFullOverlap true .
 }
     => {
-         :03-check-1 log:outputString "=== Check ===\n" .
+         :03-check-1 log:outputString "## Check\n" .
          :03-check-2 log:outputString "heavily doped barrier is narrower : yes\n" .
          :03-check-3 log:outputString "peak occurs before overlap closes : yes\n" .
          :03-check-4 log:outputString "negative differential region present : yes\n" .

@@ -13,25 +13,25 @@
 # Formal Eyeling input evidence in RDF 1.2 TriG.
 # The generated runner reads this TriG evidence directly.
 
-:temperatureLog rdf:type msg:MessageLog .
+:temperatureLog a msg:MessageLog .
 :temperatureLog msg:orderedMessages (:m001 :m002 :m003) .
 :temperatureLog msg:message :m001 .
 :temperatureLog msg:message :m002 .
 :temperatureLog msg:message :m003 .
 :temperatureLog msg:profile :generatedAtTimeProfile .
 :temperatureLog msg:retentionPolicy "replayable archive" .
-:m001 rdf:type msg:RDFMessage .
+:m001 a msg:RDFMessage .
 :m001 msg:offset 1 .
 :m001 prov:generatedAtTime "2026-05-12T18:20:00Z" .
 :m001 msg:payloadKind :observation .
 :m001 msg:localBlankLabel "_:b0" .
 :m001 msg:expectedResult 22 .
 :m001 msg:payload in:formula1 .
-:m002 rdf:type msg:RDFMessage .
+:m002 a msg:RDFMessage .
 :m002 msg:offset 2 .
 :m002 prov:generatedAtTime "2026-05-12T18:22:00Z" .
 :m002 msg:payloadKind :heartbeat .
-:m003 rdf:type msg:RDFMessage .
+:m003 a msg:RDFMessage .
 :m003 msg:offset 3 .
 :m003 prov:generatedAtTime "2026-05-12T18:25:00Z" .
 :m003 msg:payloadKind :observation .
@@ -40,14 +40,14 @@
 :m003 msg:payload in:formula2 .
 
 in:formula1 {
-  _:m001b0 rdf:type sosa:Observation .
+  _:m001b0 a sosa:Observation .
   _:m001b0 sosa:madeBySensor :thermometerA .
   _:m001b0 sosa:resultTime "2026-05-12T18:20:00Z" .
   _:m001b0 sosa:hasSimpleResult 22 .
 }
 
 in:formula2 {
-  _:m003b0 rdf:type sosa:Observation .
+  _:m003b0 a sosa:Observation .
   _:m003b0 sosa:madeBySensor :thermometerA .
   _:m003b0 sosa:resultTime "2026-05-12T18:25:00Z" .
   _:m003b0 sosa:hasSimpleResult 23 .

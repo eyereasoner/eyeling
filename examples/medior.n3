@@ -366,7 +366,7 @@
 # ARC rendering through log:outputString
 # --------------------------------------
 
-:out01 log:outputString "=== Answer ===\n" .
+:out01 log:outputString "# medior\n\n## Answer\n" .
 :out02 log:outputString "Name: Medior\n" .
 :out03 log:outputString "Region: Flanders\n" .
 :out04 log:outputString "Metric: post_discharge_coordination_priority\n" .
@@ -387,7 +387,7 @@
   ("Envelope HMAC-SHA-256: %s\n" ?sig) string:format ?line .
 } => { :out10 log:outputString ?line . } .
 
-:out11 log:outputString "\n=== Reason Why ===\n" .
+:out11 log:outputString "\n## Reason Why\n" .
 :out12 log:outputString "RenalSafetyConcern holds because eGFR = 52 and the threshold is < 60.\n" .
 :out13 log:outputString "PolypharmacyRisk holds because the active medication count is 9 and the threshold is ≥ 8.\n" .
 :out14 log:outputString "ReadmissionHistory holds because admissionsLast180Days = 2 and the threshold is ≥ 1.\n" .
@@ -396,7 +396,7 @@
 :out17 log:outputString "The selected package is \"Medior Continuity Pulse\" with cost €4, touches=3.\n" .
 :out18 log:outputString "Use is permitted only for purpose \"care_coordination\" and expires at 2026-04-11T08:00:00+00:00.\n" .
 
-:out19 log:outputString "\n=== Check ===\n" .
+:out19 log:outputString "\n## Check\n" .
 { :check :payloadHashMatches true . }
   => { :out20 log:outputString "- PASS: payloadHashMatches\n" . } .
 { :check :signatureVerifies true . }

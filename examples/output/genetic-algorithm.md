@@ -1,0 +1,3 @@
+# genetic-algorithm  
+
+GA evolved 11111101010 -> 2026 in 8 generations.  

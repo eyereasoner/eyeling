@@ -42,10 +42,9 @@
 
 {
   :Audit :result ?Result; :affectedChildren ?Affected; :largestHiddenDetour ?Detour; :recommendedAssignments ?Assignments.
-  ("=== Answer ===\naudit result : %s\nchildren affected by straight-line rule : %s\nlargest hidden detour : %s\nrecommended assignments : %s\nexplanation requested : yes\n\n=== Explanation ===\nThe support-tool rule chooses the school with the smallest straight-line distance, using preference rank only as a tie-breaker. The independent audit recomputes each candidate with walking-route distance plus 600 m per preference step. Any provisional assignment that is not the audited best, or that requires more than 2500 m of walking, is flagged. Ada and Björn look close to Centrum on a map, but their walking routes cross barriers and exceed the walking limit; Davi is also better served by the first-preference Haga route. This illustrates why a decision-support label is not enough: route geometry, preferences, and audit records must be inspectable." ?Result ?Affected ?Detour ?Assignments) string:format ?Block.
+  ("# school-placement-audit\n\n## Answer\naudit result : %s\nchildren affected by straight-line rule : %s\nlargest hidden detour : %s\nrecommended assignments : %s\nexplanation requested : yes\n\n## Explanation\nThe support-tool rule chooses the school with the smallest straight-line distance, using preference rank only as a tie-breaker. The independent audit recomputes each candidate with walking-route distance plus 600 m per preference step. Any provisional assignment that is not the audited best, or that requires more than 2500 m of walking, is flagged. Ada and Björn look close to Centrum on a map, but their walking routes cross barriers and exceed the walking limit; Davi is also better served by the first-preference Haga route. This illustrates why a decision-support label is not enough: route geometry, preferences, and audit records must be inspectable." ?Result ?Affected ?Detour ?Assignments) string:format ?Block.
 } => {
   :schoolPlacementAudit log:outputString ?Block.
   :schoolPlacementAudit :reports :Audit.
 }.
 
-{ :schoolPlacementAudit :reports ?Audit } log:query { :schoolPlacementAudit :reports ?Audit }.

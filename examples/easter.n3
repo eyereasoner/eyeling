@@ -15,6 +15,8 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
+:000_md_title log:outputString "# easter\n\n" .
+
 <> rdfs:comment """This ARC-style version keeps the Gregorian computus from the original example and reports, for each sample year, an Answer, a Reason Why, and a set of independent Checks.""" .
 
 :y2026 a :Case; :year 2026 .
@@ -194,7 +196,7 @@
         :check1 ?C1; :check2 ?C2; :check3 ?C3; :check4 ?C4; :check5 ?C5.
   (
     "Easter — Gregorian computus\n\n"
-    "=== " ?Y " ===\n"
+    "## " ?Y "\n"
     "Answer\n"
     "Easter Sunday falls on " ?Month " " ?Day ".\n\n"
     "Reason Why\n"

@@ -17,6 +17,8 @@
 @prefix list: <http://www.w3.org/2000/10/swap/list#> .
 @prefix string: <http://www.w3.org/2000/10/swap/string#> .
 
+:000_md_title log:outputString "# fundamental-theorem-arithmetic\n\n" .
+
 # --------------
 # Editable input
 # --------------

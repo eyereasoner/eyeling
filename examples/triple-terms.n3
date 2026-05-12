@@ -18,3 +18,8 @@ VERSION "1.2"
 { ?observation :entails ?entailment }
   log:query
 { ?observation :entails ?entailment } .
+
+
+# Markdown rendering via log:outputString.
+:__md_output :text "# triple-terms\n\nVERSION \"1.2\"\n\n@prefix : <https://eyereasoner.github.io/eyeling/examples/triple_terms#> .\n\n:observation :entails <<( :sensor :needs :inspection )>> .\n" .
+{ :__md_output :text ?text } log:query { :__md_output log:outputString ?text } .

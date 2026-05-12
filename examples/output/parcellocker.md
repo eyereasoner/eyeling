@@ -1,0 +1,22 @@
+# parcellocker  
+
+ParcelLocker — One-time parcel pickup by a friend  
+
+Answer  
+PERMIT  
+Noah may collect Maya's parcel from locker B17.  
+
+Reason Why  
+Maya created a one-time authorization for Noah only, for this parcel only, at this locker only, and for pickup only. The token is active, the parcel is ready, and the same authorization does not reveal billing details or allow redirection.  
+
+Check  
+C1  OK - requester matches the named delegate  
+C2  OK - requested parcel matches the authorized parcel  
+C3  OK - requested locker matches the authorized locker  
+C4  OK - requested action is parcel collection  
+C5  OK - requested purpose is pickup only  
+C6  OK - authorization is active  
+C7  OK - authorization is single-use  
+C8  OK - parcel is ready for pickup  
+C9  OK - billing details stay hidden  
+C10 OK - parcel redirection is not allowed  

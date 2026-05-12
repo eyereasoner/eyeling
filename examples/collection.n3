@@ -1,3 +1,8 @@
 @prefix : <https://eyereasoner.github.io/eyeling/examples/collection#>.
 (1 _:b2 (2)) :p2 :q2 .
 _:b2 :p :q .
+
+
+# Markdown rendering via log:outputString.
+:__md_output :text "# collection\n" .
+{ :__md_output :text ?text } log:query { :__md_output log:outputString ?text } .
