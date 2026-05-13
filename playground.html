@@ -1773,7 +1773,7 @@ const batch = [];
           // this compact form and the older long-key JSON form.
           const compact = {};
           if (state && typeof state.edit === 'string') compact.e = state.edit;
-          if (state && typeof state.url === 'string' && state.url) compact.u = state.url;
+          if (state && state.loadbg && typeof state.url === 'string' && state.url) compact.u = state.url;
           if (state && state.loadbg) compact.b = true;
           if (state && state.proofcomments) compact.p = true;
           if (state && state.httpsderef === false) compact.h = false;
