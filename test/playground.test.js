@@ -24,8 +24,8 @@ const C = TTY
   : { g: '', r: '', y: '', dim: '', n: '' };
 const msTag = (ms) => `${C.dim}(${ms} ms)${C.n}`;
 
-const TOTAL_TESTS = 11;
-const idxWidth = String(TOTAL_TESTS).length;
+const TOTAL_TESTS = (fs.readFileSync(__filename, 'utf8').match(/^\s*beginTest\(/gm) || []).length;
+const idxWidth = String(Math.max(1, TOTAL_TESTS)).length;
 let passed = 0;
 let failed = 0;
 let currentTest = null;
@@ -817,6 +817,13 @@ ${JSON.stringify(last, null, 2)}`);
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 :report log:outputString "## Hello from output string\n\nLine 2 with **bold** and [Eyeling](https://example.org/eyeling)\n" .
 `;
+    const logQueryTurtleProgram = `@prefix : <#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+:Socrates a :Human .
+{ ?x a :Human } => { ?x a :Mortal } .
+{ ?s ?p ?o } log:query { ?s ?p ?o } .
+`;
 
     // 1) Baseline smoke test: the default program runs to completion.
     beginTest('playground runs the default Socrates program');
@@ -917,7 +924,27 @@ ${JSON.stringify(last, null, 2)}`);
     assert.ok(compactShareUrl.length < playgroundUrl.length + encodeURIComponent(outputStringProgram).length, 'Expected compact share URL to be shorter than raw editor URL');
     endTest();
 
-    // 6) URL-loaded examples should auto-load matching examples/input/<stem>.trig and run in RDF/TriG mode.
+    // 6) log:query can produce Turtle; that should stay in plain source output without Markdown tabs.
+    beginTest('playground hides markdown tabs for Turtle log:query output');
+    await setProgram(logQueryTurtleProgram);
+    await clickRun();
+    const logQueryTurtle = await waitForState(
+      'log:query Turtle output completion',
+      (st) =>
+        String(st.status || '')
+          .trim()
+          .startsWith('Done') && /:Socrates\s+a\s+:Mortal\s*\./.test(String(st.output || '')),
+      30000,
+    );
+    assert.match(logQueryTurtle.output, /:Socrates\s+a\s+:Human\s*\./, 'Expected Turtle-style source output');
+    assert.match(logQueryTurtle.output, /:Socrates\s+a\s+:Mortal\s*\./, 'Expected inferred Turtle-style source output');
+    assert.doesNotMatch(logQueryTurtle.output, /^#{1,6}\s+/m, 'Expected non-Markdown Turtle output');
+    assert.equal(logQueryTurtle.outputTabsHidden, true, 'Expected Turtle log:query output to hide Markdown tabs');
+    assert.equal(logQueryTurtle.renderedHidden, true, 'Expected Turtle log:query output to skip rendered Markdown panel');
+    assert.equal(logQueryTurtle.sourceHidden, false, 'Expected Turtle log:query output to show source directly');
+    endTest();
+
+    // 7) URL-loaded examples should auto-load matching examples/input/<stem>.trig and run in RDF/TriG mode.
     beginTest('playground auto-loads companion TriG sidecars and uses RDF/TriG mode');
     await loadUrlIntoEditor('https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/smoke-arithmetic.n3');
     const smokeLoaded = await waitForState(
@@ -948,7 +975,7 @@ ${JSON.stringify(last, null, 2)}`);
     );
     endTest();
 
-    // 7) URL-loaded repository examples should auto-load matching examples/builtin/<stem>.js.
+    // 8) URL-loaded repository examples should auto-load matching examples/builtin/<stem>.js.
     beginTest('playground auto-loads a companion example builtin for URL-loaded Sudoku');
     await loadUrlIntoEditor('https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/sudoku.n3');
     await waitForState(
@@ -972,12 +999,12 @@ ${JSON.stringify(last, null, 2)}`);
     assert.match(sudoku.output, /unique valid Sudoku solution/i, 'Expected Sudoku builtin-backed result');
     endTest();
 
-    // Ensure no uncaught runtime exceptions.
+    // 9) Ensure no uncaught runtime exceptions.
     beginTest('playground has no uncaught runtime exceptions');
     assert.equal(exceptions.length, 0, `Uncaught exceptions in playground.html: ${JSON.stringify(exceptions[0] || {})}`);
     endTest();
 
-    // Console errors are noisy and often indicate a broken UI.
+    // 10) Console errors are noisy and often indicate a broken UI.
     // (We suppress known noise like /favicon.ico on the server.)
     beginTest('playground has no console errors');
     assert.equal(consoleErrors.length, 0, `Console errors in playground.html: ${JSON.stringify(consoleErrors[0] || {})}`);

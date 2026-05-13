@@ -823,7 +823,7 @@
         <section class="card">
           <div class="output-header-row">
             <h2 class="section-title">Output</h2>
-            <div class="output-tabs" role="tablist" aria-label="Output view">
+            <div class="output-tabs" role="tablist" aria-label="Output view" hidden>
               <button
                 id="output-rendered-tab"
                 type="button"
@@ -2161,9 +2161,56 @@ const batch = [];
           outputRenderedPanel.classList.toggle('is-empty', !String(value || '').trim() || String(value).trim() === '(no output yet)');
         }
 
+        function isLikelyTurtleOutput(value) {
+          const text = String(value == null ? '' : value).trim();
+          if (!text) return false;
+          if (/^#\s*Derived triples\s*\(streaming\):/im.test(text)) return true;
+          if (/^@prefix\s+[^\s]+\s+<[^>]+>\s*\./im.test(text)) return true;
+          if (/^prefix\s+[^\s]+\s+<[^>]+>\s*$/im.test(text)) return true;
+
+          const lines = text.split(/\r\n|\n|\r/).map((line) => line.trim()).filter(Boolean);
+          let tripleLike = 0;
+          for (const line of lines) {
+            if (!line || line.startsWith('#') || !/\.\s*$/.test(line)) continue;
+            if (/^(?:<[^>]+>|_:[A-Za-z][\w-]*|:([^\s]+)|[A-Za-z_][\w.-]*:[^\s]*)\s+/.test(line)) tripleLike += 1;
+            else if (/\s(?:a|<[^>]+>|:([^\s]+)|[A-Za-z_][\w.-]*:[^\s]*)\s+/.test(line)) tripleLike += 1;
+          }
+          return tripleLike > 0;
+        }
+
+        function isLikelyMarkdownOutput(value) {
+          const text = String(value == null ? '' : value).trim();
+          if (!text || text === '(no output yet)' || isLikelyTurtleOutput(text)) return false;
+          if (/^#{1,6}\s+\S/m.test(text)) return true;
+          if (/^```/m.test(text)) return true;
+          if (/^>\s+\S/m.test(text)) return true;
+          if (/^\s*[-*+]\s+\S/m.test(text)) return true;
+          if (/^\s*\d+\.\s+\S/m.test(text)) return true;
+          if (/\[[^\]\n]+\]\((?:https?:|mailto:|#|\/|\.\/|\.\.\/)[^)]+\)/i.test(text)) return true;
+          if (/\*\*[^*\n]+\*\*/.test(text) || /__[^_\n]+__/.test(text)) return true;
+          if (/\|/.test(text)) {
+            const lines = text.split(/\r\n|\n|\r/);
+            for (let i = 0; i + 1 < lines.length; i += 1) {
+              if (/\|/.test(lines[i]) && isMarkdownTableSeparator(lines[i + 1])) return true;
+            }
+          }
+          return false;
+        }
+
+        let outputMarkdownAutoDetect = false;
+
         function setOutputMarkdownMode(enabled) {
           outputMarkdownMode = !!enabled;
           if (outputTabs) outputTabs.hidden = !outputMarkdownMode;
+        }
+
+        function updateAutoMarkdownMode() {
+          if (!outputMarkdownAutoDetect) return;
+          const value = outputEl && typeof outputEl.getValue === 'function' ? outputEl.getValue() : outputTextArea.value;
+          const shouldEnable = isLikelyMarkdownOutput(value);
+          if (shouldEnable === outputMarkdownMode) return;
+          setOutputMarkdownMode(shouldEnable);
+          setOutputView(shouldEnable ? 'rendered' : 'source');
         }
 
         function setOutputView(nextView) {
@@ -2192,16 +2239,26 @@ const batch = [];
         }
 
         function setOutputText(text, preferredView) {
-          const markdownMode = preferredView !== 'source';
-          setOutputMarkdownMode(markdownMode);
+          outputMarkdownAutoDetect = preferredView === 'auto';
           outputEl.setValue(String(text == null ? '' : text));
           syncRenderedOutput();
-          setOutputView(markdownMode && preferredView !== 'source' ? 'rendered' : 'source');
+          if (outputMarkdownAutoDetect) {
+            const markdownMode = isLikelyMarkdownOutput(outputEl.getValue());
+            setOutputMarkdownMode(markdownMode);
+            setOutputView(markdownMode ? 'rendered' : 'source');
+          } else {
+            const markdownMode = preferredView !== 'source';
+            setOutputMarkdownMode(markdownMode);
+            setOutputView(markdownMode && preferredView !== 'source' ? 'rendered' : 'source');
+          }
         }
 
         if (outputRenderedTab) outputRenderedTab.addEventListener('click', () => setOutputView('rendered'));
         if (outputSourceTab) outputSourceTab.addEventListener('click', () => setOutputView('source'));
-        outputEl.on('change', syncRenderedOutput);
+        outputEl.on('change', () => {
+          syncRenderedOutput();
+          updateAutoMarkdownMode();
+        });
         setOutputText('(no output yet)', 'source');
 
         // Keep CodeMirror in sync if the user changes OS theme while this page is open.
@@ -2626,7 +2683,7 @@ const batch = [];
 
           {
             const mh = currentMaxHeights();
-            setOutputText(usesRenderedText ? '' : '# Derived triples (streaming):\n', usesRenderedText ? 'rendered' : 'source');
+            setOutputText(usesRenderedText ? '' : '# Derived triples (streaming):\n', usesRenderedText ? 'auto' : 'source');
             autoResizeCodeMirror(outputEl, 80, mh.output);
           }
 

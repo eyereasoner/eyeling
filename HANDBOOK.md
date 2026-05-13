@@ -3731,7 +3731,7 @@ This matters because the playground is not just a text box plus a submit button.
 
 The output behavior also adapts to the kind of N3 program being run. In some cases the natural result is a streamed list of derived triples. In others, such as programs using output-oriented constructs like `log:outputString`, a rendered text result is more appropriate. The playground supports both styles.
 
-For Markdown-oriented `log:outputString` examples, the output pane has two views: a rendered Markdown view and a Markdown source view. The rendered view is selected by default when the output is text intended for presentation, while the source view keeps the exact generated Markdown available for copying, inspection, or comparison.
+For Markdown-oriented `log:outputString` examples, the output pane has two views: a rendered Markdown view and a Markdown source view. Those tabs appear only when the actual output looks like Markdown; Turtle or other plain output stays in the source editor without the Markdown toggle. The rendered view is selected by default for Markdown output, while the source view keeps the exact generated Markdown available for copying, inspection, or comparison.
 
 Repository example reports often contain relative source links that are written for the checked-in files under `examples/output/*.md`. When such an example is loaded into the playground from a raw URL, the rendered Markdown view resolves those relative links against the corresponding static output page rather than against `/playground`, so links like `../name.n3` and `../input/name.trig` continue to point to the intended example files.
 
