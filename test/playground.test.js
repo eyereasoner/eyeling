@@ -973,6 +973,22 @@ ${JSON.stringify(last, null, 2)}`);
       new RegExp('href="' + started.baseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/examples/input/smoke-arithmetic\\.trig"'),
       'Expected relative Markdown TriG links to resolve against the static output page, not /playground',
     );
+    assert.equal(smoke.outputTabsHidden, false, 'Expected smoke-arithmetic Markdown output tabs to be visible');
+    assert.equal(smoke.renderedHidden, false, 'Expected smoke-arithmetic Markdown output to render by default');
+    assert.equal(smoke.sourceHidden, true, 'Expected smoke-arithmetic Markdown source to be hidden by default');
+
+    await clickOutputSourceTab();
+    const smokeSourceView = await getPlaygroundState();
+    assert.equal(smokeSourceView.sourceTabSelected, true, 'Expected smoke-arithmetic Markdown source tab to be selectable');
+    assert.equal(smokeSourceView.renderedHidden, true, 'Expected smoke-arithmetic rendered panel to hide in source view');
+    assert.equal(smokeSourceView.sourceHidden, false, 'Expected smoke-arithmetic source editor to show in source view');
+    assert.match(smokeSourceView.output, /^# smoke-arithmetic/m, 'Expected smoke-arithmetic source tab to show Markdown source');
+
+    await clickOutputRenderedTab();
+    const smokeRenderedAgain = await getPlaygroundState();
+    assert.equal(smokeRenderedAgain.renderedTabSelected, true, 'Expected smoke-arithmetic Rendered tab to be selectable again');
+    assert.equal(smokeRenderedAgain.renderedHidden, false, 'Expected smoke-arithmetic rendered panel to show again');
+    assert.equal(smokeRenderedAgain.sourceHidden, true, 'Expected smoke-arithmetic source editor to hide again');
     endTest();
 
     // 8) URL-loaded repository examples should auto-load matching examples/builtin/<stem>.js.
