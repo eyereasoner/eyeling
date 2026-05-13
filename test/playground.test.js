@@ -797,7 +797,18 @@ async function main() {
         const originalFetch = window.fetch;
         let seen = null;
         window.fetch = async (url, options) => {
-          seen = { url: String(url || ''), options: options || null };
+          options = options || {};
+          seen = {
+            url: String(url || ''),
+            options: {
+              method: options.method,
+              headers: options.headers,
+              body: options.body,
+              cache: options.cache,
+              referrerPolicy: options.referrerPolicy,
+              hasSignal: !!options.signal,
+            },
+          };
           return {
             ok: true,
             status: 200,
@@ -973,8 +984,8 @@ ${JSON.stringify(last, null, 2)}`);
     const longShare = await makeShareUrlDiagnosticsInPage();
     assert.ok(longShare.length > longShare.threshold, `Expected test share URL to exceed threshold (${longShare.length} <= ${longShare.threshold})`);
     assert.equal(longShare.needsShortener, true, 'Expected oversized share URL to request a shortener option');
-    assert.match(longShare.shortenerUrl, /^https:\/\/tinyurl\.com\/app\?url=/, 'Expected TinyURL app fallback handoff');
-    assert.ok(longShare.shortenerUrl.includes(encodeURIComponent(longShare.url).slice(0, 40)), 'Expected shortener URL to carry the generated share URL');
+    assert.equal(longShare.shortenerUrl, 'https://tinyurl.com/app', 'Expected TinyURL app fallback handoff to avoid embedding the huge URL');
+    assert.equal(longShare.shortenerUrl.includes(encodeURIComponent(longShare.url).slice(0, 40)), false, 'Expected shortener fallback URL not to carry the generated share URL');
     const tinyUrlCreated = await createTinyUrlWithStubInPage(longShare.url, 'test-token-123', {
       data: { tiny_url: 'https://tinyurl.com/eyeling-test' },
     });
@@ -982,6 +993,7 @@ ${JSON.stringify(last, null, 2)}`);
     assert.equal(tinyUrlCreated.seen.url, 'https://api.tinyurl.com/create', 'Expected TinyURL API create endpoint');
     assert.equal(tinyUrlCreated.seen.options.method, 'POST', 'Expected TinyURL API POST request');
     assert.equal(tinyUrlCreated.seen.options.headers.Authorization, 'Bearer test-token-123', 'Expected bearer token authorization');
+    assert.equal(tinyUrlCreated.seen.options.referrerPolicy, 'no-referrer', 'Expected TinyURL API request not to send a long Referer');
     assert.match(String(tinyUrlCreated.seen.options.body || ''), /"url":/, 'Expected TinyURL API body to include the long URL');
     endTest();
 

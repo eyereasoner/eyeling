@@ -2439,15 +2439,22 @@ const batch = [];
           };
         }
 
+        function normalizeTinyUrlApiToken(value) {
+          let token = String(value || '').trim();
+          token = token.replace(/^Bearer\s+/i, '').trim();
+          token = token.replace(/^['"]|['"]$/g, '').trim();
+          return token;
+        }
+
         function getTinyUrlApiToken() {
           const storage = tinyUrlApiTokenStorage();
-          const existing = storage.get();
+          const existing = normalizeTinyUrlApiToken(storage.get());
           if (existing) return existing;
           const entered = window.prompt(
             'Enter your TinyURL API token. It will be saved in this browser only and used to create TinyURLs directly.',
             '',
           );
-          const token = String(entered || '').trim();
+          const token = normalizeTinyUrlApiToken(entered);
           if (token) storage.set(token);
           return token;
         }
@@ -2460,16 +2467,35 @@ const batch = [];
 
         async function createTinyUrl(longUrl, token) {
           if (!longUrl) throw new Error('No playground share link is ready to shorten.');
+          token = normalizeTinyUrlApiToken(token);
           if (!token) throw new Error('TinyURL API token was not provided.');
-          const res = await fetch(TINYURL_CREATE_API_URL, {
-            method: 'POST',
-            headers: {
-              Accept: 'application/json',
-              'Content-Type': 'application/json',
-              Authorization: 'Bearer ' + token,
-            },
-            body: JSON.stringify({ url: String(longUrl), domain: 'tinyurl.com' }),
-          });
+
+          const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+          const timeout = controller
+            ? setTimeout(() => controller.abort(), 20000)
+            : null;
+          let res;
+          try {
+            res = await fetch(TINYURL_CREATE_API_URL, {
+              method: 'POST',
+              headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                Authorization: 'Bearer ' + token,
+              },
+              body: JSON.stringify({ url: String(longUrl), domain: 'tinyurl.com' }),
+              cache: 'no-store',
+              referrerPolicy: 'no-referrer',
+              signal: controller ? controller.signal : undefined,
+            });
+          } catch (e) {
+            if (e && e.name === 'AbortError') {
+              throw new Error('TinyURL API request timed out.');
+            }
+            throw new Error('TinyURL API request failed: ' + (e && e.message ? e.message : String(e || 'network error')));
+          } finally {
+            if (timeout) clearTimeout(timeout);
+          }
 
           let payload = null;
           try {
@@ -2493,11 +2519,12 @@ const batch = [];
           return tinyUrl;
         }
 
-        function makeShareUrlShortenerUrl(shareUrl) {
-          // Fallback only: TinyURL's app currently does not reliably prefill
-          // its form from query parameters, so the primary path is the API.
-          // Keep the app link for users who do not want to store an API token.
-          return TINYURL_APP_URL + '?url=' + encodeURIComponent(String(shareUrl || ''));
+        function makeShareUrlShortenerUrl(_shareUrl) {
+          // Fallback only: TinyURL's app does not reliably prefill its form
+          // from query parameters, and appending a very large playground URL can
+          // make TinyURL reject the request with HTTP 431. Keep the fallback URL
+          // short; the long playground link is copied to the clipboard instead.
+          return TINYURL_APP_URL;
         }
 
         function setShareUrlShortenerOption(shareUrl) {
@@ -2509,20 +2536,28 @@ const batch = [];
           }
         }
 
+        async function copyLongShareLinkForShortener() {
+          try {
+            await copyTextToClipboard(longShareUrlForShortener);
+            return true;
+          } catch (e) {
+            return false;
+          }
+        }
+
         async function openShareUrlShortener() {
-          if (!longShareUrlForShortener) return;
+          if (!longShareUrlForShortener) {
+            if (shareStatusEl) shareStatusEl.textContent = 'Create or copy a playground share link first.';
+            return;
+          }
           const token = getTinyUrlApiToken();
           if (!token) {
-            try {
-              await copyTextToClipboard(longShareUrlForShortener);
-            } catch (e) {
-              // The fallback page still opens; the user can copy from the prompt.
-            }
+            const copied = await copyLongShareLinkForShortener();
             const opened = window.open(makeShareUrlShortenerUrl(longShareUrlForShortener), '_blank', 'noopener,noreferrer');
             if (shareStatusEl) {
-              shareStatusEl.textContent = opened
-                ? 'Opened TinyURL; paste the copied playground share link if the form is empty.'
-                : 'Popup blocked; copy the compact share link or allow popups to open TinyURL.';
+              if (opened && copied) shareStatusEl.textContent = 'Opened TinyURL and copied the playground share link; paste it into the Long URL field.';
+              else if (opened) shareStatusEl.textContent = 'Opened TinyURL; copy the playground share link and paste it into the Long URL field.';
+              else shareStatusEl.textContent = 'Popup blocked; copy the compact share link manually or allow popups to open TinyURL.';
             }
             return;
           }
@@ -2534,18 +2569,16 @@ const batch = [];
             await copyTextToClipboard(tinyUrl);
             if (shareStatusEl) shareStatusEl.textContent = `Created TinyURL and copied it: ${tinyUrl}`;
           } catch (e) {
-            try {
-              await copyTextToClipboard(longShareUrlForShortener);
-            } catch (_) {}
+            const copied = await copyLongShareLinkForShortener();
             const opened = window.open(makeShareUrlShortenerUrl(longShareUrlForShortener), '_blank', 'noopener,noreferrer');
             if (shareStatusEl) {
               const reason = e && e.message ? String(e.message) : String(e || 'TinyURL creation failed.');
-              shareStatusEl.textContent = opened
-                ? `Automatic TinyURL creation failed: ${reason} Opened TinyURL and copied the long share link.`
-                : `Automatic TinyURL creation failed: ${reason}`;
+              if (opened && copied) shareStatusEl.textContent = `Automatic TinyURL creation failed: ${reason} Opened TinyURL and copied the playground share link for manual paste.`;
+              else if (opened) shareStatusEl.textContent = `Automatic TinyURL creation failed: ${reason} Opened TinyURL; copy the playground share link and paste it manually.`;
+              else shareStatusEl.textContent = `Automatic TinyURL creation failed: ${reason}`;
             }
           } finally {
-            if (openShortenerBtn) openShortenerBtn.disabled = false;
+            if (openShortenerBtn) openShortenerBtn.disabled = !longShareUrlForShortener;
           }
         }
 
@@ -2649,6 +2682,7 @@ const batch = [];
         window.__eyelingPlaygroundShouldOfferShortener = shouldOfferUrlShortener;
         window.__eyelingPlaygroundMakeShareUrlShortenerUrl = makeShareUrlShortenerUrl;
         window.__eyelingPlaygroundCreateTinyUrl = createTinyUrl;
+        window.__eyelingPlaygroundNormalizeTinyUrlApiToken = normalizeTinyUrlApiToken;
 
         editor.on('change', function () {
           clearErrorHighlight();
