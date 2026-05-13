@@ -3733,6 +3733,8 @@ The output behavior also adapts to the kind of N3 program being run. In some cas
 
 For Markdown-oriented `log:outputString` examples, the output pane has two views: a rendered Markdown view and a Markdown source view. The rendered view is selected by default when the output is text intended for presentation, while the source view keeps the exact generated Markdown available for copying, inspection, or comparison.
 
+Repository example reports often contain relative source links that are written for the checked-in files under `examples/output/*.md`. When such an example is loaded into the playground from a raw URL, the rendered Markdown view resolves those relative links against the corresponding static output page rather than against `/playground`, so links like `../name.n3` and `../input/name.trig` continue to point to the intended example files.
+
 ### I.4 Error handling and explainability
 
 For an interactive reasoning environment, error behavior matters almost as much as successful output. The playground therefore gives particular attention to syntax and runtime feedback.

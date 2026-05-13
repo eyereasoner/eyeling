@@ -917,7 +917,9 @@
         let backgroundKnowledgeAuto = false;
         let editorBuiltinModules = [];
         let editorSourceText = '';
+        let editorSourceUrl = '';
         let editorRdfMode = false;
+        let outputMarkdownLinkBaseUrl = '';
 
         // --- Unified background streaming runner (shared with the Streaming demo tab) ---
         // Exposes: window.__eyelingUnified.startStreamRun({
@@ -1974,15 +1976,29 @@ const batch = [];
           return text;
         }
 
+        function resolveMarkdownHref(href) {
+          const cleanHref = String(href || '').trim();
+          if (!isSafeMarkdownHref(cleanHref)) return null;
+          if (!outputMarkdownLinkBaseUrl) return cleanHref;
+          if (/^#/.test(cleanHref)) return cleanHref;
+          if (/^[a-z][a-z0-9+.-]*:/i.test(cleanHref)) return cleanHref;
+          try {
+            return new URL(cleanHref, outputMarkdownLinkBaseUrl).toString();
+          } catch (_) {
+            return cleanHref;
+          }
+        }
+
         function renderInlineMarkdown(value) {
           const linkTokens = [];
           let text = String(value == null ? '' : value).replace(/\[([^\]\n]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (_m, label, href) => {
             const token = String.fromCharCode(0) + 'LINK' + linkTokens.length + String.fromCharCode(0);
             const cleanHref = String(href || '').trim();
+            const resolvedHref = resolveMarkdownHref(cleanHref);
             const htmlLabel = renderInlineMarkdownNoLinks(label);
             linkTokens.push(
-              isSafeMarkdownHref(cleanHref)
-                ? '<a href="' + escapeAttr(cleanHref) + '" target="_blank" rel="noopener noreferrer">' + htmlLabel + '</a>'
+              resolvedHref
+                ? '<a href="' + escapeAttr(resolvedHref) + '" target="_blank" rel="noopener noreferrer">' + htmlLabel + '</a>'
                 : htmlLabel,
             );
             return token;
@@ -2411,6 +2427,7 @@ const batch = [];
 
           if (editorSourceText && editor.getValue() !== editorSourceText) {
             editorSourceText = '';
+            editorSourceUrl = '';
           }
 
           scheduleSavePlaygroundState();
@@ -2588,6 +2605,7 @@ const batch = [];
           const isRenderedOutputMode = programMentionsOutputStrings(programText);
           const isLogQueryMode = /\blog:query\b/.test(programText) || /swap\/log#query/.test(programText);
           const usesRenderedText = isRenderedOutputMode || (isLogQueryMode && !proofCheckbox.checked);
+          outputMarkdownLinkBaseUrl = usesRenderedText ? currentMarkdownOutputBaseUrl() : '';
           const modeLabel = isRenderedOutputMode
             ? 'rendered output'
             : isLogQueryMode && !proofCheckbox.checked
@@ -2813,6 +2831,20 @@ const batch = [];
             const m = String(n3Url || '').match(/\/examples\/([^/?#]+)\.n3(?:$|[?#])/i);
             return m && m[1] ? m[1] : null;
           }
+        }
+
+        function deriveExampleOutputMarkdownUrl(n3Url) {
+          const stem = parseRepositoryExampleStem(n3Url);
+          if (!stem) return '';
+          try {
+            return new URL('examples/output/' + encodeURIComponent(stem) + '.md', window.location.href).toString();
+          } catch (_) {
+            return '';
+          }
+        }
+
+        function currentMarkdownOutputBaseUrl() {
+          return deriveExampleOutputMarkdownUrl(editorSourceUrl);
         }
 
         function deriveExampleBuiltinUrl(n3Url) {
@@ -3079,6 +3111,7 @@ const batch = [];
               editor.setValue(text);
               editorBuiltinModules = companionBuiltins;
               editorSourceText = text;
+              editorSourceUrl = finalUrl;
               editorRdfMode = urlLooksRdfCompatibleInput(finalUrl);
               const mh = currentMaxHeights();
               autoResizeCodeMirror(editor, 220, mh.editor);

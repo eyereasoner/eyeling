@@ -535,6 +535,8 @@ async function main() {
     // Intercept CodeMirror + remote GitHub raw URLs (keep test deterministic).
     const localPkg = fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8');
     const localEyeling = fs.readFileSync(path.join(ROOT, 'eyeling.js'), 'utf8');
+    const localSmokeArithmetic = fs.readFileSync(path.join(ROOT, 'examples', 'smoke-arithmetic.n3'), 'utf8');
+    const localSmokeArithmeticTrig = fs.readFileSync(path.join(ROOT, 'examples', 'input', 'smoke-arithmetic.trig'), 'utf8');
     const localSudoku = fs.readFileSync(path.join(ROOT, 'examples', 'sudoku.n3'), 'utf8');
     const localSudokuBuiltin = fs.readFileSync(path.join(ROOT, 'examples', 'builtin', 'sudoku.js'), 'utf8');
 
@@ -565,6 +567,14 @@ async function main() {
       [
         'https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/eyeling.js',
         { ct: 'application/javascript', body: localEyeling },
+      ],
+      [
+        'https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/smoke-arithmetic.n3',
+        { ct: 'text/plain', body: localSmokeArithmetic },
+      ],
+      [
+        'https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/input/smoke-arithmetic.trig',
+        { ct: 'text/plain', body: localSmokeArithmeticTrig },
       ],
       [
         'https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/sudoku.n3',
@@ -909,7 +919,7 @@ ${JSON.stringify(last, null, 2)}`);
 
     // 6) URL-loaded examples should auto-load matching examples/input/<stem>.trig and run in RDF/TriG mode.
     beginTest('playground auto-loads companion TriG sidecars and uses RDF/TriG mode');
-    await loadUrlIntoEditor(`${started.baseUrl}/examples/smoke-arithmetic.n3`);
+    await loadUrlIntoEditor('https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/smoke-arithmetic.n3');
     const smokeLoaded = await waitForState(
       'smoke-arithmetic URL loaded with companion TriG input',
       (st) => /companion RDF\/TriG input/i.test(String(st.status || '')) && /input\/smoke-arithmetic\.trig/i.test(String(st.backgroundStatus || '')),
@@ -926,6 +936,16 @@ ${JSON.stringify(last, null, 2)}`);
       30000,
     );
     assert.match(smoke.output, /product = 42/i, 'Expected result derived from companion TriG evidence');
+    assert.match(
+      smoke.renderedHtml,
+      new RegExp('href="' + started.baseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/examples/smoke-arithmetic\\.n3"'),
+      'Expected relative Markdown source links to resolve against the static output page, not /playground',
+    );
+    assert.match(
+      smoke.renderedHtml,
+      new RegExp('href="' + started.baseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/examples/input/smoke-arithmetic\\.trig"'),
+      'Expected relative Markdown TriG links to resolve against the static output page, not /playground',
+    );
     endTest();
 
     // 7) URL-loaded repository examples should auto-load matching examples/builtin/<stem>.js.
