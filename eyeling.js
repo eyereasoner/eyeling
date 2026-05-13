@@ -8898,10 +8898,10 @@ function main() {
 }
 
 // ---------------------------------------------------------------------------
-// Internals (exposed for demo.html)
+// Internals (exposed for playground.html)
 // ---------------------------------------------------------------------------
 // The original monolithic eyeling.js exposed many internal functions and flags
-// as globals. demo.html (web worker) still relies on a subset of these.
+// as globals. playground.html (web worker) still relies on a subset of these.
 
 function getEnforceHttpsEnabled() {
   return deref.getEnforceHttpsEnabled();
@@ -8946,12 +8946,12 @@ module.exports = {
   N3SyntaxError,
   Parser,
   lex,
-  // demo internals
+  // playground internals
   forwardChain,
   materializeRdfLists,
   isGroundTriple,
   printExplanation,
-  // used by demo worker to stringify derived triples with prefixes
+  // used by playground worker to stringify derived triples with prefixes
   tripleToN3,
   tripleToRdfCompatible,
   // pretty log:query output (when proof comments are disabled)
@@ -8985,7 +8985,7 @@ module.exports = {
 'use strict';
 
 // Entry point for the bundled eyeling.js.
-// We intentionally re-export a small set of internals so demo.html (worker)
+// We intentionally re-export a small set of internals so playground.html (worker)
 // can call into the reasoner like the original monolithic build did.
 
 const engine = require('./engine');
@@ -8999,7 +8999,7 @@ module.exports = {
   main: engine.main,
   version: engine.version,
 
-  // internals for demo.html
+  // internals for playground.html
   lex: engine.lex,
   Parser: engine.Parser,
   forwardChain: engine.forwardChain,
@@ -12283,7 +12283,7 @@ module.exports = {
  * Eyeling Reasoner — printing
  *
  * Pretty-printing / serialization helpers for terms, triples, and formulas.
- * Used by the CLI, demo, and explanations.
+ * Used by the CLI, playground, and explanations.
  */
 
 'use strict';
@@ -13813,7 +13813,7 @@ module.exports = {
 'use strict';
 
 // Small module for debug/trace printing (log:trace) and its run-level state.
-// Kept separate from engine.js so browser demo + CLI can share behavior.
+// Kept separate from engine.js so browser playground + CLI can share behavior.
 
 let tracePrefixes = null;
 
@@ -13899,9 +13899,9 @@ module.exports = {
   try { if (__outerModule && __outerModule.exports) __outerModule.exports = __api; } catch (ignoredError) {}
   try { if (__outerSelf) __outerSelf.eyeling = __api; } catch (ignoredError) {}
 
-  // ---- demo.html compatibility ----
+  // ---- playground.html compatibility ----
   // The original monolithic eyeling.js exposed internal functions/flags as globals.
-  // demo.html still uses these via importScripts(...) inside a web worker.
+  // playground.html still uses these via importScripts(...) inside a web worker.
   try {
     if (__outerSelf && __entry) {
       if (typeof __entry.lex === "function") __outerSelf.lex = __entry.lex;

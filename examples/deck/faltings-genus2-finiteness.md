@@ -208,4 +208,4 @@ Easy extensions:
 - Connect this to a small “math knowledge base” of reusable lemmas
 - Use the same pattern for other theorems: “if conditions, then property”
 
-[1]: https://eyereasoner.github.io/eyeling/demo?url=https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/faltings-genus2-finiteness.n3 'Playground'
+[1]: https://eyereasoner.github.io/eyeling/playground?url=https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/faltings-genus2-finiteness.n3 'Playground'

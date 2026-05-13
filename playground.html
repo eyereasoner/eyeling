@@ -1,0 +1,2231 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <!-- Mobile-friendly viewport + safe-area support -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+    <title>Eyeling N3 Playground</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.min.css" />
+
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        background: #f5f5f7;
+        color: #111827;
+
+        /* Avoid weird auto-scaling on mobile */
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+      }
+
+      .page {
+        max-width: 1500px;
+        margin: 0 auto;
+
+        /* Safe areas (iPhone notch/home bar) */
+        padding-top: calc(1.5rem + env(safe-area-inset-top));
+        padding-right: calc(1rem + env(safe-area-inset-right));
+        padding-bottom: calc(3rem + env(safe-area-inset-bottom));
+        padding-left: calc(1rem + env(safe-area-inset-left));
+
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      header h1 {
+        margin: 0;
+        font-size: 1.4rem;
+        font-weight: 600;
+      }
+
+      header p {
+        margin: 0.25rem 0 0;
+        font-size: 0.9rem;
+        color: #6b7280;
+      }
+
+      header a {
+        color: #2563eb;
+        text-decoration: none;
+      }
+      header a:hover {
+        text-decoration: underline;
+      }
+
+      .meta {
+        margin-top: 0.35rem;
+        font-size: 0.85rem;
+        color: #6b7280;
+      }
+
+      label {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 0.35rem;
+        display: inline-block;
+      }
+
+      textarea {
+        width: 100%;
+        border-radius: 0.75rem;
+        border: 1px solid #d1d5db;
+        padding: 1rem;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        font-size: 0.9rem;
+        line-height: 1.4;
+        resize: none;
+        overflow: hidden; /* no scrollbars inside the editor */
+        background: #ffffff;
+      }
+
+      textarea:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.35);
+      }
+
+      .controls {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 0.75rem;
+        margin-top: 0.25rem;
+        flex-wrap: wrap;
+      }
+
+      .toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #374151;
+        user-select: none;
+        cursor: pointer;
+      }
+
+      .toggle input {
+        width: 1rem;
+        height: 1rem;
+        accent-color: #2563eb;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+
+      button {
+        border: none;
+        border-radius: 999px;
+        padding: 0.5rem 1.25rem;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        background: #2563eb;
+        color: #ffffff;
+        box-shadow: 0 10px 15px rgba(37, 99, 235, 0.25);
+        transition:
+          transform 0.05s ease-out,
+          box-shadow 0.05s ease-out,
+          opacity 0.1s;
+
+        /* Better taps on mobile */
+        min-height: 44px;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      button:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 24px rgba(37, 99, 235, 0.32);
+      }
+
+      button:active:not(:disabled) {
+        transform: translateY(0);
+        box-shadow: 0 8px 12px rgba(37, 99, 235, 0.2);
+      }
+
+      button:disabled {
+        opacity: 0.6;
+        cursor: default;
+        box-shadow: none;
+      }
+
+      /* Secondary + danger button variants (Playground) */
+      button.secondary {
+        background: #e5e7eb;
+        color: #111827;
+        box-shadow: none;
+      }
+      button.secondary:hover:not(:disabled) {
+        box-shadow: 0 10px 15px rgba(17, 24, 39, 0.12);
+      }
+
+      button.danger {
+        background: #dc2626;
+        color: #ffffff;
+        box-shadow: 0 10px 15px rgba(220, 38, 38, 0.25);
+      }
+      button.danger:hover:not(:disabled) {
+        box-shadow: 0 14px 24px rgba(220, 38, 38, 0.32);
+      }
+      .status {
+        font-size: 0.8rem;
+        color: #6b7280;
+      }
+
+      /* (fallback only; output is now CodeMirror) */
+      pre#output {
+        margin: 0.25rem 0 0;
+        border-radius: 0.75rem;
+        border: 1px solid #d1d5db;
+        padding: 1rem;
+        background: #ffffff;
+        color: #111827;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        font-size: 0.85rem;
+        line-height: 1.4;
+        white-space: pre-wrap;
+        word-break: break-word;
+        overflow: hidden; /* no scrollbars inside the output box */
+        min-height: 5rem;
+      }
+
+      .card {
+        background: #ffffff;
+        border-radius: 1rem;
+        padding: 1rem 1.25rem 1.25rem;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+        border: 1px solid rgba(148, 163, 184, 0.25);
+      }
+
+      .section-title {
+        font-size: 1rem;
+        font-weight: 500;
+        margin: 0 0 0.5rem;
+        color: #111827;
+      }
+
+      .uri-row {
+        margin-bottom: 0.75rem;
+      }
+
+      .uri-input-row {
+        display: flex;
+        flex-direction: row;
+        gap: 0.5rem;
+        align-items: center;
+        margin-top: 0.25rem;
+      }
+
+      .uri-mode-row,
+      .background-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem;
+        margin-top: 0.65rem;
+      }
+
+      .background-status {
+        flex: 1 1 22rem;
+      }
+
+      .mini-button {
+        min-height: 36px;
+        padding: 0.35rem 0.9rem;
+        font-size: 0.8rem;
+        box-shadow: none;
+      }
+
+      .uri-input-row input[type='text'] {
+        flex: 1;
+        border-radius: 999px;
+        border: 1px solid #d1d5db;
+        padding: 0.45rem 0.75rem;
+        font-size: 0.85rem;
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        background: #f9fafb;
+      }
+
+      .uri-input-row input[type='text']:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25);
+        background: #ffffff;
+      }
+
+      .hint {
+        display: block;
+        font-size: 0.75rem;
+        color: #9ca3af;
+        margin-top: 0.15rem;
+      }
+
+      /* --- CodeMirror (syntax highlighted) editors --- */
+      .CodeMirror {
+        height: auto;
+        border: 1px solid #d1d5db;
+        border-radius: 0.75rem;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        font-size: 0.9rem;
+        line-height: 1.4;
+        background: #ffffff;
+      }
+
+      .CodeMirror.CodeMirror-focused {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.35);
+      }
+
+      .CodeMirror-scroll {
+        overflow: hidden !important; /* desktop: no scrollbars; we auto-size instead */
+      }
+
+      .CodeMirror-gutters {
+        border-right: 1px solid #e5e7eb;
+        background: #f9fafb;
+      }
+
+      .cm-output {
+        font-size: 0.85rem;
+        min-height: 5rem;
+      }
+
+      /* Output pane: allow internal scrolling when height-capped */
+      .cm-output .CodeMirror-scroll {
+        overflow: auto !important;
+      }
+
+      /* Highlight N3 syntax error line in the editor */
+      .cm-error-line {
+        background: rgba(239, 68, 68, 0.18) !important;
+      }
+      /* CodeMirror’s line background element (more specific) */
+      .CodeMirror-linebackground.cm-error-line {
+        background: rgba(239, 68, 68, 0.18) !important;
+        box-shadow: inset 3px 0 0 rgba(239, 68, 68, 0.65) !important;
+      }
+
+      /* ---------------------------
+       MOBILE POLISH (key changes)
+       --------------------------- */
+      @media (max-width: 640px) {
+        .page {
+          gap: 0.85rem;
+          padding-top: calc(1.1rem + env(safe-area-inset-top));
+          padding-right: calc(0.85rem + env(safe-area-inset-right));
+          padding-bottom: calc(2.5rem + env(safe-area-inset-bottom));
+          padding-left: calc(0.85rem + env(safe-area-inset-left));
+        }
+
+        header h1 {
+          font-size: 1.25rem;
+        }
+
+        header p {
+          font-size: 0.95rem;
+        }
+
+        .card {
+          padding: 0.95rem 1rem 1.05rem;
+          border-radius: 1rem;
+        }
+
+        /* Stack URL input + button (no squishing) */
+        .uri-input-row {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .uri-mode-row,
+        .background-row {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        /* Prevent iOS "zoom on focus" (>=16px) */
+        .uri-input-row input[type='text'] {
+          font-size: 16px;
+          padding: 0.65rem 0.9rem;
+          width: 100%;
+        }
+
+        /* Make the load button full-width */
+        #load-uri-btn {
+          width: 100%;
+          justify-content: center;
+        }
+
+        /* Controls become a sticky action area on mobile */
+        .controls {
+          position: sticky;
+          bottom: calc(env(safe-area-inset-bottom) + 10px);
+          padding: 0.75rem 0;
+          margin-top: 0.75rem;
+          background: rgba(245, 245, 247, 0.88);
+          backdrop-filter: blur(10px);
+          border-top: 1px solid rgba(148, 163, 184, 0.35);
+
+          flex-direction: column;
+          align-items: stretch;
+          gap: 0.6rem;
+        }
+
+        /* Full-width run button, bigger type for easy taps */
+        #run-btn {
+          width: 100%;
+          font-size: 16px;
+        }
+
+        #pause-btn,
+        #stop-btn {
+          width: 100%;
+          font-size: 16px;
+        }
+
+        /* Make toggles/status readable and line-wrap */
+        .toggle {
+          width: 100%;
+          font-size: 0.95rem;
+        }
+        .status {
+          font-size: 0.9rem;
+        }
+
+        /* On mobile we cap editor height and allow internal scrolling */
+        .CodeMirror {
+          font-size: 0.95rem;
+        }
+        .CodeMirror-scroll {
+          overflow: auto !important;
+          -webkit-overflow-scrolling: touch;
+        }
+      }
+
+      /* Optional: Dark mode (keeps it pleasant on mobile) */
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #0b0f14;
+          color: #e7eaf0;
+        }
+        header p,
+        .meta,
+        .status {
+          color: #a7b0bf;
+        }
+        label,
+        .toggle {
+          color: #cbd5e1;
+        }
+        .card {
+          background: #0f1620;
+          border-color: rgba(148, 163, 184, 0.18);
+          box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+        }
+        .section-title {
+          color: #e7eaf0;
+        }
+
+        .cm-error-line {
+          background: rgba(239, 68, 68, 0.22);
+        }
+
+        textarea {
+          background: #0f1620;
+          border-color: #1f2a37;
+          color: #e7eaf0;
+        }
+        .CodeMirror {
+          background: #0f1620;
+          border-color: #1f2a37;
+        }
+        .CodeMirror-gutters {
+          background: #0b0f14;
+          border-right-color: #1f2a37;
+        }
+
+        .uri-input-row input[type='text'] {
+          background: #0b0f14;
+          border-color: #1f2a37;
+          color: #e7eaf0;
+        }
+        .uri-input-row input[type='text']:focus {
+          background: #0f1620;
+        }
+        button.secondary {
+          background: #1f2a37;
+          color: #e7eaf0;
+          box-shadow: none;
+        }
+        button.secondary:hover:not(:disabled) {
+          box-shadow: 0 10px 15px rgba(0, 0, 0, 0.25);
+        }
+        @media (max-width: 640px) {
+          .controls {
+            background: rgba(11, 15, 20, 0.88);
+            border-top-color: rgba(148, 163, 184, 0.18);
+          }
+        }
+      }
+
+      .playground-inner {
+        max-width: 960px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      /* Brighter N3 comments (#...) in the dark CodeMirror theme */
+      .cm-s-material-darker span.cm-comment {
+        color: #b0bec5;
+      }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/turtle/turtle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/sparql/sparql.min.js"></script>
+  </head>
+
+  <body>
+    <div class="page">
+      <header>
+        <h1>Eyeling N3 Playground</h1>
+        <p>
+          Edit the N3 program below, load it from a URL, or share this page with the program encoded in the fragment.
+        </p>
+        <p class="meta">
+          Powered by
+          <a href="https://eyereasoner.github.io/eyeling/" target="_blank" rel="noopener noreferrer">Eyeling</a>
+          — running version <strong>v<span id="eyeling-version">…</span></strong
+          >.
+        </p>
+      </header>
+
+      <div class="playground-inner">
+        <section class="card">
+          <h2 class="section-title">Input N3</h2>
+
+          <div class="uri-row">
+            <label for="n3-uri">Load N3 from URL</label>
+            <div class="uri-input-row">
+              <input
+                id="n3-uri"
+                type="text"
+                value="https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/witch.n3" />
+              <button id="load-uri-btn" type="button">Load from URL</button>
+            </div>
+            <div class="uri-mode-row">
+              <label
+                class="toggle"
+                title="Keep the loaded N3 separate from the editor and merge it in only when reasoning runs.">
+                <input id="load-as-background" type="checkbox" />
+                Load into background knowledge instead of overwriting the editor
+              </label>
+            </div>
+            <div class="background-row">
+              <span id="background-status" class="hint background-status"> No background knowledge loaded. </span>
+              <button id="clear-background-btn" type="button" class="secondary mini-button" disabled>
+                Clear background
+              </button>
+            </div>
+            <span class="hint"> Enter any N3 file URL (raw GitHub URLs work well) and click “Load from URL”. </span>
+          </div>
+
+          <label for="n3-editor">Editable N3 program</label>
+          <textarea id="n3-editor" spellcheck="false"></textarea>
+
+          <div class="controls">
+            <button id="run-btn">Run reasoning</button>
+            <button id="pause-btn" class="secondary" disabled>Pause</button>
+            <button id="stop-btn" class="danger" disabled>Stop</button>
+
+            <label class="toggle" title="Runs Eyeling with -p (proof comments)">
+              <input id="proof-comments" type="checkbox" />
+              Turn proof comments on (-p)
+            </label>
+            <label
+              class="toggle"
+              title="Rewrite http:// IRIs to https:// for log dereferencing builtins (mixed-content safe)">
+              <input id="enforce-https" type="checkbox" checked />
+              Enforce HTTPS for dereferencing (--enforce-https)
+            </label>
+
+            <span class="status" id="status">Idle.</span>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 class="section-title">Output</h2>
+          <textarea id="output-editor" spellcheck="false" readonly>(no output yet)</textarea>
+        </section>
+      </div>
+    </div>
+
+    <script src="dist/browser/eyeling.browser.js"></script>
+
+    <script>
+      (function () {
+        const defaultN3 = `# ------------------
+# Socrates inference
+# ------------------
+
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix : <http://example.org/socrates#>.
+
+# facts
+:Socrates a :Human.
+:Human rdfs:subClassOf :Mortal.
+
+# subclass rule
+{
+    ?S a ?A.
+    ?A rdfs:subClassOf ?B.
+} => {
+    ?S a ?B.
+}.`;
+
+        const inputTextArea = document.getElementById('n3-editor');
+        const outputTextArea = document.getElementById('output-editor');
+        const runBtn = document.getElementById('run-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const statusEl = document.getElementById('status');
+        const uriInput = document.getElementById('n3-uri');
+        const loadUriBtn = document.getElementById('load-uri-btn');
+        const loadAsBackgroundCheckbox = document.getElementById('load-as-background');
+        const backgroundStatusEl = document.getElementById('background-status');
+        const clearBackgroundBtn = document.getElementById('clear-background-btn');
+        const proofCheckbox = document.getElementById('proof-comments');
+        const enforceHttpsCheckbox = document.getElementById('enforce-https');
+        const versionEl = document.getElementById('eyeling-version');
+
+        // Persist "enforce https" toggle (default ON)
+        try {
+          const saved = localStorage.getItem('eyeling.enforceHttps');
+          if (saved !== null) enforceHttpsCheckbox.checked = saved === '1';
+          enforceHttpsCheckbox.addEventListener('change', () => {
+            localStorage.setItem('eyeling.enforceHttps', enforceHttpsCheckbox.checked ? '1' : '0');
+          });
+        } catch (_) {}
+
+        const EYELING_BROWSER_JS_URL = new URL('dist/browser/eyeling.browser.js', window.location.href).toString();
+        const EYELING_PKG_URL = new URL('package.json', window.location.href).toString();
+
+        let eyelingVersion = 'unknown';
+        let versionPromise = null;
+        let backgroundKnowledgeText = '';
+        let backgroundKnowledgeSource = '';
+        let backgroundBuiltinModules = [];
+        let editorBuiltinModules = [];
+
+        // --- Unified background streaming runner (shared with the Streaming demo tab) ---
+        // Exposes: window.__eyelingUnified.startStreamRun({
+        //   program, enforceHttps, proof,
+        //   onBatch(derivedTriples[]),
+        //   onRenderedText(text, countTriples),
+        //   onStdout(text), onStderr(text),
+        //   onDone({runId}), onError(message)
+        // })
+        (function initUnifiedEyelingRunner() {
+          const U = window.__eyelingUnified || (window.__eyelingUnified = {});
+          if (U && typeof U.startStreamRun === 'function') return;
+
+          let activeWorker = null;
+          let nextRunId = 0;
+
+          function stopActiveWorker() {
+            if (!activeWorker) return;
+            try {
+              activeWorker.terminate();
+            } catch (_) {}
+            activeWorker = null;
+          }
+
+          function nowMs() {
+            return window.performance && performance.now ? performance.now() : Date.now();
+          }
+
+          // --- Syntax error formatting (for CodeMirror highlighting) ---
+          // Eyeling's parser throws N3SyntaxError with a codepoint offset. We convert that into line/col.
+          function offsetToLineCol(text, offset) {
+            const chars = Array.from(String(text || ''));
+            const n = Math.max(0, Math.min(typeof offset === 'number' ? offset : 0, chars.length));
+            let line = 1;
+            let col = 1;
+            for (let i = 0; i < n; i++) {
+              const c = chars[i];
+              if (c === '\n') {
+                line++;
+                col = 1;
+              } else if (c === '\r') {
+                line++;
+                col = 1;
+                if (i + 1 < n && chars[i + 1] === '\n') i++; // swallow \n in CRLF
+              } else {
+                col++;
+              }
+            }
+            return { line, col };
+          }
+
+          function resolveSyntaxSourceLocation(globalLine, sourceMap, fallbackLabel) {
+            if (!sourceMap || !Number.isFinite(globalLine) || globalLine < 1) {
+              return {
+                source: 'input',
+                label: fallbackLabel || 'input.n3',
+                line: globalLine,
+              };
+            }
+
+            const backgroundStartLine = sourceMap.backgroundStartLine || 1;
+            const backgroundEndLine = sourceMap.backgroundEndLine || 0;
+            const editorStartLine = sourceMap.editorStartLine || 1;
+
+            if (sourceMap.hasBackground && globalLine >= backgroundStartLine && globalLine <= backgroundEndLine) {
+              return {
+                source: 'background',
+                label: sourceMap.backgroundLabel || 'background knowledge',
+                line: globalLine - backgroundStartLine + 1,
+              };
+            }
+
+            if (sourceMap.hasBackground && globalLine >= editorStartLine) {
+              return {
+                source: 'editor',
+                label: sourceMap.editorLabel || fallbackLabel || 'editable program',
+                line: globalLine - editorStartLine + 1,
+              };
+            }
+
+            return {
+              source: 'input',
+              label: fallbackLabel || 'input.n3',
+              line: globalLine,
+            };
+          }
+
+          function formatN3SyntaxError(err, text, label, sourceMap) {
+            const off = err && typeof err.offset === 'number' ? err.offset : null;
+            const lbl = label ? String(label) : '';
+            if (off === null) {
+              return {
+                message: 'Syntax error in ' + lbl + ': ' + (err && err.message ? err.message : String(err)),
+                source: null,
+                line: null,
+                col: null,
+              };
+            }
+            const lc = offsetToLineCol(text, off);
+            const lines = String(text || '').split(/\r\n|\n|\r/);
+            const lineText = lines[lc.line - 1] ?? '';
+            const caret = ' '.repeat(Math.max(0, lc.col - 1)) + '^';
+            const loc = resolveSyntaxSourceLocation(lc.line, sourceMap, lbl);
+            return {
+              message:
+                'Syntax error in ' +
+                loc.label +
+                ':' +
+                loc.line +
+                ':' +
+                lc.col +
+                ': ' +
+                (err && err.message ? err.message : 'Syntax error') +
+                '\n' +
+                lineText +
+                '\n' +
+                caret,
+              source: loc.source,
+              line: loc.line,
+              col: lc.col,
+            };
+          }
+
+          function formatMaybeSyntaxError(err, text, label, sourceMap) {
+            if (err && err.name === 'N3SyntaxError') {
+              return formatN3SyntaxError(err, text, label, sourceMap);
+            }
+            return {
+              message: err && err.message ? err.message : String(err),
+              source: null,
+              line: null,
+              col: null,
+            };
+          }
+
+          // Start a run. Creates/terminates workers as needed (single active run at a time).
+          U.startStreamRun = function startStreamRun(args) {
+            const program = String(args && args.program ? args.program : '');
+            const sourceMap = args && args.sourceMap ? args.sourceMap : null;
+            const enforceHttps = !!(args && args.enforceHttps);
+            const proof = !!(args && args.proof);
+            const onBatch = args && typeof args.onBatch === 'function' ? args.onBatch : null;
+            const onRenderedText = args && typeof args.onRenderedText === 'function' ? args.onRenderedText : null;
+            const onStdout = args && typeof args.onStdout === 'function' ? args.onStdout : null;
+            const onStderr = args && typeof args.onStderr === 'function' ? args.onStderr : null;
+            const onDone = args && typeof args.onDone === 'function' ? args.onDone : null;
+            const onError = args && typeof args.onError === 'function' ? args.onError : null;
+            const builtinModules = args && Array.isArray(args.builtinModules) ? args.builtinModules : [];
+
+            const runId = ++nextRunId;
+
+            function evalCommonJsBuiltinModule(source, origin) {
+              const module = { exports: {} };
+              const exports = module.exports;
+              const require = (specifier) => {
+                throw new Error(
+                  'Browser playground builtin ' +
+                    (origin || '<example-builtin>') +
+                    ' tried to require ' +
+                    specifier +
+                    '; browser-loaded example builtins must be self-contained.',
+                );
+              };
+              const cleanOrigin = String(origin || 'example-builtin.js').replace(/[\r\n]/g, '');
+              const fn = new Function(
+                'module',
+                'exports',
+                'require',
+                String(source || '') + '\n//# sourceURL=' + cleanOrigin,
+              );
+              fn(module, exports, require);
+              return module.exports;
+            }
+
+            function registerBuiltinModuleSources(modules, api) {
+              if (!modules || !modules.length) return;
+              if (!api || typeof api.registerBuiltinModule !== 'function') {
+                throw new Error('Eyeling registerBuiltinModule API not available.');
+              }
+              for (let i = 0; i < modules.length; i += 1) {
+                const item = modules[i];
+                if (!item || typeof item.source !== 'string') continue;
+                const origin = item.url || '<example-builtin-' + i + '>';
+                const mod = evalCommonJsBuiltinModule(item.source, origin);
+                api.registerBuiltinModule(mod, origin);
+              }
+            }
+
+            // Best-effort fallback for environments without Web Workers.
+            if (typeof Worker === 'undefined') {
+              try {
+                if (!window.eyeling || typeof window.eyeling.reasonStream !== 'function') {
+                  throw new Error('Eyeling reasonStream API not available.');
+                }
+                const batch = [];
+                const BATCH_MAX = 16;
+
+                function flush(force) {
+                  if (!batch.length) return;
+                  if (force || batch.length >= BATCH_MAX) {
+                    onBatch && onBatch(batch.splice(0));
+                  }
+                }
+
+                // Capture stderr (log:trace uses console.error in browser/worker)
+                const __origConsoleError = console.error;
+                console.error = (...args) => {
+                  try {
+                    onStderr && onStderr(args.join(' '));
+                  } catch (_) {}
+                  try {
+                    __origConsoleError && __origConsoleError.apply(console, args);
+                  } catch (_) {}
+                };
+
+                try {
+                  registerBuiltinModuleSources(builtinModules, window.eyeling);
+                  window.eyeling.reasonStream(program, {
+                    enforceHttps,
+                    proof,
+                    onDerived: ({ triple }) => {
+                      batch.push(triple);
+                      flush(false);
+                    },
+                  });
+                } finally {
+                  console.error = __origConsoleError;
+                }
+                flush(true);
+                onDone && onDone({ runId, exitCode: 0, message: '' });
+              } catch (e) {
+                onError && onError(formatMaybeSyntaxError(e, program, 'input.n3', sourceMap));
+              }
+
+              return { runId, cancel: () => {} };
+            }
+
+            // Worker path (keeps UI responsive and enables true streaming)
+            stopActiveWorker();
+
+            const eyelingUrl = EYELING_BROWSER_JS_URL;
+            const eyelingUrlEsc = eyelingUrl.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+
+            const workerSrc = `
+            const __EYELING_URL = "${eyelingUrlEsc}";
+            let __eyelingLoadPromise = null;
+
+            function __stripShebang(src) {
+              // NOTE: this worker source is embedded inside a template literal on the main thread.
+              // We must escape newlines as \\n so the worker sees the backslash-n sequence.
+              return String(src || "").replace(/^#![^\\n]*\\n/, "");
+            }
+
+            async function __ensureEyelingLoaded() {
+              if (__eyelingLoadPromise) return __eyelingLoadPromise;
+              __eyelingLoadPromise = (async () => {
+                // Fast path: importScripts (works in environments that support hashbang comments).
+                try {
+                  importScripts(__EYELING_URL);
+                  return;
+                } catch (_) {
+                  // Fallback: fetch + strip shebang + eval (avoids worker parse issues in older engines).
+                }
+
+                const resp = await fetch(__EYELING_URL);
+                if (!resp.ok) throw new Error("Failed to load eyeling.browser.js (" + resp.status + ")");
+                const raw = await resp.text();
+                const cleaned = __stripShebang(raw);
+                // Execute in the global scope of the worker.
+                (0, eval)(cleaned);
+              })();
+              return __eyelingLoadPromise;
+            }
+
+            const now = () => (self.performance && performance.now) ? performance.now() : Date.now();
+
+            function __evalCommonJsBuiltinModule(source, origin) {
+              const module = { exports: {} };
+              const exports = module.exports;
+              const require = (specifier) => {
+                throw new Error(
+                  "Browser playground builtin " +
+                    (origin || "<example-builtin>") +
+                    " tried to require " +
+                    specifier +
+                    "; browser-loaded example builtins must be self-contained."
+                );
+              };
+              const cleanOrigin = String(origin || "example-builtin.js").replace(/[\\r\\n]/g, "");
+              const fn = new Function("module", "exports", "require", String(source || "") + "\\n//# sourceURL=" + cleanOrigin);
+              fn(module, exports, require);
+              return module.exports;
+            }
+
+            function __registerBuiltinModuleSources(modules) {
+              if (!modules || !modules.length) return;
+              if (!self.eyeling || typeof self.eyeling.registerBuiltinModule !== "function") {
+                throw new Error("Eyeling registerBuiltinModule API not available.");
+              }
+              for (let i = 0; i < modules.length; i += 1) {
+                const item = modules[i];
+                if (!item || typeof item.source !== "string") continue;
+                const origin = item.url || ("<example-builtin-" + i + ">");
+                const mod = __evalCommonJsBuiltinModule(item.source, origin);
+                self.eyeling.registerBuiltinModule(mod, origin);
+              }
+            }
+
+            function __hasBuiltinModuleSources(modules) {
+              return Array.isArray(modules) && modules.some((item) => item && typeof item.source === "string");
+            }
+
+            function __builtinModulesForReasonStream(modules) {
+              if (!__hasBuiltinModuleSources(modules)) return undefined;
+              return modules.map((item, i) => __evalCommonJsBuiltinModule(item.source, item.url || ("<example-builtin-" + i + ">")));
+            }
+
+            function __offsetToLineCol(text, offset) {
+              const chars = Array.from(String(text || ""));
+              const n = Math.max(0, Math.min(typeof offset === "number" ? offset : 0, chars.length));
+              let line = 1;
+              let col = 1;
+              for (let i = 0; i < n; i++) {
+                const c = chars[i];
+                if (c === "\\n") {
+                  line++;
+                  col = 1;
+                } else if (c === "\\r") {
+                  line++;
+                  col = 1;
+                  if (i + 1 < n && chars[i + 1] === "\\n") i++;
+                } else {
+                  col++;
+                }
+              }
+              return { line, col };
+            }
+
+            function __resolveSyntaxSourceLocation(globalLine, sourceMap) {
+              if (!sourceMap || !Number.isFinite(globalLine) || globalLine < 1) {
+                return { source: null, label: "input.n3", line: globalLine };
+              }
+
+              const backgroundStartLine = sourceMap.backgroundStartLine || 1;
+              const backgroundEndLine = sourceMap.backgroundEndLine || 0;
+              const editorStartLine = sourceMap.editorStartLine || 1;
+
+              if (sourceMap.hasBackground && globalLine >= backgroundStartLine && globalLine <= backgroundEndLine) {
+                return {
+                  source: "background",
+                  label: sourceMap.backgroundLabel || "background knowledge",
+                  line: globalLine - backgroundStartLine + 1,
+                };
+              }
+
+              if (sourceMap.hasBackground && globalLine >= editorStartLine) {
+                return {
+                  source: "editor",
+                  label: sourceMap.editorLabel || "editable program",
+                  line: globalLine - editorStartLine + 1,
+                };
+              }
+
+              return { source: null, label: "input.n3", line: globalLine };
+            }
+
+            function __formatMaybeSyntaxError(err, text, sourceMap) {
+              if (err && err.name === "N3SyntaxError" && typeof err.offset === "number") {
+                const lc = __offsetToLineCol(text, err.offset);
+                const loc = __resolveSyntaxSourceLocation(lc.line, sourceMap);
+                const progLines = String(text || "").split(/\\r\\n|\\n|\\r/);
+                const lineText = progLines[lc.line - 1] ?? "";
+                const caret = " ".repeat(Math.max(0, lc.col - 1)) + "^";
+                return {
+                  message:
+                    "Syntax error in " +
+                    loc.label +
+                    ":" +
+                    loc.line +
+                    ":" +
+                    lc.col +
+                    ": " +
+                    (err.message || "Syntax error") +
+                    "\\n" +
+                    lineText +
+                    "\\n" +
+                    caret,
+                  source: loc.source,
+                  line: loc.line,
+                  col: lc.col,
+                };
+              }
+              return {
+                message: (err && err.message) ? err.message : String(err),
+                source: null,
+                line: null,
+                col: null,
+              };
+            }
+
+            self.onmessage = async (ev) => {
+              const msg = ev && ev.data ? ev.data : {};
+              if (msg.type !== "run") return;
+
+              await __ensureEyelingLoaded();
+
+              const runId = msg.runId;
+              const program = String(msg.program || "");
+              const sourceMap = msg.sourceMap || null;
+              const enforceHttps = !!msg.enforceHttps;
+              const proof = !!msg.proof;
+              const builtinModules = Array.isArray(msg.builtinModules) ? msg.builtinModules : [];
+
+              __registerBuiltinModuleSources(builtinModules);
+
+              // Forward stdout/stderr to the main thread.
+              // - stdout is used for proof comments (when enabled)
+              // - stderr is used by log:trace in browser/worker builds
+              const __origLog = console.log;
+              console.log = (...args) => {
+                try { self.postMessage({ type: "stdout", runId, text: args.join(" ") }); } catch (_) {}
+                try { __origLog && __origLog.apply(console, args); } catch (_) {}
+              };
+              const __origErr = console.error;
+              console.error = (...args) => {
+                try { self.postMessage({ type: "stderr", runId, text: args.join(" ") }); } catch (_) {}
+                try { __origErr && __origErr.apply(console, args); } catch (_) {}
+              };
+
+const batch = [];
+              const BATCH_MAX = 10;          // small batches = more "real-time"
+              const MAX_LATENCY_MS = 15;     // try to post at least every ~15ms
+              let lastFlush = now();
+              let countTriplesNext = null;
+
+              function flush(force) {
+                const t = now();
+                if (!batch.length) return;
+                if (force || batch.length >= BATCH_MAX || (t - lastFlush) >= MAX_LATENCY_MS) {
+                  // Copy the array so the main thread can process immediately.
+                  const payload = { type: "derived_batch", runId, triples: batch.splice(0) };
+                  if (typeof countTriplesNext === "number") payload.countTriples = countTriplesNext;
+                  countTriplesNext = null;
+                  self.postMessage(payload);
+                  lastFlush = t;
+                }
+              }
+
+              try {
+                // Streaming mode uses forwardChain directly so derived triples can be posted
+                // as soon as they are found. For browser-rendered modes (log:query or
+                // log:outputString), we use the browser API and emit a single rendered block.
+                if (typeof lex !== "function" || typeof Parser !== "function" || typeof forwardChain !== "function") {
+                  throw new Error("Eyeling internals not available (lex/Parser/forwardChain missing).");
+                }
+
+                const LOG_OUTPUT_STRING = "http://www.w3.org/2000/10/swap/log#outputString";
+
+                function hasOutputStringPredicate(trs) {
+                  return Array.isArray(trs) && trs.some((tr) => tr && tr.p && tr.p.value === LOG_OUTPUT_STRING);
+                }
+
+                function programMayProduceOutputStrings(topLevelTriples, forwardRules, logQueryRules) {
+                  return (
+                    hasOutputStringPredicate(topLevelTriples) ||
+                    (Array.isArray(forwardRules) && forwardRules.some((r) => hasOutputStringPredicate(r && r.conclusion))) ||
+                    (Array.isArray(logQueryRules) && logQueryRules.some((r) => hasOutputStringPredicate(r && r.conclusion)))
+                  );
+                }
+
+                function factsContainOutputStrings(triplesForOutput) {
+                  return Array.isArray(triplesForOutput) && triplesForOutput.some((tr) => tr && tr.p && tr.p.value === LOG_OUTPUT_STRING);
+                }
+
+                const __oldEnforce = (typeof enforceHttpsEnabled !== "undefined") ? enforceHttpsEnabled : false;
+                const __oldProof = (typeof proofCommentsEnabled !== "undefined") ? proofCommentsEnabled : false;
+                const __oldTrace = (typeof __tracePrefixes !== "undefined") ? __tracePrefixes : null;
+
+                try {
+                  if (typeof enforceHttpsEnabled !== "undefined") enforceHttpsEnabled = !!enforceHttps;
+                  if (typeof proofCommentsEnabled !== "undefined") proofCommentsEnabled = !!proof;
+
+                  const toks = lex(program);
+                  const parser = new Parser(toks);
+                  let prefixes, triples, frules, brules, qrules;
+                  [prefixes, triples, frules, brules, qrules] = parser.parseDocument();
+
+                  // Make parsed prefixes available to log:trace output.
+                  try { if (typeof __tracePrefixes !== "undefined") __tracePrefixes = prefixes; } catch (_) {}
+
+                  // Build rdf:List internal terms from rdf:first/rdf:rest.
+                  if (typeof materializeRdfLists === "function") {
+                    materializeRdfLists(triples, frules.concat(qrules || []), brules);
+                  }
+
+                  const facts = triples.filter((tr) => (typeof isGroundTriple === "function") ? isGroundTriple(tr) : true);
+
+                  const hasQueries = Array.isArray(qrules) && qrules.length;
+                  const mayAutoRenderOutputStrings = programMayProduceOutputStrings(triples, frules, qrules);
+
+                  if (hasQueries || mayAutoRenderOutputStrings) {
+                    if (!self.eyeling || typeof self.eyeling.reasonStream !== "function") {
+                      throw new Error("Eyeling API not available (eyeling.reasonStream missing).");
+                    }
+
+                    const res = self.eyeling.reasonStream(program, { enforceHttps, proof });
+                    const pfx = res && res.prefixes ? res.prefixes : prefixes;
+                    const queryMode = !!(res && res.queryMode);
+                    const outDerived = queryMode
+                      ? ((res && Array.isArray(res.queryDerived)) ? res.queryDerived : [])
+                      : ((res && Array.isArray(res.derived)) ? res.derived : []);
+                    const renderedOutputTriples = queryMode
+                      ? ((res && Array.isArray(res.queryTriples)) ? res.queryTriples : [])
+                      : ((res && Array.isArray(res.facts)) ? res.facts : []);
+
+                    if (factsContainOutputStrings(renderedOutputTriples)) {
+                      const collectOutputStrings =
+                        (self.eyeling && typeof self.eyeling.collectOutputStringsFromFacts === "function")
+                          ? self.eyeling.collectOutputStringsFromFacts
+                          : ((typeof self.collectOutputStringsFromFacts === "function")
+                              ? self.collectOutputStringsFromFacts
+                              : null);
+                      if (typeof collectOutputStrings !== "function") {
+                        throw new Error("Eyeling API not available (collectOutputStringsFromFacts missing).");
+                      }
+                      let txt = "";
+                      try {
+                        txt = String(collectOutputStrings(renderedOutputTriples, pfx) || "");
+                      } catch (_) {}
+                      self.postMessage({
+                        type: "rendered_text",
+                        runId,
+                        text: txt,
+                        countTriples: outDerived.length,
+                      });
+                    } else if (queryMode && !proof) {
+                      let txt = "";
+                      try { txt = (res && res.closureN3 != null) ? String(res.closureN3) : ""; } catch (_) {}
+                      self.postMessage({
+                        type: "rendered_text",
+                        runId,
+                        text: txt,
+                        countTriples: outDerived.length,
+                      });
+                    } else {
+                      for (const df of outDerived) {
+                        try {
+                          if (proof && typeof printExplanation === "function") {
+                            printExplanation(df, pfx);
+                          }
+                        } catch (_) {}
+
+                        let t = "";
+                        try {
+                          if (typeof tripleToN3 === "function") t = tripleToN3(df.fact, pfx);
+                          else if (df && df.fact && df.fact.toString) t = String(df.fact);
+                        } catch (_) {}
+                        if (t) {
+                          batch.push(t);
+                          flush(true);
+                        }
+                      }
+                    }
+                  } else {
+                    forwardChain(facts, frules, brules, (df) => {
+                      try {
+                        if (proof && typeof printExplanation === "function") {
+                          // Prints via console.log (forwarded to main thread as stdout).
+                          printExplanation(df, prefixes);
+                        }
+                      } catch (_) {}
+
+                      let t = "";
+                      try {
+                        if (typeof tripleToN3 === "function") t = tripleToN3(df.fact, prefixes);
+                        else if (df && df.fact && df.fact.toString) t = String(df.fact);
+                      } catch (_) {}
+
+                      if (t) {
+                        batch.push(t);
+                        // When proof comments are enabled, flush immediately so the
+                        // derived triple follows the proof block closely.
+                        flush(!!proof);
+                      }
+                    });
+                  }
+                } finally {
+                  try { if (typeof enforceHttpsEnabled !== "undefined") enforceHttpsEnabled = __oldEnforce; } catch (_) {}
+                  try { if (typeof proofCommentsEnabled !== "undefined") proofCommentsEnabled = __oldProof; } catch (_) {}
+                  try { if (typeof __tracePrefixes !== "undefined") __tracePrefixes = __oldTrace; } catch (_) {}
+                }
+
+                flush(true);
+                self.postMessage({ type: "done", runId });
+              } catch (e) {
+                if (e && e.__eyelingExit) {
+                  flush(true);
+                  self.postMessage({
+                    type: e.code === 2 ? "done" : "error",
+                    runId,
+                    exitCode: e.code,
+                    message: e.code === 2 ? "Inference fuse triggered." : ((e && e.message) ? e.message : String(e)),
+                  });
+                  return;
+                }
+
+                const errInfo = __formatMaybeSyntaxError(e, program, sourceMap);
+                self.postMessage({
+                  type: "error",
+                  runId,
+                  message: errInfo.message,
+                  errorSource: errInfo.source,
+                  errorLine: errInfo.line,
+                  errorCol: errInfo.col,
+                });
+              } finally {
+                try { console.log = __origLog; } catch (_) {}
+                try { console.error = __origErr; } catch (_) {}
+              }
+            };
+          `;
+
+            const blob = new Blob([workerSrc], { type: 'text/javascript' });
+            const url = URL.createObjectURL(blob);
+            const w = new Worker(url);
+            activeWorker = w;
+
+            let finished = false;
+            function cleanup() {
+              if (finished) return;
+              finished = true;
+              try {
+                URL.revokeObjectURL(url);
+              } catch (_) {}
+            }
+
+            w.onmessage = (ev) => {
+              const msg = ev && ev.data ? ev.data : {};
+              if (msg.runId !== runId) return;
+
+              if (msg.type === 'derived_batch') {
+                onBatch && onBatch(msg.triples || [], msg.countTriples);
+              } else if (msg.type === 'rendered_text') {
+                onRenderedText && onRenderedText(msg.text == null ? '' : String(msg.text), msg.countTriples);
+              } else if (msg.type === 'stdout') {
+                const t = msg.text == null ? '' : String(msg.text);
+                if (t) onStdout && onStdout(t);
+              } else if (msg.type === 'stderr') {
+                const t = msg.text == null ? '' : String(msg.text);
+                if (t) onStderr && onStderr(t);
+              } else if (msg.type === 'done') {
+                cleanup();
+                onDone && onDone({ runId });
+              } else if (msg.type === 'error') {
+                cleanup();
+                onError &&
+                  onError({
+                    message: msg.message || 'Unknown error',
+                    source: msg.errorSource || null,
+                    line: msg.errorLine || null,
+                    col: msg.errorCol || null,
+                  });
+              }
+            };
+
+            w.onerror = (ev) => {
+              cleanup();
+              onError && onError('Worker error: ' + (ev && ev.message ? ev.message : 'unknown'));
+            };
+
+            // Kick off the work
+            w.postMessage({
+              type: 'run',
+              runId,
+              program,
+              sourceMap,
+              enforceHttps,
+              proof,
+              builtinModules,
+            });
+
+            return {
+              runId,
+              cancel: () => {
+                try {
+                  w.terminate();
+                } catch (_) {}
+                cleanup();
+                if (activeWorker === w) activeWorker = null;
+              },
+            };
+          };
+        })();
+
+        function isSmallScreen() {
+          return window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
+        }
+
+        function currentMaxHeights() {
+          // On mobile we cap editor/output height and allow internal scrolling
+          if (!isSmallScreen()) return { editor: null, output: null };
+          const h = window.innerHeight || 800;
+          return {
+            editor: Math.max(260, Math.floor(h * 0.55)),
+            output: Math.max(160, Math.floor(h * 0.35)),
+          };
+        }
+
+        function autoResizeCodeMirror(cm, minHeightPx, maxHeightPx) {
+          // Ensure CodeMirror fits its *rendered* content (no internal scrollbars unless capped).
+          // IMPORTANT: don't use the scroller's scrollHeight here — with overflow hidden
+          // it can create a feedback loop where the editor grows a bit on every keystroke.
+          cm.refresh();
+
+          const wrapper = cm.getWrapperElement();
+
+          // Desktop cap for the Playground Output pane: ~50 lines max (scroll inside).
+          if (wrapper && wrapper.classList && wrapper.classList.contains('cm-output')) {
+            const lineCapPx = Math.round(cm.defaultTextHeight() * 50 + cm.defaultTextHeight());
+            if (Number.isFinite(lineCapPx) && lineCapPx > 0) {
+              maxHeightPx = typeof maxHeightPx === 'number' ? Math.min(maxHeightPx, lineCapPx) : lineCapPx;
+            }
+          }
+          const code = wrapper && wrapper.querySelector('.CodeMirror-code');
+          const sizer = wrapper && wrapper.querySelector('.CodeMirror-sizer');
+          const measureEl = code || sizer;
+
+          const contentHeight = measureEl ? measureEl.getBoundingClientRect().height : cm.getScrollInfo().height;
+
+          // Add a bit of breathing room so the last line isn't flush with the bottom.
+          const padding = cm.defaultTextHeight();
+
+          let target = Math.max(Math.ceil(contentHeight + padding), minHeightPx);
+          if (typeof maxHeightPx === 'number') target = Math.min(target, maxHeightPx);
+
+          cm.setSize(null, target + 'px');
+        }
+
+        function resizeAll() {
+          const mh = currentMaxHeights();
+          autoResizeCodeMirror(editor, 220, mh.editor);
+          autoResizeCodeMirror(outputEl, 80, mh.output);
+        }
+
+        // --- INITIAL CONTENT + SHAREABLE QUERY PARAMS ---
+        function getProgramFromHash() {
+          const hash = window.location.hash || '';
+          if (!hash) return null;
+          const raw = hash.startsWith('#') ? hash.slice(1) : hash;
+          if (!raw) return null;
+          try {
+            return decodeURIComponent(raw);
+          } catch (e) {
+            return raw;
+          }
+        }
+
+        function getSearchParams() {
+          try {
+            return new URL(window.location.href).searchParams;
+          } catch (e) {
+            return null;
+          }
+        }
+
+        function getFirstQueryParam(names) {
+          const params = getSearchParams();
+          if (!params) return null;
+          for (const name of names) {
+            const value = params.get(name);
+            if (value !== null) return value;
+          }
+          return null;
+        }
+
+        function parseBooleanParam(value) {
+          if (value === null || value === undefined) return null;
+          const normalized = String(value).trim().toLowerCase();
+          if (!normalized) return null;
+          if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
+          if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
+          return null;
+        }
+
+        function getProgramFromQuery() {
+          return getFirstQueryParam(['edit', 'program']);
+        }
+
+        function getN3UriFromQuery() {
+          return getFirstQueryParam(['url', 'n3url', 'n3', 'load']);
+        }
+
+        const paramProgramFromQuery = getProgramFromQuery();
+        const paramProgramFromHash = paramProgramFromQuery === null ? getProgramFromHash() : null;
+        const paramProgram = paramProgramFromQuery !== null ? paramProgramFromQuery : paramProgramFromHash;
+        const paramN3Uri = getN3UriFromQuery();
+        const paramLoadBg = parseBooleanParam(getFirstQueryParam(['loadbg', 'background', 'bg']));
+        const paramProofComments = parseBooleanParam(getFirstQueryParam(['proofcomments', 'proof']));
+        const paramHttpsDeref = parseBooleanParam(getFirstQueryParam(['httpsderef', 'enforcehttps']));
+
+        if (paramN3Uri) {
+          uriInput.value = paramN3Uri;
+        }
+        if (paramLoadBg !== null && loadAsBackgroundCheckbox) {
+          loadAsBackgroundCheckbox.checked = paramLoadBg;
+        }
+        if (paramProofComments !== null && proofCheckbox) {
+          proofCheckbox.checked = paramProofComments;
+        }
+        if (paramHttpsDeref !== null && enforceHttpsCheckbox) {
+          enforceHttpsCheckbox.checked = paramHttpsDeref;
+        }
+
+        const hasInitialShareState =
+          paramProgramFromQuery !== null ||
+          paramProgramFromHash !== null ||
+          paramN3Uri !== null ||
+          paramLoadBg !== null ||
+          paramProofComments !== null ||
+          paramHttpsDeref !== null;
+
+        let shareUrlSyncEnabled = hasInitialShareState;
+
+        const shouldAutoLoadFromQueryUrl = !!paramN3Uri && (paramLoadBg === true || paramProgram === null);
+        const initialN3 = paramProgram !== null ? paramProgram : defaultN3;
+
+        // CodeMirror editors (syntax-highlighted)
+        // Use a real dark CodeMirror theme when the OS/browser is in dark mode.
+        const colorSchemeMql = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+        const pickCmTheme = () => (colorSchemeMql && colorSchemeMql.matches ? 'material-darker' : 'default');
+
+        const editor = CodeMirror.fromTextArea(inputTextArea, {
+          mode: { name: 'sparql' },
+          theme: pickCmTheme(),
+          lineNumbers: true,
+          lineWrapping: true,
+          viewportMargin: Infinity,
+        });
+
+        const outputEl = CodeMirror.fromTextArea(outputTextArea, {
+          mode: { name: 'sparql' },
+          theme: pickCmTheme(),
+          lineNumbers: true,
+          lineWrapping: true,
+          readOnly: true,
+          viewportMargin: Infinity,
+        });
+
+        // Slightly smaller font for output
+        outputEl.getWrapperElement().classList.add('cm-output');
+
+        // Keep CodeMirror in sync if the user changes OS theme while this page is open.
+        function applyCodeMirrorTheme() {
+          const t = pickCmTheme();
+          editor.setOption('theme', t);
+          outputEl.setOption('theme', t);
+        }
+        if (colorSchemeMql) {
+          if (typeof colorSchemeMql.addEventListener === 'function') {
+            colorSchemeMql.addEventListener('change', applyCodeMirrorTheme);
+          } else if (typeof colorSchemeMql.addListener === 'function') {
+            colorSchemeMql.addListener(applyCodeMirrorTheme);
+          }
+        }
+
+        // --- N3 SYNTAX ERROR HIGHLIGHTING ---
+        let errorLineHandle = null;
+
+        function clearErrorHighlight() {
+          if (!errorLineHandle) return;
+          editor.removeLineClass(errorLineHandle, 'background', 'cm-error-line');
+          errorLineHandle = null;
+        }
+
+        function highlightEditorError(line1, col1) {
+          clearErrorHighlight();
+
+          const line = Number.isFinite(line1) ? Math.max(0, line1 - 1) : 0;
+          const ch = Number.isFinite(col1) ? Math.max(0, col1 - 1) : 0;
+          if (line < 0 || line >= editor.lineCount()) return;
+
+          errorLineHandle = editor.getLineHandle(line);
+          editor.addLineClass(errorLineHandle, 'background', 'cm-error-line');
+          editor.scrollIntoView({ line, ch }, 80);
+          editor.setCursor({ line, ch });
+        }
+
+        function highlightErrorFromOutput(outputText) {
+          if (!outputText) return;
+
+          // Eyeling error messages vary a bit. We try to find the first occurrence of
+          // something like:  Syntax error ...:<line>:<col>:
+          const text = String(outputText);
+          const lines = text.split(/\r?\n/);
+
+          let m = null;
+
+          function tryMatchLine(ln) {
+            if (!ln) return null;
+
+            // Common formats:
+            //   Syntax error in <file>:<line>:<col>: ...
+            //   Reasoning error: Syntax error ...:<line>:<col>: ...
+            let x =
+              ln.match(/(?:Syntax|Parse) error.*?:(\d+):(\d+)(?::|\b)/i) ||
+              ln.match(/\bline\s+(\d+)\b[^\d]{0,40}\bcol(?:umn)?\s+(\d+)\b/i);
+
+            // If the line mentions "Syntax error", accept a bare :line:col: too.
+            if (!x && /(?:syntax|parse) error/i.test(ln)) {
+              x = ln.match(/:(\d+):(\d+)(?::|\b)/);
+            }
+
+            return x;
+          }
+
+          const scanLimit = Math.min(lines.length, 80);
+
+          // Prefer scanning lines that mention "Syntax error"
+          for (let i = 0; i < scanLimit; i++) {
+            const ln = lines[i];
+            if (!/(?:syntax|parse) error/i.test(ln)) continue;
+            m = tryMatchLine(ln);
+            if (m) break;
+          }
+
+          // Fallback: scan a little more loosely
+          if (!m) {
+            for (let i = 0; i < scanLimit; i++) {
+              m = tryMatchLine(lines[i]);
+              if (m) break;
+            }
+          }
+
+          if (!m) return;
+
+          const line1 = parseInt(m[1], 10);
+          const col1 = parseInt(m[2], 10);
+          if (!Number.isFinite(line1) || line1 < 0) return;
+
+          highlightEditorError(line1, col1);
+        }
+
+        editor.setValue(initialN3);
+        resizeAll();
+
+        // Recompute caps on orientation/resize
+        window.addEventListener(
+          'resize',
+          () => {
+            resizeAll();
+          },
+          { passive: true },
+        );
+
+        // --- URL SHARING SUPPORT ---
+        let shareUrlUpdateTimeout = null;
+
+        function enableShareUrlSync() {
+          shareUrlSyncEnabled = true;
+        }
+
+        function updateShareUrl() {
+          if (!shareUrlSyncEnabled) return;
+
+          try {
+            const url = new URL(window.location.href);
+            const params = url.searchParams;
+
+            const uriValue = (uriInput && uriInput.value ? uriInput.value : '').trim();
+            const editorValue = editor.getValue();
+
+            if (uriValue) params.set('url', uriValue);
+            else params.delete('url');
+
+            params.set('loadbg', loadAsBackgroundCheckbox && loadAsBackgroundCheckbox.checked ? 'true' : 'false');
+            params.set('proofcomments', proofCheckbox && proofCheckbox.checked ? 'true' : 'false');
+            params.set('httpsderef', enforceHttpsCheckbox && enforceHttpsCheckbox.checked ? 'true' : 'false');
+
+            if (editorValue) params.set('edit', editorValue);
+            else params.delete('edit');
+
+            url.hash = '';
+            window.history.replaceState(null, '', url.toString());
+          } catch (e) {
+            console && console.warn && console.warn('Failed to update URL query params:', e);
+          }
+        }
+
+        function scheduleUpdateShareUrl() {
+          clearTimeout(shareUrlUpdateTimeout);
+          shareUrlUpdateTimeout = setTimeout(updateShareUrl, 300);
+        }
+
+        editor.on('change', function (_cm, changeObj) {
+          clearErrorHighlight();
+
+          const mh = currentMaxHeights();
+          autoResizeCodeMirror(editor, 220, mh.editor);
+
+          if (changeObj && changeObj.origin && changeObj.origin !== 'setValue') {
+            enableShareUrlSync();
+          }
+
+          scheduleUpdateShareUrl();
+        });
+
+        if (uriInput) {
+          uriInput.addEventListener('input', () => {
+            enableShareUrlSync();
+            scheduleUpdateShareUrl();
+          });
+        }
+
+        if (loadAsBackgroundCheckbox) {
+          loadAsBackgroundCheckbox.addEventListener('change', () => {
+            enableShareUrlSync();
+            updateShareUrl();
+          });
+        }
+
+        if (proofCheckbox) {
+          proofCheckbox.addEventListener('change', () => {
+            enableShareUrlSync();
+            updateShareUrl();
+          });
+        }
+
+        if (enforceHttpsCheckbox) {
+          enforceHttpsCheckbox.addEventListener('change', () => {
+            enableShareUrlSync();
+            updateShareUrl();
+          });
+        }
+
+        // --- EYELING VERSION (UI + runner) ---
+        function ensureEyelingVersion() {
+          if (versionPromise) return versionPromise;
+
+          versionPromise = (async () => {
+            try {
+              const resp = await fetch(EYELING_PKG_URL, { cache: 'no-store' });
+              if (!resp.ok) throw new Error('HTTP ' + resp.status);
+              const pkg = await resp.json();
+              if (pkg && pkg.version) {
+                eyelingVersion = String(pkg.version);
+                versionEl.textContent = eyelingVersion;
+              } else {
+                eyelingVersion = 'unknown';
+                versionEl.textContent = 'unknown';
+              }
+            } catch (e) {
+              eyelingVersion = 'unknown';
+              versionEl.textContent = 'unknown';
+            }
+          })();
+
+          return versionPromise;
+        }
+
+        // start loading version ASAP
+        ensureEyelingVersion();
+
+        // --- Streaming output for the Playground tab (keeps UI responsive) ---
+        let activePlayCancel = null;
+        let activePlayAppender = null;
+        let playPaused = false;
+        let playPausedBuffer = [];
+
+        function setPlayPaused(next) {
+          playPaused = !!next;
+          if (pauseBtn) pauseBtn.textContent = playPaused ? 'Resume' : 'Pause';
+        }
+
+        function enablePlayControls(running) {
+          if (stopBtn) stopBtn.disabled = !running;
+          const canResume = playPaused && playPausedBuffer.length > 0;
+          if (pauseBtn) pauseBtn.disabled = !(running || canResume);
+          if (pauseBtn) pauseBtn.textContent = playPaused ? 'Resume' : 'Pause';
+        }
+
+        function flushPlayBuffer() {
+          if (!playPausedBuffer.length) return;
+          const text = playPausedBuffer.join('');
+          playPausedBuffer = [];
+          try {
+            const appender =
+              activePlayAppender ||
+              makeCMAppender(outputEl, () => {
+                const mh = currentMaxHeights();
+                autoResizeCodeMirror(outputEl, 80, mh.output);
+              });
+            activePlayAppender = appender;
+            appender.append(text);
+            appender.flushNow();
+          } catch (_) {}
+        }
+
+        function stopPlayReasoning() {
+          try {
+            if (activePlayCancel) activePlayCancel();
+          } catch (_) {}
+          activePlayCancel = null;
+          setPlayPaused(false);
+          playPausedBuffer = [];
+          enablePlayControls(false);
+          runBtn.disabled = false;
+          statusEl.textContent = 'Stopped.';
+        }
+
+        if (pauseBtn) {
+          pauseBtn.addEventListener('click', () => {
+            // Toggle pause/resume. While paused, we buffer incoming batches.
+            if (!activePlayCancel && !(playPaused && playPausedBuffer.length)) return;
+
+            if (!playPaused) {
+              setPlayPaused(true);
+              statusEl.textContent = 'Paused. Output frozen; buffering new triples…';
+              enablePlayControls(true);
+            } else {
+              setPlayPaused(false);
+              flushPlayBuffer();
+              statusEl.textContent = activePlayCancel ? 'Reasoning (streaming)…' : 'Idle.';
+              enablePlayControls(!!activePlayCancel);
+            }
+          });
+        }
+
+        if (stopBtn) {
+          stopBtn.addEventListener('click', stopPlayReasoning);
+        }
+
+        function makeCMAppender(cm, afterFlush) {
+          let pending = '';
+          let scheduled = false;
+
+          function flush() {
+            scheduled = false;
+            if (!pending) return;
+
+            const scroller = cm.getScrollerElement();
+            const nearBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 20;
+
+            const lastLine = cm.lastLine();
+            const lastCh = cm.getLine(lastLine).length;
+            cm.replaceRange(pending, { line: lastLine, ch: lastCh });
+            pending = '';
+
+            if (nearBottom) scroller.scrollTop = scroller.scrollHeight;
+            afterFlush && afterFlush();
+          }
+
+          return {
+            append(text) {
+              pending += text;
+              if (scheduled) return;
+              scheduled = true;
+              requestAnimationFrame(flush);
+            },
+            flushNow() {
+              flush();
+            },
+          };
+        }
+
+        function programMentionsOutputStrings(programText) {
+          return /\blog:outputString\b|swap\/log#outputString/.test(String(programText || ''));
+        }
+
+        async function runReasoner() {
+          const editorProgramText = editor.getValue();
+          const effectiveProgram = buildEffectiveProgram(editorProgramText);
+          const programText = effectiveProgram.program;
+          const isRenderedOutputMode = programMentionsOutputStrings(programText);
+          const isLogQueryMode = /\blog:query\b/.test(programText) || /swap\/log#query/.test(programText);
+          const usesRenderedText = isRenderedOutputMode || (isLogQueryMode && !proofCheckbox.checked);
+          const modeLabel = isRenderedOutputMode
+            ? 'rendered output'
+            : isLogQueryMode && !proofCheckbox.checked
+              ? 'log:query'
+              : 'streaming';
+
+          runBtn.disabled = true;
+          setPlayPaused(false);
+          playPausedBuffer = [];
+          enablePlayControls(true);
+
+          clearErrorHighlight();
+
+          const startMs = performance.now();
+          let derivedCount = 0;
+
+          statusEl.textContent = usesRenderedText ? 'Reasoning (' + modeLabel + ')…' : 'Reasoning (streaming)…';
+
+          {
+            const mh = currentMaxHeights();
+            outputEl.setValue(usesRenderedText ? '' : '# Derived triples (streaming):\n');
+            autoResizeCodeMirror(outputEl, 80, mh.output);
+          }
+
+          updateShareUrl();
+
+          await new Promise(requestAnimationFrame);
+
+          const appender = makeCMAppender(outputEl, () => {
+            const mh = currentMaxHeights();
+            autoResizeCodeMirror(outputEl, 80, mh.output);
+          });
+          activePlayAppender = appender;
+
+          try {
+            if (activePlayCancel) activePlayCancel();
+          } catch (_) {}
+          activePlayCancel = null;
+
+          const U = window.__eyelingUnified;
+          if (!U || typeof U.startStreamRun !== 'function') {
+            statusEl.textContent = 'Error: unified worker not available.';
+            runBtn.disabled = false;
+            return;
+          }
+
+          const { cancel } = U.startStreamRun({
+            program: programText,
+            sourceMap: effectiveProgram.sourceMap,
+            builtinModules: effectiveProgram.builtinModules || [],
+            enforceHttps: enforceHttpsCheckbox.checked,
+            proof: proofCheckbox.checked,
+            onRenderedText: (text, countTriples) => {
+              derivedCount += countTriples != null ? countTriples : 0;
+              const chunk = String(text == null ? '' : text);
+              if (playPaused) playPausedBuffer.push(chunk);
+              else appender.append(chunk);
+              statusEl.textContent = usesRenderedText
+                ? playPaused
+                  ? 'Paused (' + modeLabel + ')…'
+                  : 'Reasoning (' + modeLabel + ')…'
+                : (playPaused ? 'Paused… Derived: ' : 'Reasoning (streaming)… Derived: ') +
+                  derivedCount.toLocaleString();
+            },
+            onStdout: (text) => {
+              const s = String(text == null ? '' : text);
+              if (!s) return;
+              const chunk = s.endsWith('\n') ? s : s + '\n';
+              if (playPaused) playPausedBuffer.push(chunk);
+              else appender.append(chunk);
+            },
+            onStderr: (text) => {
+              const s = String(text == null ? '' : text);
+              if (!s) return;
+              const lines = s.split(/\r\n|\n|\r/);
+              const out =
+                lines
+                  .filter((ln) => ln.length)
+                  .map((ln) => (ln.trimStart().startsWith('#') ? ln : '# ' + ln))
+                  .join('\n') + '\n';
+              if (playPaused) playPausedBuffer.push(out);
+              else appender.append(out);
+            },
+            onBatch: (triples, countTriples) => {
+              if (!triples || !triples.length) return;
+              derivedCount += countTriples != null ? countTriples : triples.length;
+              if (playPaused) {
+                playPausedBuffer.push(triples.join('\n') + '\n');
+              } else {
+                appender.append(triples.join('\n') + '\n');
+              }
+              statusEl.textContent = usesRenderedText
+                ? playPaused
+                  ? 'Paused (' + modeLabel + ')…'
+                  : 'Reasoning (' + modeLabel + ')…'
+                : (playPaused ? 'Paused… Derived: ' : 'Reasoning (streaming)… Derived: ') +
+                  derivedCount.toLocaleString();
+            },
+            onDone: (info) => {
+              appender.flushNow();
+              activePlayCancel = null;
+              enablePlayControls(false);
+
+              const totalSeconds = (performance.now() - startMs) / 1000;
+              const exitCode = info && typeof info.exitCode === 'number' ? info.exitCode : 0;
+              if (exitCode === 2) {
+                try {
+                  const curOut = String(outputEl.getValue ? outputEl.getValue() : '');
+                  if (!/Inference fuse triggered\./i.test(curOut)) {
+                    const prefix = curOut && !/\n$/.test(curOut) ? '\n' : '';
+                    const fuseText = prefix + '# Inference fuse triggered.\n';
+                    if (playPaused) playPausedBuffer.push(fuseText);
+                    else appender.append(fuseText);
+                    appender.flushNow();
+                  }
+                } catch (_) {}
+
+                statusEl.textContent = playPaused
+                  ? 'Inference fuse triggered — click Resume to display buffered output (' +
+                    totalSeconds.toFixed(2) +
+                    's)'
+                  : 'Inference fuse triggered. (' + totalSeconds.toFixed(2) + 's)';
+              } else if (usesRenderedText) {
+                statusEl.textContent = playPaused
+                  ? 'Done (' +
+                    modeLabel +
+                    ', paused) — click Resume to display buffered output (' +
+                    totalSeconds.toFixed(2) +
+                    's)'
+                  : 'Done (' + modeLabel + '). (' + totalSeconds.toFixed(2) + 's)';
+              } else {
+                statusEl.textContent = playPaused
+                  ? 'Done (paused). Derived: ' +
+                    derivedCount.toLocaleString() +
+                    ' — click Resume to display buffered output (' +
+                    totalSeconds.toFixed(2) +
+                    's)'
+                  : 'Done. Derived: ' + derivedCount.toLocaleString() + ' (' + totalSeconds.toFixed(2) + 's)';
+              }
+              runBtn.disabled = false;
+            },
+            onError: (err) => {
+              appender.flushNow();
+              activePlayCancel = null;
+              enablePlayControls(false);
+              setPlayPaused(false);
+              playPausedBuffer = [];
+
+              const message = err && typeof err === 'object' && 'message' in err ? String(err.message) : String(err);
+
+              const mh = currentMaxHeights();
+              outputEl.setValue('Reasoning error: ' + message);
+              autoResizeCodeMirror(outputEl, 80, mh.output);
+
+              try {
+                if (err && err.source === 'editor' && Number.isFinite(err.line)) {
+                  highlightEditorError(err.line, err.col);
+                } else {
+                  highlightErrorFromOutput('Reasoning error: ' + message);
+                }
+              } catch (_) {}
+
+              statusEl.textContent = 'Error.';
+              runBtn.disabled = false;
+            },
+          });
+
+          activePlayCancel = cancel;
+        }
+
+        function countLines(text) {
+          return String(text || '').split(/\r\n|\n|\r/).length;
+        }
+
+        function shortenMiddle(text, maxLen) {
+          const value = String(text || '');
+          const limit = Number.isFinite(maxLen) ? Math.max(8, maxLen) : 80;
+          if (value.length <= limit) return value;
+          const keep = Math.max(3, Math.floor((limit - 1) / 2));
+          return value.slice(0, keep) + '…' + value.slice(value.length - keep);
+        }
+
+        function dedupeBuiltinModules(modules) {
+          const out = [];
+          const seen = new Set();
+          for (const item of Array.isArray(modules) ? modules : []) {
+            if (!item || typeof item.source !== 'string') continue;
+            const key = item.url || item.source;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            out.push(item);
+          }
+          return out;
+        }
+
+        function deriveExampleBuiltinUrl(n3Url) {
+          try {
+            const u = new URL(n3Url, window.location.href);
+            if (!/\/examples\/[^/]+\.n3$/i.test(u.pathname)) return null;
+            u.pathname = u.pathname.replace(/\/examples\/([^/]+)\.n3$/i, '/examples/builtin/$1.js');
+            u.search = '';
+            u.hash = '';
+            return u.toString();
+          } catch (_) {
+            return null;
+          }
+        }
+
+        async function fetchCompanionExampleBuiltin(requestUrl, finalUrl) {
+          const candidate = deriveExampleBuiltinUrl(finalUrl || requestUrl) || deriveExampleBuiltinUrl(requestUrl);
+          if (!candidate) return [];
+          try {
+            const resp = await fetch(candidate);
+            if (!resp.ok) return [];
+            return [{ url: resp.url || candidate, source: await resp.text() }];
+          } catch (_) {
+            return [];
+          }
+        }
+
+        function updateBackgroundStatus() {
+          const hasBackground = !!backgroundKnowledgeText;
+          if (clearBackgroundBtn) clearBackgroundBtn.disabled = !hasBackground;
+          if (!backgroundStatusEl) return;
+
+          if (!hasBackground) {
+            backgroundStatusEl.textContent = 'No background knowledge loaded.';
+            return;
+          }
+
+          const sourceLabel = backgroundKnowledgeSource
+            ? shortenMiddle(backgroundKnowledgeSource, 96)
+            : 'loaded source';
+          backgroundStatusEl.textContent =
+            'Background knowledge ready from ' +
+            sourceLabel +
+            '. It will be merged with the editor when reasoning runs.';
+        }
+
+        function clearBackgroundKnowledge() {
+          backgroundKnowledgeText = '';
+          backgroundKnowledgeSource = '';
+          backgroundBuiltinModules = [];
+          updateBackgroundStatus();
+        }
+
+        function currentPageBaseDirective() {
+          try {
+            const url = new URL(window.location.href);
+            url.search = '';
+            url.hash = '';
+            return `@base <${url.toString()}> .`;
+          } catch (_) {
+            return '';
+          }
+        }
+
+        function buildEffectiveProgram(editorProgramText) {
+          const editorText = String(editorProgramText || '');
+          if (!backgroundKnowledgeText) {
+            return {
+              program: editorText,
+              builtinModules: dedupeBuiltinModules(editorBuiltinModules),
+              sourceMap: {
+                hasBackground: false,
+                backgroundStartLine: 0,
+                backgroundEndLine: 0,
+                backgroundLabel: 'background knowledge',
+                editorStartLine: 1,
+                editorLabel: 'editable program',
+              },
+            };
+          }
+
+          if (!editorText.trim()) {
+            return {
+              program: backgroundKnowledgeText,
+              builtinModules: dedupeBuiltinModules(backgroundBuiltinModules),
+              sourceMap: {
+                hasBackground: true,
+                backgroundStartLine: 1,
+                backgroundEndLine: countLines(backgroundKnowledgeText),
+                backgroundLabel: backgroundKnowledgeSource ? 'background knowledge from URL' : 'background knowledge',
+                editorStartLine: countLines(backgroundKnowledgeText) + 1,
+                editorLabel: 'editable program',
+              },
+            };
+          }
+
+          const parts = [];
+          parts.push('# Background knowledge loaded from URL');
+          const backgroundStartLine = parts.length + 1;
+          parts.push(backgroundKnowledgeText);
+          const backgroundEndLine = countLines(parts.join('\n'));
+          parts.push('');
+          parts.push('# Editable N3 program');
+          const editorBase = currentPageBaseDirective();
+          if (editorBase) parts.push(editorBase);
+          const editorStartLine = countLines(parts.join('\n')) + 1;
+          parts.push(editorText);
+
+          return {
+            program: parts.join('\n'),
+            builtinModules: dedupeBuiltinModules(backgroundBuiltinModules.concat(editorBuiltinModules)),
+            sourceMap: {
+              hasBackground: true,
+              backgroundStartLine,
+              backgroundEndLine,
+              backgroundLabel: backgroundKnowledgeSource ? 'background knowledge from URL' : 'background knowledge',
+              editorStartLine,
+              editorLabel: 'editable program',
+            },
+          };
+        }
+
+        function injectBaseDirective(text, fetchedUrl) {
+          if (!fetchedUrl) return text;
+
+          let base;
+          try {
+            const u = new URL(fetchedUrl);
+            u.hash = ''; // base is the document IRI, no fragment
+            base = u.toString();
+          } catch {
+            base = fetchedUrl;
+          }
+
+          const baseLine = `@base <${base}> .\n`;
+
+          // If the doc uses @base <> or BASE <> (needs an external base), replace it with the absolute base.
+          text = text.replace(/^\s*@base\s+<\s*>\s*\.\s*$/im, baseLine.trimEnd());
+          text = text.replace(/^\s*BASE\s+<\s*>\s*$/im, `BASE <${base}>`);
+
+          // If a non-empty base is already present, keep it.
+          const hasAtBase = /^\s*@base\s+<[^>]+>\s*\.\s*$/im.test(text);
+          const hasSparqlBase = /^\s*BASE\s+<[^>]+>\s*$/im.test(text);
+
+          if (!hasAtBase && !hasSparqlBase) {
+            text = baseLine + text;
+          }
+
+          return text;
+        }
+
+        async function loadFromUri() {
+          const uri = uriInput.value.trim();
+          if (!uri) return;
+
+          loadUriBtn.disabled = true;
+          statusEl.textContent = 'Loading N3 from URL...';
+          try {
+            const resp = await fetch(uri);
+            if (!resp.ok) {
+              throw new Error('HTTP ' + resp.status + ' when fetching ' + uri);
+            }
+            let text = await resp.text();
+
+            const finalUrl = resp.url || uri;
+
+            // ✅ IMPORTANT: preserve base for <#...> by injecting @base <finalURL> .
+            text = injectBaseDirective(text, finalUrl);
+
+            const companionBuiltins = await fetchCompanionExampleBuiltin(uri, finalUrl);
+
+            clearErrorHighlight();
+
+            if (loadAsBackgroundCheckbox && loadAsBackgroundCheckbox.checked) {
+              backgroundKnowledgeText = text;
+              backgroundKnowledgeSource = finalUrl;
+              backgroundBuiltinModules = companionBuiltins;
+              updateBackgroundStatus();
+              statusEl.textContent = companionBuiltins.length
+                ? 'Loaded N3 as background knowledge and loaded its example builtin. The editor was left unchanged.'
+                : 'Loaded N3 as background knowledge. The editor was left unchanged.';
+            } else {
+              editor.setValue(text);
+              editorBuiltinModules = companionBuiltins;
+              const mh = currentMaxHeights();
+              autoResizeCodeMirror(editor, 220, mh.editor);
+              statusEl.textContent = companionBuiltins.length
+                ? 'Loaded N3 into the editor and loaded its example builtin (base preserved).'
+                : 'Loaded N3 into the editor (base preserved).';
+              updateShareUrl();
+            }
+          } catch (e) {
+            statusEl.textContent = 'Failed to load URL.';
+            const mh = currentMaxHeights();
+            outputEl.setValue('Error while loading N3 from URL:\n' + (e && e.message ? e.message : String(e)));
+            autoResizeCodeMirror(outputEl, 80, mh.output);
+          } finally {
+            loadUriBtn.disabled = false;
+          }
+        }
+
+        runBtn.addEventListener('click', runReasoner);
+        loadUriBtn.addEventListener('click', loadFromUri);
+        if (clearBackgroundBtn) {
+          clearBackgroundBtn.addEventListener('click', () => {
+            clearBackgroundKnowledge();
+            statusEl.textContent = 'Background knowledge cleared.';
+          });
+        }
+        updateBackgroundStatus();
+
+        // If the page was opened with share-state params, normalize them into the canonical query format.
+        if (shareUrlSyncEnabled) updateShareUrl();
+
+        // Auto-load from ?url=... when it is meant to populate background knowledge,
+        // or when no explicit editor content was provided.
+        if (shouldAutoLoadFromQueryUrl) {
+          loadFromUri();
+        }
+      })();
+    </script>
+  </body>
+</html>

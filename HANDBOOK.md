@@ -1818,7 +1818,7 @@ Some N3 workflows treat IRIs as pointers to more knowledge. Eyeling supports thi
   - in practice, any non-http IRI is treated as a local path for convenience.
 
 - In **browser/worker**, dereferencing uses synchronous XHR (HTTP(S) only), subject to CORS.
-  - Many browsers restrict synchronous XHR on the main thread; use a worker (as in `demo.html`) to avoid UI blocking.
+  - Many browsers restrict synchronous XHR on the main thread; use a worker (as in `playground.html`) to avoid UI blocking.
 
 ### 12.2 Caching
 
@@ -2004,7 +2004,7 @@ For browser apps, prefer running Eyeling in a **Web Worker** and importing `eyel
 `lib/entry.js` exports:
 
 - public APIs: `reasonStream`, `reasonRdfJs`, `rdfjs`, `main`, `version`
-- plus a curated set of internals used by the demo (`lex`, `Parser`, `forwardChain`, etc.)
+- plus a curated set of internals used by the playground (`lex`, `Parser`, `forwardChain`, etc.)
 
 `rdfjs` is a small built-in RDF/JS `DataFactory`, so browser / worker code can construct quads without pulling in another package first.
 

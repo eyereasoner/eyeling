@@ -1,8 +1,8 @@
 'use strict';
 
-// Smoke-test the browser playground (demo.html).
+// Smoke-test the browser playground (playground.html).
 //
-// Goal: ensure demo.html loads without runtime exceptions and that the default
+// Goal: ensure playground.html loads without runtime exceptions and that the default
 // Socrates program can be executed to completion ("Done") with non-empty output.
 //
 // This test is dependency-free: it drives Chromium directly via the Chrome
@@ -56,18 +56,23 @@ function startStaticServer(rootDir) {
         return;
       }
 
-      if (pathname === '/' || pathname === '') pathname = '/demo.html';
+      if (pathname === '/' || pathname === '') pathname = '/playground.html';
       // Prevent directory traversal.
-      const fsPath = path.resolve(rootDir, '.' + pathname);
+      let fsPath = path.resolve(rootDir, '.' + pathname);
       if (!fsPath.startsWith(rootDir)) {
         res.writeHead(403);
         res.end('Forbidden');
         return;
       }
 
+      // Match GitHub Pages' convenient extensionless HTML URLs for local smoke tests.
+      if (!fs.existsSync(fsPath) && !path.extname(fsPath) && fs.existsSync(`${fsPath}.html`)) {
+        fsPath = `${fsPath}.html`;
+      }
+
       const st = fs.statSync(fsPath);
       if (st.isDirectory()) {
-        res.writeHead(301, { Location: pathname.replace(/\/$/, '') + '/demo.html' });
+        res.writeHead(301, { Location: pathname.replace(/\/$/, '') + '/playground' });
         res.end();
         return;
       }
@@ -120,7 +125,7 @@ function findChromium() {
 }
 
 // Minimal CodeMirror stub for the playground.
-// The real demo loads CodeMirror from a CDN. In CI/offline tests we intercept
+// The real playground loads CodeMirror from a CDN. In CI/offline tests we intercept
 // those script requests and provide this stub to prevent runtime failures.
 const CODEMIRROR_STUB = String.raw`(function(){
   if (window.CodeMirror) return;
@@ -244,7 +249,7 @@ const CODEMIRROR_STUB = String.raw`(function(){
         getValue: function(){ return textarea.value || ''; },
         setValue: function(v){ textarea.value = String(v == null ? '' : v); render(); emit('change', api, { origin: 'setValue' }); },
 
-        // Methods used by demo.html's streaming appender
+        // Methods used by playground.html's streaming appender
         getScrollerElement: function(){ return obj.scroll; },
         lastLine: function(){ const ls = getLines(); return Math.max(0, ls.length - 1); },
         getLine: function(n){ const ls = getLines(); return ls[n] == null ? '' : ls[n]; },
@@ -417,8 +422,10 @@ async function main() {
   try {
     const started = await startStaticServer(ROOT);
     server = started.server;
-    const demoUrl = `${started.baseUrl}/demo.html`;
-    info(`Static server: ${demoUrl}`);
+    const playgroundUrl = `${started.baseUrl}/playground.html`;
+    const cleanPlaygroundUrl = `${started.baseUrl}/playground`;
+    const legacyDemoUrl = `${started.baseUrl}/demo?url=https://example.org/example.n3#state`;
+    info(`Static server: ${playgroundUrl}`);
 
     const chromeArgs = [
       '--headless=new',
@@ -510,7 +517,7 @@ async function main() {
         { ct: 'text/css', body: '/* stub */\n' },
       ],
 
-      // GitHub raw references used by demo.html for the "latest version" display.
+      // GitHub raw references used by playground.html for the "latest version" display.
       [
         'https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/package.json',
         { ct: 'application/json', body: localPkg },
@@ -528,6 +535,29 @@ async function main() {
         { ct: 'application/javascript', body: localSudokuBuiltin },
       ],
     ]);
+
+    async function getText(url) {
+      return new Promise((resolve, reject) => {
+        http
+          .get(url, (res) => {
+            let body = '';
+            res.setEncoding('utf8');
+            res.on('data', (chunk) => {
+              body += chunk;
+            });
+            res.on('end', () => resolve({ statusCode: res.statusCode, body }));
+          })
+          .on('error', reject);
+      });
+    }
+
+    const cleanRes = await getText(cleanPlaygroundUrl);
+    assert.equal(cleanRes.statusCode, 200, 'clean /playground URL should serve the playground');
+    assert.match(cleanRes.body, /Eyeling N3 Playground/, 'clean /playground URL should load the playground');
+
+    const legacyRes = await getText(legacyDemoUrl);
+    assert.equal(legacyRes.statusCode, 200, 'legacy /demo URL should serve redirect page');
+    assert.match(legacyRes.body, /playground/, 'legacy /demo URL should point to the playground');
 
     await cdp.send(
       'Fetch.enable',
@@ -575,8 +605,8 @@ async function main() {
     });
 
     const loadFired = cdp.once('Page.loadEventFired', sessionId, 30000);
-    const nav = await cdp.send('Page.navigate', { url: demoUrl }, sessionId);
-    assert.ok(!nav.errorText, `demo.html navigation failed: ${nav.errorText}`);
+    const nav = await cdp.send('Page.navigate', { url: playgroundUrl }, sessionId);
+    assert.ok(!nav.errorText, `playground.html navigation failed: ${nav.errorText}`);
     await loadFired;
 
     async function evalInPage(expression) {
@@ -594,7 +624,7 @@ async function main() {
 
     function failFastOnExceptions() {
       if (exceptions.length) {
-        throw new Error(`Uncaught exception in demo.html: ${JSON.stringify(exceptions[0] || {})}`);
+        throw new Error(`Uncaught exception in playground.html: ${JSON.stringify(exceptions[0] || {})}`);
       }
     }
 
@@ -777,11 +807,11 @@ ${JSON.stringify(last, null, 2)}`);
     ok('playground auto-loads a companion example builtin for URL-loaded Sudoku');
 
     // Ensure no uncaught runtime exceptions.
-    assert.equal(exceptions.length, 0, `Uncaught exceptions in demo.html: ${JSON.stringify(exceptions[0] || {})}`);
+    assert.equal(exceptions.length, 0, `Uncaught exceptions in playground.html: ${JSON.stringify(exceptions[0] || {})}`);
 
     // Console errors are noisy and often indicate a broken UI.
     // (We suppress known noise like /favicon.ico on the server.)
-    assert.equal(consoleErrors.length, 0, `Console errors in demo.html: ${JSON.stringify(consoleErrors[0] || {})}`);
+    assert.equal(consoleErrors.length, 0, `Console errors in playground.html: ${JSON.stringify(consoleErrors[0] || {})}`);
 
     // Cleanup.
     try {

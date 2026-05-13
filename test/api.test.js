@@ -6,7 +6,7 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const ROOT = path.resolve(__dirname, '..');
 // Direct eyeling.js bundle API (in-process) for testing reasonStream/onDerived.
-// This is the API surface used by demo.html (browser/worker).
+// This is the API surface used by playground.html (browser/worker).
 const { reasonStream } = require('../eyeling.js');
 const { reason, reasonRdfJs, rdfjs } = require('../index.js');
 

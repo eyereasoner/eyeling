@@ -244,7 +244,7 @@ This file is a compact demo of:
 - N3 reasoning as the **transparent logic** connecting them
 - A ranked report that’s **deterministic** and **explainable**
 
-[1]: https://eyereasoner.github.io/eyeling/demo?url=https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/odrl-dpv-risk-ranked.n3 'Playground'
+[1]: https://eyereasoner.github.io/eyeling/playground?url=https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/odrl-dpv-risk-ranked.n3 'Playground'
 [2]: https://www.w3.org/TR/odrl-vocab/ 'ODRL Vocabulary & Expression 2.2'
 [3]: https://dev.dpvcg.org/dpv/modules/risk 'Risk and Impact Assessment'
 [4]: https://w3c.github.io/N3/spec/ 'Notation3 Language'

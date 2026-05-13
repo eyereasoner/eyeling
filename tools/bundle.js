@@ -141,9 +141,9 @@ function buildBundleSource({ autoRunMain }) {
   );
   out.push('  try { if (__outerSelf) __outerSelf.eyeling = __api; } catch (ignoredError) {}');
   out.push('');
-  out.push('  // ---- demo.html compatibility ----');
+  out.push('  // ---- playground.html compatibility ----');
   out.push('  // The original monolithic eyeling.js exposed internal functions/flags as globals.');
-  out.push('  // demo.html still uses these via importScripts(...) inside a web worker.');
+  out.push('  // playground.html still uses these via importScripts(...) inside a web worker.');
   out.push('  try {');
   out.push('    if (__outerSelf && __entry) {');
   out.push('      if (typeof __entry.lex === "function") __outerSelf.lex = __entry.lex;');

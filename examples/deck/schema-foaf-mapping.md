@@ -218,4 +218,4 @@ Mapping two models is about **translating meaning across vocabularies**.
 - You **derive FOAF triples**
 - The result is data that can be consumed as if it were FOAF, without rewriting your original dataset
 
-[1]: https://eyereasoner.github.io/eyeling/demo?url=https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/schema-foaf-mapping.n3 'Playground'
+[1]: https://eyereasoner.github.io/eyeling/playground?url=https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/schema-foaf-mapping.n3 'Playground'

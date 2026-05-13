@@ -368,4 +368,4 @@ That is exactly the kind of statement people care about in high-trust software.
 
 And the neat part is that the statement is not only written in prose—it is represented as data and rules that a reasoner can check.
 
-[1]: https://eyereasoner.github.io/eyeling/demo?url=https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/high-trust-rdf-bloom-envelope.n3 'Playground'
+[1]: https://eyereasoner.github.io/eyeling/playground?url=https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/high-trust-rdf-bloom-envelope.n3 'Playground'
