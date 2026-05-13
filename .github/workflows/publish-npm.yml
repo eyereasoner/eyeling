@@ -24,19 +24,5 @@ jobs:
       - name: Update npm
         run: npm install -g npm@latest
 
-      - name: Check whether this version already exists on npm
-        id: npm_version
-        run: |
-          PACKAGE_NAME=$(node -p "require('./package.json').name")
-          PACKAGE_VERSION=$(node -p "require('./package.json').version")
-          if npm view "$PACKAGE_NAME@$PACKAGE_VERSION" version >/dev/null 2>&1; then
-            echo "$PACKAGE_NAME@$PACKAGE_VERSION already exists on npm; skipping publish."
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "$PACKAGE_NAME@$PACKAGE_VERSION does not exist on npm; publishing."
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Publish to npm
-        if: steps.npm_version.outputs.exists != 'true'
         run: npm publish
