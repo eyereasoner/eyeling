@@ -814,6 +814,14 @@
               Enforce HTTPS for dereferencing (--enforce-https)
             </label>
             <button id="copy-share-link-btn" type="button" class="secondary">Copy share link</button>
+            <button
+              id="open-shortener-btn"
+              type="button"
+              class="secondary share-shortener"
+              hidden
+              title="Open TinyURL with the generated playground share link.">
+              Open shortener
+            </button>
             <span class="status share-status" id="share-status">Autosaves locally; the address bar stays short.</span>
 
             <span class="status" id="status">Idle.</span>
@@ -893,6 +901,7 @@
         const proofCheckbox = document.getElementById('proof-comments');
         const enforceHttpsCheckbox = document.getElementById('enforce-https');
         const copyShareLinkBtn = document.getElementById('copy-share-link-btn');
+        const openShortenerBtn = document.getElementById('open-shortener-btn');
         const shareStatusEl = document.getElementById('share-status');
         const versionEl = document.getElementById('eyeling-version');
 
@@ -1669,6 +1678,9 @@ const batch = [];
 
         // --- INITIAL CONTENT, LOCAL AUTOSAVE + COMPACT SHARE LINKS ---
         const PLAYGROUND_STATE_KEY = 'eyeling.playground.state.v1';
+        const SHARE_LINK_SHORTENER_THRESHOLD = 2000;
+        const SHARE_LINK_SHORTENER_CREATE_URL = 'https://tinyurl.com/create.php?url=';
+        let longShareUrlForShortener = '';
 
         function getProgramFromHash() {
           const hash = window.location.hash || '';
@@ -2393,6 +2405,35 @@ const batch = [];
           localStateSaveTimeout = setTimeout(savePlaygroundState, 250);
         }
 
+
+        function shouldOfferUrlShortener(url) {
+          return String(url || '').length > SHARE_LINK_SHORTENER_THRESHOLD;
+        }
+
+        function makeShareUrlShortenerUrl(shareUrl) {
+          return SHARE_LINK_SHORTENER_CREATE_URL + encodeURIComponent(String(shareUrl || ''));
+        }
+
+        function setShareUrlShortenerOption(shareUrl) {
+          const value = String(shareUrl || '');
+          longShareUrlForShortener = shouldOfferUrlShortener(value) ? value : '';
+          if (openShortenerBtn) {
+            openShortenerBtn.hidden = !longShareUrlForShortener;
+            openShortenerBtn.disabled = !longShareUrlForShortener;
+          }
+        }
+
+        function openShareUrlShortener() {
+          if (!longShareUrlForShortener) return;
+          const shortenerUrl = makeShareUrlShortenerUrl(longShareUrlForShortener);
+          const opened = window.open(shortenerUrl, '_blank', 'noopener,noreferrer');
+          if (shareStatusEl) {
+            shareStatusEl.textContent = opened
+              ? 'Opened URL shortener in a new tab; review it before creating the public short link.'
+              : 'Popup blocked; copy the compact share link or allow popups to open the shortener.';
+          }
+        }
+
         async function makeShareUrl() {
           const url = new URL(window.location.href);
           const params = url.searchParams;
@@ -2459,24 +2500,39 @@ const batch = [];
           if (!copyShareLinkBtn) return;
           copyShareLinkBtn.disabled = true;
           if (shareStatusEl) shareStatusEl.textContent = 'Creating compact share link…';
+          let shareUrl = '';
           try {
             savePlaygroundState();
-            const shareUrl = await makeShareUrl();
+            shareUrl = await makeShareUrl();
+            setShareUrlShortenerOption(shareUrl);
             await copyTextToClipboard(shareUrl);
-            if (shareStatusEl) shareStatusEl.textContent = 'Copied compact share link.';
-          } catch (e) {
             if (shareStatusEl) {
-              shareStatusEl.textContent = 'Could not copy automatically; use your browser copy command on this generated link.';
+              shareStatusEl.textContent = shouldOfferUrlShortener(shareUrl)
+                ? `Copied compact share link (${shareUrl.length} chars). Use Open shortener for a shorter public URL.`
+                : 'Copied compact share link.';
             }
+          } catch (e) {
             try {
-              window.prompt('Copy this compact share link:', await makeShareUrl());
-            } catch (_) {}
+              if (!shareUrl) shareUrl = await makeShareUrl();
+              setShareUrlShortenerOption(shareUrl);
+              if (shareStatusEl) {
+                shareStatusEl.textContent = shouldOfferUrlShortener(shareUrl)
+                  ? `Share link is ${shareUrl.length} chars; use Open shortener or copy it manually.`
+                  : 'Could not copy automatically; use your browser copy command on this generated link.';
+              }
+              window.prompt('Copy this compact share link:', shareUrl);
+            } catch (_) {
+              if (shareStatusEl) shareStatusEl.textContent = 'Could not create a share link.';
+            }
           } finally {
             copyShareLinkBtn.disabled = false;
           }
         }
 
         window.__eyelingPlaygroundMakeShareUrl = makeShareUrl;
+        window.__eyelingPlaygroundShareUrlShortenerThreshold = SHARE_LINK_SHORTENER_THRESHOLD;
+        window.__eyelingPlaygroundShouldOfferShortener = shouldOfferUrlShortener;
+        window.__eyelingPlaygroundMakeShareUrlShortenerUrl = makeShareUrlShortenerUrl;
 
         editor.on('change', function () {
           clearErrorHighlight();
@@ -2489,35 +2545,43 @@ const batch = [];
             editorSourceUrl = '';
           }
 
+          setShareUrlShortenerOption('');
           scheduleSavePlaygroundState();
         });
 
         if (uriInput) {
           uriInput.addEventListener('input', () => {
+            setShareUrlShortenerOption('');
             scheduleSavePlaygroundState();
           });
         }
 
         if (loadAsBackgroundCheckbox) {
           loadAsBackgroundCheckbox.addEventListener('change', () => {
+            setShareUrlShortenerOption('');
             savePlaygroundState();
           });
         }
 
         if (proofCheckbox) {
           proofCheckbox.addEventListener('change', () => {
+            setShareUrlShortenerOption('');
             savePlaygroundState();
           });
         }
 
         if (enforceHttpsCheckbox) {
           enforceHttpsCheckbox.addEventListener('change', () => {
+            setShareUrlShortenerOption('');
             savePlaygroundState();
           });
         }
 
         if (copyShareLinkBtn) {
           copyShareLinkBtn.addEventListener('click', copyShareLink);
+        }
+        if (openShortenerBtn) {
+          openShortenerBtn.addEventListener('click', openShareUrlShortener);
         }
 
         savePlaygroundState();

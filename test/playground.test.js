@@ -722,6 +722,7 @@ async function main() {
           renderedTabSelected: renderedTab ? renderedTab.getAttribute('aria-selected') === 'true' : false,
           sourceTabSelected: sourceTab ? sourceTab.getAttribute('aria-selected') === 'true' : false,
           shareStatus: document.getElementById('share-status') ? String(document.getElementById('share-status').textContent || '') : '',
+          shortenerHidden: document.getElementById('open-shortener-btn') ? !!document.getElementById('open-shortener-btn').hidden : true,
           backgroundStatus: document.getElementById('background-status') ? String(document.getElementById('background-status').textContent || '') : '',
           href: String(window.location.href || ''),
           highlighted,
@@ -774,6 +775,19 @@ async function main() {
 
     async function makeShareUrlInPage() {
       return await evalInPage(`window.__eyelingPlaygroundMakeShareUrl()`);
+    }
+
+    async function makeShareUrlDiagnosticsInPage() {
+      return await evalInPage(`(async () => {
+        const url = await window.__eyelingPlaygroundMakeShareUrl();
+        return {
+          url,
+          length: url.length,
+          threshold: window.__eyelingPlaygroundShareUrlShortenerThreshold,
+          needsShortener: window.__eyelingPlaygroundShouldOfferShortener(url),
+          shortenerUrl: window.__eyelingPlaygroundMakeShareUrlShortenerUrl(url),
+        };
+      })()`);
     }
 
     async function loadUrlIntoEditor(url) {
@@ -922,9 +936,25 @@ ${JSON.stringify(last, null, 2)}`);
     assert.match(compactShareUrl, /[?&]state=/, 'Expected an on-demand compact state parameter');
     assert.doesNotMatch(compactShareUrl, /[?&](?:edit|program)=/, 'Expected share link to avoid raw edit/program params');
     assert.ok(compactShareUrl.length < playgroundUrl.length + encodeURIComponent(outputStringProgram).length, 'Expected compact share URL to be shorter than raw editor URL');
+    assert.equal(renderedAgain.shortenerHidden, true, 'Expected ordinary compact share links to keep the shortener option hidden');
     endTest();
 
-    // 6) log:query can produce Turtle; that should stay in plain source output without Markdown tabs.
+    // 6) Very large edited programs should offer a URL shortener handoff instead of only a huge link.
+    beginTest('playground offers a URL shortener option for oversized share links');
+    const longShareProgram = Array.from({ length: 1400 }, (_, i) => {
+      const n = String(i).padStart(4, '0');
+      const token = ((i * 2654435761) >>> 0).toString(36).padStart(7, '0');
+      return `:s${n}_${token} :p${token}_${n} "literal-${n}-${token}-${i * 9973}" .`;
+    }).join('\n');
+    await setProgram(longShareProgram);
+    const longShare = await makeShareUrlDiagnosticsInPage();
+    assert.ok(longShare.length > longShare.threshold, `Expected test share URL to exceed threshold (${longShare.length} <= ${longShare.threshold})`);
+    assert.equal(longShare.needsShortener, true, 'Expected oversized share URL to request a shortener option');
+    assert.match(longShare.shortenerUrl, /^https:\/\/tinyurl\.com\/create\.php\?url=/, 'Expected TinyURL create URL handoff');
+    assert.ok(longShare.shortenerUrl.includes(encodeURIComponent(longShare.url).slice(0, 40)), 'Expected shortener URL to carry the generated share URL');
+    endTest();
+
+    // 7) log:query can produce Turtle; that should stay in plain source output without Markdown tabs.
     beginTest('playground hides markdown tabs for Turtle log:query output');
     await setProgram(logQueryTurtleProgram);
     await clickRun();
@@ -944,7 +974,7 @@ ${JSON.stringify(last, null, 2)}`);
     assert.equal(logQueryTurtle.sourceHidden, false, 'Expected Turtle log:query output to show source directly');
     endTest();
 
-    // 7) URL-loaded examples should auto-load matching examples/input/<stem>.trig and run in RDF/TriG mode.
+    // 8) URL-loaded examples should auto-load matching examples/input/<stem>.trig and run in RDF/TriG mode.
     beginTest('playground auto-loads companion TriG sidecars and uses RDF/TriG mode');
     await loadUrlIntoEditor('https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/smoke-arithmetic.n3');
     const smokeLoaded = await waitForState(
@@ -991,7 +1021,7 @@ ${JSON.stringify(last, null, 2)}`);
     assert.equal(smokeRenderedAgain.sourceHidden, true, 'Expected smoke-arithmetic source editor to hide again');
     endTest();
 
-    // 8) URL-loaded repository examples should auto-load matching examples/builtin/<stem>.js.
+    // 9) URL-loaded repository examples should auto-load matching examples/builtin/<stem>.js.
     beginTest('playground auto-loads a companion example builtin for URL-loaded Sudoku');
     await loadUrlIntoEditor('https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/sudoku.n3');
     await waitForState(
@@ -1015,12 +1045,12 @@ ${JSON.stringify(last, null, 2)}`);
     assert.match(sudoku.output, /unique valid Sudoku solution/i, 'Expected Sudoku builtin-backed result');
     endTest();
 
-    // 9) Ensure no uncaught runtime exceptions.
+    // 10) Ensure no uncaught runtime exceptions.
     beginTest('playground has no uncaught runtime exceptions');
     assert.equal(exceptions.length, 0, `Uncaught exceptions in playground.html: ${JSON.stringify(exceptions[0] || {})}`);
     endTest();
 
-    // 10) Console errors are noisy and often indicate a broken UI.
+    // 11) Console errors are noisy and often indicate a broken UI.
     // (We suppress known noise like /favicon.ico on the server.)
     beginTest('playground has no console errors');
     assert.equal(consoleErrors.length, 0, `Console errors in playground.html: ${JSON.stringify(consoleErrors[0] || {})}`);

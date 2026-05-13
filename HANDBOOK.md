@@ -3760,6 +3760,8 @@ When a user does want a portable link, the **Copy share link** button creates on
 - edited programs are shared with a compact compressed `?state=...` payload,
 - default option values are omitted from that payload to keep links small.
 
+If a generated compact share link is still very long, the playground reveals an **Open shortener** option. The threshold is intentionally conservative, and the shortener handoff is explicit rather than automatic: the browser opens a TinyURL creation page with the generated share URL only after the user chooses that option. This avoids silently sending encoded editor content to a third-party service.
+
 This keeps everyday use pleasant while preserving the important tutorial and issue-reporting workflow: a link can still capture the imported resource, the local editable overlay, background-knowledge mode, proof-comments mode, and HTTPS-dereferencing mode.
 
 For compatibility, older `?edit=`, `?program=`, `?url=`, compact `?state=`, and hash-based links are still accepted when opened. The old `/demo` entry point is also kept as a redirect to the canonical `/playground` page.
