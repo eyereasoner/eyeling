@@ -878,6 +878,7 @@
         const inputTextArea = document.getElementById('n3-editor');
         const outputTextArea = document.getElementById('output-editor');
         const outputRenderedPanel = document.getElementById('output-rendered');
+        const outputTabs = document.querySelector('.output-tabs');
         const outputRenderedTab = document.getElementById('output-rendered-tab');
         const outputSourceTab = document.getElementById('output-source-tab');
         const runBtn = document.getElementById('run-btn');
@@ -912,8 +913,11 @@
         let backgroundKnowledgeText = '';
         let backgroundKnowledgeSource = '';
         let backgroundBuiltinModules = [];
+        let backgroundKnowledgeRdfMode = false;
+        let backgroundKnowledgeAuto = false;
         let editorBuiltinModules = [];
         let editorSourceText = '';
+        let editorRdfMode = false;
 
         // --- Unified background streaming runner (shared with the Streaming demo tab) ---
         // Exposes: window.__eyelingUnified.startStreamRun({
@@ -1055,6 +1059,7 @@
             const sourceMap = args && args.sourceMap ? args.sourceMap : null;
             const enforceHttps = !!(args && args.enforceHttps);
             const proof = !!(args && args.proof);
+            const rdf = !!(args && args.rdf);
             const onBatch = args && typeof args.onBatch === 'function' ? args.onBatch : null;
             const onRenderedText = args && typeof args.onRenderedText === 'function' ? args.onRenderedText : null;
             const onStdout = args && typeof args.onStdout === 'function' ? args.onStdout : null;
@@ -1325,6 +1330,7 @@
               const sourceMap = msg.sourceMap || null;
               const enforceHttps = !!msg.enforceHttps;
               const proof = !!msg.proof;
+              const rdf = !!msg.rdf;
               const builtinModules = Array.isArray(msg.builtinModules) ? msg.builtinModules : [];
 
               __registerBuiltinModuleSources(builtinModules);
@@ -1396,7 +1402,7 @@ const batch = [];
                   if (typeof enforceHttpsEnabled !== "undefined") enforceHttpsEnabled = !!enforceHttps;
                   if (typeof proofCommentsEnabled !== "undefined") proofCommentsEnabled = !!proof;
 
-                  const toks = lex(program);
+                  const toks = lex(program, { rdf });
                   const parser = new Parser(toks);
                   let prefixes, triples, frules, brules, qrules;
                   [prefixes, triples, frules, brules, qrules] = parser.parseDocument();
@@ -1419,7 +1425,7 @@ const batch = [];
                       throw new Error("Eyeling API not available (eyeling.reasonStream missing).");
                     }
 
-                    const res = self.eyeling.reasonStream(program, { enforceHttps, proof });
+                    const res = self.eyeling.reasonStream(program, { enforceHttps, proof, rdf });
                     const pfx = res && res.prefixes ? res.prefixes : prefixes;
                     const queryMode = !!(res && res.queryMode);
                     const outDerived = queryMode
@@ -1593,6 +1599,7 @@ const batch = [];
               enforceHttps,
               proof,
               builtinModules,
+              rdf,
             });
 
             return {
@@ -1923,7 +1930,8 @@ const batch = [];
 
         const outputSourceWrapper = outputEl.getWrapperElement();
         if (outputSourceWrapper) outputSourceWrapper.id = 'output-source';
-        let outputView = 'rendered';
+        let outputView = 'source';
+        let outputMarkdownMode = false;
 
         function escapeHtml(value) {
           return String(value == null ? '' : value)
@@ -2137,9 +2145,14 @@ const batch = [];
           outputRenderedPanel.classList.toggle('is-empty', !String(value || '').trim() || String(value).trim() === '(no output yet)');
         }
 
+        function setOutputMarkdownMode(enabled) {
+          outputMarkdownMode = !!enabled;
+          if (outputTabs) outputTabs.hidden = !outputMarkdownMode;
+        }
+
         function setOutputView(nextView) {
-          outputView = nextView === 'source' ? 'source' : 'rendered';
-          const showRendered = outputView === 'rendered';
+          outputView = outputMarkdownMode && nextView !== 'source' ? 'rendered' : 'source';
+          const showRendered = outputMarkdownMode && outputView === 'rendered';
 
           if (outputRenderedPanel) outputRenderedPanel.hidden = !showRendered;
           if (outputSourceWrapper) outputSourceWrapper.classList.toggle('markdown-source-hidden', showRendered);
@@ -2149,8 +2162,8 @@ const batch = [];
             outputRenderedTab.setAttribute('aria-selected', showRendered ? 'true' : 'false');
           }
           if (outputSourceTab) {
-            outputSourceTab.classList.toggle('active', !showRendered);
-            outputSourceTab.setAttribute('aria-selected', showRendered ? 'false' : 'true');
+            outputSourceTab.classList.toggle('active', outputMarkdownMode && !showRendered);
+            outputSourceTab.setAttribute('aria-selected', outputMarkdownMode && !showRendered ? 'true' : 'false');
           }
 
           if (showRendered) {
@@ -2163,16 +2176,17 @@ const batch = [];
         }
 
         function setOutputText(text, preferredView) {
+          const markdownMode = preferredView !== 'source';
+          setOutputMarkdownMode(markdownMode);
           outputEl.setValue(String(text == null ? '' : text));
           syncRenderedOutput();
-          setOutputView(preferredView === 'source' ? 'source' : 'rendered');
+          setOutputView(markdownMode && preferredView !== 'source' ? 'rendered' : 'source');
         }
 
         if (outputRenderedTab) outputRenderedTab.addEventListener('click', () => setOutputView('rendered'));
         if (outputSourceTab) outputSourceTab.addEventListener('click', () => setOutputView('source'));
         outputEl.on('change', syncRenderedOutput);
-        syncRenderedOutput();
-        setOutputView('rendered');
+        setOutputText('(no output yet)', 'source');
 
         // Keep CodeMirror in sync if the user changes OS theme while this page is open.
         function applyCodeMirrorTheme() {
@@ -2624,6 +2638,7 @@ const batch = [];
             program: programText,
             sourceMap: effectiveProgram.sourceMap,
             builtinModules: effectiveProgram.builtinModules || [],
+            rdf: !!effectiveProgram.rdf,
             enforceHttps: enforceHttpsCheckbox.checked,
             proof: proofCheckbox.checked,
             onRenderedText: (text, countTriples) => {
@@ -2769,10 +2784,42 @@ const batch = [];
           return out;
         }
 
-        function deriveExampleBuiltinUrl(n3Url) {
+        const EXAMPLE_BUILTIN_STEMS = new Set(['queens', 'sudoku']);
+        const EXAMPLE_TRIG_INPUT_STEMS = new Set([
+          'annotation',
+          'backward-recursion',
+          'builtin-coverage',
+          'collection',
+          'context-association',
+          'dijkstra-risk-path',
+          'eco-route-insight',
+          'genetic-knapsack-selection',
+          'ontology-question-generation',
+          'rc-discharge-envelope',
+          'rdf-dataset',
+          'rdf-message-flow',
+          'rdf-messages',
+          'school-placement-audit',
+          'smoke-arithmetic',
+          'triple-terms',
+        ]);
+
+        function parseRepositoryExampleStem(n3Url) {
           try {
             const u = new URL(n3Url, window.location.href);
-            if (!/\/examples\/[^/]+\.n3$/i.test(u.pathname)) return null;
+            const m = u.pathname.match(/\/examples\/([^/]+)\.n3$/i);
+            return m && m[1] ? m[1] : null;
+          } catch (_) {
+            const m = String(n3Url || '').match(/\/examples\/([^/?#]+)\.n3(?:$|[?#])/i);
+            return m && m[1] ? m[1] : null;
+          }
+        }
+
+        function deriveExampleBuiltinUrl(n3Url) {
+          try {
+            const stem = parseRepositoryExampleStem(n3Url);
+            if (!stem || !EXAMPLE_BUILTIN_STEMS.has(stem)) return null;
+            const u = new URL(n3Url, window.location.href);
             u.pathname = u.pathname.replace(/\/examples\/([^/]+)\.n3$/i, '/examples/builtin/$1.js');
             u.search = '';
             u.hash = '';
@@ -2788,10 +2835,81 @@ const batch = [];
           try {
             const resp = await fetch(candidate);
             if (!resp.ok) return [];
-            return [{ url: resp.url || candidate, source: await resp.text() }];
+            const source = await resp.text();
+            return source.trim() ? [{ url: resp.url || candidate, source }] : [];
           } catch (_) {
             return [];
           }
+        }
+
+        function deriveExampleTrigInputUrl(n3Url) {
+          try {
+            const stem = parseRepositoryExampleStem(n3Url);
+            if (!stem || !EXAMPLE_TRIG_INPUT_STEMS.has(stem)) return null;
+            const u = new URL(n3Url, window.location.href);
+            u.pathname = u.pathname.replace(/\/examples\/([^/]+)\.n3$/i, '/examples/input/$1.trig');
+            u.search = '';
+            u.hash = '';
+            return u.toString();
+          } catch (_) {
+            return null;
+          }
+        }
+
+        async function fetchCompanionExampleTrigInput(requestUrl, finalUrl) {
+          const candidate = deriveExampleTrigInputUrl(finalUrl || requestUrl) || deriveExampleTrigInputUrl(requestUrl);
+          if (!candidate) return null;
+          try {
+            const resp = await fetch(candidate);
+            if (!resp.ok) return null;
+            const companionUrl = resp.url || candidate;
+            return { url: companionUrl, text: injectBaseDirective(await resp.text(), companionUrl) };
+          } catch (_) {
+            return null;
+          }
+        }
+
+        function urlLooksRdfCompatibleInput(url) {
+          try {
+            return /\.(?:trig|ttl|rdf|nt|nq)(?:$|[?#])/i.test(new URL(url, window.location.href).pathname);
+          } catch (_) {
+            return /\.(?:trig|ttl|rdf|nt|nq)(?:$|[?#])/i.test(String(url || ''));
+          }
+        }
+
+        function setAutoCompanionBackground(companion) {
+          if (!companion || typeof companion.text !== 'string') return false;
+          if (backgroundKnowledgeText && !backgroundKnowledgeAuto) {
+            backgroundKnowledgeText += '\n\n# Companion RDF/TriG input loaded for the editor example\n' + companion.text;
+            backgroundKnowledgeSource = backgroundKnowledgeSource
+              ? backgroundKnowledgeSource + ' + ' + companion.url
+              : companion.url;
+            backgroundKnowledgeRdfMode = true;
+          } else {
+            backgroundKnowledgeText = companion.text;
+            backgroundKnowledgeSource = companion.url;
+            backgroundBuiltinModules = [];
+            backgroundKnowledgeRdfMode = true;
+            backgroundKnowledgeAuto = true;
+          }
+          updateBackgroundStatus();
+          return true;
+        }
+
+        function clearAutoCompanionBackground() {
+          if (!backgroundKnowledgeAuto) return false;
+          clearBackgroundKnowledge();
+          return true;
+        }
+
+        async function autoLoadCompanionForEditorUrl(requestUrl, finalUrl) {
+          const companion = await fetchCompanionExampleTrigInput(requestUrl, finalUrl || requestUrl);
+          if (companion) {
+            setAutoCompanionBackground(companion);
+            return companion;
+          }
+          clearAutoCompanionBackground();
+          return null;
         }
 
         function updateBackgroundStatus() {
@@ -2817,6 +2935,8 @@ const batch = [];
           backgroundKnowledgeText = '';
           backgroundKnowledgeSource = '';
           backgroundBuiltinModules = [];
+          backgroundKnowledgeRdfMode = false;
+          backgroundKnowledgeAuto = false;
           updateBackgroundStatus();
         }
 
@@ -2837,6 +2957,7 @@ const batch = [];
             return {
               program: editorText,
               builtinModules: dedupeBuiltinModules(editorBuiltinModules),
+              rdf: !!editorRdfMode,
               sourceMap: {
                 hasBackground: false,
                 backgroundStartLine: 0,
@@ -2852,6 +2973,7 @@ const batch = [];
             return {
               program: backgroundKnowledgeText,
               builtinModules: dedupeBuiltinModules(backgroundBuiltinModules),
+              rdf: !!backgroundKnowledgeRdfMode,
               sourceMap: {
                 hasBackground: true,
                 backgroundStartLine: 1,
@@ -2878,6 +3000,7 @@ const batch = [];
           return {
             program: parts.join('\n'),
             builtinModules: dedupeBuiltinModules(backgroundBuiltinModules.concat(editorBuiltinModules)),
+            rdf: !!(backgroundKnowledgeRdfMode || editorRdfMode),
             sourceMap: {
               hasBackground: true,
               backgroundStartLine,
@@ -2944,20 +3067,30 @@ const batch = [];
               backgroundKnowledgeText = text;
               backgroundKnowledgeSource = finalUrl;
               backgroundBuiltinModules = companionBuiltins;
+              backgroundKnowledgeRdfMode = urlLooksRdfCompatibleInput(finalUrl);
+              backgroundKnowledgeAuto = false;
               updateBackgroundStatus();
               statusEl.textContent = companionBuiltins.length
                 ? 'Loaded N3 as background knowledge and loaded its example builtin. The editor was left unchanged.'
                 : 'Loaded N3 as background knowledge. The editor was left unchanged.';
               savePlaygroundState();
             } else {
+              const companionTrig = await autoLoadCompanionForEditorUrl(uri, finalUrl);
               editor.setValue(text);
               editorBuiltinModules = companionBuiltins;
               editorSourceText = text;
+              editorRdfMode = urlLooksRdfCompatibleInput(finalUrl);
               const mh = currentMaxHeights();
               autoResizeCodeMirror(editor, 220, mh.editor);
-              statusEl.textContent = companionBuiltins.length
-                ? 'Loaded N3 into the editor and loaded its example builtin (base preserved).'
-                : 'Loaded N3 into the editor (base preserved).';
+              if (companionTrig && companionBuiltins.length) {
+                statusEl.textContent = 'Loaded N3 into the editor, loaded its companion RDF/TriG input, and loaded its example builtin (base preserved).';
+              } else if (companionTrig) {
+                statusEl.textContent = 'Loaded N3 into the editor and loaded its companion RDF/TriG input; reasoning will use RDF/TriG compatibility mode.';
+              } else {
+                statusEl.textContent = companionBuiltins.length
+                  ? 'Loaded N3 into the editor and loaded its example builtin (base preserved).'
+                  : 'Loaded N3 into the editor (base preserved).';
+              }
               savePlaygroundState();
             }
           } catch (e) {
@@ -2982,9 +3115,17 @@ const batch = [];
 
 
         // Auto-load from ?url=... when it is meant to populate background knowledge,
-        // or when no explicit editor content was provided.
+        // or when no explicit editor content was provided. If an editor program is
+        // restored from a URL-loaded example, still probe for its companion
+        // examples/input/<stem>.trig sidecar without overwriting local editor text.
         if (shouldAutoLoadFromQueryUrl) {
           loadFromUri();
+        } else if (paramN3Uri && paramLoadBg !== true) {
+          autoLoadCompanionForEditorUrl(paramN3Uri).then((companion) => {
+            if (companion && shareStatusEl) {
+              shareStatusEl.textContent = 'Loaded companion RDF/TriG input for the restored example.';
+            }
+          });
         }
       })();
     </script>

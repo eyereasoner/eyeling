@@ -22,14 +22,54 @@ const TTY = process.stdout.isTTY;
 const C = TTY
   ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', dim: '\x1b[2m', n: '\x1b[0m' }
   : { g: '', r: '', y: '', dim: '', n: '' };
+const msTag = (ms) => `${C.dim}(${ms} ms)${C.n}`;
+
+const TOTAL_TESTS = 11;
+const idxWidth = String(TOTAL_TESTS).length;
+let passed = 0;
+let failed = 0;
+let currentTest = null;
+let nonTestFailure = false;
+const suiteStart = Date.now();
+
 function ok(msg) {
-  console.log(`${C.g}OK ${C.n} ${msg}`);
+  console.log(`${C.g}OK${C.n}  ${msg}`);
 }
 function info(msg) {
   console.log(`${C.y}==${C.n} ${msg}`);
 }
 function fail(msg) {
   console.error(`${C.r}FAIL${C.n} ${msg}`);
+}
+function beginTest(msg) {
+  currentTest = { msg, start: Date.now() };
+}
+function endTest() {
+  const tc = currentTest;
+  if (!tc) return;
+  const idx = String(passed + failed + 1).padStart(idxWidth, '0');
+  ok(`${idx} ${tc.msg} ${msTag(Date.now() - tc.start)}`);
+  passed += 1;
+  currentTest = null;
+}
+function recordCurrentFailure() {
+  const tc = currentTest;
+  if (!tc) return false;
+  const idx = String(passed + failed + 1).padStart(idxWidth, '0');
+  fail(`${idx} ${tc.msg} ${msTag(Date.now() - tc.start)}`);
+  failed += 1;
+  currentTest = null;
+  return true;
+}
+function printSummary() {
+  console.log('');
+  const suiteMs = Date.now() - suiteStart;
+  info(`Total elapsed: ${suiteMs} ms (${(suiteMs / 1000).toFixed(2)} s)`);
+  if (failed === 0 && !nonTestFailure) {
+    ok(`All playground tests passed (${passed}/${TOTAL_TESTS})`);
+  } else {
+    fail(`Some playground tests failed (${passed}/${TOTAL_TESTS})`);
+  }
 }
 
 function guessContentType(p) {
@@ -534,6 +574,10 @@ async function main() {
         'https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/builtin/sudoku.js',
         { ct: 'application/javascript', body: localSudokuBuiltin },
       ],
+      [
+        'https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/input/sudoku.trig',
+        { code: 404, ct: 'text/plain', body: 'not found' },
+      ],
     ]);
 
     async function getText(url) {
@@ -551,13 +595,17 @@ async function main() {
       });
     }
 
+    beginTest('clean /playground URL serves the playground');
     const cleanRes = await getText(cleanPlaygroundUrl);
     assert.equal(cleanRes.statusCode, 200, 'clean /playground URL should serve the playground');
     assert.match(cleanRes.body, /Eyeling N3 Playground/, 'clean /playground URL should load the playground');
+    endTest();
 
+    beginTest('legacy /demo URL serves the redirect page');
     const legacyRes = await getText(legacyDemoUrl);
     assert.equal(legacyRes.statusCode, 200, 'legacy /demo URL should serve redirect page');
     assert.match(legacyRes.body, /playground/, 'legacy /demo URL should point to the playground');
+    endTest();
 
     await cdp.send(
       'Fetch.enable',
@@ -582,7 +630,7 @@ async function main() {
             'Fetch.fulfillRequest',
             {
               requestId: p.requestId,
-              responseCode: 200,
+              responseCode: hit.code || 200,
               responseHeaders: [
                 { name: 'Content-Type', value: `${hit.ct}; charset=utf-8` },
                 { name: 'Cache-Control', value: 'no-store' },
@@ -647,6 +695,7 @@ async function main() {
             })
           : [];
         const renderedPanel = document.getElementById('output-rendered');
+        const outputTabs = document.querySelector('.output-tabs');
         const renderedTab = document.getElementById('output-rendered-tab');
         const sourceTab = document.getElementById('output-source-tab');
         const sourceWrapper = document.getElementById('output-source');
@@ -659,9 +708,11 @@ async function main() {
           renderedHtml: renderedPanel ? String(renderedPanel.innerHTML || '') : '',
           renderedHidden: renderedPanel ? !!renderedPanel.hidden : true,
           sourceHidden: sourceWrapper ? sourceWrapper.classList.contains('markdown-source-hidden') : true,
+          outputTabsHidden: outputTabs ? !!outputTabs.hidden : true,
           renderedTabSelected: renderedTab ? renderedTab.getAttribute('aria-selected') === 'true' : false,
           sourceTabSelected: sourceTab ? sourceTab.getAttribute('aria-selected') === 'true' : false,
           shareStatus: document.getElementById('share-status') ? String(document.getElementById('share-status').textContent || '') : '',
+          backgroundStatus: document.getElementById('background-status') ? String(document.getElementById('background-status').textContent || '') : '',
           href: String(window.location.href || ''),
           highlighted,
         };
@@ -758,6 +809,7 @@ ${JSON.stringify(last, null, 2)}`);
 `;
 
     // 1) Baseline smoke test: the default program runs to completion.
+    beginTest('playground runs the default Socrates program');
     await clickRun();
     const baseline = await waitForState(
       'default program completion',
@@ -769,9 +821,13 @@ ${JSON.stringify(last, null, 2)}`);
     );
     assert.ok(typeof baseline.output === 'string' && baseline.output.length > 0, 'Expected non-empty output');
     for (const [re, msg] of DEFAULT_PROGRAM_EXPECTS) assert.match(baseline.output, re, msg);
-    ok('playground runs the default Socrates program');
+    assert.equal(baseline.outputTabsHidden, true, 'Expected plain Turtle output to hide Markdown tabs');
+    assert.equal(baseline.renderedHidden, true, 'Expected plain Turtle output to skip rendered Markdown panel');
+    assert.equal(baseline.sourceHidden, false, 'Expected plain Turtle output to show source directly');
+    endTest();
 
     // 2) N3 syntax errors should be shown in Output and highlight the offending line.
+    beginTest('playground shows syntax errors in Output and highlights the offending line');
     await setProgram(syntaxErrorProgram);
     await clickRun();
     const syntaxErr = await waitForState(
@@ -783,9 +839,10 @@ ${JSON.stringify(last, null, 2)}`);
     assert.match(syntaxErr.output, /\n\^\s*$/m, 'Expected caret line in syntax error output');
     assert.equal(syntaxErr.highlighted[0].line, 3, 'Expected line 3 to be highlighted');
     assert.equal(syntaxErr.highlighted[0].text, '^', 'Expected highlighted line text to match the broken line');
-    ok('playground shows syntax errors in Output and highlights the offending line');
+    endTest();
 
     // 3) Inference fuse output should be visible in the Output pane.
+    beginTest('playground clearly shows inference fuse output');
     await setProgram(fuseProgram);
     await clickRun();
     const fuse = await waitForState(
@@ -799,9 +856,10 @@ ${JSON.stringify(last, null, 2)}`);
     assert.match(fuse.output, /Inference fuse triggered\./i, 'Expected fuse message in Output');
     assert.match(fuse.output, /Fired rule:/i, 'Expected fired rule explanation in Output');
     assert.match(fuse.output, /Matched instance:/i, 'Expected matched instance in Output');
-    ok('playground clearly shows inference fuse output');
+    endTest();
 
     // 4) log:outputString should render as clean text, not raw triples.
+    beginTest('playground renders log:outputString Markdown with Rendered/Markdown source tabs');
     await setProgram(outputStringProgram);
     await clickRun();
     const rendered = await waitForState(
@@ -818,6 +876,7 @@ ${JSON.stringify(last, null, 2)}`);
       /:report\s+log:outputString\s+"|# Derived triples/i,
       'Expected clean rendered output without raw triples',
     );
+    assert.equal(rendered.outputTabsHidden, false, 'Expected Markdown output tabs to be visible for log:outputString');
     assert.equal(rendered.renderedHidden, false, 'Expected rendered Markdown tab to be visible by default');
     assert.equal(rendered.sourceHidden, true, 'Expected Markdown source tab to be hidden by default');
     assert.equal(rendered.renderedTabSelected, true, 'Expected Rendered tab to be selected by default');
@@ -828,6 +887,7 @@ ${JSON.stringify(last, null, 2)}`);
 
     await clickOutputSourceTab();
     const sourceView = await getPlaygroundState();
+    assert.equal(sourceView.outputTabsHidden, false, 'Expected Markdown output tabs to stay visible in source view');
     assert.equal(sourceView.sourceTabSelected, true, 'Expected Markdown source tab to be selectable');
     assert.equal(sourceView.renderedHidden, true, 'Expected rendered Markdown panel to hide after selecting source');
     assert.equal(sourceView.sourceHidden, false, 'Expected source editor to show after selecting source');
@@ -836,17 +896,40 @@ ${JSON.stringify(last, null, 2)}`);
     await clickOutputRenderedTab();
     const renderedAgain = await getPlaygroundState();
     assert.equal(renderedAgain.renderedTabSelected, true, 'Expected Rendered tab to be selectable again');
-    ok('playground renders log:outputString Markdown with Rendered/Markdown source tabs');
+    endTest();
 
     // 5) Normal editing should not keep rewriting the browser URL with raw N3 content.
+    beginTest('playground keeps the live URL short and creates compact share links on demand');
     assert.doesNotMatch(renderedAgain.href, /[?&](?:edit|program)=/, 'Expected live URL to avoid raw editor content');
     const compactShareUrl = await makeShareUrlInPage();
     assert.match(compactShareUrl, /[?&]state=/, 'Expected an on-demand compact state parameter');
     assert.doesNotMatch(compactShareUrl, /[?&](?:edit|program)=/, 'Expected share link to avoid raw edit/program params');
     assert.ok(compactShareUrl.length < playgroundUrl.length + encodeURIComponent(outputStringProgram).length, 'Expected compact share URL to be shorter than raw editor URL');
-    ok('playground keeps the live URL short and creates compact share links on demand');
+    endTest();
 
-    // 6) URL-loaded repository examples should auto-load matching examples/builtin/<stem>.js.
+    // 6) URL-loaded examples should auto-load matching examples/input/<stem>.trig and run in RDF/TriG mode.
+    beginTest('playground auto-loads companion TriG sidecars and uses RDF/TriG mode');
+    await loadUrlIntoEditor(`${started.baseUrl}/examples/smoke-arithmetic.n3`);
+    const smokeLoaded = await waitForState(
+      'smoke-arithmetic URL loaded with companion TriG input',
+      (st) => /companion RDF\/TriG input/i.test(String(st.status || '')) && /input\/smoke-arithmetic\.trig/i.test(String(st.backgroundStatus || '')),
+      20000,
+    );
+    assert.match(smokeLoaded.backgroundStatus, /smoke-arithmetic\.trig/i, 'Expected companion TriG sidecar in background status');
+    await clickRun();
+    const smoke = await waitForState(
+      'URL-loaded smoke-arithmetic example completion with sidecar input',
+      (st) =>
+        String(st.status || '')
+          .trim()
+          .startsWith('Done') && /product = 42/i.test(String(st.output || '')),
+      30000,
+    );
+    assert.match(smoke.output, /product = 42/i, 'Expected result derived from companion TriG evidence');
+    endTest();
+
+    // 7) URL-loaded repository examples should auto-load matching examples/builtin/<stem>.js.
+    beginTest('playground auto-loads a companion example builtin for URL-loaded Sudoku');
     await loadUrlIntoEditor('https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/sudoku.n3');
     await waitForState(
       'sudoku URL loaded with companion builtin',
@@ -867,14 +950,18 @@ ${JSON.stringify(last, null, 2)}`);
     );
     assert.match(sudoku.output, /Completed grid/i, 'Expected Sudoku rendered output');
     assert.match(sudoku.output, /unique valid Sudoku solution/i, 'Expected Sudoku builtin-backed result');
-    ok('playground auto-loads a companion example builtin for URL-loaded Sudoku');
+    endTest();
 
     // Ensure no uncaught runtime exceptions.
+    beginTest('playground has no uncaught runtime exceptions');
     assert.equal(exceptions.length, 0, `Uncaught exceptions in playground.html: ${JSON.stringify(exceptions[0] || {})}`);
+    endTest();
 
     // Console errors are noisy and often indicate a broken UI.
     // (We suppress known noise like /favicon.ico on the server.)
+    beginTest('playground has no console errors');
     assert.equal(consoleErrors.length, 0, `Console errors in playground.html: ${JSON.stringify(consoleErrors[0] || {})}`);
+    endTest();
 
     // Cleanup.
     try {
@@ -883,9 +970,13 @@ ${JSON.stringify(last, null, 2)}`);
   } finally {
     await cleanup();
   }
+
+  printSummary();
 }
 
 main().catch((e) => {
+  if (!recordCurrentFailure()) nonTestFailure = true;
+  printSummary();
   fail(e && e.stack ? e.stack : String(e));
   process.exit(1);
 });

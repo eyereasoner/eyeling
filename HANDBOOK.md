@@ -3715,6 +3715,8 @@ A key recent addition is **background knowledge mode**. When enabled, the N3 loa
 
 That separation is helpful both pedagogically and practically. It mirrors real reasoning work, where a user often reasons _over_ a fixed body of data rather than constantly rewriting it.
 
+For repository examples, the playground also follows the same sidecar-input convention as the example test runner. When a loaded URL looks like `.../examples/name.n3`, the playground probes for `.../examples/input/name.trig`. If that companion TriG file exists, it is loaded automatically as background evidence and the run uses RDF/TriG compatibility mode, matching the command-line `-r` behavior used by `npm run test:examples`.
+
 ### I.3 Execution behavior
 
 The playground is designed to feel responsive even when reasoning is not trivial. To do that, it uses a browser execution model that can run inference in a worker rather than blocking the main UI thread. Output is then surfaced back into the page.
