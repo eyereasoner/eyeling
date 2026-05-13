@@ -874,6 +874,11 @@ ${JSON.stringify(last, null, 2)}`);
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 :report log:outputString "## Hello from output string\n\nLine 2 with **bold** and [Eyeling](https://example.org/eyeling)\n" .
 `;
+    const baseOnlyMarkdownProgram = `@base <https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/smoke-arithmetic.n3> .
+@prefix : <#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+:report log:outputString "# stateurl link base\n\n[N3 rules](../smoke-arithmetic.n3)\n[Input TriG](../input/smoke-arithmetic.trig)\n" .
+`;
     const logQueryTurtleProgram = `@prefix : <#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 
@@ -972,17 +977,45 @@ ${JSON.stringify(last, null, 2)}`);
     assert.equal(renderedAgain.renderedTabSelected, true, 'Expected Rendered tab to be selectable again');
     endTest();
 
-    // 5) Normal editing should not keep rewriting the browser URL with raw N3 content.
-    beginTest('playground keeps the live URL short and creates compact share links on demand');
-    assert.doesNotMatch(renderedAgain.href, /[?&](?:edit|program)=/, 'Expected live URL to avoid raw editor content');
-    const compactShareUrl = await makeShareUrlInPage();
-    assert.match(compactShareUrl, /[?&]state=/, 'Expected an on-demand compact state parameter');
-    assert.doesNotMatch(compactShareUrl, /[?&](?:edit|program)=/, 'Expected share link to avoid raw edit/program params');
-    assert.ok(compactShareUrl.length < playgroundUrl.length + encodeURIComponent(outputStringProgram).length, 'Expected compact share URL to be shorter than raw editor URL');
-    assert.equal(renderedAgain.gistShareHidden, true, 'Expected ordinary compact share links to keep the Gist share option hidden');
+    // 5) Shared state files may only restore editor text. If that text came from a repository
+    // example, the injected @base line should still give Markdown links the static output-page base.
+    beginTest('playground resolves Markdown links from restored example base directives');
+    await setProgram(baseOnlyMarkdownProgram);
+    await clickRun();
+    const baseOnlyMarkdown = await waitForState(
+      'base-only Markdown output completion',
+      (st) =>
+        String(st.status || '')
+          .trim()
+          .startsWith('Done') && /stateurl link base/i.test(String(st.output || '')),
+      20000,
+    );
+    assert.match(
+      baseOnlyMarkdown.renderedHtml,
+      new RegExp('href="' + started.baseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/examples/smoke-arithmetic\\.n3"'),
+      'Expected restored-state Markdown source links to resolve against the static output page',
+    );
+    assert.match(
+      baseOnlyMarkdown.renderedHtml,
+      new RegExp('href="' + started.baseUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/examples/input/smoke-arithmetic\\.trig"'),
+      'Expected restored-state Markdown TriG links to resolve against the static output page',
+    );
     endTest();
 
-    // 6) Very large edited programs should offer a Gist-backed share option instead of only a huge link.
+    // 6) Normal editing should not keep rewriting the browser URL with raw N3 content.
+    beginTest('playground keeps the live URL short and creates compact share links on demand');
+    await setProgram(outputStringProgram);
+    const compactShareState = await getPlaygroundState();
+    assert.doesNotMatch(compactShareState.href, /[?&](?:edit|program)=/, 'Expected live URL to avoid raw editor content');
+    const compactShareUrl = await makeShareUrlInPage();
+    const rawEditorUrlLength = playgroundUrl.length + '?edit='.length + encodeURIComponent(outputStringProgram).length;
+    assert.match(compactShareUrl, /[?&]state=/, 'Expected an on-demand compact state parameter');
+    assert.doesNotMatch(compactShareUrl, /[?&](?:edit|program)=/, 'Expected share link to avoid raw edit/program params');
+    assert.ok(compactShareUrl.length < rawEditorUrlLength, 'Expected compact share URL to be shorter than raw editor URL');
+    assert.equal(compactShareState.gistShareHidden, true, 'Expected ordinary compact share links to keep the Gist share option hidden');
+    endTest();
+
+    // 7) Very large edited programs should offer a Gist-backed share option instead of only a huge link.
     beginTest('playground offers a Gist-backed option for oversized state links');
     const longShareProgram = Array.from({ length: 1400 }, (_, i) => {
       const n = String(i).padStart(4, '0');
@@ -1015,7 +1048,7 @@ ${JSON.stringify(last, null, 2)}`);
     assert.match(String(gistShare.seen.options.body || ''), /\\"e\\":/, 'Expected compact editor state in the Gist payload');
     endTest();
 
-    // 7) log:query can produce Turtle; that should stay in plain source output without Markdown tabs.
+    // 8) log:query can produce Turtle; that should stay in plain source output without Markdown tabs.
     beginTest('playground hides markdown tabs for Turtle log:query output');
     await setProgram(logQueryTurtleProgram);
     await clickRun();
@@ -1035,7 +1068,7 @@ ${JSON.stringify(last, null, 2)}`);
     assert.equal(logQueryTurtle.sourceHidden, false, 'Expected Turtle log:query output to show source directly');
     endTest();
 
-    // 8) URL-loaded examples should auto-load matching examples/input/<stem>.trig and run in RDF/TriG mode.
+    // 9) URL-loaded examples should auto-load matching examples/input/<stem>.trig and run in RDF/TriG mode.
     beginTest('playground auto-loads companion TriG sidecars and uses RDF/TriG mode');
     await loadUrlIntoEditor('https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/smoke-arithmetic.n3');
     const smokeLoaded = await waitForState(
@@ -1082,7 +1115,7 @@ ${JSON.stringify(last, null, 2)}`);
     assert.equal(smokeRenderedAgain.sourceHidden, true, 'Expected smoke-arithmetic source editor to hide again');
     endTest();
 
-    // 9) URL-loaded repository examples should auto-load matching examples/builtin/<stem>.js.
+    // 10) URL-loaded repository examples should auto-load matching examples/builtin/<stem>.js.
     beginTest('playground auto-loads a companion example builtin for URL-loaded Sudoku');
     await loadUrlIntoEditor('https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/sudoku.n3');
     await waitForState(

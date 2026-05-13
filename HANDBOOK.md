@@ -3733,7 +3733,7 @@ The output behavior also adapts to the kind of N3 program being run. In some cas
 
 For Markdown-oriented `log:outputString` examples, the output pane has two views: a rendered Markdown view and a Markdown source view. Those tabs appear only when the actual output looks like Markdown; Turtle or other plain output stays in the source editor without the Markdown toggle. The rendered view is selected by default for Markdown output, while the source view keeps the exact generated Markdown available for copying, inspection, or comparison.
 
-Repository example reports often contain relative source links that are written for the checked-in files under `examples/output/*.md`. When such an example is loaded into the playground from a raw URL, the rendered Markdown view resolves those relative links against the corresponding static output page rather than against `/playground`, so links like `../name.n3` and `../input/name.trig` continue to point to the intended example files.
+Repository example reports often contain relative source links that are written for the checked-in files under `examples/output/*.md`. When such an example is loaded into the playground from a raw URL, or restored later from compact/Gist-backed state, the rendered Markdown view resolves those relative links against the corresponding static output page rather than against `/playground`, so links like `../name.n3` and `../input/name.trig` continue to point to the intended example files. The playground preserves this base in shared state when possible and can also recover it from the injected `@base <.../examples/name.n3>` line.
 
 ### I.4 Error handling and explainability
 

@@ -1799,6 +1799,7 @@ const batch = [];
           // this compact form and the older long-key JSON form.
           const compact = {};
           if (state && typeof state.edit === 'string') compact.e = state.edit;
+          if (state && typeof state.editorSourceUrl === 'string' && state.editorSourceUrl) compact.x = state.editorSourceUrl;
           if (state && state.loadbg && typeof state.url === 'string' && state.url) compact.u = state.url;
           if (state && state.loadbg) compact.b = true;
           if (state && state.proofcomments) compact.p = true;
@@ -1851,12 +1852,21 @@ const batch = [];
                   ? raw.program
                   : null;
           const url = typeof raw.u === 'string' ? raw.u : typeof raw.url === 'string' ? raw.url : '';
+          const editorSourceUrl =
+            typeof raw.x === 'string'
+              ? raw.x
+              : typeof raw.editorSourceUrl === 'string'
+                ? raw.editorSourceUrl
+                : typeof raw.sourceUrl === 'string'
+                  ? raw.sourceUrl
+                  : '';
           const loadbg = parseBooleanParam(Object.prototype.hasOwnProperty.call(raw, 'b') ? raw.b : raw.loadbg);
           const proofcomments = parseBooleanParam(Object.prototype.hasOwnProperty.call(raw, 'p') ? raw.p : raw.proofcomments);
           const httpsderef = parseBooleanParam(Object.prototype.hasOwnProperty.call(raw, 'h') ? raw.h : raw.httpsderef);
           return {
             edit,
             url,
+            editorSourceUrl,
             loadbg: loadbg === null ? null : loadbg,
             proofcomments: proofcomments === null ? null : proofcomments,
             httpsderef: httpsderef === null ? null : httpsderef,
@@ -1916,6 +1926,7 @@ const batch = [];
         const paramProofComments =
           restoredState && restoredState.proofcomments !== null ? restoredState.proofcomments : legacyProofComments;
         const paramHttpsDeref = restoredState && restoredState.httpsderef !== null ? restoredState.httpsderef : legacyHttpsDeref;
+        const paramEditorSourceUrl = restoredState && restoredState.editorSourceUrl ? restoredState.editorSourceUrl : '';
 
         if (paramN3Uri) {
           uriInput.value = paramN3Uri;
@@ -2390,6 +2401,16 @@ const batch = [];
         }
 
         editor.setValue(initialN3);
+        if (paramEditorSourceUrl) {
+          editorSourceUrl = paramEditorSourceUrl;
+          editorSourceText = initialN3;
+        } else if (paramProgram !== null) {
+          const initialBaseUrl = extractDocumentBaseUrl(initialN3);
+          if (initialBaseUrl) {
+            editorSourceUrl = initialBaseUrl;
+            editorSourceText = initialN3;
+          }
+        }
         resizeAll();
 
         // Recompute caps on orientation/resize
@@ -2408,6 +2429,7 @@ const batch = [];
           return {
             v: 1,
             edit: editor.getValue(),
+            editorSourceUrl: editorSourceUrl || extractDocumentBaseUrl(editor.getValue()),
             url: (uriInput && uriInput.value ? uriInput.value : '').trim(),
             loadbg: !!(loadAsBackgroundCheckbox && loadAsBackgroundCheckbox.checked),
             proofcomments: !!(proofCheckbox && proofCheckbox.checked),
@@ -3161,8 +3183,21 @@ const batch = [];
           }
         }
 
+        function extractDocumentBaseUrl(programText) {
+          const lines = String(programText || '').split(/\r?\n/).slice(0, 80);
+          for (const line of lines) {
+            const m = line.match(/^\s*(?:@base|BASE)\s+<([^>]+)>\s*\.?\s*$/i);
+            if (m && m[1]) return m[1].trim();
+          }
+          return '';
+        }
+
         function currentMarkdownOutputBaseUrl() {
-          return deriveExampleOutputMarkdownUrl(editorSourceUrl);
+          return (
+            deriveExampleOutputMarkdownUrl(editorSourceUrl) ||
+            deriveExampleOutputMarkdownUrl(uriInput && uriInput.value ? uriInput.value : '') ||
+            deriveExampleOutputMarkdownUrl(extractDocumentBaseUrl(editor.getValue()))
+          );
         }
 
         function deriveExampleBuiltinUrl(n3Url) {
