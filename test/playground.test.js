@@ -646,11 +646,21 @@ async function main() {
               };
             })
           : [];
+        const renderedPanel = document.getElementById('output-rendered');
+        const renderedTab = document.getElementById('output-rendered-tab');
+        const sourceTab = document.getElementById('output-source-tab');
+        const sourceWrapper = document.getElementById('output-source');
         return {
           status: statusEl ? String(statusEl.textContent || '') : '',
           output: outputCm && typeof outputCm.getValue === 'function'
             ? String(outputCm.getValue() || '')
             : (outputTa ? String(outputTa.value || '') : ''),
+          renderedText: renderedPanel ? String(renderedPanel.textContent || '') : '',
+          renderedHtml: renderedPanel ? String(renderedPanel.innerHTML || '') : '',
+          renderedHidden: renderedPanel ? !!renderedPanel.hidden : true,
+          sourceHidden: sourceWrapper ? sourceWrapper.classList.contains('markdown-source-hidden') : true,
+          renderedTabSelected: renderedTab ? renderedTab.getAttribute('aria-selected') === 'true' : false,
+          sourceTabSelected: sourceTab ? sourceTab.getAttribute('aria-selected') === 'true' : false,
           highlighted,
         };
       })()`)) || { status: '', output: '', highlighted: [] }
@@ -676,6 +686,24 @@ async function main() {
       await evalInPage(`(() => {
         const btn = document.getElementById('run-btn');
         if (!btn) throw new Error('run-btn not found');
+        btn.click();
+        return true;
+      })()`);
+    }
+
+    async function clickOutputSourceTab() {
+      await evalInPage(`(() => {
+        const btn = document.getElementById('output-source-tab');
+        if (!btn) throw new Error('output-source-tab not found');
+        btn.click();
+        return true;
+      })()`);
+    }
+
+    async function clickOutputRenderedTab() {
+      await evalInPage(`(() => {
+        const btn = document.getElementById('output-rendered-tab');
+        if (!btn) throw new Error('output-rendered-tab not found');
         btn.click();
         return true;
       })()`);
@@ -720,7 +748,7 @@ ${JSON.stringify(last, null, 2)}`);
     const fuseProgram = fs.readFileSync(path.join(ROOT, 'examples', 'fuse.n3'), 'utf8');
     const outputStringProgram = `@prefix : <#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
-:report log:outputString "Hello from output string\nLine 2\n" .
+:report log:outputString "## Hello from output string\n\nLine 2 with **bold** and [Eyeling](https://example.org/eyeling)\n" .
 `;
 
     // 1) Baseline smoke test: the default program runs to completion.
@@ -778,13 +806,31 @@ ${JSON.stringify(last, null, 2)}`);
           .startsWith('Done') && /Hello from output string/.test(String(st.output || '')),
       20000,
     );
-    assert.match(rendered.output, /^Hello from output string\nLine 2\n?$/m, 'Expected rendered outputString text');
+    assert.match(rendered.output, /^## Hello from output string\n\nLine 2 with \*\*bold\*\*/m, 'Expected markdown source output');
     assert.doesNotMatch(
       rendered.output,
       /:report\s+log:outputString\s+"|# Derived triples/i,
       'Expected clean rendered output without raw triples',
     );
-    ok('playground renders log:outputString cleanly in Output');
+    assert.equal(rendered.renderedHidden, false, 'Expected rendered Markdown tab to be visible by default');
+    assert.equal(rendered.sourceHidden, true, 'Expected Markdown source tab to be hidden by default');
+    assert.equal(rendered.renderedTabSelected, true, 'Expected Rendered tab to be selected by default');
+    assert.match(rendered.renderedText, /Hello from output string/, 'Expected rendered Markdown text');
+    assert.match(rendered.renderedHtml, /<h2>Hello from output string<\/h2>/i, 'Expected Markdown heading rendering');
+    assert.match(rendered.renderedHtml, /<strong>bold<\/strong>/i, 'Expected Markdown bold rendering');
+    assert.match(rendered.renderedHtml, /href="https:\/\/example\.org\/eyeling"/i, 'Expected Markdown link rendering');
+
+    await clickOutputSourceTab();
+    const sourceView = await getPlaygroundState();
+    assert.equal(sourceView.sourceTabSelected, true, 'Expected Markdown source tab to be selectable');
+    assert.equal(sourceView.renderedHidden, true, 'Expected rendered Markdown panel to hide after selecting source');
+    assert.equal(sourceView.sourceHidden, false, 'Expected source editor to show after selecting source');
+    assert.match(sourceView.output, /^## Hello from output string/m, 'Expected source tab to show markdown source');
+
+    await clickOutputRenderedTab();
+    const renderedAgain = await getPlaygroundState();
+    assert.equal(renderedAgain.renderedTabSelected, true, 'Expected Rendered tab to be selectable again');
+    ok('playground renders log:outputString Markdown with Rendered/Markdown source tabs');
 
     // 5) URL-loaded repository examples should auto-load matching examples/builtin/<stem>.js.
     await loadUrlIntoEditor('https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/sudoku.n3');

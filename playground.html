@@ -219,6 +219,168 @@
         color: #111827;
       }
 
+      .output-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .output-header-row .section-title {
+        margin-bottom: 0;
+      }
+
+      .output-tabs {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.2rem;
+        border: 1px solid #d1d5db;
+        border-radius: 999px;
+        background: #f9fafb;
+      }
+
+      button.output-tab {
+        min-height: 32px;
+        padding: 0.3rem 0.75rem;
+        border-radius: 999px;
+        background: transparent;
+        color: #4b5563;
+        box-shadow: none;
+        font-size: 0.8rem;
+      }
+
+      button.output-tab:hover:not(:disabled) {
+        transform: none;
+        box-shadow: none;
+        background: #eef2ff;
+        color: #1d4ed8;
+      }
+
+      button.output-tab.active {
+        background: #2563eb;
+        color: #ffffff;
+      }
+
+      .markdown-output {
+        margin: 0.25rem 0 0;
+        border-radius: 0.75rem;
+        border: 1px solid #d1d5db;
+        padding: 1rem;
+        background: #ffffff;
+        color: #111827;
+        font-size: 0.92rem;
+        line-height: 1.55;
+        min-height: 5rem;
+        overflow: auto;
+      }
+
+      .markdown-output.is-empty {
+        color: #6b7280;
+      }
+
+      .markdown-output h1,
+      .markdown-output h2,
+      .markdown-output h3,
+      .markdown-output h4,
+      .markdown-output h5,
+      .markdown-output h6 {
+        margin: 1rem 0 0.5rem;
+        line-height: 1.25;
+        color: inherit;
+      }
+
+      .markdown-output h1:first-child,
+      .markdown-output h2:first-child,
+      .markdown-output h3:first-child {
+        margin-top: 0;
+      }
+
+      .markdown-output h1 {
+        font-size: 1.45rem;
+      }
+      .markdown-output h2 {
+        font-size: 1.2rem;
+      }
+      .markdown-output h3 {
+        font-size: 1.05rem;
+      }
+
+      .markdown-output p {
+        margin: 0.6rem 0;
+      }
+
+      .markdown-output ul,
+      .markdown-output ol {
+        margin: 0.55rem 0 0.75rem 1.35rem;
+        padding: 0;
+      }
+
+      .markdown-output li {
+        margin: 0.2rem 0;
+      }
+
+      .markdown-output a {
+        color: #2563eb;
+        text-decoration: none;
+      }
+
+      .markdown-output a:hover {
+        text-decoration: underline;
+      }
+
+      .markdown-output code {
+        border-radius: 0.35rem;
+        padding: 0.1rem 0.25rem;
+        background: #f3f4f6;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        font-size: 0.88em;
+      }
+
+      .markdown-output pre {
+        overflow: auto;
+        border-radius: 0.65rem;
+        padding: 0.75rem;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+      }
+
+      .markdown-output pre code {
+        padding: 0;
+        background: transparent;
+      }
+
+      .markdown-output blockquote {
+        margin: 0.75rem 0;
+        padding-left: 0.85rem;
+        border-left: 3px solid #d1d5db;
+        color: #4b5563;
+      }
+
+      .markdown-output table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0.75rem 0;
+        font-size: 0.88rem;
+      }
+
+      .markdown-output th,
+      .markdown-output td {
+        border: 1px solid #d1d5db;
+        padding: 0.4rem 0.5rem;
+        vertical-align: top;
+      }
+
+      .markdown-output th {
+        background: #f9fafb;
+        font-weight: 600;
+      }
+
+      .markdown-source-hidden {
+        display: none !important;
+      }
+
       .uri-row {
         margin-bottom: 0.75rem;
       }
@@ -351,6 +513,21 @@
           border-radius: 1rem;
         }
 
+        .output-header-row {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .output-tabs {
+          width: 100%;
+          justify-content: stretch;
+        }
+
+        button.output-tab {
+          flex: 1;
+          font-size: 0.9rem;
+        }
+
         /* Stack URL input + button (no squishing) */
         .uri-input-row {
           flex-direction: column;
@@ -444,6 +621,59 @@
         }
         .section-title {
           color: #e7eaf0;
+        }
+
+        .output-tabs {
+          border-color: #1f2a37;
+          background: #0b0f14;
+        }
+
+        button.output-tab {
+          color: #cbd5e1;
+        }
+
+        button.output-tab:hover:not(:disabled) {
+          background: #172033;
+          color: #bfdbfe;
+        }
+
+        button.output-tab.active {
+          background: #2563eb;
+          color: #ffffff;
+        }
+
+        .markdown-output {
+          background: #0f1620;
+          border-color: #1f2a37;
+          color: #e7eaf0;
+        }
+
+        .markdown-output.is-empty {
+          color: #a7b0bf;
+        }
+
+        .markdown-output a {
+          color: #93c5fd;
+        }
+
+        .markdown-output code {
+          background: #172033;
+        }
+
+        .markdown-output pre,
+        .markdown-output th {
+          background: #0b0f14;
+          border-color: #1f2a37;
+        }
+
+        .markdown-output th,
+        .markdown-output td {
+          border-color: #1f2a37;
+        }
+
+        .markdown-output blockquote {
+          border-left-color: #334155;
+          color: #cbd5e1;
         }
 
         .cm-error-line {
@@ -576,7 +806,32 @@
         </section>
 
         <section class="card">
-          <h2 class="section-title">Output</h2>
+          <div class="output-header-row">
+            <h2 class="section-title">Output</h2>
+            <div class="output-tabs" role="tablist" aria-label="Output view">
+              <button
+                id="output-rendered-tab"
+                type="button"
+                class="output-tab active"
+                role="tab"
+                aria-selected="true"
+                aria-controls="output-rendered">
+                Rendered
+              </button>
+              <button
+                id="output-source-tab"
+                type="button"
+                class="output-tab"
+                role="tab"
+                aria-selected="false"
+                aria-controls="output-source">
+                Markdown source
+              </button>
+            </div>
+          </div>
+          <div id="output-rendered" class="markdown-output is-empty" role="tabpanel" aria-labelledby="output-rendered-tab">
+            (no output yet)
+          </div>
           <textarea id="output-editor" spellcheck="false" readonly>(no output yet)</textarea>
         </section>
       </div>
@@ -607,6 +862,9 @@
 
         const inputTextArea = document.getElementById('n3-editor');
         const outputTextArea = document.getElementById('output-editor');
+        const outputRenderedPanel = document.getElementById('output-rendered');
+        const outputRenderedTab = document.getElementById('output-rendered-tab');
+        const outputSourceTab = document.getElementById('output-source-tab');
         const runBtn = document.getElementById('run-btn');
         const pauseBtn = document.getElementById('pause-btn');
         const stopBtn = document.getElementById('stop-btn');
@@ -1489,6 +1747,259 @@ const batch = [];
         // Slightly smaller font for output
         outputEl.getWrapperElement().classList.add('cm-output');
 
+        const outputSourceWrapper = outputEl.getWrapperElement();
+        if (outputSourceWrapper) outputSourceWrapper.id = 'output-source';
+        let outputView = 'rendered';
+
+        function escapeHtml(value) {
+          return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+        }
+
+        function escapeAttr(value) {
+          return escapeHtml(value).replace(/`/g, '&#96;');
+        }
+
+        function isSafeMarkdownHref(href) {
+          const value = String(href || '').trim();
+          if (!value) return false;
+          if (/^(https?:|mailto:)/i.test(value)) return true;
+          if (/^(#|\/|\.\/|\.\.\/)/.test(value)) return true;
+          return !/^[a-z][a-z0-9+.-]*:/i.test(value);
+        }
+
+        function renderInlineMarkdownNoLinks(value) {
+          const codeTokens = [];
+          let text = String(value == null ? '' : value).replace(/`([^`\n]+)`/g, (_m, code) => {
+            const token = String.fromCharCode(0) + 'CODE' + codeTokens.length + String.fromCharCode(0);
+            codeTokens.push('<code>' + escapeHtml(code) + '</code>');
+            return token;
+          });
+
+          text = escapeHtml(text);
+          text = text.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+          text = text.replace(/__([^_\n]+)__/g, '<strong>$1</strong>');
+          text = text.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
+          text = text.replace(/(^|[^_])_([^_\n]+)_(?!_)/g, '$1<em>$2</em>');
+
+          for (let i = 0; i < codeTokens.length; i += 1) {
+            text = text.split(String.fromCharCode(0) + 'CODE' + i + String.fromCharCode(0)).join(codeTokens[i]);
+          }
+          return text;
+        }
+
+        function renderInlineMarkdown(value) {
+          const linkTokens = [];
+          let text = String(value == null ? '' : value).replace(/\[([^\]\n]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (_m, label, href) => {
+            const token = String.fromCharCode(0) + 'LINK' + linkTokens.length + String.fromCharCode(0);
+            const cleanHref = String(href || '').trim();
+            const htmlLabel = renderInlineMarkdownNoLinks(label);
+            linkTokens.push(
+              isSafeMarkdownHref(cleanHref)
+                ? '<a href="' + escapeAttr(cleanHref) + '" target="_blank" rel="noopener noreferrer">' + htmlLabel + '</a>'
+                : htmlLabel,
+            );
+            return token;
+          });
+
+          text = renderInlineMarkdownNoLinks(text);
+          for (let i = 0; i < linkTokens.length; i += 1) {
+            text = text.split(String.fromCharCode(0) + 'LINK' + i + String.fromCharCode(0)).join(linkTokens[i]);
+          }
+          return text;
+        }
+
+        function splitMarkdownTableRow(line) {
+          let value = String(line || '').trim();
+          if (value.startsWith('|')) value = value.slice(1);
+          if (value.endsWith('|')) value = value.slice(0, -1);
+          return value.split('|').map((cell) => cell.trim());
+        }
+
+        function isMarkdownTableSeparator(line) {
+          const cells = splitMarkdownTableRow(line);
+          return cells.length > 1 && cells.every((cell) => /^:?-{3,}:?$/.test(cell));
+        }
+
+        function renderMarkdownTable(lines, start) {
+          const header = splitMarkdownTableRow(lines[start]);
+          const rows = [];
+          let i = start + 2;
+          while (i < lines.length && /\|/.test(lines[i] || '') && String(lines[i] || '').trim()) {
+            rows.push(splitMarkdownTableRow(lines[i]));
+            i += 1;
+          }
+          const headHtml = header.map((cell) => '<th>' + renderInlineMarkdown(cell) + '</th>').join('');
+          const bodyHtml = rows
+            .map((row) => '<tr>' + row.map((cell) => '<td>' + renderInlineMarkdown(cell) + '</td>').join('') + '</tr>')
+            .join('');
+          return {
+            html: '<table><thead><tr>' + headHtml + '</tr></thead><tbody>' + bodyHtml + '</tbody></table>',
+            next: i,
+          };
+        }
+
+        function renderMarkdownToHtml(markdown) {
+          const source = String(markdown == null ? '' : markdown).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+          if (!source.trim()) return '<p>(no output yet)</p>';
+
+          const lines = source.split('\n');
+          const blocks = [];
+          let i = 0;
+
+          function paragraphFrom(start) {
+            const parts = [];
+            let j = start;
+            while (j < lines.length) {
+              const line = lines[j];
+              const trimmed = String(line || '').trim();
+              if (!trimmed) break;
+              if (/^```/.test(trimmed)) break;
+              if (/^#{1,6}\s+/.test(trimmed)) break;
+              if (/^[-*_]{3,}\s*$/.test(trimmed)) break;
+              if (/^\s*([-*+])\s+/.test(line) || /^\s*\d+\.\s+/.test(line)) break;
+              if (/^>\s?/.test(line)) break;
+              if (/\|/.test(line || '') && j + 1 < lines.length && isMarkdownTableSeparator(lines[j + 1])) break;
+
+              parts.push(renderInlineMarkdown(line.replace(/\s+$/, '')));
+              j += 1;
+            }
+            return { html: '<p>' + parts.join('<br>') + '</p>', next: j };
+          }
+
+          while (i < lines.length) {
+            const line = lines[i];
+            const trimmed = String(line || '').trim();
+
+            if (!trimmed) {
+              i += 1;
+              continue;
+            }
+
+            const fence = trimmed.match(/^```([^`]*)$/);
+            if (fence) {
+              const code = [];
+              i += 1;
+              while (i < lines.length && !/^```\s*$/.test(String(lines[i] || '').trim())) {
+                code.push(lines[i]);
+                i += 1;
+              }
+              if (i < lines.length) i += 1;
+              blocks.push('<pre><code>' + escapeHtml(code.join('\n')) + '</code></pre>');
+              continue;
+            }
+
+            const heading = trimmed.match(/^(#{1,6})\s+(.*?)\s*#*$/);
+            if (heading) {
+              const level = heading[1].length;
+              blocks.push('<h' + level + '>' + renderInlineMarkdown(heading[2]) + '</h' + level + '>');
+              i += 1;
+              continue;
+            }
+
+            if (/^[-*_]{3,}\s*$/.test(trimmed)) {
+              blocks.push('<hr>');
+              i += 1;
+              continue;
+            }
+
+            if (/\|/.test(line || '') && i + 1 < lines.length && isMarkdownTableSeparator(lines[i + 1])) {
+              const table = renderMarkdownTable(lines, i);
+              blocks.push(table.html);
+              i = table.next;
+              continue;
+            }
+
+            if (/^\s*([-*+])\s+/.test(line)) {
+              const items = [];
+              while (i < lines.length) {
+                const m = String(lines[i] || '').match(/^\s*[-*+]\s+(.*)$/);
+                if (!m) break;
+                items.push('<li>' + renderInlineMarkdown(m[1]) + '</li>');
+                i += 1;
+              }
+              blocks.push('<ul>' + items.join('') + '</ul>');
+              continue;
+            }
+
+            if (/^\s*\d+\.\s+/.test(line)) {
+              const items = [];
+              while (i < lines.length) {
+                const m = String(lines[i] || '').match(/^\s*\d+\.\s+(.*)$/);
+                if (!m) break;
+                items.push('<li>' + renderInlineMarkdown(m[1]) + '</li>');
+                i += 1;
+              }
+              blocks.push('<ol>' + items.join('') + '</ol>');
+              continue;
+            }
+
+            if (/^>\s?/.test(line)) {
+              const quoted = [];
+              while (i < lines.length && /^>\s?/.test(String(lines[i] || ''))) {
+                quoted.push(String(lines[i] || '').replace(/^>\s?/, ''));
+                i += 1;
+              }
+              blocks.push('<blockquote>' + renderMarkdownToHtml(quoted.join('\n')) + '</blockquote>');
+              continue;
+            }
+
+            const paragraph = paragraphFrom(i);
+            blocks.push(paragraph.html);
+            i = paragraph.next > i ? paragraph.next : i + 1;
+          }
+
+          return blocks.join('\n');
+        }
+
+        function syncRenderedOutput() {
+          if (!outputRenderedPanel) return;
+          const value = outputEl && typeof outputEl.getValue === 'function' ? outputEl.getValue() : outputTextArea.value;
+          outputRenderedPanel.innerHTML = renderMarkdownToHtml(value);
+          outputRenderedPanel.classList.toggle('is-empty', !String(value || '').trim() || String(value).trim() === '(no output yet)');
+        }
+
+        function setOutputView(nextView) {
+          outputView = nextView === 'source' ? 'source' : 'rendered';
+          const showRendered = outputView === 'rendered';
+
+          if (outputRenderedPanel) outputRenderedPanel.hidden = !showRendered;
+          if (outputSourceWrapper) outputSourceWrapper.classList.toggle('markdown-source-hidden', showRendered);
+
+          if (outputRenderedTab) {
+            outputRenderedTab.classList.toggle('active', showRendered);
+            outputRenderedTab.setAttribute('aria-selected', showRendered ? 'true' : 'false');
+          }
+          if (outputSourceTab) {
+            outputSourceTab.classList.toggle('active', !showRendered);
+            outputSourceTab.setAttribute('aria-selected', showRendered ? 'false' : 'true');
+          }
+
+          if (showRendered) {
+            syncRenderedOutput();
+          } else if (outputEl && typeof outputEl.refresh === 'function') {
+            outputEl.refresh();
+            const mh = currentMaxHeights();
+            autoResizeCodeMirror(outputEl, 80, mh.output);
+          }
+        }
+
+        function setOutputText(text, preferredView) {
+          outputEl.setValue(String(text == null ? '' : text));
+          syncRenderedOutput();
+          setOutputView(preferredView === 'source' ? 'source' : 'rendered');
+        }
+
+        if (outputRenderedTab) outputRenderedTab.addEventListener('click', () => setOutputView('rendered'));
+        if (outputSourceTab) outputSourceTab.addEventListener('click', () => setOutputView('source'));
+        outputEl.on('change', syncRenderedOutput);
+        syncRenderedOutput();
+        setOutputView('rendered');
+
         // Keep CodeMirror in sync if the user changes OS theme while this page is open.
         function applyCodeMirrorTheme() {
           const t = pickCmTheme();
@@ -1786,6 +2297,7 @@ const batch = [];
             pending = '';
 
             if (nearBottom) scroller.scrollTop = scroller.scrollHeight;
+            syncRenderedOutput();
             afterFlush && afterFlush();
           }
 
@@ -1833,7 +2345,7 @@ const batch = [];
 
           {
             const mh = currentMaxHeights();
-            outputEl.setValue(usesRenderedText ? '' : '# Derived triples (streaming):\n');
+            setOutputText(usesRenderedText ? '' : '# Derived triples (streaming):\n', usesRenderedText ? 'rendered' : 'source');
             autoResizeCodeMirror(outputEl, 80, mh.output);
           }
 
@@ -1964,7 +2476,7 @@ const batch = [];
               const message = err && typeof err === 'object' && 'message' in err ? String(err.message) : String(err);
 
               const mh = currentMaxHeights();
-              outputEl.setValue('Reasoning error: ' + message);
+              setOutputText('Reasoning error: ' + message, 'source');
               autoResizeCodeMirror(outputEl, 80, mh.output);
 
               try {
@@ -2200,7 +2712,7 @@ const batch = [];
           } catch (e) {
             statusEl.textContent = 'Failed to load URL.';
             const mh = currentMaxHeights();
-            outputEl.setValue('Error while loading N3 from URL:\n' + (e && e.message ? e.message : String(e)));
+            setOutputText('Error while loading N3 from URL:\n' + (e && e.message ? e.message : String(e)), 'source');
             autoResizeCodeMirror(outputEl, 80, mh.output);
           } finally {
             loadUriBtn.disabled = false;
