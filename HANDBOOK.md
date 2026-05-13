@@ -3760,9 +3760,7 @@ When a user does want a portable link, the **Copy share link** button creates on
 - edited programs are shared with a compact compressed `?state=...` payload,
 - default option values are omitted from that payload to keep links small.
 
-If a generated compact share link is still very long, the playground does not try to hide the problem behind a URL shortener. A shortener still redirects to the full target URL, so an oversized `?state=...` or `#state=...` payload can reappear as a huge redirect header and remain slow or fragile. Instead, oversized embedded-state links reveal **Create Gist share**. That option asks for a GitHub token with gist permission, stores the compact playground state as a secret Gist JSON file, and copies a small `?stateurl=...` playground link that fetches the state file client-side. The token is stored only in that browser's `localStorage`, the Gist is created by a POST request with `referrerPolicy: "no-referrer"`, and the shared playground URL no longer contains the large encoded program.
-
-The TinyURL path remains available only for long non-state URLs, where shortening the visible URL does not require TinyURL to redirect to a huge embedded payload. For embedded playground state, external storage is the practical solution; shortening alone is not.
+If a generated embedded-state link is still very long, the playground reveals **Create Gist share**. That option asks for a GitHub token with gist permission, stores the compact playground state as a secret Gist JSON file, and copies a small `?stateurl=...` playground link that fetches the state file client-side. The token is stored only in that browser's `localStorage`, the Gist is created by a POST request with `referrerPolicy: "no-referrer"`, and the shared playground URL no longer contains the large encoded program.
 
 This keeps everyday use pleasant while preserving the important tutorial and issue-reporting workflow: a link can still capture the imported resource, the local editable overlay, background-knowledge mode, proof-comments mode, and HTTPS-dereferencing mode.
 

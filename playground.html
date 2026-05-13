@@ -815,12 +815,12 @@
             </label>
             <button id="copy-share-link-btn" type="button" class="secondary">Copy share link</button>
             <button
-              id="open-shortener-btn"
+              id="create-gist-share-btn"
               type="button"
-              class="secondary share-shortener"
+              class="secondary share-gist"
               hidden
-              title="Create a shorter share target when a generated playground link is too large.">
-              Create TinyURL
+              title="Store oversized playground state in a secret GitHub Gist and copy a small stateurl= share link.">
+              Create Gist share
             </button>
             <span class="status share-status" id="share-status">Autosaves locally; the address bar stays short.</span>
 
@@ -901,7 +901,7 @@
         const proofCheckbox = document.getElementById('proof-comments');
         const enforceHttpsCheckbox = document.getElementById('enforce-https');
         const copyShareLinkBtn = document.getElementById('copy-share-link-btn');
-        const openShortenerBtn = document.getElementById('open-shortener-btn');
+        const createGistShareBtn = document.getElementById('create-gist-share-btn');
         const shareStatusEl = document.getElementById('share-status');
         const versionEl = document.getElementById('eyeling-version');
 
@@ -1678,14 +1678,10 @@ const batch = [];
 
         // --- INITIAL CONTENT, LOCAL AUTOSAVE + COMPACT SHARE LINKS ---
         const PLAYGROUND_STATE_KEY = 'eyeling.playground.state.v1';
-        const TINYURL_API_TOKEN_KEY = 'eyeling.playground.tinyurl.apiToken.v1';
-        const GITHUB_GIST_API_TOKEN_KEY = 'eyeling.playground.github.gistToken.v1';
-        const SHARE_LINK_SHORTENER_THRESHOLD = 2000;
-        const TINYURL_CREATE_API_URL = 'https://api.tinyurl.com/create';
-        const GITHUB_GIST_CREATE_API_URL = 'https://api.github.com/gists';
-        const TINYURL_APP_URL = 'https://tinyurl.com/app';
-        let longShareUrlForShortener = '';
-        let oversizedStateShareUrlForGist = '';
+                const GITHUB_GIST_API_TOKEN_KEY = 'eyeling.playground.github.gistToken.v1';
+        const GIST_SHARE_THRESHOLD = 2000;
+                const GITHUB_GIST_CREATE_API_URL = 'https://api.github.com/gists';
+                let oversizedStateShareUrlForGist = '';
 
         function getProgramFromHash() {
           const hash = window.location.hash || '';
@@ -2433,115 +2429,8 @@ const batch = [];
         }
 
 
-        function shouldOfferUrlShortener(url) {
-          return String(url || '').length > SHARE_LINK_SHORTENER_THRESHOLD;
-        }
-
-        function tinyUrlApiTokenStorage() {
-          return {
-            get() {
-              try {
-                return String(localStorage.getItem(TINYURL_API_TOKEN_KEY) || '').trim();
-              } catch (e) {
-                return '';
-              }
-            },
-            set(token) {
-              try {
-                localStorage.setItem(TINYURL_API_TOKEN_KEY, String(token || '').trim());
-              } catch (e) {
-                // The token is optional; if localStorage is unavailable, this
-                // session can still use the entered token once.
-              }
-            },
-            clear() {
-              try {
-                localStorage.removeItem(TINYURL_API_TOKEN_KEY);
-              } catch (e) {
-                // Ignore localStorage failures.
-              }
-            },
-          };
-        }
-
-        function normalizeTinyUrlApiToken(value) {
-          let token = String(value || '').trim();
-          token = token.replace(/^Bearer\s+/i, '').trim();
-          token = token.replace(/^['"]|['"]$/g, '').trim();
-          return token;
-        }
-
-        function getTinyUrlApiToken() {
-          const storage = tinyUrlApiTokenStorage();
-          const existing = normalizeTinyUrlApiToken(storage.get());
-          if (existing) return existing;
-          const entered = window.prompt(
-            'Enter your TinyURL API token. It will be saved in this browser only and used to create TinyURLs directly.',
-            '',
-          );
-          const token = normalizeTinyUrlApiToken(entered);
-          if (token) storage.set(token);
-          return token;
-        }
-
-        function tinyUrlFromApiResponse(payload) {
-          if (!payload || typeof payload !== 'object') return '';
-          const data = payload.data && typeof payload.data === 'object' ? payload.data : payload;
-          return String(data.tiny_url || data.short_url || data.url || data.alias || '').trim();
-        }
-
-        async function createTinyUrl(longUrl, token) {
-          if (!longUrl) throw new Error('No playground share link is ready to shorten.');
-          token = normalizeTinyUrlApiToken(token);
-          if (!token) throw new Error('TinyURL API token was not provided.');
-
-          const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-          const timeout = controller
-            ? setTimeout(() => controller.abort(), 20000)
-            : null;
-          let res;
-          try {
-            res = await fetch(TINYURL_CREATE_API_URL, {
-              method: 'POST',
-              headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-                Authorization: 'Bearer ' + token,
-              },
-              body: JSON.stringify({ url: String(longUrl), domain: 'tinyurl.com' }),
-              cache: 'no-store',
-              referrerPolicy: 'no-referrer',
-              signal: controller ? controller.signal : undefined,
-            });
-          } catch (e) {
-            if (e && e.name === 'AbortError') {
-              throw new Error('TinyURL API request timed out.');
-            }
-            throw new Error('TinyURL API request failed: ' + (e && e.message ? e.message : String(e || 'network error')));
-          } finally {
-            if (timeout) clearTimeout(timeout);
-          }
-
-          let payload = null;
-          try {
-            payload = await res.json();
-          } catch (e) {
-            payload = null;
-          }
-
-          if (!res.ok) {
-            const detail =
-              payload && typeof payload === 'object'
-                ? String(payload.errors || payload.error || payload.message || '').trim()
-                : '';
-            const msg = detail || `TinyURL API returned HTTP ${res.status}.`;
-            if (res.status === 401 || res.status === 403) tinyUrlApiTokenStorage().clear();
-            throw new Error(msg);
-          }
-
-          const tinyUrl = tinyUrlFromApiResponse(payload);
-          if (!tinyUrl) throw new Error('TinyURL API did not return a shortened URL.');
-          return tinyUrl;
+        function shouldOfferGistShare(url) {
+          return String(url || '').length > GIST_SHARE_THRESHOLD && shareUrlHasEmbeddedState(url);
         }
 
         function githubGistTokenStorage() {
@@ -2692,124 +2581,45 @@ const batch = [];
           }
         }
 
-        function makeShareUrlShortenerUrl(_shareUrl) {
-          // Fallback only: TinyURL's app does not reliably prefill its form
-          // from query parameters, and appending a very large playground URL can
-          // make TinyURL reject the request with HTTP 431. Keep the fallback URL
-          // short; the long playground link is copied to the clipboard instead.
-          return TINYURL_APP_URL;
-        }
-
-        function makeShareUrlShortenerTargetUrl(shareUrl) {
+        function setShareGistOption(shareUrl) {
           const value = String(shareUrl || '');
-          if (!value) return '';
-          try {
-            const u = new URL(value, window.location.href);
-            const token = u.searchParams.get('state') || u.searchParams.get('s');
-            if (token) {
-              // Shorteners redirect to the full target URL. For very large
-              // embedded states, put the payload in the fragment so the final
-              // request to GitHub Pages is just /playground; the browser-side
-              // app can still restore it because getShareStateTokenFromLocation
-              // already accepts #state=... links.
-              u.searchParams.delete('state');
-              u.searchParams.delete('s');
-              u.hash = 'state=' + token;
-              return u.toString();
-            }
-            return u.toString();
-          } catch (e) {
-            return value;
-          }
-        }
-
-        function setShareUrlShortenerOption(shareUrl) {
-          const value = String(shareUrl || '');
-          longShareUrlForShortener = '';
           oversizedStateShareUrlForGist = '';
-          if (shouldOfferUrlShortener(value)) {
-            if (shareUrlHasEmbeddedState(value)) oversizedStateShareUrlForGist = value;
-            else longShareUrlForShortener = makeShareUrlShortenerTargetUrl(value);
+          if (shouldOfferGistShare(value)) {
+            oversizedStateShareUrlForGist = value;
           }
-          if (openShortenerBtn) {
-            const active = !!(longShareUrlForShortener || oversizedStateShareUrlForGist);
-            openShortenerBtn.hidden = !active;
-            openShortenerBtn.disabled = !active;
-            openShortenerBtn.textContent = oversizedStateShareUrlForGist ? 'Create Gist share' : 'Create TinyURL';
-            openShortenerBtn.title = oversizedStateShareUrlForGist
-              ? 'Store oversized playground state in a secret GitHub Gist and copy a short stateurl= share link.'
-              : 'Create a TinyURL for the generated playground share link.';
+          if (createGistShareBtn) {
+            const active = !!oversizedStateShareUrlForGist;
+            createGistShareBtn.hidden = !active;
+            createGistShareBtn.disabled = !active;
+            createGistShareBtn.textContent = 'Create Gist share';
+            createGistShareBtn.title = 'Store oversized playground state in a secret GitHub Gist and copy a small stateurl= share link.';
           }
         }
 
-        async function copyLongShareLinkForShortener() {
-          try {
-            await copyTextToClipboard(longShareUrlForShortener);
-            return true;
-          } catch (e) {
-            return false;
-          }
-        }
-
-        async function openShareUrlShortener() {
-          if (!longShareUrlForShortener && !oversizedStateShareUrlForGist) {
-            if (shareStatusEl) shareStatusEl.textContent = 'Create or copy a playground share link first.';
+        async function createGistShare() {
+          if (!oversizedStateShareUrlForGist) {
+            if (shareStatusEl) shareStatusEl.textContent = 'Create or copy an oversized playground state link first.';
             return;
           }
 
-          if (oversizedStateShareUrlForGist) {
-            const token = getGithubGistToken();
-            if (!token) {
-              if (shareStatusEl) shareStatusEl.textContent = 'GitHub Gist token was not provided; oversized state was not uploaded.';
-              return;
-            }
-            if (openShortenerBtn) openShortenerBtn.disabled = true;
-            if (shareStatusEl) shareStatusEl.textContent = 'Creating secret GitHub Gist share…';
-            try {
-              const gistShareUrl = await createGistBackedShareUrl(getCurrentPlaygroundState(), token);
-              await copyTextToClipboard(gistShareUrl);
-              longShareUrlForShortener = '';
-              oversizedStateShareUrlForGist = '';
-              if (openShortenerBtn) openShortenerBtn.hidden = true;
-              if (shareStatusEl) shareStatusEl.textContent = `Created Gist-backed share link and copied it (${gistShareUrl.length} chars).`;
-            } catch (e) {
-              const reason = e && e.message ? String(e.message) : String(e || 'GitHub Gist share failed.');
-              if (shareStatusEl) shareStatusEl.textContent = `GitHub Gist share failed: ${reason}`;
-            } finally {
-              if (openShortenerBtn) openShortenerBtn.disabled = !(longShareUrlForShortener || oversizedStateShareUrlForGist);
-            }
-            return;
-          }
-
-          const token = getTinyUrlApiToken();
+          const token = getGithubGistToken();
           if (!token) {
-            const copied = await copyLongShareLinkForShortener();
-            const opened = window.open(makeShareUrlShortenerUrl(longShareUrlForShortener), '_blank', 'noopener,noreferrer');
-            if (shareStatusEl) {
-              if (opened && copied) shareStatusEl.textContent = 'Opened TinyURL and copied the playground link; paste it into the Long URL field.';
-              else if (opened) shareStatusEl.textContent = 'Opened TinyURL; copy the playground share link and paste it into the Long URL field.';
-              else shareStatusEl.textContent = 'Popup blocked; copy the compact share link manually or allow popups to open TinyURL.';
-            }
+            if (shareStatusEl) shareStatusEl.textContent = 'GitHub Gist token was not provided; oversized state was not uploaded.';
             return;
           }
-
-          if (openShortenerBtn) openShortenerBtn.disabled = true;
-          if (shareStatusEl) shareStatusEl.textContent = 'Creating TinyURL…';
+          if (createGistShareBtn) createGistShareBtn.disabled = true;
+          if (shareStatusEl) shareStatusEl.textContent = 'Creating secret GitHub Gist share…';
           try {
-            const tinyUrl = await createTinyUrl(longShareUrlForShortener, token);
-            await copyTextToClipboard(tinyUrl);
-            if (shareStatusEl) shareStatusEl.textContent = `Created TinyURL and copied it: ${tinyUrl}.`;
+            const gistShareUrl = await createGistBackedShareUrl(getCurrentPlaygroundState(), token);
+            await copyTextToClipboard(gistShareUrl);
+            oversizedStateShareUrlForGist = '';
+            if (createGistShareBtn) createGistShareBtn.hidden = true;
+            if (shareStatusEl) shareStatusEl.textContent = `Created Gist-backed share link and copied it (${gistShareUrl.length} chars).`;
           } catch (e) {
-            const copied = await copyLongShareLinkForShortener();
-            const opened = window.open(makeShareUrlShortenerUrl(longShareUrlForShortener), '_blank', 'noopener,noreferrer');
-            if (shareStatusEl) {
-              const reason = e && e.message ? String(e.message) : String(e || 'TinyURL creation failed.');
-              if (opened && copied) shareStatusEl.textContent = `Automatic TinyURL creation failed: ${reason} Opened TinyURL and copied the playground link for manual paste.`;
-              else if (opened) shareStatusEl.textContent = `Automatic TinyURL creation failed: ${reason} Opened TinyURL; copy the playground share link and paste it manually.`;
-              else shareStatusEl.textContent = `Automatic TinyURL creation failed: ${reason}`;
-            }
+            const reason = e && e.message ? String(e.message) : String(e || 'GitHub Gist share failed.');
+            if (shareStatusEl) shareStatusEl.textContent = `GitHub Gist share failed: ${reason}`;
           } finally {
-            if (openShortenerBtn) openShortenerBtn.disabled = !longShareUrlForShortener;
+            if (createGistShareBtn) createGistShareBtn.disabled = !oversizedStateShareUrlForGist;
           }
         }
 
@@ -2886,24 +2696,20 @@ const batch = [];
           try {
             savePlaygroundState();
             shareUrl = await makeShareUrl();
-            setShareUrlShortenerOption(shareUrl);
+            setShareGistOption(shareUrl);
             await copyTextToClipboard(shareUrl);
             if (shareStatusEl) {
-              shareStatusEl.textContent = shouldOfferUrlShortener(shareUrl)
-                ? shareUrlHasEmbeddedState(shareUrl)
-                  ? `Copied compact share link (${shareUrl.length} chars). Use Create Gist share for a practical public URL.`
-                  : `Copied compact share link (${shareUrl.length} chars). Use Create TinyURL for a shorter public URL.`
+              shareStatusEl.textContent = shouldOfferGistShare(shareUrl)
+                ? `Copied compact share link (${shareUrl.length} chars). Use Create Gist share for a practical public URL.`
                 : 'Copied compact share link.';
             }
           } catch (e) {
             try {
               if (!shareUrl) shareUrl = await makeShareUrl();
-              setShareUrlShortenerOption(shareUrl);
+              setShareGistOption(shareUrl);
               if (shareStatusEl) {
-                shareStatusEl.textContent = shouldOfferUrlShortener(shareUrl)
-                  ? shareUrlHasEmbeddedState(shareUrl)
-                    ? `Share link is ${shareUrl.length} chars; use Create Gist share for a practical public URL.`
-                    : `Share link is ${shareUrl.length} chars; use Create TinyURL or copy it manually.`
+                shareStatusEl.textContent = shouldOfferGistShare(shareUrl)
+                  ? `Share link is ${shareUrl.length} chars; use Create Gist share for a practical public URL.`
                   : 'Could not copy automatically; use your browser copy command on this generated link.';
               }
               window.prompt('Copy this compact share link:', shareUrl);
@@ -2916,15 +2722,11 @@ const batch = [];
         }
 
         window.__eyelingPlaygroundMakeShareUrl = makeShareUrl;
-        window.__eyelingPlaygroundShareUrlShortenerThreshold = SHARE_LINK_SHORTENER_THRESHOLD;
-        window.__eyelingPlaygroundShouldOfferShortener = shouldOfferUrlShortener;
-        window.__eyelingPlaygroundMakeShareUrlShortenerUrl = makeShareUrlShortenerUrl;
-        window.__eyelingPlaygroundMakeShareUrlShortenerTargetUrl = makeShareUrlShortenerTargetUrl;
-        window.__eyelingPlaygroundCreateTinyUrl = createTinyUrl;
+        window.__eyelingPlaygroundGistShareThreshold = GIST_SHARE_THRESHOLD;
+        window.__eyelingPlaygroundShouldOfferGistShare = shouldOfferGistShare;
         window.__eyelingPlaygroundCreateGistBackedShareUrl = createGistBackedShareUrl;
         window.__eyelingPlaygroundMakeShareUrlFromStateUrl = makeShareUrlFromStateUrl;
         window.__eyelingPlaygroundShareUrlHasEmbeddedState = shareUrlHasEmbeddedState;
-        window.__eyelingPlaygroundNormalizeTinyUrlApiToken = normalizeTinyUrlApiToken;
         window.__eyelingPlaygroundNormalizeGithubGistToken = normalizeGithubGistToken;
 
         editor.on('change', function () {
@@ -2938,34 +2740,34 @@ const batch = [];
             editorSourceUrl = '';
           }
 
-          setShareUrlShortenerOption('');
+          setShareGistOption('');
           scheduleSavePlaygroundState();
         });
 
         if (uriInput) {
           uriInput.addEventListener('input', () => {
-            setShareUrlShortenerOption('');
+            setShareGistOption('');
             scheduleSavePlaygroundState();
           });
         }
 
         if (loadAsBackgroundCheckbox) {
           loadAsBackgroundCheckbox.addEventListener('change', () => {
-            setShareUrlShortenerOption('');
+            setShareGistOption('');
             savePlaygroundState();
           });
         }
 
         if (proofCheckbox) {
           proofCheckbox.addEventListener('change', () => {
-            setShareUrlShortenerOption('');
+            setShareGistOption('');
             savePlaygroundState();
           });
         }
 
         if (enforceHttpsCheckbox) {
           enforceHttpsCheckbox.addEventListener('change', () => {
-            setShareUrlShortenerOption('');
+            setShareGistOption('');
             savePlaygroundState();
           });
         }
@@ -2973,8 +2775,8 @@ const batch = [];
         if (copyShareLinkBtn) {
           copyShareLinkBtn.addEventListener('click', copyShareLink);
         }
-        if (openShortenerBtn) {
-          openShortenerBtn.addEventListener('click', openShareUrlShortener);
+        if (createGistShareBtn) {
+          createGistShareBtn.addEventListener('click', createGistShare);
         }
 
         savePlaygroundState();

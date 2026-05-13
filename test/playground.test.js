@@ -722,8 +722,8 @@ async function main() {
           renderedTabSelected: renderedTab ? renderedTab.getAttribute('aria-selected') === 'true' : false,
           sourceTabSelected: sourceTab ? sourceTab.getAttribute('aria-selected') === 'true' : false,
           shareStatus: document.getElementById('share-status') ? String(document.getElementById('share-status').textContent || '') : '',
-          shortenerHidden: document.getElementById('open-shortener-btn') ? !!document.getElementById('open-shortener-btn').hidden : true,
-          shortenerText: document.getElementById('open-shortener-btn') ? String(document.getElementById('open-shortener-btn').textContent || '').trim() : '',
+          gistShareHidden: document.getElementById('create-gist-share-btn') ? !!document.getElementById('create-gist-share-btn').hidden : true,
+          gistShareText: document.getElementById('create-gist-share-btn') ? String(document.getElementById('create-gist-share-btn').textContent || '').trim() : '',
           backgroundStatus: document.getElementById('background-status') ? String(document.getElementById('background-status').textContent || '') : '',
           href: String(window.location.href || ''),
           highlighted,
@@ -784,50 +784,13 @@ async function main() {
         return {
           url,
           length: url.length,
-          threshold: window.__eyelingPlaygroundShareUrlShortenerThreshold,
-          needsShortener: window.__eyelingPlaygroundShouldOfferShortener(url),
+          threshold: window.__eyelingPlaygroundGistShareThreshold,
+          needsGistShare: window.__eyelingPlaygroundShouldOfferGistShare(url),
           hasEmbeddedState: window.__eyelingPlaygroundShareUrlHasEmbeddedState(url),
-          shortenerUrl: window.__eyelingPlaygroundMakeShareUrlShortenerUrl(url),
-          shortenerTargetUrl: window.__eyelingPlaygroundMakeShareUrlShortenerTargetUrl(url),
           stateUrlShare: window.__eyelingPlaygroundMakeShareUrlFromStateUrl('https://gist.githubusercontent.com/user/id/raw/eyeling-playground-state.json'),
         };
       })()`);
     }
-
-    async function createTinyUrlWithStubInPage(longUrl, token, response) {
-      const payload = JSON.stringify({ longUrl: String(longUrl), token: String(token), response });
-      return await evalInPage(`(async () => {
-        const args = ${payload};
-        const originalFetch = window.fetch;
-        let seen = null;
-        window.fetch = async (url, options) => {
-          options = options || {};
-          seen = {
-            url: String(url || ''),
-            options: {
-              method: options.method,
-              headers: options.headers,
-              body: options.body,
-              cache: options.cache,
-              referrerPolicy: options.referrerPolicy,
-              hasSignal: !!options.signal,
-            },
-          };
-          return {
-            ok: true,
-            status: 200,
-            json: async () => args.response,
-          };
-        };
-        try {
-          const tinyUrl = await window.__eyelingPlaygroundCreateTinyUrl(args.longUrl, args.token);
-          return { tinyUrl, seen };
-        } finally {
-          window.fetch = originalFetch;
-        }
-      })()`);
-    }
-
 
     async function createGistBackedShareUrlWithStubInPage(token, response) {
       const payload = JSON.stringify({ token: String(token), response });
@@ -1016,11 +979,11 @@ ${JSON.stringify(last, null, 2)}`);
     assert.match(compactShareUrl, /[?&]state=/, 'Expected an on-demand compact state parameter');
     assert.doesNotMatch(compactShareUrl, /[?&](?:edit|program)=/, 'Expected share link to avoid raw edit/program params');
     assert.ok(compactShareUrl.length < playgroundUrl.length + encodeURIComponent(outputStringProgram).length, 'Expected compact share URL to be shorter than raw editor URL');
-    assert.equal(renderedAgain.shortenerHidden, true, 'Expected ordinary compact share links to keep the shortener option hidden');
+    assert.equal(renderedAgain.gistShareHidden, true, 'Expected ordinary compact share links to keep the Gist share option hidden');
     endTest();
 
-    // 6) Very large edited programs should offer a URL shortener handoff instead of only a huge link.
-    beginTest('playground offers a URL shortener option for oversized share links');
+    // 6) Very large edited programs should offer a Gist-backed share option instead of only a huge link.
+    beginTest('playground offers a Gist-backed option for oversized state links');
     const longShareProgram = Array.from({ length: 1400 }, (_, i) => {
       const n = String(i).padStart(4, '0');
       const token = ((i * 2654435761) >>> 0).toString(36).padStart(7, '0');
@@ -1029,7 +992,7 @@ ${JSON.stringify(last, null, 2)}`);
     await setProgram(longShareProgram);
     const longShare = await makeShareUrlDiagnosticsInPage();
     assert.ok(longShare.length > longShare.threshold, `Expected test share URL to exceed threshold (${longShare.length} <= ${longShare.threshold})`);
-    assert.equal(longShare.needsShortener, true, 'Expected oversized share URL to request a shorter sharing option');
+    assert.equal(longShare.needsGistShare, true, 'Expected oversized embedded state to request a Gist-backed sharing option');
     assert.equal(longShare.hasEmbeddedState, true, 'Expected oversized edited program to be an embedded state link');
     assert.match(longShare.stateUrlShare, /[?&]stateurl=/, 'Expected stateurl= links to be supported for externally stored state');
     assert.doesNotMatch(longShare.stateUrlShare, /[?&]state=/, 'Expected externally stored state links to avoid embedded state payloads');
