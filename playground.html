@@ -1767,8 +1767,21 @@ const batch = [];
           return new Response(stream).text();
         }
 
+        function compactPlaygroundState(state) {
+          // Keep share links smaller than legacy ?edit= URLs by omitting default
+          // fields and using short keys. normalizePlaygroundState accepts both
+          // this compact form and the older long-key JSON form.
+          const compact = {};
+          if (state && typeof state.edit === 'string') compact.e = state.edit;
+          if (state && typeof state.url === 'string' && state.url) compact.u = state.url;
+          if (state && state.loadbg) compact.b = true;
+          if (state && state.proofcomments) compact.p = true;
+          if (state && state.httpsderef === false) compact.h = false;
+          return compact;
+        }
+
         async function packPlaygroundState(state) {
-          const json = JSON.stringify(state);
+          const json = JSON.stringify(compactPlaygroundState(state));
           const jsonToken = 'j.' + bytesToBase64Url(encodeUtf8(json));
           try {
             const gz = await gzipText(json);
@@ -1794,11 +1807,18 @@ const batch = [];
 
         function normalizePlaygroundState(raw) {
           if (!raw || typeof raw !== 'object') return null;
-          const edit = typeof raw.edit === 'string' ? raw.edit : typeof raw.program === 'string' ? raw.program : null;
-          const url = typeof raw.url === 'string' ? raw.url : '';
-          const loadbg = parseBooleanParam(raw.loadbg);
-          const proofcomments = parseBooleanParam(raw.proofcomments);
-          const httpsderef = parseBooleanParam(raw.httpsderef);
+          const edit =
+            typeof raw.e === 'string'
+              ? raw.e
+              : typeof raw.edit === 'string'
+                ? raw.edit
+                : typeof raw.program === 'string'
+                  ? raw.program
+                  : null;
+          const url = typeof raw.u === 'string' ? raw.u : typeof raw.url === 'string' ? raw.url : '';
+          const loadbg = parseBooleanParam(Object.prototype.hasOwnProperty.call(raw, 'b') ? raw.b : raw.loadbg);
+          const proofcomments = parseBooleanParam(Object.prototype.hasOwnProperty.call(raw, 'p') ? raw.p : raw.proofcomments);
+          const httpsderef = parseBooleanParam(Object.prototype.hasOwnProperty.call(raw, 'h') ? raw.h : raw.httpsderef);
           return {
             edit,
             url,
