@@ -723,6 +723,7 @@ async function main() {
           sourceTabSelected: sourceTab ? sourceTab.getAttribute('aria-selected') === 'true' : false,
           shareStatus: document.getElementById('share-status') ? String(document.getElementById('share-status').textContent || '') : '',
           shortenerHidden: document.getElementById('open-shortener-btn') ? !!document.getElementById('open-shortener-btn').hidden : true,
+          shortenerText: document.getElementById('open-shortener-btn') ? String(document.getElementById('open-shortener-btn').textContent || '').trim() : '',
           backgroundStatus: document.getElementById('background-status') ? String(document.getElementById('background-status').textContent || '') : '',
           href: String(window.location.href || ''),
           highlighted,
@@ -785,8 +786,10 @@ async function main() {
           length: url.length,
           threshold: window.__eyelingPlaygroundShareUrlShortenerThreshold,
           needsShortener: window.__eyelingPlaygroundShouldOfferShortener(url),
+          hasEmbeddedState: window.__eyelingPlaygroundShareUrlHasEmbeddedState(url),
           shortenerUrl: window.__eyelingPlaygroundMakeShareUrlShortenerUrl(url),
           shortenerTargetUrl: window.__eyelingPlaygroundMakeShareUrlShortenerTargetUrl(url),
+          stateUrlShare: window.__eyelingPlaygroundMakeShareUrlFromStateUrl('https://gist.githubusercontent.com/user/id/raw/eyeling-playground-state.json'),
         };
       })()`);
     }
@@ -819,6 +822,48 @@ async function main() {
         try {
           const tinyUrl = await window.__eyelingPlaygroundCreateTinyUrl(args.longUrl, args.token);
           return { tinyUrl, seen };
+        } finally {
+          window.fetch = originalFetch;
+        }
+      })()`);
+    }
+
+
+    async function createGistBackedShareUrlWithStubInPage(token, response) {
+      const payload = JSON.stringify({ token: String(token), response });
+      return await evalInPage(`(async () => {
+        const args = ${payload};
+        const originalFetch = window.fetch;
+        let seen = null;
+        window.fetch = async (url, options) => {
+          options = options || {};
+          seen = {
+            url: String(url || ''),
+            options: {
+              method: options.method,
+              headers: options.headers,
+              body: options.body,
+              cache: options.cache,
+              referrerPolicy: options.referrerPolicy,
+              hasSignal: !!options.signal,
+            },
+          };
+          return {
+            ok: true,
+            status: 200,
+            json: async () => args.response,
+          };
+        };
+        try {
+          const state = {
+            edit: (window.__cmStubsById && window.__cmStubsById['n3-editor']) ? window.__cmStubsById['n3-editor'].getValue() : '',
+            url: '',
+            loadbg: false,
+            proofcomments: false,
+            httpsderef: true,
+          };
+          const shareUrl = await window.__eyelingPlaygroundCreateGistBackedShareUrl(state, args.token);
+          return { shareUrl, seen };
         } finally {
           window.fetch = originalFetch;
         }
@@ -984,21 +1029,27 @@ ${JSON.stringify(last, null, 2)}`);
     await setProgram(longShareProgram);
     const longShare = await makeShareUrlDiagnosticsInPage();
     assert.ok(longShare.length > longShare.threshold, `Expected test share URL to exceed threshold (${longShare.length} <= ${longShare.threshold})`);
-    assert.equal(longShare.needsShortener, true, 'Expected oversized share URL to request a shortener option');
-    assert.equal(longShare.shortenerUrl, 'https://tinyurl.com/app', 'Expected TinyURL app fallback handoff to avoid embedding the huge URL');
-    assert.equal(longShare.shortenerUrl.includes(encodeURIComponent(longShare.url).slice(0, 40)), false, 'Expected shortener fallback URL not to carry the generated share URL');
-    assert.match(longShare.shortenerTargetUrl, /#state=g\./, 'Expected TinyURL target to use hash-state for embedded payloads');
-    assert.doesNotMatch(longShare.shortenerTargetUrl, /[?&]state=/, 'Expected TinyURL target not to send the embedded state as a query string');
-    const tinyUrlCreated = await createTinyUrlWithStubInPage(longShare.shortenerTargetUrl, 'test-token-123', {
-      data: { tiny_url: 'https://tinyurl.com/eyeling-test' },
+    assert.equal(longShare.needsShortener, true, 'Expected oversized share URL to request a shorter sharing option');
+    assert.equal(longShare.hasEmbeddedState, true, 'Expected oversized edited program to be an embedded state link');
+    assert.match(longShare.stateUrlShare, /[?&]stateurl=/, 'Expected stateurl= links to be supported for externally stored state');
+    assert.doesNotMatch(longShare.stateUrlShare, /[?&]state=/, 'Expected externally stored state links to avoid embedded state payloads');
+    const gistShare = await createGistBackedShareUrlWithStubInPage('github-gist-token-123', {
+      files: {
+        'eyeling-playground-state.json': {
+          raw_url: 'https://gist.githubusercontent.com/user/id/raw/eyeling-playground-state.json',
+        },
+      },
     });
-    assert.equal(tinyUrlCreated.tinyUrl, 'https://tinyurl.com/eyeling-test', 'Expected TinyURL API response to produce a short URL');
-    assert.equal(tinyUrlCreated.seen.url, 'https://api.tinyurl.com/create', 'Expected TinyURL API create endpoint');
-    assert.equal(tinyUrlCreated.seen.options.method, 'POST', 'Expected TinyURL API POST request');
-    assert.equal(tinyUrlCreated.seen.options.headers.Authorization, 'Bearer test-token-123', 'Expected bearer token authorization');
-    assert.equal(tinyUrlCreated.seen.options.referrerPolicy, 'no-referrer', 'Expected TinyURL API request not to send a long Referer');
-    assert.match(String(tinyUrlCreated.seen.options.body || ''), /"url":/, 'Expected TinyURL API body to include the long URL');
-    assert.match(String(tinyUrlCreated.seen.options.body || ''), /#state=g\./, 'Expected TinyURL API body to use the hash-state target URL');
+    assert.match(gistShare.shareUrl, /[?&]stateurl=/, 'Expected Gist-backed share URL to use a compact stateurl parameter');
+    assert.doesNotMatch(gistShare.shareUrl, /[?&]state=/, 'Expected Gist-backed share URL not to embed the compressed state');
+    assert.ok(gistShare.shareUrl.length < 300, 'Expected Gist-backed share URL to stay small');
+    assert.equal(gistShare.seen.url, 'https://api.github.com/gists', 'Expected GitHub Gist create endpoint');
+    assert.equal(gistShare.seen.options.method, 'POST', 'Expected GitHub Gist API POST request');
+    assert.equal(gistShare.seen.options.headers.Authorization, 'Bearer github-gist-token-123', 'Expected bearer token authorization');
+    assert.equal(gistShare.seen.options.referrerPolicy, 'no-referrer', 'Expected GitHub Gist API request not to send a long Referer');
+    assert.match(String(gistShare.seen.options.body || ''), /"public":false/, 'Expected a secret Gist, not a public Gist');
+    assert.match(String(gistShare.seen.options.body || ''), /eyeling-playground-state\.json/, 'Expected shared state to be saved as JSON');
+    assert.match(String(gistShare.seen.options.body || ''), /\\"e\\":/, 'Expected compact editor state in the Gist payload');
     endTest();
 
     // 7) log:query can produce Turtle; that should stay in plain source output without Markdown tabs.
