@@ -786,6 +786,7 @@ async function main() {
           threshold: window.__eyelingPlaygroundShareUrlShortenerThreshold,
           needsShortener: window.__eyelingPlaygroundShouldOfferShortener(url),
           shortenerUrl: window.__eyelingPlaygroundMakeShareUrlShortenerUrl(url),
+          shortenerTargetUrl: window.__eyelingPlaygroundMakeShareUrlShortenerTargetUrl(url),
         };
       })()`);
     }
@@ -986,7 +987,9 @@ ${JSON.stringify(last, null, 2)}`);
     assert.equal(longShare.needsShortener, true, 'Expected oversized share URL to request a shortener option');
     assert.equal(longShare.shortenerUrl, 'https://tinyurl.com/app', 'Expected TinyURL app fallback handoff to avoid embedding the huge URL');
     assert.equal(longShare.shortenerUrl.includes(encodeURIComponent(longShare.url).slice(0, 40)), false, 'Expected shortener fallback URL not to carry the generated share URL');
-    const tinyUrlCreated = await createTinyUrlWithStubInPage(longShare.url, 'test-token-123', {
+    assert.match(longShare.shortenerTargetUrl, /#state=g\./, 'Expected TinyURL target to use hash-state for embedded payloads');
+    assert.doesNotMatch(longShare.shortenerTargetUrl, /[?&]state=/, 'Expected TinyURL target not to send the embedded state as a query string');
+    const tinyUrlCreated = await createTinyUrlWithStubInPage(longShare.shortenerTargetUrl, 'test-token-123', {
       data: { tiny_url: 'https://tinyurl.com/eyeling-test' },
     });
     assert.equal(tinyUrlCreated.tinyUrl, 'https://tinyurl.com/eyeling-test', 'Expected TinyURL API response to produce a short URL');
@@ -995,6 +998,7 @@ ${JSON.stringify(last, null, 2)}`);
     assert.equal(tinyUrlCreated.seen.options.headers.Authorization, 'Bearer test-token-123', 'Expected bearer token authorization');
     assert.equal(tinyUrlCreated.seen.options.referrerPolicy, 'no-referrer', 'Expected TinyURL API request not to send a long Referer');
     assert.match(String(tinyUrlCreated.seen.options.body || ''), /"url":/, 'Expected TinyURL API body to include the long URL');
+    assert.match(String(tinyUrlCreated.seen.options.body || ''), /#state=g\./, 'Expected TinyURL API body to use the hash-state target URL');
     endTest();
 
     // 7) log:query can produce Turtle; that should stay in plain source output without Markdown tabs.

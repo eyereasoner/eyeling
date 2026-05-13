@@ -2527,9 +2527,32 @@ const batch = [];
           return TINYURL_APP_URL;
         }
 
+        function makeShareUrlShortenerTargetUrl(shareUrl) {
+          const value = String(shareUrl || '');
+          if (!value) return '';
+          try {
+            const u = new URL(value, window.location.href);
+            const token = u.searchParams.get('state') || u.searchParams.get('s');
+            if (token) {
+              // Shorteners redirect to the full target URL. For very large
+              // embedded states, put the payload in the fragment so the final
+              // request to GitHub Pages is just /playground; the browser-side
+              // app can still restore it because getShareStateTokenFromLocation
+              // already accepts #state=... links.
+              u.searchParams.delete('state');
+              u.searchParams.delete('s');
+              u.hash = 'state=' + token;
+              return u.toString();
+            }
+            return u.toString();
+          } catch (e) {
+            return value;
+          }
+        }
+
         function setShareUrlShortenerOption(shareUrl) {
           const value = String(shareUrl || '');
-          longShareUrlForShortener = shouldOfferUrlShortener(value) ? value : '';
+          longShareUrlForShortener = shouldOfferUrlShortener(value) ? makeShareUrlShortenerTargetUrl(value) : '';
           if (openShortenerBtn) {
             openShortenerBtn.hidden = !longShareUrlForShortener;
             openShortenerBtn.disabled = !longShareUrlForShortener;
@@ -2555,7 +2578,7 @@ const batch = [];
             const copied = await copyLongShareLinkForShortener();
             const opened = window.open(makeShareUrlShortenerUrl(longShareUrlForShortener), '_blank', 'noopener,noreferrer');
             if (shareStatusEl) {
-              if (opened && copied) shareStatusEl.textContent = 'Opened TinyURL and copied the playground share link; paste it into the Long URL field.';
+              if (opened && copied) shareStatusEl.textContent = 'Opened TinyURL and copied the hash-state playground link; paste it into the Long URL field.';
               else if (opened) shareStatusEl.textContent = 'Opened TinyURL; copy the playground share link and paste it into the Long URL field.';
               else shareStatusEl.textContent = 'Popup blocked; copy the compact share link manually or allow popups to open TinyURL.';
             }
@@ -2567,13 +2590,13 @@ const batch = [];
           try {
             const tinyUrl = await createTinyUrl(longShareUrlForShortener, token);
             await copyTextToClipboard(tinyUrl);
-            if (shareStatusEl) shareStatusEl.textContent = `Created TinyURL and copied it: ${tinyUrl}`;
+            if (shareStatusEl) shareStatusEl.textContent = `Created TinyURL and copied it: ${tinyUrl}. It redirects to a hash-state playground link, so GitHub Pages receives only /playground.`;
           } catch (e) {
             const copied = await copyLongShareLinkForShortener();
             const opened = window.open(makeShareUrlShortenerUrl(longShareUrlForShortener), '_blank', 'noopener,noreferrer');
             if (shareStatusEl) {
               const reason = e && e.message ? String(e.message) : String(e || 'TinyURL creation failed.');
-              if (opened && copied) shareStatusEl.textContent = `Automatic TinyURL creation failed: ${reason} Opened TinyURL and copied the playground share link for manual paste.`;
+              if (opened && copied) shareStatusEl.textContent = `Automatic TinyURL creation failed: ${reason} Opened TinyURL and copied the hash-state playground link for manual paste.`;
               else if (opened) shareStatusEl.textContent = `Automatic TinyURL creation failed: ${reason} Opened TinyURL; copy the playground share link and paste it manually.`;
               else shareStatusEl.textContent = `Automatic TinyURL creation failed: ${reason}`;
             }
@@ -2681,6 +2704,7 @@ const batch = [];
         window.__eyelingPlaygroundShareUrlShortenerThreshold = SHARE_LINK_SHORTENER_THRESHOLD;
         window.__eyelingPlaygroundShouldOfferShortener = shouldOfferUrlShortener;
         window.__eyelingPlaygroundMakeShareUrlShortenerUrl = makeShareUrlShortenerUrl;
+        window.__eyelingPlaygroundMakeShareUrlShortenerTargetUrl = makeShareUrlShortenerTargetUrl;
         window.__eyelingPlaygroundCreateTinyUrl = createTinyUrl;
         window.__eyelingPlaygroundNormalizeTinyUrlApiToken = normalizeTinyUrlApiToken;
 
