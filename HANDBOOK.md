@@ -3760,7 +3760,7 @@ When a user does want a portable link, the **Copy share link** button creates on
 - edited programs are shared with a compact compressed `?state=...` payload,
 - default option values are omitted from that payload to keep links small.
 
-If a generated compact share link is still very long, the playground reveals an **Open shortener** option. The threshold is intentionally conservative, and the shortener handoff is explicit rather than automatic: the browser opens a TinyURL creation page with the generated share URL only after the user chooses that option. This avoids silently sending encoded editor content to a third-party service.
+If a generated compact share link is still very long, the playground reveals a **Create TinyURL** option. The threshold is intentionally conservative, and the shortener handoff is explicit rather than automatic: after the user chooses that option, the browser uses a TinyURL API token stored locally in that browser to create the short link and copy it to the clipboard. If no token is provided, or if the API request fails, the playground falls back to opening TinyURL and copying the long compact share link so it can be pasted manually. This avoids silently sending encoded editor content to a third-party service while still making the account-backed TinyURL workflow one click after setup.
 
 This keeps everyday use pleasant while preserving the important tutorial and issue-reporting workflow: a link can still capture the imported resource, the local editable overlay, background-knowledge mode, proof-comments mode, and HTTPS-dereferencing mode.
 

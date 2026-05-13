@@ -790,6 +790,29 @@ async function main() {
       })()`);
     }
 
+    async function createTinyUrlWithStubInPage(longUrl, token, response) {
+      const payload = JSON.stringify({ longUrl: String(longUrl), token: String(token), response });
+      return await evalInPage(`(async () => {
+        const args = ${payload};
+        const originalFetch = window.fetch;
+        let seen = null;
+        window.fetch = async (url, options) => {
+          seen = { url: String(url || ''), options: options || null };
+          return {
+            ok: true,
+            status: 200,
+            json: async () => args.response,
+          };
+        };
+        try {
+          const tinyUrl = await window.__eyelingPlaygroundCreateTinyUrl(args.longUrl, args.token);
+          return { tinyUrl, seen };
+        } finally {
+          window.fetch = originalFetch;
+        }
+      })()`);
+    }
+
     async function loadUrlIntoEditor(url) {
       const payload = JSON.stringify(String(url));
       await evalInPage(`(() => {
@@ -950,8 +973,16 @@ ${JSON.stringify(last, null, 2)}`);
     const longShare = await makeShareUrlDiagnosticsInPage();
     assert.ok(longShare.length > longShare.threshold, `Expected test share URL to exceed threshold (${longShare.length} <= ${longShare.threshold})`);
     assert.equal(longShare.needsShortener, true, 'Expected oversized share URL to request a shortener option');
-    assert.match(longShare.shortenerUrl, /^https:\/\/tinyurl\.com\/create\.php\?url=/, 'Expected TinyURL create URL handoff');
+    assert.match(longShare.shortenerUrl, /^https:\/\/tinyurl\.com\/app\?url=/, 'Expected TinyURL app fallback handoff');
     assert.ok(longShare.shortenerUrl.includes(encodeURIComponent(longShare.url).slice(0, 40)), 'Expected shortener URL to carry the generated share URL');
+    const tinyUrlCreated = await createTinyUrlWithStubInPage(longShare.url, 'test-token-123', {
+      data: { tiny_url: 'https://tinyurl.com/eyeling-test' },
+    });
+    assert.equal(tinyUrlCreated.tinyUrl, 'https://tinyurl.com/eyeling-test', 'Expected TinyURL API response to produce a short URL');
+    assert.equal(tinyUrlCreated.seen.url, 'https://api.tinyurl.com/create', 'Expected TinyURL API create endpoint');
+    assert.equal(tinyUrlCreated.seen.options.method, 'POST', 'Expected TinyURL API POST request');
+    assert.equal(tinyUrlCreated.seen.options.headers.Authorization, 'Bearer test-token-123', 'Expected bearer token authorization');
+    assert.match(String(tinyUrlCreated.seen.options.body || ''), /"url":/, 'Expected TinyURL API body to include the long URL');
     endTest();
 
     // 7) log:query can produce Turtle; that should stay in plain source output without Markdown tabs.
