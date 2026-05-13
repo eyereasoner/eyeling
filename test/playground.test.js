@@ -661,6 +661,8 @@ async function main() {
           sourceHidden: sourceWrapper ? sourceWrapper.classList.contains('markdown-source-hidden') : true,
           renderedTabSelected: renderedTab ? renderedTab.getAttribute('aria-selected') === 'true' : false,
           sourceTabSelected: sourceTab ? sourceTab.getAttribute('aria-selected') === 'true' : false,
+          shareStatus: document.getElementById('share-status') ? String(document.getElementById('share-status').textContent || '') : '',
+          href: String(window.location.href || ''),
           highlighted,
         };
       })()`)) || { status: '', output: '', highlighted: [] }
@@ -707,6 +709,10 @@ async function main() {
         btn.click();
         return true;
       })()`);
+    }
+
+    async function makeShareUrlInPage() {
+      return await evalInPage(`window.__eyelingPlaygroundMakeShareUrl()`);
     }
 
     async function loadUrlIntoEditor(url) {
@@ -832,13 +838,24 @@ ${JSON.stringify(last, null, 2)}`);
     assert.equal(renderedAgain.renderedTabSelected, true, 'Expected Rendered tab to be selectable again');
     ok('playground renders log:outputString Markdown with Rendered/Markdown source tabs');
 
-    // 5) URL-loaded repository examples should auto-load matching examples/builtin/<stem>.js.
+    // 5) Normal editing should not keep rewriting the browser URL with raw N3 content.
+    assert.doesNotMatch(renderedAgain.href, /[?&](?:edit|program)=/, 'Expected live URL to avoid raw editor content');
+    const compactShareUrl = await makeShareUrlInPage();
+    assert.match(compactShareUrl, /[?&]state=/, 'Expected an on-demand compact state parameter');
+    assert.doesNotMatch(compactShareUrl, /[?&](?:edit|program)=/, 'Expected share link to avoid raw edit/program params');
+    assert.ok(compactShareUrl.length < playgroundUrl.length + encodeURIComponent(outputStringProgram).length, 'Expected compact share URL to be shorter than raw editor URL');
+    ok('playground keeps the live URL short and creates compact share links on demand');
+
+    // 6) URL-loaded repository examples should auto-load matching examples/builtin/<stem>.js.
     await loadUrlIntoEditor('https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/sudoku.n3');
     await waitForState(
       'sudoku URL loaded with companion builtin',
       (st) => /loaded n3 into the editor and loaded its example builtin/i.test(String(st.status || '')),
       20000,
     );
+    const urlLoadedShareUrl = await makeShareUrlInPage();
+    assert.match(urlLoadedShareUrl, /[?&]url=/, 'Expected URL-loaded examples to share as a short url= link');
+    assert.doesNotMatch(urlLoadedShareUrl, /[?&]state=/, 'Expected unedited URL-loaded examples to avoid state payloads');
     await clickRun();
     const sudoku = await waitForState(
       'URL-loaded Sudoku example completion',

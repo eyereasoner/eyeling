@@ -187,6 +187,11 @@
         color: #6b7280;
       }
 
+      .share-status {
+        flex: 1 1 14rem;
+        min-width: 12rem;
+      }
+
       /* (fallback only; output is now CodeMirror) */
       pre#output {
         margin: 0.25rem 0 0;
@@ -588,6 +593,14 @@
         .status {
           font-size: 0.9rem;
         }
+        #copy-share-link-btn {
+          width: 100%;
+          font-size: 16px;
+        }
+        .share-status {
+          width: 100%;
+          min-width: 0;
+        }
 
         /* On mobile we cap editor height and allow internal scrolling */
         .CodeMirror {
@@ -742,7 +755,7 @@
       <header>
         <h1>Eyeling N3 Playground</h1>
         <p>
-          Edit the N3 program below, load it from a URL, or share this page with the program encoded in the fragment.
+          Edit the N3 program below, load it from a URL, autosave locally, or copy a compact share link.
         </p>
         <p class="meta">
           Powered by
@@ -800,6 +813,8 @@
               <input id="enforce-https" type="checkbox" checked />
               Enforce HTTPS for dereferencing (--enforce-https)
             </label>
+            <button id="copy-share-link-btn" type="button" class="secondary">Copy share link</button>
+            <span class="status share-status" id="share-status">Autosaves locally; the address bar stays short.</span>
 
             <span class="status" id="status">Idle.</span>
           </div>
@@ -840,7 +855,7 @@
     <script src="dist/browser/eyeling.browser.js"></script>
 
     <script>
-      (function () {
+      (async function () {
         const defaultN3 = `# ------------------
 # Socrates inference
 # ------------------
@@ -876,6 +891,8 @@
         const clearBackgroundBtn = document.getElementById('clear-background-btn');
         const proofCheckbox = document.getElementById('proof-comments');
         const enforceHttpsCheckbox = document.getElementById('enforce-https');
+        const copyShareLinkBtn = document.getElementById('copy-share-link-btn');
+        const shareStatusEl = document.getElementById('share-status');
         const versionEl = document.getElementById('eyeling-version');
 
         // Persist "enforce https" toggle (default ON)
@@ -896,6 +913,7 @@
         let backgroundKnowledgeSource = '';
         let backgroundBuiltinModules = [];
         let editorBuiltinModules = [];
+        let editorSourceText = '';
 
         // --- Unified background streaming runner (shared with the Streaming demo tab) ---
         // Exposes: window.__eyelingUnified.startStreamRun({
@@ -1640,12 +1658,15 @@ const batch = [];
           autoResizeCodeMirror(outputEl, 80, mh.output);
         }
 
-        // --- INITIAL CONTENT + SHAREABLE QUERY PARAMS ---
+        // --- INITIAL CONTENT, LOCAL AUTOSAVE + COMPACT SHARE LINKS ---
+        const PLAYGROUND_STATE_KEY = 'eyeling.playground.state.v1';
+
         function getProgramFromHash() {
           const hash = window.location.hash || '';
           if (!hash) return null;
           const raw = hash.startsWith('#') ? hash.slice(1) : hash;
           if (!raw) return null;
+          if (/^(?:state|s)=/i.test(raw) || /^[gj]\./.test(raw)) return null;
           try {
             return decodeURIComponent(raw);
           } catch (e) {
@@ -1671,8 +1692,25 @@ const batch = [];
           return null;
         }
 
+        function getShareStateTokenFromLocation() {
+          const fromQuery = getFirstQueryParam(['state', 's']);
+          if (fromQuery) return fromQuery;
+          const hash = window.location.hash || '';
+          if (!hash) return null;
+          const raw = hash.startsWith('#') ? hash.slice(1) : hash;
+          if (!raw) return null;
+          if (/^[gj]\./.test(raw)) return raw;
+          try {
+            const hashParams = new URLSearchParams(raw);
+            return hashParams.get('state') || hashParams.get('s');
+          } catch (e) {
+            return null;
+          }
+        }
+
         function parseBooleanParam(value) {
           if (value === null || value === undefined) return null;
+          if (value === true || value === false) return value;
           const normalized = String(value).trim().toLowerCase();
           if (!normalized) return null;
           if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
@@ -1688,13 +1726,133 @@ const batch = [];
           return getFirstQueryParam(['url', 'n3url', 'n3', 'load']);
         }
 
-        const paramProgramFromQuery = getProgramFromQuery();
-        const paramProgramFromHash = paramProgramFromQuery === null ? getProgramFromHash() : null;
-        const paramProgram = paramProgramFromQuery !== null ? paramProgramFromQuery : paramProgramFromHash;
-        const paramN3Uri = getN3UriFromQuery();
-        const paramLoadBg = parseBooleanParam(getFirstQueryParam(['loadbg', 'background', 'bg']));
-        const paramProofComments = parseBooleanParam(getFirstQueryParam(['proofcomments', 'proof']));
-        const paramHttpsDeref = parseBooleanParam(getFirstQueryParam(['httpsderef', 'enforcehttps']));
+        function bytesToBase64Url(bytes) {
+          let binary = '';
+          const chunkSize = 0x8000;
+          for (let i = 0; i < bytes.length; i += chunkSize) {
+            const chunk = bytes.subarray(i, i + chunkSize);
+            binary += String.fromCharCode.apply(null, chunk);
+          }
+          return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+        }
+
+        function base64UrlToBytes(value) {
+          let b64 = String(value || '').replace(/-/g, '+').replace(/_/g, '/');
+          b64 += '='.repeat((4 - (b64.length % 4)) % 4);
+          const binary = atob(b64);
+          const bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+          return bytes;
+        }
+
+        function encodeUtf8(text) {
+          return new TextEncoder().encode(String(text));
+        }
+
+        function decodeUtf8(bytes) {
+          return new TextDecoder('utf-8').decode(bytes);
+        }
+
+        async function gzipText(text) {
+          if (!window.CompressionStream || !window.Response || !window.Blob) return null;
+          const stream = new Blob([String(text)]).stream().pipeThrough(new CompressionStream('gzip'));
+          return new Uint8Array(await new Response(stream).arrayBuffer());
+        }
+
+        async function gunzipText(bytes) {
+          if (!window.DecompressionStream || !window.Response || !window.Blob) {
+            throw new Error('This browser cannot open compressed playground state links.');
+          }
+          const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+          return new Response(stream).text();
+        }
+
+        async function packPlaygroundState(state) {
+          const json = JSON.stringify(state);
+          const jsonToken = 'j.' + bytesToBase64Url(encodeUtf8(json));
+          try {
+            const gz = await gzipText(json);
+            if (gz) {
+              const gzipToken = 'g.' + bytesToBase64Url(gz);
+              if (gzipToken.length < jsonToken.length) return gzipToken;
+            }
+          } catch (e) {
+            // Fall through to the universal JSON payload below.
+          }
+          return jsonToken;
+        }
+
+        async function unpackPlaygroundState(token) {
+          const value = String(token || '').trim();
+          if (!value) return null;
+          let json;
+          if (value.startsWith('g.')) json = await gunzipText(base64UrlToBytes(value.slice(2)));
+          else if (value.startsWith('j.')) json = decodeUtf8(base64UrlToBytes(value.slice(2)));
+          else json = decodeURIComponent(value);
+          return JSON.parse(json);
+        }
+
+        function normalizePlaygroundState(raw) {
+          if (!raw || typeof raw !== 'object') return null;
+          const edit = typeof raw.edit === 'string' ? raw.edit : typeof raw.program === 'string' ? raw.program : null;
+          const url = typeof raw.url === 'string' ? raw.url : '';
+          const loadbg = parseBooleanParam(raw.loadbg);
+          const proofcomments = parseBooleanParam(raw.proofcomments);
+          const httpsderef = parseBooleanParam(raw.httpsderef);
+          return {
+            edit,
+            url,
+            loadbg: loadbg === null ? null : loadbg,
+            proofcomments: proofcomments === null ? null : proofcomments,
+            httpsderef: httpsderef === null ? null : httpsderef,
+          };
+        }
+
+        function getSavedPlaygroundState() {
+          try {
+            const raw = localStorage.getItem(PLAYGROUND_STATE_KEY);
+            if (!raw) return null;
+            return normalizePlaygroundState(JSON.parse(raw));
+          } catch (e) {
+            return null;
+          }
+        }
+
+        const sharedStateToken = getShareStateTokenFromLocation();
+        let sharedState = null;
+        let sharedStateError = '';
+        if (sharedStateToken) {
+          try {
+            sharedState = normalizePlaygroundState(await unpackPlaygroundState(sharedStateToken));
+          } catch (e) {
+            sharedStateError = e && e.message ? e.message : String(e);
+          }
+        }
+
+        const legacyProgramFromQuery = getProgramFromQuery();
+        const legacyProgramFromHash = legacyProgramFromQuery === null ? getProgramFromHash() : null;
+        const legacyProgram = legacyProgramFromQuery !== null ? legacyProgramFromQuery : legacyProgramFromHash;
+        const legacyN3Uri = getN3UriFromQuery();
+        const legacyLoadBg = parseBooleanParam(getFirstQueryParam(['loadbg', 'background', 'bg']));
+        const legacyProofComments = parseBooleanParam(getFirstQueryParam(['proofcomments', 'proof']));
+        const legacyHttpsDeref = parseBooleanParam(getFirstQueryParam(['httpsderef', 'enforcehttps']));
+        const hasLegacyInitialState =
+          legacyProgramFromQuery !== null ||
+          legacyProgramFromHash !== null ||
+          legacyN3Uri !== null ||
+          legacyLoadBg !== null ||
+          legacyProofComments !== null ||
+          legacyHttpsDeref !== null;
+
+        const savedState = sharedStateToken || hasLegacyInitialState ? null : getSavedPlaygroundState();
+        const restoredState = sharedState || savedState;
+
+        const paramProgram = restoredState && restoredState.edit !== null ? restoredState.edit : legacyProgram;
+        const paramN3Uri = restoredState && restoredState.url ? restoredState.url : legacyN3Uri;
+        const paramLoadBg = restoredState && restoredState.loadbg !== null ? restoredState.loadbg : legacyLoadBg;
+        const paramProofComments =
+          restoredState && restoredState.proofcomments !== null ? restoredState.proofcomments : legacyProofComments;
+        const paramHttpsDeref = restoredState && restoredState.httpsderef !== null ? restoredState.httpsderef : legacyHttpsDeref;
 
         if (paramN3Uri) {
           uriInput.value = paramN3Uri;
@@ -1709,15 +1867,11 @@ const batch = [];
           enforceHttpsCheckbox.checked = paramHttpsDeref;
         }
 
-        const hasInitialShareState =
-          paramProgramFromQuery !== null ||
-          paramProgramFromHash !== null ||
-          paramN3Uri !== null ||
-          paramLoadBg !== null ||
-          paramProofComments !== null ||
-          paramHttpsDeref !== null;
-
-        let shareUrlSyncEnabled = hasInitialShareState;
+        if (shareStatusEl) {
+          if (sharedStateError) shareStatusEl.textContent = 'Could not open shared state: ' + sharedStateError;
+          else if (sharedState) shareStatusEl.textContent = 'Opened compact share link; future edits autosave locally.';
+          else if (savedState) shareStatusEl.textContent = 'Restored local autosave; the address bar stays short.';
+        }
 
         const shouldAutoLoadFromQueryUrl = !!paramN3Uri && (paramLoadBg === true || paramProgram === null);
         const initialN3 = paramProgram !== null ? paramProgram : defaultN3;
@@ -2103,85 +2257,160 @@ const batch = [];
           { passive: true },
         );
 
-        // --- URL SHARING SUPPORT ---
-        let shareUrlUpdateTimeout = null;
+        // --- LOCAL AUTOSAVE + ON-DEMAND COMPACT SHARE LINKS ---
+        let localStateSaveTimeout = null;
 
-        function enableShareUrlSync() {
-          shareUrlSyncEnabled = true;
+        function getCurrentPlaygroundState() {
+          return {
+            v: 1,
+            edit: editor.getValue(),
+            url: (uriInput && uriInput.value ? uriInput.value : '').trim(),
+            loadbg: !!(loadAsBackgroundCheckbox && loadAsBackgroundCheckbox.checked),
+            proofcomments: !!(proofCheckbox && proofCheckbox.checked),
+            httpsderef: !!(enforceHttpsCheckbox && enforceHttpsCheckbox.checked),
+          };
         }
 
-        function updateShareUrl() {
-          if (!shareUrlSyncEnabled) return;
-
+        function savePlaygroundState() {
           try {
-            const url = new URL(window.location.href);
-            const params = url.searchParams;
-
-            const uriValue = (uriInput && uriInput.value ? uriInput.value : '').trim();
-            const editorValue = editor.getValue();
-
-            if (uriValue) params.set('url', uriValue);
-            else params.delete('url');
-
-            params.set('loadbg', loadAsBackgroundCheckbox && loadAsBackgroundCheckbox.checked ? 'true' : 'false');
-            params.set('proofcomments', proofCheckbox && proofCheckbox.checked ? 'true' : 'false');
-            params.set('httpsderef', enforceHttpsCheckbox && enforceHttpsCheckbox.checked ? 'true' : 'false');
-
-            if (editorValue) params.set('edit', editorValue);
-            else params.delete('edit');
-
-            url.hash = '';
-            window.history.replaceState(null, '', url.toString());
+            localStorage.setItem(PLAYGROUND_STATE_KEY, JSON.stringify(getCurrentPlaygroundState()));
           } catch (e) {
-            console && console.warn && console.warn('Failed to update URL query params:', e);
+            // localStorage may be unavailable or full; sharing still works.
           }
         }
 
-        function scheduleUpdateShareUrl() {
-          clearTimeout(shareUrlUpdateTimeout);
-          shareUrlUpdateTimeout = setTimeout(updateShareUrl, 300);
+        function scheduleSavePlaygroundState() {
+          clearTimeout(localStateSaveTimeout);
+          localStateSaveTimeout = setTimeout(savePlaygroundState, 250);
         }
 
-        editor.on('change', function (_cm, changeObj) {
+        async function makeShareUrl() {
+          const url = new URL(window.location.href);
+          const params = url.searchParams;
+          for (const name of [
+            'edit',
+            'program',
+            'url',
+            'n3url',
+            'n3',
+            'load',
+            'loadbg',
+            'background',
+            'bg',
+            'proofcomments',
+            'proof',
+            'httpsderef',
+            'enforcehttps',
+            'state',
+            's',
+          ]) {
+            params.delete(name);
+          }
+          const state = getCurrentPlaygroundState();
+          const canShareLoadedUrl =
+            !!state.url && !state.loadbg && !!editorSourceText && state.edit === editorSourceText;
+
+          if (canShareLoadedUrl) {
+            params.set('url', state.url);
+            if (state.proofcomments) params.set('proofcomments', 'true');
+            if (!state.httpsderef) params.set('httpsderef', 'false');
+          } else {
+            params.set('state', await packPlaygroundState(state));
+          }
+
+          url.hash = '';
+          return url.toString();
+        }
+
+        async function copyTextToClipboard(text) {
+          if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            await navigator.clipboard.writeText(text);
+            return;
+          }
+
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.setAttribute('readonly', '');
+          ta.style.position = 'fixed';
+          ta.style.left = '-9999px';
+          ta.style.top = '0';
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          let ok = false;
+          try {
+            ok = document.execCommand('copy');
+          } finally {
+            document.body.removeChild(ta);
+          }
+          if (!ok) throw new Error('Clipboard copy was blocked by the browser.');
+        }
+
+        async function copyShareLink() {
+          if (!copyShareLinkBtn) return;
+          copyShareLinkBtn.disabled = true;
+          if (shareStatusEl) shareStatusEl.textContent = 'Creating compact share link…';
+          try {
+            savePlaygroundState();
+            const shareUrl = await makeShareUrl();
+            await copyTextToClipboard(shareUrl);
+            if (shareStatusEl) shareStatusEl.textContent = 'Copied compact share link.';
+          } catch (e) {
+            if (shareStatusEl) {
+              shareStatusEl.textContent = 'Could not copy automatically; use your browser copy command on this generated link.';
+            }
+            try {
+              window.prompt('Copy this compact share link:', await makeShareUrl());
+            } catch (_) {}
+          } finally {
+            copyShareLinkBtn.disabled = false;
+          }
+        }
+
+        window.__eyelingPlaygroundMakeShareUrl = makeShareUrl;
+
+        editor.on('change', function () {
           clearErrorHighlight();
 
           const mh = currentMaxHeights();
           autoResizeCodeMirror(editor, 220, mh.editor);
 
-          if (changeObj && changeObj.origin && changeObj.origin !== 'setValue') {
-            enableShareUrlSync();
+          if (editorSourceText && editor.getValue() !== editorSourceText) {
+            editorSourceText = '';
           }
 
-          scheduleUpdateShareUrl();
+          scheduleSavePlaygroundState();
         });
 
         if (uriInput) {
           uriInput.addEventListener('input', () => {
-            enableShareUrlSync();
-            scheduleUpdateShareUrl();
+            scheduleSavePlaygroundState();
           });
         }
 
         if (loadAsBackgroundCheckbox) {
           loadAsBackgroundCheckbox.addEventListener('change', () => {
-            enableShareUrlSync();
-            updateShareUrl();
+            savePlaygroundState();
           });
         }
 
         if (proofCheckbox) {
           proofCheckbox.addEventListener('change', () => {
-            enableShareUrlSync();
-            updateShareUrl();
+            savePlaygroundState();
           });
         }
 
         if (enforceHttpsCheckbox) {
           enforceHttpsCheckbox.addEventListener('change', () => {
-            enableShareUrlSync();
-            updateShareUrl();
+            savePlaygroundState();
           });
         }
+
+        if (copyShareLinkBtn) {
+          copyShareLinkBtn.addEventListener('click', copyShareLink);
+        }
+
+        savePlaygroundState();
 
         // --- EYELING VERSION (UI + runner) ---
         function ensureEyelingVersion() {
@@ -2349,7 +2578,7 @@ const batch = [];
             autoResizeCodeMirror(outputEl, 80, mh.output);
           }
 
-          updateShareUrl();
+          savePlaygroundState();
 
           await new Promise(requestAnimationFrame);
 
@@ -2699,15 +2928,17 @@ const batch = [];
               statusEl.textContent = companionBuiltins.length
                 ? 'Loaded N3 as background knowledge and loaded its example builtin. The editor was left unchanged.'
                 : 'Loaded N3 as background knowledge. The editor was left unchanged.';
+              savePlaygroundState();
             } else {
               editor.setValue(text);
               editorBuiltinModules = companionBuiltins;
+              editorSourceText = text;
               const mh = currentMaxHeights();
               autoResizeCodeMirror(editor, 220, mh.editor);
               statusEl.textContent = companionBuiltins.length
                 ? 'Loaded N3 into the editor and loaded its example builtin (base preserved).'
                 : 'Loaded N3 into the editor (base preserved).';
-              updateShareUrl();
+              savePlaygroundState();
             }
           } catch (e) {
             statusEl.textContent = 'Failed to load URL.';
@@ -2729,8 +2960,6 @@ const batch = [];
         }
         updateBackgroundStatus();
 
-        // If the page was opened with share-state params, normalize them into the canonical query format.
-        if (shareUrlSyncEnabled) updateShareUrl();
 
         // Auto-load from ?url=... when it is meant to populate background knowledge,
         // or when no explicit editor content was provided.
