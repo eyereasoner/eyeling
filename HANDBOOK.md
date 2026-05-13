@@ -3682,7 +3682,7 @@ That is exactly the sort of explanation that N3, and Eyeling in particular, can 
 
 ## Appendix I — The Eyeling Playground
 
-The **Eyeling Playground** is the browser-based front end for experimenting with Eyeling without a local install or command-line workflow. It is meant for teaching, quick debugging, live demos, and shareable reasoning examples. Rather than treating reasoning as an offline batch process, the playground makes it interactive: users can edit N3 directly in the browser, load remote N3 from a URL, run reasoning, inspect streamed output, and share the current state through a link.
+The **Eyeling Playground** is the browser-based front end for experimenting with Eyeling without a local install or command-line workflow. It is meant for teaching, quick debugging, live demos, and shareable reasoning examples. Rather than treating reasoning as an offline batch process, the playground makes it interactive: users can edit N3 directly in the browser, load remote N3 from a URL, run reasoning, inspect streamed or rendered output, autosave local state, and create a compact share link when needed.
 
 This appendix explains what the playground is for, how it is structured, and why it matters in practice.
 
@@ -3696,7 +3696,8 @@ The playground exists to lower that initial friction. It lets a user:
 - edit or paste a small N3 program,
 - run reasoning immediately,
 - inspect output and errors in place,
-- and share the exact setup with a URL.
+- autosave local work between reloads,
+- and copy a compact share link when the setup should be shared.
 
 That makes the playground useful not only for newcomers, but also for experienced users who want a fast feedback loop for small examples.
 
@@ -3728,6 +3729,8 @@ This matters because the playground is not just a text box plus a submit button.
 
 The output behavior also adapts to the kind of N3 program being run. In some cases the natural result is a streamed list of derived triples. In others, such as programs using output-oriented constructs like `log:outputString`, a rendered text result is more appropriate. The playground supports both styles.
 
+For Markdown-oriented `log:outputString` examples, the output pane has two views: a rendered Markdown view and a Markdown source view. The rendered view is selected by default when the output is text intended for presentation, while the source view keeps the exact generated Markdown available for copying, inspection, or comparison.
+
 ### I.4 Error handling and explainability
 
 For an interactive reasoning environment, error behavior matters almost as much as successful output. The playground therefore gives particular attention to syntax and runtime feedback.
@@ -3741,21 +3744,21 @@ The playground also exposes two configuration toggles that are especially useful
 
 Together these choices make the playground better suited to live explanation, teaching, and debugging than a minimal browser wrapper would be.
 
-### I.5 Shareable state through URLs
+### I.5 Local state and compact share links
 
-One of the most practical features of the playground is that its state can be encoded in the page URL.
+The playground deliberately separates ordinary editing from link sharing.
 
-The canonical query parameters are:
+During normal use, the live browser URL is kept short. Editor content and UI state are autosaved in `localStorage`, so reloading the page can restore local work without continuously rewriting the address bar with a large encoded N3 program.
 
-- `edit` — sets the editor content,
-- `url` — fills the URL field,
-- `loadbg` — determines whether the URL should be loaded as background knowledge,
-- `proofcomments` — initializes the proof-comments checkbox,
-- `httpsderef` — initializes the HTTPS dereferencing checkbox.
+When a user does want a portable link, the **Copy share link** button creates one on demand:
 
-This makes the playground particularly strong for tutorials and demos. A link can specify not just a program, but a whole configuration: an imported resource, whether it belongs in background knowledge, a small editable overlay, and the relevant runtime toggles.
+- unedited examples that were loaded from a URL can be shared as short `?url=...` links,
+- edited programs are shared with a compact compressed `?state=...` payload,
+- default option values are omitted from that payload to keep links small.
 
-Older hash-based links are still accepted as a fallback, but new state updates are written using query parameters because they scale better as the UI grows beyond a single editor field.
+This keeps everyday use pleasant while preserving the important tutorial and issue-reporting workflow: a link can still capture the imported resource, the local editable overlay, background-knowledge mode, proof-comments mode, and HTTPS-dereferencing mode.
+
+For compatibility, older `?edit=`, `?program=`, `?url=`, compact `?state=`, and hash-based links are still accepted when opened. The old `/demo` entry point is also kept as a redirect to the canonical `/playground` page.
 
 ### I.6 What the playground is good for
 
@@ -3775,7 +3778,7 @@ For short reasoning tasks, the playground can be a faster debugging surface than
 
 #### I.6.4 Sharing examples
 
-A single link can capture enough context for another person to reproduce an example quickly. This is valuable in issue reports, discussions, teaching material, and public-facing demonstrations.
+A copied share link can capture enough context for another person to reproduce an example quickly, without forcing the live browser URL to carry the full editor content during normal use. This is valuable in issue reports, discussions, teaching material, and public-facing demonstrations.
 
 ### I.7 Limits of the playground
 
@@ -3787,7 +3790,7 @@ In short: the playground is best thought of as a compact interactive front end f
 
 ### I.8 Why it matters
 
-The Eyeling Playground shows that N3 reasoning can be made substantially more approachable without flattening the underlying logic into a toy interface. A relatively small set of features — an editor, a URL loader, background knowledge mode, responsive execution, proof toggles, and shareable query parameters — is enough to support serious educational and exploratory work.
+The Eyeling Playground shows that N3 reasoning can be made substantially more approachable without flattening the underlying logic into a toy interface. A relatively small set of features — an editor, a URL loader, background knowledge mode, responsive execution, proof toggles, rendered Markdown output, local autosave, and compact share links — is enough to support serious educational and exploratory work.
 
 That is the main value of the playground. It gives Eyeling a public-facing, browser-native environment where reasoning is not hidden behind setup overhead, and where examples can move easily between author, teacher, student, and reviewer.
 
