@@ -6,22 +6,45 @@ on:
       - 'v*'
 
 permissions:
-  id-token: write # nodig voor OIDC naar npm
+  id-token: write # required for OIDC to npm
   contents: read
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
 
-      # npm docs: zorg voor npm 11.5.1+ voor trusted publishing
-      - name: Update npm
-        run: npm install -g npm@latest
+      - name: Install dependencies
+        run: npm ci
 
-      - run: npm publish
+      - name: Build
+        run: npm run build --if-present
+
+      - name: Test
+        run: npm test --if-present
+
+      - name: Check whether this version already exists on npm
+        id: npm_version
+        run: |
+          PACKAGE_NAME=$(node -p "require('./package.json').name")
+          PACKAGE_VERSION=$(node -p "require('./package.json').version")
+
+          if npm view "$PACKAGE_NAME@$PACKAGE_VERSION" version >/dev/null 2>&1; then
+            echo "$PACKAGE_NAME@$PACKAGE_VERSION already exists on npm; skipping publish."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "$PACKAGE_NAME@$PACKAGE_VERSION does not exist on npm; publishing."
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to npm
+        if: steps.npm_version.outputs.exists != 'true'
+        run: npm publish
