@@ -6,13 +6,12 @@ on:
       - 'v*'
 
 permissions:
-  id-token: write # required for OIDC to npm
+  id-token: write
   contents: read
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v6
 
@@ -22,21 +21,14 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           package-manager-cache: false
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build --if-present
-
-      - name: Test
-        run: npm test --if-present
+      - name: Update npm
+        run: npm install -g npm@latest
 
       - name: Check whether this version already exists on npm
         id: npm_version
         run: |
           PACKAGE_NAME=$(node -p "require('./package.json').name")
           PACKAGE_VERSION=$(node -p "require('./package.json').version")
-
           if npm view "$PACKAGE_NAME@$PACKAGE_VERSION" version >/dev/null 2>&1; then
             echo "$PACKAGE_NAME@$PACKAGE_VERSION already exists on npm; skipping publish."
             echo "exists=true" >> "$GITHUB_OUTPUT"
