@@ -12077,8 +12077,10 @@ class PrefixEnv {
   }
 
   expandQName(q) {
-    if (q.includes(':')) {
-      const [p, local] = q.split(':', 2);
+    const sep = typeof q === 'string' ? q.indexOf(':') : -1;
+    if (sep >= 0) {
+      const p = q.slice(0, sep);
+      const local = q.slice(sep + 1);
       const base = this.map[p] || '';
       if (base) return base + local;
       return q;

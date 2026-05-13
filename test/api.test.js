@@ -1371,6 +1371,32 @@ res:CITY_Chañaral rdfs:label "Chañaral".
   },
 
   {
+    name: '52c parse: prefixed local names preserve colons after the prefix separator',
+    opt: ['-n'],
+    input: `@prefix : <http://example.org/> .
+
+:foo: a :Bar .
+
+{
+  <http://example.org/foo:> a <http://example.org/Bar> .
+}
+=>
+{
+  :result :has :success-literal-24 .
+}.
+
+{
+  :result :has :success-literal-24 .
+}
+=>
+{
+  :test :is true .
+}.
+`,
+    expect: [/:result\s+:has\s+:success-literal-24\s*\./, /:test\s+:is\s+true\s*\./],
+  },
+
+  {
     name: '53 --stream: prints prefixes used in input (not just derived output) before streaming triples',
     opt: ['--stream', '-n'],
     input: `@prefix ex: <http://example.org/>.
