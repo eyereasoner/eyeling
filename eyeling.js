@@ -1691,15 +1691,85 @@ function __listElemsForBuiltin(listLike, facts) {
   return null;
 }
 
-function evalListFirstLikeBuiltin(sTerm, oTerm, subst) {
-  if (!(sTerm instanceof ListTerm)) return [];
-  if (!sTerm.elems.length) return [];
-  const first = sTerm.elems[0];
-  const s2 = unifyTerm(oTerm, first, subst);
-  return s2 !== null ? [s2] : [];
+function __pushBuiltinDeltaLimited(out, delta, maxResults) {
+  if (delta === null) return false;
+  out.push(delta);
+  return typeof maxResults === 'number' && maxResults > 0 && out.length >= maxResults;
 }
 
-function evalListRestLikeBuiltin(sTerm, oTerm, subst) {
+function __collectListLikeTermsFromTerm(t, out, seen) {
+  if (t instanceof ListTerm || t instanceof OpenListTerm) {
+    const k = termFastKey ? termFastKey(t) : null;
+    if (k === null || !seen.has(k)) {
+      if (k !== null) seen.add(k);
+      out.push(t);
+    }
+    if (t instanceof ListTerm) {
+      for (const e of t.elems) __collectListLikeTermsFromTerm(e, out, seen);
+    } else {
+      for (const e of t.prefix) __collectListLikeTermsFromTerm(e, out, seen);
+    }
+    return;
+  }
+  if (t instanceof GraphTerm) {
+    for (const tr of t.triples) {
+      __collectListLikeTermsFromTerm(tr.s, out, seen);
+      __collectListLikeTermsFromTerm(tr.p, out, seen);
+      __collectListLikeTermsFromTerm(tr.o, out, seen);
+    }
+  }
+}
+
+function __collectListLikeTermsFromFacts(facts) {
+  const out = [];
+  const seen = new Set();
+  for (const tr of facts) {
+    __collectListLikeTermsFromTerm(tr.s, out, seen);
+    __collectListLikeTermsFromTerm(tr.o, out, seen);
+  }
+  return out;
+}
+
+function evalListFirstLikeBuiltin(sTerm, oTerm, subst, facts, maxResults) {
+  if (sTerm instanceof ListTerm) {
+    if (!sTerm.elems.length) return [];
+    const first = sTerm.elems[0];
+    const s2 = unifyTerm(oTerm, first, subst);
+    return s2 !== null ? [s2] : [];
+  }
+
+  // For a variable subject, enumerate already-existing collection terms.
+  // This lets a rule body such as `_:x rdf:first 1; rdf:rest rdf:nil`
+  // bind `_:x` to an N3 collection literal `(1)` used elsewhere as a term.
+  // Also include ordinary rdf:first facts so the builtin path does not hide
+  // RDF-serialized lists when the subject starts unbound.
+  if (sTerm instanceof Var) {
+    const out = [];
+
+    for (const listTerm of __collectListLikeTermsFromFacts(facts)) {
+      if (!(listTerm instanceof ListTerm) || !listTerm.elems.length) continue;
+      let s2 = unifyTerm(sTerm, listTerm, subst);
+      if (s2 === null) continue;
+      s2 = unifyTerm(oTerm, listTerm.elems[0], s2);
+      if (__pushBuiltinDeltaLimited(out, s2, maxResults)) return out;
+    }
+
+    const RDF_FIRST = RDF_NS + 'first';
+    for (const tr of facts) {
+      if (!(tr.p instanceof Iri) || tr.p.value !== RDF_FIRST) continue;
+      let s2 = unifyTerm(sTerm, tr.s, subst);
+      if (s2 === null) continue;
+      s2 = unifyTerm(oTerm, tr.o, s2);
+      if (__pushBuiltinDeltaLimited(out, s2, maxResults)) return out;
+    }
+
+    return out;
+  }
+
+  return [];
+}
+
+function evalListRestLikeBuiltin(sTerm, oTerm, subst, facts, maxResults) {
   // Closed list: (a b c) -> (b c)
   if (sTerm instanceof ListTerm) {
     if (!sTerm.elems.length) return [];
@@ -1718,6 +1788,32 @@ function evalListRestLikeBuiltin(sTerm, oTerm, subst) {
     const rest = new OpenListTerm(sTerm.prefix.slice(1), sTerm.tailVar);
     const s2 = unifyTerm(oTerm, rest, subst);
     return s2 !== null ? [s2] : [];
+  }
+
+  // See evalListFirstLikeBuiltin(): if the collection subject is still a
+  // variable, enumerate known list literals and ordinary rdf:rest facts.
+  if (sTerm instanceof Var) {
+    const out = [];
+
+    for (const listTerm of __collectListLikeTermsFromFacts(facts)) {
+      if (!(listTerm instanceof ListTerm) || !listTerm.elems.length) continue;
+      let s2 = unifyTerm(sTerm, listTerm, subst);
+      if (s2 === null) continue;
+      const rest = new ListTerm(listTerm.elems.slice(1));
+      s2 = unifyTerm(oTerm, rest, s2);
+      if (__pushBuiltinDeltaLimited(out, s2, maxResults)) return out;
+    }
+
+    const RDF_REST = RDF_NS + 'rest';
+    for (const tr of facts) {
+      if (!(tr.p instanceof Iri) || tr.p.value !== RDF_REST) continue;
+      let s2 = unifyTerm(sTerm, tr.s, subst);
+      if (s2 === null) continue;
+      s2 = unifyTerm(oTerm, tr.o, s2);
+      if (__pushBuiltinDeltaLimited(out, s2, maxResults)) return out;
+    }
+
+    return out;
   }
 
   return [];
@@ -2859,14 +2955,14 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     return s2 !== null ? [s2] : [];
   }
   if (pv === RDF_NS + 'first') {
-    return evalListFirstLikeBuiltin(g.s, g.o, subst);
+    return evalListFirstLikeBuiltin(g.s, g.o, subst, facts, maxResults);
   }
 
   // list:rest and rdf:rest
   // true iff $s is a (non-empty) list and $o is the rest (tail) of that list.
   // Schema: $s+ list:rest $o-
   if (pv === LIST_NS + 'rest') {
-    if (g.s instanceof ListTerm || g.s instanceof OpenListTerm) return evalListRestLikeBuiltin(g.s, g.o, subst);
+    if (g.s instanceof ListTerm || g.s instanceof OpenListTerm) return evalListRestLikeBuiltin(g.s, g.o, subst, facts, maxResults);
     const xs = __listElemsForBuiltin(g.s, facts);
     if (!xs || !xs.length) return [];
     const rest = new ListTerm(xs.slice(1));
@@ -2874,7 +2970,7 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     return s2 !== null ? [s2] : [];
   }
   if (pv === RDF_NS + 'rest') {
-    return evalListRestLikeBuiltin(g.s, g.o, subst);
+    return evalListRestLikeBuiltin(g.s, g.o, subst, facts, maxResults);
   }
 
   // list:iterate
@@ -7918,7 +8014,10 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
     const isRdfFirstOrRest = goalPredicateIri === RDF_NS + 'first' || goalPredicateIri === RDF_NS + 'rest';
     const shouldTreatAsBuiltin =
       isBuiltinPred(goal0.p) &&
-      !(isRdfFirstOrRest && !(goal0.s instanceof ListTerm || goal0.s instanceof OpenListTerm));
+      !(
+        isRdfFirstOrRest &&
+        !(goal0.s instanceof ListTerm || goal0.s instanceof OpenListTerm || goal0.s instanceof Var)
+      );
 
     if (shouldTreatAsBuiltin) {
       const remaining = max - results.length;
@@ -11703,14 +11802,142 @@ const STRING_NS = 'http://www.w3.org/2000/10/swap/string#';
 const SKOLEM_NS = 'https://eyereasoner.github.io/.well-known/genid/';
 const RDF_JSON_DT = RDF_NS + 'JSON';
 
-function resolveIriRef(ref, base) {
-  if (!base) return ref;
-  if (/^[A-Za-z][A-Za-z0-9+.-]*:/.test(ref)) return ref; // already absolute
-  try {
-    return new URL(ref, base).toString();
-  } catch {
-    return ref;
+function parseUriReferenceForResolution(uri) {
+  // RFC 3986 Appendix B-style component parser, with the scheme tightened to
+  // the RFC scheme grammar. Capturing delimiter presence matters: `?` with an
+  // empty query is defined, while no `?` means undefined.
+  const m = /^(([A-Za-z][A-Za-z0-9+.-]*):)?(\/\/([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?$/u.exec(String(uri));
+  if (!m) return null;
+  return {
+    scheme: m[2] !== undefined ? m[2] : undefined,
+    authority: m[4] !== undefined ? m[4] : undefined,
+    path: m[5] || '',
+    query: m[6] !== undefined ? (m[7] || '') : undefined,
+    fragment: m[8] !== undefined ? (m[9] || '') : undefined,
+  };
+}
+
+function recomposeUriReference(parts) {
+  let out = '';
+  if (parts.scheme !== undefined) out += `${parts.scheme}:`;
+  if (parts.authority !== undefined) out += `//${parts.authority}`;
+  out += parts.path || '';
+  if (parts.query !== undefined) out += `?${parts.query}`;
+  if (parts.fragment !== undefined) out += `#${parts.fragment}`;
+  return out;
+}
+
+function removeLastPathSegment(path) {
+  if (!path) return '';
+  const i = path.lastIndexOf('/');
+  if (i < 0) return '';
+  if (i === 0) return '';
+  return path.slice(0, i);
+}
+
+function removeDotSegments(path) {
+  // RFC 3986 section 5.2.4.  This deliberately avoids WHATWG URL parsing so
+  // Eyeling preserves IRI spelling (for example, it does not add a trailing
+  // slash to `http://example.org`) while still normalizing `.` and `..` path
+  // segments as required by section 5.2.2.
+  let input = String(path || '');
+  let output = '';
+
+  while (input.length > 0) {
+    if (input.startsWith('../')) {
+      input = input.slice(3);
+    } else if (input.startsWith('./')) {
+      input = input.slice(2);
+    } else if (input.startsWith('/./')) {
+      input = `/${input.slice(3)}`;
+    } else if (input === '/.') {
+      input = '/';
+    } else if (input.startsWith('/../')) {
+      input = `/${input.slice(4)}`;
+      output = removeLastPathSegment(output);
+    } else if (input === '/..') {
+      input = '/';
+      output = removeLastPathSegment(output);
+    } else if (input === '.' || input === '..') {
+      input = '';
+    } else {
+      let segmentEnd;
+      if (input[0] === '/') {
+        segmentEnd = input.indexOf('/', 1);
+      } else {
+        segmentEnd = input.indexOf('/');
+      }
+
+      if (segmentEnd < 0) {
+        output += input;
+        input = '';
+      } else {
+        output += input.slice(0, segmentEnd);
+        input = input.slice(segmentEnd);
+      }
+    }
   }
+
+  return output;
+}
+
+function mergePaths(base, refPath) {
+  if (base.authority !== undefined && base.path === '') {
+    return `/${refPath}`;
+  }
+  const i = base.path.lastIndexOf('/');
+  if (i < 0) return refPath;
+  return `${base.path.slice(0, i + 1)}${refPath}`;
+}
+
+function resolveIriRef(ref, base) {
+  const r = parseUriReferenceForResolution(ref);
+  if (!r) return ref;
+
+  const baseParts = base ? parseUriReferenceForResolution(base) : null;
+
+  // Absolute references do not need a base, but RFC 3986 section 5.2.2 still
+  // applies remove_dot_segments(R.path) when R.scheme is defined.
+  if (r.scheme !== undefined) {
+    return recomposeUriReference({
+      scheme: r.scheme,
+      authority: r.authority,
+      path: removeDotSegments(r.path),
+      query: r.query,
+      fragment: r.fragment,
+    });
+  }
+
+  // Without a usable base, preserve relative references as written.
+  if (!baseParts || baseParts.scheme === undefined) return ref;
+
+  const t = {
+    scheme: baseParts.scheme,
+    authority: undefined,
+    path: '',
+    query: undefined,
+    fragment: r.fragment,
+  };
+
+  if (r.authority !== undefined) {
+    t.authority = r.authority;
+    t.path = removeDotSegments(r.path);
+    t.query = r.query;
+  } else if (r.path === '') {
+    t.authority = baseParts.authority;
+    t.path = baseParts.path;
+    t.query = r.query !== undefined ? r.query : baseParts.query;
+  } else {
+    t.authority = baseParts.authority;
+    if (r.path.startsWith('/')) {
+      t.path = removeDotSegments(r.path);
+    } else {
+      t.path = removeDotSegments(mergePaths(baseParts, r.path));
+    }
+    t.query = r.query;
+  }
+
+  return recomposeUriReference(t);
 }
 
 // -----------------------------------------------------------------------------

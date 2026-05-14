@@ -1246,6 +1246,35 @@ ${U('o1')} ${U('path')} (${U('c')} ${U('d')}).
   },
 
   {
+    name: '49c rdf:first/rest bind an unbound rule blank to an N3 list literal',
+    opt: { proofComments: false },
+    input: `@prefix : <http://example.org/> .
+
+(1) <http://a.example/p> <http://a.example/o> .
+
+{
+  _:el1 rdf:first 1 .
+  _:el1 rdf:rest rdf:nil .
+  _:el1 <http://a.example/p> <http://a.example/o> .
+}
+=>
+{
+  :result :has :success-literal-25 .
+}.
+
+{ :result :has :success-literal-25 . }
+=>
+{
+  :test :is true .
+}.
+`,
+    expect: [
+      /:result\s+:has\s+:success-literal-25\s*\./,
+      /:test\s+:is\s+true\s*\./,
+    ],
+  },
+
+  {
     name: '50 rdf collection materialization: rdf:first/rdf:rest triples become list terms',
     opt: { proofComments: false },
     input: ` ${U('s')} ${U('p')} _:l1.
