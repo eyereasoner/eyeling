@@ -3,6 +3,8 @@
 [![npm version](https://img.shields.io/npm/v/eyeling.svg)](https://www.npmjs.com/package/eyeling)
 [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.19068086-blue.svg)](https://doi.org/10.5281/zenodo.19068086)
 
+![Eyeling](eyeling.png)
+
 A compact [Notation3 (N3)](https://notation3.org/) reasoner in **JavaScript**.
 
 ## Quick start
