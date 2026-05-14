@@ -1,14 +1,35 @@
 # ================
 # RDF Message Flow
 # ================
-# A companion to rdf_messages.n3. This example focuses on a live stream where
-# RDF Messages continuously flow through a small processing pipeline. The next
-# message is released only after the current message reaches the sink, so the
-# stream behaves as an ordered, replayable flow rather than a single merged RDF
-# graph.
+#
+# Run as:
+#
+#   eyeling -r examples/rdf-message-flow.n3 examples/input/rdf-message-flow.trig
+#
+# Motivation
+# ----------
+# The RDF Messages draft describes an RDF Message as an RDF dataset interpreted
+# atomically, and an RDF Message Stream as an ordered sequence of such messages.
+# It also defines RDF Message Logs with explicit MESSAGE delimiters. This Eyeling
+# example keeps the same message-level discipline while staying in ordinary
+# N3/TriG that Eyeling can reason over today.
+#
+# The companion TriG file therefore separates two layers:
+#
+#   1. example-local envelope facts in the default graph, such as order,
+#      processing stage, and payload graph; and
+#   2. one named graph per non-empty message payload, treated here as the RDF
+#      dataset/message that must be inspected atomically.
+#
+# The rules below deliberately do not merge all payload graphs into one global
+# graph. Instead, each observation is checked with log:includes inside the named
+# payload formula. The empty heartbeat has no payload graph but still advances
+# through the same pipeline. The next message is released only after the current
+# one reaches the sink, making the example a small back-pressure / flow-control
+# story rather than a batch merge of all input triples.
 
 @prefix : <https://eyereasoner.github.io/eyeling/examples/rdf-message-flow#>.
-@prefix msg: <https://example.org/msg#>.
+@prefix flow: <https://eyereasoner.github.io/eyeling/examples/rdf-message-flow/vocab#>.
 @prefix prov: <http://www.w3.org/ns/prov#>.
 @prefix sosa: <http://www.w3.org/ns/sosa/>.
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
@@ -17,126 +38,120 @@
 @prefix log: <http://www.w3.org/2000/10/swap/log#>.
 @prefix string: <http://www.w3.org/2000/10/swap/string#>.
 
-
-# The stream starts with just the first message at ingress. Later messages are
-# not pre-loaded; each one is released by the previous message after sink.
-
-
-
-# Empty heartbeat: it flows through the same pipeline and keeps the stream live.
-
-
-
-# Stage 1: once a message has entered the stream, validate its envelope.
-
-{ ?Message :atStage :ingest. } => {
-  ?Message :atStage :validate.
+# Stage 1: once an envelope has entered the stream, validate it.
+{ ?Envelope :atStage :ingest. } => {
+  ?Envelope :atStage :validate.
 }.
 
-# Stage 2: validation preserves the message boundary before interpretation.
+# Stage 2: validation records that the envelope keeps an explicit message
+# boundary before the payload is interpreted.
 {
-  ?Message :atStage :validate;
-    a msg:RDFMessage;
-    msg:offset ?Offset.
+  ?Envelope :atStage :validate;
+    a flow:MessageEnvelope;
+    flow:offset ?Offset.
 } => {
-  ?Message msg:boundaryExplicit true.
-  ?Message :atStage :interpret.
+  ?Envelope flow:boundaryExplicit true.
+  ?Envelope :atStage :interpret.
 }.
 
-# Stage 3a: observation payloads are inspected inside their message formula.
+# Stage 3a: observation payloads are inspected inside their own payload graph.
+# This models the RDF Messages idea that messages are separate atomic datasets.
 {
-  ?Message :atStage :interpret;
-    msg:payloadKind :observation;
-    msg:expectedResult ?Result;
-    msg:payload ?Payload.
+  ?Envelope :atStage :interpret;
+    flow:payloadKind :observation;
+    flow:expectedResult ?Result;
+    flow:payloadGraph ?Payload.
   ?Payload log:nameOf ?PayloadContext.
   ?PayloadContext log:includes { ?Observation sosa:hasSimpleResult ?Result. }.
 } => {
-  ?Message msg:payloadResult ?Result.
-  ?Message :atStage :route.
+  ?Envelope flow:payloadResult ?Result.
+  ?Envelope :atStage :route.
 }.
 
-# Stage 3b: empty heartbeats have no payload, but still move through the flow.
+# Stage 3b: empty heartbeats contain no quads, but RDF Messages explicitly allow
+# empty messages, so the envelope still moves through the flow.
 {
-  ?Message :atStage :interpret;
-    msg:payloadKind :heartbeat.
+  ?Envelope :atStage :interpret;
+    flow:payloadKind :heartbeat.
 } => {
-  ?Message msg:emptyMessageAllowed true.
-  ?Message :atStage :route.
+  ?Envelope flow:emptyMessageAllowed true.
+  ?Envelope :atStage :route.
 }.
 
 # Stage 4a: hot observations are routed to the alert sink.
 {
-  ?Message :atStage :route;
-    msg:payloadResult ?Result.
+  ?Envelope :atStage :route;
+    flow:payloadResult ?Result.
   :temperatureFlow :highThreshold ?Threshold.
   ?Result math:greaterThan ?Threshold.
 } => {
-  ?Message :route :alertSink.
-  ?Message :atStage :sink.
-  :alertSink :received ?Message.
+  ?Envelope :route :alertSink.
+  ?Envelope :atStage :sink.
+  :alertSink :received ?Envelope.
 }.
 
 # Stage 4b: normal observations are routed to the archive sink.
 {
-  ?Message :atStage :route;
-    msg:payloadResult ?Result.
+  ?Envelope :atStage :route;
+    flow:payloadResult ?Result.
   :temperatureFlow :highThreshold ?Threshold.
   ?Result math:notGreaterThan ?Threshold.
 } => {
-  ?Message :route :archiveSink.
-  ?Message :atStage :sink.
-  :archiveSink :received ?Message.
+  ?Envelope :route :archiveSink.
+  ?Envelope :atStage :sink.
+  :archiveSink :received ?Envelope.
 }.
 
 # Stage 4c: heartbeats are routed separately from observations.
 {
-  ?Message :atStage :route;
-    msg:emptyMessageAllowed true.
+  ?Envelope :atStage :route;
+    flow:emptyMessageAllowed true.
 } => {
-  ?Message :route :heartbeatSink.
-  ?Message :atStage :sink.
-  :heartbeatSink :received ?Message.
+  ?Envelope :route :heartbeatSink.
+  ?Envelope :atStage :sink.
+  :heartbeatSink :received ?Envelope.
 }.
 
-# Continuous-flow rule: reaching the sink releases the next message into ingress.
+# Continuous-flow rule: reaching the sink releases the next envelope into ingress.
+# This mirrors a consumer-visible ordered stream: later messages are not processed
+# until the earlier message has completed the pipeline.
 {
-  ?Message :atStage :sink;
-    msg:nextMessage ?Next.
-  ?Next a msg:RDFMessage.
+  ?Envelope :atStage :sink;
+    flow:nextEnvelope ?Next.
+  ?Next a flow:MessageEnvelope.
 } => {
-  ?Message :releases ?Next.
+  ?Envelope :releases ?Next.
   ?Next :atStage :ingest.
 }.
 
-# The Eyeling verdict is emitted only after all five messages have flowed through
-# ingest, validation, interpretation, routing, and sink.
+# The Eyeling verdict is emitted only after all five envelopes have flowed
+# through ingest, validation, interpretation, routing, and sink while preserving
+# their message boundaries.
 {
-  :temperatureFlow msg:orderedMessages ?Messages;
+  :temperatureFlow flow:orderedEnvelopes ?Envelopes;
     :highThreshold ?Threshold.
-  ?Messages list:length ?Count.
+  ?Envelopes list:length ?Count.
   :m001 :atStage :sink;
-    msg:payloadResult ?FirstResult;
+    flow:payloadResult ?FirstResult;
     :route :archiveSink;
     :releases :m002.
   :m002 :atStage :sink;
-    msg:payloadResult ?SecondResult;
+    flow:payloadResult ?SecondResult;
     :route :archiveSink;
     :releases :m003.
   :m003 :atStage :sink;
-    msg:emptyMessageAllowed true;
+    flow:emptyMessageAllowed true;
     :route :heartbeatSink;
     :releases :m004.
   :m004 :atStage :sink;
-    msg:payloadResult ?FourthResult;
+    flow:payloadResult ?FourthResult;
     :route :alertSink;
     :releases :m005.
   :m005 :atStage :sink;
-    msg:payloadResult ?FifthResult;
+    flow:payloadResult ?FifthResult;
     :route :alertSink.
-  ("# rdf-message-flow\n\n## Source files\n\n- [N3 rules](../rdf-message-flow.n3)\n- [Input TriG](../input/rdf-message-flow.trig)\n\n## Answer\nContinuous RDF Message flow accepted: %d ordered messages moved through the ingest → validate → interpret → route → sink pipeline. The threshold was %d, so results %s and %s were archived, the heartbeat kept the stream alive, and results %s and %s were emitted as alerts.\n\n## Explanation\nThe N3 source starts only :m001 at ingress. Each message must reach :sink before the continuous-flow rule releases its msg:nextMessage. Observation payloads are inspected with log:includes inside each message formula, while the empty heartbeat uses the same envelope and routing stages without a payload. This models messages flowing through a live stream while preserving message boundaries." ?Count ?Threshold ?FirstResult ?SecondResult ?FourthResult ?FifthResult) string:format ?Block.
+  ("# rdf-message-flow\n\n## Source files\n\n- [N3 rules](../rdf-message-flow.n3)\n- [Input TriG](../input/rdf-message-flow.trig)\n\n## Answer\nContinuous RDF Message flow accepted: %d ordered message envelopes moved through the ingest → validate → interpret → route → sink pipeline. The threshold was %d, so results %s and %s were archived, the heartbeat kept the stream alive, and results %s and %s were emitted as alerts.\n\n## Explanation\nThe input is a single runnable example split across an N3 rule file and a TriG sidecar. The TriG file uses example-local envelope facts for stream order and processing state, while each named payload graph is treated as an atomic RDF Message dataset. Only :m001 starts at ingress; each envelope must reach :sink before the continuous-flow rule releases its flow:nextEnvelope. Observation payloads are inspected with log:includes inside their own payload formula, and the empty heartbeat advances without a payload graph. This keeps message boundaries visible to the reasoner instead of merging all payload triples into one global graph." ?Count ?Threshold ?FirstResult ?SecondResult ?FourthResult ?FifthResult) string:format ?Block.
 } => {
   :rdfMessageFlowExample log:outputString ?Block.
   :rdfMessageFlowExample :demonstrates :ContinuousFlow, :BackPressureRelease, :AtomicMessageContext, :HeartbeatInFlow, :ThresholdRouting.
 }.
-

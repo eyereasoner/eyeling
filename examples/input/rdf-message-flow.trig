@@ -1,5 +1,29 @@
+# ==============================
+# RDF Message Flow input sidecar
+# ==============================
+#
+# This file is the data half of the runnable example:
+#
+#   eyeling -r examples/rdf-message-flow.n3 examples/input/rdf-message-flow.trig
+#
+# It is intentionally plain TriG rather than a parser-level RDF Message Log with
+# VERSION "1.2-messages" and MESSAGE delimiters. The RDF Messages draft says an
+# RDF Message is an RDF dataset interpreted atomically, that a stream is an
+# ordered sequence of such messages, and that messages in a stream should not be
+# combined by default. To demonstrate those ideas in Eyeling today, the default
+# graph below contains example-local envelope records (:m001 ... :m005) and each
+# non-empty message payload is placed in its own named graph (in:payload001 ...
+# in:payload005).
+#
+# The envelope IRIs are not identifiers for RDF Messages defined by the spec;
+# they are application-level records used by the flow-control rules. The named
+# payload graphs are the datasets/messages being interpreted atomically. The
+# third envelope is an empty heartbeat, which is valid because RDF Messages may
+# be empty. Blank node labels are kept unique because this sidecar is ordinary
+# TriG; a true RDF Message Log parser would reset blank-node scope per MESSAGE.
+
 @prefix : <https://eyereasoner.github.io/eyeling/examples/rdf-message-flow#> .
-@prefix msg: <https://example.org/msg#> .
+@prefix flow: <https://eyereasoner.github.io/eyeling/examples/rdf-message-flow/vocab#> .
 @prefix prov: <http://www.w3.org/ns/prov#> .
 @prefix sosa: <http://www.w3.org/ns/sosa/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -10,77 +34,87 @@
 @prefix see: <https://example.org/see#> .
 @prefix in: <https://example.org/see/input#> .
 
-# Formal Eyeling input evidence in RDF 1.2 TriG.
-# The generated runner reads this TriG evidence directly.
-
-:temperatureFlow a msg:MessageStream .
-:temperatureFlow msg:orderedMessages (:m001 :m002 :m003 :m004 :m005) .
-:temperatureFlow msg:message :m001 .
-:temperatureFlow msg:message :m002 .
-:temperatureFlow msg:message :m003 .
-:temperatureFlow msg:message :m004 .
-:temperatureFlow msg:message :m005 .
+:temperatureFlow a flow:RDFMessageStream .
+:temperatureFlow flow:orderedEnvelopes (:m001 :m002 :m003 :m004 :m005) .
+:temperatureFlow flow:envelope :m001 .
+:temperatureFlow flow:envelope :m002 .
+:temperatureFlow flow:envelope :m003 .
+:temperatureFlow flow:envelope :m004 .
+:temperatureFlow flow:envelope :m005 .
+:temperatureFlow :producer :thermometerA .
+:temperatureFlow :consumer :flowProcessor .
 :temperatureFlow :pipeline (:ingest :validate :interpret :route :sink) .
 :temperatureFlow :highThreshold 26 .
-:m001 :atStage :ingest .
-:m001 a msg:RDFMessage .
-:m001 msg:offset 1 .
-:m001 msg:nextMessage :m002 .
-:m001 prov:generatedAtTime "2026-05-12T18:20:00Z" .
-:m001 msg:payloadKind :observation .
-:m001 msg:expectedResult 21 .
-:m001 msg:payload in:formula1 .
-:m002 a msg:RDFMessage .
-:m002 msg:offset 2 .
-:m002 msg:nextMessage :m003 .
-:m002 prov:generatedAtTime "2026-05-12T18:21:00Z" .
-:m002 msg:payloadKind :observation .
-:m002 msg:expectedResult 22 .
-:m002 msg:payload in:formula2 .
-:m003 a msg:RDFMessage .
-:m003 msg:offset 3 .
-:m003 msg:nextMessage :m004 .
-:m003 prov:generatedAtTime "2026-05-12T18:22:00Z" .
-:m003 msg:payloadKind :heartbeat .
-:m004 a msg:RDFMessage .
-:m004 msg:offset 4 .
-:m004 msg:nextMessage :m005 .
-:m004 prov:generatedAtTime "2026-05-12T18:23:00Z" .
-:m004 msg:payloadKind :observation .
-:m004 msg:expectedResult 28 .
-:m004 msg:payload in:formula3 .
-:m005 a msg:RDFMessage .
-:m005 msg:offset 5 .
-:m005 prov:generatedAtTime "2026-05-12T18:24:00Z" .
-:m005 msg:payloadKind :observation .
-:m005 msg:expectedResult 29 .
-:m005 msg:payload in:formula4 .
 
-in:formula1 {
+:thermometerA a flow:StreamProducer .
+:flowProcessor a flow:StreamConsumer .
+:archiveSink a flow:StreamConsumer .
+:alertSink a flow:StreamConsumer .
+:heartbeatSink a flow:StreamConsumer .
+
+:m001 a flow:MessageEnvelope .
+:m001 :atStage :ingest .
+:m001 flow:offset 1 .
+:m001 flow:nextEnvelope :m002 .
+:m001 prov:generatedAtTime "2026-05-12T18:20:00Z"^^xsd:dateTime .
+:m001 flow:payloadKind :observation .
+:m001 flow:expectedResult 21 .
+:m001 flow:payloadGraph in:payload001 .
+
+:m002 a flow:MessageEnvelope .
+:m002 flow:offset 2 .
+:m002 flow:nextEnvelope :m003 .
+:m002 prov:generatedAtTime "2026-05-12T18:21:00Z"^^xsd:dateTime .
+:m002 flow:payloadKind :observation .
+:m002 flow:expectedResult 22 .
+:m002 flow:payloadGraph in:payload002 .
+
+:m003 a flow:MessageEnvelope .
+:m003 flow:offset 3 .
+:m003 flow:nextEnvelope :m004 .
+:m003 prov:generatedAtTime "2026-05-12T18:22:00Z"^^xsd:dateTime .
+:m003 flow:payloadKind :heartbeat .
+
+:m004 a flow:MessageEnvelope .
+:m004 flow:offset 4 .
+:m004 flow:nextEnvelope :m005 .
+:m004 prov:generatedAtTime "2026-05-12T18:23:00Z"^^xsd:dateTime .
+:m004 flow:payloadKind :observation .
+:m004 flow:expectedResult 28 .
+:m004 flow:payloadGraph in:payload004 .
+
+:m005 a flow:MessageEnvelope .
+:m005 flow:offset 5 .
+:m005 prov:generatedAtTime "2026-05-12T18:24:00Z"^^xsd:dateTime .
+:m005 flow:payloadKind :observation .
+:m005 flow:expectedResult 29 .
+:m005 flow:payloadGraph in:payload005 .
+
+in:payload001 {
   _:m001b0 a sosa:Observation .
   _:m001b0 sosa:madeBySensor :thermometerA .
-  _:m001b0 sosa:resultTime "2026-05-12T18:20:00Z" .
+  _:m001b0 sosa:resultTime "2026-05-12T18:20:00Z"^^xsd:dateTime .
   _:m001b0 sosa:hasSimpleResult 21 .
 }
 
-in:formula2 {
+in:payload002 {
   _:m002b0 a sosa:Observation .
   _:m002b0 sosa:madeBySensor :thermometerA .
-  _:m002b0 sosa:resultTime "2026-05-12T18:21:00Z" .
+  _:m002b0 sosa:resultTime "2026-05-12T18:21:00Z"^^xsd:dateTime .
   _:m002b0 sosa:hasSimpleResult 22 .
 }
 
-in:formula3 {
+in:payload004 {
   _:m004b0 a sosa:Observation .
   _:m004b0 sosa:madeBySensor :thermometerA .
-  _:m004b0 sosa:resultTime "2026-05-12T18:23:00Z" .
+  _:m004b0 sosa:resultTime "2026-05-12T18:23:00Z"^^xsd:dateTime .
   _:m004b0 sosa:hasSimpleResult 28 .
 }
 
-in:formula4 {
+in:payload005 {
   _:m005b0 a sosa:Observation .
   _:m005b0 sosa:madeBySensor :thermometerA .
-  _:m005b0 sosa:resultTime "2026-05-12T18:24:00Z" .
+  _:m005b0 sosa:resultTime "2026-05-12T18:24:00Z"^^xsd:dateTime .
   _:m005b0 sosa:hasSimpleResult 29 .
 }
 
@@ -88,13 +122,7 @@ in:metadata {
   in:run a see:InputDataset .
   in:run see:name "rdf_message_flow" .
   in:run see:title "RDF Message Flow" .
-  in:run see:sourceFile "examples/n3/rdf_message_flow.n3" .
-  in:run see:sourceSHA256 "e4e534c8ac3c2aa276e7158cca8d3146531879033f73685c302b486be2ab0099" .
-  in:run see:description "A companion to rdf_messages.n3. This example focuses on a live stream where\nRDF Messages continuously flow through a small processing pipeline. The next\nmessage is released only after the current message reaches the sink, so the\nstream behaves as an ordered, replayable flow rather than a single merged RDF\ngraph." .
+  in:run see:sourceFile "examples/rdf-message-flow.n3" .
+  in:run see:description "A single Eyeling example split across an N3 rule file and a TriG input sidecar. It models an ordered RDF Message Stream using application-level envelopes and named payload graphs so that each payload can be interpreted atomically without merging all message contents into one graph." .
   in:run see:compiler "Eyeling RDF/TriG input sidecar" .
-  in:run see:inputFacts 42 .
-  in:run see:compiledRules 9 .
-  in:run see:compiledBackwardRules 0 .
-  in:run see:compiledFuses 0 .
-  in:run see:compiledQueries 1 .
 }

@@ -1,5 +1,32 @@
+# ==========================
+# RDF Messages input sidecar
+# ==========================
+#
+# This file is the data half of the runnable example:
+#
+#   eyeling -r examples/rdf-messages.n3 examples/input/rdf-messages.trig
+#
+# It is intentionally plain TriG rather than a parser-level RDF Message Log with
+# VERSION "1.2-messages" and MESSAGE delimiters. The RDF Messages draft says an
+# RDF Message is an RDF dataset interpreted atomically, that a message stream is
+# an ordered sequence of such messages, that messages are not combined by
+# default, and that blank-node labels are scoped to the message.
+#
+# To demonstrate those ideas in Eyeling today, the default graph contains
+# application-local envelope records (:m001 ... :m003) plus replay order and
+# offsets. Each non-empty message payload is placed in its own named graph
+# (in:payload001 and in:payload003). The second envelope is an empty heartbeat,
+# which is valid because RDF Messages may be empty.
+#
+# The envelope IRIs are not message identifiers defined by the spec; they are
+# application-level records used by the rules. The named payload graphs are the
+# datasets/messages being interpreted atomically. The rmsg:localBlankLabel values
+# show that the same source-local label "_:b0" can recur in different messages;
+# the concrete TriG blank nodes themselves are unique because this sidecar is
+# ordinary TriG rather than an RDF Message Log parser resetting blank-node scope.
+
 @prefix : <https://eyereasoner.github.io/eyeling/examples/rdf-messages#> .
-@prefix msg: <https://w3c-cg.github.io/rsp/spec/messages#> .
+@prefix rmsg: <https://eyereasoner.github.io/eyeling/examples/rdf-messages/vocab#> .
 @prefix prov: <http://www.w3.org/ns/prov#> .
 @prefix sosa: <http://www.w3.org/ns/sosa/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
@@ -10,46 +37,46 @@
 @prefix see: <https://example.org/see#> .
 @prefix in: <https://example.org/see/input#> .
 
-# Formal Eyeling input evidence in RDF 1.2 TriG.
-# The generated runner reads this TriG evidence directly.
+:temperatureLog a rmsg:MessageLog .
+:temperatureLog rmsg:orderedMessages (:m001 :m002 :m003) .
+:temperatureLog rmsg:message :m001 .
+:temperatureLog rmsg:message :m002 .
+:temperatureLog rmsg:message :m003 .
+:temperatureLog rmsg:profile :generatedAtTimeProfile .
+:temperatureLog rmsg:retentionPolicy "replayable archive" .
 
-:temperatureLog a msg:MessageLog .
-:temperatureLog msg:orderedMessages (:m001 :m002 :m003) .
-:temperatureLog msg:message :m001 .
-:temperatureLog msg:message :m002 .
-:temperatureLog msg:message :m003 .
-:temperatureLog msg:profile :generatedAtTimeProfile .
-:temperatureLog msg:retentionPolicy "replayable archive" .
-:m001 a msg:RDFMessage .
-:m001 msg:offset 1 .
-:m001 prov:generatedAtTime "2026-05-12T18:20:00Z" .
-:m001 msg:payloadKind :observation .
-:m001 msg:localBlankLabel "_:b0" .
-:m001 msg:expectedResult 22 .
-:m001 msg:payload in:formula1 .
-:m002 a msg:RDFMessage .
-:m002 msg:offset 2 .
-:m002 prov:generatedAtTime "2026-05-12T18:22:00Z" .
-:m002 msg:payloadKind :heartbeat .
-:m003 a msg:RDFMessage .
-:m003 msg:offset 3 .
-:m003 prov:generatedAtTime "2026-05-12T18:25:00Z" .
-:m003 msg:payloadKind :observation .
-:m003 msg:localBlankLabel "_:b0" .
-:m003 msg:expectedResult 23 .
-:m003 msg:payload in:formula2 .
+:m001 a rmsg:MessageEnvelope .
+:m001 rmsg:offset 1 .
+:m001 prov:generatedAtTime "2026-05-12T18:20:00Z"^^xsd:dateTime .
+:m001 rmsg:payloadKind :observation .
+:m001 rmsg:localBlankLabel "_:b0" .
+:m001 rmsg:expectedResult 22 .
+:m001 rmsg:payloadGraph in:payload001 .
 
-in:formula1 {
+:m002 a rmsg:MessageEnvelope .
+:m002 rmsg:offset 2 .
+:m002 prov:generatedAtTime "2026-05-12T18:22:00Z"^^xsd:dateTime .
+:m002 rmsg:payloadKind :heartbeat .
+
+:m003 a rmsg:MessageEnvelope .
+:m003 rmsg:offset 3 .
+:m003 prov:generatedAtTime "2026-05-12T18:25:00Z"^^xsd:dateTime .
+:m003 rmsg:payloadKind :observation .
+:m003 rmsg:localBlankLabel "_:b0" .
+:m003 rmsg:expectedResult 23 .
+:m003 rmsg:payloadGraph in:payload003 .
+
+in:payload001 {
   _:m001b0 a sosa:Observation .
   _:m001b0 sosa:madeBySensor :thermometerA .
-  _:m001b0 sosa:resultTime "2026-05-12T18:20:00Z" .
+  _:m001b0 sosa:resultTime "2026-05-12T18:20:00Z"^^xsd:dateTime .
   _:m001b0 sosa:hasSimpleResult 22 .
 }
 
-in:formula2 {
+in:payload003 {
   _:m003b0 a sosa:Observation .
   _:m003b0 sosa:madeBySensor :thermometerA .
-  _:m003b0 sosa:resultTime "2026-05-12T18:25:00Z" .
+  _:m003b0 sosa:resultTime "2026-05-12T18:25:00Z"^^xsd:dateTime .
   _:m003b0 sosa:hasSimpleResult 23 .
 }
 
@@ -57,13 +84,7 @@ in:metadata {
   in:run a see:InputDataset .
   in:run see:name "rdf_messages" .
   in:run see:title "RDF Messages" .
-  in:run see:sourceFile "examples/n3/rdf_messages.n3" .
-  in:run see:sourceSHA256 "2ea8b414b92e65531cf384000955ca47811d5b7c779a8d2c9fb007515e745f32" .
-  in:run see:description "This Eyeling example models the main idea from\nhttps://pietercolpaert.be/papers/eswc2026-rdf-messages/:\na message stream/log is not just one freely mergeable RDF graph. It is an\nordered sequence of RDF Datasets that are interpreted atomically, one message\nat a time. The middle message is deliberately empty to model a heartbeat, and\nthe local blank-node label \"_:b0\" is deliberately reused by two messages to\nshow message-scoped blank nodes." .
+  in:run see:sourceFile "examples/rdf-messages.n3" .
+  in:run see:description "A single Eyeling example split across an N3 rule file and a TriG input sidecar. It models a replayable RDF Message Log with application-level envelopes and named payload graphs so that each payload can be interpreted atomically without merging all message contents into one graph." .
   in:run see:compiler "Eyeling RDF/TriG input sidecar" .
-  in:run see:inputFacts 25 .
-  in:run see:compiledRules 6 .
-  in:run see:compiledBackwardRules 0 .
-  in:run see:compiledFuses 0 .
-  in:run see:compiledQueries 1 .
 }

@@ -1,16 +1,38 @@
 # ============
 # RDF Messages
 # ============
-# This Eyeling example models the main idea from
-# https://pietercolpaert.be/papers/eswc2026-rdf-messages/:
-# a message stream/log is not just one freely mergeable RDF graph. It is an
-# ordered sequence of RDF Datasets that are interpreted atomically, one message
-# at a time. The middle message is deliberately empty to model a heartbeat, and
-# the local blank-node label "_:b0" is deliberately reused by two messages to
-# show message-scoped blank nodes.
+#
+# Run as:
+#
+#   eyeling -r examples/rdf-messages.n3 examples/input/rdf-messages.trig
+#
+# Motivation
+# ----------
+# The RDF Messages draft defines an RDF Message as an RDF dataset interpreted
+# atomically, an RDF Message Stream as an ordered sequence of messages, and an
+# RDF Message Log as a replayable record of such a stream. The draft also says
+# that messages should not be combined by default and that blank node labels are
+# scoped to the message in which they occur.
+#
+# This Eyeling example demonstrates those ideas in ordinary N3/TriG rather than
+# in a parser-level RDF Message Log with VERSION "1.2-messages" and MESSAGE
+# delimiters. The companion TriG file therefore has two layers:
+#
+#   1. application-local envelope facts in the default graph, such as message
+#      order, offset, expected result, and the textual blank-node label seen in
+#      the original stream; and
+#   2. one named graph per non-empty message payload, treated as the atomic RDF
+#      dataset/message to be inspected.
+#
+# The rules below validate a replay archive with three message envelopes. The
+# middle message is an empty heartbeat. The first and third messages both record
+# the local blank-node label "_:b0"; because this sidecar is normal TriG, the
+# actual TriG blank nodes are unique, while the envelope records show the
+# message-scoped label reuse that a true RDF Message Log parser would preserve
+# by resetting blank-node scope at each MESSAGE delimiter.
 
 @prefix : <https://eyereasoner.github.io/eyeling/examples/rdf-messages#>.
-@prefix msg: <https://w3c-cg.github.io/rsp/spec/messages#>.
+@prefix rmsg: <https://eyereasoner.github.io/eyeling/examples/rdf-messages/vocab#>.
 @prefix prov: <http://www.w3.org/ns/prov#>.
 @prefix sosa: <http://www.w3.org/ns/sosa/>.
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
@@ -19,51 +41,49 @@
 @prefix log: <http://www.w3.org/2000/10/swap/log#>.
 @prefix string: <http://www.w3.org/2000/10/swap/string#>.
 
-
-
-# Empty RDF Message: a legal heartbeat/keep-alive event.
-
-
 # A message with an offset inside a log has an explicit replay boundary.
-
+# The envelope resource is application-local; the payload graph is the dataset
+# treated as the RDF Message.
 {
-  ?Log a msg:MessageLog;
-    msg:message ?Message.
-  ?Message a msg:RDFMessage;
-    msg:offset ?Offset.
+  ?Log a rmsg:MessageLog;
+    rmsg:message ?Message.
+  ?Message a rmsg:MessageEnvelope;
+    rmsg:offset ?Offset.
 } => {
-  ?Message msg:boundaryExplicit true.
-  ?Log msg:replayContains ?Message.
+  ?Message rmsg:boundaryExplicit true.
+  ?Log rmsg:replayContains ?Message.
 }.
 
-# The payload is a dataset-like formula. We can inspect it without merging it
-# into the global graph, preserving the message as the unit of interpretation.
+# The payload is a dataset-like named graph. Inspect it with log:includes instead
+# of merging all payload triples into the global graph.
 {
-  ?Message a msg:RDFMessage;
-    msg:expectedResult ?Result;
-    msg:payload ?Payload.
+  ?Message a rmsg:MessageEnvelope;
+    rmsg:expectedResult ?Result;
+    rmsg:payloadGraph ?Payload.
   ?Payload log:nameOf ?PayloadContext.
   ?PayloadContext log:includes { ?Observation sosa:hasSimpleResult ?Result. }.
 } => {
-  ?Message msg:payloadResult ?Result.
+  ?Message rmsg:payloadResult ?Result.
 }.
 
-# Heartbeat/keep-alive messages can be empty and still occupy a boundary.
+# Empty messages are legal RDF Messages. Here the empty second envelope acts as
+# a heartbeat/keep-alive and still occupies a boundary in the replay archive.
 {
-  ?Message a msg:RDFMessage;
-    msg:payloadKind :heartbeat.
+  ?Message a rmsg:MessageEnvelope;
+    rmsg:payloadKind :heartbeat.
 } => {
-  ?Message msg:emptyMessageAllowed true.
+  ?Message rmsg:emptyMessageAllowed true.
   :HeartbeatEvidence :accepted ?Message.
 }.
 
-# The same blank-node label may recur in a message log because blank nodes are
-# scoped to their RDF Message, not to the whole replay archive.
+# The same local blank-node label may recur in different messages. In this
+# plain-TriG sidecar the real blank nodes are unique, and the envelope metadata
+# records the per-message label visible in the source stream.
 {
-  ?First a msg:RDFMessage;
-    msg:localBlankLabel ?Label.
-  ?Second a msg:RDFMessage;
-    msg:localBlankLabel ?Label.
+  ?First a rmsg:MessageEnvelope;
+    rmsg:localBlankLabel ?Label.
+  ?Second a rmsg:MessageEnvelope;
+    rmsg:localBlankLabel ?Label.
   ?First log:notEqualTo ?Second.
 } => {
   :BlankNodeScope :reusedLabel ?Label.
@@ -71,35 +91,35 @@
 }.
 
 # Different observations from the same sensor are not a global contradiction:
-# each message is interpreted in its own communication context.
+# by default, message payloads remain separate communication contexts.
 {
-  ?First a msg:RDFMessage;
-    msg:payloadResult ?FirstResult.
-  ?Second a msg:RDFMessage;
-    msg:payloadResult ?SecondResult.
+  ?First a rmsg:MessageEnvelope;
+    rmsg:payloadResult ?FirstResult.
+  ?Second a rmsg:MessageEnvelope;
+    rmsg:payloadResult ?SecondResult.
   ?FirstResult math:notEqualTo ?SecondResult.
   ?First log:notEqualTo ?Second.
 } => {
   :MessageContext :differentObservationsStayContextual true.
 }.
 
-# The Eyeling verdict is emitted only when all message-specific validations have been
-# derived from the log, message metadata, payload formulas, and built-ins.
+# The Eyeling verdict is emitted only when all message-specific validations have
+# been derived from the log metadata, ordered message list, payload graphs, and
+# built-ins.
 {
-  :temperatureLog msg:orderedMessages ?Messages.
+  :temperatureLog rmsg:orderedMessages ?Messages.
   ?Messages list:length ?Count.
-  :m001 msg:boundaryExplicit true;
-    msg:payloadResult ?FirstResult.
-  :m002 msg:boundaryExplicit true;
-    msg:emptyMessageAllowed true.
-  :m003 msg:boundaryExplicit true;
-    msg:payloadResult ?SecondResult.
+  :m001 rmsg:boundaryExplicit true;
+    rmsg:payloadResult ?FirstResult.
+  :m002 rmsg:boundaryExplicit true;
+    rmsg:emptyMessageAllowed true.
+  :m003 rmsg:boundaryExplicit true;
+    rmsg:payloadResult ?SecondResult.
   :BlankNodeScope :reusedLabel ?Label;
     :isPerMessage true.
   :MessageContext :differentObservationsStayContextual true.
-  ("# rdf-messages\n\n## Source files\n\n- [N3 rules](../rdf-messages.n3)\n- [Input TriG](../input/rdf-messages.trig)\n\n## Answer\nRDF Message log accepted: %d explicit message boundaries are preserved. Message :m002 is an empty heartbeat, and the local blank-node label %s is safely reused in separate messages.\n\n## Explanation\nThe N3 source models an RDF Message Log as an ordered sequence of RDF Messages. Each non-empty message has a formula-valued payload that is inspected with log:includes, so the observation data stays inside the message boundary instead of being treated as one global graph. The two temperature results, %s and %s, are different observations from the same stream but are contextualized by their message boundaries." ?Count ?Label ?FirstResult ?SecondResult) string:format ?Block.
+  ("# rdf-messages\n\n## Source files\n\n- [N3 rules](../rdf-messages.n3)\n- [Input TriG](../input/rdf-messages.trig)\n\n## Answer\nRDF Message replay archive accepted: %d explicit message boundaries are preserved. Message :m002 is an empty heartbeat, and the local blank-node label %s is safely reused in separate message envelopes.\n\n## Explanation\nThe input is a single runnable example split across an N3 rule file and a TriG sidecar. The TriG file uses application-local envelope facts for stream order and replay metadata, while each non-empty named payload graph is treated as an atomic RDF Message dataset. Payloads are inspected with log:includes inside their own formulas, so the observation data stays inside the message boundary instead of being treated as one global graph. The two temperature results, %s and %s, are different observations from the same stream but are contextualized by their message boundaries.\n\nThis is intentionally not a parser-level VERSION \\\"1.2-messages\\\" / MESSAGE delimiter test. It is a reasoning example over an already-materialized sidecar representation of a message log." ?Count ?Label ?FirstResult ?SecondResult) string:format ?Block.
 } => {
   :rdfMessagesExample log:outputString ?Block.
   :rdfMessagesExample :demonstrates :ExplicitBoundaries, :AtomicMessageContext, :EmptyHeartbeat, :MessageScopedBlankNodes, :ReplayableMessageLog.
 }.
-
