@@ -1246,35 +1246,6 @@ ${U('o1')} ${U('path')} (${U('c')} ${U('d')}).
   },
 
   {
-    name: '49c rdf:first/rest bind an unbound rule blank to an N3 list literal',
-    opt: { proofComments: false },
-    input: `@prefix : <http://example.org/> .
-
-(1) <http://a.example/p> <http://a.example/o> .
-
-{
-  _:el1 rdf:first 1 .
-  _:el1 rdf:rest rdf:nil .
-  _:el1 <http://a.example/p> <http://a.example/o> .
-}
-=>
-{
-  :result :has :success-literal-25 .
-}.
-
-{ :result :has :success-literal-25 . }
-=>
-{
-  :test :is true .
-}.
-`,
-    expect: [
-      /:result\s+:has\s+:success-literal-25\s*\./,
-      /:test\s+:is\s+true\s*\./,
-    ],
-  },
-
-  {
     name: '50 rdf collection materialization: rdf:first/rdf:rest triples become list terms',
     opt: { proofComments: false },
     input: ` ${U('s')} ${U('p')} _:l1.
@@ -1297,6 +1268,38 @@ _:l2 rdf:rest rdf:nil.
   // -------------------------
   // Newer eyeling.js features
   // -------------------------
+
+  {
+    name: '50b regression: rdf:first/rest with variable subject binds existing N3 list term',
+    opt: { proofComments: false },
+    input: `@prefix : <http://example.org/> .
+
+(1) <http://a.example/p> <http://a.example/o> .
+
+{
+    _:el1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> 1 .
+    _:el1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+    _:el1 <http://a.example/p> <http://a.example/o> .
+}
+=>
+{
+    :result :has :success-literal-25.
+}.
+
+{} => {
+    :test :contains :success-literal-25.
+}.
+
+{
+    :result :has :success-literal-25.
+}
+=>
+{
+    :test :is true.
+}.
+`,
+    expect: [/:result\s+:has\s+:success-literal-25\s*\./, /:test\s+:is\s+true\s*\./],
+  },
 
   {
     name: '51 automatic output rendering: prints log:outputString values ordered by key (subject)',
@@ -1423,6 +1426,111 @@ res:CITY_Chañaral rdfs:label "Chañaral".
 }.
 `,
     expect: [/:result\s+:has\s+:success-literal-24\s*\./, /:test\s+:is\s+true\s*\./],
+  },
+
+  {
+    name: '52d regression: @base and @prefix remapping resolve relative IRIs incrementally',
+    opt: { proofComments: false },
+    input: `# Reference: https://www.w3.org/TR/turtle/#sec-iri-references
+@base <http://foo/bar/> .
+<a1> <b1> <c1> .
+@base <http://example.org/ns/> .
+<a2> <http://example.org/ns/b2> <c2> .
+@base <foo/> .
+<a3> <b3> <c3> .
+@prefix : <bar#> .
+:a4 :b4 :c4 .
+@prefix : <http://example.org/ns2#> .
+:a5 :b5 :c5 .
+
+{
+    <http://foo/bar/a1> <http://foo/bar/b1> <http://foo/bar/c1> .
+    <http://example.org/ns/a2> <http://example.org/ns/b2> <http://example.org/ns/c2> .
+    <http://example.org/ns/foo/a3> <http://example.org/ns/foo/b3> <http://example.org/ns/foo/c3> .
+    <http://example.org/ns/foo/bar#a4> <http://example.org/ns/foo/bar#b4> <http://example.org/ns/foo/bar#c4> .
+    <http://example.org/ns2#a5> <http://example.org/ns2#b5> <http://example.org/ns2#c5> .
+}
+=>
+{
+    :result :has :success-literal-28.
+}.
+
+{} => {
+    :test :contains :success-literal-28.
+}.
+
+{
+    :result :has :success-literal-28.
+}
+=>
+{
+    :test :is true.
+}.
+`,
+    expect: [/:result\s+:has\s+:success-literal-28\s*\./, /:test\s+:is\s+true\s*\./],
+  },
+
+  {
+    name: '52e regression: is/of works in blank node property lists with list values',
+    opt: { proofComments: false },
+    input: `@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:thing :prop (1 2 3).
+
+{
+    (1 2 3) is :prop of :thing.
+    [ is :prop of :thing ].
+}
+=>
+{
+    :result :has :success-literal-29.
+}.
+
+{} => {
+    :test :contains :success-literal-29.
+}.
+
+{
+    :result :has :success-literal-29.
+}
+=>
+{
+    :test :is true.
+}.
+`,
+    expect: [/:result\s+:has\s+:success-literal-29\s*\./, /:test\s+:is\s+true\s*\./],
+  },
+
+  {
+    name: '52f regression: has works with list values in statement predicate position',
+    opt: { proofComments: false },
+    input: `@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:thing :prop (1 2 3).
+
+{
+    :thing has :prop (1 2 3).
+}
+=>
+{
+    :result :has :success-literal-30.
+}.
+
+{} => {
+    :test :contains :success-literal-30.
+}.
+
+{
+    :result :has :success-literal-30.
+}
+=>
+{
+    :test :is true.
+}.
+`,
+    expect: [/:result\s+:has\s+:success-literal-30\s*\./, /:test\s+:is\s+true\s*\./],
   },
 
   {

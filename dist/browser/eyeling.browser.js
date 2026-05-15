@@ -1699,7 +1699,7 @@ function __pushBuiltinDeltaLimited(out, delta, maxResults) {
 
 function __collectListLikeTermsFromTerm(t, out, seen) {
   if (t instanceof ListTerm || t instanceof OpenListTerm) {
-    const k = termFastKey ? termFastKey(t) : null;
+    const k = termFastKey(t);
     if (k === null || !seen.has(k)) {
       if (k !== null) seen.add(k);
       out.push(t);
@@ -11498,6 +11498,20 @@ class Parser {
     if (this.peek().typ === 'Ident' && (this.peek().value || '') === 'a') {
       this.next();
       pred = internIri(RDF_NS + 'type');
+    } else if (this.peek().typ === 'Ident' && (this.peek().value || '') === 'has') {
+      // N3 syntactic sugar is also valid in predicate-object lists,
+      // including blank node property lists: [ has :p :o ] means _:b :p :o.
+      this.next();
+      pred = this.parseTerm();
+    } else if (this.peek().typ === 'Ident' && (this.peek().value || '') === 'is') {
+      // N3 syntactic sugar: [ is :p of :s ] means :s :p _:b.
+      this.next();
+      pred = this.parseTerm();
+      if (!(this.peek().typ === 'Ident' && (this.peek().value || '') === 'of')) {
+        this.fail(`Expected 'of' after 'is <expr>', got ${this.peek().toString()}`);
+      }
+      this.next();
+      invert = true;
     } else if (this.peek().typ === 'OpPredInvert') {
       this.next();
       pred = this.parseTerm();
