@@ -1,0 +1,89 @@
+# ===================================
+# RDF Message Microgrid input sidecar
+# ===================================
+#
+# This file is the data half of the runnable example:
+#
+#   eyeling -r examples/rdf-message-microgrid.n3 examples/input/rdf-message-microgrid.trig
+#
+# The scene is a clinic operating as an islanded microgrid after a storm. The
+# data arrives as a replayable stream of atomic messages: life-safety loads,
+# power status, flexible demand, and an empty heartbeat. The default graph holds
+# application-local envelope facts, while each non-empty message payload is kept
+# in a named graph.
+#
+# The envelope IRIs are not RDF Message identifiers defined by the specification;
+# they are local replay records for this example. The named graphs are the
+# datasets/messages interpreted atomically by the N3 rules.
+
+@prefix : <https://eyereasoner.github.io/eyeling/examples/rdf-message-microgrid#> .
+@prefix rmsg: <https://eyereasoner.github.io/eyeling/examples/rdf-message-microgrid/vocab#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix see: <https://example.org/see#> .
+@prefix in: <https://example.org/see/input#> .
+
+:stormClinicLog a rmsg:MessageLog .
+:stormClinicLog rmsg:orderedMessages (:m001 :m002 :m003 :m004) .
+:stormClinicLog rmsg:message :m001 .
+:stormClinicLog rmsg:message :m002 .
+:stormClinicLog rmsg:message :m003 .
+:stormClinicLog rmsg:message :m004 .
+:stormClinicLog rmsg:retentionPolicy "storm replay archive" .
+
+:m001 a rmsg:MessageEnvelope .
+:m001 rmsg:offset 1 .
+:m001 prov:generatedAtTime "2026-05-15T19:00:00Z"^^xsd:dateTime .
+:m001 rmsg:payloadKind :lifeSafetyLoads .
+:m001 rmsg:payloadGraph in:lifeSafetyPayload .
+
+:m002 a rmsg:MessageEnvelope .
+:m002 rmsg:offset 2 .
+:m002 prov:generatedAtTime "2026-05-15T19:01:00Z"^^xsd:dateTime .
+:m002 rmsg:payloadKind :powerStatus .
+:m002 rmsg:payloadGraph in:powerPayload .
+
+:m003 a rmsg:MessageEnvelope .
+:m003 rmsg:offset 3 .
+:m003 prov:generatedAtTime "2026-05-15T19:02:00Z"^^xsd:dateTime .
+:m003 rmsg:payloadKind :flexibleDemand .
+:m003 rmsg:payloadGraph in:flexPayload .
+
+:m004 a rmsg:MessageEnvelope .
+:m004 rmsg:offset 4 .
+:m004 prov:generatedAtTime "2026-05-15T19:03:00Z"^^xsd:dateTime .
+:m004 rmsg:payloadKind :heartbeat .
+
+in:lifeSafetyPayload {
+  :oxygenConcentrator a :LifeSafetyLoad .
+  :oxygenConcentrator :requiresWatts 500 .
+  :oxygenConcentrator :serves :respiratoryCareRoom .
+
+  :vaccineFridge a :ColdChainLoad .
+  :vaccineFridge :requiresWatts 120 .
+  :vaccineFridge :serves :vaccineColdChain .
+}
+
+in:powerPayload {
+  :batteryBank a :PowerReserve .
+  :batteryBank :availableWatts 650 .
+  :batteryBank :state :islanded .
+
+  :solarForecast a :NearTermForecast .
+  :solarForecast :expectedWatts 150 .
+}
+
+in:flexPayload {
+  :evChargers a :FlexibleLoad .
+  :evChargers :shedWatts 600 .
+  :evChargers :serves :staffVehicles .
+}
+
+in:metadata {
+  in:run a see:InputDataset .
+  in:run see:name "rdf_message_microgrid" .
+  in:run see:title "RDF Message Microgrid" .
+  in:run see:sourceFile "examples/rdf-message-microgrid.n3" .
+  in:run see:description "A storm clinic microgrid example using application-local RDF Message envelopes and named payload graphs so a reasoner can make a bounded, explainable load-shedding decision." .
+  in:run see:compiler "Eyeling RDF/TriG input sidecar" .
+}

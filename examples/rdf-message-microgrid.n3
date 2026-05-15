@@ -1,0 +1,141 @@
+# =====================
+# RDF Message Microgrid
+# =====================
+#
+# Run as:
+#
+#   eyeling -r examples/rdf-message-microgrid.n3 examples/input/rdf-message-microgrid.trig
+#
+# Motivation
+# ----------
+# A clinic has lost grid power during a storm. Several small systems continue to
+# send RDF data: one message describes life-safety loads, another describes the
+# current battery and solar situation, another describes flexible demand that may
+# be deferred, and a fourth message is an empty heartbeat.
+#
+# The RDF Messages draft treats each message as an RDF dataset intended to be
+# interpreted atomically. It also treats a message stream as an ordered sequence
+# and allows empty messages. This example models those ideas in ordinary TriG/N3:
+# the companion TriG file contains application-local envelope facts in the
+# default graph, and each non-empty payload is placed in its own named graph.
+#
+# The point is not only technical. Atomic messages let a small reasoner make a
+# careful decision under pressure: protect the oxygen concentrator and vaccine
+# fridge, defer the EV chargers, and explain the action from the replayed message
+# boundaries instead of silently merging every payload into one timeless graph.
+#
+# This is intentionally not a parser-level VERSION "1.2-messages" / MESSAGE
+# delimiter test. It is a reasoning example over an already-materialized sidecar
+# representation of a message log.
+
+@prefix : <https://eyereasoner.github.io/eyeling/examples/rdf-message-microgrid#>.
+@prefix rmsg: <https://eyereasoner.github.io/eyeling/examples/rdf-message-microgrid/vocab#>.
+@prefix prov: <http://www.w3.org/ns/prov#>.
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix list: <http://www.w3.org/2000/10/swap/list#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix string: <http://www.w3.org/2000/10/swap/string#>.
+
+# Every envelope with an offset is an explicit replay boundary. The envelope is
+# application-local metadata; the payload graph is the dataset/message being
+# interpreted atomically.
+{
+  ?Log a rmsg:MessageLog;
+    rmsg:message ?Message.
+  ?Message a rmsg:MessageEnvelope;
+    rmsg:offset ?Offset.
+} => {
+  ?Message rmsg:boundaryExplicit true.
+  ?Log rmsg:replayContains ?Message.
+}.
+
+# Empty RDF Messages are valid. Here the fourth envelope is a heartbeat that
+# confirms the stream is still alive without adding any payload triples.
+{
+  ?Message a rmsg:MessageEnvelope;
+    rmsg:payloadKind :heartbeat.
+} => {
+  ?Message rmsg:emptyMessageAllowed true.
+}.
+
+# Inspect the life-safety message inside its own payload graph.
+{
+  ?Message rmsg:payloadKind :lifeSafetyLoads;
+    rmsg:payloadGraph ?Payload.
+  ?Payload log:nameOf ?PayloadContext.
+  ?PayloadContext log:includes {
+    :oxygenConcentrator :requiresWatts ?Oxygen.
+    :vaccineFridge :requiresWatts ?Fridge.
+  }.
+  (?Oxygen ?Fridge) math:sum ?CriticalWatts.
+} => {
+  :clinicMicrogrid rmsg:criticalWatts ?CriticalWatts.
+  :clinicMicrogrid rmsg:mustKeep :oxygenConcentrator, :vaccineFridge.
+}.
+
+# Inspect the power-status message atomically.
+{
+  ?Message rmsg:payloadKind :powerStatus;
+    rmsg:payloadGraph ?Payload.
+  ?Payload log:nameOf ?PayloadContext.
+  ?PayloadContext log:includes {
+    :batteryBank :availableWatts ?BatteryWatts.
+    :solarForecast :expectedWatts ?SolarWatts.
+  }.
+  (?BatteryWatts ?SolarWatts) math:sum ?AvailableWatts.
+} => {
+  :clinicMicrogrid rmsg:availableWatts ?AvailableWatts.
+}.
+
+# Inspect the flexible-demand message atomically. The EV chargers are useful, but
+# they are safe to defer so life-safety loads keep running.
+{
+  ?Message rmsg:payloadKind :flexibleDemand;
+    rmsg:payloadGraph ?Payload.
+  ?Payload log:nameOf ?PayloadContext.
+  ?PayloadContext log:includes {
+    :evChargers :shedWatts ?ShedWatts.
+  }.
+} => {
+  :clinicMicrogrid rmsg:deferrableWatts ?ShedWatts.
+  :clinicMicrogrid rmsg:mayDefer :evChargers.
+}.
+
+# The decision combines conclusions from the separate messages, while preserving
+# the evidence that each conclusion came through an explicit message boundary.
+{
+  :clinicMicrogrid rmsg:criticalWatts ?CriticalWatts;
+    rmsg:availableWatts ?AvailableWatts;
+    rmsg:deferrableWatts ?ShedWatts;
+    rmsg:mustKeep :oxygenConcentrator, :vaccineFridge;
+    rmsg:mayDefer :evChargers.
+  (?AvailableWatts ?ShedWatts) math:sum ?ProtectedBudget.
+  ?ProtectedBudget math:greaterThan ?CriticalWatts.
+} => {
+  :clinicMicrogrid rmsg:protectedBudgetWatts ?ProtectedBudget.
+  :clinicMicrogrid rmsg:resilienceAction :protectClinic.
+  :clinicMicrogrid rmsg:keeps :oxygenConcentrator, :vaccineFridge.
+  :clinicMicrogrid rmsg:defers :evChargers.
+}.
+
+# Emit the example report only when the message stream, empty heartbeat, atomic
+# payload inspection, and protection decision have all been derived.
+{
+  :stormClinicLog rmsg:orderedMessages ?Messages.
+  ?Messages list:length ?Count.
+  :m001 rmsg:boundaryExplicit true.
+  :m002 rmsg:boundaryExplicit true.
+  :m003 rmsg:boundaryExplicit true.
+  :m004 rmsg:boundaryExplicit true;
+    rmsg:emptyMessageAllowed true.
+  :clinicMicrogrid rmsg:criticalWatts ?CriticalWatts;
+    rmsg:availableWatts ?AvailableWatts;
+    rmsg:deferrableWatts ?ShedWatts;
+    rmsg:protectedBudgetWatts ?ProtectedBudget;
+    rmsg:resilienceAction :protectClinic.
+  ("# rdf-message-microgrid\n\n## Source files\n\n- [N3 rules](../rdf-message-microgrid.n3)\n- [Input TriG](../input/rdf-message-microgrid.trig)\n\n## Answer\nStorm clinic microgrid accepted: %d RDF Message envelopes were replayed atomically. Critical care needs %d W, current battery plus solar gives %d W, and deferring the EV chargers frees %d W, so the protected budget is %d W. The reasoned action is to keep the oxygen concentrator and vaccine fridge online, while deferring EV charging.\n\n## Why this is an RDF Messages example\nThe input is a single runnable example split across an N3 rule file and a TriG sidecar. The default graph records stream order, offsets, and envelope metadata. Each non-empty named graph is treated as an atomic message payload, and the fourth message is an empty heartbeat. The rules inspect each payload with log:includes inside its own formula, then combine only the derived conclusions needed for the microgrid decision. This keeps the explanation tied to message boundaries instead of silently flattening the stream into one global graph.\n\nThis is intentionally not a parser-level VERSION \\\"1.2-messages\\\" / MESSAGE delimiter test. It is a reasoning example over an already-materialized sidecar representation of a message log." ?Count ?CriticalWatts ?AvailableWatts ?ShedWatts ?ProtectedBudget) string:format ?Block.
+} => {
+  :rdfMessageMicrogridExample log:outputString ?Block.
+  :rdfMessageMicrogridExample :demonstrates :AtomicMessageContext, :EmptyHeartbeat, :ReplayableMessageLog, :ResilientDecisionSupport.
+}.
