@@ -1534,6 +1534,35 @@ res:CITY_Chañaral rdfs:label "Chañaral".
   },
 
   {
+    name: '52g regression: string:replace honors escaped dollar and backslash in replacement',
+    opt: { proofComments: false },
+    input: `@prefix : <http://example.org/> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+
+{
+    ("abcd" "b" "\\$\\\\") string:replace "a$\\cd".
+}
+=>
+{
+    :result :has :success-literal-8.
+}.
+
+{} => {
+    :test :contains :success-literal-8.
+}.
+
+{
+    :result :has :success-literal-8.
+}
+=>
+{
+    :test :is true.
+}.
+`,
+    expect: [/:result\s+:has\s+:success-literal-8\s*\./, /:test\s+:is\s+true\s*\./],
+  },
+
+  {
     name: '53 --stream: prints prefixes used in input (not just derived output) before streaming triples',
     opt: ['--stream', '-n'],
     input: `@prefix ex: <http://example.org/>.
