@@ -1,0 +1,144 @@
+@prefix : <http://example.org/closure#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix string: <http://www.w3.org/2000/10/swap/string#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+
+# C-core transitive-closure demonstration, translated to N3.
+#
+# Generate a chain of nodes, derive direct links, then materialize
+# all transitive reachability pairs.
+
+:report :nodes 70.
+
+# Generate the integer range 1..Max.
+:range :has 1.
+
+{
+    :range :has ?N.
+    :report :nodes ?Max.
+    ?N math:lessThan ?Max.
+    (?N 1) math:sum ?Next.
+}
+=>
+{
+    :range :has ?Next.
+}.
+
+# Turn each number into a node IRI:
+#   1 -> :n1
+#   2 -> :n2
+#   ...
+{
+    :range :has ?N.
+    ("http://example.org/closure#n" ?N) string:concatenation ?NodeText.
+    ?Node log:uri ?NodeText.
+}
+=>
+{
+    ?N :node ?Node.
+}.
+
+# Successor numbers.
+{
+    :range :has ?N.
+    :report :nodes ?Max.
+    ?N math:lessThan ?Max.
+    (?N 1) math:sum ?Next.
+}
+=>
+{
+    ?N :nextNumber ?Next.
+}.
+
+# Direct chain links.
+{
+    ?N :node ?From.
+    ?N :nextNumber ?Next.
+    ?Next :node ?To.
+}
+=>
+{
+    ?From :link ?To.
+}.
+
+# Reachability: base case.
+{
+    ?From :link ?To.
+}
+=>
+{
+    ?From :reaches ?To.
+}.
+
+# Reachability: transitive case.
+{
+    ?From :link ?Via.
+    ?Via :reaches ?To.
+}
+=>
+{
+    ?From :reaches ?To.
+}.
+
+# Report direct links: Max - 1.
+{
+    :report :nodes ?Max.
+    (?Max 1) math:difference ?Links.
+}
+=>
+{
+    :report :directLinks ?Links.
+}.
+
+# Report reachable pairs: Max * (Max - 1) / 2.
+{
+    :report :nodes ?Max.
+    (?Max 1) math:difference ?Previous.
+    (?Max ?Previous) math:product ?TwicePairs.
+    (?TwicePairs 2) math:quotient ?Pairs.
+}
+=>
+{
+    :report :reachablePairs ?Pairs.
+}.
+
+# Expected materialized triples:
+#   reachable pairs + direct links + 8 report/test triples
+{
+    :report :nodes ?Max.
+    (?Max 1) math:difference ?Links.
+    (?Max ?Links) math:product ?TwicePairs.
+    (?TwicePairs 2) math:quotient ?Pairs.
+    (?Pairs ?Links) math:sum ?GraphTriples.
+    (?GraphTriples 8) math:sum ?Total.
+}
+=>
+{
+    :report :expectedMaterializedTriples ?Total.
+}.
+
+:report :firstNode :n1.
+
+{
+    :report :nodes ?Max.
+    ("http://example.org/closure#n" ?Max) string:concatenation ?LastText.
+    ?Last log:uri ?LastText.
+}
+=>
+{
+    :report :lastNode ?Last.
+}.
+
+:report :message "Recursive closure from a tiny source: this is the C core hot path.".
+
+# Test triple: n1 reaches the generated last node.
+{
+    :report :nodes ?Max.
+    ("http://example.org/closure#n" ?Max) string:concatenation ?LastText.
+    ?Last log:uri ?LastText.
+    :n1 :reaches ?Last.
+}
+=>
+{
+    :test :is true.
+}.
