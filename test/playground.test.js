@@ -874,6 +874,10 @@ ${JSON.stringify(last, null, 2)}`);
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 :report log:outputString "## Hello from output string\n\nLine 2 with **bold** and [Eyeling](https://example.org/eyeling)\n" .
 `;
+    const riskMarkdownOutputStringProgram = `@prefix : <#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+:report log:outputString "# Risk report\n\n### Clause H1 — score 100\n\nRisk: secondary use is permitted without a safeguard. Clause H1: Hospital may provide electronic health data for secondary use.\n\n- **Mitigation for clause H1:** Require a permit before secondary use.\n" .
+`;
     const baseOnlyMarkdownProgram = `@base <https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/smoke-arithmetic.n3> .
 @prefix : <#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
@@ -975,6 +979,25 @@ ${JSON.stringify(last, null, 2)}`);
     await clickOutputRenderedTab();
     const renderedAgain = await getPlaygroundState();
     assert.equal(renderedAgain.renderedTabSelected, true, 'Expected Rendered tab to be selectable again');
+    endTest();
+
+    beginTest('playground renders Markdown reports with colon-led prose lines');
+    await setProgram(riskMarkdownOutputStringProgram);
+    await clickRun();
+    const riskMarkdown = await waitForState(
+      'risk Markdown rendering',
+      (st) =>
+        String(st.status || '')
+          .trim()
+          .startsWith('Done') && /Risk report/.test(String(st.output || '')),
+      20000,
+    );
+    assert.equal(riskMarkdown.outputTabsHidden, false, 'Expected risk-report Markdown tabs to be visible');
+    assert.equal(riskMarkdown.renderedHidden, false, 'Expected risk-report Markdown to render by default');
+    assert.equal(riskMarkdown.sourceHidden, true, 'Expected risk-report Markdown source to be hidden by default');
+    assert.match(riskMarkdown.renderedHtml, /<h1>Risk report<\/h1>/i, 'Expected risk-report heading rendering');
+    assert.match(riskMarkdown.renderedHtml, /<h3>Clause H1 — score 100<\/h3>/i, 'Expected risk-report clause heading rendering');
+    assert.match(riskMarkdown.renderedHtml, /<strong>Mitigation for clause H1:<\/strong>/i, 'Expected risk-report mitigation bold rendering');
     endTest();
 
     // 5) Shared state files may only restore editor text. If that text came from a repository

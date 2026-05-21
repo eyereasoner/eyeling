@@ -2216,12 +2216,16 @@ const batch = [];
 
           const lines = text.split(/\r\n|\n|\r/).map((line) => line.trim()).filter(Boolean);
           let tripleLike = 0;
+          const turtleSubject = '(?:<[^>]+>|_:[A-Za-z][\\w-]*|:[^\\s]+|[A-Za-z_][\\w.-]*:[^\\s]*)';
+          const turtlePredicate = '(?:a|=|<[^>]+>|:[^\\s]+|[A-Za-z_][\\w.-]*:[^\\s]+)';
+          const turtleObject = '(?:<[^>]+>|_:[A-Za-z][\\w-]*|:[^\\s]+|[A-Za-z_][\\w.-]*:[^\\s]+|[\"\']|[-+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][-+]?\\d+)?|true|false|\\(|\\[|\\{)';
+          const turtleTripleStart = new RegExp('^' + turtleSubject + '\\s+' + turtlePredicate + '\\s+' + turtleObject + '(?:\\s|[.;,]|$)');
           for (const line of lines) {
             if (!line || line.startsWith('#') || !/\.\s*$/.test(line)) continue;
-            // Treat a line as Turtle only when it starts with a Turtle subject.
-            // Do not scan arbitrary prose for prefixed-name fragments: Markdown
-            // explanations can mention terms such as :x, :y, or math:product.
-            if (/^(?:<[^>]+>|_:[A-Za-z][\w-]*|:([^\s]+)|[A-Za-z_][\w.-]*:[^\s]*)\s+/.test(line)) tripleLike += 1;
+            // Treat a line as Turtle only when it has a plausible subject,
+            // predicate, and object. This avoids classifying Markdown prose such
+            // as "Risk: secondary use is permitted." as a prefixed-name triple.
+            if (turtleTripleStart.test(line)) tripleLike += 1;
           }
           return tripleLike > 0;
         }
