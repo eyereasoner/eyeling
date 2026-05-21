@@ -527,7 +527,7 @@
 {
   :AgreementHC1 dct:title ?alabel .
   :PatientExample dct:title ?plabel .
-  ( "# odrl-dpv-healthcare-risk-ranked\n\n## Source files\n\n- [N3 rules](../odrl-dpv-healthcare-risk-ranked.n3)\n\n## Ranked DPV Risk Report (Healthcare & Life Sciences)\nAgreement: %s\nProfile: %s\n\n"
+  ( "# odrl-dpv-healthcare-risk-ranked\n\n## Source files\n\n- [N3 rules](../odrl-dpv-healthcare-risk-ranked.n3)\n\n## Ranked DPV Risk Report (Healthcare & Life Sciences)\n\n**Agreement:** %s\n**Profile:** %s\n\n"
     ?alabel ?plabel ) string:format ?hdr .
 }
 =>
@@ -547,8 +547,8 @@
 
   ( 1000 ?score ) math:difference ?inv .
 
-  ( "score=%s (%s, %s)  clause %s\n  %s\n\n"
-    ?score ?lvl ?sev ?cid ?why ) string:format ?line .
+  ( "### Clause %s — score %s\n\n**Risk level:** `%s`\n**Severity:** `%s`\n\n%s\n\n"
+    ?cid ?score ?lvl ?sev ?why ) string:format ?line .
 }
 =>
 {
@@ -566,7 +566,7 @@
 
   ( 1000 ?score ) math:difference ?inv .
 
-  ( "  - mitigation for clause %s: %s\n"
+  ( "- **Mitigation for clause %s:** %s\n\n"
     ?cid ?md ) string:format ?mline .
 }
 =>

@@ -391,7 +391,7 @@
   ?agreement a :Agreement; :label ?alabel.
   ?profile a :ConsumerProfile; :label ?plabel.
 
-  ( "# odrl-risk\n\n## Source files\n\n- [N3 rules](../odrl-risk.n3)\n\n## Risk report for %s (profile: %s)\n" ?alabel ?plabel ) string:format ?hdr.
+  ( "# odrl-risk\n\n## Source files\n\n- [N3 rules](../odrl-risk.n3)\n\n## Risk report\n\n**Agreement:** %s\n**Profile:** %s\n\n" ?alabel ?plabel ) string:format ?hdr.
 }
 =>
 {
@@ -428,8 +428,8 @@
         :title ?title;
         :explanation ?why.
 
-  ( "%s) score=%s (%s), clause %s — %s. %s\n"
-    ?rank ?score ?sev ?cid ?title ?why
+  ( "### %s. Clause %s — %s\n\n**Score:** `%s`\n**Severity:** `%s`\n\n%s\n\n"
+    ?rank ?cid ?title ?score ?sev ?why
   ) string:format ?line.
 }
 =>

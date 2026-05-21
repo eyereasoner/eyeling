@@ -773,7 +773,7 @@
 {
   ?agreement a :Agreement; :label ?alabel.
   ?profile a :ConsumerProfile; :label ?plabel.
-  ( "# odrl-risk-mitigation\n\n## Source files\n\n- [N3 rules](../odrl-risk-mitigation.n3)\n\n## Risk report for %s (profile: %s)\n" ?alabel ?plabel ) string:format ?hdr.
+  ( "# odrl-risk-mitigation\n\n## Source files\n\n- [N3 rules](../odrl-risk-mitigation.n3)\n\n## Risk report\n\n**Agreement:** %s\n**Profile:** %s\n\n" ?alabel ?plabel ) string:format ?hdr.
 }
 =>
 {
@@ -807,8 +807,8 @@
         :title ?title;
         :explanation ?why.
 
-  ( "%s) score=%s (%s), clause %s — %s. %s\n"
-    ?rank ?score ?sev ?cid ?title ?why
+  ( "### %s. Clause %s — %s\n\n**Score:** `%s`\n**Severity:** `%s`\n\n%s\n\n"
+    ?rank ?cid ?title ?score ?sev ?why
   ) string:format ?line.
 }
 =>
@@ -820,7 +820,7 @@
 {
   ?agreement a :Agreement.
   ?profile a :ConsumerProfile.
-  "\n--- Suggested mitigations (highest risk first) ---\n" log:equalTo ?hdr2.
+  "\n## Suggested mitigations (highest risk first)\n\n" log:equalTo ?hdr2.
 }
 =>
 {
@@ -859,7 +859,7 @@
   ?risk :clauseId ?cid;
         :title ?title.
 
-  ( "%s) clause %s — %s (score=%s). %s\n"
+  ( "- **%s. Clause %s — %s** (score `%s`): %s\n"
     ?rank ?cid ?title ?score ?fixText
   ) string:format ?line.
 }

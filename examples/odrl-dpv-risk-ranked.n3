@@ -412,7 +412,7 @@
 {
   :Agreement1 dct:title ?alabel .
   :ConsumerExample dct:title ?plabel .
-  ( "# odrl-dpv-risk-ranked\n\n## Source files\n\n- [N3 rules](../odrl-dpv-risk-ranked.n3)\n\n## Ranked DPV Risk Report\nAgreement: %s\nProfile: %s\n\n"
+  ( "# odrl-dpv-risk-ranked\n\n## Source files\n\n- [N3 rules](../odrl-dpv-risk-ranked.n3)\n\n## Ranked DPV Risk Report\n\n**Agreement:** %s\n**Profile:** %s\n\n"
     ?alabel ?plabel ) string:format ?hdr .
 }
 log:query
@@ -432,8 +432,8 @@ log:query
 
   ( 1000 ?score ) math:difference ?inv .
 
-  ( "score=%s (%s, %s)  clause %s\n  %s\n\n"
-    ?score ?lvl ?sev ?cid ?why ) string:format ?line .
+  ( "### Clause %s — score %s\n\n**Risk level:** `%s`\n**Severity:** `%s`\n\n%s\n\n"
+    ?cid ?score ?lvl ?sev ?why ) string:format ?line .
 }
 log:query
 {
@@ -451,7 +451,7 @@ log:query
 
   ( 1000 ?score ) math:difference ?inv .
 
-  ( "  - mitigation for clause %s: %s\n"
+  ( "- **Mitigation for clause %s:** %s\n\n"
     ?cid ?md ) string:format ?mline .
 }
 log:query
