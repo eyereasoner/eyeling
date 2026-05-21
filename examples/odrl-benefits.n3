@@ -1,0 +1,221 @@
+# ======================================================================================
+# odrl-benefits.n3
+#
+# A very small example showing why ODRL policies are useful.
+#
+# The same machine-readable policy can:
+# - permit a good use case (medical research),
+# - block an unwanted use case (marketing),
+# - attach an operational duty (delete the data after use), and
+# - produce an explainable audit trail.
+# ======================================================================================
+
+@prefix :      <https://example.org/odrl-benefits#> .
+@prefix odrl:  <http://www.w3.org/ns/odrl/2/> .
+@prefix dct:   <http://purl.org/dc/terms/> .
+@prefix log:   <http://www.w3.org/2000/10/swap/log#> .
+@prefix string:<http://www.w3.org/2000/10/swap/string#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+
+# -------------------
+# Parties and assets
+# -------------------
+
+:ResearchLab dct:title "Example Research Lab" .
+:HealthDataset dct:title "Pseudonymised health dataset" .
+:MedicalResearch dct:title "medical research" .
+:Marketing dct:title "marketing" .
+:Allowed dct:title "Allowed" .
+:Blocked dct:title "Blocked" .
+
+# -----------------------------
+# One compact ODRL policy
+# -----------------------------
+
+:Policy a odrl:Policy ;
+  dct:title "Health-data sharing policy" ;
+  odrl:permission :PermitResearchUse ;
+  odrl:prohibition :ProhibitMarketingUse .
+
+:PermitResearchUse a odrl:Permission ;
+  odrl:assignee :ResearchLab ;
+  odrl:target :HealthDataset ;
+  odrl:action odrl:use ;
+  odrl:constraint [
+    odrl:leftOperand odrl:purpose ;
+    odrl:operator odrl:eq ;
+    odrl:rightOperand :MedicalResearch
+  ] ;
+  odrl:duty :DeleteAfterUse .
+
+:DeleteAfterUse a odrl:Duty ;
+  odrl:action odrl:delete ;
+  odrl:target :HealthDataset ;
+  odrl:constraint [
+    odrl:leftOperand odrl:dateTime ;
+    odrl:operator odrl:lteq ;
+    odrl:rightOperand "2026-12-31"^^xsd:date
+  ] .
+
+:ProhibitMarketingUse a odrl:Prohibition ;
+  odrl:assignee :ResearchLab ;
+  odrl:target :HealthDataset ;
+  odrl:action odrl:use ;
+  odrl:constraint [
+    odrl:leftOperand odrl:purpose ;
+    odrl:operator odrl:eq ;
+    odrl:rightOperand :Marketing
+  ] .
+
+# -----------------
+# Two access requests
+# -----------------
+
+:RequestResearch a :Request ;
+  dct:title "Use the dataset for medical research" ;
+  odrl:assignee :ResearchLab ;
+  odrl:target :HealthDataset ;
+  odrl:action odrl:use ;
+  :purpose :MedicalResearch .
+
+:RequestMarketing a :Request ;
+  dct:title "Use the dataset for marketing" ;
+  odrl:assignee :ResearchLab ;
+  odrl:target :HealthDataset ;
+  odrl:action odrl:use ;
+  :purpose :Marketing .
+
+# ---------------------------
+# Minimal policy evaluation
+# ---------------------------
+
+# Benefit 1: permissions are machine-readable.
+{
+  ?request a :Request ;
+    odrl:assignee ?party ;
+    odrl:target ?asset ;
+    odrl:action ?action ;
+    :purpose ?purpose .
+
+  :Policy odrl:permission ?permission .
+  ?permission odrl:assignee ?party ;
+    odrl:target ?asset ;
+    odrl:action ?action ;
+    odrl:constraint [
+      odrl:leftOperand odrl:purpose ;
+      odrl:operator odrl:eq ;
+      odrl:rightOperand ?purpose
+    ] .
+}
+=>
+{
+  ?request :decision :Allowed ;
+    :benefit :MachineReadablePermission ;
+    :why "A matching ODRL permission grants this purpose-specific use." .
+} .
+
+# Benefit 2: prohibitions make unwanted use cases explicit.
+{
+  ?request a :Request ;
+    odrl:assignee ?party ;
+    odrl:target ?asset ;
+    odrl:action ?action ;
+    :purpose ?purpose .
+
+  :Policy odrl:prohibition ?prohibition .
+  ?prohibition odrl:assignee ?party ;
+    odrl:target ?asset ;
+    odrl:action ?action ;
+    odrl:constraint [
+      odrl:leftOperand odrl:purpose ;
+      odrl:operator odrl:eq ;
+      odrl:rightOperand ?purpose
+    ] .
+}
+=>
+{
+  ?request :decision :Blocked ;
+    :benefit :PurposeLimitation ;
+    :why "A matching ODRL prohibition blocks this purpose-specific use." .
+} .
+
+# Benefit 3: permitted use can carry operational duties.
+{
+  ?request :decision :Allowed ;
+    odrl:assignee ?party ;
+    odrl:target ?asset ;
+    odrl:action ?action ;
+    :purpose ?purpose .
+
+  :Policy odrl:permission ?permission .
+  ?permission odrl:assignee ?party ;
+    odrl:target ?asset ;
+    odrl:action ?action ;
+    odrl:constraint [
+      odrl:leftOperand odrl:purpose ;
+      odrl:operator odrl:eq ;
+      odrl:rightOperand ?purpose
+    ] ;
+    odrl:duty ?duty .
+
+  ?duty odrl:action odrl:delete ;
+    odrl:constraint [
+      odrl:leftOperand odrl:dateTime ;
+      odrl:operator odrl:lteq ;
+      odrl:rightOperand ?date
+    ] .
+}
+=>
+{
+  ?request :duty "Delete the dataset after the approved research use." ;
+    :deleteBy ?date ;
+    :benefit :OperationalDuty .
+} .
+
+# ----------------------------
+# Markdown report output
+# ----------------------------
+
+:out01 log:outputString "# odrl-benefits\n\n## Source files\n\n- [N3 rules](../odrl-benefits.n3)\n\n" .
+:out02 log:outputString "## Why ODRL helps\n\n" .
+:out03 log:outputString "This example uses one small ODRL policy to make data-use decisions explicit, machine-checkable, and auditable.\n\n" .
+:out04 log:outputString "### Policy in plain language\n\n" .
+:out05 log:outputString "- The research lab **may use** the pseudonymised health dataset for **medical research**.\n" .
+:out06 log:outputString "- The research lab **must delete** the dataset by `2026-12-31`.\n" .
+:out07 log:outputString "- The research lab **must not use** the dataset for **marketing**.\n\n" .
+:out08 log:outputString "### Evaluated requests\n\n" .
+:out09 log:outputString "| Request | Decision | Explanation |\n" .
+:out10 log:outputString "| --- | --- | --- |\n" .
+
+{
+  :RequestResearch dct:title ?title ;
+    :decision ?decision ;
+    :why ?why ;
+    :deleteBy ?date .
+  ?decision dct:title ?decisionLabel .
+
+  ("| %s | `%s` | %s Duty: delete by `%s`. |\n" ?title ?decisionLabel ?why ?date) string:format ?line .
+}
+=>
+{
+  :out11 log:outputString ?line .
+} .
+
+{
+  :RequestMarketing dct:title ?title ;
+    :decision ?decision ;
+    :why ?why .
+  ?decision dct:title ?decisionLabel .
+
+  ("| %s | `%s` | %s |\n" ?title ?decisionLabel ?why) string:format ?line .
+}
+=>
+{
+  :out12 log:outputString ?line .
+} .
+
+:out13 log:outputString "\n### Benefits illustrated\n\n" .
+:out14 log:outputString "1. **Clarity:** the policy says who may do what, to which asset, and for which purpose.\n" .
+:out15 log:outputString "2. **Automation:** requests can be allowed or blocked by rules instead of manual reading.\n" .
+:out16 log:outputString "3. **Purpose limitation:** research use and marketing use are treated differently.\n" .
+:out17 log:outputString "4. **Accountability:** duties such as deletion are part of the same policy and can be audited.\n" .
