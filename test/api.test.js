@@ -2865,6 +2865,64 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
     ],
   },
   {
+    name: 'RDF mode replays RDF 1.2 message logs into eymsg envelopes',
+    opt: { proofComments: false, rdf: true },
+    input: {
+      sources: [
+        {
+          label: 'rules.n3',
+          text: `@prefix : <http://example.org/msgtest#>.
+@prefix eymsg: <https://eyereasoner.github.io/eyeling/vocab/message#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix list: <http://www.w3.org/2000/10/swap/list#>.
+
+{
+  ?S a eymsg:RDFMessageStream;
+    eymsg:messageCount ?Count;
+    eymsg:orderedEnvelopes ?Envelopes;
+    eymsg:firstEnvelope ?First.
+  ?Envelopes list:length ?Len.
+  ?First eymsg:nextEnvelope ?Second.
+  ?Second eymsg:nextEnvelope ?Third;
+    eymsg:payloadKind eymsg:empty.
+  ?First eymsg:payloadGraph ?P1.
+  ?P1 log:nameOf ?G1.
+  ?G1 log:includes { ?B1 :value 1. }.
+  ?Third eymsg:payloadGraph ?P3.
+  ?P3 log:nameOf ?G3.
+  ?G3 log:includes { ?B3 :value 2. }.
+} log:query {
+  :result :messageCount ?Count;
+    :listLength ?Len;
+    :empty ?Second;
+    :firstBlank ?B1;
+    :thirdBlank ?B3.
+}.
+`,
+        },
+        {
+          label: 'message-log.trig',
+          text: `VERSION "1.2-messages"
+@prefix : <http://example.org/msgtest#> .
+_:b :value 1 .
+MESSAGE
+# empty message
+MESSAGE
+_:b :value 2 .
+`,
+        },
+      ],
+    },
+    expect: [
+      /:result\s+:messageCount\s+"3"\^\^xsd:integer\s*\./m,
+      /:result\s+:listLength\s+3\s*\./m,
+      /:result\s+:empty\s+<urn:eyeling:message-log:[0-9a-f]+#m002>\s*\./m,
+      /:result\s+:firstBlank\s+_:src2_eyeling_m001_b\s*\./m,
+      /:result\s+:thirdBlank\s+_:src2_eyeling_m003_b\s*\./m,
+    ],
+  },
+
+  {
     name: 'API empty input returns empty output',
     opt: { proofComments: false },
     input: '',

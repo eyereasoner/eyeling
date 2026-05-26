@@ -1,50 +1,36 @@
-# ==============================
-# RDF Message Flow input sidecar
-# ==============================
+# =============================
+# RDF Message Flow message log
+# =============================
 #
 # This file is the data half of the runnable example:
 #
 #   eyeling -r examples/rdf-message-flow.n3 examples/input/rdf-message-flow.trig
 #
-# It is intentionally plain TriG rather than a parser-level RDF Message Log with
-# VERSION "1.2-messages" and MESSAGE delimiters. The RDF Messages draft says an
-# RDF Message is an RDF dataset interpreted atomically, that a stream is an
-# ordered sequence of such messages, and that messages in a stream should not be
-# combined by default. To demonstrate those ideas in Eyeling today, the default
-# graph below contains example-local envelope records (:m001 ... :m005) and each
-# non-empty message payload is placed in its own named graph (in:payload001 ...
-# in:payload005).
+# It is a parser-level RDF Message Log using the RDF 1.2 Messages draft syntax:
+# VERSION "1.2-messages" selects message-log parsing and MESSAGE delimiters
+# separate the ordered RDF Messages. Eyeling replays this log internally by
+# materializing message envelopes and one payload graph per non-empty message.
+# The sidecar itself does not contain application-level envelope facts.
 #
-# The envelope IRIs are not identifiers for RDF Messages defined by the spec;
-# they are application-level records used by the flow-control rules. The named
-# payload graphs are the datasets/messages being interpreted atomically. The
-# third envelope is an empty heartbeat, which is valid because RDF Messages may
-# be empty. Blank node labels are kept unique because this sidecar is ordinary
-# TriG; a true RDF Message Log parser would reset blank-node scope per MESSAGE.
+# The third message is deliberately empty. The same blank node label _:obs is
+# also reused in several messages; an RDF Message Log parser scopes blank node
+# identifiers to each message, so those labels do not collide.
 
-@prefix : <https://eyereasoner.github.io/eyeling/examples/rdf-message-flow#> .
-@prefix flow: <https://eyereasoner.github.io/eyeling/examples/rdf-message-flow/vocab#> .
-@prefix prov: <http://www.w3.org/ns/prov#> .
-@prefix sosa: <http://www.w3.org/ns/sosa/> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-@prefix math: <http://www.w3.org/2000/10/swap/math#> .
-@prefix list: <http://www.w3.org/2000/10/swap/list#> .
-@prefix log: <http://www.w3.org/2000/10/swap/log#> .
-@prefix string: <http://www.w3.org/2000/10/swap/string#> .
-@prefix see: <https://example.org/see#> .
-@prefix in: <https://example.org/see/input#> .
+VERSION "1.2-messages"
+PREFIX : <https://eyereasoner.github.io/eyeling/examples/rdf-message-flow#>
+PREFIX flow: <https://eyereasoner.github.io/eyeling/examples/rdf-message-flow/vocab#>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX sosa: <http://www.w3.org/ns/sosa/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX see: <https://example.org/see#>
+PREFIX in: <https://example.org/see/input#>
 
-:temperatureFlow a flow:RDFMessageStream .
-:temperatureFlow flow:orderedEnvelopes (:m001 :m002 :m003 :m004 :m005) .
-:temperatureFlow flow:envelope :m001 .
-:temperatureFlow flow:envelope :m002 .
-:temperatureFlow flow:envelope :m003 .
-:temperatureFlow flow:envelope :m004 .
-:temperatureFlow flow:envelope :m005 .
-:temperatureFlow :producer :thermometerA .
-:temperatureFlow :consumer :flowProcessor .
-:temperatureFlow :pipeline (:ingest :validate :interpret :route :sink) .
-:temperatureFlow :highThreshold 26 .
+# Message 1: stream context plus first observation.
+:temperatureFlow a flow:RDFMessageStream ;
+  :producer :thermometerA ;
+  :consumer :flowProcessor ;
+  :pipeline (:ingest :validate :interpret :route :sink) ;
+  :highThreshold 26 .
 
 :thermometerA a flow:StreamProducer .
 :flowProcessor a flow:StreamConsumer .
@@ -52,77 +38,42 @@
 :alertSink a flow:StreamConsumer .
 :heartbeatSink a flow:StreamConsumer .
 
-:m001 a flow:MessageEnvelope .
-:m001 :atStage :ingest .
-:m001 flow:offset 1 .
-:m001 flow:nextEnvelope :m002 .
-:m001 prov:generatedAtTime "2026-05-12T18:20:00Z"^^xsd:dateTime .
-:m001 flow:payloadKind :observation .
-:m001 flow:expectedResult 21 .
-:m001 flow:payloadGraph in:payload001 .
+_:obs a sosa:Observation ;
+  sosa:madeBySensor :thermometerA ;
+  sosa:resultTime "2026-05-12T18:20:00Z"^^xsd:dateTime ;
+  sosa:hasSimpleResult 21 .
 
-:m002 a flow:MessageEnvelope .
-:m002 flow:offset 2 .
-:m002 flow:nextEnvelope :m003 .
-:m002 prov:generatedAtTime "2026-05-12T18:21:00Z"^^xsd:dateTime .
-:m002 flow:payloadKind :observation .
-:m002 flow:expectedResult 22 .
-:m002 flow:payloadGraph in:payload002 .
+in:run a see:InputDataset ;
+  see:name "rdf_message_flow" ;
+  see:title "RDF Message Flow" ;
+  see:sourceFile "examples/rdf-message-flow.n3" ;
+  see:description "A true RDF 1.2 Message Log sidecar. Eyeling parses VERSION 1.2-messages and MESSAGE delimiters into replayable internal message envelopes." ;
+  see:compiler "Eyeling RDF Message Log input" .
 
-:m003 a flow:MessageEnvelope .
-:m003 flow:offset 3 .
-:m003 flow:nextEnvelope :m004 .
-:m003 prov:generatedAtTime "2026-05-12T18:22:00Z"^^xsd:dateTime .
-:m003 flow:payloadKind :heartbeat .
+MESSAGE
 
-:m004 a flow:MessageEnvelope .
-:m004 flow:offset 4 .
-:m004 flow:nextEnvelope :m005 .
-:m004 prov:generatedAtTime "2026-05-12T18:23:00Z"^^xsd:dateTime .
-:m004 flow:payloadKind :observation .
-:m004 flow:expectedResult 28 .
-:m004 flow:payloadGraph in:payload004 .
+# Message 2: normal observation.
+_:obs a sosa:Observation ;
+  sosa:madeBySensor :thermometerA ;
+  sosa:resultTime "2026-05-12T18:21:00Z"^^xsd:dateTime ;
+  sosa:hasSimpleResult 22 .
 
-:m005 a flow:MessageEnvelope .
-:m005 flow:offset 5 .
-:m005 prov:generatedAtTime "2026-05-12T18:24:00Z"^^xsd:dateTime .
-:m005 flow:payloadKind :observation .
-:m005 flow:expectedResult 29 .
-:m005 flow:payloadGraph in:payload005 .
+MESSAGE
 
-in:payload001 {
-  _:m001b0 a sosa:Observation .
-  _:m001b0 sosa:madeBySensor :thermometerA .
-  _:m001b0 sosa:resultTime "2026-05-12T18:20:00Z"^^xsd:dateTime .
-  _:m001b0 sosa:hasSimpleResult 21 .
-}
+# Message 3: empty heartbeat. The next MESSAGE delimiter finalizes this empty
+# message and opens message 4.
+MESSAGE
 
-in:payload002 {
-  _:m002b0 a sosa:Observation .
-  _:m002b0 sosa:madeBySensor :thermometerA .
-  _:m002b0 sosa:resultTime "2026-05-12T18:21:00Z"^^xsd:dateTime .
-  _:m002b0 sosa:hasSimpleResult 22 .
-}
+# Message 4: hot observation.
+_:obs a sosa:Observation ;
+  sosa:madeBySensor :thermometerA ;
+  sosa:resultTime "2026-05-12T18:23:00Z"^^xsd:dateTime ;
+  sosa:hasSimpleResult 28 .
 
-in:payload004 {
-  _:m004b0 a sosa:Observation .
-  _:m004b0 sosa:madeBySensor :thermometerA .
-  _:m004b0 sosa:resultTime "2026-05-12T18:23:00Z"^^xsd:dateTime .
-  _:m004b0 sosa:hasSimpleResult 28 .
-}
+MESSAGE
 
-in:payload005 {
-  _:m005b0 a sosa:Observation .
-  _:m005b0 sosa:madeBySensor :thermometerA .
-  _:m005b0 sosa:resultTime "2026-05-12T18:24:00Z"^^xsd:dateTime .
-  _:m005b0 sosa:hasSimpleResult 29 .
-}
-
-in:metadata {
-  in:run a see:InputDataset .
-  in:run see:name "rdf_message_flow" .
-  in:run see:title "RDF Message Flow" .
-  in:run see:sourceFile "examples/rdf-message-flow.n3" .
-  in:run see:description "A single Eyeling example split across an N3 rule file and a TriG input sidecar. It models an ordered RDF Message Stream using application-level envelopes and named payload graphs so that each payload can be interpreted atomically without merging all message contents into one graph." .
-  in:run see:compiler "Eyeling RDF/TriG input sidecar" .
-}
+# Message 5: hot observation. EOF finalizes the message.
+_:obs a sosa:Observation ;
+  sosa:madeBySensor :thermometerA ;
+  sosa:resultTime "2026-05-12T18:24:00Z"^^xsd:dateTime ;
+  sosa:hasSimpleResult 29 .

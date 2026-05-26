@@ -9,28 +9,23 @@
 # Motivation
 # ----------
 # The RDF Messages draft describes an RDF Message as an RDF dataset interpreted
-# atomically, and an RDF Message Stream as an ordered sequence of such messages.
-# It also defines RDF Message Logs with explicit MESSAGE delimiters. This Eyeling
-# example keeps the same message-level discipline while staying in ordinary
-# N3/TriG that Eyeling can reason over today.
+# atomically, an RDF Message Stream as an ordered sequence of messages, and an
+# RDF Message Log as a static replayable representation of that stream.
 #
-# The companion TriG file therefore separates two layers:
+# The companion sidecar is now a true RDF Message Log: it uses
+# VERSION "1.2-messages" and MESSAGE delimiters. In RDF compatibility mode,
+# Eyeling parses those delimiters internally and materializes a replay view using
+# the eymsg: vocabulary: a stream resource, ordered envelopes, offsets,
+# next-envelope links, and one named payload graph per non-empty message.
 #
-#   1. example-local envelope facts in the default graph, such as order,
-#      processing stage, and payload graph; and
-#   2. one named graph per non-empty message payload, treated here as the RDF
-#      dataset/message that must be inspected atomically.
-#
-# The rules below deliberately do not merge all payload graphs into one global
-# graph. Instead, each observation is checked with log:includes inside the named
-# payload formula. The empty heartbeat has no payload graph but still advances
-# through the same pipeline. The next message is released only after the current
-# one reaches the sink, making the example a small back-pressure / flow-control
-# story rather than a batch merge of all input triples.
+# The rules below therefore no longer invent envelope facts in the TriG file.
+# They consume the replay view that Eyeling exposes, inspect each payload with
+# log:includes inside its own message formula, and let the empty heartbeat flow
+# through without a payload graph.
 
 @prefix : <https://eyereasoner.github.io/eyeling/examples/rdf-message-flow#>.
 @prefix flow: <https://eyereasoner.github.io/eyeling/examples/rdf-message-flow/vocab#>.
-@prefix prov: <http://www.w3.org/ns/prov#>.
+@prefix eymsg: <https://eyereasoner.github.io/eyeling/vocab/message#>.
 @prefix sosa: <http://www.w3.org/ns/sosa/>.
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
 @prefix math: <http://www.w3.org/2000/10/swap/math#>.
@@ -38,29 +33,49 @@
 @prefix log: <http://www.w3.org/2000/10/swap/log#>.
 @prefix string: <http://www.w3.org/2000/10/swap/string#>.
 
+# Eyeling's parser-level replay exposes the first envelope; that starts the
+# consumer-visible flow. Later envelopes are released only by the sink rule.
+{
+  ?Stream a eymsg:RDFMessageStream;
+    eymsg:firstEnvelope ?Envelope.
+} => {
+  ?Envelope :atStage :ingest.
+}.
+
+# Stream configuration is carried by the first RDF Message payload, not by a
+# hand-written sidecar envelope. The rule lifts only the threshold needed by the
+# routing rules into the ordinary reasoning context.
+{
+  ?Envelope eymsg:payloadGraph ?Payload.
+  ?Payload log:nameOf ?PayloadContext.
+  ?PayloadContext log:includes { :temperatureFlow :highThreshold ?Threshold. }.
+} => {
+  :temperatureFlow :highThreshold ?Threshold.
+}.
+
 # Stage 1: once an envelope has entered the stream, validate it.
 { ?Envelope :atStage :ingest. } => {
   ?Envelope :atStage :validate.
 }.
 
-# Stage 2: validation records that the envelope keeps an explicit message
-# boundary before the payload is interpreted.
+# Stage 2: validation records that the parser gave the reasoner an explicit
+# RDF Message boundary before the payload is interpreted.
 {
   ?Envelope :atStage :validate;
-    a flow:MessageEnvelope;
-    flow:offset ?Offset.
+    a eymsg:MessageEnvelope;
+    eymsg:offset ?Offset.
 } => {
   ?Envelope flow:boundaryExplicit true.
   ?Envelope :atStage :interpret.
 }.
 
-# Stage 3a: observation payloads are inspected inside their own payload graph.
-# This models the RDF Messages idea that messages are separate atomic datasets.
+# Stage 3a: observation payloads are inspected inside their own replayed message
+# graph. This keeps the RDF Messages default discipline: messages are atomic
+# datasets and are not silently merged.
 {
   ?Envelope :atStage :interpret;
-    flow:payloadKind :observation;
-    flow:expectedResult ?Result;
-    flow:payloadGraph ?Payload.
+    eymsg:payloadKind eymsg:nonEmpty;
+    eymsg:payloadGraph ?Payload.
   ?Payload log:nameOf ?PayloadContext.
   ?PayloadContext log:includes { ?Observation sosa:hasSimpleResult ?Result. }.
 } => {
@@ -69,10 +84,10 @@
 }.
 
 # Stage 3b: empty heartbeats contain no quads, but RDF Messages explicitly allow
-# empty messages, so the envelope still moves through the flow.
+# empty messages, so the parser-level envelope still moves through the flow.
 {
   ?Envelope :atStage :interpret;
-    flow:payloadKind :heartbeat.
+    eymsg:payloadKind eymsg:empty.
 } => {
   ?Envelope flow:emptyMessageAllowed true.
   ?Envelope :atStage :route.
@@ -112,46 +127,52 @@
   :heartbeatSink :received ?Envelope.
 }.
 
-# Continuous-flow rule: reaching the sink releases the next envelope into ingress.
-# This mirrors a consumer-visible ordered stream: later messages are not processed
-# until the earlier message has completed the pipeline.
+# Continuous-flow rule: reaching the sink releases the next replayed envelope
+# into ingress. The ordering link comes from Eyeling's internal MESSAGE replay,
+# not from the sidecar data.
 {
   ?Envelope :atStage :sink;
-    flow:nextEnvelope ?Next.
-  ?Next a flow:MessageEnvelope.
+    eymsg:nextEnvelope ?Next.
+  ?Next a eymsg:MessageEnvelope.
 } => {
   ?Envelope :releases ?Next.
   ?Next :atStage :ingest.
 }.
 
-# The Eyeling verdict is emitted only after all five envelopes have flowed
-# through ingest, validation, interpretation, routing, and sink while preserving
-# their message boundaries.
+# The verdict is emitted only after all five parser-replayed envelopes have
+# flowed through ingest, validation, interpretation, routing, and sink while
+# preserving message boundaries.
 {
-  :temperatureFlow flow:orderedEnvelopes ?Envelopes;
-    :highThreshold ?Threshold.
+  ?Stream a eymsg:RDFMessageStream;
+    eymsg:orderedEnvelopes ?Envelopes;
+    eymsg:firstEnvelope ?M1.
   ?Envelopes list:length ?Count.
-  :m001 :atStage :sink;
+  :temperatureFlow :highThreshold ?Threshold.
+  ?M1 :atStage :sink;
     flow:payloadResult ?FirstResult;
     :route :archiveSink;
-    :releases :m002.
-  :m002 :atStage :sink;
+    eymsg:nextEnvelope ?M2;
+    :releases ?M2.
+  ?M2 :atStage :sink;
     flow:payloadResult ?SecondResult;
     :route :archiveSink;
-    :releases :m003.
-  :m003 :atStage :sink;
+    eymsg:nextEnvelope ?M3;
+    :releases ?M3.
+  ?M3 :atStage :sink;
     flow:emptyMessageAllowed true;
     :route :heartbeatSink;
-    :releases :m004.
-  :m004 :atStage :sink;
+    eymsg:nextEnvelope ?M4;
+    :releases ?M4.
+  ?M4 :atStage :sink;
     flow:payloadResult ?FourthResult;
     :route :alertSink;
-    :releases :m005.
-  :m005 :atStage :sink;
+    eymsg:nextEnvelope ?M5;
+    :releases ?M5.
+  ?M5 :atStage :sink;
     flow:payloadResult ?FifthResult;
     :route :alertSink.
-  ("# rdf-message-flow\n\n## Source files\n\n- [N3 rules](../rdf-message-flow.n3)\n- [Input TriG](../input/rdf-message-flow.trig)\n\n## Answer\nContinuous RDF Message flow accepted: %d ordered message envelopes moved through the ingest → validate → interpret → route → sink pipeline. The threshold was %d, so results %s and %s were archived, the heartbeat kept the stream alive, and results %s and %s were emitted as alerts.\n\n## Explanation\nThe input is a single runnable example split across an N3 rule file and a TriG sidecar. The TriG file uses example-local envelope facts for stream order and processing state, while each named payload graph is treated as an atomic RDF Message dataset. Only :m001 starts at ingress; each envelope must reach :sink before the continuous-flow rule releases its flow:nextEnvelope. Observation payloads are inspected with log:includes inside their own payload formula, and the empty heartbeat advances without a payload graph. This keeps message boundaries visible to the reasoner instead of merging all payload triples into one global graph." ?Count ?Threshold ?FirstResult ?SecondResult ?FourthResult ?FifthResult) string:format ?Block.
+  ("# rdf-message-flow\n\n## Source files\n\n- [N3 rules](../rdf-message-flow.n3)\n- [Input RDF Message Log](../input/rdf-message-flow.trig)\n\n## Answer\nContinuous RDF Message flow accepted: %d ordered parser-replayed message envelopes moved through the ingest → validate → interpret → route → sink pipeline. The threshold was %d, so results %s and %s were archived, the empty heartbeat kept the stream alive, and results %s and %s were emitted as alerts.\n\n## Explanation\nThe input sidecar is now a true RDF Message Log using VERSION \\\"1.2-messages\\\" and MESSAGE delimiters. Eyeling parses the log internally into an eymsg: replay view with ordered envelopes, offsets, next-envelope links, and one payload graph per non-empty message. Only the first replayed envelope starts at ingress; each envelope must reach :sink before the continuous-flow rule releases its eymsg:nextEnvelope. Observation payloads are inspected with log:includes inside their own message formula, and the delimiter-only third message is replayed as an empty heartbeat. This keeps message boundaries in the parser/runtime instead of modeling them by hand in the TriG sidecar." ?Count ?Threshold ?FirstResult ?SecondResult ?FourthResult ?FifthResult) string:format ?Block.
 } => {
   :rdfMessageFlowExample log:outputString ?Block.
-  :rdfMessageFlowExample :demonstrates :ContinuousFlow, :BackPressureRelease, :AtomicMessageContext, :HeartbeatInFlow, :ThresholdRouting.
+  :rdfMessageFlowExample :demonstrates :ContinuousFlow, :BackPressureRelease, :AtomicMessageContext, :HeartbeatInFlow, :ThresholdRouting, :RDFMessageLogReplay.
 }.
