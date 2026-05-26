@@ -324,6 +324,35 @@ const cases = [
     },
   },
   {
+    name: '00d math comparison accepts xsd:dateTimeStamp with xsd:dateTime',
+    opt: { proofComments: false },
+    input: `
+@prefix : <http://example.org/> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+{
+  "2026-05-30T00:00:00Z"^^xsd:dateTimeStamp math:notGreaterThan "2027-02-12T00:00:00Z"^^xsd:dateTime .
+}
+=>
+{
+  :mixedDateTimeStampCompare :is true .
+}.
+
+{
+  "2026-05-30T00:00:00Z"^^xsd:dateTimeStamp math:notGreaterThan "2026-05-30T00:00:00Z"^^xsd:dateTimeStamp .
+}
+=>
+{
+  :sameDateTimeStampCompare :is true .
+}.
+`,
+    expect: [
+      /:mixedDateTimeStampCompare\s+:is\s+true\s*\./,
+      /:sameDateTimeStampCompare\s+:is\s+true\s*\./,
+    ],
+  },
+  {
     name: '01 forward rule: p -> q',
     opt: { proofComments: false },
     input: `
