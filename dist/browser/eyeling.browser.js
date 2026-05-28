@@ -5517,6 +5517,10 @@ const {
   copyQuotedGraphMetadata,
 } = require('./prelude');
 
+// Inference fuses use sysexits.h EX_DATAERR (65): input/rules made a
+// forbidden condition provable, rather than a generic usage/runtime error.
+const INFERENCE_FUSE_EXIT_CODE = 65;
+
 // In N3/Turtle, rdf:nil is the canonical IRI for the empty RDF list.
 // Eyeling represents list literals with ListTerm; ensure rdf:nil unifies with ().
 const RDF_NIL_IRI = RDF_NS + 'nil';
@@ -8445,7 +8449,7 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
         // Allow dynamic fuses: ... => ?X. where ?X becomes false
         if (dynTerm instanceof Literal && dynTerm.value === 'false') {
           __printTriggeredFuse(r, opts && opts.prefixes, s, 'Dynamic head resolved to false.');
-          __exitReasoning(2, 'Inference fuse triggered.');
+          __exitReasoning(INFERENCE_FUSE_EXIT_CODE, 'Inference fuse triggered.');
         }
 
         const dynTriples = __graphTriplesOrTrue(dynTerm);
@@ -8606,7 +8610,7 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
           // Inference fuse
           if (r.isFuse && sols.length) {
             __printTriggeredFuse(r, opts && opts.prefixes, sols[0]);
-            __exitReasoning(2, 'Inference fuse triggered.');
+            __exitReasoning(INFERENCE_FUSE_EXIT_CODE, 'Inference fuse triggered.');
           }
 
           for (const s of sols) {
@@ -9143,6 +9147,7 @@ module.exports = {
   registerBuiltinModule,
   loadBuiltinModule,
   listBuiltinIris,
+  INFERENCE_FUSE_EXIT_CODE,
 };
 
   };
@@ -9170,6 +9175,7 @@ module.exports = {
   rdfjs: dataFactory,
   main: engine.main,
   version: engine.version,
+  INFERENCE_FUSE_EXIT_CODE: engine.INFERENCE_FUSE_EXIT_CODE,
 
   // internals for playground.html
   lex: engine.lex,

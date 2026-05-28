@@ -793,7 +793,7 @@ Implementation: deterministic Skolem IDs live in `lib/skolem.js`; the per-firing
 A rule whose conclusion is `false` is treated as a hard failure. During forward chaining:
 
 - Eyeling proves the premise (it only needs one solution)
-- if the premise is provable, it prints a message and exits with status code 2
+- if the premise is provable, it prints a message and exits with status code 65 (`EX_DATAERR` in Unix `sysexits.h` terminology)
 
 This is Eyeling’s way to express hard consistency checks and detect inconsistencies.
 
@@ -3417,7 +3417,7 @@ So Eyeling is not only implementing the semantics document; it is also defining 
 
 #### G.2.4 Inference fuses (`=> false`) are an engine-level procedural feature
 
-The semantics document discusses `false` in relation to implication and constraints. Eyeling turns `{ ... } => false` into an engine-level hard failure with a visible message and failing exit status. That is a practical tooling feature: it lets a rule act like a checked invariant.
+The semantics document discusses `false` in relation to implication and constraints. Eyeling turns `{ ... } => false` into an engine-level hard failure with a visible message and exit status 65 (`EX_DATAERR`). That is a practical tooling feature: it lets a rule act like a checked invariant.
 
 This is very useful in real programs, but it is an operational behavior of the reasoner, not something a model-theoretic semantics “executes.”
 

@@ -457,13 +457,13 @@ ${U('s')} ${U('p')} ${U('o')}.
     notExpect: [/^#/m],
   },
   {
-    name: '11 negative entailment: rule derives false (expect exit 2 => throws)',
+    name: '11 negative entailment: rule derives false (expect exit 65 => throws)',
     opt: { proofComments: false },
     input: `
 { ${U('a')} ${U('p')} ${U('b')}. } => false.
 ${U('a')} ${U('p')} ${U('b')}.
 `,
-    expectErrorCode: 2,
+    expectErrorCode: 65,
   },
   {
     name: '12 invalid syntax should throw (non-zero exit)',
@@ -987,10 +987,10 @@ ${transitiveClosureN3('sub')}
     ],
   },
   {
-    name: '25 heavier negative entailment: batch + forbidden => false (expect exit 2)',
+    name: '25 heavier negative entailment: batch + forbidden => false (expect exit 65)',
     opt: { proofComments: false, maxBuffer: 200 * 1024 * 1024 },
     input: negativeEntailmentBatchN3(200),
-    expectErrorCode: 2,
+    expectErrorCode: 65,
   },
   {
     name: '26 sanity: no rules => no newly derived facts',
@@ -1108,7 +1108,7 @@ ${U('a')} ${U('p')} ${U('b')}.
 { ${U('a')} ${U('p')} ${U('b')}. } => { ${U('a')} ${U('q')} ${U('b')}. }.
 { ${U('a')} ${U('q')} ${U('b')}. } => false.
 `,
-    expectErrorCode: 2,
+    expectErrorCode: 65,
   },
 
   {

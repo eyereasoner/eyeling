@@ -10,6 +10,8 @@ function getBrowserApi() {
   return api;
 }
 
+export const INFERENCE_FUSE_EXIT_CODE = 65;
+
 export function reasonStream(input, opts) {
   return getBrowserApi().reasonStream(input, opts);
 }
@@ -64,6 +66,7 @@ const eyeling = {
   get version() {
     return getBrowserApi().version;
   },
+  INFERENCE_FUSE_EXIT_CODE,
   reasonStream,
   reasonRdfJs,
   rdfjs,

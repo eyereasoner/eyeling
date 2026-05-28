@@ -79,12 +79,12 @@ function normalizeMarkdownForCompare(text) {
 
 // Expectation logic (shared with test/examples.test.js):
 // 1) If file contains:  # expect-exit: N  -> use N
-// 2) Else, if it contains "=> false" -> expect exit 2
+// 2) Else, if it contains "=> false" -> expect exit 65
 // 3) Else -> expect exit 0
 function expectedExitCode(n3Text) {
   const m = n3Text.match(/^[ \t]*#[: ]*expect-exit:[ \t]*([0-9]+)\b/m);
   if (m) return parseInt(m[1], 10);
-  if (/=>\s*false\b/.test(n3Text)) return 2;
+  if (/=>\s*false\b/.test(n3Text)) return 65;
   return 0;
 }
 

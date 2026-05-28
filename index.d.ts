@@ -209,6 +209,7 @@ declare module 'eyeling' {
     opts?: Omit<ReasonStreamOptions, 'rdfjs' | 'onDerived'>,
   ): AsyncIterable<RdfJsQuad>;
 
+  export const INFERENCE_FUSE_EXIT_CODE: 65;
   export const rdfjs: RdfJsDataFactory;
   export function registerBuiltin(iri: string, handler: BuiltinHandler): BuiltinHandler;
   export function unregisterBuiltin(iri: string): boolean;
@@ -237,6 +238,7 @@ declare module 'eyeling/browser' {
     opts?: Omit<ReasonStreamOptions, 'rdfjs' | 'onDerived'>,
   ): AsyncIterable<RdfJsQuad>;
 
+  export const INFERENCE_FUSE_EXIT_CODE: 65;
   export const rdfjs: RdfJsDataFactory;
   export function registerBuiltin(iri: string, handler: BuiltinHandler): BuiltinHandler;
   export function unregisterBuiltin(iri: string): boolean;
@@ -247,6 +249,7 @@ declare module 'eyeling/browser' {
     readonly version: string;
     reasonStream: typeof reasonStream;
     reasonRdfJs: typeof reasonRdfJs;
+    readonly INFERENCE_FUSE_EXIT_CODE: typeof INFERENCE_FUSE_EXIT_CODE;
     rdfjs: typeof rdfjs;
     registerBuiltin: typeof registerBuiltin;
     unregisterBuiltin: typeof unregisterBuiltin;

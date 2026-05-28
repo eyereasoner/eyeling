@@ -1529,10 +1529,10 @@ const batch = [];
                 if (e && e.__eyelingExit) {
                   flush(true);
                   self.postMessage({
-                    type: e.code === 2 ? "done" : "error",
+                    type: e.code === 65 ? "done" : "error",
                     runId,
                     exitCode: e.code,
-                    message: e.code === 2 ? "Inference fuse triggered." : ((e && e.message) ? e.message : String(e)),
+                    message: e.code === 65 ? "Inference fuse triggered." : ((e && e.message) ? e.message : String(e)),
                   });
                   return;
                 }
@@ -3057,7 +3057,7 @@ const batch = [];
 
               const totalSeconds = (performance.now() - startMs) / 1000;
               const exitCode = info && typeof info.exitCode === 'number' ? info.exitCode : 0;
-              if (exitCode === 2) {
+              if (exitCode === 65) {
                 try {
                   const curOut = String(outputEl.getValue ? outputEl.getValue() : '');
                   if (!/Inference fuse triggered\./i.test(curOut)) {
