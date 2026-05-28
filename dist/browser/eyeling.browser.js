@@ -4825,7 +4825,7 @@ function main() {
         parseN3Text(text, {
           baseIri: __sourceLabelToBaseIri(sourceLabel),
           label: sourceLabel,
-          collectUsedPrefixes: true,
+          collectUsedPrefixes: streamMode,
           keepSourceArtifacts: false,
           rdf: rdfMode,
         }),
@@ -6536,11 +6536,13 @@ function termFastKey(t) {
   if (t instanceof Iri || t instanceof Blank) return t.__tid;
 
   if (t instanceof Literal) {
-    // Very large literals intentionally skip global interning in prelude.js to
-    // avoid retaining huge strings forever. Their per-object __tid is therefore
-    // not value-stable, so using it here breaks duplicate detection for facts
-    // such as long log:outputString blocks that are re-derived during forward
-    // chaining. Fall back to a value-based key in that case.
+    // Literal construction already computed a value-stable __tid for ordinary
+    // short literals.  Avoid re-running literalParts()/datatype normalization
+    // while building fact indexes; on data-heavy inputs this is a hot path.
+    // Only the rare over-sized literal needs the value-based fallback because
+    // prelude intentionally gives such literals per-object ids to avoid
+    // retaining huge strings in the global interner.
+    if (typeof t.value !== 'string' || t.value.length + 64 <= MAX_LITERAL_TID_LEN) return t.__tid;
     const norm = normalizeLiteralForTid(t.value);
     if (typeof norm === 'string' && norm.length > MAX_LITERAL_TID_LEN) return 'L:' + norm;
     return t.__tid;
@@ -6627,17 +6629,28 @@ function ensureFactIndexes(facts) {
     enumerable: false,
     writable: true,
   });
+  Object.defineProperty(facts, '__keySetComplete', {
+    value: false,
+    enumerable: false,
+    writable: true,
+  });
 
-  for (let i = 0; i < facts.length; i++) indexFact(facts, facts[i], i);
+  // Build lookup indexes eagerly, but do not populate the duplicate-detection
+  // string Set for every input fact.  The predicate/subject/object indexes are
+  // enough to verify duplicates when needed; avoiding 100k+ joined string keys
+  // saves substantial time and GC on data-heavy query workloads.
+  for (let i = 0; i < facts.length; i++) indexFact(facts, facts[i], i, false);
 }
 
-function indexFact(facts, tr, idx) {
+function indexFact(facts, tr, idx, addKeySet = true) {
   const sk = termFastKey(tr.s);
   const ok = termFastKey(tr.o);
+  let pkForKey = null;
 
   if (tr.p instanceof Iri) {
     // Use predicate term id as the primary key to avoid hashing long IRI strings.
     const pk = tr.p.__tid;
+    pkForKey = pk;
 
     let pb = facts.__byPred.get(pk);
     if (!pb) {
@@ -6695,8 +6708,10 @@ function indexFact(facts, tr, idx) {
     }
   }
 
-  const key = tripleFastKey(tr);
-  if (key !== null) facts.__keySet.add(key);
+  if (addKeySet && sk !== null && ok !== null) {
+    if (pkForKey === null) pkForKey = termFastKey(tr.p);
+    if (pkForKey !== null) facts.__keySet.add(sk + '\t' + pkForKey + '\t' + ok);
+  }
 }
 
 function candidateFacts(facts, goal) {
@@ -6758,7 +6773,10 @@ function hasFactIndexed(facts, tr) {
   ensureFactIndexes(facts);
 
   const key = tripleFastKey(tr);
-  if (key !== null) return facts.__keySet.has(key);
+  if (key !== null) {
+    if (facts.__keySet.has(key)) return true;
+    if (facts.__keySetComplete) return false;
+  }
 
   if (tr.p instanceof Iri) {
     const pk = tr.p.__tid;
@@ -6788,7 +6806,7 @@ function pushFactIndexed(facts, tr) {
   ensureFactIndexes(facts);
   const idx = facts.length;
   facts.push(tr);
-  indexFact(facts, tr, idx);
+  indexFact(facts, tr, idx, true);
 }
 
 function makeDerivedRecord(fact, rule, premises, subst, captureExplanations) {
@@ -8325,11 +8343,9 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
     const varGen = [0];
     const skCounter = [0];
 
-    // Speed up dynamic rule promotion by maintaining O(1) membership sets.
-    // (Some workloads derive many rule-producing triples.)
-
-    __ensureRuleKeySet(forwardRules);
-    __ensureRuleKeySet(backRules);
+    // Rule-key sets are only needed if a program actually derives rule-producing
+    // triples. Building them eagerly is expensive on large static rule sets, so
+    // dynamic-promotion sites create them lazily before duplicate checks.
 
     // Cache head blank-node skolemization per (rule firing, head blank label).
     // This prevents repeatedly generating fresh _:sk_N blanks for the *same*
@@ -8508,8 +8524,9 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
               newRule.conclusion,
               newRule.__dynamicConclusionTerm || null,
             );
-            if (!forwardRules.__ruleKeySet.has(key)) {
-              forwardRules.__ruleKeySet.add(key);
+            const forwardRuleKeySet = __ensureRuleKeySet(forwardRules);
+            if (!forwardRuleKeySet.has(key)) {
+              forwardRuleKeySet.add(key);
               forwardRules.push(newRule);
               rulesChanged = true;
             }
@@ -8523,8 +8540,9 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
               newRule.conclusion,
               newRule.__dynamicConclusionTerm || null,
             );
-            if (!backRules.__ruleKeySet.has(key)) {
-              backRules.__ruleKeySet.add(key);
+            const backRuleKeySet = __ensureRuleKeySet(backRules);
+            if (!backRuleKeySet.has(key)) {
+              backRuleKeySet.add(key);
               backRules.push(newRule);
               indexBackRule(backRules, newRule);
               rulesChanged = true;
@@ -9462,7 +9480,26 @@ class N3SyntaxError extends SyntaxError {
 }
 
 function isWs(c) {
-  return /\s/.test(c);
+  if (c === null || c === undefined) return false;
+  const code = c.charCodeAt(0);
+  // Fast path for the whitespace used by N3/Turtle inputs.
+  return code === 0x20 || code === 0x09 || code === 0x0a || code === 0x0d || code === 0x0c;
+}
+
+function isAsciiAlphaCode(code) {
+  return (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
+}
+
+function isAsciiDigitCode(code) {
+  return code >= 48 && code <= 57;
+}
+
+function isAsciiAlpha(c) {
+  return c !== null && c !== undefined && isAsciiAlphaCode(c.charCodeAt(0));
+}
+
+function isAsciiDigit(c) {
+  return c !== null && c !== undefined && isAsciiDigitCode(c.charCodeAt(0));
 }
 
 // Turtle/N3 prefixed names (PNAME_*) allow many Unicode letters and certain
@@ -9475,13 +9512,18 @@ function isWs(c) {
 //
 // We implement a grammar-aligned matcher for PN_CHARS* and PLX fragments.
 function isHexDigit(c) {
-  return c !== null && /^[0-9A-Fa-f]$/.test(c);
+  if (c === null || c === undefined) return false;
+  const code = c.charCodeAt(0);
+  return (code >= 48 && code <= 57) || (code >= 65 && code <= 70) || (code >= 97 && code <= 102);
 }
 
 function isPnCharsBase(c) {
   // Approximation of PN_CHARS_BASE from the N3 grammar using Unicode properties.
   // Covers most letters used in practice (including ñ) and common scripts.
-  return c !== null && /[A-Za-z]|\p{L}|\p{Nl}/u.test(c);
+  if (c === null || c === undefined) return false;
+  const code = c.charCodeAt(0);
+  if (isAsciiAlphaCode(code)) return true;
+  return /\p{L}|\p{Nl}/u.test(c);
 }
 
 function isPnCharsU(c) {
@@ -9491,9 +9533,11 @@ function isPnCharsU(c) {
 
 function isPnChars(c) {
   // PN_CHARS ::= PN_CHARS_U | '-' | [0-9] | U+00B7 | [U+0300-U+036F] | [U+203F-U+2040]
-  if (c === null) return false;
+  if (c === null || c === undefined) return false;
+  const code = c.charCodeAt(0);
+  if (isAsciiAlphaCode(code) || isAsciiDigitCode(code) || code === 95 || code === 45) return true;
   if (isPnCharsU(c)) return true;
-  if (c === '-' || /[0-9]/.test(c) || c === '\u00B7') return true;
+  if (c === '\u00B7') return true;
   const cp = c.codePointAt(0);
   return (cp >= 0x0300 && cp <= 0x036f) || (cp >= 0x203f && cp <= 0x2040);
 }
@@ -10598,7 +10642,10 @@ function normalizeRdfCompatibility(inputText) {
 function lex(inputText, opts = {}) {
   const rdf = !!(opts && opts.rdf);
   if (rdf) inputText = normalizeRdfCompatibility(inputText);
-  const chars = Array.from(inputText);
+  // Avoid copying large ASCII/BMP inputs into an Array.  Array.from() is
+  // only needed when the text contains surrogate pairs and we want the old
+  // code-point iteration behavior for non-BMP characters.
+  const chars = /[\uD800-\uDFFF]/.test(inputText) ? Array.from(inputText) : inputText;
   const n = chars.length;
   let i = 0;
   const tokens = [];
@@ -10614,19 +10661,29 @@ function lex(inputText, opts = {}) {
   // - Accepts percent escapes (%HH) as PLX fragments.
   // - Accepts PN_LOCAL_ESC backslash escapes and decodes them ("\\." -> ".").
   // - Accepts '.' inside a name only when it is not terminal.
+  function sliceChars(start, end) {
+    return typeof chars === 'string' ? chars.slice(start, end) : chars.slice(start, end).join('');
+  }
+
   function readIdentText(startOffsetForErrors) {
-    const out = [];
+    const start = i;
+    let out = null;
+
+    function appendRawUntilHere() {
+      if (out === null) out = [sliceChars(start, i)];
+    }
+
     while (i < n) {
-      const cc = peek();
-      if (cc === null || isWs(cc)) break;
+      const cc = chars[i];
+      if (cc === null || cc === undefined || isWs(cc)) break;
 
       // Hard stops: delimiters cannot appear unescaped inside PNAME tokens.
-      if ('{}()[];,'.includes(cc)) break;
+      if (cc === '{' || cc === '}' || cc === '(' || cc === ')' || cc === '[' || cc === ']' || cc === ';' || cc === ',') break;
 
       // Dot is allowed inside PN_LOCAL, but not at the end.
       if (cc === '.') {
         if (!canContinueAfterDot(peek(1))) break;
-        out.push('.');
+        if (out !== null) out.push('.');
         i++;
         continue;
       }
@@ -10641,6 +10698,7 @@ function lex(inputText, opts = {}) {
             typeof startOffsetForErrors === 'number' ? startOffsetForErrors : i,
           );
         }
+        appendRawUntilHere();
         out.push('%', h1, h2);
         i += 3;
         continue;
@@ -10650,6 +10708,7 @@ function lex(inputText, opts = {}) {
       if (cc === '\\') {
         const esc = peek(1);
         if (esc !== null && PN_LOCAL_ESC_SET.has(esc)) {
+          appendRawUntilHere();
           out.push(esc); // decoded form
           i += 2;
           continue;
@@ -10661,14 +10720,14 @@ function lex(inputText, opts = {}) {
       }
 
       if (isIdentChar(cc)) {
-        out.push(cc);
+        if (out !== null) out.push(cc);
         i++;
         continue;
       }
 
       break;
     }
-    return out.join('');
+    return out === null ? sliceChars(start, i) : out.join('');
   }
 
   while (i < n) {
@@ -10955,10 +11014,10 @@ function lex(inputText, opts = {}) {
         //   "@" [a-zA-Z]+ ("-" [a-zA-Z0-9]+)*
         const tagChars = [];
         let cc = peek();
-        if (cc === null || !/[A-Za-z]/.test(cc)) {
+        if (cc === null || !isAsciiAlpha(cc)) {
           throw new N3SyntaxError("Invalid language tag (expected [A-Za-z] after '@')", start);
         }
-        while ((cc = peek()) !== null && /[A-Za-z]/.test(cc)) {
+        while ((cc = peek()) !== null && isAsciiAlpha(cc)) {
           tagChars.push(cc);
           i++;
         }
@@ -10982,7 +11041,7 @@ function lex(inputText, opts = {}) {
       // Otherwise, treat as a directive (@prefix, @base)
       const wordChars = [];
       let cc;
-      while ((cc = peek()) !== null && /[A-Za-z]/.test(cc)) {
+      while ((cc = peek()) !== null && isAsciiAlpha(cc)) {
         wordChars.push(cc);
         i++;
       }
@@ -10994,19 +11053,19 @@ function lex(inputText, opts = {}) {
     }
 
     // 6) Numeric literal (integer or float)
-    if (/[0-9]/.test(c) || (c === '-' && peek(1) !== null && /[0-9]/.test(peek(1)))) {
+    if (isAsciiDigit(c) || (c === '-' && peek(1) !== null && isAsciiDigit(peek(1)))) {
       const start = i;
       const numChars = [c];
       i++;
       while (i < n) {
         const cc = chars[i];
-        if (/[0-9]/.test(cc)) {
+        if (isAsciiDigit(cc)) {
           numChars.push(cc);
           i++;
           continue;
         }
         if (cc === '.') {
-          if (i + 1 < n && /[0-9]/.test(chars[i + 1])) {
+          if (i + 1 < n && isAsciiDigit(chars[i + 1])) {
             numChars.push('.');
             i++;
             continue;
@@ -11021,14 +11080,14 @@ function lex(inputText, opts = {}) {
       if (i < n && (chars[i] === 'e' || chars[i] === 'E')) {
         let j = i + 1;
         if (j < n && (chars[j] === '+' || chars[j] === '-')) j++;
-        if (j < n && /[0-9]/.test(chars[j])) {
+        if (j < n && isAsciiDigit(chars[j])) {
           numChars.push(chars[i]); // e/E
           i++;
           if (i < n && (chars[i] === '+' || chars[i] === '-')) {
             numChars.push(chars[i]);
             i++;
           }
-          while (i < n && /[0-9]/.test(chars[i])) {
+          while (i < n && isAsciiDigit(chars[i])) {
             numChars.push(chars[i]);
             i++;
           }
@@ -11477,7 +11536,15 @@ class Parser {
   }
 
   isIdentKeyword(tok, keyword) {
-    return tok && tok.typ === 'Ident' && typeof tok.value === 'string' && tok.value.toLowerCase() === keyword;
+    if (!tok || tok.typ !== 'Ident' || typeof tok.value !== 'string') return false;
+    const v = tok.value;
+    if (v.length !== keyword.length) return false;
+    for (let i = 0; i < keyword.length; i++) {
+      const code = v.charCodeAt(i);
+      const lower = code >= 65 && code <= 90 ? code + 32 : code;
+      if (lower !== keyword.charCodeAt(i)) return false;
+    }
+    return true;
   }
 
   canStartSparqlPrefixDirective() {
@@ -12400,19 +12467,38 @@ function literalParts(lit) {
 // equality fast-paths than repeated string key construction.
 
 let __nextTid = 1;
-const __tidIntern = new Map(); // string key -> number
+const __tidIntern = new Map(); // legacy generic key -> number
+const __iriTidIntern = new Map(); // IRI value -> number
+const __blankTidIntern = new Map(); // blank label -> number
+const __literalTidIntern = new Map(); // normalized literal lexical form -> number
 
 // Avoid storing extremely large literal keys in the global term-id intern map.
 // For huge literals we still assign a unique __tid, but we do not intern the key.
 const MAX_LITERAL_TID_LEN = 1024;
 
-function __getTid(key) {
-  let id = __tidIntern.get(key);
+function __getTidFromMap(map, key) {
+  let id = map.get(key);
   if (!id) {
     id = __nextTid++;
-    __tidIntern.set(key, id);
+    map.set(key, id);
   }
   return id;
+}
+
+function __getTid(key) {
+  return __getTidFromMap(__tidIntern, key);
+}
+
+function __getIriTid(value) {
+  return __getTidFromMap(__iriTidIntern, value);
+}
+
+function __getBlankTid(label) {
+  return __getTidFromMap(__blankTidIntern, label);
+}
+
+function __getLiteralTid(norm) {
+  return __getTidFromMap(__literalTidIntern, norm);
 }
 
 function __isQuotedLexical(lit) {
@@ -12460,6 +12546,14 @@ function __isPlainStringLiteralValue(lit) {
 function normalizeLiteralForTid(lit) {
   // Canonicalize so that plain string and explicit xsd:string share the same id.
   if (typeof lit !== 'string') return lit;
+
+  // Fast path for the overwhelmingly common lexer output for plain string
+  // literals: a canonical JSON-style quoted lexical form with no suffix.
+  // This avoids literalParts()/language-tag parsing for large fact tables.
+  if (lit.length >= 2 && lit.charCodeAt(0) === 34 && lit.charCodeAt(lit.length - 1) === 34 && lit.indexOf('^^') < 0) {
+    return `${lit}^^<${XSD_NS}string>`;
+  }
+
   const [lex, dt] = literalParts(lit);
   if (dt === XSD_NS + 'string') return `${lex}^^<${XSD_NS}string>`;
   if (dt === null && __isPlainStringLiteralValue(lit)) return `${lex}^^<${XSD_NS}string>`;
@@ -12477,7 +12571,7 @@ class Iri extends Term {
     super();
     this.value = value;
     Object.defineProperty(this, '__tid', {
-      value: __getTid('I:' + value),
+      value: __getIriTid(value),
       enumerable: false,
     });
   }
@@ -12489,7 +12583,7 @@ class Literal extends Term {
     this.value = value; // raw lexical form, e.g. "foo", 12, true, or "\"1944-08-21\"^^..."
     const norm = normalizeLiteralForTid(value);
     const useIntern = typeof norm === 'string' && norm.length <= MAX_LITERAL_TID_LEN;
-    const tid = useIntern ? __getTid('L:' + norm) : __nextTid++;
+    const tid = useIntern ? __getLiteralTid(norm) : __nextTid++;
     Object.defineProperty(this, '__tid', {
       value: tid,
       enumerable: false,
@@ -12509,7 +12603,7 @@ class Blank extends Term {
     super();
     this.label = label; // _:b1, etc.
     Object.defineProperty(this, '__tid', {
-      value: __getTid('B:' + label),
+      value: __getBlankTid(label),
       enumerable: false,
     });
   }
