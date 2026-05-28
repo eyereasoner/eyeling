@@ -5849,6 +5849,14 @@ function __prepareForwardRule(r) {
       configurable: true,
     });
   }
+  if (!hasOwn.call(r, '__needsForwardSkipCheck')) {
+    Object.defineProperty(r, '__needsForwardSkipCheck', {
+      value: !!(r.__headIsStrictGround || (r.__scopedSkipInfo && r.__scopedSkipInfo.needsSnap)),
+      enumerable: false,
+      writable: false,
+      configurable: true,
+    });
+  }
 }
 
 function __graphTriplesOrTrue(term) {
@@ -6167,6 +6175,11 @@ function skolemizeTermForHeadBlanks(t, headBlankLabels, mapping, skCounter, firi
 }
 
 function skolemizeTripleForHeadBlanks(tr, headBlankLabels, mapping, skCounter, firingKey, globalMap) {
+  // Fast path: the common case has no explicit head blanks.  Do not allocate a
+  // replacement Triple or compute a firing key when skolemization cannot change
+  // anything.  This matters for long single-premise chains such as
+  // deep-taxonomy-100000, where every derived head triple is otherwise copied.
+  if (!headBlankLabels || headBlankLabels.size === 0) return tr;
   return new Triple(
     skolemizeTermForHeadBlanks(tr.s, headBlankLabels, mapping, skCounter, firingKey, globalMap),
     skolemizeTermForHeadBlanks(tr.p, headBlankLabels, mapping, skCounter, firingKey, globalMap),
@@ -6642,6 +6655,35 @@ function ensureFactIndexes(facts) {
   for (let i = 0; i < facts.length; i++) indexFact(facts, facts[i], i, false);
 }
 
+function cloneFactIndexesForSnapshot(src, dest) {
+  ensureFactIndexes(src);
+
+  function cloneArrayMap(map) {
+    const out = new Map();
+    for (const [k, arr] of map) out.set(k, arr.slice());
+    return out;
+  }
+
+  function cloneNestedArrayMap(map) {
+    const out = new Map();
+    for (const [k, inner] of map) {
+      const innerOut = new Map();
+      for (const [k2, arr] of inner) innerOut.set(k2, arr.slice());
+      out.set(k, innerOut);
+    }
+    return out;
+  }
+
+  Object.defineProperty(dest, '__byPred', { value: cloneArrayMap(src.__byPred), enumerable: false, writable: true });
+  Object.defineProperty(dest, '__byPS', { value: cloneNestedArrayMap(src.__byPS), enumerable: false, writable: true });
+  Object.defineProperty(dest, '__byPO', { value: cloneNestedArrayMap(src.__byPO), enumerable: false, writable: true });
+  Object.defineProperty(dest, '__wildPred', { value: src.__wildPred.slice(), enumerable: false, writable: true });
+  Object.defineProperty(dest, '__wildPS', { value: cloneArrayMap(src.__wildPS), enumerable: false, writable: true });
+  Object.defineProperty(dest, '__wildPO', { value: cloneArrayMap(src.__wildPO), enumerable: false, writable: true });
+  Object.defineProperty(dest, '__keySet', { value: new Set(src.__keySet), enumerable: false, writable: true });
+  Object.defineProperty(dest, '__keySetComplete', { value: !!src.__keySetComplete, enumerable: false, writable: true });
+}
+
 function indexFact(facts, tr, idx, addKeySet = true) {
   const sk = termFastKey(tr.s);
   const ok = termFastKey(tr.o);
@@ -6928,13 +6970,20 @@ function makeSinglePremiseAgendaIndex(forwardRules, backRules) {
     if (!isSinglePremiseAgendaRuleSafe(r, backRules)) continue;
 
     const goal = r.premise[0];
+    const goalSKey = termFastKey(goal.s);
+    const goalOKey = termFastKey(goal.o);
+    const fastSubjectVar = goal.p instanceof Iri && goal.s instanceof Var && goalOKey !== null ? goal.s.name : null;
+    const fastObjectVar = goal.p instanceof Iri && goal.o instanceof Var && goalSKey !== null ? goal.o.name : null;
     const entry = {
       rule: r,
       ruleIndex: i,
       goal,
       goalPredTid: goal.p instanceof Iri ? goal.p.__tid : null,
-      goalSKey: termFastKey(goal.s),
-      goalOKey: termFastKey(goal.o),
+      goalSKey,
+      goalOKey,
+      needsSkipCheck: !!r.__needsForwardSkipCheck,
+      fastSubjectVar,
+      fastObjectVar,
     };
 
     index.indexed.add(r);
@@ -8395,7 +8444,7 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
 
     function makeScopedSnapshot() {
       const snap = facts.slice();
-      ensureFactIndexes(snap);
+      cloneFactIndexesForSnapshot(facts, snap);
       Object.defineProperty(snap, '__scopedSnapshot', {
         value: snap,
         enumerable: false,
@@ -8449,10 +8498,21 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
       let changedHere = false;
       let rulesChanged = false;
 
-      // IMPORTANT: one skolem map per *rule firing*
+      // IMPORTANT: one skolem map per *rule firing*.  Instantiate premise
+      // triples and build the firing key lazily: normal CLI runs do not capture
+      // proof records, and most rules have no explicit head blanks, so the eager
+      // work was pure allocation on large forward chains.
       const skMap = {};
-      const instantiatedPremises = r.premise.map((b) => applySubstTriple(b, s));
-      const fireKey = __firingKey(ruleIndex, instantiatedPremises);
+      let instantiatedPremises = null;
+      let fireKey = null;
+      function getInstantiatedPremises() {
+        if (instantiatedPremises === null) instantiatedPremises = r.premise.map((b) => applySubstTriple(b, s));
+        return instantiatedPremises;
+      }
+      function getFireKey() {
+        if (fireKey === null) fireKey = __firingKey(ruleIndex, getInstantiatedPremises());
+        return fireKey;
+      }
 
       // Support "dynamic" rule heads where the consequent is a term that
       // (after substitution) evaluates to a quoted formula.
@@ -8505,7 +8565,7 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
         if (isFwRuleTriple || isBwRuleTriple) {
           if (!hasFactIndexed(facts, instantiated)) {
             pushFactIndexed(facts, instantiated);
-            const df = makeDerivedRecord(instantiated, r, instantiatedPremises, s, captureExplanations);
+            const df = makeDerivedRecord(instantiated, r, getInstantiatedPremises(), s, captureExplanations);
             derivedForward.push(df);
             if (typeof onDerived === 'function') onDerived(df);
             changedHere = true;
@@ -8553,20 +8613,23 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
         }
 
         // Only skolemize blank nodes that occur explicitly in the rule head
-        const inst = skolemizeTripleForHeadBlanks(
-          instantiated,
-          headBlankLabelsHere,
-          skMap,
-          skCounter,
-          fireKey,
-          headSkolemCache,
-        );
+        const inst =
+          headBlankLabelsHere && headBlankLabelsHere.size
+            ? skolemizeTripleForHeadBlanks(
+                instantiated,
+                headBlankLabelsHere,
+                skMap,
+                skCounter,
+                getFireKey(),
+                headSkolemCache,
+              )
+            : instantiated;
 
         if (!isGroundTriple(inst)) continue;
         if (hasFactIndexed(facts, inst)) continue;
 
         pushFactIndexed(facts, inst);
-        const df = makeDerivedRecord(inst, r, instantiatedPremises, s, captureExplanations);
+        const df = makeDerivedRecord(inst, r, getInstantiatedPremises(), s, captureExplanations);
         derivedForward.push(df);
         if (typeof onDerived === 'function') onDerived(df);
 
@@ -8593,10 +8656,19 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
           for (let ci = 0; ci < total; ci++) {
             const entry = ci < candidates.exactLen ? candidates.exact[ci] : candidates.wild[ci - candidates.exactLen];
             const r = entry.rule;
-            if (__skipForwardRuleNow(r)) continue;
+            if (entry.needsSkipCheck && __skipForwardRuleNow(r)) continue;
 
-            const s = unifyTriple(entry.goal, fact, __emptySubst());
-            if (s === null) continue;
+            let s;
+            if (entry.fastSubjectVar !== null) {
+              s = __emptySubst();
+              s[entry.fastSubjectVar] = fact.s;
+            } else if (entry.fastObjectVar !== null) {
+              s = __emptySubst();
+              s[entry.fastObjectVar] = fact.o;
+            } else {
+              s = unifyTriple(entry.goal, fact, __emptySubst());
+              if (s === null) continue;
+            }
 
             const outcome = __emitForwardRuleSolution(r, entry.ruleIndex, s);
             if (outcome.rulesChanged) {
@@ -8613,7 +8685,7 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
         for (let i = 0; i < forwardRules.length; i++) {
           const r = forwardRules[i];
           if (agendaIndex.indexed.has(r)) continue;
-          if (__skipForwardRuleNow(r)) continue;
+          if (r.__needsForwardSkipCheck && __skipForwardRuleNow(r)) continue;
 
           const headIsStrictGround = r.__headIsStrictGround;
           const maxSols = r.isFuse || headIsStrictGround ? 1 : undefined;
@@ -10639,6 +10711,16 @@ function normalizeRdfCompatibility(inputText) {
   return text;
 }
 
+
+function isNumericLikeIdentifier(word) {
+  if (typeof word !== 'string' || word.length === 0) return false;
+  for (let j = 0; j < word.length; j++) {
+    const code = word.charCodeAt(j);
+    if (!((code >= 48 && code <= 57) || code === 46 || code === 45)) return false;
+  }
+  return true;
+}
+
 function lex(inputText, opts = {}) {
   const rdf = !!(opts && opts.rdf);
   if (rdf) inputText = normalizeRdfCompatibility(inputText);
@@ -10806,22 +10888,47 @@ function lex(inputText, opts = {}) {
       continue;
     }
 
-    // 5) Single-character punctuation
-    if ('{}()[];,.'.includes(c)) {
-      const mapping = {
-        '{': 'LBrace',
-        '}': 'RBrace',
-        '(': 'LParen',
-        ')': 'RParen',
-        '[': 'LBracket',
-        ']': 'RBracket',
-        ';': 'Semicolon',
-        ',': 'Comma',
-        '.': 'Dot',
-      };
-      tokens.push(new Token(mapping[c], null, i));
-      i++;
-      continue;
+    // 5) Single-character punctuation.  Use a switch rather than allocating a
+    // mapping object for every punctuation token in large inputs.
+    switch (c) {
+      case '{':
+        tokens.push(new Token('LBrace', null, i));
+        i++;
+        continue;
+      case '}':
+        tokens.push(new Token('RBrace', null, i));
+        i++;
+        continue;
+      case '(':
+        tokens.push(new Token('LParen', null, i));
+        i++;
+        continue;
+      case ')':
+        tokens.push(new Token('RParen', null, i));
+        i++;
+        continue;
+      case '[':
+        tokens.push(new Token('LBracket', null, i));
+        i++;
+        continue;
+      case ']':
+        tokens.push(new Token('RBracket', null, i));
+        i++;
+        continue;
+      case ';':
+        tokens.push(new Token('Semicolon', null, i));
+        i++;
+        continue;
+      case ',':
+        tokens.push(new Token('Comma', null, i));
+        i++;
+        continue;
+      case '.':
+        tokens.push(new Token('Dot', null, i));
+        i++;
+        continue;
+      default:
+        break;
     }
 
     // String literal: short "..." or long """..."""
@@ -10880,26 +10987,36 @@ function lex(inputText, opts = {}) {
         continue;
       }
 
-      // Short string literal " ... "
+      // Short string literal " ... ".  Most data files contain plain
+      // unescaped labels; keep that path slice-based and avoid building an
+      // intermediate character array + raw quoted string.
       i++; // consume opening "
-      const sChars = [];
+      const contentStart = i;
+      let sChars = null;
+      let closed = false;
       while (i < n) {
         const cc = chars[i];
         i++;
         if (cc === '\\') {
+          if (sChars === null) sChars = [sliceChars(contentStart, i - 1)];
           if (i < n) {
             const esc = chars[i];
             i++;
             sChars.push('\\');
             sChars.push(esc);
+          } else {
+            sChars.push('\\');
           }
           continue;
         }
-        if (cc === '"') break;
-        sChars.push(cc);
+        if (cc === '"') {
+          closed = true;
+          break;
+        }
+        if (sChars !== null) sChars.push(cc);
       }
-      const raw = '"' + sChars.join('') + '"';
-      const decoded = decodeN3StringEscapes(stripQuotes(raw), start);
+      const rawContent = sChars === null ? sliceChars(contentStart, closed ? i - 1 : i) : sChars.join('');
+      const decoded = sChars === null ? rawContent : decodeN3StringEscapes(rawContent, start);
       assertValidStringLiteralValue(decoded, start);
       const s = JSON.stringify(decoded); // canonical short quoted form
       tokens.push(new Token('Literal', s, start));
@@ -10964,24 +11081,32 @@ function lex(inputText, opts = {}) {
 
       // Short string literal ' ... '
       i++; // consume opening '
-      const sChars = [];
+      const contentStart = i;
+      let sChars = null;
+      let closed = false;
       while (i < n) {
         const cc = chars[i];
         i++;
         if (cc === '\\') {
+          if (sChars === null) sChars = [sliceChars(contentStart, i - 1)];
           if (i < n) {
             const esc = chars[i];
             i++;
             sChars.push('\\');
             sChars.push(esc);
+          } else {
+            sChars.push('\\');
           }
           continue;
         }
-        if (cc === "'") break;
-        sChars.push(cc);
+        if (cc === "'") {
+          closed = true;
+          break;
+        }
+        if (sChars !== null) sChars.push(cc);
       }
-      const raw = "'" + sChars.join('') + "'";
-      const decoded = decodeN3StringEscapes(stripQuotes(raw), start);
+      const rawContent = sChars === null ? sliceChars(contentStart, closed ? i - 1 : i) : sChars.join('');
+      const decoded = sChars === null ? rawContent : decodeN3StringEscapes(rawContent, start);
       assertValidStringLiteralValue(decoded, start);
       const s = JSON.stringify(decoded); // canonical short quoted form
       tokens.push(new Token('Literal', s, start));
@@ -11106,7 +11231,7 @@ function lex(inputText, opts = {}) {
     }
     if (word === 'true' || word === 'false') {
       tokens.push(new Token('Literal', word, start));
-    } else if ([...word].every((ch) => /[0-9.-]/.test(ch))) {
+    } else if (isNumericLikeIdentifier(word)) {
       tokens.push(new Token('Literal', word, start));
     } else {
       tokens.push(new Token('Ident', word, start));
@@ -11691,7 +11816,7 @@ class Parser {
     } else if (tok2.typ === 'Ident') {
       const qn = tok2.value || '';
       if (!qn.includes(':')) failInvalidKeywordLikeIdent(this.fail.bind(this), tok2, qn);
-      assertValidQNamePrefix(qn.split(':', 1)[0], this.fail.bind(this), tok2, '@prefix directive IRI');
+      assertValidQNamePrefix(qn.slice(0, qn.indexOf(':')), this.fail.bind(this), tok2, '@prefix directive IRI');
       iri = this.prefixes.expandQName(qn);
     } else {
       this.fail(`Expected IRI after @prefix, got ${tok2.toString()}`, tok2);
@@ -11708,7 +11833,7 @@ class Parser {
     } else if (tok.typ === 'Ident') {
       const qn = tok.value || '';
       if (!qn.includes(':')) failInvalidKeywordLikeIdent(this.fail.bind(this), tok, qn);
-      assertValidQNamePrefix(qn.split(':', 1)[0], this.fail.bind(this), tok, '@base directive IRI');
+      assertValidQNamePrefix(qn.slice(0, qn.indexOf(':')), this.fail.bind(this), tok, '@base directive IRI');
       iri = this.prefixes.expandQName(qn);
     } else {
       this.fail(`Expected IRI after @base, got ${tok.toString()}`, tok);
@@ -11737,7 +11862,7 @@ class Parser {
     } else if (tok2.typ === 'Ident') {
       const qn = tok2.value || '';
       if (!qn.includes(':')) failInvalidKeywordLikeIdent(this.fail.bind(this), tok2, qn);
-      assertValidQNamePrefix(qn.split(':', 1)[0], this.fail.bind(this), tok2, '@prefix directive IRI');
+      assertValidQNamePrefix(qn.slice(0, qn.indexOf(':')), this.fail.bind(this), tok2, '@prefix directive IRI');
       iri = this.prefixes.expandQName(qn);
     } else {
       this.fail(`Expected IRI after PREFIX, got ${tok2.toString()}`, tok2);
@@ -11758,7 +11883,7 @@ class Parser {
     } else if (tok.typ === 'Ident') {
       const qn = tok.value || '';
       if (!qn.includes(':')) failInvalidKeywordLikeIdent(this.fail.bind(this), tok, qn);
-      assertValidQNamePrefix(qn.split(':', 1)[0], this.fail.bind(this), tok, 'BASE directive IRI');
+      assertValidQNamePrefix(qn.slice(0, qn.indexOf(':')), this.fail.bind(this), tok, 'BASE directive IRI');
       iri = this.prefixes.expandQName(qn);
     } else {
       this.fail(`Expected IRI after BASE, got ${tok.toString()}`, tok);
@@ -11805,14 +11930,18 @@ class Parser {
       const name = val || '';
       if (name === 'a') {
         return internIri(RDF_NS + 'type');
-      } else if (name.startsWith('_:')) {
-        return new Blank(name);
-      } else if (name.includes(':')) {
-        assertValidQNamePrefix(name.split(':', 1)[0], this.fail.bind(this), tok);
-        return internIri(this.prefixes.expandQName(name));
-      } else {
-        failInvalidKeywordLikeIdent(this.fail.bind(this), tok, name);
       }
+      const sep = name.indexOf(':');
+      if (sep === 1 && name.charCodeAt(0) === 95) {
+        return new Blank(name);
+      }
+      if (sep >= 0) {
+        const prefixName = name.slice(0, sep);
+        assertValidQNamePrefix(prefixName, this.fail.bind(this), tok);
+        const base = this.prefixes.map[prefixName] || '';
+        return internIri(base ? base + name.slice(sep + 1) : name);
+      }
+      failInvalidKeywordLikeIdent(this.fail.bind(this), tok, name);
     }
 
     if (typ === 'Literal') {
@@ -11843,7 +11972,7 @@ class Parser {
         } else if (dtTok.typ === 'Ident') {
           const qn = dtTok.value || '';
           if (!qn.includes(':')) failInvalidKeywordLikeIdent(this.fail.bind(this), dtTok, qn);
-          assertValidQNamePrefix(qn.split(':', 1)[0], this.fail.bind(this), dtTok, 'datatype prefixed name');
+          assertValidQNamePrefix(qn.slice(0, qn.indexOf(':')), this.fail.bind(this), dtTok, 'datatype prefixed name');
           dtIri = this.prefixes.expandQName(qn);
         } else {
           this.fail(`Expected datatype after ^^, got ${dtTok.toString()}`, dtTok);
