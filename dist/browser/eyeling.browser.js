@@ -4965,12 +4965,14 @@ function main() {
     outTriples = res.queryTriples;
     outDerived = res.queryDerived;
   } else {
+    const skipDerivedCollection = mayAutoRenderOutputStrings && !engine.getProofCommentsEnabled();
     derived = engine.forwardChain(facts, frules, brules, null, {
       captureExplanations: engine.getProofCommentsEnabled(),
+      collectDerived: !skipDerivedCollection,
       prefixes,
     });
     outDerived = derived;
-    outTriples = derived.map((df) => df.fact);
+    outTriples = skipDerivedCollection ? [] : derived.map((df) => df.fact);
   }
 
   const renderedOutputTriples = hasQueries ? outTriples : facts;
@@ -8388,6 +8390,8 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
     __attachGoalTable(backRules, goalTable);
 
     const captureExplanations = !(opts && opts.captureExplanations === false);
+    const collectDerived = !(opts && opts.collectDerived === false);
+    const hasDerivedCallback = typeof onDerived === 'function';
     const derivedForward = [];
     const varGen = [0];
     const skCounter = [0];
@@ -8566,8 +8570,8 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
           if (!hasFactIndexed(facts, instantiated)) {
             pushFactIndexed(facts, instantiated);
             const df = makeDerivedRecord(instantiated, r, getInstantiatedPremises(), s, captureExplanations);
-            derivedForward.push(df);
-            if (typeof onDerived === 'function') onDerived(df);
+            if (collectDerived) derivedForward.push(df);
+            if (hasDerivedCallback) onDerived(df);
             changedHere = true;
           }
 
@@ -8630,8 +8634,8 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
 
         pushFactIndexed(facts, inst);
         const df = makeDerivedRecord(inst, r, getInstantiatedPremises(), s, captureExplanations);
-        derivedForward.push(df);
-        if (typeof onDerived === 'function') onDerived(df);
+        if (collectDerived) derivedForward.push(df);
+        if (hasDerivedCallback) onDerived(df);
 
         changedHere = true;
       }
@@ -10727,7 +10731,9 @@ function lex(inputText, opts = {}) {
   // Avoid copying large ASCII/BMP inputs into an Array.  Array.from() is
   // only needed when the text contains surrogate pairs and we want the old
   // code-point iteration behavior for non-BMP characters.
-  const chars = /[\uD800-\uDFFF]/.test(inputText) ? Array.from(inputText) : inputText;
+  const hasSurrogates = /[\uD800-\uDFFF]/.test(inputText);
+  const inputMayContainInvalidStringChar = hasSurrogates || /[\u0000\uFFFE\uFFFF]/.test(inputText);
+  const chars = hasSurrogates ? Array.from(inputText) : inputText;
   const n = chars.length;
   let i = 0;
   const tokens = [];
@@ -10762,12 +10768,45 @@ function lex(inputText, opts = {}) {
       // Hard stops: delimiters cannot appear unescaped inside PNAME tokens.
       if (cc === '{' || cc === '}' || cc === '(' || cc === ')' || cc === '[' || cc === ']' || cc === ';' || cc === ',') break;
 
-      // Dot is allowed inside PN_LOCAL, but not at the end.
-      if (cc === '.') {
-        if (!canContinueAfterDot(peek(1))) break;
-        if (out !== null) out.push('.');
+      const code = cc.charCodeAt(0);
+
+      // Common ASCII QName/identifier characters. Keep this branch inline so
+      // ordinary N3 files do not call through the full Unicode PN_CHARS predicate
+      // for every character.
+      if (
+        code === 58 || // ':'
+        code === 95 || // '_'
+        code === 45 || // '-'
+        (code >= 48 && code <= 57) ||
+        (code >= 65 && code <= 90) ||
+        (code >= 97 && code <= 122)
+      ) {
+        if (out !== null) out.push(cc);
         i++;
         continue;
+      }
+
+      // Dot is allowed inside PN_LOCAL, but not at the end.
+      if (cc === '.') {
+        const next = peek(1);
+        if (next === null) break;
+        const ncode = next.charCodeAt(0);
+        if (
+          next === '%' ||
+          next === '\\' ||
+          ncode === 58 ||
+          ncode === 95 ||
+          ncode === 45 ||
+          (ncode >= 48 && ncode <= 57) ||
+          (ncode >= 65 && ncode <= 90) ||
+          (ncode >= 97 && ncode <= 122) ||
+          isIdentChar(next)
+        ) {
+          if (out !== null) out.push('.');
+          i++;
+          continue;
+        }
+        break;
       }
 
       // Percent escape: %HH
@@ -11017,7 +11056,7 @@ function lex(inputText, opts = {}) {
       }
       const rawContent = sChars === null ? sliceChars(contentStart, closed ? i - 1 : i) : sChars.join('');
       const decoded = sChars === null ? rawContent : decodeN3StringEscapes(rawContent, start);
-      assertValidStringLiteralValue(decoded, start);
+      if (sChars !== null || inputMayContainInvalidStringChar) assertValidStringLiteralValue(decoded, start);
       const s = JSON.stringify(decoded); // canonical short quoted form
       tokens.push(new Token('Literal', s, start));
       continue;
@@ -11107,7 +11146,7 @@ function lex(inputText, opts = {}) {
       }
       const rawContent = sChars === null ? sliceChars(contentStart, closed ? i - 1 : i) : sChars.join('');
       const decoded = sChars === null ? rawContent : decodeN3StringEscapes(rawContent, start);
-      assertValidStringLiteralValue(decoded, start);
+      if (sChars !== null || inputMayContainInvalidStringChar) assertValidStringLiteralValue(decoded, start);
       const s = JSON.stringify(decoded); // canonical short quoted form
       tokens.push(new Token('Literal', s, start));
       continue;
@@ -12217,15 +12256,21 @@ class Parser {
 
     while (true) {
       const { verb, invert } = this.parseStatementVerb();
-      const objects = this.parseObjectList();
 
-      // If VERB or OBJECTS contained paths, their helper triples must come
-      // before the triples that consume the path results (Easter depends on this).
-      this.flushPendingTriples(out);
+      while (true) {
+        const o = this.parseTerm();
+        const postTriples = this.pendingTriplesAfter;
+        this.pendingTriplesAfter = [];
 
-      for (const { term: o, postTriples } of objects) {
+        // If VERB or OBJECT contained paths, their helper triples must come
+        // before the triple that consumes the path result (Easter depends on this).
+        this.flushPendingTriples(out);
+
         out.push(new Triple(invert ? o : subject, verb, invert ? subject : o));
-        if (postTriples && postTriples.length) out.push(...postTriples);
+        if (postTriples.length) out.push(...postTriples);
+
+        if (this.peek().typ !== 'Comma') break;
+        this.next();
       }
 
       if (this.peek().typ === 'Semicolon') {
@@ -12237,27 +12282,6 @@ class Parser {
     }
 
     return out;
-  }
-
-  parseObjectList() {
-    // Capture any trailing property-list triples produced while parsing each
-    // object term so we can emit them *after* the triple that references the
-    // term. (See pendingTriplesAfter in the constructor.)
-
-    const objs = [];
-    const readObj = () => {
-      const o = this.parseTerm();
-      const post = this.pendingTriplesAfter;
-      this.pendingTriplesAfter = [];
-      objs.push({ term: o, postTriples: post });
-    };
-
-    readObj();
-    while (this.peek().typ === 'Comma') {
-      this.next();
-      readObj();
-    }
-    return objs;
   }
 
   makeRule(left, right, isForward) {
