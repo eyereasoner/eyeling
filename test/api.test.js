@@ -1770,6 +1770,46 @@ ex:w a ex:Woman .
   },
 
   {
+    name: '58b regression: fully variable top-level fact can trigger indexed ground forward rule',
+    opt: { proofComments: false },
+    input: `@prefix : <http://example.org/#>.
+
+?S :p ?O.
+
+{ :s :p :o } => { :test :is true }.
+`,
+    expect: [/:(?:test)\s+:(?:is)\s+true\s*\./],
+  },
+
+  {
+    name: '58c regression: variable-predicate fact can trigger indexed IRI-predicate rule',
+    opt: { proofComments: false },
+    input: `@prefix : <http://example.org/#>.
+
+?S ?P :o.
+
+{ :s :p :o } => { :test :is true }.
+`,
+    expect: [/:(?:test)\s+:(?:is)\s+true\s*\./],
+  },
+
+  {
+    name: '58d regression: numeric literal equivalence must not be pruned by object indexes',
+    opt: { proofComments: false },
+    input: `@prefix : <http://example.org/#>.
+
+:a :v 1.0.
+:b :v 2.0.
+
+{
+  ?x :v 1.00.
+} => { :test :from ?x }.
+`,
+    expect: [/:(?:test)\s+:(?:from)\s+:(?:a)\s*\./],
+    reject: [/:(?:test)\s+:(?:from)\s+:(?:b)\s*\./],
+  },
+
+  {
     name: '59 regression: quoted-formula alpha-equivalence must not rename blanks introduced by outer substitution',
     opt: { proofComments: false },
     input: `@prefix : <http://example.org/> .

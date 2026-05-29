@@ -559,21 +559,25 @@ Facts live in an array `facts: Triple[]`.
 Eyeling attaches hidden (non-enumerable) index fields:
 
 - `facts.__byPred: Map<predicateId, number[]>` where each entry is an index into `facts` (and `predicateId` is `predicate.__tid`)
-- `facts.__byPS: Map<predicateId, Map<termId, number[]>>` where each entry is an index into `facts` (and `termId` is `term.__tid`)
-- `facts.__byPO: Map<predicateId, Map<termId, number[]>>` where each entry is an index into `facts` (and `termId` is `term.__tid`)
+- `facts.__byPS: Map<predicateId, Map<lookupKey, number[]>>` where each entry is an index into `facts`
+- `facts.__byPO: Map<predicateId, Map<lookupKey, number[]>>` where each entry is an index into `facts`
+- `facts.__byPNonFastS` / `facts.__byPNonFastO` for the small fallback set of IRI-predicate facts whose subject/object cannot be fast-keyed (for example variables or quoted formulas)
+- `facts.__varPred*` for top-level facts whose predicate is a variable; these are the only non-IRI-predicate facts that can match a ground IRI predicate goal
 - `facts.__keySet: Set<string>` for a fast-path `"sid	pid	oid"` key (all three are `__tid` values)
 
-`termFastKey(term)` returns a `termId` (`term.__tid`) for **Iri**, **Literal**, and **Blank** terms, and `null` for structured terms (lists, quoted graphs) and variables.
+`termFastKey(term)` returns a `termId` (`term.__tid`) for **Iri**, **Literal**, **Blank**, and strict-ground list terms, and `null` for quoted graphs, open lists, and variables. Proving-time lookup uses `termLookupKey(term)`, which is aligned with `unifyTerm`: it keeps exact ids for IRIs/blanks/strings, but canonicalizes value-equivalent booleans and numerics such as `true` / `"1"^^xsd:boolean` and `1.0` / `1.00`.
 
-The “fast key” only exists when `termFastKey` succeeds for all three terms.
+The duplicate-check “fast key” only exists when `termFastKey` succeeds for all three terms; the proof indexes use the broader `termLookupKey`.
 
 ### 7.2 Candidate selection: pick the smallest bucket
 
 When proving a goal with IRI predicate, Eyeling computes candidate facts by:
 
-1. restricting to predicate bucket
-2. optionally narrowing further by subject or object fast key
-3. choosing the smaller of (p,s) vs (p,o) when both exist
+1. restricting to the IRI predicate bucket
+2. if subject or object has a lookup key, using the matching `(p,s)` or `(p,o)` bucket plus only the non-fast fallback facts for that same position
+3. choosing the smaller of the subject-constrained and object-constrained candidate sets when both exist
+
+Variable-predicate facts are kept in a separate tiny fallback index. Blank/list/formula predicates are not scanned for an IRI predicate goal because they cannot unify with an IRI predicate.
 
 This is a cheap selectivity heuristic. In type-heavy RDF, `(p,o)` is often extremely selective (e.g., `rdf:type` + a class IRI), so the PO index can be a major speed win.
 
@@ -583,7 +587,7 @@ The same selectivity idea is also reused by the single-premise forward-rule agen
 
 When adding derived facts, Eyeling uses a fast-path duplicate check when possible:
 
-- If all three terms have a fast key (Iri/Literal/Blank → `__tid`), it checks membership in `facts.__keySet` using the `"sid	pid	oid"` key.
+- If all three terms have a duplicate-check fast key, it checks membership in `facts.__keySet` using the `"sid	pid	oid"` key.
 - Otherwise (lists, quoted graphs, variables), it falls back to structural triple equality.
 
 This still treats blanks correctly: blanks are _not_ interchangeable; the blank **label** (and thus its `__tid`) is part of the key.
