@@ -2497,6 +2497,26 @@ _:b a ex:Person ; ex:name "B" .
     notExpect: [/:result\s+:sumX\s+"329"\^\^xsd:decimal\s*\./, /:result\s+:meanX\s+"47"\^\^xsd:decimal\s*\./],
   },
   {
+    name: '244 regression: scoped collectAllIn is stratified after scoped notIncludes',
+    opt: { proofComments: false },
+    input: `@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+:a :x 1 .
+:b :x 1 .
+
+{ ?s :x 1 . ?X log:notIncludes { ?s :marked ?X } } => { ?s :marked true } .
+{ ( ?s { ?s :marked true } ?all ) log:collectAllIn ?scope } => { :result :marked ?all } .
+`,
+    expect: [
+      /^:a\s+:marked\s+true\s*\./m,
+      /^:b\s+:marked\s+true\s*\./m,
+      /^:result\s+:marked\s+\(:a\s+:b\)\s*\./m,
+    ],
+    notExpect: [/^:result\s+:marked\s+\(\)\s*\./m],
+  },
+
+  {
     name: '244 regression: log:dtlit recognizes shorthand numeric and boolean literals',
     opt: { proofComments: false },
     input: `@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .

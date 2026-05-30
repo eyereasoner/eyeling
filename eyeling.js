@@ -5973,6 +5973,158 @@ function __varOccursElsewhereInPremise(premise, name, idx, field) {
   return false;
 }
 
+
+function __scopedPriorityForTerm(t) {
+  if (t instanceof GraphTerm) return 0;
+  const p0 = __logNaturalPriorityFromTerm(t);
+  return p0 !== null && p0 >= 1 ? p0 : 1;
+}
+
+function __pushScopedQueryTriplesFromGraph(term, out) {
+  if (!(term instanceof GraphTerm)) return;
+  for (const tr of term.triples) out.push(tr);
+}
+
+function __analyzeForwardRuleScopedUse(rule) {
+  const out = {
+    needsSnap: false,
+    baseLevel: 0,
+    queryTriples: [],
+    hasScopedAggregate: false,
+  };
+
+  if (!rule || !Array.isArray(rule.premise)) return out;
+
+  for (let i = 0; i < rule.premise.length; i++) {
+    const tr = rule.premise[i];
+    if (!(tr && tr.p instanceof Iri)) continue;
+    const pv = tr.p.value;
+
+    if (pv === LOG_NS + 'includes' || pv === LOG_NS + 'notIncludes') {
+      // Explicit quoted scopes are local formulas, not snapshots of the global closure.
+      if (tr.s instanceof GraphTerm) continue;
+
+      // A scope variable that is bound by another premise may become an explicit GraphTerm.
+      // Still, if it remains unbound at runtime the builtin treats it as priority 1.
+      // We therefore record the scoped use, but only use quoted object triples for
+      // dependency analysis; variables inside the quoted object do not bind the scope.
+      out.needsSnap = true;
+      out.baseLevel = Math.max(out.baseLevel, __scopedPriorityForTerm(tr.s));
+      __pushScopedQueryTriplesFromGraph(tr.o, out.queryTriples);
+      continue;
+    }
+
+    if (pv === LOG_NS + 'collectAllIn') {
+      if (tr.o instanceof GraphTerm) continue;
+
+      out.needsSnap = true;
+      out.hasScopedAggregate = true;
+      out.baseLevel = Math.max(out.baseLevel, __scopedPriorityForTerm(tr.o));
+      if (tr.s instanceof ListTerm && tr.s.elems.length === 3) {
+        __pushScopedQueryTriplesFromGraph(tr.s.elems[1], out.queryTriples);
+      }
+      continue;
+    }
+
+    if (pv === LOG_NS + 'forAllIn') {
+      if (tr.o instanceof GraphTerm) continue;
+
+      out.needsSnap = true;
+      out.hasScopedAggregate = true;
+      out.baseLevel = Math.max(out.baseLevel, __scopedPriorityForTerm(tr.o));
+      if (tr.s instanceof ListTerm && tr.s.elems.length === 2) {
+        __pushScopedQueryTriplesFromGraph(tr.s.elems[0], out.queryTriples);
+        __pushScopedQueryTriplesFromGraph(tr.s.elems[1], out.queryTriples);
+      }
+    }
+  }
+
+  return out;
+}
+
+function __triplePatternsMayOverlap(a, b) {
+  return unifyTriple(a, b, __emptySubst()) !== null || unifyTriple(b, a, __emptySubst()) !== null;
+}
+
+function __ruleConclusionsMayFeedScopedQueries(producer, consumerMeta) {
+  if (!consumerMeta || !consumerMeta.queryTriples || consumerMeta.queryTriples.length === 0) return false;
+
+  // Dynamic conclusions are only known after a proof solution. Conservatively
+  // assume they can feed any scoped query if the producing rule is scoped.
+  if (producer && producer.__dynamicConclusionTerm) return true;
+
+  if (!producer || !Array.isArray(producer.conclusion) || producer.conclusion.length === 0) return false;
+  for (const q of consumerMeta.queryTriples) {
+    for (const h of producer.conclusion) {
+      if (__triplePatternsMayOverlap(q, h)) return true;
+    }
+  }
+  return false;
+}
+
+function __setForwardRuleScopedStratumInfo(rule, level) {
+  const value =
+    level > 0
+      ? { needsSnap: true, requiredLevel: level, exactLevel: true }
+      : { needsSnap: false, requiredLevel: 0, exactLevel: false };
+
+  if (!hasOwn.call(rule, '__scopedStratumInfo')) {
+    Object.defineProperty(rule, '__scopedStratumInfo', {
+      value,
+      enumerable: false,
+      writable: true,
+      configurable: true,
+    });
+  } else {
+    rule.__scopedStratumInfo = value;
+  }
+}
+
+function __computeForwardRuleScopedStrata(forwardRules) {
+  if (!Array.isArray(forwardRules) || forwardRules.length === 0) return 0;
+
+  const metas = forwardRules.map((r) => __analyzeForwardRuleScopedUse(r));
+  const levels = metas.map((m) => (m.needsSnap ? Math.max(1, m.baseLevel || 1) : 0));
+
+  let maxLevel = 0;
+  for (const lvl of levels) if (lvl > maxLevel) maxLevel = lvl;
+
+  // Stratify scoped rules by data dependency: if a scoped query can read facts
+  // produced by another scoped rule, the reader must run against a later frozen
+  // snapshot. This prevents non-monotonic scoped builtins such as collectAllIn
+  // from emitting an early result before lower strata have derived their facts.
+  const passLimit = Math.max(1, forwardRules.length) + maxLevel + 1;
+  for (let pass = 0; pass < passLimit; pass++) {
+    let changed = false;
+    for (let ci = 0; ci < forwardRules.length; ci++) {
+      if (!metas[ci].needsSnap || !metas[ci].hasScopedAggregate) continue;
+      let needed = levels[ci];
+      for (let pi = 0; pi < forwardRules.length; pi++) {
+        if (pi === ci) continue;
+        if (levels[pi] <= 0) continue;
+        if (metas[pi].hasScopedAggregate) continue;
+        if (!__ruleConclusionsMayFeedScopedQueries(forwardRules[pi], metas[ci])) continue;
+        needed = Math.max(needed, levels[pi] + 1);
+      }
+      if (needed !== levels[ci]) {
+        levels[ci] = needed;
+        if (needed > maxLevel) maxLevel = needed;
+        changed = true;
+      }
+    }
+    if (!changed) break;
+  }
+
+
+  maxLevel = 0;
+  for (let i = 0; i < forwardRules.length; i++) {
+    __setForwardRuleScopedStratumInfo(forwardRules[i], levels[i]);
+    if (levels[i] > maxLevel) maxLevel = levels[i];
+  }
+
+  return maxLevel;
+}
+
 function __computeForwardRuleScopedSkipInfo(rule) {
   let needsSnap = false;
   let requiredLevel = 0;
@@ -7158,7 +7310,7 @@ function makeSinglePremiseAgendaIndex(forwardRules, backRules) {
       goalPredTid: goal.p instanceof Iri ? goal.p.__tid : null,
       goalSKey,
       goalOKey,
-      needsSkipCheck: !!r.__needsForwardSkipCheck,
+      needsSkipCheck: !!(r.__needsForwardSkipCheck || (r.__scopedStratumInfo && r.__scopedStratumInfo.needsSnap)),
       fastSubjectVar,
       fastObjectVar,
     };
@@ -8606,7 +8758,10 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
     let scopedClosureLevel = 0;
 
     // Scan known rules for the maximum requested closure priority in scoped log:* goals.
-    let maxScopedClosurePriorityNeeded = __computeMaxScopedClosurePriorityNeeded(forwardRules, backRules);
+    let maxScopedClosurePriorityNeeded = Math.max(
+      __computeMaxScopedClosurePriorityNeeded(forwardRules, backRules),
+      __computeForwardRuleScopedStrata(forwardRules),
+    );
 
     // Conservative fast-skip for forward rules that cannot possibly succeed
     // until a scoped snapshot exists (or a given closure level is reached).
@@ -8660,12 +8815,16 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
       // until a snapshot exists (and a certain closure level is reached).
       // This prevents expensive proofs that will definitely fail in Phase A
       // and in early closure levels.
-      const info = r.__scopedSkipInfo;
+      const info = r.__scopedStratumInfo || r.__scopedSkipInfo;
       if (info && info.needsSnap) {
         const snapHere = facts.__scopedSnapshot || null;
         const lvlHere = (facts && typeof facts.__scopedClosureLevel === 'number' && facts.__scopedClosureLevel) || 0;
         if (!snapHere) return true;
-        if (lvlHere < info.requiredLevel) return true;
+        if (info.exactLevel) {
+          if (lvlHere !== info.requiredLevel) return true;
+        } else if (lvlHere < info.requiredLevel) {
+          return true;
+        }
       }
 
       // Optimization: if the rule head is **structurally ground** (no vars anywhere, even inside
@@ -8865,6 +9024,10 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
 
             const outcome = __emitForwardRuleSolution(r, entry.ruleIndex, s);
             if (outcome.rulesChanged) {
+              maxScopedClosurePriorityNeeded = Math.max(
+                __computeMaxScopedClosurePriorityNeeded(forwardRules, backRules),
+                __computeForwardRuleScopedStrata(forwardRules),
+              );
               agendaIndex = makeSinglePremiseAgendaIndex(forwardRules, backRules);
               agendaCursor = 0;
             }
@@ -8878,7 +9041,7 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
         for (let i = 0; i < forwardRules.length; i++) {
           const r = forwardRules[i];
           if (agendaIndex.indexed.has(r)) continue;
-          if (r.__needsForwardSkipCheck && __skipForwardRuleNow(r)) continue;
+          if ((r.__needsForwardSkipCheck || (r.__scopedStratumInfo && r.__scopedStratumInfo.needsSnap)) && __skipForwardRuleNow(r)) continue;
 
           const headIsStrictGround = r.__headIsStrictGround;
           const maxSols = r.isFuse || headIsStrictGround ? 1 : undefined;
@@ -8899,6 +9062,10 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
           for (const s of sols) {
             const outcome = __emitForwardRuleSolution(r, i, s);
             if (outcome.rulesChanged) {
+              maxScopedClosurePriorityNeeded = Math.max(
+                __computeMaxScopedClosurePriorityNeeded(forwardRules, backRules),
+                __computeForwardRuleScopedStrata(forwardRules),
+              );
               agendaIndex = makeSinglePremiseAgendaIndex(forwardRules, backRules);
               agendaCursor = 0;
             }
@@ -8926,8 +9093,8 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
       // Rules may have been added dynamically (rule-producing triples), possibly
       // introducing scoped builtins and/or higher closure priorities.
       maxScopedClosurePriorityNeeded = Math.max(
-        maxScopedClosurePriorityNeeded,
         __computeMaxScopedClosurePriorityNeeded(forwardRules, backRules),
+        __computeForwardRuleScopedStrata(forwardRules),
       );
 
       // If there are no scoped builtins in the entire program, Phase B is pure
@@ -8945,8 +9112,8 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
 
       // Phase B can also derive rule-producing triples.
       maxScopedClosurePriorityNeeded = Math.max(
-        maxScopedClosurePriorityNeeded,
         __computeMaxScopedClosurePriorityNeeded(forwardRules, backRules),
+        __computeForwardRuleScopedStrata(forwardRules),
       );
 
       if (!changedA && !changedB && scopedClosureLevel >= maxScopedClosurePriorityNeeded) break;
