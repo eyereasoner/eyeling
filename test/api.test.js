@@ -454,7 +454,7 @@ ${U('x')} ${U('age')} "42".
 ${U('s')} ${U('p')} ${U('o')}.
 `,
     expect: [new RegExp(`${EX}s>\\s+<${EX}q>\\s+<${EX}o>\\s*\\.`)],
-    notExpect: [/^#/m],
+    notExpect: [/pe:why/m],
   },
   {
     name: '11 negative entailment: rule derives false (expect exit 65 => throws)',
@@ -1038,23 +1038,23 @@ ${U('a')} ${U('p')} ${U('b')}.
     expect: [new RegExp(`${EX}a>\\s+<${EX}q2>\\s+<${EX}b>\\s*\\.`)],
   },
   {
-    name: '30 sanity: proofComments:true enables proof comments',
-    opt: { proofComments: true },
+    name: '30 sanity: proof:true enables N3 proof explanations',
+    opt: { proof: true },
     input: `
 { ${U('s')} ${U('p')} ${U('o')}. } => { ${U('s')} ${U('q')} ${U('o')}. }.
 ${U('s')} ${U('p')} ${U('o')}.
 `,
-    expect: [/^#/m, new RegExp(`${EX}s>\\s+<${EX}q>\\s+<${EX}o>\\s*\\.`)],
+    expect: [/pe:why/m, /pe:by/m, new RegExp(`${EX}s>\\s+<${EX}q>\\s+<${EX}o>\\s*\\.`)],
   },
   {
-    name: '31 sanity: -n suppresses proof comments',
+    name: '31 sanity: default output has no proof explanations',
     opt: ['-n'],
     input: `
 { ${U('s')} ${U('p')} ${U('o')}. } => { ${U('s')} ${U('q')} ${U('o')}. }.
 ${U('s')} ${U('p')} ${U('o')}.
 `,
     expect: [new RegExp(`${EX}s>\\s+<${EX}q>\\s+<${EX}o>\\s*\\.`)],
-    notExpect: [/^#/m],
+    notExpect: [/pe:why/m],
   },
 
   // -------------------------

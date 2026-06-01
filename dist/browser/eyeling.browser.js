@@ -4721,7 +4721,7 @@ function main() {
       `  -d, --deterministic-skolem   Make log:skolem stable across reasoning runs.\n` +
       `  -e, --enforce-https          Rewrite http:// IRIs to https:// for log dereferencing builtins.\n` +
       `  -h, --help                   Show this help and exit.\n` +
-      `  -p, --proof-comments         Enable proof explanations.\n` +
+      `  -p, --proof                  Enable proof explanations.\n` +
       `  -r, --rdf                    Enable RDF/TriG input/output compatibility.\n` +
       `  -s, --super-restricted       Disable all builtins except => and <=.\n` +
       `  -t, --stream                 Stream derived triples as soon as they are derived.\n` +
@@ -4776,8 +4776,8 @@ function main() {
     if (typeof engine.setDeterministicSkolemEnabled === 'function') engine.setDeterministicSkolemEnabled(true);
   }
 
-  // --proof-comments / -p: enable proof explanations
-  if (argv.includes('--proof-comments') || argv.includes('-p')) {
+  // --proof / -p: enable proof explanations as N3 proof graphs
+  if (argv.includes('--proof') || argv.includes('--proof-comments') || argv.includes('-p')) {
     engine.setProofCommentsEnabled(true);
   }
 
@@ -4826,6 +4826,7 @@ function main() {
           baseIri: __sourceLabelToBaseIri(sourceLabel),
           label: sourceLabel,
           collectUsedPrefixes: streamMode,
+          collectSourceLocations: engine.getProofCommentsEnabled(),
           keepSourceArtifacts: false,
           rdf: rdfMode,
         }),
@@ -4916,7 +4917,7 @@ function main() {
   const hasQueries = Array.isArray(qrules) && qrules.length;
   const mayAutoRenderOutputStrings = programMayProduceOutputStrings(triples, frules, qrules);
 
-  if (streamMode && !hasQueries && !mayAutoRenderOutputStrings) {
+  if (streamMode && !hasQueries && !mayAutoRenderOutputStrings && !engine.getProofCommentsEnabled()) {
     const usedInInput = mergedDocument.usedPrefixes instanceof Set ? new Set(mergedDocument.usedPrefixes) : new Set();
     const outPrefixes = restrictPrefixEnv(prefixes, usedInInput);
 
@@ -4978,6 +4979,11 @@ function main() {
   const renderedOutputTriples = hasQueries ? outTriples : facts;
   if (factsContainOutputStrings(renderedOutputTriples)) {
     process.stdout.write(engine.collectOutputStringsFromFacts(renderedOutputTriples, prefixes));
+    return;
+  }
+
+  if (engine.getProofCommentsEnabled()) {
+    process.stdout.write(engine.renderProofDocument(outDerived, derived, triples, prefixes, brules));
     return;
   }
 
@@ -6269,9 +6275,11 @@ const { evalBuiltin, isBuiltinPred } = makeBuiltins({
 });
 
 // Initialize proof/output helpers (implemented in lib/explain.js).
-const { printExplanation, collectOutputStringsFromFacts } = makeExplain({
+const { printExplanation, renderProofDocument, collectOutputStringsFromFacts } = makeExplain({
   applySubstTerm,
   skolemKeyFromTerm,
+  isBuiltinPred,
+  findBackwardProofForGoal,
 });
 
 function skolemizeTermForHeadBlanks(t, headBlankLabels, mapping, skCounter, firingKey, globalMap) {
@@ -7922,6 +7930,217 @@ function unifyTriple(pat, fact, subst) {
   return s3;
 }
 
+
+function __copyProofSourceMetadata(from, to) {
+  if (!from || !to) return to;
+  for (const key of ['__sourceOffset', '__source']) {
+    if (hasOwn.call(from, key)) {
+      Object.defineProperty(to, key, {
+        value: from[key],
+        enumerable: false,
+        writable: false,
+        configurable: true,
+      });
+    }
+  }
+  return to;
+}
+
+function __standardizeRuleForProof(rule, gen) {
+  const proofVarNames = Object.create(null);
+
+  function renameTerm(t, vmapName, vmapVar, genArr) {
+    if (t instanceof Var) {
+      if (!hasOwn.call(vmapVar, t.name)) {
+        const name = `${t.name}__proof_${genArr[0]}`;
+        genArr[0] += 1;
+        vmapName[t.name] = name;
+        vmapVar[t.name] = new Var(name);
+        proofVarNames[name] = t.name;
+      }
+      return vmapVar[t.name];
+    }
+    if (t instanceof ListTerm) {
+      let changed = false;
+      const elems2 = t.elems.map((e) => {
+        const e2 = renameTerm(e, vmapName, vmapVar, genArr);
+        if (e2 !== e) changed = true;
+        return e2;
+      });
+      return changed ? new ListTerm(elems2) : t;
+    }
+    if (t instanceof OpenListTerm) {
+      let changed = false;
+      const newXs = t.prefix.map((e) => {
+        const e2 = renameTerm(e, vmapName, vmapVar, genArr);
+        if (e2 !== e) changed = true;
+        return e2;
+      });
+      if (!hasOwn.call(vmapName, t.tailVar)) {
+        const name = `${t.tailVar}__proof_${genArr[0]}`;
+        genArr[0] += 1;
+        vmapName[t.tailVar] = name;
+        vmapVar[t.tailVar] = new Var(name);
+        proofVarNames[name] = t.tailVar;
+      }
+      const newTail = vmapName[t.tailVar];
+      if (newTail !== t.tailVar) changed = true;
+      return changed ? new OpenListTerm(newXs, newTail) : t;
+    }
+    if (t instanceof GraphTerm) {
+      let changed = false;
+      const triples2 = t.triples.map((tr) => {
+        const s2 = renameTerm(tr.s, vmapName, vmapVar, genArr);
+        const p2 = renameTerm(tr.p, vmapName, vmapVar, genArr);
+        const o2 = renameTerm(tr.o, vmapName, vmapVar, genArr);
+        if (s2 !== tr.s || p2 !== tr.p || o2 !== tr.o) changed = true;
+        return s2 === tr.s && p2 === tr.p && o2 === tr.o ? tr : new Triple(s2, p2, o2);
+      });
+      return changed ? copyQuotedGraphMetadata(t, new GraphTerm(triples2)) : t;
+    }
+    return t;
+  }
+
+  const vmapName = Object.create(null);
+  const vmapVar = Object.create(null);
+  const premise = rule.premise.map((tr) => {
+    const s2 = renameTerm(tr.s, vmapName, vmapVar, gen);
+    const p2 = renameTerm(tr.p, vmapName, vmapVar, gen);
+    const o2 = renameTerm(tr.o, vmapName, vmapVar, gen);
+    return s2 === tr.s && p2 === tr.p && o2 === tr.o ? tr : new Triple(s2, p2, o2);
+  });
+  const conclusion = rule.conclusion.map((tr) => {
+    const s2 = renameTerm(tr.s, vmapName, vmapVar, gen);
+    const p2 = renameTerm(tr.p, vmapName, vmapVar, gen);
+    const o2 = renameTerm(tr.o, vmapName, vmapVar, gen);
+    return s2 === tr.s && p2 === tr.p && o2 === tr.o ? tr : new Triple(s2, p2, o2);
+  });
+  const out = new Rule(premise, conclusion, rule.isForward, rule.isFuse, rule.headBlankLabels);
+  Object.defineProperty(out, '__proofVarSourceNames', {
+    value: proofVarNames,
+    enumerable: false,
+    writable: false,
+    configurable: true,
+  });
+  return __copyProofSourceMetadata(rule, out);
+}
+
+function __mergeProofSubst(base, delta) {
+  const out = __cloneSubst(base);
+  for (const k in delta || {}) {
+    if (!hasOwn.call(delta, k)) continue;
+    const v = applySubstTerm(delta[k], out);
+    if (hasOwn.call(out, k)) {
+      if (!termsEqual(applySubstTerm(out[k], out), v)) return null;
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
+function __sourceSortKey(obj) {
+  const src = obj && obj.__source;
+  const label = src && typeof src.label === 'string' ? src.label : '';
+  const line = src && Number.isInteger(src.line) ? src.line : 0;
+  return `${label}\t${line}`;
+}
+
+function __candidateFactsForProof(facts, goal) {
+  if (!Array.isArray(facts)) return [];
+  ensureFactIndexes(facts);
+  const candidates = candidateFacts(facts, goal);
+  if (!candidates) return facts;
+  const out = [];
+  for (let i = 0; i < candidates.exactLen; i++) out.push(facts[candidates.exact[i]]);
+  for (let i = 0; i < candidates.wildLen; i++) out.push(facts[candidates.wild[i]]);
+  return out;
+}
+
+function findBackwardProofForGoal(goal, facts, backRules, opts = {}) {
+  const maxDepth = Number.isInteger(opts.maxDepth) && opts.maxDepth > 0 ? opts.maxDepth : 64;
+  const varGen = [0];
+
+  function proofKey(tr) {
+    return `${skolemKeyFromTerm(tr.s)}\t${skolemKeyFromTerm(tr.p)}\t${skolemKeyFromTerm(tr.o)}`;
+  }
+
+  function proveGoal(goal0, subst, depth, visited) {
+    if (depth > maxDepth) return [];
+    const g = applySubstTriple(goal0, subst);
+    const key = proofKey(g);
+    if (visited.has(key)) return [];
+
+    if (isBuiltinPred(g.p)) {
+      const builtinGoalForEval = g.p instanceof Iri && g.p.value === LOG_NS + 'rawType' ? goal0 : g;
+      const builtinSubstForEval = g.p instanceof Iri && g.p.value === LOG_NS + 'rawType' ? subst : __emptySubst();
+      const deltas = evalBuiltin(builtinGoalForEval, builtinSubstForEval, facts, backRules, depth, varGen, 1) || [];
+      const out = [];
+      for (const delta of deltas) {
+        const subst2 = __mergeProofSubst(subst, delta);
+        if (subst2 === null) continue;
+        const fact = applySubstTriple(g, subst2);
+        out.push({ subst: subst2, proof: { kind: 'builtin', fact, builtin: fact.p } });
+        break;
+      }
+      return out;
+    }
+
+    const factResults = [];
+    for (const f of __candidateFactsForProof(facts, g)) {
+      const subst2 = unifyTriple(g, f, subst);
+      if (subst2 === null) continue;
+      factResults.push({ subst: subst2, proof: { kind: 'fact', fact: applySubstTriple(f, subst2), source: f.__source } });
+      break;
+    }
+    if (factResults.length) return factResults;
+
+    if (!(g.p instanceof Iri)) return [];
+    ensureBackRuleIndexes(backRules);
+    const rules = (backRules.__byHeadPred.get(g.p.__tid) || []).concat(backRules.__wildHeadPred || []);
+    rules.sort((a, b) => (__sourceSortKey(a) < __sourceSortKey(b) ? -1 : __sourceSortKey(a) > __sourceSortKey(b) ? 1 : 0));
+
+    const visited2 = new Set(visited);
+    visited2.add(key);
+
+    for (const r of rules) {
+      if (!r || !Array.isArray(r.conclusion) || r.conclusion.length !== 1) continue;
+      const rStd = __standardizeRuleForProof(r, varGen);
+      const head = rStd.conclusion[0];
+      if (head.p instanceof Iri && head.p.__tid !== g.p.__tid) continue;
+      const subst1 = unifyTriple(head, g, subst);
+      if (subst1 === null) continue;
+      const bodyProof = proveGoalList(rStd.premise || [], subst1, depth + 1, visited2);
+      if (!bodyProof) continue;
+      const fact = applySubstTriple(g, bodyProof.subst);
+      const premises = (rStd.premise || []).map((prem) => applySubstTriple(prem, bodyProof.subst));
+      const df = new DerivedFact(fact, rStd, premises, bodyProof.subst);
+      return [{ subst: bodyProof.subst, proof: { kind: 'rule', df, children: bodyProof.proofs } }];
+    }
+
+    return [];
+  }
+
+  function proveGoalList(goals, subst, depth, visited) {
+    let states = [{ subst, proofs: [] }];
+    for (const goal1 of goals || []) {
+      const next = [];
+      for (const state of states) {
+        const proofs = proveGoal(goal1, state.subst, depth, visited);
+        for (const pr of proofs) next.push({ subst: pr.subst, proofs: state.proofs.concat([pr.proof]) });
+      }
+      if (!next.length) return null;
+      // Keep proof reconstruction deterministic and cheap: one proof is enough
+      // for an explanation of the already-derived enclosing fact.
+      states = [next[0]];
+    }
+    return states[0] || { subst, proofs: [] };
+  }
+
+  const found = proveGoal(goal, __emptySubst(), 0, new Set());
+  return found.length ? found[0].proof : null;
+}
+
 // Strategy: when the substitution is "large" or search depth is high,
 // keep only bindings that are still relevant to:
 //   - variables appearing in the remaining goals
@@ -9436,11 +9655,19 @@ function reasonStream(input, opts = {}) {
         ? facts
         : derived.map((d) => d.fact);
 
-  const closureN3 = useRdfCompatibility
-    ? closureTriples.map((t) => tripleToRdfCompatible(t, prefixes)).join('\n')
-    : Array.isArray(logQueryRules) && logQueryRules.length && !proof
-      ? prettyPrintQueryTriples(closureTriples, prefixes)
-      : closureTriples.map((t) => tripleToN3(t, prefixes)).join('\n');
+  const closureN3 = proof
+    ? renderProofDocument(
+        Array.isArray(logQueryRules) && logQueryRules.length ? queryDerived : derived,
+        derived,
+        triples,
+        prefixes,
+        brules,
+      ).replace(/\n$/g, '')
+    : useRdfCompatibility
+      ? closureTriples.map((t) => tripleToRdfCompatible(t, prefixes)).join('\n')
+      : Array.isArray(logQueryRules) && logQueryRules.length
+        ? prettyPrintQueryTriples(closureTriples, prefixes)
+        : closureTriples.map((t) => tripleToN3(t, prefixes)).join('\n');
 
   const __out = {
     prefixes,
@@ -9567,6 +9794,7 @@ module.exports = {
   collectLogQueryConclusions,
   forwardChainAndCollectLogQueryConclusions,
   collectOutputStringsFromFacts,
+  renderProofDocument,
   main,
   version,
   N3SyntaxError,
@@ -9636,6 +9864,7 @@ module.exports = {
   materializeRdfLists: engine.materializeRdfLists,
   isGroundTriple: engine.isGroundTriple,
   printExplanation: engine.printExplanation,
+  renderProofDocument: engine.renderProofDocument,
   tripleToN3: engine.tripleToN3,
   collectOutputStringsFromFacts: engine.collectOutputStringsFromFacts,
   prettyPrintQueryTriples: engine.prettyPrintQueryTriples,
@@ -9662,7 +9891,7 @@ module.exports = {
  */
 'use strict';
 
-const { LOG_NS, Literal, Iri, Blank, Var, varsInRule, literalParts } = require('./prelude');
+const { LOG_NS, Literal, Iri, Blank, Var, GraphTerm, varsInRule, literalParts, PrefixEnv } = require('./prelude');
 
 const { termToN3, tripleToN3 } = require('./printing');
 const { parseNumericLiteralInfo, termToJsString } = require('./builtins');
@@ -9670,6 +9899,8 @@ const { parseNumericLiteralInfo, termToJsString } = require('./builtins');
 function makeExplain(deps) {
   const applySubstTerm = deps.applySubstTerm;
   const skolemKeyFromTerm = deps.skolemKeyFromTerm;
+  const isBuiltinPred = typeof deps.isBuiltinPred === 'function' ? deps.isBuiltinPred : () => false;
+  const findBackwardProofForGoal = typeof deps.findBackwardProofForGoal === 'function' ? deps.findBackwardProofForGoal : null;
 
   function printExplanation(df, prefixes) {
     console.log('# ----------------------------------------------------------------------');
@@ -9765,6 +9996,282 @@ function makeExplain(deps) {
 
     console.log('# Therefore the derived triple above is entailed by the rules and facts.');
     console.log('# ----------------------------------------------------------------------\n');
+  }
+
+
+  const PE_NS = 'https://eyereasoner.github.io/pe#';
+
+  function n3String(value) {
+    return JSON.stringify(String(value));
+  }
+
+  function lineIndent(text, prefix) {
+    return String(text)
+      .split(/\r?\n/)
+      .map((line) => (line.length ? prefix + line : line))
+      .join('\n');
+  }
+
+  function graphForTriple(tr, prefixes) {
+    const body = tripleToN3(tr, prefixes).trimEnd();
+    if (!body.includes('\n')) return `{ ${body} }`;
+    return `{
+${lineIndent(body, '    ')}
+}`;
+  }
+
+
+  function clonePrefixEnvWithProofVocabulary(prefixes) {
+    const map = { ...(prefixes && prefixes.map ? prefixes.map : {}) };
+    if (!map.pe) map.pe = PE_NS;
+    return new PrefixEnv(map, (prefixes && prefixes.baseIri) || '');
+  }
+
+  function proofTripleKey(tr) {
+    if (!tr) return '';
+    return `${skolemKeyFromTerm(tr.s)}\t${skolemKeyFromTerm(tr.p)}\t${skolemKeyFromTerm(tr.o)}`;
+  }
+
+  function sourceLabelForProof(source) {
+    if (!source || typeof source.label !== 'string' || !source.label) return '<unknown>';
+    // Keep proof output stable when the CLI is invoked with paths such as examples/foo.n3.
+    return source.label.replace(/\\/g, '/').split('/').pop() || source.label;
+  }
+
+  function byBlankNode(kind, source) {
+    const src = source || {};
+    const props = [`pe:${kind} ${n3String(sourceLabelForProof(src))}`];
+    if (Number.isInteger(src.line) && src.line > 0) props.push(`pe:line ${src.line}`);
+    return `[ ${props.join('; ')} ]`;
+  }
+
+  function renderBindingList(df, prefixes) {
+    if (!df || !df.rule || !df.subst) return '';
+    const ruleVars = varsInRule(df.rule);
+    const visibleNames = Object.keys(df.subst)
+      .filter((name) => ruleVars.has(name))
+      .sort();
+    if (!visibleNames.length) return '';
+    const sourceNames = (df.rule && df.rule.__proofVarSourceNames) || null;
+    return visibleNames
+      .map((name) => {
+        const value = applySubstTerm(new Var(name), df.subst);
+        const displayName = sourceNames && sourceNames[name] ? sourceNames[name] : name;
+        return `[ pe:var ${n3String(displayName)}; pe:value ${termToN3(value, prefixes)} ]`;
+      })
+      .join(', ');
+  }
+
+  function proofSourceKey(source) {
+    if (!source) return '';
+    const label = typeof source.label === 'string' ? source.label : '';
+    const line = Number.isInteger(source.line) ? source.line : 0;
+    return `${label}\t${line}`;
+  }
+
+  function proofEntryKey(kind, fact, source, extra) {
+    return `${kind}\t${proofTripleKey(fact)}\t${proofSourceKey(source)}\t${extra || ''}`;
+  }
+
+  function ruleEntryKey(df) {
+    const rule = df && df.rule;
+    const premises = (df && df.premises ? df.premises : []).map((prem) => proofTripleKey(prem)).join('\t');
+    return proofEntryKey('rule', df && df.fact, rule && rule.__source, premises);
+  }
+
+  function collectProofEntries(rootDf, derivedByKey, baseFactByKey, resolveBackwardProof) {
+    const entries = [];
+    const seen = new Set();
+
+    function entryKeyForProof(proof, fallbackTriple) {
+      if (!proof) return proofEntryKey('fact', fallbackTriple, null);
+      if (proof.kind === 'rule') return ruleEntryKey(proof.df);
+      if (proof.kind === 'builtin') return proofEntryKey('builtin', proof.fact || fallbackTriple, null);
+      return proofEntryKey('fact', proof.fact || fallbackTriple, proof.source);
+    }
+
+    function visitProofNode(proof, fallbackTriple) {
+      if (!proof) {
+        visitFactTriple(fallbackTriple);
+        return;
+      }
+      const key = entryKeyForProof(proof, fallbackTriple);
+      if (!key || seen.has(key)) return;
+      if (proof.kind === 'rule' && proof.df) {
+        visitDerivedFact(proof.df, proof.children || null);
+        return;
+      }
+      seen.add(key);
+      if (proof.kind === 'builtin') {
+        entries.push({
+          kind: 'builtin',
+          fact: proof.fact || fallbackTriple,
+          builtin: proof.builtin || (proof.fact && proof.fact.p),
+        });
+      } else {
+        entries.push({ kind: 'fact', fact: proof.fact || fallbackTriple, source: proof.source });
+      }
+    }
+
+    function visitFactTriple(tr) {
+      const tripleKey = proofTripleKey(tr);
+      if (!tripleKey) return;
+      const df = derivedByKey.get(tripleKey);
+      if (df) {
+        visitDerivedFact(df);
+        return;
+      }
+      const base = baseFactByKey.get(tripleKey) || null;
+      if (base) {
+        const key = proofEntryKey('fact', base, base.__source);
+        if (seen.has(key)) return;
+        seen.add(key);
+        entries.push({ kind: 'fact', fact: base, source: base.__source });
+        return;
+      }
+      if (tr && isBuiltinPred(tr.p)) {
+        const key = proofEntryKey('builtin', tr, null);
+        if (seen.has(key)) return;
+        seen.add(key);
+        entries.push({ kind: 'builtin', fact: tr, builtin: tr.p });
+        return;
+      }
+      if (resolveBackwardProof) {
+        const proof = resolveBackwardProof(tr);
+        if (proof) {
+          visitProofNode(proof, tr);
+          return;
+        }
+      }
+      const key = proofEntryKey('fact', tr, null);
+      if (seen.has(key)) return;
+      seen.add(key);
+      entries.push({ kind: 'fact', fact: tr, source: null });
+    }
+
+    function visitDerivedFact(df, children) {
+      const key = ruleEntryKey(df);
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      entries.push({ kind: 'rule', df });
+
+      if (Array.isArray(children) && children.length) {
+        for (const child of children) visitProofNode(child);
+        return;
+      }
+      for (const prem of df.premises || []) visitFactTriple(prem);
+    }
+
+    visitDerivedFact(rootDf);
+    return entries;
+  }
+
+  function collectProofOutputTriples(outputDerived) {
+    const out = [];
+    const seen = new Set();
+    for (const df of outputDerived || []) {
+      if (!df || !df.fact) continue;
+      const key = proofTripleKey(df.fact);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(df.fact);
+    }
+    return out;
+  }
+
+  function renderProofEntry(entry, prefixes) {
+    if (!entry) return '';
+    if (entry.kind === 'fact') {
+      return `  ${graphForTriple(entry.fact, prefixes)}\n    pe:by ${byBlankNode('fact', entry.source)}.`;
+    }
+    if (entry.kind === 'builtin') {
+      return `  ${graphForTriple(entry.fact, prefixes)}\n    pe:by [ pe:builtin ${termToN3(entry.builtin, prefixes)} ].`;
+    }
+
+    const df = entry.df;
+    const props = [`pe:by ${byBlankNode('rule', df.rule && df.rule.__source)}`];
+    const bindings = renderBindingList(df, prefixes);
+    if (bindings) props.push(`pe:binding ${bindings}`);
+    if (df.premises && df.premises.length) {
+      props.push(`pe:uses ${df.premises.map((prem) => graphForTriple(prem, prefixes)).join(', ')}`);
+    }
+
+    let out = `  ${graphForTriple(df.fact, prefixes)}\n`;
+    for (let i = 0; i < props.length; i++) {
+      out += `    ${props[i]}${i === props.length - 1 ? '.' : ';'}\n`;
+    }
+    return out.trimEnd();
+  }
+
+  function renderProofBlock(rootDf, derivedByKey, baseFactByKey, prefixes, resolveBackwardProof) {
+    const entries = collectProofEntries(rootDf, derivedByKey, baseFactByKey, resolveBackwardProof);
+    const rootGraph = graphForTriple(rootDf.fact, prefixes);
+    const proofBody = entries.map((entry) => renderProofEntry(entry, prefixes)).join('\n\n');
+    const proofGraph = proofBody ? `{
+${proofBody}
+}` : '{}';
+    return `${rootGraph} pe:why ${proofGraph}.`;
+  }
+
+  function renderProofDocument(outputDerived, allDerived, baseFacts, prefixes, backRules) {
+    const selectedDerived = Array.isArray(outputDerived) ? outputDerived.filter((df) => df && df.fact) : [];
+    if (!selectedDerived.length) return '';
+
+    const proofPrefixes = clonePrefixEnvWithProofVocabulary(prefixes);
+    const derivedByKey = new Map();
+    for (const df of allDerived || []) {
+      if (!df || !df.fact) continue;
+      const key = proofTripleKey(df.fact);
+      if (!derivedByKey.has(key)) derivedByKey.set(key, df);
+    }
+    // Do not insert query-wrapper output facts here: those wrappers often derive
+    // the same triple they use, and would hide the underlying fact/rule proof.
+
+    const baseFactByKey = new Map();
+    for (const tr of baseFacts || []) {
+      if (!tr) continue;
+      const key = proofTripleKey(tr);
+      if (!baseFactByKey.has(key)) baseFactByKey.set(key, tr);
+    }
+
+    const resolveBackwardProof = findBackwardProofForGoal
+      ? (tr) => findBackwardProofForGoal(tr, baseFacts || [], backRules || [], { maxDepth: 64 })
+      : null;
+
+    const outputTriples = collectProofOutputTriples(selectedDerived);
+    const proofRelationTriples = [];
+    for (const df of selectedDerived) {
+      proofRelationTriples.push({ s: new GraphTerm([df.fact]), p: new Iri(PE_NS + 'why'), o: new GraphTerm([]) });
+      for (const entry of collectProofEntries(df, derivedByKey, baseFactByKey, resolveBackwardProof)) {
+        const fact = entry.kind === 'rule' ? entry.df.fact : entry.fact;
+        const byObject = entry.kind === 'builtin' && entry.builtin ? entry.builtin : new Iri(PE_NS + 'source');
+        proofRelationTriples.push({ s: new GraphTerm([fact]), p: new Iri(PE_NS + 'by'), o: byObject });
+        if (entry.kind === 'rule') {
+          for (const prem of entry.df.premises || []) proofRelationTriples.push({ s: new GraphTerm([fact]), p: new Iri(PE_NS + 'uses'), o: new GraphTerm([prem]) });
+        }
+      }
+    }
+
+    const usedPrefixes = proofPrefixes.prefixesUsedForOutput(outputTriples.concat(proofRelationTriples));
+    if (!usedPrefixes.some(([pfx]) => pfx === 'pe')) usedPrefixes.push(['pe', PE_NS]);
+    usedPrefixes.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+
+    const parts = [];
+    for (const [pfx, base] of usedPrefixes) {
+      if (!base) continue;
+      if (pfx === '') parts.push(`@prefix : <${base}> .`);
+      else parts.push(`@prefix ${pfx}: <${base}> .`);
+    }
+    if (parts.length) parts.push('');
+
+    parts.push(...outputTriples.map((tr) => tripleToN3(tr, proofPrefixes)));
+    parts.push('');
+    for (let i = 0; i < selectedDerived.length; i++) {
+      if (i > 0) parts.push('');
+      parts.push(renderProofBlock(selectedDerived[i], derivedByKey, baseFactByKey, proofPrefixes, resolveBackwardProof));
+    }
+
+    return parts.join('\n').replace(/[ \t]+$/gm, '').replace(/\s*$/g, '') + '\n';
   }
 
   // ===========================================================================
@@ -9873,7 +10380,7 @@ function makeExplain(deps) {
     return addMarkdownHardBreaks(pairs.map((p) => p.text).join(''));
   }
 
-  return { printExplanation, collectOutputStringsFromFacts };
+  return { printExplanation, renderProofDocument, collectOutputStringsFromFacts };
 }
 
 module.exports = { makeExplain };
@@ -11665,6 +12172,67 @@ function emptyParsedDocument() {
   };
 }
 
+function lineStartsForText(text) {
+  const s = String(text);
+  const starts = [0];
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c === 10) starts.push(i + 1); // LF
+    else if (c === 13) { // CR or CRLF
+      if (i + 1 < s.length && s.charCodeAt(i + 1) === 10) i++;
+      starts.push(i + 1);
+    }
+  }
+  return starts;
+}
+
+function offsetToLineFromStarts(offset, lineStarts) {
+  if (typeof offset !== 'number') return null;
+  let lo = 0;
+  let hi = lineStarts.length;
+  while (lo + 1 < hi) {
+    const mid = (lo + hi) >> 1;
+    if (lineStarts[mid] <= offset) lo = mid;
+    else hi = mid;
+  }
+  return lo + 1;
+}
+
+function annotateSourceLocation(obj, label, lineStarts) {
+  if (!obj || typeof obj.__sourceOffset !== 'number') return obj;
+  const line = offsetToLineFromStarts(obj.__sourceOffset, lineStarts);
+  Object.defineProperty(obj, '__source', {
+    value: { label, line },
+    enumerable: false,
+    writable: false,
+    configurable: true,
+  });
+  return obj;
+}
+
+function annotateParsedSourceLocations(doc, text, label) {
+  const lineStarts = lineStartsForText(text);
+  for (const tr of doc.triples || []) annotateSourceLocation(tr, label, lineStarts);
+  for (const r of doc.frules || []) annotateSourceLocation(r, label, lineStarts);
+  for (const r of doc.brules || []) annotateSourceLocation(r, label, lineStarts);
+  for (const r of doc.logQueryRules || []) annotateSourceLocation(r, label, lineStarts);
+}
+
+function copySourceMetadata(from, to) {
+  if (!from || !to) return to;
+  for (const key of ['__sourceOffset', '__source']) {
+    if (Object.prototype.hasOwnProperty.call(from, key)) {
+      Object.defineProperty(to, key, {
+        value: from[key],
+        enumerable: false,
+        writable: false,
+        configurable: true,
+      });
+    }
+  }
+  return to;
+}
+
 function prefixesUsedInTokens(tokens, prefEnv) {
   const used = new Set();
   const toks = Array.isArray(tokens) ? tokens : [];
@@ -11742,6 +12310,7 @@ function parseN3Text(text, opts = {}) {
     label = '<input>',
     keepSourceArtifacts = true,
     collectUsedPrefixes = false,
+    collectSourceLocations = true,
     rdf = false,
   } = opts || {};
   const tokens = lex(text, { rdf });
@@ -11750,6 +12319,7 @@ function parseN3Text(text, opts = {}) {
   const [prefixes, triples, frules, brules, logQueryRules] = parser.parseDocument();
 
   const doc = { prefixes, triples, frules, brules, logQueryRules, label };
+  if (collectSourceLocations) annotateParsedSourceLocations(doc, text, label);
 
   if (collectUsedPrefixes) {
     Object.defineProperty(doc, 'usedPrefixes', {
@@ -11795,7 +12365,7 @@ function scopeBlankNodesInDocument(doc, sourceIndex) {
   }
 
   function cloneTriple(triple) {
-    return new Triple(cloneTerm(triple.s), cloneTerm(triple.p), cloneTerm(triple.o));
+    return copySourceMetadata(triple, new Triple(cloneTerm(triple.s), cloneTerm(triple.p), cloneTerm(triple.o)));
   }
 
   function cloneRule(rule) {
@@ -11804,12 +12374,15 @@ function scopeBlankNodesInDocument(doc, sourceIndex) {
       for (const label of rule.headBlankLabels) headBlankLabels.add(scopedBlankLabel(label, sourceIndex, mapping));
     }
 
-    const out = new Rule(
-      (rule.premise || []).map(cloneTriple),
-      (rule.conclusion || []).map(cloneTriple),
-      rule.isForward,
-      rule.isFuse,
-      headBlankLabels,
+    const out = copySourceMetadata(
+      rule,
+      new Rule(
+        (rule.premise || []).map(cloneTriple),
+        (rule.conclusion || []).map(cloneTriple),
+        rule.isForward,
+        rule.isFuse,
+        headBlankLabels,
+      ),
     );
 
     if (rule && Object.prototype.hasOwnProperty.call(rule, '__dynamicConclusionTerm')) {
@@ -11937,6 +12510,7 @@ function parseN3SourceList(input, opts = {}) {
       label: source.label,
       baseIri: source.baseIri || (sources.length === 1 ? defaultBaseIri : ''),
       collectUsedPrefixes: true,
+      collectSourceLocations: !!opts.collectSourceLocations,
       keepSourceArtifacts: !!opts.keepSourceArtifacts,
       rdf: !!opts.rdf,
     }),
@@ -12001,6 +12575,17 @@ function assertValidQNamePrefix(prefixName, fail, tok, context = 'prefixed name'
 
 function failInvalidKeywordLikeIdent(fail, tok, name) {
   fail(`invalid_keyword(${name})`, tok);
+}
+
+function annotateSourceOffset(obj, offset) {
+  if (!obj || typeof offset !== 'number') return obj;
+  Object.defineProperty(obj, '__sourceOffset', {
+    value: offset,
+    enumerable: false,
+    writable: false,
+    configurable: true,
+  });
+  return obj;
 }
 
 class Parser {
@@ -12127,17 +12712,19 @@ class Parser {
         continue;
       }
 
+      const statementToken = this.peek();
+      const statementOffset = statementToken && typeof statementToken.offset === 'number' ? statementToken.offset : null;
       const first = this.parseTerm();
       if (this.peek().typ === 'OpImplies') {
         this.next();
         const second = this.parseTerm();
         this.expectDot();
-        forwardRules.push(this.makeRule(first, second, true));
+        forwardRules.push(annotateSourceOffset(this.makeRule(first, second, true), statementOffset));
       } else if (this.peek().typ === 'OpImpliedBy') {
         this.next();
         const second = this.parseTerm();
         this.expectDot();
-        backwardRules.push(this.makeRule(first, second, false));
+        backwardRules.push(annotateSourceOffset(this.makeRule(first, second, false), statementOffset));
       } else {
         let more;
 
@@ -12155,16 +12742,17 @@ class Parser {
         }
 
         // normalize explicit log:implies / log:impliedBy at top-level
-        for (const tr of more) {
+        for (const tr0 of more) {
+          const tr = annotateSourceOffset(tr0, statementOffset);
           if (isLogImplies(tr.p) && tr.s instanceof GraphTerm && tr.o instanceof GraphTerm) {
-            forwardRules.push(this.makeRule(tr.s, tr.o, true));
+            forwardRules.push(annotateSourceOffset(this.makeRule(tr.s, tr.o, true), statementOffset));
           } else if (isLogImpliedBy(tr.p) && tr.s instanceof GraphTerm && tr.o instanceof GraphTerm) {
-            backwardRules.push(this.makeRule(tr.s, tr.o, false));
+            backwardRules.push(annotateSourceOffset(this.makeRule(tr.s, tr.o, false), statementOffset));
           } else if (isLogQuery(tr.p) && tr.s instanceof GraphTerm && tr.o instanceof GraphTerm) {
             // Output-selection directive: { premise } log:query { conclusion }.
             // When present at top-level, eyeling prints only the instantiated conclusion
             // triples (unique) instead of all newly derived facts.
-            logQueries.push(this.makeRule(tr.s, tr.o, true));
+            logQueries.push(annotateSourceOffset(this.makeRule(tr.s, tr.o, true), statementOffset));
           } else {
             triples.push(tr);
           }
@@ -15105,6 +15693,7 @@ module.exports = {
       if (typeof __entry.materializeRdfLists === "function") __outerSelf.materializeRdfLists = __entry.materializeRdfLists;
       if (typeof __entry.isGroundTriple === "function") __outerSelf.isGroundTriple = __entry.isGroundTriple;
       if (typeof __entry.printExplanation === "function") __outerSelf.printExplanation = __entry.printExplanation;
+      if (typeof __entry.renderProofDocument === "function") __outerSelf.renderProofDocument = __entry.renderProofDocument;
       if (typeof __entry.tripleToN3 === "function") __outerSelf.tripleToN3 = __entry.tripleToN3;
       if (typeof __entry.collectOutputStringsFromFacts === "function") __outerSelf.collectOutputStringsFromFacts = __entry.collectOutputStringsFromFacts;
       if (typeof __entry.prettyPrintQueryTriples === "function") __outerSelf.prettyPrintQueryTriples = __entry.prettyPrintQueryTriples;

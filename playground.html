@@ -803,9 +803,9 @@
             <button id="pause-btn" class="secondary" disabled>Pause</button>
             <button id="stop-btn" class="danger" disabled>Stop</button>
 
-            <label class="toggle" title="Runs Eyeling with -p (proof comments)">
+            <label class="toggle" title="Runs Eyeling with -p/--proof (N3 proof explanations)">
               <input id="proof-comments" type="checkbox" />
-              Turn proof comments on (-p)
+              Turn proof explanations on (-p)
             </label>
             <label
               class="toggle"
@@ -1466,7 +1466,7 @@ const batch = [];
                         text: txt,
                         countTriples: outDerived.length,
                       });
-                    } else if (queryMode && !proof) {
+                    } else if (proof || queryMode) {
                       let txt = "";
                       try { txt = (res && res.closureN3 != null) ? String(res.closureN3) : ""; } catch (_) {}
                       self.postMessage({
@@ -1477,12 +1477,6 @@ const batch = [];
                       });
                     } else {
                       for (const df of outDerived) {
-                        try {
-                          if (proof && typeof printExplanation === "function") {
-                            printExplanation(df, pfx);
-                          }
-                        } catch (_) {}
-
                         let t = "";
                         try {
                           if (typeof tripleToN3 === "function") t = tripleToN3(df.fact, pfx);
@@ -1495,27 +1489,29 @@ const batch = [];
                       }
                     }
                   } else {
-                    forwardChain(facts, frules, brules, (df) => {
-                      try {
-                        if (proof && typeof printExplanation === "function") {
-                          // Prints via console.log (forwarded to main thread as stdout).
-                          printExplanation(df, prefixes);
+                    if (proof && typeof renderProofDocument === "function") {
+                      const derived = forwardChain(facts, frules, brules, null, { prefixes });
+                      const txt = String(renderProofDocument(derived, derived, triples, prefixes) || "");
+                      self.postMessage({
+                        type: "rendered_text",
+                        runId,
+                        text: txt,
+                        countTriples: derived.length,
+                      });
+                    } else {
+                      forwardChain(facts, frules, brules, (df) => {
+                        let t = "";
+                        try {
+                          if (typeof tripleToN3 === "function") t = tripleToN3(df.fact, prefixes);
+                          else if (df && df.fact && df.fact.toString) t = String(df.fact);
+                        } catch (_) {}
+
+                        if (t) {
+                          batch.push(t);
+                          flush(false);
                         }
-                      } catch (_) {}
-
-                      let t = "";
-                      try {
-                        if (typeof tripleToN3 === "function") t = tripleToN3(df.fact, prefixes);
-                        else if (df && df.fact && df.fact.toString) t = String(df.fact);
-                      } catch (_) {}
-
-                      if (t) {
-                        batch.push(t);
-                        // When proof comments are enabled, flush immediately so the
-                        // derived triple follows the proof block closely.
-                        flush(!!proof);
-                      }
-                    });
+                      });
+                    }
                   }
                 } finally {
                   try { if (typeof enforceHttpsEnabled !== "undefined") enforceHttpsEnabled = __oldEnforce; } catch (_) {}

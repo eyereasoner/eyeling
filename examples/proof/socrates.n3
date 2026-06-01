@@ -1,0 +1,19 @@
+@prefix : <http://example.org/socrates#> .
+@prefix pe: <https://eyereasoner.github.io/pe#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+:Socrates a :Mortal .
+
+{ :Socrates a :Mortal . } pe:why {
+  { :Socrates a :Mortal . }
+    pe:by [ pe:rule "socrates.n3"; pe:line 14 ];
+    pe:binding [ pe:var "A"; pe:value :Human ], [ pe:var "B"; pe:value :Mortal ], [ pe:var "S"; pe:value :Socrates ];
+    pe:uses { :Socrates a :Human . }, { :Human rdfs:subClassOf :Mortal . }.
+
+  { :Socrates a :Human . }
+    pe:by [ pe:fact "socrates.n3"; pe:line 10 ].
+
+  { :Human rdfs:subClassOf :Mortal . }
+    pe:by [ pe:fact "socrates.n3"; pe:line 11 ].
+}.

@@ -158,6 +158,9 @@ function buildBundleSource({ autoRunMain }) {
   out.push(
     '      if (typeof __entry.printExplanation === "function") __outerSelf.printExplanation = __entry.printExplanation;',
   );
+  out.push(
+    '      if (typeof __entry.renderProofDocument === "function") __outerSelf.renderProofDocument = __entry.renderProofDocument;',
+  );
   out.push('      if (typeof __entry.tripleToN3 === "function") __outerSelf.tripleToN3 = __entry.tripleToN3;');
   out.push(
     '      if (typeof __entry.collectOutputStringsFromFacts === "function") __outerSelf.collectOutputStringsFromFacts = __entry.collectOutputStringsFromFacts;',

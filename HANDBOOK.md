@@ -1958,7 +1958,7 @@ The current CLI supports a small set of flags (see `lib/cli.js`):
 - `--builtin <module.js>` — load a custom builtin module (repeatable).
 - `-d`, `--deterministic-skolem` — make `log:skolem` stable across runs.
 - `-e`, `--enforce-https` — rewrite `http://…` to `https://…` for dereferencing builtins.
-- `-p`, `--proof-comments` — include per-fact proof comment blocks in output.
+- `-p`, `--proof` — include per-fact proof explanations as N3 proof graphs.
 - `-s`, `--super-restricted` — disable all builtins except `log:implies` / `log:impliedBy`.
 - `-t`, `--stream` — stream derived triples as soon as they are derived.
 - `-v`, `--version` — print version and exit.
@@ -2045,7 +2045,7 @@ const input = `
 { ?s a ?A. ?A rdfs:subClassOf ?B. } => { ?s a ?B. }.
 `;
 
-console.log(reason({ proofComments: false }, input));
+console.log(reason({ proof: false }, input));
 ```
 
 ESM:
@@ -2063,13 +2063,13 @@ const input = `
 { ?s a ?A. ?A rdfs:subClassOf ?B. } => { ?s a ?B. }.
 `;
 
-console.log(eyeling.reason({ proofComments: false }, input));
+console.log(eyeling.reason({ proof: false }, input));
 ```
 
 Notes:
 
 - `reason()` returns the same textual output you would get from the CLI for the same input and options.
-- By default, the npm helper keeps output machine-friendly (`proofComments: false`).
+- By default, the npm helper keeps output machine-friendly (`proof: false`).
 - Use this path when you want CLI-equivalent behavior inside JavaScript.
 
 #### 14.5.2 RDF-JS and Eyeling rule-object interoperability
@@ -2089,7 +2089,7 @@ For example:
 const { reason } = require('eyeling');
 
 const out = reason(
-  { proofComments: false },
+  { proof: false },
   {
     sources: [
       '@prefix : <http://example.org/> .\n:Socrates a :Man .\n',
@@ -2138,7 +2138,7 @@ const rule = {
 };
 
 const out = reason(
-  { proofComments: false },
+  { proof: false },
   {
     quads: [rdfjs.quad(rdfjs.namedNode(ex + 'alice'), rdfjs.namedNode(ex + 'parent'), rdfjs.namedNode(ex + 'bob'))],
     rules: [rule],
@@ -2556,7 +2556,7 @@ Options:
   -d, --deterministic-skolem   Make log:skolem stable across reasoning runs.
   -e, --enforce-https          Rewrite http:// IRIs to https:// for log dereferencing builtins.
   -h, --help                   Show this help and exit.
-  -p, --proof-comments         Enable proof explanations.
+  -p, --proof                  Enable proof explanations.
   -s, --super-restricted       Disable all builtins except => and <=.
   -t, --stream                 Stream derived triples as soon as they are derived.
   -v, --version                Print version and exit.
@@ -3766,7 +3766,7 @@ When a user does want a portable link, the **Copy share link** button creates on
 
 If a generated embedded-state link is still very long, the playground reveals **Create Gist share**. That option asks for a GitHub token with gist permission, stores the compact playground state as a secret Gist JSON file, and copies a small `?stateurl=...` playground link that fetches the state file client-side. The token is stored only in that browser's `localStorage`, the Gist is created by a POST request with `referrerPolicy: "no-referrer"`, and the shared playground URL no longer contains the large encoded program.
 
-This keeps everyday use pleasant while preserving the important tutorial and issue-reporting workflow: a link can still capture the imported resource, the local editable overlay, background-knowledge mode, proof-comments mode, and HTTPS-dereferencing mode.
+This keeps everyday use pleasant while preserving the important tutorial and issue-reporting workflow: a link can still capture the imported resource, the local editable overlay, background-knowledge mode, proof mode, and HTTPS-dereferencing mode.
 
 For compatibility, older `?edit=`, `?program=`, `?url=`, compact `?state=`, `?stateurl=`, and hash-based links are accepted when opened. The old `/demo` entry point is also kept as a redirect to the canonical `/playground` page.
 

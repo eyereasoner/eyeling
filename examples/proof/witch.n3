@@ -1,0 +1,120 @@
+@prefix : <https://eyereasoner.github.io/eye/reasoning/witch#> .
+@prefix pe: <https://eyereasoner.github.io/pe#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+:DUCK a :ISMADEOFWOOD .
+:DUCK a :BURNS .
+:GIRL a :FLOATS .
+:GIRL a :ISMADEOFWOOD .
+:GIRL a :BURNS .
+:GIRL a :WITCH .
+
+{ :DUCK a :ISMADEOFWOOD . } pe:why {
+  { :DUCK a :ISMADEOFWOOD . }
+    pe:by [ pe:rule "witch.n3"; pe:line 22 ];
+    pe:binding [ pe:var "x"; pe:value :DUCK ];
+    pe:uses { :DUCK a :FLOATS . }.
+
+  { :DUCK a :FLOATS . }
+    pe:by [ pe:fact "witch.n3"; pe:line 26 ].
+}.
+
+{ :DUCK a :BURNS . } pe:why {
+  { :DUCK a :BURNS . }
+    pe:by [ pe:rule "witch.n3"; pe:line 19 ];
+    pe:binding [ pe:var "x"; pe:value :DUCK ];
+    pe:uses { :DUCK a :ISMADEOFWOOD . }.
+
+  { :DUCK a :ISMADEOFWOOD . }
+    pe:by [ pe:rule "witch.n3"; pe:line 22 ];
+    pe:binding [ pe:var "x"; pe:value :DUCK ];
+    pe:uses { :DUCK a :FLOATS . }.
+
+  { :DUCK a :FLOATS . }
+    pe:by [ pe:fact "witch.n3"; pe:line 26 ].
+}.
+
+{ :GIRL a :FLOATS . } pe:why {
+  { :GIRL a :FLOATS . }
+    pe:by [ pe:rule "witch.n3"; pe:line 29 ];
+    pe:binding [ pe:var "x"; pe:value :DUCK ], [ pe:var "y"; pe:value :GIRL ];
+    pe:uses { :DUCK a :FLOATS . }, { :DUCK :SAMEWEIGHT :GIRL . }.
+
+  { :DUCK a :FLOATS . }
+    pe:by [ pe:fact "witch.n3"; pe:line 26 ].
+
+  { :DUCK :SAMEWEIGHT :GIRL . }
+    pe:by [ pe:fact "witch.n3"; pe:line 33 ].
+}.
+
+{ :GIRL a :ISMADEOFWOOD . } pe:why {
+  { :GIRL a :ISMADEOFWOOD . }
+    pe:by [ pe:rule "witch.n3"; pe:line 22 ];
+    pe:binding [ pe:var "x"; pe:value :GIRL ];
+    pe:uses { :GIRL a :FLOATS . }.
+
+  { :GIRL a :FLOATS . }
+    pe:by [ pe:rule "witch.n3"; pe:line 29 ];
+    pe:binding [ pe:var "x"; pe:value :DUCK ], [ pe:var "y"; pe:value :GIRL ];
+    pe:uses { :DUCK a :FLOATS . }, { :DUCK :SAMEWEIGHT :GIRL . }.
+
+  { :DUCK a :FLOATS . }
+    pe:by [ pe:fact "witch.n3"; pe:line 26 ].
+
+  { :DUCK :SAMEWEIGHT :GIRL . }
+    pe:by [ pe:fact "witch.n3"; pe:line 33 ].
+}.
+
+{ :GIRL a :BURNS . } pe:why {
+  { :GIRL a :BURNS . }
+    pe:by [ pe:rule "witch.n3"; pe:line 19 ];
+    pe:binding [ pe:var "x"; pe:value :GIRL ];
+    pe:uses { :GIRL a :ISMADEOFWOOD . }.
+
+  { :GIRL a :ISMADEOFWOOD . }
+    pe:by [ pe:rule "witch.n3"; pe:line 22 ];
+    pe:binding [ pe:var "x"; pe:value :GIRL ];
+    pe:uses { :GIRL a :FLOATS . }.
+
+  { :GIRL a :FLOATS . }
+    pe:by [ pe:rule "witch.n3"; pe:line 29 ];
+    pe:binding [ pe:var "x"; pe:value :DUCK ], [ pe:var "y"; pe:value :GIRL ];
+    pe:uses { :DUCK a :FLOATS . }, { :DUCK :SAMEWEIGHT :GIRL . }.
+
+  { :DUCK a :FLOATS . }
+    pe:by [ pe:fact "witch.n3"; pe:line 26 ].
+
+  { :DUCK :SAMEWEIGHT :GIRL . }
+    pe:by [ pe:fact "witch.n3"; pe:line 33 ].
+}.
+
+{ :GIRL a :WITCH . } pe:why {
+  { :GIRL a :WITCH . }
+    pe:by [ pe:rule "witch.n3"; pe:line 13 ];
+    pe:binding [ pe:var "x"; pe:value :GIRL ];
+    pe:uses { :GIRL a :BURNS . }, { :GIRL a :WOMAN . }.
+
+  { :GIRL a :BURNS . }
+    pe:by [ pe:rule "witch.n3"; pe:line 19 ];
+    pe:binding [ pe:var "x"; pe:value :GIRL ];
+    pe:uses { :GIRL a :ISMADEOFWOOD . }.
+
+  { :GIRL a :ISMADEOFWOOD . }
+    pe:by [ pe:rule "witch.n3"; pe:line 22 ];
+    pe:binding [ pe:var "x"; pe:value :GIRL ];
+    pe:uses { :GIRL a :FLOATS . }.
+
+  { :GIRL a :FLOATS . }
+    pe:by [ pe:rule "witch.n3"; pe:line 29 ];
+    pe:binding [ pe:var "x"; pe:value :DUCK ], [ pe:var "y"; pe:value :GIRL ];
+    pe:uses { :DUCK a :FLOATS . }, { :DUCK :SAMEWEIGHT :GIRL . }.
+
+  { :DUCK a :FLOATS . }
+    pe:by [ pe:fact "witch.n3"; pe:line 26 ].
+
+  { :DUCK :SAMEWEIGHT :GIRL . }
+    pe:by [ pe:fact "witch.n3"; pe:line 33 ].
+
+  { :GIRL a :WOMAN . }
+    pe:by [ pe:fact "witch.n3"; pe:line 16 ].
+}.

@@ -19,21 +19,24 @@ function reason(opt = {}, input = '') {
 
   const args = [];
 
-  // default: proof comments OFF for API output (machine-friendly)
-  // set { proofComments: true } to keep them
-  const proofCommentsSpecified = typeof opt.proofComments === 'boolean' || typeof opt.noProofComments === 'boolean';
+  // default: proof output OFF for API output (machine-friendly)
+  // set { proof: true } to include N3 proof explanations.
+  // proofComments/noProofComments are accepted as legacy aliases.
+  const proofSpecified =
+    typeof opt.proof === 'boolean' || typeof opt.proofComments === 'boolean' || typeof opt.noProofComments === 'boolean';
 
-  const proofComments =
-    typeof opt.proofComments === 'boolean'
-      ? opt.proofComments
-      : typeof opt.noProofComments === 'boolean'
-        ? !opt.noProofComments
-        : false;
+  const proof =
+    typeof opt.proof === 'boolean'
+      ? opt.proof
+      : typeof opt.proofComments === 'boolean'
+        ? opt.proofComments
+        : typeof opt.noProofComments === 'boolean'
+          ? !opt.noProofComments
+          : false;
 
   // Only pass a flag when the caller explicitly asked.
-  // (CLI default is now: no proof comments.)
-  if (proofCommentsSpecified) {
-    if (proofComments) args.push('--proof-comments');
+  if (proofSpecified) {
+    if (proof) args.push('--proof');
     else args.push('--no-proof-comments');
   }
 

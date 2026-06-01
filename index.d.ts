@@ -151,6 +151,7 @@ declare module 'eyeling' {
   }
 
   export interface ReasonOptions {
+    proof?: boolean;
     proofComments?: boolean;
     noProofComments?: boolean;
     args?: string[];

@@ -1,0 +1,31 @@
+@prefix : <https://example.org/#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix pe: <https://eyereasoner.github.io/pe#> .
+@prefix time: <http://www.w3.org/2000/10/swap/time#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:test :is true .
+
+{ :test :is true . } pe:why {
+  { :test :is true . }
+    pe:by [ pe:rule "age.n3"; pe:line 24 ];
+    pe:binding [ pe:var "S"; pe:value :patH ];
+    pe:uses { :patH :ageAbove "P80Y"^^xsd:duration . }.
+
+  { :patH :ageAbove "P80Y"^^xsd:duration . }
+    pe:by [ pe:rule "age.n3"; pe:line 16 ];
+    pe:binding [ pe:var "A"; pe:value "P80Y"^^xsd:duration ], [ pe:var "B"; pe:value "1944-08-21"^^xsd:date ], [ pe:var "D"; pe:value "2026-06-01T22:06:20.106+00:00"^^xsd:dateTime ], [ pe:var "F"; pe:value "PT2580761180.106S"^^xsd:duration ], [ pe:var "S"; pe:value :patH ];
+    pe:uses { :patH :birthDay "1944-08-21"^^xsd:date . }, { "" time:localTime "2026-06-01T22:06:20.106+00:00"^^xsd:dateTime . }, { ("2026-06-01T22:06:20.106+00:00"^^xsd:dateTime "1944-08-21"^^xsd:date) math:difference "PT2580761180.106S"^^xsd:duration . }, { "PT2580761180.106S"^^xsd:duration math:greaterThan "P80Y"^^xsd:duration . }.
+
+  { :patH :birthDay "1944-08-21"^^xsd:date . }
+    pe:by [ pe:fact "age.n3"; pe:line 13 ].
+
+  { "" time:localTime "2026-06-01T22:06:20.106+00:00"^^xsd:dateTime . }
+    pe:by [ pe:builtin time:localTime ].
+
+  { ("2026-06-01T22:06:20.106+00:00"^^xsd:dateTime "1944-08-21"^^xsd:date) math:difference "PT2580761180.106S"^^xsd:duration . }
+    pe:by [ pe:builtin math:difference ].
+
+  { "PT2580761180.106S"^^xsd:duration math:greaterThan "P80Y"^^xsd:duration . }
+    pe:by [ pe:builtin math:greaterThan ].
+}.

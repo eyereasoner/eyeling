@@ -17,6 +17,3 @@
 } => {
     ?S a ?B.
 }.
-
-# query
-{ ?S a ?C } log:query { ?S a ?C }.
