@@ -1147,20 +1147,14 @@
 
                 try {
                   registerBuiltinModuleSources(builtinModules, window.eyeling);
-                  const res = window.eyeling.reasonStream(program, {
+                  window.eyeling.reasonStream(program, {
                     enforceHttps,
                     proof,
-                    rdf,
-                    onDerived: proof
-                      ? null
-                      : ({ triple }) => {
-                          batch.push(triple);
-                          flush(false);
-                        },
+                    onDerived: ({ triple }) => {
+                      batch.push(triple);
+                      flush(false);
+                    },
                   });
-                  if (proof) {
-                    onRenderedText && onRenderedText(res && res.closureN3 != null ? String(res.closureN3) : '', res && Array.isArray(res.derived) ? res.derived.length : 0);
-                  }
                 } finally {
                   console.error = __origConsoleError;
                 }
@@ -1353,6 +1347,7 @@
               __registerBuiltinModuleSources(builtinModules);
 
               // Forward stdout/stderr to the main thread.
+              // - proof mode renders one N3 proof document via the API
               // - stderr is used by log:trace in browser/worker builds
               const __origLog = console.log;
               console.log = (...args) => {
@@ -1436,12 +1431,30 @@ const batch = [];
                   const hasQueries = Array.isArray(qrules) && qrules.length;
                   const mayAutoRenderOutputStrings = programMayProduceOutputStrings(triples, frules, qrules);
 
-                  if (proof || hasQueries || mayAutoRenderOutputStrings) {
+                  if (proof) {
                     if (!self.eyeling || typeof self.eyeling.reasonStream !== "function") {
                       throw new Error("Eyeling API not available (eyeling.reasonStream missing).");
                     }
 
-                    const res = self.eyeling.reasonStream(program, { enforceHttps, proof, rdf });
+                    const res = self.eyeling.reasonStream(program, { enforceHttps, proof: true, rdf, sourceLabel: "playground" });
+                    const queryMode = !!(res && res.queryMode);
+                    const outDerived = queryMode
+                      ? ((res && Array.isArray(res.queryDerived)) ? res.queryDerived : [])
+                      : ((res && Array.isArray(res.derived)) ? res.derived : []);
+                    let txt = "";
+                    try { txt = (res && res.closureN3 != null) ? String(res.closureN3) : ""; } catch (_) {}
+                    self.postMessage({
+                      type: "rendered_text",
+                      runId,
+                      text: txt,
+                      countTriples: outDerived.length,
+                    });
+                  } else if (hasQueries || mayAutoRenderOutputStrings) {
+                    if (!self.eyeling || typeof self.eyeling.reasonStream !== "function") {
+                      throw new Error("Eyeling API not available (eyeling.reasonStream missing).");
+                    }
+
+                    const res = self.eyeling.reasonStream(program, { enforceHttps, proof: false, rdf, sourceLabel: "playground" });
                     const pfx = res && res.prefixes ? res.prefixes : prefixes;
                     const queryMode = !!(res && res.queryMode);
                     const outDerived = queryMode
@@ -1471,7 +1484,7 @@ const batch = [];
                         text: txt,
                         countTriples: outDerived.length,
                       });
-                    } else if (proof || queryMode) {
+                    } else if (queryMode) {
                       let txt = "";
                       try { txt = (res && res.closureN3 != null) ? String(res.closureN3) : ""; } catch (_) {}
                       self.postMessage({
@@ -2939,17 +2952,13 @@ const batch = [];
           const programText = effectiveProgram.program;
           const isRenderedOutputMode = programMentionsOutputStrings(programText);
           const isLogQueryMode = /\blog:query\b/.test(programText) || /swap\/log#query/.test(programText);
-          const isProofMode = proofCheckbox.checked;
-          const usesRenderedText = isRenderedOutputMode || isProofMode || (isLogQueryMode && !isProofMode);
-          outputMarkdownLinkBaseUrl = isRenderedOutputMode ? currentMarkdownOutputBaseUrl() : '';
+          const usesRenderedText = isRenderedOutputMode || (isLogQueryMode && !proofCheckbox.checked);
+          outputMarkdownLinkBaseUrl = usesRenderedText ? currentMarkdownOutputBaseUrl() : '';
           const modeLabel = isRenderedOutputMode
             ? 'rendered output'
-            : isProofMode
-              ? 'proof'
-              : isLogQueryMode
-                ? 'log:query'
-                : 'streaming';
-          const initialOutputView = isRenderedOutputMode || (isLogQueryMode && !isProofMode) ? 'auto' : 'source';
+            : isLogQueryMode && !proofCheckbox.checked
+              ? 'log:query'
+              : 'streaming';
 
           runBtn.disabled = true;
           setPlayPaused(false);
@@ -2965,7 +2974,7 @@ const batch = [];
 
           {
             const mh = currentMaxHeights();
-            setOutputText(usesRenderedText ? '' : '# Derived triples (streaming):\n', usesRenderedText ? initialOutputView : 'source');
+            setOutputText(usesRenderedText ? '' : '# Derived triples (streaming):\n', usesRenderedText ? 'auto' : 'source');
             autoResizeCodeMirror(outputEl, 80, mh.output);
           }
 
