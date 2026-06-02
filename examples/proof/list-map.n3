@@ -1,0 +1,44 @@
+@prefix : <http://example.org/#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix pe: <https://eyereasoner.github.io/pe#> .
+
+:test1 :is true .
+:test2 :is true .
+:test3 :is true .
+:test4 :is true .
+
+{ :test1 :is true . } pe:why {
+  { :test1 :is true . }
+    pe:by [ pe:rule "list-map.n3"; pe:line 14 ];
+    pe:uses { ((:s1 :s2) :p1) list:map (:o1 :o2) . }.
+
+  { ((:s1 :s2) :p1) list:map (:o1 :o2) . }
+    pe:by [ pe:builtin list:map ].
+}.
+
+{ :test2 :is true . } pe:why {
+  { :test2 :is true . }
+    pe:by [ pe:rule "list-map.n3"; pe:line 15 ];
+    pe:uses { ((:s1 :s2 :s3) :p1) list:map (:o1 :o2 :o3 :o4) . }.
+
+  { ((:s1 :s2 :s3) :p1) list:map (:o1 :o2 :o3 :o4) . }
+    pe:by [ pe:builtin list:map ].
+}.
+
+{ :test3 :is true . } pe:why {
+  { :test3 :is true . }
+    pe:by [ pe:rule "list-map.n3"; pe:line 16 ];
+    pe:uses { ((:s4) :p1) list:map () . }.
+
+  { ((:s4) :p1) list:map () . }
+    pe:by [ pe:builtin list:map ].
+}.
+
+{ :test4 :is true . } pe:why {
+  { :test4 :is true . }
+    pe:by [ pe:rule "list-map.n3"; pe:line 17 ];
+    pe:uses { ((:s1) :p2) list:map () . }.
+
+  { ((:s1) :p2) list:map () . }
+    pe:by [ pe:builtin list:map ].
+}.

@@ -1,0 +1,53 @@
+@prefix : <https://eyereasoner.github.io/ns#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix pe: <https://eyereasoner.github.io/pe#> .
+
+{
+    ?x :childOf ?y .
+} <= {
+    ?y :parentOf ?x .
+} .
+:bob :hasParent :alice .
+
+{
+    {
+        ?x :childOf ?y .
+    } <= {
+        ?y :parentOf ?x .
+    } .
+} pe:why {
+  {
+    {
+        ?x :childOf ?y .
+    } <= {
+        ?y :parentOf ?x .
+    } .
+}
+    pe:by [ pe:rule "derived-backward-rule.n3"; pe:line 16 ];
+    pe:binding
+      [ pe:var "p"; pe:value :parentOf ],
+      [ pe:var "q"; pe:value :childOf ];
+    pe:uses { :parentOf :invOf :childOf . }.
+
+  { :parentOf :invOf :childOf . }
+    pe:by [ pe:fact "derived-backward-rule.n3"; pe:line 8 ].
+}.
+
+{ :bob :hasParent :alice . } pe:why {
+  { :bob :hasParent :alice . }
+    pe:by [ pe:rule "derived-backward-rule.n3"; pe:line 27 ];
+    pe:binding
+      [ pe:var "x"; pe:value :bob ],
+      [ pe:var "y"; pe:value :alice ];
+    pe:uses { :bob :childOf :alice . }.
+
+  { :bob :childOf :alice . }
+    pe:by [ pe:rule "derived-backward-rule.n3"; pe:line 16 ];
+    pe:binding
+      [ pe:var "x"; pe:value :bob ],
+      [ pe:var "y"; pe:value :alice ];
+    pe:uses { :alice :parentOf :bob . }.
+
+  { :alice :parentOf :bob . }
+    pe:by [ pe:fact "derived-backward-rule.n3"; pe:line 10 ].
+}.

@@ -1,0 +1,34 @@
+@prefix : <http://example.org/#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix pe: <https://eyereasoner.github.io/pe#> .
+
+:uriString :is "https://www.w3.org" .
+:uriResource :is <https://www.w3.org> .
+
+{ :uriString :is "https://www.w3.org" . } pe:why {
+  { :uriString :is "https://www.w3.org" . }
+    pe:by [ pe:rule "log-uri.n3"; pe:line 8 ];
+    pe:binding
+      [ pe:var "r"; pe:value <https://www.w3.org> ],
+      [ pe:var "s"; pe:value "https://www.w3.org" ];
+    pe:uses
+      { <https://www.w3.org> log:uri "https://www.w3.org" . },
+      { <https://www.w3.org> log:uri "https://www.w3.org" . }.
+
+  { <https://www.w3.org> log:uri "https://www.w3.org" . }
+    pe:by [ pe:builtin log:uri ].
+}.
+
+{ :uriResource :is <https://www.w3.org> . } pe:why {
+  { :uriResource :is <https://www.w3.org> . }
+    pe:by [ pe:rule "log-uri.n3"; pe:line 8 ];
+    pe:binding
+      [ pe:var "r"; pe:value <https://www.w3.org> ],
+      [ pe:var "s"; pe:value "https://www.w3.org" ];
+    pe:uses
+      { <https://www.w3.org> log:uri "https://www.w3.org" . },
+      { <https://www.w3.org> log:uri "https://www.w3.org" . }.
+
+  { <https://www.w3.org> log:uri "https://www.w3.org" . }
+    pe:by [ pe:builtin log:uri ].
+}.

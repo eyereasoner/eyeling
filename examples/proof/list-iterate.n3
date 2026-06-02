@@ -1,0 +1,142 @@
+@prefix : <urn:example:> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix pe: <https://eyereasoner.github.io/pe#> .
+
+("Huey" "Dewey" "Louie") :iterate (0 "Huey") .
+"Dewey" :hasIndex 1 .
+("Huey" "Dewey" "Louie") :iterate (1 "Dewey") .
+("Huey" "Dewey" "Louie") :iterate (2 "Louie") .
+:test :is true .
+
+{ ("Huey" "Dewey" "Louie") :iterate (0 "Huey") . } pe:why {
+  { ("Huey" "Dewey" "Louie") :iterate (0 "Huey") . }
+    pe:by [ pe:rule "list-iterate.n3"; pe:line 11 ];
+    pe:binding
+      [ pe:var "X"; pe:value ("Huey" "Dewey" "Louie") ],
+      [ pe:var "Y"; pe:value (0 "Huey") ],
+      [ pe:var "Z"; pe:value 1 ];
+    pe:uses
+      { :Let :param ("Huey" "Dewey" "Louie") . },
+      { ("Huey" "Dewey" "Louie") list:iterate (0 "Huey") . },
+      { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . },
+      { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . }.
+
+  { :Let :param ("Huey" "Dewey" "Louie") . }
+    pe:by [ pe:fact "list-iterate.n3"; pe:line 9 ].
+
+  { ("Huey" "Dewey" "Louie") list:iterate (0 "Huey") . }
+    pe:by [ pe:builtin list:iterate ].
+
+  { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . }
+    pe:by [ pe:builtin list:iterate ].
+}.
+
+{ "Dewey" :hasIndex 1 . } pe:why {
+  { "Dewey" :hasIndex 1 . }
+    pe:by [ pe:rule "list-iterate.n3"; pe:line 11 ];
+    pe:binding
+      [ pe:var "X"; pe:value ("Huey" "Dewey" "Louie") ],
+      [ pe:var "Y"; pe:value (0 "Huey") ],
+      [ pe:var "Z"; pe:value 1 ];
+    pe:uses
+      { :Let :param ("Huey" "Dewey" "Louie") . },
+      { ("Huey" "Dewey" "Louie") list:iterate (0 "Huey") . },
+      { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . },
+      { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . }.
+
+  { :Let :param ("Huey" "Dewey" "Louie") . }
+    pe:by [ pe:fact "list-iterate.n3"; pe:line 9 ].
+
+  { ("Huey" "Dewey" "Louie") list:iterate (0 "Huey") . }
+    pe:by [ pe:builtin list:iterate ].
+
+  { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . }
+    pe:by [ pe:builtin list:iterate ].
+}.
+
+{ ("Huey" "Dewey" "Louie") :iterate (1 "Dewey") . } pe:why {
+  { ("Huey" "Dewey" "Louie") :iterate (1 "Dewey") . }
+    pe:by [ pe:rule "list-iterate.n3"; pe:line 11 ];
+    pe:binding
+      [ pe:var "X"; pe:value ("Huey" "Dewey" "Louie") ],
+      [ pe:var "Y"; pe:value (1 "Dewey") ],
+      [ pe:var "Z"; pe:value 1 ];
+    pe:uses
+      { :Let :param ("Huey" "Dewey" "Louie") . },
+      { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . },
+      { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . },
+      { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . }.
+
+  { :Let :param ("Huey" "Dewey" "Louie") . }
+    pe:by [ pe:fact "list-iterate.n3"; pe:line 9 ].
+
+  { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . }
+    pe:by [ pe:builtin list:iterate ].
+}.
+
+{ ("Huey" "Dewey" "Louie") :iterate (2 "Louie") . } pe:why {
+  { ("Huey" "Dewey" "Louie") :iterate (2 "Louie") . }
+    pe:by [ pe:rule "list-iterate.n3"; pe:line 11 ];
+    pe:binding
+      [ pe:var "X"; pe:value ("Huey" "Dewey" "Louie") ],
+      [ pe:var "Y"; pe:value (2 "Louie") ],
+      [ pe:var "Z"; pe:value 1 ];
+    pe:uses
+      { :Let :param ("Huey" "Dewey" "Louie") . },
+      { ("Huey" "Dewey" "Louie") list:iterate (2 "Louie") . },
+      { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . },
+      { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . }.
+
+  { :Let :param ("Huey" "Dewey" "Louie") . }
+    pe:by [ pe:fact "list-iterate.n3"; pe:line 9 ].
+
+  { ("Huey" "Dewey" "Louie") list:iterate (2 "Louie") . }
+    pe:by [ pe:builtin list:iterate ].
+
+  { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . }
+    pe:by [ pe:builtin list:iterate ].
+}.
+
+{ :test :is true . } pe:why {
+  { :test :is true . }
+    pe:by [ pe:rule "list-iterate.n3"; pe:line 31 ];
+    pe:binding
+      [ pe:var "X"; pe:value ("Huey" "Dewey" "Louie") ],
+      [ pe:var "Y"; pe:value (0 "Huey") ];
+    pe:uses
+      { ("Huey" "Dewey" "Louie") :iterate (0 "Huey") . },
+      { "Dewey" :hasIndex 1 . }.
+
+  { ("Huey" "Dewey" "Louie") :iterate (0 "Huey") . }
+    pe:by [ pe:rule "list-iterate.n3"; pe:line 11 ];
+    pe:binding
+      [ pe:var "X"; pe:value ("Huey" "Dewey" "Louie") ],
+      [ pe:var "Y"; pe:value (0 "Huey") ],
+      [ pe:var "Z"; pe:value 1 ];
+    pe:uses
+      { :Let :param ("Huey" "Dewey" "Louie") . },
+      { ("Huey" "Dewey" "Louie") list:iterate (0 "Huey") . },
+      { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . },
+      { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . }.
+
+  { :Let :param ("Huey" "Dewey" "Louie") . }
+    pe:by [ pe:fact "list-iterate.n3"; pe:line 9 ].
+
+  { ("Huey" "Dewey" "Louie") list:iterate (0 "Huey") . }
+    pe:by [ pe:builtin list:iterate ].
+
+  { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . }
+    pe:by [ pe:builtin list:iterate ].
+
+  { "Dewey" :hasIndex 1 . }
+    pe:by [ pe:rule "list-iterate.n3"; pe:line 11 ];
+    pe:binding
+      [ pe:var "X"; pe:value ("Huey" "Dewey" "Louie") ],
+      [ pe:var "Y"; pe:value (0 "Huey") ],
+      [ pe:var "Z"; pe:value 1 ];
+    pe:uses
+      { :Let :param ("Huey" "Dewey" "Louie") . },
+      { ("Huey" "Dewey" "Louie") list:iterate (0 "Huey") . },
+      { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . },
+      { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . }.
+}.

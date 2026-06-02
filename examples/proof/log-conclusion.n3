@@ -1,0 +1,118 @@
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix pe: <https://eyereasoner.github.io/pe#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+:result :is {
+    :Felix a :Cat .
+    {
+        ?X a :Cat .
+    } => {
+        ?X :says "Meow" .
+    } .
+    :Felix :says "Meow" .
+} .
+
+{
+    :result :is {
+        :Felix a :Cat .
+        {
+            ?X a :Cat .
+        } => {
+            ?X :says "Meow" .
+        } .
+        :Felix :says "Meow" .
+    } .
+} pe:why {
+  {
+    :result :is {
+        :Felix a :Cat .
+        {
+            ?X a :Cat .
+        } => {
+            ?X :says "Meow" .
+        } .
+        :Felix :says "Meow" .
+    } .
+}
+    pe:by [ pe:rule "log-conclusion.n3"; pe:line 13 ];
+    pe:binding
+      [ pe:var "conclusion"; pe:value {
+          :Felix a :Cat .
+          {
+              ?X a :Cat .
+          } => {
+              ?X :says "Meow" .
+          } .
+          :Felix :says "Meow" .
+      } ],
+      [ pe:var "param"; pe:value {
+          :Felix a :Cat .
+          {
+              ?X a :Cat .
+          } => {
+              ?X :says "Meow" .
+          } .
+      } ];
+    pe:uses
+      {
+          :let :param {
+              :Felix a :Cat .
+              {
+                  ?X a :Cat .
+              } => {
+                  ?X :says "Meow" .
+              } .
+          } .
+      },
+      {
+          {
+              :Felix a :Cat .
+              {
+                  ?X a :Cat .
+              } => {
+                  ?X :says "Meow" .
+              } .
+          } log:conclusion {
+              :Felix a :Cat .
+              {
+                  ?X a :Cat .
+              } => {
+                  ?X :says "Meow" .
+              } .
+              :Felix :says "Meow" .
+          } .
+      }.
+
+  {
+    :let :param {
+        :Felix a :Cat .
+        {
+            ?X a :Cat .
+        } => {
+            ?X :says "Meow" .
+        } .
+    } .
+}
+    pe:by [ pe:fact "log-conclusion.n3"; pe:line 8 ].
+
+  {
+    {
+        :Felix a :Cat .
+        {
+            ?X a :Cat .
+        } => {
+            ?X :says "Meow" .
+        } .
+    } log:conclusion {
+        :Felix a :Cat .
+        {
+            ?X a :Cat .
+        } => {
+            ?X :says "Meow" .
+        } .
+        :Felix :says "Meow" .
+    } .
+}
+    pe:by [ pe:builtin log:conclusion ].
+}.

@@ -1,0 +1,80 @@
+@prefix : <http://example.org/socrates#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix pe: <https://eyereasoner.github.io/pe#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+{
+    :Socrates a :Human .
+} <= true .
+{
+    :Human rdfs:subClassOf :Mortal .
+} <= true .
+:Socrates a :Mortal .
+:test :is true .
+
+{
+    {
+        :Socrates a :Human .
+    } <= true .
+} pe:why {
+  {
+    {
+        :Socrates a :Human .
+    } <= true .
+}
+    pe:by [ pe:rule "derived-backward-rule-2.n3"; pe:line 9 ].
+}.
+
+{
+    {
+        :Human rdfs:subClassOf :Mortal .
+    } <= true .
+} pe:why {
+  {
+    {
+        :Human rdfs:subClassOf :Mortal .
+    } <= true .
+}
+    pe:by [ pe:rule "derived-backward-rule-2.n3"; pe:line 9 ].
+}.
+
+{ :Socrates a :Mortal . } pe:why {
+  { :Socrates a :Mortal . }
+    pe:by [ pe:rule "derived-backward-rule-2.n3"; pe:line 14 ];
+    pe:binding
+      [ pe:var "A"; pe:value :Human ],
+      [ pe:var "B"; pe:value :Mortal ],
+      [ pe:var "S"; pe:value :Socrates ];
+    pe:uses
+      { :Socrates a :Human . },
+      { :Human rdfs:subClassOf :Mortal . }.
+
+  { :Socrates a :Human . }
+    pe:by [ pe:rule "derived-backward-rule-2.n3"; pe:line 9 ].
+
+  { :Human rdfs:subClassOf :Mortal . }
+    pe:by [ pe:rule "derived-backward-rule-2.n3"; pe:line 9 ].
+}.
+
+{ :test :is true . } pe:why {
+  { :test :is true . }
+    pe:by [ pe:rule "derived-backward-rule-2.n3"; pe:line 21 ];
+    pe:uses { :Socrates a :Mortal . }.
+
+  { :Socrates a :Mortal . }
+    pe:by [ pe:rule "derived-backward-rule-2.n3"; pe:line 14 ];
+    pe:binding
+      [ pe:var "A"; pe:value :Human ],
+      [ pe:var "B"; pe:value :Mortal ],
+      [ pe:var "S"; pe:value :Socrates ];
+    pe:uses
+      { :Socrates a :Human . },
+      { :Human rdfs:subClassOf :Mortal . }.
+
+  { :Socrates a :Human . }
+    pe:by [ pe:rule "derived-backward-rule-2.n3"; pe:line 9 ].
+
+  { :Human rdfs:subClassOf :Mortal . }
+    pe:by [ pe:rule "derived-backward-rule-2.n3"; pe:line 9 ].
+}.

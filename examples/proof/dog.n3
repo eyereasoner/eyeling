@@ -1,0 +1,41 @@
+@prefix : <https://eyereasoner.github.io/ns#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix pe: <https://eyereasoner.github.io/pe#> .
+
+:alice :mustHave :dogLicense .
+
+{ :alice :mustHave :dogLicense . } pe:why {
+  { :alice :mustHave :dogLicense . }
+    pe:by [ pe:rule "dog.n3"; pe:line 13 ];
+    pe:binding
+      [ pe:var "Any"; pe:value :dog1 ],
+      [ pe:var "Count"; pe:value 5 ],
+      [ pe:var "List"; pe:value (1 1 1 1 1) ],
+      [ pe:var "Subject"; pe:value :alice ];
+    pe:uses
+      { :alice :hasDog :dog1 . },
+      {
+          (1 {
+              :alice :hasDog ?Dog .
+          } (1 1 1 1 1)) log:collectAllIn ?Scope .
+      },
+      { (1 1 1 1 1) math:sum 5 . },
+      { 5 math:greaterThan 4 . }.
+
+  { :alice :hasDog :dog1 . }
+    pe:by [ pe:fact "dog.n3"; pe:line 10 ].
+
+  {
+    (1 {
+        :alice :hasDog ?Dog .
+    } (1 1 1 1 1)) log:collectAllIn ?Scope .
+}
+    pe:by [ pe:builtin log:collectAllIn ].
+
+  { (1 1 1 1 1) math:sum 5 . }
+    pe:by [ pe:builtin math:sum ].
+
+  { 5 math:greaterThan 4 . }
+    pe:by [ pe:builtin math:greaterThan ].
+}.

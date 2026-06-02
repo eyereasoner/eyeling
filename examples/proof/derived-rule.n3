@@ -1,0 +1,43 @@
+@prefix : <https://eyereasoner.github.io/ns#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix pe: <https://eyereasoner.github.io/pe#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+{
+    ?y a :Dog .
+} => {
+    :test :is true .
+} .
+:test :is true .
+
+{
+    {
+        ?y a :Dog .
+    } => {
+        :test :is true .
+    } .
+} pe:why {
+  {
+    {
+        ?y a :Dog .
+    } => {
+        :test :is true .
+    } .
+}
+    pe:by [ pe:rule "derived-rule.n3"; pe:line 11 ];
+    pe:binding [ pe:var "x"; pe:value :Minka ];
+    pe:uses { :Minka a :Cat . }.
+
+  { :Minka a :Cat . }
+    pe:by [ pe:fact "derived-rule.n3"; pe:line 8 ].
+}.
+
+{ :test :is true . } pe:why {
+  { :test :is true . }
+    pe:by [ pe:rule "derived-rule.n3"; pe:line 11 ];
+    pe:binding [ pe:var "y"; pe:value :Charly ];
+    pe:uses { :Charly a :Dog . }.
+
+  { :Charly a :Dog . }
+    pe:by [ pe:fact "derived-rule.n3"; pe:line 9 ].
+}.

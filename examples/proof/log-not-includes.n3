@@ -1,0 +1,55 @@
+@prefix : <http://example.org/#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix pe: <https://eyereasoner.github.io/pe#> .
+
+:x :y 1 .
+{
+    :x :y 1 .
+} => {
+    :a :b :c .
+} .
+:a :b :c .
+
+{ :x :y 1 . } pe:why {
+  { :x :y 1 . }
+    pe:by [ pe:rule "log-not-includes.n3"; pe:line 10 ];
+    pe:uses { 1 math:equalTo 1 . }.
+
+  { 1 math:equalTo 1 . }
+    pe:by [ pe:builtin math:equalTo ].
+}.
+
+{
+    {
+        :x :y 1 .
+    } => {
+        :a :b :c .
+    } .
+} pe:why {
+  {
+    {
+        :x :y 1 .
+    } => {
+        :a :b :c .
+    } .
+}
+    pe:by [ pe:rule "log-not-includes.n3"; pe:line 10 ];
+    pe:uses { 1 math:equalTo 1 . }.
+
+  { 1 math:equalTo 1 . }
+    pe:by [ pe:builtin math:equalTo ].
+}.
+
+{ :a :b :c . } pe:why {
+  { :a :b :c . }
+    pe:by [ pe:rule "log-not-includes.n3"; pe:line 10 ];
+    pe:uses { :x :y 1 . }.
+
+  { :x :y 1 . }
+    pe:by [ pe:rule "log-not-includes.n3"; pe:line 10 ];
+    pe:uses { 1 math:equalTo 1 . }.
+
+  { 1 math:equalTo 1 . }
+    pe:by [ pe:builtin math:equalTo ].
+}.

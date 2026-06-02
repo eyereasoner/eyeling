@@ -1,0 +1,14 @@
+@prefix : <http://example.org/socrates#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix pe: <https://eyereasoner.github.io/pe#> .
+
+:test :is true .
+
+{ :test :is true . } pe:why {
+  { :test :is true . }
+    pe:by [ pe:rule "equals.n3"; pe:line 11 ];
+    pe:uses { :X = :Y . }.
+
+  { :X = :Y . }
+    pe:by [ pe:fact "equals.n3"; pe:line 9 ].
+}.
