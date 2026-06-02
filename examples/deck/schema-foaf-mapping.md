@@ -1,5 +1,7 @@
 # Mapping two data models (beginner-friendly)
 
+Example files: [source](../schema-foaf-mapping.n3) · [golden output](../output/schema-foaf-mapping.n3).
+
 When people say “map two data models,” they mean:
 
 > **Taking data described using one vocabulary (Model A) and expressing the same meaning using another vocabulary (Model B).**

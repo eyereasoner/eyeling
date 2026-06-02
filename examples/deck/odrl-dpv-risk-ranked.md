@@ -4,6 +4,8 @@
 
 This deck explains how an agreement is modeled in **ODRL**, how risks are expressed in **DPV**, and how **N3 rules** connect the two into a ranked report. ([Playground][1])
 
+Example files: [source](../odrl-dpv-risk-ranked.n3) · [golden output](../output/odrl-dpv-risk-ranked.md).
+
 ---
 
 ## The idea

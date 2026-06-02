@@ -2,6 +2,8 @@
 
 This deck explains the example `rdf-message-flow.n3` and its input file `input/rdf-message-flow.trig`.
 
+Example files: [rules](../rdf-message-flow.n3) · [message log input](../input/rdf-message-flow.trig) · [golden output](../output/rdf-message-flow.md).
+
 Handbook reference: [https://eyereasoner.github.io/eyeling/HANDBOOK#rdf-message-log-replay-under--r](https://eyereasoner.github.io/eyeling/HANDBOOK#rdf-message-log-replay-under--r).
 
 The goal is to show, in plain language, how Eyeling can now read an RDF Message Log directly instead of asking the example data to describe its own message envelopes by hand.

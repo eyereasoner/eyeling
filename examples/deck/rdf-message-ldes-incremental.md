@@ -2,6 +2,8 @@
 
 ## Why this example exists
 
+Example files: [rules](../rdf-message-ldes-incremental.n3) · [message log input](../input/rdf-message-ldes-incremental.trig) · [golden output](../output/rdf-message-ldes-incremental.md).
+
 A long-running stream should not force a reasoner to reload and re-check all past data every time a new event arrives.
 
 This example shows the intended shape:
