@@ -1,0 +1,79 @@
+# =====================================
+# RDF Message Window Repair message log
+# =====================================
+#
+# This file is the data half of the runnable example:
+#
+#   eyeling -r examples/rdf-message-window-repair.n3 examples/input/rdf-message-window-repair.trig
+#
+# The log models a fire-door monitoring ABox stream. Message 1 is stable
+# configuration/TBox-like policy. Messages 2-5 are ordered ABox assertions. The
+# rules use a sliding window over the last three ABox messages and repair a noisy
+# contradiction by preferring the highest-priority assertion.
+
+VERSION "1.2-messages"
+PREFIX : <https://eyereasoner.github.io/eyeling/examples/rdf-message-window-repair#>
+PREFIX see: <https://example.org/see#>
+PREFIX in: <https://example.org/see/input#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+# Message 1: fixed stream policy and action vocabulary.
+:doorA a :FireDoor ;
+  :windowSize 3 ;
+  :repairPolicy :preferHigherPriority .
+
+:open :actionText "send a technician to inspect and close the fire door";
+  :stateText "open" .
+:closed :actionText "mark the fire compartment as sealed";
+  :stateText "closed" .
+
+in:run a see:InputDataset ;
+  see:name "rdf_message_window_repair" ;
+  see:title "RDF Message Window Repair" ;
+  see:sourceFile "examples/rdf-message-window-repair.n3" ;
+  see:description "A true RDF 1.2 Message Log for sliding-window repair of an open/closed fire-door inconsistency." ;
+  see:compiler "Eyeling RDF Message Log input" .
+
+MESSAGE
+
+# Message 2: the previous window starts with a normal closed reading. It expires
+# when the current window slides forward.
+:reading-001 a :DoorAssertion ;
+  :about :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" ;
+  :observedAt "2026-05-12T18:20:00Z"^^xsd:dateTime .
+
+MESSAGE
+
+# Message 3: overlapping evidence retained in the next window. The camera says
+# the door is open.
+:reading-002 a :DoorAssertion ;
+  :about :doorA ;
+  :doorState :open ;
+  :priority 1 ;
+  :source "corridor-camera" ;
+  :observedAt "2026-05-12T18:20:30Z"^^xsd:dateTime .
+
+MESSAGE
+
+# Message 4: another overlapping reading conflicts with message 3: the latch
+# says the same door is closed.
+:reading-003 a :DoorAssertion ;
+  :about :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" ;
+  :observedAt "2026-05-12T18:21:00Z"^^xsd:dateTime .
+
+MESSAGE
+
+# Message 5: entering high-priority safety-controller assertion. The preferred
+# repair keeps this assertion rather than the lower-priority conflicting fact.
+:reading-004 a :DoorAssertion ;
+  :about :doorA ;
+  :doorState :closed ;
+  :priority 3 ;
+  :source "safety-controller" ;
+  :observedAt "2026-05-12T18:21:30Z"^^xsd:dateTime .

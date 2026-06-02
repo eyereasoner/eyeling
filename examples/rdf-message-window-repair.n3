@@ -1,0 +1,163 @@
+# =========================
+# RDF Message Window Repair
+# =========================
+#
+# Run as:
+#
+#   eyeling -r examples/rdf-message-window-repair.n3 examples/input/rdf-message-window-repair.trig
+#
+# This example is inspired by incremental, inconsistency-resilient reasoning over
+# sliding ABox streams.  The input is a true RDF Message Log: each MESSAGE
+# boundary is parsed by Eyeling into an eymsg: envelope with one payload graph per
+# non-empty message.
+#
+# The rules below keep the message boundaries visible, select two overlapping
+# three-message windows, detect that the current window says the same fire door
+# is both open and closed, and repair the inconsistency by keeping the
+# higher-priority safety-controller assertion for the final materialization.
+
+@prefix : <https://eyereasoner.github.io/eyeling/examples/rdf-message-window-repair#>.
+@prefix eymsg: <https://eyereasoner.github.io/eyeling/vocab/message#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix list: <http://www.w3.org/2000/10/swap/list#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix string: <http://www.w3.org/2000/10/swap/string#>.
+
+# Eyeling's parser-level replay gives a static view of the message log: an
+# ordered list, explicit offsets, and next-envelope links.
+{
+  ?Stream a eymsg:RDFMessageStream;
+    eymsg:envelope ?Message.
+  ?Message a eymsg:MessageEnvelope;
+    eymsg:offset ?Offset.
+} => {
+  ?Message :boundaryExplicit true.
+  ?Message :offset ?Offset.
+}.
+
+# The first payload carries stream policy, like a fixed TBox/configuration that
+# is not itself part of the changing ABox window.
+{
+  ?Message eymsg:payloadGraph ?Payload.
+  ?Payload log:nameOf ?PayloadContext.
+  ?PayloadContext log:includes {
+    :doorA :windowSize ?WindowSize;
+      :repairPolicy :preferHigherPriority.
+    :open :actionText ?OpenAction;
+      :stateText ?OpenStateText.
+    :closed :actionText ?ClosedAction;
+      :stateText ?ClosedStateText.
+  }.
+} => {
+  :doorA :windowSize ?WindowSize;
+    :repairPolicy :preferHigherPriority.
+  :open :actionText ?OpenAction;
+    :stateText ?OpenStateText.
+  :closed :actionText ?ClosedAction;
+    :stateText ?ClosedStateText.
+}.
+
+# With five messages, message 1 is configuration and messages 2-5 are ABox
+# assertions.  The previous and current sliding windows overlap on messages 3
+# and 4; message 2 expires and message 5 enters.
+{
+  ?Stream a eymsg:RDFMessageStream;
+    eymsg:firstEnvelope ?M1.
+  ?M1 eymsg:nextEnvelope ?M2.
+  ?M2 eymsg:nextEnvelope ?M3.
+  ?M3 eymsg:nextEnvelope ?M4.
+  ?M4 eymsg:nextEnvelope ?M5.
+} => {
+  :previousWindow :contains ?M2, ?M3, ?M4.
+  :currentWindow :contains ?M3, ?M4, ?M5.
+  :windowSlide :expired ?M2;
+    :retained ?M3, ?M4;
+    :entered ?M5.
+}.
+
+# Inspect each message payload inside its own replayed RDF Message graph, then
+# lift only the ABox assertion metadata needed for window reasoning.
+{
+  ?Window :contains ?Message.
+  ?Message eymsg:payloadGraph ?Payload.
+  ?Payload log:nameOf ?PayloadContext.
+  ?PayloadContext log:includes {
+    ?Reading :about :doorA;
+      :doorState ?State;
+      :priority ?Priority;
+      :source ?Source.
+  }.
+} => {
+  ?Message :windowAssertion ?Reading;
+    :doorState ?State;
+    :priority ?Priority;
+    :source ?Source.
+  ?Window :hasDoorState ?State.
+}.
+
+# The current graph-level window is inconsistent: after raw materialization it
+# says the same door is both open and closed.
+{
+  :currentWindow :contains ?OpenMessage, ?ClosedMessage.
+  ?OpenMessage :doorState :open.
+  ?ClosedMessage :doorState :closed.
+} => {
+  :currentWindow :rawConflict :doorOpenAndClosed;
+    :inconsistentDoor :doorA.
+}.
+
+# Preferred repair: if a current-window assertion has higher priority than a
+# conflicting current-window assertion, keep the higher-priority assertion as the
+# one used by materialization.
+{
+  :currentWindow :contains ?PreferredMessage, ?RejectedMessage;
+    :rawConflict :doorOpenAndClosed.
+  ?PreferredMessage :doorState ?PreferredState;
+    :priority ?PreferredPriority;
+    :source ?PreferredSource.
+  ?RejectedMessage :doorState ?RejectedState;
+    :priority ?RejectedPriority.
+  ?PreferredState log:notEqualTo ?RejectedState.
+  ?PreferredPriority math:greaterThan ?RejectedPriority.
+} => {
+  :currentWindow :preferredRepairState ?PreferredState;
+    :preferredEvidence ?PreferredMessage;
+    :preferredSource ?PreferredSource;
+    :rejectsLowerPriority ?RejectedMessage;
+    :repairsInconsistency :doorOpenAndClosed;
+    :resolvedDoorState ?PreferredState.
+}.
+
+# Materialize the final operational conclusion from the repaired state rather
+# than from the inconsistent raw window.
+{
+  :currentWindow :preferredRepairState ?State.
+  ?State :actionText ?ActionText.
+} => {
+  :currentWindow :materializedActionText ?ActionText.
+}.
+
+# Emit a report only when the parser replay, sliding-window bookkeeping, raw
+# conflict, preferred repair, and final materialization were all derived.
+{
+  ?Stream a eymsg:RDFMessageStream;
+    eymsg:orderedEnvelopes ?Messages.
+  ?Messages list:length ?Count.
+  :doorA :windowSize ?WindowSize.
+  :previousWindow :contains ?PreviousOnly.
+  :windowSlide :expired ?PreviousOnly;
+    :retained ?Overlap1, ?Overlap2;
+    :entered ?Entered.
+  :currentWindow :rawConflict :doorOpenAndClosed;
+    :inconsistentDoor :doorA;
+    :preferredEvidence ?PreferredMessage;
+    :preferredSource ?PreferredSource;
+    :resolvedDoorState ?State;
+    :materializedActionText ?ActionText.
+  ?State :stateText ?StateText.
+  ?PreferredMessage :priority ?PreferredPriority.
+  ("# rdf-message-window-repair\n\n## Source files\n\n- [N3 rules](../rdf-message-window-repair.n3)\n- [Input RDF Message Log](../input/rdf-message-window-repair.trig)\n- [Story deck](../deck/rdf-message-window-repair.md)\n\n## Answer\nSliding-window RDF Message repair accepted: %d parser-replayed messages produced two overlapping %d-message ABox windows. The current window retained two envelopes from the previous window, expired one old door reading, and added one new safety-controller reading. Its raw graph-level materialization was inconsistent because doorA was both open and closed. The preferred repair kept the priority-%d assertion from %s, resolved the door state to %s, and materialized the action: %s.\n\n## Explanation\nThe RDF Message Log uses VERSION \\\"1.2-messages\\\" and MESSAGE delimiters. Eyeling parses those boundaries into eymsg: envelopes and payload graphs; the rules inspect each payload with log:includes rather than merging message bodies by hand. The example mirrors a sliding-window stream-reasoning pattern: when the window advances, overlapping message evidence is retained, an expired assertion leaves the window, an entering assertion can change the materialization, and a preferred repair fixes a noisy open/closed contradiction before the final action is produced." ?Count ?WindowSize ?PreferredPriority ?PreferredSource ?StateText ?ActionText) string:format ?Block.
+} => {
+  :rdfMessageWindowRepairExample log:outputString ?Block.
+  :rdfMessageWindowRepairExample :demonstrates :RDFMessageLogReplay, :SlidingWindow, :OverlappingWindows, :ABoxStream, :RawDoorInconsistency, :PreferredRepair, :IncrementalMaterialization.
+}.
