@@ -37,8 +37,12 @@
 { :GIRL a :FLOATS . } pe:why {
   { :GIRL a :FLOATS . }
     pe:by [ pe:rule "witch.n3"; pe:line 29 ];
-    pe:binding [ pe:var "x"; pe:value :DUCK ], [ pe:var "y"; pe:value :GIRL ];
-    pe:uses { :DUCK a :FLOATS . }, { :DUCK :SAMEWEIGHT :GIRL . }.
+    pe:binding
+      [ pe:var "x"; pe:value :DUCK ],
+      [ pe:var "y"; pe:value :GIRL ];
+    pe:uses
+      { :DUCK a :FLOATS . },
+      { :DUCK :SAMEWEIGHT :GIRL . }.
 
   { :DUCK a :FLOATS . }
     pe:by [ pe:fact "witch.n3"; pe:line 26 ].
@@ -55,8 +59,12 @@
 
   { :GIRL a :FLOATS . }
     pe:by [ pe:rule "witch.n3"; pe:line 29 ];
-    pe:binding [ pe:var "x"; pe:value :DUCK ], [ pe:var "y"; pe:value :GIRL ];
-    pe:uses { :DUCK a :FLOATS . }, { :DUCK :SAMEWEIGHT :GIRL . }.
+    pe:binding
+      [ pe:var "x"; pe:value :DUCK ],
+      [ pe:var "y"; pe:value :GIRL ];
+    pe:uses
+      { :DUCK a :FLOATS . },
+      { :DUCK :SAMEWEIGHT :GIRL . }.
 
   { :DUCK a :FLOATS . }
     pe:by [ pe:fact "witch.n3"; pe:line 26 ].
@@ -78,8 +86,12 @@
 
   { :GIRL a :FLOATS . }
     pe:by [ pe:rule "witch.n3"; pe:line 29 ];
-    pe:binding [ pe:var "x"; pe:value :DUCK ], [ pe:var "y"; pe:value :GIRL ];
-    pe:uses { :DUCK a :FLOATS . }, { :DUCK :SAMEWEIGHT :GIRL . }.
+    pe:binding
+      [ pe:var "x"; pe:value :DUCK ],
+      [ pe:var "y"; pe:value :GIRL ];
+    pe:uses
+      { :DUCK a :FLOATS . },
+      { :DUCK :SAMEWEIGHT :GIRL . }.
 
   { :DUCK a :FLOATS . }
     pe:by [ pe:fact "witch.n3"; pe:line 26 ].
@@ -92,7 +104,9 @@
   { :GIRL a :WITCH . }
     pe:by [ pe:rule "witch.n3"; pe:line 13 ];
     pe:binding [ pe:var "x"; pe:value :GIRL ];
-    pe:uses { :GIRL a :BURNS . }, { :GIRL a :WOMAN . }.
+    pe:uses
+      { :GIRL a :BURNS . },
+      { :GIRL a :WOMAN . }.
 
   { :GIRL a :BURNS . }
     pe:by [ pe:rule "witch.n3"; pe:line 19 ];
@@ -106,8 +120,12 @@
 
   { :GIRL a :FLOATS . }
     pe:by [ pe:rule "witch.n3"; pe:line 29 ];
-    pe:binding [ pe:var "x"; pe:value :DUCK ], [ pe:var "y"; pe:value :GIRL ];
-    pe:uses { :DUCK a :FLOATS . }, { :DUCK :SAMEWEIGHT :GIRL . }.
+    pe:binding
+      [ pe:var "x"; pe:value :DUCK ],
+      [ pe:var "y"; pe:value :GIRL ];
+    pe:uses
+      { :DUCK a :FLOATS . },
+      { :DUCK :SAMEWEIGHT :GIRL . }.
 
   { :DUCK a :FLOATS . }
     pe:by [ pe:fact "witch.n3"; pe:line 26 ].

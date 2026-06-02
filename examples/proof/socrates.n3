@@ -8,8 +8,13 @@
 { :Socrates a :Mortal . } pe:why {
   { :Socrates a :Mortal . }
     pe:by [ pe:rule "socrates.n3"; pe:line 14 ];
-    pe:binding [ pe:var "A"; pe:value :Human ], [ pe:var "B"; pe:value :Mortal ], [ pe:var "S"; pe:value :Socrates ];
-    pe:uses { :Socrates a :Human . }, { :Human rdfs:subClassOf :Mortal . }.
+    pe:binding
+      [ pe:var "A"; pe:value :Human ],
+      [ pe:var "B"; pe:value :Mortal ],
+      [ pe:var "S"; pe:value :Socrates ];
+    pe:uses
+      { :Socrates a :Human . },
+      { :Human rdfs:subClassOf :Mortal . }.
 
   { :Socrates a :Human . }
     pe:by [ pe:fact "socrates.n3"; pe:line 10 ].
