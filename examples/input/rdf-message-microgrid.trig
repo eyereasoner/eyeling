@@ -6,6 +6,9 @@
 #
 #   eyeling -r examples/rdf-message-microgrid.n3 examples/input/rdf-message-microgrid.trig
 #
+# See the handbook section on RDF Message Log replay under -r:
+#   https://eyereasoner.github.io/eyeling/HANDBOOK#rdf-message-log-replay-under--r
+#
 # The scene is a clinic operating as an islanded microgrid after a storm. The
 # data arrives as a true RDF Message Log: life-safety loads, power status,
 # flexible demand, and an empty heartbeat. Eyeling parses the MESSAGE boundaries

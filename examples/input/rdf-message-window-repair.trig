@@ -6,6 +6,9 @@
 #
 #   eyeling -r examples/rdf-message-window-repair.n3 examples/input/rdf-message-window-repair.trig
 #
+# See the handbook section on RDF Message Log replay under -r:
+#   https://eyereasoner.github.io/eyeling/HANDBOOK#rdf-message-log-replay-under--r
+#
 # The log models a fire-door monitoring ABox stream. Message 1 is stable
 # configuration/TBox-like policy. Messages 2-5 are ordered ABox assertions. The
 # rules use a sliding window over the last three ABox messages and repair a noisy
