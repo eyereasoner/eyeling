@@ -1,0 +1,26 @@
+@prefix : <http://example.org/socrates#> .
+@prefix pe: <https://eyereasoner.github.io/pe#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+:Socrates :is _:sk_0 .
+:Plato :is _:sk_1 .
+
+{ :Socrates :is _:sk_0 . } pe:why {
+  { :Socrates :is _:sk_0 . }
+    pe:by [ pe:rule "existential-rule.n3"; pe:line 13 ];
+    pe:binding [ pe:var "S"; pe:value :Socrates ];
+    pe:uses { :Socrates a :Human . }.
+
+  { :Socrates a :Human . }
+    pe:by [ pe:fact "existential-rule.n3"; pe:line 9 ].
+}.
+
+{ :Plato :is _:sk_1 . } pe:why {
+  { :Plato :is _:sk_1 . }
+    pe:by [ pe:rule "existential-rule.n3"; pe:line 13 ];
+    pe:binding [ pe:var "S"; pe:value :Plato ];
+    pe:uses { :Plato a :Human . }.
+
+  { :Plato a :Human . }
+    pe:by [ pe:fact "existential-rule.n3"; pe:line 10 ].
+}.

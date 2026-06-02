@@ -1,0 +1,196 @@
+@prefix : <http://examples.org/#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix pe: <https://eyereasoner.github.io/pe#> .
+
+:result :sameInputByCompositeInjectivity (:h :a :b) .
+:result :sameInputByCompositeInjectivity (:h :b :a) .
+
+{ :result :sameInputByCompositeInjectivity (:h :a :b) . } pe:why {
+  { :result :sameInputByCompositeInjectivity (:h :a :b) . }
+    pe:by [ pe:rule "composition-of-injective-functions-is-injective.n3"; pe:line 234 ];
+    pe:binding
+      [ pe:var "h"; pe:value :h ],
+      [ pe:var "x"; pe:value :a ],
+      [ pe:var "y"; pe:value :b ];
+    pe:uses
+      { (:h :a :b) :sameInputUnderEqualCompositeOutput true . },
+      { :a log:notEqualTo :b . }.
+
+  { (:h :a :b) :sameInputUnderEqualCompositeOutput true . }
+    pe:by [ pe:rule "composition-of-injective-functions-is-injective.n3"; pe:line 169 ];
+    pe:binding
+      [ pe:var "f"; pe:value :f ],
+      [ pe:var "fx"; pe:value :p ],
+      [ pe:var "fy"; pe:value :q ],
+      [ pe:var "g"; pe:value :g ],
+      [ pe:var "h"; pe:value :h ],
+      [ pe:var "u"; pe:value :r ],
+      [ pe:var "v"; pe:value :r ],
+      [ pe:var "x"; pe:value :a ],
+      [ pe:var "y"; pe:value :b ];
+    pe:uses
+      { :h :compositeOf (:g :f) . },
+      { :f :injective true . },
+      { :g :injective true . },
+      { (:f :a) :app :p . },
+      { (:f :b) :app :q . },
+      { (:g :p) :app :r . },
+      { (:g :q) :app :r . },
+      { (:r :r) :sameTerm true . },
+      { (:a :b) :sameTerm true . }.
+
+  { :h :compositeOf (:g :f) . }
+    pe:by [ pe:fact "composition-of-injective-functions-is-injective.n3"; pe:line 219 ].
+
+  { :f :injective true . }
+    pe:by [ pe:fact "composition-of-injective-functions-is-injective.n3"; pe:line 216 ].
+
+  { :g :injective true . }
+    pe:by [ pe:fact "composition-of-injective-functions-is-injective.n3"; pe:line 217 ].
+
+  { (:f :a) :app :p . }
+    pe:by [ pe:fact "composition-of-injective-functions-is-injective.n3"; pe:line 221 ].
+
+  { (:f :b) :app :q . }
+    pe:by [ pe:fact "composition-of-injective-functions-is-injective.n3"; pe:line 222 ].
+
+  { (:g :p) :app :r . }
+    pe:by [ pe:fact "composition-of-injective-functions-is-injective.n3"; pe:line 224 ].
+
+  { (:g :q) :app :r . }
+    pe:by [ pe:fact "composition-of-injective-functions-is-injective.n3"; pe:line 225 ].
+
+  { (:r :r) :sameTerm true . }
+    pe:by [ pe:rule "composition-of-injective-functions-is-injective.n3"; pe:line 77 ];
+    pe:binding [ pe:var "z"; pe:value :r ];
+    pe:uses { :r :inZ true . }.
+
+  { :r :inZ true . }
+    pe:by [ pe:fact "composition-of-injective-functions-is-injective.n3"; pe:line 214 ].
+
+  { (:a :b) :sameTerm true . }
+    pe:by [ pe:rule "composition-of-injective-functions-is-injective.n3"; pe:line 117 ];
+    pe:binding
+      [ pe:var "f"; pe:value :f ],
+      [ pe:var "u"; pe:value :p ],
+      [ pe:var "v"; pe:value :q ],
+      [ pe:var "x"; pe:value :a ],
+      [ pe:var "y"; pe:value :b ];
+    pe:uses
+      { :f :injective true . },
+      { (:f :a) :app :p . },
+      { (:f :b) :app :q . },
+      { (:p :q) :sameTerm true . }.
+
+  { (:p :q) :sameTerm true . }
+    pe:by [ pe:rule "composition-of-injective-functions-is-injective.n3"; pe:line 117 ];
+    pe:binding
+      [ pe:var "f"; pe:value :g ],
+      [ pe:var "u"; pe:value :r ],
+      [ pe:var "v"; pe:value :r ],
+      [ pe:var "x"; pe:value :p ],
+      [ pe:var "y"; pe:value :q ];
+    pe:uses
+      { :g :injective true . },
+      { (:g :p) :app :r . },
+      { (:g :q) :app :r . },
+      { (:r :r) :sameTerm true . }.
+
+  { :a log:notEqualTo :b . }
+    pe:by [ pe:builtin log:notEqualTo ].
+}.
+
+{ :result :sameInputByCompositeInjectivity (:h :b :a) . } pe:why {
+  { :result :sameInputByCompositeInjectivity (:h :b :a) . }
+    pe:by [ pe:rule "composition-of-injective-functions-is-injective.n3"; pe:line 234 ];
+    pe:binding
+      [ pe:var "h"; pe:value :h ],
+      [ pe:var "x"; pe:value :b ],
+      [ pe:var "y"; pe:value :a ];
+    pe:uses
+      { (:h :b :a) :sameInputUnderEqualCompositeOutput true . },
+      { :b log:notEqualTo :a . }.
+
+  { (:h :b :a) :sameInputUnderEqualCompositeOutput true . }
+    pe:by [ pe:rule "composition-of-injective-functions-is-injective.n3"; pe:line 169 ];
+    pe:binding
+      [ pe:var "f"; pe:value :f ],
+      [ pe:var "fx"; pe:value :q ],
+      [ pe:var "fy"; pe:value :p ],
+      [ pe:var "g"; pe:value :g ],
+      [ pe:var "h"; pe:value :h ],
+      [ pe:var "u"; pe:value :r ],
+      [ pe:var "v"; pe:value :r ],
+      [ pe:var "x"; pe:value :b ],
+      [ pe:var "y"; pe:value :a ];
+    pe:uses
+      { :h :compositeOf (:g :f) . },
+      { :f :injective true . },
+      { :g :injective true . },
+      { (:f :b) :app :q . },
+      { (:f :a) :app :p . },
+      { (:g :q) :app :r . },
+      { (:g :p) :app :r . },
+      { (:r :r) :sameTerm true . },
+      { (:b :a) :sameTerm true . }.
+
+  { :h :compositeOf (:g :f) . }
+    pe:by [ pe:fact "composition-of-injective-functions-is-injective.n3"; pe:line 219 ].
+
+  { :f :injective true . }
+    pe:by [ pe:fact "composition-of-injective-functions-is-injective.n3"; pe:line 216 ].
+
+  { :g :injective true . }
+    pe:by [ pe:fact "composition-of-injective-functions-is-injective.n3"; pe:line 217 ].
+
+  { (:f :b) :app :q . }
+    pe:by [ pe:fact "composition-of-injective-functions-is-injective.n3"; pe:line 222 ].
+
+  { (:f :a) :app :p . }
+    pe:by [ pe:fact "composition-of-injective-functions-is-injective.n3"; pe:line 221 ].
+
+  { (:g :q) :app :r . }
+    pe:by [ pe:fact "composition-of-injective-functions-is-injective.n3"; pe:line 225 ].
+
+  { (:g :p) :app :r . }
+    pe:by [ pe:fact "composition-of-injective-functions-is-injective.n3"; pe:line 224 ].
+
+  { (:r :r) :sameTerm true . }
+    pe:by [ pe:rule "composition-of-injective-functions-is-injective.n3"; pe:line 77 ];
+    pe:binding [ pe:var "z"; pe:value :r ];
+    pe:uses { :r :inZ true . }.
+
+  { :r :inZ true . }
+    pe:by [ pe:fact "composition-of-injective-functions-is-injective.n3"; pe:line 214 ].
+
+  { (:b :a) :sameTerm true . }
+    pe:by [ pe:rule "composition-of-injective-functions-is-injective.n3"; pe:line 117 ];
+    pe:binding
+      [ pe:var "f"; pe:value :f ],
+      [ pe:var "u"; pe:value :q ],
+      [ pe:var "v"; pe:value :p ],
+      [ pe:var "x"; pe:value :b ],
+      [ pe:var "y"; pe:value :a ];
+    pe:uses
+      { :f :injective true . },
+      { (:f :b) :app :q . },
+      { (:f :a) :app :p . },
+      { (:q :p) :sameTerm true . }.
+
+  { (:q :p) :sameTerm true . }
+    pe:by [ pe:rule "composition-of-injective-functions-is-injective.n3"; pe:line 117 ];
+    pe:binding
+      [ pe:var "f"; pe:value :g ],
+      [ pe:var "u"; pe:value :r ],
+      [ pe:var "v"; pe:value :r ],
+      [ pe:var "x"; pe:value :q ],
+      [ pe:var "y"; pe:value :p ];
+    pe:uses
+      { :g :injective true . },
+      { (:g :q) :app :r . },
+      { (:g :p) :app :r . },
+      { (:r :r) :sameTerm true . }.
+
+  { :b log:notEqualTo :a . }
+    pe:by [ pe:builtin log:notEqualTo ].
+}.

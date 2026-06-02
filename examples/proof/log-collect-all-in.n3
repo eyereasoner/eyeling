@@ -1,0 +1,152 @@
+@prefix : <http://example.org/#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix pe: <https://eyereasoner.github.io/pe#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+
+:result1 :is ("Huey" "Dewey" "Louie") .
+:result2 :is (("Huey") ("Dewey") ("Louie")) .
+:result3 :is ("Huey" "Dewey") .
+
+{ :result1 :is ("Huey" "Dewey" "Louie") . } pe:why {
+  { :result1 :is ("Huey" "Dewey" "Louie") . }
+    pe:by [ pe:rule "log-collect-all-in.n3"; pe:line 13 ];
+    pe:binding
+      [ pe:var "allParams"; pe:value ("Huey" "Dewey" "Louie") ],
+      [ pe:var "filteredParams"; pe:value ("Huey" "Dewey") ],
+      [ pe:var "nestedParams"; pe:value (("Huey") ("Dewey") ("Louie")) ];
+    pe:uses
+      {
+          (?param {
+              :Let :param ?param .
+          } ("Huey" "Dewey" "Louie")) log:collectAllIn ?_b1 .
+      },
+      {
+          ((?param) {
+              :Let :param ?param .
+          } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?_b1 .
+      },
+      {
+          (?param {
+              :Let :param ?param .
+              ?param string:lessThan "Louie" .
+          } ("Huey" "Dewey")) log:collectAllIn ?_b1 .
+      }.
+
+  {
+    (?param {
+        :Let :param ?param .
+    } ("Huey" "Dewey" "Louie")) log:collectAllIn ?_b1 .
+}
+    pe:by [ pe:builtin log:collectAllIn ].
+
+  {
+    ((?param) {
+        :Let :param ?param .
+    } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?_b1 .
+}
+    pe:by [ pe:builtin log:collectAllIn ].
+
+  {
+    (?param {
+        :Let :param ?param .
+        ?param string:lessThan "Louie" .
+    } ("Huey" "Dewey")) log:collectAllIn ?_b1 .
+}
+    pe:by [ pe:builtin log:collectAllIn ].
+}.
+
+{ :result2 :is (("Huey") ("Dewey") ("Louie")) . } pe:why {
+  { :result2 :is (("Huey") ("Dewey") ("Louie")) . }
+    pe:by [ pe:rule "log-collect-all-in.n3"; pe:line 13 ];
+    pe:binding
+      [ pe:var "allParams"; pe:value ("Huey" "Dewey" "Louie") ],
+      [ pe:var "filteredParams"; pe:value ("Huey" "Dewey") ],
+      [ pe:var "nestedParams"; pe:value (("Huey") ("Dewey") ("Louie")) ];
+    pe:uses
+      {
+          (?param {
+              :Let :param ?param .
+          } ("Huey" "Dewey" "Louie")) log:collectAllIn ?_b1 .
+      },
+      {
+          ((?param) {
+              :Let :param ?param .
+          } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?_b1 .
+      },
+      {
+          (?param {
+              :Let :param ?param .
+              ?param string:lessThan "Louie" .
+          } ("Huey" "Dewey")) log:collectAllIn ?_b1 .
+      }.
+
+  {
+    (?param {
+        :Let :param ?param .
+    } ("Huey" "Dewey" "Louie")) log:collectAllIn ?_b1 .
+}
+    pe:by [ pe:builtin log:collectAllIn ].
+
+  {
+    ((?param) {
+        :Let :param ?param .
+    } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?_b1 .
+}
+    pe:by [ pe:builtin log:collectAllIn ].
+
+  {
+    (?param {
+        :Let :param ?param .
+        ?param string:lessThan "Louie" .
+    } ("Huey" "Dewey")) log:collectAllIn ?_b1 .
+}
+    pe:by [ pe:builtin log:collectAllIn ].
+}.
+
+{ :result3 :is ("Huey" "Dewey") . } pe:why {
+  { :result3 :is ("Huey" "Dewey") . }
+    pe:by [ pe:rule "log-collect-all-in.n3"; pe:line 13 ];
+    pe:binding
+      [ pe:var "allParams"; pe:value ("Huey" "Dewey" "Louie") ],
+      [ pe:var "filteredParams"; pe:value ("Huey" "Dewey") ],
+      [ pe:var "nestedParams"; pe:value (("Huey") ("Dewey") ("Louie")) ];
+    pe:uses
+      {
+          (?param {
+              :Let :param ?param .
+          } ("Huey" "Dewey" "Louie")) log:collectAllIn ?_b1 .
+      },
+      {
+          ((?param) {
+              :Let :param ?param .
+          } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?_b1 .
+      },
+      {
+          (?param {
+              :Let :param ?param .
+              ?param string:lessThan "Louie" .
+          } ("Huey" "Dewey")) log:collectAllIn ?_b1 .
+      }.
+
+  {
+    (?param {
+        :Let :param ?param .
+    } ("Huey" "Dewey" "Louie")) log:collectAllIn ?_b1 .
+}
+    pe:by [ pe:builtin log:collectAllIn ].
+
+  {
+    ((?param) {
+        :Let :param ?param .
+    } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?_b1 .
+}
+    pe:by [ pe:builtin log:collectAllIn ].
+
+  {
+    (?param {
+        :Let :param ?param .
+        ?param string:lessThan "Louie" .
+    } ("Huey" "Dewey")) log:collectAllIn ?_b1 .
+}
+    pe:by [ pe:builtin log:collectAllIn ].
+}.
