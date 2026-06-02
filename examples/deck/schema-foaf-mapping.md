@@ -1,6 +1,6 @@
 # Mapping two data models (beginner-friendly)
 
-[Start with the source](../schema-foaf-mapping.n3), then compare the generated [golden output](../output/schema-foaf-mapping.n3).
+[Start with the source](../schema-foaf-mapping.n3) to see the vocabulary mapping rules; the [golden output](../output/schema-foaf-mapping.n3) shows the FOAF-shaped facts derived from the Schema.org-shaped input.
 
 When people say “map two data models,” they mean:
 

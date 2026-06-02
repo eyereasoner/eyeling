@@ -1,6 +1,6 @@
 # Faltings’ theorem (emulated) in Notation3: a genus‑2 curve over Q
 
-[Start with the source](../faltings-genus2-finiteness.n3), then compare the generated [golden output](../output/faltings-genus2-finiteness.n3).
+[Start with the source](../faltings-genus2-finiteness.n3) for the emulated theorem statement and inference rules; the [golden output](../output/faltings-genus2-finiteness.n3) shows the finite-rational-points conclusion produced by the example.
 
 The goal is to show—at a friendly, “wide audience” level—how an N3 file can _model_ a famous mathematical implication:
 

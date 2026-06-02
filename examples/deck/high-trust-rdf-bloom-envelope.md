@@ -1,6 +1,6 @@
 # High-trust RDF graph lookup with a decimal certificate
 
-[Start with the source](../high-trust-rdf-bloom-envelope.n3), then compare the generated [golden output](../output/high-trust-rdf-bloom-envelope.n3).
+[Start with the source](../high-trust-rdf-bloom-envelope.n3) for the Bloom-filter certificate and arithmetic checks; the [golden output](../output/high-trust-rdf-bloom-envelope.n3) shows the trust decision that Eyeling derives.
 
 The goal is to show that **advanced engineering claims can be expressed and checked in N3**, even when the claim involves a **transcendental quantity** such as `exp(-k*n/m)`.
 

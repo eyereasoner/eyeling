@@ -2,7 +2,7 @@
 
 ## Ranked, explainable output from machine-readable “Terms of Service”
 
-[Start with the source](../odrl-dpv-risk-ranked.n3), then compare the generated [golden output](../output/odrl-dpv-risk-ranked.md).
+[Start with the source](../odrl-dpv-risk-ranked.n3) to inspect the machine-readable policy and risk rules; the [golden output](../output/odrl-dpv-risk-ranked.md) shows the ranked explanation produced from them.
 
 ---
 

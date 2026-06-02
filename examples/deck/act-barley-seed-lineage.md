@@ -1,6 +1,6 @@
 # ACT barley seed lineage — can and can't
 
-[Start with the source](../act-barley-seed-lineage.n3), then compare the generated [golden output](../output/act-barley-seed-lineage.md).
+[Start with the source](../act-barley-seed-lineage.n3) to see the ACT model itself; the [golden output](../output/act-barley-seed-lineage.md) shows the lineage conclusions that Eyeling derives from it.
 
 The aim is to show how **Applied Constructor Theory** can describe a concrete biological case in Notation3 while doing both sides of Chiara Marletto’s formula:
 
