@@ -212,6 +212,8 @@ function runExampleToFile({ root, examplesDir, eyelingJsPath, nodePath, file, ge
 
 function main() {
   const suiteStart = Date.now();
+  const proofOnly = process.argv.includes('--proof-only');
+
 
   // test/examples.test.js -> repo root is one level up
   const root = path.resolve(__dirname, '..');
@@ -230,11 +232,13 @@ function main() {
     process.exit(1);
   }
 
-  const files = fs
-    .readdirSync(examplesDir)
-    .filter((f) => f.endsWith('.n3'))
-    .sort((a, b) => a.localeCompare(b));
-  const proofFiles = fs.existsSync(proofDir)
+  const files = proofOnly
+    ? []
+    : fs
+        .readdirSync(examplesDir)
+        .filter((f) => f.endsWith('.n3'))
+        .sort((a, b) => a.localeCompare(b));
+  const proofFiles = proofOnly && fs.existsSync(proofDir)
     ? fs
         .readdirSync(proofDir)
         .filter((f) => f.endsWith('.n3') && fs.existsSync(path.join(examplesDir, f)))
@@ -242,11 +246,13 @@ function main() {
     : [];
   const totalTests = files.length + proofFiles.length;
 
-  info(`Running ${files.length} examples tests and ${proofFiles.length} proof golden tests`);
+  info(proofOnly
+    ? `Running ${proofFiles.length} proof golden tests`
+    : `Running ${files.length} examples tests`);
   console.log(`${C.dim}${getEyelingVersion(nodePath, eyelingJsPath, root)}; node ${process.version}${C.n}`);
 
-  if (files.length === 0) {
-    ok('No .n3 files found in examples/');
+  if (totalTests === 0) {
+    ok(proofOnly ? 'No proof goldens found in examples/proof/' : 'No .n3 files found in examples/');
     process.exit(0);
   }
 
@@ -256,6 +262,7 @@ function main() {
   // Pretty, stable numbering (e.g., 001..100 when running 100 tests)
   const idxWidth = String(files.length).length;
   const proofIdxWidth = String(Math.max(proofFiles.length, 1)).length;
+  const proofLabel = proofOnly ? '' : 'proof ';
 
   for (let i = 0; i < files.length; i++) {
     const idx = String(i + 1).padStart(idxWidth, '0');
@@ -357,7 +364,7 @@ function main() {
       n3Text = fs.readFileSync(filePath, 'utf8');
     } catch (e) {
       const ms = Date.now() - start;
-      fail(`proof ${idx} ${file} ${msTag(ms)}`);
+      fail(`${proofLabel}${idx} ${file} ${msTag(ms)}`);
       fail(`Cannot read proof input: ${e.message}`);
       failed++;
       continue;
@@ -381,13 +388,13 @@ function main() {
 
     if (diffOk && rcOk) {
       if (expectedRc === 0) {
-        ok(`proof ${idx} ${file} ${msTag(ms)}`);
+        ok(`${proofLabel}${idx} ${file} ${msTag(ms)}`);
       } else {
-        ok(`proof ${idx} ${file} (expected exit ${expectedRc}) ${msTag(ms)}`);
+        ok(`${proofLabel}${idx} ${file} (expected exit ${expectedRc}) ${msTag(ms)}`);
       }
       passed++;
     } else {
-      fail(`proof ${idx} ${file} ${msTag(ms)}`);
+      fail(`${proofLabel}${idx} ${file} ${msTag(ms)}`);
       if (!rcOk) {
         fail(`Exit code ${rc}, expected ${expectedRc}`);
       }
@@ -410,10 +417,14 @@ function main() {
   info(`Total elapsed: ${suiteMs} ms (${(suiteMs / 1000).toFixed(2)} s)`);
 
   if (failed === 0) {
-    ok(`All examples tests passed (${passed}/${totalTests})`);
+    ok(proofOnly
+      ? `All proof golden tests passed (${passed}/${totalTests})`
+      : `All examples tests passed (${passed}/${totalTests})`);
     process.exit(0);
   } else {
-    fail(`Some examples tests failed (${passed}/${totalTests})`);
+    fail(proofOnly
+      ? `Some proof golden tests failed (${passed}/${totalTests})`
+      : `Some examples tests failed (${passed}/${totalTests})`);
     // keep exit code 2 (matches historical behavior of examples/test)
     process.exit(2);
   }
