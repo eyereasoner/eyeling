@@ -1,0 +1,564 @@
+# =========================================
+# RDF Message LDES Incremental Repair input
+# =========================================
+#
+# This file is the data half of the runnable example:
+#
+#   eyeling -r examples/rdf-message-ldes-incremental.n3 examples/input/rdf-message-ldes-incremental.trig
+#
+# See the handbook section on RDF Message Log replay under -r:
+#   https://eyereasoner.github.io/eyeling/HANDBOOK#rdf-message-log-replay-under--r
+#
+# It serializes one LDES configuration message followed by forty append-only
+# LDES member messages.  A consumer checkpoint at sequence 34 lets the N3 rules
+# skip the large committed prefix and repair only the new tail.
+
+VERSION "1.2-messages"
+PREFIX : <https://eyereasoner.github.io/eyeling/examples/rdf-message-ldes-incremental#>
+PREFIX ldes: <https://w3id.org/ldes#>
+PREFIX tree: <https://w3id.org/tree#>
+PREFIX see: <https://example.org/see#>
+PREFIX in: <https://example.org/see/input#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+# Message 1: stable LDES stream metadata and consumer checkpoint.
+:doorStream a ldes:EventStream ;
+  ldes:timestampPath :observedAt ;
+  ldes:sequencePath :sequence ;
+  tree:view :doorStreamPage ;
+  :lastCommittedSequence 34 ;
+  :currentWindowFromSequence 35 ;
+  :windowSize 6 ;
+  :repairPolicy :preferHigherPriority .
+
+:open :stateText "open" ;
+  :actionText "dispatch an operator to inspect and close the door" .
+:closed :stateText "closed" ;
+  :actionText "keep the compartment sealed and continue monitoring" .
+
+in:run a see:InputDataset ;
+  see:name "rdf_message_ldes_incremental" ;
+  see:title "RDF Message LDES Incremental Repair" ;
+  see:sourceFile "examples/rdf-message-ldes-incremental.n3" ;
+  see:description "Forty LDES members serialized as RDF Messages; the rules use a sequence bookmark to reason only over the new tail." ;
+  see:compiler "Eyeling RDF Message Log input" .
+
+MESSAGE
+
+# Message 2: historical LDES member 001, already committed by the checkpoint.
+:doorStream tree:member :obs-001 .
+
+:obs-001 a :DoorObservation ;
+  :sequence 1 ;
+  :observedAt "2026-05-12T18:18:00Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 3: historical LDES member 002, already committed by the checkpoint.
+:doorStream tree:member :obs-002 .
+
+:obs-002 a :DoorObservation ;
+  :sequence 2 ;
+  :observedAt "2026-05-12T18:18:30Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 4: historical LDES member 003, already committed by the checkpoint.
+:doorStream tree:member :obs-003 .
+
+:obs-003 a :DoorObservation ;
+  :sequence 3 ;
+  :observedAt "2026-05-12T18:19:00Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 5: historical LDES member 004, already committed by the checkpoint.
+:doorStream tree:member :obs-004 .
+
+:obs-004 a :DoorObservation ;
+  :sequence 4 ;
+  :observedAt "2026-05-12T18:19:30Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 6: historical LDES member 005, already committed by the checkpoint.
+:doorStream tree:member :obs-005 .
+
+:obs-005 a :DoorObservation ;
+  :sequence 5 ;
+  :observedAt "2026-05-12T18:20:00Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 7: historical LDES member 006, already committed by the checkpoint.
+:doorStream tree:member :obs-006 .
+
+:obs-006 a :DoorObservation ;
+  :sequence 6 ;
+  :observedAt "2026-05-12T18:20:30Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 8: historical LDES member 007, already committed by the checkpoint.
+:doorStream tree:member :obs-007 .
+
+:obs-007 a :DoorObservation ;
+  :sequence 7 ;
+  :observedAt "2026-05-12T18:21:00Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :open ;
+  :priority 1 ;
+  :source "maintenance-camera" .
+
+MESSAGE
+
+# Message 9: historical LDES member 008, already committed by the checkpoint.
+:doorStream tree:member :obs-008 .
+
+:obs-008 a :DoorObservation ;
+  :sequence 8 ;
+  :observedAt "2026-05-12T18:21:30Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 10: historical LDES member 009, already committed by the checkpoint.
+:doorStream tree:member :obs-009 .
+
+:obs-009 a :DoorObservation ;
+  :sequence 9 ;
+  :observedAt "2026-05-12T18:22:00Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 11: historical LDES member 010, already committed by the checkpoint.
+:doorStream tree:member :obs-010 .
+
+:obs-010 a :DoorObservation ;
+  :sequence 10 ;
+  :observedAt "2026-05-12T18:22:30Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 12: historical LDES member 011, already committed by the checkpoint.
+:doorStream tree:member :obs-011 .
+
+:obs-011 a :DoorObservation ;
+  :sequence 11 ;
+  :observedAt "2026-05-12T18:23:00Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 13: historical LDES member 012, already committed by the checkpoint.
+:doorStream tree:member :obs-012 .
+
+:obs-012 a :DoorObservation ;
+  :sequence 12 ;
+  :observedAt "2026-05-12T18:23:30Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 14: historical LDES member 013, already committed by the checkpoint.
+:doorStream tree:member :obs-013 .
+
+:obs-013 a :DoorObservation ;
+  :sequence 13 ;
+  :observedAt "2026-05-12T18:24:00Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 15: historical LDES member 014, already committed by the checkpoint.
+:doorStream tree:member :obs-014 .
+
+:obs-014 a :DoorObservation ;
+  :sequence 14 ;
+  :observedAt "2026-05-12T18:24:30Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :open ;
+  :priority 1 ;
+  :source "maintenance-camera" .
+
+MESSAGE
+
+# Message 16: historical LDES member 015, already committed by the checkpoint.
+:doorStream tree:member :obs-015 .
+
+:obs-015 a :DoorObservation ;
+  :sequence 15 ;
+  :observedAt "2026-05-12T18:25:00Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 17: historical LDES member 016, already committed by the checkpoint.
+:doorStream tree:member :obs-016 .
+
+:obs-016 a :DoorObservation ;
+  :sequence 16 ;
+  :observedAt "2026-05-12T18:25:30Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 18: historical LDES member 017, already committed by the checkpoint.
+:doorStream tree:member :obs-017 .
+
+:obs-017 a :DoorObservation ;
+  :sequence 17 ;
+  :observedAt "2026-05-12T18:26:00Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 19: historical LDES member 018, already committed by the checkpoint.
+:doorStream tree:member :obs-018 .
+
+:obs-018 a :DoorObservation ;
+  :sequence 18 ;
+  :observedAt "2026-05-12T18:26:30Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 20: historical LDES member 019, already committed by the checkpoint.
+:doorStream tree:member :obs-019 .
+
+:obs-019 a :DoorObservation ;
+  :sequence 19 ;
+  :observedAt "2026-05-12T18:27:00Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 21: historical LDES member 020, already committed by the checkpoint.
+:doorStream tree:member :obs-020 .
+
+:obs-020 a :DoorObservation ;
+  :sequence 20 ;
+  :observedAt "2026-05-12T18:27:30Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 22: historical LDES member 021, already committed by the checkpoint.
+:doorStream tree:member :obs-021 .
+
+:obs-021 a :DoorObservation ;
+  :sequence 21 ;
+  :observedAt "2026-05-12T18:28:00Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :open ;
+  :priority 1 ;
+  :source "maintenance-camera" .
+
+MESSAGE
+
+# Message 23: historical LDES member 022, already committed by the checkpoint.
+:doorStream tree:member :obs-022 .
+
+:obs-022 a :DoorObservation ;
+  :sequence 22 ;
+  :observedAt "2026-05-12T18:28:30Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 24: historical LDES member 023, already committed by the checkpoint.
+:doorStream tree:member :obs-023 .
+
+:obs-023 a :DoorObservation ;
+  :sequence 23 ;
+  :observedAt "2026-05-12T18:29:00Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 25: historical LDES member 024, already committed by the checkpoint.
+:doorStream tree:member :obs-024 .
+
+:obs-024 a :DoorObservation ;
+  :sequence 24 ;
+  :observedAt "2026-05-12T18:29:30Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 26: historical LDES member 025, already committed by the checkpoint.
+:doorStream tree:member :obs-025 .
+
+:obs-025 a :DoorObservation ;
+  :sequence 25 ;
+  :observedAt "2026-05-12T18:30:00Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 27: historical LDES member 026, already committed by the checkpoint.
+:doorStream tree:member :obs-026 .
+
+:obs-026 a :DoorObservation ;
+  :sequence 26 ;
+  :observedAt "2026-05-12T18:30:30Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 28: historical LDES member 027, already committed by the checkpoint.
+:doorStream tree:member :obs-027 .
+
+:obs-027 a :DoorObservation ;
+  :sequence 27 ;
+  :observedAt "2026-05-12T18:31:00Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 29: historical LDES member 028, already committed by the checkpoint.
+:doorStream tree:member :obs-028 .
+
+:obs-028 a :DoorObservation ;
+  :sequence 28 ;
+  :observedAt "2026-05-12T18:31:30Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :open ;
+  :priority 1 ;
+  :source "maintenance-camera" .
+
+MESSAGE
+
+# Message 30: historical LDES member 029, already committed by the checkpoint.
+:doorStream tree:member :obs-029 .
+
+:obs-029 a :DoorObservation ;
+  :sequence 29 ;
+  :observedAt "2026-05-12T18:32:00Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 31: historical LDES member 030, already committed by the checkpoint.
+:doorStream tree:member :obs-030 .
+
+:obs-030 a :DoorObservation ;
+  :sequence 30 ;
+  :observedAt "2026-05-12T18:32:30Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 32: historical LDES member 031, already committed by the checkpoint.
+:doorStream tree:member :obs-031 .
+
+:obs-031 a :DoorObservation ;
+  :sequence 31 ;
+  :observedAt "2026-05-12T18:33:00Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 33: historical LDES member 032, already committed by the checkpoint.
+:doorStream tree:member :obs-032 .
+
+:obs-032 a :DoorObservation ;
+  :sequence 32 ;
+  :observedAt "2026-05-12T18:33:30Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :open ;
+  :priority 1 ;
+  :source "maintenance-camera" .
+
+MESSAGE
+
+# Message 34: historical LDES member 033, already committed by the checkpoint.
+:doorStream tree:member :obs-033 .
+
+:obs-033 a :DoorObservation ;
+  :sequence 33 ;
+  :observedAt "2026-05-12T18:34:00Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 35: historical LDES member 034, already committed by the checkpoint.
+:doorStream tree:member :obs-034 .
+
+:obs-034 a :DoorObservation ;
+  :sequence 34 ;
+  :observedAt "2026-05-12T18:34:30Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 36: first new tail member after the LDES checkpoint.
+:doorStream tree:member :obs-035 .
+
+:obs-035 a :DoorObservation ;
+  :sequence 35 ;
+  :observedAt "2026-05-12T18:35:00Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 37: new tail LDES member 036.
+:doorStream tree:member :obs-036 .
+
+:obs-036 a :DoorObservation ;
+  :sequence 36 ;
+  :observedAt "2026-05-12T18:35:30Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 38: new tail LDES member 037.
+:doorStream tree:member :obs-037 .
+
+:obs-037 a :DoorObservation ;
+  :sequence 37 ;
+  :observedAt "2026-05-12T18:36:00Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :open ;
+  :priority 1 ;
+  :source "corridor-camera" .
+
+MESSAGE
+
+# Message 39: new tail LDES member 038.
+:doorStream tree:member :obs-038 .
+
+:obs-038 a :DoorObservation ;
+  :sequence 38 ;
+  :observedAt "2026-05-12T18:36:30Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :open ;
+  :priority 1 ;
+  :source "thermal-edge-camera" .
+
+MESSAGE
+
+# Message 40: new tail LDES member 039.
+:doorStream tree:member :obs-039 .
+
+:obs-039 a :DoorObservation ;
+  :sequence 39 ;
+  :observedAt "2026-05-12T18:37:00Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 1 ;
+  :source "hallway-latch" .
+
+MESSAGE
+
+# Message 41: high-priority tail member used by the preferred repair.
+:doorStream tree:member :obs-040 .
+
+:obs-040 a :DoorObservation ;
+  :sequence 40 ;
+  :observedAt "2026-05-12T18:37:30Z"^^xsd:dateTime ;
+  :door :doorA ;
+  :doorState :closed ;
+  :priority 5 ;
+  :source "safety-controller" .

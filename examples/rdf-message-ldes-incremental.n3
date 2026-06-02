@@ -1,0 +1,231 @@
+# =====================================
+# RDF Message LDES Incremental Repair
+# =====================================
+#
+# Run as:
+#
+#   eyeling -r examples/rdf-message-ldes-incremental.n3 examples/input/rdf-message-ldes-incremental.trig
+#
+# See the handbook section on RDF Message Log replay under -r:
+#   https://eyereasoner.github.io/eyeling/HANDBOOK#rdf-message-log-replay-under--r
+#
+# This example combines two streaming ideas:
+#
+# - RDF Messages give parser-level message boundaries for a potentially long
+#   stream.  Eyeling replays those boundaries as eymsg: envelopes and keeps each
+#   payload graph separate.
+# - LDES describes an append-only stream of members with a timestamp/sequence
+#   order.  The rules below model an incremental consumer that has already
+#   committed sequence 34, so it only reasons over the new tail of the log.
+#
+# The input intentionally contains forty LDES members.  Only the six members
+# after the checkpoint are part of the current incremental repair window.  That
+# tail contains a concrete inconsistency: the same door is both open and closed.
+# The repair keeps the highest-priority assertion before materializing the
+# operational action.
+
+@prefix : <https://eyereasoner.github.io/eyeling/examples/rdf-message-ldes-incremental#>.
+@prefix eymsg: <https://eyereasoner.github.io/eyeling/vocab/message#>.
+@prefix ldes: <https://w3id.org/ldes#>.
+@prefix tree: <https://w3id.org/tree#>.
+@prefix list: <http://www.w3.org/2000/10/swap/list#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix string: <http://www.w3.org/2000/10/swap/string#>.
+
+# Eyeling's RDF-message replay gives us a static, ordered view of a message log.
+{
+  ?Stream a eymsg:RDFMessageStream;
+    eymsg:envelope ?Envelope.
+  ?Envelope a eymsg:MessageEnvelope;
+    eymsg:offset ?Offset.
+} => {
+  ?Envelope :messageOffset ?Offset;
+    :messageBoundaryExplicit true.
+}.
+
+# Message 1 carries LDES context and the incremental consumer state.  The LDES
+# bookmark is the key point: everything up to sequence 34 was already committed
+# by the previous synchronization run.
+{
+  ?Envelope eymsg:payloadGraph ?Payload.
+  ?Payload log:nameOf ?PayloadContext.
+  ?PayloadContext log:includes {
+    :doorStream a ldes:EventStream;
+      ldes:timestampPath :observedAt;
+      ldes:sequencePath :sequence;
+      tree:view :doorStreamPage;
+      :lastCommittedSequence ?Bookmark;
+      :currentWindowFromSequence ?WindowStart;
+      :windowSize ?WindowSize;
+      :repairPolicy :preferHigherPriority.
+    :open :stateText ?OpenStateText;
+      :actionText ?OpenAction.
+    :closed :stateText ?ClosedStateText;
+      :actionText ?ClosedAction.
+  }.
+} => {
+  :doorStream a ldes:EventStream;
+    ldes:timestampPath :observedAt;
+    ldes:sequencePath :sequence;
+    tree:view :doorStreamPage;
+    :lastCommittedSequence ?Bookmark;
+    :currentWindowFromSequence ?WindowStart;
+    :windowSize ?WindowSize;
+    :repairPolicy :preferHigherPriority.
+  :open :stateText ?OpenStateText;
+    :actionText ?OpenAction.
+  :closed :stateText ?ClosedStateText;
+    :actionText ?ClosedAction.
+}.
+
+# Each non-configuration RDF Message payload contributes one LDES member.  The
+# rules lift just the metadata needed by the incremental reasoner; the payloads
+# themselves stay scoped to their message graphs.
+{
+  ?Envelope eymsg:payloadGraph ?Payload.
+  ?Payload log:nameOf ?PayloadContext.
+  ?PayloadContext log:includes {
+    :doorStream tree:member ?Member.
+    ?Member a :DoorObservation;
+      :sequence ?Sequence;
+      :observedAt ?ObservedAt;
+      :door ?Door;
+      :doorState ?State;
+      :priority ?Priority;
+      :source ?Source.
+  }.
+} => {
+  ?Member :ldesMember true;
+    :envelope ?Envelope;
+    :sequence ?Sequence;
+    :observedAt ?ObservedAt;
+    :door ?Door;
+    :doorState ?State;
+    :priority ?Priority;
+    :source ?Source.
+  ?Envelope :emitsLDESMember ?Member.
+}.
+
+# The LDES checkpoint lets an incremental consumer skip the large, already
+# committed history.
+{
+  :doorStream :lastCommittedSequence ?Bookmark.
+  ?Member :ldesMember true;
+    :sequence ?Sequence.
+  ?Sequence math:notGreaterThan ?Bookmark.
+} => {
+  ?Member :alreadyCommitted true.
+}.
+
+{
+  :doorStream :lastCommittedSequence ?Bookmark.
+  ?Member :ldesMember true;
+    :sequence ?Sequence.
+  ?Sequence math:greaterThan ?Bookmark.
+} => {
+  ?Member :newlyEmitted true.
+}.
+
+# The current incremental repair window is the new tail after the checkpoint.
+{
+  :doorStream :currentWindowFromSequence ?WindowStart.
+  ?Member :newlyEmitted true;
+    :sequence ?Sequence.
+  ?Sequence math:notLessThan ?WindowStart.
+} => {
+  :currentLDESWindow :contains ?Member.
+  ?Member :inCurrentLDESWindow true.
+}.
+
+# Raw tail materialization is inconsistent: the same door is open and closed in
+# the new LDES members.
+{
+  :currentLDESWindow :contains ?OpenMember, ?ClosedMember.
+  ?OpenMember :door ?Door;
+    :doorState :open.
+  ?ClosedMember :door ?Door;
+    :doorState :closed.
+  ?OpenMember log:notEqualTo ?ClosedMember.
+} => {
+  :currentLDESWindow :rawConflict :doorOpenAndClosed;
+    :inconsistentDoor ?Door.
+}.
+
+# Preferred repair: keep the higher-priority assertion when the current tail
+# contains conflicting LDES members for the same door.
+{
+  :currentLDESWindow :contains ?PreferredMember, ?RejectedMember;
+    :rawConflict :doorOpenAndClosed.
+  ?PreferredMember :doorState ?PreferredState;
+    :priority ?PreferredPriority;
+    :source ?PreferredSource;
+    :sequence ?PreferredSequence.
+  ?RejectedMember :doorState ?RejectedState;
+    :priority ?RejectedPriority.
+  ?PreferredState log:notEqualTo ?RejectedState.
+  ?PreferredPriority math:greaterThan ?RejectedPriority.
+} => {
+  :currentLDESWindow :preferredRepairState ?PreferredState;
+    :preferredEvidence ?PreferredMember;
+    :preferredSource ?PreferredSource;
+    :preferredSequence ?PreferredSequence;
+    :preferredPriority ?PreferredPriority;
+    :rejectsLowerPriority ?RejectedMember;
+    :repairsInconsistency :doorOpenAndClosed;
+    :resolvedDoorState ?PreferredState.
+}.
+
+# Materialize from the repaired state, not from the inconsistent raw window.
+{
+  :currentLDESWindow :preferredRepairState ?State.
+  ?State :actionText ?ActionText.
+} => {
+  :currentLDESWindow :materializedActionText ?ActionText.
+}.
+
+# Count the stream and the incremental tail.  These counts are useful in the
+# report because they show that the example input has lots of historical data,
+# but the reasoning focus is the tail after the LDES bookmark.
+{
+  ( ?Member { ?Member :ldesMember true. } ?AllMembers ) log:collectAllIn _:ldesCounts.
+  ?AllMembers list:length ?AllCount.
+  ( ?Member { ?Member :alreadyCommitted true. } ?CommittedMembers ) log:collectAllIn _:ldesCounts.
+  ?CommittedMembers list:length ?CommittedCount.
+  ( ?Member { ?Member :newlyEmitted true. } ?NewMembers ) log:collectAllIn _:ldesCounts.
+  ?NewMembers list:length ?NewCount.
+  ( ?Member { ?Member :inCurrentLDESWindow true. } ?WindowMembers ) log:collectAllIn _:ldesCounts.
+  ?WindowMembers list:length ?WindowCount.
+} => {
+  :incrementalRun :totalLDESMembers ?AllCount;
+    :alreadyCommittedMembers ?CommittedCount;
+    :newlyEmittedMembers ?NewCount;
+    :windowMemberCount ?WindowCount.
+}.
+
+# Emit a compact human-readable result only once the parser replay, LDES
+# checkpoint, count aggregation, inconsistency repair, and final materialization
+# are all present.
+{
+  ?Stream a eymsg:RDFMessageStream;
+    eymsg:orderedEnvelopes ?Envelopes.
+  ?Envelopes list:length ?EnvelopeCount.
+  :doorStream :lastCommittedSequence ?Bookmark;
+    :windowSize ?WindowSize.
+  :incrementalRun :totalLDESMembers ?AllCount;
+    :alreadyCommittedMembers ?CommittedCount;
+    :newlyEmittedMembers ?NewCount;
+    :windowMemberCount ?WindowCount.
+  :currentLDESWindow :rawConflict :doorOpenAndClosed;
+    :inconsistentDoor :doorA;
+    :preferredSource ?PreferredSource;
+    :preferredSequence ?PreferredSequence;
+    :preferredPriority ?PreferredPriority;
+    :resolvedDoorState ?State;
+    :materializedActionText ?ActionText.
+  ?State :stateText ?StateText.
+  ("# rdf-message-ldes-incremental\n\n## Source files\n\n- [N3 rules](../rdf-message-ldes-incremental.n3)\n- [Input RDF Message Log](../input/rdf-message-ldes-incremental.trig)\n- [Story deck](../deck/rdf-message-ldes-incremental.md)\n\n## Answer\nIncremental LDES reasoning accepted: %d RDF Message envelopes contained %d append-only LDES members. The consumer checkpoint was sequence %d, so %d committed history members were skipped and only %d newly emitted members entered the repair window. The tail window has %d members, contains a raw open/closed inconsistency for doorA, repairs it by keeping the priority-%d member at sequence %d from %s, resolves the door state to %s, and materializes the action: %s.\n\n## Explanation\nThe input is deliberately larger than the reasoning task: it serializes many LDES members as RDF Messages, but the LDES sequence bookmark tells the consumer which prefix was already materialized. Eyeling's -r mode replays the RDF Message Log into ordered eymsg: envelopes; the rules inspect each payload with log:includes, classify old versus new members from the LDES sequence path, and run the inconsistency repair only over the new tail. This mirrors an incremental streaming pipeline: append-only publication, resumable synchronization, small repair window, and monotonic output after the noisy tail is fixed." ?EnvelopeCount ?AllCount ?Bookmark ?CommittedCount ?NewCount ?WindowCount ?PreferredPriority ?PreferredSequence ?PreferredSource ?StateText ?ActionText) string:format ?Block.
+} => {
+  :rdfMessageLDESIncrementalExample log:outputString ?Block.
+  :rdfMessageLDESIncrementalExample :demonstrates :RDFMessageLogReplay, :LDESMemberStream, :CheckpointedSynchronization, :IncrementalReasoning, :TailWindowRepair, :RawDoorInconsistency, :PreferredRepair.
+}.
