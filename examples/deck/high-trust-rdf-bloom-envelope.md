@@ -1,8 +1,6 @@
 # High-trust RDF graph lookup with a decimal certificate
 
-This deck explains the example `high-trust-rdf-bloom-envelope.n3` ([Playground][1]).
-
-Example files: [source](../high-trust-rdf-bloom-envelope.n3) · [golden output](../output/high-trust-rdf-bloom-envelope.n3).
+[source](../high-trust-rdf-bloom-envelope.n3) · [golden output](../output/high-trust-rdf-bloom-envelope.n3)
 
 The goal is to show that **advanced engineering claims can be expressed and checked in N3**, even when the claim involves a **transcendental quantity** such as `exp(-k*n/m)`.
 

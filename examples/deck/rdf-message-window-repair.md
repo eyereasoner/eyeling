@@ -1,10 +1,6 @@
 # RDF Message window repair — fixing an open/closed door conflict
 
-This deck explains the example `rdf-message-window-repair.n3` and its input file `input/rdf-message-window-repair.trig`.
-
-Example files: [rules](../rdf-message-window-repair.n3) · [message log input](../input/rdf-message-window-repair.trig) · [golden output](../output/rdf-message-window-repair.md).
-
-Handbook reference: [https://eyereasoner.github.io/eyeling/HANDBOOK#rdf-message-log-replay-under--r](https://eyereasoner.github.io/eyeling/HANDBOOK#rdf-message-log-replay-under--r).
+[rules](../rdf-message-window-repair.n3) · [message log input](../input/rdf-message-window-repair.trig) · [golden output](../output/rdf-message-window-repair.md) · [handbook](https://eyereasoner.github.io/eyeling/HANDBOOK#rdf-message-log-replay-under--r)
 
 The goal is to show how Eyeling can reason over a replayed RDF Message Log, keep message boundaries visible, detect an inconsistency in a sliding window, and materialize a repaired conclusion instead of blindly merging contradictory facts.
 

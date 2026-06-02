@@ -1,8 +1,8 @@
 # RDF Message LDES Incremental Repair
 
-## Why this example exists
+[rules](../rdf-message-ldes-incremental.n3) · [message log input](../input/rdf-message-ldes-incremental.trig) · [golden output](../output/rdf-message-ldes-incremental.md)
 
-Example files: [rules](../rdf-message-ldes-incremental.n3) · [message log input](../input/rdf-message-ldes-incremental.trig) · [golden output](../output/rdf-message-ldes-incremental.md).
+## Why this example exists
 
 A long-running stream should not force a reasoner to reload and re-check all past data every time a new event arrives.
 

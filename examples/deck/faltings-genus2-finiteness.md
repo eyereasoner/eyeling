@@ -1,8 +1,6 @@
 # Faltings’ theorem (emulated) in Notation3: a genus‑2 curve over Q
 
-This deck explains the example `faltings-genus2-finiteness.n3` ([Playground][1]).
-
-Example files: [source](../faltings-genus2-finiteness.n3) · [golden output](../output/faltings-genus2-finiteness.n3).
+[source](../faltings-genus2-finiteness.n3) · [golden output](../output/faltings-genus2-finiteness.n3)
 
 The goal is to show—at a friendly, “wide audience” level—how an N3 file can _model_ a famous mathematical implication:
 

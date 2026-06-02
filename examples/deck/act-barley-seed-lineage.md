@@ -1,8 +1,6 @@
 # ACT barley seed lineage — can and can't
 
-This deck explains the example `act-barley-seed-lineage.n3`.
-
-Example files: [source](../act-barley-seed-lineage.n3) · [golden output](../output/act-barley-seed-lineage.md).
+[source](../act-barley-seed-lineage.n3) · [golden output](../output/act-barley-seed-lineage.md)
 
 The aim is to show how **Applied Constructor Theory** can describe a concrete biological case in Notation3 while doing both sides of Chiara Marletto’s formula:
 

@@ -1,6 +1,6 @@
 # Mapping two data models (beginner-friendly)
 
-Example files: [source](../schema-foaf-mapping.n3) · [golden output](../output/schema-foaf-mapping.n3).
+[source](../schema-foaf-mapping.n3) · [golden output](../output/schema-foaf-mapping.n3)
 
 When people say “map two data models,” they mean:
 
