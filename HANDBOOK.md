@@ -236,7 +236,15 @@ The lexer turns the input into tokens like:
 
 Parsing becomes dramatically simpler because tokenization already decided where strings end, where numbers are, and so on.
 
-By default, Eyeling parses ordinary N3. Selected RDF/TriG surface syntax is accepted only when RDF compatibility is explicitly enabled with `eyeling -r file.trig`, `eyeling --rdf file.trig`, or API option `{ rdf: true }`. In that mode, the lexer normalizes RDF/TriG input syntax to ordinary N3 graph terms before normal parsing, and the printer emits RDF/TriG-compatible output where feasible. Eyeling remains an N3 reasoner; this is syntax compatibility, not a separate RDF dataset reasoning model.
+By default, Eyeling parses ordinary N3. Selected RDF/TriG surface syntax is accepted only when RDF compatibility is explicitly enabled with `eyeling -r file.trig`, `eyeling --rdf file.trig`, or API option `{ rdf: true }`.
+
+The `-r` flag does **not** switch Eyeling to a different RDF dataset reasoner. It adds a parser/printer compatibility layer around the same N3 engine:
+
+1. before normal parsing, RDF/TriG surface syntax is normalized into ordinary Eyeling N3 terms;
+2. the usual N3 parser, rule compiler, forward chainer, backward prover, builtins, and output rendering then run on that normalized program;
+3. when possible, final output is printed back in RDF/TriG-compatible syntax.
+
+This matters because rules still reason over Eyeling's N3 term model. Named graphs become quoted formulas, RDF 1.2 triple terms become singleton quoted formulas, and RDF Message Logs become an explicit replay graph that ordinary N3 rules can consume.
 
 In RDF compatibility mode, RDF 1.2 triple terms written as `<<( s p o )>>`, plus the reified triple form `<<s p o ~ r>>`, are normalized to Eyeling's existing singleton quoted-formula term `{ s p o }`. A reifier `r` is preserved as `r rdf:reifies { s p o }`. A leading `VERSION "1.2"` or `@version "1.2"` directive is ignored for the same reason. On output, `--rdf` converts a singleton graph term back to `<<( ... )>>` only when its inner triple is valid as an RDF triple term; otherwise it stays in N3 graph-term form. It also prints `log:nameOf` graph-term triples back as TriG named graph blocks. For example:
 
@@ -266,7 +274,64 @@ is treated internally like:
 } .
 ```
 
-This keeps Eyeling's N3 model stable while allowing small RDF 1.1/RDF 1.2 dataset-shaped inputs to run through the existing `GraphTerm` machinery when the caller opts in. More exotic future RDF forms should be added only if they can be mapped cleanly onto Eyeling's quoted-formula term model.
+A top-level default graph block is unwrapped into ordinary top-level triples. A named graph block is not merged into the default graph; it remains a quoted formula reachable through `log:nameOf`.
+
+#### RDF Message Log replay under `-r`
+
+If RDF compatibility mode sees a top-level message version directive such as:
+
+```trig
+VERSION "1.2-messages"
+```
+
+or the corresponding `@version` spelling, Eyeling treats the input as an RDF Message Log before ordinary N3 parsing starts. The accepted message-version strings are `"1.1-messages"`, `"1.2-messages"`, and `"1.2-basic-messages"`.
+
+At top-level statement boundaries, `MESSAGE` and `@message` delimiters split the document into message chunks. The text before the first delimiter is the first message. An empty chunk is still a message: it is replayed as an empty heartbeat rather than being dropped. Directives and comments alone do not make a message non-empty.
+
+Each chunk is then normalized separately using the same RDF/TriG compatibility rules. Eyeling also scopes blank-node labels per message, so reusing `_:x` in two different messages does not accidentally identify the same blank node across message boundaries.
+
+The result of replay is not a hidden side channel. Eyeling materializes ordinary facts using the `eymsg:` vocabulary:
+
+```n3
+@prefix eymsg: <https://eyereasoner.github.io/eyeling/vocab/message#>.
+
+?stream a eymsg:RDFMessageStream;
+  eymsg:messageCount ?count;
+  eymsg:orderedEnvelopes ?envelopes;
+  eymsg:firstEnvelope ?first;
+  eymsg:lastEnvelope ?last;
+  eymsg:envelope ?envelope.
+
+?envelope a eymsg:MessageEnvelope;
+  eymsg:offset ?n;
+  eymsg:payloadKind eymsg:nonEmpty;
+  eymsg:payloadGraph ?payload;
+  eymsg:nextEnvelope ?next.
+```
+
+For an empty message, the envelope has `eymsg:payloadKind eymsg:empty` and no `eymsg:payloadGraph`. For a non-empty message, the payload is exposed as a named graph:
+
+```n3
+?payload log:nameOf {
+  ...the normalized message body...
+} .
+```
+
+That design is deliberate: message payload triples are **not silently merged** into the global fact store. Rules inspect a payload explicitly, usually with `log:nameOf` plus `log:includes`:
+
+```n3
+{
+  ?envelope eymsg:payloadGraph ?payload.
+  ?payload log:nameOf ?payloadGraph.
+  ?payloadGraph log:includes { :doorA :state :closed }.
+} => {
+  ?envelope :reportsClosed :doorA.
+}.
+```
+
+This is the important mental model for `-r` with RDF Messages: the parser preserves message order and message boundaries as data. Reasoning can then implement stream-like behavior—flow stages, sliding windows, heartbeats, conflict repair, replay audits—without the TriG sidecar having to invent envelope facts by hand.
+
+This keeps Eyeling's N3 model stable while allowing small RDF 1.1/RDF 1.2 dataset-shaped and message-log-shaped inputs to run through the existing `GraphTerm` machinery when the caller opts in. More exotic future RDF forms should be added only if they can be mapped cleanly onto Eyeling's quoted-formula term model.
 
 ### 4.2 Parsing triples, with Turtle-style convenience
 
@@ -2557,6 +2622,7 @@ Options:
   -e, --enforce-https          Rewrite http:// IRIs to https:// for log dereferencing builtins.
   -h, --help                   Show this help and exit.
   -p, --proof                  Enable proof explanations.
+  -r, --rdf                    Enable RDF/TriG input/output compatibility.
   -s, --super-restricted       Disable all builtins except => and <=.
   -t, --stream                 Stream derived triples as soon as they are derived.
   -v, --version                Print version and exit.
@@ -2597,7 +2663,7 @@ Quoted graphs/formulas use `{ ... }`. Inside a quoted formula, directive scope m
 
 - `@prefix/@base` and `PREFIX/BASE` directives may appear at top level **or inside `{ ... }`**, and apply to the formula they occur in (formula-local scoping).
 
-With `-r, --rdf` / `{ rdf: true }`, Eyeling also accepts RDF 1.2 triple-term surface forms such as `<<( s p o )>>` and `<<s p o ~ r>>` as compatibility spellings for a singleton quoted formula `{ s p o }`. In the same mode, feasible singleton graph terms are printed back as RDF 1.2 triple terms, while invalid cases such as a literal subject remain ordinary N3 graph terms. This is useful for inputs that use `rdf:reifies` or other predicates whose objects are RDF 1.2 triple terms, while keeping the default language and the rest of Eyeling on its N3 formula-term model.
+With `-r, --rdf` / `{ rdf: true }`, Eyeling accepts selected RDF/TriG surface syntax before normal N3 parsing. RDF 1.2 triple-term forms such as `<<( s p o )>>` and `<<s p o ~ r>>` are compatibility spellings for singleton quoted formulas such as `{ s p o }`; feasible singleton graph terms are printed back as RDF 1.2 triple terms. TriG named graph blocks become `log:nameOf` quoted formulas. If a `VERSION "1.2-messages"`-style directive is present, top-level `MESSAGE` delimiters are replayed as `eymsg:` stream/envelope facts and per-message payload graphs. See [Chapter 4.1](#41-lexing-tokens-not-magic) for the full `-r` model and RDF Message handling.
 
 For the formal grammar, see the N3 spec grammar:
 
