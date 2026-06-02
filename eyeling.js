@@ -5595,6 +5595,10 @@ function __cloneSubst(subst) {
   return out;
 }
 
+function __defineHiddenWritable(obj, name, value) {
+  Object.defineProperty(obj, name, { value, enumerable: false, writable: true });
+}
+
 let version = 'dev';
 try {
   // Node: keep package.json version if available
@@ -5906,44 +5910,29 @@ function __logNaturalPriorityFromTerm(t) {
 function __computeMaxScopedClosurePriorityNeeded(forwardRules, backRules) {
   let maxP = 0;
 
+  function bumpMaxPriority(term) {
+    if (term instanceof GraphTerm) return;
+    if (term instanceof Var) {
+      if (maxP < 1) maxP = 1;
+      return;
+    }
+    const p0 = __logNaturalPriorityFromTerm(term);
+    const priority = p0 !== null ? p0 : 1;
+    if (priority > maxP) maxP = priority;
+  }
+
   function scanTriple(tr) {
     if (!(tr && tr.p instanceof Iri)) return;
     const pv = tr.p.value;
 
     // log:collectAllIn / log:forAllIn use the object position for the priority.
     if (pv === LOG_NS + 'collectAllIn' || pv === LOG_NS + 'forAllIn') {
-      // Explicit scope graphs are immediate and do not require a closure.
-      if (tr.o instanceof GraphTerm) return;
-      // Variable or non-numeric object => default priority 1 (if used).
-      if (tr.o instanceof Var) {
-        if (maxP < 1) maxP = 1;
-        return;
-      }
-      const p0 = __logNaturalPriorityFromTerm(tr.o);
-      if (p0 !== null) {
-        if (p0 > maxP) maxP = p0;
-      } else {
-        if (maxP < 1) maxP = 1;
-      }
+      bumpMaxPriority(tr.o);
       return;
     }
 
     // log:includes / log:notIncludes use the subject position for the priority.
-    if (pv === LOG_NS + 'includes' || pv === LOG_NS + 'notIncludes') {
-      // Explicit scope graphs are immediate and do not require a closure.
-      if (tr.s instanceof GraphTerm) return;
-      // Variable or non-numeric subject => default priority 1 (if used).
-      if (tr.s instanceof Var) {
-        if (maxP < 1) maxP = 1;
-        return;
-      }
-      const p0 = __logNaturalPriorityFromTerm(tr.s);
-      if (p0 !== null) {
-        if (p0 > maxP) maxP = p0;
-      } else {
-        if (maxP < 1) maxP = 1;
-      }
-    }
+    if (pv === LOG_NS + 'includes' || pv === LOG_NS + 'notIncludes') bumpMaxPriority(tr.s);
   }
 
   for (const r of forwardRules) {
@@ -5979,7 +5968,6 @@ function __varOccursElsewhereInPremise(premise, name, idx, field) {
   }
   return false;
 }
-
 
 function __scopedPriorityForTerm(t) {
   if (t instanceof GraphTerm) return 0;
@@ -6122,7 +6110,6 @@ function __computeForwardRuleScopedStrata(forwardRules) {
     if (!changed) break;
   }
 
-
   maxLevel = 0;
   for (let i = 0; i < forwardRules.length; i++) {
     __setForwardRuleScopedStratumInfo(forwardRules[i], levels[i]);
@@ -6136,42 +6123,33 @@ function __computeForwardRuleScopedSkipInfo(rule) {
   let needsSnap = false;
   let requiredLevel = 0;
 
+  function addScopedUse(scopeTerm, idx, field) {
+    if (scopeTerm instanceof GraphTerm) return true; // explicit scope
+
+    // If scope term is a Var that appears elsewhere, it might be bound to a GraphTerm.
+    // Be conservative and do not skip in that case.
+    if (scopeTerm instanceof Var) {
+      if (__varOccursElsewhereInPremise(rule.premise, scopeTerm.name, idx, field)) return false;
+      needsSnap = true;
+      requiredLevel = Math.max(requiredLevel, 1);
+      return true;
+    }
+
+    needsSnap = true;
+    const p0 = __logNaturalPriorityFromTerm(scopeTerm);
+    requiredLevel = Math.max(requiredLevel, p0 !== null ? p0 : 1);
+    return true;
+  }
+
   for (let i = 0; i < rule.premise.length; i++) {
     const tr = rule.premise[i];
     if (!(tr && tr.p instanceof Iri)) continue;
     const pv = tr.p.value;
 
     if (pv === LOG_NS + 'collectAllIn' || pv === LOG_NS + 'forAllIn') {
-      if (tr.o instanceof GraphTerm) continue; // explicit scope
-      // If scope term is a Var that appears elsewhere, it might be bound to a GraphTerm.
-      // Be conservative and do not skip in that case.
-      if (tr.o instanceof Var) {
-        if (__varOccursElsewhereInPremise(rule.premise, tr.o.name, i, 'o')) return null;
-        needsSnap = true;
-        requiredLevel = Math.max(requiredLevel, 1);
-      } else {
-        needsSnap = true;
-        let prio = 1;
-        const p0 = __logNaturalPriorityFromTerm(tr.o);
-        if (p0 !== null) prio = p0;
-        requiredLevel = Math.max(requiredLevel, prio);
-      }
-      continue;
-    }
-
-    if (pv === LOG_NS + 'includes' || pv === LOG_NS + 'notIncludes') {
-      if (tr.s instanceof GraphTerm) continue; // explicit scope
-      if (tr.s instanceof Var) {
-        if (__varOccursElsewhereInPremise(rule.premise, tr.s.name, i, 's')) return null;
-        needsSnap = true;
-        requiredLevel = Math.max(requiredLevel, 1);
-      } else {
-        needsSnap = true;
-        let prio = 1;
-        const p0 = __logNaturalPriorityFromTerm(tr.s);
-        if (p0 !== null) prio = p0;
-        requiredLevel = Math.max(requiredLevel, prio);
-      }
+      if (!addScopedUse(tr.o, i, 'o')) return null;
+    } else if (pv === LOG_NS + 'includes' || pv === LOG_NS + 'notIncludes') {
+      if (!addScopedUse(tr.s, i, 's')) return null;
     }
   }
 
@@ -6354,140 +6332,70 @@ function skolemizeTripleForHeadBlanks(tr, headBlankLabels, mapping, skCounter, f
 // Alpha equivalence helpers
 // ===========================================================================
 
-function termsEqual(a, b) {
+function __isRdfNilEmptyListPair(a, b) {
+  return a instanceof Iri && a.value === RDF_NIL_IRI && b instanceof ListTerm && b.elems.length === 0;
+}
+
+function __numericInfosSameDatatypeEqual(ai, bi, exactDecimal) {
+  if (!ai || !bi || ai.dt !== bi.dt) return false;
+  if (ai.kind === 'bigint' && bi.kind === 'bigint') return ai.value === bi.value;
+
+  if (exactDecimal && ai.dt === XSD_NS + 'decimal') {
+    const da = parseXsdDecimalToBigIntScale(ai.lexStr);
+    const db = parseXsdDecimalToBigIntScale(bi.lexStr);
+    if (da && db) {
+      const scale = Math.max(da.scale, db.scale);
+      return da.num * pow10n(scale - da.scale) === db.num * pow10n(scale - db.scale);
+    }
+  }
+
+  const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
+  const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
+  return !Number.isNaN(an) && !Number.isNaN(bn) && an === bn;
+}
+
+function __literalsEqual(a, b, exactDecimal) {
+  if (a.value === b.value) return true;
+  if (literalsEquivalentAsXsdString(a.value, b.value)) return true;
+  return __numericInfosSameDatatypeEqual(parseNumericLiteralInfo(a), parseNumericLiteralInfo(b), exactDecimal);
+}
+
+function __termArraysEqual(xs, ys, eq) {
+  if (xs.length !== ys.length) return false;
+  for (let i = 0; i < xs.length; i++) {
+    if (!eq(xs[i], ys[i])) return false;
+  }
+  return true;
+}
+
+function __termsEqual(a, b, exactDecimal) {
   if (a === b) return true;
   if (!a || !b) return false;
   if (a.__tid && b.__tid && a.__tid === b.__tid) return true;
 
   // rdf:nil is equivalent to the empty list ()
-  if (a instanceof Iri && a.value === RDF_NIL_IRI && b instanceof ListTerm && b.elems.length === 0) return true;
-  if (b instanceof Iri && b.value === RDF_NIL_IRI && a instanceof ListTerm && a.elems.length === 0) return true;
+  if (__isRdfNilEmptyListPair(a, b) || __isRdfNilEmptyListPair(b, a)) return true;
   if (a.constructor !== b.constructor) return false;
 
   if (a instanceof Iri) return a.value === b.value;
-
-  if (a instanceof Literal) {
-    if (a.value === b.value) return true;
-
-    // Plain "abc" == "abc"^^xsd:string (but not language-tagged strings)
-    if (literalsEquivalentAsXsdString(a.value, b.value)) return true;
-
-    // Keep in sync with unifyTerm(): numeric-value equality, datatype-aware.
-    const ai = parseNumericLiteralInfo(a);
-    const bi = parseNumericLiteralInfo(b);
-
-    if (ai && bi) {
-      // Same datatype => compare values
-      if (ai.dt === bi.dt) {
-        if (ai.kind === 'bigint' && bi.kind === 'bigint') return ai.value === bi.value;
-
-        const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
-        const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
-        return !Number.isNaN(an) && !Number.isNaN(bn) && an === bn;
-      }
-    }
-
-    return false;
-  }
-
+  if (a instanceof Literal) return __literalsEqual(a, b, exactDecimal);
   if (a instanceof Var) return a.name === b.name;
   if (a instanceof Blank) return a.label === b.label;
-
-  if (a instanceof ListTerm) {
-    if (a.elems.length !== b.elems.length) return false;
-    for (let i = 0; i < a.elems.length; i++) {
-      if (!termsEqual(a.elems[i], b.elems[i])) return false;
-    }
-    return true;
-  }
-
-  if (a instanceof OpenListTerm) {
-    if (a.tailVar !== b.tailVar) return false;
-    if (a.prefix.length !== b.prefix.length) return false;
-    for (let i = 0; i < a.prefix.length; i++) {
-      if (!termsEqual(a.prefix[i], b.prefix[i])) return false;
-    }
-    return true;
-  }
-
-  if (a instanceof GraphTerm) {
-    return alphaEqGraphTriples(a.triples, b.triples);
-  }
-
+  if (a instanceof ListTerm) return __termArraysEqual(a.elems, b.elems, (x, y) => __termsEqual(x, y, exactDecimal));
+  if (a instanceof OpenListTerm)
+    return a.tailVar === b.tailVar && __termArraysEqual(a.prefix, b.prefix, (x, y) => __termsEqual(x, y, exactDecimal));
+  if (a instanceof GraphTerm) return alphaEqGraphTriples(a.triples, b.triples);
   return false;
 }
 
+function termsEqual(a, b) {
+  // Keep in sync with unifyTerm(): numeric-value equality, datatype-aware.
+  return __termsEqual(a, b, false);
+}
+
 function termsEqualNoIntDecimal(a, b) {
-  if (a === b) return true;
-  if (!a || !b) return false;
-  if (a.__tid && b.__tid && a.__tid === b.__tid) return true;
-
-  // rdf:nil is equivalent to the empty list ()
-  if (a instanceof Iri && a.value === RDF_NIL_IRI && b instanceof ListTerm && b.elems.length === 0) return true;
-  if (b instanceof Iri && b.value === RDF_NIL_IRI && a instanceof ListTerm && a.elems.length === 0) return true;
-  if (a.constructor !== b.constructor) return false;
-
-  if (a instanceof Iri) return a.value === b.value;
-
-  if (a instanceof Literal) {
-    if (a.value === b.value) return true;
-
-    // Plain "abc" == "abc"^^xsd:string (but not language-tagged)
-    if (literalsEquivalentAsXsdString(a.value, b.value)) return true;
-
-    // Numeric equality ONLY when datatypes agree (no integer<->decimal here)
-    const ai = parseNumericLiteralInfo(a);
-    const bi = parseNumericLiteralInfo(b);
-    if (ai && bi && ai.dt === bi.dt) {
-      // integer: exact bigint
-      if (ai.kind === 'bigint' && bi.kind === 'bigint') return ai.value === bi.value;
-
-      // decimal: compare exactly via num/scale if possible
-      if (ai.dt === XSD_NS + 'decimal') {
-        const da = parseXsdDecimalToBigIntScale(ai.lexStr);
-        const db = parseXsdDecimalToBigIntScale(bi.lexStr);
-        if (da && db) {
-          const scale = Math.max(da.scale, db.scale);
-          const na = da.num * pow10n(scale - da.scale);
-          const nb = db.num * pow10n(scale - db.scale);
-          return na === nb;
-        }
-      }
-
-      // double/float-ish: JS number (same as your normal same-dt path)
-      const an = ai.kind === 'bigint' ? Number(ai.value) : ai.value;
-      const bn = bi.kind === 'bigint' ? Number(bi.value) : bi.value;
-      return !Number.isNaN(an) && !Number.isNaN(bn) && an === bn;
-    }
-
-    return false;
-  }
-
-  if (a instanceof Var) return a.name === b.name;
-  if (a instanceof Blank) return a.label === b.label;
-
-  if (a instanceof ListTerm) {
-    if (a.elems.length !== b.elems.length) return false;
-    for (let i = 0; i < a.elems.length; i++) {
-      if (!termsEqualNoIntDecimal(a.elems[i], b.elems[i])) return false;
-    }
-    return true;
-  }
-
-  if (a instanceof OpenListTerm) {
-    if (a.tailVar !== b.tailVar) return false;
-    if (a.prefix.length !== b.prefix.length) return false;
-    for (let i = 0; i < a.prefix.length; i++) {
-      if (!termsEqualNoIntDecimal(a.prefix[i], b.prefix[i])) return false;
-    }
-    return true;
-  }
-
-  if (a instanceof GraphTerm) {
-    return alphaEqGraphTriples(a.triples, b.triples);
-  }
-
-  return false;
+  // Numeric equality ONLY when datatypes agree; decimals are compared exactly.
+  return __termsEqual(a, b, true);
 }
 
 function triplesEqual(a, b) {
@@ -6847,66 +6755,18 @@ function ensureFactIndexes(facts) {
   )
     return;
 
-  Object.defineProperty(facts, '__byPred', {
-    value: new Map(),
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(facts, '__byPS', {
-    value: new Map(),
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(facts, '__byPO', {
-    value: new Map(),
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(facts, '__byPNonFastS', {
-    value: new Map(),
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(facts, '__byPNonFastO', {
-    value: new Map(),
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(facts, '__varPred', {
-    value: [],
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(facts, '__varPredPS', {
-    value: new Map(),
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(facts, '__varPredPO', {
-    value: new Map(),
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(facts, '__varPredNonFastS', {
-    value: [],
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(facts, '__varPredNonFastO', {
-    value: [],
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(facts, '__keySet', {
-    value: new Set(),
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(facts, '__keySetComplete', {
-    value: false,
-    enumerable: false,
-    writable: true,
-  });
+  __defineHiddenWritable(facts, '__byPred', new Map());
+  __defineHiddenWritable(facts, '__byPS', new Map());
+  __defineHiddenWritable(facts, '__byPO', new Map());
+  __defineHiddenWritable(facts, '__byPNonFastS', new Map());
+  __defineHiddenWritable(facts, '__byPNonFastO', new Map());
+  __defineHiddenWritable(facts, '__varPred', []);
+  __defineHiddenWritable(facts, '__varPredPS', new Map());
+  __defineHiddenWritable(facts, '__varPredPO', new Map());
+  __defineHiddenWritable(facts, '__varPredNonFastS', []);
+  __defineHiddenWritable(facts, '__varPredNonFastO', []);
+  __defineHiddenWritable(facts, '__keySet', new Set());
+  __defineHiddenWritable(facts, '__keySetComplete', false);
 
   // Build lookup indexes eagerly, but do not populate the duplicate-detection
   // string Set for every input fact.  The predicate/subject/object indexes are
@@ -6934,51 +6794,36 @@ function cloneFactIndexesForSnapshot(src, dest) {
     return out;
   }
 
-  Object.defineProperty(dest, '__byPred', { value: cloneArrayMap(src.__byPred), enumerable: false, writable: true });
-  Object.defineProperty(dest, '__byPS', { value: cloneNestedArrayMap(src.__byPS), enumerable: false, writable: true });
-  Object.defineProperty(dest, '__byPO', { value: cloneNestedArrayMap(src.__byPO), enumerable: false, writable: true });
-  Object.defineProperty(dest, '__byPNonFastS', {
-    value: cloneArrayMap(src.__byPNonFastS),
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(dest, '__byPNonFastO', {
-    value: cloneArrayMap(src.__byPNonFastO),
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(dest, '__varPred', { value: src.__varPred.slice(), enumerable: false, writable: true });
-  Object.defineProperty(dest, '__varPredPS', {
-    value: cloneArrayMap(src.__varPredPS),
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(dest, '__varPredPO', {
-    value: cloneArrayMap(src.__varPredPO),
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(dest, '__varPredNonFastS', {
-    value: src.__varPredNonFastS.slice(),
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(dest, '__varPredNonFastO', {
-    value: src.__varPredNonFastO.slice(),
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(dest, '__keySet', { value: new Set(src.__keySet), enumerable: false, writable: true });
-  Object.defineProperty(dest, '__keySetComplete', { value: !!src.__keySetComplete, enumerable: false, writable: true });
+  __defineHiddenWritable(dest, '__byPred', cloneArrayMap(src.__byPred));
+  __defineHiddenWritable(dest, '__byPS', cloneNestedArrayMap(src.__byPS));
+  __defineHiddenWritable(dest, '__byPO', cloneNestedArrayMap(src.__byPO));
+  __defineHiddenWritable(dest, '__byPNonFastS', cloneArrayMap(src.__byPNonFastS));
+  __defineHiddenWritable(dest, '__byPNonFastO', cloneArrayMap(src.__byPNonFastO));
+  __defineHiddenWritable(dest, '__varPred', src.__varPred.slice());
+  __defineHiddenWritable(dest, '__varPredPS', cloneArrayMap(src.__varPredPS));
+  __defineHiddenWritable(dest, '__varPredPO', cloneArrayMap(src.__varPredPO));
+  __defineHiddenWritable(dest, '__varPredNonFastS', src.__varPredNonFastS.slice());
+  __defineHiddenWritable(dest, '__varPredNonFastO', src.__varPredNonFastO.slice());
+  __defineHiddenWritable(dest, '__keySet', new Set(src.__keySet));
+  __defineHiddenWritable(dest, '__keySetComplete', !!src.__keySetComplete);
 }
 
-function addToIndexArrayMap(map, key, value) {
+function pushMapArray(map, key, value) {
   let bucket = map.get(key);
   if (!bucket) {
     bucket = [];
     map.set(key, bucket);
   }
   bucket.push(value);
+}
+
+function getOrCreateMap(map, key) {
+  let inner = map.get(key);
+  if (!inner) {
+    inner = new Map();
+    map.set(key, inner);
+  }
+  return inner;
 }
 
 function indexFact(facts, tr, idx, addKeySet = true) {
@@ -6991,45 +6836,30 @@ function indexFact(facts, tr, idx, addKeySet = true) {
     const pk = tr.p.__tid;
     pkForKey = pk;
 
-    let pb = facts.__byPred.get(pk);
-    if (!pb) {
-      pb = [];
-      facts.__byPred.set(pk, pb);
-    }
-    pb.push(idx);
+    pushMapArray(facts.__byPred, pk, idx);
 
     if (sk !== null) {
-      let ps = facts.__byPS.get(pk);
-      if (!ps) {
-        ps = new Map();
-        facts.__byPS.set(pk, ps);
-      }
-      addToIndexArrayMap(ps, sk, idx);
+      pushMapArray(getOrCreateMap(facts.__byPS, pk), sk, idx);
     } else {
-      addToIndexArrayMap(facts.__byPNonFastS, pk, idx);
+      pushMapArray(facts.__byPNonFastS, pk, idx);
     }
 
     if (ok !== null) {
-      let po = facts.__byPO.get(pk);
-      if (!po) {
-        po = new Map();
-        facts.__byPO.set(pk, po);
-      }
-      addToIndexArrayMap(po, ok, idx);
+      pushMapArray(getOrCreateMap(facts.__byPO, pk), ok, idx);
     } else {
-      addToIndexArrayMap(facts.__byPNonFastO, pk, idx);
+      pushMapArray(facts.__byPNonFastO, pk, idx);
     }
   } else if (tr.p instanceof Var) {
     facts.__varPred.push(idx);
 
     if (sk !== null) {
-      addToIndexArrayMap(facts.__varPredPS, sk, idx);
+      pushMapArray(facts.__varPredPS, sk, idx);
     } else {
       facts.__varPredNonFastS.push(idx);
     }
 
     if (ok !== null) {
-      addToIndexArrayMap(facts.__varPredPO, ok, idx);
+      pushMapArray(facts.__varPredPO, ok, idx);
     } else {
       facts.__varPredNonFastO.push(idx);
     }
@@ -7183,16 +7013,8 @@ function makeDerivedRecord(fact, rule, premises, subst, captureExplanations) {
 function ensureBackRuleIndexes(backRules) {
   if (backRules.__byHeadPred && backRules.__wildHeadPred) return;
 
-  Object.defineProperty(backRules, '__byHeadPred', {
-    value: new Map(),
-    enumerable: false,
-    writable: true,
-  });
-  Object.defineProperty(backRules, '__wildHeadPred', {
-    value: [],
-    enumerable: false,
-    writable: true,
-  });
+  __defineHiddenWritable(backRules, '__byHeadPred', new Map());
+  __defineHiddenWritable(backRules, '__wildHeadPred', []);
 
   for (const r of backRules) indexBackRule(backRules, r);
 }
@@ -7201,13 +7023,7 @@ function indexBackRule(backRules, r) {
   if (!r || !r.conclusion || r.conclusion.length !== 1) return;
   const head = r.conclusion[0];
   if (head && head.p instanceof Iri) {
-    const k = head.p.__tid;
-    let bucket = backRules.__byHeadPred.get(k);
-    if (!bucket) {
-      bucket = [];
-      backRules.__byHeadPred.set(k, bucket);
-    }
-    bucket.push(r);
+    pushMapArray(backRules.__byHeadPred, head.p.__tid, r);
   } else {
     backRules.__wildHeadPred.push(r);
   }
@@ -7242,12 +7058,11 @@ function isSinglePremiseAgendaRuleSafe(r, backRules) {
   return backRules.__wildHeadPred.length === 0;
 }
 
-function mergeSinglePremiseAgendaBuckets() {
+function mergeSinglePremiseAgendaBuckets(...buckets) {
   let out = null;
   let seen = null;
 
-  for (let i = 0; i < arguments.length; i++) {
-    const bucket = arguments[i];
+  for (const bucket of buckets) {
     if (!bucket || bucket.length === 0) continue;
 
     if (out === null) {
@@ -7257,8 +7072,7 @@ function mergeSinglePremiseAgendaBuckets() {
     }
 
     if (!seen) seen = new Set(out);
-    for (let j = 0; j < bucket.length; j++) {
-      const entry = bucket[j];
+    for (const entry of bucket) {
       if (seen.has(entry)) continue;
       seen.add(entry);
       out.push(entry);
@@ -7268,14 +7082,14 @@ function mergeSinglePremiseAgendaBuckets() {
   return out;
 }
 
-function termContainsVarForAgenda(t) {
+function termContainsVar(t) {
   if (t instanceof Var) return true;
-  if (t instanceof ListTerm) return t.elems.some(termContainsVarForAgenda);
+  if (t instanceof ListTerm) return t.elems.some(termContainsVar);
   if (t instanceof OpenListTerm) return true;
   if (t instanceof GraphTerm)
     return t.triples.some(
       (tr) =>
-        termContainsVarForAgenda(tr.s) || termContainsVarForAgenda(tr.p) || termContainsVarForAgenda(tr.o),
+        termContainsVar(tr.s) || termContainsVar(tr.p) || termContainsVar(tr.o),
     );
   return false;
 }
@@ -7293,15 +7107,6 @@ function makeSinglePremiseAgendaIndex(forwardRules, backRules) {
     indexed: new Set(),
     size: 0,
   };
-
-  function addToMapArray(m, k, v) {
-    let bucket = m.get(k);
-    if (!bucket) {
-      bucket = [];
-      m.set(k, bucket);
-    }
-    bucket.push(v);
-  }
 
   for (let i = 0; i < forwardRules.length; i++) {
     const r = forwardRules[i];
@@ -7328,29 +7133,15 @@ function makeSinglePremiseAgendaIndex(forwardRules, backRules) {
     index.size += 1;
 
     if (entry.goalPredTid !== null) {
-      addToMapArray(index.byPredAll, entry.goalPredTid, entry);
+      pushMapArray(index.byPredAll, entry.goalPredTid, entry);
       index.allIriPred.push(entry);
-      if (entry.goalSKey === null && entry.goalOKey === null) addToMapArray(index.byPred, entry.goalPredTid, entry);
-      if (entry.goalSKey !== null) {
-        let ps = index.byPS.get(entry.goalPredTid);
-        if (!ps) {
-          ps = new Map();
-          index.byPS.set(entry.goalPredTid, ps);
-        }
-        addToMapArray(ps, entry.goalSKey, entry);
-      }
-      if (entry.goalOKey !== null) {
-        let po = index.byPO.get(entry.goalPredTid);
-        if (!po) {
-          po = new Map();
-          index.byPO.set(entry.goalPredTid, po);
-        }
-        addToMapArray(po, entry.goalOKey, entry);
-      }
+      if (entry.goalSKey === null && entry.goalOKey === null) pushMapArray(index.byPred, entry.goalPredTid, entry);
+      if (entry.goalSKey !== null) pushMapArray(getOrCreateMap(index.byPS, entry.goalPredTid), entry.goalSKey, entry);
+      if (entry.goalOKey !== null) pushMapArray(getOrCreateMap(index.byPO, entry.goalPredTid), entry.goalOKey, entry);
     } else {
       if (entry.goalSKey === null && entry.goalOKey === null) index.wildPred.push(entry);
-      if (entry.goalSKey !== null) addToMapArray(index.wildPS, entry.goalSKey, entry);
-      if (entry.goalOKey !== null) addToMapArray(index.wildPO, entry.goalOKey, entry);
+      if (entry.goalSKey !== null) pushMapArray(index.wildPS, entry.goalSKey, entry);
+      if (entry.goalOKey !== null) pushMapArray(index.wildPO, entry.goalOKey, entry);
     }
   }
 
@@ -7366,7 +7157,7 @@ function getSinglePremiseAgendaCandidates(index, fact) {
   let exact = null;
   if (fact.p instanceof Iri) {
     const pk = fact.p.__tid;
-    if ((sk === null && termContainsVarForAgenda(fact.s)) || (ok === null && termContainsVarForAgenda(fact.o))) {
+    if ((sk === null && termContainsVar(fact.s)) || (ok === null && termContainsVar(fact.o))) {
       // A fact with a variable-bearing subject/object (most importantly a
       // top-level variable fact such as `?S :p ?O.`) can match rules whose
       // premise is fixed in that position. The ordinary `(p,s)` / `(p,o)` lookup
@@ -7721,16 +7512,8 @@ function unifyOpenWithList(prefix, tailv, ys, subst) {
 }
 
 function graphTriplesContainVars(triples) {
-  function termHasVar(t) {
-    if (t instanceof Var) return true;
-    if (t instanceof ListTerm) return t.elems.some(termHasVar);
-    if (t instanceof OpenListTerm) return t.prefix.some(termHasVar) || true;
-    if (t instanceof GraphTerm) return t.triples.some((tr) => termHasVar(tr.s) || termHasVar(tr.p) || termHasVar(tr.o));
-    return false;
-  }
-
   for (const tr of triples) {
-    if (termHasVar(tr.s) || termHasVar(tr.p) || termHasVar(tr.o)) return true;
+    if (termContainsVar(tr.s) || termContainsVar(tr.p) || termContainsVar(tr.o)) return true;
   }
   return false;
 }
