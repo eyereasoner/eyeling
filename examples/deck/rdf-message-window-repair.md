@@ -1,6 +1,6 @@
 # RDF Message window repair — fixing an open/closed door conflict
 
-[rules](../rdf-message-window-repair.n3) · [message log input](../input/rdf-message-window-repair.trig) · [golden output](../output/rdf-message-window-repair.md) · [handbook](https://eyereasoner.github.io/eyeling/HANDBOOK#rdf-message-log-replay-under--r)
+[Follow the rules](../rdf-message-window-repair.n3), [replay the message log input](../input/rdf-message-window-repair.trig), compare the [golden output](../output/rdf-message-window-repair.md), and see the [handbook](https://eyereasoner.github.io/eyeling/HANDBOOK#rdf-message-log-replay-under--r) for RDF Message replay under `-r`.
 
 The goal is to show how Eyeling can reason over a replayed RDF Message Log, keep message boundaries visible, detect an inconsistency in a sliding window, and materialize a repaired conclusion instead of blindly merging contradictory facts.
 

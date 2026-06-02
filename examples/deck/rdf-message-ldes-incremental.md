@@ -1,6 +1,6 @@
 # RDF Message LDES Incremental Repair
 
-[rules](../rdf-message-ldes-incremental.n3) · [message log input](../input/rdf-message-ldes-incremental.trig) · [golden output](../output/rdf-message-ldes-incremental.md)
+[Follow the rules](../rdf-message-ldes-incremental.n3), [replay the message log input](../input/rdf-message-ldes-incremental.trig), compare the [golden output](../output/rdf-message-ldes-incremental.md), and see the [handbook](https://eyereasoner.github.io/eyeling/HANDBOOK#rdf-message-log-replay-under--r) for RDF Message replay under `-r`.
 
 ## Why this example exists
 

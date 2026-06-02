@@ -1,6 +1,6 @@
 # Mapping two data models (beginner-friendly)
 
-[source](../schema-foaf-mapping.n3) · [golden output](../output/schema-foaf-mapping.n3)
+[Start with the source](../schema-foaf-mapping.n3), then compare the generated [golden output](../output/schema-foaf-mapping.n3).
 
 When people say “map two data models,” they mean:
 
