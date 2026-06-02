@@ -5535,6 +5535,27 @@ const INFERENCE_FUSE_EXIT_CODE = 65;
 const RDF_NIL_IRI = RDF_NS + 'nil';
 const EMPTY_LIST_TERM = new ListTerm([]);
 
+const LOG_COLLECT_ALL_IN_IRI = LOG_NS + 'collectAllIn';
+const LOG_FOR_ALL_IN_IRI = LOG_NS + 'forAllIn';
+const LOG_INCLUDES_IRI = LOG_NS + 'includes';
+const LOG_NOT_INCLUDES_IRI = LOG_NS + 'notIncludes';
+const LOG_IMPLIES_IRI = LOG_NS + 'implies';
+const LOG_IMPLIED_BY_IRI = LOG_NS + 'impliedBy';
+
+const MATH_BUILTINS_SATISFIABLE_WHEN_FULLY_UNBOUND = new Set([
+  MATH_NS + 'sin',
+  MATH_NS + 'cos',
+  MATH_NS + 'tan',
+  MATH_NS + 'asin',
+  MATH_NS + 'acos',
+  MATH_NS + 'atan',
+  MATH_NS + 'sinh',
+  MATH_NS + 'cosh',
+  MATH_NS + 'tanh',
+  MATH_NS + 'degrees',
+  MATH_NS + 'negation',
+]);
+
 const { lex, N3SyntaxError } = require('./lexer');
 const { Parser } = require('./parser');
 const { liftBlankRuleVars } = require('./rules');
@@ -5595,9 +5616,28 @@ function __cloneSubst(subst) {
   return out;
 }
 
-function __defineHiddenWritable(obj, name, value) {
-  Object.defineProperty(obj, name, { value, enumerable: false, writable: true });
+function __defineHidden(obj, name, value, writable) {
+  Object.defineProperty(obj, name, { value, enumerable: false, writable, configurable: true });
 }
+
+function __defineHiddenValue(obj, name, value) {
+  __defineHidden(obj, name, value, false);
+}
+
+function __defineHiddenWritable(obj, name, value) {
+  __defineHidden(obj, name, value, true);
+}
+
+function __setHiddenWritable(obj, name, value) {
+  if (hasOwn.call(obj, name)) obj[name] = value;
+  else __defineHiddenWritable(obj, name, value);
+}
+
+const FACT_INDEX_ARRAY_FIELDS = ['__varPred', '__varPredNonFastS', '__varPredNonFastO'];
+const FACT_INDEX_ARRAY_MAP_FIELDS = ['__byPred', '__byPNonFastS', '__byPNonFastO', '__varPredPS', '__varPredPO'];
+const FACT_INDEX_NESTED_ARRAY_MAP_FIELDS = ['__byPS', '__byPO'];
+const FACT_INDEX_MAP_FIELDS = FACT_INDEX_ARRAY_MAP_FIELDS.concat(FACT_INDEX_NESTED_ARRAY_MAP_FIELDS);
+const FACT_INDEX_REQUIRED_FIELDS = FACT_INDEX_ARRAY_FIELDS.concat(FACT_INDEX_MAP_FIELDS, ['__keySet']);
 
 let version = 'dev';
 try {
@@ -5822,14 +5862,13 @@ function __firingKey(ruleIndex, instantiatedPremises) {
 // -----------------------------------------------------------------------------
 function __ensureRuleKeySet(rules) {
   if (!hasOwn.call(rules, '__ruleKeySet')) {
-    Object.defineProperty(rules, '__ruleKeySet', {
-      value: new Set(
+    __defineHiddenValue(
+      rules,
+      '__ruleKeySet',
+      new Set(
         rules.map((r) => __ruleKey(r.isForward, r.isFuse, r.premise, r.conclusion, r.__dynamicConclusionTerm || null)),
       ),
-      enumerable: false,
-      writable: false,
-      configurable: true,
-    });
+    );
   }
   return rules.__ruleKeySet;
 }
@@ -5847,28 +5886,13 @@ function __computeHeadIsStrictGround(r) {
 function __prepareForwardRule(r) {
   if (!hasOwn.call(r, '__scopedSkipInfo')) {
     const info = __computeForwardRuleScopedSkipInfo(r);
-    Object.defineProperty(r, '__scopedSkipInfo', {
-      value: info,
-      enumerable: false,
-      writable: false,
-      configurable: true,
-    });
+    __defineHiddenValue(r, '__scopedSkipInfo', info);
   }
   if (!hasOwn.call(r, '__headIsStrictGround')) {
-    Object.defineProperty(r, '__headIsStrictGround', {
-      value: __computeHeadIsStrictGround(r),
-      enumerable: false,
-      writable: false,
-      configurable: true,
-    });
+    __defineHiddenValue(r, '__headIsStrictGround', __computeHeadIsStrictGround(r));
   }
   if (!hasOwn.call(r, '__needsForwardSkipCheck')) {
-    Object.defineProperty(r, '__needsForwardSkipCheck', {
-      value: !!(r.__headIsStrictGround || (r.__scopedSkipInfo && r.__scopedSkipInfo.needsSnap)),
-      enumerable: false,
-      writable: false,
-      configurable: true,
-    });
+    __defineHiddenValue(r, '__needsForwardSkipCheck', !!(r.__headIsStrictGround || (r.__scopedSkipInfo && r.__scopedSkipInfo.needsSnap)));
   }
 }
 
@@ -5926,13 +5950,13 @@ function __computeMaxScopedClosurePriorityNeeded(forwardRules, backRules) {
     const pv = tr.p.value;
 
     // log:collectAllIn / log:forAllIn use the object position for the priority.
-    if (pv === LOG_NS + 'collectAllIn' || pv === LOG_NS + 'forAllIn') {
+    if (pv === LOG_COLLECT_ALL_IN_IRI || pv === LOG_FOR_ALL_IN_IRI) {
       bumpMaxPriority(tr.o);
       return;
     }
 
     // log:includes / log:notIncludes use the subject position for the priority.
-    if (pv === LOG_NS + 'includes' || pv === LOG_NS + 'notIncludes') bumpMaxPriority(tr.s);
+    if (pv === LOG_INCLUDES_IRI || pv === LOG_NOT_INCLUDES_IRI) bumpMaxPriority(tr.s);
   }
 
   for (const r of forwardRules) {
@@ -5944,17 +5968,6 @@ function __computeMaxScopedClosurePriorityNeeded(forwardRules, backRules) {
   return maxP;
 }
 
-function __termContainsVarName(t, name) {
-  if (t instanceof Var) return t.name === name;
-  if (t instanceof ListTerm) return t.elems.some((e) => __termContainsVarName(e, name));
-  if (t instanceof OpenListTerm) return t.tailVar === name || t.prefix.some((e) => __termContainsVarName(e, name));
-  if (t instanceof GraphTerm)
-    return t.triples.some(
-      (tr) =>
-        __termContainsVarName(tr.s, name) || __termContainsVarName(tr.p, name) || __termContainsVarName(tr.o, name),
-    );
-  return false;
-}
 
 function __varOccursElsewhereInPremise(premise, name, idx, field) {
   for (let i = 0; i < premise.length; i++) {
@@ -5962,9 +5975,9 @@ function __varOccursElsewhereInPremise(premise, name, idx, field) {
     if (!(tr && tr.s && tr.p && tr.o)) continue;
 
     // Skip the specific scope/priority occurrence we are analyzing.
-    if (!(i === idx && field === 's') && __termContainsVarName(tr.s, name)) return true;
-    if (!(i === idx && field === 'p') && __termContainsVarName(tr.p, name)) return true;
-    if (!(i === idx && field === 'o') && __termContainsVarName(tr.o, name)) return true;
+    if (!(i === idx && field === 's') && containsVarTerm(tr.s, name)) return true;
+    if (!(i === idx && field === 'p') && containsVarTerm(tr.p, name)) return true;
+    if (!(i === idx && field === 'o') && containsVarTerm(tr.o, name)) return true;
   }
   return false;
 }
@@ -5995,7 +6008,7 @@ function __analyzeForwardRuleScopedUse(rule) {
     if (!(tr && tr.p instanceof Iri)) continue;
     const pv = tr.p.value;
 
-    if (pv === LOG_NS + 'includes' || pv === LOG_NS + 'notIncludes') {
+    if (pv === LOG_INCLUDES_IRI || pv === LOG_NOT_INCLUDES_IRI) {
       // Explicit quoted scopes are local formulas, not snapshots of the global closure.
       if (tr.s instanceof GraphTerm) continue;
 
@@ -6009,7 +6022,7 @@ function __analyzeForwardRuleScopedUse(rule) {
       continue;
     }
 
-    if (pv === LOG_NS + 'collectAllIn') {
+    if (pv === LOG_COLLECT_ALL_IN_IRI) {
       if (tr.o instanceof GraphTerm) continue;
 
       out.needsSnap = true;
@@ -6021,7 +6034,7 @@ function __analyzeForwardRuleScopedUse(rule) {
       continue;
     }
 
-    if (pv === LOG_NS + 'forAllIn') {
+    if (pv === LOG_FOR_ALL_IN_IRI) {
       if (tr.o instanceof GraphTerm) continue;
 
       out.needsSnap = true;
@@ -6063,16 +6076,7 @@ function __setForwardRuleScopedStratumInfo(rule, level) {
       ? { needsSnap: true, requiredLevel: level, exactLevel: true }
       : { needsSnap: false, requiredLevel: 0, exactLevel: false };
 
-  if (!hasOwn.call(rule, '__scopedStratumInfo')) {
-    Object.defineProperty(rule, '__scopedStratumInfo', {
-      value,
-      enumerable: false,
-      writable: true,
-      configurable: true,
-    });
-  } else {
-    rule.__scopedStratumInfo = value;
-  }
+  __setHiddenWritable(rule, '__scopedStratumInfo', value);
 }
 
 function __computeForwardRuleScopedStrata(forwardRules) {
@@ -6146,9 +6150,9 @@ function __computeForwardRuleScopedSkipInfo(rule) {
     if (!(tr && tr.p instanceof Iri)) continue;
     const pv = tr.p.value;
 
-    if (pv === LOG_NS + 'collectAllIn' || pv === LOG_NS + 'forAllIn') {
+    if (pv === LOG_COLLECT_ALL_IN_IRI || pv === LOG_FOR_ALL_IN_IRI) {
       if (!addScopedUse(tr.o, i, 'o')) return null;
-    } else if (pv === LOG_NS + 'includes' || pv === LOG_NS + 'notIncludes') {
+    } else if (pv === LOG_INCLUDES_IRI || pv === LOG_NOT_INCLUDES_IRI) {
       if (!addScopedUse(tr.s, i, 's')) return null;
     }
   }
@@ -6740,31 +6744,10 @@ function tripleFastKey(tr) {
 }
 
 function ensureFactIndexes(facts) {
-  if (
-    facts.__byPred &&
-    facts.__byPS &&
-    facts.__byPO &&
-    facts.__byPNonFastS &&
-    facts.__byPNonFastO &&
-    facts.__varPred &&
-    facts.__varPredPS &&
-    facts.__varPredPO &&
-    facts.__varPredNonFastS &&
-    facts.__varPredNonFastO &&
-    facts.__keySet
-  )
-    return;
+  if (FACT_INDEX_REQUIRED_FIELDS.every((name) => facts[name])) return;
 
-  __defineHiddenWritable(facts, '__byPred', new Map());
-  __defineHiddenWritable(facts, '__byPS', new Map());
-  __defineHiddenWritable(facts, '__byPO', new Map());
-  __defineHiddenWritable(facts, '__byPNonFastS', new Map());
-  __defineHiddenWritable(facts, '__byPNonFastO', new Map());
-  __defineHiddenWritable(facts, '__varPred', []);
-  __defineHiddenWritable(facts, '__varPredPS', new Map());
-  __defineHiddenWritable(facts, '__varPredPO', new Map());
-  __defineHiddenWritable(facts, '__varPredNonFastS', []);
-  __defineHiddenWritable(facts, '__varPredNonFastO', []);
+  for (const name of FACT_INDEX_MAP_FIELDS) __defineHiddenWritable(facts, name, new Map());
+  for (const name of FACT_INDEX_ARRAY_FIELDS) __defineHiddenWritable(facts, name, []);
   __defineHiddenWritable(facts, '__keySet', new Set());
   __defineHiddenWritable(facts, '__keySetComplete', false);
 
@@ -6794,16 +6777,9 @@ function cloneFactIndexesForSnapshot(src, dest) {
     return out;
   }
 
-  __defineHiddenWritable(dest, '__byPred', cloneArrayMap(src.__byPred));
-  __defineHiddenWritable(dest, '__byPS', cloneNestedArrayMap(src.__byPS));
-  __defineHiddenWritable(dest, '__byPO', cloneNestedArrayMap(src.__byPO));
-  __defineHiddenWritable(dest, '__byPNonFastS', cloneArrayMap(src.__byPNonFastS));
-  __defineHiddenWritable(dest, '__byPNonFastO', cloneArrayMap(src.__byPNonFastO));
-  __defineHiddenWritable(dest, '__varPred', src.__varPred.slice());
-  __defineHiddenWritable(dest, '__varPredPS', cloneArrayMap(src.__varPredPS));
-  __defineHiddenWritable(dest, '__varPredPO', cloneArrayMap(src.__varPredPO));
-  __defineHiddenWritable(dest, '__varPredNonFastS', src.__varPredNonFastS.slice());
-  __defineHiddenWritable(dest, '__varPredNonFastO', src.__varPredNonFastO.slice());
+  for (const name of FACT_INDEX_ARRAY_MAP_FIELDS) __defineHiddenWritable(dest, name, cloneArrayMap(src[name]));
+  for (const name of FACT_INDEX_NESTED_ARRAY_MAP_FIELDS) __defineHiddenWritable(dest, name, cloneNestedArrayMap(src[name]));
+  for (const name of FACT_INDEX_ARRAY_FIELDS) __defineHiddenWritable(dest, name, src[name].slice());
   __defineHiddenWritable(dest, '__keySet', new Set(src.__keySet));
   __defineHiddenWritable(dest, '__keySetComplete', !!src.__keySetComplete);
 }
@@ -7082,18 +7058,6 @@ function mergeSinglePremiseAgendaBuckets(...buckets) {
   return out;
 }
 
-function termContainsVar(t) {
-  if (t instanceof Var) return true;
-  if (t instanceof ListTerm) return t.elems.some(termContainsVar);
-  if (t instanceof OpenListTerm) return true;
-  if (t instanceof GraphTerm)
-    return t.triples.some(
-      (tr) =>
-        termContainsVar(tr.s) || termContainsVar(tr.p) || termContainsVar(tr.o),
-    );
-  return false;
-}
-
 function makeSinglePremiseAgendaIndex(forwardRules, backRules) {
   const index = {
     byPred: new Map(),
@@ -7157,7 +7121,7 @@ function getSinglePremiseAgendaCandidates(index, fact) {
   let exact = null;
   if (fact.p instanceof Iri) {
     const pk = fact.p.__tid;
-    if ((sk === null && termContainsVar(fact.s)) || (ok === null && termContainsVar(fact.o))) {
+    if ((sk === null && containsVarTerm(fact.s)) || (ok === null && containsVarTerm(fact.o))) {
       // A fact with a variable-bearing subject/object (most importantly a
       // top-level variable fact such as `?S :p ?O.`) can match rules whose
       // premise is fixed in that position. The ordinary `(p,s)` / `(p,o)` lookup
@@ -7202,11 +7166,11 @@ function getSinglePremiseAgendaCandidates(index, fact) {
 // ===========================================================================
 
 function isLogImplies(p) {
-  return p instanceof Iri && p.value === LOG_NS + 'implies';
+  return p instanceof Iri && p.value === LOG_IMPLIES_IRI;
 }
 
 function isLogImpliedBy(p) {
-  return p instanceof Iri && p.value === LOG_NS + 'impliedBy';
+  return p instanceof Iri && p.value === LOG_IMPLIED_BY_IRI;
 }
 
 // ===========================================================================
@@ -7239,16 +7203,7 @@ function __makeGoalTable() {
 
 function __attachGoalTable(scopeCarrier, goalTable) {
   if (!scopeCarrier) return goalTable;
-  if (!hasOwn.call(scopeCarrier, 'goalTable')) {
-    Object.defineProperty(scopeCarrier, 'goalTable', {
-      value: goalTable,
-      enumerable: false,
-      writable: true,
-      configurable: true,
-    });
-  } else {
-    scopeCarrier.goalTable = goalTable;
-  }
+  __setHiddenWritable(scopeCarrier, 'goalTable', goalTable);
   return goalTable;
 }
 
@@ -7303,11 +7258,10 @@ function __canStoreGoalMemo(visited, maxResults) {
 // Unification + substitution
 // ===========================================================================
 
-function containsVarTerm(t, v) {
-  if (t instanceof Iri || t instanceof Literal || t instanceof Blank) return false;
-  if (t instanceof Var) return t.name === v;
+function containsVarTerm(t, v = null) {
+  if (t instanceof Var) return v === null || t.name === v;
   if (t instanceof ListTerm) return t.elems.some((e) => containsVarTerm(e, v));
-  if (t instanceof OpenListTerm) return t.prefix.some((e) => containsVarTerm(e, v)) || t.tailVar === v;
+  if (t instanceof OpenListTerm) return t.prefix.some((e) => containsVarTerm(e, v)) || v === null || t.tailVar === v;
   if (t instanceof GraphTerm)
     return t.triples.some((tr) => containsVarTerm(tr.s, v) || containsVarTerm(tr.p, v) || containsVarTerm(tr.o, v));
   return false;
@@ -7513,7 +7467,7 @@ function unifyOpenWithList(prefix, tailv, ys, subst) {
 
 function graphTriplesContainVars(triples) {
   for (const tr of triples) {
-    if (termContainsVar(tr.s) || termContainsVar(tr.p) || termContainsVar(tr.o)) return true;
+    if (containsVarTerm(tr.s) || containsVarTerm(tr.p) || containsVarTerm(tr.o)) return true;
   }
   return false;
 }
@@ -7798,19 +7752,7 @@ function __tripleHasVarOrBlank(tr) {
 }
 
 function __builtinIsSatisfiableWhenFullyUnbound(pIriVal) {
-  return (
-    pIriVal === MATH_NS + 'sin' ||
-    pIriVal === MATH_NS + 'cos' ||
-    pIriVal === MATH_NS + 'tan' ||
-    pIriVal === MATH_NS + 'asin' ||
-    pIriVal === MATH_NS + 'acos' ||
-    pIriVal === MATH_NS + 'atan' ||
-    pIriVal === MATH_NS + 'sinh' ||
-    pIriVal === MATH_NS + 'cosh' ||
-    pIriVal === MATH_NS + 'tanh' ||
-    pIriVal === MATH_NS + 'degrees' ||
-    pIriVal === MATH_NS + 'negation'
-  );
+  return MATH_BUILTINS_SATISFIABLE_WHEN_FULLY_UNBOUND.has(pIriVal);
 }
 
 function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxResults, opts) {
@@ -8445,12 +8387,7 @@ function __proofTripleKey(tr) {
 
 function __copyProofSource(from, to) {
   if (from && to && Object.prototype.hasOwnProperty.call(from, '__source')) {
-    Object.defineProperty(to, '__source', {
-      value: from.__source,
-      enumerable: false,
-      writable: false,
-      configurable: true,
-    });
+    __defineHiddenValue(to, '__source', from.__source);
   }
   return to;
 }
@@ -8462,12 +8399,7 @@ function __annotateProofVarSourceNames(rule) {
     const m = /^(.*)__\d+$/.exec(name);
     sourceNames[name] = m ? m[1] : name;
   }
-  Object.defineProperty(rule, '__proofVarSourceNames', {
-    value: sourceNames,
-    enumerable: false,
-    writable: false,
-    configurable: true,
-  });
+  __defineHiddenValue(rule, '__proofVarSourceNames', sourceNames);
   return rule;
 }
 
@@ -8673,45 +8605,16 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
     // until a scoped snapshot exists (or a given closure level is reached).
     // Helper functions are module-scoped: __computeForwardRuleScopedSkipInfo, etc.
     function setScopedSnapshot(snap, level) {
-      if (!hasOwn.call(facts, '__scopedSnapshot')) {
-        Object.defineProperty(facts, '__scopedSnapshot', {
-          value: snap,
-          enumerable: false,
-          writable: true,
-          configurable: true,
-        });
-      } else {
-        facts.__scopedSnapshot = snap;
-      }
-
-      if (!hasOwn.call(facts, '__scopedClosureLevel')) {
-        Object.defineProperty(facts, '__scopedClosureLevel', {
-          value: level,
-          enumerable: false,
-          writable: true,
-          configurable: true,
-        });
-      } else {
-        facts.__scopedClosureLevel = level;
-      }
+      __setHiddenWritable(facts, '__scopedSnapshot', snap);
+      __setHiddenWritable(facts, '__scopedClosureLevel', level);
     }
 
     function makeScopedSnapshot() {
       const snap = facts.slice();
       cloneFactIndexesForSnapshot(facts, snap);
-      Object.defineProperty(snap, '__scopedSnapshot', {
-        value: snap,
-        enumerable: false,
-        writable: true,
-        configurable: true,
-      });
+      __defineHiddenWritable(snap, '__scopedSnapshot', snap);
       // Propagate closure level so nested scoped builtins can see it.
-      Object.defineProperty(snap, '__scopedClosureLevel', {
-        value: scopedClosureLevel,
-        enumerable: false,
-        writable: true,
-        configurable: true,
-      });
+      __defineHiddenWritable(snap, '__scopedClosureLevel', scopedClosureLevel);
       return snap;
     }
 
@@ -9059,36 +8962,12 @@ function __withScopedSnapshotForQueries(facts, fn) {
   // Create a frozen snapshot of the saturated closure.
   const snap = facts.slice();
   ensureFactIndexes(snap);
-  Object.defineProperty(snap, '__scopedSnapshot', {
-    value: snap,
-    enumerable: false,
-    writable: true,
-    configurable: true,
-  });
-  Object.defineProperty(snap, '__scopedClosureLevel', {
-    value: Number.MAX_SAFE_INTEGER,
-    enumerable: false,
-    writable: true,
-    configurable: true,
-  });
+  __defineHiddenWritable(snap, '__scopedSnapshot', snap);
+  __defineHiddenWritable(snap, '__scopedClosureLevel', Number.MAX_SAFE_INTEGER);
 
   // Ensure the live facts array exposes the snapshot/level for builtins.
-  if (!hasOwn.call(facts, '__scopedSnapshot')) {
-    Object.defineProperty(facts, '__scopedSnapshot', {
-      value: null,
-      enumerable: false,
-      writable: true,
-      configurable: true,
-    });
-  }
-  if (!hasOwn.call(facts, '__scopedClosureLevel')) {
-    Object.defineProperty(facts, '__scopedClosureLevel', {
-      value: 0,
-      enumerable: false,
-      writable: true,
-      configurable: true,
-    });
-  }
+  __setHiddenWritable(facts, '__scopedSnapshot', null);
+  __setHiddenWritable(facts, '__scopedClosureLevel', 0);
 
   facts.__scopedSnapshot = snap;
   facts.__scopedClosureLevel = Number.MAX_SAFE_INTEGER;
