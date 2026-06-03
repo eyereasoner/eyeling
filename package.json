@@ -1,6 +1,6 @@
 {
   "name": "eyeling",
-  "version": "1.27.2",
+  "version": "1.26.2",
   "description": "A minimal Notation3 (N3) reasoner in JavaScript.",
   "main": "./index.js",
   "keywords": [
@@ -41,7 +41,6 @@
     "build": "node tools/bundle.js",
     "test:packlist": "node test/packlist.test.js",
     "test:api": "node test/api.test.js && node test/stream_messages.test.js",
-    "test:stream-messages": "node test/stream_messages.test.js",
     "test:builtins": "node test/builtins.test.js",
     "test:examples": "node test/examples.test.js",
     "test:examples:proof": "node test/examples.test.js --proof-only",
@@ -52,7 +51,8 @@
     "test": "npm run test:api && npm run test:builtins && npm run test:examples && npm run test:examples:proof && npm run test:manifest && npm run test:playground",
     "posttest": "npm run test:package",
     "preversion": "npm test",
-    "postversion": "git push origin HEAD --follow-tags"
+    "postversion": "git push origin HEAD --follow-tags",
+    "test:stream-messages": "node test/stream_messages.test.js"
   },
   "exports": {
     ".": {

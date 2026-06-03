@@ -3967,6 +3967,10 @@ const batch = [];
               editorSourceUrl = finalUrl;
               editorRdfMode = urlLooksRdfCompatibleInput(finalUrl);
               if (editorRdfMode) enableRdfModeToggle();
+              else if (!backgroundKnowledgeRdfMode && !effectiveStreamMessagesMode() && rdfModeCheckbox) {
+                rdfModeCheckbox.checked = false;
+              }
+              syncStreamMessagesControls();
               const mh = currentMaxHeights();
               autoResizeCodeMirror(editor, 220, mh.editor);
               if (companionTrig && companionBuiltins.length) {
