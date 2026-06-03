@@ -333,6 +333,36 @@ This is the important mental model for `-r` with RDF Messages: the parser preser
 
 This keeps Eyeling's N3 model stable while allowing small RDF 1.1/RDF 1.2 dataset-shaped and message-log-shaped inputs to run through the existing `GraphTerm` machinery when the caller opts in. More exotic future RDF forms should be added only if they can be mapped cleanly onto Eyeling's quoted-formula term model.
 
+
+#### Streaming large RDF Message Logs with `--stream-messages`
+
+The ordinary `-r` replay described above is intentionally a faithful whole-log replay: it materializes one stream resource, the complete ordered-envelope list, all envelope links, and all payload graphs before reasoning. That is useful for examples, audits, proofs, and rules that need to see the whole log at once, but it is not the right execution model for very large append-only logs.
+
+For large files where each RDF Message can be processed independently, use:
+
+```sh
+eyeling -r --stream-messages rules.n3 large-message-log.trig
+```
+
+`--stream-messages` keeps the rule files loaded once, then reads each RDF Message chunk from the log and runs the rules against a one-message replay view:
+
+```n3
+?stream a eymsg:RDFMessageStream;
+  eymsg:envelope ?envelope;
+  eymsg:firstEnvelope ?envelope;
+  eymsg:lastEnvelope ?envelope;
+  eymsg:orderedEnvelopes (?envelope).
+
+?envelope a eymsg:MessageEnvelope;
+  eymsg:offset ?n;
+  eymsg:payloadKind eymsg:nonEmpty;
+  eymsg:payloadGraph ?payload.
+```
+
+The payload is still scoped behind `?payload log:nameOf { ... }`, so rules use the same `log:nameOf`/`log:includes` pattern as in whole-log replay. The important difference is lifetime: after one message has been parsed, reasoned over, and printed, its facts are discarded before the next message is read. Local files are scanned incrementally instead of first being normalized into one giant N3 document.
+
+This mode is meant for production-style message feeds such as MARC-record streams, telemetry streams, or LDES member logs where a consumer checkpoint already tells the application which messages are new. It deliberately does not expose `eymsg:nextEnvelope` links or a complete `eymsg:messageCount`, because those require holding global stream state. Use ordinary `eyeling -r` when your rules need global ordering, sliding windows across several messages, or proof output for the entire replay.
+
 ### 4.2 Parsing triples, with Turtle-style convenience
 
 The parser supports:
@@ -2623,6 +2653,7 @@ Options:
   -h, --help                   Show this help and exit.
   -p, --proof                  Enable proof explanations.
   -r, --rdf                    Enable RDF/TriG input/output compatibility.
+      --stream-messages        Process RDF Message Logs one message at a time under -r.
   -s, --super-restricted       Disable all builtins except => and <=.
   -t, --stream                 Stream derived triples as soon as they are derived.
   -v, --version                Print version and exit.
@@ -2663,7 +2694,7 @@ Quoted graphs/formulas use `{ ... }`. Inside a quoted formula, directive scope m
 
 - `@prefix/@base` and `PREFIX/BASE` directives may appear at top level **or inside `{ ... }`**, and apply to the formula they occur in (formula-local scoping).
 
-With `-r, --rdf` / `{ rdf: true }`, Eyeling accepts selected RDF/TriG surface syntax before normal N3 parsing. RDF 1.2 triple-term forms such as `<<( s p o )>>` and `<<s p o ~ r>>` are compatibility spellings for singleton quoted formulas such as `{ s p o }`; feasible singleton graph terms are printed back as RDF 1.2 triple terms. TriG named graph blocks become `log:nameOf` quoted formulas. If a `VERSION "1.2-messages"`-style directive is present, top-level `MESSAGE` delimiters are replayed as `eymsg:` stream/envelope facts and per-message payload graphs. See [Chapter 4.1](#41-lexing-tokens-not-magic) for the full `-r` model and RDF Message handling.
+With `-r, --rdf` / `{ rdf: true }`, Eyeling accepts selected RDF/TriG surface syntax before normal N3 parsing. RDF 1.2 triple-term forms such as `<<( s p o )>>` and `<<s p o ~ r>>` are compatibility spellings for singleton quoted formulas such as `{ s p o }`; feasible singleton graph terms are printed back as RDF 1.2 triple terms. TriG named graph blocks become `log:nameOf` quoted formulas. If a `VERSION "1.2-messages"`-style directive is present, top-level `MESSAGE` delimiters are replayed as `eymsg:` stream/envelope facts and per-message payload graphs. For large independent message logs, `--stream-messages` runs the same payload-inspection style one message at a time. See [Chapter 4.1](#41-lexing-tokens-not-magic) for the full `-r` model and RDF Message handling.
 
 For the formal grammar, see the N3 spec grammar:
 
