@@ -4623,6 +4623,7 @@ module.exports = {
 'use strict';
 
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { pathToFileURL, fileURLToPath } = require('node:url');
 const { TextDecoder } = require('node:util');
@@ -4676,6 +4677,10 @@ function __isNetworkOrFileIri(s) {
   return typeof s === 'string' && /^(https?:|file:\/\/)/i.test(s);
 }
 
+function __isHttpSource(s) {
+  return typeof s === 'string' && /^https?:/i.test(s);
+}
+
 function __sourceLabelToBaseIri(sourceLabel) {
   if (!sourceLabel || sourceLabel === '<stdin>') return '';
   if (__isNetworkOrFileIri(sourceLabel)) return deref.stripFragment(sourceLabel);
@@ -4692,6 +4697,112 @@ function __readInputSourceSync(sourceLabel) {
   }
 
   return fs.readFileSync(sourceLabel, { encoding: 'utf8' });
+}
+
+function __httpFetchScriptBody({ prefixOnly = false } = {}) {
+  return `
+    const fs = require('fs');
+    const http = require('http');
+    const https = require('https');
+    const zlib = require('zlib');
+    const { URL } = require('url');
+    const urlArg = process.argv[1];
+    const outFile = process.argv[2] || '';
+    const limit = Math.max(1, Number(process.argv[3] || 65536));
+    const prefixOnly = ${prefixOnly ? 'true' : 'false'};
+    const maxRedirects = 10;
+    function requestUrl(u, redirects) {
+      if (redirects > maxRedirects) { console.error('Too many redirects'); process.exit(3); }
+      const parsed = new URL(u);
+      const mod = parsed.protocol === 'https:' ? https : parsed.protocol === 'http:' ? http : null;
+      if (!mod) { console.error('Unsupported protocol ' + parsed.protocol); process.exit(2); }
+      const headers = {
+        accept: 'text/n3, text/turtle, application/trig, application/n-triples, application/n-quads, text/plain;q=0.8, */*;q=0.01',
+        'accept-encoding': 'identity',
+        'user-agent': 'eyeling-rdf-message-stream'
+      };
+      if (prefixOnly) headers.range = 'bytes=0-' + String(limit - 1);
+      const req = mod.request({
+        protocol: parsed.protocol,
+        hostname: parsed.hostname,
+        port: parsed.port || undefined,
+        path: parsed.pathname + parsed.search,
+        headers,
+      }, (res) => {
+        const sc = res.statusCode || 0;
+        if (sc >= 300 && sc < 400 && res.headers && res.headers.location) {
+          const next = new URL(res.headers.location, u).toString();
+          res.resume();
+          return requestUrl(next, redirects + 1);
+        }
+        if (sc < 200 || sc >= 300) {
+          res.resume();
+          console.error('HTTP status ' + sc);
+          process.exit(4);
+        }
+        const enc = String((res.headers && res.headers['content-encoding']) || '').toLowerCase();
+        let body = res;
+        if (enc.includes('gzip')) body = res.pipe(zlib.createGunzip());
+        else if (enc.includes('deflate')) body = res.pipe(zlib.createInflate());
+        else if (enc.includes('br')) body = res.pipe(zlib.createBrotliDecompress());
+        if (prefixOnly) {
+          const chunks = [];
+          let bytes = 0;
+          let finished = false;
+          function finish() {
+            if (finished) return;
+            finished = true;
+            const buf = Buffer.concat(chunks, bytes).subarray(0, limit);
+            process.stdout.write(buf.toString('utf8'));
+            process.exit(0);
+          }
+          body.on('data', (chunk) => {
+            if (finished) return;
+            chunks.push(chunk);
+            bytes += chunk.length;
+            if (bytes >= limit) finish();
+          });
+          body.on('end', finish);
+          body.on('error', (e) => { console.error(e && e.message ? e.message : String(e)); process.exit(5); });
+          return;
+        }
+        const out = fs.createWriteStream(outFile);
+        body.pipe(out);
+        body.on('error', (e) => { console.error(e && e.message ? e.message : String(e)); process.exit(5); });
+        out.on('error', (e) => { console.error(e && e.message ? e.message : String(e)); process.exit(6); });
+        out.on('finish', () => process.exit(0));
+      });
+      req.on('error', (e) => { console.error(e && e.message ? e.message : String(e)); process.exit(5); });
+      req.end();
+    }
+    requestUrl(urlArg, 0);
+  `;
+}
+
+function __readHttpPrefixSync(sourceLabel, byteLimit = 64 * 1024) {
+  const cp = require('node:child_process');
+  const r = cp.spawnSync(process.execPath, ['-e', __httpFetchScriptBody({ prefixOnly: true }), sourceLabel, '', String(byteLimit)], {
+    encoding: 'utf8',
+    maxBuffer: byteLimit + 16 * 1024,
+  });
+  if (r.status !== 0) throw new Error(`Failed to dereference ${sourceLabel}${r.stderr ? ': ' + String(r.stderr).trim() : ''}`);
+  return r.stdout;
+}
+
+function __downloadHttpSourceToTempFileSync(sourceLabel) {
+  const cp = require('node:child_process');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'eyeling-rdf-message-log-'));
+  const file = path.join(dir, 'source.txt');
+  const r = cp.spawnSync(process.execPath, ['-e', __httpFetchScriptBody({ prefixOnly: false }), sourceLabel, file], {
+    encoding: 'utf8',
+    maxBuffer: 1024 * 1024,
+    stdio: ['ignore', 'ignore', 'pipe'],
+  });
+  if (r.status !== 0) {
+    try { fs.rmSync(dir, { recursive: true, force: true }); } catch {}
+    throw new Error(`Failed to dereference ${sourceLabel}${r.stderr ? ': ' + String(r.stderr).trim() : ''}`);
+  }
+  return { file, cleanup: () => { try { fs.rmSync(dir, { recursive: true, force: true }); } catch {} } };
 }
 
 
@@ -4748,6 +4859,9 @@ function __sourceLooksLikeRdfMessageLogSync(sourceLabel) {
     } finally {
       fs.closeSync(fd);
     }
+  }
+  if (__isHttpSource(sourceLabel)) {
+    return RDF_MESSAGE_VERSION_RE.test(__readHttpPrefixSync(sourceLabel));
   }
   return RDF_MESSAGE_VERSION_RE.test(__readInputSourceSync(sourceLabel));
 }
@@ -4905,6 +5019,15 @@ function __forEachRdfMessageChunkSync(sourceLabel, onMessage) {
   const filePath = __localPathForSource(sourceLabel);
   if (filePath) {
     forEachRdfMessageChunkInFileSync(filePath, onMessage);
+    return;
+  }
+  if (__isHttpSource(sourceLabel)) {
+    const tmp = __downloadHttpSourceToTempFileSync(sourceLabel);
+    try {
+      forEachRdfMessageChunkInFileSync(tmp.file, onMessage);
+    } finally {
+      tmp.cleanup();
+    }
     return;
   }
   forEachRdfMessageChunkInText(__readInputSourceSync(sourceLabel), onMessage);

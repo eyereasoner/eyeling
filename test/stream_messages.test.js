@@ -23,19 +23,15 @@ function info(msg) {
 function fail(msg) {
   console.error(`${C.r}FAIL${C.n} ${msg}`);
 }
-
 function numberedName(index, name) {
   return `${String(index + 1).padStart(3, '0')} ${name}`;
 }
-
 function msNow() {
   return Date.now();
 }
-
 function mkTmpDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'eyeling-stream-messages-'));
 }
-
 function rmrf(p) {
   try {
     fs.rmSync(p, { recursive: true, force: true });
@@ -49,11 +45,9 @@ function runEyeling(args, opts = {}) {
     maxBuffer: opts.maxBuffer || 20 * 1024 * 1024,
   });
 }
-
 function expectEyelingOk(args, opts = {}) {
   const r = runEyeling(args, opts);
   if (r.status === 0) return r.stdout;
-
   throw new Error(
     `eyeling failed with exit ${r.status}\n` +
       `STDOUT:\n${r.stdout || ''}\n` +
@@ -77,7 +71,6 @@ function writeScopedPayloadRules(file) {
     'utf8',
   );
 }
-
 function writeBasicMessageLog(file) {
   fs.writeFileSync(
     file,
@@ -95,7 +88,6 @@ function writeBasicMessageLog(file) {
     'utf8',
   );
 }
-
 function writeLargeMessageLog(file, count) {
   let text = 'VERSION "1.2-messages"\nPREFIX : <urn:test#>\n';
   for (let i = 1; i <= count; i += 1) {
@@ -104,7 +96,6 @@ function writeLargeMessageLog(file, count) {
   }
   fs.writeFileSync(file, text, 'utf8');
 }
-
 function writeMarcMessageLog(file) {
   fs.writeFileSync(
     file,
@@ -128,6 +119,48 @@ function writeMarcMessageLog(file) {
   );
 }
 
+function startFileServer(file) {
+  const dir = path.dirname(file);
+  const script = path.join(dir, 'server.js');
+  const portFile = path.join(dir, 'server.port');
+  fs.writeFileSync(
+    script,
+    `const fs = require('node:fs');\n` +
+      `const http = require('node:http');\n` +
+      `const file = process.argv[2];\n` +
+      `const portFile = process.argv[3];\n` +
+      `const size = fs.statSync(file).size;\n` +
+      `const server = http.createServer((req, res) => {\n` +
+      `  const headers = { 'content-type': 'text/plain', 'accept-ranges': 'bytes' };\n` +
+      `  if (req.method === 'HEAD') { res.writeHead(200, { ...headers, 'content-length': size }); res.end(); return; }\n` +
+      `  const range = req.headers.range;\n` +
+      `  if (range) {\n` +
+      `    const m = /^bytes=(\\d+)-(\\d*)$/.exec(range);\n` +
+      `    const start = m ? Number(m[1]) : 0;\n` +
+      `    const end = m && m[2] ? Math.min(Number(m[2]), size - 1) : size - 1;\n` +
+      `    res.writeHead(206, { ...headers, 'content-range': 'bytes ' + start + '-' + end + '/' + size, 'content-length': end - start + 1 });\n` +
+      `    fs.createReadStream(file, { start, end }).pipe(res);\n` +
+      `    return;\n` +
+      `  }\n` +
+      `  res.writeHead(200, { ...headers, 'content-length': size });\n` +
+      `  fs.createReadStream(file).pipe(res);\n` +
+      `});\n` +
+      `server.listen(0, '127.0.0.1', () => fs.writeFileSync(portFile, String(server.address().port)));\n`,
+    'utf8',
+  );
+  const child = cp.spawn(process.execPath, [script, file, portFile], { cwd: root, stdio: ['ignore', 'ignore', 'pipe'] });
+  const deadline = Date.now() + 5000;
+  while (Date.now() < deadline) {
+    if (fs.existsSync(portFile)) {
+      const port = fs.readFileSync(portFile, 'utf8').trim();
+      return { url: `http://127.0.0.1:${port}/messages.txt`, stop: () => child.kill() };
+    }
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20);
+  }
+  child.kill();
+  throw new Error('test HTTP server did not start');
+}
+
 const cases = [
   {
     name: 'scoped payload rules run once per RDF Message',
@@ -136,7 +169,6 @@ const cases = [
       const log = path.join(tmp, 'messages.trig');
       writeScopedPayloadRules(rules);
       writeBasicMessageLog(log);
-
       const out = expectEyelingOk(['-r', '--stream-messages', rules, log]);
       assert.equal(out, 'one\ntwo\nthree\n');
     },
@@ -148,7 +180,6 @@ const cases = [
       const log = path.join(tmp, 'messages.trig');
       writeScopedPayloadRules(rules);
       writeBasicMessageLog(log);
-
       const out = expectEyelingOk(['-r', '--stream-messages', rules, log]);
       assert.equal(out.trim().split('\n').length, 3);
       assert.ok(!out.includes('one\none'));
@@ -161,7 +192,6 @@ const cases = [
       const log = path.join(tmp, 'large.trig');
       writeScopedPayloadRules(rules);
       writeLargeMessageLog(log, 1000);
-
       const out = expectEyelingOk(['-r', '--stream-messages', rules, log]);
       const lines = out.trim().split('\n');
       assert.equal(lines.length, 1000);
@@ -172,11 +202,29 @@ const cases = [
     },
   },
   {
+    name: 'remote text/plain RDF Message Logs are streamed via HTTP',
+    run(tmp) {
+      const rules = path.join(tmp, 'rules.n3');
+      const log = path.join(tmp, 'remote.trig');
+      writeScopedPayloadRules(rules);
+      writeLargeMessageLog(log, 25);
+      const server = startFileServer(log);
+      try {
+        const out = expectEyelingOk(['-r', '--stream-messages', server.url, rules]);
+        const lines = out.trim().split('\n');
+        assert.equal(lines.length, 25);
+        assert.equal(lines[0], '1');
+        assert.equal(lines[24], '25');
+      } finally {
+        server.stop();
+      }
+    },
+  },
+  {
     name: 'MARC extraction rules fire over each streamed payload graph',
     run(tmp) {
       const log = path.join(tmp, 'marc.messages.txt');
       writeMarcMessageLog(log);
-
       const fixture = path.join(root, 'test', 'fixtures', 'marc-rules-stream-messages.n3');
       const out = expectEyelingOk(['-r', '--stream-messages', fixture, log]);
       assert.deepEqual(out.trim().split('\n').sort(), [
@@ -196,7 +244,6 @@ const cases = [
       const log = path.join(tmp, 'messages.trig');
       writeScopedPayloadRules(rules);
       writeBasicMessageLog(log);
-
       const r = runEyeling(['--stream-messages', rules, log]);
       assert.notEqual(r.status, 0);
       assert.match(r.stderr, /requires -r\/--rdf/);
@@ -207,15 +254,12 @@ const cases = [
 (function main() {
   const suiteStart = msNow();
   info(`Running ${cases.length} stream-message tests`);
-
   let passed = 0;
   let failed = 0;
-
   for (const [index, tc] of cases.entries()) {
     const tmp = mkTmpDir();
     const testName = numberedName(index, tc.name);
     const start = msNow();
-
     try {
       tc.run(tmp);
       ok(`${testName} ${C.dim}(${msNow() - start} ms)${C.n}`);
@@ -228,16 +272,13 @@ const cases = [
       rmrf(tmp);
     }
   }
-
   console.log('');
   const suiteMs = msNow() - suiteStart;
   console.log(`${C.y}==${C.n} Total elapsed: ${suiteMs} ms (${(suiteMs / 1000).toFixed(2)} s)`);
-
   if (failed === 0) {
     ok(`All stream-message tests passed (${passed}/${cases.length})`);
     process.exit(0);
   }
-
   fail(`Some stream-message tests failed (${passed}/${cases.length})`);
   process.exit(1);
 })();
