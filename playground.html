@@ -500,7 +500,8 @@
         min-height: 5rem;
       }
 
-      /* Output pane: allow internal scrolling when height-capped */
+      /* Editor panes: allow internal scrolling when height-capped. */
+      .cm-input .CodeMirror-scroll,
       .cm-output .CodeMirror-scroll {
         overflow: auto !important;
       }
@@ -839,6 +840,14 @@
               <input id="proof-comments" type="checkbox" />
               Turn proof explanations on (-p)
             </label>
+            <label class="toggle" title="Enable RDF/TriG input/output compatibility (-r/--rdf)">
+              <input id="rdf-mode" type="checkbox" />
+              RDF/TriG mode (-r)
+            </label>
+            <label class="toggle" title="Process RDF Message Logs one message at a time under RDF/TriG mode (--stream-messages)">
+              <input id="stream-messages" type="checkbox" />
+              Stream RDF Messages (--stream-messages)
+            </label>
             <label
               class="toggle"
               title="Rewrite http:// IRIs to https:// for log dereferencing builtins (mixed-content safe)">
@@ -858,12 +867,6 @@
 
             <span class="status" id="status">Idle.</span>
           </div>
-
-          <details class="cli-options">
-            <summary>Related CLI options</summary>
-            <pre><code>  -r, --rdf                    Enable RDF/TriG input/output compatibility.
-      --stream-messages        Process RDF Message Logs one message at a time under -r.</code></pre>
-          </details>
         </section>
 
         <section class="card">
@@ -937,17 +940,29 @@
         const backgroundStatusEl = document.getElementById('background-status');
         const clearBackgroundBtn = document.getElementById('clear-background-btn');
         const proofCheckbox = document.getElementById('proof-comments');
+        const rdfModeCheckbox = document.getElementById('rdf-mode');
+        const streamMessagesCheckbox = document.getElementById('stream-messages');
         const enforceHttpsCheckbox = document.getElementById('enforce-https');
         const copyShareLinkBtn = document.getElementById('copy-share-link-btn');
         const createGistShareBtn = document.getElementById('create-gist-share-btn');
         const shareStatusEl = document.getElementById('share-status');
         const versionEl = document.getElementById('eyeling-version');
 
-        // Persist "enforce https" toggle (default ON)
+        // Persist run-option toggles.
         try {
-          const saved = localStorage.getItem('eyeling.enforceHttps');
-          if (saved !== null) enforceHttpsCheckbox.checked = saved === '1';
-          enforceHttpsCheckbox.addEventListener('change', () => {
+          const savedRdf = localStorage.getItem('eyeling.rdfMode');
+          const savedStreamMessages = localStorage.getItem('eyeling.streamMessages');
+          const savedHttps = localStorage.getItem('eyeling.enforceHttps');
+          if (savedRdf !== null && rdfModeCheckbox) rdfModeCheckbox.checked = savedRdf === '1';
+          if (savedStreamMessages !== null && streamMessagesCheckbox) streamMessagesCheckbox.checked = savedStreamMessages === '1';
+          if (savedHttps !== null && enforceHttpsCheckbox) enforceHttpsCheckbox.checked = savedHttps === '1';
+          if (rdfModeCheckbox) rdfModeCheckbox.addEventListener('change', () => {
+            localStorage.setItem('eyeling.rdfMode', rdfModeCheckbox.checked ? '1' : '0');
+          });
+          if (streamMessagesCheckbox) streamMessagesCheckbox.addEventListener('change', () => {
+            localStorage.setItem('eyeling.streamMessages', streamMessagesCheckbox.checked ? '1' : '0');
+          });
+          if (enforceHttpsCheckbox) enforceHttpsCheckbox.addEventListener('change', () => {
             localStorage.setItem('eyeling.enforceHttps', enforceHttpsCheckbox.checked ? '1' : '0');
           });
         } catch (_) {}
@@ -968,9 +983,32 @@
         let editorRdfMode = false;
         let outputMarkdownLinkBaseUrl = '';
 
+        function effectiveRdfMode() {
+          return !!((rdfModeCheckbox && rdfModeCheckbox.checked) || backgroundKnowledgeRdfMode || editorRdfMode);
+        }
+
+        function effectiveStreamMessagesMode() {
+          return !!(streamMessagesCheckbox && streamMessagesCheckbox.checked);
+        }
+
+        function enableRdfModeToggle() {
+          if (rdfModeCheckbox) rdfModeCheckbox.checked = true;
+        }
+
+        function syncStreamMessagesControls() {
+          const streaming = effectiveStreamMessagesMode();
+          if (streaming) enableRdfModeToggle();
+          if (proofCheckbox) {
+            proofCheckbox.disabled = streaming;
+            if (streaming) proofCheckbox.checked = false;
+          }
+        }
+
+        syncStreamMessagesControls();
+
         // --- Unified background streaming runner (shared with the Streaming demo tab) ---
         // Exposes: window.__eyelingUnified.startStreamRun({
-        //   program, enforceHttps, proof,
+        //   program, enforceHttps, proof, rdf, streamMessages,
         //   onBatch(derivedTriples[]),
         //   onRenderedText(text, countTriples),
         //   onStdout(text), onStderr(text),
@@ -1109,6 +1147,7 @@
             const enforceHttps = !!(args && args.enforceHttps);
             const proof = !!(args && args.proof);
             const rdf = !!(args && args.rdf);
+            const streamMessages = !!(args && args.streamMessages);
             const onBatch = args && typeof args.onBatch === 'function' ? args.onBatch : null;
             const onRenderedText = args && typeof args.onRenderedText === 'function' ? args.onRenderedText : null;
             const onStdout = args && typeof args.onStdout === 'function' ? args.onStdout : null;
@@ -1380,6 +1419,7 @@
               const enforceHttps = !!msg.enforceHttps;
               const proof = !!msg.proof;
               const rdf = !!msg.rdf;
+              const streamMessages = !!msg.streamMessages;
               const builtinModules = Array.isArray(msg.builtinModules) ? msg.builtinModules : [];
 
               __registerBuiltinModuleSources(builtinModules);
@@ -1426,6 +1466,25 @@ const batch = [];
                 }
 
                 const LOG_OUTPUT_STRING = "http://www.w3.org/2000/10/swap/log#outputString";
+                const __RDF_MESSAGE_VERSION_LINE_RE = /^\\s*(?:@version|VERSION)\\s+(["'])(?:1\\.1|1\\.2|1\\.2-basic)-messages\\1\\s*\\.?\\s*(?:#.*)?$/i;
+                const __RDF_MESSAGE_DELIMITER_LINE_RE = /^\\s*(?:@message|MESSAGE)\\b(?:\\s+[^#\\r\\n]+)?\\s*\\.?\\s*(?:#.*)?$/i;
+                const __RDF_DIRECTIVE_LINE_RE = /^\\s*(?:@?(?:prefix|base)\\b|PREFIX\\b|BASE\\b)/i;
+                const __RDF_TYPE_IRI = "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>";
+                const __XSD_INTEGER_IRI = "<http://www.w3.org/2001/XMLSchema#integer>";
+                const __LOG_NAME_OF_IRI = "<http://www.w3.org/2000/10/swap/log#nameOf>";
+                const __EYMSG_IRIS = {
+                  RDFMessageStream: "<https://eyereasoner.github.io/eyeling/vocab/message#RDFMessageStream>",
+                  MessageEnvelope: "<https://eyereasoner.github.io/eyeling/vocab/message#MessageEnvelope>",
+                  envelope: "<https://eyereasoner.github.io/eyeling/vocab/message#envelope>",
+                  orderedEnvelopes: "<https://eyereasoner.github.io/eyeling/vocab/message#orderedEnvelopes>",
+                  firstEnvelope: "<https://eyereasoner.github.io/eyeling/vocab/message#firstEnvelope>",
+                  lastEnvelope: "<https://eyereasoner.github.io/eyeling/vocab/message#lastEnvelope>",
+                  offset: "<https://eyereasoner.github.io/eyeling/vocab/message#offset>",
+                  payloadKind: "<https://eyereasoner.github.io/eyeling/vocab/message#payloadKind>",
+                  payloadGraph: "<https://eyereasoner.github.io/eyeling/vocab/message#payloadGraph>",
+                  nonEmpty: "<https://eyereasoner.github.io/eyeling/vocab/message#nonEmpty>",
+                  empty: "<https://eyereasoner.github.io/eyeling/vocab/message#empty>",
+                };
 
                 function hasOutputStringPredicate(trs) {
                   return Array.isArray(trs) && trs.some((tr) => tr && tr.p && tr.p.value === LOG_OUTPUT_STRING);
@@ -1443,6 +1502,193 @@ const batch = [];
                   return Array.isArray(triplesForOutput) && triplesForOutput.some((tr) => tr && tr.p && tr.p.value === LOG_OUTPUT_STRING);
                 }
 
+                function __simpleHashText(text) {
+                  let h = 0x811c9dc5;
+                  const s = String(text || "");
+                  for (let i = 0; i < s.length; i++) {
+                    h ^= s.charCodeAt(i);
+                    h = Math.imul(h, 0x01000193) >>> 0;
+                  }
+                  return h.toString(16).padStart(8, "0");
+                }
+
+                function __splitLinesKeepEnds(text) {
+                  return String(text || "").match(/.*(?:\\r\\n|\\n|\\r)|.+$/g) || [];
+                }
+
+                function __stripRdfDirectiveLines(text) {
+                  return String(text || "")
+                    .split(/(?<=\\r\\n|\\n|\\r)/)
+                    .filter((line) => !__RDF_DIRECTIVE_LINE_RE.test(line) && !__RDF_MESSAGE_VERSION_LINE_RE.test(line))
+                    .join("");
+                }
+
+                function __hasRdfPayload(text) {
+                  return String(text || "")
+                    .split(/\\r\\n|\\n|\\r/)
+                    .some((line) => {
+                      const trimmed = line.replace(/#.*$/g, "").trim();
+                      return trimmed && !__RDF_DIRECTIVE_LINE_RE.test(trimmed) && !__RDF_MESSAGE_VERSION_LINE_RE.test(trimmed);
+                    });
+                }
+
+                function __addRdfDirective(directives, seen, line) {
+                  if (!__RDF_DIRECTIVE_LINE_RE.test(line)) return;
+                  const key = line.trim();
+                  if (!key || seen.has(key)) return;
+                  seen.add(key);
+                  directives.push(line.endsWith("\\n") || line.endsWith("\\r") ? line : line + "\\n");
+                }
+
+                function __normalizeStreamingPayloadChunk(chunk, directives) {
+                  const prelude = directives.join("");
+                  const source = prelude + String(chunk || "");
+                  const normalized = typeof normalizeRdfCompatibility === "function" ? normalizeRdfCompatibility(source) : source;
+                  return __stripRdfDirectiveLines(normalized).trim();
+                }
+
+                function __buildSingleMessageReplayDocument(sourceLabel, messageIndex, chunk, directives) {
+                  const hash = __simpleHashText(sourceLabel || "playground");
+                  const base = "urn:eyeling:message-stream:" + hash;
+                  const padded = String(messageIndex).padStart(6, "0");
+                  const stream = "<" + base + "#stream>";
+                  const envelope = "<" + base + "#m" + padded + ">";
+                  const payload = "<" + base + "#m" + padded + "/payload>";
+                  const body = __normalizeStreamingPayloadChunk(chunk, directives);
+                  const hasBody = __hasRdfPayload(body);
+                  const out = [];
+
+                  for (const line of directives) {
+                    const trimmed = String(line || "").trim();
+                    if (trimmed) out.push(trimmed);
+                  }
+                  out.push(stream + " " + __RDF_TYPE_IRI + " " + __EYMSG_IRIS.RDFMessageStream + " .");
+                  out.push(stream + " " + __EYMSG_IRIS.envelope + " " + envelope + " .");
+                  out.push(stream + " " + __EYMSG_IRIS.orderedEnvelopes + " (" + envelope + ") .");
+                  out.push(stream + " " + __EYMSG_IRIS.firstEnvelope + " " + envelope + " .");
+                  out.push(stream + " " + __EYMSG_IRIS.lastEnvelope + " " + envelope + " .");
+                  out.push(envelope + " " + __RDF_TYPE_IRI + " " + __EYMSG_IRIS.MessageEnvelope + " .");
+                  out.push(envelope + " " + __EYMSG_IRIS.offset + " \\"" + messageIndex + "\\"^^" + __XSD_INTEGER_IRI + " .");
+                  out.push(envelope + " " + __EYMSG_IRIS.payloadKind + " " + (hasBody ? __EYMSG_IRIS.nonEmpty : __EYMSG_IRIS.empty) + " .");
+                  if (hasBody) {
+                    out.push(envelope + " " + __EYMSG_IRIS.payloadGraph + " " + payload + " .");
+                    out.push(payload + " " + __LOG_NAME_OF_IRI + " {");
+                    out.push(body);
+                    out.push("} .");
+                  }
+                  return out.join("\\n") + "\\n";
+                }
+
+                function __forEachRdfMessageChunkInText(text, onMessage) {
+                  const directives = [];
+                  const seenDirectives = new Set();
+                  let chunk = "";
+                  let messageIndex = 1;
+                  let sawVersion = false;
+                  let sawDelimiter = false;
+
+                  function emit() {
+                    onMessage({ messageIndex, chunk, directives: directives.slice() });
+                    messageIndex += 1;
+                    chunk = "";
+                  }
+
+                  for (const line of __splitLinesKeepEnds(text)) {
+                    if (__RDF_MESSAGE_VERSION_LINE_RE.test(line)) {
+                      sawVersion = true;
+                      continue;
+                    }
+                    if (__RDF_MESSAGE_DELIMITER_LINE_RE.test(line)) {
+                      emit();
+                      sawDelimiter = true;
+                      continue;
+                    }
+                    __addRdfDirective(directives, seenDirectives, line);
+                    chunk += line;
+                  }
+                  if (!sawVersion) throw new Error("--stream-messages did not find VERSION \\"*-messages\\" in the editor input.");
+                  if (sawDelimiter || __hasRdfPayload(chunk)) emit();
+                }
+
+                function __containsRdfMessageVersionLine(text) {
+                  return __splitLinesKeepEnds(String(text || "")).some((line) => __RDF_MESSAGE_VERSION_LINE_RE.test(line));
+                }
+
+                function __splitProgramForMessageStreaming(text, sourceMap) {
+                  const lines = __splitLinesKeepEnds(text);
+                  if (sourceMap && sourceMap.hasBackground && sourceMap.editorStartLine > 1) {
+                    const cut = Math.max(0, sourceMap.editorStartLine - 1);
+                    return {
+                      rulesText: lines.slice(0, cut).join(""),
+                      messagesText: lines.slice(cut).join(""),
+                    };
+                  }
+                  const idx = lines.findIndex((line) => __RDF_MESSAGE_VERSION_LINE_RE.test(line));
+                  if (idx < 0) return { rulesText: text, messagesText: "" };
+                  return {
+                    rulesText: lines.slice(0, idx).join(""),
+                    messagesText: lines.slice(idx).join(""),
+                  };
+                }
+
+                function __parseWorkerDocument(text, useRdf, label) {
+                  const toks = lex(String(text || ""), { rdf: !!useRdf });
+                  const parser = new Parser(toks);
+                  const parsed = parser.parseDocument();
+                  return {
+                    label,
+                    prefixes: parsed[0],
+                    triples: parsed[1] || [],
+                    frules: parsed[2] || [],
+                    brules: parsed[3] || [],
+                    qrules: parsed[4] || [],
+                  };
+                }
+
+                function __runStreamMessagesProgram() {
+                  if (!rdf) throw new Error("--stream-messages requires RDF/TriG mode (-r).");
+                  if (proof) throw new Error("--stream-messages currently does not support proof output.");
+
+                  const split = __splitProgramForMessageStreaming(program, sourceMap);
+                  if (!__containsRdfMessageVersionLine(split.messagesText)) {
+                    throw new Error("--stream-messages needs RDF Message Log input in the editor. Load rules as background knowledge, then load or paste the message log into the editor.");
+                  }
+
+                  const rulesDoc = __parseWorkerDocument(split.rulesText || "", rdf, "playground rules");
+                  let messageCount = 0;
+
+                  __forEachRdfMessageChunkInText(split.messagesText, ({ messageIndex, chunk, directives }) => {
+                    messageCount += 1;
+                    const messageReplay = __buildSingleMessageReplayDocument("playground", messageIndex, chunk, directives);
+                    const messageDoc = __parseWorkerDocument(messageReplay, false, "playground message " + messageIndex);
+                    const prefixes = rulesDoc.prefixes || messageDoc.prefixes;
+                    const triples = rulesDoc.triples.slice().concat(messageDoc.triples);
+                    const frules = rulesDoc.frules.slice().concat(messageDoc.frules);
+                    const brules = rulesDoc.brules.slice().concat(messageDoc.brules);
+                    const qrules = rulesDoc.qrules.slice().concat(messageDoc.qrules);
+
+                    if (typeof materializeRdfLists === "function") {
+                      materializeRdfLists(triples, frules.concat(qrules || []), brules);
+                    }
+                    const facts = triples.filter((tr) => (typeof isGroundTriple === "function") ? isGroundTriple(tr) : true);
+
+                    forwardChain(facts, frules, brules, (df) => {
+                      let t = "";
+                      try {
+                        if (typeof tripleToN3 === "function") t = tripleToN3(df.fact, prefixes);
+                        else if (df && df.fact && df.fact.toString) t = String(df.fact);
+                      } catch (_) {}
+                      if (t) {
+                        batch.push(t);
+                        flush(false);
+                      }
+                    });
+                    flush(true);
+                  });
+
+                  if (!messageCount) throw new Error("--stream-messages did not find any RDF messages to process.");
+                }
+
                 const __oldEnforce = (typeof enforceHttpsEnabled !== "undefined") ? enforceHttpsEnabled : false;
                 const __oldProof = (typeof proofCommentsEnabled !== "undefined") ? proofCommentsEnabled : false;
                 const __oldTrace = (typeof __tracePrefixes !== "undefined") ? __tracePrefixes : null;
@@ -1450,6 +1696,13 @@ const batch = [];
                 try {
                   if (typeof enforceHttpsEnabled !== "undefined") enforceHttpsEnabled = !!enforceHttps;
                   if (typeof proofCommentsEnabled !== "undefined") proofCommentsEnabled = !!proof;
+
+                  if (streamMessages) {
+                    __runStreamMessagesProgram();
+                    flush(true);
+                    self.postMessage({ type: "done", runId });
+                    return;
+                  }
 
                   const toks = lex(program, { rdf });
                   const parser = new Parser(toks);
@@ -1652,6 +1905,7 @@ const batch = [];
               proof,
               builtinModules,
               rdf,
+              streamMessages,
             });
 
             return {
@@ -1844,6 +2098,8 @@ const batch = [];
           if (state && state.loadbg && typeof state.url === 'string' && state.url) compact.u = state.url;
           if (state && state.loadbg) compact.b = true;
           if (state && state.proofcomments) compact.p = true;
+          if (state && state.rdf) compact.r = true;
+          if (state && state.streammessages) compact.m = true;
           if (state && state.httpsderef === false) compact.h = false;
           return compact;
         }
@@ -1903,6 +2159,10 @@ const batch = [];
                   : '';
           const loadbg = parseBooleanParam(Object.prototype.hasOwnProperty.call(raw, 'b') ? raw.b : raw.loadbg);
           const proofcomments = parseBooleanParam(Object.prototype.hasOwnProperty.call(raw, 'p') ? raw.p : raw.proofcomments);
+          const rdf = parseBooleanParam(Object.prototype.hasOwnProperty.call(raw, 'r') ? raw.r : raw.rdf);
+          const streammessages = parseBooleanParam(
+            Object.prototype.hasOwnProperty.call(raw, 'm') ? raw.m : raw.streammessages,
+          );
           const httpsderef = parseBooleanParam(Object.prototype.hasOwnProperty.call(raw, 'h') ? raw.h : raw.httpsderef);
           return {
             edit,
@@ -1910,6 +2170,8 @@ const batch = [];
             editorSourceUrl,
             loadbg: loadbg === null ? null : loadbg,
             proofcomments: proofcomments === null ? null : proofcomments,
+            rdf: rdf === null ? null : rdf,
+            streammessages: streammessages === null ? null : streammessages,
             httpsderef: httpsderef === null ? null : httpsderef,
           };
         }
@@ -1949,6 +2211,8 @@ const batch = [];
         const legacyN3Uri = getN3UriFromQuery();
         const legacyLoadBg = parseBooleanParam(getFirstQueryParam(['loadbg', 'background', 'bg']));
         const legacyProofComments = parseBooleanParam(getFirstQueryParam(['proofcomments', 'proof']));
+        const legacyRdfMode = parseBooleanParam(getFirstQueryParam(['rdf', 'rdfmode']));
+        const legacyStreamMessages = parseBooleanParam(getFirstQueryParam(['streammessages', 'stream-messages']));
         const legacyHttpsDeref = parseBooleanParam(getFirstQueryParam(['httpsderef', 'enforcehttps']));
         const hasLegacyInitialState =
           legacyProgramFromQuery !== null ||
@@ -1956,6 +2220,8 @@ const batch = [];
           legacyN3Uri !== null ||
           legacyLoadBg !== null ||
           legacyProofComments !== null ||
+          legacyRdfMode !== null ||
+          legacyStreamMessages !== null ||
           legacyHttpsDeref !== null;
 
         const savedState = sharedStateToken || sharedStateUrl || hasLegacyInitialState ? null : getSavedPlaygroundState();
@@ -1966,6 +2232,9 @@ const batch = [];
         const paramLoadBg = restoredState && restoredState.loadbg !== null ? restoredState.loadbg : legacyLoadBg;
         const paramProofComments =
           restoredState && restoredState.proofcomments !== null ? restoredState.proofcomments : legacyProofComments;
+        const paramRdfMode = restoredState && restoredState.rdf !== null ? restoredState.rdf : legacyRdfMode;
+        const paramStreamMessages =
+          restoredState && restoredState.streammessages !== null ? restoredState.streammessages : legacyStreamMessages;
         const paramHttpsDeref = restoredState && restoredState.httpsderef !== null ? restoredState.httpsderef : legacyHttpsDeref;
         const paramEditorSourceUrl = restoredState && restoredState.editorSourceUrl ? restoredState.editorSourceUrl : '';
 
@@ -1977,6 +2246,13 @@ const batch = [];
         }
         if (paramProofComments !== null && proofCheckbox) {
           proofCheckbox.checked = paramProofComments;
+        }
+        if (paramRdfMode !== null && rdfModeCheckbox) {
+          rdfModeCheckbox.checked = paramRdfMode;
+        }
+        if (paramStreamMessages !== null && streamMessagesCheckbox) {
+          streamMessagesCheckbox.checked = paramStreamMessages;
+          syncStreamMessagesControls();
         }
         if (paramHttpsDeref !== null && enforceHttpsCheckbox) {
           enforceHttpsCheckbox.checked = paramHttpsDeref;
@@ -2004,6 +2280,8 @@ const batch = [];
           lineWrapping: true,
           viewportMargin: Infinity,
         });
+
+        editor.getWrapperElement().classList.add('cm-input');
 
         const outputEl = CodeMirror.fromTextArea(outputTextArea, {
           mode: { name: 'sparql' },
@@ -2478,6 +2756,8 @@ const batch = [];
             url: (uriInput && uriInput.value ? uriInput.value : '').trim(),
             loadbg: !!(loadAsBackgroundCheckbox && loadAsBackgroundCheckbox.checked),
             proofcomments: !!(proofCheckbox && proofCheckbox.checked),
+            rdf: !!(rdfModeCheckbox && rdfModeCheckbox.checked),
+            streammessages: !!(streamMessagesCheckbox && streamMessagesCheckbox.checked),
             httpsderef: !!(enforceHttpsCheckbox && enforceHttpsCheckbox.checked),
           };
         }
@@ -2832,6 +3112,23 @@ const batch = [];
           });
         }
 
+        if (rdfModeCheckbox) {
+          rdfModeCheckbox.addEventListener('change', () => {
+            setShareGistOption('');
+            if (!rdfModeCheckbox.checked && streamMessagesCheckbox) streamMessagesCheckbox.checked = false;
+            syncStreamMessagesControls();
+            savePlaygroundState();
+          });
+        }
+
+        if (streamMessagesCheckbox) {
+          streamMessagesCheckbox.addEventListener('change', () => {
+            setShareGistOption('');
+            syncStreamMessagesControls();
+            savePlaygroundState();
+          });
+        }
+
         if (enforceHttpsCheckbox) {
           enforceHttpsCheckbox.addEventListener('change', () => {
             setShareGistOption('');
@@ -2991,12 +3288,15 @@ const batch = [];
           const isRenderedOutputMode = programMentionsOutputStrings(programText);
           const isLogQueryMode = /\blog:query\b/.test(programText) || /swap\/log#query/.test(programText);
           const usesRenderedText = isRenderedOutputMode || (isLogQueryMode && !proofCheckbox.checked);
+          const streamMessages = effectiveStreamMessagesMode();
           outputMarkdownLinkBaseUrl = usesRenderedText ? currentMarkdownOutputBaseUrl() : '';
           const modeLabel = isRenderedOutputMode
             ? 'rendered output'
-            : isLogQueryMode && !proofCheckbox.checked
-              ? 'log:query'
-              : 'streaming';
+            : streamMessages
+              ? 'RDF Message streaming'
+              : isLogQueryMode && !proofCheckbox.checked
+                ? 'log:query'
+                : 'streaming';
 
           runBtn.disabled = true;
           setPlayPaused(false);
@@ -3043,6 +3343,7 @@ const batch = [];
             sourceMap: effectiveProgram.sourceMap,
             builtinModules: effectiveProgram.builtinModules || [],
             rdf: !!effectiveProgram.rdf,
+            streamMessages,
             enforceHttps: enforceHttpsCheckbox.checked,
             proof: proofCheckbox.checked,
             onRenderedText: (text, countTriples) => {
@@ -3322,6 +3623,7 @@ const batch = [];
             backgroundBuiltinModules = [];
             backgroundKnowledgeRdfMode = true;
             backgroundKnowledgeAuto = true;
+            enableRdfModeToggle();
           }
           updateBackgroundStatus();
           return true;
@@ -3388,7 +3690,7 @@ const batch = [];
             return {
               program: editorText,
               builtinModules: dedupeBuiltinModules(editorBuiltinModules),
-              rdf: !!editorRdfMode,
+              rdf: effectiveRdfMode(),
               sourceMap: {
                 hasBackground: false,
                 backgroundStartLine: 0,
@@ -3404,7 +3706,7 @@ const batch = [];
             return {
               program: backgroundKnowledgeText,
               builtinModules: dedupeBuiltinModules(backgroundBuiltinModules),
-              rdf: !!backgroundKnowledgeRdfMode,
+              rdf: effectiveRdfMode(),
               sourceMap: {
                 hasBackground: true,
                 backgroundStartLine: 1,
@@ -3431,7 +3733,7 @@ const batch = [];
           return {
             program: parts.join('\n'),
             builtinModules: dedupeBuiltinModules(backgroundBuiltinModules.concat(editorBuiltinModules)),
-            rdf: !!(backgroundKnowledgeRdfMode || editorRdfMode),
+            rdf: effectiveRdfMode(),
             sourceMap: {
               hasBackground: true,
               backgroundStartLine,
@@ -3499,6 +3801,7 @@ const batch = [];
               backgroundKnowledgeSource = finalUrl;
               backgroundBuiltinModules = companionBuiltins;
               backgroundKnowledgeRdfMode = urlLooksRdfCompatibleInput(finalUrl);
+              if (backgroundKnowledgeRdfMode) enableRdfModeToggle();
               backgroundKnowledgeAuto = false;
               updateBackgroundStatus();
               statusEl.textContent = companionBuiltins.length
@@ -3512,6 +3815,7 @@ const batch = [];
               editorSourceText = text;
               editorSourceUrl = finalUrl;
               editorRdfMode = urlLooksRdfCompatibleInput(finalUrl);
+              if (editorRdfMode) enableRdfModeToggle();
               const mh = currentMaxHeights();
               autoResizeCodeMirror(editor, 220, mh.editor);
               if (companionTrig && companionBuiltins.length) {
