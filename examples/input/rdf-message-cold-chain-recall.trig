@@ -1,0 +1,668 @@
+# ===================================
+# RDF Message Cold Chain Recall input
+# ===================================
+#
+# This file is the data half of the runnable example:
+#
+#   eyeling -r examples/rdf-message-cold-chain-recall.n3 examples/input/rdf-message-cold-chain-recall.trig
+#
+# See the handbook section on RDF Message Log replay under -r:
+#   https://eyereasoner.github.io/eyeling/HANDBOOK#rdf-message-log-replay-under--r
+#
+# It serializes one LDES configuration message followed by forty-eight telemetry
+# member messages.  A consumer checkpoint at sequence 42 lets the N3 rules skip
+# the large committed prefix and repair only the new tail.
+
+VERSION "1.2-messages"
+PREFIX : <https://eyereasoner.github.io/eyeling/examples/rdf-message-cold-chain-recall#>
+PREFIX ldes: <https://w3id.org/ldes#>
+PREFIX tree: <https://w3id.org/tree#>
+PREFIX see: <https://example.org/see#>
+PREFIX in: <https://example.org/see/input#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+# Message 1: stable LDES stream metadata and consumer checkpoint.
+:telemetryStream a ldes:EventStream ;
+  ldes:timestampPath :observedAt ;
+  ldes:sequencePath :sequence ;
+  tree:view :telemetryPage ;
+  :lastCommittedSequence 42 ;
+  :currentWindowFromSequence 43 ;
+  :temperatureLimitTenthC 80 ;
+  :temperatureLimitLabel "8.0°C" ;
+  :repairPolicy :preferCalibratedLogger .
+
+:quarantineDecision :decisionText "quarantine batchA, notify QA, and hold shipment" .
+
+in:run a see:InputDataset ;
+  see:name "rdf_message_cold_chain_recall" ;
+  see:title "RDF Message Cold Chain Recall" ;
+  see:sourceFile "examples/rdf-message-cold-chain-recall.n3" ;
+  see:description "Forty-eight cold-chain telemetry members serialized as RDF Messages; the rules resume after a sequence checkpoint and repair contradictory tail evidence." ;
+  see:compiler "Eyeling RDF Message Log input" .
+
+MESSAGE
+# Message 2: historical telemetry member 001, already committed by the checkpoint.
+:telemetryStream tree:member :obs-001 .
+
+:obs-001 a :ColdChainObservation ;
+  :sequence 1 ;
+  :observedAt "2026-05-12T12:03:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 43 ;
+  :temperatureLabel "4.3°C" ;
+  :priority 1 ;
+  :source "dock-sensor" .
+
+MESSAGE
+# Message 3: historical telemetry member 002, already committed by the checkpoint.
+:telemetryStream tree:member :obs-002 .
+
+:obs-002 a :ColdChainObservation ;
+  :sequence 2 ;
+  :observedAt "2026-05-12T12:06:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 44 ;
+  :temperatureLabel "4.4°C" ;
+  :priority 1 ;
+  :source "warehouse-reader" .
+
+MESSAGE
+# Message 4: historical telemetry member 003, already committed by the checkpoint.
+:telemetryStream tree:member :obs-003 .
+
+:obs-003 a :ColdChainObservation ;
+  :sequence 3 ;
+  :observedAt "2026-05-12T12:09:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 45 ;
+  :temperatureLabel "4.5°C" ;
+  :priority 1 ;
+  :source "truck-gateway" .
+
+MESSAGE
+# Message 5: historical telemetry member 004, already committed by the checkpoint.
+:telemetryStream tree:member :obs-004 .
+
+:obs-004 a :ColdChainObservation ;
+  :sequence 4 ;
+  :observedAt "2026-05-12T12:12:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 46 ;
+  :temperatureLabel "4.6°C" ;
+  :priority 1 ;
+  :source "dock-sensor" .
+
+MESSAGE
+# Message 6: historical telemetry member 005, already committed by the checkpoint.
+:telemetryStream tree:member :obs-005 .
+
+:obs-005 a :ColdChainObservation ;
+  :sequence 5 ;
+  :observedAt "2026-05-12T12:15:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 47 ;
+  :temperatureLabel "4.7°C" ;
+  :priority 1 ;
+  :source "warehouse-reader" .
+
+MESSAGE
+# Message 7: historical telemetry member 006, already committed by the checkpoint.
+:telemetryStream tree:member :obs-006 .
+
+:obs-006 a :ColdChainObservation ;
+  :sequence 6 ;
+  :observedAt "2026-05-12T12:18:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 48 ;
+  :temperatureLabel "4.8°C" ;
+  :priority 1 ;
+  :source "truck-gateway" .
+
+MESSAGE
+# Message 8: historical telemetry member 007, already committed by the checkpoint.
+:telemetryStream tree:member :obs-007 .
+
+:obs-007 a :ColdChainObservation ;
+  :sequence 7 ;
+  :observedAt "2026-05-12T12:21:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 49 ;
+  :temperatureLabel "4.9°C" ;
+  :priority 1 ;
+  :source "dock-sensor" .
+
+MESSAGE
+# Message 9: historical telemetry member 008, already committed by the checkpoint.
+:telemetryStream tree:member :obs-008 .
+
+:obs-008 a :ColdChainObservation ;
+  :sequence 8 ;
+  :observedAt "2026-05-12T12:24:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 42 ;
+  :temperatureLabel "4.2°C" ;
+  :priority 1 ;
+  :source "warehouse-reader" .
+
+MESSAGE
+# Message 10: historical telemetry member 009, already committed by the checkpoint.
+:telemetryStream tree:member :obs-009 .
+
+:obs-009 a :ColdChainObservation ;
+  :sequence 9 ;
+  :observedAt "2026-05-12T12:27:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 43 ;
+  :temperatureLabel "4.3°C" ;
+  :priority 1 ;
+  :source "truck-gateway" .
+
+MESSAGE
+# Message 11: historical telemetry member 010, already committed by the checkpoint.
+:telemetryStream tree:member :obs-010 .
+
+:obs-010 a :ColdChainObservation ;
+  :sequence 10 ;
+  :observedAt "2026-05-12T13:30:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 44 ;
+  :temperatureLabel "4.4°C" ;
+  :priority 1 ;
+  :source "dock-sensor" .
+
+MESSAGE
+# Message 12: historical telemetry member 011, already committed by the checkpoint.
+:telemetryStream tree:member :obs-011 .
+
+:obs-011 a :ColdChainObservation ;
+  :sequence 11 ;
+  :observedAt "2026-05-12T13:33:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 45 ;
+  :temperatureLabel "4.5°C" ;
+  :priority 1 ;
+  :source "warehouse-reader" .
+
+MESSAGE
+# Message 13: historical telemetry member 012, already committed by the checkpoint.
+:telemetryStream tree:member :obs-012 .
+
+:obs-012 a :ColdChainObservation ;
+  :sequence 12 ;
+  :observedAt "2026-05-12T13:36:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 46 ;
+  :temperatureLabel "4.6°C" ;
+  :priority 1 ;
+  :source "truck-gateway" .
+
+MESSAGE
+# Message 14: historical telemetry member 013, already committed by the checkpoint.
+:telemetryStream tree:member :obs-013 .
+
+:obs-013 a :ColdChainObservation ;
+  :sequence 13 ;
+  :observedAt "2026-05-12T13:39:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 47 ;
+  :temperatureLabel "4.7°C" ;
+  :priority 1 ;
+  :source "dock-sensor" .
+
+MESSAGE
+# Message 15: historical telemetry member 014, already committed by the checkpoint.
+:telemetryStream tree:member :obs-014 .
+
+:obs-014 a :ColdChainObservation ;
+  :sequence 14 ;
+  :observedAt "2026-05-12T13:42:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 48 ;
+  :temperatureLabel "4.8°C" ;
+  :priority 1 ;
+  :source "warehouse-reader" .
+
+MESSAGE
+# Message 16: historical telemetry member 015, already committed by the checkpoint.
+:telemetryStream tree:member :obs-015 .
+
+:obs-015 a :ColdChainObservation ;
+  :sequence 15 ;
+  :observedAt "2026-05-12T13:45:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 49 ;
+  :temperatureLabel "4.9°C" ;
+  :priority 1 ;
+  :source "truck-gateway" .
+
+MESSAGE
+# Message 17: historical telemetry member 016, already committed by the checkpoint.
+:telemetryStream tree:member :obs-016 .
+
+:obs-016 a :ColdChainObservation ;
+  :sequence 16 ;
+  :observedAt "2026-05-12T13:48:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 42 ;
+  :temperatureLabel "4.2°C" ;
+  :priority 1 ;
+  :source "dock-sensor" .
+
+MESSAGE
+# Message 18: historical telemetry member 017, already committed by the checkpoint.
+:telemetryStream tree:member :obs-017 .
+
+:obs-017 a :ColdChainObservation ;
+  :sequence 17 ;
+  :observedAt "2026-05-12T13:51:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 43 ;
+  :temperatureLabel "4.3°C" ;
+  :priority 1 ;
+  :source "warehouse-reader" .
+
+MESSAGE
+# Message 19: historical telemetry member 018, already committed by the checkpoint.
+:telemetryStream tree:member :obs-018 .
+
+:obs-018 a :ColdChainObservation ;
+  :sequence 18 ;
+  :observedAt "2026-05-12T13:54:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 44 ;
+  :temperatureLabel "4.4°C" ;
+  :priority 1 ;
+  :source "truck-gateway" .
+
+MESSAGE
+# Message 20: historical telemetry member 019, already committed by the checkpoint.
+:telemetryStream tree:member :obs-019 .
+
+:obs-019 a :ColdChainObservation ;
+  :sequence 19 ;
+  :observedAt "2026-05-12T13:57:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 45 ;
+  :temperatureLabel "4.5°C" ;
+  :priority 1 ;
+  :source "dock-sensor" .
+
+MESSAGE
+# Message 21: historical telemetry member 020, already committed by the checkpoint.
+:telemetryStream tree:member :obs-020 .
+
+:obs-020 a :ColdChainObservation ;
+  :sequence 20 ;
+  :observedAt "2026-05-12T14:00:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 46 ;
+  :temperatureLabel "4.6°C" ;
+  :priority 1 ;
+  :source "warehouse-reader" .
+
+MESSAGE
+# Message 22: historical telemetry member 021, already committed by the checkpoint.
+:telemetryStream tree:member :obs-021 .
+
+:obs-021 a :ColdChainObservation ;
+  :sequence 21 ;
+  :observedAt "2026-05-12T14:03:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 47 ;
+  :temperatureLabel "4.7°C" ;
+  :priority 1 ;
+  :source "truck-gateway" .
+
+MESSAGE
+# Message 23: historical telemetry member 022, already committed by the checkpoint.
+:telemetryStream tree:member :obs-022 .
+
+:obs-022 a :ColdChainObservation ;
+  :sequence 22 ;
+  :observedAt "2026-05-12T14:06:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 48 ;
+  :temperatureLabel "4.8°C" ;
+  :priority 1 ;
+  :source "dock-sensor" .
+
+MESSAGE
+# Message 24: historical telemetry member 023, already committed by the checkpoint.
+:telemetryStream tree:member :obs-023 .
+
+:obs-023 a :ColdChainObservation ;
+  :sequence 23 ;
+  :observedAt "2026-05-12T14:09:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 49 ;
+  :temperatureLabel "4.9°C" ;
+  :priority 1 ;
+  :source "warehouse-reader" .
+
+MESSAGE
+# Message 25: historical telemetry member 024, already committed by the checkpoint.
+:telemetryStream tree:member :obs-024 .
+
+:obs-024 a :ColdChainObservation ;
+  :sequence 24 ;
+  :observedAt "2026-05-12T14:12:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 42 ;
+  :temperatureLabel "4.2°C" ;
+  :priority 1 ;
+  :source "truck-gateway" .
+
+MESSAGE
+# Message 26: historical telemetry member 025, already committed by the checkpoint.
+:telemetryStream tree:member :obs-025 .
+
+:obs-025 a :ColdChainObservation ;
+  :sequence 25 ;
+  :observedAt "2026-05-12T14:15:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 43 ;
+  :temperatureLabel "4.3°C" ;
+  :priority 1 ;
+  :source "dock-sensor" .
+
+MESSAGE
+# Message 27: historical telemetry member 026, already committed by the checkpoint.
+:telemetryStream tree:member :obs-026 .
+
+:obs-026 a :ColdChainObservation ;
+  :sequence 26 ;
+  :observedAt "2026-05-12T14:18:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 44 ;
+  :temperatureLabel "4.4°C" ;
+  :priority 1 ;
+  :source "warehouse-reader" .
+
+MESSAGE
+# Message 28: historical telemetry member 027, already committed by the checkpoint.
+:telemetryStream tree:member :obs-027 .
+
+:obs-027 a :ColdChainObservation ;
+  :sequence 27 ;
+  :observedAt "2026-05-12T14:21:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 45 ;
+  :temperatureLabel "4.5°C" ;
+  :priority 1 ;
+  :source "truck-gateway" .
+
+MESSAGE
+# Message 29: historical telemetry member 028, already committed by the checkpoint.
+:telemetryStream tree:member :obs-028 .
+
+:obs-028 a :ColdChainObservation ;
+  :sequence 28 ;
+  :observedAt "2026-05-12T14:24:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 46 ;
+  :temperatureLabel "4.6°C" ;
+  :priority 1 ;
+  :source "dock-sensor" .
+
+MESSAGE
+# Message 30: historical telemetry member 029, already committed by the checkpoint.
+:telemetryStream tree:member :obs-029 .
+
+:obs-029 a :ColdChainObservation ;
+  :sequence 29 ;
+  :observedAt "2026-05-12T14:27:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 47 ;
+  :temperatureLabel "4.7°C" ;
+  :priority 1 ;
+  :source "warehouse-reader" .
+
+MESSAGE
+# Message 31: historical telemetry member 030, already committed by the checkpoint.
+:telemetryStream tree:member :obs-030 .
+
+:obs-030 a :ColdChainObservation ;
+  :sequence 30 ;
+  :observedAt "2026-05-12T15:30:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 48 ;
+  :temperatureLabel "4.8°C" ;
+  :priority 1 ;
+  :source "truck-gateway" .
+
+MESSAGE
+# Message 32: historical telemetry member 031, already committed by the checkpoint.
+:telemetryStream tree:member :obs-031 .
+
+:obs-031 a :ColdChainObservation ;
+  :sequence 31 ;
+  :observedAt "2026-05-12T15:33:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 49 ;
+  :temperatureLabel "4.9°C" ;
+  :priority 1 ;
+  :source "dock-sensor" .
+
+MESSAGE
+# Message 33: historical telemetry member 032, already committed by the checkpoint.
+:telemetryStream tree:member :obs-032 .
+
+:obs-032 a :ColdChainObservation ;
+  :sequence 32 ;
+  :observedAt "2026-05-12T15:36:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 42 ;
+  :temperatureLabel "4.2°C" ;
+  :priority 1 ;
+  :source "warehouse-reader" .
+
+MESSAGE
+# Message 34: historical telemetry member 033, already committed by the checkpoint.
+:telemetryStream tree:member :obs-033 .
+
+:obs-033 a :ColdChainObservation ;
+  :sequence 33 ;
+  :observedAt "2026-05-12T15:39:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 43 ;
+  :temperatureLabel "4.3°C" ;
+  :priority 1 ;
+  :source "truck-gateway" .
+
+MESSAGE
+# Message 35: historical telemetry member 034, already committed by the checkpoint.
+:telemetryStream tree:member :obs-034 .
+
+:obs-034 a :ColdChainObservation ;
+  :sequence 34 ;
+  :observedAt "2026-05-12T15:42:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 44 ;
+  :temperatureLabel "4.4°C" ;
+  :priority 1 ;
+  :source "dock-sensor" .
+
+MESSAGE
+# Message 36: historical telemetry member 035, already committed by the checkpoint.
+:telemetryStream tree:member :obs-035 .
+
+:obs-035 a :ColdChainObservation ;
+  :sequence 35 ;
+  :observedAt "2026-05-12T15:45:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 45 ;
+  :temperatureLabel "4.5°C" ;
+  :priority 1 ;
+  :source "warehouse-reader" .
+
+MESSAGE
+# Message 37: historical telemetry member 036, already committed by the checkpoint.
+:telemetryStream tree:member :obs-036 .
+
+:obs-036 a :ColdChainObservation ;
+  :sequence 36 ;
+  :observedAt "2026-05-12T15:48:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 46 ;
+  :temperatureLabel "4.6°C" ;
+  :priority 1 ;
+  :source "truck-gateway" .
+
+MESSAGE
+# Message 38: historical telemetry member 037, already committed by the checkpoint.
+:telemetryStream tree:member :obs-037 .
+
+:obs-037 a :ColdChainObservation ;
+  :sequence 37 ;
+  :observedAt "2026-05-12T15:51:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 47 ;
+  :temperatureLabel "4.7°C" ;
+  :priority 1 ;
+  :source "dock-sensor" .
+
+MESSAGE
+# Message 39: historical telemetry member 038, already committed by the checkpoint.
+:telemetryStream tree:member :obs-038 .
+
+:obs-038 a :ColdChainObservation ;
+  :sequence 38 ;
+  :observedAt "2026-05-12T15:54:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 48 ;
+  :temperatureLabel "4.8°C" ;
+  :priority 1 ;
+  :source "warehouse-reader" .
+
+MESSAGE
+# Message 40: historical telemetry member 039, already committed by the checkpoint.
+:telemetryStream tree:member :obs-039 .
+
+:obs-039 a :ColdChainObservation ;
+  :sequence 39 ;
+  :observedAt "2026-05-12T15:57:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 49 ;
+  :temperatureLabel "4.9°C" ;
+  :priority 1 ;
+  :source "truck-gateway" .
+
+MESSAGE
+# Message 41: historical telemetry member 040, already committed by the checkpoint.
+:telemetryStream tree:member :obs-040 .
+
+:obs-040 a :ColdChainObservation ;
+  :sequence 40 ;
+  :observedAt "2026-05-12T16:00:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 42 ;
+  :temperatureLabel "4.2°C" ;
+  :priority 1 ;
+  :source "dock-sensor" .
+
+MESSAGE
+# Message 42: historical telemetry member 041, already committed by the checkpoint.
+:telemetryStream tree:member :obs-041 .
+
+:obs-041 a :ColdChainObservation ;
+  :sequence 41 ;
+  :observedAt "2026-05-12T16:03:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 43 ;
+  :temperatureLabel "4.3°C" ;
+  :priority 1 ;
+  :source "warehouse-reader" .
+
+MESSAGE
+# Message 43: historical telemetry member 042, already committed by the checkpoint.
+:telemetryStream tree:member :obs-042 .
+
+:obs-042 a :ColdChainObservation ;
+  :sequence 42 ;
+  :observedAt "2026-05-12T16:06:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 44 ;
+  :temperatureLabel "4.4°C" ;
+  :priority 1 ;
+  :source "truck-gateway" .
+
+MESSAGE
+# Message 44: new tail telemetry still within range.
+:telemetryStream tree:member :obs-043 .
+
+:obs-043 a :ColdChainObservation ;
+  :sequence 43 ;
+  :observedAt "2026-05-12T16:09:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 45 ;
+  :temperatureLabel "4.5°C" ;
+  :priority 1 ;
+  :source "truck-gateway" .
+
+MESSAGE
+# Message 45: new tail telemetry still within range.
+:telemetryStream tree:member :obs-044 .
+
+:obs-044 a :ColdChainObservation ;
+  :sequence 44 ;
+  :observedAt "2026-05-12T16:12:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 46 ;
+  :temperatureLabel "4.6°C" ;
+  :priority 1 ;
+  :source "dock-sensor" .
+
+MESSAGE
+# Message 46: new tail telemetry still within range.
+:telemetryStream tree:member :obs-045 .
+
+:obs-045 a :ColdChainObservation ;
+  :sequence 45 ;
+  :observedAt "2026-05-12T16:15:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 47 ;
+  :temperatureLabel "4.7°C" ;
+  :priority 1 ;
+  :source "warehouse-reader" .
+
+MESSAGE
+# Message 47: new tail telemetry reports a temperature excursion.
+:telemetryStream tree:member :obs-046 .
+
+:obs-046 a :ColdChainObservation ;
+  :sequence 46 ;
+  :observedAt "2026-05-12T16:18:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 121 ;
+  :temperatureLabel "12.1°C" ;
+  :priority 2 ;
+  :source "truck-gateway" .
+
+MESSAGE
+# Message 48: calibrated logger reports the excursion used for repair.
+:telemetryStream tree:member :obs-047 .
+
+:obs-047 a :ColdChainObservation ;
+  :sequence 47 ;
+  :observedAt "2026-05-12T16:21:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 118 ;
+  :temperatureLabel "11.8°C" ;
+  :priority 5 ;
+  :source "calibrated-cold-chain-logger" ;
+  :calibrationClass :calibratedLogger .
+
+MESSAGE
+# Message 49: new tail telemetry still within range.
+:telemetryStream tree:member :obs-048 .
+
+:obs-048 a :ColdChainObservation ;
+  :sequence 48 ;
+  :observedAt "2026-05-12T16:24:00Z"^^xsd:dateTime ;
+  :batch :batchA ;
+  :temperatureTenthC 44 ;
+  :temperatureLabel "4.4°C" ;
+  :priority 1 ;
+  :source "door-proximity-sensor" .
+

@@ -1,0 +1,229 @@
+# =================================
+# RDF Message Cold Chain Recall
+# =================================
+#
+# Run as:
+#
+#   eyeling -r examples/rdf-message-cold-chain-recall.n3 examples/input/rdf-message-cold-chain-recall.trig
+#
+# See the handbook section on RDF Message Log replay under -r:
+#   https://eyereasoner.github.io/eyeling/HANDBOOK#rdf-message-log-replay-under--r
+#
+# This example is meant to be operationally obvious: a cold-chain shipment has
+# many historical telemetry messages, a checkpoint says which prefix was already
+# processed, and the new tail contains inconsistent evidence about whether a
+# medicine batch stayed below its temperature limit.  The repair keeps the
+# calibrated logger reading before materializing a recall/quarantine decision.
+
+@prefix : <https://eyereasoner.github.io/eyeling/examples/rdf-message-cold-chain-recall#>.
+@prefix eymsg: <https://eyereasoner.github.io/eyeling/vocab/message#>.
+@prefix ldes: <https://w3id.org/ldes#>.
+@prefix tree: <https://w3id.org/tree#>.
+@prefix list: <http://www.w3.org/2000/10/swap/list#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix string: <http://www.w3.org/2000/10/swap/string#>.
+
+# Parser replay gives us an ordered RDF Message stream.  Keep this visible in
+# the derived data so the report can say how many messages were processed.
+{
+  ?Stream a eymsg:RDFMessageStream;
+    eymsg:envelope ?Envelope.
+  ?Envelope a eymsg:MessageEnvelope;
+    eymsg:offset ?Offset.
+} => {
+  ?Envelope :messageOffset ?Offset;
+    :messageBoundaryExplicit true.
+}.
+
+# Message 1 carries stream metadata and the consumer checkpoint.  Everything up
+# to sequence 42 was already materialized by a previous synchronization run.
+{
+  ?Envelope eymsg:payloadGraph ?Payload.
+  ?Payload log:nameOf ?PayloadContext.
+  ?PayloadContext log:includes {
+    :telemetryStream a ldes:EventStream;
+      ldes:timestampPath :observedAt;
+      ldes:sequencePath :sequence;
+      tree:view :telemetryPage;
+      :lastCommittedSequence ?Bookmark;
+      :currentWindowFromSequence ?WindowStart;
+      :temperatureLimitTenthC ?Limit;
+      :temperatureLimitLabel ?LimitLabel;
+      :repairPolicy :preferCalibratedLogger.
+    :quarantineDecision :decisionText ?DecisionText.
+  }.
+} => {
+  :telemetryStream a ldes:EventStream;
+    ldes:timestampPath :observedAt;
+    ldes:sequencePath :sequence;
+    tree:view :telemetryPage;
+    :lastCommittedSequence ?Bookmark;
+    :currentWindowFromSequence ?WindowStart;
+    :temperatureLimitTenthC ?Limit;
+    :temperatureLimitLabel ?LimitLabel;
+    :repairPolicy :preferCalibratedLogger.
+  :quarantineDecision :decisionText ?DecisionText.
+}.
+
+# Each RDF Message payload contributes one LDES telemetry member.  The payloads
+# stay scoped to their message graphs; the reasoner lifts only the fields needed
+# for incremental classification, repair, and reporting.
+{
+  ?Envelope eymsg:payloadGraph ?Payload.
+  ?Payload log:nameOf ?PayloadContext.
+  ?PayloadContext log:includes {
+    :telemetryStream tree:member ?Member.
+    ?Member a :ColdChainObservation;
+      :sequence ?Sequence;
+      :observedAt ?ObservedAt;
+      :batch ?Batch;
+      :temperatureTenthC ?Temperature;
+      :temperatureLabel ?TemperatureLabel;
+      :priority ?Priority;
+      :source ?Source.
+  }.
+} => {
+  ?Member :ldesMember true;
+    :envelope ?Envelope;
+    :sequence ?Sequence;
+    :observedAt ?ObservedAt;
+    :batch ?Batch;
+    :temperatureTenthC ?Temperature;
+    :temperatureLabel ?TemperatureLabel;
+    :priority ?Priority;
+    :source ?Source.
+  ?Envelope :emitsLDESMember ?Member.
+}.
+
+
+# Carry optional calibration metadata when a telemetry member has it.  Most
+# sensors do not; the calibrated logger in the noisy tail does.
+{
+  ?Envelope eymsg:payloadGraph ?Payload.
+  ?Payload log:nameOf ?PayloadContext.
+  ?PayloadContext log:includes {
+    ?Member :calibrationClass ?CalibrationClass.
+  }.
+} => {
+  ?Member :calibrationClass ?CalibrationClass.
+}.
+
+# The checkpoint separates the large committed prefix from the new tail.
+{
+  :telemetryStream :lastCommittedSequence ?Bookmark.
+  ?Member :ldesMember true;
+    :sequence ?Sequence.
+  ?Sequence math:notGreaterThan ?Bookmark.
+} => {
+  ?Member :alreadyCommitted true.
+}.
+
+{
+  :telemetryStream :lastCommittedSequence ?Bookmark.
+  ?Member :ldesMember true;
+    :sequence ?Sequence.
+  ?Sequence math:greaterThan ?Bookmark.
+} => {
+  ?Member :newlyEmitted true.
+}.
+
+{
+  :telemetryStream :currentWindowFromSequence ?WindowStart.
+  ?Member :newlyEmitted true;
+    :sequence ?Sequence.
+  ?Sequence math:notLessThan ?WindowStart.
+} => {
+  :currentColdChainWindow :contains ?Member.
+  ?Member :inCurrentColdChainWindow true.
+}.
+
+# The raw tail is inconsistent for batchA: some new telemetry says the batch is
+# still within range, while another message says it crossed the cold-chain limit.
+{
+  :telemetryStream :temperatureLimitTenthC ?Limit.
+  :currentColdChainWindow :contains ?InRangeMember, ?ExcursionMember.
+  ?InRangeMember :batch ?Batch;
+    :temperatureTenthC ?InRangeTemperature.
+  ?ExcursionMember :batch ?Batch;
+    :temperatureTenthC ?ExcursionTemperature.
+  ?InRangeTemperature math:notGreaterThan ?Limit.
+  ?ExcursionTemperature math:greaterThan ?Limit.
+  ?InRangeMember log:notEqualTo ?ExcursionMember.
+} => {
+  :currentColdChainWindow :rawConflict :batchBothInRangeAndInExcursion;
+    :inconsistentBatch ?Batch.
+}.
+
+# Preferred repair: calibrated cold-chain logger evidence wins for recall
+# decisions.  In this example it says batchA exceeded the temperature limit.
+{
+  :telemetryStream :temperatureLimitTenthC ?Limit.
+  :currentColdChainWindow :rawConflict :batchBothInRangeAndInExcursion;
+    :contains ?PreferredMember.
+  ?PreferredMember :batch ?Batch;
+    :temperatureTenthC ?PreferredTemperature;
+    :temperatureLabel ?PreferredTemperatureLabel;
+    :priority ?PreferredPriority;
+    :source ?PreferredSource;
+    :sequence ?PreferredSequence;
+    :calibrationClass :calibratedLogger.
+  ?PreferredTemperature math:greaterThan ?Limit.
+} => {
+  :currentColdChainWindow :preferredRepair :calibratedLoggerWins;
+    :repairedBatch ?Batch;
+    :preferredEvidence ?PreferredMember;
+    :preferredSource ?PreferredSource;
+    :preferredSequence ?PreferredSequence;
+    :preferredPriority ?PreferredPriority;
+    :repairedTemperatureTenthC ?PreferredTemperature;
+    :repairedTemperatureLabel ?PreferredTemperatureLabel;
+    :materializedDecision :quarantineDecision.
+}.
+
+# Count the whole stream and the incremental tail.  The interesting point is
+# that the input is large enough to make streaming useful, while the repair is
+# local to the new messages after the checkpoint.
+{
+  ( ?Member { ?Member :ldesMember true. } ?AllMembers ) log:collectAllIn _:coldChainCounts.
+  ?AllMembers list:length ?AllCount.
+  ( ?Member { ?Member :alreadyCommitted true. } ?CommittedMembers ) log:collectAllIn _:coldChainCounts.
+  ?CommittedMembers list:length ?CommittedCount.
+  ( ?Member { ?Member :newlyEmitted true. } ?NewMembers ) log:collectAllIn _:coldChainCounts.
+  ?NewMembers list:length ?NewCount.
+  ( ?Member { ?Member :inCurrentColdChainWindow true. } ?WindowMembers ) log:collectAllIn _:coldChainCounts.
+  ?WindowMembers list:length ?WindowCount.
+} => {
+  :incrementalColdChainRun :totalTelemetryMembers ?AllCount;
+    :alreadyCommittedMembers ?CommittedCount;
+    :newlyEmittedMembers ?NewCount;
+    :windowMemberCount ?WindowCount.
+}.
+
+# Emit one compact report when replay, checkpointing, conflict detection, repair,
+# and final materialization are all present.
+{
+  ?Stream a eymsg:RDFMessageStream;
+    eymsg:orderedEnvelopes ?Envelopes.
+  ?Envelopes list:length ?EnvelopeCount.
+  :telemetryStream :lastCommittedSequence ?Bookmark;
+    :temperatureLimitTenthC ?Limit;
+    :temperatureLimitLabel ?LimitLabel.
+  :incrementalColdChainRun :totalTelemetryMembers ?AllCount;
+    :alreadyCommittedMembers ?CommittedCount;
+    :newlyEmittedMembers ?NewCount;
+    :windowMemberCount ?WindowCount.
+  :currentColdChainWindow :rawConflict :batchBothInRangeAndInExcursion;
+    :inconsistentBatch :batchA;
+    :preferredRepair :calibratedLoggerWins;
+    :preferredSource ?PreferredSource;
+    :preferredSequence ?PreferredSequence;
+    :preferredPriority ?PreferredPriority;
+    :repairedTemperatureLabel ?PreferredTemperatureLabel;
+    :materializedDecision :quarantineDecision.
+  :quarantineDecision :decisionText ?DecisionText.
+  ("# rdf-message-cold-chain-recall\n\n## Source files\n\n- [N3 rules](../rdf-message-cold-chain-recall.n3)\n- [Input RDF Message Log](../input/rdf-message-cold-chain-recall.trig)\n- [Story deck](../deck/rdf-message-cold-chain-recall.md)\n\n## Answer\nCold-chain recall reasoning accepted: %d RDF Message envelopes contained %d append-only telemetry members. The consumer checkpoint was sequence %d, so %d committed history members were skipped and only %d newly emitted members entered the repair window. The tail window has %d members and says batchA is both within range and over the %s limit. The repair keeps the calibrated logger evidence at sequence %d from %s with priority %d, resolves the repaired temperature to %s, and materializes the decision: %s.\n\n## Explanation\nThis is the streaming shape that matters operationally. A cold-chain consumer can replay a long RDF Message Log, use LDES sequence metadata to resume after its checkpoint, and inspect only the new tail. The raw tail is contradictory, so the rules do not materialize from the flattened data. They first choose the calibrated logger reading, then derive the quarantine decision from that repaired state." ?EnvelopeCount ?AllCount ?Bookmark ?CommittedCount ?NewCount ?WindowCount ?LimitLabel ?PreferredSequence ?PreferredSource ?PreferredPriority ?PreferredTemperatureLabel ?DecisionText) string:format ?Block.
+} => {
+  :rdfMessageColdChainRecallExample log:outputString ?Block.
+  :rdfMessageColdChainRecallExample :demonstrates :RDFMessageLogReplay, :LDESMemberStream, :CheckpointedSynchronization, :IncrementalColdChainReasoning, :TelemetryConflictRepair, :QuarantineMaterialization.
+}.
