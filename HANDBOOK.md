@@ -359,7 +359,9 @@ eyeling -r --stream-messages rules.n3 large-message-log.trig
   eymsg:payloadGraph ?payload.
 ```
 
-The payload is still scoped behind `?payload log:nameOf { ... }`, so rules use the same `log:nameOf`/`log:includes` pattern as in whole-log replay. The important difference is lifetime: after one message has been parsed, reasoned over, and printed, its facts are discarded before the next message is read. Local files are scanned incrementally instead of first being normalized into one giant N3 document.
+The payload is still scoped behind `?payload log:nameOf { ... }`, so rules use the same `log:nameOf`/`log:includes` pattern as in whole-log replay. The important difference is lifetime: after one message has been parsed, reasoned over, and printed, its facts are discarded before the next message is read. Local files are scanned incrementally instead of first being normalized into one giant N3 document. Remote HTTP(S) message logs are likewise detected from a small prefix and then spooled for streaming, rather than buffered as one large response.
+
+The browser playground exposes the same idea through the RDF and stream-message toggles. In the playground, load extraction rules as background knowledge and put the RDF Message Log itself in the main editor. The detector accepts both `VERSION "1.2-messages"` / `MESSAGE` and `@version "1.1-messages" .` / `@message .` forms. When the stream-message toggle is enabled, each editor message is replayed separately against the background rules.
 
 This mode is meant for production-style message feeds such as MARC-record streams, telemetry streams, or LDES member logs where a consumer checkpoint already tells the application which messages are new. It deliberately does not expose `eymsg:nextEnvelope` links or a complete `eymsg:messageCount`, because those require holding global stream state. Use ordinary `eyeling -r` when your rules need global ordering, sliding windows across several messages, or proof output for the entire replay.
 
@@ -3842,10 +3844,14 @@ For an interactive reasoning environment, error behavior matters almost as much 
 
 When an N3 syntax error occurs, the output pane shows the error with line and column information, and the editor highlights the offending line. This shortens the distance between the parser’s complaint and the place where the user needs to fix the program.
 
-The playground also exposes two configuration toggles that are especially useful for explanation and browser safety:
+The playground also exposes configuration toggles that are especially useful for explanation, RDF compatibility, and browser safety:
 
 - **proof comments**, which make reasoning output more explanatory,
-- **HTTPS dereferencing enforcement**, which helps avoid mixed-content problems when dereferencing from the browser.
+- **HTTPS dereferencing enforcement**, which helps avoid mixed-content problems when dereferencing from the browser,
+- **RDF/TriG compatibility**, which mirrors command-line `-r, --rdf` for RDF surface syntax and message-log replay,
+- **stream RDF Messages**, which mirrors `--stream-messages` under RDF mode and runs background rules over one editor message at a time.
+
+For streamed RDF Messages in the playground, the main editor must contain the message log and the rules should be loaded as background knowledge. This keeps the interaction close to the command-line form `eyeling -r --stream-messages rules.n3 messages.trig` while preserving the playground's interactive editor/output loop.
 
 Together these choices make the playground better suited to live explanation, teaching, and debugging than a minimal browser wrapper would be.
 
