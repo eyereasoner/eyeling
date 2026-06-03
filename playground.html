@@ -447,6 +447,28 @@
         margin-top: 0.15rem;
       }
 
+      .cli-options {
+        margin-top: 0.65rem;
+        font-size: 0.8rem;
+        color: #6b7280;
+      }
+
+      .cli-options summary {
+        cursor: pointer;
+        font-weight: 500;
+      }
+
+      .cli-options pre {
+        margin: 0.4rem 0 0;
+        padding: 0.65rem 0.75rem;
+        border-radius: 0.65rem;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        overflow-x: auto;
+        font-size: 0.78rem;
+        line-height: 1.45;
+      }
+
       /* --- CodeMirror (syntax highlighted) editors --- */
       .CodeMirror {
         height: auto;
@@ -669,6 +691,16 @@
           color: #93c5fd;
         }
 
+        .cli-options {
+          color: #a7b0bf;
+        }
+
+        .cli-options pre {
+          background: #0b0f14;
+          border-color: #1f2a37;
+          color: #e7eaf0;
+        }
+
         .markdown-output code {
           background: #172033;
         }
@@ -826,6 +858,12 @@
 
             <span class="status" id="status">Idle.</span>
           </div>
+
+          <details class="cli-options">
+            <summary>Related CLI options</summary>
+            <pre><code>  -r, --rdf                    Enable RDF/TriG input/output compatibility.
+      --stream-messages        Process RDF Message Logs one message at a time under -r.</code></pre>
+          </details>
         </section>
 
         <section class="card">
