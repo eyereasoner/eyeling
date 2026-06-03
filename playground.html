@@ -2098,8 +2098,8 @@ const batch = [];
           if (state && state.loadbg && typeof state.url === 'string' && state.url) compact.u = state.url;
           if (state && state.loadbg) compact.b = true;
           if (state && state.proofcomments) compact.p = true;
-          if (state && state.rdf) compact.r = true;
-          if (state && state.streammessages) compact.m = true;
+          if (state && Object.prototype.hasOwnProperty.call(state, 'rdf')) compact.r = !!state.rdf;
+          if (state && Object.prototype.hasOwnProperty.call(state, 'streammessages')) compact.m = !!state.streammessages;
           if (state && state.httpsderef === false) compact.h = false;
           return compact;
         }
@@ -2232,9 +2232,14 @@ const batch = [];
         const paramLoadBg = restoredState && restoredState.loadbg !== null ? restoredState.loadbg : legacyLoadBg;
         const paramProofComments =
           restoredState && restoredState.proofcomments !== null ? restoredState.proofcomments : legacyProofComments;
-        const paramRdfMode = restoredState && restoredState.rdf !== null ? restoredState.rdf : legacyRdfMode;
+        const paramRdfMode =
+          restoredState && restoredState.rdf !== null ? restoredState.rdf : sharedState ? false : legacyRdfMode;
         const paramStreamMessages =
-          restoredState && restoredState.streammessages !== null ? restoredState.streammessages : legacyStreamMessages;
+          restoredState && restoredState.streammessages !== null
+            ? restoredState.streammessages
+            : sharedState
+              ? false
+              : legacyStreamMessages;
         const paramHttpsDeref = restoredState && restoredState.httpsderef !== null ? restoredState.httpsderef : legacyHttpsDeref;
         const paramEditorSourceUrl = restoredState && restoredState.editorSourceUrl ? restoredState.editorSourceUrl : '';
 
