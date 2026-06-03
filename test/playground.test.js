@@ -848,6 +848,47 @@ async function main() {
       })()`);
     }
 
+
+    async function setStreamMessageUrlMode(messageLogUrl) {
+      const payload = JSON.stringify(String(messageLogUrl || ''));
+      await evalInPage(`(() => {
+        const rdf = document.getElementById('rdf-mode');
+        const stream = document.getElementById('stream-messages');
+        const input = document.getElementById('message-log-uri');
+        if (!rdf) throw new Error('rdf-mode checkbox not found');
+        if (!stream) throw new Error('stream-messages checkbox not found');
+        if (!input) throw new Error('message-log-uri input not found');
+        rdf.checked = true;
+        rdf.dispatchEvent(new Event('change', { bubbles: true }));
+        stream.checked = true;
+        stream.dispatchEvent(new Event('change', { bubbles: true }));
+        input.value = ${payload};
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        return {
+          visible: !document.getElementById('message-log-uri-row').hidden,
+          label: document.getElementById('n3-editor-label').textContent,
+        };
+      })()`);
+    }
+
+    async function clearStreamMessageUrlMode() {
+      await evalInPage(`(() => {
+        const rdf = document.getElementById('rdf-mode');
+        const stream = document.getElementById('stream-messages');
+        const input = document.getElementById('message-log-uri');
+        if (!rdf) throw new Error('rdf-mode checkbox not found');
+        if (!stream) throw new Error('stream-messages checkbox not found');
+        if (!input) throw new Error('message-log-uri input not found');
+        stream.checked = false;
+        stream.dispatchEvent(new Event('change', { bubbles: true }));
+        rdf.checked = false;
+        rdf.dispatchEvent(new Event('change', { bubbles: true }));
+        input.value = '';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        return true;
+      })()`);
+    }
+
     async function waitForState(label, predicate, timeoutMs = 60000) {
       const deadline = Date.now() + timeoutMs;
       let last = { status: '', output: '', highlighted: [] };
@@ -1091,7 +1132,39 @@ ${JSON.stringify(last, null, 2)}`);
     assert.equal(logQueryTurtle.sourceHidden, false, 'Expected Turtle log:query output to show source directly');
     endTest();
 
-    // 9) URL-loaded examples should auto-load matching examples/input/<stem>.trig and run in RDF/TriG mode.
+    beginTest('playground streams RDF Messages from a URL while keeping rules in the editor');
+    const streamMessageRules = `@prefix : <urn:test#> .
+@prefix eymsg: <https://eyereasoner.github.io/eyeling/vocab/message#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+{
+  ?Envelope eymsg:payloadGraph ?Payload.
+  ?Payload log:nameOf ?PayloadContext.
+  ?PayloadContext log:includes { ?Subject :line ?Line. }.
+} => {
+  ?Subject :seen ?Line.
+}.
+`;
+    await setProgram(streamMessageRules);
+    await setStreamMessageUrlMode(started.baseUrl + '/test/fixtures/playground-stream-messages.txt');
+    await clickRun();
+    const streamedMessages = await waitForState(
+      'URL-backed RDF Message stream completion',
+      (st) =>
+        String(st.status || '')
+          .trim()
+          .startsWith('Done') && /:a\s+:seen\s+"one"\s*\./.test(String(st.output || '')),
+      30000,
+    );
+    assert.match(streamedMessages.output, /:a\s+:seen\s+"one"\s*\./, 'Expected first streamed message to fire the rule');
+    assert.match(streamedMessages.output, /:b\s+:seen\s+"two"\s*\./, 'Expected second streamed message to fire the rule');
+    assert.doesNotMatch(streamedMessages.output, /@version|@message/i, 'Expected the message log to stay outside the editor/output text');
+    const streamShareUrl = await makeShareUrlInPage();
+    assert.match(streamShareUrl, /[?&]state=/, 'Expected stream-message URL state to be shared compactly');
+    await clearStreamMessageUrlMode();
+    endTest();
+
+    // 10) URL-loaded examples should auto-load matching examples/input/<stem>.trig and run in RDF/TriG mode.
     beginTest('playground auto-loads companion TriG sidecars and uses RDF/TriG mode');
     await loadUrlIntoEditor('https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/smoke-arithmetic.n3');
     const smokeLoaded = await waitForState(

@@ -828,7 +828,20 @@
             <span class="hint"> Enter any N3 file URL (raw GitHub URLs work well) and click “Load from URL”. </span>
           </div>
 
-          <label for="n3-editor">Editable N3 program</label>
+          <div id="message-log-uri-row" class="uri-row stream-message-uri-row" hidden>
+            <label for="message-log-uri">RDF Message Log URL</label>
+            <div class="uri-input-row">
+              <input
+                id="message-log-uri"
+                type="text"
+                placeholder="https://example.org/path/to/messages.txt" />
+            </div>
+            <span class="hint">
+              In stream-message mode, keep rules/background knowledge in the editor and link the message log here so it can be fetched incrementally.
+            </span>
+          </div>
+
+          <label id="n3-editor-label" for="n3-editor">Editable N3 program</label>
           <textarea id="n3-editor" spellcheck="false"></textarea>
 
           <div class="controls">
@@ -939,6 +952,9 @@
         const loadAsBackgroundCheckbox = document.getElementById('load-as-background');
         const backgroundStatusEl = document.getElementById('background-status');
         const clearBackgroundBtn = document.getElementById('clear-background-btn');
+        const messageLogUriRow = document.getElementById('message-log-uri-row');
+        const messageLogUriInput = document.getElementById('message-log-uri');
+        const editorLabel = document.getElementById('n3-editor-label');
         const proofCheckbox = document.getElementById('proof-comments');
         const rdfModeCheckbox = document.getElementById('rdf-mode');
         const streamMessagesCheckbox = document.getElementById('stream-messages');
@@ -952,15 +968,20 @@
         try {
           const savedRdf = localStorage.getItem('eyeling.rdfMode');
           const savedStreamMessages = localStorage.getItem('eyeling.streamMessages');
+          const savedMessageLogUrl = localStorage.getItem('eyeling.messageLogUrl');
           const savedHttps = localStorage.getItem('eyeling.enforceHttps');
           if (savedRdf !== null && rdfModeCheckbox) rdfModeCheckbox.checked = savedRdf === '1';
           if (savedStreamMessages !== null && streamMessagesCheckbox) streamMessagesCheckbox.checked = savedStreamMessages === '1';
+          if (savedMessageLogUrl !== null && messageLogUriInput) messageLogUriInput.value = savedMessageLogUrl;
           if (savedHttps !== null && enforceHttpsCheckbox) enforceHttpsCheckbox.checked = savedHttps === '1';
           if (rdfModeCheckbox) rdfModeCheckbox.addEventListener('change', () => {
             localStorage.setItem('eyeling.rdfMode', rdfModeCheckbox.checked ? '1' : '0');
           });
           if (streamMessagesCheckbox) streamMessagesCheckbox.addEventListener('change', () => {
             localStorage.setItem('eyeling.streamMessages', streamMessagesCheckbox.checked ? '1' : '0');
+          });
+          if (messageLogUriInput) messageLogUriInput.addEventListener('input', () => {
+            localStorage.setItem('eyeling.messageLogUrl', messageLogUriInput.value || '');
           });
           if (enforceHttpsCheckbox) enforceHttpsCheckbox.addEventListener('change', () => {
             localStorage.setItem('eyeling.enforceHttps', enforceHttpsCheckbox.checked ? '1' : '0');
@@ -998,6 +1019,12 @@
         function syncStreamMessagesControls() {
           const streaming = effectiveStreamMessagesMode();
           if (streaming) enableRdfModeToggle();
+          if (messageLogUriRow) messageLogUriRow.hidden = !streaming;
+          if (editorLabel) {
+            editorLabel.textContent = streaming
+              ? 'Rules / background knowledge'
+              : 'Editable N3 program';
+          }
           if (proofCheckbox) {
             proofCheckbox.disabled = streaming;
             if (streaming) proofCheckbox.checked = false;
@@ -1008,7 +1035,7 @@
 
         // --- Unified background streaming runner (shared with the Streaming demo tab) ---
         // Exposes: window.__eyelingUnified.startStreamRun({
-        //   program, enforceHttps, proof, rdf, streamMessages,
+        //   program, enforceHttps, proof, rdf, streamMessages, messageLogUrl,
         //   onBatch(derivedTriples[]),
         //   onRenderedText(text, countTriples),
         //   onStdout(text), onStderr(text),
@@ -1148,6 +1175,7 @@
             const proof = !!(args && args.proof);
             const rdf = !!(args && args.rdf);
             const streamMessages = !!(args && args.streamMessages);
+            const messageLogUrl = args && args.messageLogUrl != null ? String(args.messageLogUrl).trim() : '';
             const onBatch = args && typeof args.onBatch === 'function' ? args.onBatch : null;
             const onRenderedText = args && typeof args.onRenderedText === 'function' ? args.onRenderedText : null;
             const onStdout = args && typeof args.onStdout === 'function' ? args.onStdout : null;
@@ -1420,6 +1448,7 @@
               const proof = !!msg.proof;
               const rdf = !!msg.rdf;
               const streamMessages = !!msg.streamMessages;
+              const messageLogUrl = String(msg.messageLogUrl || '').trim();
               const builtinModules = Array.isArray(msg.builtinModules) ? msg.builtinModules : [];
 
               __registerBuiltinModuleSources(builtinModules);
@@ -1568,7 +1597,7 @@ const batch = [];
                   out.push(stream + " " + __EYMSG_IRIS.firstEnvelope + " " + envelope + " .");
                   out.push(stream + " " + __EYMSG_IRIS.lastEnvelope + " " + envelope + " .");
                   out.push(envelope + " " + __RDF_TYPE_IRI + " " + __EYMSG_IRIS.MessageEnvelope + " .");
-                  out.push(envelope + " " + __EYMSG_IRIS.offset + " \\"" + messageIndex + "\\"^^" + __XSD_INTEGER_IRI + " .");
+                  out.push(envelope + " " + __EYMSG_IRIS.offset + ' "' + messageIndex + '"^^' + __XSD_INTEGER_IRI + " .");
                   out.push(envelope + " " + __EYMSG_IRIS.payloadKind + " " + (hasBody ? __EYMSG_IRIS.nonEmpty : __EYMSG_IRIS.empty) + " .");
                   if (hasBody) {
                     out.push(envelope + " " + __EYMSG_IRIS.payloadGraph + " " + payload + " .");
@@ -1606,7 +1635,72 @@ const batch = [];
                     __addRdfDirective(directives, seenDirectives, line);
                     chunk += line;
                   }
-                  if (!sawVersion) throw new Error("--stream-messages did not find VERSION \\"*-messages\\" in the editor input.");
+                  if (!sawVersion) throw new Error('--stream-messages did not find VERSION "*-messages" in the editor input.');
+                  if (sawDelimiter || __hasRdfPayload(chunk)) emit();
+                }
+
+                async function __forEachRdfMessageChunkFromUrl(url, onMessage) {
+                  const sourceUrl = String(url || "").trim();
+                  if (!sourceUrl) throw new Error("--stream-messages needs an RDF Message Log URL or a small pasted message log in the editor.");
+                  const res = await fetch(sourceUrl, { cache: "no-store", referrerPolicy: "no-referrer" });
+                  if (!res.ok) throw new Error("HTTP " + res.status + " when fetching RDF Message Log URL.");
+                  if (!res.body || typeof res.body.getReader !== "function") {
+                    return __forEachRdfMessageChunkInText(await res.text(), onMessage);
+                  }
+
+                  const directives = [];
+                  const seenDirectives = new Set();
+                  let chunk = "";
+                  let messageIndex = 1;
+                  let sawVersion = false;
+                  let sawDelimiter = false;
+                  let buffered = "";
+
+                  function emit() {
+                    onMessage({ messageIndex, chunk, directives: directives.slice() });
+                    messageIndex += 1;
+                    chunk = "";
+                  }
+
+                  function processLine(line) {
+                    if (__RDF_MESSAGE_VERSION_LINE_RE.test(line)) {
+                      sawVersion = true;
+                      return;
+                    }
+                    if (__RDF_MESSAGE_DELIMITER_LINE_RE.test(line)) {
+                      emit();
+                      sawDelimiter = true;
+                      return;
+                    }
+                    __addRdfDirective(directives, seenDirectives, line);
+                    chunk += line;
+                  }
+
+                  function consumeBufferedLines(final) {
+                    for (;;) {
+                      const m = /\\r\\n|\\n|\\r/.exec(buffered);
+                      if (!m) break;
+                      const end = m.index + m[0].length;
+                      processLine(buffered.slice(0, end));
+                      buffered = buffered.slice(end);
+                    }
+                    if (final && buffered) {
+                      processLine(buffered);
+                      buffered = "";
+                    }
+                  }
+
+                  const reader = res.body.getReader();
+                  const decoder = new TextDecoder("utf-8");
+                  for (;;) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    buffered += decoder.decode(value, { stream: true });
+                    consumeBufferedLines(false);
+                  }
+                  buffered += decoder.decode();
+                  consumeBufferedLines(true);
+                  if (!sawVersion) throw new Error("--stream-messages did not find VERSION \\\"*-messages\\\" in the RDF Message Log URL.");
                   if (sawDelimiter || __hasRdfPayload(chunk)) emit();
                 }
 
@@ -1645,21 +1739,23 @@ const batch = [];
                   };
                 }
 
-                function __runStreamMessagesProgram() {
+                async function __runStreamMessagesProgram() {
                   if (!rdf) throw new Error("--stream-messages requires RDF/TriG mode (-r).");
                   if (proof) throw new Error("--stream-messages currently does not support proof output.");
 
-                  const split = __splitProgramForMessageStreaming(program, sourceMap);
-                  if (!__containsRdfMessageVersionLine(split.messagesText)) {
-                    throw new Error("--stream-messages needs RDF Message Log input in the editor. Load rules as background knowledge, then load or paste the message log into the editor.");
+                  const split = messageLogUrl
+                    ? { rulesText: program, messagesText: "" }
+                    : __splitProgramForMessageStreaming(program, sourceMap);
+                  if (!messageLogUrl && !__containsRdfMessageVersionLine(split.messagesText)) {
+                    throw new Error("--stream-messages needs an RDF Message Log URL, or a small pasted RDF Message Log in the editor after the rules.");
                   }
 
                   const rulesDoc = __parseWorkerDocument(split.rulesText || "", rdf, "playground rules");
                   let messageCount = 0;
 
-                  __forEachRdfMessageChunkInText(split.messagesText, ({ messageIndex, chunk, directives }) => {
+                  const processMessage = ({ messageIndex, chunk, directives }) => {
                     messageCount += 1;
-                    const messageReplay = __buildSingleMessageReplayDocument("playground", messageIndex, chunk, directives);
+                    const messageReplay = __buildSingleMessageReplayDocument(messageLogUrl || "playground", messageIndex, chunk, directives);
                     const messageDoc = __parseWorkerDocument(messageReplay, false, "playground message " + messageIndex);
                     const prefixes = rulesDoc.prefixes || messageDoc.prefixes;
                     const triples = rulesDoc.triples.slice().concat(messageDoc.triples);
@@ -1684,7 +1780,10 @@ const batch = [];
                       }
                     });
                     flush(true);
-                  });
+                  };
+
+                  if (messageLogUrl) await __forEachRdfMessageChunkFromUrl(messageLogUrl, processMessage);
+                  else __forEachRdfMessageChunkInText(split.messagesText, processMessage);
 
                   if (!messageCount) throw new Error("--stream-messages did not find any RDF messages to process.");
                 }
@@ -1698,7 +1797,7 @@ const batch = [];
                   if (typeof proofCommentsEnabled !== "undefined") proofCommentsEnabled = !!proof;
 
                   if (streamMessages) {
-                    __runStreamMessagesProgram();
+                    await __runStreamMessagesProgram();
                     flush(true);
                     self.postMessage({ type: "done", runId });
                     return;
@@ -1906,6 +2005,7 @@ const batch = [];
               builtinModules,
               rdf,
               streamMessages,
+              messageLogUrl,
             });
 
             return {
@@ -2043,6 +2143,10 @@ const batch = [];
           return getFirstQueryParam(['url', 'n3url', 'n3', 'load']);
         }
 
+        function getMessageLogUrlFromQuery() {
+          return getFirstQueryParam(['messageurl', 'messagelog', 'message-log', 'mlog']);
+        }
+
         function getStateUrlFromQuery() {
           return getFirstQueryParam(['stateurl', 'stateuri', 'state-url']);
         }
@@ -2095,6 +2199,7 @@ const batch = [];
           const compact = {};
           if (state && typeof state.edit === 'string') compact.e = state.edit;
           if (state && typeof state.editorSourceUrl === 'string' && state.editorSourceUrl) compact.x = state.editorSourceUrl;
+          if (state && typeof state.messageLogUrl === 'string' && state.messageLogUrl) compact.l = state.messageLogUrl;
           if (state && state.loadbg && typeof state.url === 'string' && state.url) compact.u = state.url;
           if (state && state.loadbg) compact.b = true;
           if (state && state.proofcomments) compact.p = true;
@@ -2149,6 +2254,14 @@ const batch = [];
                   ? raw.program
                   : null;
           const url = typeof raw.u === 'string' ? raw.u : typeof raw.url === 'string' ? raw.url : '';
+          const messageLogUrl =
+            typeof raw.l === 'string'
+              ? raw.l
+              : typeof raw.messageLogUrl === 'string'
+                ? raw.messageLogUrl
+                : typeof raw.messageurl === 'string'
+                  ? raw.messageurl
+                  : '';
           const editorSourceUrl =
             typeof raw.x === 'string'
               ? raw.x
@@ -2167,6 +2280,7 @@ const batch = [];
           return {
             edit,
             url,
+            messageLogUrl,
             editorSourceUrl,
             loadbg: loadbg === null ? null : loadbg,
             proofcomments: proofcomments === null ? null : proofcomments,
@@ -2209,6 +2323,7 @@ const batch = [];
         const legacyProgramFromHash = legacyProgramFromQuery === null ? getProgramFromHash() : null;
         const legacyProgram = legacyProgramFromQuery !== null ? legacyProgramFromQuery : legacyProgramFromHash;
         const legacyN3Uri = getN3UriFromQuery();
+        const legacyMessageLogUrl = getMessageLogUrlFromQuery();
         const legacyLoadBg = parseBooleanParam(getFirstQueryParam(['loadbg', 'background', 'bg']));
         const legacyProofComments = parseBooleanParam(getFirstQueryParam(['proofcomments', 'proof']));
         const legacyRdfMode = parseBooleanParam(getFirstQueryParam(['rdf', 'rdfmode']));
@@ -2218,6 +2333,7 @@ const batch = [];
           legacyProgramFromQuery !== null ||
           legacyProgramFromHash !== null ||
           legacyN3Uri !== null ||
+          legacyMessageLogUrl !== null ||
           legacyLoadBg !== null ||
           legacyProofComments !== null ||
           legacyRdfMode !== null ||
@@ -2229,6 +2345,7 @@ const batch = [];
 
         const paramProgram = restoredState && restoredState.edit !== null ? restoredState.edit : legacyProgram;
         const paramN3Uri = restoredState && restoredState.url ? restoredState.url : legacyN3Uri;
+        const paramMessageLogUrl = restoredState ? (restoredState.messageLogUrl || '') : (legacyMessageLogUrl || '');
         const paramLoadBg = restoredState && restoredState.loadbg !== null ? restoredState.loadbg : legacyLoadBg;
         const paramProofComments =
           restoredState && restoredState.proofcomments !== null ? restoredState.proofcomments : legacyProofComments;
@@ -2245,6 +2362,9 @@ const batch = [];
 
         if (paramN3Uri) {
           uriInput.value = paramN3Uri;
+        }
+        if (messageLogUriInput) {
+          messageLogUriInput.value = paramMessageLogUrl || '';
         }
         if (paramLoadBg !== null && loadAsBackgroundCheckbox) {
           loadAsBackgroundCheckbox.checked = paramLoadBg;
@@ -2759,6 +2879,7 @@ const batch = [];
             edit: editor.getValue(),
             editorSourceUrl: editorSourceUrl || extractDocumentBaseUrl(editor.getValue()),
             url: (uriInput && uriInput.value ? uriInput.value : '').trim(),
+            messageLogUrl: (messageLogUriInput && messageLogUriInput.value ? messageLogUriInput.value : '').trim(),
             loadbg: !!(loadAsBackgroundCheckbox && loadAsBackgroundCheckbox.checked),
             proofcomments: !!(proofCheckbox && proofCheckbox.checked),
             rdf: !!(rdfModeCheckbox && rdfModeCheckbox.checked),
@@ -2853,6 +2974,14 @@ const batch = [];
             'loadbg',
             'background',
             'bg',
+            'messageurl',
+            'messagelog',
+            'message-log',
+            'mlog',
+            'rdf',
+            'rdfmode',
+            'streammessages',
+            'stream-messages',
             'proofcomments',
             'proof',
             'httpsderef',
@@ -2988,6 +3117,14 @@ const batch = [];
             'loadbg',
             'background',
             'bg',
+            'messageurl',
+            'messagelog',
+            'message-log',
+            'mlog',
+            'rdf',
+            'rdfmode',
+            'streammessages',
+            'stream-messages',
             'proofcomments',
             'proof',
             'httpsderef',
@@ -3002,7 +3139,7 @@ const batch = [];
           }
           const state = getCurrentPlaygroundState();
           const canShareLoadedUrl =
-            !!state.url && !state.loadbg && !!editorSourceText && state.edit === editorSourceText;
+            !!state.url && !state.loadbg && !state.messageLogUrl && !state.rdf && !state.streammessages && !!editorSourceText && state.edit === editorSourceText;
 
           if (canShareLoadedUrl) {
             params.set('url', state.url);
@@ -3130,6 +3267,13 @@ const batch = [];
           streamMessagesCheckbox.addEventListener('change', () => {
             setShareGistOption('');
             syncStreamMessagesControls();
+            savePlaygroundState();
+          });
+        }
+
+        if (messageLogUriInput) {
+          messageLogUriInput.addEventListener('input', () => {
+            setShareGistOption('');
             savePlaygroundState();
           });
         }
@@ -3294,6 +3438,7 @@ const batch = [];
           const isLogQueryMode = /\blog:query\b/.test(programText) || /swap\/log#query/.test(programText);
           const usesRenderedText = isRenderedOutputMode || (isLogQueryMode && !proofCheckbox.checked);
           const streamMessages = effectiveStreamMessagesMode();
+          const messageLogUrl = streamMessages && messageLogUriInput ? messageLogUriInput.value.trim() : '';
           outputMarkdownLinkBaseUrl = usesRenderedText ? currentMarkdownOutputBaseUrl() : '';
           const modeLabel = isRenderedOutputMode
             ? 'rendered output'
@@ -3349,6 +3494,7 @@ const batch = [];
             builtinModules: effectiveProgram.builtinModules || [],
             rdf: !!effectiveProgram.rdf,
             streamMessages,
+            messageLogUrl,
             enforceHttps: enforceHttpsCheckbox.checked,
             proof: proofCheckbox.checked,
             onRenderedText: (text, countTriples) => {
