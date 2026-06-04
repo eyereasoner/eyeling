@@ -48,7 +48,7 @@
     "test:playground": "node test/playground.test.js",
     "test:package": "node test/package.test.js",
     "pretest": "npm run build && npm run test:packlist",
-    "test": "npm run test:api && npm run test:builtins && npm run test:examples && npm run test:examples:proof && npm run test:manifest && npm run test:playground",
+    "test": "npm run test:api && npm run test:builtins && npm run test:examples && npm run test:examples:proof && npm run test:manifest && npm run rdf12 && npm run test:playground",
     "posttest": "npm run test:package",
     "preversion": "npm test",
     "postversion": "git push origin HEAD --follow-tags",
