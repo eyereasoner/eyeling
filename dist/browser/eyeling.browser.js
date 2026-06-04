@@ -10900,10 +10900,10 @@ function normalizeRdfCompatibility(inputText) {
   // unless they actually contain RDF 1.2 triple terms, VERSION directives, or a
   // plausible top-level TriG named graph block.
   const hasTripleTerms = text.includes('<<');
-  const hasVersionDirective = /^\s*(?:@version|VERSION)\s+(["'])1\.2\1\s*\.?\s*(?:#.*)?$/im.test(text);
+  const hasVersionDirective = /^\s*(?:@version|VERSION)\s+(["'])(?:1\.1|1\.2|1\.2-basic)\1\s*\.?\s*(?:#.*)?$/im.test(text);
   const hasMessageVersionDirective = /^\s*(?:@version|VERSION)\s+(["'])(?:1\.1|1\.2|1\.2-basic)-messages\1\s*\.?\s*(?:#.*)?$/im.test(text);
-  const hasNamedGraphCandidate = /(?:^|[.\r\n])\s*(?:GRAPH\s+)?(?:<[^>\r\n]*>|_:[A-Za-z][A-Za-z0-9_-]*|[A-Za-z][A-Za-z0-9_-]*:[^\s{};,.()[\]]*)\s*\{/m.test(text);
-  const hasAnnotationSyntax = /(?:^|\s)~\s*(?:<|_:[A-Za-z]|[A-Za-z][A-Za-z0-9_-]*:|\{\|)|\{\|/.test(text);
+  const hasNamedGraphCandidate = /(?:^|[.\r\n])\s*(?:GRAPH\s+)?(?:<[^>\r\n]*>|_:[A-Za-z][A-Za-z0-9_-]*|[A-Za-z][A-Za-z0-9_-]*:[^\s{};,.()[\]]*|:[^\s{};,.()[\]]+)\s*\{/m.test(text);
+  const hasAnnotationSyntax = /(?:^|\s)~|\{\|/.test(text);
 
   if (!hasTripleTerms && !hasVersionDirective && !hasMessageVersionDirective && !hasNamedGraphCandidate && !hasAnnotationSyntax) return text;
 
@@ -11190,8 +11190,10 @@ function normalizeRdfCompatibility(inputText) {
         }
         if (s.startsWith('{|', j)) {
           const block = readAnnotationBlockAt(s, j);
+          const inner = block.inner.trim();
+          if (!inner) throw new N3SyntaxError('Empty RDF annotation block is not allowed');
           if (!reifier) reifier = `_:rdfAnnotation${++generatedBlank}`;
-          annotationBlocks.push(block.inner.trim());
+          annotationBlocks.push(inner);
           j = block.end;
           continue;
         }
@@ -11199,7 +11201,7 @@ function normalizeRdfCompatibility(inputText) {
       }
 
       const after = skipWsAndComments(s, j);
-      if (s[after] !== '.') return null;
+      if (!['.', ';', ',', '}'].includes(s[after])) return null;
       if (!reifier && annotationBlocks.length === 0) return null;
 
       const baseTriple = `${subj.text} ${pred.text} ${obj.text}`;
@@ -11209,10 +11211,15 @@ function normalizeRdfCompatibility(inputText) {
       for (const inner of annotationBlocks) {
         if (inner) extra.push(`${reifier} ${inner} .`);
       }
+
+      let continuation = '';
+      if (s[after] === ';') continuation = `\n${subj.text} `;
+      else if (s[after] === ',') continuation = `\n${subj.text} ${pred.text} `;
+
       return {
         start,
-        end: after + 1,
-        text: `${baseTriple} .${extra.length ? '\n' + extra.join('\n') : ''}`,
+        end: s[after] === '}' ? after : after + 1,
+        text: `${baseTriple} .${extra.length ? '\n' + extra.join('\n') : ''}${continuation}`,
       };
     }
 
@@ -11306,6 +11313,29 @@ function normalizeRdfCompatibility(inputText) {
         while (i < s.length && s[i] !== '\n' && s[i] !== '\r') i += 1;
         continue;
       }
+      if (s.startsWith('{|', i)) {
+        i += 2;
+        while (i < s.length) {
+          if (s[i] === '"' || s[i] === "'") {
+            i = readStringAt(s, i).end;
+            continue;
+          }
+          if (s[i] === '<' && !s.startsWith('<<', i)) {
+            i = readIriAt(s, i).end;
+            continue;
+          }
+          if (s[i] === '#') {
+            while (i < s.length && s[i] !== '\n' && s[i] !== '\r') i += 1;
+            continue;
+          }
+          if (s.startsWith('|}', i)) {
+            i += 2;
+            break;
+          }
+          i += 1;
+        }
+        continue;
+      }
       if (ch === '{') depth += 1;
       if (ch === '}') {
         depth -= 1;
@@ -11329,6 +11359,28 @@ function normalizeRdfCompatibility(inputText) {
         const termStart = skipWsAndComments(s, i);
         out += s.slice(i, termStart);
         i = termStart;
+
+        // Preserve directives and keep the scanner at statement-start for
+        // following TriG graph blocks. SPARQL-style PREFIX/BASE/VERSION lines
+        // have no trailing '.', while @prefix/@base/@version directives do.
+        if (startsWordAt(s, 'PREFIX', i) || startsWordAt(s, 'BASE', i) || startsWordAt(s, 'VERSION', i)) {
+          let end = i;
+          while (end < s.length && s[end] !== '\n' && s[end] !== '\r') end += 1;
+          out += s.slice(i, end);
+          i = end;
+          statementStart = true;
+          continue;
+        }
+        if (s[i] === '@') {
+          const lower = s.slice(i, i + 9).toLowerCase();
+          if (lower.startsWith('@prefix') || lower.startsWith('@base') || lower.startsWith('@version')) {
+            const end = skipOldStyleDirective(s, i);
+            out += s.slice(i, end);
+            i = end;
+            statementStart = true;
+            continue;
+          }
+        }
 
         // Top-level TriG default graph block: { ... } .
         if (s[i] === '{') {
@@ -11618,7 +11670,7 @@ function normalizeRdfCompatibility(inputText) {
   function normalizeMessageChunk(chunk, messageIndex) {
     let body = String(chunk || '');
     if (hasTripleTerms || body.includes('<<')) body = convertTripleTerms(body);
-    if (hasAnnotationSyntax || /(?:^|\s)~\s*(?:<|_:[A-Za-z]|[A-Za-z][A-Za-z0-9_-]*:|\{\|)|\{\|/.test(body)) {
+    if (hasAnnotationSyntax || /(?:^|\s)~|\{\|/.test(body)) {
       body = convertAnnotations(body);
     }
     body = normalizeNamedGraphs(body);
@@ -12151,6 +12203,17 @@ function lex(inputText, opts = {}) {
           i++;
         }
         while (peek() === '-') {
+          if (peek(1) === '-') {
+            const dir = sliceChars(i + 2, i + 5);
+            const afterDir = peek(5);
+            if ((dir === 'ltr' || dir === 'rtl') && (afterDir === null || !/[A-Za-z0-9-]/.test(afterDir))) {
+              tagChars.push('--', dir);
+              i += 5;
+              break;
+            }
+            throw new N3SyntaxError('Invalid language direction (expected --ltr or --rtl)', start);
+          }
+
           tagChars.push('-');
           i++; // consume '-'
           const segChars = [];
@@ -14901,7 +14964,7 @@ function splitLiteralLexAndLang(value) {
     return { lexical: value, language: '' };
   }
   const language = value.slice(lastQuote + 2);
-  if (!/^[A-Za-z]+(?:-[A-Za-z0-9]+)*$/.test(language)) {
+  if (!/^[A-Za-z]+(?:-[A-Za-z0-9]+)*(?:--(?:ltr|rtl))?$/.test(language)) {
     return { lexical: value, language: '' };
   }
   return { lexical: value.slice(0, lastQuote + 1), language };
@@ -14936,6 +14999,51 @@ function internalTermToRdfJs(term, factory, position) {
   if (term instanceof Var) return rdfFactory.variable(term.name);
   if (term instanceof InternalLiteral) return internalLiteralToRdfJs(term, rdfFactory);
   return unsupportedRdfJsTerm(term, position);
+}
+
+function internalRdf12TermToRdfJs(term, factory, position) {
+  const rdfFactory = getDataFactory(factory);
+  if (term instanceof GraphTerm) {
+    if (position === 'predicate' || position === 'graph') {
+      return unsupportedRdfJsTerm(term, position);
+    }
+    if (!Array.isArray(term.triples) || term.triples.length !== 1) {
+      return unsupportedRdfJsTerm(term, position);
+    }
+    const triple = term.triples[0];
+    return rdfFactory.quad(
+      internalRdf12TermToRdfJs(triple.s, rdfFactory, 'subject'),
+      internalTermToRdfJs(triple.p, rdfFactory, 'predicate'),
+      internalRdf12TermToRdfJs(triple.o, rdfFactory, 'object'),
+      rdfFactory.defaultGraph(),
+    );
+  }
+  return internalTermToRdfJs(term, rdfFactory, position);
+}
+
+function assertRdfJsQuadShape(subject, predicate, object, graph) {
+  if (!['NamedNode', 'BlankNode', 'Quad'].includes(subject.termType)) {
+    throw new TypeError(`Invalid RDF subject termType ${subject.termType}`);
+  }
+  if (predicate.termType !== 'NamedNode') {
+    throw new TypeError(`Invalid RDF predicate termType ${predicate.termType}`);
+  }
+  if (!['NamedNode', 'BlankNode', 'Literal', 'Quad'].includes(object.termType)) {
+    throw new TypeError(`Invalid RDF object termType ${object.termType}`);
+  }
+  if (!['DefaultGraph', 'NamedNode', 'BlankNode'].includes(graph.termType)) {
+    throw new TypeError(`Invalid RDF graph termType ${graph.termType}`);
+  }
+}
+
+function internalTripleToRdfJsQuadInGraph(triple, graph, factory) {
+  const rdfFactory = getDataFactory(factory);
+  const subject = internalRdf12TermToRdfJs(triple.s, rdfFactory, 'subject');
+  const predicate = internalTermToRdfJs(triple.p, rdfFactory, 'predicate');
+  const object = internalRdf12TermToRdfJs(triple.o, rdfFactory, 'object');
+  const graphTerm = graph || rdfFactory.defaultGraph();
+  assertRdfJsQuadShape(subject, predicate, object, graphTerm);
+  return rdfFactory.quad(subject, predicate, object, graphTerm);
 }
 
 function internalTripleToRdfJsQuad(triple, factory) {
@@ -15424,6 +15532,7 @@ module.exports = {
   rdfJsQuadToInternalTriple,
   internalTermToRdfJs,
   internalTripleToRdfJsQuad,
+  internalTripleToRdfJsQuadInGraph,
   normalizeParsedReasonerInputSync,
   normalizeReasonerInputSync,
   normalizeReasonerInputAsync,
