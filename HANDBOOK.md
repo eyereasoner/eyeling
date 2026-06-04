@@ -3851,7 +3851,9 @@ The playground also exposes configuration toggles that are especially useful for
 - **RDF/TriG compatibility**, which mirrors command-line `-r, --rdf` for RDF surface syntax and message-log replay,
 - **stream RDF Messages**, which mirrors `--stream-messages` under RDF mode and runs the editor rules over one RDF Message at a time.
 
-For streamed RDF Messages in the playground, put the extraction rules and any small background knowledge in the editor, then provide the large RDF Message Log through the **RDF Message Log URL** field. The URL is preserved in compact share links. A pasted message log in the editor is still useful for small teaching examples, but the URL field is the intended path for large logs because it lets the worker fetch and parse the stream incrementally rather than asking CodeMirror to hold the log text.
+For streamed RDF Messages in the playground, put the extraction rules and any small background knowledge in the editor, then provide the large RDF Message Log through the **RDF Message Log URL** field. The URL is preserved in compact share links. A pasted message log in the editor is still useful for small teaching examples, but the URL field is the intended path for large logs because it lets the worker fetch and parse the stream incrementally rather than asking CodeMirror to hold the log text. URL fetches follow HTTP redirects, so short, stable, or repository URLs can redirect to the actual raw resource while the final URL is still used for base handling where needed.
+
+The layout is responsive: on small screens the URL fields and action buttons stack vertically, controls remain tap-friendly, and the editor/output panes scroll internally when their height is capped. That keeps the playground useful on phones for opening shared links, changing toggles, and running small or URL-backed streaming examples.
 
 Together these choices make the playground better suited to live explanation, teaching, and debugging than a minimal browser wrapper would be.
 

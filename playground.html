@@ -15,6 +15,10 @@
         box-sizing: border-box;
       }
 
+      html {
+        min-height: 100%;
+      }
+
       body {
         margin: 0;
         font-family:
@@ -29,6 +33,13 @@
         /* Avoid weird auto-scaling on mobile */
         -webkit-text-size-adjust: 100%;
         text-size-adjust: 100%;
+        overflow-x: hidden;
+      }
+
+      input,
+      textarea,
+      button {
+        font: inherit;
       }
 
       .page {
@@ -210,6 +221,7 @@
       }
 
       .card {
+        overflow: hidden;
         background: #ffffff;
         border-radius: 1rem;
         padding: 1rem 1.25rem 1.25rem;
@@ -418,8 +430,10 @@
         box-shadow: none;
       }
 
-      .uri-input-row input[type='text'] {
+      .uri-input-row input[type='text'],
+      .uri-input-row input[type='url'] {
         flex: 1;
+        min-width: 0;
         border-radius: 999px;
         border: 1px solid #d1d5db;
         padding: 0.45rem 0.75rem;
@@ -433,7 +447,8 @@
         background: #f9fafb;
       }
 
-      .uri-input-row input[type='text']:focus {
+      .uri-input-row input[type='text']:focus,
+      .uri-input-row input[type='url']:focus {
         outline: none;
         border-color: #2563eb;
         box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25);
@@ -569,7 +584,8 @@
         }
 
         /* Prevent iOS "zoom on focus" (>=16px) */
-        .uri-input-row input[type='text'] {
+        .uri-input-row input[type='text'],
+        .uri-input-row input[type='url'] {
           font-size: 16px;
           padding: 0.65rem 0.9rem;
           width: 100%;
@@ -632,6 +648,37 @@
         .CodeMirror-scroll {
           overflow: auto !important;
           -webkit-overflow-scrolling: touch;
+        }
+
+        .CodeMirror-gutters {
+          min-width: 2.1rem;
+        }
+      }
+
+      @media (max-width: 420px) {
+        .page {
+          padding-right: calc(0.65rem + env(safe-area-inset-right));
+          padding-left: calc(0.65rem + env(safe-area-inset-left));
+        }
+
+        .card {
+          padding: 0.85rem 0.8rem 0.95rem;
+          border-radius: 0.85rem;
+        }
+
+        .controls {
+          margin-right: -0.15rem;
+          margin-left: -0.15rem;
+          padding-right: 0.15rem;
+          padding-left: 0.15rem;
+        }
+
+        .toggle {
+          align-items: flex-start;
+        }
+
+        .toggle input {
+          margin-top: 0.12rem;
         }
       }
 
@@ -740,12 +787,14 @@
           border-right-color: #1f2a37;
         }
 
-        .uri-input-row input[type='text'] {
+        .uri-input-row input[type='text'],
+        .uri-input-row input[type='url'] {
           background: #0b0f14;
           border-color: #1f2a37;
           color: #e7eaf0;
         }
-        .uri-input-row input[type='text']:focus {
+        .uri-input-row input[type='text']:focus,
+        .uri-input-row input[type='url']:focus {
           background: #0f1620;
         }
         button.secondary {
@@ -765,6 +814,7 @@
       }
 
       .playground-inner {
+        width: 100%;
         max-width: 960px;
         margin: 0 auto;
         display: flex;
@@ -807,7 +857,11 @@
             <div class="uri-input-row">
               <input
                 id="n3-uri"
-                type="text"
+                type="url"
+                inputmode="url"
+                autocomplete="url"
+                autocapitalize="off"
+                spellcheck="false"
                 value="https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/witch.n3" />
               <button id="load-uri-btn" type="button">Load from URL</button>
             </div>
@@ -833,7 +887,11 @@
             <div class="uri-input-row">
               <input
                 id="message-log-uri"
-                type="text"
+                type="url"
+                inputmode="url"
+                autocomplete="url"
+                autocapitalize="off"
+                spellcheck="false"
                 placeholder="https://example.org/path/to/messages.txt" />
             </div>
             <span class="hint">
@@ -1299,7 +1357,7 @@
                   // Fallback: fetch + strip shebang + eval (avoids worker parse issues in older engines).
                 }
 
-                const resp = await fetch(__EYELING_URL);
+                const resp = await fetch(__EYELING_URL, { redirect: "follow", cache: "no-store" });
                 if (!resp.ok) throw new Error("Failed to load eyeling.browser.js (" + resp.status + ")");
                 const raw = await resp.text();
                 const cleaned = __stripShebang(raw);
@@ -1642,8 +1700,8 @@ const batch = [];
                 async function __forEachRdfMessageChunkFromUrl(url, onMessage) {
                   const sourceUrl = String(url || "").trim();
                   if (!sourceUrl) throw new Error("--stream-messages needs an RDF Message Log URL or a small pasted message log in the editor.");
-                  const res = await fetch(sourceUrl, { cache: "no-store", referrerPolicy: "no-referrer" });
-                  if (!res.ok) throw new Error("HTTP " + res.status + " when fetching RDF Message Log URL.");
+                  const res = await fetch(sourceUrl, { cache: "no-store", referrerPolicy: "no-referrer", redirect: "follow" });
+                  if (!res.ok) throw new Error("HTTP " + res.status + " when fetching RDF Message Log URL" + (res.url ? " (" + res.url + ")" : "") + ".");
                   if (!res.body || typeof res.body.getReader !== "function") {
                     return __forEachRdfMessageChunkInText(await res.text(), onMessage);
                   }
@@ -2234,10 +2292,20 @@ const batch = [];
           return JSON.parse(json);
         }
 
+        async function fetchReadableUrl(url, options = {}) {
+          const init = {
+            redirect: 'follow',
+            cache: 'no-store',
+            referrerPolicy: 'no-referrer',
+            ...options,
+          };
+          return fetch(url, init);
+        }
+
         async function fetchPlaygroundStateFromUrl(stateUrl) {
           const url = String(stateUrl || '').trim();
           if (!url) return null;
-          const res = await fetch(url, { cache: 'no-store', referrerPolicy: 'no-referrer' });
+          const res = await fetchReadableUrl(url);
           if (!res.ok) throw new Error(`HTTP ${res.status} when fetching shared state.`);
           const text = await res.text();
           return JSON.parse(text);
@@ -3300,7 +3368,7 @@ const batch = [];
 
           versionPromise = (async () => {
             try {
-              const resp = await fetch(EYELING_PKG_URL, { cache: 'no-store' });
+              const resp = await fetchReadableUrl(EYELING_PKG_URL);
               if (!resp.ok) throw new Error('HTTP ' + resp.status);
               const pkg = await resp.json();
               if (pkg && pkg.version) {
@@ -3716,7 +3784,7 @@ const batch = [];
           const candidate = deriveExampleBuiltinUrl(finalUrl || requestUrl) || deriveExampleBuiltinUrl(requestUrl);
           if (!candidate) return [];
           try {
-            const resp = await fetch(candidate);
+            const resp = await fetchReadableUrl(candidate);
             if (!resp.ok) return [];
             const source = await resp.text();
             return source.trim() ? [{ url: resp.url || candidate, source }] : [];
@@ -3743,7 +3811,7 @@ const batch = [];
           const candidate = deriveExampleTrigInputUrl(finalUrl || requestUrl) || deriveExampleTrigInputUrl(requestUrl);
           if (!candidate) return null;
           try {
-            const resp = await fetch(candidate);
+            const resp = await fetchReadableUrl(candidate);
             if (!resp.ok) return null;
             const companionUrl = resp.url || candidate;
             return { url: companionUrl, text: injectBaseDirective(await resp.text(), companionUrl) };
@@ -3932,7 +4000,7 @@ const batch = [];
           loadUriBtn.disabled = true;
           statusEl.textContent = 'Loading N3 from URL...';
           try {
-            const resp = await fetch(uri);
+            const resp = await fetchReadableUrl(uri);
             if (!resp.ok) {
               throw new Error('HTTP ' + resp.status + ' when fetching ' + uri);
             }

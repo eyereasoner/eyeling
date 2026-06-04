@@ -96,6 +96,15 @@ function startStaticServer(rootDir) {
         return;
       }
 
+      if (pathname === '/redirect/playground-stream-messages.txt') {
+        res.writeHead(302, {
+          Location: '/test/fixtures/playground-stream-messages.txt',
+          'Cache-Control': 'no-store',
+        });
+        res.end();
+        return;
+      }
+
       if (pathname === '/' || pathname === '') pathname = '/playground.html';
       // Prevent directory traversal.
       let fsPath = path.resolve(rootDir, '.' + pathname);
@@ -1132,7 +1141,7 @@ ${JSON.stringify(last, null, 2)}`);
     assert.equal(logQueryTurtle.sourceHidden, false, 'Expected Turtle log:query output to show source directly');
     endTest();
 
-    beginTest('playground streams RDF Messages from a URL while keeping rules in the editor');
+    beginTest('playground follows redirects while streaming RDF Messages from a URL');
     const streamMessageRules = `@prefix : <urn:test#> .
 @prefix eymsg: <https://eyereasoner.github.io/eyeling/vocab/message#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
@@ -1146,7 +1155,7 @@ ${JSON.stringify(last, null, 2)}`);
 }.
 `;
     await setProgram(streamMessageRules);
-    await setStreamMessageUrlMode(started.baseUrl + '/test/fixtures/playground-stream-messages.txt');
+    await setStreamMessageUrlMode(started.baseUrl + '/redirect/playground-stream-messages.txt');
     await clickRun();
     const streamedMessages = await waitForState(
       'URL-backed RDF Message stream completion',
