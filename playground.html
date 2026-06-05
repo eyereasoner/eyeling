@@ -5,7 +5,7 @@
     <!-- Mobile-friendly viewport + safe-area support -->
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
-    <title>Eyeling N3 Playground</title>
+    <title>The Eyeling N3 Playground</title>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/theme/material-darker.min.css" />
@@ -59,8 +59,10 @@
 
       header h1 {
         margin: 0;
-        font-size: 1.4rem;
-        font-weight: 600;
+        font-size: 1.9rem;
+        font-weight: 650;
+        text-align: center;
+        letter-spacing: -0.02em;
       }
 
       header p {
@@ -402,6 +404,82 @@
         margin-bottom: 0.75rem;
       }
 
+      .quick-load-row {
+        margin-bottom: 0.85rem;
+      }
+
+      .quick-load-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.55rem;
+        align-items: center;
+        margin-top: 0.3rem;
+      }
+
+      .quick-load-grid select {
+        min-width: 0;
+        border-radius: 999px;
+        border: 1px solid #d1d5db;
+        padding: 0.55rem 2.35rem 0.55rem 0.9rem;
+        font-size: 0.9rem;
+        background: #f9fafb;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        background-image:
+          linear-gradient(45deg, transparent 50%, #6b7280 50%),
+          linear-gradient(135deg, #6b7280 50%, transparent 50%);
+        background-position:
+          calc(100% - 1.2rem) calc(50% - 0.12rem),
+          calc(100% - 0.9rem) calc(50% - 0.12rem);
+        background-size: 0.42rem 0.42rem, 0.42rem 0.42rem;
+        background-repeat: no-repeat;
+      }
+
+      .quick-load-grid select::-ms-expand {
+        display: none;
+      }
+
+      .quick-load-grid select:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25);
+        background: #ffffff;
+      }
+
+      .config-panel {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.9rem;
+        background: linear-gradient(180deg, #fbfcff 0%, #f8fafc 100%);
+        padding: 0.15rem 0.75rem 0.7rem;
+        margin-bottom: 0.9rem;
+      }
+
+      .config-panel summary {
+        list-style: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        font-size: 0.86rem;
+        font-weight: 600;
+        color: #1f2937;
+        padding: 0.5rem 0.2rem;
+        user-select: none;
+      }
+
+      .config-panel summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .config-panel[open] summary {
+        color: #1d4ed8;
+      }
+
+      .config-panel .hint {
+        color: #6b7280;
+      }
+
       .uri-input-row {
         display: flex;
         flex-direction: row;
@@ -577,6 +655,10 @@
           align-items: stretch;
         }
 
+        .quick-load-grid {
+          grid-template-columns: 1fr;
+        }
+
         .uri-mode-row,
         .background-row {
           flex-direction: column;
@@ -586,6 +668,12 @@
         /* Prevent iOS "zoom on focus" (>=16px) */
         .uri-input-row input[type='text'],
         .uri-input-row input[type='url'] {
+          font-size: 16px;
+          padding: 0.65rem 0.9rem;
+          width: 100%;
+        }
+
+        .quick-load-grid select {
           font-size: 16px;
           padding: 0.65rem 0.9rem;
           width: 100%;
@@ -793,9 +881,30 @@
           border-color: #1f2a37;
           color: #e7eaf0;
         }
+        .quick-load-grid select {
+          background: #0b0f14;
+          border-color: #1f2a37;
+          color: #e7eaf0;
+        }
         .uri-input-row input[type='text']:focus,
         .uri-input-row input[type='url']:focus {
           background: #0f1620;
+        }
+        .quick-load-grid select:focus {
+          background: #0f1620;
+        }
+        .config-panel {
+          border-color: #1f2a37;
+          background: linear-gradient(180deg, #111827 0%, #0f172a 100%);
+        }
+        .config-panel summary {
+          color: #dbeafe;
+        }
+        .config-panel[open] summary {
+          color: #93c5fd;
+        }
+        .config-panel .hint {
+          color: #a7b0bf;
         }
         button.secondary {
           background: #1f2a37;
@@ -822,6 +931,22 @@
         gap: 1rem;
       }
 
+      .page-footer {
+        text-align: center;
+        font-size: 0.85rem;
+        color: #6b7280;
+        margin-top: 0.2rem;
+      }
+
+      .page-footer a {
+        color: #2563eb;
+        text-decoration: none;
+      }
+
+      .page-footer a:hover {
+        text-decoration: underline;
+      }
+
       /* Brighter N3 comments (#...) in the dark CodeMirror theme */
       .cm-s-material-darker span.cm-comment {
         color: #b0bec5;
@@ -836,21 +961,23 @@
   <body>
     <div class="page">
       <header>
-        <h1>Eyeling N3 Playground</h1>
-        <p>
-          Edit the N3 program below, load it from a URL, autosave locally, or copy a compact share link.
-        </p>
-        <p class="meta">
-          Powered by
-          <a href="https://eyereasoner.github.io/eyeling/" target="_blank" rel="noopener noreferrer">Eyeling</a>
-          — running version <strong>v<span id="eyeling-version">…</span></strong
-          >.
-        </p>
+        <h1>The Eyeling N3 Playground</h1>
       </header>
 
       <div class="playground-inner">
         <section class="card">
-          <h2 class="section-title">Input N3</h2>
+          <div class="quick-load-row">
+            <label for="example-select">Load an example</label>
+            <div class="quick-load-grid">
+              <select id="example-select" aria-label="Load a bundled example">
+                <option value="">Loading examples...</option>
+              </select>
+            </div>
+            <span class="hint">Examples are listed from the <a href="https://github.com/eyereasoner/eyeling/blob/main/examples/">GitHub repository</a>.</span>
+          </div>
+
+          <details id="advanced-config-panel" class="config-panel">
+            <summary><span aria-hidden="true">&#9881;</span> Advanced configuration</summary>
 
           <div class="uri-row">
             <label for="n3-uri">Load N3 from URL</label>
@@ -899,14 +1026,7 @@
             </span>
           </div>
 
-          <label id="n3-editor-label" for="n3-editor">Editable N3 program</label>
-          <textarea id="n3-editor" spellcheck="false"></textarea>
-
-          <div class="controls">
-            <button id="run-btn">Run reasoning</button>
-            <button id="pause-btn" class="secondary" disabled>Pause</button>
-            <button id="stop-btn" class="danger" disabled>Stop</button>
-
+          <div class="uri-mode-row">
             <label class="toggle" title="Runs Eyeling with -p/--proof (N3 proof explanations)">
               <input id="proof-comments" type="checkbox" />
               Turn proof explanations on (-p)
@@ -925,6 +1045,16 @@
               <input id="enforce-https" type="checkbox" checked />
               Enforce HTTPS for dereferencing (--enforce-https)
             </label>
+          </div>
+          </details>
+
+          <label id="n3-editor-label" for="n3-editor">Editable N3 program</label>
+          <textarea id="n3-editor" spellcheck="false"></textarea>
+
+          <div class="controls">
+            <button id="run-btn">Run reasoning</button>
+            <button id="pause-btn" class="secondary" disabled>Pause</button>
+            <button id="stop-btn" class="danger" disabled>Stop</button>
             <button id="copy-share-link-btn" type="button" class="secondary">Copy share link</button>
             <button
               id="create-gist-share-btn"
@@ -934,7 +1064,7 @@
               title="Store oversized playground state in a secret GitHub Gist and copy a small stateurl= share link.">
               Create Gist share
             </button>
-            <span class="status share-status" id="share-status">Autosaves locally; the address bar stays short.</span>
+            <span class="status share-status" id="share-status"></span>
 
             <span class="status" id="status">Idle.</span>
           </div>
@@ -970,6 +1100,13 @@
           <textarea id="output-editor" spellcheck="false" readonly>(no output yet)</textarea>
         </section>
       </div>
+
+      <footer class="page-footer">
+        Powered by
+        <a href="https://eyereasoner.github.io/eyeling/" target="_blank" rel="noopener noreferrer">Eyeling</a>
+        — running version <strong>v<span id="eyeling-version">…</span></strong
+        >.
+      </footer>
     </div>
 
     <script src="dist/browser/eyeling.browser.js"></script>
@@ -1005,6 +1142,8 @@
         const pauseBtn = document.getElementById('pause-btn');
         const stopBtn = document.getElementById('stop-btn');
         const statusEl = document.getElementById('status');
+        const exampleSelect = document.getElementById('example-select');
+        const advancedConfigPanel = document.getElementById('advanced-config-panel');
         const uriInput = document.getElementById('n3-uri');
         const loadUriBtn = document.getElementById('load-uri-btn');
         const loadAsBackgroundCheckbox = document.getElementById('load-as-background');
@@ -1077,6 +1216,7 @@
         function syncStreamMessagesControls() {
           const streaming = effectiveStreamMessagesMode();
           if (streaming) enableRdfModeToggle();
+          if (advancedConfigPanel && streaming) advancedConfigPanel.open = true;
           if (messageLogUriRow) messageLogUriRow.hidden = !streaming;
           if (editorLabel) {
             editorLabel.textContent = streaming
@@ -2467,7 +2607,7 @@ const batch = [];
           if (sharedStateError) shareStatusEl.textContent = 'Could not open shared state: ' + sharedStateError;
           else if (sharedState && sharedStateUrl) shareStatusEl.textContent = 'Opened shared state file; future edits autosave locally.';
           else if (sharedState) shareStatusEl.textContent = 'Opened compact share link; future edits autosave locally.';
-          else if (savedState) shareStatusEl.textContent = 'Restored local autosave; the address bar stays short.';
+          else if (savedState) shareStatusEl.textContent = 'Restored local autosave.';
         }
 
         const shouldAutoLoadFromQueryUrl = !!paramN3Uri && (paramLoadBg === true || paramProgram === null);
@@ -3707,6 +3847,144 @@ const batch = [];
           return value.slice(0, keep) + '…' + value.slice(value.length - keep);
         }
 
+        function canonicalComparableUrl(value) {
+          const text = String(value || '').trim();
+          if (!text) return '';
+          try {
+            const u = new URL(text, window.location.href);
+            u.hash = '';
+            return u.toString();
+          } catch (_) {
+            return text;
+          }
+        }
+
+        function formatExampleTitleFromFilename(name) {
+          const stem = String(name || '').replace(/\.n3$/i, '');
+          if (!stem) return '';
+          return stem
+            .split(/[-_]+/)
+            .filter(Boolean)
+            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(' ');
+        }
+
+        function parseExampleFileUrlsFromHtml(baseUrl, html) {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(String(html || ''), 'text/html');
+          const urls = [];
+          const seen = new Set();
+          const links = doc.querySelectorAll('a[href]');
+          for (const link of links) {
+            const href = link.getAttribute('href');
+            if (!href) continue;
+            let resolved;
+            try {
+              resolved = new URL(href, baseUrl).toString();
+            } catch (_) {
+              continue;
+            }
+            if (!/\/examples\/[^/]+\.n3(?:$|[?#])/i.test(resolved)) continue;
+            if (seen.has(resolved)) continue;
+            seen.add(resolved);
+            urls.push(resolved);
+          }
+          return urls;
+        }
+
+        function buildExampleOptionData(url) {
+          const value = String(url || '').trim();
+          if (!value) return null;
+          let filename = '';
+          try {
+            filename = decodeURIComponent(new URL(value, window.location.href).pathname.split('/').pop() || '');
+          } catch (_) {
+            filename = String(value.split('/').pop() || '');
+          }
+          if (!/\.n3$/i.test(filename)) return null;
+          const title = formatExampleTitleFromFilename(filename);
+          return {
+            value,
+            title: title || filename,
+          };
+        }
+
+        function setExampleSelectOptions(exampleUrls) {
+          if (!exampleSelect) return;
+          const prior = canonicalComparableUrl(exampleSelect.value) || canonicalComparableUrl(uriInput && uriInput.value);
+          const options = [];
+          for (const url of Array.isArray(exampleUrls) ? exampleUrls : []) {
+            const item = buildExampleOptionData(url);
+            if (!item) continue;
+            options.push(item);
+          }
+          options.sort((a, b) => a.title.localeCompare(b.title));
+
+          exampleSelect.innerHTML = '';
+          if (!options.length) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = 'No examples discovered';
+            exampleSelect.appendChild(opt);
+            exampleSelect.disabled = true;
+            return;
+          }
+
+          const placeholder = document.createElement('option');
+          placeholder.value = '';
+          placeholder.textContent = 'Choose an example...';
+          exampleSelect.appendChild(placeholder);
+
+          for (const item of options) {
+            const opt = document.createElement('option');
+            opt.value = item.value;
+            opt.textContent = item.title;
+            exampleSelect.appendChild(opt);
+          }
+
+          let selected = '';
+          if (prior) {
+            for (const item of options) {
+              if (canonicalComparableUrl(item.value) === prior) {
+                selected = item.value;
+                break;
+              }
+            }
+          }
+          exampleSelect.value = selected;
+          exampleSelect.disabled = false;
+        }
+
+        async function discoverExampleUrls() {
+          const apiUrl = 'https://api.github.com/repos/eyereasoner/eyeling/contents/examples?ref=main';
+          try {
+            const resp = await fetchReadableUrl(apiUrl, {
+              headers: {
+                Accept: 'application/vnd.github+json',
+              },
+            });
+            if (!resp.ok) return [];
+            const entries = await resp.json();
+            if (!Array.isArray(entries)) return [];
+            const rawBase = 'https://raw.githubusercontent.com/eyereasoner/eyeling/main/examples/';
+            const urls = [];
+            for (const item of entries) {
+              if (!item || item.type !== 'file') continue;
+              const name = String(item.name || '');
+              if (!/\.n3$/i.test(name)) continue;
+              urls.push(rawBase + encodeURIComponent(name));
+            }
+            return urls;
+          } catch (_) {
+            return [];
+          }
+        }
+
+        async function initExampleDropdown() {
+          if (!exampleSelect) return;
+          setExampleSelectOptions(await discoverExampleUrls());
+        }
+
         function dedupeBuiltinModules(modules) {
           const out = [];
           const seen = new Set();
@@ -4019,6 +4297,17 @@ const batch = [];
             let text = await resp.text();
 
             const finalUrl = resp.url || uri;
+            const loadingAsBackground = !!(loadAsBackgroundCheckbox && loadAsBackgroundCheckbox.checked);
+
+            // If the same URL was previously loaded into background knowledge and now
+            // the user loads it into the editor, clear background first to avoid duplicates.
+            if (
+              !loadingAsBackground &&
+              backgroundKnowledgeText &&
+              canonicalComparableUrl(backgroundKnowledgeSource) === canonicalComparableUrl(finalUrl)
+            ) {
+              clearBackgroundKnowledge();
+            }
 
             // ✅ IMPORTANT: preserve base for <#...> by injecting @base <finalURL> .
             text = injectBaseDirective(text, finalUrl);
@@ -4027,7 +4316,7 @@ const batch = [];
 
             clearErrorHighlight();
 
-            if (loadAsBackgroundCheckbox && loadAsBackgroundCheckbox.checked) {
+            if (loadingAsBackground) {
               backgroundKnowledgeText = text;
               backgroundKnowledgeSource = finalUrl;
               backgroundBuiltinModules = companionBuiltins;
@@ -4082,8 +4371,19 @@ const batch = [];
           }
         }
 
+        async function loadSelectedExample() {
+          if (!exampleSelect) return;
+          const value = String(exampleSelect.value || '').trim();
+          if (!value) return;
+          uriInput.value = value;
+          await loadFromUri();
+        }
+
         runBtn.addEventListener('click', runReasoner);
         loadUriBtn.addEventListener('click', loadFromUri);
+        if (exampleSelect) {
+          exampleSelect.addEventListener('change', loadSelectedExample);
+        }
         if (clearBackgroundBtn) {
           clearBackgroundBtn.addEventListener('click', () => {
             clearBackgroundKnowledge();
@@ -4091,6 +4391,7 @@ const batch = [];
           });
         }
         updateBackgroundStatus();
+        initExampleDropdown();
 
 
         // Auto-load from ?url=... when it is meant to populate background knowledge,
