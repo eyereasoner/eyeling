@@ -2302,6 +2302,18 @@ const batch = [];
           return fetch(url, init);
         }
 
+        function urlsReferToSameResource(a, b) {
+          a = String(a || '').trim();
+          b = String(b || '').trim();
+          if (!a || !b) return false;
+          if (a === b) return true;
+          try {
+            return new URL(a, window.location.href).href === new URL(b, window.location.href).href;
+          } catch (_) {
+            return false;
+          }
+        }
+
         async function fetchPlaygroundStateFromUrl(stateUrl) {
           const url = String(stateUrl || '').trim();
           if (!url) return null;
@@ -4028,6 +4040,14 @@ const batch = [];
                 : 'Loaded N3 as background knowledge. The editor was left unchanged.';
               savePlaygroundState();
             } else {
+              if (
+                backgroundKnowledgeText &&
+                (urlsReferToSameResource(backgroundKnowledgeSource, finalUrl) ||
+                  urlsReferToSameResource(backgroundKnowledgeSource, uri))
+              ) {
+                clearBackgroundKnowledge();
+              }
+
               const companionTrig = await autoLoadCompanionForEditorUrl(uri, finalUrl);
               editor.setValue(text);
               editorBuiltinModules = companionBuiltins;
