@@ -1000,7 +1000,7 @@ Package scripts are defined in `package.json`.
 | `npm run test:manifest` | Validate example/test manifest expectations. |
 | `npm run test:playground` | Check playground serving headers. |
 | `npm run test:package` | Verify package-level behavior. |
-| `npm run rdf12` | Run RDF 1.2 Turtle, N-Triples, N-Quads, and TriG syntax suites. |
+| `npm run test:rdf12` | Run RDF 1.2 Turtle, N-Triples, N-Quads, and TriG syntax suites. |
 | `npm test` | Build and run the full suite. |
 
 ### Recommended local check before committing
