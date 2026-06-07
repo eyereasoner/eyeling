@@ -43,20 +43,20 @@
     "test:builtins": "node test/builtins.test.js",
     "test:examples": "node test/examples.test.js",
     "test:examples:proof": "node test/examples.test.js --proof-only",
+    "test:stream-messages": "node test/stream_messages.test.js",
     "test:manifest": "node test/manifest.test.js",
+    "test:rdf12": "node test/rdf12.test.js",
+    "test:rdf12:ntriples": "node test/rdf12.test.js ntriples",
+    "test:rdf12:nquads": "node test/rdf12.test.js nquads",
+    "test:rdf12:turtle": "node test/rdf12.test.js turtle",
+    "test:rdf12:trig": "node test/rdf12.test.js trig",
     "test:playground": "node test/playground.test.js",
     "test:package": "node test/package.test.js",
     "pretest": "npm run build && npm run test:packlist",
-    "test": "npm run test:api && npm run test:builtins && npm run test:examples && npm run test:examples:proof && npm run test:manifest && npm run rdf12 && npm run test:playground",
+    "test": "npm run test:api && npm run test:builtins && npm run test:examples && npm run test:examples:proof && npm run test:manifest && npm run test:rdf12 && npm run test:playground",
     "posttest": "npm run test:package",
     "preversion": "npm test",
-    "postversion": "git push origin HEAD --follow-tags",
-    "test:stream-messages": "node test/stream_messages.test.js",
-    "rdf12": "npm run rdf-12-turtle && npm run rdf-12-ntriples && npm run rdf-12-nquads && npm run rdf-12-trig",
-    "rdf-12-ntriples": "rdf-test-suite spec/rdf12-parser.js https://w3c.github.io/rdf-tests/rdf/rdf12/rdf-n-triples/syntax/manifest.ttl -i '{ \"format\": \"n-triples\" }' -c .rdf-test-suite-cache/",
-    "rdf-12-nquads": "rdf-test-suite spec/rdf12-parser.js https://w3c.github.io/rdf-tests/rdf/rdf12/rdf-n-quads/syntax/manifest.ttl -i '{ \"format\": \"n-quads\" }' -c .rdf-test-suite-cache/",
-    "rdf-12-turtle": "rdf-test-suite spec/rdf12-parser.js https://w3c.github.io/rdf-tests/rdf/rdf12/rdf-turtle/syntax/manifest.ttl -i '{ \"format\": \"turtle\" }' -c .rdf-test-suite-cache/",
-    "rdf-12-trig": "rdf-test-suite spec/rdf12-parser.js https://w3c.github.io/rdf-tests/rdf/rdf12/rdf-trig/syntax/manifest.ttl -i '{ \"format\": \"trig\" }' -c .rdf-test-suite-cache/"
+    "postversion": "git push origin HEAD --follow-tags"
   },
   "devDependencies": {
     "rdf-test-suite": "^2.1.4"
