@@ -17,6 +17,7 @@ Eyeling aims to make knowledge itself computationally accountable, so every conc
 </tr>
 </table>
 
+|   |
 |---|
 | **Mission**
 
