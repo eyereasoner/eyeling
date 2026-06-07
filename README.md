@@ -5,10 +5,21 @@
 
 A compact [Notation3 (N3)](https://notation3.org/) reasoner in **JavaScript**.
 
-> [!IMPORTANT]
-> **Mission**
->
-> Eyeling aims to make knowledge itself computationally accountable, so every conclusion can be derived, checked, and explained. It does this by keeping reasoning close to explicit facts, rules, and proofs rather than hidden assumptions or opaque workflows. As a compact Notation3 reasoner for JavaScript, Eyeling is designed to fit into practical systems while remaining inspectable enough for researchers, engineers, and agents to understand why a result follows. The ambition is not just to process data, but to support a culture of verifiable knowledge: conclusions that can be exchanged, reproduced, challenged, and improved.
+<table>
+<tr>
+<td>
+
+**Mission**
+
+Eyeling aims to make knowledge itself computationally accountable, so every conclusion can be derived, checked, and explained. It does this by keeping reasoning close to explicit facts, rules, and proofs rather than hidden assumptions or opaque workflows. As a compact Notation3 reasoner for JavaScript, Eyeling is designed to fit into practical systems while remaining inspectable enough for researchers, engineers, and agents to understand why a result follows. The ambition is not just to process data, but to support a culture of verifiable knowledge: conclusions that can be exchanged, reproduced, challenged, and improved.
+
+</td>
+</tr>
+</table>
+
+| **Mission** |
+|---|
+| Eyeling aims to make knowledge itself computationally accountable, so every conclusion can be derived, checked, and explained. It does this by keeping reasoning close to explicit facts, rules, and proofs rather than hidden assumptions or opaque workflows. As a compact Notation3 reasoner for JavaScript, Eyeling is designed to fit into practical systems while remaining inspectable enough for researchers, engineers, and agents to understand why a result follows. The ambition is not just to process data, but to support a culture of verifiable knowledge: conclusions that can be exchanged, reproduced, challenged, and improved. |
 
 Eyeling is characterized by:
 
