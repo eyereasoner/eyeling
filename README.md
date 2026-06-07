@@ -5,7 +5,7 @@
 
 A compact [Notation3 (N3)](https://notation3.org/) reasoner in **JavaScript**.
 
-<table>
+<table style="background-color: #eef7ff;">
 <tr>
 <td>
 
