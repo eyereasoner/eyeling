@@ -21,7 +21,6 @@
   "files": [
     "LICENSE.md",
     "README.md",
-    "HANDBOOK.md",
     "eyeling-builtins.ttl",
     "eyeling.js",
     "index.js",

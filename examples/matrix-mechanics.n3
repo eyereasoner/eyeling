@@ -32,7 +32,7 @@
 # Notes
 # -----
 # - This is a direct, concrete 2x2 example, not a general matrix library.
-# - The structure follows the Eyeling handbook style:
+# - The structure follows the Eyeling README style:
 #     Facts -> Logic -> Presentation -> Checks
 # - The output is organized in ARC form:
 #     Answer -> Reason Why -> Check

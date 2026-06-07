@@ -6,8 +6,8 @@
 #
 #   eyeling -r examples/rdf-messages.n3 examples/input/rdf-messages.trig
 #
-# See the handbook section on RDF Message Log replay under -r:
-#   https://eyereasoner.github.io/eyeling/HANDBOOK#rdf-message-log-replay-under--r
+# See the README section on RDF Message Log replay under -r:
+#   https://eyereasoner.github.io/eyeling/#rdf-message-logs
 #
 # It is a true RDF Message Log. VERSION "1.2-messages" tells Eyeling to parse
 # MESSAGE delimiters as message boundaries before ordinary N3 reasoning starts.

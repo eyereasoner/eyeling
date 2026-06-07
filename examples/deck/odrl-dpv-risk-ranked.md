@@ -181,7 +181,7 @@ Instead of “printing during reasoning”, the program emits facts like:
 
 - `log:outputString "..."`
 
-Then Eyeling’s `--strings` / `-r` mode collects and sorts them deterministically. ([Handbook Inside Eyeling][5])
+Then Eyeling’s `--strings` / `-r` mode collects and sorts them deterministically. ([README guide inside Eyeling][5])
 
 To force ranking, it uses an **inverse score key**:
 
@@ -248,4 +248,4 @@ This file is a compact demo of:
 [2]: https://www.w3.org/TR/odrl-vocab/ 'ODRL Vocabulary & Expression 2.2'
 [3]: https://dev.dpvcg.org/dpv/modules/risk 'Risk and Impact Assessment'
 [4]: https://w3c.github.io/N3/spec/ 'Notation3 Language'
-[5]: https://eyereasoner.github.io/eyeling/HANDBOOK 'Handbook Inside Eyeling'
+[5]: https://eyereasoner.github.io/eyeling/ 'README guide inside Eyeling'

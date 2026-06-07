@@ -35,7 +35,7 @@
 #
 # References
 # - N3 specification: https://w3c.github.io/N3/spec/
-# - Eyeling builtins handbook: https://eyereasoner.github.io/eyeling/HANDBOOK#ch11
+# - Eyeling built-ins README: https://eyereasoner.github.io/eyeling/#built-ins
 # - ODRL model/vocabulary: https://www.w3.org/TR/odrl-model/
 # =====================================================================================
 

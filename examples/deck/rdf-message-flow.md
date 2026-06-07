@@ -1,6 +1,6 @@
 # RDF Message Logs in Eyeling — from stream to reasoning
 
-This deck reads alongside the [rules](../rdf-message-flow.n3) and the replayed [message log input](../input/rdf-message-flow.trig): the [golden output](../output/rdf-message-flow.md) shows what Eyeling derives once `-r` has exposed the RDF Message envelopes and payload graphs. The [handbook section](https://eyereasoner.github.io/eyeling/HANDBOOK#rdf-message-log-replay-under--r) explains that replay step in more detail.
+This deck reads alongside the [rules](../rdf-message-flow.n3) and the replayed [message log input](../input/rdf-message-flow.trig): the [golden output](../output/rdf-message-flow.md) shows what Eyeling derives once `-r` has exposed the RDF Message envelopes and payload graphs. The [README section](https://eyereasoner.github.io/eyeling/#rdf-message-logs) explains that replay step in more detail.
 
 The goal is to show, in plain language, how Eyeling can now read an RDF Message Log directly instead of asking the example data to describe its own message envelopes by hand.
 

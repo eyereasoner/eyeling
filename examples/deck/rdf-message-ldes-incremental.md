@@ -1,6 +1,6 @@
 # RDF Message LDES Incremental Repair
 
-This deck walks through a stream that is large enough to make full recomputation unattractive. The [rules](../rdf-message-ldes-incremental.n3) consume the replayed LDES [message log input](../input/rdf-message-ldes-incremental.trig), the [golden output](../output/rdf-message-ldes-incremental.md) shows the incremental repair result, and the [handbook section](https://eyereasoner.github.io/eyeling/HANDBOOK#rdf-message-log-replay-under--r) explains how `-r` turns RDF Message boundaries into facts for the rules.
+This deck walks through a stream that is large enough to make full recomputation unattractive. The [rules](../rdf-message-ldes-incremental.n3) consume the replayed LDES [message log input](../input/rdf-message-ldes-incremental.trig), the [golden output](../output/rdf-message-ldes-incremental.md) shows the incremental repair result, and the [README section](https://eyereasoner.github.io/eyeling/#rdf-message-logs) explains how `-r` turns RDF Message boundaries into facts for the rules.
 
 ## Why this example exists
 
@@ -45,7 +45,7 @@ MESSAGE
 
 Eyeling's `-r` mode preserves those message boundaries as `eymsg:` envelopes and payload graphs.  The rules inspect payloads with `log:includes`, so each member remains scoped to the message that emitted it.
 
-Handbook: <https://eyereasoner.github.io/eyeling/HANDBOOK#rdf-message-log-replay-under--r>
+README: <https://eyereasoner.github.io/eyeling/#rdf-message-logs>
 
 ## Why LDES helps
 

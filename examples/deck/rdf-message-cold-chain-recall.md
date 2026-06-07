@@ -1,6 +1,6 @@
 # RDF Message Cold Chain Recall
 
-This deck follows a cold-chain stream where the cost of a wrong conclusion is concrete: either release a shipment or quarantine it. The [rules](../rdf-message-cold-chain-recall.n3) replay the LDES [message log input](../input/rdf-message-cold-chain-recall.trig), the [golden output](../output/rdf-message-cold-chain-recall.md) records the repaired decision, and the [handbook section](https://eyereasoner.github.io/eyeling/HANDBOOK#rdf-message-log-replay-under--r) explains how `-r` exposes RDF Message boundaries to the rules.
+This deck follows a cold-chain stream where the cost of a wrong conclusion is concrete: either release a shipment or quarantine it. The [rules](../rdf-message-cold-chain-recall.n3) replay the LDES [message log input](../input/rdf-message-cold-chain-recall.trig), the [golden output](../output/rdf-message-cold-chain-recall.md) records the repaired decision, and the [README section](https://eyereasoner.github.io/eyeling/#rdf-message-logs) explains how `-r` exposes RDF Message boundaries to the rules.
 
 ## Why this example exists
 
