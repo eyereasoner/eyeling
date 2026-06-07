@@ -24,4 +24,4 @@ jobs:
         run: npm install --no-audit --no-fund
 
       - name: Run RDF 1.2 spec tests
-        run: npm run rdf12
+        run: npm run test:rdf12
