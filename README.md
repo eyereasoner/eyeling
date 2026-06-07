@@ -5,10 +5,14 @@
 
 A compact [Notation3 (N3)](https://notation3.org/) reasoner in **JavaScript**.
 
-> [!NOTE]
-> **Mission**
->
-> Eyeling aims to make knowledge itself computationally accountable, so every conclusion can be derived, checked, and explained. It does this by keeping reasoning close to explicit facts, rules, and proofs rather than hidden assumptions or opaque workflows. As a compact Notation3 reasoner for JavaScript, Eyeling is designed to fit into practical systems while remaining inspectable enough for researchers, engineers, and agents to understand why a result follows. The ambition is not just to process data, but to support a culture of verifiable knowledge: conclusions that can be exchanged, reproduced, challenged, and improved.
+<table style="background-color: #eef7ff;">
+<tr>
+<td bgcolor="#eef7ff" style="background-color: #eef7ff; padding: 16px;">
+<p><strong>Mission</strong></p>
+<p>Eyeling aims to make knowledge itself computationally accountable, so every conclusion can be derived, checked, and explained. It does this by keeping reasoning close to explicit facts, rules, and proofs rather than hidden assumptions or opaque workflows. As a compact Notation3 reasoner for JavaScript, Eyeling is designed to fit into practical systems while remaining inspectable enough for researchers, engineers, and agents to understand why a result follows. The ambition is not just to process data, but to support a culture of verifiable knowledge: conclusions that can be exchanged, reproduced, challenged, and improved.</p>
+</td>
+</tr>
+</table>
 
 Eyeling is characterized by:
 
