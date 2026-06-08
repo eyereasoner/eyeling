@@ -1,10 +1,10 @@
 # RDF Message Logs internals
 
-Eyeling handles RDF Message Logs as an RDF-compatibility normalization step. A message log is not parsed as one flat graph first; it is split into message chunks and rewritten into ordinary N3 facts that describe the stream, its ordered message envelopes, and each message payload graph.
+Eyeling handles RDF Message Logs as an RDF-compatibility replay step. A message log is not parsed as one flat graph first; it is split into message chunks and exposed as ordinary N3 facts that describe the stream, its ordered message envelopes, and each message payload graph. Common line-oriented logs use the fast RDF AST builder in `lib/fast_rdf.js`; richer RDF/TriG inputs fall back to the normalization path in `lib/lexer.js`.
 
-There are two execution paths:
+There are two replay modes:
 
-- normal RDF mode, where a whole message log is normalized into one replay document;
+- normal RDF mode, where a whole message log becomes one replay document;
 - `--stream-messages`, where the CLI reads one message at a time and runs the rules once per replayed message.
 
 Both paths expose the same basic `eymsg:` vocabulary and use N3 quoted formulas for payload graphs.
@@ -40,16 +40,15 @@ Old-style `@version` and `@message` forms are also recognized.
 
 ## Normal, whole-log RDF mode
 
-When `lex(input, { rdf: true })` sees a `*-messages` version directive, `normalizeRdfCompatibility()` dispatches to `normalizeRdfMessageLog()` in `lib/lexer.js`.
+When RDF mode sees a `*-messages` version directive, the common fast path is `parseFastRdfMessageLog()` in `lib/fast_rdf.js`. It directly builds the same Eyeling AST that the replay document would have produced. If the input uses richer RDF/TriG constructs outside the fast subset, Eyeling returns to `normalizeRdfMessageLog()` through the RDF compatibility layer in `lib/lexer.js`.
 
-That function:
+Both paths:
 
-1. strips the version directive;
-2. splits the text at top-level `MESSAGE` / `@message` delimiters;
-3. creates deterministic stream, envelope, and payload IRIs from a hash of the whole source text;
-4. normalizes each message chunk through the RDF/TriG compatibility layer;
-5. rewrites blank-node labels so each message gets its own blank-node scope;
-6. emits ordinary N3 replay facts.
+1. strip the version directive;
+2. split the text at top-level `MESSAGE` / `@message` delimiters;
+3. create deterministic stream, envelope, and payload IRIs from a hash of the whole source text;
+4. keep each message in its own blank-node scope;
+5. expose ordinary N3 replay facts.
 
 Conceptually, the input above becomes something like:
 
@@ -98,7 +97,7 @@ Conceptually, the input above becomes something like:
   } .
 ```
 
-After this rewrite, the ordinary N3 parser and reasoner handle the result. There is no separate RDF Message Log AST.
+After this replay conversion, the ordinary N3 reasoner handles the result. The fast path avoids printing and reparsing a synthetic N3 replay document, but it intentionally builds the same stream/envelope/payload AST shape.
 
 ## Payload graphs
 
@@ -127,7 +126,7 @@ This is the key design choice: message boundaries are preserved by putting each 
 
 ## Per-message normalization
 
-Each message body is normalized before it is embedded as a payload formula:
+Each message body is converted before it is embedded as a payload formula. In the fast path this is intentionally limited to line-oriented RDF statements: IRIs, prefixed names, blank nodes, literals, numeric/boolean literals, simple N-Quads named graphs, and nested RDF/Turtle collections. Richer RDF 1.2/TriG features are handled by the fallback normalization path:
 
 - RDF 1.2 triple terms are converted to singleton N3 graph terms;
 - RDF 1.2 annotation syntax is expanded;
@@ -219,7 +218,7 @@ RDF Message Log support is best understood as:
 ```text
 message-log syntax
   -> split into message chunks
-  -> normalize each chunk as RDF/TriG/RDF 1.2
+  -> parse fast line-oriented payloads directly, or fall back to RDF/TriG normalization
   -> wrap each chunk in an eymsg: envelope
   -> expose the payload as log:nameOf { ... }
   -> run the ordinary N3 reasoner

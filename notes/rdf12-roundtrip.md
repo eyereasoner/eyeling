@@ -2,17 +2,15 @@
 
 ## Summary
 
-Eyeling does **not** implement RDF 1.2 as a separate internal data model. RDF/TriG compatibility is an opt-in **syntax-normalization layer** in `lib/lexer.js`.
+Eyeling does **not** implement RDF 1.2 as a separate internal data model. RDF/TriG compatibility is an opt-in layer that either normalizes RDF/TriG surface syntax in `lib/lexer.js` or, for common line-oriented RDF inputs, directly builds the same Eyeling AST in `lib/fast_rdf.js`.
 
-When parsing with RDF mode enabled, Eyeling rewrites RDF 1.2/TriG surface syntax into ordinary N3 syntax. The normal parser and reasoner then operate on Eyeling's existing N3 AST. On output, `lib/printing.js` can print some N3 graph terms back as RDF 1.2 triple terms.
+When parsing with RDF mode enabled, Eyeling maps RDF 1.2/TriG surface syntax into ordinary N3-compatible AST terms. The normal reasoner then operates on Eyeling's existing N3 AST. On output, `lib/printing.js` can print some N3 graph terms back as RDF 1.2 triple terms.
 
 The flow is:
 
 ```text
 RDF 1.2 / TriG input
-  -- lex(input, { rdf: true }) / normalizeRdfCompatibility() -->
-normalized N3 text
-  -- Parser -->
+  -- normalizeRdfCompatibility() or tryParseFastRdfText() -->
 Eyeling N3 AST
   -- reasoner -->
 derived N3 facts
@@ -131,7 +129,7 @@ becomes:
 
 ## Reasoning model
 
-After normalization, RDF 1.2 constructs are ordinary N3 terms. For example, this rule can match reified RDF 1.2 triples:
+After compatibility conversion, RDF 1.2 constructs are ordinary N3 terms. For example, this rule can match reified RDF 1.2 triples:
 
 ```n3
 { ?r rdf:reifies { ?s ?p ?o } }

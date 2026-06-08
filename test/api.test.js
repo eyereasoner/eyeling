@@ -3083,6 +3083,47 @@ _:b :value 2 .
   },
 
   {
+    name: 'RDF message fast path handles line-oriented nested collections',
+    opt: { proofComments: false, rdf: true },
+    input: {
+      sources: [
+        {
+          label: 'rules.n3',
+          text: `@prefix : <http://example.org/msgtest#>.
+@prefix eymsg: <https://eyereasoner.github.io/eyeling/vocab/message#>.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix list: <http://www.w3.org/2000/10/swap/list#>.
+
+{
+  ?Envelope eymsg:payloadGraph ?Payload.
+  ?Payload log:nameOf ?G.
+  ?G log:includes { ?Record :record ?Fields. }.
+  ?Fields list:length ?Len.
+} log:query {
+  ?Envelope :fieldCount ?Len.
+}.
+`,
+        },
+        {
+          label: 'message-log.nt',
+          text: `VERSION "1.2-messages"
+@prefix : <http://example.org/msgtest#> .
+<http://example.org/record/1> a :Record.
+<http://example.org/record/1> :record (("001" "_" "_" "_" "42") ("245" "1" "0" "a" "Title, with comma")) .
+MESSAGE
+<http://example.org/record/2> a :Record.
+<http://example.org/record/2> :record (("001" "_" "_" "_" "43")) .
+`,
+        },
+      ],
+    },
+    expect: [
+      /<urn:eyeling:message-log:[0-9a-f]+#m001>\s+:fieldCount\s+2\s*\./m,
+      /<urn:eyeling:message-log:[0-9a-f]+#m002>\s+:fieldCount\s+1\s*\./m,
+    ],
+  },
+
+  {
     name: 'API empty input returns empty output',
     opt: { proofComments: false },
     input: '',
