@@ -30,7 +30,9 @@
     "lib",
     "test",
     "tools",
-    "examples"
+    "examples",
+    "spec",
+    "notes"
   ],
   "engines": {
     "node": ">=18"
