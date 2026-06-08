@@ -4623,10 +4623,13 @@ module.exports = {
 'use strict';
 
 const fs = require('node:fs');
-const os = require('node:os');
 const path = require('node:path');
-const { pathToFileURL, fileURLToPath } = require('node:url');
+const { pathToFileURL, fileURLToPath, URL } = require('node:url');
 const { TextDecoder } = require('node:util');
+const http = require('node:http');
+const https = require('node:https');
+const readline = require('node:readline');
+const zlib = require('node:zlib');
 
 const engine = require('./engine');
 const deref = require('./deref');
@@ -4760,7 +4763,8 @@ function __httpFetchScriptBody({ prefixOnly = false } = {}) {
             if (finished) return;
             chunks.push(chunk);
             bytes += chunk.length;
-            if (bytes >= limit) finish();
+            const text = Buffer.concat(chunks, bytes).toString('utf8');
+            if (bytes >= limit || /^\\s*(?:@version|VERSION)\\s+(["'])(?:1\\.1|1\\.2|1\\.2-basic)-messages\\1\\s*\\.?\\s*(?:#.*)?$/im.test(text)) finish();
           });
           body.on('end', finish);
           body.on('error', (e) => { console.error(e && e.message ? e.message : String(e)); process.exit(5); });
@@ -4789,22 +4793,95 @@ function __readHttpPrefixSync(sourceLabel, byteLimit = 64 * 1024) {
   return r.stdout;
 }
 
-function __downloadHttpSourceToTempFileSync(sourceLabel) {
-  const cp = require('node:child_process');
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'eyeling-rdf-message-log-'));
-  const file = path.join(dir, 'source.txt');
-  const r = cp.spawnSync(process.execPath, ['-e', __httpFetchScriptBody({ prefixOnly: false }), sourceLabel, file], {
-    encoding: 'utf8',
-    maxBuffer: 1024 * 1024,
-    stdio: ['ignore', 'ignore', 'pipe'],
+function __openHttpTextStream(sourceLabel, redirects = 0) {
+  const maxRedirects = 10;
+  return new Promise((resolve, reject) => {
+    if (redirects > maxRedirects) {
+      reject(new Error('Too many redirects'));
+      return;
+    }
+
+    let parsed;
+    try {
+      parsed = new URL(sourceLabel);
+    } catch (e) {
+      reject(e);
+      return;
+    }
+
+    const mod = parsed.protocol === 'https:' ? https : parsed.protocol === 'http:' ? http : null;
+    if (!mod) {
+      reject(new Error(`Unsupported protocol ${parsed.protocol}`));
+      return;
+    }
+
+    const req = mod.request(
+      {
+        protocol: parsed.protocol,
+        hostname: parsed.hostname,
+        port: parsed.port || undefined,
+        path: parsed.pathname + parsed.search,
+        headers: {
+          accept: 'text/n3, text/turtle, application/trig, application/n-triples, application/n-quads, text/plain;q=0.8, */*;q=0.01',
+          'accept-encoding': 'identity',
+          'user-agent': 'eyeling-rdf-message-stream',
+        },
+      },
+      (res) => {
+        const sc = res.statusCode || 0;
+        if (sc >= 300 && sc < 400 && res.headers && res.headers.location) {
+          const next = new URL(res.headers.location, sourceLabel).toString();
+          res.resume();
+          resolve(__openHttpTextStream(next, redirects + 1));
+          return;
+        }
+        if (sc < 200 || sc >= 300) {
+          res.resume();
+          reject(new Error(`HTTP status ${sc}`));
+          return;
+        }
+
+        const enc = String((res.headers && res.headers['content-encoding']) || '').toLowerCase();
+        let body = res;
+        if (enc.includes('gzip')) body = res.pipe(zlib.createGunzip());
+        else if (enc.includes('deflate')) body = res.pipe(zlib.createInflate());
+        else if (enc.includes('br')) body = res.pipe(zlib.createBrotliDecompress());
+        resolve(body);
+      },
+    );
+    req.on('error', reject);
+    req.end();
   });
-  if (r.status !== 0) {
-    try { fs.rmSync(dir, { recursive: true, force: true }); } catch {}
-    throw new Error(`Failed to dereference ${sourceLabel}${r.stderr ? ': ' + String(r.stderr).trim() : ''}`);
-  }
-  return { file, cleanup: () => { try { fs.rmSync(dir, { recursive: true, force: true }); } catch {} } };
 }
 
+async function forEachLineInHttpSource(sourceLabel, onLine) {
+  const body = await __openHttpTextStream(sourceLabel);
+  await new Promise((resolve, reject) => {
+    let settled = false;
+    function done(err) {
+      if (settled) return;
+      settled = true;
+      if (err) reject(err);
+      else resolve();
+    }
+
+    const rl = readline.createInterface({ input: body, crlfDelay: Infinity });
+    rl.on('line', (line) => {
+      try {
+        onLine(line + '\n');
+      } catch (e) {
+        try { rl.close(); } catch {}
+        if (body && typeof body.destroy === 'function') {
+          try { body.destroy(); } catch {}
+        }
+        done(e);
+      }
+    });
+    rl.on('close', () => done());
+    rl.on('error', done);
+    body.on('error', done);
+  });
+}
 
 const RDF_MESSAGE_VERSION_RE = /^\s*(?:@version|VERSION)\s+(["'])(?:1\.1|1\.2|1\.2-basic)-messages\1\s*\.?\s*(?:#.*)?$/im;
 const RDF_MESSAGE_VERSION_LINE_RE = /^\s*(?:@version|VERSION)\s+(["'])(?:1\.1|1\.2|1\.2-basic)-messages\1\s*\.?\s*(?:#.*)?$/i;
@@ -5022,15 +5099,50 @@ function __forEachRdfMessageChunkSync(sourceLabel, onMessage) {
     return;
   }
   if (__isHttpSource(sourceLabel)) {
-    const tmp = __downloadHttpSourceToTempFileSync(sourceLabel);
-    try {
-      forEachRdfMessageChunkInFileSync(tmp.file, onMessage);
-    } finally {
-      tmp.cleanup();
-    }
-    return;
+    throw new Error('internal error: HTTP RDF Message Logs must be streamed asynchronously');
   }
   forEachRdfMessageChunkInText(__readInputSourceSync(sourceLabel), onMessage);
+}
+
+
+async function forEachRdfMessageChunkInHttpSource(sourceLabel, onMessage) {
+  const directives = [];
+  const seenDirectives = new Set();
+  let chunk = '';
+  let messageIndex = 1;
+  let sawVersion = false;
+  let sawDelimiter = false;
+
+  function emit() {
+    onMessage({ messageIndex, chunk, directives: directives.slice() });
+    messageIndex += 1;
+    chunk = '';
+  }
+
+  await forEachLineInHttpSource(sourceLabel, (line) => {
+    if (RDF_MESSAGE_VERSION_LINE_RE.test(line)) {
+      sawVersion = true;
+      return;
+    }
+    if (RDF_MESSAGE_DELIMITER_LINE_RE.test(line)) {
+      emit();
+      sawDelimiter = true;
+      return;
+    }
+    addRdfDirective(directives, seenDirectives, line);
+    chunk += line;
+  });
+
+  if (!sawVersion) throw new Error('not an RDF Message Log: missing VERSION "*-messages" directive');
+  if (sawDelimiter || hasRdfPayload(chunk)) emit();
+}
+
+async function __forEachRdfMessageChunk(sourceLabel, onMessage) {
+  if (__isHttpSource(sourceLabel)) {
+    await forEachRdfMessageChunkInHttpSource(sourceLabel, onMessage);
+    return;
+  }
+  __forEachRdfMessageChunkSync(sourceLabel, onMessage);
 }
 
 function factsContainOutputStrings(triplesForOutput) {
@@ -5096,7 +5208,7 @@ function runParsedDocumentOnce(mergedDocument, { rdfMode = false, outputPrefixes
   }
 }
 
-function runStreamMessagesMode(sourceLabels, { rdfMode }) {
+async function runStreamMessagesMode(sourceLabels, { rdfMode }) {
   const ordinarySourceLabels = [];
   const messageSourceLabels = [];
 
@@ -5148,7 +5260,7 @@ function runStreamMessagesMode(sourceLabels, { rdfMode }) {
   const fullIriPrefixes = new PrefixEnv({});
   for (const messageSourceLabel of messageSourceLabels) {
     try {
-      __forEachRdfMessageChunkSync(messageSourceLabel, ({ messageIndex, chunk, directives }) => {
+      await __forEachRdfMessageChunk(messageSourceLabel, ({ messageIndex, chunk, directives }) => {
         const messageText = buildSingleMessageReplayDocument({
           sourceLabel: messageSourceLabel,
           messageIndex,
@@ -5182,7 +5294,7 @@ function runStreamMessagesMode(sourceLabels, { rdfMode }) {
   }
 }
 
-function main() {
+async function main() {
   // Drop "node" and script name; keep only user-provided args
   // Expand combined short options: -pt == -p -t
   const argvRaw = process.argv.slice(2);
@@ -5321,7 +5433,7 @@ function main() {
   }
 
   if (streamMessagesMode) {
-    runStreamMessagesMode(sourceLabels, { rdfMode });
+    await runStreamMessagesMode(sourceLabels, { rdfMode });
     return;
   }
 
@@ -5405,7 +5517,8 @@ function main() {
     return false;
   }
 
-  function factsContainOutputStrings(triplesForOutput) {
+  
+function factsContainOutputStrings(triplesForOutput) {
     return (
       Array.isArray(triplesForOutput) &&
       triplesForOutput.some(
@@ -9843,7 +9956,15 @@ function reasonRdfJs(input, opts = {}) {
 // Minimal export surface for Node + browser/worker
 function main() {
   // Lazily require to avoid hard cycles in the module graph.
-  return require('./cli').main();
+  const result = require('./cli').main();
+  if (result && typeof result.then === 'function') {
+    result.catch((e) => {
+      const msg = e && e.stack ? e.stack : e && e.message ? e.message : String(e);
+      console.error(msg);
+      process.exit(1);
+    });
+  }
+  return result;
 }
 
 // ---------------------------------------------------------------------------

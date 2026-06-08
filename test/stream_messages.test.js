@@ -161,6 +161,88 @@ function startFileServer(file) {
   throw new Error('test HTTP server did not start');
 }
 
+
+function startOpenEndedMessageServer() {
+  const dir = mkTmpDir();
+  const script = path.join(dir, 'server.js');
+  const portFile = path.join(dir, 'server.port');
+  fs.writeFileSync(
+    script,
+    [
+      "const http = require('node:http');",
+      "const fs = require('node:fs');",
+      'const portFile = process.argv[2];',
+      'const server = http.createServer((req, res) => {',
+      "  res.writeHead(200, { 'content-type': 'text/plain' });",
+      "  res.write('VERSION \\\"1.2-messages\\\"\\nPREFIX : <urn:test#>\\n');",
+      "  res.write(':a :line \\\"one\\\\n\\\".\\nMESSAGE\\n');",
+      "  setInterval(() => res.write('# keepalive\\n'), 1000);",
+      '});',
+      "server.listen(0, '127.0.0.1', () => fs.writeFileSync(portFile, String(server.address().port)));",
+      '',
+    ].join('\n'),
+    'utf8',
+  );
+  const child = cp.spawn(process.execPath, [script, portFile], { cwd: root, stdio: ['ignore', 'ignore', 'pipe'] });
+  const deadline = Date.now() + 5000;
+  while (Date.now() < deadline) {
+    if (fs.existsSync(portFile)) {
+      const port = fs.readFileSync(portFile, 'utf8').trim();
+      return {
+        url: `http://127.0.0.1:${port}/messages.txt`,
+        stop: () => {
+          child.kill();
+          rmrf(dir);
+        },
+      };
+    }
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20);
+  }
+  child.kill();
+  rmrf(dir);
+  throw new Error('test open-ended HTTP server did not start');
+}
+
+function waitForEyelingOutput(args, pattern, opts = {}) {
+  const timeoutMs = opts.timeoutMs || 4000;
+  return new Promise((resolve, reject) => {
+    const child = cp.spawn(process.execPath, [eyelingJsPath, ...args], {
+      cwd: root,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      child.kill();
+      reject(new Error(`timed out waiting for ${pattern}; stdout=${JSON.stringify(stdout)} stderr=${JSON.stringify(stderr)}`));
+    }, timeoutMs);
+
+    function finish(err) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      child.kill();
+      if (err) reject(err);
+      else resolve(stdout);
+    }
+
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk.toString('utf8');
+      if (pattern.test(stdout)) finish();
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk.toString('utf8');
+    });
+    child.on('error', finish);
+    child.on('exit', (code) => {
+      if (!settled && code !== 0) finish(new Error(`eyeling exited with ${code}; stdout=${stdout}; stderr=${stderr}`));
+    });
+  });
+}
+
 const cases = [
   {
     name: 'scoped payload rules run once per RDF Message',
@@ -221,6 +303,20 @@ const cases = [
     },
   },
   {
+    name: 'remote HTTP RDF Message Logs emit before the response ends',
+    async run(tmp) {
+      const rules = path.join(tmp, 'rules.n3');
+      writeScopedPayloadRules(rules);
+      const server = startOpenEndedMessageServer();
+      try {
+        const out = await waitForEyelingOutput(['-r', '--stream-messages', rules, server.url], /^one\n/);
+        assert.equal(out, 'one\n');
+      } finally {
+        server.stop();
+      }
+    },
+  },
+  {
     name: 'MARC extraction rules fire over each streamed payload graph',
     run(tmp) {
       const log = path.join(tmp, 'marc.messages.txt');
@@ -251,7 +347,7 @@ const cases = [
   },
 ];
 
-(function main() {
+(async function main() {
   const suiteStart = msNow();
   info(`Running ${cases.length} stream-message tests`);
   let passed = 0;
@@ -261,7 +357,7 @@ const cases = [
     const testName = numberedName(index, tc.name);
     const start = msNow();
     try {
-      tc.run(tmp);
+      await tc.run(tmp);
       ok(`${testName} ${C.dim}(${msNow() - start} ms)${C.n}`);
       passed++;
     } catch (e) {
@@ -281,4 +377,7 @@ const cases = [
   }
   fail(`Some stream-message tests failed (${passed}/${cases.length})`);
   process.exit(1);
-})();
+})().catch((e) => {
+  fail(e && e.stack ? e.stack : String(e));
+  process.exit(1);
+});

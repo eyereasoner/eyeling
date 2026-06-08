@@ -195,7 +195,13 @@ function buildBundleSource({ autoRunMain }) {
     out.push(
       '    if (__outerModule && __outerRequire && __outerRequire.main === __outerModule && typeof __entry.main === "function") {',
     );
-    out.push('      __entry.main();');
+    out.push('      const __mainResult = __entry.main();');
+    out.push('      if (__mainResult && typeof __mainResult.then === "function") {');
+    out.push('        __mainResult.catch((e) => {');
+    out.push('          try { if (typeof console !== "undefined" && console.error) console.error(e && e.stack ? e.stack : e && e.message ? e.message : String(e)); } catch (ignoredError) {}');
+    out.push('          try { if (typeof process !== "undefined" && process.exit) process.exit(1); } catch (ignoredError) {}');
+    out.push('        });');
+    out.push('      }');
     out.push('    }');
     out.push('  } catch (ignoredError) {}');
   }
