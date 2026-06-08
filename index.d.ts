@@ -99,7 +99,8 @@ declare module 'eyeling' {
     | RdfJsNamedNode
     | RdfJsBlankNode
     | RdfJsVariable
-    | RdfJsLiteral;
+    | RdfJsLiteral
+    | RdfJsQuad;
 
   export interface EyelingTriple {
     _type?: 'Triple';
@@ -182,7 +183,7 @@ declare module 'eyeling' {
     dataFactory?: RdfJsDataFactory | null;
     skipUnsupportedRdfJs?: boolean;
     builtinModules?: string | string[];
-    onDerived?: (item: { triple: string; quad?: RdfJsQuad; df: any }) => void;
+    onDerived?: (item: { triple: string; quad?: RdfJsQuad; quads?: RdfJsQuad[]; df: any }) => void;
   }
 
   export interface ReasonStreamResult {

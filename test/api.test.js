@@ -2106,29 +2106,32 @@ _:x :hates { _:foo :making :mess }.
     },
   },
   {
-    name: '63a RDF/JS export: reasonRdfJs can skip N3-only derived triples',
+    name: '63a RDF/JS export: reasonRdfJs emits RDF 1.2 Quad terms for singleton graph terms',
     async run() {
       const ex = 'http://example.org/';
       const input = `@prefix : <${ex}>.
 :a :p :b.
 { :a :p :b. } => { :x :holds { :a :p :b. }. :x :ok :yes. }.`;
       const quads = [];
-      for await (const quad of reasonRdfJs(input, { skipUnsupportedRdfJs: true })) {
+      for await (const quad of reasonRdfJs(input)) {
         quads.push(quad);
       }
       this.quads = quads;
-      return quads.map((q) => `${q.subject.value} ${q.predicate.value} ${q.object.value}`).join('\n');
+      return quads.map((q) => `${q.subject.value} ${q.predicate.value} ${q.object.termType}:${q.object.value}`).join('\n');
     },
-    expect: [/http:\/\/example\.org\/ok/],
-    notExpect: [/http:\/\/example\.org\/holds/],
+    expect: [/http:\/\/example\.org\/ok/, /http:\/\/example\.org\/holds\s+Quad:/],
     check(outputIgnored, tc) {
-      assert.equal(tc.quads.length, 1, 'Expected one yielded RDF/JS quad after skipping GraphTerm output');
-      assert.equal(tc.quads[0].predicate.value, 'http://example.org/ok');
-      assert.equal(tc.quads[0].object.value, 'http://example.org/yes');
+      assert.equal(tc.quads.length, 2, 'Expected both derived facts as RDF/JS quads');
+      const holds = tc.quads.find((q) => q.predicate.value === 'http://example.org/holds');
+      assert.ok(holds, 'Expected :holds quad');
+      assert.equal(holds.object.termType, 'Quad');
+      assert.equal(holds.object.subject.value, 'http://example.org/a');
+      assert.equal(holds.object.predicate.value, 'http://example.org/p');
+      assert.equal(holds.object.object.value, 'http://example.org/b');
     },
   },
   {
-    name: '63b RDF/JS export: reasonStream keeps N3 closure while omitting unsupported closureQuads',
+    name: '63b RDF/JS export: reasonStream converts singleton graph terms without skipUnsupportedRdfJs',
     run() {
       const ex = 'http://example.org/';
       const input = `@prefix : <${ex}>.
@@ -2137,7 +2140,6 @@ _:x :hates { _:foo :making :mess }.
       const seen = [];
       const result = reasonStream(input, {
         rdfjs: true,
-        skipUnsupportedRdfJs: true,
         includeInputFactsInClosure: false,
         onDerived: ({ triple, quad }) => seen.push({ triple, quad }),
       });
@@ -2148,24 +2150,23 @@ _:x :hates { _:foo :making :mess }.
     expect: [/:holds/, /:ok/],
     check(outputIgnored, tc) {
       assert.equal(tc.seen.length, 2, 'Expected both derived facts to reach onDerived');
-      assert.equal(tc.seen.filter((x) => x.quad).length, 1, 'Expected only one RDF/JS quad in onDerived');
+      assert.equal(tc.seen.filter((x) => x.quad).length, 2, 'Expected both RDF/JS quads in onDerived');
       assert.ok(Array.isArray(tc.result.closureQuads), 'Expected closureQuads array');
-      assert.equal(
-        tc.result.closureQuads.length,
-        1,
-        'Expected unsupported GraphTerm triple to be omitted from closureQuads',
+      assert.equal(tc.result.closureQuads.length, 2, 'Expected both RDF/JS quads in closureQuads');
+      assert.ok(
+        tc.result.closureQuads.some(
+          (q) => q.predicate.value === 'http://example.org/holds' && q.object.termType === 'Quad',
+        ),
+        'Expected RDF 1.2 Quad term object in closureQuads',
       );
-      assert.equal(tc.result.closureQuads[0].predicate.value, 'http://example.org/ok');
       assert.match(tc.result.closureN3, /:holds/, 'Expected N3 closure to retain quoted-formula triple');
     },
   },
   {
-    name: '64 RDF/JS validation: named-graph input quads are rejected clearly',
-    expectError: true,
+    name: '64 RDF/JS input: named-graph quads are represented as log:nameOf graph terms',
     run() {
       const ex = 'http://example.org/';
-      return reason(
-        {},
+      const result = reasonStream(
         {
           quads: [
             rdfjs.quad(
@@ -2176,7 +2177,61 @@ _:x :hates { _:foo :making :mess }.
             ),
           ],
         },
+        { rdfjs: true },
       );
+      this.result = result;
+      return result.closureN3;
+    },
+    expect: [/log:nameOf/, /http:\/\/example\.org\/g/, /http:\/\/example\.org\/s/],
+    check(outputIgnored, tc) {
+      assert.equal(tc.result.closureQuads.length, 1, 'Expected one named-graph RDF/JS quad');
+      assert.equal(tc.result.closureQuads[0].graph.value, 'http://example.org/g');
+    },
+  },
+  {
+    name: '64a RDF/JS input: Quad terms are accepted as RDF 1.2 triple terms',
+    run() {
+      const ex = 'http://example.org/';
+      const quoted = rdfjs.quad(
+        rdfjs.namedNode(ex + 's'),
+        rdfjs.namedNode(ex + 'p'),
+        rdfjs.namedNode(ex + 'o'),
+      );
+      const result = reasonStream(
+        {
+          quads: [rdfjs.quad(rdfjs.namedNode(ex + 'obs'), rdfjs.namedNode(ex + 'about'), quoted)],
+        },
+        { rdf: true, rdfjs: true },
+      );
+      this.result = result;
+      return result.closureN3;
+    },
+    expect: [/<<\(\s+<http:\/\/example\.org\/s>\s+<http:\/\/example\.org\/p>\s+<http:\/\/example\.org\/o>\s+\)>>/],
+    check(outputIgnored, tc) {
+      assert.equal(tc.result.closureQuads.length, 1, 'Expected one RDF/JS quad');
+      assert.equal(tc.result.closureQuads[0].object.termType, 'Quad');
+      assert.equal(tc.result.closureQuads[0].object.subject.value, 'http://example.org/s');
+    },
+  },
+  {
+    name: '64b RDF/JS input: object with quads and n3 text is merged',
+    run() {
+      const ex = 'http://example.org/';
+      const result = reasonStream(
+        {
+          n3: `@prefix : <${ex}>.
+{ ?x :p ?y. } => { ?x :q ?y. } .`,
+          quads: [rdfjs.quad(rdfjs.namedNode(ex + 'a'), rdfjs.namedNode(ex + 'p'), rdfjs.namedNode(ex + 'b'))],
+        },
+        { includeInputFactsInClosure: false, rdfjs: true },
+      );
+      this.result = result;
+      return result.closureN3;
+    },
+    expect: [/:a\s+:q\s+:b/],
+    check(outputIgnored, tc) {
+      assert.equal(tc.result.closureQuads.length, 1, 'Expected one derived RDF/JS quad');
+      assert.equal(tc.result.closureQuads[0].predicate.value, 'http://example.org/q');
     },
   },
   {

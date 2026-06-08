@@ -495,9 +495,19 @@ const result = reasonStream(input, { rdfjs: true });
 console.log(result.closureQuads);
 ```
 
-Supported RDF-JS input terms include named nodes, blank nodes, literals, variables, default graph terms, and default-graph quads. Named-graph input quads are rejected clearly unless handled through N3/TriG compatibility mode.
+Supported RDF-JS input terms include named nodes, blank nodes, literals, variables, default graph terms, and RDF 1.2 `Quad` terms in subject/object positions. Input objects may combine `quads`/`dataset`/`facts` with `n3`; Eyeling merges the RDF-JS facts with the N3 text before reasoning.
 
-Use RDF-JS when you want Eyeling to sit inside a JavaScript RDF pipeline. Use raw N3 input when you need N3-only features such as quoted formulas or N3 rules represented directly in source text.
+Named-graph RDF-JS input quads are accepted and represented internally with the same shape as RDF/TriG compatibility mode:
+
+```n3
+:graph log:nameOf {
+  :s :p :o .
+} .
+```
+
+When `rdfjs: true` is used on output, singleton N3 quoted formulas are converted to RDF-JS `Quad` terms where RDF 1.2 can represent them, and `log:nameOf` graph terms are expanded back into named-graph RDF-JS quads.
+
+Use RDF-JS when you want Eyeling to sit inside a JavaScript RDF pipeline. Use raw N3 input when you need N3-only features such as rules represented directly in source text.
 
 ---
 
@@ -1185,7 +1195,7 @@ Default CLI output prints newly derived facts. Use `reasonStream()` with `includ
 
 ### RDF-JS conversion fails
 
-Some N3 terms cannot be represented as ordinary RDF-JS quads. Use:
+RDF 1.2 singleton quoted formulas are converted to RDF-JS `Quad` terms, but general N3 formulas, lists with open tails, and other N3-only terms still cannot be represented as RDF-JS quads. Use:
 
 ```js
 reasonStream(input, { rdfjs: true, skipUnsupportedRdfJs: true });

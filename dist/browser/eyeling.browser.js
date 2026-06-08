@@ -6106,7 +6106,7 @@ const {
 } = require('./printing');
 const {
   getDataFactory,
-  internalTripleToRdfJsQuad,
+  internalTripleToRdfJsQuads,
   normalizeParsedReasonerInputSync,
   normalizeReasonerInputSync,
   normalizeReasonerInputAsync,
@@ -9604,13 +9604,20 @@ function isUnsupportedRdfJsConversionError(err) {
   );
 }
 
-function maybeTripleToRdfJsQuad(triple, rdfFactory, skipUnsupportedRdfJs) {
+function maybeTripleToRdfJsQuads(triple, rdfFactory, skipUnsupportedRdfJs) {
   try {
-    return internalTripleToRdfJsQuad(triple, rdfFactory);
+    return internalTripleToRdfJsQuads(triple, rdfFactory);
   } catch (err) {
-    if (skipUnsupportedRdfJs && isUnsupportedRdfJsConversionError(err)) return null;
+    if (skipUnsupportedRdfJs && isUnsupportedRdfJsConversionError(err)) return [];
     throw err;
   }
+}
+
+function addRdfJsPayloadQuads(payload, quads) {
+  if (!Array.isArray(quads) || quads.length === 0) return payload;
+  payload.quads = quads;
+  if (quads.length === 1) payload.quad = quads[0];
+  return payload;
 }
 
 function reasonStream(input, opts = {}) {
@@ -9640,7 +9647,8 @@ function reasonStream(input, opts = {}) {
         rdf: useRdfCompatibility,
       })
     : null;
-  const parsedInput = parsedSourceList || parsedTextInput || normalizeParsedReasonerInputSync(input);
+  const hasInlineN3 = input && typeof input === 'object' && !Array.isArray(input) && typeof input.n3 === 'string';
+  const parsedInput = parsedSourceList || parsedTextInput || (hasInlineN3 ? null : normalizeParsedReasonerInputSync(input));
   const rdfFactory = rdfjs ? getDataFactory(dataFactory) : null;
 
   const __oldEnforceHttps = deref.getEnforceHttpsEnabled();
@@ -9711,8 +9719,7 @@ function reasonStream(input, opts = {}) {
       for (const qdf of queryDerived) {
         const payload = { triple: useRdfCompatibility ? tripleToRdfCompatible(qdf.fact, prefixes) : tripleToN3(qdf.fact, prefixes), df: qdf };
         if (rdfFactory) {
-          const quad = maybeTripleToRdfJsQuad(qdf.fact, rdfFactory, skipUnsupportedRdfJs);
-          if (quad) payload.quad = quad;
+          addRdfJsPayloadQuads(payload, maybeTripleToRdfJsQuads(qdf.fact, rdfFactory, skipUnsupportedRdfJs));
         }
         onDerived(payload);
       }
@@ -9730,8 +9737,7 @@ function reasonStream(input, opts = {}) {
             df,
           };
           if (rdfFactory) {
-            const quad = maybeTripleToRdfJsQuad(df.fact, rdfFactory, skipUnsupportedRdfJs);
-            if (quad) payload.quad = quad;
+            addRdfJsPayloadQuads(payload, maybeTripleToRdfJsQuads(df.fact, rdfFactory, skipUnsupportedRdfJs));
           }
           onDerived(payload);
         }
@@ -9772,12 +9778,10 @@ function reasonStream(input, opts = {}) {
   };
 
   if (rdfFactory) {
-    __out.closureQuads = closureTriples
-      .map((t) => maybeTripleToRdfJsQuad(t, rdfFactory, skipUnsupportedRdfJs))
-      .filter(Boolean);
-    __out.queryQuads = queryTriples
-      .map((t) => maybeTripleToRdfJsQuad(t, rdfFactory, skipUnsupportedRdfJs))
-      .filter(Boolean);
+    __out.closureQuads = closureTriples.flatMap((t) =>
+      maybeTripleToRdfJsQuads(t, rdfFactory, skipUnsupportedRdfJs),
+    );
+    __out.queryQuads = queryTriples.flatMap((t) => maybeTripleToRdfJsQuads(t, rdfFactory, skipUnsupportedRdfJs));
   }
   deref.setEnforceHttpsEnabled(__oldEnforceHttps);
   return __out;
@@ -9808,9 +9812,9 @@ function reasonRdfJs(input, opts = {}) {
         ...restOpts,
         rdfjs: false,
         onDerived: ({ df }) => {
-          const quad = maybeTripleToRdfJsQuad(df.fact, rdfFactory, skipUnsupportedRdfJs);
-          if (quad) {
-            queue.push(quad);
+          const quads = maybeTripleToRdfJsQuads(df.fact, rdfFactory, skipUnsupportedRdfJs);
+          if (quads.length) {
+            queue.push(...quads);
             flush();
           }
         },
@@ -14708,6 +14712,7 @@ module.exports = {
 
 const {
   XSD_NS,
+  LOG_NS,
   Literal: InternalLiteral,
   Iri,
   Blank,
@@ -14718,6 +14723,7 @@ const {
   Triple,
   Rule,
   PrefixEnv,
+  annotateQuotedGraphTerm,
   literalParts,
 } = require('./prelude');
 const { termToN3, tripleToN3 } = require('./printing');
@@ -15021,6 +15027,49 @@ function internalRdf12TermToRdfJs(term, factory, position) {
   return internalTermToRdfJs(term, rdfFactory, position);
 }
 
+function isDefaultGraphTerm(term) {
+  return isRdfJsTerm(term) && term.termType === 'DefaultGraph';
+}
+
+function assertDefaultGraphForRdfJsQuadTerm(term, position) {
+  if (!isDefaultGraphTerm(term.graph)) {
+    throw new TypeError(`RDF/JS Quad terms with named graphs are not supported in ${position}`);
+  }
+}
+
+function rdfJsGraphNameToInternal(term, position = 'quad.graph') {
+  assertSupportedRdfJsTerm(term, position);
+  switch (term.termType) {
+    case 'NamedNode':
+      return new Iri(term.value);
+    case 'BlankNode':
+      return new Blank(`_:${term.value}`);
+    case 'DefaultGraph':
+      return null;
+    default:
+      throw new TypeError(`Invalid RDF graph termType ${term.termType}`);
+  }
+}
+
+function internalGraphNameToRdfJs(term, factory, position = 'graph') {
+  if (term instanceof Iri || term instanceof Blank) return internalTermToRdfJs(term, factory, position);
+  return unsupportedRdfJsTerm(term, position);
+}
+
+function graphKey(term) {
+  return `${term.termType}:${term.value}`;
+}
+
+function isInternalLogNameOfTriple(triple) {
+  return (
+    triple instanceof Triple &&
+    (triple.s instanceof Iri || triple.s instanceof Blank) &&
+    triple.p instanceof Iri &&
+    triple.p.value === LOG_NS + 'nameOf' &&
+    triple.o instanceof GraphTerm
+  );
+}
+
 function assertRdfJsQuadShape(subject, predicate, object, graph) {
   if (!['NamedNode', 'BlankNode', 'Quad'].includes(subject.termType)) {
     throw new TypeError(`Invalid RDF subject termType ${subject.termType}`);
@@ -15049,11 +15098,20 @@ function internalTripleToRdfJsQuadInGraph(triple, graph, factory) {
 function internalTripleToRdfJsQuad(triple, factory) {
   const rdfFactory = getDataFactory(factory);
   return rdfFactory.quad(
-    internalTermToRdfJs(triple.s, rdfFactory, 'subject'),
+    internalRdf12TermToRdfJs(triple.s, rdfFactory, 'subject'),
     internalTermToRdfJs(triple.p, rdfFactory, 'predicate'),
-    internalTermToRdfJs(triple.o, rdfFactory, 'object'),
+    internalRdf12TermToRdfJs(triple.o, rdfFactory, 'object'),
     rdfFactory.defaultGraph(),
   );
+}
+
+function internalTripleToRdfJsQuads(triple, factory) {
+  const rdfFactory = getDataFactory(factory);
+  if (isInternalLogNameOfTriple(triple)) {
+    const graph = internalGraphNameToRdfJs(triple.s, rdfFactory, 'graph');
+    return (triple.o.triples || []).map((inner) => internalTripleToRdfJsQuadInGraph(inner, graph, rdfFactory));
+  }
+  return [internalTripleToRdfJsQuad(triple, rdfFactory)];
 }
 
 function escapeStringForN3(value) {
@@ -15087,7 +15145,14 @@ function rdfJsTermToN3(term, position = 'term') {
       return `${lexical}^^<${datatype}>`;
     }
     case 'Quad':
-      throw new TypeError(`Quoted triple terms are not supported in ${position}`);
+      if (String(position).endsWith('.predicate') || position === 'quad.predicate' || position === 'predicate') {
+        throw new TypeError(`Quoted triple terms are not valid RDF predicates in ${position}`);
+      }
+      assertDefaultGraphForRdfJsQuadTerm(term, position);
+      return `{ ${rdfJsTermToN3(term.subject, `${position}.subject`)} ${rdfJsTermToN3(
+        term.predicate,
+        `${position}.predicate`,
+      )} ${rdfJsTermToN3(term.object, `${position}.object`)} . }`;
     default:
       throw new TypeError(`Unsupported RDF/JS termType ${JSON.stringify(term.termType)} in ${position}`);
   }
@@ -15107,8 +15172,21 @@ function rdfJsTermToInternal(term, position = 'term') {
       return new InternalLiteral(rdfJsTermToN3(term, position));
     case 'DefaultGraph':
       throw new TypeError(`DefaultGraph is not a valid standalone N3 term in ${position}`);
-    case 'Quad':
-      throw new TypeError(`Quoted triple terms are not supported in ${position}`);
+    case 'Quad': {
+      if (String(position).endsWith('.predicate') || position === 'quad.predicate' || position === 'predicate') {
+        throw new TypeError(`Quoted triple terms are not valid RDF predicates in ${position}`);
+      }
+      assertDefaultGraphForRdfJsQuadTerm(term, position);
+      return annotateQuotedGraphTerm(
+        new GraphTerm([
+          new Triple(
+            rdfJsTermToInternal(term.subject, `${position}.subject`),
+            rdfJsTermToInternal(term.predicate, `${position}.predicate`),
+            rdfJsTermToInternal(term.object, `${position}.object`),
+          ),
+        ]),
+      );
+    }
     default:
       throw new TypeError(`Unsupported RDF/JS termType ${JSON.stringify(term.termType)} in ${position}`);
   }
@@ -15116,22 +15194,58 @@ function rdfJsTermToInternal(term, position = 'term') {
 
 function rdfJsQuadToInternalTriple(quad) {
   if (!isRdfJsQuad(quad)) throw new TypeError('Expected an RDF/JS Quad');
-  if (quad.graph.termType !== 'DefaultGraph') {
-    throw new TypeError('Named graph quads are not supported by Eyeling input; use the default graph only');
-  }
-  return new Triple(
+  const inner = new Triple(
     rdfJsTermToInternal(quad.subject, 'quad.subject'),
     rdfJsTermToInternal(quad.predicate, 'quad.predicate'),
     rdfJsTermToInternal(quad.object, 'quad.object'),
   );
+  const graph = rdfJsGraphNameToInternal(quad.graph, 'quad.graph');
+  if (!graph) return inner;
+  return new Triple(graph, new Iri(LOG_NS + 'nameOf'), annotateQuotedGraphTerm(new GraphTerm([inner])));
+}
+
+function rdfJsQuadsToInternalTriples(quads) {
+  const out = [];
+  const namedGraphs = new Map();
+
+  for (const quad of quads) {
+    if (!isRdfJsQuad(quad)) throw new TypeError('Expected an RDF/JS Quad');
+    const inner = new Triple(
+      rdfJsTermToInternal(quad.subject, 'quad.subject'),
+      rdfJsTermToInternal(quad.predicate, 'quad.predicate'),
+      rdfJsTermToInternal(quad.object, 'quad.object'),
+    );
+    const graph = rdfJsGraphNameToInternal(quad.graph, 'quad.graph');
+    if (!graph) {
+      out.push(inner);
+      continue;
+    }
+
+    const key = graphKey(quad.graph);
+    let group = namedGraphs.get(key);
+    if (!group) {
+      group = { graph, triples: [] };
+      namedGraphs.set(key, group);
+    }
+    group.triples.push(inner);
+  }
+
+  for (const { graph, triples } of namedGraphs.values()) {
+    out.push(new Triple(graph, new Iri(LOG_NS + 'nameOf'), annotateQuotedGraphTerm(new GraphTerm(triples))));
+  }
+
+  return out;
 }
 
 function rdfJsQuadToN3(quad) {
   if (!isRdfJsQuad(quad)) throw new TypeError('Expected an RDF/JS Quad');
-  if (quad.graph.termType !== 'DefaultGraph') {
-    throw new TypeError('Named graph quads are not supported by Eyeling input; use the default graph only');
-  }
-  return `${rdfJsTermToN3(quad.subject, 'quad.subject')} ${rdfJsTermToN3(quad.predicate, 'quad.predicate')} ${rdfJsTermToN3(quad.object, 'quad.object')}.`;
+  return tripleToN3(rdfJsQuadToInternalTriple(quad), PrefixEnv.newDefault());
+}
+
+function rdfJsQuadsToN3(quads) {
+  return rdfJsQuadsToInternalTriples(quads)
+    .map((triple) => tripleToN3(triple, PrefixEnv.newDefault()))
+    .join('\n');
 }
 
 function collectIterableToArray(iterable, label) {
@@ -15174,6 +15288,11 @@ function getPrefixesText(input) {
     if (typeof input[key] === 'string') return input[key];
   }
   return '';
+}
+
+function getN3Text(input) {
+  if (!isObject(input)) return '';
+  return typeof input.n3 === 'string' ? input.n3 : '';
 }
 
 function joinN3Sections(parts) {
@@ -15444,7 +15563,7 @@ function appendSyncQuadFacts(doc, input) {
   const quads = collectIterableToArray(quadsInfo.value, quadsInfo.label);
   return {
     ...doc,
-    triples: doc.triples.concat(quads.map((quad) => rdfJsQuadToInternalTriple(quad))),
+    triples: doc.triples.concat(rdfJsQuadsToInternalTriples(quads)),
   };
 }
 
@@ -15454,7 +15573,7 @@ async function appendAsyncQuadFacts(doc, input) {
   const quads = await collectAsyncIterableToArray(quadsInfo.value, quadsInfo.label);
   return {
     ...doc,
-    triples: doc.triples.concat(quads.map((quad) => rdfJsQuadToInternalTriple(quad))),
+    triples: doc.triples.concat(rdfJsQuadsToInternalTriples(quads)),
   };
 }
 
@@ -15473,13 +15592,13 @@ async function normalizeParsedReasonerInputAsync(input) {
 function normalizeReasonerInputSync(input) {
   if (typeof input === 'string') return input;
   const parsed = normalizeParsedReasonerInputSync(input);
-  if (parsed) return serializeEyelingDocument(parsed);
+  const n3Text = getN3Text(input);
+  if (parsed) return joinN3Sections([n3Text, serializeEyelingDocument(parsed)]);
   if (!isObject(input)) {
     throw new TypeError(
       'Reasoner input must be an N3 string, an Eyeling AST/rule object, or an object containing RDF/JS quads plus optional rules',
     );
   }
-  if (typeof input.n3 === 'string') return input.n3;
 
   const quadsInfo = pickInputQuadIterable(input);
   const rulesText = getRulesText(input);
@@ -15487,25 +15606,25 @@ function normalizeReasonerInputSync(input) {
   const prefixesText = getPrefixesText(input);
 
   if (!quadsInfo) {
-    if (rulesText || factsText || prefixesText) return joinN3Sections([prefixesText, factsText, rulesText]);
+    if (n3Text || rulesText || factsText || prefixesText) return joinN3Sections([prefixesText, n3Text, factsText, rulesText]);
     throw new TypeError('Input object must provide n3 text, Eyeling AST/rule objects, or RDF/JS quads/facts/dataset');
   }
 
   const quads = collectIterableToArray(quadsInfo.value, quadsInfo.label);
-  const quadText = quads.map((quad) => rdfJsQuadToN3(quad)).join('\n');
-  return joinN3Sections([prefixesText, factsText, quadText, rulesText]);
+  const quadText = rdfJsQuadsToN3(quads);
+  return joinN3Sections([prefixesText, n3Text, factsText, quadText, rulesText]);
 }
 
 async function normalizeReasonerInputAsync(input) {
   if (typeof input === 'string') return input;
   const parsed = await normalizeParsedReasonerInputAsync(input);
-  if (parsed) return serializeEyelingDocument(parsed);
+  const n3Text = getN3Text(input);
+  if (parsed) return joinN3Sections([n3Text, serializeEyelingDocument(parsed)]);
   if (!isObject(input)) {
     throw new TypeError(
       'Reasoner input must be an N3 string, an Eyeling AST/rule object, or an object containing RDF/JS quads plus optional rules',
     );
   }
-  if (typeof input.n3 === 'string') return input.n3;
 
   const quadsInfo = pickInputQuadIterable(input);
   const rulesText = getRulesText(input);
@@ -15513,13 +15632,13 @@ async function normalizeReasonerInputAsync(input) {
   const prefixesText = getPrefixesText(input);
 
   if (!quadsInfo) {
-    if (rulesText || factsText || prefixesText) return joinN3Sections([prefixesText, factsText, rulesText]);
+    if (n3Text || rulesText || factsText || prefixesText) return joinN3Sections([prefixesText, n3Text, factsText, rulesText]);
     throw new TypeError('Input object must provide n3 text, Eyeling AST/rule objects, or RDF/JS quads/facts/dataset');
   }
 
   const quads = await collectAsyncIterableToArray(quadsInfo.value, quadsInfo.label);
-  const quadText = quads.map((quad) => rdfJsQuadToN3(quad)).join('\n');
-  return joinN3Sections([prefixesText, factsText, quadText, rulesText]);
+  const quadText = rdfJsQuadsToN3(quads);
+  return joinN3Sections([prefixesText, n3Text, factsText, quadText, rulesText]);
 }
 
 module.exports = {
@@ -15530,8 +15649,10 @@ module.exports = {
   rdfJsTermToN3,
   rdfJsQuadToN3,
   rdfJsQuadToInternalTriple,
+  rdfJsQuadsToInternalTriples,
   internalTermToRdfJs,
   internalTripleToRdfJsQuad,
+  internalTripleToRdfJsQuads,
   internalTripleToRdfJsQuadInGraph,
   normalizeParsedReasonerInputSync,
   normalizeReasonerInputSync,
