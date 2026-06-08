@@ -2917,6 +2917,22 @@ _:b a ex:Person ; ex:name "B" .
   },
 
   {
+    name: 'RDF mode rejects object lists inside RDF 1.2 triple terms',
+    opt: { proofComments: false, rdf: true },
+    input: `VERSION "1.2"
+@prefix : <http://example.org/ns#> .
+@prefix coll: <http://example.org/collection#> .
+
+:climateDataset coll:contains
+  <<( :asiaDataset coll:contains
+      <<( :China :avgTemp :18C )>>,
+      <<( :Thailand :avgTemp :20C )>>
+  )>> .
+`,
+    expectError: true,
+  },
+
+  {
     name: 'RDF mode accepts PREFIX and reified triple terms with reifiers',
     opt: { proofComments: false, rdf: true },
     input: `VERSION "1.2"

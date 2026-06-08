@@ -11140,11 +11140,114 @@ function normalizeRdfCompatibility(inputText) {
       return text.slice(at, j);
     }
 
+    function readBalancedTermAt(text, at) {
+      const open = text[at];
+      const matching = { '{': '}', '[': ']', '(': ')' };
+      if (!matching[open]) return null;
+
+      const stack = [matching[open]];
+      let j = at + 1;
+      while (j < text.length) {
+        const ch = text[j];
+        if (ch === '"' || ch === "'") {
+          const str = readStringAt(text, j);
+          j = str.end;
+          continue;
+        }
+        if (ch === '<' && !text.startsWith('<<', j)) {
+          const iri = readIriAt(text, j);
+          j = iri.end;
+          continue;
+        }
+        if (ch === '#') {
+          while (j < text.length && text[j] !== '\n' && text[j] !== '\r') j += 1;
+          continue;
+        }
+        if (matching[ch]) {
+          stack.push(matching[ch]);
+          j += 1;
+          continue;
+        }
+        if (ch === stack[stack.length - 1]) {
+          stack.pop();
+          j += 1;
+          if (stack.length === 0) return { text: text.slice(at, j), end: j };
+          continue;
+        }
+        j += 1;
+      }
+
+      throw new N3SyntaxError(`Unterminated term inside RDF 1.2 triple term, expected ${stack[stack.length - 1]}`);
+    }
+
+    function readRdfTripleTermComponent(text, at) {
+      const j = skipWsAndComments(text, at);
+      if (j >= text.length) return null;
+      const ch = text[j];
+
+      if (ch === '<') return readIriAt(text, j);
+
+      if (ch === '"' || ch === "'") {
+        const str = readStringAt(text, j);
+        let end = str.end;
+        let termText = str.text;
+        if (text.startsWith('^^', end)) {
+          const datatype = readRdfTripleTermComponent(text, end + 2);
+          if (datatype) {
+            termText += '^^' + datatype.text;
+            end = datatype.end;
+          }
+        } else if (text[end] === '@') {
+          let k = end + 1;
+          if (/[A-Za-z]/.test(text[k] || '')) {
+            while (k < text.length && /[A-Za-z0-9-]/.test(text[k])) k += 1;
+            termText += text.slice(end, k);
+            end = k;
+          }
+        }
+        return { text: termText, end };
+      }
+
+      if (ch === '{' || ch === '[' || ch === '(') return readBalancedTermAt(text, j);
+
+      let k = j;
+      while (k < text.length && !/\s/.test(text[k]) && !'{}[](),;'.includes(text[k])) k += 1;
+      if (k === j) return null;
+      const value = text.slice(j, k);
+      if (!value || value.startsWith('@')) return null;
+      return { text: value, end: k };
+    }
+
+    function validateSingleRdfTripleTerm(rawTriple) {
+      const triple = rawTriple.trim();
+      if (!triple) throw new N3SyntaxError('RDF 1.2 triple term must contain exactly one subject, predicate, and object');
+
+      let pos = 0;
+      for (const label of ['subject', 'predicate', 'object']) {
+        const term = readRdfTripleTermComponent(triple, pos);
+        if (!term) throw new N3SyntaxError(`RDF 1.2 triple term is missing a ${label}`);
+        pos = term.end;
+      }
+
+      const rest = skipWsAndComments(triple, pos);
+      if (rest >= triple.length) return;
+
+      const found = triple[rest];
+      if (found === ',') {
+        throw new N3SyntaxError("RDF 1.2 triple terms must contain exactly one object; object lists using ',' are not valid inside <<( ... )>>");
+      }
+      if (found === ';') {
+        throw new N3SyntaxError("RDF 1.2 triple terms must contain exactly one predicate-object pair; ';' is not valid inside <<( ... )>>");
+      }
+      throw new N3SyntaxError(`RDF 1.2 triple term must contain exactly one subject, predicate, and object; unexpected ${JSON.stringify(triple.slice(rest, rest + 20))}`);
+    }
+
     function graphTermFromTripleBody(rawBody, parenthesized) {
       let body = rawBody.trim();
       if (parenthesized && body.startsWith('(') && body.endsWith(')')) body = body.slice(1, -1).trim();
       const split = splitTopLevelReifier(body);
       const triple = split.triple;
+      validateSingleRdfTripleTerm(triple);
       const graph = '{ ' + triple + ' }';
       if (split.reifier) {
         const reifier = firstTerm(split.reifier);
