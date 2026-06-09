@@ -18,31 +18,31 @@
       {
           (?param {
               :Let :param ?param .
-          } ("Huey" "Dewey" "Louie")) log:collectAllIn ?_b1 .
+          } ("Huey" "Dewey" "Louie")) log:collectAllIn ?eyeling_b1 .
       },
       {
           ((?param) {
               :Let :param ?param .
-          } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?_b1 .
+          } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?eyeling_b1 .
       },
       {
           (?param {
               :Let :param ?param .
               ?param string:lessThan "Louie" .
-          } ("Huey" "Dewey")) log:collectAllIn ?_b1 .
+          } ("Huey" "Dewey")) log:collectAllIn ?eyeling_b1 .
       }.
 
   {
     (?param {
         :Let :param ?param .
-    } ("Huey" "Dewey" "Louie")) log:collectAllIn ?_b1 .
+    } ("Huey" "Dewey" "Louie")) log:collectAllIn ?eyeling_b1 .
 }
     pe:by [ pe:builtin log:collectAllIn ].
 
   {
     ((?param) {
         :Let :param ?param .
-    } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?_b1 .
+    } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?eyeling_b1 .
 }
     pe:by [ pe:builtin log:collectAllIn ].
 
@@ -50,7 +50,7 @@
     (?param {
         :Let :param ?param .
         ?param string:lessThan "Louie" .
-    } ("Huey" "Dewey")) log:collectAllIn ?_b1 .
+    } ("Huey" "Dewey")) log:collectAllIn ?eyeling_b1 .
 }
     pe:by [ pe:builtin log:collectAllIn ].
 }.
@@ -66,31 +66,31 @@
       {
           (?param {
               :Let :param ?param .
-          } ("Huey" "Dewey" "Louie")) log:collectAllIn ?_b1 .
+          } ("Huey" "Dewey" "Louie")) log:collectAllIn ?eyeling_b1 .
       },
       {
           ((?param) {
               :Let :param ?param .
-          } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?_b1 .
+          } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?eyeling_b1 .
       },
       {
           (?param {
               :Let :param ?param .
               ?param string:lessThan "Louie" .
-          } ("Huey" "Dewey")) log:collectAllIn ?_b1 .
+          } ("Huey" "Dewey")) log:collectAllIn ?eyeling_b1 .
       }.
 
   {
     (?param {
         :Let :param ?param .
-    } ("Huey" "Dewey" "Louie")) log:collectAllIn ?_b1 .
+    } ("Huey" "Dewey" "Louie")) log:collectAllIn ?eyeling_b1 .
 }
     pe:by [ pe:builtin log:collectAllIn ].
 
   {
     ((?param) {
         :Let :param ?param .
-    } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?_b1 .
+    } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?eyeling_b1 .
 }
     pe:by [ pe:builtin log:collectAllIn ].
 
@@ -98,7 +98,7 @@
     (?param {
         :Let :param ?param .
         ?param string:lessThan "Louie" .
-    } ("Huey" "Dewey")) log:collectAllIn ?_b1 .
+    } ("Huey" "Dewey")) log:collectAllIn ?eyeling_b1 .
 }
     pe:by [ pe:builtin log:collectAllIn ].
 }.
@@ -114,31 +114,31 @@
       {
           (?param {
               :Let :param ?param .
-          } ("Huey" "Dewey" "Louie")) log:collectAllIn ?_b1 .
+          } ("Huey" "Dewey" "Louie")) log:collectAllIn ?eyeling_b1 .
       },
       {
           ((?param) {
               :Let :param ?param .
-          } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?_b1 .
+          } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?eyeling_b1 .
       },
       {
           (?param {
               :Let :param ?param .
               ?param string:lessThan "Louie" .
-          } ("Huey" "Dewey")) log:collectAllIn ?_b1 .
+          } ("Huey" "Dewey")) log:collectAllIn ?eyeling_b1 .
       }.
 
   {
     (?param {
         :Let :param ?param .
-    } ("Huey" "Dewey" "Louie")) log:collectAllIn ?_b1 .
+    } ("Huey" "Dewey" "Louie")) log:collectAllIn ?eyeling_b1 .
 }
     pe:by [ pe:builtin log:collectAllIn ].
 
   {
     ((?param) {
         :Let :param ?param .
-    } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?_b1 .
+    } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?eyeling_b1 .
 }
     pe:by [ pe:builtin log:collectAllIn ].
 
@@ -146,7 +146,7 @@
     (?param {
         :Let :param ?param .
         ?param string:lessThan "Louie" .
-    } ("Huey" "Dewey")) log:collectAllIn ?_b1 .
+    } ("Huey" "Dewey")) log:collectAllIn ?eyeling_b1 .
 }
     pe:by [ pe:builtin log:collectAllIn ].
 }.

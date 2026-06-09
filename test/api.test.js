@@ -3123,6 +3123,36 @@ MESSAGE
     ],
   },
 
+
+  {
+    name: 'regression: user variable ?_b1 cannot capture lifted blank-node internals',
+    opt: { proofComments: false },
+    input: `@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix : <http://example.org/> .
+
+:test :value (6).
+
+{
+    :test :value [
+        rdf:first 6;
+        rdf:rest rdf:nil].
+}
+=>
+{
+    ?_b1 a :test
+}.
+
+{
+    ?What a :test .
+} => { :test :is false }.
+`,
+    // API output contains newly derived triples only; the input fact is not echoed.
+    check(out) {
+      assert.equal(out, '');
+    },
+    notExpect: [/\(6\)\s+a\s+:test\s*\./m, /:test\s+:is\s+false\s*\./m],
+  },
+
   {
     name: 'API empty input returns empty output',
     opt: { proofComments: false },
