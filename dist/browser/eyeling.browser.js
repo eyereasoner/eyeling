@@ -142,6 +142,10 @@ function __assertBuiltinHandlerResult(iri, out) {
   }
 }
 
+function apiTermToN3(term, prefixes = PrefixEnv.newDefault()) {
+  return termToN3(term, prefixes || PrefixEnv.newDefault());
+}
+
 function __buildBuiltinRegistrationApi() {
   if (__builtinApiSingleton) return __builtinApiSingleton;
 
@@ -154,7 +158,7 @@ function __buildBuiltinRegistrationApi() {
     literalParts,
     termToJsString,
     termToJsStringDecoded,
-    termToN3,
+    termToN3: apiTermToN3,
     iriValue,
     unifyTerm,
     applySubstTerm,

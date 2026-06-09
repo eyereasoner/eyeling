@@ -111,6 +111,14 @@ const cases = [
     },
   },
   {
+    name: 'custom builtin helper termToN3 uses default prefixes when omitted',
+    run() {
+      const api = builtins.__testBuildBuiltinApi();
+      assert.equal(api.termToN3(api.internIri('http://www.w3.org/2000/10/swap/log#implies')), 'log:implies');
+      assert.equal(api.termToN3(api.internLiteral('"abc"')), '"abc"');
+    },
+  },
+  {
     name: 'registerBuiltinModule accepts supported module export forms',
     run() {
       assert.doesNotThrow(() => builtins.registerBuiltinModule(makeOkMapModule(), 'ok-map'));
