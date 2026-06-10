@@ -19,7 +19,7 @@ Eyeling is characterized by:
 - **Notation3 reasoning in a small JavaScript package** — facts, quoted formulas, and N3 rules are parsed and reasoned over directly.
 - **Forward and backward chaining** — `=>` rules derive new facts, while `<=` rules act as goal-directed definitions.
 - **Backward proving inside forward rules** — forward-rule bodies are solved with the backward engine, so rules can use derived predicates and built-ins without materializing everything first.
-- **Built-ins in rule bodies** — N3 programs can combine logical rules with computations such as math, string, list, time, and web-oriented predicates.
+- **Built-ins in rule bodies** — N3 programs can combine logical rules with computations such as math, string, datatype, list, time, and web-oriented predicates.
 - **Streaming RDF Messages** — supports RDF Messages streams, enabling Eyeling to fit into streaming RDF pipelines.
 - **Node.js, npm, and browser use** — run it from the command line, call it from JavaScript, or use the browser-oriented bundle.
 - **RDF-JS interoperability** — use N3 text, RDF-JS quads, datasets, or Eyeling’s own AST-level API.
@@ -602,6 +602,7 @@ Eyeling implements SWAP-style built-ins across these namespaces:
 | `rdf:` | `first`, `rest` | Aliases for list traversal over RDF collections. |
 | `log:` | `includes`, `notIncludes`, `semantics`, `conclusion`, `query`, `outputString` | Formula, dereferencing, query, and output operations. |
 | `string:` | `contains`, `matches`, `replace`, `format`, `length` | String tests and transformations. |
+| `dt:` | `datatype`, `lexicalForm`, `validForDatatype`, `sameValueAs`, `canonicalLiteral` | XSD datatype inspection, value-space validity, equality, inequality, and canonicalization. |
 
 The authoritative built-in catalog is `eyeling-builtins.ttl`. It documents each built-in as RDF, including its kind:
 
@@ -612,6 +613,37 @@ The authoritative built-in catalog is `eyeling-builtins.ttl`. It documents each 
 - `ex:IO`: may dereference or parse external content;
 - `ex:Meta`: operates on formulas or types;
 - `ex:SideEffect`: produces output.
+
+### Datatype built-ins
+
+Eyeling provides datatype built-ins in the namespace `https://eyereasoner.github.io/eyeling/datatype#`, usually used with the prefix `dt:`. They are intended for declarative datatype reasoning in N3 rule sets, including OWL 2 RL-style rules that need XSD value-space semantics without hard-coding OWL into the engine.
+
+Supported operations include:
+
+- `dt:datatype`, `dt:lexicalForm`, and `dt:language` for literal inspection;
+- `dt:validForDatatype` and `dt:invalidForDatatype` for lexical validity and datatype membership checks;
+- `dt:sameValueAs` and `dt:differentValueFrom` for value-space equality and inequality;
+- `dt:canonicalLiteral` for canonical literal production.
+
+The built-ins cover RDF language strings and the OWL 2 RL-relevant XSD set: `xsd:string`, `xsd:normalizedString`, `xsd:token`, `xsd:language`, `xsd:Name`, `xsd:NCName`, `xsd:NMTOKEN`, `xsd:boolean`, `xsd:decimal`, `xsd:integer` and its bounded integer subtypes, `xsd:float`, `xsd:double`, `xsd:hexBinary`, `xsd:base64Binary`, `xsd:anyURI`, `xsd:dateTime`, and `xsd:dateTimeStamp`.
+
+Example:
+
+```n3
+@prefix : <http://example.org/> .
+@prefix dt: <https://eyereasoner.github.io/eyeling/datatype#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+{
+  "01"^^xsd:integer dt:sameValueAs "1.0"^^xsd:decimal .
+  "2026-06-10T12:00:00Z"^^xsd:dateTime
+    dt:sameValueAs "2026-06-10T14:00:00+02:00"^^xsd:dateTime .
+}
+=>
+{
+  :check :status :pass .
+} .
+```
 
 ### Numeric built-ins
 

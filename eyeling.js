@@ -26,6 +26,7 @@ const {
   LIST_NS,
   LOG_NS,
   STRING_NS,
+  DT_NS,
   Literal,
   Iri,
   Var,
@@ -175,7 +176,7 @@ function __buildBuiltinRegistrationApi() {
     literalsEquivalentAsXsdString,
     materializeRdfLists,
     terms: { Literal, Iri, Var, Blank, ListTerm, OpenListTerm, GraphTerm, Triple, Rule },
-    ns: { RDF_NS, XSD_NS, CRYPTO_NS, MATH_NS, TIME_NS, LIST_NS, LOG_NS, STRING_NS },
+    ns: { RDF_NS, XSD_NS, CRYPTO_NS, MATH_NS, TIME_NS, LIST_NS, LOG_NS, STRING_NS, DT_NS },
   };
 
   __builtinApiSingleton = __freezeBuiltinApi(api);
@@ -912,6 +913,63 @@ const XSD_DOUBLE_DT = XSD_NS + 'double';
 const XSD_FLOAT_DT = XSD_NS + 'float';
 const XSD_INTEGER_DT = XSD_NS + 'integer';
 
+const XSD_STRING_DT = XSD_NS + 'string';
+const XSD_BOOLEAN_DT = XSD_NS + 'boolean';
+const XSD_DATETIME_DT = XSD_NS + 'dateTime';
+const XSD_DATETIME_STAMP_DT = XSD_NS + 'dateTimeStamp';
+const XSD_HEX_BINARY_DT = XSD_NS + 'hexBinary';
+const XSD_BASE64_BINARY_DT = XSD_NS + 'base64Binary';
+const XSD_ANY_URI_DT = XSD_NS + 'anyURI';
+const RDF_LANGSTRING_DT = RDF_NS + 'langString';
+
+const XSD_STRING_LIKE_DTS = new Set([
+  XSD_STRING_DT,
+  XSD_NS + 'normalizedString',
+  XSD_NS + 'token',
+  XSD_NS + 'language',
+  XSD_NS + 'Name',
+  XSD_NS + 'NCName',
+  XSD_NS + 'NMTOKEN',
+]);
+
+const XSD_INTEGER_BOUNDS = new Map([
+  [XSD_NS + 'nonPositiveInteger', [null, 0n]],
+  [XSD_NS + 'negativeInteger', [null, -1n]],
+  [XSD_NS + 'long', [-(2n ** 63n), 2n ** 63n - 1n]],
+  [XSD_NS + 'int', [-(2n ** 31n), 2n ** 31n - 1n]],
+  [XSD_NS + 'short', [-(2n ** 15n), 2n ** 15n - 1n]],
+  [XSD_NS + 'byte', [-(2n ** 7n), 2n ** 7n - 1n]],
+  [XSD_NS + 'nonNegativeInteger', [0n, null]],
+  [XSD_NS + 'unsignedLong', [0n, 2n ** 64n - 1n]],
+  [XSD_NS + 'unsignedInt', [0n, 2n ** 32n - 1n]],
+  [XSD_NS + 'unsignedShort', [0n, 2n ** 16n - 1n]],
+  [XSD_NS + 'unsignedByte', [0n, 2n ** 8n - 1n]],
+  [XSD_NS + 'positiveInteger', [1n, null]],
+]);
+
+const XSD_DATATYPE_BUILTIN_DTS = new Set([
+  RDF_LANGSTRING_DT,
+  XSD_STRING_DT,
+  XSD_NS + 'normalizedString',
+  XSD_NS + 'token',
+  XSD_NS + 'language',
+  XSD_NS + 'Name',
+  XSD_NS + 'NCName',
+  XSD_NS + 'NMTOKEN',
+  XSD_BOOLEAN_DT,
+  XSD_DECIMAL_DT,
+  XSD_INTEGER_DT,
+  XSD_FLOAT_DT,
+  XSD_DOUBLE_DT,
+  XSD_HEX_BINARY_DT,
+  XSD_BASE64_BINARY_DT,
+  XSD_ANY_URI_DT,
+  XSD_DATETIME_DT,
+  XSD_DATETIME_STAMP_DT,
+  ...XSD_INTEGER_BOUNDS.keys(),
+]);
+
+
 // Integer-derived datatypes from XML Schema Part 2 (and commonly used ones).
 const XSD_INTEGER_DERIVED_DTS = new Set([
   XSD_INTEGER_DT,
@@ -965,6 +1023,537 @@ function inferDatatypeForShorthandLexical(lex) {
   if (/^[+-]?(?:\d+\.\d*|\.\d+)$/.test(lex)) return XSD_NS + 'decimal';
   if (/^[+-]?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][+-]?\d+)$/.test(lex)) return XSD_NS + 'double';
   return null;
+}
+
+
+function extractLiteralLanguageTag(litVal) {
+  if (typeof litVal !== 'string' || !literalHasLangTag(litVal)) return null;
+  const lastQuote = litVal.lastIndexOf('"');
+  if (lastQuote < 0) return null;
+  const after = lastQuote + 1;
+  if (after >= litVal.length || litVal[after] !== '@') return null;
+  const tag = litVal.slice(after + 1);
+  if (!/^[A-Za-z]+(?:-[A-Za-z0-9]+)*(?:--(?:ltr|rtl))?$/.test(tag)) return null;
+  return tag;
+}
+
+function literalLexicalValue(litVal) {
+  const [lex] = literalParts(litVal);
+  if (isQuotedLexical(lex)) return decodeN3StringEscapes(stripQuotes(lex));
+  return typeof lex === 'string' ? lex : String(lex);
+}
+
+function literalDatatypeIri(t) {
+  if (!(t instanceof Literal)) return null;
+  if (literalHasLangTag(t.value)) return RDF_LANGSTRING_DT;
+
+  const [lex, dt] = literalParts(t.value);
+  if (dt !== null) return dt;
+  if (isPlainStringLiteralValue(t.value)) return XSD_STRING_DT;
+
+  return inferDatatypeForShorthandLexical(lex) || XSD_STRING_DT;
+}
+
+function isSupportedDatatypeIri(dt) {
+  return XSD_DATATYPE_BUILTIN_DTS.has(dt);
+}
+
+function makeDatatypeTypedLiteral(lexical, dt) {
+  return internLiteral(`${JSON.stringify(String(lexical))}^^<${dt}>`);
+}
+
+function makeLangStringLiteral(lexical, lang) {
+  return internLiteral(`${JSON.stringify(String(lexical))}@${String(lang).toLowerCase()}`);
+}
+
+function canonicalIntegerLex(v) {
+  return v === 0n ? '0' : v.toString();
+}
+
+function canonicalDecimalLexFromParts(num, scale) {
+  if (num === 0n) return '0.0';
+  const neg = num < 0n;
+  let digits = (neg ? -num : num).toString();
+  if (scale > 0) {
+    while (digits.length <= scale) digits = `0${digits}`;
+  }
+  let intPart = scale > 0 ? digits.slice(0, digits.length - scale) : digits;
+  let fracPart = scale > 0 ? digits.slice(digits.length - scale) : '';
+  intPart = intPart.replace(/^0+(?=\d)/, '') || '0';
+  fracPart = fracPart.replace(/0+$/g, '');
+  if (!fracPart) fracPart = '0';
+  return `${neg ? '-' : ''}${intPart}.${fracPart}`;
+}
+
+function canonicalFloatDoubleLex(n) {
+  const special = formatXsdFloatSpecialLex(n);
+  if (special !== null) return special;
+  if (Object.is(n, -0)) return '0';
+  return String(n).replace('e', 'E');
+}
+
+function parseStringLikeDatatypeValue(lexical, dt) {
+  let value = String(lexical);
+
+  if (dt === XSD_NS + 'normalizedString') {
+    value = value.replace(/[\t\n\r]/g, ' ');
+  } else if (dt !== XSD_STRING_DT) {
+    value = value.replace(/[\t\n\r ]+/g, ' ').trim();
+  }
+
+  if (dt === XSD_NS + 'language') {
+    if (!/^[A-Za-z]{1,8}(?:-[A-Za-z0-9]{1,8})*$/.test(value)) return null;
+    value = value.toLowerCase();
+  } else if (dt === XSD_NS + 'Name') {
+    if (!/^[:_\p{L}][:_\p{L}\p{N}.\-\u00B7\u0300-\u036F\u203F-\u2040]*$/u.test(value)) return null;
+  } else if (dt === XSD_NS + 'NCName') {
+    if (!/^[_\p{L}][_\p{L}\p{N}.\-\u00B7\u0300-\u036F\u203F-\u2040]*$/u.test(value)) return null;
+  } else if (dt === XSD_NS + 'NMTOKEN') {
+    if (!/^[:_\p{L}\p{N}.\-\u00B7\u0300-\u036F\u203F-\u2040]+$/u.test(value)) return null;
+  }
+
+  return {
+    family: 'string',
+    dt,
+    value,
+    canonicalLex: value,
+    canonicalLiteral: makeDatatypeTypedLiteral(value, dt),
+    comparable: true,
+  };
+}
+
+function parseBooleanDatatypeValue(lexical) {
+  const s = String(lexical);
+  if (s === 'true' || s === '1') {
+    return {
+      family: 'boolean',
+      dt: XSD_BOOLEAN_DT,
+      value: true,
+      canonicalLex: 'true',
+      canonicalLiteral: makeDatatypeTypedLiteral('true', XSD_BOOLEAN_DT),
+      comparable: true,
+    };
+  }
+  if (s === 'false' || s === '0') {
+    return {
+      family: 'boolean',
+      dt: XSD_BOOLEAN_DT,
+      value: false,
+      canonicalLex: 'false',
+      canonicalLiteral: makeDatatypeTypedLiteral('false', XSD_BOOLEAN_DT),
+      comparable: true,
+    };
+  }
+  return null;
+}
+
+function parseIntegerDatatypeValue(lexical, dt) {
+  const s = String(lexical);
+  if (!/^[+-]?\d+$/.test(s)) return null;
+  let value;
+  try {
+    value = BigInt(s);
+  } catch (_) {
+    return null;
+  }
+
+  const bounds = XSD_INTEGER_BOUNDS.get(dt);
+  if (bounds) {
+    const [min, max] = bounds;
+    if (min !== null && value < min) return null;
+    if (max !== null && value > max) return null;
+  }
+
+  const canonicalLex = canonicalIntegerLex(value);
+  return {
+    family: 'numeric',
+    numericKind: 'decimalExact',
+    dt,
+    decimalNum: value,
+    decimalScale: 0,
+    value,
+    canonicalLex,
+    canonicalLiteral: makeDatatypeTypedLiteral(canonicalLex, dt),
+    comparable: true,
+  };
+}
+
+function parseDecimalDatatypeValue(lexical) {
+  const parsed = parseXsdDecimalToBigIntScale(String(lexical));
+  if (!parsed) return null;
+  const canonicalLex = canonicalDecimalLexFromParts(parsed.num, parsed.scale);
+  return {
+    family: 'numeric',
+    numericKind: 'decimalExact',
+    dt: XSD_DECIMAL_DT,
+    decimalNum: parsed.num,
+    decimalScale: parsed.scale,
+    canonicalLex,
+    canonicalLiteral: makeDatatypeTypedLiteral(canonicalLex, XSD_DECIMAL_DT),
+    comparable: true,
+  };
+}
+
+function isXsdFloatDoubleLexical(s) {
+  if (parseXsdFloatSpecialLex(s) !== null) return true;
+  return /^[+-]?(?:(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?|\d+(?:[eE][+-]?\d+))$/.test(s);
+}
+
+function parseFloatDoubleDatatypeValue(lexical, dt) {
+  const s = String(lexical);
+  if (!isXsdFloatDoubleLexical(s)) return null;
+  const special = parseXsdFloatSpecialLex(s);
+  const value = special !== null ? special : Number(s);
+  if (Number.isNaN(value) && s !== 'NaN') return null;
+  const canonicalLex = canonicalFloatDoubleLex(value);
+  return {
+    family: 'numeric',
+    numericKind: 'floatDouble',
+    dt,
+    value,
+    canonicalLex,
+    canonicalLiteral: makeDatatypeTypedLiteral(canonicalLex, dt),
+    comparable: !Number.isNaN(value),
+  };
+}
+
+function normalizeBase64Lexical(s) {
+  return String(s).replace(/[\t\n\r ]+/g, '');
+}
+
+const BASE64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+const BASE64_LOOKUP = (() => {
+  const m = Object.create(null);
+  for (let i = 0; i < BASE64_ALPHABET.length; i++) m[BASE64_ALPHABET[i]] = i;
+  return m;
+})();
+
+function decodeBase64Bytes(input) {
+  const s = normalizeBase64Lexical(input);
+  if (s.length === 0) return [];
+  if (s.length % 4 !== 0) return null;
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(s)) return null;
+  const pad = s.endsWith('==') ? 2 : s.endsWith('=') ? 1 : 0;
+  if (pad && s.slice(0, -pad).includes('=')) return null;
+
+  const out = [];
+  for (let i = 0; i < s.length; i += 4) {
+    const c0 = BASE64_LOOKUP[s[i]];
+    const c1 = BASE64_LOOKUP[s[i + 1]];
+    const c2 = s[i + 2] === '=' ? 0 : BASE64_LOOKUP[s[i + 2]];
+    const c3 = s[i + 3] === '=' ? 0 : BASE64_LOOKUP[s[i + 3]];
+    if (c0 == null || c1 == null || c2 == null || c3 == null) return null;
+    const n = (c0 << 18) | (c1 << 12) | (c2 << 6) | c3;
+    out.push((n >> 16) & 0xff);
+    if (s[i + 2] !== '=') out.push((n >> 8) & 0xff);
+    if (s[i + 3] !== '=') out.push(n & 0xff);
+    if ((s[i + 2] === '=' || s[i + 3] === '=') && i + 4 !== s.length) return null;
+  }
+  return out;
+}
+
+function encodeBase64Bytes(bytes) {
+  let out = '';
+  for (let i = 0; i < bytes.length; i += 3) {
+    const b0 = bytes[i];
+    const b1 = i + 1 < bytes.length ? bytes[i + 1] : 0;
+    const b2 = i + 2 < bytes.length ? bytes[i + 2] : 0;
+    const n = (b0 << 16) | (b1 << 8) | b2;
+    out += BASE64_ALPHABET[(n >> 18) & 63];
+    out += BASE64_ALPHABET[(n >> 12) & 63];
+    out += i + 1 < bytes.length ? BASE64_ALPHABET[(n >> 6) & 63] : '=';
+    out += i + 2 < bytes.length ? BASE64_ALPHABET[n & 63] : '=';
+  }
+  return out;
+}
+
+function parseBinaryDatatypeValue(lexical, dt) {
+  const s = String(lexical);
+  let bytes;
+  let canonicalLex;
+  if (dt === XSD_HEX_BINARY_DT) {
+    if (!/^(?:[0-9A-Fa-f]{2})*$/.test(s)) return null;
+    bytes = [];
+    for (let i = 0; i < s.length; i += 2) bytes.push(parseInt(s.slice(i, i + 2), 16));
+    canonicalLex = s.toUpperCase();
+  } else {
+    bytes = decodeBase64Bytes(s);
+    if (bytes === null) return null;
+    canonicalLex = encodeBase64Bytes(bytes);
+  }
+
+  return {
+    family: 'binary',
+    dt,
+    bytes,
+    canonicalLex,
+    canonicalLiteral: makeDatatypeTypedLiteral(canonicalLex, dt),
+    comparable: true,
+  };
+}
+
+function parseAnyUriDatatypeValue(lexical) {
+  const value = String(lexical);
+  if (/[\u0000-\u001F\u007F]/.test(value)) return null;
+  return {
+    family: 'anyURI',
+    dt: XSD_ANY_URI_DT,
+    value,
+    canonicalLex: value,
+    canonicalLiteral: makeDatatypeTypedLiteral(value, XSD_ANY_URI_DT),
+    comparable: true,
+  };
+}
+
+function isLeapYearNumber(year) {
+  if (year % 400 === 0) return true;
+  if (year % 100 === 0) return false;
+  return year % 4 === 0;
+}
+
+function daysInMonthNumber(year, month) {
+  if (month === 2) return isLeapYearNumber(year) ? 29 : 28;
+  return [4, 6, 9, 11].includes(month) ? 30 : 31;
+}
+
+function floorDivNumber(a, b) {
+  return Math.floor(a / b);
+}
+
+function daysFromCivilNumber(year, month, day) {
+  let y = year;
+  y -= month <= 2 ? 1 : 0;
+  const era = floorDivNumber(y, 400);
+  const yoe = y - era * 400;
+  const mp = month + (month > 2 ? -3 : 9);
+  const doy = Math.floor((153 * mp + 2) / 5) + day - 1;
+  const doe = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + doy;
+  return era * 146097 + doe - 719468;
+}
+
+function parseDateTimeDatatypeValue(lexical, dt) {
+  const s = String(lexical);
+  const m = /^(-?\d{4,})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?(Z|[+-]\d{2}:\d{2})?$/.exec(s);
+  if (!m) return null;
+
+  const year = Number(m[1]);
+  const month = Number(m[2]);
+  let day = Number(m[3]);
+  let hour = Number(m[4]);
+  const minute = Number(m[5]);
+  const second = Number(m[6]);
+  let frac = m[7] || '';
+  const tz = m[8] || null;
+  if (!Number.isSafeInteger(year)) return null;
+  if (dt === XSD_DATETIME_STAMP_DT && !tz) return null;
+  if (!(month >= 1 && month <= 12)) return null;
+  if (!(day >= 1 && day <= daysInMonthNumber(year, month))) return null;
+  if (!(minute >= 0 && minute <= 59)) return null;
+  if (!(second >= 0 && second <= 59)) return null;
+  if (hour === 24) {
+    if (minute !== 0 || second !== 0 || /[1-9]/.test(frac)) return null;
+    hour = 0;
+    const d = new Date(Date.UTC(year, month - 1, day));
+    d.setUTCFullYear(year);
+    d.setUTCDate(d.getUTCDate() + 1);
+    day = d.getUTCDate();
+  } else if (!(hour >= 0 && hour <= 23)) {
+    return null;
+  }
+
+  frac = frac.replace(/0+$/g, '');
+  const fracScale = frac.length;
+  const fracNum = frac ? BigInt(frac) : 0n;
+
+  let offsetMinutes = null;
+  if (tz) {
+    if (tz === 'Z') {
+      offsetMinutes = 0;
+    } else {
+      const sign = tz[0] === '-' ? -1 : 1;
+      const hh = Number(tz.slice(1, 3));
+      const mm = Number(tz.slice(4, 6));
+      if (!(hh >= 0 && hh <= 14) || !(mm >= 0 && mm <= 59)) return null;
+      if (hh === 14 && mm !== 0) return null;
+      offsetMinutes = sign * (hh * 60 + mm);
+    }
+  }
+
+  const dayCount = daysFromCivilNumber(year, month, day);
+  let totalSeconds = BigInt(dayCount) * 86400n + BigInt(hour * 3600 + minute * 60 + second);
+  if (offsetMinutes !== null) totalSeconds -= BigInt(offsetMinutes * 60);
+
+  const localKey = `${m[1]}-${m[2]}-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:${m[5]}:${m[6]}${frac ? `.${frac}` : ''}`;
+  const canonicalLex = canonicalDateTimeLex(totalSeconds, fracNum, fracScale, offsetMinutes !== null, localKey);
+  return {
+    family: 'dateTime',
+    dt,
+    hasTimezone: offsetMinutes !== null,
+    totalSeconds,
+    fracNum,
+    fracScale,
+    localKey,
+    canonicalLex,
+    canonicalLiteral: makeDatatypeTypedLiteral(canonicalLex, dt),
+    comparable: true,
+  };
+}
+
+function canonicalDateTimeLex(totalSeconds, fracNum, fracScale, hasTimezone, localKey) {
+  const frac = fracScale > 0 ? `.${fracNum.toString().padStart(fracScale, '0')}` : '';
+  if (!hasTimezone) return localKey;
+
+  const minSafeSeconds = BigInt(Math.ceil(Number.MIN_SAFE_INTEGER / 1000));
+  const maxSafeSeconds = BigInt(Math.floor(Number.MAX_SAFE_INTEGER / 1000));
+  if (totalSeconds < minSafeSeconds || totalSeconds > maxSafeSeconds) return `${localKey}Z`;
+
+  const d = new Date(Number(totalSeconds) * 1000);
+  if (Number.isNaN(d.getTime())) return `${localKey}Z`;
+  let iso = d.toISOString().replace(/\.000Z$/, 'Z');
+  if (frac) iso = iso.replace('Z', `${frac}Z`);
+  return iso;
+}
+
+function parseLangStringDatatypeValue(t, lexical) {
+  const tag = extractLiteralLanguageTag(t.value);
+  if (tag === null) return null;
+  return {
+    family: 'langString',
+    dt: RDF_LANGSTRING_DT,
+    value: String(lexical),
+    lang: tag.toLowerCase(),
+    canonicalLex: String(lexical),
+    canonicalLiteral: makeLangStringLiteral(lexical, tag),
+    comparable: true,
+  };
+}
+
+function parseDatatypeValueForDatatype(t, dt) {
+  if (!(t instanceof Literal) || typeof dt !== 'string' || !isSupportedDatatypeIri(dt)) return null;
+  const lexical = literalLexicalValue(t.value);
+
+  if (dt === RDF_LANGSTRING_DT) return parseLangStringDatatypeValue(t, lexical);
+  if (literalHasLangTag(t.value)) return null;
+  if (XSD_STRING_LIKE_DTS.has(dt)) return parseStringLikeDatatypeValue(lexical, dt);
+  if (dt === XSD_BOOLEAN_DT) return parseBooleanDatatypeValue(lexical);
+  if (dt === XSD_INTEGER_DT || XSD_INTEGER_BOUNDS.has(dt)) return parseIntegerDatatypeValue(lexical, dt);
+  if (dt === XSD_DECIMAL_DT) return parseDecimalDatatypeValue(lexical);
+  if (dt === XSD_FLOAT_DT || dt === XSD_DOUBLE_DT) return parseFloatDoubleDatatypeValue(lexical, dt);
+  if (dt === XSD_HEX_BINARY_DT || dt === XSD_BASE64_BINARY_DT) return parseBinaryDatatypeValue(lexical, dt);
+  if (dt === XSD_ANY_URI_DT) return parseAnyUriDatatypeValue(lexical);
+  if (dt === XSD_DATETIME_DT || dt === XSD_DATETIME_STAMP_DT) return parseDateTimeDatatypeValue(lexical, dt);
+
+  return null;
+}
+
+function parseDatatypeValue(t) {
+  const dt = literalDatatypeIri(t);
+  return dt === null ? null : parseDatatypeValueForDatatype(t, dt);
+}
+
+function compareDecimalExactValues(a, b) {
+  const scale = Math.max(a.decimalScale, b.decimalScale);
+  return a.decimalNum * pow10n(scale - a.decimalScale) === b.decimalNum * pow10n(scale - b.decimalScale);
+}
+
+function datatypeValuesSame(a, b) {
+  if (!a || !b || !a.comparable || !b.comparable) return false;
+  if (a.family === 'langString' || b.family === 'langString') {
+    return a.family === b.family && a.value === b.value && a.lang === b.lang;
+  }
+  if (a.family === 'string' && b.family === 'string') return a.value === b.value;
+  if (a.family === 'boolean' && b.family === 'boolean') return a.value === b.value;
+  if (a.family === 'anyURI' && b.family === 'anyURI') return a.value === b.value;
+  if (a.family === 'binary' && b.family === 'binary') {
+    if (a.bytes.length !== b.bytes.length) return false;
+    for (let i = 0; i < a.bytes.length; i++) if (a.bytes[i] !== b.bytes[i]) return false;
+    return true;
+  }
+  if (a.family === 'numeric' && b.family === 'numeric') {
+    if (a.numericKind === 'decimalExact' && b.numericKind === 'decimalExact') return compareDecimalExactValues(a, b);
+    const av = a.numericKind === 'decimalExact' ? Number(a.decimalNum) / 10 ** a.decimalScale : a.value;
+    const bv = b.numericKind === 'decimalExact' ? Number(b.decimalNum) / 10 ** b.decimalScale : b.value;
+    return !Number.isNaN(av) && !Number.isNaN(bv) && av === bv;
+  }
+  if (a.family === 'dateTime' && b.family === 'dateTime') {
+    if (a.hasTimezone !== b.hasTimezone) return false;
+    if (!a.hasTimezone) return a.localKey === b.localKey;
+    if (a.totalSeconds !== b.totalSeconds) return false;
+    const scale = Math.max(a.fracScale, b.fracScale);
+    return a.fracNum * pow10n(scale - a.fracScale) === b.fracNum * pow10n(scale - b.fracScale);
+  }
+  return false;
+}
+
+function datatypeValuesComparable(a, b) {
+  if (!a || !b || !a.comparable || !b.comparable) return false;
+  if (a.family === 'dateTime' && b.family === 'dateTime' && a.hasTimezone !== b.hasTimezone) return false;
+  if (a.family === 'langString' || b.family === 'langString') return a.family === b.family;
+  if (a.family === 'string' || b.family === 'string') return a.family === b.family;
+  return a.family === b.family;
+}
+
+function evalBindBuiltinObject(outTerm, valueTerm, subst) {
+  if (outTerm instanceof Var) {
+    const s2 = __cloneSubst(subst);
+    s2[outTerm.name] = valueTerm;
+    return [s2];
+  }
+  if (outTerm instanceof Blank) return [__cloneSubst(subst)];
+  const s2 = unifyTerm(outTerm, valueTerm, subst);
+  return s2 !== null ? [s2] : [];
+}
+
+function evalDatatypeInspectionBuiltin(g, subst, kind) {
+  if (!(g.s instanceof Literal)) return [];
+
+  let valueTerm;
+  if (kind === 'datatype') {
+    const dt = literalDatatypeIri(g.s);
+    if (dt === null) return [];
+    valueTerm = internIri(dt);
+  } else if (kind === 'lexicalForm') {
+    valueTerm = makeStringLiteral(literalLexicalValue(g.s.value));
+  } else if (kind === 'language') {
+    const tag = extractLiteralLanguageTag(g.s.value);
+    if (tag === null) return [];
+    valueTerm = makeStringLiteral(tag);
+  } else if (kind === 'canonicalLiteral') {
+    const info = parseDatatypeValue(g.s);
+    if (!info) return [];
+    valueTerm = info.canonicalLiteral;
+  } else {
+    return [];
+  }
+
+  return evalBindBuiltinObject(g.o, valueTerm, subst);
+}
+
+function evalDatatypeValidityBuiltin(g, subst, positive) {
+  if (!(g.s instanceof Literal)) return [];
+
+  let dt = null;
+  if (g.o instanceof Iri) dt = g.o.value;
+  else if (g.o instanceof Var) dt = literalDatatypeIri(g.s);
+  else return [];
+
+  if (dt === null || !isSupportedDatatypeIri(dt)) return [];
+  const ok = parseDatatypeValueForDatatype(g.s, dt) !== null;
+  if (positive && !ok) return [];
+  if (!positive && ok) return [];
+
+  if (g.o instanceof Var) return evalBindBuiltinObject(g.o, internIri(dt), subst);
+  return [__cloneSubst(subst)];
+}
+
+function evalDatatypeValueComparisonBuiltin(g, subst, same) {
+  if (!(g.s instanceof Literal) || !(g.o instanceof Literal)) return [];
+  const a = parseDatatypeValue(g.s);
+  const b = parseDatatypeValue(g.o);
+  if (!datatypeValuesComparable(a, b)) return [];
+  const eq = datatypeValuesSame(a, b);
+  if (same ? eq : !eq) return [__cloneSubst(subst)];
+  return [];
 }
 
 // ===========================================================================
@@ -2114,6 +2703,19 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
 
   const registeredBuiltinResult = __evalRegisteredBuiltin(pv, g, subst, facts, backRules, depth, varGen, maxResults);
   if (registeredBuiltinResult !== null) return registeredBuiltinResult;
+
+  // -----------------------------------------------------------------
+  // 4.0 datatype: builtins (Eyeling datatype namespace)
+  // -----------------------------------------------------------------
+
+  if (pv === DT_NS + 'datatype') return evalDatatypeInspectionBuiltin(g, subst, 'datatype');
+  if (pv === DT_NS + 'lexicalForm') return evalDatatypeInspectionBuiltin(g, subst, 'lexicalForm');
+  if (pv === DT_NS + 'language') return evalDatatypeInspectionBuiltin(g, subst, 'language');
+  if (pv === DT_NS + 'canonicalLiteral') return evalDatatypeInspectionBuiltin(g, subst, 'canonicalLiteral');
+  if (pv === DT_NS + 'validForDatatype') return evalDatatypeValidityBuiltin(g, subst, true);
+  if (pv === DT_NS + 'invalidForDatatype') return evalDatatypeValidityBuiltin(g, subst, false);
+  if (pv === DT_NS + 'sameValueAs') return evalDatatypeValueComparisonBuiltin(g, subst, true);
+  if (pv === DT_NS + 'differentValueFrom') return evalDatatypeValueComparisonBuiltin(g, subst, false);
 
   // -----------------------------------------------------------------
   // 4.1 crypto: builtins
@@ -4440,6 +5042,7 @@ function isBuiltinPred(p) {
     v.startsWith(MATH_NS) ||
     v.startsWith(LOG_NS) ||
     v.startsWith(STRING_NS) ||
+    v.startsWith(DT_NS) ||
     v.startsWith(TIME_NS) ||
     v.startsWith(LIST_NS)
   );
@@ -14204,6 +14807,7 @@ const TIME_NS = 'http://www.w3.org/2000/10/swap/time#';
 const LIST_NS = 'http://www.w3.org/2000/10/swap/list#';
 const LOG_NS = 'http://www.w3.org/2000/10/swap/log#';
 const STRING_NS = 'http://www.w3.org/2000/10/swap/string#';
+const DT_NS = 'https://eyereasoner.github.io/eyeling/datatype#';
 const SKOLEM_NS = 'https://eyereasoner.github.io/.well-known/genid/';
 const RDF_JSON_DT = RDF_NS + 'JSON';
 
@@ -14722,6 +15326,7 @@ class PrefixEnv {
     m['string'] = STRING_NS;
     m['list'] = LIST_NS;
     m['time'] = TIME_NS;
+    m['dt'] = DT_NS;
     m['genid'] = SKOLEM_NS;
     m[''] = ''; // empty prefix default namespace
     return new PrefixEnv(m, ''); // base IRI starts empty
@@ -14906,6 +15511,7 @@ module.exports = {
   LIST_NS,
   LOG_NS,
   STRING_NS,
+  DT_NS,
   SKOLEM_NS,
   RDF_JSON_DT,
   resolveIriRef,

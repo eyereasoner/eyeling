@@ -19,6 +19,7 @@ function fail(msg) {
 
 const builtins = require('../lib/builtins');
 require('../lib/engine');
+const { reason } = require('../index');
 
 const expectedApiKeys = [
   'registerBuiltin',
@@ -61,7 +62,7 @@ const expectedTermsKeys = [
   'Rule',
 ].sort();
 
-const expectedNsKeys = ['RDF_NS', 'XSD_NS', 'CRYPTO_NS', 'MATH_NS', 'TIME_NS', 'LIST_NS', 'LOG_NS', 'STRING_NS'].sort();
+const expectedNsKeys = ['RDF_NS', 'XSD_NS', 'CRYPTO_NS', 'MATH_NS', 'TIME_NS', 'LIST_NS', 'LOG_NS', 'STRING_NS', 'DT_NS'].sort();
 
 function makeOkMapModule() {
   return {
@@ -95,6 +96,11 @@ function makeOkDefaultMapModule() {
 
 function makeBadExportModule() {
   return 42;
+}
+
+
+function runReason(input) {
+  return reason({ proof: false }, input);
 }
 
 const cases = [
@@ -157,6 +163,60 @@ const cases = [
       );
     },
   },
+
+  {
+    name: 'datatype builtins inspect literals, validate XSD value spaces, compare values, and canonicalize',
+    run() {
+      const out = runReason(`
+@prefix : <http://example.org/datatype-tests#> .
+@prefix dt: <https://eyereasoner.github.io/eyeling/datatype#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+{ "01"^^xsd:integer dt:datatype ?d . } => { :integer :datatype ?d } .
+{ "001"^^xsd:integer dt:lexicalForm ?lex . } => { :integer :lexicalForm ?lex } .
+{ "hello"@en dt:language ?lang . } => { :language :tag ?lang } .
+{ "plain" dt:datatype ?d . } => { :plain :datatype ?d } .
+{ "hello"@EN dt:datatype ?d . } => { :langString :datatype ?d } .
+
+{ "1"^^xsd:integer dt:validForDatatype xsd:integer . } => { :valid :integer true } .
+{ "2147483648"^^xsd:int dt:invalidForDatatype xsd:int . } => { :invalid :int true } .
+{ "2"^^xsd:boolean dt:invalidForDatatype xsd:boolean . } => { :invalid :boolean true } .
+{ "2026-02-31T00:00:00Z"^^xsd:dateTime dt:invalidForDatatype xsd:dateTime . } => { :invalid :dateTime true } .
+
+{ "01"^^xsd:integer dt:sameValueAs "1.0"^^xsd:decimal . } => { :same :numeric true } .
+{ "true"^^xsd:boolean dt:sameValueAs "1"^^xsd:boolean . } => { :same :boolean true } .
+{ "2026-06-10T12:00:00Z"^^xsd:dateTime dt:sameValueAs "2026-06-10T14:00:00+02:00"^^xsd:dateTime . } => { :same :dateTime true } .
+{ "AQID"^^xsd:base64Binary dt:sameValueAs "010203"^^xsd:hexBinary . } => { :same :binary true } .
+{ "11"^^xsd:integer dt:differentValueFrom "12"^^xsd:integer . } => { :different :numeric true } .
+
+{ "01"^^xsd:integer dt:canonicalLiteral ?ci . } => { :canonical :integer ?ci } .
+{ "1"^^xsd:boolean dt:canonicalLiteral ?cb . } => { :canonical :boolean ?cb } .
+{ " a\t b "^^xsd:token dt:canonicalLiteral ?ct . } => { :canonical :token ?ct } .
+{ "2026-06-10T14:00:00+02:00"^^xsd:dateTime dt:canonicalLiteral ?cd . } => { :canonical :dateTime ?cd } .
+`);
+
+      assert.match(out, /:integer :datatype xsd:integer \./);
+      assert.match(out, /:integer :lexicalForm "001" \./);
+      assert.match(out, /:language :tag "en" \./);
+      assert.match(out, /:plain :datatype xsd:string \./);
+      assert.match(out, /:langString :datatype rdf:langString \./);
+      assert.match(out, /:valid :integer true \./);
+      assert.match(out, /:invalid :int true \./);
+      assert.match(out, /:invalid :boolean true \./);
+      assert.match(out, /:invalid :dateTime true \./);
+      assert.match(out, /:same :numeric true \./);
+      assert.match(out, /:same :boolean true \./);
+      assert.match(out, /:same :dateTime true \./);
+      assert.match(out, /:same :binary true \./);
+      assert.match(out, /:different :numeric true \./);
+      assert.match(out, /:canonical :integer "1"\^\^xsd:integer \./);
+      assert.match(out, /:canonical :boolean true \./);
+      assert.match(out, /:canonical :token "a b"\^\^xsd:token \./);
+      assert.match(out, /:canonical :dateTime "2026-06-10T12:00:00Z"\^\^xsd:dateTime \./);
+    },
+  },
+
 ];
 
 let passed = 0;

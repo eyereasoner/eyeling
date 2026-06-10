@@ -5,6 +5,7 @@
 @prefix list: <http://www.w3.org/2000/10/swap/list#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
 @prefix string: <http://www.w3.org/2000/10/swap/string#> .
+@prefix dt: <https://eyereasoner.github.io/eyeling/datatype#> .
 @prefix ega: <urn:eyeling:ga:> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
@@ -28,7 +29,7 @@
 # ------------------------------------------------------------------------------
 
 ex:EyelingBuiltinCatalog a ex:Catalog ;
-  rdfs:comment "Builtins implemented by eyeling.js (main branch, raw GitHub URL). Namespaces follow SWAP (crypto/math/time/list/log/string) plus rdf:first/rest aliases." .
+  rdfs:comment "Builtins implemented by eyeling.js (main branch, raw GitHub URL). Namespaces follow SWAP (crypto/math/time/list/log/string), Eyeling datatype builtins (dt), plus rdf:first/rest aliases." .
 
 ex:Test a ex:Kind .
 ex:Function a ex:Kind .
@@ -40,6 +41,32 @@ ex:SideEffect a ex:Kind .
 
 ex:kind a rdf:Property .
 ex:aliasOf a rdf:Property .
+
+# --- dt: datatype ---------------------------------------------------
+
+dt:datatype a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Extracts the datatype IRI of a literal. Plain RDF string literals return xsd:string; language-tagged strings return rdf:langString; shorthand numeric/boolean literals return their inferred XSD datatype." .
+
+dt:lexicalForm a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Extracts the literal lexical form as an xsd:string/plain string value, preserving the original lexical spelling such as leading zeroes." .
+
+dt:language a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Extracts the language tag of an rdf:langString literal as a string literal." .
+
+dt:validForDatatype a ex:Builtin ; ex:kind ex:Test ;
+  rdfs:comment "Succeeds iff the subject literal has a lexical form accepted by the object datatype and denotes a value in that datatype's value space. Supports OWL 2 RL-relevant XSD strings, booleans, numerics, binary types, anyURI, dateTime, and dateTimeStamp." .
+
+dt:invalidForDatatype a ex:Builtin ; ex:kind ex:Test ;
+  rdfs:comment "Succeeds iff the object datatype is supported and the subject literal is not valid for it." .
+
+dt:sameValueAs a ex:Builtin ; ex:kind ex:Test ;
+  rdfs:comment "Value-space equality over supported datatypes, including integer/decimal numeric equality, boolean 1/true equality, timezone-normalized dateTime equality, string-derived whitespace facets, and binary byte equality." .
+
+dt:differentValueFrom a ex:Builtin ; ex:kind ex:Test ;
+  rdfs:comment "Value-space inequality over supported and comparable datatype values." .
+
+dt:canonicalLiteral a ex:Builtin ; ex:kind ex:Function ;
+  rdfs:comment "Binds/unifies the object with a canonical literal for the subject literal's datatype value, such as normalized integer, boolean, token, binary, and timezone-normalized dateTime lexicals." .
 
 # --- crypto: ---------------------------------------------------------
 
