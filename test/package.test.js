@@ -6,20 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const cp = require('node:child_process');
 
-const TTY = process.stdout.isTTY;
-const C = TTY
-  ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', dim: '\x1b[2m', n: '\x1b[0m' }
-  : { g: '', r: '', y: '', dim: '', n: '' };
-
-function info(msg) {
-  console.log(`${C.y}==${C.n} ${msg}`);
-}
-function ok(msg) {
-  console.log(`${C.g}OK${C.n}  ${msg}`);
-}
-function fail(msg) {
-  console.error(`${C.r}FAIL${C.n} ${msg}`);
-}
+const { C, detail, failResult, info, pass } = require('./report');
 
 function isWin() {
   return process.platform === 'win32';
@@ -158,6 +145,7 @@ function packTarball(root) {
 
 function main() {
   const suiteStart = Date.now();
+  let sequence = 0;
   const root = path.resolve(__dirname, '..');
 
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'eyeling-smoke-'));
@@ -167,15 +155,19 @@ function main() {
 
   try {
     info('Building tarball (npm pack)');
+    let stepStart = Date.now();
     tgzInRoot = packTarball(root);
     const srcTgz = path.join(root, tgzInRoot);
     const dstTgz = path.join(tmp, tgzInRoot);
 
     fs.renameSync(srcTgz, dstTgz);
+    pass(++sequence, `packed ${tgzInRoot}`, Date.now() - stepStart);
 
     info('Creating temp project + installing tarball');
+    stepStart = Date.now();
     runChecked(npmCmd(), ['init', '-y'], { cwd: tmp, stdio: 'ignore' });
     runChecked(npmCmd(), ['install', `./${tgzInRoot}`, '--no-audit', '--no-fund'], { cwd: tmp, stdio: 'inherit' });
+    pass(++sequence, 'created temp project and installed tarball', Date.now() - stepStart);
 
     info('API smoke test');
     // Run a tiny API check via node -e
@@ -193,17 +185,18 @@ function main() {
         console.error('Unexpected output:\\n' + out);
         process.exit(1);
       }
-      console.log('OK: API works');
     `;
+    stepStart = Date.now();
     runChecked(process.execPath, ['-e', apiCode], { cwd: tmp, stdio: 'inherit' });
-    ok('API works');
+    pass(++sequence, 'API works', Date.now() - stepStart);
 
     info('CLI smoke test');
     const bin = isWin()
       ? path.join(tmp, 'node_modules', '.bin', 'eyeling.cmd')
       : path.join(tmp, 'node_modules', '.bin', 'eyeling');
+    stepStart = Date.now();
     runChecked(bin, ['-v'], { cwd: tmp, stdio: 'inherit' });
-    ok('CLI works');
+    pass(++sequence, 'CLI works', Date.now() - stepStart);
 
     info('Examples smoke test (installed package)');
     const pkgRoot = path.join(tmp, 'node_modules', 'eyeling');
@@ -220,11 +213,10 @@ function main() {
     const SMOKE_EXAMPLES = ['age.n3', 'basic-monadic.n3', 'family-cousins.n3', 'backward.n3', 'context-association.n3'];
 
     const tmpExamplesOut = fs.mkdtempSync(path.join(os.tmpdir(), 'eyeling-pkg-examples-'));
-    let smokeIdx = 1;
-    const smokePad2 = (n) => String(n).padStart(2, '0');
-    const smokeOk = (n, msg) => console.log(`${C.g}OK${C.n}  ${smokePad2(n)} ${msg}`);
+    stepStart = Date.now();
     try {
       for (const file of SMOKE_EXAMPLES) {
+        const smokeStart = Date.now();
         const inputPath = path.join(examplesDir, file);
         const expectedPath = resolveExpectedPath(outputDir, file);
 
@@ -275,20 +267,21 @@ Output differs for ${file}:`);
           throw new Error(`Example ${file}: output differs from golden`);
         }
 
-        smokeOk(smokeIdx++, `Example smoke: ${file}`);
+        pass(++sequence, `Example smoke: ${file}`, Date.now() - smokeStart);
       }
     } finally {
       rmrf(tmpExamplesOut);
     }
-    smokeOk(smokeIdx++, 'Installed examples smoke test passed');
+    pass(++sequence, 'Installed examples smoke test passed', Date.now() - stepStart);
 
     const suiteMs = Date.now() - suiteStart;
     console.log('');
-    ok(`Packaged install smoke test passed ${C.dim}(${suiteMs} ms, ${(suiteMs / 1000).toFixed(2)} s)${C.n}`);
+    info(`Packaged install smoke test passed (${suiteMs} ms, ${(suiteMs / 1000).toFixed(2)} s)`);
     process.exit(0);
   } catch (e) {
     console.log('');
-    fail(e && e.stack ? e.stack : String(e));
+    failResult(++sequence, 'packaged install smoke test failed', Date.now() - suiteStart);
+    detail(e && e.stack ? e.stack : String(e));
     process.exit(1);
   } finally {
     // If rename failed and the tarball still exists in root, try to delete it

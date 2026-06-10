@@ -18,45 +18,29 @@ const { setTimeout: sleep } = require('node:timers/promises');
 
 const ROOT = path.resolve(__dirname, '..');
 
-const TTY = process.stdout.isTTY;
-const C = TTY
-  ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', dim: '\x1b[2m', n: '\x1b[0m' }
-  : { g: '', r: '', y: '', dim: '', n: '' };
-const msTag = (ms) => `${C.dim}(${ms} ms)${C.n}`;
+const { detail, failResult, info, pass } = require('./report');
 
 const TOTAL_TESTS = (fs.readFileSync(__filename, 'utf8').match(/^\s*beginTest\(/gm) || []).length;
-const idxWidth = String(Math.max(1, TOTAL_TESTS)).length;
 let passed = 0;
 let failed = 0;
 let currentTest = null;
 let nonTestFailure = false;
 const suiteStart = Date.now();
 
-function ok(msg) {
-  console.log(`${C.g}OK${C.n}  ${msg}`);
-}
-function info(msg) {
-  console.log(`${C.y}==${C.n} ${msg}`);
-}
-function fail(msg) {
-  console.error(`${C.r}FAIL${C.n} ${msg}`);
-}
 function beginTest(msg) {
   currentTest = { msg, start: Date.now() };
 }
 function endTest() {
   const tc = currentTest;
   if (!tc) return;
-  const idx = String(passed + failed + 1).padStart(idxWidth, '0');
-  ok(`${idx} ${tc.msg} ${msTag(Date.now() - tc.start)}`);
+  pass(passed + failed + 1, tc.msg, Date.now() - tc.start);
   passed += 1;
   currentTest = null;
 }
 function recordCurrentFailure() {
   const tc = currentTest;
   if (!tc) return false;
-  const idx = String(passed + failed + 1).padStart(idxWidth, '0');
-  fail(`${idx} ${tc.msg} ${msTag(Date.now() - tc.start)}`);
+  failResult(passed + failed + 1, tc.msg, Date.now() - tc.start);
   failed += 1;
   currentTest = null;
   return true;
@@ -66,9 +50,9 @@ function printSummary() {
   const suiteMs = Date.now() - suiteStart;
   info(`Total elapsed: ${suiteMs} ms (${(suiteMs / 1000).toFixed(2)} s)`);
   if (failed === 0 && !nonTestFailure) {
-    ok(`All playground tests passed (${passed}/${TOTAL_TESTS})`);
+    info(`All playground tests passed (${passed}/${TOTAL_TESTS})`);
   } else {
-    fail(`Some playground tests failed (${passed}/${TOTAL_TESTS})`);
+    info(`Some playground tests failed (${passed}/${TOTAL_TESTS})`);
   }
 }
 
@@ -1269,6 +1253,6 @@ ${JSON.stringify(last, null, 2)}`);
 main().catch((e) => {
   if (!recordCurrentFailure()) nonTestFailure = true;
   printSummary();
-  fail(e && e.stack ? e.stack : String(e));
+  detail(e && e.stack ? e.stack : String(e));
   process.exit(1);
 });

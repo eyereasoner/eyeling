@@ -66,27 +66,10 @@ function reasonQuiet(opt, input) {
   throw err;
 }
 
-const TTY = process.stdout.isTTY;
-const C = TTY
-  ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', dim: '\x1b[2m', n: '\x1b[0m' }
-  : { g: '', r: '', y: '', dim: '', n: '' };
-
-function ok(msg) {
-  console.log(`${C.g}OK ${C.n} ${msg}`);
-}
-function info(msg) {
-  console.log(`${C.y}==${C.n} ${msg}`);
-}
-function fail(msg) {
-  console.error(`${C.r}FAIL${C.n} ${msg}`);
-}
+const { detail, failResult, info, pass } = require('./report');
 
 function unnumberedName(name) {
   return String(name).replace(/^\d+[a-z]*\s+/i, '');
-}
-
-function numberedName(index, name) {
-  return `${String(index + 1).padStart(3, '0')} ${unnumberedName(name)}`;
 }
 
 function msNow() {
@@ -3172,7 +3155,8 @@ let failed = 0;
   info(`Running ${cases.length} API tests (independent of examples/)`);
 
   for (const [index, tc] of cases.entries()) {
-    const testName = numberedName(index, tc.name);
+    const testNr = index + 1;
+    const testName = unnumberedName(tc.name);
     const start = msNow();
     try {
       const out = typeof tc.run === 'function' ? await tc.run() : reasonQuiet(tc.opt, tc.input);
@@ -3187,19 +3171,19 @@ let failed = 0;
       if (typeof tc.check === 'function') tc.check(out, tc);
 
       const dur = msNow() - start;
-      ok(`${testName} ${C.dim}(${dur} ms)${C.n}`);
+      pass(testNr, testName, dur);
       passed++;
     } catch (e) {
       const dur = msNow() - start;
 
       if (tc.expectErrorCode != null) {
         if (e && typeof e === 'object' && 'code' in e && e.code === tc.expectErrorCode) {
-          ok(`${testName} ${C.dim}(expected exit ${tc.expectErrorCode}, ${dur} ms)${C.n}`);
+          pass(testNr, `${testName} (expected exit ${tc.expectErrorCode})`, dur);
           passed++;
           continue;
         }
-        fail(`${testName} ${C.dim}(${dur} ms)${C.n}`);
-        fail(
+        failResult(testNr, testName, dur);
+        detail(
           `Expected exit code ${tc.expectErrorCode}, got: ${e && e.code != null ? e.code : 'unknown'}\n${
             e && e.stderr ? e.stderr : e && e.stack ? e.stack : String(e)
           }`,
@@ -3209,26 +3193,26 @@ let failed = 0;
       }
 
       if (tc.expectError) {
-        ok(`${testName} ${C.dim}(expected error, ${dur} ms)${C.n}`);
+        pass(testNr, `${testName} (expected error)`, dur);
         passed++;
         continue;
       }
 
-      fail(`${testName} ${C.dim}(${dur} ms)${C.n}`);
-      fail(e && e.stack ? e.stack : String(e));
+      failResult(testNr, testName, dur);
+      detail(e && e.stack ? e.stack : String(e));
       failed++;
     }
   }
 
   console.log('');
   const suiteMs = Date.now() - suiteStart;
-  console.log(`${C.y}==${C.n} Total elapsed: ${suiteMs} ms (${(suiteMs / 1000).toFixed(2)} s)`);
+  info(`Total elapsed: ${suiteMs} ms (${(suiteMs / 1000).toFixed(2)} s)`);
 
   if (failed === 0) {
-    ok(`All API tests passed (${passed}/${cases.length})`);
+    info(`All API tests passed (${passed}/${cases.length})`);
     process.exit(0);
   } else {
-    fail(`Some API tests failed (${passed}/${cases.length})`);
+    info(`Some API tests failed (${passed}/${cases.length})`);
     process.exit(1);
   }
 })();

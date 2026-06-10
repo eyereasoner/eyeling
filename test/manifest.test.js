@@ -25,21 +25,7 @@ const cp = require('node:child_process');
 
 const ROOT = path.resolve(__dirname, '..');
 
-const TTY = process.stdout.isTTY;
-const C = TTY
-  ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', dim: '\x1b[2m', n: '\x1b[0m' }
-  : { g: '', r: '', y: '', dim: '', n: '' };
-
-function ok(msg) {
-  console.log(`${C.g}OK${C.n}  ${msg}`);
-}
-function warn(msg) {
-  console.log(`${C.y}SKIP${C.n}  ${msg}`);
-}
-function fail(msg) {
-  console.error(`${C.r}FAIL${C.n} ${msg}`);
-  process.exitCode = 1;
-}
+const { C, failResult, pass, warn } = require('./report');
 
 function run(cmd, args, opts = {}) {
   const t0 = Date.now();
@@ -70,17 +56,20 @@ function rmrf(p) {
 }
 
 (async function main() {
+  let sequence = 0;
   if (process.env.CI && process.env.EYELING_RUN_NOTATION3TESTS !== '1') {
     warn('CI detected; set EYELING_RUN_NOTATION3TESTS=1 to run Notation3 tests');
     return;
   }
 
   if (!has('git')) {
-    fail('git not found in PATH');
+    failResult(++sequence, 'git not found in PATH', 0);
+    process.exitCode = 1;
     return;
   }
   if (!has('npm')) {
-    fail('npm not found in PATH');
+    failResult(++sequence, 'npm not found in PATH', 0);
+    process.exitCode = 1;
     return;
   }
 
@@ -94,11 +83,12 @@ function rmrf(p) {
   // 1) Clone suite
   let r = run('git', ['clone', '--depth', '1', 'https://codeberg.org/phochste/notation3tests', suiteDir]);
   if (r.status !== 0) {
-    fail(`git clone failed (exit ${r.status})`);
+    failResult(++sequence, `git clone failed (exit ${r.status})`, r.ms);
+    process.exitCode = 1;
     rmrf(workDir);
     return;
   }
-  ok(`cloned notation3tests ${C.dim}(${r.ms} ms)${C.n}`);
+  pass(++sequence, 'cloned notation3tests', r.ms);
 
   // 2) Install suite dependencies
   // Notation3tests can carry vulnerabilities in its transient dependency tree.
@@ -106,11 +96,12 @@ function rmrf(p) {
   // Disable audit/funding output for this integration test install.
   r = run('npm', ['ci', '--audit=false', '--fund=false'], { cwd: suiteDir });
   if (r.status !== 0) {
-    fail(`npm ci failed (exit ${r.status})`);
+    failResult(++sequence, `npm ci failed (exit ${r.status})`, r.ms);
+    process.exitCode = 1;
     rmrf(workDir);
     return;
   }
-  ok(`npm ci ${C.dim}(${r.ms} ms)${C.n}`);
+  pass(++sequence, 'npm ci', r.ms);
 
   // 3) Pack local Eyeling
   const pack = runCapture('npm', ['pack', '--silent'], {
@@ -120,29 +111,32 @@ function rmrf(p) {
   });
   if (pack.status !== 0) {
     console.error(pack.stderr || '');
-    fail(`npm pack failed (exit ${pack.status})`);
+    failResult(++sequence, `npm pack failed (exit ${pack.status})`, pack.ms);
+    process.exitCode = 1;
     rmrf(workDir);
     return;
   }
   const tgzName = String(pack.stdout).trim().split(/\r?\n/).pop();
   const tgzPath = path.join(ROOT, tgzName);
   if (!fs.existsSync(tgzPath)) {
-    fail(`npm pack did not produce expected tarball: ${tgzPath}`);
+    failResult(++sequence, `npm pack did not produce expected tarball: ${tgzPath}`, pack.ms);
+    process.exitCode = 1;
     rmrf(workDir);
     return;
   }
-  ok(`packed ${tgzName} ${C.dim}(${pack.ms} ms)${C.n}`);
+  pass(++sequence, `packed ${tgzName}`, pack.ms);
 
   // 4) Install local tarball into suite
   // Keep the install output focused on the actual test run.
   r = run('npm', ['install', '--no-save', '--audit=false', '--fund=false', tgzPath], { cwd: suiteDir });
   if (r.status !== 0) {
-    fail(`npm install eyeling tarball failed (exit ${r.status})`);
+    failResult(++sequence, `npm install eyeling tarball failed (exit ${r.status})`, r.ms);
+    process.exitCode = 1;
     rmrf(tgzPath);
     rmrf(workDir);
     return;
   }
-  ok(`installed local eyeling ${C.dim}(${r.ms} ms)${C.n}`);
+  pass(++sequence, 'installed local eyeling', r.ms);
 
   // 5) Run suite test target
   const t0 = Date.now();
@@ -153,7 +147,7 @@ function rmrf(p) {
   rmrf(tgzPath);
 
   if (r.status === 0) {
-    ok(`notation3tests:eyeling passed ${C.dim}(${totalMs} ms)${C.n}`);
+    pass(++sequence, 'notation3tests:eyeling passed', totalMs);
     if (process.env.EYELING_KEEP_NOTATION3TESTS === '1') {
       console.log(`${C.dim}Keeping workdir (EYELING_KEEP_NOTATION3TESTS=1):${C.n} ${workDir}`);
     } else {
@@ -162,7 +156,8 @@ function rmrf(p) {
     return;
   }
 
-  fail(`notation3tests:eyeling failed (exit ${r.status}) ${C.dim}(${totalMs} ms)${C.n}`);
+  failResult(++sequence, `notation3tests:eyeling failed (exit ${r.status})`, totalMs);
+  process.exitCode = 1;
   if (process.env.EYELING_KEEP_NOTATION3TESTS === '1') {
     console.log(`${C.dim}Keeping workdir (EYELING_KEEP_NOTATION3TESTS=1):${C.n} ${workDir}`);
   } else {

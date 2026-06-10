@@ -9,23 +9,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const eyelingJsPath = path.join(root, 'eyeling.js');
 
-const TTY = process.stdout.isTTY;
-const C = TTY
-  ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', dim: '\x1b[2m', n: '\x1b[0m' }
-  : { g: '', r: '', y: '', dim: '', n: '' };
-
-function ok(msg) {
-  console.log(`${C.g}OK ${C.n} ${msg}`);
-}
-function info(msg) {
-  console.log(`${C.y}==${C.n} ${msg}`);
-}
-function fail(msg) {
-  console.error(`${C.r}FAIL${C.n} ${msg}`);
-}
-function numberedName(index, name) {
-  return `${String(index + 1).padStart(3, '0')} ${name}`;
-}
+const { detail, failResult, info, pass } = require('./report');
 function msNow() {
   return Date.now();
 }
@@ -354,15 +338,16 @@ const cases = [
   let failed = 0;
   for (const [index, tc] of cases.entries()) {
     const tmp = mkTmpDir();
-    const testName = numberedName(index, tc.name);
+    const testNr = index + 1;
+    const testName = tc.name;
     const start = msNow();
     try {
       await tc.run(tmp);
-      ok(`${testName} ${C.dim}(${msNow() - start} ms)${C.n}`);
+      pass(testNr, testName, msNow() - start);
       passed++;
     } catch (e) {
-      fail(`${testName} ${C.dim}(${msNow() - start} ms)${C.n}`);
-      fail(e && e.stack ? e.stack : String(e));
+      failResult(testNr, testName, msNow() - start);
+      detail(e && e.stack ? e.stack : String(e));
       failed++;
     } finally {
       rmrf(tmp);
@@ -370,14 +355,15 @@ const cases = [
   }
   console.log('');
   const suiteMs = msNow() - suiteStart;
-  console.log(`${C.y}==${C.n} Total elapsed: ${suiteMs} ms (${(suiteMs / 1000).toFixed(2)} s)`);
+  info(`Total elapsed: ${suiteMs} ms (${(suiteMs / 1000).toFixed(2)} s)`);
   if (failed === 0) {
-    ok(`All stream-message tests passed (${passed}/${cases.length})`);
+    info(`All stream-message tests passed (${passed}/${cases.length})`);
     process.exit(0);
   }
-  fail(`Some stream-message tests failed (${passed}/${cases.length})`);
+  info(`Some stream-message tests failed (${passed}/${cases.length})`);
   process.exit(1);
 })().catch((e) => {
-  fail(e && e.stack ? e.stack : String(e));
+  failResult(1, 'stream-message test runner failed', 0);
+  detail(e && e.stack ? e.stack : String(e));
   process.exit(1);
 });

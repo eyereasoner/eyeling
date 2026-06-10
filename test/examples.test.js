@@ -6,21 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const cp = require('node:child_process');
 
-const TTY = process.stdout.isTTY;
-const C = TTY
-  ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', dim: '\x1b[2m', n: '\x1b[0m' }
-  : { g: '', r: '', y: '', dim: '', n: '' };
-const msTag = (ms) => `${C.dim}(${ms} ms)${C.n}`;
-
-function ok(msg) {
-  console.log(`${C.g}OK${C.n}  ${msg}`);
-}
-function fail(msg) {
-  console.error(`${C.r}FAIL${C.n} ${msg}`);
-}
-function info(msg) {
-  console.log(`${C.y}==${C.n} ${msg}`);
-}
+const { C, detail, failResult, info, pass } = require('./report');
 
 function run(cmd, args, opts = {}) {
   return cp.spawnSync(cmd, args, {
@@ -224,11 +210,11 @@ function main() {
   const nodePath = process.execPath;
 
   if (!fs.existsSync(examplesDir)) {
-    fail(`Cannot find examples directory: ${examplesDir}`);
+    failResult(1, `Cannot find examples directory: ${examplesDir}`, 0);
     process.exit(1);
   }
   if (!fs.existsSync(eyelingJsPath)) {
-    fail(`Cannot find eyeling.js: ${eyelingJsPath}`);
+    failResult(1, `Cannot find eyeling.js: ${eyelingJsPath}`, 0);
     process.exit(1);
   }
 
@@ -252,21 +238,19 @@ function main() {
   console.log(`${C.dim}${getEyelingVersion(nodePath, eyelingJsPath, root)}; node ${process.version}${C.n}`);
 
   if (totalTests === 0) {
-    ok(proofOnly ? 'No proof goldens found in examples/proof/' : 'No .n3 files found in examples/');
+    info(proofOnly ? 'No proof goldens found in examples/proof/' : 'No .n3 files found in examples/');
     process.exit(0);
   }
 
   let passed = 0;
   let failed = 0;
 
-  // Pretty, stable numbering (e.g., 001..100 when running 100 tests)
-  const idxWidth = String(files.length).length;
-  const proofIdxWidth = String(Math.max(proofFiles.length, 1)).length;
-  const proofLabel = proofOnly ? '' : 'proof ';
+  let sequence = 0;
 
   for (let i = 0; i < files.length; i++) {
-    const idx = String(i + 1).padStart(idxWidth, '0');
+    const testNr = ++sequence;
     const file = files[i];
+    const testName = file;
 
     const start = Date.now();
 
@@ -278,8 +262,8 @@ function main() {
       n3Text = fs.readFileSync(filePath, 'utf8');
     } catch (e) {
       const ms = Date.now() - start;
-      fail(`${idx} ${file} ${msTag(ms)}`);
-      fail(`Cannot read input: ${e.message}`);
+      failResult(testNr, testName, ms);
+      detail(`Cannot read input: ${e.message}`);
       failed++;
       continue;
     }
@@ -291,8 +275,8 @@ function main() {
     // comparable across environments.
     if (!fs.existsSync(expectedPath)) {
       const ms = Date.now() - start;
-      fail(`${idx} ${file} ${msTag(ms)}`);
-      fail(`Missing expected output for ${path.basename(file, path.extname(file))}.*`);
+      failResult(testNr, testName, ms);
+      detail(`Missing expected output for ${path.basename(file, path.extname(file))}.*`);
       failed++;
       continue;
     }
@@ -324,18 +308,18 @@ function main() {
 
     if (diffOk && rcOk) {
       if (expectedRc === 0) {
-        ok(`${idx} ${file} ${msTag(ms)}`);
+        pass(testNr, testName, ms);
       } else {
-        ok(`${idx} ${file} (expected exit ${expectedRc}) ${msTag(ms)}`);
+        pass(testNr, `${testName} (expected exit ${expectedRc})`, ms);
       }
       passed++;
     } else {
-      fail(`${idx} ${file} ${msTag(ms)}`);
+      failResult(testNr, testName, ms);
       if (!rcOk) {
-        fail(`Exit code ${rc}, expected ${expectedRc}`);
+        detail(`Exit code ${rc}, expected ${expectedRc}`);
       }
       if (!diffOk) {
-        fail('Output differs');
+        detail('Output differs');
       }
 
       // Show diffs, because this is a test runner
@@ -353,8 +337,9 @@ function main() {
 
 
   for (let i = 0; i < proofFiles.length; i++) {
-    const idx = String(i + 1).padStart(proofIdxWidth, '0');
+    const testNr = ++sequence;
     const file = proofFiles[i];
+    const testName = proofOnly ? file : `proof ${file}`;
     const start = Date.now();
     const filePath = path.join(examplesDir, file);
     const expectedPath = path.join(proofDir, file);
@@ -364,8 +349,8 @@ function main() {
       n3Text = fs.readFileSync(filePath, 'utf8');
     } catch (e) {
       const ms = Date.now() - start;
-      fail(`${proofLabel}${idx} ${file} ${msTag(ms)}`);
-      fail(`Cannot read proof input: ${e.message}`);
+      failResult(testNr, testName, ms);
+      detail(`Cannot read proof input: ${e.message}`);
       failed++;
       continue;
     }
@@ -388,18 +373,18 @@ function main() {
 
     if (diffOk && rcOk) {
       if (expectedRc === 0) {
-        ok(`${proofLabel}${idx} ${file} ${msTag(ms)}`);
+        pass(testNr, testName, ms);
       } else {
-        ok(`${proofLabel}${idx} ${file} (expected exit ${expectedRc}) ${msTag(ms)}`);
+        pass(testNr, `${testName} (expected exit ${expectedRc})`, ms);
       }
       passed++;
     } else {
-      fail(`${proofLabel}${idx} ${file} ${msTag(ms)}`);
+      failResult(testNr, testName, ms);
       if (!rcOk) {
-        fail(`Exit code ${rc}, expected ${expectedRc}`);
+        detail(`Exit code ${rc}, expected ${expectedRc}`);
       }
       if (!diffOk) {
-        fail('Proof output differs');
+        detail('Proof output differs');
       }
       showDiff({
         examplesDir,
@@ -417,12 +402,12 @@ function main() {
   info(`Total elapsed: ${suiteMs} ms (${(suiteMs / 1000).toFixed(2)} s)`);
 
   if (failed === 0) {
-    ok(proofOnly
+    info(proofOnly
       ? `All proof golden tests passed (${passed}/${totalTests})`
       : `All examples tests passed (${passed}/${totalTests})`);
     process.exit(0);
   } else {
-    fail(proofOnly
+    info(proofOnly
       ? `Some proof golden tests failed (${passed}/${totalTests})`
       : `Some examples tests failed (${passed}/${totalTests})`);
     // keep exit code 2 (matches historical behavior of examples/test)

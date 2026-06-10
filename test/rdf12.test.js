@@ -3,44 +3,7 @@
 
 const cp = require('node:child_process');
 
-const USE_COLOR = !process.env.NO_COLOR && (
-  process.stdout.isTTY ||
-  (process.env.FORCE_COLOR && process.env.FORCE_COLOR !== '0')
-);
-const C = USE_COLOR
-  ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', gray: '\x1b[90m', dim: '\x1b[2m', n: '\x1b[0m' }
-  : { g: '', r: '', y: '', gray: '', dim: '', n: '' };
-
-function formatDuration(ms) {
-  if (!Number.isFinite(ms) || ms < 0) return '0 ms';
-  if (ms < 1000) return `${Math.round(ms)} ms`;
-  if (ms < 10000) return `${(ms / 1000).toFixed(2)} s`;
-  if (ms < 60000) return `${(ms / 1000).toFixed(1)} s`;
-
-  const minutes = Math.floor(ms / 60000);
-  const seconds = ((ms % 60000) / 1000).toFixed(1).padStart(4, '0');
-  return `${minutes}m ${seconds}s`;
-}
-
-function durationSuffix(ms) {
-  return ms == null ? '' : ` ${C.gray}${formatDuration(ms)}${C.n}`;
-}
-
-function ok(msg, ms) {
-  console.log(`${C.g}OK${C.n}  ${msg}${durationSuffix(ms)}`);
-}
-
-function fail(msg, ms) {
-  console.error(`${C.r}FAIL${C.n} ${msg}${durationSuffix(ms)}`);
-}
-
-function info(msg, ms) {
-  console.log(`${C.y}==${C.n} ${msg}${durationSuffix(ms)}`);
-}
-
-function detail(msg) {
-  console.log(`${C.dim}${msg}${C.n}`);
-}
+const { C, detail, failResult, formatDuration, info, pass } = require('./report');
 
 function nowMs() {
   return Number(process.hrtime.bigint()) / 1e6;
@@ -143,9 +106,6 @@ function resolveSuiteKeys(args) {
   return keys;
 }
 
-function sequenceLabel(n) {
-  return String(n).padStart(3, '0');
-}
 
 function createLineReader(onLine) {
   let buffer = '';
@@ -177,12 +137,12 @@ function printEvent(suiteResult, event, totals) {
   const caseElapsedMs = now - suiteResult.lastCaseAt;
   suiteResult.lastCaseAt = now;
 
-  const message = `${sequenceLabel(totals.sequence)} ${suiteResult.suite.label}: ${event.message}`;
+  const message = `${suiteResult.suite.label}: ${event.message}`;
   if (event.kind === 'ok') {
-    ok(message, caseElapsedMs);
+    pass(totals.sequence, message, caseElapsedMs);
     totals.passed++;
   } else {
-    fail(message, caseElapsedMs);
+    failResult(totals.sequence, message, caseElapsedMs);
     totals.failed++;
     suiteResult.failedCount++;
   }
@@ -236,11 +196,11 @@ function runSuite(key, totals) {
       suiteResult.error = e;
       if (!sawCase) {
         totals.sequence++;
-        fail(`${sequenceLabel(totals.sequence)} ${suite.label}: rdf-test-suite could not start: ${e.message || String(e)}`, elapsedMs);
+        failResult(totals.sequence, `${suite.label}: rdf-test-suite could not start: ${e.message || String(e)}`, elapsedMs);
         totals.failed++;
         suiteResult.caseCount++;
       }
-      console.log(`${C.gray}Suite elapsed ${formatDuration(elapsedMs)}${C.n}`);
+      console.log(`${C.dim}Suite elapsed ${formatDuration(elapsedMs)}${C.n}`);
       console.log('');
       resolve({ ...suiteResult, status: 1, elapsedMs });
       return;
@@ -273,21 +233,21 @@ function runSuite(key, totals) {
           : `${suite.label}: rdf-test-suite exited with ${suiteResult.status === 0 ? 'success' : exitText}`;
 
         if (suiteResult.status === 0) {
-          ok(`${sequenceLabel(totals.sequence)} ${message}`, elapsedMs);
+          pass(totals.sequence, message, elapsedMs);
           totals.passed++;
         } else {
-          fail(`${sequenceLabel(totals.sequence)} ${message}`, elapsedMs);
+          failResult(totals.sequence, message, elapsedMs);
           totals.failed++;
         }
         suiteResult.caseCount++;
       } else if (suiteResult.status !== 0 && suiteResult.failedCount === 0) {
         totals.sequence++;
-        fail(`${sequenceLabel(totals.sequence)} ${suite.label}: rdf-test-suite exited with status ${suiteResult.status}`, elapsedMs);
+        failResult(totals.sequence, `${suite.label}: rdf-test-suite exited with status ${suiteResult.status}`, elapsedMs);
         totals.failed++;
         suiteResult.caseCount++;
       }
 
-      console.log(`${C.gray}Suite elapsed ${formatDuration(elapsedMs)}${C.n}`);
+      console.log(`${C.dim}Suite elapsed ${formatDuration(elapsedMs)}${C.n}`);
       console.log('');
       resolve(suiteResult);
     });
@@ -299,7 +259,7 @@ async function main() {
   try {
     keys = resolveSuiteKeys(process.argv.slice(2));
   } catch (e) {
-    fail(e && e.message ? e.message : String(e));
+    failResult(1, e && e.message ? e.message : String(e), 0);
     process.exit(1);
     return;
   }
@@ -322,16 +282,17 @@ async function main() {
   info(`Grand total: ${totals.passed} OK, ${totals.failed} FAIL, ${totals.sequence} RDF 1.2 tests`, grandElapsedMs);
 
   if (totals.failed === 0 && results.every((suiteResult) => suiteResult.status === 0)) {
-    ok(`All RDF 1.2 syntax tests passed (${totals.passed}/${totals.sequence})`);
+    info(`All RDF 1.2 syntax tests passed (${totals.passed}/${totals.sequence})`);
     process.exit(0);
     return;
   }
 
-  fail(`Some RDF 1.2 syntax tests failed (${totals.passed}/${totals.sequence})`);
+  info(`Some RDF 1.2 syntax tests failed (${totals.passed}/${totals.sequence})`);
   process.exit(1);
 }
 
 main().catch((e) => {
-  fail(e && e.stack ? e.stack : String(e));
+  failResult(1, 'RDF 1.2 syntax test runner failed', 0);
+  detail(e && e.stack ? e.stack : String(e));
   process.exit(1);
 });

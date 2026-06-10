@@ -2,20 +2,7 @@
 
 const assert = require('node:assert/strict');
 
-const TTY = process.stdout.isTTY;
-const C = TTY
-  ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', dim: '\x1b[2m', n: '\x1b[0m' }
-  : { g: '', r: '', y: '', dim: '', n: '' };
-
-function ok(msg) {
-  console.log(`${C.g}OK ${C.n} ${msg}`);
-}
-function info(msg) {
-  console.log(`${C.y}==${C.n} ${msg}`);
-}
-function fail(msg) {
-  console.error(`${C.r}FAIL${C.n} ${msg}`);
-}
+const { detail, failResult, info, pass } = require('./report');
 
 const builtins = require('../lib/builtins');
 require('../lib/engine');
@@ -226,25 +213,25 @@ let failed = 0;
   const suiteStart = Date.now();
   info(`Running ${cases.length} builtin contract tests`);
 
-  for (const tc of cases) {
+  for (const [index, tc] of cases.entries()) {
     const start = Date.now();
     try {
       tc.run();
-      ok(`${tc.name} ${C.dim}(${Date.now() - start} ms)${C.n}`);
+      pass(index + 1, tc.name, Date.now() - start);
       passed++;
     } catch (e) {
-      fail(`${tc.name} ${C.dim}(${Date.now() - start} ms)${C.n}`);
-      fail(e && e.stack ? e.stack : String(e));
+      failResult(index + 1, tc.name, Date.now() - start);
+      detail(e && e.stack ? e.stack : String(e));
       failed++;
     }
   }
 
   console.log('');
-  console.log(`${C.y}==${C.n} Total elapsed: ${Date.now() - suiteStart} ms`);
+  info(`Total elapsed: ${Date.now() - suiteStart} ms`);
   if (failed === 0) {
-    ok(`All builtin contract tests passed (${passed}/${cases.length})`);
+    info(`All builtin contract tests passed (${passed}/${cases.length})`);
     process.exit(0);
   }
-  fail(`Some builtin contract tests failed (${passed}/${cases.length})`);
+  info(`Some builtin contract tests failed (${passed}/${cases.length})`);
   process.exit(1);
 })();

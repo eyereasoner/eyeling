@@ -4,19 +4,9 @@ const assert = require('node:assert/strict');
 const cp = require('node:child_process');
 const fs = require('node:fs');
 
-const TTY = process.stdout.isTTY;
-const C = TTY ? { g: '\x1b[32m', r: '\x1b[31m', y: '\x1b[33m', n: '\x1b[0m' } : { g: '', r: '', y: '', n: '' };
+const { detail, failResult, info, pass } = require('./report');
 
-function ok(msg) {
-  console.log(`${C.g}OK ${C.n} ${msg}`);
-}
-function info(msg) {
-  console.log(`${C.y}${msg}${C.n}`);
-}
-function fail(msg) {
-  console.error(`${C.r}FAIL${C.n} ${msg}`);
-}
-
+const start = Date.now();
 try {
   info('Checking packlist + metadata…');
 
@@ -65,8 +55,9 @@ try {
     'missing from npm pack: examples/output/*',
   );
 
-  ok('packlist + metadata sanity checks passed');
+  pass(1, 'packlist + metadata sanity checks passed', Date.now() - start);
 } catch (e) {
-  fail(e && e.stack ? e.stack : String(e));
+  failResult(1, 'packlist + metadata sanity checks failed', Date.now() - start);
+  detail(e && e.stack ? e.stack : String(e));
   process.exit(1);
 }
