@@ -621,11 +621,11 @@ Eyeling provides datatype built-ins in the namespace `https://eyereasoner.github
 Supported operations include:
 
 - `dt:datatype`, `dt:lexicalForm`, and `dt:language` for literal inspection;
-- `dt:validForDatatype` and `dt:invalidForDatatype` for lexical validity and datatype membership checks;
+- `dt:validForDatatype` and `dt:invalidForDatatype` for lexical validity and datatype membership checks, either as `?literal dt:validForDatatype ?datatype` tests or as tuple-to-boolean checks like `(?literal ?datatype) dt:validForDatatype true`;
 - `dt:sameValueAs` and `dt:differentValueFrom` for value-space equality and inequality;
 - `dt:canonicalLiteral` for canonical literal production.
 
-The built-ins cover RDF language strings and the OWL 2 RL-relevant XSD set: `xsd:string`, `xsd:normalizedString`, `xsd:token`, `xsd:language`, `xsd:Name`, `xsd:NCName`, `xsd:NMTOKEN`, `xsd:boolean`, `xsd:decimal`, `xsd:integer` and its bounded integer subtypes, `xsd:float`, `xsd:double`, `xsd:hexBinary`, `xsd:base64Binary`, `xsd:anyURI`, `xsd:dateTime`, and `xsd:dateTimeStamp`.
+The built-ins use strict datatype lexical validation for these checks, including exact dateTime rollover/canonicalization such as `24:00:00` normalizing to the following day. They cover RDF language strings and the OWL 2 RL-relevant XSD set: `xsd:string`, `xsd:normalizedString`, `xsd:token`, `xsd:language`, `xsd:Name`, `xsd:NCName`, `xsd:NMTOKEN`, `xsd:boolean`, `xsd:decimal`, `xsd:integer` and its bounded integer subtypes, `xsd:float`, `xsd:double`, `xsd:hexBinary`, `xsd:base64Binary`, `xsd:anyURI`, `xsd:dateTime`, and `xsd:dateTimeStamp`.
 
 Example:
 
@@ -638,6 +638,7 @@ Example:
   "01"^^xsd:integer dt:sameValueAs "1.0"^^xsd:decimal .
   "2026-06-10T12:00:00Z"^^xsd:dateTime
     dt:sameValueAs "2026-06-10T14:00:00+02:00"^^xsd:dateTime .
+  ("abc"^^xsd:integer xsd:integer) dt:validForDatatype false .
 }
 =>
 {

@@ -170,17 +170,25 @@ const cases = [
 { "2147483648"^^xsd:int dt:invalidForDatatype xsd:int . } => { :invalid :int true } .
 { "2"^^xsd:boolean dt:invalidForDatatype xsd:boolean . } => { :invalid :boolean true } .
 { "2026-02-31T00:00:00Z"^^xsd:dateTime dt:invalidForDatatype xsd:dateTime . } => { :invalid :dateTime true } .
+{ " 1.0 "^^xsd:decimal dt:invalidForDatatype xsd:decimal . } => { :invalid :decimalWhitespace true } .
+{ "02026-06-10T12:00:00Z"^^xsd:dateTime dt:invalidForDatatype xsd:dateTime . } => { :invalid :dateTimeYear true } .
 
 { "01"^^xsd:integer dt:sameValueAs "1.0"^^xsd:decimal . } => { :same :numeric true } .
 { "true"^^xsd:boolean dt:sameValueAs "1"^^xsd:boolean . } => { :same :boolean true } .
 { "2026-06-10T12:00:00Z"^^xsd:dateTime dt:sameValueAs "2026-06-10T14:00:00+02:00"^^xsd:dateTime . } => { :same :dateTime true } .
+{ "2026-12-31T24:00:00Z"^^xsd:dateTime dt:sameValueAs "2027-01-01T00:00:00Z"^^xsd:dateTime . } => { :same :midnightRollover true } .
 { "AQID"^^xsd:base64Binary dt:sameValueAs "010203"^^xsd:hexBinary . } => { :same :binary true } .
 { "11"^^xsd:integer dt:differentValueFrom "12"^^xsd:integer . } => { :different :numeric true } .
+
+{ ("1"^^xsd:integer xsd:integer) dt:validForDatatype true . } => { :tuple :valid true } .
+{ ("abc"^^xsd:integer xsd:integer) dt:validForDatatype false . } => { :tuple :invalidBoolean true } .
+{ ("abc"^^xsd:integer xsd:integer) dt:invalidForDatatype ?invalid . } => { :tuple :invalidResult ?invalid } .
 
 { "01"^^xsd:integer dt:canonicalLiteral ?ci . } => { :canonical :integer ?ci } .
 { "1"^^xsd:boolean dt:canonicalLiteral ?cb . } => { :canonical :boolean ?cb } .
 { " a\t b "^^xsd:token dt:canonicalLiteral ?ct . } => { :canonical :token ?ct } .
 { "2026-06-10T14:00:00+02:00"^^xsd:dateTime dt:canonicalLiteral ?cd . } => { :canonical :dateTime ?cd } .
+{ "2026-12-31T24:00:00Z"^^xsd:dateTime dt:canonicalLiteral ?cm . } => { :canonical :midnightRollover ?cm } .
 `);
 
       assert.match(out, /:integer :datatype xsd:integer \./);
@@ -192,15 +200,22 @@ const cases = [
       assert.match(out, /:invalid :int true \./);
       assert.match(out, /:invalid :boolean true \./);
       assert.match(out, /:invalid :dateTime true \./);
+      assert.match(out, /:invalid :decimalWhitespace true \./);
+      assert.match(out, /:invalid :dateTimeYear true \./);
       assert.match(out, /:same :numeric true \./);
       assert.match(out, /:same :boolean true \./);
       assert.match(out, /:same :dateTime true \./);
+      assert.match(out, /:same :midnightRollover true \./);
       assert.match(out, /:same :binary true \./);
       assert.match(out, /:different :numeric true \./);
+      assert.match(out, /:tuple :valid true \./);
+      assert.match(out, /:tuple :invalidBoolean true \./);
+      assert.match(out, /:tuple :invalidResult true \./);
       assert.match(out, /:canonical :integer "1"\^\^xsd:integer \./);
       assert.match(out, /:canonical :boolean true \./);
       assert.match(out, /:canonical :token "a b"\^\^xsd:token \./);
       assert.match(out, /:canonical :dateTime "2026-06-10T12:00:00Z"\^\^xsd:dateTime \./);
+      assert.match(out, /:canonical :midnightRollover "2027-01-01T00:00:00Z"\^\^xsd:dateTime \./);
     },
   },
 
