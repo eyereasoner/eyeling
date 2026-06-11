@@ -906,16 +906,30 @@ ${JSON.stringify(last, null, 2)}`);
     const fuseProgram = fs.readFileSync(path.join(ROOT, 'examples', 'fuse.n3'), 'utf8');
     const outputStringProgram = `@prefix : <#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
-:report log:outputString "## Hello from output string\n\nLine 2 with **bold** and [Eyeling](https://example.org/eyeling)\n" .
+:report log:outputString """## Hello from output string
+
+Line 2 with **bold** and [Eyeling](https://example.org/eyeling)
+""" .
 `;
     const riskMarkdownOutputStringProgram = `@prefix : <#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
-:report log:outputString "# Risk report\n\n### Clause H1 — score 100\n\nRisk: secondary use is permitted without a safeguard. Clause H1: Hospital may provide electronic health data for secondary use.\n\n- **Mitigation for clause H1:** Require a permit before secondary use.\n" .
+:report log:outputString """# Risk report
+
+### Clause H1 — score 100
+
+Risk: secondary use is permitted without a safeguard. Clause H1: Hospital may provide electronic health data for secondary use.
+
+- **Mitigation for clause H1:** Require a permit before secondary use.
+""" .
 `;
     const baseOnlyMarkdownProgram = `@base <https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/smoke-arithmetic.n3> .
 @prefix : <#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
-:report log:outputString "# stateurl link base\n\n[N3 rules](../smoke-arithmetic.n3)\n[Input TriG](../input/smoke-arithmetic.trig)\n" .
+:report log:outputString """# stateurl link base
+
+[N3 rules](../smoke-arithmetic.n3)
+[Input TriG](../input/smoke-arithmetic.trig)
+""" .
 `;
     const logQueryTurtleProgram = `@prefix : <#> .
 @prefix log: <http://www.w3.org/2000/10/swap/log#> .
