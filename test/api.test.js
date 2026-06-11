@@ -770,6 +770,132 @@ bad.:example a bad.:Person.
     expectError: true,
   },
   {
+    name: '12k2 invalid syntax: raw newline in short string literal should throw',
+    opt: { proofComments: false },
+    input: `
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:my :value "
+123".
+
+{
+    :my :value "\n123".
+}
+=>
+{
+    :result :has :crash-syntax-11.
+}.
+
+{} => {
+    :test :contains :crash-syntax-11.
+}.
+
+{
+    :result :has :crash-syntax-11.
+}
+=>
+{
+    :test :is false.
+}.
+`,
+    expectError: true,
+  },
+  {
+    name: '12k3 invalid syntax: repeated dots in numeric-looking literal should throw',
+    opt: { proofComments: false },
+    input: `
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:my :value 1.2.3.4.5.
+
+{
+    :my :value 1.2.3.4.5.
+}
+=>
+{
+    :result :has :crash-syntax-12.
+}.
+
+{} => {
+    :test :contains :crash-syntax-12.
+}.
+
+{
+    :result :has :crash-syntax-12.
+}
+=>
+{
+    :test :is false.
+}.
+`,
+    expectError: true,
+  },
+  {
+    name: '12k4 success literal: signed integer shorthand parses',
+    opt: { proofComments: false },
+    input: `
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:my :value +42.
+
+{
+    :my :value +42.
+}
+=>
+{
+    :result :has :success-literal-32.
+}.
+
+{} => {
+    :test :contains :success-literal-32.
+}.
+
+{
+    :result :has :success-literal-32.
+}
+=>
+{
+    :test :is true.
+}.
+`,
+    expect: [/:result\s+:has\s+:success-literal-32\s*\./, /:test\s+:is\s+true\s*\./],
+  },
+  {
+    name: '12k5 success literal: leading-dot decimal shorthand parses',
+    opt: { proofComments: false },
+    input: `
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:my :value .5.
+
+{
+    :my :value .5.
+}
+=>
+{
+    :result :has :success-literal-33.
+}.
+
+{} => {
+    :test :contains :success-literal-33.
+}.
+
+{
+    :result :has :success-literal-33.
+}
+=>
+{
+    :test :is true.
+}.
+`,
+    expect: [/:result\s+:has\s+:success-literal-33\s*\./, /:test\s+:is\s+true\s*\./],
+  },
+
+  {
     name: '12l regression: IRIREF \\u escape decodes before log:uri comparison (mismatch stays falsey)',
     opt: { proofComments: false },
     input: String.raw`
@@ -1360,7 +1486,7 @@ _:l2 rdf:rest rdf:nil.
       odrl:action ?Ignore ;
       odrl:duty [ odrl:action ?A ]
   ].
-  ( "%% Duty_(a,t)(action:%s)\n%% => ~Possible_(a,t)(~action:%s)\n" ?A ?A ) string:format ?Str.
+  ( "%% Duty_(a,t)(action:%s)\\n%% => ~Possible_(a,t)(~action:%s)\\n" ?A ?A ) string:format ?Str.
 }
 =>
 {

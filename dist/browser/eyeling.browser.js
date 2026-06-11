@@ -13298,7 +13298,76 @@ function lex(inputText, opts = {}) {
       continue;
     }
 
-    // 5) Single-character punctuation.  Use a switch rather than allocating a
+    // 5) Numeric literal (integer, decimal, or double). Turtle/N3 numeric
+    // literals may have a leading sign and decimals may start with '.', e.g.
+    // '+42' and '.5'.  Reject repeated decimal points so '1.2.3'
+    // cannot be misread as one impossible numeric-like token.
+    if (
+      isAsciiDigit(c) ||
+      ((c === '+' || c === '-') && (isAsciiDigit(peek(1)) || (peek(1) === '.' && isAsciiDigit(peek(2))))) ||
+      (c === '.' && isAsciiDigit(peek(1)) && !isAsciiDigit(peek(-1)))
+    ) {
+      const start = i;
+      const numChars = [];
+
+      if (chars[i] === '+' || chars[i] === '-') {
+        numChars.push(chars[i]);
+        i++;
+      }
+
+      if (chars[i] === '.') {
+        numChars.push('.');
+        i++;
+        while (i < n && isAsciiDigit(chars[i])) {
+          numChars.push(chars[i]);
+          i++;
+        }
+      } else {
+        while (i < n && isAsciiDigit(chars[i])) {
+          numChars.push(chars[i]);
+          i++;
+        }
+        if (i < n && chars[i] === '.' && i + 1 < n && isAsciiDigit(chars[i + 1])) {
+          numChars.push('.');
+          i++;
+          while (i < n && isAsciiDigit(chars[i])) {
+            numChars.push(chars[i]);
+            i++;
+          }
+        }
+      }
+
+      if (i < n && chars[i] === '.' && i + 1 < n && isAsciiDigit(chars[i + 1])) {
+        throw new N3SyntaxError('Malformed numeric literal: multiple decimal points', start);
+      }
+
+      // Optional exponent part: e.g., 1e0, 1.1e-3, .5E+0.
+      if (i < n && (chars[i] === 'e' || chars[i] === 'E')) {
+        let j = i + 1;
+        if (j < n && (chars[j] === '+' || chars[j] === '-')) j++;
+        if (j < n && isAsciiDigit(chars[j])) {
+          numChars.push(chars[i]); // e/E
+          i++;
+          if (i < n && (chars[i] === '+' || chars[i] === '-')) {
+            numChars.push(chars[i]);
+            i++;
+          }
+          while (i < n && isAsciiDigit(chars[i])) {
+            numChars.push(chars[i]);
+            i++;
+          }
+        }
+      }
+
+      if (i < n && chars[i] === '.' && i + 1 < n && isAsciiDigit(chars[i + 1])) {
+        throw new N3SyntaxError('Malformed numeric literal: multiple decimal points', start);
+      }
+
+      tokens.push(new Token('Literal', numChars.join(''), start));
+      continue;
+    }
+
+    // 6) Single-character punctuation.  Use a switch rather than allocating a
     // mapping object for every punctuation token in large inputs.
     switch (c) {
       case '{':
@@ -13419,13 +13488,17 @@ function lex(inputText, opts = {}) {
           }
           continue;
         }
+        if (cc === '\n' || cc === '\r') {
+          throw new N3SyntaxError('Unescaped newline in short string literal', start);
+        }
         if (cc === '"') {
           closed = true;
           break;
         }
         if (sChars !== null) sChars.push(cc);
       }
-      const rawContent = sChars === null ? sliceChars(contentStart, closed ? i - 1 : i) : sChars.join('');
+      if (!closed) throw new N3SyntaxError('Unterminated short string literal "..."', start);
+      const rawContent = sChars === null ? sliceChars(contentStart, i - 1) : sChars.join('');
       const decoded = sChars === null ? rawContent : decodeN3StringEscapes(rawContent, start);
       if (sChars !== null || inputMayContainInvalidStringChar) assertValidStringLiteralValue(decoded, start);
       const s = JSON.stringify(decoded); // canonical short quoted form
@@ -13509,13 +13582,17 @@ function lex(inputText, opts = {}) {
           }
           continue;
         }
+        if (cc === '\n' || cc === '\r') {
+          throw new N3SyntaxError('Unescaped newline in short string literal', start);
+        }
         if (cc === "'") {
           closed = true;
           break;
         }
         if (sChars !== null) sChars.push(cc);
       }
-      const rawContent = sChars === null ? sliceChars(contentStart, closed ? i - 1 : i) : sChars.join('');
+      if (!closed) throw new N3SyntaxError("Unterminated short string literal '...'", start);
+      const rawContent = sChars === null ? sliceChars(contentStart, i - 1) : sChars.join('');
       const decoded = sChars === null ? rawContent : decodeN3StringEscapes(rawContent, start);
       if (sChars !== null || inputMayContainInvalidStringChar) assertValidStringLiteralValue(decoded, start);
       const s = JSON.stringify(decoded); // canonical short quoted form
@@ -13595,52 +13672,6 @@ function lex(inputText, opts = {}) {
       if (word === 'prefix') tokens.push(new Token('AtPrefix', null, start));
       else if (word === 'base') tokens.push(new Token('AtBase', null, start));
       else throw new N3SyntaxError(`Unknown directive @${word}`, start);
-      continue;
-    }
-
-    // 6) Numeric literal (integer or float)
-    if (isAsciiDigit(c) || (c === '-' && peek(1) !== null && isAsciiDigit(peek(1)))) {
-      const start = i;
-      const numChars = [c];
-      i++;
-      while (i < n) {
-        const cc = chars[i];
-        if (isAsciiDigit(cc)) {
-          numChars.push(cc);
-          i++;
-          continue;
-        }
-        if (cc === '.') {
-          if (i + 1 < n && isAsciiDigit(chars[i + 1])) {
-            numChars.push('.');
-            i++;
-            continue;
-          } else {
-            break;
-          }
-        }
-        break;
-      }
-
-      // Optional exponent part: e.g., 1e0, 1.1e-3, 1.1E+0
-      if (i < n && (chars[i] === 'e' || chars[i] === 'E')) {
-        let j = i + 1;
-        if (j < n && (chars[j] === '+' || chars[j] === '-')) j++;
-        if (j < n && isAsciiDigit(chars[j])) {
-          numChars.push(chars[i]); // e/E
-          i++;
-          if (i < n && (chars[i] === '+' || chars[i] === '-')) {
-            numChars.push(chars[i]);
-            i++;
-          }
-          while (i < n && isAsciiDigit(chars[i])) {
-            numChars.push(chars[i]);
-            i++;
-          }
-        }
-      }
-
-      tokens.push(new Token('Literal', numChars.join(''), start));
       continue;
     }
 
