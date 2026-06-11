@@ -151,6 +151,14 @@ declare module 'eyeling' {
     document?: EyelingAstBundle;
   }
 
+  export interface StoreOptions {
+    name?: string;
+    clear?: boolean;
+    path?: string;
+    type?: 'memory' | 'persistent';
+    backend?: 'memory' | 'level' | 'indexeddb';
+  }
+
   export interface ReasonOptions {
     proof?: boolean;
     proofComments?: boolean;
@@ -158,6 +166,9 @@ declare module 'eyeling' {
     args?: string[];
     maxBuffer?: number;
     builtinModules?: string | string[];
+    store?: string | StoreOptions;
+    storePath?: string;
+    storeClear?: boolean;
   }
 
   export interface BuiltinRegistrationContext {
@@ -183,6 +194,9 @@ declare module 'eyeling' {
     dataFactory?: RdfJsDataFactory | null;
     skipUnsupportedRdfJs?: boolean;
     builtinModules?: string | string[];
+    store?: string | StoreOptions;
+    storePath?: string;
+    storeClear?: boolean;
     onDerived?: (item: { triple: string; quad?: RdfJsQuad; quads?: RdfJsQuad[]; df: any }) => void;
   }
 
@@ -198,10 +212,45 @@ declare module 'eyeling' {
     queryQuads?: RdfJsQuad[];
   }
 
+  export interface FactStore {
+    add(triple: EyelingTriple, kind?: 'explicit' | 'inferred'): Promise<boolean>;
+    has(triple: EyelingTriple): Promise<boolean>;
+    kindOf?(triple: EyelingTriple): Promise<number>;
+    match(s?: EyelingTerm | null, p?: EyelingTerm | null, o?: EyelingTerm | null): AsyncIterable<EyelingTriple>;
+    batchAdd?(triples: Iterable<EyelingTriple>, kind?: 'explicit' | 'inferred'): Promise<number>;
+    clear?(): Promise<void>;
+    close?(): Promise<void>;
+  }
+
+  export class MemoryFactStore implements FactStore {
+    constructor();
+    add(triple: EyelingTriple, kind?: 'explicit' | 'inferred'): Promise<boolean>;
+    has(triple: EyelingTriple): Promise<boolean>;
+    kindOf(triple: EyelingTriple): Promise<number>;
+    match(s?: EyelingTerm | null, p?: EyelingTerm | null, o?: EyelingTerm | null): AsyncIterable<EyelingTriple>;
+    batchAdd(triples: Iterable<EyelingTriple>, kind?: 'explicit' | 'inferred'): Promise<number>;
+    clear(): Promise<void>;
+    close(): Promise<void>;
+  }
+
+  export class PersistentFactStore implements FactStore {
+    add(triple: EyelingTriple, kind?: 'explicit' | 'inferred'): Promise<boolean>;
+    has(triple: EyelingTriple): Promise<boolean>;
+    kindOf(triple: EyelingTriple): Promise<number>;
+    match(s?: EyelingTerm | null, p?: EyelingTerm | null, o?: EyelingTerm | null): AsyncIterable<EyelingTriple>;
+    batchAdd(triples: Iterable<EyelingTriple>, kind?: 'explicit' | 'inferred'): Promise<number>;
+    clear(): Promise<void>;
+    close(): Promise<void>;
+  }
+
   export function reason(
     opts: ReasonOptions,
     input: string | RdfJsReasonInput | EyelingAstBundle | N3SourceListInput,
   ): string;
+  export function runAsync(
+    input: string | RdfJsReasonInput | EyelingAstBundle | N3SourceListInput,
+    opts?: ReasonStreamOptions,
+  ): Promise<ReasonStreamResult & { store?: FactStore }>;
   export function reasonStream(
     input: string | RdfJsReasonInput | EyelingAstBundle | N3SourceListInput,
     opts?: ReasonStreamOptions,
@@ -213,6 +262,7 @@ declare module 'eyeling' {
 
   export const INFERENCE_FUSE_EXIT_CODE: 65;
   export const rdfjs: RdfJsDataFactory;
+  export function createFactStore(options?: string | StoreOptions | null): Promise<FactStore>;
   export function registerBuiltin(iri: string, handler: BuiltinHandler): BuiltinHandler;
   export function unregisterBuiltin(iri: string): boolean;
   export function registerBuiltinModule(mod: any, origin?: string): boolean;
@@ -230,7 +280,13 @@ declare module 'eyeling/browser' {
   export type ReasonStreamOptions = import('eyeling').ReasonStreamOptions;
   export type ReasonStreamResult = import('eyeling').ReasonStreamResult;
   export type BuiltinHandler = import('eyeling').BuiltinHandler;
+  export type StoreOptions = import('eyeling').StoreOptions;
+  export type FactStore = import('eyeling').FactStore;
 
+  export function runAsync(
+    input: string | RdfJsReasonInput | EyelingAstBundle | N3SourceListInput,
+    opts?: ReasonStreamOptions,
+  ): Promise<ReasonStreamResult & { store?: FactStore }>;
   export function reasonStream(
     input: string | RdfJsReasonInput | EyelingAstBundle | N3SourceListInput,
     opts?: ReasonStreamOptions,
@@ -242,6 +298,7 @@ declare module 'eyeling/browser' {
 
   export const INFERENCE_FUSE_EXIT_CODE: 65;
   export const rdfjs: RdfJsDataFactory;
+  export function createFactStore(options?: string | StoreOptions | null): Promise<FactStore>;
   export function registerBuiltin(iri: string, handler: BuiltinHandler): BuiltinHandler;
   export function unregisterBuiltin(iri: string): boolean;
   export function registerBuiltinModule(mod: any, origin?: string): boolean;
@@ -249,10 +306,12 @@ declare module 'eyeling/browser' {
 
   const eyeling: {
     readonly version: string;
+    runAsync: typeof runAsync;
     reasonStream: typeof reasonStream;
     reasonRdfJs: typeof reasonRdfJs;
     readonly INFERENCE_FUSE_EXIT_CODE: typeof INFERENCE_FUSE_EXIT_CODE;
     rdfjs: typeof rdfjs;
+    createFactStore: typeof createFactStore;
     registerBuiltin: typeof registerBuiltin;
     unregisterBuiltin: typeof unregisterBuiltin;
     registerBuiltinModule: typeof registerBuiltinModule;

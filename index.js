@@ -42,6 +42,15 @@ function reason(opt = {}, input = '') {
 
   if (opt.rdf) args.push('--rdf');
 
+  if (typeof opt.store === 'string' && opt.store) args.push('--store', opt.store);
+  else if (opt.store && typeof opt.store === 'object') {
+    if (opt.store.name) args.push('--store', String(opt.store.name));
+    if (opt.store.clear) args.push('--store-clear');
+    if (opt.store.path) args.push('--store-path', String(opt.store.path));
+  }
+  if (opt.storePath) args.push('--store-path', String(opt.storePath));
+  if (opt.storeClear) args.push('--store-clear');
+
   if (Array.isArray(opt.args)) args.push(...opt.args);
 
   const builtinModules = Array.isArray(opt.builtinModules)
@@ -106,8 +115,13 @@ function reason(opt = {}, input = '') {
   }
 }
 
+async function runAsync(input = '', opt = {}) {
+  return engine.runAsync(input, opt || {});
+}
+
 module.exports = {
   reason,
+  runAsync,
   reasonStream: bundleApi.reasonStream,
   reasonRdfJs: bundleApi.reasonRdfJs,
   rdfjs: dataFactory,
@@ -116,6 +130,9 @@ module.exports = {
   registerBuiltinModule: engine.registerBuiltinModule,
   loadBuiltinModule: engine.loadBuiltinModule,
   listBuiltinIris: engine.listBuiltinIris,
+  createFactStore: engine.createFactStore,
+  MemoryFactStore: engine.MemoryFactStore,
+  PersistentFactStore: engine.PersistentFactStore,
 };
 
 // small interop nicety for ESM default import

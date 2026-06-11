@@ -240,12 +240,20 @@ function getBrowserApi() {
 
 export const INFERENCE_FUSE_EXIT_CODE = 65;
 
+export function runAsync(input, opts) {
+  return getBrowserApi().runAsync(input, opts);
+}
+
 export function reasonStream(input, opts) {
   return getBrowserApi().reasonStream(input, opts);
 }
 
 export function reasonRdfJs(input, opts) {
   return getBrowserApi().reasonRdfJs(input, opts);
+}
+
+export function createFactStore(options) {
+  return getBrowserApi().createFactStore(options);
 }
 
 export function registerBuiltin(iri, handler) {
@@ -295,9 +303,11 @@ const eyeling = {
     return getBrowserApi().version;
   },
   INFERENCE_FUSE_EXIT_CODE,
+  runAsync,
   reasonStream,
   reasonRdfJs,
   rdfjs,
+  createFactStore,
   registerBuiltin,
   unregisterBuiltin,
   registerBuiltinModule,

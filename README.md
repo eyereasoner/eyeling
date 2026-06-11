@@ -321,6 +321,7 @@ Import from the package root for Node.js:
 const {
   reason,
   reasonStream,
+  runAsync,
   reasonRdfJs,
   rdfjs,
   registerBuiltin,
@@ -328,6 +329,7 @@ const {
   registerBuiltinModule,
   loadBuiltinModule,
   listBuiltinIris,
+  createFactStore,
   INFERENCE_FUSE_EXIT_CODE,
 } = require('eyeling');
 ```
@@ -357,6 +359,9 @@ Useful options:
 | `args` | Extra CLI-style arguments. |
 | `maxBuffer` | Child-process output buffer limit. |
 | `builtinModules` | Custom built-in module path or paths. |
+| `store` | Optional persistent store name or options object; passed through to CLI `--store`. |
+| `storePath` | Optional Node.js persistent store directory. |
+| `storeClear` | Clear the named persistent store before the run. |
 
 `reason()` accepts N3 text, supported RDF-JS input objects, AST bundles, and multi-source inputs.
 
@@ -426,6 +431,58 @@ Useful options:
 | `dataFactory` | Custom RDF-JS DataFactory. |
 | `skipUnsupportedRdfJs` | Skip N3-only terms when producing RDF-JS quads. |
 | `builtinModules` | Register custom built-ins before reasoning. |
+
+### `runAsync(input, options)`
+
+`runAsync()` is the async execution API. Without a `store` option it keeps the same in-memory behavior as `reasonStream()`, but can also normalize async RDF-JS iterables before reasoning. With `store`, Eyeling opens a named persistent fact store, adds the new explicit facts, reuses facts already present in that store, reasons over the combined closure, and writes newly inferred facts back as inferred facts.
+
+```js
+const { runAsync } = require('eyeling');
+
+await runAsync(input); // memory store
+
+await runAsync(input, {
+  store: 'my-dataset',
+});
+
+await runAsync(input, {
+  store: {
+    name: 'my-dataset',
+    clear: true,
+    path: './.eyeling-store', // Node.js path override
+  },
+});
+```
+
+Persistent stores use a term dictionary plus `spo`, `pos`, and `osp` triple indexes. Exact lookup and all subject/predicate/object bound-pattern scans are available through the `FactStore` API:
+
+```js
+const { createFactStore, rdfjs } = require('eyeling');
+
+const store = await createFactStore({ name: 'my-dataset' });
+for await (const triple of store.match(null, rdfjs.namedNode('http://example.org/p'), null)) {
+  console.log(triple);
+}
+await store.close();
+```
+
+Node.js uses `classic-level` when it is installed and falls back to a small JSON-file key/value backend for dependency-free use and tests. Browser runtimes use IndexedDB through the same abstraction. The current synchronous `reasonStream()` path remains the default and does not open persistent storage.
+
+CLI equivalents:
+
+```bash
+eyeling input.n3
+# memory store
+
+eyeling input.n3 --store my-dataset
+# persistent store
+
+eyeling input.n3 --store my-dataset --store-clear
+# clear persistent store first
+
+eyeling input.n3 --store my-dataset --store-path ./.eyeling-store
+# Node.js path override
+```
 
 ### `reasonRdfJs(input, options)`
 
@@ -929,6 +986,7 @@ CLI output, API result, proof document, RDF-JS quads, or browser result
 | `lib/entry.js` | Bundle entry that exposes public APIs and selected playground internals. |
 | `lib/cli.js` | CLI argument handling, source loading, syntax errors, stream message mode. |
 | `lib/engine.js` | Core reasoning engine, proof collection, stream APIs, RDF-JS output hooks. |
+| `lib/store.js` | Optional async fact-store abstraction with memory and persistent backends. |
 | `lib/builtins.js` | Built-in predicates, custom built-in registry, helper API. |
 | `lib/lexer.js` | Lexer and compatibility normalization. |
 | `lib/parser.js` | Parser for supported N3/RDF syntax. |
@@ -973,7 +1031,7 @@ Everything else should be treated as internal unless explicitly documented.
 ├── dist/browser/             Browser bundle and ESM wrapper
 ├── examples/                 N3 examples, RDF message inputs, and generated decks
 ├── spec/                     RDF 1.2 parser test adapter
-├── test/                     API, built-in, example, package, playground, and stream tests
+├── test/                     API, built-in, store, example, package, playground, and stream tests
 ├── tools/                    Build tooling
 ├── playground.html           Browser playground
 └── demo.html                 Simple browser demo
@@ -1040,6 +1098,7 @@ Package scripts are defined in `package.json`.
 | `npm run test:manifest` | Validate example/test manifest expectations. |
 | `npm run test:playground` | Check playground serving headers. |
 | `npm run test:package` | Verify package-level behavior. |
+| `npm run test:store` | Verify memory and persistent fact-store matching. |
 | `npm run test:rdf12` | Run RDF 1.2 Turtle, N-Triples, N-Quads, and TriG syntax suites. |
 | `npm test` | Build and run the full suite. |
 
