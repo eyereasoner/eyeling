@@ -253,38 +253,38 @@
   :Check :c4 ?C4.
   :Check :c5 ?C5.
   (
-    "Complex Matrix Stability — ARC-style
+    """Complex Matrix Stability — ARC-style
 
-"
-    "## Answer
-"
+"""
+    """## Answer
+"""
     "We compare three diagonal 2x2 complex matrices for discrete-time stability: "
     "A_unstable = " ?MuS ", A_stable = " ?MsS ", and A_damped = " ?MdS ". "
     "Their spectral radii are ρ(A_unstable) = " ?Ru ", ρ(A_stable) = " ?Rs ", and ρ(A_damped) = " ?Rd ". "
-    "So A_unstable is unstable, A_stable is marginally stable, and A_damped is damped.
+    """So A_unstable is unstable, A_stable is marginally stable, and A_damped is damped.
 
-"
-    "## Reason Why
-"
+"""
+    """## Reason Why
+"""
     "For a discrete-time linear system x_{k+1} = A x_k, the eigenvalues of A govern the behaviour of the modes. "
     "Because these matrices are diagonal, the eigenvalues are just the diagonal entries. "
     "The spectral radius is the maximum modulus of the eigenvalues: if it is greater than 1 a mode grows, "
     "if it equals 1 the modes remain bounded without decaying, and if it is less than 1 all modes decay to zero. "
-    "Here the diagonal entries give radii 2, 1, and 0 respectively, which explains the three classifications.
+    """Here the diagonal entries give radii 2, 1, and 0 respectively, which explains the three classifications.
 
-"
-    "## Check
-"
-    "C1 " ?C1 "
-"
-    "C2 " ?C2 "
-"
-    "C3 " ?C3 "
-"
-    "C4 " ?C4 "
-"
-    "C5 " ?C5 "
-"
+"""
+    """## Check
+"""
+    "C1 " ?C1 """
+"""
+    "C2 " ?C2 """
+"""
+    "C3 " ?C3 """
+"""
+    "C4 " ?C4 """
+"""
+    "C5 " ?C5 """
+"""
   ) string:concatenation ?Block. }
 =>
 { :report log:outputString ?Block. } .

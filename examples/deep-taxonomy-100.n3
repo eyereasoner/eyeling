@@ -149,7 +149,7 @@
 }
     =>
 {
-    :report log:outputString "Deep Taxonomy - deep classification benchmark
+    :report log:outputString """Deep Taxonomy - deep classification benchmark
 
 ## Answer
 The test succeeds: starting from one individual classified as N0, the rules eventually classify it as N100 and then as A2.
@@ -164,5 +164,5 @@ C3 OK - the chain reaches the midpoint N50 and still carries both side-label bra
 C4 OK - the final taxonomy step from N99 to N100 was completed.
 C5 OK - once N100 is reached, the terminal class A2 is derived.
 C6 OK - the success flag is raised only after the terminal class A2 is present.
-" .
+""" .
 } .
