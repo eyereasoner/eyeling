@@ -5842,10 +5842,12 @@ function runParsedDocumentOnce(mergedDocument, { rdfMode = false, outputPrefixes
 
   let derived = [];
   let outTriples = [];
+  let queryDerived = [];
   if (hasQueries) {
     const res = engine.forwardChainAndCollectLogQueryConclusions(facts, frules, brules, qrules, { prefixes });
     derived = res.derived;
     outTriples = res.queryTriples;
+    queryDerived = res.queryDerived || [];
   } else {
     const skipDerivedCollection = mayAutoRenderOutputStrings;
     derived = engine.forwardChain(facts, frules, brules, null, {
@@ -5859,7 +5861,7 @@ function runParsedDocumentOnce(mergedDocument, { rdfMode = false, outputPrefixes
   const renderedOutputTriples = hasQueries ? outTriples : facts;
   if (factsContainOutputStrings(renderedOutputTriples)) {
     process.stdout.write(engine.collectOutputStringsFromFacts(renderedOutputTriples, prefixes));
-    return;
+    return { facts, derived, outTriples, queryDerived, queryMode: !!hasQueries };
   }
 
   const outPrefixEnv = outputPrefixes || prefixes;
@@ -5871,9 +5873,99 @@ function runParsedDocumentOnce(mergedDocument, { rdfMode = false, outputPrefixes
   } else {
     for (const df of derived) console.log(engine.tripleToN3(df.fact, outPrefixEnv));
   }
+  return { facts, derived, outTriples, queryDerived, queryMode: !!hasQueries };
 }
 
-async function runStreamMessagesMode(sourceLabels, { rdfMode }) {
+async function createCliStore({ storeName, storePath = null, storeClear = false } = {}) {
+  if (!storeName) return null;
+  return engine.createFactStore({ name: storeName, path: storePath || undefined, clear: !!storeClear });
+}
+
+async function persistRunResultToStore(store, runResult) {
+  if (!store || !runResult) return;
+  await store.batchAdd(runResult.facts || [], 'explicit');
+  await store.batchAdd((runResult.derived || []).map((df) => df.fact), 'inferred');
+  await store.batchAdd((runResult.queryDerived || []).map((df) => df.fact), 'inferred');
+  await store.batchAdd(runResult.outTriples || [], 'inferred');
+}
+
+function sourceLooksLikeLineBasedRdf(sourceLabel) {
+  if (typeof sourceLabel !== 'string') return false;
+  const clean = sourceLabel.split(/[?#]/, 1)[0].toLowerCase();
+  return /\.(?:nt|nq)(?:\.gz|\.br|\.deflate)?$/.test(clean);
+}
+
+function parseLineBasedRdfLine(line, { sourceLabel, lineNumber, rdfMode }) {
+  const text = String(line || '');
+  if (!text.trim() || /^\s*#/.test(text)) return [];
+  const doc = parseN3Text(text, {
+    baseIri: __sourceLabelToBaseIri(sourceLabel),
+    label: `${sourceLabel}:${lineNumber}`,
+    keepSourceArtifacts: false,
+    sourceLocations: false,
+    rdf: rdfMode,
+  });
+  return doc.triples || [];
+}
+
+async function ingestLineBasedRdfSourceToStore(sourceLabel, store, { rdfMode = true } = {}) {
+  let lineNumber = 0;
+  let count = 0;
+  const onLine = async (line) => {
+    lineNumber += 1;
+    let triples;
+    try {
+      triples = parseLineBasedRdfLine(line, { sourceLabel, lineNumber, rdfMode });
+    } catch (e) {
+      if (e && e.name === 'N3SyntaxError') {
+        throw new Error(formatN3SyntaxError(e, line, `${sourceLabel}:${lineNumber}`));
+      }
+      throw e;
+    }
+    count += await store.batchAdd(triples, 'explicit');
+  };
+
+  const filePath = __localPathForSource(sourceLabel);
+  if (filePath) {
+    const fd = fs.openSync(filePath, 'r');
+    const decoder = new TextDecoder('utf8');
+    const buf = Buffer.allocUnsafe(64 * 1024);
+    let carry = '';
+    try {
+      for (;;) {
+        const n = fs.readSync(fd, buf, 0, buf.length, null);
+        if (n === 0) break;
+        carry += decoder.decode(buf.subarray(0, n), { stream: true });
+        for (;;) {
+          const m = /\r\n|\n|\r/.exec(carry);
+          if (!m) break;
+          const end = m.index + m[0].length;
+          await onLine(carry.slice(0, end));
+          carry = carry.slice(end);
+        }
+      }
+      carry += decoder.decode();
+      if (carry) await onLine(carry);
+    } finally {
+      fs.closeSync(fd);
+    }
+    return count;
+  }
+
+  if (__isHttpSource(sourceLabel)) {
+    const body = await __openHttpTextStream(sourceLabel);
+    const rl = readline.createInterface({ input: body, crlfDelay: Infinity });
+    for await (const line of rl) await onLine(line + '\n');
+    return count;
+  }
+
+  const text = __readInputSourceSync(sourceLabel);
+  for (const line of text.match(/.*(?:\r\n|\n|\r)|.+$/g) || []) await onLine(line);
+  return count;
+}
+
+
+async function runStreamMessagesMode(sourceLabels, { rdfMode, storeName = null, storePath = null, storeClear = false } = {}) {
   const ordinarySourceLabels = [];
   const messageSourceLabels = [];
 
@@ -5922,40 +6014,49 @@ async function runStreamMessagesMode(sourceLabels, { rdfMode }) {
     }
   }
 
-  const fullIriPrefixes = new PrefixEnv({});
-  for (const messageSourceLabel of messageSourceLabels) {
-    try {
-      await __forEachRdfMessageChunk(messageSourceLabel, ({ messageIndex, chunk, directives }) => {
-        const messageText = buildSingleMessageReplayDocument({
-          sourceLabel: messageSourceLabel,
-          messageIndex,
-          chunk,
-          directives,
-        });
-        let messageDoc;
-        try {
-          messageDoc = parseN3Text(messageText, {
-            baseIri: `${__sourceLabelToBaseIri(messageSourceLabel)}#message-${messageIndex}`,
-            label: `${messageSourceLabel}#message-${messageIndex}`,
-            keepSourceArtifacts: false,
-            sourceLocations: false,
-            rdf: false,
-          });
-        } catch (e) {
-          if (e && e.name === 'N3SyntaxError') {
-            console.error(formatN3SyntaxError(e, messageText, `${messageSourceLabel}#message-${messageIndex}`));
-            process.exit(1);
-          }
-          throw e;
-        }
+  const store = await createCliStore({ storeName, storePath, storeClear });
+  let pendingStoreWrites = Promise.resolve();
 
-        const merged = mergeParsedDocuments(programSources.concat([messageDoc]));
-        runParsedDocumentOnce(merged, { rdfMode, outputPrefixes: fullIriPrefixes });
-      });
-    } catch (e) {
-      console.error(`Error streaming RDF Message Log ${JSON.stringify(messageSourceLabel)}: ${e && e.message ? e.message : String(e)}`);
-      process.exit(1);
+  const fullIriPrefixes = new PrefixEnv({});
+  try {
+    for (const messageSourceLabel of messageSourceLabels) {
+      try {
+        await __forEachRdfMessageChunk(messageSourceLabel, ({ messageIndex, chunk, directives }) => {
+          const messageText = buildSingleMessageReplayDocument({
+            sourceLabel: messageSourceLabel,
+            messageIndex,
+            chunk,
+            directives,
+          });
+          let messageDoc;
+          try {
+            messageDoc = parseN3Text(messageText, {
+              baseIri: `${__sourceLabelToBaseIri(messageSourceLabel)}#message-${messageIndex}`,
+              label: `${messageSourceLabel}#message-${messageIndex}`,
+              keepSourceArtifacts: false,
+              sourceLocations: false,
+              rdf: false,
+            });
+          } catch (e) {
+            if (e && e.name === 'N3SyntaxError') {
+              console.error(formatN3SyntaxError(e, messageText, `${messageSourceLabel}#message-${messageIndex}`));
+              process.exit(1);
+            }
+            throw e;
+          }
+
+          const merged = mergeParsedDocuments(programSources.concat([messageDoc]));
+          const result = runParsedDocumentOnce(merged, { rdfMode, outputPrefixes: fullIriPrefixes });
+          if (store) pendingStoreWrites = pendingStoreWrites.then(() => persistRunResultToStore(store, result));
+        });
+      } catch (e) {
+        console.error(`Error streaming RDF Message Log ${JSON.stringify(messageSourceLabel)}: ${e && e.message ? e.message : String(e)}`);
+        process.exit(1);
+      }
     }
+    await pendingStoreWrites;
+  } finally {
+    if (store && typeof store.close === 'function') await store.close();
   }
 }
 
@@ -6091,10 +6192,6 @@ async function main() {
 
 
   if (streamMessagesMode) {
-    if (storeName) {
-      console.error('Error: --store cannot be combined with --stream-messages yet.');
-      process.exit(1);
-    }
     if (!rdfMode) {
       console.error('Error: --stream-messages requires -r/--rdf.');
       process.exit(1);
@@ -6130,15 +6227,92 @@ async function main() {
     }
   }
 
-  const sourceLabels = useImplicitStdin ? ['<stdin>'] : positional.map((item) => (item === '-' ? '<stdin>' : item));
+  let sourceLabels = useImplicitStdin ? ['<stdin>'] : positional.map((item) => (item === '-' ? '<stdin>' : item));
   if (sourceLabels.filter((item) => item === '<stdin>').length > 1) {
     console.error('Error: stdin can only be used once.');
     process.exit(1);
   }
 
   if (streamMessagesMode) {
-    await runStreamMessagesMode(sourceLabels, { rdfMode });
+    await runStreamMessagesMode(sourceLabels, { rdfMode, storeName, storePath, storeClear });
     return;
+  }
+
+  if (storeName && rdfMode) {
+    const lineBasedSources = sourceLabels.filter(sourceLooksLikeLineBasedRdf);
+    if (lineBasedSources.length) {
+      if (showAst) {
+        console.error('Error: line-based --store ingestion cannot be combined with --ast.');
+        process.exit(1);
+      }
+      if (streamMode) {
+        console.error('Error: line-based --store ingestion cannot be combined with --stream.');
+        process.exit(1);
+      }
+      if (engine.getProofCommentsEnabled()) {
+        console.error('Error: line-based --store ingestion currently does not support proof output.');
+        process.exit(1);
+      }
+
+      const store = await createCliStore({ storeName, storePath, storeClear });
+      try {
+        for (const sourceLabel of lineBasedSources) {
+          try {
+            await ingestLineBasedRdfSourceToStore(sourceLabel, store, { rdfMode });
+          } catch (e) {
+            console.error(`Error streaming RDF source ${JSON.stringify(sourceLabel)}: ${e && e.message ? e.message : String(e)}`);
+            process.exit(1);
+          }
+        }
+
+        sourceLabels = sourceLabels.filter((sourceLabel) => !sourceLooksLikeLineBasedRdf(sourceLabel));
+        if (!sourceLabels.length) return;
+
+        const parsedRuleSources = [];
+        for (const sourceLabel of sourceLabels) {
+          let text;
+          try {
+            text = __readInputSourceSync(sourceLabel);
+          } catch (e) {
+            if (sourceLabel === '<stdin>') console.error(`Error reading stdin: ${e.message}`);
+            else console.error(`Error reading source ${JSON.stringify(sourceLabel)}: ${e.message}`);
+            process.exit(1);
+          }
+
+          try {
+            parsedRuleSources.push(
+              parseN3Text(text, {
+                baseIri: __sourceLabelToBaseIri(sourceLabel),
+                label: sourceLabel,
+                collectUsedPrefixes: false,
+                keepSourceArtifacts: false,
+                sourceLocations: false,
+                rdf: rdfMode,
+              }),
+            );
+          } catch (e) {
+            if (e && e.name === 'N3SyntaxError') {
+              console.error(formatN3SyntaxError(e, text, sourceLabel));
+              process.exit(1);
+            }
+            throw e;
+          }
+        }
+
+        const mergedRuleDocument = mergeParsedDocuments(parsedRuleSources);
+        const result = await engine.runStoreBacked(mergedRuleDocument, store, { rdf: rdfMode });
+        const outTriples = result.queryMode ? result.queryTriples || [] : (result.derived || []).map((df) => df.fact);
+        if (result.queryMode) {
+          const bodyText = engine.prettyPrintQueryTriples(outTriples, result.prefixes);
+          if (bodyText) process.stdout.write(String(bodyText).replace(/\s*$/g, '') + '\n');
+        } else {
+          for (const tr of outTriples) console.log(engine.tripleToRdfCompatible(tr, result.prefixes));
+        }
+        return;
+      } finally {
+        if (store && typeof store.close === 'function') await store.close();
+      }
+    }
   }
 
   const parsedSources = [];
@@ -6997,7 +7171,7 @@ const trace = require('./trace');
 const { deterministicSkolemIdFromKey } = require('./skolem');
 
 const deref = require('./deref');
-const { createFactStore, collectStore, MemoryFactStore, PersistentFactStore } = require('./store');
+const { createFactStore, collectStore, MemoryFactStore, PersistentFactStore, tripleToStoreKey } = require('./store');
 
 const hasOwn = Object.prototype.hasOwnProperty;
 
@@ -10704,6 +10878,164 @@ async function __parseRunAsyncInput(input, opts) {
   });
 }
 
+function __storePatternTerm(t, subst) {
+  const applied = applySubstTerm(t, subst || __emptySubst());
+  return containsVarTerm(applied) ? null : applied;
+}
+
+function __mergeStoreSubst(base, delta) {
+  let out = base;
+  for (const k of Object.keys(delta || {})) {
+    const v = delta[k];
+    if (Object.prototype.hasOwnProperty.call(out, k)) {
+      if (!termsEqual(out[k], v)) return null;
+    } else {
+      if (out === base) out = __cloneSubst(base);
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
+async function __proveGoalsAgainstStore(goals, subst, store, backRules, localFacts, depth, varGen, opts = {}) {
+  if (!Array.isArray(goals) || goals.length === 0) return [subst || __emptySubst()];
+  if (depth > 64) return [];
+
+  const goal0 = applySubstTriple(goals[0], subst || __emptySubst());
+  const rest = goals.slice(1);
+  const out = [];
+
+  if (isBuiltinPred(goal0.p)) {
+    const deltas = evalBuiltin(goal0, __emptySubst(), localFacts || [], backRules || [], depth, varGen, undefined);
+    for (const delta of deltas) {
+      const nextSubst = __mergeStoreSubst(subst || __emptySubst(), delta);
+      if (nextSubst === null) continue;
+      out.push(...await __proveGoalsAgainstStore(rest, nextSubst, store, backRules, localFacts, depth + 1, varGen, opts));
+      if (opts.maxResults && out.length >= opts.maxResults) return out.slice(0, opts.maxResults);
+    }
+    return out;
+  }
+
+  // Backward rules are kept in memory; they may call back into the persistent
+  // fact store for their own premises.
+  if (goal0.p instanceof Iri && Array.isArray(backRules) && backRules.length) {
+    ensureBackRuleIndexes(backRules);
+    const candRules = (backRules.__byHeadPred.get(goal0.p.__tid) || []).concat(backRules.__wildHeadPred || []);
+    for (const r of candRules) {
+      if (!r || !Array.isArray(r.conclusion) || r.conclusion.length !== 1) continue;
+      const rStd = standardizeRule(r, varGen);
+      const head = rStd.conclusion[0];
+      const s2 = unifyTriple(head, goal0, subst || __emptySubst());
+      if (s2 === null) continue;
+      const newGoals = (rStd.premise || []).concat(rest);
+      out.push(...await __proveGoalsAgainstStore(newGoals, s2, store, backRules, localFacts, depth + 1, varGen, opts));
+      if (opts.maxResults && out.length >= opts.maxResults) return out.slice(0, opts.maxResults);
+    }
+  }
+
+  const sPat = __storePatternTerm(goal0.s, subst || __emptySubst());
+  const pPat = __storePatternTerm(goal0.p, subst || __emptySubst());
+  const oPat = __storePatternTerm(goal0.o, subst || __emptySubst());
+
+  for await (const fact of store.match(sPat, pPat, oPat)) {
+    const s2 = unifyTriple(goal0, fact, subst || __emptySubst());
+    if (s2 === null) continue;
+    out.push(...await __proveGoalsAgainstStore(rest, s2, store, backRules, localFacts, depth + 1, varGen, opts));
+    if (opts.maxResults && out.length >= opts.maxResults) return out.slice(0, opts.maxResults);
+  }
+
+  return out;
+}
+
+async function runStoreBacked(input, store, opts = {}) {
+  const parsed = parseN3SourceList(input, {
+    baseIri: opts.baseIri || null,
+    rdf: !!opts.rdf,
+    sourceLocations: !!opts.proof,
+  }) || input;
+
+  const prefixes = parsed.prefixes;
+  const triples = parsed.triples || [];
+  const frules = parsed.frules || [];
+  const brules = parsed.brules || [];
+  const qrules = parsed.logQueryRules || [];
+
+  materializeRdfLists(triples, frules.concat(qrules || []), brules);
+  await store.batchAdd(triples, 'explicit');
+
+  const derived = [];
+  const derivedKeys = new Set();
+  const varGen = [0];
+  const maxIterations = Number.isInteger(opts.maxIterations) && opts.maxIterations > 0 ? opts.maxIterations : 1024;
+
+  for (let iteration = 0; iteration < maxIterations; iteration += 1) {
+    let changed = false;
+    for (let ruleIndex = 0; ruleIndex < frules.length; ruleIndex += 1) {
+      const r = frules[ruleIndex];
+      if (!r || r.isFuse || r.__dynamicConclusionTerm) continue;
+      __prepareForwardRule(r);
+      const solutions = await __proveGoalsAgainstStore(r.premise || [], __emptySubst(), store, brules, triples, 0, varGen, {});
+      for (const subst of solutions) {
+        for (const cpat of r.conclusion || []) {
+          const fact = applySubstTriple(cpat, subst);
+          if (!isGroundTriple(fact)) continue;
+          if (await store.add(fact, 'inferred')) {
+            const df = makeDerivedRecord(fact, r, (r.premise || []).map((p) => applySubstTriple(p, subst)), subst, false);
+            const key = tripleToStoreKey(fact);
+            if (!derivedKeys.has(key)) {
+              derivedKeys.add(key);
+              derived.push(df);
+            }
+            changed = true;
+          }
+        }
+      }
+    }
+    if (!changed) break;
+  }
+
+  let queryTriples = [];
+  const queryDerived = [];
+  if (qrules.length) {
+    for (const r of qrules) {
+      const solutions = await __proveGoalsAgainstStore(r.premise || [], __emptySubst(), store, brules, triples, 0, varGen, {});
+      for (const subst of solutions) {
+        for (const cpat of r.conclusion || []) {
+          const fact = applySubstTriple(cpat, subst);
+          if (!isGroundTriple(fact)) continue;
+          queryTriples.push(fact);
+          queryDerived.push(makeDerivedRecord(fact, r, (r.premise || []).map((p) => applySubstTriple(p, subst)), subst, false));
+        }
+      }
+    }
+  }
+
+  if (queryTriples.length) {
+    const seen = new Set();
+    queryTriples = queryTriples.filter((tr) => {
+      const key = tripleToStoreKey(tr);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  return {
+    prefixes,
+    facts: [],
+    derived,
+    queryMode: !!qrules.length,
+    queryTriples,
+    queryDerived,
+    closureN3: qrules.length
+      ? prettyPrintQueryTriples(queryTriples, prefixes)
+      : derived.map((df) => (opts.rdf ? tripleToRdfCompatible(df.fact, prefixes) : tripleToN3(df.fact, prefixes))).join('\n'),
+    store,
+    storeBacked: true,
+  };
+}
+
+
 function __withoutStoreOptions(opts) {
   const out = { ...(opts || {}) };
   delete out.store;
@@ -10898,6 +11230,7 @@ function setTracePrefixes(v) {
 module.exports = {
   reasonStream,
   runAsync,
+  runStoreBacked,
   reasonRdfJs,
   collectLogQueryConclusions,
   forwardChainAndCollectLogQueryConclusions,
@@ -17705,7 +18038,10 @@ class ClassicLevelKv {
     const classic = __dynamicRequire('classic-level');
     const ClassicLevel = classic && (classic.ClassicLevel || classic.Level || classic.default);
     if (!ClassicLevel) throw new Error('classic-level is not installed');
-    this.db = new ClassicLevel(location, { valueEncoding: 'json' });
+    const fs = __dynamicRequire('node:fs');
+    const path = __dynamicRequire('node:path');
+    if (fs && path) fs.mkdirSync(path.dirname(location), { recursive: true });
+    this.db = new ClassicLevel(location, { valueEncoding: 'json', createIfMissing: true, errorIfExists: false });
     this.opened = false;
   }
 

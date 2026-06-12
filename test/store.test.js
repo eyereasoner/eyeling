@@ -4,11 +4,15 @@
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const cp = require('node:child_process');
 
 const { pass, failResult, info } = require('./report');
 const { Iri, Triple } = require('../lib/prelude');
 const { createFactStore } = require('../lib/store');
 const { runAsync } = require('../index.js');
+
+const root = path.resolve(__dirname, '..');
+const eyelingJsPath = path.join(root, 'eyeling.js');
 
 const EX = 'http://example.org/';
 const a = new Iri(EX + 'a');
@@ -110,6 +114,31 @@ const tests = [
         } finally {
           if (second.store) await second.store.close();
         }
+      } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: 'CLI auto-creates stores and streams line-based RDF into them',
+    fn: async () => {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'eyeling-cli-store-'));
+      try {
+        const facts = path.join(dir, 'facts.nt');
+        const rules = path.join(dir, 'rules.n3');
+        fs.writeFileSync(facts, '<http://example.org/a> <http://example.org/p> <http://example.org/b> .\n', 'utf8');
+        fs.writeFileSync(
+          rules,
+          '@prefix : <http://example.org/> .\n{ ?s :p ?o } => { ?s :q ?o } .\n',
+          'utf8',
+        );
+        const r = cp.spawnSync(
+          process.execPath,
+          [eyelingJsPath, '-r', '--store', 'auto-created', '--store-path', path.join(dir, 'store'), facts, rules],
+          { cwd: root, encoding: 'utf8', maxBuffer: 5 * 1024 * 1024 },
+        );
+        if (r.status !== 0) throw new Error(`eyeling failed:\nSTDOUT:\n${r.stdout}\nSTDERR:\n${r.stderr}`);
+        if (!r.stdout.includes(':a :q :b .')) throw new Error(`expected streamed store inference, got:\n${r.stdout}`);
       } finally {
         fs.rmSync(dir, { recursive: true, force: true });
       }

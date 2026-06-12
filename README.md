@@ -454,7 +454,7 @@ await runAsync(input, {
 });
 ```
 
-Persistent stores use a term dictionary plus `spo`, `pos`, and `osp` triple indexes. Exact lookup and all subject/predicate/object bound-pattern scans are available through the `FactStore` API:
+Named persistent stores are created automatically when first opened. Persistent stores use a term dictionary plus `spo`, `pos`, and `osp` triple indexes. Exact lookup and all subject/predicate/object bound-pattern scans are available through the `FactStore` API:
 
 ```js
 const { createFactStore, rdfjs } = require('eyeling');
@@ -482,6 +482,12 @@ eyeling input.n3 --store my-dataset --store-clear
 
 eyeling input.n3 --store my-dataset --store-path ./.eyeling-store
 # Node.js path override
+
+# Stream line-oriented RDF input into a store without reading one giant string.
+eyeling --rdf big.nt --store my-dataset --store-path ./.eyeling-store
+
+# Stream RDF Message Logs one message at a time and persist facts/inferences.
+eyeling --rdf --stream-messages rules.n3 messages.trig --store my-dataset
 ```
 
 ### `reasonRdfJs(input, options)`
@@ -615,6 +621,12 @@ For one-message-at-a-time processing:
 
 ```bash
 eyeling --rdf --stream-messages rules.n3 messages.trig
+```
+
+`--stream-messages` can also be combined with `--store` to create/reuse a named store and persist each message's explicit facts and inferred facts while keeping only one replay message in memory at a time:
+
+```bash
+eyeling --rdf --stream-messages rules.n3 messages.trig --store my-dataset --store-path ./.eyeling-store
 ```
 
 Eyeling materializes a replay view under the `eymsg:` vocabulary:
@@ -1253,7 +1265,7 @@ reasonStream(input, { rdf: true });
 
 ### `--stream-messages` fails immediately
 
-`--stream-messages` requires RDF mode and cannot be combined with `--ast`, `--stream`, or proof output.
+`--stream-messages` requires RDF mode and cannot be combined with `--ast`, `--stream`, or proof output. It can be combined with `--store`.
 
 Use:
 

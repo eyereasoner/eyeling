@@ -318,6 +318,19 @@ const cases = [
     },
   },
   {
+    name: '--stream-messages can persist each message result into a named store',
+    run(tmp) {
+      const rules = path.join(tmp, 'rules.n3');
+      const log = path.join(tmp, 'messages.trig');
+      const storePath = path.join(tmp, 'store');
+      writeScopedPayloadRules(rules);
+      writeBasicMessageLog(log);
+      const out = expectEyelingOk(['-r', '--stream-messages', '--store', 'messages', '--store-path', storePath, '--store-clear', rules, log]);
+      assert.equal(out, 'one\ntwo\nthree\n');
+      assert.ok(fs.existsSync(path.join(storePath, 'messages.json')) || fs.existsSync(path.join(storePath, 'messages')));
+    },
+  },
+  {
     name: '--stream-messages requires RDF mode',
     run(tmp) {
       const rules = path.join(tmp, 'rules.n3');
