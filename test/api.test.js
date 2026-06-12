@@ -896,6 +896,75 @@ bad.:example a bad.:Person.
   },
 
   {
+    name: '12k6 success literal: decimal doubles with omitted fractional digits parse',
+    opt: { proofComments: false },
+    input: `
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:my :value1 4.e2.
+:my :value2 3.e-2.
+:my :value3 2.e+2.
+:my :value4 1.e001.
+
+{
+    :my :value1 4.e2.
+    :my :value2 3.e-2.
+    :my :value3 2.e+2.
+    :my :value4 1.e001.
+}
+=>
+{
+    :result :has :success-literal-34.
+}.
+
+{} => {
+    :test :contains :success-literal-34.
+}.
+
+{
+    :result :has :success-literal-34.
+}
+=>
+{
+    :test :is true.
+}.
+`,
+    expect: [/:result\s+:has\s+:success-literal-34\s*\./, /:test\s+:is\s+true\s*\./],
+  },
+  {
+    name: '12k7 success literal: repeated semicolon separators parse',
+    opt: { proofComments: false },
+    input: `
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:s :p :o ;;;;;;; .
+
+{
+    :s :p :o .
+}
+=>
+{
+    :result :has :success-literal-35.
+}.
+
+{} => {
+    :test :contains :success-literal-35.
+}.
+
+{
+    :result :has :success-literal-35.
+}
+=>
+{
+    :test :is true.
+}.
+`,
+    expect: [/:result\s+:has\s+:success-literal-35\s*\./, /:test\s+:is\s+true\s*\./],
+  },
+
+  {
     name: '12l regression: IRIREF \\u escape decodes before log:uri comparison (mismatch stays falsey)',
     opt: { proofComments: false },
     input: String.raw`

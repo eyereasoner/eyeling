@@ -13886,12 +13886,21 @@ function lex(inputText, opts = {}) {
           numChars.push(chars[i]);
           i++;
         }
-        if (i < n && chars[i] === '.' && i + 1 < n && isAsciiDigit(chars[i + 1])) {
-          numChars.push('.');
-          i++;
-          while (i < n && isAsciiDigit(chars[i])) {
-            numChars.push(chars[i]);
+        if (i < n && chars[i] === '.') {
+          const next = i + 1 < n ? chars[i + 1] : null;
+          let exponentAfterDot = false;
+          if (next === 'e' || next === 'E') {
+            let j = i + 2;
+            if (j < n && (chars[j] === '+' || chars[j] === '-')) j++;
+            exponentAfterDot = j < n && isAsciiDigit(chars[j]);
+          }
+          if (isAsciiDigit(next) || exponentAfterDot) {
+            numChars.push('.');
             i++;
+            while (i < n && isAsciiDigit(chars[i])) {
+              numChars.push(chars[i]);
+              i++;
+            }
           }
         }
       }
@@ -15211,7 +15220,7 @@ class Parser {
       }
 
       if (this.peek().typ === 'Semicolon') {
-        this.next();
+        while (this.peek().typ === 'Semicolon') this.next();
         if (this.peek().typ === closingTyp) break;
         continue;
       }
@@ -15338,7 +15347,7 @@ class Parser {
       }
 
       if (this.peek().typ === 'Semicolon') {
-        this.next();
+        while (this.peek().typ === 'Semicolon') this.next();
         if (this.peek().typ === 'Dot') break;
         continue;
       }
