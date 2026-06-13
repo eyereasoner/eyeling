@@ -1,0 +1,6 @@
+@prefix ex: <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+{ ?s a ex:AllowedItem . }
+log:query
+{ ?s a ex:AllowedItem . } .

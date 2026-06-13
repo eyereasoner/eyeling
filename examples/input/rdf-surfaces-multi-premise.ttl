@@ -1,0 +1,13 @@
+# eyeling-options: --rdf-surfaces
+@prefix ex: <http://example.org/> .
+
+ex:case123 ex:hasSymptom ex:Fever .
+ex:case123 ex:hasExposure ex:Travel .
+
+%not[ _:x
+_:x ex:hasSymptom ex:Fever .
+_:x ex:hasExposure ex:Travel .
+%not[
+_:x a ex:PriorityCase .
+%]
+%]

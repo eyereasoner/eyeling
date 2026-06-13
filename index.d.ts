@@ -169,6 +169,8 @@ declare module 'eyeling' {
     store?: string | StoreOptions;
     storePath?: string;
     storeClear?: boolean;
+    rdf?: boolean;
+    rdfSurfaces?: boolean;
   }
 
   export interface BuiltinRegistrationContext {
@@ -191,6 +193,8 @@ declare module 'eyeling' {
     includeInputFactsInClosure?: boolean;
     enforceHttps?: boolean;
     rdfjs?: boolean;
+    rdf?: boolean;
+    rdfSurfaces?: boolean;
     dataFactory?: RdfJsDataFactory | null;
     skipUnsupportedRdfJs?: boolean;
     builtinModules?: string | string[];

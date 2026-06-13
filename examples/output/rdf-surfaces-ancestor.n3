@@ -1,0 +1,5 @@
+@prefix ex: <http://example.org/> .
+
+ex:ann ex:ancestor ex:bob .
+ex:bob ex:ancestor ex:cat .
+ex:ann ex:ancestor ex:cat .

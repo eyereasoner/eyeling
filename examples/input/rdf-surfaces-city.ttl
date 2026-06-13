@@ -1,0 +1,11 @@
+# eyeling-options: --rdf-surfaces
+@prefix ex: <http://example.org/> .
+
+ex:Brussels a ex:City .
+
+%not[ _:x
+_:x a ex:City .
+%not[
+_:x a ex:HumanCommunity .
+%]
+%]

@@ -1,0 +1,17 @@
+# eyeling-options: --rdf-surfaces
+@prefix ex: <http://example.org/> .
+
+ex:box ex:contains ex:item42 .
+ex:item42 a ex:AllowedItem .
+
+%not[ _:x
+%not[ _:y
+_:x ex:contains _:y .
+%not[
+_:y a ex:AllowedItem .
+%]
+%]
+%not[
+_:x a ex:AllowedContainer .
+%]
+%]

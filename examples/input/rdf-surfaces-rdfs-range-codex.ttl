@@ -1,0 +1,18 @@
+# eyeling-options: --rdf-surfaces
+@prefix ex: <http://example.org/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+ex:parent rdfs:range ex:Person .
+ex:alice ex:parent ex:bob .
+
+%not[ _:p _:c
+_:p rdfs:range _:c .
+%not[
+%not[ _:s _:o
+_:s _:p _:o .
+%not[
+_:o a _:c .
+%]
+%]
+%]
+%]

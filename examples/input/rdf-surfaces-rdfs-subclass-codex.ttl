@@ -1,0 +1,18 @@
+# eyeling-options: --rdf-surfaces
+@prefix ex: <http://example.org/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+ex:City rdfs:subClassOf ex:HumanCommunity .
+ex:Brussels a ex:City .
+
+%not[ _:c _:d
+_:c rdfs:subClassOf _:d .
+%not[
+%not[ _:x
+_:x a _:c .
+%not[
+_:x a _:d .
+%]
+%]
+%]
+%]

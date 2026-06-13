@@ -1,0 +1,3 @@
+@prefix ex: <http://example.org/> .
+
+ex:case123 a ex:PriorityCase .

@@ -40,7 +40,8 @@ function reason(opt = {}, input = '') {
     else args.push('--no-proof-comments');
   }
 
-  if (opt.rdf) args.push('--rdf');
+  if (opt.rdf || opt.rdfSurfaces) args.push('--rdf');
+  if (opt.rdfSurfaces) args.push('--rdf-surfaces');
 
   if (typeof opt.store === 'string' && opt.store) args.push('--store', opt.store);
   else if (opt.store && typeof opt.store === 'object') {

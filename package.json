@@ -38,11 +38,14 @@
     "node": ">=18"
   },
   "scripts": {
-    "prebuild": "eslint . --fix",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "build": "node tools/bundle.js",
     "test:packlist": "node test/packlist.test.js",
-    "test:api": "node test/api.test.js && node test/stream_messages.test.js",
+    "test:api": "node test/api.test.js && node test/stream_messages.test.js && node test/rdf_surfaces.test.js",
+    "test:rdf-surfaces": "node test/rdf_surfaces.test.js",
     "test:builtins": "node test/builtins.test.js",
+    "test:store": "node test/store.test.js",
     "test:examples": "node test/examples.test.js",
     "test:examples:proof": "node test/examples.test.js --proof-only",
     "test:stream-messages": "node test/stream_messages.test.js",
@@ -58,10 +61,10 @@
     "test": "npm run test:api && npm run test:builtins && npm run test:store && npm run test:examples && npm run test:examples:proof && npm run test:manifest && npm run test:rdf12 && npm run test:playground",
     "posttest": "npm run test:package",
     "preversion": "npm test",
-    "postversion": "git push origin HEAD --follow-tags",
-    "test:store": "node test/store.test.js"
+    "postversion": "git push origin HEAD --follow-tags"
   },
   "devDependencies": {
+    "eslint": "^9.0.0",
     "rdf-test-suite": "^2.1.4"
   },
   "exports": {
