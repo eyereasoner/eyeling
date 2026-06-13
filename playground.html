@@ -1209,7 +1209,13 @@
         let outputMarkdownLinkBaseUrl = '';
 
         function effectiveRdfSurfacesMode() {
-          return !!((rdfSurfacesCheckbox && rdfSurfacesCheckbox.checked) || backgroundKnowledgeRdfSurfacesMode || editorRdfSurfacesMode);
+          return !!(
+            (rdfSurfacesCheckbox && rdfSurfacesCheckbox.checked) ||
+            backgroundKnowledgeRdfSurfacesMode ||
+            editorRdfSurfacesMode ||
+            textDeclaresRdfSurfaces(backgroundKnowledgeText) ||
+            textDeclaresRdfSurfaces(editor.getValue())
+          );
         }
 
         function effectiveRdfMode() {
@@ -4130,7 +4136,7 @@ const batch = [];
           try {
             const stem = parseRepositoryExampleStem(n3Url);
             if (!stem) return null;
-            const extension = EXAMPLE_RDF_SURFACES_INPUT_STEMS.has(stem)
+            const extension = stem.startsWith('rdf-surfaces-')
               ? '.ttl'
               : EXAMPLE_TRIG_INPUT_STEMS.has(stem)
                 ? '.trig'
@@ -4165,7 +4171,8 @@ const batch = [];
         }
 
         function textDeclaresRdfSurfaces(text) {
-          return /(?:^|[\r\n])\s*#\s*eyeling-options:\s*.*--rdf-surfaces\b/i.test(String(text || ''));
+          const value = String(text || '');
+          return /(?:^|[\r\n])\s*#\s*eyeling-options:\s*.*--rdf-surfaces\b/i.test(value) || /(^|\s)%not\[/i.test(value);
         }
 
         function urlLooksRdfSurfacesInput(url) {
