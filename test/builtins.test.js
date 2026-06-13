@@ -7,6 +7,7 @@ const { detail, failResult, info, pass } = require('./report');
 const builtins = require('../lib/builtins');
 require('../lib/engine');
 const { reason } = require('../index');
+const { reasonStream } = require('../lib/engine');
 
 const expectedApiKeys = [
   'registerBuiltin',
@@ -216,6 +217,41 @@ const cases = [
       assert.match(out, /:canonical :token "a b"\^\^xsd:token \./);
       assert.match(out, /:canonical :dateTime "2026-06-10T12:00:00Z"\^\^xsd:dateTime \./);
       assert.match(out, /:canonical :midnightRollover "2027-01-01T00:00:00Z"\^\^xsd:dateTime \./);
+    },
+  },
+  {
+    name: 'custom builtin API hides internal blank-node variable prefix',
+    run() {
+      const iri = 'http://example.org/custom#format';
+      builtins.unregisterBuiltin(iri);
+      builtins.registerBuiltin(iri, ({ goal, subst, api }) => {
+        const formatted = api.termToN3(goal.s);
+        assert.doesNotMatch(formatted, /\uE000eyeling_b/);
+        assert.match(formatted, /\?_b1/);
+        const next = api.unifyTerm(goal.o, api.internLiteral(JSON.stringify(formatted)), subst);
+        return next === null ? [] : [next];
+      });
+
+      try {
+        const out = reasonStream(`
+@prefix : <http://example.org/> .
+@prefix cb: <http://example.org/custom#> .
+
+{
+  { [] a ?class } cb:format ?format .
+}
+=>
+{
+  :result :is ?format .
+} .
+`, { proof: false, includeInputFactsInClosure: false }).closureN3;
+        assert.doesNotMatch(out, /\uE000eyeling_b/);
+        assert.match(out, /:result :is/);
+        assert.match(out, /\?_b1/);
+        assert.match(out, /\?class/);
+      } finally {
+        builtins.unregisterBuiltin(iri);
+      }
     },
   },
 

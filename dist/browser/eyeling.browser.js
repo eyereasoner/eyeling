@@ -41,6 +41,8 @@ const {
   PrefixEnv,
   literalParts,
   copyQuotedGraphMetadata,
+  isInternalBlankVarName,
+  internalBlankVarSuffix,
 } = require('./prelude');
 
 const { decodeN3StringEscapes } = require('./lexer');
@@ -143,6 +145,127 @@ function __assertBuiltinHandlerResult(iri, out) {
   }
 }
 
+function collectVarNamesInTerm(t, acc) {
+  if (t instanceof Var) {
+    acc.add(t.name);
+    return;
+  }
+  if (t instanceof ListTerm) {
+    for (const e of t.elems) collectVarNamesInTerm(e, acc);
+    return;
+  }
+  if (t instanceof OpenListTerm) {
+    for (const e of t.prefix) collectVarNamesInTerm(e, acc);
+    acc.add(t.tailVar);
+    return;
+  }
+  if (t instanceof GraphTerm) {
+    for (const tr of t.triples) collectVarNamesInTriple(tr, acc);
+  }
+}
+
+function collectVarNamesInTriple(tr, acc) {
+  collectVarNamesInTerm(tr.s, acc);
+  collectVarNamesInTerm(tr.p, acc);
+  collectVarNamesInTerm(tr.o, acc);
+}
+
+function cloneSubstWithMappedKeys(subst, keyMap, externalizeTerm) {
+  const out = Object.create(null);
+  for (const [key, val] of Object.entries(subst || {})) {
+    out[keyMap.get(key) || key] = externalizeTerm ? externalizeTerm(val) : val;
+  }
+  return out;
+}
+
+function hasInternalBlankVarInSubst(subst) {
+  for (const key of Object.keys(subst || {})) {
+    if (isInternalBlankVarName(key)) return true;
+  }
+  return false;
+}
+
+function makeCustomBuiltinPublicBridge(goal, subst) {
+  const used = new Set(Object.keys(subst || {}).filter((name) => !isInternalBlankVarName(name)));
+  collectVarNamesInTriple(goal, used);
+  for (const name of Array.from(used)) {
+    if (isInternalBlankVarName(name)) used.delete(name);
+  }
+
+  const internalNames = new Set();
+  collectVarNamesInTriple(goal, internalNames);
+  for (const key of Object.keys(subst || {})) internalNames.add(key);
+  for (const name of Array.from(internalNames)) {
+    if (!isInternalBlankVarName(name)) internalNames.delete(name);
+  }
+
+  if (internalNames.size === 0 && !hasInternalBlankVarInSubst(subst)) return null;
+
+  const internalToPublic = new Map();
+  const publicToInternal = new Map();
+
+  function allocatePublicName(internalName) {
+    const suffix = internalBlankVarSuffix(internalName) || String(internalToPublic.size + 1);
+    const base = /^[$A-Za-z_][0-9A-Za-z_]*$/u.test(`_b${suffix}`) ? `_b${suffix}` : `_b${internalToPublic.size + 1}`;
+    let name = base;
+    let n = 1;
+    while (used.has(name) || publicToInternal.has(name)) {
+      n += 1;
+      name = `${base}_${n}`;
+    }
+    used.add(name);
+    internalToPublic.set(internalName, name);
+    publicToInternal.set(name, internalName);
+    return name;
+  }
+
+  for (const name of internalNames) allocatePublicName(name);
+
+  function externalName(name) {
+    if (!isInternalBlankVarName(name)) return name;
+    return internalToPublic.get(name) || allocatePublicName(name);
+  }
+
+  function externalizeTerm(t) {
+    if (t instanceof Var) return new Var(externalName(t.name));
+    if (t instanceof ListTerm) return new ListTerm(t.elems.map(externalizeTerm));
+    if (t instanceof OpenListTerm) return new OpenListTerm(t.prefix.map(externalizeTerm), externalName(t.tailVar));
+    if (t instanceof GraphTerm) {
+      const triples = t.triples.map((tr) => new Triple(externalizeTerm(tr.s), externalizeTerm(tr.p), externalizeTerm(tr.o)));
+      return copyQuotedGraphMetadata(t, new GraphTerm(triples));
+    }
+    return t;
+  }
+
+  function internalizeTerm(t) {
+    if (t instanceof Var) return new Var(publicToInternal.get(t.name) || t.name);
+    if (t instanceof ListTerm) return new ListTerm(t.elems.map(internalizeTerm));
+    if (t instanceof OpenListTerm) return new OpenListTerm(t.prefix.map(internalizeTerm), publicToInternal.get(t.tailVar) || t.tailVar);
+    if (t instanceof GraphTerm) {
+      const triples = t.triples.map((tr) => new Triple(internalizeTerm(tr.s), internalizeTerm(tr.p), internalizeTerm(tr.o)));
+      return copyQuotedGraphMetadata(t, new GraphTerm(triples));
+    }
+    return t;
+  }
+
+  function internalizeDelta(delta) {
+    const out = Object.create(null);
+    for (const [key, val] of Object.entries(delta || {})) {
+      out[publicToInternal.get(key) || key] = internalizeTerm(val);
+    }
+    return out;
+  }
+
+  return {
+    goal: new Triple(externalizeTerm(goal.s), externalizeTerm(goal.p), externalizeTerm(goal.o)),
+    subst: cloneSubstWithMappedKeys(subst, internalToPublic, externalizeTerm),
+    internalizeResults(out) {
+      if (out == null) return out;
+      return out.map(internalizeDelta);
+    },
+  };
+}
+
 function apiTermToN3(term, prefixes = PrefixEnv.newDefault()) {
   return termToN3(term, prefixes || PrefixEnv.newDefault());
 }
@@ -242,10 +365,11 @@ function __evalRegisteredBuiltin(pv, goal, subst, facts, backRules, depth, varGe
   const handler = __customBuiltinHandlers.get(pv);
   if (typeof handler !== 'function') return null;
 
+  const bridge = makeCustomBuiltinPublicBridge(goal, subst);
   const ctx = {
     iri: pv,
-    goal,
-    subst,
+    goal: bridge ? bridge.goal : goal,
+    subst: bridge ? bridge.subst : subst,
     facts,
     backRules,
     depth,
@@ -255,7 +379,8 @@ function __evalRegisteredBuiltin(pv, goal, subst, facts, backRules, depth, varGe
   };
 
   try {
-    const out = handler(ctx);
+    const raw = handler(ctx);
+    const out = bridge ? bridge.internalizeResults(raw) : raw;
     if (out == null) return [];
     __assertBuiltinHandlerResult(pv, out);
     return out;
@@ -10995,7 +11120,7 @@ async function runStoreBacked(input, store, opts = {}) {
   }
 
   let queryTriples = [];
-  const queryDerived = [];
+  let queryDerived = [];
   if (qrules.length) {
     for (const r of qrules) {
       const solutions = await __proveGoalsAgainstStore(r.premise || [], __emptySubst(), store, brules, triples, 0, varGen, {});
@@ -15468,6 +15593,21 @@ const DT_NS = 'https://eyereasoner.github.io/eyeling/datatype#';
 const SKOLEM_NS = 'https://eyereasoner.github.io/.well-known/genid/';
 const RDF_JSON_DT = RDF_NS + 'JSON';
 
+// Private rule-lifting variable prefix used for blank nodes that appear in
+// rule-body patterns.  The prefix is intentionally not spellable in N3 input,
+// but public extension APIs should present these variables with stable,
+// ordinary names and translate them back internally.
+const INTERNAL_BLANK_VAR_PREFIX = '\uE000eyeling_b';
+
+function isInternalBlankVarName(name) {
+  return typeof name === 'string' && name.startsWith(INTERNAL_BLANK_VAR_PREFIX);
+}
+
+function internalBlankVarSuffix(name) {
+  if (!isInternalBlankVarName(name)) return '';
+  return name.slice(INTERNAL_BLANK_VAR_PREFIX.length);
+}
+
 function parseUriReferenceForResolution(uri) {
   // RFC 3986 Appendix B-style component parser, with the scheme tightened to
   // the RFC scheme grammar. Capturing delimiter presence matters: `?` with an
@@ -16171,6 +16311,9 @@ module.exports = {
   DT_NS,
   SKOLEM_NS,
   RDF_JSON_DT,
+  INTERNAL_BLANK_VAR_PREFIX,
+  isInternalBlankVarName,
+  internalBlankVarSuffix,
   resolveIriRef,
   literalParts,
   normalizeLiteralForTid,
@@ -17645,6 +17788,7 @@ const {
   GraphTerm,
   Triple,
   copyQuotedGraphMetadata,
+  INTERNAL_BLANK_VAR_PREFIX,
 } = require('./prelude');
 
 function liftBlankRuleVars(premise, conclusion) {
@@ -17660,10 +17804,8 @@ function liftBlankRuleVars(premise, conclusion) {
   // These variables are implementation details used to correlate one blank
   // node across the lifted rule body.  Their names must not be spellable by
   // user input; otherwise a user variable such as ?_b1 can capture the
-  // lifted blank node and leak it into the rule head.  U+E000 is a private-use
-  // code point and is not accepted by the lexer as part of a variable name.
-  const INTERNAL_BLANK_VAR_PREFIX = '\uE000eyeling_b';
-
+  // lifted blank node and leak it into the rule head.  The public custom
+  // builtin API maps these names back to ordinary-looking ?_bN variables.
   function blankToVar(label) {
     let name = mapping[label];
     if (name === undefined) {
