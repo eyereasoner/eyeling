@@ -1035,6 +1035,10 @@
               <input id="rdf-mode" type="checkbox" />
               RDF/TriG mode (-r)
             </label>
+            <label class="toggle" title="Enable RDF Surfaces syntax (--rdf-surfaces); also enables RDF/TriG mode">
+              <input id="rdf-surfaces-mode" type="checkbox" />
+              RDF Surfaces (--rdf-surfaces)
+            </label>
             <label class="toggle" title="Process RDF Message Logs one message at a time under RDF/TriG mode (--stream-messages)">
               <input id="stream-messages" type="checkbox" />
               Stream RDF Messages (--stream-messages)
@@ -1154,6 +1158,7 @@
         const editorLabel = document.getElementById('n3-editor-label');
         const proofCheckbox = document.getElementById('proof-comments');
         const rdfModeCheckbox = document.getElementById('rdf-mode');
+        const rdfSurfacesCheckbox = document.getElementById('rdf-surfaces-mode');
         const streamMessagesCheckbox = document.getElementById('stream-messages');
         const enforceHttpsCheckbox = document.getElementById('enforce-https');
         const copyShareLinkBtn = document.getElementById('copy-share-link-btn');
@@ -1194,15 +1199,21 @@
         let backgroundKnowledgeSource = '';
         let backgroundBuiltinModules = [];
         let backgroundKnowledgeRdfMode = false;
+        let backgroundKnowledgeRdfSurfacesMode = false;
         let backgroundKnowledgeAuto = false;
         let editorBuiltinModules = [];
         let editorSourceText = '';
         let editorSourceUrl = '';
         let editorRdfMode = false;
+        let editorRdfSurfacesMode = false;
         let outputMarkdownLinkBaseUrl = '';
 
+        function effectiveRdfSurfacesMode() {
+          return !!((rdfSurfacesCheckbox && rdfSurfacesCheckbox.checked) || backgroundKnowledgeRdfSurfacesMode || editorRdfSurfacesMode);
+        }
+
         function effectiveRdfMode() {
-          return !!((rdfModeCheckbox && rdfModeCheckbox.checked) || backgroundKnowledgeRdfMode || editorRdfMode);
+          return !!((rdfModeCheckbox && rdfModeCheckbox.checked) || effectiveRdfSurfacesMode() || backgroundKnowledgeRdfMode || editorRdfMode);
         }
 
         function effectiveStreamMessagesMode() {
@@ -1211,6 +1222,11 @@
 
         function enableRdfModeToggle() {
           if (rdfModeCheckbox) rdfModeCheckbox.checked = true;
+        }
+
+        function enableRdfSurfacesModeToggle() {
+          if (rdfSurfacesCheckbox) rdfSurfacesCheckbox.checked = true;
+          enableRdfModeToggle();
         }
 
         function syncStreamMessagesControls() {
@@ -1233,7 +1249,7 @@
 
         // --- Unified background streaming runner (shared with the Streaming demo tab) ---
         // Exposes: window.__eyelingUnified.startStreamRun({
-        //   program, enforceHttps, proof, rdf, streamMessages, messageLogUrl,
+        //   program, enforceHttps, proof, rdf, rdfSurfaces, streamMessages, messageLogUrl,
         //   onBatch(derivedTriples[]),
         //   onRenderedText(text, countTriples),
         //   onStdout(text), onStderr(text),
@@ -1371,7 +1387,8 @@
             const sourceMap = args && args.sourceMap ? args.sourceMap : null;
             const enforceHttps = !!(args && args.enforceHttps);
             const proof = !!(args && args.proof);
-            const rdf = !!(args && args.rdf);
+            const rdfSurfaces = !!(args && args.rdfSurfaces);
+            const rdf = !!(args && (args.rdf || args.rdfSurfaces));
             const streamMessages = !!(args && args.streamMessages);
             const messageLogUrl = args && args.messageLogUrl != null ? String(args.messageLogUrl).trim() : '';
             const onBatch = args && typeof args.onBatch === 'function' ? args.onBatch : null;
@@ -1453,6 +1470,8 @@
                   window.eyeling.reasonStream(program, {
                     enforceHttps,
                     proof,
+                    rdf,
+                    rdfSurfaces,
                     onDerived: ({ triple }) => {
                       batch.push(triple);
                       flush(false);
@@ -1644,7 +1663,8 @@
               const sourceMap = msg.sourceMap || null;
               const enforceHttps = !!msg.enforceHttps;
               const proof = !!msg.proof;
-              const rdf = !!msg.rdf;
+              const rdfSurfaces = !!msg.rdfSurfaces;
+              const rdf = !!(msg.rdf || msg.rdfSurfaces);
               const streamMessages = !!msg.streamMessages;
               const messageLogUrl = String(msg.messageLogUrl || '').trim();
               const builtinModules = Array.isArray(msg.builtinModules) ? msg.builtinModules : [];
@@ -2001,7 +2021,7 @@ const batch = [];
                     return;
                   }
 
-                  const toks = lex(program, { rdf });
+                  const toks = lex(program, { rdf, rdfSurfaces });
                   const parser = new Parser(toks);
                   let prefixes, triples, frules, brules, qrules;
                   [prefixes, triples, frules, brules, qrules] = parser.parseDocument();
@@ -2024,7 +2044,7 @@ const batch = [];
                       throw new Error("Eyeling API not available (eyeling.reasonStream missing).");
                     }
 
-                    const res = self.eyeling.reasonStream(program, { enforceHttps, proof: true, rdf, sourceLabel: "playground" });
+                    const res = self.eyeling.reasonStream(program, { enforceHttps, proof: true, rdf, rdfSurfaces, sourceLabel: "playground" });
                     const queryMode = !!(res && res.queryMode);
                     const outDerived = queryMode
                       ? ((res && Array.isArray(res.queryDerived)) ? res.queryDerived : [])
@@ -2042,7 +2062,7 @@ const batch = [];
                       throw new Error("Eyeling API not available (eyeling.reasonStream missing).");
                     }
 
-                    const res = self.eyeling.reasonStream(program, { enforceHttps, proof: false, rdf, sourceLabel: "playground" });
+                    const res = self.eyeling.reasonStream(program, { enforceHttps, proof: false, rdf, rdfSurfaces, sourceLabel: "playground" });
                     const pfx = res && res.prefixes ? res.prefixes : prefixes;
                     const queryMode = !!(res && res.queryMode);
                     const outDerived = queryMode
@@ -3478,7 +3498,16 @@ const batch = [];
           rdfModeCheckbox.addEventListener('change', () => {
             setShareGistOption('');
             if (!rdfModeCheckbox.checked && streamMessagesCheckbox) streamMessagesCheckbox.checked = false;
+            if (!rdfModeCheckbox.checked && rdfSurfacesCheckbox) rdfSurfacesCheckbox.checked = false;
             syncStreamMessagesControls();
+            savePlaygroundState();
+          });
+        }
+
+        if (rdfSurfacesCheckbox) {
+          rdfSurfacesCheckbox.addEventListener('change', () => {
+            setShareGistOption('');
+            if (rdfSurfacesCheckbox.checked) enableRdfModeToggle();
             savePlaygroundState();
           });
         }
@@ -3713,6 +3742,7 @@ const batch = [];
             sourceMap: effectiveProgram.sourceMap,
             builtinModules: effectiveProgram.builtinModules || [],
             rdf: !!effectiveProgram.rdf,
+            rdfSurfaces: !!effectiveProgram.rdfSurfaces,
             streamMessages,
             messageLogUrl,
             enforceHttps: enforceHttpsCheckbox.checked,
@@ -4017,6 +4047,19 @@ const batch = [];
           'smoke-arithmetic',
           'triple-terms',
         ]);
+        const EXAMPLE_RDF_SURFACES_INPUT_STEMS = new Set([
+          'rdf-surfaces-city',
+          'rdf-surfaces-range',
+          'rdf-surfaces-all-values-from',
+          'rdf-surfaces-all-values-from-reverse',
+          'rdf-surfaces-domain',
+          'rdf-surfaces-property-chain',
+          'rdf-surfaces-ancestor',
+          'rdf-surfaces-multi-premise',
+          'rdf-surfaces-rdfs-range-codex',
+          'rdf-surfaces-rdfs-subclass-codex',
+          'rdf-surfaces-owl-all-values-from-codex',
+        ]);
 
         function parseRepositoryExampleStem(n3Url) {
           try {
@@ -4086,9 +4129,15 @@ const batch = [];
         function deriveExampleTrigInputUrl(n3Url) {
           try {
             const stem = parseRepositoryExampleStem(n3Url);
-            if (!stem || !EXAMPLE_TRIG_INPUT_STEMS.has(stem)) return null;
+            if (!stem) return null;
+            const extension = EXAMPLE_RDF_SURFACES_INPUT_STEMS.has(stem)
+              ? '.ttl'
+              : EXAMPLE_TRIG_INPUT_STEMS.has(stem)
+                ? '.trig'
+                : '';
+            if (!extension) return null;
             const u = new URL(n3Url, window.location.href);
-            u.pathname = u.pathname.replace(/\/examples\/([^/]+)\.n3$/i, '/examples/input/$1.trig');
+            u.pathname = u.pathname.replace(/\/examples\/([^/]+)\.n3$/i, '/examples/input/$1' + extension);
             u.search = '';
             u.hash = '';
             return u.toString();
@@ -4104,9 +4153,27 @@ const batch = [];
             const resp = await fetchReadableUrl(candidate);
             if (!resp.ok) return null;
             const companionUrl = resp.url || candidate;
-            return { url: companionUrl, text: injectBaseDirective(await resp.text(), companionUrl) };
+            const rawText = await resp.text();
+            return {
+              url: companionUrl,
+              text: injectBaseDirective(rawText, companionUrl),
+              rdfSurfaces: urlLooksRdfSurfacesInput(companionUrl) || textDeclaresRdfSurfaces(rawText),
+            };
           } catch (_) {
             return null;
+          }
+        }
+
+        function textDeclaresRdfSurfaces(text) {
+          return /(?:^|[\r\n])\s*#\s*eyeling-options:\s*.*--rdf-surfaces\b/i.test(String(text || ''));
+        }
+
+        function urlLooksRdfSurfacesInput(url) {
+          try {
+            const pathname = new URL(url, window.location.href).pathname;
+            return /\/examples\/input\/rdf-surfaces-[^/]+\.ttl$/i.test(pathname);
+          } catch (_) {
+            return /\/examples\/input\/rdf-surfaces-[^/?#]+\.ttl(?:$|[?#])/i.test(String(url || ''));
           }
         }
 
@@ -4126,13 +4193,17 @@ const batch = [];
               ? backgroundKnowledgeSource + ' + ' + companion.url
               : companion.url;
             backgroundKnowledgeRdfMode = true;
+            backgroundKnowledgeRdfSurfacesMode = backgroundKnowledgeRdfSurfacesMode || !!companion.rdfSurfaces;
+            if (companion.rdfSurfaces) enableRdfSurfacesModeToggle();
           } else {
             backgroundKnowledgeText = companion.text;
             backgroundKnowledgeSource = companion.url;
             backgroundBuiltinModules = [];
             backgroundKnowledgeRdfMode = true;
+            backgroundKnowledgeRdfSurfacesMode = !!companion.rdfSurfaces;
             backgroundKnowledgeAuto = true;
-            enableRdfModeToggle();
+            if (companion.rdfSurfaces) enableRdfSurfacesModeToggle();
+            else enableRdfModeToggle();
           }
           updateBackgroundStatus();
           return true;
@@ -4178,6 +4249,7 @@ const batch = [];
           backgroundKnowledgeSource = '';
           backgroundBuiltinModules = [];
           backgroundKnowledgeRdfMode = false;
+          backgroundKnowledgeRdfSurfacesMode = false;
           backgroundKnowledgeAuto = false;
           updateBackgroundStatus();
         }
@@ -4200,6 +4272,7 @@ const batch = [];
               program: editorText,
               builtinModules: dedupeBuiltinModules(editorBuiltinModules),
               rdf: effectiveRdfMode(),
+              rdfSurfaces: effectiveRdfSurfacesMode(),
               sourceMap: {
                 hasBackground: false,
                 backgroundStartLine: 0,
@@ -4216,6 +4289,7 @@ const batch = [];
               program: backgroundKnowledgeText,
               builtinModules: dedupeBuiltinModules(backgroundBuiltinModules),
               rdf: effectiveRdfMode(),
+              rdfSurfaces: effectiveRdfSurfacesMode(),
               sourceMap: {
                 hasBackground: true,
                 backgroundStartLine: 1,
@@ -4243,6 +4317,7 @@ const batch = [];
             program: parts.join('\n'),
             builtinModules: dedupeBuiltinModules(backgroundBuiltinModules.concat(editorBuiltinModules)),
             rdf: effectiveRdfMode(),
+            rdfSurfaces: effectiveRdfSurfacesMode(),
             sourceMap: {
               hasBackground: true,
               backgroundStartLine,
@@ -4321,7 +4396,9 @@ const batch = [];
               backgroundKnowledgeSource = finalUrl;
               backgroundBuiltinModules = companionBuiltins;
               backgroundKnowledgeRdfMode = urlLooksRdfCompatibleInput(finalUrl);
-              if (backgroundKnowledgeRdfMode) enableRdfModeToggle();
+              backgroundKnowledgeRdfSurfacesMode = urlLooksRdfSurfacesInput(finalUrl) || textDeclaresRdfSurfaces(text);
+              if (backgroundKnowledgeRdfSurfacesMode) enableRdfSurfacesModeToggle();
+              else if (backgroundKnowledgeRdfMode) enableRdfModeToggle();
               backgroundKnowledgeAuto = false;
               updateBackgroundStatus();
               statusEl.textContent = companionBuiltins.length
@@ -4343,9 +4420,12 @@ const batch = [];
               editorSourceText = text;
               editorSourceUrl = finalUrl;
               editorRdfMode = urlLooksRdfCompatibleInput(finalUrl);
-              if (editorRdfMode) enableRdfModeToggle();
-              else if (!backgroundKnowledgeRdfMode && !effectiveStreamMessagesMode() && rdfModeCheckbox) {
+              editorRdfSurfacesMode = urlLooksRdfSurfacesInput(finalUrl) || textDeclaresRdfSurfaces(text);
+              if (editorRdfSurfacesMode) enableRdfSurfacesModeToggle();
+              else if (editorRdfMode) enableRdfModeToggle();
+              else if (!backgroundKnowledgeRdfMode && !backgroundKnowledgeRdfSurfacesMode && !effectiveStreamMessagesMode() && rdfModeCheckbox) {
                 rdfModeCheckbox.checked = false;
+                if (rdfSurfacesCheckbox) rdfSurfacesCheckbox.checked = false;
               }
               syncStreamMessagesControls();
               const mh = currentMaxHeights();
