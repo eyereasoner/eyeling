@@ -973,7 +973,7 @@
                 <option value="">Loading examples...</option>
               </select>
             </div>
-            <span class="hint">Examples are listed from the <a href="https://github.com/eyereasoner/eyeling/blob/main/examples/">GitHub repository</a>.</span>
+            <span class="hint">Examples are listed from the <a href="https://github.com/eyereasoner/eyeling/blob/main/examples/">GitHub repository</a>, with bundled RDF Surfaces examples available locally.</span>
           </div>
 
           <details id="advanced-config-panel" class="config-panel">
@@ -4038,9 +4038,22 @@ const batch = [];
           }
         }
 
+        function appendMissingBundledRdfSurfacesExamples(exampleUrls) {
+          const out = Array.isArray(exampleUrls) ? exampleUrls.slice() : [];
+          const stems = new Set(out.map(parseRepositoryExampleStem).filter(Boolean));
+          for (const stem of BUNDLED_RDF_SURFACES_EXAMPLE_STEMS) {
+            if (stems.has(stem)) continue;
+            try {
+              out.push(new URL('examples/' + encodeURIComponent(stem) + '.n3', window.location.href).toString());
+              stems.add(stem);
+            } catch (_) {}
+          }
+          return out;
+        }
+
         async function initExampleDropdown() {
           if (!exampleSelect) return;
-          setExampleSelectOptions(await discoverExampleUrls());
+          setExampleSelectOptions(appendMissingBundledRdfSurfacesExamples(await discoverExampleUrls()));
         }
 
         function dedupeBuiltinModules(modules) {
@@ -4057,6 +4070,23 @@ const batch = [];
         }
 
         const EXAMPLE_BUILTIN_STEMS = new Set(['queens', 'sudoku']);
+        const BUNDLED_RDF_SURFACES_EXAMPLE_STEMS = [
+          'rdf-surfaces-all-values-from',
+          'rdf-surfaces-all-values-from-reverse',
+          'rdf-surfaces-ancestor',
+          'rdf-surfaces-city',
+          'rdf-surfaces-disjunction-elimination',
+          'rdf-surfaces-disjunction-route-filter',
+          'rdf-surfaces-domain',
+          'rdf-surfaces-explicit-disjunction',
+          'rdf-surfaces-multi-premise',
+          'rdf-surfaces-owl-all-values-from-codex',
+          'rdf-surfaces-property-chain',
+          'rdf-surfaces-range',
+          'rdf-surfaces-rdfs-range-codex',
+          'rdf-surfaces-rdfs-subclass-codex',
+          'rdf-surfaces-strong-negation-access',
+        ];
         const EXAMPLE_TRIG_INPUT_STEMS = new Set([
           'annotation',
           'backward-recursion',
