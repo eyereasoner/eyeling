@@ -734,9 +734,13 @@ eyeling --rdf-surfaces examples/input/rdf-surfaces-all-values-from-reverse.ttl e
 eyeling --rdf-surfaces examples/input/rdf-surfaces-rdfs-range-codex.ttl examples/rdf-surfaces-rdfs-range-codex.n3
 eyeling --rdf-surfaces examples/input/rdf-surfaces-rdfs-subclass-codex.ttl examples/rdf-surfaces-rdfs-subclass-codex.n3
 eyeling --rdf-surfaces examples/input/rdf-surfaces-owl-all-values-from-codex.ttl examples/rdf-surfaces-owl-all-values-from-codex.n3
+eyeling --rdf-surfaces examples/input/rdf-surfaces-strong-negation-access.ttl examples/rdf-surfaces-strong-negation-access.n3
+eyeling --rdf-surfaces examples/input/rdf-surfaces-disjunction-route-filter.ttl examples/rdf-surfaces-disjunction-route-filter.n3
+eyeling --rdf-surfaces examples/input/rdf-surfaces-explicit-disjunction.ttl examples/rdf-surfaces-explicit-disjunction.n3
+eyeling --rdf-surfaces examples/input/rdf-surfaces-disjunction-elimination.ttl examples/rdf-surfaces-disjunction-elimination.n3
 ```
 
-The additional examples show ordinary Horn-style RDF Surface patterns beyond the exact slide-33 abbreviations: subject typing (`rdf-surfaces-domain`), a two-hop property chain (`rdf-surfaces-property-chain`), recursive transitive closure (`rdf-surfaces-ancestor`), a conjunctive classification rule (`rdf-surfaces-multi-premise`), and codex-style RDFS/OWL rule generation (`rdf-surfaces-rdfs-range-codex`, `rdf-surfaces-rdfs-subclass-codex`, `rdf-surfaces-owl-all-values-from-codex`).
+The additional examples show ordinary Horn-style RDF Surface patterns beyond the exact slide-33 abbreviations: subject typing (`rdf-surfaces-domain`), a two-hop property chain (`rdf-surfaces-property-chain`), recursive transitive closure (`rdf-surfaces-ancestor`), a conjunctive classification rule (`rdf-surfaces-multi-premise`), and codex-style RDFS/OWL rule generation (`rdf-surfaces-rdfs-range-codex`, `rdf-surfaces-rdfs-subclass-codex`, `rdf-surfaces-owl-all-values-from-codex`). More challenging examples keep the engine unchanged and add N3 helper rules on top: `rdf-surfaces-strong-negation-access` uses a top-level negative surface as a strong-negation fuse for an access policy, `rdf-surfaces-disjunction-route-filter` represents a disjunction as explicit candidate routes and filters one with a strong-negation policy, `rdf-surfaces-explicit-disjunction` puts the disjunction directly in the RDF Surface file with one outer negative surface and two inner alternatives, and `rdf-surfaces-disjunction-elimination` uses `log:forAllIn` to derive a conclusion only when every option in a disjunction implies it.
 
 ---
 

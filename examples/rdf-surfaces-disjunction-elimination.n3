@@ -1,0 +1,13 @@
+@prefix ex: <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+# Disjunction elimination as N3 rules: if every disjunctive option implies the
+# same candidate conclusion, then the whole disjunction entails that conclusion.
+{ ?choice ex:candidateConclusion ?conclusion .
+  ( { ?choice ex:option ?option . }
+    { ?option ex:implies ?conclusion . } ) log:forAllIn 1 .
+} => { ?choice ex:disjunctionEntails ?conclusion . } .
+
+{ ?choice ex:disjunctionEntails ?conclusion . }
+log:query
+{ ?choice ex:disjunctionEntails ?conclusion . } .

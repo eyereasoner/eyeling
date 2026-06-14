@@ -1,0 +1,24 @@
+@prefix ex: <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+# Extra N3 rules encode a disjunction as explicit alternatives. This does not
+# assert both routes; it derives candidate routes that can be filtered.
+{ ?shipment a ex:ExpressShipment . }
+=> {
+  ?shipment ex:possibleRoute ex:Rail .
+  ?shipment ex:possibleRoute ex:Drone .
+} .
+
+# Mirror the strong-negation policy into a filterable denial fact before any
+# candidate route is selected as viable.
+{ ?shipment ex:destination ex:CityCenter .
+  ?shipment ex:possibleRoute ex:Drone .
+} => { ?shipment ex:stronglyNegatedRoute ex:Drone . } .
+
+{ ?shipment ex:possibleRoute ?route .
+  1 log:notIncludes { ?shipment ex:stronglyNegatedRoute ?route . } .
+} => { ?shipment ex:viableRoute ?route . } .
+
+{ ?shipment ex:viableRoute ?route . }
+log:query
+{ ?shipment ex:viableRoute ?route . } .

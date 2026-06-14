@@ -1,0 +1,11 @@
+# eyeling-options: --rdf-surfaces
+@prefix ex: <http://example.org/> .
+
+ex:shipment17 a ex:ExpressShipment .
+ex:shipment17 ex:destination ex:CityCenter .
+
+# Strong negation: a drone route to the city center is explicitly denied.
+%not[ _:shipment
+_:shipment ex:route ex:Drone .
+_:shipment ex:destination ex:CityCenter .
+%]

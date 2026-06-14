@@ -1,0 +1,16 @@
+# eyeling-options: --rdf-surfaces
+@prefix ex: <http://example.org/> .
+
+ex:caseSplit ex:option ex:ManualReview .
+ex:caseSplit ex:option ex:AutomaticHold .
+ex:caseSplit ex:candidateConclusion ex:NeedsHumanAttention .
+ex:caseSplit ex:candidateConclusion ex:NoAction .
+
+ex:ManualReview ex:implies ex:NeedsHumanAttention .
+ex:AutomaticHold ex:implies ex:NeedsHumanAttention .
+ex:ManualReview ex:implies ex:HasTicket .
+
+# Strong negation: this case split must not collapse to "no action".
+%not[
+ex:caseSplit ex:disjunctionEntails ex:NoAction .
+%]

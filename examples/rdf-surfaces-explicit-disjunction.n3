@@ -1,0 +1,16 @@
+@prefix ex: <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+# Extra N3 rules interpret the explicit surface disjunction as candidate
+# alternatives and select the alternatives that are not strongly negated.
+{ ?shipment ex:destination ex:CityCenter .
+  ?shipment ex:possibleRoute ex:Drone .
+} => { ?shipment ex:stronglyNegatedRoute ex:Drone . } .
+
+{ ?shipment ex:possibleRoute ?route .
+  1 log:notIncludes { ?shipment ex:stronglyNegatedRoute ?route . } .
+} => { ?shipment ex:selectedRoute ?route . } .
+
+{ ?shipment ex:selectedRoute ?route . }
+log:query
+{ ?shipment ex:selectedRoute ?route . } .

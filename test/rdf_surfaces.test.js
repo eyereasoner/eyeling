@@ -132,6 +132,16 @@ const exampleCases = [
     'rdf-surfaces-owl-all-values-from-codex',
     '@prefix ex: <http://example.org/> .\n\nex:item43 a ex:AllowedItem .\nex:item42 a ex:AllowedItem .\nex:box a ex:AllowedContainer .\nex:crate a ex:AllowedContainer .',
   ],
+  [
+    'rdf-surfaces-strong-negation-access',
+    '@prefix ex: <http://example.org/> .\n\nex:bob ex:decision ex:Permit .\nex:alice ex:decision ex:Deny .',
+  ],
+  ['rdf-surfaces-disjunction-route-filter', '@prefix ex: <http://example.org/> .\n\nex:shipment17 ex:viableRoute ex:Rail .'],
+  ['rdf-surfaces-explicit-disjunction', '@prefix ex: <http://example.org/> .\n\nex:shipment23 ex:selectedRoute ex:Rail .'],
+  [
+    'rdf-surfaces-disjunction-elimination',
+    '@prefix ex: <http://example.org/> .\n\nex:caseSplit ex:disjunctionEntails ex:NeedsHumanAttention .',
+  ],
 ];
 
 let seq = 0;
