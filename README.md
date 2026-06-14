@@ -292,7 +292,6 @@ eyeling --rdf --stream-messages rules.n3 messages.trig
 | `-h`, `--help` | Show help and exit. |
 | `-p`, `--proof` | Enable proof explanations. |
 | `-r`, `--rdf` | Enable RDF/TriG input and output compatibility. |
-| `--rdf-surfaces` | Enable RDF Surfaces `%not[ ... %]` syntax. Implies `--rdf`. |
 | `--stream-messages` | Process RDF Message Logs one message at a time under `--rdf`. |
 | `-s`, `--super-restricted` | Disable all built-ins except implication handling. |
 | `-t`, `--stream` | Stream derived triples as soon as they are derived. |
@@ -357,7 +356,6 @@ Useful options:
 |---|---|
 | `proof` | Include proof explanations when true. Defaults to false for API output. |
 | `rdf` | Enable RDF/TriG compatibility mode. |
-| `rdfSurfaces` | Enable RDF Surfaces syntax. Implies RDF compatibility in the bundled CLI path. |
 | `args` | Extra CLI-style arguments. |
 | `maxBuffer` | Child-process output buffer limit. |
 | `builtinModules` | Custom built-in module path or paths. |
@@ -429,7 +427,6 @@ Useful options:
 | `onDerived` | Callback called for derived or query-selected output. |
 | `enforceHttps` | Apply HTTPS rewriting for dereferencing built-ins. |
 | `rdf` | Enable RDF/TriG compatibility mode. |
-| `rdfSurfaces` | Enable RDF Surfaces syntax. Implies RDF compatibility. |
 | `rdfjs` | Also emit RDF-JS quads where conversion is possible. |
 | `dataFactory` | Custom RDF-JS DataFactory. |
 | `skipUnsupportedRdfJs` | Skip N3-only terms when producing RDF-JS quads. |
@@ -590,161 +587,6 @@ In RDF mode, Eyeling accepts and serializes RDF-compatible forms such as:
 - RDF Message Log replay syntax under the message-log mode described below.
 
 RDF 1.2 triple terms require explicit RDF compatibility mode. This protects ordinary N3 users from accidentally mixing parser modes.
-
-### RDF Surfaces
-
-RDF Surfaces are enabled with `--rdf-surfaces` on the CLI or `{ rdfSurfaces: true }` in the API. The option implies RDF compatibility mode. The syntax follows the BLOGIC text convention from Pat Hayes' ISWC 2009 slides: `%not[` and `%]` surface parentheses plus explicit blank-node binding graffiti at the beginning of a surface. Because RDF Surfaces may now combine the surface extension with RDF 1.2 TriG features, the examples use `.trig` for RDF Surface input files and start with `VERSION "1.2-surfaces"`.
-
-The examples keep RDF Surface input separate from Eyeling queries:
-
-- `examples/input/<name>.trig` contains RDF 1.2 TriG input, RDF Surface rules, and the `VERSION "1.2-surfaces"` header.
-- `examples/<name>.n3` contains only the corresponding `log:query`.
-
-Use separate non-indented lines for triples and surface closes. Put only newly bound blank marks on the surface-opening line; marks already bound by an outer surface are reused in inner triples and are not repeated after `%not[`.
-
-```trig
-VERSION "1.2-surfaces"
-@prefix ex: <http://example.org/> .
-
-ex:Brussels a ex:City .
-
-%not[ _:x
-_:x a ex:City .
-%not[
-_:x a ex:HumanCommunity .
-%]
-%]
-```
-
-The slide-32 shape above is normalized as:
-
-```n3
-{ ?x a ex:City . }
-=>
-{ ?x a ex:HumanCommunity . } .
-```
-
-The first slide-33 abbreviation, range, is written as:
-
-```trig
-%not[ _:x _:y
-_:x ex:parent _:y .
-%not[
-_:y a ex:Person .
-%]
-%]
-```
-
-and behaves like:
-
-```n3
-{ ?x ex:parent ?y . }
-=>
-{ ?y a ex:Person . } .
-```
-
-Eyeling also recognizes codex-style surfaces that introduce rules from RDF/OWL vocabulary facts. For example, this `rdfs:range` codex:
-
-```trig
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-
-%not[ _:p _:c
-_:p rdfs:range _:c .
-%not[
-%not[ _:s _:o
-_:s _:p _:o .
-%not[
-_:o a _:c .
-%]
-%]
-%]
-%]
-```
-
-is normalized to the Horn rule shape:
-
-```n3
-{
-  ?p rdfs:range ?c .
-  ?s ?p ?o .
-}
-=>
-{ ?o a ?c . } .
-```
-
-The slide-33 `owl:allValuesFrom` codex is supported in both directions:
-
-```trig
-@prefix owl: <http://www.w3.org/2002/07/owl#> .
-
-%not[ _:a _:b _:c
-_:a owl:onProperty _:b .
-_:a owl:allValuesFrom _:c .
-%not[
-%not[ _:x _:y
-_:x a _:a .
-_:x _:b _:y .
-%not[
-_:y a _:c .
-%]
-%]
-%not[ _:x
-%not[ _:y
-_:x _:b _:y .
-%not[
-_:y a _:c .
-%]
-%]
-%not[
-_:x a _:a .
-%]
-%]
-%]
-%]
-```
-
-The forward part derives filler types. The reverse part is compiled into a data-driven scoped check using `log:forAllIn`: for each resource with at least one property value, if all those values are known to have the target class, infer the restricted class.
-
-A top-level negative surface without a nested negative child is treated as an inference fuse:
-
-```trig
-%not[ _:x
-_:x a ex:Impossible .
-%]
-```
-
-which behaves like:
-
-```n3
-{ ?x a ex:Impossible . } => false .
-```
-
-The implementation is intentionally conservative: it supports the practical Horn fragment used by the included RDF Surfaces examples, including slide-32 implication, slide-33 range/allValuesFrom codices, nested codices that flatten to Horn rules, scoped `log:forAllIn` reverse checks, and top-level negative-surface fuses. It does not claim to be a complete first-order RDF Surfaces theorem prover.
-
-Run the included examples:
-
-```bash
-eyeling --rdf-surfaces examples/input/rdf-surfaces-city.trig examples/rdf-surfaces-city.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-range.trig examples/rdf-surfaces-range.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-domain.trig examples/rdf-surfaces-domain.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-property-chain.trig examples/rdf-surfaces-property-chain.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-ancestor.trig examples/rdf-surfaces-ancestor.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-multi-premise.trig examples/rdf-surfaces-multi-premise.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-all-values-from.trig examples/rdf-surfaces-all-values-from.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-all-values-from-reverse.trig examples/rdf-surfaces-all-values-from-reverse.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-rdfs-range-codex.trig examples/rdf-surfaces-rdfs-range-codex.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-rdfs-subclass-codex.trig examples/rdf-surfaces-rdfs-subclass-codex.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-rdf12-named-graph.trig examples/rdf-surfaces-rdf12-named-graph.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-rdf12-triple-term.trig examples/rdf-surfaces-rdf12-triple-term.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-rdf12-graph-triple-term.trig examples/rdf-surfaces-rdf12-graph-triple-term.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-owl-all-values-from-codex.trig examples/rdf-surfaces-owl-all-values-from-codex.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-strong-negation-access.trig examples/rdf-surfaces-strong-negation-access.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-disjunction-route-filter.trig examples/rdf-surfaces-disjunction-route-filter.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-explicit-disjunction.trig examples/rdf-surfaces-explicit-disjunction.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-disjunction-elimination.trig examples/rdf-surfaces-disjunction-elimination.n3
-```
-
-The additional examples show ordinary Horn-style RDF Surface patterns beyond the exact slide-33 abbreviations: subject typing (`rdf-surfaces-domain`), a two-hop property chain (`rdf-surfaces-property-chain`), recursive transitive closure (`rdf-surfaces-ancestor`), a conjunctive classification rule (`rdf-surfaces-multi-premise`), codex-style RDFS/OWL rule generation (`rdf-surfaces-rdfs-range-codex`, `rdf-surfaces-rdfs-subclass-codex`, `rdf-surfaces-owl-all-values-from-codex`), and RDF 1.2 inputs with named graphs and triple terms (`rdf-surfaces-rdf12-named-graph`, `rdf-surfaces-rdf12-triple-term`, `rdf-surfaces-rdf12-graph-triple-term`). More challenging examples keep the engine unchanged and add N3 helper rules on top: `rdf-surfaces-strong-negation-access` uses a top-level negative surface as a strong-negation fuse for an access policy, `rdf-surfaces-disjunction-route-filter` represents a disjunction as explicit candidate routes and filters one with a strong-negation policy, `rdf-surfaces-explicit-disjunction` puts the disjunction directly in the RDF Surface file with one outer negative surface and two inner alternatives, and `rdf-surfaces-disjunction-elimination` uses `log:forAllIn` to derive a conclusion only when every option in a disjunction implies it.
 
 ---
 
@@ -1121,7 +963,6 @@ input text / RDF-JS / AST
         │
         ▼
 lib/lexer.js       tokenization and RDF compatibility normalization
-lib/rdf_surfaces.js RDF Surfaces `%not[...%]` normalization
         │
         ▼
 lib/parser.js      N3/TriG-ish parser to internal AST
@@ -1271,7 +1112,6 @@ Package scripts are defined in `package.json`.
 | `npm run test:package` | Verify package-level behavior. |
 | `npm run test:store` | Verify memory and persistent fact-store matching. |
 | `npm run test:rdf12` | Run RDF 1.2 Turtle, N-Triples, N-Quads, and TriG syntax suites. |
-| `npm run test:rdf-surfaces` | Run RDF Surfaces syntax and reasoning checks. |
 | `npm test` | Build and run the full suite. |
 
 ### Recommended local check before committing
@@ -1307,7 +1147,6 @@ The tests exercise:
 - RDF-JS input and output;
 - custom built-ins;
 - RDF 1.2 compatibility mode;
-- RDF Surfaces compatibility mode;
 - RDF Message Log parsing and streaming;
 - package exports and browser playground behavior.
 

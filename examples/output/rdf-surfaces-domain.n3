@@ -1,3 +1,0 @@
-@prefix ex: <http://example.org/> .
-
-ex:alice a ex:Member .

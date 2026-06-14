@@ -1,4 +1,0 @@
-@prefix ex: <http://example.org/> .
-
-ex:bob ex:decision ex:Permit .
-ex:alice ex:decision ex:Deny .

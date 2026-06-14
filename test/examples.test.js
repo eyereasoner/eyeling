@@ -152,27 +152,6 @@ function resolveExampleTrigInput(root, inputFile) {
   return { abs, rel };
 }
 
-function resolveExampleRdfSurfaceInput(root, inputFile) {
-  const stem = path.basename(inputFile, path.extname(inputFile));
-  const rel = path.join('input', `${stem}.trig`);
-  const abs = path.join(root, 'examples', rel);
-  if (!fs.existsSync(abs)) return null;
-  const text = fs.readFileSync(abs, 'utf8');
-  if (!text.includes('%not[')) return null;
-  return { abs, rel };
-}
-
-
-function exampleOptionFlags(sourceText) {
-  const m = String(sourceText || '').match(/^[ \t]*#\s*eyeling-options:\s*(.*?)\s*$/m);
-  if (!m) return [];
-  return m[1].trim().split(/\s+/).filter(Boolean);
-}
-
-function addUniqueFlag(args, flag) {
-  if (!args.includes(flag)) args.push(flag);
-}
-
 function resolveExampleBuiltinPath(root, inputFile) {
   const stem = path.basename(inputFile, path.extname(inputFile));
   const rel = path.join('examples', 'builtin', `${stem}.js`);
@@ -181,13 +160,10 @@ function resolveExampleBuiltinPath(root, inputFile) {
   return { abs, rel };
 }
 
-function runExampleToFile({ root, examplesDir, eyelingJsPath, nodePath, file, generatedPath, proof = false, sourceText = '' }) {
+function runExampleToFile({ root, examplesDir, eyelingJsPath, nodePath, file, generatedPath, proof = false }) {
   const builtin = resolveExampleBuiltinPath(root, file);
   const trigInput = resolveExampleTrigInput(root, file);
-  const rdfSurfaceInput = resolveExampleRdfSurfaceInput(root, file);
-  const optionFlags = exampleOptionFlags(sourceText);
-  const rdfSurfacesMode = !!rdfSurfaceInput || optionFlags.includes('--rdf-surfaces');
-  const rdfMode = !!trigInput || rdfSurfacesMode || optionFlags.includes('--rdf') || optionFlags.includes('-r');
+  const rdfMode = !!trigInput;
   const modeFlag = proof ? '-p' : '-d';
   const outFd = fs.openSync(generatedPath, 'w');
 
@@ -195,12 +171,7 @@ function runExampleToFile({ root, examplesDir, eyelingJsPath, nodePath, file, ge
     if (builtin) {
       const args = [eyelingJsPath, modeFlag];
       if (rdfMode) args.push('-r');
-      for (const flag of optionFlags) addUniqueFlag(args, flag);
-      if (rdfSurfacesMode) addUniqueFlag(args, '--rdf-surfaces');
-      args.push('--builtin');
-      args.push(builtin.rel);
-      if (rdfSurfaceInput) args.push(path.join('examples', rdfSurfaceInput.rel));
-      args.push(path.join('examples', file));
+      args.push('--builtin', builtin.rel, path.join('examples', file));
       if (trigInput) args.push(path.join('examples', trigInput.rel));
       return cp.spawnSync(nodePath, args, {
         cwd: root,
@@ -212,9 +183,6 @@ function runExampleToFile({ root, examplesDir, eyelingJsPath, nodePath, file, ge
 
     const args = [eyelingJsPath, modeFlag];
     if (rdfMode) args.push('-r');
-    for (const flag of optionFlags) addUniqueFlag(args, flag);
-    if (rdfSurfacesMode) addUniqueFlag(args, '--rdf-surfaces');
-    if (rdfSurfaceInput) args.push(rdfSurfaceInput.rel);
     args.push(file);
     if (trigInput) args.push(trigInput.rel);
     return cp.spawnSync(nodePath, args, {
@@ -322,7 +290,7 @@ function main() {
     //   node eyeling.js --builtin examples/builtin/foo.js examples/foo.n3
     // A matching examples/input/<stem>.trig sidecar is external RDF/TriG
     // evidence for this example, so include it and run in -r mode automatically.
-    const r = runExampleToFile({ root, examplesDir, eyelingJsPath, nodePath, file, generatedPath, sourceText: n3Text });
+    const r = runExampleToFile({ root, examplesDir, eyelingJsPath, nodePath, file, generatedPath });
 
     const rc = r.status == null ? 1 : r.status;
 
@@ -390,7 +358,7 @@ function main() {
     const expectedRc = expectedExitCode(n3Text);
     const tmpDir = mkTmpDir();
     const generatedPath = path.join(tmpDir, 'generated.n3');
-    const r = runExampleToFile({ root, examplesDir, eyelingJsPath, nodePath, file, generatedPath, proof: true, sourceText: n3Text });
+    const r = runExampleToFile({ root, examplesDir, eyelingJsPath, nodePath, file, generatedPath, proof: true });
     const rc = r.status == null ? 1 : r.status;
     const ms = Date.now() - start;
 

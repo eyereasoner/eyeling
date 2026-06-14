@@ -1,3 +1,0 @@
-@prefix ex: <http://example.org/> .
-
-ex:claim1 a ex:CityClaim .

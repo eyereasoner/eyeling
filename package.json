@@ -43,7 +43,6 @@
     "build": "node tools/bundle.js",
     "test:packlist": "node test/packlist.test.js",
     "test:api": "node test/api.test.js",
-    "test:rdf-surfaces": "node test/rdf_surfaces.test.js",
     "test:builtins": "node test/builtins.test.js",
     "test:store": "node test/store.test.js",
     "test:examples": "node test/examples.test.js",

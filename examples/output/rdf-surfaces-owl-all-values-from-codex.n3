@@ -1,6 +1,0 @@
-@prefix ex: <http://example.org/> .
-
-ex:item43 a ex:AllowedItem .
-ex:item42 a ex:AllowedItem .
-ex:box a ex:AllowedContainer .
-ex:crate a ex:AllowedContainer .

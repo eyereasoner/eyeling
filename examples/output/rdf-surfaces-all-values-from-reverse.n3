@@ -1,3 +1,0 @@
-@prefix ex: <http://example.org/> .
-
-ex:box a ex:AllowedContainer .

@@ -1,3 +1,0 @@
-@prefix ex: <http://example.org/> .
-
-ex:shipment17 ex:viableRoute ex:Rail .

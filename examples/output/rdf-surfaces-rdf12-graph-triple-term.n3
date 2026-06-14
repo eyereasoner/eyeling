@@ -1,3 +1,0 @@
-@prefix ex: <http://example.org/> .
-
-ex:obs1 a ex:AuditedObservation .

@@ -10,7 +10,6 @@ const sections = [
   ['Packlist checks', 'npm', ['run', 'test:packlist']],
   ['API tests', 'npm', ['run', 'test:api']],
   ['Streaming RDF Messages tests', 'npm', ['run', 'test:stream-messages']],
-  ['RDF Surfaces tests', 'npm', ['run', 'test:rdf-surfaces']],
   ['Builtin contract tests', 'npm', ['run', 'test:builtins']],
   ['Store tests', 'npm', ['run', 'test:store']],
   ['Examples tests', 'npm', ['run', 'test:examples']],

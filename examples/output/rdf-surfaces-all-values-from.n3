@@ -1,3 +1,0 @@
-@prefix ex: <http://example.org/> .
-
-ex:item42 a ex:AllowedItem .
