@@ -4212,6 +4212,9 @@ const batch = [];
           'rdf-surfaces-range',
           'rdf-surfaces-rdfs-range-codex',
           'rdf-surfaces-rdfs-subclass-codex',
+          'rdf-surfaces-rdf12-named-graph',
+          'rdf-surfaces-rdf12-triple-term',
+          'rdf-surfaces-rdf12-graph-triple-term',
           'rdf-surfaces-strong-negation-access',
         ];
         const EXAMPLE_TRIG_INPUT_STEMS = new Set([
@@ -4302,7 +4305,7 @@ const batch = [];
           try {
             const stem = parseRepositoryExampleStem(n3Url);
             if (!stem || (!EXAMPLE_TRIG_INPUT_STEMS.has(stem) && !stem.startsWith('rdf-surfaces-'))) return null;
-            const ext = stem.startsWith('rdf-surfaces-') ? '.ttl' : '.trig';
+            const ext = '.trig';
             const u = new URL(n3Url, window.location.href);
             u.pathname = u.pathname.replace(/\/examples\/([^/]+)\.n3$/i, '/examples/input/$1' + ext);
             u.search = '';
@@ -4324,7 +4327,7 @@ const batch = [];
             return {
               url: companionUrl,
               text: injectBaseDirective(rawText, companionUrl),
-              rdfSurfaces: /(^|\s)%not\[/i.test(rawText) || /\/examples\/input\/rdf-surfaces-[^/]+\.ttl$/i.test(new URL(companionUrl, window.location.href).pathname),
+              rdfSurfaces: /(^|\s)%not\[/i.test(rawText) || /\/examples\/input\/rdf-surfaces-[^/]+\.trig$/i.test(new URL(companionUrl, window.location.href).pathname),
             };
           } catch (_) {
             return null;

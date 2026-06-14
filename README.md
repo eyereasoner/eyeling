@@ -593,16 +593,17 @@ RDF 1.2 triple terms require explicit RDF compatibility mode. This protects ordi
 
 ### RDF Surfaces
 
-RDF Surfaces are enabled with `--rdf-surfaces` on the CLI or `{ rdfSurfaces: true }` in the API. The option implies RDF compatibility mode. The syntax follows the BLOGIC text convention from Pat Hayes' ISWC 2009 slides: `%not[` and `%]` surface parentheses plus explicit blank-node binding graffiti at the beginning of a surface. Because this is Turtle plus the surface extension, the examples use `.ttl` for RDF Surface input files.
+RDF Surfaces are enabled with `--rdf-surfaces` on the CLI or `{ rdfSurfaces: true }` in the API. The option implies RDF compatibility mode. The syntax follows the BLOGIC text convention from Pat Hayes' ISWC 2009 slides: `%not[` and `%]` surface parentheses plus explicit blank-node binding graffiti at the beginning of a surface. Because RDF Surfaces may now combine the surface extension with RDF 1.2 TriG features, the examples use `.trig` for RDF Surface input files and start with `VERSION "1.2-surfaces"`.
 
 The examples keep RDF Surface input separate from Eyeling queries:
 
-- `examples/input/<name>.ttl` contains ordinary RDF triples and RDF Surface rules.
+- `examples/input/<name>.trig` contains RDF 1.2 TriG input, RDF Surface rules, and the `VERSION "1.2-surfaces"` header.
 - `examples/<name>.n3` contains only the corresponding `log:query`.
 
 Use separate non-indented lines for triples and surface closes. Put only newly bound blank marks on the surface-opening line; marks already bound by an outer surface are reused in inner triples and are not repeated after `%not[`.
 
-```turtle
+```trig
+VERSION "1.2-surfaces"
 @prefix ex: <http://example.org/> .
 
 ex:Brussels a ex:City .
@@ -625,7 +626,7 @@ The slide-32 shape above is normalized as:
 
 The first slide-33 abbreviation, range, is written as:
 
-```turtle
+```trig
 %not[ _:x _:y
 _:x ex:parent _:y .
 %not[
@@ -644,7 +645,7 @@ and behaves like:
 
 Eyeling also recognizes codex-style surfaces that introduce rules from RDF/OWL vocabulary facts. For example, this `rdfs:range` codex:
 
-```turtle
+```trig
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
 %not[ _:p _:c
@@ -673,7 +674,7 @@ is normalized to the Horn rule shape:
 
 The slide-33 `owl:allValuesFrom` codex is supported in both directions:
 
-```turtle
+```trig
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 
 %not[ _:a _:b _:c
@@ -706,7 +707,7 @@ The forward part derives filler types. The reverse part is compiled into a data-
 
 A top-level negative surface without a nested negative child is treated as an inference fuse:
 
-```turtle
+```trig
 %not[ _:x
 _:x a ex:Impossible .
 %]
@@ -723,24 +724,27 @@ The implementation is intentionally conservative: it supports the practical Horn
 Run the included examples:
 
 ```bash
-eyeling --rdf-surfaces examples/input/rdf-surfaces-city.ttl examples/rdf-surfaces-city.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-range.ttl examples/rdf-surfaces-range.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-domain.ttl examples/rdf-surfaces-domain.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-property-chain.ttl examples/rdf-surfaces-property-chain.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-ancestor.ttl examples/rdf-surfaces-ancestor.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-multi-premise.ttl examples/rdf-surfaces-multi-premise.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-all-values-from.ttl examples/rdf-surfaces-all-values-from.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-all-values-from-reverse.ttl examples/rdf-surfaces-all-values-from-reverse.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-rdfs-range-codex.ttl examples/rdf-surfaces-rdfs-range-codex.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-rdfs-subclass-codex.ttl examples/rdf-surfaces-rdfs-subclass-codex.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-owl-all-values-from-codex.ttl examples/rdf-surfaces-owl-all-values-from-codex.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-strong-negation-access.ttl examples/rdf-surfaces-strong-negation-access.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-disjunction-route-filter.ttl examples/rdf-surfaces-disjunction-route-filter.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-explicit-disjunction.ttl examples/rdf-surfaces-explicit-disjunction.n3
-eyeling --rdf-surfaces examples/input/rdf-surfaces-disjunction-elimination.ttl examples/rdf-surfaces-disjunction-elimination.n3
+eyeling --rdf-surfaces examples/input/rdf-surfaces-city.trig examples/rdf-surfaces-city.n3
+eyeling --rdf-surfaces examples/input/rdf-surfaces-range.trig examples/rdf-surfaces-range.n3
+eyeling --rdf-surfaces examples/input/rdf-surfaces-domain.trig examples/rdf-surfaces-domain.n3
+eyeling --rdf-surfaces examples/input/rdf-surfaces-property-chain.trig examples/rdf-surfaces-property-chain.n3
+eyeling --rdf-surfaces examples/input/rdf-surfaces-ancestor.trig examples/rdf-surfaces-ancestor.n3
+eyeling --rdf-surfaces examples/input/rdf-surfaces-multi-premise.trig examples/rdf-surfaces-multi-premise.n3
+eyeling --rdf-surfaces examples/input/rdf-surfaces-all-values-from.trig examples/rdf-surfaces-all-values-from.n3
+eyeling --rdf-surfaces examples/input/rdf-surfaces-all-values-from-reverse.trig examples/rdf-surfaces-all-values-from-reverse.n3
+eyeling --rdf-surfaces examples/input/rdf-surfaces-rdfs-range-codex.trig examples/rdf-surfaces-rdfs-range-codex.n3
+eyeling --rdf-surfaces examples/input/rdf-surfaces-rdfs-subclass-codex.trig examples/rdf-surfaces-rdfs-subclass-codex.n3
+eyeling --rdf-surfaces examples/input/rdf-surfaces-rdf12-named-graph.trig examples/rdf-surfaces-rdf12-named-graph.n3
+eyeling --rdf-surfaces examples/input/rdf-surfaces-rdf12-triple-term.trig examples/rdf-surfaces-rdf12-triple-term.n3
+eyeling --rdf-surfaces examples/input/rdf-surfaces-rdf12-graph-triple-term.trig examples/rdf-surfaces-rdf12-graph-triple-term.n3
+eyeling --rdf-surfaces examples/input/rdf-surfaces-owl-all-values-from-codex.trig examples/rdf-surfaces-owl-all-values-from-codex.n3
+eyeling --rdf-surfaces examples/input/rdf-surfaces-strong-negation-access.trig examples/rdf-surfaces-strong-negation-access.n3
+eyeling --rdf-surfaces examples/input/rdf-surfaces-disjunction-route-filter.trig examples/rdf-surfaces-disjunction-route-filter.n3
+eyeling --rdf-surfaces examples/input/rdf-surfaces-explicit-disjunction.trig examples/rdf-surfaces-explicit-disjunction.n3
+eyeling --rdf-surfaces examples/input/rdf-surfaces-disjunction-elimination.trig examples/rdf-surfaces-disjunction-elimination.n3
 ```
 
-The additional examples show ordinary Horn-style RDF Surface patterns beyond the exact slide-33 abbreviations: subject typing (`rdf-surfaces-domain`), a two-hop property chain (`rdf-surfaces-property-chain`), recursive transitive closure (`rdf-surfaces-ancestor`), a conjunctive classification rule (`rdf-surfaces-multi-premise`), and codex-style RDFS/OWL rule generation (`rdf-surfaces-rdfs-range-codex`, `rdf-surfaces-rdfs-subclass-codex`, `rdf-surfaces-owl-all-values-from-codex`). More challenging examples keep the engine unchanged and add N3 helper rules on top: `rdf-surfaces-strong-negation-access` uses a top-level negative surface as a strong-negation fuse for an access policy, `rdf-surfaces-disjunction-route-filter` represents a disjunction as explicit candidate routes and filters one with a strong-negation policy, `rdf-surfaces-explicit-disjunction` puts the disjunction directly in the RDF Surface file with one outer negative surface and two inner alternatives, and `rdf-surfaces-disjunction-elimination` uses `log:forAllIn` to derive a conclusion only when every option in a disjunction implies it.
+The additional examples show ordinary Horn-style RDF Surface patterns beyond the exact slide-33 abbreviations: subject typing (`rdf-surfaces-domain`), a two-hop property chain (`rdf-surfaces-property-chain`), recursive transitive closure (`rdf-surfaces-ancestor`), a conjunctive classification rule (`rdf-surfaces-multi-premise`), codex-style RDFS/OWL rule generation (`rdf-surfaces-rdfs-range-codex`, `rdf-surfaces-rdfs-subclass-codex`, `rdf-surfaces-owl-all-values-from-codex`), and RDF 1.2 inputs with named graphs and triple terms (`rdf-surfaces-rdf12-named-graph`, `rdf-surfaces-rdf12-triple-term`, `rdf-surfaces-rdf12-graph-triple-term`). More challenging examples keep the engine unchanged and add N3 helper rules on top: `rdf-surfaces-strong-negation-access` uses a top-level negative surface as a strong-negation fuse for an access policy, `rdf-surfaces-disjunction-route-filter` represents a disjunction as explicit candidate routes and filters one with a strong-negation policy, `rdf-surfaces-explicit-disjunction` puts the disjunction directly in the RDF Surface file with one outer negative surface and two inner alternatives, and `rdf-surfaces-disjunction-elimination` uses `log:forAllIn` to derive a conclusion only when every option in a disjunction implies it.
 
 ---
 

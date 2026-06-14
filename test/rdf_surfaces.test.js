@@ -6,7 +6,7 @@ const cp = require('node:child_process');
 const path = require('node:path');
 
 const { reason } = require('../index.js');
-const { C, failResult, pass } = require('./report');
+const { C, failResult, formatDuration, info, pass } = require('./report');
 
 const ROOT = path.resolve(__dirname, '..');
 const EYELING = path.join(ROOT, 'eyeling.js');
@@ -22,7 +22,7 @@ function runCli(input, args = ['--rdf-surfaces']) {
 function runExample(name) {
   return cp.spawnSync(
     process.execPath,
-    [EYELING, '--rdf-surfaces', path.join(ROOT, 'examples', 'input', `${name}.ttl`), path.join(ROOT, 'examples', `${name}.n3`)],
+    [EYELING, '--rdf-surfaces', path.join(ROOT, 'examples', 'input', `${name}.trig`), path.join(ROOT, 'examples', `${name}.n3`)],
     { encoding: 'utf8', maxBuffer: 20 * 1024 * 1024 },
   );
 }
@@ -128,6 +128,9 @@ const exampleCases = [
   ['rdf-surfaces-all-values-from-reverse', '@prefix ex: <http://example.org/> .\n\nex:box a ex:AllowedContainer .'],
   ['rdf-surfaces-rdfs-range-codex', '@prefix ex: <http://example.org/> .\n\nex:bob a ex:Person .'],
   ['rdf-surfaces-rdfs-subclass-codex', '@prefix ex: <http://example.org/> .\n\nex:Brussels a ex:HumanCommunity .'],
+  ['rdf-surfaces-rdf12-named-graph', '@prefix ex: <http://example.org/> .\n\nex:Brussels a ex:ReportedCity .'],
+  ['rdf-surfaces-rdf12-triple-term', '@prefix ex: <http://example.org/> .\n\nex:claim1 a ex:CityClaim .'],
+  ['rdf-surfaces-rdf12-graph-triple-term', '@prefix ex: <http://example.org/> .\n\nex:obs1 a ex:AuditedObservation .'],
   [
     'rdf-surfaces-owl-all-values-from-codex',
     '@prefix ex: <http://example.org/> .\n\nex:item43 a ex:AllowedItem .\nex:item42 a ex:AllowedItem .\nex:box a ex:AllowedContainer .\nex:crate a ex:AllowedContainer .',
@@ -143,6 +146,10 @@ const exampleCases = [
     '@prefix ex: <http://example.org/> .\n\nex:caseSplit ex:disjunctionEntails ex:NeedsHumanAttention .',
   ],
 ];
+
+const suiteStart = Date.now();
+
+info('RDF Surfaces tests');
 
 let seq = 0;
 let failed = 0;
@@ -211,4 +218,10 @@ _:x a ex:Impossible .
   }
 }
 
-if (failed) process.exit(1);
+const suiteMs = Date.now() - suiteStart;
+info(`Total elapsed: ${formatDuration(suiteMs)}`);
+if (failed) {
+  info(`Some RDF Surfaces tests failed (${seq - failed}/${seq})`);
+  process.exit(1);
+}
+info(`All RDF Surfaces tests passed (${seq}/${seq})`);

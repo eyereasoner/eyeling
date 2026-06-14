@@ -154,7 +154,7 @@ function resolveExampleTrigInput(root, inputFile) {
 
 function resolveExampleRdfSurfaceInput(root, inputFile) {
   const stem = path.basename(inputFile, path.extname(inputFile));
-  const rel = path.join('input', `${stem}.ttl`);
+  const rel = path.join('input', `${stem}.trig`);
   const abs = path.join(root, 'examples', rel);
   if (!fs.existsSync(abs)) return null;
   const text = fs.readFileSync(abs, 'utf8');

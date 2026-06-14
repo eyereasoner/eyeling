@@ -1,6 +1,6 @@
 {
   "name": "eyeling",
-  "version": "1.30.5",
+  "version": "1.30.3",
   "description": "A minimal Notation3 (N3) reasoner in JavaScript.",
   "main": "./index.js",
   "keywords": [
@@ -42,7 +42,7 @@
     "lint:fix": "eslint . --fix",
     "build": "node tools/bundle.js",
     "test:packlist": "node test/packlist.test.js",
-    "test:api": "node test/api.test.js && node test/stream_messages.test.js && node test/rdf_surfaces.test.js",
+    "test:api": "node test/api.test.js",
     "test:rdf-surfaces": "node test/rdf_surfaces.test.js",
     "test:builtins": "node test/builtins.test.js",
     "test:store": "node test/store.test.js",
@@ -57,9 +57,7 @@
     "test:rdf12:trig": "node test/rdf12.test.js trig",
     "test:playground": "node test/playground.test.js",
     "test:package": "node test/package.test.js",
-    "pretest": "npm run build && npm run test:packlist",
-    "test": "npm run test:api && npm run test:builtins && npm run test:store && npm run test:examples && npm run test:examples:proof && npm run test:manifest && npm run test:rdf12 && npm run test:playground",
-    "posttest": "npm run test:package",
+    "test": "node test/run.js",
     "preversion": "npm test",
     "postversion": "git push origin HEAD --follow-tags"
   },

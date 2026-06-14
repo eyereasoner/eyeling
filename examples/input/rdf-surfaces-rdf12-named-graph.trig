@@ -1,11 +1,14 @@
+VERSION "1.2-surfaces"
 # eyeling-options: --rdf-surfaces
 @prefix ex: <http://example.org/> .
 
+ex:regionalReport {
 ex:Brussels a ex:City .
+}
 
 %not[ _:x
-_:x a ex:City .
+ex:regionalReport { _:x a ex:City . }
 %not[
-_:x a ex:HumanCommunity .
+_:x a ex:ReportedCity .
 %]
 %]

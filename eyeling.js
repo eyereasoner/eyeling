@@ -12852,7 +12852,7 @@ function normalizeRdfCompatibility(inputText) {
   // unless they actually contain RDF 1.2 triple terms, VERSION directives, or a
   // plausible top-level TriG named graph block.
   const hasTripleTerms = text.includes('<<');
-  const hasVersionDirective = /^\s*(?:@version|VERSION)\s+(["'])(?:1\.1|1\.2|1\.2-basic)\1\s*\.?\s*(?:#.*)?$/im.test(text);
+  const hasVersionDirective = /^\s*(?:@version|VERSION)\s+(["'])(?:1\.1|1\.2|1\.2-basic|1\.2-surfaces)\1\s*\.?\s*(?:#.*)?$/im.test(text);
   const hasMessageVersionDirective = /^\s*(?:@version|VERSION)\s+(["'])(?:1\.1|1\.2|1\.2-basic)-messages\1\s*\.?\s*(?:#.*)?$/im.test(text);
   const hasNamedGraphCandidate = /(?:^|[.\r\n])\s*(?:GRAPH\s+)?(?:<[^>\r\n]*>|_:[A-Za-z][A-Za-z0-9_-]*|[A-Za-z][A-Za-z0-9_-]*:[^\s{};,.()[\]]*|:[^\s{};,.()[\]]+)\s*\{/m.test(text);
   const hasAnnotationSyntax = /(?:^|\s)~|\{\|/.test(text);
@@ -13321,7 +13321,7 @@ function normalizeRdfCompatibility(inputText) {
   }
 
   function stripVersionDirectives(s) {
-    return s.replace(/^\s*(?:@version|VERSION)\s+(["'])(?:1\.1|1\.2|1\.2-basic)(?:-messages)?\1\s*\.?\s*(?:#.*)?$/gim, '');
+    return s.replace(/^\s*(?:@version|VERSION)\s+(["'])(?:1\.1|1\.2|1\.2-basic|1\.2-surfaces|(?:1\.1|1\.2|1\.2-basic)-messages)\1\s*\.?\s*(?:#.*)?$/gim, '');
   }
 
   function skipWsAndComments(s, at) {
@@ -16988,6 +16988,24 @@ function extractLeadingBinders(raw) {
   const contentStart = skipWsAndComments(text, 0);
   if (contentStart >= text.length) return { binders: [], text };
 
+  // Preferred BLOGIC graffiti style: put newly bound marks on the `%not[`
+  // line and put triples on following non-indented lines, e.g.
+  // `%not[ _:x _:y\n_:x :p _:y .`.  Reading that first line directly
+  // avoids guessing from the first triple shape, which matters for RDF 1.2
+  // formula objects and TriG named graph blocks.
+  let lineEnd = text.indexOf('\n', contentStart);
+  if (lineEnd < 0) lineEnd = text.length;
+  let lineText = text.slice(contentStart, lineEnd);
+  let newlineEnd = lineEnd < text.length ? lineEnd + 1 : lineEnd;
+  if (lineText.endsWith('\r')) {
+    lineText = lineText.slice(0, -1);
+  }
+  const lineTrim = lineText.trim();
+  if (/^_:[A-Za-z_][A-Za-z0-9._-]*(?:\s+_:[A-Za-z_][A-Za-z0-9._-]*)*$/.test(lineTrim)) {
+    const binders = lineTrim.split(/\s+/).map((tok) => tok.slice(2));
+    return { binders, text: text.slice(0, contentStart) + text.slice(newlineEnd) };
+  }
+
   const segment = readStatementSegment(text.slice(contentStart));
   const toks = tokenizeLeadingSegment(segment);
   let leadingBlankCount = 0;
@@ -17013,6 +17031,57 @@ function extractLeadingBinders(raw) {
   const binders = toks.slice(0, binderCount).map((t) => t.text.slice(2));
   const cut = toks[binderCount - 1].end;
   return { binders, text: text.slice(0, contentStart) + text.slice(contentStart + cut) };
+}
+
+
+function readBalancedCurlyAt(s, at) {
+  if (s[at] !== '{') return null;
+  let i = at;
+  let depth = 0;
+  while (i < s.length) {
+    const ch = s[i];
+    if (ch === '"' || ch === "'") {
+      i = readStringAt(s, i).end;
+      continue;
+    }
+    if (ch === '<') {
+      i = readIriAt(s, i).end;
+      continue;
+    }
+    if (ch === '#') {
+      while (i < s.length && s[i] !== '\n' && s[i] !== '\r') i += 1;
+      continue;
+    }
+    if (ch === '{') depth += 1;
+    else if (ch === '}') {
+      depth -= 1;
+      if (depth === 0) return { text: s.slice(at, i + 1), end: i + 1 };
+    }
+    i += 1;
+  }
+  throw syntaxError('Unterminated named graph block inside RDF Surface', at);
+}
+
+function normalizeSurfaceStatement(statement) {
+  const raw = String(statement || '').trim();
+  if (!raw) return raw;
+
+  let i = 0;
+  const first = readBareTokenAt(raw, i);
+  if (first && /^GRAPH$/i.test(first.text)) {
+    i = first.end;
+  }
+
+  const term = readBareTokenAt(raw, i);
+  if (!term) return raw;
+  const afterTerm = skipWsAndComments(raw, term.end);
+  if (raw[afterTerm] !== '{') return raw;
+
+  const block = readBalancedCurlyAt(raw, afterTerm);
+  const afterBlock = skipWsAndComments(raw, block.end);
+  if (afterBlock !== raw.length) return raw;
+
+  return `${term.text} ${LOG_NAME_OF_IRI} ${block.text}`;
 }
 
 function splitTopLevelStatements(raw, surfaceOffset = null) {
@@ -17046,7 +17115,7 @@ function splitTopLevelStatements(raw, surfaceOffset = null) {
     else if (ch === ')' && depthParen > 0) depthParen -= 1;
     else if (ch === '.' && depthBrace === 0 && depthBracket === 0 && depthParen === 0) {
       const stmt = text.slice(start, i).trim();
-      if (stmt) out.push(stmt);
+      if (stmt) out.push(normalizeSurfaceStatement(stmt));
       start = i + 1;
     }
     i += 1;
@@ -17054,9 +17123,13 @@ function splitTopLevelStatements(raw, surfaceOffset = null) {
 
   const tail = text.slice(start).trim();
   if (tail) {
-    // A raw binder-only segment is OK; any other dangling text is most likely a
+    // A raw binder-only segment is OK; RDF 1.2 TriG named graph blocks are
+    // also OK without a trailing dot. Any other dangling text is most likely a
     // missing dot in the surface body.
-    if (!/^_:[A-Za-z_][A-Za-z0-9._-]*(?:\s+_:[A-Za-z_][A-Za-z0-9._-]*)*$/.test(tail)) {
+    const normalizedTail = normalizeSurfaceStatement(tail);
+    if (normalizedTail !== tail) {
+      out.push(normalizedTail);
+    } else if (!/^_:[A-Za-z_][A-Za-z0-9._-]*(?:\s+_:[A-Za-z_][A-Za-z0-9._-]*)*$/.test(tail)) {
       throw syntaxError('RDF Surface statement is missing a terminating dot', surfaceOffset);
     }
   }
@@ -17126,6 +17199,7 @@ function readSurfaceAt(s, at) {
 }
 
 const LOG_FOR_ALL_IN_IRI = '<http://www.w3.org/2000/10/swap/log#forAllIn>';
+const LOG_NAME_OF_IRI = '<http://www.w3.org/2000/10/swap/log#nameOf>';
 
 function rewriteBlankMarksWithMap(statement, labelToVarName) {
   const map = labelToVarName instanceof Map ? labelToVarName : new Map();

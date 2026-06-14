@@ -1,13 +1,12 @@
+VERSION "1.2-surfaces"
 # eyeling-options: --rdf-surfaces
 @prefix ex: <http://example.org/> .
 
 ex:alice ex:parent ex:bob .
-ex:bob ex:parent ex:carol .
 
-%not[ _:x _:y _:z
+%not[ _:x _:y
 _:x ex:parent _:y .
-_:y ex:parent _:z .
 %not[
-_:x ex:grandparent _:z .
+_:y a ex:Person .
 %]
 %]

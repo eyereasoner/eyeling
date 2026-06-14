@@ -1,3 +1,4 @@
+VERSION "1.2-surfaces"
 # eyeling-options: --rdf-surfaces
 @prefix ex: <http://example.org/> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .

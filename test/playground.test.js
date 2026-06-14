@@ -62,7 +62,7 @@ function guessContentType(p) {
   if (ext === '.js') return 'application/javascript; charset=utf-8';
   if (ext === '.css') return 'text/css; charset=utf-8';
   if (ext === '.json') return 'application/json; charset=utf-8';
-  if (ext === '.ttl' || ext === '.n3') return 'text/plain; charset=utf-8';
+  if (ext === '.ttl' || ext === '.trig' || ext === '.n3') return 'text/plain; charset=utf-8';
   if (ext === '.txt' || ext === '.md') return 'text/plain; charset=utf-8';
   return 'application/octet-stream';
 }
