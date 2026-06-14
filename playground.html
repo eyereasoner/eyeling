@@ -112,6 +112,15 @@
         box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.35);
       }
 
+      .rdf-editor-panel {
+        margin-bottom: 0.9rem;
+      }
+
+      .rdf-editor-hint {
+        display: block;
+        margin-top: 0.35rem;
+      }
+
       .controls {
         display: flex;
         flex-direction: row;
@@ -1052,6 +1061,14 @@
           </div>
           </details>
 
+          <div id="rdf-editor-panel" class="rdf-editor-panel" hidden>
+            <label id="rdf-editor-label" for="rdf-editor">Editable RDF</label>
+            <textarea id="rdf-editor" spellcheck="false"></textarea>
+            <span id="rdf-editor-hint" class="hint rdf-editor-hint">
+              Companion RDF/Turtle input loaded for this example. It is merged with the N3 program when reasoning runs.
+            </span>
+          </div>
+
           <label id="n3-editor-label" for="n3-editor">Editable N3 program</label>
           <textarea id="n3-editor" spellcheck="false"></textarea>
 
@@ -1136,6 +1153,8 @@
     ?S a ?B.
 }.`;
 
+        const rdfEditorPanel = document.getElementById('rdf-editor-panel');
+        const rdfTextArea = document.getElementById('rdf-editor');
         const inputTextArea = document.getElementById('n3-editor');
         const outputTextArea = document.getElementById('output-editor');
         const outputRenderedPanel = document.getElementById('output-rendered');
@@ -1214,6 +1233,7 @@
         let editorRdfMode = false;
         let editorRdfSurfacesMode = false;
         let outputMarkdownLinkBaseUrl = '';
+        let rdfEditor = null;
 
         function textDeclaresRdfSurfaces(text) {
           return /(^|\s)%not\[/i.test(String(text || ''));
@@ -1225,6 +1245,7 @@
             backgroundKnowledgeRdfSurfacesMode ||
             editorRdfSurfacesMode ||
             textDeclaresRdfSurfaces(backgroundKnowledgeText) ||
+            (typeof rdfEditor !== 'undefined' && rdfEditor && !rdfEditorPanel.hidden && textDeclaresRdfSurfaces(rdfEditor.getValue())) ||
             textDeclaresRdfSurfaces(editor.getValue())
           );
         }
@@ -2303,6 +2324,7 @@ const batch = [];
 
         function resizeAll() {
           const mh = currentMaxHeights();
+          if (isRdfEditorVisible()) autoResizeCodeMirror(rdfEditor, 160, mh.editor);
           autoResizeCodeMirror(editor, 220, mh.editor);
           autoResizeCodeMirror(outputEl, 80, mh.output);
         }
@@ -2434,12 +2456,15 @@ const batch = [];
           // this compact form and the older long-key JSON form.
           const compact = {};
           if (state && typeof state.edit === 'string') compact.e = state.edit;
+          if (state && typeof state.rdfedit === 'string') compact.d = state.rdfedit;
           if (state && typeof state.editorSourceUrl === 'string' && state.editorSourceUrl) compact.x = state.editorSourceUrl;
+          if (state && typeof state.rdfSourceUrl === 'string' && state.rdfSourceUrl) compact.y = state.rdfSourceUrl;
           if (state && typeof state.messageLogUrl === 'string' && state.messageLogUrl) compact.l = state.messageLogUrl;
           if (state && state.loadbg && typeof state.url === 'string' && state.url) compact.u = state.url;
           if (state && state.loadbg) compact.b = true;
           if (state && state.proofcomments) compact.p = true;
           if (state && Object.prototype.hasOwnProperty.call(state, 'rdf')) compact.r = !!state.rdf;
+          if (state && Object.prototype.hasOwnProperty.call(state, 'rdfsurfaces')) compact.s = !!state.rdfsurfaces;
           if (state && Object.prototype.hasOwnProperty.call(state, 'streammessages')) compact.m = !!state.streammessages;
           if (state && state.httpsderef === false) compact.h = false;
           return compact;
@@ -2512,6 +2537,24 @@ const batch = [];
                   ? raw.program
                   : null;
           const url = typeof raw.u === 'string' ? raw.u : typeof raw.url === 'string' ? raw.url : '';
+          const rdfedit =
+            typeof raw.d === 'string'
+              ? raw.d
+              : typeof raw.rdfedit === 'string'
+                ? raw.rdfedit
+                : typeof raw.rdfEdit === 'string'
+                  ? raw.rdfEdit
+                  : typeof raw.backgroundKnowledge === 'string'
+                    ? raw.backgroundKnowledge
+                    : null;
+          const rdfSourceUrl =
+            typeof raw.y === 'string'
+              ? raw.y
+              : typeof raw.rdfSourceUrl === 'string'
+                ? raw.rdfSourceUrl
+                : typeof raw.backgroundSourceUrl === 'string'
+                  ? raw.backgroundSourceUrl
+                  : '';
           const messageLogUrl =
             typeof raw.l === 'string'
               ? raw.l
@@ -2540,7 +2583,9 @@ const batch = [];
           const httpsderef = parseBooleanParam(Object.prototype.hasOwnProperty.call(raw, 'h') ? raw.h : raw.httpsderef);
           return {
             edit,
+            rdfedit,
             url,
+            rdfSourceUrl,
             messageLogUrl,
             editorSourceUrl,
             loadbg: loadbg === null ? null : loadbg,
@@ -2607,6 +2652,8 @@ const batch = [];
 
         const paramProgram = restoredState && restoredState.edit !== null ? restoredState.edit : legacyProgram;
         const paramN3Uri = restoredState && restoredState.url ? restoredState.url : legacyN3Uri;
+        const paramRdfEdit = restoredState && restoredState.rdfedit !== null ? restoredState.rdfedit : null;
+        const paramRdfSourceUrl = restoredState && restoredState.rdfSourceUrl ? restoredState.rdfSourceUrl : '';
         const paramMessageLogUrl = restoredState ? (restoredState.messageLogUrl || '') : (legacyMessageLogUrl || '');
         const paramLoadBg = restoredState && restoredState.loadbg !== null ? restoredState.loadbg : legacyLoadBg;
         const paramProofComments =
@@ -2665,6 +2712,16 @@ const batch = [];
         const colorSchemeMql = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
         const pickCmTheme = () => (colorSchemeMql && colorSchemeMql.matches ? 'material-darker' : 'default');
 
+        rdfEditor = CodeMirror.fromTextArea(rdfTextArea, {
+          mode: { name: 'turtle' },
+          theme: pickCmTheme(),
+          lineNumbers: true,
+          lineWrapping: true,
+          viewportMargin: Infinity,
+        });
+
+        rdfEditor.getWrapperElement().classList.add('cm-input', 'cm-rdf');
+
         const editor = CodeMirror.fromTextArea(inputTextArea, {
           mode: { name: 'sparql' },
           theme: pickCmTheme(),
@@ -2691,6 +2748,40 @@ const batch = [];
         if (outputSourceWrapper) outputSourceWrapper.id = 'output-source';
         let outputView = 'source';
         let outputMarkdownMode = false;
+        let settingRdfEditorValue = false;
+
+        function isRdfEditorVisible() {
+          return !!(rdfEditorPanel && !rdfEditorPanel.hidden);
+        }
+
+        function showEditableRdfFromBackground() {
+          if (!rdfEditorPanel) return;
+          rdfEditorPanel.hidden = false;
+          settingRdfEditorValue = true;
+          rdfEditor.setValue(backgroundKnowledgeText || '');
+          settingRdfEditorValue = false;
+          rdfEditor.refresh();
+          const mh = currentMaxHeights();
+          autoResizeCodeMirror(rdfEditor, 160, mh.editor);
+        }
+
+        function hideEditableRdf() {
+          if (!rdfEditorPanel) return;
+          rdfEditorPanel.hidden = true;
+          settingRdfEditorValue = true;
+          rdfEditor.setValue('');
+          settingRdfEditorValue = false;
+        }
+
+        function syncBackgroundFromRdfEditor() {
+          if (!isRdfEditorVisible()) return;
+          backgroundKnowledgeText = rdfEditor.getValue();
+          backgroundKnowledgeRdfMode = true;
+          backgroundKnowledgeRdfSurfacesMode = textDeclaresRdfSurfaces(backgroundKnowledgeText);
+          if (backgroundKnowledgeRdfSurfacesMode) enableRdfSurfacesModeToggle();
+          else enableRdfModeToggle();
+          updateBackgroundStatus();
+        }
 
         function escapeHtml(value) {
           return String(value == null ? '' : value)
@@ -3027,6 +3118,7 @@ const batch = [];
         // Keep CodeMirror in sync if the user changes OS theme while this page is open.
         function applyCodeMirrorTheme() {
           const t = pickCmTheme();
+          rdfEditor.setOption('theme', t);
           editor.setOption('theme', t);
           outputEl.setOption('theme', t);
         }
@@ -3126,6 +3218,18 @@ const batch = [];
             editorSourceText = initialN3;
           }
         }
+        if (paramRdfEdit !== null) {
+          backgroundKnowledgeText = paramRdfEdit;
+          backgroundKnowledgeSource = paramRdfSourceUrl;
+          backgroundBuiltinModules = [];
+          backgroundKnowledgeRdfMode = true;
+          backgroundKnowledgeRdfSurfacesMode = textDeclaresRdfSurfaces(paramRdfEdit);
+          backgroundKnowledgeAuto = true;
+          if (backgroundKnowledgeRdfSurfacesMode) enableRdfSurfacesModeToggle();
+          else enableRdfModeToggle();
+          showEditableRdfFromBackground();
+          updateBackgroundStatus();
+        }
         resizeAll();
 
         // Recompute caps on orientation/resize
@@ -3144,7 +3248,9 @@ const batch = [];
           return {
             v: 1,
             edit: editor.getValue(),
+            rdfedit: isRdfEditorVisible() ? rdfEditor.getValue() : null,
             editorSourceUrl: editorSourceUrl || extractDocumentBaseUrl(editor.getValue()),
+            rdfSourceUrl: isRdfEditorVisible() ? backgroundKnowledgeSource : '',
             url: (uriInput && uriInput.value ? uriInput.value : '').trim(),
             messageLogUrl: (messageLogUriInput && messageLogUriInput.value ? messageLogUriInput.value : '').trim(),
             loadbg: !!(loadAsBackgroundCheckbox && loadAsBackgroundCheckbox.checked),
@@ -3248,6 +3354,8 @@ const batch = [];
             'mlog',
             'rdf',
             'rdfmode',
+            'rdfsurfaces',
+            'rdf-surfaces',
             'streammessages',
             'stream-messages',
             'proofcomments',
@@ -3391,6 +3499,8 @@ const batch = [];
             'mlog',
             'rdf',
             'rdfmode',
+            'rdfsurfaces',
+            'rdf-surfaces',
             'streammessages',
             'stream-messages',
             'proofcomments',
@@ -3407,7 +3517,15 @@ const batch = [];
           }
           const state = getCurrentPlaygroundState();
           const canShareLoadedUrl =
-            !!state.url && !state.loadbg && !state.messageLogUrl && !state.rdf && !state.streammessages && !!editorSourceText && state.edit === editorSourceText;
+            !!state.url &&
+            !state.loadbg &&
+            !state.messageLogUrl &&
+            !state.rdf &&
+            !state.rdfsurfaces &&
+            !state.rdfedit &&
+            !state.streammessages &&
+            !!editorSourceText &&
+            state.edit === editorSourceText;
 
           if (canShareLoadedUrl) {
             params.set('url', state.url);
@@ -3485,6 +3603,15 @@ const batch = [];
         window.__eyelingPlaygroundMakeShareUrlFromStateUrl = makeShareUrlFromStateUrl;
         window.__eyelingPlaygroundShareUrlHasEmbeddedState = shareUrlHasEmbeddedState;
         window.__eyelingPlaygroundNormalizeGithubGistToken = normalizeGithubGistToken;
+
+        rdfEditor.on('change', function () {
+          if (settingRdfEditorValue) return;
+          syncBackgroundFromRdfEditor();
+          const mh = currentMaxHeights();
+          autoResizeCodeMirror(rdfEditor, 160, mh.editor);
+          setShareGistOption('');
+          scheduleSavePlaygroundState();
+        });
 
         editor.on('change', function () {
           clearErrorHighlight();
@@ -4232,6 +4359,7 @@ const batch = [];
             if (companion.rdfSurfaces) enableRdfSurfacesModeToggle();
             else enableRdfModeToggle();
           }
+          showEditableRdfFromBackground();
           updateBackgroundStatus();
           return true;
         }
@@ -4278,6 +4406,7 @@ const batch = [];
           backgroundKnowledgeRdfMode = false;
           backgroundKnowledgeRdfSurfacesMode = false;
           backgroundKnowledgeAuto = false;
+          hideEditableRdf();
           updateBackgroundStatus();
         }
 
@@ -4293,8 +4422,10 @@ const batch = [];
         }
 
         function buildEffectiveProgram(editorProgramText) {
+          syncBackgroundFromRdfEditor();
           const editorText = String(editorProgramText || '');
-          if (!backgroundKnowledgeText) {
+          const backgroundText = String(backgroundKnowledgeText || '');
+          if (!backgroundText) {
             return {
               program: editorText,
               builtinModules: dedupeBuiltinModules(editorBuiltinModules),
@@ -4313,16 +4444,16 @@ const batch = [];
 
           if (!editorText.trim()) {
             return {
-              program: backgroundKnowledgeText,
+              program: backgroundText,
               builtinModules: dedupeBuiltinModules(backgroundBuiltinModules),
               rdf: effectiveRdfMode(),
               rdfSurfaces: effectiveRdfSurfacesMode(),
               sourceMap: {
                 hasBackground: true,
                 backgroundStartLine: 1,
-                backgroundEndLine: countLines(backgroundKnowledgeText),
+                backgroundEndLine: countLines(backgroundText),
                 backgroundLabel: backgroundKnowledgeSource ? 'background knowledge from URL' : 'background knowledge',
-                editorStartLine: countLines(backgroundKnowledgeText) + 1,
+                editorStartLine: countLines(backgroundText) + 1,
                 editorLabel: 'editable program',
               },
             };
@@ -4331,7 +4462,7 @@ const batch = [];
           const parts = [];
           parts.push('# Background knowledge loaded from URL');
           const backgroundStartLine = parts.length + 1;
-          parts.push(backgroundKnowledgeText);
+          parts.push(backgroundText);
           const backgroundEndLine = countLines(parts.join('\n'));
           parts.push('');
           parts.push('# Editable N3 program');
@@ -4427,6 +4558,7 @@ const batch = [];
               if (backgroundKnowledgeRdfSurfacesMode) enableRdfSurfacesModeToggle();
               else if (backgroundKnowledgeRdfMode) enableRdfModeToggle();
               backgroundKnowledgeAuto = false;
+              hideEditableRdf();
               updateBackgroundStatus();
               statusEl.textContent = companionBuiltins.length
                 ? 'Loaded N3 as background knowledge and loaded its example builtin. The editor was left unchanged.'
@@ -4507,7 +4639,7 @@ const batch = [];
         // examples/input/<stem>.trig sidecar without overwriting local editor text.
         if (shouldAutoLoadFromQueryUrl) {
           loadFromUri();
-        } else if (paramN3Uri && paramLoadBg !== true) {
+        } else if (paramN3Uri && paramLoadBg !== true && paramRdfEdit === null) {
           autoLoadCompanionForEditorUrl(paramN3Uri).then((companion) => {
             if (companion && shareStatusEl) {
               shareStatusEl.textContent = 'Loaded companion RDF/TriG input for the restored example.';
