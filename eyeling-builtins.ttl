@@ -45,7 +45,7 @@ ex:aliasOf a rdf:Property .
 # --- dt: datatype ---------------------------------------------------
 
 dt:datatype a ex:Builtin ; ex:kind ex:Function ;
-  rdfs:comment "Extracts the datatype IRI of a literal. Plain RDF string literals return xsd:string; language-tagged strings return rdf:langString; shorthand numeric/boolean literals return their inferred XSD datatype." .
+  rdfs:comment "Extracts the datatype IRI of a literal. Plain RDF string literals return xsd:string; language-tagged strings return rdf:langString; shorthand numeric/boolean literals return their inferred XSD datatype. It returns the literal's actual datatype IRI only; rdfs:Literal is a class and is not returned by dt:datatype." .
 
 dt:lexicalForm a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Extracts the literal lexical form as an xsd:string/plain string value, preserving the original lexical spelling such as leading zeroes." .

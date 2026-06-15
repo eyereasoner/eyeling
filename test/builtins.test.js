@@ -199,7 +199,6 @@ const cases = [
 { "11"^^xsd:integer dt:differentValueFrom "12"^^xsd:integer . } => { :different :numeric true } .
 { "hello@en"^^rdf:PlainLiteral dt:differentValueFrom "bye@en"^^rdf:PlainLiteral . } => { :different :plainLiteral true } .
 { "a" dt:differentValueFrom "b" . } => { :different :string true } .
-{ "a" dt:datatype ?sd . ?sd <http://www.w3.org/2000/10/swap/log#notEqualTo> xsd:string . } => { :string :comparisonDatatype ?sd } .
 { "<a/>"^^rdf:XMLLiteral dt:differentValueFrom "<b/>"^^rdf:XMLLiteral . } => { :different :xmlLiteral true } .
 
 { ("1"^^xsd:integer xsd:integer) dt:validForDatatype true . } => { :tuple :valid true } .
@@ -252,7 +251,6 @@ const cases = [
       assert.match(out, /:different :numeric true \./);
       assert.match(out, /:different :plainLiteral true \./);
       assert.match(out, /:different :string true \./);
-      assert.match(out, /:string :comparisonDatatype rdfs:Literal \./);
       assert.match(out, /:different :xmlLiteral true \./);
       assert.match(out, /:tuple :valid true \./);
       assert.match(out, /:tuple :invalidBoolean true \./);
@@ -265,6 +263,21 @@ const cases = [
       assert.match(out, /:canonical :dateTime "2026-06-10T12:00:00Z"\^\^xsd:dateTime \./);
       assert.match(out, /:canonical :midnightRollover "2027-01-01T00:00:00Z"\^\^xsd:dateTime \./);
       assert.match(out, /:sameAs :reflexive true \./);
+
+      const datatypeOut = runReason(`
+@prefix : <http://example.org/datatype-tests#> .
+@prefix dt: <https://eyereasoner.github.io/eyeling/datatype#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+:s :plainName "Alice" .
+:s :typedName "Alice"^^xsd:string .
+{ :s :plainName ?value . ?value dt:datatype ?datatype . } => { :plain :detectedDatatype ?datatype } .
+{ :s :typedName ?value . ?value dt:datatype ?datatype . } => { :typed :detectedDatatype ?datatype } .
+`);
+      assert.match(datatypeOut, /:plain :detectedDatatype xsd:string \./);
+      assert.match(datatypeOut, /:typed :detectedDatatype xsd:string \./);
+      assert.doesNotMatch(datatypeOut, /:plain :detectedDatatype rdfs:Literal \./);
+      assert.doesNotMatch(datatypeOut, /:typed :detectedDatatype rdfs:Literal \./);
     },
   },
   {
