@@ -47,7 +47,7 @@ out(X) :- in(X).
   assert.match(directCli.stdout, /ancestor\(jan, emma\)\./);
 
   // Sanity check the ESM file URL too; this catches nested package type regressions.
-  const esm = await import(pathToFileURL(`${process.cwd()}/lib/eyelang/index.mjs`).href);
+  const esm = await import(pathToFileURL(`${process.cwd()}/lib/eyelang/index.js`).href);
   assert.equal(typeof esm.Program, 'function');
 
   pass(1, 'eyelang second-engine integration passed', Date.now() - startedAt);

@@ -85,7 +85,7 @@ function reasonEyelangSync(opt = {}, input = '') {
 }
 
 async function loadEyelangModule() {
-  return import(pathToFileURL(path.join(__dirname, 'lib', 'eyelang', 'index.mjs')).href);
+  return import(pathToFileURL(path.join(__dirname, 'lib', 'eyelang', 'index.js')).href);
 }
 
 async function runEyelang(input = '', opt = {}) {

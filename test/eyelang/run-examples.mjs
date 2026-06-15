@@ -4,7 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { Program, run } from '../../lib/eyelang/index.mjs';
+import { Program, run } from '../../lib/eyelang/index.js';
 import { fileURLToPath } from 'node:url';
 import { TestReporter, isMainModule } from './test-style.mjs';
 

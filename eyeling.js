@@ -6483,7 +6483,7 @@ async function main() {
       `Options:\n` +
       `  -a, --ast                    Print parsed AST as JSON and exit.\n` +
       `      --builtin <module.js>    Load a custom builtin module (repeatable).\n` +
-      `      --engine <n3|eyelang>    Select the N3 engine (default) or eyelang engine.\n` +
+      `      --engine <n3|eyelang>   Select the N3 engine (default) or eyelang engine.\n` +
       `  -d, --deterministic-skolem   Make log:skolem stable across reasoning runs.\n` +
       `  -e, --enforce-https          Rewrite http:// IRIs to https:// for log dereferencing builtins.\n` +
       `  -h, --help                   Show this help and exit.\n` +

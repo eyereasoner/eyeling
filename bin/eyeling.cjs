@@ -37,7 +37,7 @@ function normalizeEngineName(value) {
 }
 
 async function runEyelangCli(argv) {
-  const cliUrl = pathToFileURL(path.join(__dirname, '..', 'lib', 'eyelang', 'cli.mjs')).href;
+  const cliUrl = pathToFileURL(path.join(__dirname, '..', 'lib', 'eyelang', 'cli.js')).href;
   const cli = await import(cliUrl);
   await cli.main(argv);
 }

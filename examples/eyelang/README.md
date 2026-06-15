@@ -1,5 +1,8 @@
 # eyelang
 
+[![npm version](https://img.shields.io/npm/v/eyelang.svg)](https://www.npmjs.com/package/eyelang)
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.1242549108-blue.svg)](https://doi.org/10.5281/zenodo.20342331)
+
 eyelang is a small rule engine for Prolog-style Horn clauses over ordinary terms, lists, arithmetic, strings, and finite search. The command-line executable is `eyelang`.
 
 Programs write relations directly, for example `ancestor(pat, emma)` or `status(case1, accepted)`. eyelang output is ordinary eyelang syntax: by default, the CLI materializes selected answer facts and prints those facts only. Pass `--proof` (or `-p`) when you also want each answer followed by a `why/2` explanation fact that records the proof. Programs may add `materialize(Name, Arity).` declarations to focus output on selected predicates.

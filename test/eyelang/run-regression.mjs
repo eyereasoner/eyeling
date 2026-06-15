@@ -31,11 +31,11 @@ import {
   variantTerms,
   parseProgramText,
   rdfToEyelang,
-} from '../../lib/eyelang/index.mjs';
-import { parseGoalText } from '../../lib/eyelang/parser.mjs';
-import { selectClauseCandidates } from '../../lib/eyelang/program.mjs';
+} from '../../lib/eyelang/index.js';
+import { parseGoalText } from '../../lib/eyelang/parser.js';
+import { selectClauseCandidates } from '../../lib/eyelang/program.js';
 import { TestReporter, isMainModule } from './test-style.mjs';
-import { hashHex } from '../../lib/eyelang/hash.mjs';
+import { hashHex } from '../../lib/eyelang/hash.js';
 
 const testRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)));
 const packageRoot = path.resolve(testRoot, '..', '..');
