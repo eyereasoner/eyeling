@@ -1,0 +1,11 @@
+# Adapted from eyeling/examples/collatz-1000.n3.
+# A small, bounded Collatz step demonstration.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix : <https://eyereasoner.github.io/eyeling/examples/collatz#>.
+
+:case6 :value 6.
+:case7 :value 7.
+
+{ ?C :value ?N. (?N 2) math:remainder 0. (?N 2) math:integerQuotient ?M. } => { ?C :next ?M. }.
+{ ?C :value ?N. (?N 2) math:remainder 1. (?N 3) math:product ?T. (?T 1) math:sum ?M. } => { ?C :next ?M. }.
+{ ?C :next ?N. ?N math:greaterThan 10. } => { ?C :jumpsAboveTen true. }.

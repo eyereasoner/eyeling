@@ -1,0 +1,1 @@
+rdf(iri("http://example.org/annotation#a"), iri("http://example.org/annotation#nameStatementBy"), iri("http://example.org/annotation#bob")).

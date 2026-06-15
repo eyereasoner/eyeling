@@ -1,0 +1,8 @@
+answer(single, n2).
+answer(single, n3).
+answer(single, n4).
+answer(multiple, a1).
+answer(multiple, a2).
+answer(multiple, b1).
+answer(multiple, b2).
+answer(bound_check, yes).

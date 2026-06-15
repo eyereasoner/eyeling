@@ -23,6 +23,7 @@ Eyeling is characterized by:
 - **Streaming RDF Messages** — supports RDF Messages streams, enabling Eyeling to fit into streaming RDF pipelines.
 - **Node.js, npm, and browser use** — run it from the command line, call it from JavaScript, or use the browser-oriented bundle.
 - **RDF-JS interoperability** — use N3 text, RDF-JS quads, datasets, or Eyeling’s own AST-level API, with TypeScript declarations grounded in `@rdfjs/types`.
+- **Experimental eyelang engine** — run compact Prolog-style Horn clause programs alongside the N3 engine, giving Eyeling a second reasoning engine without mixing the internals.
 
 
 This README is the primary guide to using, extending, and maintaining Eyeling.
@@ -53,20 +54,21 @@ Eyeling is designed for people who want a small, inspectable reasoner that can r
 4. [Command-line interface](#command-line-interface)
 5. [JavaScript API](#javascript-api)
 6. [RDF-JS integration](#rdf-js-integration)
-7. [RDF compatibility mode and RDF 1.2](#rdf-compatibility-mode-and-rdf-12)
-8. [RDF Message Logs](#rdf-message-logs)
-9. [Built-ins](#built-ins)
-10. [Custom built-ins](#custom-built-ins)
-11. [Reasoning model](#reasoning-model)
-12. [Architecture](#architecture)
-13. [Repository layout](#repository-layout)
-14. [Examples guide](#examples-guide)
-15. [Testing and quality checks](#testing-and-quality-checks)
-16. [Development workflow](#development-workflow)
-17. [Publishing and release notes](#publishing-and-release-notes)
-18. [Troubleshooting](#troubleshooting)
-19. [Security and operational notes](#security-and-operational-notes)
-20. [Glossary](#glossary)
+7. [Eyelang second engine](#eyelang-second-engine)
+8. [RDF compatibility mode and RDF 1.2](#rdf-compatibility-mode-and-rdf-12)
+9. [RDF Message Logs](#rdf-message-logs)
+10. [Built-ins](#built-ins)
+11. [Custom built-ins](#custom-built-ins)
+12. [Reasoning model](#reasoning-model)
+13. [Architecture](#architecture)
+14. [Repository layout](#repository-layout)
+15. [Examples guide](#examples-guide)
+16. [Testing and quality checks](#testing-and-quality-checks)
+17. [Development workflow](#development-workflow)
+18. [Publishing and release notes](#publishing-and-release-notes)
+19. [Troubleshooting](#troubleshooting)
+20. [Security and operational notes](#security-and-operational-notes)
+21. [Glossary](#glossary)
 
 ---
 
@@ -80,7 +82,8 @@ It accepts facts and rules written in N3-style syntax, computes the logical cons
 - a CommonJS API from Node.js through `require('eyeling')`;
 - a browser/worker API through `eyeling/browser`;
 - an RDF-JS adapter for applications that work with quads and data factories;
-- a streaming tool for RDF Message Logs.
+- a streaming tool for RDF Message Logs;
+- an experimental host for the `eyelang` Prolog-style Horn clause engine.
 
 Eyeling is intentionally small and dependency-light. The source tree is organized as a miniature compiler and inference engine: lexer, parser, term model, rule normalization, built-ins, forward chaining, backward proving, printing, RDF-JS adapters, and CLI wiring.
 
@@ -141,6 +144,26 @@ For proof output:
 
 ```bash
 node eyeling.js --proof examples/socrates.n3
+```
+
+Run an eyelang program through the second engine:
+
+```bash
+eyeling --engine eyelang examples/eyelang/ancestor.pl
+```
+
+Or from JavaScript:
+
+```js
+const { reason } = require('eyeling');
+
+const output = reason({ engine: 'eyelang' }, `
+  materialize(out, 1).
+  in(done).
+  out(X) :- in(X).
+`);
+
+console.log(output);
 ```
 
 ---
@@ -592,6 +615,54 @@ The built-in `rdfjs` factory implements the standard RDF-JS constructors for nam
 Supported RDF-JS input terms include named nodes, blank nodes, literals, variables, default graph terms, and default-graph quads. Named-graph input quads are rejected clearly unless handled through N3/TriG compatibility mode.
 
 Use RDF-JS when you want Eyeling to sit inside a JavaScript RDF pipeline. Use raw N3 input when you need N3-only features such as quoted formulas or N3 rules represented directly in source text.
+
+---
+
+## Eyelang second engine
+
+Eyeling can also host the experimental `eyelang` engine. This is deliberately a second engine, not a rewrite of the N3 engine. The package therefore has two eyes:
+
+- the default **N3 engine** for RDF/Notation3 reasoning;
+- the **eyelang engine** for compact Prolog-style Horn clause programs.
+
+Use the CLI option when running `.pl` programs:
+
+```bash
+eyeling --engine eyelang examples/eyelang/ancestor.pl
+```
+
+Use the CommonJS convenience API when the rest of your application already imports `eyeling`:
+
+```js
+const { reason, reasonEyelang } = require('eyeling');
+
+const program = `
+  materialize(out, 1).
+  in(done).
+  out(X) :- in(X).
+`;
+
+console.log(reason({ engine: 'eyelang' }, program));
+console.log(await reasonEyelang(program));
+```
+
+Use the subpath export for the full eyelang module API:
+
+```js
+import { run, Program, Solver } from 'eyeling/eyelang';
+
+const result = run(program);
+console.log(result.stdout);
+```
+
+The two engines intentionally keep separate parsers, term models, solvers, and built-ins. Shared package entry points, examples, documentation, and CLI routing make them convenient to use together while keeping their execution models inspectable.
+
+Eyelang examples and language notes live under `examples/eyelang/`. The embedded engine runtime stays under `lib/eyelang/`, while the conformance corpus and test runners live under `test/eyelang/` so runtime code and test assets stay separate:
+
+```bash
+npm run test:eyelang        # integration check plus eyelang corpus
+npm run test:eyelang:corpus # eyelang corpus only
+```
 
 ---
 

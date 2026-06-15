@@ -1,0 +1,3 @@
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/expression-eval#e1"), iri("https://eyereasoner.github.io/eyeling/examples/expression-eval#value"), literal("5", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/expression-eval#e2"), iri("https://eyereasoner.github.io/eyeling/examples/expression-eval#value"), literal("20", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/expression-eval#answer"), iri("https://eyereasoner.github.io/eyeling/examples/expression-eval#value"), literal("20", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).

@@ -1,0 +1,10 @@
+# Adapted from eyeling/examples/fastpow.n3.
+# Computes powers with math:exponentiation and derives named results.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix : <https://eyereasoner.github.io/eyeling/examples/fastpow#>.
+
+:case1 :base 2; :exponent 10.
+:case2 :base 3; :exponent 7.
+
+{ ?C :base ?B; :exponent ?E. (?B ?E) math:exponentiation ?V. } => { ?C :power ?V. }.
+{ ?C :power ?V. ?V math:greaterThan 1000. } => { ?C :largePower true. }.

@@ -1,0 +1,4 @@
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/control-system#loop1"), iri("https://eyereasoner.github.io/eyeling/examples/control-system#absoluteError"), literal("3", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/control-system#loop2"), iri("https://eyereasoner.github.io/eyeling/examples/control-system#absoluteError"), literal("11", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/control-system#loop1"), iri("https://eyereasoner.github.io/eyeling/examples/control-system#status"), iri("https://eyereasoner.github.io/eyeling/examples/control-system#ok")).
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/control-system#loop2"), iri("https://eyereasoner.github.io/eyeling/examples/control-system#status"), iri("https://eyereasoner.github.io/eyeling/examples/control-system#alarm")).

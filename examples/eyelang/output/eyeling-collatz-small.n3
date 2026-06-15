@@ -1,0 +1,3 @@
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/collatz#case6"), iri("https://eyereasoner.github.io/eyeling/examples/collatz#next"), literal("3", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/collatz#case7"), iri("https://eyereasoner.github.io/eyeling/examples/collatz#next"), literal("22", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/collatz#case7"), iri("https://eyereasoner.github.io/eyeling/examples/collatz#jumpsAboveTen"), literal("true", iri("http://www.w3.org/2001/XMLSchema#boolean"), "", "")).

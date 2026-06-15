@@ -1,0 +1,9 @@
+# Adapted from eyeling/examples/derived-rule.n3.
+# eyelang's N3 layer does not materialize nested rules yet, so this is a flat equivalent.
+@prefix : <https://eyereasoner.github.io/eyeling/examples/derived-rule#>.
+
+:Minka a :Cat.
+:Charly a :Dog.
+
+{ ?X a :Cat. ?Y a :Dog. } => { :test :is true. }.
+{ ?X a :Cat. ?Y a :Dog. } => { ?X :compatibleWith ?Y. }.

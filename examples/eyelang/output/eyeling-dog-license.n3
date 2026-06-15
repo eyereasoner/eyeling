@@ -1,0 +1,1 @@
+rdf(iri("https://eyereasoner.github.io/ns#alice"), iri("https://eyereasoner.github.io/ns#mustHave"), iri("https://eyereasoner.github.io/ns#dogLicense")).

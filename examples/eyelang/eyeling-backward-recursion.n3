@@ -1,0 +1,11 @@
+# Adapted from eyeling/examples/backward-recursion.n3.
+# Demonstrates recursive <= rules.
+@prefix : <urn:example#>.
+
+:a :parent :b.
+:b :parent :c.
+:c :parent :d.
+
+{ ?x :ancestor ?y } <= { ?x :parent ?y }.
+{ ?x :ancestor ?z } <= { ?x :parent ?y. ?y :ancestor ?z }.
+{ :a :ancestor ?who } => { :a :reaches ?who }.

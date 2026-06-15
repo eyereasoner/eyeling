@@ -1,0 +1,11 @@
+# Adapted from eyereasoner/eyeling examples/socrates.n3.
+# Demonstrates a small RDFS-style subclass rule in the RDF/N3 reader.
+PREFIX : <http://example.org/socrates#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+:Socrates a :Human .
+:Human rdfs:subClassOf :Mortal .
+
+{ ?S a ?A . ?A rdfs:subClassOf ?B . }
+=>
+{ ?S a ?B . } .

@@ -1,0 +1,5 @@
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/drone-corridor#c1"), iri("https://eyereasoner.github.io/eyeling/examples/drone-corridor#allowed"), literal("true", iri("http://www.w3.org/2001/XMLSchema#boolean"), "", "")).
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/drone-corridor#c2"), iri("https://eyereasoner.github.io/eyeling/examples/drone-corridor#allowed"), literal("true", iri("http://www.w3.org/2001/XMLSchema#boolean"), "", "")).
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/drone-corridor#dock"), iri("https://eyereasoner.github.io/eyeling/examples/drone-corridor#canFlyTo"), iri("https://eyereasoner.github.io/eyeling/examples/drone-corridor#tower")).
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/drone-corridor#tower"), iri("https://eyereasoner.github.io/eyeling/examples/drone-corridor#canFlyTo"), iri("https://eyereasoner.github.io/eyeling/examples/drone-corridor#field")).
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/drone-corridor#mission"), iri("https://eyereasoner.github.io/eyeling/examples/drone-corridor#hasTwoHopRoute"), literal("true", iri("http://www.w3.org/2001/XMLSchema#boolean"), "", "")).

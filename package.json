@@ -26,6 +26,7 @@
     "index.js",
     "index.d.ts",
     "browser.d.ts",
+    "eyelang.d.ts",
     "bin",
     "dist",
     "lib",
@@ -59,7 +60,10 @@
     "test:package": "node test/package.test.js",
     "test": "node test/run.js",
     "preversion": "npm test",
-    "postversion": "git push origin HEAD --follow-tags"
+    "postversion": "git push origin HEAD --follow-tags",
+    "test:eyelang": "node test/eyelang.test.js && node test/eyelang/run-all.mjs",
+    "test:eyelang:integration": "node test/eyelang.test.js",
+    "test:eyelang:corpus": "node test/eyelang/run-all.mjs"
   },
   "dependencies": {
     "@rdfjs/types": "^2.0.1"
@@ -80,7 +84,12 @@
       "default": "./dist/browser/index.mjs"
     },
     "./eyeling.js": "./eyeling.js",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./eyelang": {
+      "types": "./eyelang.d.ts",
+      "import": "./lib/eyelang/index.mjs",
+      "default": "./lib/eyelang/index.mjs"
+    }
   },
   "typesVersions": {
     "*": {

@@ -1,0 +1,10 @@
+# Adapted from eyeling/examples/backward.n3.
+# Backward rule example: <= acts like a :- rule over N3 triples.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix : <https://eyereasoner.github.io/ns#>.
+
+# something is more interesting if it is greater
+{ ?X :moreInterestingThan ?Y. } <= { ?X math:greaterThan ?Y. }.
+
+# derivation (forward)
+{ 5 :moreInterestingThan 3. } => { 5 :isIndeedMoreInterestingThan 3. }.

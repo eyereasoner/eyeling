@@ -1,0 +1,1 @@
+rdf(iri("http://example.org/socrates#test"), iri("http://example.org/socrates#is"), literal("true", iri("http://www.w3.org/2001/XMLSchema#boolean"), "", "")).

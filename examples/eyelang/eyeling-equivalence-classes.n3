@@ -1,0 +1,11 @@
+# Adapted from eyeling/examples/equivalence-classes-overlap-implies-same-class.n3.
+# If two class sets share a member, they are linked as the same class.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix : <https://eyereasoner.github.io/eyeling/examples/equivalence-classes#>.
+
+:classA :member :alice, :bob.
+:classB :member :bob, :carol.
+:classC :member :diana.
+
+{ ?C1 :member ?X. ?C2 :member ?X. ?C1 log:notEqualTo ?C2. } => { ?C1 :sameClassAs ?C2. }.
+{ ?C1 :sameClassAs ?C2. } => { ?C2 :sameClassAs ?C1. }.

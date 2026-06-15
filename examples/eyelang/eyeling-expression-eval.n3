@@ -1,0 +1,11 @@
+# Adapted from eyeling/examples/expression-eval.n3.
+# Evaluates a small expression tree using arithmetic builtins.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix : <https://eyereasoner.github.io/eyeling/examples/expression-eval#>.
+
+:e1 :op :add; :left 2; :right 3.
+:e2 :op :mul; :left :e1; :right 4.
+
+{ ?E :op :add; :left ?A; :right ?B. (?A ?B) math:sum ?V. } => { ?E :value ?V. }.
+{ ?E :op :mul; :left ?L; :right ?B. ?L :value ?A. (?A ?B) math:product ?V. } => { ?E :value ?V. }.
+{ :e2 :value ?V. } => { :answer :value ?V. }.

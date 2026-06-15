@@ -1,0 +1,6 @@
+rdf(iri("http://example.com/alice"), iri("http://example.com/total"), literal("5", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).
+rdf(iri("http://example.com/alice"), iri("http://example.com/label"), literal("Alice total 5", iri("http://www.w3.org/2001/XMLSchema#string"), "", "")).
+rdf(iri("http://example.com/alice"), iri("http://example.com/status"), iri("http://example.com/passing")).
+rdf(iri("http://example.com/red"), iri("http://example.com/kind"), iri("http://example.com/colour")).
+rdf(iri("http://example.com/green"), iri("http://example.com/kind"), iri("http://example.com/colour")).
+rdf(iri("http://example.com/blue"), iri("http://example.com/kind"), iri("http://example.com/colour")).

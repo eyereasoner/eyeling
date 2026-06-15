@@ -1,0 +1,5 @@
+answer(selection, result([a, b], 9, 5, 3)).
+answer(selection, result([a], 5, 3, 1)).
+answer(selection, result([b], 4, 2, 2)).
+answer(selection, result([c], 7, 5, 3)).
+answer(selection, result([], 0, 0, 0)).

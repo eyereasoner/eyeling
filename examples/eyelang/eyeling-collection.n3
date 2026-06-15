@@ -1,0 +1,11 @@
+# Adapted from eyeling/examples/collection.n3.
+# Shows N3/RDF collections in subject and object positions.
+@prefix list: <http://www.w3.org/2000/10/swap/list#>.
+@prefix : <https://eyereasoner.github.io/eyeling/examples/collection#>.
+
+(1 _:b2 (2)) :p2 :q2.
+_:b2 :p :q.
+
+{ (1 _:b2 (2)) list:length ?Length. } => {
+  :collection :length ?Length.
+}.

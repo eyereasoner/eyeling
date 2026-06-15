@@ -1,0 +1,2 @@
+rdf(iri("http://example.org/triple-term#alice"), iri("http://example.org/triple-term#reportedKnower"), iri("http://example.org/triple-term#bob")).
+rdf(iri("http://example.org/triple-term#alice"), iri("http://example.org/triple-term#reportedKnown"), iri("http://example.org/triple-term#carol")).

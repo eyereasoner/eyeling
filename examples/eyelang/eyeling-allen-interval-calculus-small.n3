@@ -1,0 +1,13 @@
+# Adapted from eyeling/examples/allen-interval-calculus.n3.
+# Classifies a few interval relations with math comparisons.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix : <https://eyereasoner.github.io/eyeling/examples/allen#>.
+
+:a :start 1; :end 3.
+:b :start 3; :end 5.
+:c :start 4; :end 8.
+:d :start 1; :end 8.
+
+{ ?X :end ?XE. ?Y :start ?YS. ?XE math:equalTo ?YS. } => { (?X ?Y) :allen :meets. }.
+{ ?X :start ?XS; :end ?XE. ?Y :start ?YS; :end ?YE. ?XS math:lessThan ?YS. ?XE math:greaterThan ?YS. ?XE math:lessThan ?YE. } => { (?X ?Y) :allen :overlaps. }.
+{ ?X :start ?XS; :end ?XE. ?Y :start ?YS; :end ?YE. ?XS math:equalTo ?YS. ?XE math:lessThan ?YE. } => { (?X ?Y) :allen :starts. }.

@@ -1,0 +1,11 @@
+# Adapted from eyeling/examples/basic-monadic.n3.
+# A tiny monadic propagation benchmark.
+@prefix : <https://eyereasoner.github.io/eyeling/examples/basic-monadic#>.
+
+:i0 a :N0.
+:i1 a :N0.
+:i2 a :N1.
+
+{ ?X a :N0. } => { ?X a :N1. }.
+{ ?X a :N1. } => { ?X a :N2. }.
+{ ?X a :N2. } => { ?X :accepted true. }.

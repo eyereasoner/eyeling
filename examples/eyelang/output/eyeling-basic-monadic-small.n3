@@ -1,0 +1,8 @@
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/basic-monadic#i0"), iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), iri("https://eyereasoner.github.io/eyeling/examples/basic-monadic#N1")).
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/basic-monadic#i1"), iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), iri("https://eyereasoner.github.io/eyeling/examples/basic-monadic#N1")).
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/basic-monadic#i2"), iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), iri("https://eyereasoner.github.io/eyeling/examples/basic-monadic#N2")).
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/basic-monadic#i0"), iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), iri("https://eyereasoner.github.io/eyeling/examples/basic-monadic#N2")).
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/basic-monadic#i1"), iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), iri("https://eyereasoner.github.io/eyeling/examples/basic-monadic#N2")).
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/basic-monadic#i2"), iri("https://eyereasoner.github.io/eyeling/examples/basic-monadic#accepted"), literal("true", iri("http://www.w3.org/2001/XMLSchema#boolean"), "", "")).
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/basic-monadic#i0"), iri("https://eyereasoner.github.io/eyeling/examples/basic-monadic#accepted"), literal("true", iri("http://www.w3.org/2001/XMLSchema#boolean"), "", "")).
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/basic-monadic#i1"), iri("https://eyereasoner.github.io/eyeling/examples/basic-monadic#accepted"), literal("true", iri("http://www.w3.org/2001/XMLSchema#boolean"), "", "")).

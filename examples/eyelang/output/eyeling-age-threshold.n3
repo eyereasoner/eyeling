@@ -1,0 +1,4 @@
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/age#alice"), iri("https://eyereasoner.github.io/eyeling/examples/age#adult"), literal("true", iri("http://www.w3.org/2001/XMLSchema#boolean"), "", "")).
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/age#carol"), iri("https://eyereasoner.github.io/eyeling/examples/age#adult"), literal("true", iri("http://www.w3.org/2001/XMLSchema#boolean"), "", "")).
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/age#carol"), iri("https://eyereasoner.github.io/eyeling/examples/age#senior"), literal("true", iri("http://www.w3.org/2001/XMLSchema#boolean"), "", "")).
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/age#carol"), iri("https://eyereasoner.github.io/eyeling/examples/age#discount"), iri("https://eyereasoner.github.io/eyeling/examples/age#seniorPass")).

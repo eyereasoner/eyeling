@@ -1,0 +1,4 @@
+rdf(iri("https://eyereasoner.github.io/ns#msg"), iri("https://eyereasoner.github.io/ns#mentionsEye"), literal("true", iri("http://www.w3.org/2001/XMLSchema#boolean"), "", "")).
+rdf(iri("https://eyereasoner.github.io/ns#msg"), iri("https://eyereasoner.github.io/ns#length"), literal("13", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).
+rdf(iri("https://eyereasoner.github.io/ns#msg"), iri("https://eyereasoner.github.io/ns#label"), literal("N3 + RDF 1.2", iri("http://www.w3.org/2001/XMLSchema#string"), "", "")).
+rdf(iri("https://eyereasoner.github.io/ns#msg"), iri("https://eyereasoner.github.io/ns#scrapedTail"), literal("lang", iri("http://www.w3.org/2001/XMLSchema#string"), "", "")).

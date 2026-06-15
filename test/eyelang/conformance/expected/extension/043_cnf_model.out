@@ -1,0 +1,1 @@
+answer(model, [value(a, false), value(b, true)]).

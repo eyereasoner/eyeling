@@ -1,0 +1,9 @@
+rdf(iri("urn:example#a"), iri("urn:example#ancestor"), iri("urn:example#b")).
+rdf(iri("urn:example#b"), iri("urn:example#ancestor"), iri("urn:example#c")).
+rdf(iri("urn:example#c"), iri("urn:example#ancestor"), iri("urn:example#d")).
+rdf(iri("urn:example#a"), iri("urn:example#ancestor"), iri("urn:example#c")).
+rdf(iri("urn:example#a"), iri("urn:example#ancestor"), iri("urn:example#d")).
+rdf(iri("urn:example#b"), iri("urn:example#ancestor"), iri("urn:example#d")).
+rdf(iri("urn:example#a"), iri("urn:example#reaches"), iri("urn:example#b")).
+rdf(iri("urn:example#a"), iri("urn:example#reaches"), iri("urn:example#c")).
+rdf(iri("urn:example#a"), iri("urn:example#reaches"), iri("urn:example#d")).

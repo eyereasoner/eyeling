@@ -1,0 +1,12 @@
+# Adapted from eyeling/examples/family-cousins.n3.
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix : <https://eyereasoner.github.io/ns#>.
+
+:alice :parentOf :bob, :carol.
+:bob :parentOf :dave.
+:carol :parentOf :erin.
+:erin :parentOf :fay.
+
+{ ?p :parentOf ?x. ?p :parentOf ?y. ?x log:notEqualTo ?y. } => { ?x :siblingOf ?y. }.
+{ ?a :parentOf ?x. ?b :parentOf ?y. ?a :siblingOf ?b. ?x log:notEqualTo ?y. } => { ?x :cousinOf ?y. }.
+{ ?x :cousinOf ?y. } => { ?x :relatedTo ?y. }.

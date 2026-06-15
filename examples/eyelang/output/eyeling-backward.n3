@@ -1,0 +1,1 @@
+rdf(literal("5", iri("http://www.w3.org/2001/XMLSchema#integer"), "", ""), iri("https://eyereasoner.github.io/ns#isIndeedMoreInterestingThan"), literal("3", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).

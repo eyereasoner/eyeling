@@ -1,0 +1,10 @@
+# Adapted from eyeling/examples/bmi.n3.
+# Computes BMI from mass and squared height using math builtins.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix : <https://eyereasoner.github.io/ns#>.
+
+:alice :massKg 72;
+       :heightM 1.8.
+
+{ ?P :heightM ?H. (?H 2) math:exponentiation ?H2. } => { ?P :heightSquared ?H2. }.
+{ ?P :massKg ?M. ?P :heightSquared ?H2. (?M ?H2) math:quotient ?BMI. } => { ?P :bmi ?BMI. }.

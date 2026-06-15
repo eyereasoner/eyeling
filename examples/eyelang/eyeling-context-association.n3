@@ -1,0 +1,11 @@
+# Adapted from eyeling/examples/context-association.n3.
+# Associates named contexts with facts and derives their subjects.
+@prefix : <https://eyereasoner.github.io/eyeling/examples/context-association#>.
+
+:ctx1 :contains :fact1.
+:ctx2 :contains :fact2.
+:fact1 :subject :alice; :predicate :likes; :object :tea.
+:fact2 :subject :bob; :predicate :likes; :object :coffee.
+
+{ ?C :contains ?F. ?F :subject ?S. } => { ?C :mentions ?S. }.
+{ ?C :mentions ?S. } => { ?S :mentionedIn ?C. }.

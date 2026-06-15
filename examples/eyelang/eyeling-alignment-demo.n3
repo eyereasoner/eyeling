@@ -1,0 +1,11 @@
+# Adapted from eyeling/examples/alignment-demo.n3.
+# Simple vocabulary alignment using owl:sameAs and an explicit transfer rule.
+@prefix owl: <http://www.w3.org/2002/07/owl#>.
+@prefix schema: <https://schema.org/>.
+@prefix ex: <https://example.org/ns#>.
+@prefix : <https://eyereasoner.github.io/ns#>.
+
+ex:label = schema:name.
+:alice ex:label "Alice".
+
+{ ?p owl:sameAs ?q. ?s ?p ?o. } => { ?s ?q ?o. }.

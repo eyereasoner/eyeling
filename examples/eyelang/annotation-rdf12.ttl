@@ -1,0 +1,12 @@
+# Inspired by eyereasoner/eyeling examples/annotation.n3.
+# Demonstrates RDF 1.2 annotation syntax lowered through rdf:reifies.
+VERSION "1.2"
+PREFIX : <http://example.org/annotation#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+:a :name "Alice" ~ :t {| :statedBy :bob ; :recorded "2021-07-07"^^xsd:date |} .
+
+{ ?Statement rdf:reifies <<( ?Person :name ?Name )>> .
+  ?Statement :statedBy ?Agent . }
+=>
+{ ?Person :nameStatementBy ?Agent . } .

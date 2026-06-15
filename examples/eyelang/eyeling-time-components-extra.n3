@@ -1,0 +1,10 @@
+# Adapted from eyeling builtin/time examples.
+# Extracts date-time components.
+@prefix time: <http://www.w3.org/2000/10/swap/time#>.
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
+@prefix : <https://eyereasoner.github.io/eyeling/examples/time-extra#>.
+
+:event :at "2026-06-15T10:30:45Z"^^xsd:dateTime.
+
+{ :event :at ?T. ?T time:year ?Y. ?T time:month ?M. ?T time:day ?D. ?T time:hour ?H. } => { :event :year ?Y; :month ?M; :day ?D; :hour ?H. }.
+{ :event :year 2026; :month 6; :day 15. } => { :event :dateCheck true. }.

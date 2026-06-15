@@ -1,0 +1,8 @@
+# Inspired by eyeling/examples/crypto-builtins-tests.n3.
+@prefix crypto: <http://www.w3.org/2000/10/swap/crypto#>.
+@prefix : <https://eyereasoner.github.io/ns#>.
+
+:payload :text "eyelang".
+
+{ :payload :text ?Text. ?Text crypto:sha256 ?Digest. } => { :payload :sha256 ?Digest. }.
+{ :payload :text ?Text. ?Text crypto:md5 ?Digest. } => { :payload :md5 ?Digest. }.

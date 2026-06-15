@@ -1,0 +1,4 @@
+answer(atom, name(alice, "Alice")).
+answer(atom, knows(alice, bob)).
+answer(binary, exposed(alice, name, "Alice")).
+answer(binary, exposed(alice, knows, bob)).

@@ -1,0 +1,13 @@
+# Adapted from eyeling/examples/dog.n3.
+# The original uses log:collectAllIn; this compatibility example supplies the count directly.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix : <https://eyereasoner.github.io/ns#>.
+
+:alice :hasDog :dog1, :dog2, :dog3, :dog4, :dog5;
+       :dogCount 5.
+:bob :hasDog :dog6, :dog7;
+     :dogCount 2.
+
+{ ?Subject :dogCount ?Count. ?Count math:greaterThan 4. } => {
+  ?Subject :mustHave :dogLicense.
+}.

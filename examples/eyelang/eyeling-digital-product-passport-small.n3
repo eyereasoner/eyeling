@@ -1,0 +1,11 @@
+# Adapted from eyeling/examples/digital-product-passport.n3.
+# Simple product passport conformance rules.
+@prefix string: <http://www.w3.org/2000/10/swap/string#>.
+@prefix : <https://eyereasoner.github.io/eyeling/examples/digital-product-passport#>.
+
+:bike1 :serial "EU-BIKE-001"; :batteryId "BAT-77"; :recycledContent "32%".
+:toy1 :serial "TOY-9"; :batteryId ""; :recycledContent "0%".
+
+{ ?P :serial ?S. ?S string:startsWith "EU-". } => { ?P :hasEuSerial true. }.
+{ ?P :batteryId ?B. ?B string:startsWith "BAT-". } => { ?P :hasBatteryPassport true. }.
+{ ?P :hasEuSerial true. ?P :hasBatteryPassport true. } => { ?P :passportStatus :ready. }.

@@ -1,0 +1,3 @@
+answer(sum, [[6, 8], [10, 12]]).
+answer(product, [[4, 4], [10, 8]]).
+answer(determinant, 8.0000000000000018).

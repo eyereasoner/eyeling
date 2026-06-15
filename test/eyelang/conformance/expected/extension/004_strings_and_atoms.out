@@ -1,0 +1,4 @@
+answer(atom_concat, eyelang).
+answer(str_concat, "eyelang").
+answer(contains, true).
+answer(not_contains, true).

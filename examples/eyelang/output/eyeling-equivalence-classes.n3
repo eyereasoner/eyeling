@@ -1,0 +1,2 @@
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/equivalence-classes#classA"), iri("https://eyereasoner.github.io/eyeling/examples/equivalence-classes#sameClassAs"), iri("https://eyereasoner.github.io/eyeling/examples/equivalence-classes#classB")).
+rdf(iri("https://eyereasoner.github.io/eyeling/examples/equivalence-classes#classB"), iri("https://eyereasoner.github.io/eyeling/examples/equivalence-classes#sameClassAs"), iri("https://eyereasoner.github.io/eyeling/examples/equivalence-classes#classA")).

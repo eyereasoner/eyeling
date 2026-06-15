@@ -1,0 +1,9 @@
+# Inspired by eyeling builtin examples for the SWAP math namespace.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix : <https://eyereasoner.github.io/ns#>.
+
+{ (2 3 5) math:sum ?Total. } => { :calc :sum ?Total. }.
+{ (21 4) math:integerQuotient ?Q. } => { :calc :integerQuotient ?Q. }.
+{ (21 4) math:remainder ?R. } => { :calc :remainder ?R. }.
+{ (2 8) math:exponentiation ?Pow. } => { :calc :power ?Pow. }.
+{ -3 math:absoluteValue ?Abs. } => { :calc :absolute ?Abs. }.

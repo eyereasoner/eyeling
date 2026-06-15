@@ -1,0 +1,22 @@
+# Adapted from eyeling/examples/french-cities.n3.
+# One-way routes are paths; paths compose transitively.
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix owl: <http://www.w3.org/2002/07/owl#>.
+@prefix : <https://eyereasoner.github.io/eyeling/examples/french-cities#>.
+
+:paris :oneway :orleans, :chartres, :amiens.
+:orleans :oneway :blois, :bourges.
+:blois :oneway :tours.
+:chartres :oneway :lemans.
+:lemans :oneway :angers, :tours.
+:angers :oneway :nantes.
+:oneway rdfs:subPropertyOf :path.
+:path a owl:TransitiveProperty.
+
+{ ?P rdfs:subPropertyOf ?Q. ?S ?P ?O. } => { ?S ?Q ?O. }.
+{ ?P a owl:TransitiveProperty. ?S ?P ?X. ?X ?P ?O. } => { ?S ?P ?O. }.
+{ ?C :path :nantes. } => { ?C :canReach :nantes. }.
+{ :paris :canReach :nantes. } => { :report :reachableCity :paris. }.
+{ :chartres :canReach :nantes. } => { :report :reachableCity :chartres. }.
+{ :lemans :canReach :nantes. } => { :report :reachableCity :lemans. }.
+{ :angers :canReach :nantes. } => { :report :reachableCity :angers. }.

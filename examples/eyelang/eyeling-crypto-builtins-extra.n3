@@ -1,0 +1,10 @@
+# Adapted from eyeling/examples/crypto-builtins-tests.n3.
+# Extra digest checks beyond the compact builtins demo.
+@prefix crypto: <http://www.w3.org/2000/10/swap/crypto#>.
+@prefix string: <http://www.w3.org/2000/10/swap/string#>.
+@prefix : <https://eyereasoner.github.io/eyeling/examples/crypto-extra#>.
+
+:payload :text "eyelang".
+
+{ :payload :text ?T. ?T crypto:sha256 ?H. ?H string:length ?L. } => { :payload :sha256Length ?L; :sha256 ?H. }.
+{ :payload :sha256Length 64. } => { :payload :hashLooksComplete true. }.

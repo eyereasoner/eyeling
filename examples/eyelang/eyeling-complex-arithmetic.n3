@@ -1,0 +1,10 @@
+# Adapted from eyeling/examples/complex.n3.
+# Computes complex addition on pair-shaped RDF collections.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix : <https://eyereasoner.github.io/eyeling/examples/complex#>.
+
+:z1 :cartesian (3 4).
+:z2 :cartesian (5 -2).
+
+{ ?A :cartesian (?AR ?AI). ?B :cartesian (?BR ?BI). (?AR ?BR) math:sum ?RR. (?AI ?BI) math:sum ?RI. } => { (?A ?B) :sum (?RR ?RI). }.
+{ (:z1 :z2) :sum ?Z. } => { :example :complexSum ?Z. }.
