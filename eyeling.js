@@ -16909,7 +16909,8 @@ function termEquals(self, other) {
       !!self.datatype &&
       typeof self.datatype.equals === 'function' &&
       self.datatype.equals(other.datatype) &&
-      self.language === (other.language || '')
+      self.language === (other.language || '') &&
+      (self.direction || '') === (other.direction || '')
     );
   }
 
@@ -16974,6 +16975,7 @@ class Literal {
     this.termType = 'Literal';
     this.value = String(value);
     this.language = '';
+    this.direction = '';
     this.datatype = null;
 
     if (typeof languageOrDatatype === 'string') {
@@ -16981,6 +16983,10 @@ class Literal {
       this.datatype = new NamedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#langString');
     } else if (isRdfJsTerm(languageOrDatatype)) {
       this.datatype = languageOrDatatype;
+    } else if (languageOrDatatype && typeof languageOrDatatype === 'object') {
+      this.language = String(languageOrDatatype.language || '');
+      this.direction = languageOrDatatype.direction || '';
+      this.datatype = new NamedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#langString');
     } else {
       this.datatype = new NamedNode(XSD_NS + 'string');
     }
@@ -17026,6 +17032,38 @@ const dataFactory = {
   },
   quad(subject, predicate, object, graph) {
     return new Quad(subject, predicate, object, graph || defaultGraphSingleton);
+  },
+  fromTerm(original) {
+    if (!isRdfJsTerm(original)) throw new TypeError('Expected an RDF/JS term');
+
+    switch (original.termType) {
+      case 'NamedNode':
+        return new NamedNode(original.value);
+      case 'BlankNode':
+        return new BlankNode(original.value);
+      case 'Literal':
+        if (original.language || original.direction) {
+          return new Literal(original.value, { language: original.language || '', direction: original.direction || '' });
+        }
+        return new Literal(original.value, original.datatype ? dataFactory.fromTerm(original.datatype) : undefined);
+      case 'Variable':
+        return new Variable(original.value);
+      case 'DefaultGraph':
+        return defaultGraphSingleton;
+      case 'Quad':
+        return dataFactory.fromQuad(original);
+      default:
+        throw new TypeError(`Unsupported RDF/JS termType ${JSON.stringify(original.termType)}`);
+    }
+  },
+  fromQuad(original) {
+    if (!isRdfJsQuad(original)) throw new TypeError('Expected an RDF/JS Quad');
+    return new Quad(
+      dataFactory.fromTerm(original.subject),
+      dataFactory.fromTerm(original.predicate),
+      dataFactory.fromTerm(original.object),
+      dataFactory.fromTerm(original.graph),
+    );
   },
 };
 

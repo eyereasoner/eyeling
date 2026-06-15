@@ -1,50 +1,14 @@
 declare module 'eyeling' {
-  export interface RdfJsTerm {
-    termType: string;
-    value: string;
-    equals(other: RdfJsTerm | null | undefined): boolean;
-  }
-
-  export interface RdfJsNamedNode extends RdfJsTerm {
-    termType: 'NamedNode';
-  }
-
-  export interface RdfJsBlankNode extends RdfJsTerm {
-    termType: 'BlankNode';
-  }
-
-  export interface RdfJsVariable extends RdfJsTerm {
-    termType: 'Variable';
-  }
-
-  export interface RdfJsDefaultGraph extends RdfJsTerm {
-    termType: 'DefaultGraph';
-    value: '';
-  }
-
-  export interface RdfJsLiteral extends RdfJsTerm {
-    termType: 'Literal';
-    language: string;
-    datatype: RdfJsNamedNode;
-  }
-
-  export interface RdfJsQuad extends RdfJsTerm {
-    termType: 'Quad';
-    value: '';
-    subject: RdfJsTerm;
-    predicate: RdfJsTerm;
-    object: RdfJsTerm;
-    graph: RdfJsTerm;
-  }
-
-  export interface RdfJsDataFactory {
-    namedNode(value: string): RdfJsNamedNode;
-    blankNode(value?: string): RdfJsBlankNode;
-    literal(value: string, languageOrDatatype?: string | RdfJsNamedNode): RdfJsLiteral;
+  export type RdfJsTerm = import('@rdfjs/types').Term;
+  export type RdfJsNamedNode = import('@rdfjs/types').NamedNode;
+  export type RdfJsBlankNode = import('@rdfjs/types').BlankNode;
+  export type RdfJsVariable = import('@rdfjs/types').Variable;
+  export type RdfJsDefaultGraph = import('@rdfjs/types').DefaultGraph;
+  export type RdfJsLiteral = import('@rdfjs/types').Literal;
+  export type RdfJsQuad = import('@rdfjs/types').Quad;
+  export type RdfJsDataFactory = import('@rdfjs/types').DataFactory<RdfJsQuad> & {
     variable(value: string): RdfJsVariable;
-    defaultGraph(): RdfJsDefaultGraph;
-    quad(subject: RdfJsTerm, predicate: RdfJsTerm, object: RdfJsTerm, graph?: RdfJsTerm): RdfJsQuad;
-  }
+  };
 
   export interface EyelingPrefixEnv {
     _type?: 'PrefixEnv';

@@ -60,6 +60,9 @@
     "preversion": "npm test",
     "postversion": "git push origin HEAD --follow-tags"
   },
+  "dependencies": {
+    "@rdfjs/types": "^2.0.1"
+  },
   "devDependencies": {
     "eslint": "^9.0.0",
     "rdf-test-suite": "^2.1.4"
