@@ -54,19 +54,19 @@ dt:language a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Extracts the language tag of an rdf:langString literal as a string literal." .
 
 dt:validForDatatype a ex:Builtin ; ex:kind ex:Test ;
-  rdfs:comment "Succeeds iff the subject literal has a lexical form accepted by the object datatype and denotes a value in that datatype's value space. Also supports tuple-to-boolean form: (literal datatype) dt:validForDatatype true/false. Supports OWL 2 RL-relevant XSD strings, booleans, numerics, binary types, anyURI, dateTime, and dateTimeStamp." .
+  rdfs:comment "Succeeds iff the subject literal has a lexical form accepted by the object datatype and denotes a value in that datatype's value space. Also supports tuple-to-boolean form: (literal datatype) dt:validForDatatype true/false. Supports OWL 2 RL-relevant RDF and XSD datatypes, including rdf:PlainLiteral, rdf:XMLLiteral, rdf:langString, rdfs:Literal, strings, booleans, numerics, binary types, anyURI, dateTime, and dateTimeStamp." .
 
 dt:invalidForDatatype a ex:Builtin ; ex:kind ex:Test ;
   rdfs:comment "Succeeds iff the object datatype is supported and the subject literal is not valid for it. Also supports tuple-to-boolean form: (literal datatype) dt:invalidForDatatype true/false." .
 
 dt:sameValueAs a ex:Builtin ; ex:kind ex:Test ;
-  rdfs:comment "Value-space equality over supported datatypes, including integer/decimal numeric equality, boolean 1/true equality, timezone-normalized dateTime equality with exact midnight rollover, string-derived whitespace facets, and binary byte equality." .
+  rdfs:comment "Value-space equality over supported datatypes, including integer/decimal numeric equality, boolean 1/true equality, rdf:PlainLiteral language-tag normalization, rdf:XMLLiteral lexical comparison after XML well-formedness checks, timezone-normalized dateTime equality with exact midnight rollover, and binary byte equality." .
 
 dt:differentValueFrom a ex:Builtin ; ex:kind ex:Test ;
   rdfs:comment "Value-space inequality over supported and comparable datatype values." .
 
 dt:canonicalLiteral a ex:Builtin ; ex:kind ex:Function ;
-  rdfs:comment "Binds/unifies the object with a canonical literal for the subject literal's datatype value, such as normalized integer, boolean, token, binary, and timezone-normalized dateTime lexicals, including 24:00:00 rollover." .
+  rdfs:comment "Binds/unifies the object with a canonical literal for the subject literal's datatype value, such as normalized integer, boolean, rdf:PlainLiteral language tags, rdf:XMLLiteral fragments, binary, and timezone-normalized dateTime lexicals, including 24:00:00 rollover." .
 
 # --- crypto: ---------------------------------------------------------
 

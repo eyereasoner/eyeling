@@ -25,6 +25,7 @@
     "eyeling.js",
     "index.js",
     "index.d.ts",
+    "browser.d.ts",
     "bin",
     "dist",
     "lib",
@@ -75,7 +76,7 @@
       "default": "./index.js"
     },
     "./browser": {
-      "types": "./index.d.ts",
+      "types": "./browser.d.ts",
       "default": "./dist/browser/index.mjs"
     },
     "./eyeling.js": "./eyeling.js",
@@ -84,7 +85,7 @@
   "typesVersions": {
     "*": {
       "browser": [
-        "index.d.ts"
+        "browser.d.ts"
       ]
     }
   },

@@ -22,7 +22,7 @@ Eyeling is characterized by:
 - **Built-ins in rule bodies** — N3 programs can combine logical rules with computations such as math, string, datatype, list, time, and web-oriented predicates.
 - **Streaming RDF Messages** — supports RDF Messages streams, enabling Eyeling to fit into streaming RDF pipelines.
 - **Node.js, npm, and browser use** — run it from the command line, call it from JavaScript, or use the browser-oriented bundle.
-- **RDF-JS interoperability** — use N3 text, RDF-JS quads, datasets, or Eyeling’s own AST-level API.
+- **RDF-JS interoperability** — use N3 text, RDF-JS quads, datasets, or Eyeling’s own AST-level API, with TypeScript declarations grounded in `@rdfjs/types`.
 
 
 This README is the primary guide to using, extending, and maintaining Eyeling.
@@ -533,7 +533,7 @@ The browser entry loads `dist/browser/eyeling.browser.js` and exposes the API th
 
 ## RDF-JS integration
 
-Eyeling includes a lightweight RDF-JS DataFactory and adapters for supported RDF-JS terms and quads.
+Eyeling includes a lightweight RDF-JS DataFactory and adapters for supported RDF-JS terms and quads. Its TypeScript declarations reuse the official `@rdfjs/types` interfaces, so Eyeling quads, terms, and data factories can be passed to other RDF-JS libraries without local type casts.
 
 ```js
 const { reasonStream, rdfjs } = require('eyeling');
@@ -557,6 +557,37 @@ const input = {
 const result = reasonStream(input, { rdfjs: true });
 console.log(result.closureQuads);
 ```
+
+TypeScript users can use Eyeling directly with `@rdfjs/types`:
+
+```ts
+import type { DataFactory, Quad } from '@rdfjs/types';
+import { rdfjs, reasonRdfJs } from 'eyeling';
+
+const ex = 'http://example.org/';
+const factory: DataFactory<Quad> = rdfjs;
+
+const facts: Quad[] = [
+  factory.quad(
+    factory.namedNode(`${ex}Socrates`),
+    factory.namedNode(`${ex}type`),
+    factory.namedNode(`${ex}Man`),
+  ),
+];
+
+for await (const quad of reasonRdfJs({
+  quads: facts,
+  n3: `
+    @prefix : <http://example.org/> .
+    { ?x :type :Man } => { ?x :type :Mortal } .
+  `,
+})) {
+  const derived: Quad = quad;
+  console.log(derived.subject.value, derived.predicate.value, derived.object.value);
+}
+```
+
+The built-in `rdfjs` factory implements the standard RDF-JS constructors for named nodes, blank nodes, literals, default graph terms, variables, and quads, plus `fromTerm()` and `fromQuad()` clone helpers. `@rdfjs/types` is installed with Eyeling because the public declarations import it.
 
 Supported RDF-JS input terms include named nodes, blank nodes, literals, variables, default graph terms, and default-graph quads. Named-graph input quads are rejected clearly unless handled through N3/TriG compatibility mode.
 
@@ -694,17 +725,20 @@ Supported operations include:
 - `dt:sameValueAs` and `dt:differentValueFrom` for value-space equality and inequality;
 - `dt:canonicalLiteral` for canonical literal production.
 
-The built-ins use strict datatype lexical validation for these checks, including exact dateTime rollover/canonicalization such as `24:00:00` normalizing to the following day. They cover RDF language strings and the OWL 2 RL-relevant XSD set: `xsd:string`, `xsd:normalizedString`, `xsd:token`, `xsd:language`, `xsd:Name`, `xsd:NCName`, `xsd:NMTOKEN`, `xsd:boolean`, `xsd:decimal`, `xsd:integer` and its bounded integer subtypes, `xsd:float`, `xsd:double`, `xsd:hexBinary`, `xsd:base64Binary`, `xsd:anyURI`, `xsd:dateTime`, and `xsd:dateTimeStamp`.
+The built-ins use strict datatype lexical validation for these checks, including exact dateTime rollover/canonicalization such as `24:00:00` normalizing to the following day. They cover RDF language strings, `rdf:PlainLiteral`, `rdf:XMLLiteral`, `rdfs:Literal`, and the OWL 2 RL-relevant XSD set: `xsd:string`, `xsd:normalizedString`, `xsd:token`, `xsd:language`, `xsd:Name`, `xsd:NCName`, `xsd:NMTOKEN`, `xsd:boolean`, `xsd:decimal`, `xsd:integer` and its bounded integer subtypes, `xsd:float`, `xsd:double`, `xsd:hexBinary`, `xsd:base64Binary`, `xsd:anyURI`, `xsd:dateTime`, and `xsd:dateTimeStamp`. Lexical validation is intentionally strict for conformance: string-derived datatypes with whitespace-collapse facets must already be written in canonical collapsed lexical form, `xsd:float` and `xsd:double` enforce finite value ranges, `xsd:anyURI` rejects spaces, unsafe delimiters, and malformed percent escapes, and XML literals must be well-formed XML fragments.
 
 Example:
 
 ```n3
 @prefix : <http://example.org/> .
 @prefix dt: <https://eyereasoner.github.io/eyeling/datatype#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 {
   "01"^^xsd:integer dt:sameValueAs "1.0"^^xsd:decimal .
+  "hello@EN"^^rdf:PlainLiteral dt:sameValueAs "hello@en"^^rdf:PlainLiteral .
+  "<a/>"^^rdf:XMLLiteral dt:validForDatatype rdf:XMLLiteral .
   "2026-06-10T12:00:00Z"^^xsd:dateTime
     dt:sameValueAs "2026-06-10T14:00:00+02:00"^^xsd:dateTime .
   ("abc"^^xsd:integer xsd:integer) dt:validForDatatype false .

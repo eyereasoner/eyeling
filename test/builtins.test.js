@@ -159,6 +159,8 @@ const cases = [
 @prefix : <http://example.org/datatype-tests#> .
 @prefix dt: <https://eyereasoner.github.io/eyeling/datatype#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 { "01"^^xsd:integer dt:datatype ?d . } => { :integer :datatype ?d } .
@@ -166,20 +168,39 @@ const cases = [
 { "hello"@en dt:language ?lang . } => { :language :tag ?lang } .
 { "plain" dt:datatype ?d . } => { :plain :datatype ?d } .
 { "hello"@EN dt:datatype ?d . } => { :langString :datatype ?d } .
+{ "hello@en"^^rdf:PlainLiteral dt:datatype ?d . } => { :plainLiteral :datatype ?d } .
 
 { "1"^^xsd:integer dt:validForDatatype xsd:integer . } => { :valid :integer true } .
+{ "hello@en"^^rdf:PlainLiteral dt:validForDatatype rdf:PlainLiteral . } => { :valid :plainLiteral true } .
+{ "abc@"^^rdf:PlainLiteral dt:validForDatatype rdf:PlainLiteral . } => { :valid :plainLiteralEmptyTag true } .
+{ "<a/>"^^rdf:XMLLiteral dt:validForDatatype rdf:XMLLiteral . } => { :valid :xmlLiteral true } .
+{ "anything" dt:validForDatatype rdfs:Literal . } => { :valid :rdfsLiteral true } .
 { "2147483648"^^xsd:int dt:invalidForDatatype xsd:int . } => { :invalid :int true } .
 { "2"^^xsd:boolean dt:invalidForDatatype xsd:boolean . } => { :invalid :boolean true } .
 { "2026-02-31T00:00:00Z"^^xsd:dateTime dt:invalidForDatatype xsd:dateTime . } => { :invalid :dateTime true } .
 { " 1.0 "^^xsd:decimal dt:invalidForDatatype xsd:decimal . } => { :invalid :decimalWhitespace true } .
 { "02026-06-10T12:00:00Z"^^xsd:dateTime dt:invalidForDatatype xsd:dateTime . } => { :invalid :dateTimeYear true } .
+{ "http://example.org/a b"^^xsd:anyURI dt:invalidForDatatype xsd:anyURI . } => { :invalid :anyURI true } .
+{ ":abc"^^xsd:anyURI dt:invalidForDatatype xsd:anyURI . } => { :invalid :anyURIRelativeColon true } .
+{ "3.5E38"^^xsd:float dt:invalidForDatatype xsd:float . } => { :invalid :floatHigh true } .
+{ "1.0E-46"^^xsd:float dt:invalidForDatatype xsd:float . } => { :invalid :floatLow true } .
+{ "a  b"^^xsd:token dt:invalidForDatatype xsd:token . } => { :invalid :token true } .
+{ "hello"^^rdf:PlainLiteral dt:invalidForDatatype rdf:PlainLiteral . } => { :invalid :plainLiteralNoTag true } .
+{ "hello@bad_tag"^^rdf:PlainLiteral dt:invalidForDatatype rdf:PlainLiteral . } => { :invalid :plainLiteralBadTag true } .
+{ "<a>"^^rdf:XMLLiteral dt:invalidForDatatype rdf:XMLLiteral . } => { :invalid :xmlLiteral true } .
 
 { "01"^^xsd:integer dt:sameValueAs "1.0"^^xsd:decimal . } => { :same :numeric true } .
+{ "hello@EN"^^rdf:PlainLiteral dt:sameValueAs "hello@en"^^rdf:PlainLiteral . } => { :same :plainLiteral true } .
 { "true"^^xsd:boolean dt:sameValueAs "1"^^xsd:boolean . } => { :same :boolean true } .
 { "2026-06-10T12:00:00Z"^^xsd:dateTime dt:sameValueAs "2026-06-10T14:00:00+02:00"^^xsd:dateTime . } => { :same :dateTime true } .
 { "2026-12-31T24:00:00Z"^^xsd:dateTime dt:sameValueAs "2027-01-01T00:00:00Z"^^xsd:dateTime . } => { :same :midnightRollover true } .
 { "AQID"^^xsd:base64Binary dt:sameValueAs "010203"^^xsd:hexBinary . } => { :same :binary true } .
+{ "<a/>"^^rdf:XMLLiteral dt:sameValueAs "<a/>"^^rdf:XMLLiteral . } => { :same :xmlLiteral true } .
 { "11"^^xsd:integer dt:differentValueFrom "12"^^xsd:integer . } => { :different :numeric true } .
+{ "hello@en"^^rdf:PlainLiteral dt:differentValueFrom "bye@en"^^rdf:PlainLiteral . } => { :different :plainLiteral true } .
+{ "a" dt:differentValueFrom "b" . } => { :different :string true } .
+{ "a" dt:datatype ?sd . ?sd <http://www.w3.org/2000/10/swap/log#notEqualTo> xsd:string . } => { :string :comparisonDatatype ?sd } .
+{ "<a/>"^^rdf:XMLLiteral dt:differentValueFrom "<b/>"^^rdf:XMLLiteral . } => { :different :xmlLiteral true } .
 
 { ("1"^^xsd:integer xsd:integer) dt:validForDatatype true . } => { :tuple :valid true } .
 { ("abc"^^xsd:integer xsd:integer) dt:validForDatatype false . } => { :tuple :invalidBoolean true } .
@@ -187,9 +208,14 @@ const cases = [
 
 { "01"^^xsd:integer dt:canonicalLiteral ?ci . } => { :canonical :integer ?ci } .
 { "1"^^xsd:boolean dt:canonicalLiteral ?cb . } => { :canonical :boolean ?cb } .
-{ " a\t b "^^xsd:token dt:canonicalLiteral ?ct . } => { :canonical :token ?ct } .
+{ "a b"^^xsd:token dt:canonicalLiteral ?ct . } => { :canonical :token ?ct } .
+{ "hello@EN"^^rdf:PlainLiteral dt:canonicalLiteral ?cp . } => { :canonical :plainLiteral ?cp } .
+{ "<a/>"^^rdf:XMLLiteral dt:canonicalLiteral ?cx . } => { :canonical :xmlLiteral ?cx } .
 { "2026-06-10T14:00:00+02:00"^^xsd:dateTime dt:canonicalLiteral ?cd . } => { :canonical :dateTime ?cd } .
 { "2026-12-31T24:00:00Z"^^xsd:dateTime dt:canonicalLiteral ?cm . } => { :canonical :midnightRollover ?cm } .
+
+:x owl:differentFrom :x .
+{ :x owl:sameAs :x . } => { :sameAs :reflexive true } .
 `);
 
       assert.match(out, /:integer :datatype xsd:integer \./);
@@ -197,26 +223,48 @@ const cases = [
       assert.match(out, /:language :tag "en" \./);
       assert.match(out, /:plain :datatype xsd:string \./);
       assert.match(out, /:langString :datatype rdf:langString \./);
+      assert.match(out, /:plainLiteral :datatype rdf:PlainLiteral \./);
       assert.match(out, /:valid :integer true \./);
+      assert.match(out, /:valid :plainLiteral true \./);
+      assert.match(out, /:valid :plainLiteralEmptyTag true \./);
+      assert.match(out, /:valid :xmlLiteral true \./);
+      assert.match(out, /:valid :rdfsLiteral true \./);
       assert.match(out, /:invalid :int true \./);
       assert.match(out, /:invalid :boolean true \./);
       assert.match(out, /:invalid :dateTime true \./);
       assert.match(out, /:invalid :decimalWhitespace true \./);
       assert.match(out, /:invalid :dateTimeYear true \./);
+      assert.match(out, /:invalid :anyURI true \./);
+      assert.match(out, /:invalid :anyURIRelativeColon true \./);
+      assert.match(out, /:invalid :floatHigh true \./);
+      assert.match(out, /:invalid :floatLow true \./);
+      assert.match(out, /:invalid :token true \./);
+      assert.match(out, /:invalid :plainLiteralNoTag true \./);
+      assert.match(out, /:invalid :plainLiteralBadTag true \./);
+      assert.match(out, /:invalid :xmlLiteral true \./);
       assert.match(out, /:same :numeric true \./);
+      assert.match(out, /:same :plainLiteral true \./);
       assert.match(out, /:same :boolean true \./);
       assert.match(out, /:same :dateTime true \./);
       assert.match(out, /:same :midnightRollover true \./);
       assert.match(out, /:same :binary true \./);
+      assert.match(out, /:same :xmlLiteral true \./);
       assert.match(out, /:different :numeric true \./);
+      assert.match(out, /:different :plainLiteral true \./);
+      assert.match(out, /:different :string true \./);
+      assert.match(out, /:string :comparisonDatatype rdfs:Literal \./);
+      assert.match(out, /:different :xmlLiteral true \./);
       assert.match(out, /:tuple :valid true \./);
       assert.match(out, /:tuple :invalidBoolean true \./);
       assert.match(out, /:tuple :invalidResult true \./);
       assert.match(out, /:canonical :integer "1"\^\^xsd:integer \./);
       assert.match(out, /:canonical :boolean true \./);
       assert.match(out, /:canonical :token "a b"\^\^xsd:token \./);
+      assert.match(out, /:canonical :plainLiteral "hello@en"\^\^rdf:PlainLiteral \./);
+      assert.match(out, /:canonical :xmlLiteral "<a\/>"\^\^rdf:XMLLiteral \./);
       assert.match(out, /:canonical :dateTime "2026-06-10T12:00:00Z"\^\^xsd:dateTime \./);
       assert.match(out, /:canonical :midnightRollover "2027-01-01T00:00:00Z"\^\^xsd:dateTime \./);
+      assert.match(out, /:sameAs :reflexive true \./);
     },
   },
   {
