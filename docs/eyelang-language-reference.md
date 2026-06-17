@@ -468,7 +468,7 @@ An extension built-in SHOULD obey the same surface-language discipline as standa
 - it SHOULD document its intended modes, especially which arguments must be ground before it runs deterministically;
 - it MUST NOT change the meaning of ordinary facts, rules, unification, or standard built-ins.
 
-For example, an implementation may include extension modules for number-theory algorithms, graph search, matrix operations, or alphametic puzzles. Those modules may be valuable and may make example programs much faster, but their predicate names, arities, algorithms, and modes are implementation-defined unless they are separately standardized.
+For example, an implementation may include extension modules for number-theory algorithms, graph search, or matrix operations. Those modules may be valuable and may make example programs much faster, but their predicate names, arities, algorithms, and modes are implementation-defined unless they are separately standardized.
 
 An implementation that provides explanation output SHOULD make extension built-ins explainable at least as opaque successful or failed built-in calls, so that proof traces do not incorrectly report "no clauses" for a host-provided relation.
 

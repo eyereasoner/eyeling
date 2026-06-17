@@ -261,7 +261,7 @@ best(Cycle, Cost) :-
   weighted_hamiltonian_cycle(edge, Cities, Cycle, Cost).
 ```
 
-The reusable search and numeric helpers include `n_queens/2`, Hamiltonian path/cycle helpers, `cnf_model/3`, Quine-McCluskey helpers, bounded subset/path helpers, number-theory helpers such as `extended_gcd/5`, matrix helpers such as `matrix_multiply/2`, and `alphametic_sum/5`. These helpers are extension builtins of this implementation; [the eyelang language reference](eyelang-language-reference.md) defines the portable core and standard builtin profile.
+The reusable search and numeric helpers include `n_queens/2`, Hamiltonian path/cycle helpers, `bounded_path/5`, `cnf_model/3`, Quine-McCluskey helpers, number-theory helpers such as `extended_gcd/5`, and matrix helpers such as `matrix_multiply/2`. These helpers are extension builtins of this implementation; [the eyelang language reference](eyelang-language-reference.md) defines the portable core and standard builtin profile.
 
 To add a builtin, create or extend a module with `register(registry)` and call `registry.add(name, arity, handler, options)`. The default registry is assembled in [`lib/eyelang/builtins/registry.js`](../lib/eyelang/builtins/registry.js). Builtins that are only safe for specific argument modes should provide a `ready` predicate and `fallbackWhenNotReady: true`, so user-defined clauses remain visible until the builtin is applicable.
 
@@ -336,7 +336,6 @@ The repository includes examples for recursion, graph reachability, finite searc
 | [`composition-of-injective-functions-is-injective.pl`](../examples/eyelang/composition-of-injective-functions-is-injective.pl) | Encodes composition and injectivity of finite functions. | [`output/composition-of-injective-functions-is-injective.pl`](../examples/eyelang/output/composition-of-injective-functions-is-injective.pl) |
 | [`context-association.pl`](../examples/eyelang/context-association.pl) | Associates named contexts with their contents. | [`output/context-association.pl`](../examples/eyelang/output/context-association.pl) |
 | [`control-system.pl`](../examples/eyelang/control-system.pl) | Evaluates control-system measurements and targets. | [`output/control-system.pl`](../examples/eyelang/output/control-system.pl) |
-| [`cryptarithmetic-send-more-money.pl`](../examples/eyelang/cryptarithmetic-send-more-money.pl) | Solves SEND+MORE and related puzzles. | [`output/cryptarithmetic-send-more-money.pl`](../examples/eyelang/output/cryptarithmetic-send-more-money.pl) |
 | [`cyclic-path.pl`](../examples/eyelang/cyclic-path.pl) | Computes paths in a cyclic graph. | [`output/cyclic-path.pl`](../examples/eyelang/output/cyclic-path.pl) |
 | [`d3-group.pl`](../examples/eyelang/d3-group.pl) | Enumerates subgroups of the D3 group. | [`output/d3-group.pl`](../examples/eyelang/output/d3-group.pl) |
 | [`dairy-energy-balance.pl`](../examples/eyelang/dairy-energy-balance.pl) | Classifies dairy cow energy balance. | [`output/dairy-energy-balance.pl`](../examples/eyelang/output/dairy-energy-balance.pl) |
