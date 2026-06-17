@@ -631,6 +631,13 @@ Use the CLI option when running `.pl` programs:
 eyeling --engine eyelang examples/eyelang/ancestor.pl
 ```
 
+A paired example shows the same vulnerability-impact scenario in both engines:
+
+```bash
+eyeling examples/vulnerability-impact.n3
+eyeling --engine eyelang examples/eyelang/vulnerability-impact.pl
+```
+
 Use the CommonJS convenience API when the rest of your application already imports `eyeling`:
 
 ```js
@@ -1171,6 +1178,7 @@ The repository contains more than two hundred N3 examples under `examples/`, plu
 | `examples/age.n3` | Literal propagation. |
 | `examples/family-cousins.n3` | Multi-hop relational inference. |
 | `examples/dijkstra.n3` | Graph/path reasoning. |
+| `examples/vulnerability-impact.n3` and `examples/eyelang/vulnerability-impact.pl` | Paired N3 and eyelang dependency-risk example. |
 | `examples/list-map.n3` | List processing. |
 | `examples/string-builtins-tests.n3` | String built-ins. |
 | `examples/math-builtins-tests.n3` | Numeric built-ins. |
