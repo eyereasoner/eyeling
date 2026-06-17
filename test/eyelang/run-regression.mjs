@@ -491,9 +491,9 @@ function listExampleNames() {
 }
 
 function readmeCatalogExampleNames() {
-  const readme = fs.readFileSync(path.join(packageRoot, 'examples', 'eyelang', 'README.md'), 'utf8');
+  const readme = fs.readFileSync(path.join(packageRoot, 'docs', 'eyelang-guide.md'), 'utf8');
   const section = between(readme, '## Example catalog', '## Golden outputs, tests, and conformance');
-  return [...section.matchAll(/examples\/([A-Za-z0-9_-]+)\.pl/g)]
+  return [...section.matchAll(/examples\/eyelang\/([A-Za-z0-9_-]+)\.pl/g)]
     .map((match) => match[1])
     .filter((name, index, names) => names.indexOf(name) === index)
     .sort();

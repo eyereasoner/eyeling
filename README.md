@@ -28,21 +28,14 @@ Eyeling is characterized by:
 
 This README is the primary guide to using, extending, and maintaining Eyeling.
 
-| Project fact | Value |
-|---|---|
-| Package | `eyeling` |
-| Runtime | Node.js `>=18` |
-| License | MIT |
-| Main entry point | `index.js` |
-| CLI binary | `eyeling` |
-| Browser entry point | `eyeling/browser` |
-
 Eyeling is designed for people who want a small, inspectable reasoner that can run N3 rules in Node.js, the browser, tests, and RDF-oriented data pipelines.
 
 ## Project links
 
 - [Playground](https://eyereasoner.github.io/eyeling/playground)
 - [Conformance report](https://codeberg.org/phochste/notation3tests/src/branch/main/reports/report.md)
+- [eyelang guide](docs/eyelang-guide.md)
+- [eyelang language reference](docs/eyelang-language-reference.md)
 
 ---
 
@@ -304,21 +297,33 @@ Process an RDF Message Log one message at a time:
 eyeling --rdf --stream-messages rules.n3 messages.trig
 ```
 
+Run an eyelang program through the bundled second engine:
+
+```bash
+eyeling --engine eyelang examples/eyelang/ancestor.pl
+```
+
 ### CLI options
 
 | Option | Meaning |
 |---|---|
 | `-a`, `--ast` | Print the parsed AST as JSON and exit. |
-| `--builtin <module.js>` | Load a custom built-in module. Repeatable. |
+| `--builtin <module.js>` | Load a custom N3 built-in module. Repeatable. |
+| `--engine <n3\|eyelang>` | Select the default N3 engine or route the remaining arguments to the eyelang engine. |
 | `-d`, `--deterministic-skolem` | Make `log:skolem` stable across reasoning runs. |
 | `-e`, `--enforce-https` | Rewrite `http://` IRIs to `https://` for log dereferencing built-ins. |
 | `-h`, `--help` | Show help and exit. |
 | `-p`, `--proof` | Enable proof explanations. |
 | `-r`, `--rdf` | Enable RDF/TriG input and output compatibility. |
 | `--stream-messages` | Process RDF Message Logs one message at a time under `--rdf`. |
-| `-s`, `--super-restricted` | Disable all built-ins except implication handling. |
+| `--store <name>` | Use an optional persistent fact store. |
+| `--store-clear` | Clear the named persistent store before the run. |
+| `--store-path <dir>` | Use a Node.js persistent-store directory. |
+| `-s`, `--super-restricted` | Disable all N3 built-ins except implication handling. |
 | `-t`, `--stream` | Stream derived triples as soon as they are derived. |
 | `-v`, `--version` | Print the package version and exit. |
+
+When `--engine eyelang` is selected, the remaining arguments are handled by the eyelang CLI. Its supported options are `--help`, `--proof`, `--stats`, `--version`, and `--` to stop option parsing. See the [eyelang guide](docs/eyelang-guide.md) for examples.
 
 ### Output behavior
 
@@ -664,7 +669,7 @@ console.log(result.stdout);
 
 The two engines intentionally keep separate parsers, term models, solvers, and built-ins. Shared package entry points, examples, documentation, and CLI routing make them convenient to use together while keeping their execution models inspectable.
 
-Eyelang examples and language notes live under `examples/eyelang/`. The embedded engine runtime stays under `lib/eyelang/`, while the conformance corpus and test runners live under `test/eyelang/` so runtime code and test assets stay separate:
+The [eyelang guide](docs/eyelang-guide.md) introduces the CLI, output model, examples, and testing workflow. The [eyelang language reference](docs/eyelang-language-reference.md) defines syntax, terms, clauses, built-ins, declarations, output, and conformance boundaries. Runnable examples live under `examples/eyelang/`. The embedded engine runtime stays under `lib/eyelang/`, while the conformance corpus and test runners live under `test/eyelang/` so runtime code and test assets stay separate:
 
 ```bash
 npm run test:eyelang        # integration check plus eyelang corpus
@@ -769,28 +774,20 @@ The Alma RDF Message Log example intentionally keeps the message log as a URL, b
 
 ## Built-ins
 
-Eyeling implements SWAP-style built-ins across these namespaces:
+Eyeling implements SWAP-style built-ins for the N3 engine across these namespaces. The authoritative machine-readable catalog is [`eyeling-builtins.ttl`](eyeling-builtins.ttl); this README lists the public names so users do not need to infer support from examples.
 
-| Namespace | Examples | Purpose |
-|---|---|---|
-| `crypto:` | `sha`, `md5`, `sha256`, `sha512` | Hashing. |
-| `math:` | `sum`, `product`, `difference`, `greaterThan`, `sin`, `cos` | Numeric computation and comparison. |
-| `time:` | `year`, `month`, `day`, `localTime` | `xsd:dateTime` helpers. |
-| `list:` | `first`, `rest`, `member`, `length`, `map`, `sort` | N3 and RDF list operations. |
-| `rdf:` | `first`, `rest` | Aliases for list traversal over RDF collections. |
-| `log:` | `includes`, `notIncludes`, `semantics`, `conclusion`, `query`, `outputString` | Formula, dereferencing, query, and output operations. |
-| `string:` | `contains`, `matches`, `replace`, `format`, `length` | String tests and transformations. |
-| `dt:` | `datatype`, `lexicalForm`, `validForDatatype`, `sameValueAs`, `canonicalLiteral` | XSD datatype inspection, value-space validity, equality, inequality, and canonicalization. |
+| Namespace | Built-ins |
+|---|---|
+| `crypto:` | `sha`, `md5`, `sha256`, `sha512` |
+| `math:` | `equalTo`, `notEqualTo`, `greaterThan`, `lessThan`, `notLessThan`, `notGreaterThan`, `sum`, `product`, `difference`, `quotient`, `integerQuotient`, `remainder`, `rounded`, `exponentiation`, `absoluteValue`, `acos`, `asin`, `atan`, `sin`, `cos`, `tan`, `sinh`, `cosh`, `tanh`, `degrees`, `negation` |
+| `time:` | `day`, `hour`, `minute`, `month`, `second`, `timeZone`, `year`, `localTime` |
+| `list:` | `append`, `first`, `rest`, `iterate`, `last`, `memberAt`, `remove`, `member`, `in`, `length`, `notMember`, `reverse`, `sort`, `map`, `firstRest` |
+| `rdf:` | `first`, `rest` |
+| `log:` | `equalTo`, `notEqualTo`, `conjunction`, `conclusion`, `content`, `semantics`, `semanticsOrError`, `parsedAsN3`, `rawType`, `dtlit`, `langlit`, `implies`, `impliedBy`, `query`, `includes`, `notIncludes`, `collectAllIn`, `forAllIn`, `skolem`, `uri`, `trace`, `outputString` |
+| `string:` | `concatenation`, `contains`, `containsIgnoringCase`, `endsWith`, `startsWith`, `equalIgnoringCase`, `notEqualIgnoringCase`, `greaterThan`, `lessThan`, `notGreaterThan`, `notLessThan`, `matches`, `notMatches`, `replace`, `scrape`, `format`, `length`, `charAt`, `setCharAt` |
+| `dt:` | `datatype`, `lexicalForm`, `language`, `validForDatatype`, `invalidForDatatype`, `sameValueAs`, `differentValueFrom`, `canonicalLiteral` |
 
-The authoritative built-in catalog is `eyeling-builtins.ttl`. It documents each built-in as RDF, including its kind:
-
-- `ex:Test`: succeeds or fails without necessarily binding variables;
-- `ex:Function`: computes an output and may bind variables;
-- `ex:Relation`: unification-based relation;
-- `ex:Generator`: may yield multiple solutions;
-- `ex:IO`: may dereference or parse external content;
-- `ex:Meta`: operates on formulas or types;
-- `ex:SideEffect`: produces output.
+The catalog marks each built-in with a coarse kind: `ex:Test`, `ex:Function`, `ex:Relation`, `ex:Generator`, `ex:IO`, `ex:Meta`, or `ex:SideEffect`.
 
 ### Datatype built-ins
 
@@ -805,89 +802,36 @@ Supported operations include:
 
 The built-ins use strict datatype lexical validation for these checks, including exact dateTime rollover/canonicalization such as `24:00:00` normalizing to the following day. They cover RDF language strings, `rdf:PlainLiteral`, `rdf:XMLLiteral`, `rdfs:Literal`, and the OWL 2 RL-relevant XSD set: `xsd:string`, `xsd:normalizedString`, `xsd:token`, `xsd:language`, `xsd:Name`, `xsd:NCName`, `xsd:NMTOKEN`, `xsd:boolean`, `xsd:decimal`, `xsd:integer` and its bounded integer subtypes, `xsd:float`, `xsd:double`, `xsd:hexBinary`, `xsd:base64Binary`, `xsd:anyURI`, `xsd:dateTime`, and `xsd:dateTimeStamp`. Lexical validation is intentionally strict for conformance: string-derived datatypes with whitespace-collapse facets must already be written in canonical collapsed lexical form, `xsd:float` and `xsd:double` enforce finite value ranges, `xsd:anyURI` rejects spaces, unsafe delimiters, and malformed percent escapes, and XML literals must be well-formed XML fragments.
 
-Example:
-
-```n3
-@prefix : <http://example.org/> .
-@prefix dt: <https://eyereasoner.github.io/eyeling/datatype#> .
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-
-{
-  "01"^^xsd:integer dt:sameValueAs "1.0"^^xsd:decimal .
-  "hello@EN"^^rdf:PlainLiteral dt:sameValueAs "hello@en"^^rdf:PlainLiteral .
-  "<a/>"^^rdf:XMLLiteral dt:validForDatatype rdf:XMLLiteral .
-  "2026-06-10T12:00:00Z"^^xsd:dateTime
-    dt:sameValueAs "2026-06-10T14:00:00+02:00"^^xsd:dateTime .
-  ("abc"^^xsd:integer xsd:integer) dt:validForDatatype false .
-}
-=>
-{
-  :check :status :pass .
-} .
-```
-
 ### Numeric built-ins
 
 Numeric built-ins support common XSD numeric literals. Integer-oriented operations use `BigInt` where possible, with safety limits to avoid accidental memory exhaustion. Date/time comparisons and timestamp arithmetic are supported for relevant operations.
-
-Example:
-
-```n3
-@prefix : <http://example.org/> .
-@prefix math: <http://www.w3.org/2000/10/swap/math#> .
-
-{
-  (2 3 5) math:sum ?total .
-}
-=>
-{
-  :calculation :total ?total .
-} .
-```
 
 ### List built-ins
 
 Eyeling supports both native N3 list terms and materialized RDF collections. Anonymous `rdf:first`/`rdf:rest` collections can be materialized into list terms, while named list nodes keep their identity.
 
-Example:
-
-```n3
-@prefix : <http://example.org/> .
-@prefix list: <http://www.w3.org/2000/10/swap/list#> .
-
-{
-  ("red" "green" "blue") list:length ?n .
-}
-=>
-{
-  :palette :size ?n .
-} .
-```
-
 ### Formula and log built-ins
 
-Formula-aware built-ins make Eyeling useful for meta-reasoning:
-
-```n3
-@prefix : <http://example.org/> .
-@prefix log: <http://www.w3.org/2000/10/swap/log#> .
-
-:doc :graph { :alice :knows :bob } .
-
-{
-  :doc :graph ?g .
-  ?g log:includes { :alice :knows ?person } .
-}
-=>
-{
-  :doc :mentions ?person .
-} .
-```
+Formula-aware built-ins make Eyeling useful for meta-reasoning. `log:includes`, `log:notIncludes`, `log:collectAllIn`, and `log:forAllIn` prove goals inside formula scopes. `log:query` selects output triples, while `log:outputString` writes selected string values directly to stdout.
 
 `log:semantics`, `log:content`, and related built-ins may dereference sources. Use `--enforce-https` or `{ enforceHttps: true }` in environments where HTTP-to-HTTPS rewriting is required.
 
----
+### eyelang built-ins
+
+The eyelang engine has its own built-in registry under `lib/eyelang/builtins/`. These are separate from the N3 namespaces above and are called as ordinary eyelang predicates. See the [eyelang language reference](docs/eyelang-language-reference.md#9-standard-built-in-predicates) for the portable profile. The bundled implementation currently registers:
+
+| Family | Built-ins |
+|---|---|
+| Core and host | `eq/2`, `neq/2`, `local_time/1`, `difference/3` |
+| Arithmetic and comparison | `neg/2`, `abs/2`, `sin/2`, `cos/2`, `asin/2`, `acos/2`, `rounded/2`, `log/2`, `add/3`, `sub/3`, `mul/3`, `div/3`, `mod/3`, `min/3`, `pow/3`, `lt/2`, `gt/2`, `le/2`, `ge/2`, `between/3`, `smallest_divisor_from/3` |
+| Strings | `str_concat/3`, `contains/2`, `matches/2`, `not_matches/2` |
+| Lists | `append/3`, `nth0/3`, `set_nth0/4`, `rest/2`, `member/2`, `select/3`, `not_member/2`, `reverse/2`, `length/2`, `sort/2` |
+| Aggregation | `findall/3`, `countall/2`, `sumall/3`, `aggregate_min/5`, `aggregate_max/5` |
+| Control | `not/1`, `once/1` |
+| Formula terms | `formula_binary/4` |
+| Search and optimization helpers | `n_queens/2`, `weighted_hamiltonian_cycle/4`, `weighted_hamiltonian_path/4`, `hamiltonian_cycle/3`, `fixed_length_cycle/4`, `bounded_path/5`, `bounded_subset/7`, `cnf_model/3`, `qm_prime_implicants/4`, `qm_minimal_cover/4`, `alphametic_sum/5` |
+| Numeric extension helpers | `extended_gcd/5`, `collatz_trajectory/2`, `kaprekar_steps/2`, `goldbach_pair/3` |
+| Matrix helpers | `matrix_sum/2`, `matrix_multiply/2`, `cholesky_decomposition/2`, `determinant/2`, `matrix_inv_triang/2`, `matrix_inversion/2` |
 
 ## Custom built-ins
 
@@ -1153,8 +1097,8 @@ Everything else should be treated as internal unless explicitly documented.
 ├── bin/                      CLI executable shim
 ├── lib/                      Source modules
 ├── dist/browser/             Browser bundle and ESM wrapper
-├── docs/                     Project documentation, including the eyelang language reference
-├── examples/                 N3 examples, RDF message inputs, and generated decks
+├── docs/                     Project documentation, including the eyelang guide and language reference
+├── examples/                 N3 examples, eyelang examples, RDF message inputs, and generated decks
 ├── spec/                     RDF 1.2 parser test adapter
 ├── test/                     API, built-in, store, example, package, playground, and stream tests
 ├── tools/                    Build tooling
@@ -1168,7 +1112,7 @@ The package publishes the source modules, tests, examples, bundled runtime, brow
 
 ## Examples guide
 
-The repository contains more than two hundred N3 examples under `examples/`, plus RDF Message input files under `examples/input/` and presentation-oriented Markdown decks under `examples/deck/`.
+The repository contains more than two hundred N3 examples under `examples/`, eyelang `.pl` examples under `examples/eyelang/`, RDF Message input files under `examples/input/`, and presentation-oriented Markdown decks under `examples/deck/`. See the [eyelang guide](docs/eyelang-guide.md#example-catalog) for the eyelang example catalog.
 
 ### Good first examples
 
