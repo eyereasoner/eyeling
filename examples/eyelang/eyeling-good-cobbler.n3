@@ -1,9 +1,0 @@
-# Adapted from eyeling/examples/good-cobbler.n3.
-# Term-logic style statement represented with an RDF collection.
-@prefix : <https://eyereasoner.github.io/eyeling/examples/good-cobbler#>.
-
-:joe :is (:good :Cobbler).
-:ann :is (:careful :Tailor).
-
-{ ?X :is (:good ?Y). } => { ?X :goodAt ?Y. }.
-{ ?X :goodAt ?Y. } => { :test :hasGoodWorker ?X. }.

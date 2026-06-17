@@ -1,3 +1,0 @@
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/euler-identity#euler"), iri("https://eyereasoner.github.io/eyeling/examples/euler-identity#cosPi"), literal("-1", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/euler-identity#euler"), iri("https://eyereasoner.github.io/eyeling/examples/euler-identity#sinPi"), literal("1.2246467991473532e-16", iri("http://www.w3.org/2001/XMLSchema#decimal"), "", "")).
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/euler-identity#euler"), iri("https://eyereasoner.github.io/eyeling/examples/euler-identity#cosPiAtMinusOne"), literal("true", iri("http://www.w3.org/2001/XMLSchema#boolean"), "", "")).

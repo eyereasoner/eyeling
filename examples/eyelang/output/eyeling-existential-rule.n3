@@ -1,4 +1,0 @@
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/existential-rule#Socrates"), iri("https://eyereasoner.github.io/eyeling/examples/existential-rule#hasNature"), bnode("humanNature")).
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/existential-rule#Plato"), iri("https://eyereasoner.github.io/eyeling/examples/existential-rule#hasNature"), bnode("humanNature")).
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/existential-rule#Socrates"), iri("https://eyereasoner.github.io/eyeling/examples/existential-rule#witnessed"), literal("true", iri("http://www.w3.org/2001/XMLSchema#boolean"), "", "")).
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/existential-rule#Plato"), iri("https://eyereasoner.github.io/eyeling/examples/existential-rule#witnessed"), literal("true", iri("http://www.w3.org/2001/XMLSchema#boolean"), "", "")).

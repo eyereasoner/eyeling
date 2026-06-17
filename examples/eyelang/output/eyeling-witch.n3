@@ -1,2 +1,0 @@
-rdf(iri("https://eyereasoner.github.io/eye/reasoning/witch#elsie"), iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), iri("https://eyereasoner.github.io/eye/reasoning/witch#WITCH")).
-rdf(iri("https://eyereasoner.github.io/eye/reasoning/witch#elsie"), iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), iri("https://eyereasoner.github.io/eye/reasoning/witch#WEIGHS_THE_SAME_AS_A_DUCK")).

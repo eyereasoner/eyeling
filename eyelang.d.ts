@@ -6,7 +6,6 @@ export interface EyelangRunOptions {
   proof?: boolean;
   why?: boolean;
   explain?: boolean;
-  inputFormat?: 'auto' | 'eyelang' | 'rdf' | 'rdf12' | 'turtle' | 'ttl' | 'nt' | 'n3' | string;
   [key: string]: unknown;
 }
 
@@ -32,14 +31,6 @@ export class Program {
 export function makeProgram(clauses?: unknown[], options?: EyelangRunOptions): Program;
 export function parseClauses(source: string, options?: EyelangRunOptions): unknown[];
 export function parseProgramText(source: string, options?: EyelangRunOptions): unknown[];
-export function parseRdfClauses(source: string, options?: EyelangRunOptions): unknown[];
-export function rdfToEyelang(source: string, options?: EyelangRunOptions): string;
-export function clausesToEyelang(clauses: unknown[]): string;
-export function rdfIri(value: string): unknown;
-export function rdfBlank(value: string): unknown;
-export function rdfLiteral(value: string, datatype?: string, language?: string): unknown;
-export function rdfTripleTerm(subject: unknown, predicate: unknown, object: unknown): unknown;
-export function rdfGoal(subject: unknown, predicate: unknown, object: unknown): unknown;
 
 export class Env {
   constructor(parent?: Env | null);
@@ -79,9 +70,6 @@ declare const eyelang: {
   makeProgram: typeof makeProgram;
   parseClauses: typeof parseClauses;
   parseProgramText: typeof parseProgramText;
-  parseRdfClauses: typeof parseRdfClauses;
-  rdfToEyelang: typeof rdfToEyelang;
-  clausesToEyelang: typeof clausesToEyelang;
   Solver: typeof Solver;
   Env: typeof Env;
   BuiltinRegistry: typeof BuiltinRegistry;

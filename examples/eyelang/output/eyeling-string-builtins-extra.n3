@@ -1,3 +1,0 @@
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/string-extra#msg"), iri("https://eyereasoner.github.io/eyeling/examples/string-extra#sensor"), literal("A17", iri("http://www.w3.org/2001/XMLSchema#string"), "", "")).
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/string-extra#msg"), iri("https://eyereasoner.github.io/eyeling/examples/string-extra#greenText"), literal("sensor:A17 status:GREEN", iri("http://www.w3.org/2001/XMLSchema#string"), "", "")).
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/string-extra#msg"), iri("https://eyereasoner.github.io/eyeling/examples/string-extra#deviceId"), literal("device-A17", iri("http://www.w3.org/2001/XMLSchema#string"), "", "")).

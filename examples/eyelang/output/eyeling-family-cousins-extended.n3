@@ -1,6 +1,0 @@
-rdf(iri("https://eyereasoner.github.io/ns#bob"), iri("https://eyereasoner.github.io/ns#siblingOf"), iri("https://eyereasoner.github.io/ns#carol")).
-rdf(iri("https://eyereasoner.github.io/ns#carol"), iri("https://eyereasoner.github.io/ns#siblingOf"), iri("https://eyereasoner.github.io/ns#bob")).
-rdf(iri("https://eyereasoner.github.io/ns#dave"), iri("https://eyereasoner.github.io/ns#cousinOf"), iri("https://eyereasoner.github.io/ns#erin")).
-rdf(iri("https://eyereasoner.github.io/ns#erin"), iri("https://eyereasoner.github.io/ns#cousinOf"), iri("https://eyereasoner.github.io/ns#dave")).
-rdf(iri("https://eyereasoner.github.io/ns#dave"), iri("https://eyereasoner.github.io/ns#relatedTo"), iri("https://eyereasoner.github.io/ns#erin")).
-rdf(iri("https://eyereasoner.github.io/ns#erin"), iri("https://eyereasoner.github.io/ns#relatedTo"), iri("https://eyereasoner.github.io/ns#dave")).

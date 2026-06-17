@@ -30,7 +30,6 @@ import {
   unify,
   variantTerms,
   parseProgramText,
-  rdfToEyelang,
 } from '../../lib/eyelang/index.js';
 import { parseGoalText } from '../../lib/eyelang/parser.js';
 import { selectClauseCandidates } from '../../lib/eyelang/program.js';
@@ -206,66 +205,6 @@ why(
         assertEqual(result.stderr, '', 'stderr');
       },
     },
-
-    {
-      name: 'RDF 1.2 Turtle annotations lower to rdf/3 facts',
-      run: () => {
-        const source = 'VERSION "1.2"\nPREFIX : <http://example.com/>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n:alice :name "Alice" ~ :t {| :statedBy :bob ; :recorded "2021-07-07"^^xsd:date |} .\n';
-        const actual = rdfToEyelang(source, { materializeRdf: false });
-        assertEqual(actual, [
-          'rdf(iri("http://example.com/alice"), iri("http://example.com/name"), literal("Alice", iri("http://www.w3.org/2001/XMLSchema#string"), "", "")).\n',
-          'rdf(iri("http://example.com/t"), iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies"), triple(iri("http://example.com/alice"), iri("http://example.com/name"), literal("Alice", iri("http://www.w3.org/2001/XMLSchema#string"), "", ""))).\n',
-          'rdf(iri("http://example.com/t"), iri("http://example.com/statedBy"), iri("http://example.com/bob")).\n',
-          'rdf(iri("http://example.com/t"), iri("http://example.com/recorded"), literal("2021-07-07", iri("http://www.w3.org/2001/XMLSchema#date"), "", "")).\n',
-        ].join(''), 'rdfToEyelang');
-      },
-    },
-    {
-      name: 'Notation3 rules materialize derived RDF triples',
-      run: () => {
-        const source = '@prefix : <http://example.com/> .\n{ ?x :parent ?y . } => { ?x :related ?y . } .\n:alice :parent :bob .\n';
-        const actual = run(source, { inputFormat: 'n3' }).stdout;
-        assertEqual(actual, 'rdf(iri("http://example.com/alice"), iri("http://example.com/related"), iri("http://example.com/bob")).\n', 'stdout');
-      },
-    },
-    {
-      name: '--rdf reads RDF 1.2 / N3 compatibility input',
-      run: () => {
-        const source = '@prefix : <http://example.com/> .\n{ ?x :parent ?y . } => { ?x :related ?y . } .\n:alice :parent :bob .\n';
-        const result = runCli(['--rdf', '-'], { input: source });
-        assertEqual(result.status, 0, 'exit status');
-        assertEqual(result.stdout, 'rdf(iri("http://example.com/alice"), iri("http://example.com/related"), iri("http://example.com/bob")).\n', 'stdout');
-        assertEqual(result.stderr, '', 'stderr');
-      },
-    },
-
-    {
-      name: 'Notation3 <= rules and builtins materialize derived RDF triples',
-      run: () => {
-        const source = '@prefix : <http://example.com/> .\n@prefix math: <http://www.w3.org/2000/10/swap/math#> .\n{ ?x :ok true . } <= { (2 3) math:sum ?n . ?n math:equalTo 5 . ?x :seed true . } .\n:case :seed true .\n';
-        const actual = run(source, { inputFormat: 'n3' }).stdout;
-        assertEqual(actual, 'rdf(iri("http://example.com/case"), iri("http://example.com/ok"), literal("true", iri("http://www.w3.org/2001/XMLSchema#boolean"), "", "")).\n', 'stdout');
-      },
-    },
-
-    {
-      name: 'bundled RDF 1.2 / N3 examples match golden output',
-      run: () => {
-        const dir = path.join(packageRoot, 'examples', 'eyelang');
-        const files = fs.readdirSync(dir)
-          .filter((name) => name.endsWith('.n3') || name.endsWith('.ttl'))
-          .sort();
-        assertEqual(files.length > 0, true, 'rdf example files exist');
-        for (const name of files) {
-          const result = runCli([path.join('examples', 'eyelang', name)]);
-          assertEqual(result.status, 0, `${name} exit status`);
-          assertEqual(result.stderr, '', `${name} stderr`);
-          const expected = fs.readFileSync(path.join(dir, 'output', name), 'utf8');
-          assertEqual(result.stdout, expected, `${name} stdout`);
-        }
-      },
-    },
-
 
     {
       name: '--proof enables materialization explanations',

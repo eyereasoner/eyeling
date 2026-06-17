@@ -1,4 +1,0 @@
-rdf(iri("https://eyereasoner.github.io/ns#event"), iri("https://eyereasoner.github.io/ns#year"), literal("2026", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).
-rdf(iri("https://eyereasoner.github.io/ns#event"), iri("https://eyereasoner.github.io/ns#month"), literal("6", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).
-rdf(iri("https://eyereasoner.github.io/ns#event"), iri("https://eyereasoner.github.io/ns#day"), literal("15", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).
-rdf(iri("https://eyereasoner.github.io/ns#event"), iri("https://eyereasoner.github.io/ns#hour"), literal("10", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).

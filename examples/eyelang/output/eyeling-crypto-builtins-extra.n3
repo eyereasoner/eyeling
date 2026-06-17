@@ -1,3 +1,0 @@
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/crypto-extra#payload"), iri("https://eyereasoner.github.io/eyeling/examples/crypto-extra#sha256Length"), literal("64", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/crypto-extra#payload"), iri("https://eyereasoner.github.io/eyeling/examples/crypto-extra#sha256"), literal("4b357736281309b7e52867fdd0014d831067c8a2060446e6d3315215ca0cc38f", iri("http://www.w3.org/2001/XMLSchema#string"), "", "")).
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/crypto-extra#payload"), iri("https://eyereasoner.github.io/eyeling/examples/crypto-extra#hashLooksComplete"), literal("true", iri("http://www.w3.org/2001/XMLSchema#boolean"), "", "")).

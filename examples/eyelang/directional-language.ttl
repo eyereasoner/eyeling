@@ -1,9 +1,0 @@
-# RDF 1.2 directional language-tagged string example.
-VERSION "1.2"
-PREFIX : <http://example.org/lang#>
-
-:greeting :label "שלום"@he--rtl .
-
-{ ?Thing :label ?Text . }
-=>
-{ ?Thing :hasDirectionalLabel true . } .

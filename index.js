@@ -27,8 +27,7 @@ function normalizeEyelangSourceForTempFile(source) {
       typeof source.eyelang === 'string' ? source.eyelang
         : typeof source.prolog === 'string' ? source.prolog
           : typeof source.text === 'string' ? source.text
-            : typeof source.n3 === 'string' ? source.n3
-              : null;
+            : null;
     if (text !== null) return text;
   }
   throw new TypeError('reason({ engine: "eyelang" }, input): each source must be a string or an object with an eyelang/prolog/text field');
@@ -49,9 +48,6 @@ function reasonEyelangSync(opt = {}, input = '') {
 
   if (opt.proof || opt.why || opt.explain) args.push('--proof');
   if (opt.stats) args.push('--stats');
-  if (opt.rdf || opt.rdf12) args.push('--rdf');
-  if (opt.n3) args.push('--n3');
-  if (typeof opt.inputFormat === 'string' && opt.inputFormat) args.push('--input-format', opt.inputFormat);
   if (Array.isArray(opt.args)) args.push(...opt.args);
 
   const maxBuffer = Number.isFinite(opt.maxBuffer) ? opt.maxBuffer : 50 * 1024 * 1024;

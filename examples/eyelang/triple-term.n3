@@ -1,9 +1,0 @@
-# RDF 1.2 triple term example for the eyelang compatibility layer.
-PREFIX : <http://example.org/triple-term#>
-
-:alice :says <<( :bob :knows :carol )>> .
-
-{ ?Reporter :says <<( ?Knower :knows ?Known )>> . }
-=>
-{ ?Reporter :reportedKnower ?Knower .
-  ?Reporter :reportedKnown ?Known . } .

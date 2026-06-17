@@ -1,2 +1,0 @@
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/derived-rule#test"), iri("https://eyereasoner.github.io/eyeling/examples/derived-rule#is"), literal("true", iri("http://www.w3.org/2001/XMLSchema#boolean"), "", "")).
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/derived-rule#Minka"), iri("https://eyereasoner.github.io/eyeling/examples/derived-rule#compatibleWith"), iri("https://eyereasoner.github.io/eyeling/examples/derived-rule#Charly")).

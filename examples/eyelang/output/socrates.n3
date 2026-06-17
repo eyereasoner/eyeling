@@ -1,1 +1,0 @@
-rdf(iri("http://example.org/socrates#Socrates"), iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"), iri("http://example.org/socrates#Mortal")).

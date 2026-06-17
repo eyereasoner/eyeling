@@ -1,5 +1,0 @@
-rdf(iri("https://eyereasoner.github.io/ns#calc"), iri("https://eyereasoner.github.io/ns#sum"), literal("10", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).
-rdf(iri("https://eyereasoner.github.io/ns#calc"), iri("https://eyereasoner.github.io/ns#integerQuotient"), literal("5", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).
-rdf(iri("https://eyereasoner.github.io/ns#calc"), iri("https://eyereasoner.github.io/ns#remainder"), literal("1", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).
-rdf(iri("https://eyereasoner.github.io/ns#calc"), iri("https://eyereasoner.github.io/ns#power"), literal("256", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).
-rdf(iri("https://eyereasoner.github.io/ns#calc"), iri("https://eyereasoner.github.io/ns#absolute"), literal("3", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).

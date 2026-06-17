@@ -1,4 +1,0 @@
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/fastpow#case1"), iri("https://eyereasoner.github.io/eyeling/examples/fastpow#power"), literal("1024", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/fastpow#case2"), iri("https://eyereasoner.github.io/eyeling/examples/fastpow#power"), literal("2187", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/fastpow#case1"), iri("https://eyereasoner.github.io/eyeling/examples/fastpow#largePower"), literal("true", iri("http://www.w3.org/2001/XMLSchema#boolean"), "", "")).
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/fastpow#case2"), iri("https://eyereasoner.github.io/eyeling/examples/fastpow#largePower"), literal("true", iri("http://www.w3.org/2001/XMLSchema#boolean"), "", "")).

@@ -20,13 +20,12 @@ For the normative language definition, including lexical syntax, terms, clauses,
 4. [Writing programs](#writing-programs)
 5. [Aggregation helpers](#aggregation-helpers)
 6. [Formula data](#formula-data)
-7. [RDF 1.2 and Notation3 compatibility](#rdf-12-and-notation3-compatibility)
-8. [Example catalog](#example-catalog)
-9. [Golden outputs, tests, and conformance](#golden-outputs-tests-and-conformance)
-10. [Development and release](#development-and-release)
-11. [Relationship to Eyeling](#relationship-to-eyeling)
-12. [Performance notes](#performance-notes)
-13. [Implementation limits](#implementation-limits)
+7. [Example catalog](#example-catalog)
+8. [Golden outputs, tests, and conformance](#golden-outputs-tests-and-conformance)
+9. [Development and release](#development-and-release)
+10. [Relationship to Eyeling](#relationship-to-eyeling)
+11. [Performance notes](#performance-notes)
+12. [Implementation limits](#implementation-limits)
 
 ## Quick start
 
@@ -316,69 +315,9 @@ formula_binary((name(alice, "Alice"), knows(alice, bob)), S, P, O).
 This can yield `S = alice`, `P = name`, `O = "Alice"` and `S = alice`, `P = knows`, `O = bob`. The utility is useful for quoted formula data, but it does not make those formula members true in the ambient program.
 
 
-## RDF 1.2 and Notation3 compatibility
-
-The core eyelang syntax remains Prolog-like, but `src/rdf.js` adds a compatibility layer for RDF 1.2 Turtle/N-Triples style data and a practical Notation3 rule subset. Use it from the CLI with `--rdf`, `--rdf12`, `--n3`, or `--input-format FORMAT`; file inputs ending in `.ttl`, `.nt`, or `.n3` are recognized when the CLI uses its default `auto` format.
-
-```sh
-bin/eyelang --rdf data.ttl rules.n3
-printf '@prefix : <http://example.com/> .
-{ ?x :parent ?y . } => { ?x :related ?y . } .
-:alice :parent :bob .
-' | bin/eyelang --n3 -
-```
-
-RDF triples are lowered to ordinary `rdf/3` goals:
-
-```prolog
-rdf(Subject, Predicate, Object).
-```
-
-RDF terms are explicit eyelang compound terms:
-
-```prolog
-iri("http://example.com/alice")
-bnode("b0")
-literal("Alice", iri("http://www.w3.org/2001/XMLSchema#string"), "", "")
-triple(Subject, Predicate, Object)
-```
-
-The layer supports `PREFIX`/`@prefix`, `BASE`/`@base`, `VERSION`/`@version`, IRIs, prefixed names, blank nodes, strings, numeric and boolean literals, language-tagged and RDF 1.2 directional language-tagged strings, RDF collections, blank-node property lists, RDF 1.2 triple terms `<<( ... )>>`, reified triple sugar `<< ... >>`, annotation blocks `{| ... |}`, N3 rules of the form `{ antecedent } => { consequent } .`, reverse rules of the form `{ consequent } <= { antecedent } .`, and N3 equality `=` as `owl:sameAs`. Reified triples and annotations are expanded through `rdf:reifies`, so this Turtle fragment:
-
-```turtle
-VERSION "1.2"
-PREFIX : <http://example.com/>
-:alice :name "Alice" ~ :t {| :statedBy :bob |} .
-```
-
-is made available as eyelang facts like:
-
-```prolog
-rdf(iri("http://example.com/alice"), iri("http://example.com/name"), literal("Alice", iri("http://www.w3.org/2001/XMLSchema#string"), "", "")).
-rdf(iri("http://example.com/t"), iri("http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies"), triple(iri("http://example.com/alice"), iri("http://example.com/name"), literal("Alice", iri("http://www.w3.org/2001/XMLSchema#string"), "", ""))).
-rdf(iri("http://example.com/t"), iri("http://example.com/statedBy"), iri("http://example.com/bob")).
-```
-
-From JavaScript, use `parseRdfClauses(source, options)` when you want clause objects, or `rdfToEyelang(source, options)` when you want the lowered eyelang source text.
-
-N3 body triples whose predicates are in the common SWAP namespaces are lowered to eyelang built-ins instead of `rdf/3` goals. The practical bridge covers math comparisons and arithmetic such as `math:sum`, `math:difference`, `math:product`, `math:quotient`, `math:rounded`, and trigonometric functions, with exact BigInt-backed integer paths for large N3 arithmetic examples; string predicates such as `string:contains`, `string:startsWith`, `string:concatenation`, `string:length`, `string:replace`, and `string:scrape`; list predicates such as `list:member`, `list:append`, `list:first`, `list:rest`, `list:length`, `list:reverse`, and `list:sort`; `crypto:sha`, `crypto:md5`, `crypto:sha256`, `crypto:sha512`; simple `time:*` component extraction; and selected `log:*` helpers such as `log:equalTo`, `log:notEqualTo`, `log:uri`, `log:dtlit`, and `log:rawType`. This follows the builtin families used by eyeling while keeping eyelang's execution model small.
-
-RDF/N3 examples now live directly in [`examples/`](examples/), with golden outputs in [`examples/output/`](examples/output/), matching the existing example layout. They include eyeling-inspired `socrates.n3`, `family-cousins.n3`, and `annotation-rdf12.ttl` examples; focused RDF 1.2 triple-term and directional-language examples; `n3-builtins.n3`; and a larger `eyeling-*.n3` set adapted from the eyeling example directory. The added eyeling-style examples cover backward rules, recursive `<=`, equality, collection/list handling, Ackermann-style hyperoperations, Fibonacci numbers, dog-license, witch, Cat Koko, family/cousin, alignment, BMI, and SWAP math/string/list/crypto/time builtins. Run them with auto format detection or force the reader explicitly:
-
-```sh
-bin/eyelang examples/socrates.n3
-bin/eyelang --rdf12 examples/annotation-rdf12.ttl
-bin/eyelang --n3 examples/n3-builtins.n3
-bin/eyelang --n3 examples/eyeling-backward-recursion.n3
-bin/eyelang --n3 examples/eyeling-ackermann.n3
-bin/eyelang --n3 examples/eyeling-fibonacci.n3
-```
-
-This is a compatibility layer, not a validating W3C conformance parser. It intentionally covers the graph-oriented syntax, common RDF 1.2 constructs, and the N3 Horn-rule/builtin patterns that map cleanly to eyelang; it does not implement RDF/XML, full TriG datasets, SPARQL, scoped N3 formula built-ins such as full `log:semantics`, or every Notation3 construct.
-
 ## Example catalog
 
-The repository includes examples for recursion, graph reachability, finite search, arithmetic, list processing, optimization, policies, puzzles, N3-inspired rule chains, and applied scientific calculations. Bundled examples use relation-style output.
+The repository includes examples for recursion, graph reachability, finite search, arithmetic, list processing, optimization, policies, puzzles, and applied scientific calculations. Bundled examples use relation-style output.
 
 | Input | Short description | Output |
 | --- | --- | --- |
@@ -391,7 +330,6 @@ The repository includes examples for recursion, graph reachability, finite searc
 | [`ancestor.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/ancestor.pl) | Derives ancestors from parent facts. | [`output/ancestor.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/ancestor.pl) |
 | [`animal.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/animal.pl) | Classifies animals from traits. | [`output/animal.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/animal.pl) |
 | [`annotation.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/annotation.pl) | Derives facts from quoted annotation data. | [`output/annotation.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/annotation.pl) |
-| [`annotation-rdf12.ttl`](https://github.com/eyereasoner/eyelang/blob/main/examples/annotation-rdf12.ttl) | Demonstrates RDF 1.2 annotation syntax lowered through `rdf:reifies`. | [`output/annotation-rdf12.ttl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/annotation-rdf12.ttl) |
 | [`auroracare.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/auroracare.pl) | Evaluates purpose-based medical data access scenarios. | [`output/auroracare.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/auroracare.pl) |
 | [`backward.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/backward.pl) | Shows a backward-rule pattern as a goal-directed numeric rule. | [`output/backward.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/backward.pl) |
 | [`basic-monadic.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/basic-monadic.pl) | Runs a monadic benchmark over generated inputs. | [`output/basic-monadic.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/basic-monadic.pl) |
@@ -516,21 +454,18 @@ The repository includes examples for recursion, graph reachability, finite searc
 | [`turing.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/turing.pl) | Simulates a binary-increment Turing machine. | [`output/turing.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/turing.pl) |
 | [`vector-similarity.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/vector-similarity.pl) | Computes dot product, norm, and cosine similarity. | [`output/vector-similarity.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/vector-similarity.pl) |
 | [`vulnerability-impact.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/vulnerability-impact.pl) | Analyzes vulnerable transitive dependencies and urgent patch impact. | [`output/vulnerability-impact.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/vulnerability-impact.pl) |
-| [`witch.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/witch.pl) | Derives the classic “burn the witch” N3 rule chain. | [`output/witch.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/witch.pl) |
+| [`witch.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/witch.pl) | Derives the classic “burn the witch” rule chain. | [`output/witch.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/witch.pl) |
 | [`wolf-goat-cabbage.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/wolf-goat-cabbage.pl) | Solves the wolf-goat-cabbage river crossing. | [`output/wolf-goat-cabbage.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/wolf-goat-cabbage.pl) |
 | [`zebra.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/zebra.pl) | Solves the zebra logic puzzle. | [`output/zebra.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/zebra.pl) |
 
 
-| [`directional-language.ttl`](https://github.com/eyereasoner/eyelang/blob/main/examples/directional-language.ttl) | Demonstrates RDF 1.2 directional language-tagged strings. | [`output/directional-language.ttl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/directional-language.ttl) |
-| [`n3-builtins.n3`](https://github.com/eyereasoner/eyelang/blob/main/examples/n3-builtins.n3) | Uses N3 `<=` plus `math:`, `string:`, and `list:` builtins. | [`output/n3-builtins.n3`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/n3-builtins.n3) |
-| [`triple-term.n3`](https://github.com/eyereasoner/eyelang/blob/main/examples/triple-term.n3) | Demonstrates RDF 1.2 triple terms in N3 data and rules. | [`output/triple-term.n3`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/triple-term.n3) |
 
 ## Golden outputs, tests, and conformance
 
-Golden answer outputs live in [`examples/output`](examples/output). `npm run test:examples` covers every top-level runnable example with extension `.pl`, `.n3`, `.ttl`, or `.nt`. A curated proof-output suite for `.pl` examples lives in [`examples/proof`](examples/proof). Example tests pin `local_time/1` to `2026-05-30` so date-dependent examples stay deterministic. Regenerate them after an intentional output or explanation change:
+Golden answer outputs live in [`examples/output`](examples/output). `npm run test:examples` covers every top-level runnable `.pl` example. A curated proof-output suite for `.pl` examples lives in [`examples/proof`](examples/proof). Example tests pin `local_time/1` to `2026-05-30` so date-dependent examples stay deterministic. Regenerate them after an intentional output or explanation change:
 
 ```sh
-for f in examples/*.pl examples/*.n3 examples/*.ttl examples/*.nt; do
+for f in examples/*.pl; do
   [ -e "$f" ] || continue
   b=$(basename "$f")
   EYELANG_LOCAL_TIME=2026-05-30 bin/eyelang "$f" > "examples/output/$b"
@@ -629,4 +564,4 @@ For large programs, keep helper predicates selective, bind arguments early, and 
 
 ## Implementation limits
 
-eyelang is intentionally smaller than ISO Prolog. It has no operators, cut, modules, dynamic database updates, DCGs, or complete ISO library. Negation is negation-as-failure through `not/1`. Search is goal-directed and expected to be finite for the selected output goals. Output explanations are non-normative proof printouts and do not change answer semantics. The RDF 1.2 / Notation3 reader is an implementation compatibility layer over `rdf/3`, not a normative RDF conformance profile.
+eyelang is intentionally smaller than ISO Prolog. It has no operators, cut, modules, dynamic database updates, DCGs, or complete ISO library. Negation is negation-as-failure through `not/1`. Search is goal-directed and expected to be finite for the selected output goals. Output explanations are non-normative proof printouts and do not change answer semantics. 

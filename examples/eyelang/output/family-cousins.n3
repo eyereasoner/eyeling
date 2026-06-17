@@ -1,8 +1,0 @@
-rdf(iri("http://example.org/family#Dave"), iri("http://example.org/family#cousin"), iri("http://example.org/family#Frank")).
-rdf(iri("http://example.org/family#Dave"), iri("http://example.org/family#cousin"), iri("http://example.org/family#Grace")).
-rdf(iri("http://example.org/family#Eve"), iri("http://example.org/family#cousin"), iri("http://example.org/family#Frank")).
-rdf(iri("http://example.org/family#Eve"), iri("http://example.org/family#cousin"), iri("http://example.org/family#Grace")).
-rdf(iri("http://example.org/family#Frank"), iri("http://example.org/family#cousin"), iri("http://example.org/family#Dave")).
-rdf(iri("http://example.org/family#Frank"), iri("http://example.org/family#cousin"), iri("http://example.org/family#Eve")).
-rdf(iri("http://example.org/family#Grace"), iri("http://example.org/family#cousin"), iri("http://example.org/family#Dave")).
-rdf(iri("http://example.org/family#Grace"), iri("http://example.org/family#cousin"), iri("http://example.org/family#Eve")).

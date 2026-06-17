@@ -470,7 +470,7 @@ An extension built-in SHOULD obey the same surface-language discipline as standa
 - it SHOULD document its intended modes, especially which arguments must be ground before it runs deterministically;
 - it MUST NOT change the meaning of ordinary facts, rules, unification, or standard built-ins.
 
-For example, an implementation may include extension modules for Sudoku solving, portfolio selection, number-theory algorithms, graph search, matrix operations, alphametic puzzles, or a non-normative RDF/Notation3 reader that lowers RDF triples to ordinary eyelang predicates such as `rdf/3` and lowers selected Notation3 built-in predicates to extension built-ins such as `n3_math_sum/2` or `n3_string_contains/2`. Those modules may be valuable and may make example programs much faster, but their predicate names, arities, algorithms, syntax accepted by non-eyelang readers, and modes are implementation-defined unless they are separately standardized.
+For example, an implementation may include extension modules for Sudoku solving, portfolio selection, number-theory algorithms, graph search, matrix operations, or alphametic puzzles. Those modules may be valuable and may make example programs much faster, but their predicate names, arities, algorithms, and modes are implementation-defined unless they are separately standardized.
 
 An implementation that provides explanation output SHOULD make extension built-ins explainable at least as opaque successful or failed built-in calls, so that proof traces do not incorrectly report "no clauses" for a host-provided relation.
 
@@ -681,4 +681,3 @@ URL input uses host networking support when available. Hosts SHOULD treat downlo
 
 Programs SHOULD be written with finite search in mind. Broad default materialization can be expensive for helper predicates; use `materialize/2` declarations and concise output predicates when needed.
 
-Compatibility readers for external syntaxes such as RDF 1.2 Turtle, N-Triples, or Notation3 SHOULD be treated as front-end translations into eyelang clauses. Such readers may support N3 implication syntaxes such as `=>` and `<=`, empty `true` rule bodies, N3 equality as `owl:sameAs`, and common N3/SWAP built-in namespaces mapped to host extension built-ins, including exact integer arithmetic where the host provides it. Unless a host explicitly claims a separate RDF or N3 conformance profile, such readers are not part of core eyelang conformance and may accept only the subset that maps cleanly to finite Horn-clause reasoning.

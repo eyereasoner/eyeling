@@ -98,10 +98,6 @@ export interface EyelangRunOptions {
   why?: boolean;
   explain?: boolean;
   stats?: boolean;
-  rdf?: boolean;
-  rdf12?: boolean;
-  n3?: boolean;
-  inputFormat?: 'auto' | 'eyelang' | 'rdf' | 'rdf12' | 'turtle' | 'ttl' | 'nt' | 'n3' | string;
   args?: string[];
   maxBuffer?: number;
   [key: string]: unknown;

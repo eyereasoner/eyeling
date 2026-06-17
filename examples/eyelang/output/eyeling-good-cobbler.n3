@@ -1,2 +1,0 @@
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/good-cobbler#joe"), iri("https://eyereasoner.github.io/eyeling/examples/good-cobbler#goodAt"), iri("https://eyereasoner.github.io/eyeling/examples/good-cobbler#Cobbler")).
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/good-cobbler#test"), iri("https://eyereasoner.github.io/eyeling/examples/good-cobbler#hasGoodWorker"), iri("https://eyereasoner.github.io/eyeling/examples/good-cobbler#joe")).

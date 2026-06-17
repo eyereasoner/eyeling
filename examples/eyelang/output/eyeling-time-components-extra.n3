@@ -1,5 +1,0 @@
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/time-extra#event"), iri("https://eyereasoner.github.io/eyeling/examples/time-extra#year"), literal("2026", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/time-extra#event"), iri("https://eyereasoner.github.io/eyeling/examples/time-extra#month"), literal("6", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/time-extra#event"), iri("https://eyereasoner.github.io/eyeling/examples/time-extra#day"), literal("15", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/time-extra#event"), iri("https://eyereasoner.github.io/eyeling/examples/time-extra#hour"), literal("10", iri("http://www.w3.org/2001/XMLSchema#integer"), "", "")).
-rdf(iri("https://eyereasoner.github.io/eyeling/examples/time-extra#event"), iri("https://eyereasoner.github.io/eyeling/examples/time-extra#dateCheck"), literal("true", iri("http://www.w3.org/2001/XMLSchema#boolean"), "", "")).

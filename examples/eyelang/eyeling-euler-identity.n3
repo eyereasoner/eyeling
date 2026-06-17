@@ -1,9 +1,0 @@
-# Adapted from eyeling/examples/euler-identity.n3.
-# Numeric trigonometric builtins around pi.
-@prefix math: <http://www.w3.org/2000/10/swap/math#>.
-@prefix : <https://eyereasoner.github.io/eyeling/examples/euler-identity#>.
-
-:pi :radians 3.141592653589793.
-
-{ :pi :radians ?P. ?P math:cos ?C. ?P math:sin ?S. } => { :euler :cosPi ?C; :sinPi ?S. }.
-{ :euler :cosPi ?C. ?C math:notGreaterThan -1. } => { :euler :cosPiAtMinusOne true. }.

@@ -1,1 +1,0 @@
-rdf(iri("http://example.org/lang#greeting"), iri("http://example.org/lang#hasDirectionalLabel"), literal("true", iri("http://www.w3.org/2001/XMLSchema#boolean"), "", "")).

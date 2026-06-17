@@ -54,7 +54,7 @@ export function runExamples(reporter = new TestReporter()) {
 
 
 function exampleIsRunnable(name) {
-  return name.endsWith('.pl') || name.endsWith('.n3') || name.endsWith('.ttl') || name.endsWith('.nt');
+  return name.endsWith('.pl');
 }
 
 function runExample(name) {
@@ -79,7 +79,6 @@ function runProgramExample(programFile, filename, options) {
     const program = Program.parseSources([{ text, filename }], {
       sourceMetadata: options.proof,
       markRecursive: options.proof,
-      inputFormat: 'auto',
     });
     return run(program, options).stdout;
   } finally {
