@@ -1,0 +1,12 @@
+@prefix : <https://example.org/trust-flow-provenance-threshold#> .
+@prefix dpv: <https://w3id.org/dpv#> .
+@prefix fpv: <https://example.org/fpv#> .
+@prefix risk: <https://w3id.org/dpv/risk#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:messageA fpv:confidence "0.8937599999999999"^^xsd:decimal .
+:messageB fpv:confidence "0.41999999999999993"^^xsd:decimal .
+:messageA fpv:trustFlowState fpv:accepted .
+:messageA dpv:hasStatus fpv:HighTrustFlow .
+:messageB fpv:trustFlowState fpv:quarantine .
+:messageB dpv:hasRisk risk:LowTrustDataSource .

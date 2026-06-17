@@ -1,0 +1,54 @@
+# Trust flow with provenance-derived confidence.
+# A message is considered high-trust only when publisher trust, signature strength,
+# and transformation quality combine above the receiver threshold.
+
+@prefix :     <https://example.org/trust-flow-provenance-threshold#> .
+@prefix dpv:  <https://w3id.org/dpv#> .
+@prefix fpv:  <https://example.org/fpv#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix risk: <https://w3id.org/dpv/risk#> .
+
+:messageA a fpv:Message ;
+  prov:wasAttributedTo :PublisherA ;
+  prov:wasGeneratedBy :TransformA ;
+  fpv:hasSignature :SignatureA ;
+  fpv:receiver :ReceiverApp .
+
+:messageB a fpv:Message ;
+  prov:wasAttributedTo :PublisherB ;
+  prov:wasGeneratedBy :TransformB ;
+  fpv:hasSignature :SignatureB ;
+  fpv:receiver :ReceiverApp .
+
+:PublisherA fpv:publisherTrust 0.95 .
+:PublisherB fpv:publisherTrust 0.70 .
+:SignatureA fpv:signatureStrength 0.98 .
+:SignatureB fpv:signatureStrength 0.75 .
+:TransformA fpv:qualityScore 0.96 .
+:TransformB fpv:qualityScore 0.80 .
+:ReceiverApp fpv:acceptanceThreshold 0.85 .
+
+{ ?message a fpv:Message ;
+    prov:wasAttributedTo ?publisher ;
+    prov:wasGeneratedBy ?transform ;
+    fpv:hasSignature ?signature ;
+    fpv:receiver ?receiver .
+  ?publisher fpv:publisherTrust ?publisherTrust .
+  ?signature fpv:signatureStrength ?signatureTrust .
+  ?transform fpv:qualityScore ?quality .
+  ( ?publisherTrust ?signatureTrust ?quality ) math:product ?confidence . }
+=>
+{ ?message fpv:confidence ?confidence . } .
+
+{ ?message fpv:confidence ?confidence ; fpv:receiver ?receiver .
+  ?receiver fpv:acceptanceThreshold ?threshold .
+  ?confidence math:notLessThan ?threshold . }
+=>
+{ ?message fpv:trustFlowState fpv:accepted ; dpv:hasStatus fpv:HighTrustFlow . } .
+
+{ ?message fpv:confidence ?confidence ; fpv:receiver ?receiver .
+  ?receiver fpv:acceptanceThreshold ?threshold .
+  ?confidence math:lessThan ?threshold . }
+=>
+{ ?message fpv:trustFlowState fpv:quarantine ; dpv:hasRisk risk:LowTrustDataSource . } .

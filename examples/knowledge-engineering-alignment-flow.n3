@@ -1,0 +1,62 @@
+# Knowledge-engineering alignment flow inspired by reusable Linked Data artefacts.
+# The example keeps domain terms local, adds generic RDFS/OWL alignment rules once,
+# and derives a target SOSA/FPV-shaped view plus the compact runtime steps that were useful.
+# FPV is used here as a small local Flow/Policy Vocabulary profile, not as a public standard.
+
+@prefix :     <https://example.org/knowledge-engineering-alignment-flow#> .
+@prefix fpv:  <https://example.org/fpv#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+# Local vocabulary: useful to the source team, but not yet the application profile.
+:LocalObservation rdfs:subClassOf sosa:Observation .
+:TemperatureProbe rdfs:subClassOf sosa:Sensor .
+:observedBy rdfs:subPropertyOf sosa:madeBySensor .
+:observedAt rdfs:subPropertyOf sosa:resultTime .
+:temperatureCelsius rdfs:subPropertyOf sosa:hasSimpleResult .
+:observedFeature owl:equivalentProperty sosa:hasFeatureOfInterest .
+:inFlow rdfs:subPropertyOf fpv:hasFlowStep .
+
+# Incoming message in local terms.
+:msg1 a :LocalObservation ;
+  :observedBy :probe7 ;
+  :observedAt "2026-06-17T12:34:56Z"^^xsd:dateTime ;
+  :temperatureCelsius 18.6 ;
+  :observedFeature :platformB ;
+  :inFlow :ingestStep .
+
+:probe7 a :TemperatureProbe .
+
+# Generic rules over vocabulary primitives. They never mention the source classes directly.
+{ ?thing a ?class . ?class rdfs:subClassOf ?super . }
+=>
+{ ?thing a ?super . } .
+
+{ ?subject ?property ?object . ?property rdfs:subPropertyOf ?superProperty . }
+=>
+{ ?subject ?superProperty ?object . } .
+
+{ ?p owl:equivalentProperty ?q . ?s ?p ?o . }
+=>
+{ ?s ?q ?o . } .
+
+{ ?p owl:equivalentProperty ?q . ?s ?q ?o . }
+=>
+{ ?s ?p ?o . } .
+
+# Shape-planning trace: when a source predicate is aligned to a target predicate,
+# record the direct rule that a streaming runtime could specialize.
+{ ?sourcePredicate rdfs:subPropertyOf ?targetPredicate . }
+=>
+{ ?sourcePredicate fpv:runtimeRule fpv:copyToTarget ; fpv:targetPredicate ?targetPredicate . } .
+
+{ ?sourcePredicate owl:equivalentProperty ?targetPredicate . }
+=>
+{ ?sourcePredicate fpv:runtimeRule fpv:copyToTarget ; fpv:targetPredicate ?targetPredicate . } .
+
+# Trust-flow hook: the target-shaped observation can now be attached to a flow step.
+{ ?message a sosa:Observation ; fpv:hasFlowStep ?step ; sosa:madeBySensor ?sensor . }
+=>
+{ ?step fpv:emits ?message ; fpv:trustedBy ?sensor . } .

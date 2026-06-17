@@ -356,6 +356,7 @@ The repository includes examples for recursion, graph reachability, finite searc
 | [`dijkstra.pl`](../examples/eyelang/dijkstra.pl) | Enumerates weighted simple paths. | [`output/dijkstra.pl`](../examples/eyelang/output/dijkstra.pl) |
 | [`dining-philosophers.pl`](../examples/eyelang/dining-philosophers.pl) | Simulates Chandy-Misra fork exchanges. | [`output/dining-philosophers.pl`](../examples/eyelang/output/dining-philosophers.pl) |
 | [`dog.pl`](../examples/eyelang/dog.pl) | Counts dogs and derives when a license is required. | [`output/dog.pl`](../examples/eyelang/output/dog.pl) |
+| [`dpv-odrl-purpose-mapping.pl`](../examples/eyelang/dpv-odrl-purpose-mapping.pl) | Maps a DPV process into an ODRL permission view. | [`output/dpv-odrl-purpose-mapping.pl`](../examples/eyelang/output/dpv-odrl-purpose-mapping.pl) |
 | [`drone-corridor-planner.pl`](../examples/eyelang/drone-corridor-planner.pl) | Plans bounded drone corridor routes. | [`output/drone-corridor-planner.pl`](../examples/eyelang/output/drone-corridor-planner.pl) |
 | [`easter-computus.pl`](../examples/eyelang/easter-computus.pl) | Computes Gregorian Easter dates. | [`output/easter-computus.pl`](../examples/eyelang/output/easter-computus.pl) |
 | [`electrical-rc-filter.pl`](../examples/eyelang/electrical-rc-filter.pl) | Sizes an RC low-pass filter. | [`output/electrical-rc-filter.pl`](../examples/eyelang/output/electrical-rc-filter.pl) |
@@ -394,6 +395,7 @@ The repository includes examples for recursion, graph reachability, finite searc
 | [`ideal-gas-law.pl`](../examples/eyelang/ideal-gas-law.pl) | Applies the ideal gas law. | [`output/ideal-gas-law.pl`](../examples/eyelang/output/ideal-gas-law.pl) |
 | [`illegitimate-reasoning.pl`](../examples/eyelang/illegitimate-reasoning.pl) | Detects suspect reasoning patterns. | [`output/illegitimate-reasoning.pl`](../examples/eyelang/output/illegitimate-reasoning.pl) |
 | [`kaprekar.pl`](../examples/eyelang/kaprekar.pl) | Iterates toward Kaprekar's constant. | [`output/kaprekar.pl`](../examples/eyelang/output/kaprekar.pl) |
+| [`knowledge-engineering-alignment-flow.pl`](../examples/eyelang/knowledge-engineering-alignment-flow.pl) | Specializes reusable alignment rules into a target-shaped flow view. | [`output/knowledge-engineering-alignment-flow.pl`](../examples/eyelang/output/knowledge-engineering-alignment-flow.pl) |
 | [`law-of-cosines.pl`](../examples/eyelang/law-of-cosines.pl) | Computes a triangle side by cosine law. | [`output/law-of-cosines.pl`](../examples/eyelang/output/law-of-cosines.pl) |
 | [`least-squares-regression.pl`](../examples/eyelang/least-squares-regression.pl) | Fits a least-squares regression line. | [`output/least-squares-regression.pl`](../examples/eyelang/output/least-squares-regression.pl) |
 | [`list-collection.pl`](../examples/eyelang/list-collection.pl) | Demonstrates list and collection built-ins. | [`output/list-collection.pl`](../examples/eyelang/output/list-collection.pl) |
@@ -406,6 +408,7 @@ The repository includes examples for recursion, graph reachability, finite searc
 | [`network-sla.pl`](../examples/eyelang/network-sla.pl) | Checks network path SLA compliance. | [`output/network-sla.pl`](../examples/eyelang/output/network-sla.pl) |
 | [`newton-raphson.pl`](../examples/eyelang/newton-raphson.pl) | Finds roots by Newton-Raphson iteration. | [`output/newton-raphson.pl`](../examples/eyelang/output/newton-raphson.pl) |
 | [`nixon-diamond.pl`](../examples/eyelang/nixon-diamond.pl) | Reports the classic Nixon-diamond conflict. | [`output/nixon-diamond.pl`](../examples/eyelang/output/nixon-diamond.pl) |
+| [`odrl-dpv-fpv-trust-flow.pl`](../examples/eyelang/odrl-dpv-fpv-trust-flow.pl) | Decides ODRL/DPV data flows with local FPV trust gates. | [`output/odrl-dpv-fpv-trust-flow.pl`](../examples/eyelang/output/odrl-dpv-fpv-trust-flow.pl) |
 | [`odrl-dpv-healthcare-risk-ranked.pl`](../examples/eyelang/odrl-dpv-healthcare-risk-ranked.pl) | Ranks healthcare policy risks and mitigations. | [`output/odrl-dpv-healthcare-risk-ranked.pl`](../examples/eyelang/output/odrl-dpv-healthcare-risk-ranked.pl) |
 | [`odrl-dpv-risk-ranked.pl`](../examples/eyelang/odrl-dpv-risk-ranked.pl) | Ranks data-policy risks and mitigations. | [`output/odrl-dpv-risk-ranked.pl`](../examples/eyelang/output/odrl-dpv-risk-ranked.pl) |
 | [`orbital-transfer-design.pl`](../examples/eyelang/orbital-transfer-design.pl) | Designs a Hohmann orbital transfer. | [`output/orbital-transfer-design.pl`](../examples/eyelang/output/orbital-transfer-design.pl) |
@@ -430,6 +433,7 @@ The repository includes examples for recursion, graph reachability, finite searc
 | [`statistics-summary.pl`](../examples/eyelang/statistics-summary.pl) | Computes population statistics for a sample. | [`output/statistics-summary.pl`](../examples/eyelang/output/statistics-summary.pl) |
 | [`superdense-coding.pl`](../examples/eyelang/superdense-coding.pl) | Models superdense-coding bit transmission. | [`output/superdense-coding.pl`](../examples/eyelang/output/superdense-coding.pl) |
 | [`traveling-salesman.pl`](../examples/eyelang/traveling-salesman.pl) | Finds an optimal traveling-salesman tour. | [`output/traveling-salesman.pl`](../examples/eyelang/output/traveling-salesman.pl) |
+| [`trust-flow-provenance-threshold.pl`](../examples/eyelang/trust-flow-provenance-threshold.pl) | Classifies message trust from provenance confidence scores. | [`output/trust-flow-provenance-threshold.pl`](../examples/eyelang/output/trust-flow-provenance-threshold.pl) |
 | [`turing.pl`](../examples/eyelang/turing.pl) | Simulates a binary-increment Turing machine. | [`output/turing.pl`](../examples/eyelang/output/turing.pl) |
 | [`vector-similarity.pl`](../examples/eyelang/vector-similarity.pl) | Computes dot product, norm, and cosine similarity. | [`output/vector-similarity.pl`](../examples/eyelang/output/vector-similarity.pl) |
 | [`vulnerability-impact.pl`](../examples/eyelang/vulnerability-impact.pl) | Analyzes vulnerable transitive dependencies and urgent patch impact. | [`output/vulnerability-impact.pl`](../examples/eyelang/output/vulnerability-impact.pl) |

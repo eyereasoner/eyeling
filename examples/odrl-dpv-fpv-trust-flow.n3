@@ -1,0 +1,97 @@
+# ODRL + DPV + FPV trust-flow decisioning.
+# FPV is a local Flow/Policy Vocabulary profile used to describe data flows and trust gates.
+# ODRL states permissions/prohibitions, DPV gives privacy/risk vocabulary, and rules derive
+# which flow is permitted, denied, or escalated for human review.
+
+@prefix :     <https://example.org/odrl-dpv-fpv-trust-flow#> .
+@prefix dpv:  <https://w3id.org/dpv#> .
+@prefix fpv:  <https://example.org/fpv#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix odrl: <http://www.w3.org/ns/odrl/2/> .
+@prefix risk: <https://w3id.org/dpv/risk#> .
+
+:HospitalA :trustScore 0.92 .
+:SmallClinic :trustScore 0.63 .
+:AdNetwork :trustScore 0.28 .
+
+:FlowCare a fpv:DataFlow ;
+  fpv:source :HospitalA ;
+  fpv:recipient :ResearchPartner ;
+  fpv:data :LabResult ;
+  fpv:processing dpv:Use ;
+  fpv:purpose dpv:Healthcare .
+
+:FlowClinic a fpv:DataFlow ;
+  fpv:source :SmallClinic ;
+  fpv:recipient :ResearchPartner ;
+  fpv:data :LabResult ;
+  fpv:processing dpv:Use ;
+  fpv:purpose dpv:Healthcare .
+
+:FlowAds a fpv:DataFlow ;
+  fpv:source :HospitalA ;
+  fpv:recipient :AdNetwork ;
+  fpv:data :LabResult ;
+  fpv:processing dpv:Share ;
+  fpv:purpose dpv:Marketing .
+
+:TrustPolicy a odrl:Policy ;
+  odrl:permission :PermitHealthcareResearch ;
+  odrl:prohibition :ProhibitMarketingDisclosure .
+
+:PermitHealthcareResearch a odrl:Permission ;
+  odrl:assignee :ResearchPartner ;
+  odrl:target :LabResult ;
+  odrl:action dpv:Use ;
+  odrl:constraint :HealthcarePurpose, :MinTrust .
+
+:HealthcarePurpose a odrl:Constraint ;
+  odrl:leftOperand fpv:purpose ;
+  odrl:operator odrl:isA ;
+  odrl:rightOperand dpv:Healthcare .
+
+:MinTrust a odrl:Constraint ;
+  odrl:leftOperand fpv:sourceTrust ;
+  odrl:operator odrl:gteq ;
+  odrl:rightOperand 0.80 .
+
+:ProhibitMarketingDisclosure a odrl:Prohibition ;
+  odrl:assignee :AdNetwork ;
+  odrl:target :LabResult ;
+  odrl:action dpv:Share ;
+  odrl:constraint :MarketingPurpose .
+
+:MarketingPurpose a odrl:Constraint ;
+  odrl:leftOperand fpv:purpose ;
+  odrl:operator odrl:isA ;
+  odrl:rightOperand dpv:Marketing .
+
+# Permit if ODRL permission matches and the trust gate is satisfied.
+{ ?flow a fpv:DataFlow ; fpv:source ?source ; fpv:recipient ?recipient ; fpv:data ?data ; fpv:processing ?action ; fpv:purpose ?purpose .
+  ?source :trustScore ?score .
+  :TrustPolicy odrl:permission ?permission .
+  ?permission odrl:assignee ?recipient ; odrl:target ?data ; odrl:action ?action ; odrl:constraint ?purposeConstraint, ?trustConstraint .
+  ?purposeConstraint odrl:leftOperand fpv:purpose ; odrl:operator odrl:isA ; odrl:rightOperand ?purpose .
+  ?trustConstraint odrl:leftOperand fpv:sourceTrust ; odrl:operator odrl:gteq ; odrl:rightOperand ?minTrust .
+  ?score math:notLessThan ?minTrust . }
+=>
+{ ?flow fpv:decision fpv:permit ; fpv:confidence ?score ; dpv:hasStatus fpv:ExecutableFlow . } .
+
+# If the flow otherwise matches but the trust gate is too low, escalate rather than silently deny.
+{ ?flow a fpv:DataFlow ; fpv:source ?source ; fpv:recipient ?recipient ; fpv:data ?data ; fpv:processing ?action ; fpv:purpose ?purpose .
+  ?source :trustScore ?score .
+  :TrustPolicy odrl:permission ?permission .
+  ?permission odrl:assignee ?recipient ; odrl:target ?data ; odrl:action ?action ; odrl:constraint ?purposeConstraint, ?trustConstraint .
+  ?purposeConstraint odrl:leftOperand fpv:purpose ; odrl:operator odrl:isA ; odrl:rightOperand ?purpose .
+  ?trustConstraint odrl:leftOperand fpv:sourceTrust ; odrl:operator odrl:gteq ; odrl:rightOperand ?minTrust .
+  ?score math:lessThan ?minTrust . }
+=>
+{ ?flow fpv:decision fpv:review ; fpv:confidence ?score ; dpv:hasRisk risk:TrustworthinessRisk . } .
+
+# Prohibition wins for marketing disclosure to the advertising network.
+{ ?flow a fpv:DataFlow ; fpv:recipient ?recipient ; fpv:data ?data ; fpv:processing ?action ; fpv:purpose ?purpose .
+  :TrustPolicy odrl:prohibition ?prohibition .
+  ?prohibition odrl:assignee ?recipient ; odrl:target ?data ; odrl:action ?action ; odrl:constraint ?purposeConstraint .
+  ?purposeConstraint odrl:leftOperand fpv:purpose ; odrl:operator odrl:isA ; odrl:rightOperand ?purpose . }
+=>
+{ ?flow fpv:decision fpv:deny ; dpv:hasRisk risk:UnwantedDisclosureData ; dpv:hasStatus fpv:BlockedFlow . } .

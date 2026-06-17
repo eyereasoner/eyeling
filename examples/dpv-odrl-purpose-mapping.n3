@@ -1,0 +1,54 @@
+# DPV -> ODRL policy view.
+# A DPV process description is made executable by deriving the ODRL permission,
+# target, action, and purpose/legal-basis constraints used by a policy evaluator.
+
+@prefix :        <https://example.org/dpv-odrl-purpose-mapping#> .
+@prefix dpv:     <https://w3id.org/dpv#> .
+@prefix dpv-odrl:<https://w3id.org/dpv/mappings/odrl#> .
+@prefix odrl:    <http://www.w3.org/ns/odrl/2/> .
+
+:AlphaCareProcess a dpv:Process ;
+  dpv:hasDataController :HospitalA ;
+  dpv:hasRecipient :ResearchPartner ;
+  dpv:hasPersonalData :LabResult ;
+  dpv:hasProcessing dpv:Use ;
+  dpv:hasPurpose dpv:Healthcare ;
+  dpv:hasLegalBasis dpv:Consent .
+
+:AlphaPolicy :representsProcess :AlphaCareProcess ;
+  :permissionNode :AlphaPermission ;
+  :purposeConstraint :AlphaPurposeConstraint ;
+  :basisConstraint :AlphaBasisConstraint .
+
+{ ?policy :representsProcess ?process ; :permissionNode ?permission .
+  ?process a dpv:Process ;
+    dpv:hasDataController ?controller ;
+    dpv:hasRecipient ?recipient ;
+    dpv:hasPersonalData ?data ;
+    dpv:hasProcessing ?processing . }
+=>
+{ ?policy a odrl:Policy ; odrl:permission ?permission .
+  ?permission a odrl:Permission ;
+    odrl:assigner ?controller ;
+    odrl:assignee ?recipient ;
+    odrl:target ?data ;
+    odrl:action ?processing ;
+    :derivedFromProcess ?process . } .
+
+{ ?policy :representsProcess ?process ; :permissionNode ?permission ; :purposeConstraint ?constraint .
+  ?process dpv:hasPurpose ?purpose . }
+=>
+{ ?permission odrl:constraint ?constraint .
+  ?constraint a odrl:Constraint ;
+    odrl:leftOperand dpv-odrl:Purpose ;
+    odrl:operator odrl:isA ;
+    odrl:rightOperand ?purpose . } .
+
+{ ?policy :representsProcess ?process ; :permissionNode ?permission ; :basisConstraint ?constraint .
+  ?process dpv:hasLegalBasis ?basis . }
+=>
+{ ?permission odrl:constraint ?constraint .
+  ?constraint a odrl:Constraint ;
+    odrl:leftOperand dpv-odrl:LegalBasis ;
+    odrl:operator odrl:isA ;
+    odrl:rightOperand ?basis . } .

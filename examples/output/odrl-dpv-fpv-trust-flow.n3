@@ -1,0 +1,14 @@
+@prefix : <https://example.org/odrl-dpv-fpv-trust-flow#> .
+@prefix dpv: <https://w3id.org/dpv#> .
+@prefix fpv: <https://example.org/fpv#> .
+@prefix risk: <https://w3id.org/dpv/risk#> .
+
+:FlowCare fpv:decision fpv:permit .
+:FlowCare fpv:confidence 0.92 .
+:FlowCare dpv:hasStatus fpv:ExecutableFlow .
+:FlowClinic fpv:decision fpv:review .
+:FlowClinic fpv:confidence 0.63 .
+:FlowClinic dpv:hasRisk risk:TrustworthinessRisk .
+:FlowAds fpv:decision fpv:deny .
+:FlowAds dpv:hasRisk risk:UnwantedDisclosureData .
+:FlowAds dpv:hasStatus fpv:BlockedFlow .
