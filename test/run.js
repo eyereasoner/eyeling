@@ -5,20 +5,26 @@ const cp = require('node:child_process');
 
 const { C, formatDuration } = require('./report');
 
+const node = process.execPath;
+
+// Run test files directly instead of through `npm run …`. This keeps the
+// output in the compact Eyeling reporter style and avoids npm's script banners
+// between the colored OK/FAIL test lines.
 const sections = [
-  ['Build bundle', 'npm', ['run', 'build']],
-  ['Packlist checks', 'npm', ['run', 'test:packlist']],
-  ['API tests', 'npm', ['run', 'test:api']],
-  ['Streaming RDF Messages tests', 'npm', ['run', 'test:stream-messages']],
-  ['Builtin contract tests', 'npm', ['run', 'test:builtins']],
-  ['Store tests', 'npm', ['run', 'test:store']],
-  ['Examples tests', 'npm', ['run', 'test:examples']],
-  ['Proof examples tests', 'npm', ['run', 'test:examples:proof']],
-  ['Manifest tests', 'npm', ['run', 'test:manifest']],
-  ['RDF 1.2 syntax tests', 'npm', ['run', 'test:rdf12']],
-  ['Playground tests', 'npm', ['run', 'test:playground']],
-  ['Eyelang second-engine tests', 'npm', ['run', 'test:eyelang']],
-  ['Package tests', 'npm', ['run', 'test:package']],
+  ['Build bundle', node, ['tools/bundle.js']],
+  ['Packlist checks', node, ['test/packlist.test.js']],
+  ['API tests', node, ['test/api.test.js']],
+  ['Streaming RDF Messages tests', node, ['test/stream_messages.test.js']],
+  ['Builtin contract tests', node, ['test/builtins.test.js']],
+  ['Store tests', node, ['test/store.test.js']],
+  ['Examples tests', node, ['test/examples.test.js']],
+  ['Proof examples tests', node, ['test/examples.test.js', '--proof-only']],
+  ['Manifest tests', node, ['test/manifest.test.js']],
+  ['RDF 1.2 syntax tests', node, ['test/rdf12.test.js']],
+  ['Playground tests', node, ['test/playground.test.js']],
+  ['Eyelang second-engine tests', node, ['test/eyelang.test.js']],
+  ['Eyelang corpus tests', node, ['test/eyelang/run-all.mjs']],
+  ['Package tests', node, ['test/package.test.js']],
 ];
 
 const aggregate = {
@@ -43,7 +49,8 @@ function makeSectionSummary() {
     // Normal Eyeling tests use report.js: "OK 001 ..." / "FAIL 001 ...".
     reportOk: 0,
     reportFail: 0,
-    // The eyelang corpus runner uses: "1 OK ..." / "1 FAIL ...".
+    // Older corpus runners used: "1 OK ..." / "1 FAIL ...". Keep
+    // parsing that shape so aggregate totals remain robust across local runs.
     numberedOk: 0,
     numberedFail: 0,
     // notation3tests prints a suite-level line with the real manifest count.
@@ -124,6 +131,12 @@ function scoreLine() {
   return `TOTAL [COUNT:${aggregate.total}] OK: ⭐${aggregate.ok}⭐ INCOMPLETE: ⭐${aggregate.incomplete}⭐ NONCONFORM: ⭐${aggregate.nonconform}⭐ CRASHED: ⭐${aggregate.crashed}⭐ => SCORE: ⭐⭐⭐${score.toFixed(1)}⭐⭐⭐`;
 }
 
+function childEnv() {
+  const env = { ...process.env };
+  if (!env.NO_COLOR && C.g && !env.FORCE_COLOR) env.FORCE_COLOR = '1';
+  return env;
+}
+
 function runSection(label, cmd, args) {
   console.log('');
   sectionLine('Start', label);
@@ -135,7 +148,7 @@ function runSection(label, cmd, args) {
   return new Promise((resolve) => {
     const child = cp.spawn(cmd, args, {
       cwd: process.cwd(),
-      env: process.env,
+      env: childEnv(),
       shell: process.platform === 'win32',
       stdio: ['inherit', 'pipe', 'pipe'],
     });
