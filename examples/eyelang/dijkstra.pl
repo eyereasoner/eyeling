@@ -24,8 +24,8 @@ weighted_graph(dijkstraGraph, (
 
 % Derivation rules: each rule below contributes one logical step toward the displayed results.
 base_link(A, B, Cost) :-
-  weighted_graph(dijkstraGraph, Formula),
-  formula_binary(Formula, A, edge, arc(B, Cost)).
+  weighted_graph(dijkstraGraph, Context),
+  holds(Context, edge(A, arc(B, Cost))).
 
 link(A, B, Cost) :- base_link(A, B, Cost).
 link(B, A, Cost) :- base_link(A, B, Cost).

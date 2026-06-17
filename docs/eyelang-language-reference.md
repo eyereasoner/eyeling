@@ -39,7 +39,7 @@
   - [9.6 Strings and atom constants](#96-strings-and-atom-constants)
   - [9.7 Lists](#97-lists)
   - [9.8 Aggregation and ordering](#98-aggregation-and-ordering)
-  - [9.9 Formula terms](#99-formula-terms)
+  - [9.9 Context terms](#99-context-terms)
   - [9.10 Search control](#910-search-control)
 - [10. Extension built-ins](#10-extension-built-ins)
 - [11. Declarations](#11-declarations)
@@ -67,7 +67,7 @@
 
 eyelang is a compact Prolog-like definite-clause language for rule-based programs over ordinary terms, lists, arithmetic, strings, and finite search. An eyelang program is a finite sequence of facts and Horn clauses. The underlying declarative semantics of the pure language is **Herbrand semantics**: constants, compound terms, and lists denote themselves, and predicates denote sets of ground atomic formulas over those terms. Evaluation is goal-directed: goals are solved by unification against facts, rules, and a fixed set of built-in predicates.
 
-eyelang is intentionally smaller than ISO Prolog. It supports enough Prolog syntax to express Horn-clause reasoning, list processing, arithmetic examples, finite search, and formula data, without operators, cut, modules, dynamic predicates, DCGs, or a complete ISO standard library.
+eyelang is intentionally smaller than ISO Prolog. It supports enough Prolog syntax to express Horn-clause reasoning, list processing, arithmetic examples, finite search, and context data, without operators, cut, modules, dynamic predicates, DCGs, or a complete ISO standard library.
 
 ## 1. Terminology and normative language
 
@@ -96,7 +96,7 @@ eyelang is designed to be:
 - small enough to embed and audit;
 - deterministic in textual output order after duplicate suppression;
 - useful for relation-style `p(S, O)` output through ordinary predicate names;
-- practical for examples involving recursion, lists, arithmetic, strings, aggregation, finite search, and formula-valued data.
+- practical for examples involving recursion, lists, arithmetic, strings, aggregation, finite search, and context-valued data.
 
 Non-goals include complete ISO Prolog compatibility, operator declarations, module systems, dynamic database updates, cut-based control, and full bottom-up closure semantics.
 
@@ -252,7 +252,7 @@ Parenthesized comma terms may be goals or data:
 (name(alice, "Alice"), knows(alice, bob))
 ```
 
-When a comma term appears as a goal, it is evaluated as conjunction. When it appears as data, it remains a term. `formula_binary/4` enumerates binary members inside such formula terms.
+When a comma term appears as a goal, it is evaluated as conjunction. When it appears as data, it remains a term. `holds/2` enumerates member terms inside such contexts, and `holds/3` exposes each member as a predicate name plus an argument list for any arity.
 
 ## 6. Clauses and predicates
 
@@ -429,21 +429,23 @@ Comparisons interpret numeric-looking terms numerically. Other scalar terms are 
 | `aggregate_max(Key, Template, Goal, BestKey, BestTemplate)` | Selects the solution of `Goal` with the largest resolved `Key`, returning that key and the corresponding resolved `Template`. Fails when `Goal` has no solutions. |
 | `sort(Input, Output)` | Sorts and deduplicates a proper list. |
 
-### 9.9 Formula terms
+### 9.9 Context terms
 
-Formula terms are data representations of atomic formulas and comma conjunctions.
+Context terms are data representations of atomic formulas and comma conjunctions.
 
 | Built-in | Meaning |
 |---|---|
-| `formula_binary(Formula, S, P, O)` | Enumerates binary formula members `P(S, O)`, exposing the functor as atom constant `P`. |
+| `holds(Context, Term)` | Enumerates member terms inside a context term and unifies each member with `Term`. |
+| `holds(Context, Name, Args)` | Enumerates context members of any arity, exposing each member as atom constant `Name` plus a proper argument list `Args`. |
 
 Example:
 
 ```prolog
-formula_binary((name(alice, "Alice"), knows(alice, bob)), S, P, O).
+holds((name(alice, "Alice"), knows(alice, bob)), name(S, O)).
+holds((ready, name(alice, "Alice"), route(alice, bob, 7)), Name, Args).
 ```
 
-This can yield `formula_binary((name(alice, "Alice"), knows(alice, bob)), alice, name, "Alice").` and `formula_binary((name(alice, "Alice"), knows(alice, bob)), alice, knows, bob).`
+The first goal can yield `holds((name(alice, "Alice"), knows(alice, bob)), name(alice, "Alice")).` The second can yield `holds((ready, name(alice, "Alice"), route(alice, bob, 7)), ready, []).`, `holds((ready, name(alice, "Alice"), route(alice, bob, 7)), name, [alice, "Alice"]).`, and `holds((ready, name(alice, "Alice"), route(alice, bob, 7)), route, [alice, bob, 7]).`
 
 ### 9.10 Search control
 

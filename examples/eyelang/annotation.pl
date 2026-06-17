@@ -1,7 +1,7 @@
 % Annotation with quoted formula data.
 %
 % The program keeps the annotation as data and derives visible relations from it.
-% Formula members become default output only when explicit rules project them.
+% Context members become default output only when explicit rules project them.
 
 % Output declarations: materialize/2 selects the relations written to this example's golden output.
 materialize(name, 2).
@@ -18,17 +18,17 @@ annotation(t, (
 
 % Derivation rules: each rule below contributes one logical step toward the displayed results.
 name(S, O) :-
-  annotation(_T, Formula),
-  formula_binary(Formula, S, name, O).
+  annotation(_T, Context),
+  holds(Context, name(S, O)).
 
 log_nameOf(T, name(S, O)) :-
-  annotation(T, Formula),
-  formula_binary(Formula, S, name, O).
+  annotation(T, Context),
+  holds(Context, name(S, O)).
 
 statedBy(S, O) :-
-  annotation(_T, Formula),
-  formula_binary(Formula, S, statedBy, O).
+  annotation(_T, Context),
+  holds(Context, statedBy(S, O)).
 
 recorded(S, O) :-
-  annotation(_T, Formula),
-  formula_binary(Formula, S, recorded, O).
+  annotation(_T, Context),
+  holds(Context, recorded(S, O)).

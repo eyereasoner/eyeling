@@ -45,7 +45,7 @@ reading(substation_load_percent, 94).
 threshold(substation_load_percent, 85).
 
 % The deployable skills are stored as quoted formula data and projected by
-% formula_binary/4, showing how policy documents can be reasoned over as data.
+% holds/2, showing how policy documents can be reasoned over as data.
 policy_bundle(response_policy, (
   permission(medical_transport, deploy),
   permission(cold_chain, deploy),
@@ -168,13 +168,13 @@ criticalNeed(civic_storm, map_flood_front) :-
   activeSignal(civic_storm, river_surge).
 
 policyClearance(Skill, deploy) :-
-  policy_bundle(response_policy, Formula),
-  formula_binary(Formula, Skill, permission, deploy),
+  policy_bundle(response_policy, Context),
+  holds(Context, permission(Skill, deploy)),
   not(policyBlocked(Skill, deploy)).
 
 policyBlocked(Skill, deploy) :-
-  policy_bundle(response_policy, Formula),
-  formula_binary(Formula, Skill, prohibition, deploy).
+  policy_bundle(response_policy, Context),
+  holds(Context, prohibition(Skill, deploy)).
 
 usableRoute(Zone, route(Path, minutes(Minutes), risk(RouteRisk))) :-
   zone(Zone),

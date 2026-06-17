@@ -4,7 +4,7 @@
 % checklist facts as relation materialization.
 %
 % Static input is kept as scoped data: the case, insight, policy, envelope, and
-% signature are formula terms, while the product catalog is a list of records.
+% signature are context terms, while the product catalog is a list of records.
 % Rules project only the fields they need, avoiding global permission/prohibition
 % facts that could contradict another policy formula in the same program.
 
@@ -41,7 +41,7 @@ materialize(marketingProhibited, 2).
 materialize(filesWrittenExpected, 2).
 
 % Program structure: facts set up the scenario, and rules derive the materialized conclusions.
-% Formula-valued facts keep each input graph scoped and easy to project.
+% Context-valued facts keep each input graph scoped and easy to project.
 case_graph(delfourCaseGraph, (
   caseName(case, "delfour"),
   requestPurpose(case, "shopping_assist"),
@@ -102,11 +102,11 @@ signature_graph(delfourSignatureGraph, (
 reason_text(reasonText, "Household requires low-sugar guidance (diabetes in POD). A neutral Insight is scoped to device 'self-scanner', event 'pick_up_scanner', retailer 'Delfour', and expires soon; the policy confines use to shopping assistance.").
 
 % Derivation rules: each rule below contributes one logical step toward the displayed results.
-case_statement(S, P, O) :- case_graph(delfourCaseGraph, Formula), formula_binary(Formula, S, P, O).
-insight_statement(S, P, O) :- insight_graph(delfourInsightGraph, Formula), formula_binary(Formula, S, P, O).
-policy_statement(S, P, O) :- policy_graph(delfourPolicyGraph, Formula), formula_binary(Formula, S, P, O).
-envelope_statement(S, P, O) :- envelope_graph(delfourEnvelopeGraph, Formula), formula_binary(Formula, S, P, O).
-signature_statement(S, P, O) :- signature_graph(delfourSignatureGraph, Formula), formula_binary(Formula, S, P, O).
+case_statement(S, P, O) :- case_graph(delfourCaseGraph, Context), holds(Context, P, [S, O]).
+insight_statement(S, P, O) :- insight_graph(delfourInsightGraph, Context), holds(Context, P, [S, O]).
+policy_statement(S, P, O) :- policy_graph(delfourPolicyGraph, Context), holds(Context, P, [S, O]).
+envelope_statement(S, P, O) :- envelope_graph(delfourEnvelopeGraph, Context), holds(Context, P, [S, O]).
+signature_statement(S, P, O) :- signature_graph(delfourSignatureGraph, Context), holds(Context, P, [S, O]).
 
 case_name(case, Name) :- case_statement(case, caseName, Name).
 request_purpose(case, Purpose) :- case_statement(case, requestPurpose, Purpose).

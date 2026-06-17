@@ -32,8 +32,8 @@ route_network(riskNetwork, (
 
 % Derivation rules: each rule below contributes one logical step toward the displayed results.
 route_segment(From, To, Raw, Risk) :-
-  route_network(riskNetwork, Formula),
-  formula_binary(Formula, From, segment, segment(To, Raw, Risk)).
+  route_network(riskNetwork, Context),
+  holds(Context, segment(From, segment(To, Raw, Risk))).
 
 candidate(pathB, [depotA, depotB, labD]).
 candidate(pathC, [depotA, depotC, labD]).

@@ -36,7 +36,7 @@ The runner executes materialized programs in-process through the public JavaScri
 
 `core` covers the portable core language profile from the [eyelang language reference](../../../docs/eyelang-language-reference.md): lexical syntax, facts, definite clauses, first-order terms, lists, conjunction, structured unification through user predicates, left-to-right goal-directed proof search, materialized output, and read-back printing.
 
-`extension` covers the standard built-in and host behavior exercised by the current reference implementation: arithmetic, comparison, strings, list relations, aggregation, formula-term helpers, number-theory helpers, finite-search helpers used by the example corpus, matrix helpers, `memoize/2`, `materialize/2`, and default derived output.
+`extension` covers the standard built-in and host behavior exercised by the current reference implementation: arithmetic, comparison, strings, list relations, aggregation, context-term helpers, number-theory helpers, finite-search helpers used by the example corpus, matrix helpers, `memoize/2`, `materialize/2`, and default derived output.
 
 The profile name `extension` is a test-suite grouping name. It does not mean that these cases are outside the eyelang language reference; most of them correspond to the standard built-in profile and standard host profile in the [eyelang language reference](../../../docs/eyelang-language-reference.md).
 

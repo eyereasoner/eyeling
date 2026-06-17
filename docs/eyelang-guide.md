@@ -16,7 +16,7 @@ For the normative language definition, including lexical syntax, terms, clauses,
 3. [Default output](#default-output)
 4. [Writing programs](#writing-programs)
 5. [Aggregation helpers](#aggregation-helpers)
-6. [Formula data](#formula-data)
+6. [Context data](#context-data)
 7. [Example catalog](#example-catalog)
 8. [Golden outputs, tests, and conformance](#golden-outputs-tests-and-conformance)
 9. [Development and release](#development-and-release)
@@ -250,7 +250,7 @@ The playground has matching `--stats` and `--proof` checkboxes, so browser runs 
 
 eyelang builtins are registered by name and arity in small modules under [`lib/eyelang/builtins`](../lib/eyelang/builtins). This keeps the runtime portable to Node.js and the browser while giving each builtin family a clear boundary. Builtins are enabled by normal predicate calls.
 
-The core builtin families cover unification, arithmetic, comparison, dates, strings, lists, aggregation, formula terms, and search control. Additional reusable finite-search helpers are available only where bundled examples need them to avoid large amounts of repetitive generate-and-test code. These helpers are deliberately general relations rather than shortcuts tied to a particular example name. For example:
+The core builtin families cover unification, arithmetic, comparison, dates, strings, lists, aggregation, context terms, and search control. Additional reusable finite-search helpers are available only where bundled examples need them to avoid large amounts of repetitive generate-and-test code. These helpers are deliberately general relations rather than shortcuts tied to a particular example name. For example:
 
 ```prolog
 answer(Queens) :-
@@ -287,17 +287,16 @@ best_cycle(Cycle, Cost) :-
   aggregate_min([Cost, Cycle], Cycle, candidate_cycle(Cities, Cycle, Cost), [Cost, Cycle], Cycle).
 ```
 
-## Formula data
+## Context data
 
-Comma terms can be data as well as conjunctions. eyelang provides a relation-oriented formula utility.
-
-`formula_binary(Formula, S, P, O)` enumerates binary terms and exposes their functor as an atom constant:
+Comma terms can be data as well as conjunctions. eyelang provides two context utilities:
 
 ```prolog
-formula_binary((name(alice, "Alice"), knows(alice, bob)), S, P, O).
+holds((name(alice, "Alice"), knows(alice, bob)), name(S, O)).
+holds((ready, name(alice, "Alice"), route(alice, bob, 7)), Name, Args).
 ```
 
-This can yield `S = alice`, `P = name`, `O = "Alice"` and `S = alice`, `P = knows`, `O = bob`. The utility is useful for quoted formula data, but it does not make those formula members true in the ambient program.
+Use `holds/2` when you want to match the member term directly, for example `name(S, O)`, `route(A, B, Cost)`, or `edge(A, arc(B, Cost))`. Use `holds/3` when you need the predicate name and argument list as data: it exposes any-arity member as atom constant `Name` plus a proper list `Args`, so zero-, binary-, and ternary members appear as `ready/0`, `name/2`, and `route/3` shapes without a special binary predicate. These utilities are useful for quoted context data, but they do not make those context members true in the ambient program.
 
 
 ## Example catalog

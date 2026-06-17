@@ -39,12 +39,12 @@ map_graph(mapBE, (
 
 % Derivation rules: each rule below contributes one logical step toward the displayed results.
 case_statement(S, P, O) :-
-  case_graph(caseGraph, Formula),
-  formula_binary(Formula, S, P, O).
+  case_graph(caseGraph, Context),
+  holds(Context, P, [S, O]).
 
 map_description(From, To, Action, Duration, Cost, Belief, Comfort) :-
-  map_graph(mapBE, Formula),
-  formula_binary(Formula, mapBE, gps_description, description(From, true, To, Action, Duration, Cost, Belief, Comfort)).
+  map_graph(mapBE, Context),
+  holds(Context, gps_description(mapBE, description(From, true, To, Action, Duration, Cost, Belief, Comfort))).
 
 path(From, To, [Action], Duration, Cost, Belief, Comfort) :-
   map_description(From, To, Action, Duration, Cost, Belief, Comfort).

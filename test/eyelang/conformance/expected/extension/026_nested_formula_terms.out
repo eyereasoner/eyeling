@@ -1,3 +1,0 @@
-answer(binary, exposed(a, name, "A")).
-answer(binary, exposed(a, knows, b)).
-answer(binary, exposed(b, likes, c)).

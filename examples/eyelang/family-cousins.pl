@@ -33,7 +33,7 @@ family_graph(familyGraph, (
 )).
 
 % Derivation rules: each rule below contributes one logical step toward the displayed results.
-family_statement(S, P, O) :- family_graph(familyGraph, Formula), formula_binary(Formula, S, P, O).
+family_statement(S, P, O) :- family_graph(familyGraph, Context), holds(Context, P, [S, O]).
 
 parent(Parent, Child) :- family_statement(Parent, parent, Child).
 branch(Person, Branch) :- family_statement(Person, seedBranch, Branch).

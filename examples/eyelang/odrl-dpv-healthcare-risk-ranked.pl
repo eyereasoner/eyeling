@@ -114,8 +114,8 @@ policy_graph(policyGraphHC1, (
 
 % Derivation rules: each rule below contributes one logical step toward the displayed results.
 policy_statement(GraphName, Subject, Predicate, Object) :-
-  policy_graph(GraphName, Formula),
-  formula_binary(Formula, Subject, Predicate, Object).
+  policy_graph(GraphName, Context),
+  holds(Context, Predicate, [Subject, Object]).
 
 permission(Graph, Permission) :- policy_statement(Graph, policyHC1, odrl_permission, Permission).
 clause(Graph, Permission, Clause) :- policy_statement(Graph, Permission, clause, Clause).

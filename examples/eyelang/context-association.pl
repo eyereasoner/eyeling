@@ -39,9 +39,9 @@ log_nameOf(g3, (
 % A tiny projection shows how a program can inspect a quoted context without
 % making the entire context globally true.
 % Derivation rules: each rule below contributes one logical step toward the displayed results.
-context_statement(Context, Subject, Predicate, Object) :-
-  log_nameOf(Context, Formula),
-  formula_binary(Formula, Subject, Predicate, Object).
+context_statement(ContextName, Subject, Predicate, Object) :-
+  log_nameOf(ContextName, Context),
+  holds(Context, Predicate, [Subject, Object]).
 
 dataGraph(association, skolem_g0) :-
   context_statement(skolem_g0, bob, foaf_name, "Bob").

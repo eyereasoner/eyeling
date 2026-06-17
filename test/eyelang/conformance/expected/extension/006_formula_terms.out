@@ -1,2 +1,0 @@
-answer(binary, exposed(alice, name, "Alice")).
-answer(binary, exposed(alice, knows, bob)).
