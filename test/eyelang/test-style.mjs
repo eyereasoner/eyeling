@@ -1,17 +1,20 @@
 // Shared test output helpers.
 // The runners use this small reporter so individual suites and `npm test` share
-// one compact, Eyesharl-like style with a continuous grey test number.
+// one compact Eyeling-style layout: colored OK/FAIL, sequence number, test description, and dimmed timing.
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
-const useColor = Boolean(process.stdout.isTTY) && process.env.NO_COLOR == null;
+const useColor = process.env.NO_COLOR == null && (
+  Boolean(process.stdout.isTTY) ||
+  Boolean(process.env.FORCE_COLOR && process.env.FORCE_COLOR !== '0')
+);
 
 export const colors = {
   green: useColor ? '\x1b[32m' : '',
   red: useColor ? '\x1b[31m' : '',
   yellow: useColor ? '\x1b[33m' : '',
-  grey: useColor ? '\x1b[90m' : '',
+  dim: useColor ? '\x1b[2m' : '',
   reset: useColor ? '\x1b[0m' : '',
 };
 
@@ -45,7 +48,7 @@ export class TestReporter {
     const total = this.total - this.currentSection.totalAtStart;
     const ms = nowMs() - this.currentSection.startedAt;
     const suite = label ?? defaultSectionLabel(this.currentSection.name);
-    this.stdout.write(`${colors.green}OK${colors.reset} ${ok}/${total} ${suite} tests passed ${colors.grey}(${ms} ms)${colors.reset}\n`);
+    this.stdout.write(`${colors.green}OK${colors.reset} ${ok}/${total} ${suite} tests passed ${colors.dim}(${ms} ms)${colors.reset}\n`);
   }
 
   test(name, run) {
@@ -57,10 +60,10 @@ export class TestReporter {
       run();
       const ms = nowMs() - startedAt;
       this.ok++;
-      this.stdout.write(`${colors.grey}${nr}${colors.reset} ${colors.green}OK${colors.reset} ${name} ${colors.grey}(${ms} ms)${colors.reset}\n`);
+      this.stdout.write(`${colors.green}OK${colors.reset} ${nr} ${name} ${colors.dim}(${ms} ms)${colors.reset}\n`);
     } catch (error) {
       const ms = nowMs() - startedAt;
-      this.stderr.write(`${colors.grey}${nr}${colors.reset} ${colors.red}FAIL${colors.reset} ${name} ${colors.grey}(${ms} ms)${colors.reset}\n`);
+      this.stderr.write(`${colors.red}FAIL${colors.reset} ${nr} ${name} ${colors.dim}(${ms} ms)${colors.reset}\n`);
       this.stderr.write(`${error?.stack ?? String(error)}\n`);
       throw error;
     }
@@ -69,7 +72,7 @@ export class TestReporter {
   totalLine() {
     const ms = nowMs() - this.startedAt;
     this.stdout.write(`\n${colors.yellow}== Total${colors.reset}\n`);
-    this.stdout.write(`${colors.green}OK${colors.reset} ${this.ok}/${this.total} tests passed ${colors.grey}(${ms} ms)${colors.reset}\n`);
+    this.stdout.write(`${colors.green}OK${colors.reset} ${this.ok}/${this.total} tests passed ${colors.dim}(${ms} ms)${colors.reset}\n`);
   }
 }
 
