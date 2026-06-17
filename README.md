@@ -829,7 +829,7 @@ The eyelang engine has its own built-in registry under `lib/eyelang/builtins/`. 
 | Aggregation | `findall/3`, `countall/2`, `sumall/3`, `aggregate_min/5`, `aggregate_max/5` |
 | Control | `not/1`, `once/1` |
 | Context terms | `holds/2`, `holds/3` |
-| Search and optimization helpers | `n_queens/2`, `weighted_hamiltonian_cycle/4`, `weighted_hamiltonian_path/4`, `hamiltonian_cycle/3`, `fixed_length_cycle/4`, `bounded_path/5`, `bounded_subset/7`, `cnf_model/3`, `qm_prime_implicants/4`, `qm_minimal_cover/4`, `alphametic_sum/5` |
+| Search and optimization helpers | `n_queens/2`, `weighted_hamiltonian_cycle/4`, `weighted_hamiltonian_path/4`, `hamiltonian_cycle/3`, `fixed_length_cycle/4`, `bounded_path/5`, `cnf_model/3`, `qm_prime_implicants/4`, `qm_minimal_cover/4`, `alphametic_sum/5` |
 | Numeric extension helpers | `extended_gcd/5`, `collatz_trajectory/2`, `kaprekar_steps/2`, `goldbach_pair/3` |
 | Matrix helpers | `matrix_sum/2`, `matrix_multiply/2`, `cholesky_decomposition/2`, `determinant/2`, `matrix_inv_triang/2`, `matrix_inversion/2` |
 
