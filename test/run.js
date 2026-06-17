@@ -126,9 +126,26 @@ function addSectionToAggregate(summary) {
   aggregate.nonconform += failed;
 }
 
-function scoreLine() {
+function scoreColor(score) {
+  if (aggregate.crashed || aggregate.nonconform) return C.r;
+  if (aggregate.incomplete || score < 100) return C.y;
+  return C.g;
+}
+
+function scoreLine(elapsedMs) {
   const score = aggregate.total === 0 ? 0 : (100 * aggregate.ok) / aggregate.total;
-  return `TOTAL [COUNT:${aggregate.total}] OK: ⭐${aggregate.ok}⭐ INCOMPLETE: ⭐${aggregate.incomplete}⭐ NONCONFORM: ⭐${aggregate.nonconform}⭐ CRASHED: ⭐${aggregate.crashed}⭐ => SCORE: ⭐⭐⭐${score.toFixed(1)}⭐⭐⭐`;
+  const scoreC = scoreColor(score);
+  return [
+    `${C.dim}TOTAL${C.n}`,
+    `${C.dim}[COUNT:${aggregate.total}]${C.n}`,
+    `${C.g}OK:${C.n} ${C.y}⭐${aggregate.ok}⭐${C.n}`,
+    `${C.r}INCOMPLETE:${C.n} ${C.y}⭐${aggregate.incomplete}⭐${C.n}`,
+    `${C.r}NONCONFORM:${C.n} ${C.y}⭐${aggregate.nonconform}⭐${C.n}`,
+    `${C.r}CRASHED:${C.n} ${C.y}⭐${aggregate.crashed}⭐${C.n}`,
+    '=>',
+    `${scoreC}SCORE:${C.n} ${C.y}⭐⭐⭐${score.toFixed(1)}⭐⭐⭐${C.n}`,
+    `${C.dim}ELAPSED:${C.n} ${C.y}${formatDuration(elapsedMs)}${C.n}`,
+  ].join(' ');
 }
 
 function childEnv() {
@@ -194,6 +211,7 @@ function runSection(label, cmd, args) {
 }
 
 (async function main() {
+  const suiteStartedAt = Date.now();
   let status = 0;
   for (const [label, cmd, args] of sections) {
     const sectionStatus = await runSection(label, cmd, args);
@@ -204,7 +222,7 @@ function runSection(label, cmd, args) {
   }
 
   console.log('');
-  console.log(scoreLine());
+  console.log(scoreLine(Date.now() - suiteStartedAt));
 
   process.exit(status);
 })();
