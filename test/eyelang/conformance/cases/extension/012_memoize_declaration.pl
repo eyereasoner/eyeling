@@ -1,4 +1,4 @@
-% SPEC 10.1: memoize/2 is a declaration and does not change answers.
+% Reference 10.1: memoize/2 is a declaration and does not change answers.
 materialize(reach, 2).
 memoize(reach_any, 2).
 edge(a, b).

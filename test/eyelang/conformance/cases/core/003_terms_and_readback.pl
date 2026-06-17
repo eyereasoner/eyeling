@@ -1,4 +1,4 @@
-% SPEC 3, 5, 11: scalars, compounds, lists, and read-back printing.
+% Reference 3, 5, 11: scalars, compounds, lists, and read-back printing.
 materialize(value, 2).
 raw_value(atom, pat).
 raw_value(quoted_atom, 'atom with spaces').

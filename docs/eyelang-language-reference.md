@@ -1,4 +1,4 @@
-# eyelang Language Specification
+# eyelang Language Reference
 
 ## Table of contents
 
@@ -77,7 +77,7 @@ A **term** is a variable, atom constant, string, number, list, or compound term.
 
 An **atom constant** is a symbolic scalar term, such as `pat`, `type`, or `'atom with spaces'`. It is a term and may appear as an argument, list element, functor name, or predicate name.
 
-An **atomic formula** is a predicate application such as `parent(pat, jan)` or `status(case1, accepted)`. It is the unit of truth in a Herbrand interpretation. In some logic-programming literature atomic formulas are called "atoms"; this specification avoids that shorthand. Whenever the noun "atom" appears here outside a built-in name such as `formula_atom/2`, it means **atom constant**, not atomic formula.
+An **atomic formula** is a predicate application such as `parent(pat, jan)` or `status(case1, accepted)`. It is the unit of truth in a Herbrand interpretation. In some logic-programming literature atomic formulas are called "atoms"; this specification avoids that shorthand. Whenever the noun "atom" appears here outside the phrase "atomic formula", it means **atom constant**.
 
 This distinction is normative: `pat` is an atom constant and can appear as a term argument; `parent(pat, jan)` is an atomic formula and can appear as a fact, rule head, or goal. A compound term such as `pair(pat, jan)` has the same surface shape as an atomic formula, but its role is determined by context: as data it is a compound term, and as a clause head or goal it is an atomic formula with predicate symbol `pair/2`.
 
@@ -252,7 +252,7 @@ Parenthesized comma terms may be goals or data:
 (name(alice, "Alice"), knows(alice, bob))
 ```
 
-When a comma term appears as a goal, it is evaluated as conjunction. When it appears as data, it remains a term. `formula_atom/2` and `formula_binary/4` enumerate members inside such formula terms.
+When a comma term appears as a goal, it is evaluated as conjunction. When it appears as data, it remains a term. `formula_binary/4` enumerates binary members inside such formula terms.
 
 ## 6. Clauses and predicates
 
@@ -368,7 +368,7 @@ Implementations MAY provide additional built-ins, but such built-ins are extensi
 | `div(A, B, C)` | `C = A / B`; integer inputs use integer division. |
 | `mod(A, B, C)` | Integer remainder. |
 | `pow(A, B, C)` | `C = A^B`. |
-| `max(A, B, C)`, `min(A, B, C)` | Numeric maximum or minimum. |
+| `min(A, B, C)` | Numeric minimum. |
 
 ### 9.3 Comparison
 
@@ -399,10 +399,8 @@ Comparisons interpret numeric-looking terms numerically. Other scalar terms are 
 
 | Built-in | Meaning |
 |---|---|
-| `atom_concat(A, B, C)` | Atom-constant concatenation. |
 | `str_concat(A, B, C)` | String concatenation. |
 | `contains(Text, Needle)` | Text contains `Needle`. |
-| `not_contains(Text, Needle)` | Text does not contain `Needle`. |
 | `matches(Text, Pattern)` | Text matches a simple implementation regex/search pattern. |
 | `not_matches(Text, Pattern)` | Negation of `matches/2`. |
 
@@ -419,7 +417,6 @@ Comparisons interpret numeric-looking terms numerically. Other scalar terms are 
 | `not_member(X, List)` | Succeeds when `X` is not a member. |
 | `reverse(A, B)` | Reverses a proper list. |
 | `length(List, N)` | Proper-list length. |
-| `is_list(X)` | Succeeds when `X` is a proper list. |
 
 ### 9.8 Aggregation and ordering
 
@@ -434,11 +431,10 @@ Comparisons interpret numeric-looking terms numerically. Other scalar terms are 
 
 ### 9.9 Formula terms
 
-Formula terms are data representations of atomic formulas and comma conjunctions. `formula_atom/2` uses "atom" in the logic-programming sense of atomic formula; it MUST NOT be confused with atom constants such as `alice` or `name`.
+Formula terms are data representations of atomic formulas and comma conjunctions.
 
 | Built-in | Meaning |
 |---|---|
-| `formula_atom(Formula, Atom)` | Enumerates atomic-formula members inside comma formula data. The second argument denotes an atomic formula term, not necessarily an atom constant. |
 | `formula_binary(Formula, S, P, O)` | Enumerates binary formula members `P(S, O)`, exposing the functor as atom constant `P`. |
 
 Example:
@@ -470,7 +466,7 @@ An extension built-in SHOULD obey the same surface-language discipline as standa
 - it SHOULD document its intended modes, especially which arguments must be ground before it runs deterministically;
 - it MUST NOT change the meaning of ordinary facts, rules, unification, or standard built-ins.
 
-For example, an implementation may include extension modules for Sudoku solving, portfolio selection, number-theory algorithms, graph search, matrix operations, or alphametic puzzles. Those modules may be valuable and may make example programs much faster, but their predicate names, arities, algorithms, and modes are implementation-defined unless they are separately standardized.
+For example, an implementation may include extension modules for portfolio selection, number-theory algorithms, graph search, matrix operations, or alphametic puzzles. Those modules may be valuable and may make example programs much faster, but their predicate names, arities, algorithms, and modes are implementation-defined unless they are separately standardized.
 
 An implementation that provides explanation output SHOULD make extension built-ins explainable at least as opaque successful or failed built-in calls, so that proof traces do not incorrectly report "no clauses" for a host-provided relation.
 

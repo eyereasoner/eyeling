@@ -1,4 +1,4 @@
-% SPEC 9.7, 9.8: list, aggregation, and ordering built-ins.
+% Reference 9.7, 9.8: list, aggregation, and ordering built-ins.
 answer(member, X) :- member(X, [a, b]).
 answer(append, X) :- append([a], [b, c], X).
 answer(nth0, X) :- nth0(1, [a, b, c], X).

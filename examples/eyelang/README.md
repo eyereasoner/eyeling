@@ -10,7 +10,7 @@ Programs write relations directly, for example `ancestor(pat, emma)` or `status(
 
 Try it in the [browser playground](https://eyereasoner.github.io/eyelang/playground). The playground includes run options equivalent to CLI `--stats` and `--proof`.
 
-For the normative language definition, including lexical syntax, terms, clauses, goals, built-ins, `memoize/2`, `materialize/2`, and conformance boundaries, read the [eyelang specification](SPEC.md).
+For the normative language definition, including lexical syntax, terms, clauses, goals, built-ins, `memoize/2`, `materialize/2`, and conformance boundaries, read the [eyelang language reference](../../docs/eyelang-language-reference.md).
 
 ## Contents
 
@@ -243,7 +243,7 @@ The CLI is output-oriented and uses `materialize/2` to decide what to print. Emb
 Add `-s` or `--stats` when you want lightweight solver counters on stderr without changing stdout:
 
 ```sh
-bin/eyelang -s examples/sudoku.pl
+bin/eyelang -s examples/eyelang/n-queens.pl
 ```
 
 The playground has matching `--stats` and `--proof` checkboxes, so browser runs can show the same counters or explanations like the CLI.
@@ -251,15 +251,11 @@ The playground has matching `--stats` and `--proof` checkboxes, so browser runs 
 
 ### Builtins
 
-eyelang builtins are registered by name and arity in small modules under [`src/builtins`](src/builtins). This keeps the runtime portable to Node.js and the browser while giving each builtin family a clear boundary. Builtins are enabled by normal predicate calls.
+eyelang builtins are registered by name and arity in small modules under [`lib/eyelang/builtins`](../../lib/eyelang/builtins). This keeps the runtime portable to Node.js and the browser while giving each builtin family a clear boundary. Builtins are enabled by normal predicate calls.
 
-The core builtin families cover unification, arithmetic, comparison, dates, strings, lists, aggregation, formula terms, and search control. Additional reusable finite-search helpers are available for examples that would otherwise need large amounts of repetitive generate-and-test code. These helpers are deliberately general relations rather than shortcuts tied to a particular example name. For example:
+The core builtin families cover unification, arithmetic, comparison, dates, strings, lists, aggregation, formula terms, and search control. Additional reusable finite-search helpers are available only where bundled examples need them to avoid large amounts of repetitive generate-and-test code. These helpers are deliberately general relations rather than shortcuts tied to a particular example name. For example:
 
 ```prolog
-solution(Name, Rows) :-
-  puzzle(Name, Grid),
-  sudoku(Grid, Rows).
-
 answer(Queens) :-
   n_queens(8, Queens).
 
@@ -268,11 +264,9 @@ best(Cycle, Cost) :-
   weighted_hamiltonian_cycle(edge, Cities, Cycle, Cost).
 ```
 
-`sudoku/2` accepts either an 81-character string or a 9x9 list. Digits `1` to `9` are givens; `0`, `.`, and `_` mark blanks. It returns the solved 9x9 list.
+The reusable search and numeric helpers include `n_queens/2`, Hamiltonian path/cycle helpers, `cnf_model/3`, Quine-McCluskey helpers, bounded subset/path helpers, number-theory helpers such as `extended_gcd/5`, matrix helpers such as `matrix_multiply/2`, and `alphametic_sum/5`. These helpers are extension builtins of this implementation; [the eyelang language reference](../../docs/eyelang-language-reference.md) defines the portable core and standard builtin profile.
 
-The reusable search and numeric helpers include `atom_range/4`, `atom_ranges/4`, `n_queens/2`, Hamiltonian path/cycle helpers, `cnf_model/3`, Quine-McCluskey helpers, bounded subset/path helpers, number-theory helpers such as `extended_gcd/5`, matrix helpers such as `matrix_multiply/2`, and `alphametic_sum/5`. These helpers are extension builtins of this implementation; [`SPEC.md`](SPEC.md) defines the portable core and standard builtin profile.
-
-To add a builtin, create or extend a module with `register(registry)` and call `registry.add(name, arity, handler, options)`. The default registry is assembled in [`src/builtins/registry.js`](src/builtins/registry.js). Builtins that are only safe for specific argument modes should provide a `ready` predicate and `fallbackWhenNotReady: true`, so user-defined clauses remain visible until the builtin is applicable.
+To add a builtin, create or extend a module with `register(registry)` and call `registry.add(name, arity, handler, options)`. The default registry is assembled in [`lib/eyelang/builtins/registry.js`](../../lib/eyelang/builtins/registry.js). Builtins that are only safe for specific argument modes should provide a `ready` predicate and `fallbackWhenNotReady: true`, so user-defined clauses remain visible until the builtin is applicable.
 
 
 ## Aggregation helpers
@@ -298,13 +292,7 @@ best_cycle(Cycle, Cost) :-
 
 ## Formula data
 
-Comma terms can be data as well as conjunctions. eyelang provides relation-oriented formula utilities.
-
-`formula_atom(Formula, Atom)` enumerates atomic formula terms inside a comma formula:
-
-```prolog
-formula_atom((name(alice, "Alice"), knows(alice, bob)), X).
-```
+Comma terms can be data as well as conjunctions. eyelang provides a relation-oriented formula utility.
 
 `formula_binary(Formula, S, P, O)` enumerates binary terms and exposes their functor as an atom constant:
 
@@ -380,7 +368,6 @@ The repository includes examples for recursion, graph reachability, finite searc
 | [`equivalence-classes-overlap-implies-same-class.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/equivalence-classes-overlap-implies-same-class.pl) | Packages the shared-member proof pattern for equivalence classes. | [`output/equivalence-classes-overlap-implies-same-class.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/equivalence-classes-overlap-implies-same-class.pl) |
 | [`eulerian-path.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/eulerian-path.pl) | Finds an Eulerian path using each edge once. | [`output/eulerian-path.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/eulerian-path.pl) |
 | [`ev-range-worlds.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/ev-range-worlds.pl) | Estimates electric-vehicle trip feasibility. | [`output/ev-range-worlds.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/ev-range-worlds.pl) |
-| [`exact-cover-sudoku.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/exact-cover-sudoku.pl) | Solves Sudoku via exact-cover-style constraints. | [`output/exact-cover-sudoku.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/exact-cover-sudoku.pl) |
 | [`existential-rule.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/existential-rule.pl) | Represents existential witnesses with explicit Skolem-style terms. | [`output/existential-rule.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/existential-rule.pl) |
 | [`exoplanet-validation-worlds.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/exoplanet-validation-worlds.pl) | Validates exoplanet candidates across worlds. | [`output/exoplanet-validation-worlds.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/exoplanet-validation-worlds.pl) |
 | [`expression-eval.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/expression-eval.pl) | Evaluates a small arithmetic expression tree. | [`output/expression-eval.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/expression-eval.pl) |
@@ -448,7 +435,6 @@ The repository includes examples for recursion, graph reachability, finite searc
 | [`socket-family.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/socket-family.pl) | Shows socket-declared family-source inputs and ancestry rules. | [`output/socket-family.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/socket-family.pl) |
 | [`socrates.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/socrates.pl) | Derives that Socrates is mortal. | [`output/socrates.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/socrates.pl) |
 | [`statistics-summary.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/statistics-summary.pl) | Computes population statistics for a sample. | [`output/statistics-summary.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/statistics-summary.pl) |
-| [`sudoku.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/sudoku.pl) | Solves generic 9x9 Sudoku strings through the sudoku/2 builtin. | [`output/sudoku.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/sudoku.pl) |
 | [`superdense-coding.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/superdense-coding.pl) | Models superdense-coding bit transmission. | [`output/superdense-coding.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/superdense-coding.pl) |
 | [`traveling-salesman.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/traveling-salesman.pl) | Finds an optimal traveling-salesman tour. | [`output/traveling-salesman.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/traveling-salesman.pl) |
 | [`turing.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/turing.pl) | Simulates a binary-increment Turing machine. | [`output/turing.pl`](https://github.com/eyereasoner/eyelang/blob/main/examples/output/turing.pl) |
@@ -483,7 +469,7 @@ Run the full test suite:
 npm test
 ```
 
-The test suite runs in this order: Conformance, Regression/API/White-box, Examples. Each section prints its own subtotal, followed by a suite-specific grand total. The suite checks the conformance cases derived from `SPEC.md`, supplemental regression/API/white-box checks, and every runnable example against its golden output.
+The test suite runs in this order: Conformance, Regression/API/White-box, Examples. Each section prints its own subtotal, followed by a suite-specific grand total. The suite checks the conformance cases derived from the language reference, supplemental regression/API/white-box checks, and every runnable example against its golden output.
 
 Run only one suite when you are iterating:
 
@@ -493,7 +479,7 @@ npm run test:regression
 npm run test:examples
 ```
 
-The conformance suite lives in [`conformance/`](conformance/) and is split into `core` and `extension` profiles matching `SPEC.md`. Each case is a small program with an exact expected stdout file, and some internal conformance cases also include a goal file for testing the embeddable solver, so other implementations can reuse the same cases. The regression suite lives in [`test/run-regression.js`](test/run-regression.js) and covers CLI regressions, the public JavaScript API, and white-box invariants for parser, unification, and indexing behavior.
+The conformance suite lives in [`conformance/`](conformance/) and is split into `core` and `extension` profiles matching the language reference. Each case is a small program with an exact expected stdout file, and some internal conformance cases also include a goal file for testing the embeddable solver, so other implementations can reuse the same cases. The regression suite lives in [`test/run-regression.js`](test/run-regression.js) and covers CLI regressions, the public JavaScript API, and white-box invariants for parser, unification, and indexing behavior.
 
 ## Development and release
 
@@ -510,13 +496,13 @@ node bin/eyelang --help
 Useful profiling smoke test:
 
 ```sh
-bin/eyelang -s examples/sudoku.pl > /dev/null
+bin/eyelang -s examples/eyelang/n-queens.pl > /dev/null
 ```
 
 For a release:
 
 1. update `VERSION`;
-2. update `README.md` and `SPEC.md`;
+2. update `README.md` and the language reference;
 3. regenerate golden outputs if behavior changed;
 4. run `npm test`;
 5. publish the repository with `playground.html` and `playground-worker.mjs` if publishing the playground. The playground includes controls equivalent to CLI `--stats` and `--proof`.

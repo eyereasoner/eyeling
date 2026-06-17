@@ -1,4 +1,4 @@
-% SPEC 3.5, 5.2, 11: graphic atom constants are scalar terms.
+% Reference 3.5, 5.2, 11: graphic atom constants are scalar terms.
 materialize(value, 2).
 raw_value(hash, #).
 raw_value(arrow, =>).

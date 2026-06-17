@@ -1,6 +1,3 @@
-answer(atom, name(a, "A")).
-answer(atom, knows(a, b)).
-answer(atom, likes(b, c)).
 answer(binary, exposed(a, name, "A")).
 answer(binary, exposed(a, knows, b)).
 answer(binary, exposed(b, likes, c)).

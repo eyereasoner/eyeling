@@ -1,4 +1,4 @@
-% SPEC 9.3, 9.6: lexical comparison and simple text matching.
+% Reference 9.3, 9.6: lexical comparison and simple text matching.
 answer(matches, true) :- matches("eyelang", "eye").
 answer(not_matches, true) :- not_matches("eyelang", "cat").
 answer(lex_lt, true) :- lt(alpha, beta).

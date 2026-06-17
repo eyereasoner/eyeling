@@ -1,2 +1,1 @@
-answer(atom, eyelang).
 answer(string, "eyelang").

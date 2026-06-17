@@ -1,4 +1,4 @@
-% SPEC 9.10: not/1 succeeds when the subgoal has no proof.
+% Reference 9.10: not/1 succeeds when the subgoal has no proof.
 candidate(a).
 candidate(b).
 candidate(c).

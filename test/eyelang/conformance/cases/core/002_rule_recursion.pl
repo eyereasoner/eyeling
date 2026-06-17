@@ -1,4 +1,4 @@
-% SPEC 6, 7: definite clauses, conjunction, and recursive proof search.
+% Reference 6, 7: definite clauses, conjunction, and recursive proof search.
 materialize(ancestor, 2).
 parent(pat, jan).
 parent(jan, emma).

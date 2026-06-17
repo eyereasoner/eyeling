@@ -29,6 +29,7 @@
     "eyelang.d.ts",
     "bin",
     "dist",
+    "docs",
     "lib",
     "test",
     "tools",

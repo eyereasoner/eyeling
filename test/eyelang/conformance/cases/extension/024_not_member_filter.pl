@@ -1,4 +1,4 @@
-% SPEC 9.7: not_member/2 can filter finite candidates.
+% Reference 9.7: not_member/2 can filter finite candidates.
 candidate(a).
 candidate(b).
 candidate(c).

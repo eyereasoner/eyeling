@@ -1153,6 +1153,7 @@ Everything else should be treated as internal unless explicitly documented.
 ├── bin/                      CLI executable shim
 ├── lib/                      Source modules
 ├── dist/browser/             Browser bundle and ESM wrapper
+├── docs/                     Project documentation, including the eyelang language reference
 ├── examples/                 N3 examples, RDF message inputs, and generated decks
 ├── spec/                     RDF 1.2 parser test adapter
 ├── test/                     API, built-in, store, example, package, playground, and stream tests

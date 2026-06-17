@@ -1,4 +1,4 @@
-% SPEC 6: predicate name and arity both identify a predicate group.
+% Reference 6: predicate name and arity both identify a predicate group.
 p(a).
 p(a, b).
 answer(unary, X) :- p(X).

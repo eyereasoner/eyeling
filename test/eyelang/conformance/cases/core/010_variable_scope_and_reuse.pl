@@ -1,4 +1,4 @@
-% SPEC 5.1, 7.1: variable occurrences are scoped per clause and reused within a clause.
+% Reference 5.1, 7.1: variable occurrences are scoped per clause and reused within a clause.
 edge(a, b).
 edge(b, c).
 edge(c, d).
