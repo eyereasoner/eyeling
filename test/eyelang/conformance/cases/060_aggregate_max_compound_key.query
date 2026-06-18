@@ -1,0 +1,1 @@
+aggregate_max([S, Name], Name, score(Name, S), Key, BestName)

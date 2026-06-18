@@ -9,35 +9,34 @@ import { fileURLToPath } from 'node:url';
 import { TestReporter, isMainModule } from './test-style.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)));
-const profileArg = process.argv[2] ?? 'conformance';
+const filterArg = process.argv[2] ?? null;
 
-export function runConformance(reporter = new TestReporter(), requestedProfiles = null) {
-  const profiles = requestedProfiles ?? (profileArg === 'conformance' ? ['core', 'extension'] : [profileArg]);
-  for (const profile of profiles) runProfile(reporter, profile);
+export function runConformance(reporter = new TestReporter(), requestedFilter = null) {
+  const filter = requestedFilter ?? filterArg;
+  const label = filter == null ? 'eyelang' : `eyelang ${filter}`;
+  reporter.section(`Conformance ${label}`);
+  for (const file of listCaseFiles(filter)) runCaseFile(reporter, file);
+  reporter.sectionTotal(`conformance ${label}`);
 }
 
-function runProfile(reporter, profile) {
-  const casesDir = path.join(root, 'conformance', 'cases', profile);
-  const expectedDir = path.join(root, 'conformance', 'expected', profile);
-
-  reporter.section(`Conformance ${profile}`);
-
-  const files = fs.readdirSync(casesDir)
+function listCaseFiles(filter = null) {
+  const casesDir = path.join(root, 'conformance', 'cases');
+  return fs.readdirSync(casesDir)
     .filter((name) => name.endsWith('.pl'))
+    .filter((name) => filter == null || name.includes(filter) || name.slice(0, -3) === filter)
     .sort();
-
-  for (const file of files) {
-    const name = file.slice(0, -3);
-    const label = `${profile}/${name}`;
-    reporter.test(label, () => runCase(profile, name, file, casesDir, expectedDir));
-  }
-
-  reporter.sectionTotal(`conformance ${profile}`);
 }
 
-function runCase(profile, name, file, casesDir, expectedDir) {
+function runCaseFile(reporter, file) {
+  const name = file.slice(0, -3);
+  reporter.test(name, () => runCase(name, file));
+}
+
+function runCase(name, file) {
+  const casesDir = path.join(root, 'conformance', 'cases');
+  const expectedDir = path.join(root, 'conformance', 'expected');
   const programFile = path.join(casesDir, file);
-  const expected = path.join(expectedDir, `${name}.out`);
+  const expected = path.join(expectedDir, `${name}.pl`);
   const text = fs.readFileSync(programFile, 'utf8');
   const program = Program.parseSources([{ text, filename: file }], { sourceMetadata: false, markRecursive: false });
   const actual = run(program).stdout;
@@ -48,8 +47,7 @@ function runCase(profile, name, file, casesDir, expectedDir) {
 
   const expectedText = fs.readFileSync(expected, 'utf8');
   if (expectedText !== actual) {
-    throw new Error(`output mismatch for ${profile}/${name}
-${diffText(expected, actual)}`.trimEnd());
+    throw new Error(`output mismatch for ${name}\n${diffText(expected, actual)}`.trimEnd());
   }
 }
 

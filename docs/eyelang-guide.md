@@ -460,7 +460,7 @@ node test/eyelang/run-regression.mjs
 node test/eyelang/run-examples.mjs
 ```
 
-The conformance suite lives in [`test/eyelang/conformance/`](../test/eyelang/conformance/) and is split into `core` and `extension` profiles matching the language reference. Each case is a small program with an exact expected stdout file, and some internal conformance cases also include a goal file for testing the embeddable solver, so other implementations can reuse the same cases. The regression suite lives in [`test/eyelang/run-regression.mjs`](../test/eyelang/run-regression.mjs) and covers CLI regressions, the public JavaScript API, and white-box invariants for parser, unification, and indexing behavior.
+The conformance suite lives in [`test/eyelang/conformance/`](../test/eyelang/conformance/) as one flat eyelang corpus. Each case is a small `.pl` program with an exact expected stdout `.pl` file, and some cases also include a goal file for testing the embeddable solver, so other implementations can reuse the same cases. The suite covers the standard language surface from the language reference, including reusable built-ins. The regression suite lives in [`test/eyelang/run-regression.mjs`](../test/eyelang/run-regression.mjs) and covers CLI regressions, the public JavaScript API, and white-box invariants for parser, unification, and indexing behavior.
 
 ## Development and release
 

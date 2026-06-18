@@ -41,7 +41,7 @@
   - [9.8 Aggregation and ordering](#98-aggregation-and-ordering)
   - [9.9 Context terms](#99-context-terms)
   - [9.10 Search control](#910-search-control)
-- [10. Extension built-ins](#10-extension-built-ins)
+- [10. Implementation-specific built-ins](#10-implementation-specific-built-ins)
 - [11. Declarations](#11-declarations)
   - [11.1 Memoization](#111-memoization)
   - [11.2 Default-output materialization](#112-default-output-materialization)
@@ -51,10 +51,7 @@
   - [12.3 Sockets and AI agents](#123-sockets-and-ai-agents)
 - [13. Output and read-back profile](#13-output-and-read-back-profile)
   - [13.1 Explanation output](#131-explanation-output)
-- [14. Conformance profiles](#14-conformance-profiles)
-  - [14.1 Core language profile](#141-core-language-profile)
-  - [14.2 Standard built-in profile](#142-standard-built-in-profile)
-  - [14.3 Standard host profile](#143-standard-host-profile)
+- [14. Conformance](#14-conformance)
 - [15. Relationship to ISO Prolog](#15-relationship-to-iso-prolog)
 - [16. Examples](#16-examples)
   - [16.1 Transitive closure](#161-transitive-closure)
@@ -345,7 +342,7 @@ This section specifies the **standard built-ins** of the eyelang language. An im
 
 A built-in call is still written as an atomic formula, but the relation is provided by the host implementation rather than by source clauses. Several built-ins are mode-sensitive: they are intended to run when their input arguments are sufficiently ground, and implementations may leave user-defined clauses visible when that mode is not yet satisfied.
 
-Implementations MAY provide additional built-ins, but such built-ins are extensions and are not part of this normative catalog. Extension built-ins are discussed separately in section 10.
+Implementations MAY provide additional built-ins, but such built-ins are implementation-specific and are not part of this normative catalog. Implementation-specific built-ins are discussed separately in section 10.
 
 ### 9.1 Equality and unification
 
@@ -485,13 +482,13 @@ The N3 example [`context-schema-audit.n3`](../examples/context-schema-audit.n3) 
 | `once(Goal)` | Succeeds with at most the first solution of `Goal`. |
 | `forall(Generator, Test)` | Succeeds when every solution of `Generator` also satisfies `Test`; succeeds vacuously when `Generator` has no solutions. |
 
-## 10. Extension built-ins
+## 10. Implementation-specific built-ins
 
-Implementations MAY provide additional built-ins beyond the standard predicates listed above. Such built-ins are **extension built-ins**. They are useful for embedding eyelang in particular host environments, exposing efficient finite-domain solvers, or providing domain-specific relations for examples and applications.
+Implementations MAY provide additional built-ins beyond the standard predicates listed above. Such built-ins are **implementation-specific built-ins**. They are useful for embedding eyelang in particular host environments, exposing efficient finite-domain solvers, or providing domain-specific relations for applications.
 
-Extension built-ins are not required for conformance to this specification. A portable eyelang program SHOULD NOT depend on an extension built-in unless the target implementation explicitly documents that extension.
+Implementation-specific built-ins are not required for conformance to this specification. A portable eyelang program SHOULD NOT depend on one unless the target implementation explicitly documents it.
 
-An extension built-in SHOULD obey the same surface-language discipline as standard built-ins:
+An implementation-specific built-in SHOULD obey the same surface-language discipline as standard built-ins:
 
 - it is called using ordinary atomic-formula syntax, for example `some_extension(A, B)`;
 - its arguments and results are eyelang terms from the Herbrand universe;
@@ -499,9 +496,9 @@ An extension built-in SHOULD obey the same surface-language discipline as standa
 - it SHOULD document its intended modes, especially which arguments must be ground before it runs deterministically;
 - it MUST NOT change the meaning of ordinary facts, rules, unification, or standard built-ins.
 
-For example, an implementation may include extension modules for number-theory algorithms, matrix operations, or host-specific integrations. Those modules may be valuable and may make example programs much faster, but their predicate names, arities, algorithms, and modes are implementation-defined unless they are separately standardized.
+For example, an implementation may include host-specific integrations or domain accelerators. Those modules may be valuable and may make applications much faster, but their predicate names, arities, algorithms, and modes are implementation-defined unless they are separately standardized.
 
-An implementation that provides explanation output SHOULD make extension built-ins explainable at least as opaque successful or failed built-in calls, so that proof traces do not incorrectly report "no clauses" for a host-provided relation.
+An implementation that provides explanation output SHOULD make implementation-specific built-ins explainable at least as opaque successful or failed built-in calls, so that proof traces do not incorrectly report "no clauses" for a host-provided relation.
 
 ## 11. Declarations
 
@@ -623,37 +620,25 @@ Default host output behavior is:
 
 When proof output is enabled, each answer SHOULD be followed by a machine-readable `why/2` fact. Explanation output is ordinary eyelang syntax whose second argument is a nested abstract proof term such as `proof(goal(G), by(Method), bindings(Bindings), uses(Proofs))`; implementations SHOULD print `goal(...)` and `by(...)` on separate lines for readability. A proof term preserves the answer goal, derivation method, relevant bindings, and nested uses while omitting proof IDs. User clauses SHOULD be referenced explicitly as `fact(Filename, clause(N))` or `rule(Filename, clause(N))`, where `N` is the 1-based clause number within that source. Built-ins SHOULD be referenced as `builtin(Name, Arity)` because they do not come from source clauses. Explanation output is outside the logical semantics of the input program and MUST NOT change the set of answers.
 
-## 14. Conformance profiles
+## 14. Conformance
 
-### 14.1 Core language profile
-
-A conforming core language implementation supports:
+A conforming eyelang implementation supports the standard language described above as one conformance surface rather than as separate core and extension profiles. This includes:
 
 - lexical syntax described above;
 - facts and definite clauses;
 - first-order unification without occurs check;
 - left-to-right goal-directed proof search;
 - lists and comma conjunctions;
-- answer printing.
-
-### 14.2 Standard built-in profile
-
-A conforming standard built-in implementation supports the built-ins listed in section 9. These are the portable built-ins independent implementations should implement when they claim standard built-in compatibility.
-
-### 14.3 Standard host profile
-
-A conforming standard host also supports:
-
+- answer printing and read-back formatting;
+- the standard built-ins listed in section 9;
 - `memoize/2` declarations;
 - `materialize/2` declarations;
 - default derived output;
-- explanation output;
-- stdin, file, and URL inputs in the CLI.
+- explanation output when the host exposes proof output.
 
-Browser execution, package layout, and any extension built-ins described in implementation documentation are outside this specification unless separately standardized.
+Browser execution, package layout, CLI URL loading, and any implementation-specific built-ins described in host documentation are outside this conformance surface unless separately standardized.
 
-
-Conformance cases for these profiles live in the repository under `conformance/`. They are run by `npm test` before the example suite, and can be run alone with `npm run test:conformance`. The cases use exact expected standard output files so independent implementations can compare behavior case by case.
+Conformance cases live in the repository under `test/eyelang/conformance/`. They are run by `npm test` before the example suite, and can be run alone with `node test/eyelang/run-conformance.mjs`. Each case has an input program under `conformance/cases/` and an exact expected standard-output file under `conformance/expected/`; both use `.pl` so expected output remains eyelang-readable.
 
 ## 15. Relationship to ISO Prolog
 
