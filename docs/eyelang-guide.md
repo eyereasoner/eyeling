@@ -296,7 +296,7 @@ holds((name(alice, "Alice"), knows(alice, bob)), name(S, O)).
 holds((ready, name(alice, "Alice"), route(alice, bob, 7)), Name, Args).
 ```
 
-Use `holds/2` when you want to match the member term directly, for example `name(S, O)`, `route(A, B, Cost)`, or `edge(A, arc(B, Cost))`. Use `holds/3` when you need the predicate name and argument list as data: it exposes any-arity member as atom constant `Name` plus a proper list `Args`, so zero-, binary-, and ternary members appear as `ready/0`, `name/2`, and `route/3` shapes without a special binary predicate. These utilities are useful for quoted context data, but they do not make those context members true in the ambient program.
+Use `holds/2` when you want to match the member term directly, for example `name(S, O)`, `route(A, B, Cost)`, or `edge(A, arc(B, Cost))`. Use `holds/3` when you need the predicate name and argument list as data: it exposes any-arity member as atom constant `Name` plus a proper list `Args`, so zero-, binary-, and ternary members appear as `ready/0`, `name/2`, and `route/3` shapes without a special binary predicate. These utilities are useful for quoted context data, but they do not make those context members true in the ambient program. The [`context-schema-audit.pl`](../examples/eyelang/context-schema-audit.pl) example shows a case that really needs `holds/3`: it audits heterogeneous message contexts by extracting every member as `Name + Args`, computing each arity, and checking the resulting shape against a schema without knowing the predicate names in advance.
 
 
 ## Example catalog
@@ -335,6 +335,7 @@ The repository includes examples for recursion, graph reachability, finite searc
 | [`complex.pl`](../examples/eyelang/complex.pl) | Performs arithmetic on complex pairs. | [`output/complex.pl`](../examples/eyelang/output/complex.pl) |
 | [`composition-of-injective-functions-is-injective.pl`](../examples/eyelang/composition-of-injective-functions-is-injective.pl) | Encodes composition and injectivity of finite functions. | [`output/composition-of-injective-functions-is-injective.pl`](../examples/eyelang/output/composition-of-injective-functions-is-injective.pl) |
 | [`context-association.pl`](../examples/eyelang/context-association.pl) | Associates named contexts with their contents. | [`output/context-association.pl`](../examples/eyelang/output/context-association.pl) |
+| [`context-schema-audit.pl`](../examples/eyelang/context-schema-audit.pl) | Audits mixed-arity context members with `holds/3`. | [`output/context-schema-audit.pl`](../examples/eyelang/output/context-schema-audit.pl) |
 | [`control-system.pl`](../examples/eyelang/control-system.pl) | Evaluates control-system measurements and targets. | [`output/control-system.pl`](../examples/eyelang/output/control-system.pl) |
 | [`cyclic-path.pl`](../examples/eyelang/cyclic-path.pl) | Computes paths in a cyclic graph. | [`output/cyclic-path.pl`](../examples/eyelang/output/cyclic-path.pl) |
 | [`d3-group.pl`](../examples/eyelang/d3-group.pl) | Enumerates subgroups of the D3 group. | [`output/d3-group.pl`](../examples/eyelang/output/d3-group.pl) |
