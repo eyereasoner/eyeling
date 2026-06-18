@@ -450,6 +450,8 @@ The first goal can yield `holds((name(alice, "Alice"), knows(alice, bob)), name(
 
 `holds/3` is the appropriate form for schema-style introspection because it exposes the predicate name and all arguments without assuming a fixed arity. For example, a single rule can inspect `heartbeat`, `source(sensor17)`, `temperature(sensor17, 38)`, and `signature(sensor17, sha256, Hash, Time)` as `heartbeat/0`, `source/1`, `temperature/2`, and `signature/4`; see [`context-schema-audit.pl`](../examples/eyelang/context-schema-audit.pl).
 
+The N3 example [`context-schema-audit.n3`](../examples/context-schema-audit.n3) shows the same idea in quoted graph form: members are encoded as predicates with RDF-list argument objects, then `log:includes` and `list:length` expose `Name + Arity` for schema checking.
+
 ### 9.10 Search control
 
 | Built-in | Meaning |

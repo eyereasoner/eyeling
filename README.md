@@ -1130,6 +1130,7 @@ The repository contains more than two hundred N3 examples under `examples/`, eye
 | `examples/string-builtins-tests.n3` | String built-ins. |
 | `examples/math-builtins-tests.n3` | Numeric built-ins. |
 | `examples/rdf-messages.n3` | RDF Message Log replay. |
+| `examples/context-schema-audit.n3` | Quoted-context schema validation with `log:includes` and list arity checks. |
 
 ### Running all examples through tests
 

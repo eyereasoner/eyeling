@@ -300,6 +300,8 @@ Use `holds/2` when you want to match the member term directly, for example `name
 
 `matches/3` can create context data from named regular-expression captures, which is useful when text logs or messages need to become facts before later rules inspect them with `holds/2` or `holds/3`. See [`observability-log-correlation.pl`](../examples/eyelang/observability-log-correlation.pl) for a complete log-correlation example.
 
+The N3 counterpart of the context schema audit lives at [`examples/context-schema-audit.n3`](../examples/context-schema-audit.n3) with golden output in [`examples/output/context-schema-audit.md`](../examples/output/context-schema-audit.md).
+
 
 ## Example catalog
 
