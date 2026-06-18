@@ -1,6 +1,6 @@
 # Context schema audit
 #
-# This is the N3 counterpart of the eyelang context-schema-audit example.  Each
+# This example shows a context-schema audit in ordinary RDF/N3. Each
 # message carries a quoted context graph whose members encode an event name as
 # the predicate and its arguments as an RDF list.  A generic rule uses
 # log:includes to inspect those quoted contexts, list:length to compute arity,

@@ -46,8 +46,6 @@ try {
     'bin/eyeling.cjs',
     'dist/browser/eyeling.browser.js',
     'dist/browser/index.mjs',
-    'docs/eyelang-guide.md',
-    'docs/eyelang-language-reference.md',
   ];
 
   for (const p of mustHave) assert.ok(paths.has(p), `missing from npm pack: ${p}`);

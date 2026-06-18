@@ -23,7 +23,6 @@ Eyeling is characterized by:
 - **Streaming RDF Messages** — supports RDF Messages streams, enabling Eyeling to fit into streaming RDF pipelines.
 - **Node.js, npm, and browser use** — run it from the command line, call it from JavaScript, or use the browser-oriented bundle.
 - **RDF-JS interoperability** — use N3 text, RDF-JS quads, datasets, or Eyeling’s own AST-level API, with TypeScript declarations grounded in `@rdfjs/types`.
-- **Experimental eyelang engine** — run compact Prolog-style Horn clause programs alongside the N3 engine, giving Eyeling a second reasoning engine without mixing the internals.
 
 
 This README is the primary guide to using, extending, and maintaining Eyeling.
@@ -34,8 +33,6 @@ Eyeling is designed for people who want a small, inspectable reasoner that can r
 
 - [Playground](https://eyereasoner.github.io/eyeling/playground)
 - [Conformance report](https://codeberg.org/phochste/notation3tests/src/branch/main/reports/report.md)
-- [eyelang guide](docs/eyelang-guide.md)
-- [eyelang language reference](docs/eyelang-language-reference.md)
 
 ---
 
@@ -47,7 +44,6 @@ Eyeling is designed for people who want a small, inspectable reasoner that can r
 4. [Command-line interface](#command-line-interface)
 5. [JavaScript API](#javascript-api)
 6. [RDF-JS integration](#rdf-js-integration)
-7. [Eyelang second engine](#eyelang-second-engine)
 8. [RDF compatibility mode and RDF 1.2](#rdf-compatibility-mode-and-rdf-12)
 9. [RDF Message Logs](#rdf-message-logs)
 10. [Built-ins](#built-ins)
@@ -76,7 +72,6 @@ It accepts facts and rules written in N3-style syntax, computes the logical cons
 - a browser/worker API through `eyeling/browser`;
 - an RDF-JS adapter for applications that work with quads and data factories;
 - a streaming tool for RDF Message Logs;
-- an experimental host for the `eyelang` Prolog-style Horn clause engine.
 
 Eyeling is intentionally small and dependency-light. The source tree is organized as a miniature compiler and inference engine: lexer, parser, term model, rule normalization, built-ins, forward chaining, backward proving, printing, RDF-JS adapters, and CLI wiring.
 
@@ -139,18 +134,12 @@ For proof output:
 node eyeling.js --proof examples/socrates.n3
 ```
 
-Run an eyelang program through the second engine:
-
-```bash
-eyeling --engine eyelang examples/eyelang/ancestor.pl
-```
 
 Or from JavaScript:
 
 ```js
 const { reason } = require('eyeling');
 
-const output = reason({ engine: 'eyelang' }, `
   materialize(out, 1).
   in(done).
   out(X) :- in(X).
@@ -297,11 +286,6 @@ Process an RDF Message Log one message at a time:
 eyeling --rdf --stream-messages rules.n3 messages.trig
 ```
 
-Run an eyelang program through the bundled second engine:
-
-```bash
-eyeling --engine eyelang examples/eyelang/ancestor.pl
-```
 
 ### CLI options
 
@@ -309,7 +293,6 @@ eyeling --engine eyelang examples/eyelang/ancestor.pl
 |---|---|
 | `-a`, `--ast` | Print the parsed AST as JSON and exit. |
 | `--builtin <module.js>` | Load a custom N3 built-in module. Repeatable. |
-| `--engine <n3\|eyelang>` | Select the default N3 engine or route the remaining arguments to the eyelang engine. |
 | `-d`, `--deterministic-skolem` | Make `log:skolem` stable across reasoning runs. |
 | `-e`, `--enforce-https` | Rewrite `http://` IRIs to `https://` for log dereferencing built-ins. |
 | `-h`, `--help` | Show help and exit. |
@@ -323,7 +306,6 @@ eyeling --engine eyelang examples/eyelang/ancestor.pl
 | `-t`, `--stream` | Stream derived triples as soon as they are derived. |
 | `-v`, `--version` | Print the package version and exit. |
 
-When `--engine eyelang` is selected, the remaining arguments are handled by the eyelang CLI. Its supported options are `--help`, `--proof`, `--stats`, `--version`, and `--` to stop option parsing. See the [eyelang guide](docs/eyelang-guide.md) for examples.
 
 ### Output behavior
 
@@ -623,60 +605,6 @@ Use RDF-JS when you want Eyeling to sit inside a JavaScript RDF pipeline. Use ra
 
 ---
 
-## Eyelang second engine
-
-Eyeling can also host the experimental `eyelang` engine. This is deliberately a second engine, not a rewrite of the N3 engine. The package therefore has two eyes:
-
-- the default **N3 engine** for RDF/Notation3 reasoning;
-- the **eyelang engine** for compact Prolog-style Horn clause programs.
-
-Use the CLI option when running `.pl` programs:
-
-```bash
-eyeling --engine eyelang examples/eyelang/ancestor.pl
-```
-
-A paired example shows the same vulnerability-impact scenario in both engines:
-
-```bash
-eyeling examples/vulnerability-impact.n3
-eyeling --engine eyelang examples/eyelang/vulnerability-impact.pl
-```
-
-Use the CommonJS convenience API when the rest of your application already imports `eyeling`:
-
-```js
-const { reason, reasonEyelang } = require('eyeling');
-
-const program = `
-  materialize(out, 1).
-  in(done).
-  out(X) :- in(X).
-`;
-
-console.log(reason({ engine: 'eyelang' }, program));
-console.log(await reasonEyelang(program));
-```
-
-Use the subpath export for the full eyelang module API:
-
-```js
-import { run, Program, Solver } from 'eyeling/eyelang';
-
-const result = run(program);
-console.log(result.stdout);
-```
-
-The two engines intentionally keep separate parsers, term models, solvers, and built-ins. Shared package entry points, examples, documentation, and CLI routing make them convenient to use together while keeping their execution models inspectable.
-
-The [eyelang guide](docs/eyelang-guide.md) introduces the CLI, output model, examples, and testing workflow. The [eyelang language reference](docs/eyelang-language-reference.md) defines syntax, terms, clauses, built-ins, declarations, output, and conformance boundaries. Runnable examples live under `examples/eyelang/`. The embedded engine runtime stays under `lib/eyelang/`, while the conformance corpus and test runners live under `test/eyelang/` so runtime code and test assets stay separate:
-
-```bash
-npm run test:eyelang        # integration check plus eyelang corpus
-npm run test:eyelang:corpus # eyelang corpus only
-```
-
----
 
 ## RDF compatibility mode and RDF 1.2
 
@@ -817,20 +745,6 @@ Formula-aware built-ins make Eyeling useful for meta-reasoning. `log:includes`, 
 
 `log:semantics`, `log:content`, and related built-ins may dereference sources. Use `--enforce-https` or `{ enforceHttps: true }` in environments where HTTP-to-HTTPS rewriting is required.
 
-### eyelang built-ins
-
-The eyelang engine has its own built-in registry under `lib/eyelang/builtins/`. These are separate from the N3 namespaces above and are called as ordinary eyelang predicates. See the [eyelang language reference](docs/eyelang-language-reference.md#9-standard-built-in-predicates) for the portable profile. The bundled implementation currently registers 80 name/arity entries across 78 predicate names:
-
-| Family | Count | Built-ins |
-|---|---:|---|
-| Core and host | 4 | `eq/2`, `neq/2`, `local_time/1`, `difference/3` |
-| Arithmetic, comparison, and generators | 29 | `neg/2`, `abs/2`, `sin/2`, `cos/2`, `tan/2`, `asin/2`, `acos/2`, `sqrt/2`, `floor/2`, `ceiling/2`, `trunc/2`, `rounded/2`, `exp/2`, `log/2`, `add/3`, `sub/3`, `mul/3`, `div/3`, `mod/3`, `min/3`, `max/3`, `pow/3`, `atan2/3`, `lt/2`, `gt/2`, `le/2`, `ge/2`, `between/3`, `smallest_divisor_from/3` |
-| Strings and conversions | 15 | `str_concat/3`, `contains/2`, `matches/2`, `matches/3`, `not_matches/2`, `split/3`, `join/3`, `substring/4`, `replace/4`, `lowercase/2`, `uppercase/2`, `trim/2`, `number_string/2`, `atom_string/2`, `term_string/2` |
-| Lists | 19 | `append/3`, `nth0/3`, `set_nth0/4`, `head/2`, `rest/2`, `last/2`, `take/3`, `drop/3`, `slice/4`, `member/2`, `select/3`, `not_member/2`, `reverse/2`, `length/2`, `sum_list/2`, `min_list/2`, `max_list/2`, `list_to_set/2`, `sort/2` |
-| Aggregation | 5 | `findall/3`, `countall/2`, `sumall/3`, `aggregate_min/5`, `aggregate_max/5` |
-| Control | 3 | `not/1`, `once/1`, `forall/2` |
-| Context and terms | 5 | `holds/2`, `holds/3`, `functor/3`, `arg/3`, `compound_name_arguments/3` |
-| **Total** | **80** |  |
 
 ## Custom built-ins
 
@@ -1096,8 +1010,8 @@ Everything else should be treated as internal unless explicitly documented.
 ├── bin/                      CLI executable shim
 ├── lib/                      Source modules
 ├── dist/browser/             Browser bundle and ESM wrapper
-├── docs/                     Project documentation, including the eyelang guide and language reference
-├── examples/                 N3 examples, eyelang examples, RDF message inputs, and generated decks
+├── docs/                     Project documentation
+├── examples/                 N3 examples, RDF message inputs, and generated decks
 ├── spec/                     RDF 1.2 parser test adapter
 ├── test/                     API, built-in, store, example, package, playground, and stream tests
 ├── tools/                    Build tooling
@@ -1111,7 +1025,7 @@ The package publishes the source modules, tests, examples, bundled runtime, brow
 
 ## Examples guide
 
-The repository contains more than two hundred N3 examples under `examples/`, eyelang `.pl` examples under `examples/eyelang/`, RDF Message input files under `examples/input/`, and presentation-oriented Markdown decks under `examples/deck/`. See the [eyelang guide](docs/eyelang-guide.md#example-catalog) for the eyelang example catalog.
+The repository contains more than two hundred N3 examples under `examples/`, RDF Message input files under `examples/input/`, and presentation-oriented Markdown decks under `examples/deck/`.
 
 ### Good first examples
 
@@ -1122,7 +1036,6 @@ The repository contains more than two hundred N3 examples under `examples/`, eye
 | `examples/age.n3` | Literal propagation. |
 | `examples/family-cousins.n3` | Multi-hop relational inference. |
 | `examples/dijkstra.n3` | Graph/path reasoning. |
-| `examples/vulnerability-impact.n3` and `examples/eyelang/vulnerability-impact.pl` | Paired N3 and eyelang dependency-risk example. |
 | `examples/list-map.n3` | List processing. |
 | `examples/string-builtins-tests.n3` | String built-ins. |
 | `examples/math-builtins-tests.n3` | Numeric built-ins. |

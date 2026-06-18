@@ -22,8 +22,6 @@ const sections = [
   ['Manifest tests', node, ['test/manifest.test.js']],
   ['RDF 1.2 syntax tests', node, ['test/rdf12.test.js']],
   ['Playground tests', node, ['test/playground.test.js']],
-  ['Eyelang second-engine tests', node, ['test/eyelang.test.js']],
-  ['Eyelang corpus tests', node, ['test/eyelang/run-all.mjs']],
   ['Package tests', node, ['test/package.test.js']],
 ];
 

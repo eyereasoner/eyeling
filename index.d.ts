@@ -80,33 +80,7 @@ export interface N3SourceListInput {
   scopeBlankNodes?: boolean;
 }
 
-export type EngineName = 'n3' | 'eyeling' | 'eyelang' | 'prolog' | 'horn';
-
-export type EyelangSource = string | { eyelang?: string; prolog?: string; text?: string; label?: string };
-
-export interface EyelangSourceListInput {
-  sources: EyelangSource[];
-}
-
-export interface EyelangStats {
-  [key: string]: number;
-}
-
-export interface EyelangRunOptions {
-  engine?: EngineName;
-  proof?: boolean;
-  why?: boolean;
-  explain?: boolean;
-  stats?: boolean;
-  args?: string[];
-  maxBuffer?: number;
-  [key: string]: unknown;
-}
-
-export interface EyelangRunResult {
-  stdout: string;
-  stats: EyelangStats;
-}
+export type EngineName = 'n3' | 'eyeling';
 
 export interface RdfJsReasonInput {
   n3?: string;
@@ -150,7 +124,7 @@ export interface ReasonOptions {
   rdf?: boolean;
   rdf12?: boolean;
   n3?: boolean;
-  inputFormat?: 'auto' | 'eyelang' | 'rdf' | 'rdf12' | 'turtle' | 'ttl' | 'nt' | 'n3' | string;
+  inputFormat?: 'auto' | 'rdf' | 'rdf12' | 'turtle' | 'ttl' | 'nt' | 'n3' | string;
   args?: string[];
   maxBuffer?: number;
   builtinModules?: string | string[];
@@ -235,18 +209,12 @@ export class PersistentFactStore implements FactStore {
 
 export function reason(
   opts: ReasonOptions,
-  input: string | RdfJsReasonInput | EyelingAstBundle | N3SourceListInput | EyelangSourceListInput,
+  input: string | RdfJsReasonInput | EyelingAstBundle | N3SourceListInput,
 ): string;
-export function runAsync(
-  input: string,
-  opts: ReasonStreamOptions & { engine: 'eyelang' | 'prolog' | 'horn' },
-): Promise<EyelangRunResult>;
 export function runAsync(
   input: string | RdfJsReasonInput | EyelingAstBundle | N3SourceListInput,
   opts?: ReasonStreamOptions & { engine?: 'n3' | 'eyeling' },
 ): Promise<ReasonStreamResult & { store?: FactStore }>;
-export function runEyelang(input: string, opts?: EyelangRunOptions): Promise<EyelangRunResult>;
-export function reasonEyelang(input: string, opts?: EyelangRunOptions): Promise<string>;
 export function reasonStream(
   input: string | RdfJsReasonInput | EyelingAstBundle | N3SourceListInput,
   opts?: ReasonStreamOptions,
@@ -269,8 +237,6 @@ export interface EyelingModule {
   readonly version: string;
   reason: typeof reason;
   runAsync: typeof runAsync;
-  runEyelang: typeof runEyelang;
-  reasonEyelang: typeof reasonEyelang;
   reasonStream: typeof reasonStream;
   reasonRdfJs: typeof reasonRdfJs;
   readonly INFERENCE_FUSE_EXIT_CODE: typeof INFERENCE_FUSE_EXIT_CODE;
