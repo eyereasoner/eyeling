@@ -774,18 +774,19 @@ The Alma RDF Message Log example intentionally keeps the message log as a URL, b
 
 ## Built-ins
 
-Eyeling implements SWAP-style built-ins for the N3 engine across these namespaces. The authoritative machine-readable catalog is [`eyeling-builtins.ttl`](eyeling-builtins.ttl); this README lists the public names so users do not need to infer support from examples.
+Eyeling implements **104 public SWAP-style built-in predicates** for the N3 engine across these namespaces. The authoritative machine-readable catalog is [`eyeling-builtins.ttl`](eyeling-builtins.ttl); this README lists the public names so users do not need to infer support from examples or internal dispatch code.
 
-| Namespace | Built-ins |
-|---|---|
-| `crypto:` | `sha`, `md5`, `sha256`, `sha512` |
-| `math:` | `equalTo`, `notEqualTo`, `greaterThan`, `lessThan`, `notLessThan`, `notGreaterThan`, `sum`, `product`, `difference`, `quotient`, `integerQuotient`, `remainder`, `rounded`, `exponentiation`, `absoluteValue`, `acos`, `asin`, `atan`, `sin`, `cos`, `tan`, `sinh`, `cosh`, `tanh`, `degrees`, `negation` |
-| `time:` | `day`, `hour`, `minute`, `month`, `second`, `timeZone`, `year`, `localTime` |
-| `list:` | `append`, `first`, `rest`, `iterate`, `last`, `memberAt`, `remove`, `member`, `in`, `length`, `notMember`, `reverse`, `sort`, `map`, `firstRest` |
-| `rdf:` | `first`, `rest` |
-| `log:` | `equalTo`, `notEqualTo`, `conjunction`, `conclusion`, `content`, `semantics`, `semanticsOrError`, `parsedAsN3`, `rawType`, `dtlit`, `langlit`, `implies`, `impliedBy`, `query`, `includes`, `notIncludes`, `collectAllIn`, `forAllIn`, `skolem`, `uri`, `trace`, `outputString` |
-| `string:` | `concatenation`, `contains`, `containsIgnoringCase`, `endsWith`, `startsWith`, `equalIgnoringCase`, `notEqualIgnoringCase`, `greaterThan`, `lessThan`, `notGreaterThan`, `notLessThan`, `matches`, `notMatches`, `replace`, `scrape`, `format`, `length`, `charAt`, `setCharAt` |
-| `dt:` | `datatype`, `lexicalForm`, `language`, `validForDatatype`, `invalidForDatatype`, `sameValueAs`, `differentValueFrom`, `canonicalLiteral` |
+| Namespace | Count | Built-ins |
+|---|---:|---|
+| `crypto:` | 4 | `sha`, `md5`, `sha256`, `sha512` |
+| `math:` | 26 | `equalTo`, `notEqualTo`, `greaterThan`, `lessThan`, `notLessThan`, `notGreaterThan`, `sum`, `product`, `difference`, `quotient`, `integerQuotient`, `remainder`, `rounded`, `exponentiation`, `absoluteValue`, `acos`, `asin`, `atan`, `sin`, `cos`, `tan`, `sinh`, `cosh`, `tanh`, `degrees`, `negation` |
+| `time:` | 8 | `day`, `hour`, `minute`, `month`, `second`, `timeZone`, `year`, `localTime` |
+| `list:` | 15 | `append`, `first`, `rest`, `iterate`, `last`, `memberAt`, `remove`, `member`, `in`, `length`, `notMember`, `reverse`, `sort`, `map`, `firstRest` |
+| `rdf:` | 2 | `first`, `rest` |
+| `log:` | 22 | `equalTo`, `notEqualTo`, `conjunction`, `conclusion`, `content`, `semantics`, `semanticsOrError`, `parsedAsN3`, `rawType`, `dtlit`, `langlit`, `implies`, `impliedBy`, `query`, `includes`, `notIncludes`, `collectAllIn`, `forAllIn`, `skolem`, `uri`, `trace`, `outputString` |
+| `string:` | 19 | `concatenation`, `contains`, `containsIgnoringCase`, `endsWith`, `startsWith`, `equalIgnoringCase`, `notEqualIgnoringCase`, `greaterThan`, `lessThan`, `notGreaterThan`, `notLessThan`, `matches`, `notMatches`, `replace`, `scrape`, `format`, `length`, `charAt`, `setCharAt` |
+| `dt:` | 8 | `datatype`, `lexicalForm`, `language`, `validForDatatype`, `invalidForDatatype`, `sameValueAs`, `differentValueFrom`, `canonicalLiteral` |
+| **Total** | **104** |  |
 
 The catalog marks each built-in with a coarse kind: `ex:Test`, `ex:Function`, `ex:Relation`, `ex:Generator`, `ex:IO`, `ex:Meta`, or `ex:SideEffect`.
 
@@ -820,18 +821,19 @@ Formula-aware built-ins make Eyeling useful for meta-reasoning. `log:includes`, 
 
 The eyelang engine has its own built-in registry under `lib/eyelang/builtins/`. These are separate from the N3 namespaces above and are called as ordinary eyelang predicates. See the [eyelang language reference](docs/eyelang-language-reference.md#9-standard-built-in-predicates) for the portable profile. The bundled implementation currently registers 68 name/arity entries across 66 predicate names:
 
-| Family | Built-ins |
-|---|---|
-| Core and host | `eq/2`, `neq/2`, `local_time/1`, `difference/3` |
-| Arithmetic and comparison | `neg/2`, `abs/2`, `sin/2`, `cos/2`, `asin/2`, `acos/2`, `rounded/2`, `log/2`, `add/3`, `sub/3`, `mul/3`, `div/3`, `mod/3`, `min/3`, `pow/3`, `lt/2`, `gt/2`, `le/2`, `ge/2`, `between/3`, `smallest_divisor_from/3` |
-| Strings | `str_concat/3`, `contains/2`, `matches/2`, `matches/3`, `not_matches/2` |
-| Lists | `append/3`, `nth0/3`, `set_nth0/4`, `rest/2`, `member/2`, `select/3`, `not_member/2`, `reverse/2`, `length/2`, `sort/2` |
-| Aggregation | `findall/3`, `countall/2`, `sumall/3`, `aggregate_min/5`, `aggregate_max/5` |
-| Control | `not/1`, `once/1` |
-| Context terms | `holds/2`, `holds/3` |
-| Search and optimization helpers | `n_queens/2`, `weighted_hamiltonian_cycle/4`, `weighted_hamiltonian_path/4`, `hamiltonian_cycle/3`, `fixed_length_cycle/4`, `bounded_path/5`, `cnf_model/3`, `qm_prime_implicants/4`, `qm_minimal_cover/4` |
-| Numeric extension helpers | `extended_gcd/5`, `collatz_trajectory/2`, `kaprekar_steps/2`, `goldbach_pair/3` |
-| Matrix helpers | `matrix_sum/2`, `matrix_multiply/2`, `cholesky_decomposition/2`, `determinant/2`, `matrix_inv_triang/2`, `matrix_inversion/2` |
+| Family | Count | Built-ins |
+|---|---:|---|
+| Core and host | 4 | `eq/2`, `neq/2`, `local_time/1`, `difference/3` |
+| Arithmetic and comparison | 21 | `neg/2`, `abs/2`, `sin/2`, `cos/2`, `asin/2`, `acos/2`, `rounded/2`, `log/2`, `add/3`, `sub/3`, `mul/3`, `div/3`, `mod/3`, `min/3`, `pow/3`, `lt/2`, `gt/2`, `le/2`, `ge/2`, `between/3`, `smallest_divisor_from/3` |
+| Strings | 5 | `str_concat/3`, `contains/2`, `matches/2`, `matches/3`, `not_matches/2` |
+| Lists | 10 | `append/3`, `nth0/3`, `set_nth0/4`, `rest/2`, `member/2`, `select/3`, `not_member/2`, `reverse/2`, `length/2`, `sort/2` |
+| Aggregation | 5 | `findall/3`, `countall/2`, `sumall/3`, `aggregate_min/5`, `aggregate_max/5` |
+| Control | 2 | `not/1`, `once/1` |
+| Context terms | 2 | `holds/2`, `holds/3` |
+| Search and optimization helpers | 9 | `n_queens/2`, `weighted_hamiltonian_cycle/4`, `weighted_hamiltonian_path/4`, `hamiltonian_cycle/3`, `fixed_length_cycle/4`, `bounded_path/5`, `cnf_model/3`, `qm_prime_implicants/4`, `qm_minimal_cover/4` |
+| Numeric extension helpers | 4 | `extended_gcd/5`, `collatz_trajectory/2`, `kaprekar_steps/2`, `goldbach_pair/3` |
+| Matrix helpers | 6 | `matrix_sum/2`, `matrix_multiply/2`, `cholesky_decomposition/2`, `determinant/2`, `matrix_inv_triang/2`, `matrix_inversion/2` |
+| **Total** | **68** |  |
 
 ## Custom built-ins
 
