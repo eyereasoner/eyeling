@@ -1,0 +1,72 @@
+# Context schema audit
+#
+# This is the N3 counterpart of the eyelang context-schema-audit example.  Each
+# message carries a quoted context graph whose members encode an event name as
+# the predicate and its arguments as an RDF list.  A generic rule uses
+# log:includes to inspect those quoted contexts, list:length to compute arity,
+# and schema rules to flag unexpected or wrong-arity members.
+
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
+@prefix list: <http://www.w3.org/2000/10/swap/list#>.
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix : <http://example.org/#>.
+
+:msg_ok :context {
+  :entry :heartbeat ().
+  :entry :source (:sensor17).
+  :entry :temperature (:sensor17 38).
+  :entry :gps (:sensor17 51 4).
+  :entry :signature (:sensor17 :sha256 "9f86d081" "2026-06-18T09:30:00Z").
+}.
+
+:msg_bad :context {
+  :entry :heartbeat ().
+  :entry :source (:sensor18).
+  :entry :temperature (:sensor18 99).
+  :entry :gps (:sensor18 51).
+  :entry :tampered (:sensor18).
+}.
+
+:heartbeat :allowedArity 0.
+:source :allowedArity 1.
+:temperature :allowedArity 2.
+:gps :allowedArity 3.
+:signature :allowedArity 4.
+
+{
+  ?Message :context ?Context.
+  ?Context log:includes { :entry ?Name ?Args }.
+  ?Args list:length ?Arity.
+}
+=>
+{
+  ?Message :contextShape (?Name ?Arity).
+}.
+
+{
+  ?Message :contextShape (?Name ?Arity).
+  ?Name :allowedArity ?AllowedArity.
+  ?Arity math:notEqualTo ?AllowedArity.
+}
+=>
+{
+  ?Message :schemaViolation (?Name ?Arity).
+}.
+
+{
+  ?Message :contextShape (?Name ?Arity).
+  1 log:notIncludes { ?Name :allowedArity ?AnyArity. }.
+}
+=>
+{
+  ?Message :schemaViolation (?Name ?Arity).
+}.
+
+{
+  :msg_bad :schemaViolation (:gps 2).
+  :msg_bad :schemaViolation (:tampered 1).
+}
+=>
+{
+  :report log:outputString "# Context schema audit\n\n## Source files\n\n- [N3 rules](../context-schema-audit.n3)\n\n## Entailment\nThe audit inspects quoted message contexts and finds two schema violations in `msg_bad`: `gps/2` should have arity 3, and `tampered/1` is not an allowed context member.\n\n## Explanation\nEach context member is encoded as a quoted triple whose predicate is the member name and whose object is the argument list. The generic audit rule uses `log:includes` to bind the member name and argument list, then `list:length` to compute the arity. Allowed shapes are declared once as `:allowedArity` facts, so the same rule can validate zero-, unary-, binary-, ternary-, and four-argument members without writing a separate rule per predicate.\n".
+}.
