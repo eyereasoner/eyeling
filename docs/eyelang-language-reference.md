@@ -360,15 +360,18 @@ Implementations MAY provide additional built-ins, but such built-ins are extensi
 |---|---|
 | `neg(A, B)` | `B` is the numeric negation of `A`. |
 | `abs(A, B)` | `B` is the absolute value of `A`. |
-| `sin(A, B)`, `cos(A, B)`, `asin(A, B)`, `acos(A, B)`, `log(A, B)` | Floating functions. |
-| `rounded(A, B)` | `B` is `A` rounded to the nearest integer. |
+| `sin(A, B)`, `cos(A, B)`, `tan(A, B)` | Trigonometric floating functions. |
+| `asin(A, B)`, `acos(A, B)`, `atan2(Y, X, Angle)` | Inverse trigonometric floating functions. |
+| `sqrt(A, B)` | Square root. Fails for negative inputs. |
+| `floor(A, B)`, `ceiling(A, B)`, `trunc(A, B)`, `rounded(A, B)` | Integer-valued numeric rounding functions. |
+| `exp(A, B)`, `log(A, B)` | Natural exponent and logarithm. `log/2` fails for non-positive inputs. |
 | `add(A, B, C)` | `C = A + B`. |
 | `sub(A, B, C)` | `C = A - B`. |
 | `mul(A, B, C)` | `C = A * B`. |
 | `div(A, B, C)` | `C = A / B`; integer inputs use integer division. |
 | `mod(A, B, C)` | Integer remainder. |
 | `pow(A, B, C)` | `C = A^B`. |
-| `min(A, B, C)` | Numeric minimum. |
+| `min(A, B, C)`, `max(A, B, C)` | Numeric minimum and maximum. |
 
 ### 9.3 Comparison
 
@@ -404,6 +407,14 @@ Comparisons interpret numeric-looking terms numerically. Other scalar terms are 
 | `matches(Text, Pattern)` | Text matches a simple implementation regex/search pattern. |
 | `matches(Text, Pattern, Context)` | Text matches a JavaScript regular expression with named capture groups; `Context` is a comma context containing one unary term per matched capture group. |
 | `not_matches(Text, Pattern)` | Negation of `matches/2`. |
+| `split(Text, Separator, Parts)` | Splits text into a proper list of strings. |
+| `join(Parts, Separator, Text)` | Joins a proper list of scalar terms into a string. |
+| `substring(Text, Start, Length, Out)` | Extracts a zero-based substring. |
+| `replace(Text, Search, Replacement, Out)` | Replaces all non-empty literal occurrences of `Search`. |
+| `lowercase(Text, Out)`, `uppercase(Text, Out)`, `trim(Text, Out)` | Text normalization helpers. |
+| `number_string(Number, String)` | Converts a number to a string or parses a numeric string into a number. |
+| `atom_string(Atom, String)` | Converts between atom constants and strings. |
+| `term_string(Term, String)` | Renders a ground term as its eyelang source string. |
 
 ### 9.7 Lists
 
@@ -412,12 +423,21 @@ Comparisons interpret numeric-looking terms numerically. Other scalar terms are 
 | `append(A, B, C)` | List append/split relation. |
 | `nth0(Index, List, Value)` | Zero-based list lookup. |
 | `set_nth0(Index, List, Value, Out)` | Functional list update. |
+| `head(List, Head)` | Head of a non-empty list. |
 | `rest(List, Tail)` | Tail of a non-empty list. |
+| `last(List, Last)` | Last element of a non-empty proper list. |
+| `take(N, List, Prefix)` | First `N` items of a proper list. |
+| `drop(N, List, Suffix)` | Proper-list suffix after dropping `N` items. |
+| `slice(Start, Length, List, Slice)` | Zero-based proper-list slice. |
 | `member(X, List)` | Member generator. |
 | `select(X, List, Rest)` | Selects one occurrence. |
 | `not_member(X, List)` | Succeeds when `X` is not a member. |
 | `reverse(A, B)` | Reverses a proper list. |
 | `length(List, N)` | Proper-list length. |
+| `sum_list(List, Sum)` | Numeric sum of a proper list; empty lists produce `0`. |
+| `min_list(List, Min)`, `max_list(List, Max)` | Minimum and maximum under standard term ordering. |
+| `list_to_set(List, Set)` | Removes duplicates while preserving the first occurrence order. |
+| `sort(Input, Output)` | Sorts and deduplicates a proper list. |
 
 ### 9.8 Aggregation and ordering
 
@@ -428,9 +448,8 @@ Comparisons interpret numeric-looking terms numerically. Other scalar terms are 
 | `sumall(Template, Goal, Sum)` | Sums numeric `Template` values over solutions of `Goal`; empty solution sets produce `0`. |
 | `aggregate_min(Key, Template, Goal, BestKey, BestTemplate)` | Selects the solution of `Goal` with the smallest resolved `Key`, returning that key and the corresponding resolved `Template`. Fails when `Goal` has no solutions. |
 | `aggregate_max(Key, Template, Goal, BestKey, BestTemplate)` | Selects the solution of `Goal` with the largest resolved `Key`, returning that key and the corresponding resolved `Template`. Fails when `Goal` has no solutions. |
-| `sort(Input, Output)` | Sorts and deduplicates a proper list. |
 
-### 9.9 Context terms
+### 9.9 Context and term inspection
 
 Context terms are data representations of atomic formulas and comma conjunctions.
 
@@ -438,12 +457,18 @@ Context terms are data representations of atomic formulas and comma conjunctions
 |---|---|
 | `holds(Context, Term)` | Enumerates member terms inside a context term and unifies each member with `Term`. |
 | `holds(Context, Name, Args)` | Enumerates context members of any arity, exposing each member as atom constant `Name` plus a proper argument list `Args`. |
+| `functor(Term, Name, Arity)` | Decomposes a non-variable term into its name and arity. |
+| `arg(Index, Term, Arg)` | Extracts the 1-based argument of a compound term. |
+| `compound_name_arguments(Term, Name, Args)` | Decomposes a compound term or constructs one from an atom name and proper argument list. |
 
 Example:
 
 ```prolog
 holds((name(alice, "Alice"), knows(alice, bob)), name(S, O)).
 holds((ready, name(alice, "Alice"), route(alice, bob, 7)), Name, Args).
+functor(route(alice, bob, 7), route, 3).
+arg(2, route(alice, bob, 7), bob).
+compound_name_arguments(Term, route, [alice, bob, 7]).
 ```
 
 The first goal can yield `holds((name(alice, "Alice"), knows(alice, bob)), name(alice, "Alice")).` The second can yield `holds((ready, name(alice, "Alice"), route(alice, bob, 7)), ready, []).`, `holds((ready, name(alice, "Alice"), route(alice, bob, 7)), name, [alice, "Alice"]).`, and `holds((ready, name(alice, "Alice"), route(alice, bob, 7)), route, [alice, bob, 7]).`
@@ -458,6 +483,7 @@ The N3 example [`context-schema-audit.n3`](../examples/context-schema-audit.n3) 
 |---|---|
 | `not(Goal)` | Negation as failure. Succeeds when `Goal` has no solution. |
 | `once(Goal)` | Succeeds with at most the first solution of `Goal`. |
+| `forall(Generator, Test)` | Succeeds when every solution of `Generator` also satisfies `Test`; succeeds vacuously when `Generator` has no solutions. |
 
 ## 10. Extension built-ins
 

@@ -106,9 +106,9 @@ scores_for([Disease|RestDiseases], [Score|RestScores]) :-
   score(Disease, Score),
   scores_for(RestDiseases, RestScores).
 
-sum_list([], 0.0).
-sum_list([Value|Rest], Sum) :-
-  sum_list(Rest, TailSum),
+score_sum([], 0.0).
+score_sum([Value|Rest], Sum) :-
+  score_sum(Rest, TailSum),
   add(Value, TailSum, Sum).
 
 normalize_scores([], _Total, []).
@@ -159,7 +159,7 @@ scores(case, Scores) :-
   scores_for(Diseases, Scores).
 evidenceTotal(case, Total) :-
   scores(case, Scores),
-  sum_list(Scores, Total).
+  score_sum(Scores, Total).
 posteriors(case, Posteriors) :-
   scores(case, Scores),
   evidenceTotal(case, Total),

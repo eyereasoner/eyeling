@@ -250,7 +250,7 @@ The playground has matching `--stats` and `--proof` checkboxes, so browser runs 
 
 eyelang builtins are registered by name and arity in small modules under [`lib/eyelang/builtins`](../lib/eyelang/builtins). This keeps the runtime portable to Node.js and the browser while giving each builtin family a clear boundary. Builtins are enabled by normal predicate calls.
 
-The builtin families cover unification, arithmetic, comparison, dates, strings, lists, aggregation, context terms, search control, number-theory helpers, and matrix helpers. The previous finite-search helper module has been removed because those predicates were too example-specific to be reusable. Examples that are still practical with ordinary relations and reusable list/arithmetic builtins have been rewritten in that style; only the examples that depended on non-portable shortcuts were dropped. The complete bundled implementation list is kept in the top-level [README built-ins section](../README.md#built-ins-1), and the regression suite checks that table against the actual runtime registry.
+The builtin families cover unification, arithmetic, comparison, dates, strings, lists, aggregation, context terms, term inspection, and search control. Domain-specific number-theory and matrix helper modules were removed from the default registry because those predicates were examples/accelerators rather than a reusable portable surface. New reusable helpers cover common numeric functions, list slicing and summaries, string normalization/conversion, term inspection/construction, and `forall/2`. The complete bundled implementation list is kept in the top-level [README built-ins section](../README.md#built-ins-1), and the regression suite checks that table against the actual runtime registry.
 
 To add a builtin, create or extend a module with `register(registry)` and call `registry.add(name, arity, handler, options)`. The default registry is assembled in [`lib/eyelang/builtins/registry.js`](../lib/eyelang/builtins/registry.js). Builtins that are only safe for specific argument modes should provide a `ready` predicate and `fallbackWhenNotReady: true`, so user-defined clauses remain visible until the builtin is applicable.
 
@@ -321,10 +321,8 @@ The repository includes examples for recursion, graph reachability, finite searc
 | [`canary-release.pl`](../examples/eyelang/canary-release.pl) | Decides canary rollout or rollback. | [`output/canary-release.pl`](../examples/eyelang/output/canary-release.pl) |
 | [`cat-koko.pl`](../examples/eyelang/cat-koko.pl) | Demonstrates named existential witnesses from a Cat Koko rule pattern. | [`output/cat-koko.pl`](../examples/eyelang/output/cat-koko.pl) |
 | [`clinical-trial-screening.pl`](../examples/eyelang/clinical-trial-screening.pl) | Screens candidates for a trial. | [`output/clinical-trial-screening.pl`](../examples/eyelang/output/clinical-trial-screening.pl) |
-| [`collatz-1000.pl`](../examples/eyelang/collatz-1000.pl) | Computes shared Collatz trajectories. | [`output/collatz-1000.pl`](../examples/eyelang/output/collatz-1000.pl) |
 | [`combinatorics-findall-sort.pl`](../examples/eyelang/combinatorics-findall-sort.pl) | Collects and sorts finite combinations. | [`output/combinatorics-findall-sort.pl`](../examples/eyelang/output/combinatorics-findall-sort.pl) |
 | [`competitive-enzyme-kinetics.pl`](../examples/eyelang/competitive-enzyme-kinetics.pl) | Computes inhibited enzyme reaction rates. | [`output/competitive-enzyme-kinetics.pl`](../examples/eyelang/output/competitive-enzyme-kinetics.pl) |
-| [`complex-matrix-stability.pl`](../examples/eyelang/complex-matrix-stability.pl) | Checks stability of a 2x2 system. | [`output/complex-matrix-stability.pl`](../examples/eyelang/output/complex-matrix-stability.pl) |
 | [`complex.pl`](../examples/eyelang/complex.pl) | Performs arithmetic on complex pairs. | [`output/complex.pl`](../examples/eyelang/output/complex.pl) |
 | [`composition-of-injective-functions-is-injective.pl`](../examples/eyelang/composition-of-injective-functions-is-injective.pl) | Encodes composition and injectivity of finite functions. | [`output/composition-of-injective-functions-is-injective.pl`](../examples/eyelang/output/composition-of-injective-functions-is-injective.pl) |
 | [`context-association.pl`](../examples/eyelang/context-association.pl) | Associates named contexts with their contents. | [`output/context-association.pl`](../examples/eyelang/output/context-association.pl) |
@@ -344,9 +342,9 @@ The repository includes examples for recursion, graph reachability, finite searc
 | [`derived-backward-rule.pl`](../examples/eyelang/derived-backward-rule.pl) | Derives an inverse-property backward rule from rule data. | [`output/derived-backward-rule.pl`](../examples/eyelang/output/derived-backward-rule.pl) |
 | [`derived-rule.pl`](../examples/eyelang/derived-rule.pl) | Derives conclusions from rule data. | [`output/derived-rule.pl`](../examples/eyelang/output/derived-rule.pl) |
 | [`diamond-property.pl`](../examples/eyelang/diamond-property.pl) | Checks the diamond property of a relation. | [`output/diamond-property.pl`](../examples/eyelang/output/diamond-property.pl) |
+| [`dijkstra.pl`](../examples/eyelang/dijkstra.pl) | Enumerates weighted simple paths. | [`output/dijkstra.pl`](../examples/eyelang/output/dijkstra.pl) |
 | [`dijkstra-findall-sort.pl`](../examples/eyelang/dijkstra-findall-sort.pl) | Finds shortest paths using collected candidates. | [`output/dijkstra-findall-sort.pl`](../examples/eyelang/output/dijkstra-findall-sort.pl) |
 | [`dijkstra-risk-path.pl`](../examples/eyelang/dijkstra-risk-path.pl) | Ranks routes by cost and trust. | [`output/dijkstra-risk-path.pl`](../examples/eyelang/output/dijkstra-risk-path.pl) |
-| [`dijkstra.pl`](../examples/eyelang/dijkstra.pl) | Enumerates weighted simple paths. | [`output/dijkstra.pl`](../examples/eyelang/output/dijkstra.pl) |
 | [`dining-philosophers.pl`](../examples/eyelang/dining-philosophers.pl) | Simulates Chandy-Misra fork exchanges. | [`output/dining-philosophers.pl`](../examples/eyelang/output/dining-philosophers.pl) |
 | [`dog.pl`](../examples/eyelang/dog.pl) | Counts dogs and derives when a license is required. | [`output/dog.pl`](../examples/eyelang/output/dog.pl) |
 | [`dpv-odrl-purpose-mapping.pl`](../examples/eyelang/dpv-odrl-purpose-mapping.pl) | Maps a DPV process into an ODRL permission view. | [`output/dpv-odrl-purpose-mapping.pl`](../examples/eyelang/output/dpv-odrl-purpose-mapping.pl) |
@@ -365,14 +363,12 @@ The repository includes examples for recursion, graph reachability, finite searc
 | [`fft8-numeric.pl`](../examples/eyelang/fft8-numeric.pl) | Runs an 8-point FFT over complex pairs. | [`output/fft8-numeric.pl`](../examples/eyelang/output/fft8-numeric.pl) |
 | [`fibonacci.pl`](../examples/eyelang/fibonacci.pl) | Computes large Fibonacci numbers by fast doubling. | [`output/fibonacci.pl`](../examples/eyelang/output/fibonacci.pl) |
 | [`field-nitrogen-balance.pl`](../examples/eyelang/field-nitrogen-balance.pl) | Classifies field nitrogen balance. | [`output/field-nitrogen-balance.pl`](../examples/eyelang/output/field-nitrogen-balance.pl) |
-| [`floating-point.pl`](../examples/eyelang/floating-point.pl) | Exercises floating-point arithmetic and comparisons. | [`output/floating-point.pl`](../examples/eyelang/output/floating-point.pl) |
 | [`flandor.pl`](../examples/eyelang/flandor.pl) | Derives a Flanders macro-insight authorization and retooling package. | [`output/flandor.pl`](../examples/eyelang/output/flandor.pl) |
+| [`floating-point.pl`](../examples/eyelang/floating-point.pl) | Exercises floating-point arithmetic and comparisons. | [`output/floating-point.pl`](../examples/eyelang/output/floating-point.pl) |
 | [`four-color-map.pl`](../examples/eyelang/four-color-map.pl) | Checks a four-colour map assignment. | [`output/four-color-map.pl`](../examples/eyelang/output/four-color-map.pl) |
 | [`fundamental-theorem-arithmetic.pl`](../examples/eyelang/fundamental-theorem-arithmetic.pl) | Factors integers and reconstructs products. | [`output/fundamental-theorem-arithmetic.pl`](../examples/eyelang/output/fundamental-theorem-arithmetic.pl) |
-| [`gcd-bezout-identity.pl`](../examples/eyelang/gcd-bezout-identity.pl) | Computes gcd and Bézout coefficients. | [`output/gcd-bezout-identity.pl`](../examples/eyelang/output/gcd-bezout-identity.pl) |
 | [`gd-step-certified.pl`](../examples/eyelang/gd-step-certified.pl) | Certifies a gradient-descent step. | [`output/gd-step-certified.pl`](../examples/eyelang/output/gd-step-certified.pl) |
 | [`gdpr-compliance.pl`](../examples/eyelang/gdpr-compliance.pl) | Checks GDPR-style processing compliance. | [`output/gdpr-compliance.pl`](../examples/eyelang/output/gdpr-compliance.pl) |
-| [`goldbach-1000.pl`](../examples/eyelang/goldbach-1000.pl) | Finds Goldbach prime pairs up to 1000. | [`output/goldbach-1000.pl`](../examples/eyelang/output/goldbach-1000.pl) |
 | [`good-cobbler.pl`](../examples/eyelang/good-cobbler.pl) | Demonstrates term-level structure with a good-cobbler statement. | [`output/good-cobbler.pl`](../examples/eyelang/output/good-cobbler.pl) |
 | [`gps.pl`](../examples/eyelang/gps.pl) | Finds and verifies route paths. | [`output/gps.pl`](../examples/eyelang/output/gps.pl) |
 | [`graph-reachability.pl`](../examples/eyelang/graph-reachability.pl) | Derives reachable nodes in a graph. | [`output/graph-reachability.pl`](../examples/eyelang/output/graph-reachability.pl) |
@@ -386,14 +382,12 @@ The repository includes examples for recursion, graph reachability, finite searc
 | [`heron-theorem.pl`](../examples/eyelang/heron-theorem.pl) | Computes triangle area by Heron's theorem. | [`output/heron-theorem.pl`](../examples/eyelang/output/heron-theorem.pl) |
 | [`ideal-gas-law.pl`](../examples/eyelang/ideal-gas-law.pl) | Applies the ideal gas law. | [`output/ideal-gas-law.pl`](../examples/eyelang/output/ideal-gas-law.pl) |
 | [`illegitimate-reasoning.pl`](../examples/eyelang/illegitimate-reasoning.pl) | Detects suspect reasoning patterns. | [`output/illegitimate-reasoning.pl`](../examples/eyelang/output/illegitimate-reasoning.pl) |
-| [`kaprekar.pl`](../examples/eyelang/kaprekar.pl) | Iterates toward Kaprekar's constant. | [`output/kaprekar.pl`](../examples/eyelang/output/kaprekar.pl) |
 | [`knowledge-engineering-alignment-flow.pl`](../examples/eyelang/knowledge-engineering-alignment-flow.pl) | Specializes reusable alignment rules into a target-shaped flow view. | [`output/knowledge-engineering-alignment-flow.pl`](../examples/eyelang/output/knowledge-engineering-alignment-flow.pl) |
 | [`law-of-cosines.pl`](../examples/eyelang/law-of-cosines.pl) | Computes a triangle side by cosine law. | [`output/law-of-cosines.pl`](../examples/eyelang/output/law-of-cosines.pl) |
 | [`least-squares-regression.pl`](../examples/eyelang/least-squares-regression.pl) | Fits a least-squares regression line. | [`output/least-squares-regression.pl`](../examples/eyelang/output/least-squares-regression.pl) |
 | [`list-collection.pl`](../examples/eyelang/list-collection.pl) | Demonstrates list and collection built-ins. | [`output/list-collection.pl`](../examples/eyelang/output/list-collection.pl) |
 | [`lldm.pl`](../examples/eyelang/lldm.pl) | Calculates leg-length discrepancy measurements. | [`output/lldm.pl`](../examples/eyelang/output/lldm.pl) |
 | [`manufacturing-quality-control.pl`](../examples/eyelang/manufacturing-quality-control.pl) | Evaluates process capability and quality. | [`output/manufacturing-quality-control.pl`](../examples/eyelang/output/manufacturing-quality-control.pl) |
-| [`matrix.pl`](../examples/eyelang/matrix.pl) | Runs matrix operations over sample inputs. | [`output/matrix.pl`](../examples/eyelang/output/matrix.pl) |
 | [`microgrid-dispatch.pl`](../examples/eyelang/microgrid-dispatch.pl) | Plans microgrid dispatch and reserve. | [`output/microgrid-dispatch.pl`](../examples/eyelang/output/microgrid-dispatch.pl) |
 | [`monkey-bananas.pl`](../examples/eyelang/monkey-bananas.pl) | Solves the monkey-and-bananas puzzle. | [`output/monkey-bananas.pl`](../examples/eyelang/output/monkey-bananas.pl) |
 | [`network-sla.pl`](../examples/eyelang/network-sla.pl) | Checks network path SLA compliance. | [`output/network-sla.pl`](../examples/eyelang/output/network-sla.pl) |
@@ -412,6 +406,7 @@ The repository includes examples for recursion, graph reachability, finite searc
 | [`proof-contrapositive.pl`](../examples/eyelang/proof-contrapositive.pl) | Models proof by contrapositive. | [`output/proof-contrapositive.pl`](../examples/eyelang/output/proof-contrapositive.pl) |
 | [`quadratic-formula.pl`](../examples/eyelang/quadratic-formula.pl) | Solves sample quadratic equations. | [`output/quadratic-formula.pl`](../examples/eyelang/output/quadratic-formula.pl) |
 | [`radioactive-decay.pl`](../examples/eyelang/radioactive-decay.pl) | Computes radioactive decay over time. | [`output/radioactive-decay.pl`](../examples/eyelang/output/radioactive-decay.pl) |
+| [`reusable-builtins.pl`](../examples/eyelang/reusable-builtins.pl) | Tours reusable numeric, list, and string builtins. | [`output/reusable-builtins.pl`](../examples/eyelang/output/reusable-builtins.pl) |
 | [`riemann-hypothesis.pl`](../examples/eyelang/riemann-hypothesis.pl) | Checks a finite catalogue of non-trivial zeta zeros against the Riemann-hypothesis condition. | [`output/riemann-hypothesis.pl`](../examples/eyelang/output/riemann-hypothesis.pl) |
 | [`security-incident-correlation.pl`](../examples/eyelang/security-incident-correlation.pl) | Correlates security incidents across signals. | [`output/security-incident-correlation.pl`](../examples/eyelang/output/security-incident-correlation.pl) |
 | [`service-impact.pl`](../examples/eyelang/service-impact.pl) | Analyzes service impact over cyclic dependencies. | [`output/service-impact.pl`](../examples/eyelang/output/service-impact.pl) |
@@ -422,6 +417,7 @@ The repository includes examples for recursion, graph reachability, finite searc
 | [`socrates.pl`](../examples/eyelang/socrates.pl) | Derives that Socrates is mortal. | [`output/socrates.pl`](../examples/eyelang/output/socrates.pl) |
 | [`statistics-summary.pl`](../examples/eyelang/statistics-summary.pl) | Computes population statistics for a sample. | [`output/statistics-summary.pl`](../examples/eyelang/output/statistics-summary.pl) |
 | [`superdense-coding.pl`](../examples/eyelang/superdense-coding.pl) | Models superdense-coding bit transmission. | [`output/superdense-coding.pl`](../examples/eyelang/output/superdense-coding.pl) |
+| [`term-tools.pl`](../examples/eyelang/term-tools.pl) | Inspects, builds, renders, and validates terms with reusable term/control builtins. | [`output/term-tools.pl`](../examples/eyelang/output/term-tools.pl) |
 | [`trust-flow-provenance-threshold.pl`](../examples/eyelang/trust-flow-provenance-threshold.pl) | Classifies message trust from provenance confidence scores. | [`output/trust-flow-provenance-threshold.pl`](../examples/eyelang/output/trust-flow-provenance-threshold.pl) |
 | [`turing.pl`](../examples/eyelang/turing.pl) | Simulates a binary-increment Turing machine. | [`output/turing.pl`](../examples/eyelang/output/turing.pl) |
 | [`vector-similarity.pl`](../examples/eyelang/vector-similarity.pl) | Computes dot product, norm, and cosine similarity. | [`output/vector-similarity.pl`](../examples/eyelang/output/vector-similarity.pl) |
@@ -429,7 +425,6 @@ The repository includes examples for recursion, graph reachability, finite searc
 | [`witch.pl`](../examples/eyelang/witch.pl) | Derives the classic “burn the witch” rule chain. | [`output/witch.pl`](../examples/eyelang/output/witch.pl) |
 | [`wolf-goat-cabbage.pl`](../examples/eyelang/wolf-goat-cabbage.pl) | Solves the wolf-goat-cabbage river crossing. | [`output/wolf-goat-cabbage.pl`](../examples/eyelang/output/wolf-goat-cabbage.pl) |
 | [`zebra.pl`](../examples/eyelang/zebra.pl) | Solves the zebra logic puzzle. | [`output/zebra.pl`](../examples/eyelang/output/zebra.pl) |
-
 
 
 ## Golden outputs, tests, and conformance

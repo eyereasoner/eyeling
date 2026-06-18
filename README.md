@@ -819,20 +819,18 @@ Formula-aware built-ins make Eyeling useful for meta-reasoning. `log:includes`, 
 
 ### eyelang built-ins
 
-The eyelang engine has its own built-in registry under `lib/eyelang/builtins/`. These are separate from the N3 namespaces above and are called as ordinary eyelang predicates. See the [eyelang language reference](docs/eyelang-language-reference.md#9-standard-built-in-predicates) for the portable profile. The bundled implementation currently registers 59 name/arity entries across 57 predicate names:
+The eyelang engine has its own built-in registry under `lib/eyelang/builtins/`. These are separate from the N3 namespaces above and are called as ordinary eyelang predicates. See the [eyelang language reference](docs/eyelang-language-reference.md#9-standard-built-in-predicates) for the portable profile. The bundled implementation currently registers 80 name/arity entries across 78 predicate names:
 
 | Family | Count | Built-ins |
 |---|---:|---|
 | Core and host | 4 | `eq/2`, `neq/2`, `local_time/1`, `difference/3` |
-| Arithmetic and comparison | 21 | `neg/2`, `abs/2`, `sin/2`, `cos/2`, `asin/2`, `acos/2`, `rounded/2`, `log/2`, `add/3`, `sub/3`, `mul/3`, `div/3`, `mod/3`, `min/3`, `pow/3`, `lt/2`, `gt/2`, `le/2`, `ge/2`, `between/3`, `smallest_divisor_from/3` |
-| Strings | 5 | `str_concat/3`, `contains/2`, `matches/2`, `matches/3`, `not_matches/2` |
-| Lists | 10 | `append/3`, `nth0/3`, `set_nth0/4`, `rest/2`, `member/2`, `select/3`, `not_member/2`, `reverse/2`, `length/2`, `sort/2` |
+| Arithmetic, comparison, and generators | 29 | `neg/2`, `abs/2`, `sin/2`, `cos/2`, `tan/2`, `asin/2`, `acos/2`, `sqrt/2`, `floor/2`, `ceiling/2`, `trunc/2`, `rounded/2`, `exp/2`, `log/2`, `add/3`, `sub/3`, `mul/3`, `div/3`, `mod/3`, `min/3`, `max/3`, `pow/3`, `atan2/3`, `lt/2`, `gt/2`, `le/2`, `ge/2`, `between/3`, `smallest_divisor_from/3` |
+| Strings and conversions | 15 | `str_concat/3`, `contains/2`, `matches/2`, `matches/3`, `not_matches/2`, `split/3`, `join/3`, `substring/4`, `replace/4`, `lowercase/2`, `uppercase/2`, `trim/2`, `number_string/2`, `atom_string/2`, `term_string/2` |
+| Lists | 19 | `append/3`, `nth0/3`, `set_nth0/4`, `head/2`, `rest/2`, `last/2`, `take/3`, `drop/3`, `slice/4`, `member/2`, `select/3`, `not_member/2`, `reverse/2`, `length/2`, `sum_list/2`, `min_list/2`, `max_list/2`, `list_to_set/2`, `sort/2` |
 | Aggregation | 5 | `findall/3`, `countall/2`, `sumall/3`, `aggregate_min/5`, `aggregate_max/5` |
-| Control | 2 | `not/1`, `once/1` |
-| Context terms | 2 | `holds/2`, `holds/3` |
-| Numeric extension helpers | 4 | `extended_gcd/5`, `collatz_trajectory/2`, `kaprekar_steps/2`, `goldbach_pair/3` |
-| Matrix helpers | 6 | `matrix_sum/2`, `matrix_multiply/2`, `cholesky_decomposition/2`, `determinant/2`, `matrix_inv_triang/2`, `matrix_inversion/2` |
-| **Total** | **59** |  |
+| Control | 3 | `not/1`, `once/1`, `forall/2` |
+| Context and terms | 5 | `holds/2`, `holds/3`, `functor/3`, `arg/3`, `compound_name_arguments/3` |
+| **Total** | **80** |  |
 
 ## Custom built-ins
 

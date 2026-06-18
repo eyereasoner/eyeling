@@ -1,2 +1,0 @@
-answer(pair, pair(5, 23)).
-answer(pair, pair(11, 17)).
