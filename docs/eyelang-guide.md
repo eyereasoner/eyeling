@@ -298,6 +298,8 @@ holds((ready, name(alice, "Alice"), route(alice, bob, 7)), Name, Args).
 
 Use `holds/2` when you want to match the member term directly, for example `name(S, O)`, `route(A, B, Cost)`, or `edge(A, arc(B, Cost))`. Use `holds/3` when you need the predicate name and argument list as data: it exposes any-arity member as atom constant `Name` plus a proper list `Args`, so zero-, binary-, and ternary members appear as `ready/0`, `name/2`, and `route/3` shapes without a special binary predicate. These utilities are useful for quoted context data, but they do not make those context members true in the ambient program. The [`context-schema-audit.pl`](../examples/eyelang/context-schema-audit.pl) example shows a case that really needs `holds/3`: it audits heterogeneous message contexts by extracting every member as `Name + Args`, computing each arity, and checking the resulting shape against a schema without knowing the predicate names in advance.
 
+`matches/3` can create context data from named regular-expression captures, which is useful when text logs or messages need to become facts before later rules inspect them with `holds/2` or `holds/3`. See [`observability-log-correlation.pl`](../examples/eyelang/observability-log-correlation.pl) for a complete log-correlation example.
+
 
 ## Example catalog
 
@@ -409,6 +411,7 @@ The repository includes examples for recursion, graph reachability, finite searc
 | [`network-sla.pl`](../examples/eyelang/network-sla.pl) | Checks network path SLA compliance. | [`output/network-sla.pl`](../examples/eyelang/output/network-sla.pl) |
 | [`newton-raphson.pl`](../examples/eyelang/newton-raphson.pl) | Finds roots by Newton-Raphson iteration. | [`output/newton-raphson.pl`](../examples/eyelang/output/newton-raphson.pl) |
 | [`nixon-diamond.pl`](../examples/eyelang/nixon-diamond.pl) | Reports the classic Nixon-diamond conflict. | [`output/nixon-diamond.pl`](../examples/eyelang/output/nixon-diamond.pl) |
+| [`observability-log-correlation.pl`](../examples/eyelang/observability-log-correlation.pl) | Extracts named regex captures from observability logs and correlates events by trace id. | [`output/observability-log-correlation.pl`](../examples/eyelang/output/observability-log-correlation.pl) |
 | [`odrl-dpv-fpv-trust-flow.pl`](../examples/eyelang/odrl-dpv-fpv-trust-flow.pl) | Decides ODRL/DPV data flows with local FPV trust gates. | [`output/odrl-dpv-fpv-trust-flow.pl`](../examples/eyelang/output/odrl-dpv-fpv-trust-flow.pl) |
 | [`odrl-dpv-healthcare-risk-ranked.pl`](../examples/eyelang/odrl-dpv-healthcare-risk-ranked.pl) | Ranks healthcare policy risks and mitigations. | [`output/odrl-dpv-healthcare-risk-ranked.pl`](../examples/eyelang/output/odrl-dpv-healthcare-risk-ranked.pl) |
 | [`odrl-dpv-risk-ranked.pl`](../examples/eyelang/odrl-dpv-risk-ranked.pl) | Ranks data-policy risks and mitigations. | [`output/odrl-dpv-risk-ranked.pl`](../examples/eyelang/output/odrl-dpv-risk-ranked.pl) |

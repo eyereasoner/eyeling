@@ -824,7 +824,7 @@ The eyelang engine has its own built-in registry under `lib/eyelang/builtins/`. 
 |---|---|
 | Core and host | `eq/2`, `neq/2`, `local_time/1`, `difference/3` |
 | Arithmetic and comparison | `neg/2`, `abs/2`, `sin/2`, `cos/2`, `asin/2`, `acos/2`, `rounded/2`, `log/2`, `add/3`, `sub/3`, `mul/3`, `div/3`, `mod/3`, `min/3`, `pow/3`, `lt/2`, `gt/2`, `le/2`, `ge/2`, `between/3`, `smallest_divisor_from/3` |
-| Strings | `str_concat/3`, `contains/2`, `matches/2`, `not_matches/2` |
+| Strings | `str_concat/3`, `contains/2`, `matches/2`, `matches/3`, `not_matches/2` |
 | Lists | `append/3`, `nth0/3`, `set_nth0/4`, `rest/2`, `member/2`, `select/3`, `not_member/2`, `reverse/2`, `length/2`, `sort/2` |
 | Aggregation | `findall/3`, `countall/2`, `sumall/3`, `aggregate_min/5`, `aggregate_max/5` |
 | Control | `not/1`, `once/1` |

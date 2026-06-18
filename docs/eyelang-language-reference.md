@@ -402,6 +402,7 @@ Comparisons interpret numeric-looking terms numerically. Other scalar terms are 
 | `str_concat(A, B, C)` | String concatenation. |
 | `contains(Text, Needle)` | Text contains `Needle`. |
 | `matches(Text, Pattern)` | Text matches a simple implementation regex/search pattern. |
+| `matches(Text, Pattern, Context)` | Text matches a JavaScript regular expression with named capture groups; `Context` is a comma context containing one unary term per matched capture group. |
 | `not_matches(Text, Pattern)` | Negation of `matches/2`. |
 
 ### 9.7 Lists
