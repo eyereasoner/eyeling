@@ -10014,5 +10014,19 @@ edge(i48, i89, i48).
 edge(i26, i42, i54).
 
 % Derivation rules: each rule below contributes one logical step toward the displayed results.
-cycle(R, Cycle) :-
-  fixed_length_cycle(edge, 10, R, Cycle).
+%
+% Keep this example independent from specialized search builtins by spelling out the
+% ten-edge monadic benchmark directly.  The left-to-right shape binds the next
+% node before the next edge lookup, so the ordinary predicate indexes can keep the
+% query finite and selective.
+cycle(R, [D0, D1, D2, D3, D4, D5, D6, D7, D8, D9, D0]) :-
+  edge(D0, R, D1),
+  edge(D1, R, D2),
+  edge(D2, R, D3),
+  edge(D3, R, D4),
+  edge(D4, R, D5),
+  edge(D5, R, D6),
+  edge(D6, R, D7),
+  edge(D7, R, D8),
+  edge(D8, R, D9),
+  edge(D9, R, D0).

@@ -819,7 +819,7 @@ Formula-aware built-ins make Eyeling useful for meta-reasoning. `log:includes`, 
 
 ### eyelang built-ins
 
-The eyelang engine has its own built-in registry under `lib/eyelang/builtins/`. These are separate from the N3 namespaces above and are called as ordinary eyelang predicates. See the [eyelang language reference](docs/eyelang-language-reference.md#9-standard-built-in-predicates) for the portable profile. The bundled implementation currently registers 68 name/arity entries across 66 predicate names:
+The eyelang engine has its own built-in registry under `lib/eyelang/builtins/`. These are separate from the N3 namespaces above and are called as ordinary eyelang predicates. See the [eyelang language reference](docs/eyelang-language-reference.md#9-standard-built-in-predicates) for the portable profile. The bundled implementation currently registers 59 name/arity entries across 57 predicate names:
 
 | Family | Count | Built-ins |
 |---|---:|---|
@@ -830,10 +830,9 @@ The eyelang engine has its own built-in registry under `lib/eyelang/builtins/`. 
 | Aggregation | 5 | `findall/3`, `countall/2`, `sumall/3`, `aggregate_min/5`, `aggregate_max/5` |
 | Control | 2 | `not/1`, `once/1` |
 | Context terms | 2 | `holds/2`, `holds/3` |
-| Search and optimization helpers | 9 | `n_queens/2`, `weighted_hamiltonian_cycle/4`, `weighted_hamiltonian_path/4`, `hamiltonian_cycle/3`, `fixed_length_cycle/4`, `bounded_path/5`, `cnf_model/3`, `qm_prime_implicants/4`, `qm_minimal_cover/4` |
 | Numeric extension helpers | 4 | `extended_gcd/5`, `collatz_trajectory/2`, `kaprekar_steps/2`, `goldbach_pair/3` |
 | Matrix helpers | 6 | `matrix_sum/2`, `matrix_multiply/2`, `cholesky_decomposition/2`, `determinant/2`, `matrix_inv_triang/2`, `matrix_inversion/2` |
-| **Total** | **68** |  |
+| **Total** | **59** |  |
 
 ## Custom built-ins
 

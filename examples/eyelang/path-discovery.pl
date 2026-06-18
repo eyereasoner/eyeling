@@ -1,19 +1,34 @@
 % Generic path discovery over the air-routes graph.
-% Change or add route_request(FromLabel, ToLabel, MaxStopOvers) to answer other routes.
+% Add route_request(FromLabel, ToLabel, MaxStopOvers) facts to answer other routes.
+% MaxStopOvers is converted to a leg limit, and the recursive search keeps a
+% visited list so it works without the removed finite-search helper builtins.
+
 % Output declarations: materialize/2 selects the relations written to this example's golden output.
-materialize(airroute, 2).
+materialize(airroute, 4).
 
 % Program structure: facts set up the scenario, and rules derive the materialized conclusions.
 route_request("Ostend-Bruges International Airport", "Václav Havel Airport Prague", 2).
 
 % Derivation rules: each rule below contributes one logical step toward the displayed results.
-airroute(discovered, RouteText) :-
-  route_request(From, To, MaxStopOvers),
-  airport(Source, From),
-  airport(Destination, To),
+airroute(FromLabel, ToLabel, MaxStopOvers, RouteText) :-
+  route_request(FromLabel, ToLabel, MaxStopOvers),
+  route_between(FromLabel, ToLabel, MaxStopOvers, RouteText).
+
+route_between(FromLabel, ToLabel, MaxStopOvers, RouteText) :-
+  airport(Source, FromLabel),
+  airport(Destination, ToLabel),
   add(MaxStopOvers, 1, MaxLegs),
-  bounded_path(flight, Source, Destination, MaxLegs, Path),
+  simple_path(Source, Destination, MaxLegs, [Source], ReversePath),
+  reverse(ReversePath, Path),
   route_text(Path, RouteText).
+
+simple_path(Node, Node, _RemainingLegs, Visited, Visited).
+simple_path(Node, Goal, RemainingLegs, Visited, Path) :-
+  gt(RemainingLegs, 0),
+  flight(Node, Next),
+  not_member(Next, Visited),
+  sub(RemainingLegs, 1, NextRemainingLegs),
+  simple_path(Next, Goal, NextRemainingLegs, [Next|Visited], Path).
 
 route_text([Node], Text) :-
   airport(Node, Text).
