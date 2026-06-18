@@ -197,6 +197,18 @@ why(
       },
     },
     {
+      name: 'README mirrors the eyelang builtin registry',
+      run: () => {
+        const actual = registeredBuiltinNames();
+        const documented = readmeBuiltinNames();
+        assertEqual(documented.join('\n'), actual.join('\n'), 'README builtin catalog');
+
+        const { entries, names } = readmeBuiltinSummary();
+        assertEqual(entries, actual.length, 'README builtin entry count');
+        assertEqual(names, new Set(actual.map((item) => item.split('/')[0])).size, 'README builtin name count');
+      },
+    },
+    {
       name: 'stdin input is accepted',
       run: () => {
         const result = runCli(['-'], { input: 'p(a, b).\nq(X, Y) :- p(X, Y).\n' });
@@ -497,6 +509,27 @@ function readmeCatalogExampleNames() {
     .map((match) => match[1])
     .filter((name, index, names) => names.indexOf(name) === index)
     .sort();
+}
+
+function registeredBuiltinNames() {
+  return [...createDefaultRegistry().defs.keys()].sort();
+}
+
+function readmeBuiltinNames() {
+  const readme = fs.readFileSync(path.join(packageRoot, 'README.md'), 'utf8');
+  const section = between(readme, '### eyelang built-ins', '## Custom built-ins');
+  return [...section.matchAll(/`([A-Za-z_][A-Za-z0-9_]*)\/(\d+)`/g)]
+    .map((match) => `${match[1]}/${match[2]}`)
+    .filter((name, index, names) => names.indexOf(name) === index)
+    .sort();
+}
+
+function readmeBuiltinSummary() {
+  const readme = fs.readFileSync(path.join(packageRoot, 'README.md'), 'utf8');
+  const section = between(readme, '### eyelang built-ins', '## Custom built-ins');
+  const match = section.match(/currently registers (\d+) name\/arity entries across (\d+) predicate names/);
+  if (match == null) throw new Error('README builtin summary not found');
+  return { entries: Number(match[1]), names: Number(match[2]) };
 }
 
 function playgroundExampleNames() {

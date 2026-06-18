@@ -261,7 +261,7 @@ best(Cycle, Cost) :-
   weighted_hamiltonian_cycle(edge, Cities, Cycle, Cost).
 ```
 
-The reusable search and numeric helpers include `n_queens/2`, Hamiltonian path/cycle helpers, `bounded_path/5`, `cnf_model/3`, Quine-McCluskey helpers, number-theory helpers such as `extended_gcd/5`, and matrix helpers such as `matrix_multiply/2`. These helpers are extension builtins of this implementation; [the eyelang language reference](eyelang-language-reference.md) defines the portable core and standard builtin profile.
+The reusable search and numeric helpers include `n_queens/2`, Hamiltonian path/cycle helpers, `bounded_path/5`, `cnf_model/3`, Quine-McCluskey helpers, number-theory helpers such as `extended_gcd/5`, and matrix helpers such as `matrix_multiply/2`. These helpers are extension builtins of this implementation; [the eyelang language reference](eyelang-language-reference.md) defines the portable core and standard builtin profile. The complete bundled implementation list is kept in the top-level [README built-ins section](../README.md#built-ins-1), and the regression suite checks that table against the actual runtime registry.
 
 To add a builtin, create or extend a module with `register(registry)` and call `registry.add(name, arity, handler, options)`. The default registry is assembled in [`lib/eyelang/builtins/registry.js`](../lib/eyelang/builtins/registry.js). Builtins that are only safe for specific argument modes should provide a `ready` predicate and `fallbackWhenNotReady: true`, so user-defined clauses remain visible until the builtin is applicable.
 

@@ -818,7 +818,7 @@ Formula-aware built-ins make Eyeling useful for meta-reasoning. `log:includes`, 
 
 ### eyelang built-ins
 
-The eyelang engine has its own built-in registry under `lib/eyelang/builtins/`. These are separate from the N3 namespaces above and are called as ordinary eyelang predicates. See the [eyelang language reference](docs/eyelang-language-reference.md#9-standard-built-in-predicates) for the portable profile. The bundled implementation currently registers:
+The eyelang engine has its own built-in registry under `lib/eyelang/builtins/`. These are separate from the N3 namespaces above and are called as ordinary eyelang predicates. See the [eyelang language reference](docs/eyelang-language-reference.md#9-standard-built-in-predicates) for the portable profile. The bundled implementation currently registers 68 name/arity entries across 66 predicate names:
 
 | Family | Built-ins |
 |---|---|
