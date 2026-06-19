@@ -1,1 +1,0 @@
-sumall(S, score(_Item, S), Sum)

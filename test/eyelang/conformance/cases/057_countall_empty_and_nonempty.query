@@ -1,1 +1,0 @@
-(countall(item(X), C), countall(missing(X), Z))

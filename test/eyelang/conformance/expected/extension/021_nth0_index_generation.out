@@ -1,1 +1,0 @@
-answer(index, 1).
