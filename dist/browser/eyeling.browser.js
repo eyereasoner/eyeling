@@ -6242,7 +6242,7 @@ function runParsedDocumentOnce(mergedDocument, { rdfMode = false, outputPrefixes
   let outTriples = [];
   let queryDerived = [];
   if (hasQueries) {
-    const res = engine.forwardChainAndCollectLogQueryConclusions(facts, frules, brules, qrules, { prefixes });
+    const res = engine.forwardChainAndCollectLogQueryConclusions(facts, frules, brules, qrules, null, { captureExplanations: false, prefixes });
     derived = res.derived;
     outTriples = res.queryTriples;
     queryDerived = res.queryDerived || [];
@@ -6929,7 +6929,7 @@ function factsContainOutputStrings(triplesForOutput) {
   let outDerived = [];
 
   if (hasQueries) {
-    const res = engine.forwardChainAndCollectLogQueryConclusions(facts, frules, brules, qrules, { prefixes });
+    const res = engine.forwardChainAndCollectLogQueryConclusions(facts, frules, brules, qrules, null, { captureExplanations: engine.getProofCommentsEnabled(), prefixes });
     derived = res.derived;
     outTriples = res.queryTriples;
     outDerived = res.queryDerived;
@@ -7507,6 +7507,7 @@ const LOG_COLLECT_ALL_IN_IRI = LOG_NS + 'collectAllIn';
 const LOG_FOR_ALL_IN_IRI = LOG_NS + 'forAllIn';
 const LOG_INCLUDES_IRI = LOG_NS + 'includes';
 const LOG_NOT_INCLUDES_IRI = LOG_NS + 'notIncludes';
+const LOG_MEMOIZE_IRI = LOG_NS + 'memoize';
 const LOG_IMPLIES_IRI = LOG_NS + 'implies';
 const LOG_IMPLIED_BY_IRI = LOG_NS + 'impliedBy';
 
@@ -7608,6 +7609,7 @@ const FACT_INDEX_ARRAY_MAP_FIELDS = ['__byPred', '__byPNonFastS', '__byPNonFastO
 const FACT_INDEX_NESTED_ARRAY_MAP_FIELDS = ['__byPS', '__byPO'];
 const FACT_INDEX_MAP_FIELDS = FACT_INDEX_ARRAY_MAP_FIELDS.concat(FACT_INDEX_NESTED_ARRAY_MAP_FIELDS);
 const FACT_INDEX_REQUIRED_FIELDS = FACT_INDEX_ARRAY_FIELDS.concat(FACT_INDEX_MAP_FIELDS, ['__keySet']);
+const FACT_INDEX_ALL_FIELDS = FACT_INDEX_REQUIRED_FIELDS.concat(['__keySetComplete']);
 
 let version = 'dev';
 try {
@@ -8675,7 +8677,13 @@ function termLookupKey(t) {
     return t.__tid;
   }
   if (t instanceof Blank) return t.__tid;
-  if (t instanceof Literal) return literalLookupKey(t);
+  if (t instanceof Literal) {
+    const cached = t.__lookupKey;
+    if (cached !== undefined) return cached;
+    const key = literalLookupKey(t);
+    Object.defineProperty(t, '__lookupKey', { value: key, enumerable: false });
+    return key;
+  }
 
   if (t instanceof ListTerm) {
     const cached = t.__lookupKey;
@@ -8711,6 +8719,13 @@ function tripleFastKey(tr) {
   const ko = termFastKey(tr.o);
   if (ks === null || kp === null || ko === null) return null;
   return ks + '\t' + kp + '\t' + ko;
+}
+
+function resetFactIndexes(facts) {
+  if (!facts) return;
+  for (const name of FACT_INDEX_ALL_FIELDS) {
+    try { delete facts[name]; } catch {}
+  }
 }
 
 function ensureFactIndexes(facts) {
@@ -9141,6 +9156,157 @@ function isLogImplies(p) {
 
 function isLogImpliedBy(p) {
   return p instanceof Iri && p.value === LOG_IMPLIED_BY_IRI;
+}
+
+function isLogMemoize(p) {
+  return p instanceof Iri && p.value === LOG_MEMOIZE_IRI;
+}
+
+function isTruthyMemoizeObject(o) {
+  if (!(o instanceof Literal)) return false;
+  if (o.value === 'true') return true;
+  const info = parseBooleanLiteralInfo(o);
+  return !!(info && info.value === true);
+}
+
+// ===========================================================================
+// Predicate memoization declarations
+// ===========================================================================
+//
+// Eyeling accepts top-level declarations of the form:
+//   :predicate log:memoize true.
+// They are engine directives, not data facts.  Each declaration asks the
+// backward prover to table completed answers for that predicate during the
+// current reasoning scope.  The hint is deliberately predicate-local and
+// conservative: unbound calls and finite-result probes still use the normal
+// path, and cached answers are invalidated when the fact/rule scope changes.
+
+function __extractLogMemoizeDeclarations(facts) {
+  const memoized = new Set();
+  if (!Array.isArray(facts) || facts.length === 0) return memoized;
+
+  let write = 0;
+  let removed = false;
+  for (let read = 0; read < facts.length; read++) {
+    const tr = facts[read];
+    if (tr && isLogMemoize(tr.p) && tr.s instanceof Iri && isTruthyMemoizeObject(tr.o)) {
+      memoized.add(tr.s.__tid);
+      removed = true;
+      continue;
+    }
+    if (write !== read) facts[write] = tr;
+    write++;
+  }
+
+  if (removed) {
+    facts.length = write;
+    resetFactIndexes(facts);
+  }
+  return memoized;
+}
+
+function __attachMemoizedPredicates(scopeCarrier, memoized) {
+  if (!scopeCarrier || !memoized || memoized.size === 0) return;
+  __setHiddenWritable(scopeCarrier, 'memoizedPredicates', memoized);
+}
+
+function __memoizedPredicateSet(facts, backRules) {
+  return (facts && facts.memoizedPredicates) || (backRules && backRules.memoizedPredicates) || null;
+}
+
+function __predicateIsMemoized(facts, backRules, p) {
+  if (!(p instanceof Iri)) return false;
+  const memoized = __memoizedPredicateSet(facts, backRules);
+  return !!(memoized && memoized.has(p.__tid));
+}
+
+function __makePredicateMemoTable() {
+  return {
+    scopeVersion: null,
+    entries: new Map(),
+  };
+}
+
+function __ensurePredicateMemoTable(facts, backRules) {
+  let table = (facts && facts.predicateMemoTable) || (backRules && backRules.predicateMemoTable) || null;
+  if (!table) table = __makePredicateMemoTable();
+  __setHiddenWritable(facts, 'predicateMemoTable', table);
+  __setHiddenWritable(backRules, 'predicateMemoTable', table);
+
+  const version = goalTableScopeVersion(facts, backRules);
+  if (table.scopeVersion !== version) {
+    table.scopeVersion = version;
+    table.entries.clear();
+  }
+  return table;
+}
+
+function __memoKeyPart(t) {
+  if (__termHasVarOrBlank(t)) return { bound: false, text: '_' };
+  const fast = termLookupKey(t);
+  if (fast !== null) return { bound: true, text: encodeLookupKeyPart(fast) };
+  return { bound: true, text: skolemKeyFromTerm(t) };
+}
+
+function __predicateMemoKey(goal) {
+  if (!(goal && goal.p instanceof Iri)) return null;
+  const sPart = __memoKeyPart(goal.s);
+  const oPart = __memoKeyPart(goal.o);
+  if (!sPart.bound && !oPart.bound) return null;
+  return `${goal.p.__tid}|${sPart.text}|${oPart.text}`;
+}
+
+function __makePredicateMemoEntry() {
+  return {
+    computing: false,
+    complete: false,
+    unsafe: false,
+    answers: [],
+    answerKeys: new Set(),
+  };
+}
+
+function __getPredicateMemoEntry(facts, backRules, key) {
+  const table = __ensurePredicateMemoTable(facts, backRules);
+  let entry = table.entries.get(key);
+  if (!entry) {
+    entry = __makePredicateMemoEntry();
+    table.entries.set(key, entry);
+  }
+  return entry;
+}
+
+function __canStorePredicateMemo(maxResults) {
+  return !(typeof maxResults === 'number' && maxResults > 0);
+}
+
+function __canMemoizeAnswerTerm(t) {
+  if (t instanceof Var || t instanceof OpenListTerm) return false;
+  if (t instanceof ListTerm) return t.elems.every(__canMemoizeAnswerTerm);
+  if (t instanceof GraphTerm) return t.triples.every((tr) => __canMemoizeAnswerTerm(tr.s) && __canMemoizeAnswerTerm(tr.p) && __canMemoizeAnswerTerm(tr.o));
+  return true;
+}
+
+function __memoAnswerKeyPart(t) {
+  const fast = termLookupKey(t);
+  if (fast !== null) return encodeLookupKeyPart(fast);
+  return skolemKeyFromTerm(t);
+}
+
+function __memoAnswerKey(tr) {
+  return __memoAnswerKeyPart(tr.s) + '\t' + __memoAnswerKeyPart(tr.p) + '\t' + __memoAnswerKeyPart(tr.o);
+}
+
+function __storePredicateMemoAnswer(entry, rawGoal, subst) {
+  const answer = applySubstTriple(rawGoal, subst || {});
+  if (!__canMemoizeAnswerTerm(answer.s) || !__canMemoizeAnswerTerm(answer.p) || !__canMemoizeAnswerTerm(answer.o)) {
+    entry.unsafe = true;
+    return;
+  }
+  const key = __memoAnswerKey(answer);
+  if (entry.answerKeys.has(key)) return;
+  entry.answerKeys.add(key);
+  entry.answers.push(answer);
 }
 
 // ===========================================================================
@@ -10056,6 +10222,47 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
       continue;
     }
 
+    if (frame.kind === 'memoComplete') {
+      frame.entry.computing = false;
+      if (frame.entry.unsafe) {
+        frame.table.entries.delete(frame.key);
+      } else {
+        frame.entry.complete = true;
+      }
+      continue;
+    }
+
+    if (frame.kind === 'memoAnswerIter') {
+      const answers = frame.entry.answers;
+      while (frame.idx < answers.length && results.length < max) {
+        const answer = answers[frame.idx++];
+        const mark = trail.length;
+        if (!unifyTripleTrail(frame.goal0, answer)) {
+          undoTo(mark);
+          continue;
+        }
+
+        if (!frame.restGoals.length) {
+          results.push(gcCompactForGoals(substMut, [], answerVars));
+          undoTo(mark);
+          if (results.length >= max) return results;
+          continue;
+        }
+
+        stack.push(frame);
+        stack.push({ kind: 'undo', substMark: mark, visitedMark: visitedTrail.length });
+        stack.push({
+          kind: 'node',
+          goalsNow: frame.restGoals,
+          curDepth: frame.curDepth + 1,
+          canDeferBuiltins: frame.canDeferBuiltins,
+          deferCount: 0,
+        });
+        break;
+      }
+      continue;
+    }
+
     if (frame.kind === 'deltaIter') {
       const deltas = frame.deltas;
       while (frame.idx < deltas.length && results.length < max) {
@@ -10197,7 +10404,21 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
     }
 
     const rawGoal = goalsNow[0];
-    const restGoals = goalsNow.length > 1 ? goalsNow.slice(1) : [];
+    let restGoals = goalsNow.length > 1 ? goalsNow.slice(1) : [];
+
+    if (rawGoal && rawGoal.__kind === 'memoStore') {
+      __storePredicateMemoAnswer(rawGoal.entry, rawGoal.goal, substMut);
+      if (rawGoal.stop && restGoals.length === 0) continue;
+      stack.push({
+        kind: 'node',
+        goalsNow: restGoals,
+        curDepth: frame.curDepth,
+        canDeferBuiltins: frame.canDeferBuiltins,
+        deferCount: 0,
+      });
+      continue;
+    }
+
     const goal0 = applySubstTriple(rawGoal, substMut);
 
     // 1) Builtins
@@ -10293,8 +10514,46 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
     const goalKey = tripleKeyForVisited(goal0);
     const goalWasVisited = visitedCounts.has(goalKey);
 
+    let memoCompleteFrame = null;
+    let memoReplayFrame = null;
+    if (__predicateIsMemoized(facts, backRules, goal0.p)) {
+      const memoKey = __predicateMemoKey(goal0);
+      if (memoKey !== null) {
+        const memoEntry = __getPredicateMemoEntry(facts, backRules, memoKey);
+        if (memoEntry.complete) {
+          stack.push({
+            kind: 'memoAnswerIter',
+            entry: memoEntry,
+            idx: 0,
+            goal0,
+            restGoals,
+            curDepth: frame.curDepth,
+            canDeferBuiltins: frame.canDeferBuiltins,
+          });
+          continue;
+        }
+        if (!memoEntry.computing && __canStorePredicateMemo(maxResults)) {
+          memoEntry.computing = true;
+          const table = __ensurePredicateMemoTable(facts, backRules);
+          memoReplayFrame = {
+            kind: 'memoAnswerIter',
+            entry: memoEntry,
+            idx: 0,
+            goal0,
+            restGoals,
+            curDepth: frame.curDepth,
+            canDeferBuiltins: frame.canDeferBuiltins,
+          };
+          memoCompleteFrame = { kind: 'memoComplete', entry: memoEntry, table, key: memoKey };
+          restGoals = [{ __kind: 'memoStore', entry: memoEntry, goal: rawGoal, stop: true }];
+        }
+      }
+    }
+
     // 3) Backward rules (indexed by head predicate) — explored first
     if (goal0.p instanceof Iri) {
+      if (memoReplayFrame) stack.push(memoReplayFrame);
+      if (memoCompleteFrame) stack.push(memoCompleteFrame);
       ensureBackRuleIndexes(backRules);
       const candRules = (backRules.__byHeadPred.get(goal0.p.__tid) || []).concat(backRules.__wildHeadPred);
 
@@ -10326,6 +10585,8 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
         });
       }
     } else {
+      if (memoReplayFrame) stack.push(memoReplayFrame);
+      if (memoCompleteFrame) stack.push(memoCompleteFrame);
       // No IRI predicate: rule indexing doesn't apply; only try all facts.
       stack.push({
         kind: 'factIter',
@@ -10531,6 +10792,10 @@ function __exitReasoning(code, message /* optional */) {
 function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, opts = {}) {
   enterReasoningRun();
   try {
+    const memoizedPredicates = __extractLogMemoizeDeclarations(facts);
+    __attachMemoizedPredicates(facts, memoizedPredicates);
+    __attachMemoizedPredicates(backRules, memoizedPredicates);
+
     ensureFactIndexes(facts);
     ensureBackRuleIndexes(backRules);
 
@@ -11169,7 +11434,7 @@ function reasonStream(input, opts = {}) {
   if (Array.isArray(logQueryRules) && logQueryRules.length) {
     // Query-selection mode: derive full closure, then output only the unique
     // instantiated conclusion triples of the log:query directives.
-    const res = forwardChainAndCollectLogQueryConclusions(facts, frules, brules, logQueryRules, { prefixes });
+    const res = forwardChainAndCollectLogQueryConclusions(facts, frules, brules, logQueryRules, null, { captureExplanations: proof, prefixes });
     derived = res.derived;
     queryTriples = res.queryTriples;
     queryDerived = res.queryDerived;
@@ -11203,7 +11468,7 @@ function reasonStream(input, opts = {}) {
           onDerived(payload);
         }
       },
-      { prefixes },
+      { captureExplanations: proof, prefixes },
     );
   }
 
@@ -14850,7 +15115,7 @@ function parseN3Text(text, opts = {}) {
   }
 
   const tokens = lex(text, { rdf });
-  const parser = new Parser(tokens);
+  const parser = new Parser(tokens, { sourceOffsets: sourceLocations });
   if (baseIri) parser.prefixes.setBase(baseIri);
   const [prefixes, triples, frules, brules, logQueryRules] = parser.parseDocument();
 
@@ -15125,7 +15390,7 @@ function annotateSourceOffset(obj, offset) {
 }
 
 class Parser {
-  constructor(tokens) {
+  constructor(tokens, options = {}) {
     this.toks = tokens;
     this.pos = 0;
     this.prefixes = PrefixEnv.newDefault();
@@ -15139,6 +15404,7 @@ class Parser {
     // makes derived output read naturally, e.g. ':s :p _:b.' preceding
     // '_:b :q :r.'
     this.pendingTriplesAfter = [];
+    this.trackSourceOffsets = !!(options && options.sourceOffsets);
   }
 
   peek() {
@@ -15149,6 +15415,10 @@ class Parser {
     const tok = this.toks[this.pos];
     this.pos += 1;
     return tok;
+  }
+
+  annotateSourceOffset(obj, offset) {
+    return this.trackSourceOffsets ? annotateSourceOffset(obj, offset) : obj;
   }
 
   fail(message, tok = this.peek()) {
@@ -15255,12 +15525,12 @@ class Parser {
         this.next();
         const second = this.parseTerm();
         this.expectDot();
-        forwardRules.push(annotateSourceOffset(this.makeRule(first, second, true), statementOffset));
+        forwardRules.push(this.annotateSourceOffset(this.makeRule(first, second, true), statementOffset));
       } else if (this.peek().typ === 'OpImpliedBy') {
         this.next();
         const second = this.parseTerm();
         this.expectDot();
-        backwardRules.push(annotateSourceOffset(this.makeRule(first, second, false), statementOffset));
+        backwardRules.push(this.annotateSourceOffset(this.makeRule(first, second, false), statementOffset));
       } else {
         let more;
 
@@ -15279,16 +15549,16 @@ class Parser {
 
         // normalize explicit log:implies / log:impliedBy at top-level
         for (const tr0 of more) {
-          const tr = annotateSourceOffset(tr0, statementOffset);
+          const tr = this.annotateSourceOffset(tr0, statementOffset);
           if (isLogImplies(tr.p) && tr.s instanceof GraphTerm && tr.o instanceof GraphTerm) {
-            forwardRules.push(annotateSourceOffset(this.makeRule(tr.s, tr.o, true), statementOffset));
+            forwardRules.push(this.annotateSourceOffset(this.makeRule(tr.s, tr.o, true), statementOffset));
           } else if (isLogImpliedBy(tr.p) && tr.s instanceof GraphTerm && tr.o instanceof GraphTerm) {
-            backwardRules.push(annotateSourceOffset(this.makeRule(tr.s, tr.o, false), statementOffset));
+            backwardRules.push(this.annotateSourceOffset(this.makeRule(tr.s, tr.o, false), statementOffset));
           } else if (isLogQuery(tr.p) && tr.s instanceof GraphTerm && tr.o instanceof GraphTerm) {
             // Output-selection directive: { premise } log:query { conclusion }.
             // When present at top-level, eyeling prints only the instantiated conclusion
             // triples (unique) instead of all newly derived facts.
-            logQueries.push(annotateSourceOffset(this.makeRule(tr.s, tr.o, true), statementOffset));
+            logQueries.push(this.annotateSourceOffset(this.makeRule(tr.s, tr.o, true), statementOffset));
           } else {
             triples.push(tr);
           }

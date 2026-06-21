@@ -34,6 +34,12 @@
 # Backward helper relations
 # -------------------------
 
+# Memoize repeated factorization subgoals.  The example asks for the same
+# smallest-divisor and factor-list computations through several independent
+# checks, so tabling completed answers avoids recomputing trial division.
+:smallestDivisorFrom log:memoize true .
+:factorSmallest log:memoize true .
+
 # divides0(A,B): A divides B in the positive integers.
 { (?A ?B) :divides0 true }
 <=

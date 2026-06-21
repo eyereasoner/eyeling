@@ -3,18 +3,24 @@
 # See https://en.wikipedia.org/wiki/Fibonacci_number
 # ==================================================
 
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
 @prefix math: <http://www.w3.org/2000/10/swap/math#>.
 @prefix : <https://eyereasoner.github.io/eye/reasoning#>.
 
-{?X :fibonacci ?Y} <= {(?X 0 1) :fib ?Y}.
+# Memoize the overlapping recursive subproblems.  The direct definition below
+# intentionally exposes the classic recurrence so repeated calls such as
+# F(10000), F(1000), F(100), ... can reuse completed :fibonacci answers.
+:fibonacci log:memoize true.
 
-{(0 ?A ?B) :fib ?A} <= true.
-{(1 ?A ?B) :fib ?B} <= true.
-{(?X ?A ?B) :fib ?Y} <= {
+{0 :fibonacci 0} <= true.
+{1 :fibonacci 1} <= true.
+{?X :fibonacci ?Y} <= {
     ?X math:greaterThan 1.
-    (?X 1) math:difference ?D.
-    (?A ?B) math:sum ?S.
-    (?D ?B ?S) :fib ?Y.
+    (?X 1) math:difference ?X1.
+    (?X 2) math:difference ?X2.
+    ?X1 :fibonacci ?Y1.
+    ?X2 :fibonacci ?Y2.
+    (?Y1 ?Y2) math:sum ?Y.
 }.
 
 {
@@ -34,4 +40,3 @@
         10000 :fibonacci ?F10000.
     }.
 }.
-

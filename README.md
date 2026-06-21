@@ -224,6 +224,25 @@ The CLI renders the `log:outputString` values directly:
 hello
 ```
 
+### Predicate memoization
+
+Eyeling supports a predicate-local performance directive for backward rules:
+
+```n3
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+:predicate log:memoize true .
+```
+
+A top-level `log:memoize true` triple is treated as an engine directive rather than an RDF fact. It asks the backward prover to reuse completed answers for that predicate during the current reasoning run. This is especially useful for recursive predicates with overlapping subgoals, such as the direct Fibonacci recurrence or Collatz trajectories where many starting values share suffixes:
+
+```n3
+:fibonacci log:memoize true .
+:collatz log:memoize true .
+```
+
+Memoization is intentionally selective. It can slow down pure generators, predicates with mostly unique states, or small linear recursions because maintaining the table costs more than recomputation. Prefer it for dynamic-programming-shaped predicates that are called repeatedly with the same bound subject or object. The examples `examples/fibonacci.n3`, `examples/collatz-1000.n3`, and `examples/fundamental-theorem-arithmetic.n3` show cases where the directive helps.
+
 ---
 
 ## Command-line interface
@@ -743,6 +762,8 @@ Eyeling supports both native N3 list terms and materialized RDF collections. Ano
 
 Formula-aware built-ins make Eyeling useful for meta-reasoning. `log:includes`, `log:notIncludes`, `log:collectAllIn`, and `log:forAllIn` prove goals inside formula scopes. `log:query` selects output triples, while `log:outputString` writes selected string values directly to stdout.
 
+`log:memoize` is a top-level performance directive for backward predicates, not an RDF-producing fact and not a general-purpose built-in. Use it when a recursive predicate has overlapping subgoals whose completed answers are likely to be requested again.
+
 `log:semantics`, `log:content`, and related built-ins may dereference sources. Use `--enforce-https` or `{ enforceHttps: true }` in environments where HTTP-to-HTTPS rewriting is required.
 
 
@@ -901,6 +922,8 @@ The backward prover solves rule bodies. It can match current facts, use backward
 { :example :works true } .
 ```
 
+For selected predicates, `:predicate log:memoize true .` enables tabling of completed backward answers. This preserves the normal declarative reading of the backward rules but can turn repeated recursive work into table lookups. The directive is removed from the data facts before reasoning, so it does not appear in normal output.
+
 ### Dynamic rules
 
 Eyeling treats top-level `log:implies` and `log:impliedBy` as rule forms and can activate derived implication facts as live rules during reasoning. This supports programs that derive rules as part of their logic.
@@ -1041,6 +1064,16 @@ The repository contains more than two hundred N3 examples under `examples/`, RDF
 | `examples/math-builtins-tests.n3` | Numeric built-ins. |
 | `examples/rdf-messages.n3` | RDF Message Log replay. |
 | `examples/context-schema-audit.n3` | Quoted-context schema validation with `log:includes` and list arity checks. |
+
+### Memoization examples
+
+These examples demonstrate `log:memoize` on predicates that benefit from reusing completed backward-rule answers:
+
+| Example | Memoized predicate | Why it helps |
+|---|---|---|
+| `examples/fibonacci.n3` | `:fibonacci` | The direct recurrence repeatedly asks for the same smaller Fibonacci numbers. |
+| `examples/collatz-1000.n3` | `:collatz` | Many starting values share Collatz suffix trajectories. |
+| `examples/fundamental-theorem-arithmetic.n3` | `:smallestDivisorFrom`, `:factorSmallest` | Factorization and independent checks reuse trial-division and factor-list subgoals. |
 
 ### Running all examples through tests
 

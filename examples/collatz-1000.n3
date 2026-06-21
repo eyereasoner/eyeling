@@ -19,6 +19,10 @@
 @prefix :     <http://example.org/collatz#> .
 @prefix math: <http://www.w3.org/2000/10/swap/math#> .
 @prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix log:  <http://www.w3.org/2000/10/swap/log#> .
+
+# Memoize the overlapping Collatz suffixes shared by many starting values.
+:collatz log:memoize true .
 
 # -----------------------------------------
 # Query / materialization of the test suite
