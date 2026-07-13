@@ -18,7 +18,7 @@ const { setTimeout: sleep } = require('node:timers/promises');
 
 const ROOT = path.resolve(__dirname, '..');
 
-const { detail, failResult, info, pass } = require('./report');
+const { detail, failResult, info, pass, warn } = require('./report');
 
 const TOTAL_TESTS = (fs.readFileSync(__filename, 'utf8').match(/^\s*beginTest\(/gm) || []).length;
 let passed = 0;
@@ -132,27 +132,50 @@ function startStaticServer(rootDir) {
 }
 
 function which(cmd) {
-  try {
-    // Avoid spawnSync (keeps this file in the same style as other tests: lightweight).
-    const paths = String(process.env.PATH || '').split(path.delimiter);
-    for (const p of paths) {
-      const fp = path.join(p, cmd);
-      if (fs.existsSync(fp)) return fp;
-    }
-  } catch (_) {}
+  // Avoid spawnSync (keeps this file in the same style as other tests: lightweight).
+  const paths = String(process.env.PATH || '').split(path.delimiter);
+  for (const p of paths) {
+    const fp = path.join(p, cmd);
+    try {
+      fs.accessSync(fp, fs.constants.X_OK);
+      return fp;
+    } catch (_) {}
+  }
   return null;
 }
 
-function findChromium() {
+function canLaunch(binary) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const child = spawn(binary, ['--version'], { stdio: 'ignore' });
+    const timeout = setTimeout(() => {
+      child.kill('SIGKILL');
+      finish(false);
+    }, 3000);
+
+    function finish(ok) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      resolve(ok);
+    }
+
+    child.on('error', () => finish(false));
+    child.on('exit', (code) => finish(code === 0));
+  });
+}
+
+async function findChromium() {
   // Allow overrides.
   const env = process.env.EYELING_BROWSER || process.env.CHROME_BIN || process.env.PUPPETEER_EXECUTABLE_PATH;
   if (env && fs.existsSync(env)) return env;
 
-  // Common binaries.
+  // Common binaries. Probe each one because some Linux distributions leave a
+  // chromium-browser launcher in PATH even when its required Snap is absent.
   const candidates = ['chromium', 'chromium-browser', 'google-chrome', 'google-chrome-stable', 'chrome'];
   for (const c of candidates) {
     const p = which(c);
-    if (p) return p;
+    if (p && await canLaunch(p)) return p;
   }
   return null;
 }
@@ -428,8 +451,11 @@ class CDP {
 }
 
 async function main() {
-  const browserPath = findChromium();
-  assert.ok(browserPath, 'No Chromium/Chrome binary found. Set EYELING_BROWSER to override.');
+  const browserPath = await findChromium();
+  if (!browserPath) {
+    warn('Playground browser tests skipped: no usable Chromium/Chrome binary found (set EYELING_BROWSER to override).');
+    return;
+  }
 
   let server = null;
   let chrome = null;
