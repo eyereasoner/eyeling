@@ -352,6 +352,7 @@ const {
   reasonStream,
   runAsync,
   reasonRdfJs,
+  parseN3Text,
   rdfjs,
   registerBuiltin,
   unregisterBuiltin,
@@ -393,6 +394,25 @@ Useful options:
 | `storeClear` | Clear the named persistent store before the run. |
 
 `reason()` accepts N3 text, supported RDF-JS input objects, AST bundles, and multi-source inputs.
+
+### `parseN3Text(text, options)`
+
+Use `parseN3Text()` to parse reusable facts and rules once. Its result can be passed directly to the in-process reasoning APIs, or its `frules`, `brules`, and `logQueryRules` arrays can be combined with variable input:
+
+```js
+const { parseN3Text, reasonStream } = require('eyeling');
+
+const rules = parseN3Text('@prefix : <http://example.org/> . { ?s :p ?o } => { ?s :q ?o } .', {
+  keepSourceArtifacts: false,
+});
+
+const result = reasonStream({
+  n3: '@prefix : <http://example.org/> . :a :p :b .',
+  rules: rules.frules,
+});
+```
+
+The parser is also exported from `eyeling/browser` for client-side reasoners.
 
 ### Multi-source input
 

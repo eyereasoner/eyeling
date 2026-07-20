@@ -7,8 +7,8 @@ const { spawnSync } = require('node:child_process');
 const ROOT = path.resolve(__dirname, '..');
 // Direct eyeling.js bundle API (in-process) for testing reasonStream/onDerived.
 // This is the API surface used by playground.html (browser/worker).
-const { reasonStream } = require('../eyeling.js');
-const { reason, reasonRdfJs, rdfjs } = require('../index.js');
+const { reasonStream, parseN3Text: parseN3TextBundle } = require('../eyeling.js');
+const { reason, reasonRdfJs, rdfjs, parseN3Text } = require('../index.js');
 
 // Run reason() in a subprocess with stderr captured, so expected parse errors
 // don't spam the parent process' stderr (while still being available as e.stderr).
@@ -3329,6 +3329,31 @@ MESSAGE
       assert.equal(out, '');
     },
     notExpect: [/\(6\)\s+a\s+:test\s*\./m, /:test\s+:is\s+false\s*\./m],
+  },
+
+  {
+    name: 'public parseN3Text export supports reusable pre-parsed rules',
+    async run() {
+      assert.equal(parseN3Text, parseN3TextBundle);
+      const parsed = parseN3Text(`
+        { ?s <http://example.org/p> ?o }
+          => { ?s <http://example.org/q> ?o } .
+      `, { keepSourceArtifacts: false });
+
+      assert.equal(parsed.frules.length, 1);
+      assert.equal(parsed.tokens, undefined);
+      assert.equal(parsed.text, undefined);
+
+      const result = reasonStream({
+        n3: '<http://example.org/a> <http://example.org/p> <http://example.org/b> .',
+        rules: parsed.frules,
+      });
+      assert.match(result.closureN3, /<http:\/\/example\.org\/a>\s+<http:\/\/example\.org\/q>\s+<http:\/\/example\.org\/b>/);
+      return '';
+    },
+    check(out) {
+      assert.equal(out, '');
+    },
   },
 
   {

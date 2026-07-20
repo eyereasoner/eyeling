@@ -73,6 +73,27 @@ export interface EyelingRule {
 
 export type EyelingAstBundle = [EyelingPrefixEnv, EyelingTriple[], EyelingRule[], EyelingRule[], EyelingRule[]?];
 
+export interface ParseN3Options {
+  baseIri?: string;
+  label?: string;
+  keepSourceArtifacts?: boolean;
+  collectUsedPrefixes?: boolean;
+  sourceLocations?: boolean;
+  rdf?: boolean;
+}
+
+export interface EyelingParsedDocument {
+  prefixes: EyelingPrefixEnv;
+  triples: EyelingTriple[];
+  frules: EyelingRule[];
+  brules: EyelingRule[];
+  logQueryRules: EyelingRule[];
+  label: string;
+  tokens?: unknown[];
+  text?: string;
+  readonly usedPrefixes?: ReadonlySet<string>;
+}
+
 export type N3Source = string | { n3?: string; text?: string; baseIri?: string; label?: string };
 
 export interface N3SourceListInput {
@@ -223,6 +244,7 @@ export function reasonRdfJs(
   input: string | RdfJsReasonInput | EyelingAstBundle | N3SourceListInput,
   opts?: Omit<ReasonStreamOptions, 'rdfjs' | 'onDerived'>,
 ): AsyncIterable<import('@rdfjs/types').Quad>;
+export function parseN3Text(text: string, opts?: ParseN3Options): EyelingParsedDocument;
 
 export const INFERENCE_FUSE_EXIT_CODE: 65;
 export const rdfjs: import('@rdfjs/types').DataFactory<import('@rdfjs/types').Quad, import('@rdfjs/types').Quad> & { variable(value: string): import('@rdfjs/types').Variable };
@@ -239,6 +261,7 @@ export interface EyelingModule {
   runAsync: typeof runAsync;
   reasonStream: typeof reasonStream;
   reasonRdfJs: typeof reasonRdfJs;
+  parseN3Text: typeof parseN3Text;
   readonly INFERENCE_FUSE_EXIT_CODE: typeof INFERENCE_FUSE_EXIT_CODE;
   rdfjs: typeof rdfjs;
   createFactStore: typeof createFactStore;

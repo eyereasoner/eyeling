@@ -125,6 +125,7 @@ module.exports = {
   runAsync,
   reasonStream: bundleApi.reasonStream,
   reasonRdfJs: bundleApi.reasonRdfJs,
+  parseN3Text: bundleApi.parseN3Text,
   rdfjs: dataFactory,
   registerBuiltin: engine.registerBuiltin,
   unregisterBuiltin: engine.unregisterBuiltin,

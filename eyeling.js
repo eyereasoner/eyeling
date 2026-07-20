@@ -11952,12 +11952,14 @@ module.exports = {
 
 const engine = require('./engine');
 const { dataFactory } = require('./rdfjs');
+const { parseN3Text } = require('./multisource');
 
 module.exports = {
   // public
   reasonStream: engine.reasonStream,
   runAsync: engine.runAsync,
   reasonRdfJs: engine.reasonRdfJs,
+  parseN3Text,
   rdfjs: dataFactory,
   main: engine.main,
   version: engine.version,

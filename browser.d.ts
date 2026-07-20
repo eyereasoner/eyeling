@@ -10,6 +10,8 @@ export type EyelingTerm = import('eyeling').EyelingTerm;
 export type EyelingTriple = import('eyeling').EyelingTriple;
 export type EyelingRule = import('eyeling').EyelingRule;
 export type EyelingAstBundle = import('eyeling').EyelingAstBundle;
+export type ParseN3Options = import('eyeling').ParseN3Options;
+export type EyelingParsedDocument = import('eyeling').EyelingParsedDocument;
 export type N3Source = import('eyeling').N3Source;
 export type N3SourceListInput = import('eyeling').N3SourceListInput;
 export type RdfJsReasonInput = import('eyeling').RdfJsReasonInput;
@@ -32,6 +34,7 @@ export function reasonRdfJs(
   input: string | RdfJsReasonInput | EyelingAstBundle | N3SourceListInput,
   opts?: Omit<ReasonStreamOptions, 'rdfjs' | 'onDerived'>,
 ): AsyncIterable<import('@rdfjs/types').Quad>;
+export function parseN3Text(text: string, opts?: ParseN3Options): EyelingParsedDocument;
 
 export const INFERENCE_FUSE_EXIT_CODE: 65;
 export const rdfjs: import('eyeling').EyelingModule['rdfjs'];
@@ -48,6 +51,7 @@ export interface EyelingBrowserModule {
   runAsync: typeof runAsync;
   reasonStream: typeof reasonStream;
   reasonRdfJs: typeof reasonRdfJs;
+  parseN3Text: typeof parseN3Text;
   readonly INFERENCE_FUSE_EXIT_CODE: typeof INFERENCE_FUSE_EXIT_CODE;
   rdfjs: typeof rdfjs;
   createFactStore: typeof createFactStore;

@@ -252,6 +252,10 @@ export function reasonRdfJs(input, opts) {
   return getBrowserApi().reasonRdfJs(input, opts);
 }
 
+export function parseN3Text(text, opts) {
+  return getBrowserApi().parseN3Text(text, opts);
+}
+
 export function createFactStore(options) {
   return getBrowserApi().createFactStore(options);
 }
@@ -306,6 +310,7 @@ const eyeling = {
   runAsync,
   reasonStream,
   reasonRdfJs,
+  parseN3Text,
   rdfjs,
   createFactStore,
   registerBuiltin,
