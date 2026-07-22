@@ -1988,6 +1988,21 @@ ex:w a ex:Woman .
   },
 
   {
+    name: '58e regression: demand-driven list index uses all bound positions',
+    opt: { proofComments: false },
+    input: `@prefix : <http://example.org/#>.
+
+(:a :b1 :c) :relation :v1.
+(:a :b2 :d) :relation :v2.
+(:z :b3 :c) :relation :v3.
+
+{ (:a ?middle :c) :relation ?value } => { :case :value ?value }.
+`,
+    expect: [/:(?:case)\s+:(?:value)\s+:(?:v1)\s*\./],
+    reject: [/:(?:case)\s+:(?:value)\s+:(?:v[23])\s*\./],
+  },
+
+  {
     name: '59 regression: quoted-formula alpha-equivalence must not rename blanks introduced by outer substitution',
     opt: { proofComments: false },
     input: `@prefix : <http://example.org/> .
