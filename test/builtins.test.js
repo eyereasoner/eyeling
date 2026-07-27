@@ -281,6 +281,34 @@ const cases = [
     },
   },
   {
+    name: 'log:equalTo tolerates numeric machine roundoff from math:sum',
+    run() {
+      const out = runReason(`
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+
+{
+  (0.1 0.2) math:sum ?sum .
+  ?sum log:equalTo 0.3 .
+} => {
+  :result :has :success-literal-2 .
+} .
+
+{} => {
+  :test :contains :success-literal-2 .
+} .
+
+{
+  :result :has :success-literal-2 .
+} => {
+  :test :is true .
+} .
+`);
+      assert.match(out, /:test :is true \./);
+    },
+  },
+  {
     name: 'custom builtin API hides internal blank-node variable prefix',
     run() {
       const iri = 'http://example.org/custom#format';
