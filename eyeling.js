@@ -7986,15 +7986,19 @@ function __analyzeForwardRuleScopedUse(rule) {
   const out = {
     needsSnap: false,
     baseLevel: 0,
-    queryTriples: [],
-    hasScopedAggregate: false,
+    scopedQueryTriples: [],
+    positiveQueryTriples: [],
   };
 
   if (!rule || !Array.isArray(rule.premise)) return out;
 
   for (let i = 0; i < rule.premise.length; i++) {
     const tr = rule.premise[i];
-    if (!(tr && tr.p instanceof Iri)) continue;
+    if (!(tr && tr.s && tr.p && tr.o)) continue;
+    if (!(tr.p instanceof Iri)) {
+      out.positiveQueryTriples.push(tr);
+      continue;
+    }
     const pv = tr.p.value;
 
     if (pv === LOG_INCLUDES_IRI || pv === LOG_NOT_INCLUDES_IRI) {
@@ -8007,7 +8011,7 @@ function __analyzeForwardRuleScopedUse(rule) {
       // dependency analysis; variables inside the quoted object do not bind the scope.
       out.needsSnap = true;
       out.baseLevel = Math.max(out.baseLevel, __scopedPriorityForTerm(tr.s));
-      __pushScopedQueryTriplesFromGraph(tr.o, out.queryTriples);
+      __pushScopedQueryTriplesFromGraph(tr.o, out.scopedQueryTriples);
       continue;
     }
 
@@ -8015,10 +8019,9 @@ function __analyzeForwardRuleScopedUse(rule) {
       if (tr.o instanceof GraphTerm) continue;
 
       out.needsSnap = true;
-      out.hasScopedAggregate = true;
       out.baseLevel = Math.max(out.baseLevel, __scopedPriorityForTerm(tr.o));
       if (tr.s instanceof ListTerm && tr.s.elems.length === 3) {
-        __pushScopedQueryTriplesFromGraph(tr.s.elems[1], out.queryTriples);
+        __pushScopedQueryTriplesFromGraph(tr.s.elems[1], out.scopedQueryTriples);
       }
       continue;
     }
@@ -8027,13 +8030,19 @@ function __analyzeForwardRuleScopedUse(rule) {
       if (tr.o instanceof GraphTerm) continue;
 
       out.needsSnap = true;
-      out.hasScopedAggregate = true;
       out.baseLevel = Math.max(out.baseLevel, __scopedPriorityForTerm(tr.o));
       if (tr.s instanceof ListTerm && tr.s.elems.length === 2) {
-        __pushScopedQueryTriplesFromGraph(tr.s.elems[0], out.queryTriples);
-        __pushScopedQueryTriplesFromGraph(tr.s.elems[1], out.queryTriples);
+        __pushScopedQueryTriplesFromGraph(tr.s.elems[0], out.scopedQueryTriples);
+        __pushScopedQueryTriplesFromGraph(tr.s.elems[1], out.scopedQueryTriples);
       }
+      continue;
     }
+
+    // Ordinary rule-body goals are monotone dependencies. A rule consuming
+    // facts produced in a delayed stratum must participate in that stratum too,
+    // so downstream scoped queries can be placed after the complete monotone
+    // closure rather than after only the first scoped producer.
+    out.positiveQueryTriples.push(tr);
   }
 
   return out;
@@ -8043,15 +8052,15 @@ function __triplePatternsMayOverlap(a, b) {
   return unifyTriple(a, b, __emptySubst()) !== null || unifyTriple(b, a, __emptySubst()) !== null;
 }
 
-function __ruleConclusionsMayFeedScopedQueries(producer, consumerMeta) {
-  if (!consumerMeta || !consumerMeta.queryTriples || consumerMeta.queryTriples.length === 0) return false;
+function __ruleConclusionsMayFeedQueries(producer, queryTriples) {
+  if (!queryTriples || queryTriples.length === 0) return false;
 
   // Dynamic conclusions are only known after a proof solution. Conservatively
-  // assume they can feed any scoped query if the producing rule is scoped.
+  // assume they can feed any query.
   if (producer && producer.__dynamicConclusionTerm) return true;
 
   if (!producer || !Array.isArray(producer.conclusion) || producer.conclusion.length === 0) return false;
-  for (const q of consumerMeta.queryTriples) {
+  for (const q of queryTriples) {
     for (const h of producer.conclusion) {
       if (__triplePatternsMayOverlap(q, h)) return true;
     }
@@ -8072,38 +8081,152 @@ function __computeForwardRuleScopedStrata(forwardRules) {
   if (!Array.isArray(forwardRules) || forwardRules.length === 0) return 0;
 
   const metas = forwardRules.map((r) => __analyzeForwardRuleScopedUse(r));
-  const levels = metas.map((m) => (m.needsSnap ? Math.max(1, m.baseLevel || 1) : 0));
+  const baseLevels = metas.map((m) => (m.needsSnap ? Math.max(1, m.baseLevel || 1) : 0));
 
-  let maxLevel = 0;
-  for (const lvl of levels) if (lvl > maxLevel) maxLevel = lvl;
+  // The common case has no global scoped query at all. Avoid building a rule
+  // dependency graph (and especially pairwise rule comparisons) for ordinary
+  // forward-chaining programs.
+  if (!metas.some((m) => m.needsSnap)) {
+    for (const rule of forwardRules) __setForwardRuleScopedStratumInfo(rule, 0);
+    return 0;
+  }
 
-  // Stratify scoped rules by data dependency: if a scoped query can read facts
-  // produced by another scoped rule, the reader must run against a later frozen
-  // snapshot. This prevents non-monotonic scoped builtins such as collectAllIn
-  // from emitting an early result before lower strata have derived their facts.
-  const passLimit = Math.max(1, forwardRules.length) + maxLevel + 1;
-  for (let pass = 0; pass < passLimit; pass++) {
+  // Edges point from a fact-producing rule to a consuming rule. Ordinary
+  // premises have weight 0 (same stratum); queries against a frozen scope have
+  // weight 1 (a strictly later snapshot).
+  const edges = [];
+  const adjacency = Array.from({ length: forwardRules.length }, () => []);
+  const producersByPredicate = new Map();
+  const wildcardProducers = new Set();
+  for (let pi = 0; pi < forwardRules.length; pi++) {
+    const producer = forwardRules[pi];
+    if (producer.__dynamicConclusionTerm) wildcardProducers.add(pi);
+    for (const head of producer.conclusion || []) {
+      if (!(head.p instanceof Iri)) {
+        wildcardProducers.add(pi);
+        continue;
+      }
+      let bucket = producersByPredicate.get(head.p.value);
+      if (!bucket) {
+        bucket = [];
+        producersByPredicate.set(head.p.value, bucket);
+      }
+      bucket.push(pi);
+    }
+  }
+
+  for (let ci = 0; ci < forwardRules.length; ci++) {
+    const weightsByProducer = new Map();
+    function addDependencies(queryTriples, weight) {
+      for (const query of queryTriples) {
+        const candidates = query.p instanceof Iri
+          ? [...(producersByPredicate.get(query.p.value) || []), ...wildcardProducers]
+          : forwardRules.keys();
+        for (const pi of candidates) {
+          if (!__ruleConclusionsMayFeedQueries(forwardRules[pi], [query])) continue;
+          const oldWeight = weightsByProducer.get(pi);
+          if (oldWeight === undefined || weight > oldWeight) weightsByProducer.set(pi, weight);
+        }
+      }
+    }
+    addDependencies(metas[ci].positiveQueryTriples, 0);
+    addDependencies(metas[ci].scopedQueryTriples, 1);
+    for (const [pi, weight] of weightsByProducer) {
+      const edge = { from: pi, to: ci, weight };
+      edges.push(edge);
+      adjacency[pi].push(edge);
+    }
+  }
+
+  // Collapse dependency cycles. Positive-only cycles form one ordinary
+  // fixpoint stratum. A cycle containing a scoped edge is not mathematically
+  // stratifiable; serialize its rules in source order as a deterministic
+  // operational fallback. This ensures competing absence tests do not all fire
+  // against the same stale snapshot.
+  const reverseAdjacency = Array.from({ length: forwardRules.length }, () => []);
+  for (const edge of edges) reverseAdjacency[edge.to].push(edge.from);
+
+  // Iterative Kosaraju traversal avoids overflowing the JavaScript call stack
+  // on long rule-dependency chains.
+  const visited = new Array(forwardRules.length).fill(false);
+  const finishOrder = [];
+  for (let start = 0; start < forwardRules.length; start++) {
+    if (visited[start]) continue;
+    visited[start] = true;
+    const visitStack = [{ node: start, edgeIndex: 0 }];
+    while (visitStack.length) {
+      const frame = visitStack[visitStack.length - 1];
+      if (frame.edgeIndex < adjacency[frame.node].length) {
+        const next = adjacency[frame.node][frame.edgeIndex++].to;
+        if (visited[next]) continue;
+        visited[next] = true;
+        visitStack.push({ node: next, edgeIndex: 0 });
+        continue;
+      }
+      finishOrder.push(frame.node);
+      visitStack.pop();
+    }
+  }
+
+  const components = [];
+  const componentOf = new Array(forwardRules.length).fill(-1);
+  for (let i = finishOrder.length - 1; i >= 0; i--) {
+    const start = finishOrder[i];
+    if (componentOf[start] >= 0) continue;
+    const componentIndex = components.length;
+    const members = [];
+    const collectStack = [start];
+    componentOf[start] = componentIndex;
+    while (collectStack.length) {
+      const node = collectStack.pop();
+      members.push(node);
+      for (const previous of reverseAdjacency[node]) {
+        if (componentOf[previous] >= 0) continue;
+        componentOf[previous] = componentIndex;
+        collectStack.push(previous);
+      }
+    }
+    components.push(members);
+  }
+
+  const offsets = new Array(forwardRules.length).fill(0);
+  const componentHasScopedCycle = new Array(components.length).fill(false);
+  for (const edge of edges) {
+    if (edge.weight > 0 && componentOf[edge.from] === componentOf[edge.to]) {
+      componentHasScopedCycle[componentOf[edge.from]] = true;
+    }
+  }
+  for (let comp = 0; comp < components.length; comp++) {
+    const members = components[comp];
+    if (!componentHasScopedCycle[comp]) continue;
+    members.sort((a, b) => a - b);
+    for (let i = 0; i < members.length; i++) offsets[members[i]] = i;
+  }
+
+  // The component graph is acyclic. Repeated relaxation is simple here and is
+  // bounded by the number of components, while offsets retain deterministic
+  // ordering inside an otherwise unstratifiable scoped cycle.
+  const componentBases = new Array(components.length).fill(0);
+  for (let node = 0; node < forwardRules.length; node++) {
+    const comp = componentOf[node];
+    componentBases[comp] = Math.max(componentBases[comp], baseLevels[node] - offsets[node]);
+  }
+  for (let pass = 0; pass < components.length; pass++) {
     let changed = false;
-    for (let ci = 0; ci < forwardRules.length; ci++) {
-      if (!metas[ci].needsSnap || !metas[ci].hasScopedAggregate) continue;
-      let needed = levels[ci];
-      for (let pi = 0; pi < forwardRules.length; pi++) {
-        if (pi === ci) continue;
-        if (levels[pi] <= 0) continue;
-        if (metas[pi].hasScopedAggregate) continue;
-        if (!__ruleConclusionsMayFeedScopedQueries(forwardRules[pi], metas[ci])) continue;
-        needed = Math.max(needed, levels[pi] + 1);
-      }
-      if (needed !== levels[ci]) {
-        levels[ci] = needed;
-        if (needed > maxLevel) maxLevel = needed;
-        changed = true;
-      }
+    for (const edge of edges) {
+      const fromComp = componentOf[edge.from];
+      const toComp = componentOf[edge.to];
+      if (fromComp === toComp) continue;
+      const needed = componentBases[fromComp] + offsets[edge.from] + edge.weight - offsets[edge.to];
+      if (needed <= componentBases[toComp]) continue;
+      componentBases[toComp] = needed;
+      changed = true;
     }
     if (!changed) break;
   }
 
-  maxLevel = 0;
+  const levels = forwardRules.map((_, i) => Math.max(0, componentBases[componentOf[i]] + offsets[i]));
+  let maxLevel = 0;
   for (let i = 0; i < forwardRules.length; i++) {
     __setForwardRuleScopedStratumInfo(forwardRules[i], levels[i]);
     if (levels[i] > maxLevel) maxLevel = levels[i];

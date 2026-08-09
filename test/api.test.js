@@ -2765,6 +2765,38 @@ _:b a ex:Person ; ex:name "B" .
   },
 
   {
+    name: '244a regression: scoped strata propagate through monotone rules',
+    opt: { proofComments: false },
+    input: `@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix : <http://example.org/ns#> .
+
+:a :x 1 . :b :x 1 .
+{ ?s :x 1 . ?f log:notIncludes { ?s :excluded true } } => { ?s :marked true } .
+{ ?s :marked true } => { ?s :flagged true } .
+{ ( ?s { ?s :flagged true } ?all ) log:collectAllIn ?scope } => { :result :hasList ?all }.
+`,
+    expect: [
+      /^:a\s+:flagged\s+true\s*\./m,
+      /^:b\s+:flagged\s+true\s*\./m,
+      /^:result\s+:hasList\s+\(:a\s+:b\)\s*\./m,
+    ],
+    notExpect: [/^:result\s+:hasList\s+\(\)\s*\./m],
+  },
+
+  {
+    name: '244b regression: mutually negative scoped rules use successive snapshots',
+    opt: { proofComments: false },
+    input: `@prefix : <http://ex/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+{ ?f log:notIncludes { :q :holds true } } => { :p :holds true } .
+{ ?g log:notIncludes { :p :holds true } } => { :q :holds true } .
+`,
+    expect: [/^:p\s+:holds\s+true\s*\./m],
+    notExpect: [/^:q\s+:holds\s+true\s*\./m],
+  },
+
+  {
     name: '244 regression: log:dtlit recognizes shorthand numeric and boolean literals',
     opt: { proofComments: false },
     input: `@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
