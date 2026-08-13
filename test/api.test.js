@@ -2797,6 +2797,26 @@ _:b a ex:Person ; ex:name "B" .
   },
 
   {
+    name: 'issue #24: unreachable wildcard rule does not lose derivations',
+    opt: { proofComments: false },
+    input: `@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix : <http://example.org/#> .
+
+:s :p :o .
+
+{ ?f log:notIncludes { :no :such :fact } } => { :negation :fired true } .
+{ ?x :q ?y } => { ?x :lost true } .
+{ ?x :p ?y } => { ?x :q ?y } .
+{ ?a ?pp ?b . ?a :never true } => { ?b ?pp ?a } .
+`,
+    expect: [
+      /^:negation\s+:fired\s+true\s*\./m,
+      /^:s\s+:q\s+:o\s*\./m,
+      /^:s\s+:lost\s+true\s*\./m,
+    ],
+  },
+
+  {
     name: '244 regression: log:dtlit recognizes shorthand numeric and boolean literals',
     opt: { proofComments: false },
     input: `@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
