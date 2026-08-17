@@ -2901,6 +2901,36 @@ _:b a ex:Person ; ex:name "B" .
     expect: [/^:result\s+:is\s+\{[\s\S]*\?A\s+a\s+\?B\s*\.[\s\S]*\?B\s+rdfs:subClassOf\s+\?C\s*\.[\s\S]*\}\s*\./m],
   },
   {
+    name: 'regression: log:rawType distinguishes EYE labeled and unlabeled blank nodes',
+    opt: { proofComments: false },
+    input: `@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix : <http://example.org/ns#> .
+
+_:named :p :labeledInput .
+[] :p :unlabeledInput .
+[ :detail :value ] :p :propertyListInput .
+
+{ ?x :p :labeledInput . ?x log:rawType log:LabeledBlankNode }
+=> { :test :labeledBlankNode true } .
+
+{ ?x :p :unlabeledInput . ?x log:rawType log:UnlabeledBlankNode }
+=> { :test :unlabeledBlankNode true } .
+
+{ ?x :p :propertyListInput . ?x log:rawType log:UnlabeledBlankNode }
+=> { :test :propertyListBlankNode true } .
+
+{ ?x :p :labeledInput . ?x log:rawType log:UnlabeledBlankNode }
+=> { :test :wrongType true } .
+`,
+    expect: [
+      /^:test\s+:labeledBlankNode\s+true\s*\./m,
+      /^:test\s+:unlabeledBlankNode\s+true\s*\./m,
+      /^:test\s+:propertyListBlankNode\s+true\s*\./m,
+    ],
+    notExpect: [/^:test\s+:wrongType\s+true\s*\./m],
+  },
+
+  {
     name: 'regression: log:rawType accepts quoted variables found via log:includes',
     opt: { proofComments: false },
     input: `@prefix log: <http://www.w3.org/2000/10/swap/log#> .

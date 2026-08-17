@@ -270,7 +270,7 @@ log:parsedAsN3 a ex:Builtin ; ex:kind ex:Meta ;
   rdfs:comment "Parses an N3 string (xsd:string-ish) into a formula." .
 
 log:rawType a ex:Builtin ; ex:kind ex:Meta ;
-  rdfs:comment "Returns one of log:Formula, log:Literal, rdf:List, or log:Other for the subject term." .
+  rdfs:comment "Returns the raw term type; blank nodes follow EYE and are distinguished as log:LabeledBlankNode or log:UnlabeledBlankNode." .
 
 log:dtlit a ex:Builtin ; ex:kind ex:Function ;
   rdfs:comment "Builds a datatype literal from (lex datatypeIri). Binds/unifies object with the resulting Literal." .

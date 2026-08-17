@@ -4638,7 +4638,8 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
 
   // log:rawType
   // Schema: $s+ log:rawType $o-
-  // Returns one of log:Formula, log:Literal, rdf:List, or log:Other.
+  // Mirrors EYE's blank-node distinction in addition to the N3 spec's core
+  // Formula/Literal/List/Other categories.
   if (pv === LOG_NS + 'rawType') {
     if (g.s instanceof Var && !__varCameFromBoundSubstitution(goal.s, subst)) return [];
 
@@ -4646,7 +4647,9 @@ function evalBuiltin(goal, subst, facts, backRules, depth, varGen, maxResults) {
     if (g.s instanceof GraphTerm) ty = internIri(LOG_NS + 'Formula');
     else if (g.s instanceof Literal) ty = internIri(LOG_NS + 'Literal');
     else if (g.s instanceof ListTerm || g.s instanceof OpenListTerm) ty = internIri(RDF_NS + 'List');
-    else ty = internIri(LOG_NS + 'Other');
+    else if (g.s instanceof Blank) {
+      ty = internIri(LOG_NS + (g.s.blankNodeKind === 'unlabeled' ? 'UnlabeledBlankNode' : 'LabeledBlankNode'));
+    } else ty = internIri(LOG_NS + 'Other');
 
     if (g.o instanceof Var) {
       const s2 = __cloneSubst(subst);
@@ -8410,7 +8413,7 @@ function skolemizeTermForHeadBlanks(t, headBlankLabels, mapping, skCounter, firi
         mapping[label] = `_:sk_${idx}`;
       }
     }
-    return new Blank(mapping[label]);
+    return new Blank(mapping[label], t.blankNodeKind);
   }
 
   if (t instanceof ListTerm) {
@@ -15377,7 +15380,7 @@ function scopeBlankNodesInDocument(doc, sourceIndex) {
   const mapping = new Map();
 
   function cloneTerm(term) {
-    if (term instanceof Blank) return new Blank(scopedBlankLabel(term.label, sourceIndex, mapping));
+    if (term instanceof Blank) return new Blank(scopedBlankLabel(term.label, sourceIndex, mapping), term.blankNodeKind);
     if (term instanceof ListTerm) return new ListTerm(term.elems.map(cloneTerm));
     if (term instanceof OpenListTerm) return new OpenListTerm(term.prefix.map(cloneTerm), term.tailVar);
     if (term instanceof GraphTerm) return annotateQuotedGraphTerm(new GraphTerm(term.triples.map(cloneTriple)));
@@ -15902,7 +15905,7 @@ class Parser {
       const pred = this.parsePathItem();
 
       this.blankCounter += 1;
-      const bn = new Blank(`_:b${this.blankCounter}`);
+      const bn = new Blank(`_:b${this.blankCounter}`, 'unlabeled');
 
       this.pendingTriples.push(dir === 'OpPathFwd' ? new Triple(t, pred, bn) : new Triple(bn, pred, t));
 
@@ -16003,7 +16006,7 @@ class Parser {
     if (this.peek().typ === 'RBracket') {
       this.next();
       this.blankCounter += 1;
-      return new Blank(`_:b${this.blankCounter}`);
+      return new Blank(`_:b${this.blankCounter}`, 'unlabeled');
     }
 
     // IRI property list: [ id <IRI> predicateObjectList? ]
@@ -16036,12 +16039,12 @@ class Parser {
     // [ predicateObjectList ]
     this.blankCounter += 1;
     const id = `_:b${this.blankCounter}`;
-    const subj = new Blank(id);
+    const subj = new Blank(id, 'unlabeled');
     const localTriples = this.parsePropertyListTriples(subj, 'RBracket', 'blank node property list');
 
     // Defer the blank-node description until after the triple that references it.
     if (localTriples.length) this.pendingTriplesAfter.push(...localTriples);
-    return new Blank(id);
+    return new Blank(id, 'unlabeled');
   }
 
   parsePropertyVerb() {
@@ -16728,9 +16731,12 @@ class Var extends Term {
 }
 
 class Blank extends Term {
-  constructor(label) {
+  constructor(label, blankNodeKind = 'labeled') {
     super();
     this.label = label; // _:b1, etc.
+    // EYE's log:rawType distinguishes source-labeled blank nodes (_:name)
+    // from unlabeled blank nodes introduced by N3 syntax such as [] / [...].
+    this.blankNodeKind = blankNodeKind === 'unlabeled' ? 'unlabeled' : 'labeled';
     Object.defineProperty(this, '__tid', {
       value: __getBlankTid(label),
       enumerable: false,
@@ -18229,7 +18235,7 @@ function reviveEyelingTerm(value) {
     case 'Var':
       return new Var(value.name);
     case 'Blank':
-      return new Blank(value.label);
+      return new Blank(value.label, value.blankNodeKind);
     case 'ListTerm':
       return new ListTerm((value.elems || []).map((item) => reviveEyelingTerm(item)));
     case 'OpenListTerm':
@@ -18788,7 +18794,7 @@ function termToJson(term) {
   if (term instanceof Iri) return ['Iri', term.value];
   if (term instanceof Literal) return ['Literal', term.value];
   if (term instanceof Var) return ['Var', term.name];
-  if (term instanceof Blank) return ['Blank', term.label];
+  if (term instanceof Blank) return ['Blank', term.label, term.blankNodeKind];
   if (term instanceof ListTerm) return ['ListTerm', term.elems.map(termToJson)];
   if (term instanceof OpenListTerm) return ['OpenListTerm', term.prefix.map(termToJson), term.tailVar];
   if (term instanceof GraphTerm) return ['GraphTerm', term.triples.map(tripleToJson)];
@@ -18832,7 +18838,7 @@ function termFromJson(json) {
     case 'Var':
       return new Var(json[1]);
     case 'Blank':
-      return new Blank(json[1]);
+      return new Blank(json[1], json[2]);
     case 'ListTerm':
       return new ListTerm((json[1] || []).map(termFromJson));
     case 'OpenListTerm':
