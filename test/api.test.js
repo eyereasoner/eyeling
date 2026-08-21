@@ -102,6 +102,14 @@ const EX = 'http://example.org/';
 // Helper to build a URI quickly
 const U = (path) => `<${EX}${path}>`;
 
+// Derived triples carrying `pred`, sorted, for order-independent assertions.
+const derivedWith = (out, pred) =>
+  String(out)
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.includes(` ${pred} `))
+    .sort();
+
 function parentChainN3(n) {
   // n links => n+1 nodes: n0->n1->...->nN
   let s = '';
@@ -3453,6 +3461,93 @@ MESSAGE
     },
   },
 
+  {
+    name: '247 streamed forward body: every join solution is emitted',
+    opt: { proofComments: false },
+    input: `
+@prefix : <http://example.org/> .
+
+{ ?x :b1 ?z . ?z :b2 ?y } => { ?x :a ?y } .
+
+:x1 :b1 :m1 . :x1 :b1 :m2 . :x2 :b1 :m1 .
+:m1 :b2 :y1 . :m1 :b2 :y2 . :m2 :b2 :y1 .
+`,
+    check(out) {
+      assert.deepEqual(derivedWith(out, ':a'), [
+        ':x1 :a :y1 .',
+        ':x1 :a :y2 .',
+        ':x2 :a :y1 .',
+        ':x2 :a :y2 .',
+      ]);
+    },
+  },
+  {
+    name: '248 streamed forward body: transitive closure is complete and terminates',
+    opt: { proofComments: false },
+    input: `
+@prefix : <http://example.org/> .
+
+{ ?a :p ?b . ?b :p ?c } => { ?a :p ?c } .
+
+:n1 :p :n2 . :n2 :p :n3 . :n3 :p :n4 . :n4 :p :n5 .
+`,
+    check(out) {
+      assert.deepEqual(derivedWith(out, ':p'), [
+        ':n1 :p :n3 .',
+        ':n1 :p :n4 .',
+        ':n1 :p :n5 .',
+        ':n2 :p :n4 .',
+        ':n2 :p :n5 .',
+        ':n3 :p :n5 .',
+      ]);
+    },
+  },
+  {
+    name: '249 streamed forward body: a fuse over a join still triggers (expect exit 65)',
+    opt: { proofComments: false },
+    input: `
+@prefix : <http://example.org/> .
+
+{ ?x :b1 ?z . ?z :b2 ?y } => false .
+
+:x1 :b1 :m1 .
+:m1 :b2 :y1 .
+`,
+    expectErrorCode: 65,
+  },
+  {
+    name: '250 streamed forward body: a fuse whose join has no solution does not trigger',
+    opt: { proofComments: false },
+    input: `
+@prefix : <http://example.org/> .
+
+{ ?x :b1 ?z . ?z :b2 ?y } => false .
+{ ?x :b1 ?z } => { ?x :reached ?z } .
+
+:x1 :b1 :m1 .
+:m2 :b2 :y1 .
+`,
+    check(out) {
+      assert.deepEqual(derivedWith(out, ':reached'), [':x1 :reached :m1 .']);
+    },
+  },
+  {
+    name: '251 streamed forward body: notIncludes beside a join sees the store as the rule found it',
+    opt: { proofComments: false },
+    input: `
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+{ ?x :b1 ?z . ?z :b2 ?y . ?f log:notIncludes { ?x :blocked true } } => { ?x :a ?y } .
+
+:x1 :b1 :m1 . :x2 :b1 :m1 .
+:m1 :b2 :y1 . :m1 :b2 :y2 .
+:x2 :blocked true .
+`,
+    check(out) {
+      assert.deepEqual(derivedWith(out, ':a'), [':x1 :a :y1 .', ':x1 :a :y2 .']);
+    },
+  },
   {
     name: 'API empty input returns empty output',
     opt: { proofComments: false },
