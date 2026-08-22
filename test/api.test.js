@@ -259,6 +259,32 @@ ${U('c')} ${U('friend')} ${U('d')}.
 
 const cases = [
   {
+    name: '00z duplicate detection is value equality, verified per fact',
+    opt: { proofComments: false },
+    input: `
+  @prefix : <http://example.org/> .
+  @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+  :a :b "1.0"^^xsd:decimal .
+  :c :d 1 .
+  :e :f true .
+  :go :go :go .
+
+  { :go :go :go } => { :a :b "1.00"^^xsd:decimal } .
+  { :go :go :go } => { :c :d "01"^^xsd:integer } .
+  { :go :go :go } => { :e :f "1"^^xsd:boolean } .
+  `,
+    check(out) {
+      const s = String(out);
+      // Value-equal numerics are the same fact, so neither is re-derived.
+      assert.ok(!s.includes('1.00'), 'decimal duplicate was re-derived');
+      assert.ok(!s.includes('"01"'), 'integer duplicate was re-derived');
+      // A boolean shares an index key with `true` without being equal to it,
+      // so the fact must survive: an index hit alone may not decide membership.
+      assert.match(s, /:e\s+:f\s+true\s*\./);
+    },
+  },
+  {
     name: '00 parsing untyped literal ^^',
     opt: { proofComments: false },
     input: `
