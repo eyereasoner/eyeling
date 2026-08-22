@@ -10145,6 +10145,115 @@ function __builtinIsSatisfiableWhenFullyUnbound(pIriVal) {
   return MATH_BUILTINS_SATISFIABLE_WHEN_FULLY_UNBOUND.has(pIriVal);
 }
 
+
+// Cost-gated body ordering for forward rules.
+//
+// A conjunction is evaluated left to right, so a body that opens with unselective
+// patterns enumerates their product before any shared variable can prune it. Only
+// fact-lookup goals are considered here: a goal that a backward rule could answer
+// keeps its written position, because rule selection order is load-bearing for
+// termination. The written order is kept unless the estimate says it is
+// catastrophically worse, so ordinary programs — and their output order — do not move.
+const GOAL_ORDER_MIN_GOALS = 3;
+const GOAL_ORDER_MIN_COST = 1e6;
+const GOAL_ORDER_MIN_GAIN = 100;
+
+function __orderCandidateTerm(t) {
+  return t instanceof Iri || t instanceof Literal || t instanceof Blank || t instanceof Var;
+}
+
+function __orderCandidateGoal(tr, backRules) {
+  if (!tr || !(tr.p instanceof Iri)) return false;
+  if (isBuiltinPred(tr.p)) return false;
+  if (backRules.__wildHeadPred && backRules.__wildHeadPred.length) return false;
+  if (backRules.__byHeadPred && backRules.__byHeadPred.has(tr.p.__tid)) return false;
+  return __orderCandidateTerm(tr.s) && __orderCandidateTerm(tr.o);
+}
+
+function __orderTermIsBound(term, bound) {
+  if (term instanceof Var) return bound.has(term.name);
+  if (term instanceof Blank) return bound.has(term.label);
+  return true;
+}
+
+function __orderBindTerm(term, bound) {
+  if (term instanceof Var) bound.add(term.name);
+  else if (term instanceof Blank) bound.add(term.label);
+}
+
+// Expected matches for one binding of what is already bound.
+function __orderFanout(facts, tr, bound) {
+  const pk = tr.p.__tid;
+  const all = facts.__byPred.get(pk);
+  const extent = all ? all.length : 0;
+  if (extent === 0) return 0;
+
+  const sBound = __orderTermIsBound(tr.s, bound);
+  const oBound = __orderTermIsBound(tr.o, bound);
+  let est = extent;
+  if (sBound) {
+    const byS = facts.__byPS.get(pk);
+    if (byS && byS.size) est = Math.min(est, extent / byS.size);
+  }
+  if (oBound) {
+    const byO = facts.__byPO.get(pk);
+    if (byO && byO.size) est = Math.min(est, extent / byO.size);
+  }
+  if (sBound && oBound) est = Math.min(est, 1);
+  return est;
+}
+
+function __orderCost(order, facts, boundStart) {
+  const bound = new Set(boundStart);
+  let card = 1;
+  let cost = 0;
+  for (let i = 0; i < order.length; i++) {
+    const parent = card;
+    card *= __orderFanout(facts, order[i], bound);
+    cost += Math.max(parent, card);
+    __orderBindTerm(order[i].s, bound);
+    __orderBindTerm(order[i].o, bound);
+    if (card === 0) break;
+  }
+  return cost;
+}
+
+function __reorderBodyForCost(goals, subst, facts, backRules) {
+  if (goals.length < GOAL_ORDER_MIN_GOALS) return null;
+  for (let i = 0; i < goals.length; i++) {
+    if (!__orderCandidateGoal(goals[i], backRules)) return null;
+  }
+
+  const boundStart = new Set();
+  if (subst) for (const k in subst) if (hasOwn.call(subst, k)) boundStart.add(k);
+
+  const writtenCost = __orderCost(goals, facts, boundStart);
+  if (!(writtenCost > GOAL_ORDER_MIN_COST)) return null;
+
+  const bound = new Set(boundStart);
+  const remaining = goals.slice();
+  const greedy = [];
+  while (remaining.length) {
+    let bestAt = 0;
+    let bestFan = Infinity;
+    for (let i = 0; i < remaining.length; i++) {
+      const fan = __orderFanout(facts, remaining[i], bound);
+      if (fan < bestFan) {
+        bestFan = fan;
+        bestAt = i;
+      }
+    }
+    const picked = remaining.splice(bestAt, 1)[0];
+    __orderBindTerm(picked.s, bound);
+    __orderBindTerm(picked.o, bound);
+    greedy.push(picked);
+  }
+
+  const greedyCost = __orderCost(greedy, facts, boundStart);
+  if (greedyCost * GOAL_ORDER_MIN_GAIN > writtenCost) return null;
+  return greedy;
+}
+
 // With opts.onSolution the caller takes each solution as it is found and gets back
 // the count, so an answer set is never held as an array. Callers that omit it get
 // the array and behave exactly as before.
@@ -10195,6 +10304,13 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
   const initialGoals = Array.isArray(goals) ? goals.slice() : [];
   const substMut = subst ? __cloneSubst(subst) : {};
   const initialVisited = visited ? visited.slice() : [];
+
+  if (allowDeferredBuiltins) {
+    const reordered = __reorderBodyForCost(initialGoals, substMut, facts, backRules);
+    if (reordered && reordered.length === initialGoals.length) {
+      for (let i = 0; i < initialGoals.length; i++) initialGoals[i] = reordered[i];
+    }
+  }
 
   // Variables from the original goal list (needed by the caller to instantiate conclusions)
   const answerVars = new Set();

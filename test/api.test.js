@@ -285,6 +285,55 @@ const cases = [
     },
   },
   {
+    name: '00y a body whose written order is catastrophic still yields exactly its answers',
+    opt: { proofComments: false },
+    input: (() => {
+      const lines = [
+        '@prefix : <http://example.org/> .',
+        '{ ?X a :T1 . ?Y a :T2 . ?Z a :T3 . ?X :p ?Y . ?Y :q ?Z } => { ?X :found ?Z } .',
+      ];
+      for (let i = 0; i < 150; i++) {
+        lines.push(`:x${i} a :T1 .`, `:y${i} a :T2 .`, `:z${i} a :T3 .`);
+      }
+      // The two answers.
+      lines.push(':x7 :p :y3 .', ':y3 :q :z9 .', ':x8 :p :y4 .', ':y4 :q :z2 .');
+      // One decoy per type atom: a complete :p/:q chain whose endpoint lacks the
+      // type, so dropping any one of the three atoms shows up as an extra answer.
+      lines.push(':xBad :p :y5 .', ':y5 :q :z5 .');
+      lines.push(':x6 :p :yBad .', ':yBad :q :z6 .');
+      lines.push(':x1 :p :y1 .', ':y1 :q :zBad .');
+      return lines.join('\n');
+    })(),
+    check(out) {
+      const s = String(out);
+      const found = (s.match(/:found/g) || []).length;
+      assert.equal(found, 2, `expected exactly 2 :found facts, got ${found} in:\n${s}`);
+      assert.match(s, /:x7\s+:found\s+:z9\s*\./);
+      assert.match(s, /:x8\s+:found\s+:z2\s*\./);
+    },
+  },
+  {
+    name: '00x a cheap body keeps its written evaluation order',
+    opt: { proofComments: false },
+    input: (() => {
+      const lines = ['@prefix : <http://example.org/> .'];
+      // :a is written first and is the least selective atom, so a cost-blind
+      // reordering would start from :b instead and find :w2 before :w1.
+      for (let i = 0; i < 100; i++) lines.push(`:pad${i} :a :nowhere .`);
+      lines.push(':w1 :a :p1 .', ':w2 :a :p2 .');
+      lines.push(':p2 :b :q2 .', ':p1 :b :q1 .');
+      lines.push(':q1 :c :out1 .', ':q2 :c :out2 .');
+      lines.push('{ ?W :a ?X . ?X :b ?Y . ?Y :c ?Z } => { ?W :found ?Z } .');
+      return lines.join('\n');
+    })(),
+    check(out) {
+      const order = String(out).split('\n').filter((l) => l.includes(':found'));
+      assert.equal(order.length, 2, `expected 2 derivations, got:\n${out}`);
+      assert.match(order[0], /:w1\s+:found\s+:out1\s*\./);
+      assert.match(order[1], /:w2\s+:found\s+:out2\s*\./);
+    },
+  },
+  {
     name: '00 parsing untyped literal ^^',
     opt: { proofComments: false },
     input: `
