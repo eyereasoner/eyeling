@@ -259,6 +259,41 @@ ${U('c')} ${U('friend')} ${U('d')}.
 
 const cases = [
   {
+    name: '00x a single document larger than the argument limit still loads',
+    // mergeParsedDocuments appended with push(...doc.triples), which gives every
+    // triple its own stack argument slot and overflowed past ~128k. Run through
+    // the CLI with a file: an input this size cannot be passed as an argument.
+    run() {
+      const os = require('node:os');
+      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'eyeling-large-doc-'));
+      const docPath = path.join(tmp, 'large.n3');
+
+      const lines = ['@prefix : <http://example.org/> .', '{ :n0 :par ?Y } => { :n0 :tc ?Y } .'];
+      for (let i = 0; i < 150000; i++) lines.push(`:n${i} :par :n${i + 1} .`);
+      fs.writeFileSync(docPath, lines.join('\n') + '\n', 'utf8');
+
+      try {
+        const r = spawnSync(process.execPath, [path.join(ROOT, 'eyeling.js'), docPath], {
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'pipe'],
+          maxBuffer: DEFAULT_MAX_BUFFER,
+        });
+        if (r.error) throw r.error;
+        if (r.status !== 0) {
+          const err = new Error(`CLI failed with exit ${r.status}: ${r.stderr}`);
+          err.code = r.status;
+          throw err;
+        }
+        return r.stdout;
+      } finally {
+        fs.rmSync(tmp, { recursive: true, force: true });
+      }
+    },
+    check(out) {
+      assert.match(String(out), /:n0\s+:tc\s+:n1\s*\./);
+    },
+  },
+  {
     name: '00z duplicate detection is value equality, verified per fact',
     opt: { proofComments: false },
     input: `
