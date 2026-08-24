@@ -259,6 +259,55 @@ ${U('c')} ${U('friend')} ${U('d')}.
 
 const cases = [
   {
+    name: '00w the fast line parser does not widen what plain N3 accepts: VERSION',
+    // parseN3Text now tries the fast line parser for every source, not only in RDF
+    // compatibility mode. It must not accept what the N3 parser rejects.
+    opt: { proofComments: false },
+    input: 'VERSION "1.2"\n<http://e/a> <http://e/p> <http://e/b> .\n',
+    expectError: true,
+  },
+  {
+    name: '00w the fast line parser does not widen what plain N3 accepts: quads',
+    opt: { proofComments: false },
+    input: '<http://e/a> <http://e/p> <http://e/b> <http://e/g> .\n',
+    expectError: true,
+  },
+  {
+    name: '00w RDF compatibility mode still accepts a VERSION line',
+    opt: { proofComments: false, rdf: true },
+    input: 'VERSION "1.2"\n@prefix : <http://e/> .\n:a :p :b .\n{ ?x :p ?y } => { ?x :q ?y } .\n',
+    check(out) {
+      assert.match(String(out), /:a\s+:q\s+:b\s*\./);
+    },
+  },
+  {
+    name: '00w RDF compatibility mode still accepts a fourth graph term',
+    // Quads are the fast parser's own extension, so this only holds for a
+    // data-only document; reaching check() at all means it parsed.
+    opt: { proofComments: false, rdf: true },
+    input: '<http://e/a> <http://e/p> <http://e/b> <http://e/g> .\n',
+    check(out) {
+      assert.equal(typeof out, 'string');
+    },
+  },
+  {
+    name: '00w a long string spanning lines survives the fast line parser',
+    // The fast parser is line-oriented and raises on an unterminated """...""",
+    // so tryParseFastRdfText has to treat a throw as "fall back", not as an error.
+    opt: { proofComments: false },
+    input: [
+      '@prefix : <http://example.org/> .',
+      ':s :p """',
+      '@prefix : <http://example.org/> .',
+      ':Let :param "x" .',
+      '""" .',
+      '{ :s :p ?O } => { :s :seen ?O } .',
+    ].join('\n'),
+    check(out) {
+      assert.match(String(out), /:s\s+:seen\s+"/);
+    },
+  },
+  {
     name: '00x a single document larger than the argument limit still loads',
     // mergeParsedDocuments appended with push(...doc.triples), which gives every
     // triple its own stack argument slot and overflowed past ~128k. Run through
