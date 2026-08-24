@@ -13212,13 +13212,17 @@ function parseDirective(line, prefixes, usedPrefixes) {
   return false;
 }
 
-function parseFastStatement(line, prefixes, usedPrefixes, blankPrefix, sourceOffset = null) {
+// rdf12 says whether RDF compatibility mode is on. With it off, this parser must
+// not be more permissive than the N3 parser it stands in for: a VERSION line and
+// a fourth (graph) term are both errors there, so refuse the line and let the
+// caller fall back rather than accepting silently.
+function parseFastStatement(line, prefixes, usedPrefixes, blankPrefix, sourceOffset = null, rdf12 = true) {
   let s = String(line || '');
   const leading = s.length - s.trimStart().length;
   s = s.slice(leading);
   if (!s || s[0] === '#') return [];
-  if (VERSION_LINE_RE.test(s)) return [];
-  if (MESSAGE_LINE_RE.test(s)) return '__MESSAGE__';
+  if (VERSION_LINE_RE.test(s)) return rdf12 ? [] : null;
+  if (MESSAGE_LINE_RE.test(s)) return rdf12 ? '__MESSAGE__' : null;
   if (parseDirective(s, prefixes, usedPrefixes)) return [];
 
   let pos = 0;
@@ -13234,6 +13238,7 @@ function parseFastStatement(line, prefixes, usedPrefixes, blankPrefix, sourceOff
 
   let graph = null;
   if (s[pos] !== '.') {
+    if (!rdf12) return null;
     const graphTerm = parseIriOrQName(s, pos, prefixes, usedPrefixes);
     if (!graphTerm) return null;
     graph = graphTerm.term;
@@ -13290,8 +13295,8 @@ function makeDoc(prefixes, triples, label, usedPrefixes) {
   return doc;
 }
 
-function parseLineOrAbort(line, prefixes, usedPrefixes, blankPrefix, sourceOffset) {
-  const parsed = parseFastStatement(line, prefixes, usedPrefixes, blankPrefix, sourceOffset);
+function parseLineOrAbort(line, prefixes, usedPrefixes, blankPrefix, sourceOffset, rdf12 = true) {
+  const parsed = parseFastStatement(line, prefixes, usedPrefixes, blankPrefix, sourceOffset, rdf12);
   if (parsed === null || parsed === '__MESSAGE__') return parsed;
   return parsed;
 }
@@ -13306,14 +13311,19 @@ function parseFastRdfText(text, opts = {}) {
   const usedPrefixes = new Set();
   let sawUsefulLine = false;
 
+  const rdf12 = opts.rdf !== false;
+
   for (const { line, offset } of lineIterator(source)) {
-    const parsed = parseLineOrAbort(line, prefixes, usedPrefixes, '', offset);
+    const parsed = parseLineOrAbort(line, prefixes, usedPrefixes, '', offset, rdf12);
     if (parsed === null || parsed === '__MESSAGE__') return null;
     if (parsed.length) sawUsefulLine = true;
     triples.push(...parsed);
   }
 
-  if (!sawUsefulLine && !/^\s*(?:@prefix|PREFIX|@base|BASE|@version|VERSION)\b/im.test(source)) return null;
+  const directiveOnly = rdf12
+    ? /^\s*(?:@prefix|PREFIX|@base|BASE|@version|VERSION)\b/im
+    : /^\s*(?:@prefix|PREFIX|@base|BASE)\b/im;
+  if (!sawUsefulLine && !directiveOnly.test(source)) return null;
   return makeDoc(prefixes, triples, opts.label || '<input>', usedPrefixes);
 }
 
@@ -13387,8 +13397,17 @@ function parseFastRdfMessageLog(text, opts = {}) {
   return makeDoc(prefixes, triples, opts.label || '<input>', usedPrefixes);
 }
 
+// This parser is an optimisation, never an authority: it is line-oriented, so a
+// construct spanning lines (a """long string""", say) can make it raise rather
+// than return null. Either way the answer is the same — fall back and let the N3
+// parser decide, including on what the error is.
 function tryParseFastRdfText(text, opts = {}) {
-  return parseFastRdfMessageLog(text, opts) || parseFastRdfText(text, opts);
+  try {
+    if (opts.rdf === false) return parseFastRdfText(text, opts);
+    return parseFastRdfMessageLog(text, opts) || parseFastRdfText(text, opts);
+  } catch {
+    return null;
+  }
 }
 
 module.exports = { tryParseFastRdfText, parseFastRdfText, parseFastRdfMessageLog };
@@ -15529,13 +15548,15 @@ function parseN3Text(text, opts = {}) {
     rdf = false,
   } = opts || {};
 
-  if (rdf) {
-    const fastDoc = tryParseFastRdfText(text, { baseIri, label });
-    if (fastDoc) {
-      if (sourceLocations) annotateParsedSourceLocations(fastDoc, text, label);
-      if (keepSourceArtifacts) fastDoc.text = text;
-      return fastDoc;
-    }
+  // The fast line parser is all-or-nothing: it returns null on anything it cannot
+  // handle, so try it for every source and not just in RDF compatibility mode.
+  // It is told which mode it is in, because with RDF 1.2 off it must reject the
+  // same constructs the N3 parser does instead of accepting them silently.
+  const fastDoc = tryParseFastRdfText(text, { baseIri, label, rdf });
+  if (fastDoc) {
+    if (sourceLocations) annotateParsedSourceLocations(fastDoc, text, label);
+    if (keepSourceArtifacts) fastDoc.text = text;
+    return fastDoc;
   }
 
   const tokens = lex(text, { rdf });
