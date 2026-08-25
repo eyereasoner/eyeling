@@ -1,0 +1,140 @@
+#
+# Is Alice allowed to sell her passport?
+#
+# - Default with her trust in information sources => no
+# - Change her trust in the Gov and City to 5% => yes
+# - Change her trustLevel in the request to 99% to see that 
+#   the confidence level does not match her minimum required
+@prefix math: <http://www.w3.org/2000/10/swap/math#>.
+@prefix list: <http://www.w3.org/2000/10/swap/list#>.
+@prefix odrl: <http://www.w3.org/ns/odrl/2/>.
+@prefix dct:  <http://purl.org/dc/terms/>.
+@prefix :     <http://example.org/odrl-passport#>.
+
+# Trust model (0..1)
+:Gov        :trust 0.95.
+:City       :trust 0.80.
+:RandomBlog :trust 0.30.
+
+#  Can Alice sell her passport with a trust level more than 90%?
+:req1 a :Request;
+  odrl:assignee :Alice;
+  odrl:target   :Passport;
+  odrl:action   odrl:sell;
+  :trustLevel   0.90.
+
+# ODRL Policies
+
+# Governent 
+:PolGov a odrl:Policy;
+  dct:creator :Gov;
+  odrl:prohibition [
+  	odrl:target   :Passport;
+  	odrl:action   odrl:sell
+  ] .
+
+# City
+:PolCity a odrl:Policy;
+  dct:creator :Partner;
+  odrl:prohibition [
+    odrl:target   :Passport;
+    odrl:action   odrl:sell
+  ] .
+
+# RandomBlog 
+:PolBlog a odrl:Policy;
+  dct:creator :RandomBlog;
+  odrl:permission [
+    odrl:target   :Passport;
+    odrl:action   odrl:sell
+  ].
+
+# Minimal "ODRL + trust" evaluator
+
+# Two scores => Decide: permit wins if its score is greater than prohibit score
+{
+  ?Verb1 list:in (odrl:permit odrl:prohibit).
+  ?Verb2 list:in (odrl:permit odrl:prohibit).
+  (:req1 ?Verb1 ?Sp) :cand true.
+  (:req1 ?Verb2 ?Sd) :cand true.
+  (?Sp ?Sd) math:greaterThan true.
+}
+=>
+{
+  :req1 :decision ?Verb1.
+  :req1 :confidence ?Sp.
+}.
+
+{
+  ?Req a :Request ; :trustLevel ?Min .
+  ?Req :confidence ?Conf.
+  ?Conf math:greaterThan ?Min.
+}
+=>
+{
+  ?Req :confidenceMinimumLevelMatched true.
+}.
+
+{
+  ?Req a :Request ; :trustLevel ?Min .
+  ?Req :confidence ?Conf.
+  ?Conf math:notGreaterThan ?Min.
+}
+=>
+{
+  ?Req :confidenceMinimumLevelMatched false.
+}.
+
+# Helper functions -----------------------
+
+# Candidate PERMIT for a request
+{
+  (?Req odrl:permit ?Score) :cand true.
+}
+<=
+{
+  # Gather information about the request
+  ?Req 
+    a :Request; 
+    odrl:assignee ?A; 
+    odrl:target ?T; 
+    odrl:action ?Act.
+  
+  # Gather information about the policy matching the request
+  ?Pol 
+    a odrl:Policy; 
+    dct:creator ?Iss; 
+    odrl:permission ?Perm.
+  
+  ?Perm odrl:target ?T; 
+        odrl:action ?Act.
+
+  # How much do we trust the issuer?
+  ?Iss :trust ?Score.
+}.
+
+# Candidate PROHIBIT for a request
+{
+  (?Req odrl:prohibit ?Score) :cand true.
+}
+<=
+{
+  # Gather information about the request
+  ?Req 
+    a :Request; 
+    odrl:assignee ?A; 
+    odrl:target ?T; 
+    odrl:action ?Act .
+  
+  # Gather information about the policy matching the request
+  ?Pol 
+    a odrl:Policy; 
+    dct:creator ?Iss; 
+    odrl:prohibition ?Proh.
+  
+  ?Proh odrl:target ?T; 
+    odrl:action ?Act.
+
+  # How much do we trust the issuer?
+  ?Iss :trust ?Score.
+}.
