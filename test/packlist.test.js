@@ -34,7 +34,10 @@ try {
     throw new Error('npm pack --dry-run --json failed\n' + (e.stderr || e.message));
   }
 
-  const pack = JSON.parse(packJson)[0];
+  const packResult = JSON.parse(packJson);
+  const pack = Array.isArray(packResult) ? packResult[0] : packResult[pkg.name];
+  assert.ok(pack, 'npm pack --dry-run --json: package metadata missing');
+  assert.ok(Array.isArray(pack.files), 'npm pack --dry-run --json: files missing');
   const paths = new Set(pack.files.map((f) => f.path));
 
   const mustHave = [
