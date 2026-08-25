@@ -2830,6 +2830,24 @@ _:x :hates { _:foo :making :mess }.
       /:result\s+:status\s+:matched\s*\./,
     ],
   },
+  {
+    name: 'issue #31: log:notIncludes existentializes blank nodes nested inside list arguments',
+    opt: { proofComments: false },
+    input: `@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix : <http://example.org/> .
+
+{
+    ?value list:in ("foo" 5) .
+    [] log:notIncludes { ([] xsd:string) log:dtlit ?value } .
+} => {
+    :result :is ?value
+} .
+`,
+    expect: [/:result\s+:is\s+5\s*\./m],
+    notExpect: [/:result\s+:is\s+"foo"\s*\./m],
+  },
 
   {
     name: '243aa regression: collectAllIn keeps outer blank-node bindings fixed in quoted formulas',
