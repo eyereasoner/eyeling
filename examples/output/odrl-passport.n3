@@ -1,6 +1,5 @@
 @prefix : <http://example.org/odrl-passport#> .
 @prefix odrl: <http://www.w3.org/ns/odrl/2/> .
 
-:req1 :decision odrl:prohibit .
-:req1 :confidence 0.95 .
-:req1 :confidenceMinimumLevelMatched true .
+:req1 :decision (:Gov odrl:prohibit 0.95) .
+:Alice :shouldChoose (odrl:prohibit :Gov) .

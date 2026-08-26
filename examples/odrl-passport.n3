@@ -5,6 +5,7 @@
 # - Change her trust in the Gov and City to 5% => yes
 # - Change her trustLevel in the request to 99% to see that 
 #   the confidence level does not match her minimum required
+@prefix log: <http://www.w3.org/2000/10/swap/log#>.
 @prefix math: <http://www.w3.org/2000/10/swap/math#>.
 @prefix list: <http://www.w3.org/2000/10/swap/list#>.
 @prefix odrl: <http://www.w3.org/ns/odrl/2/>.
@@ -15,6 +16,7 @@
 :Gov        :trust 0.95.
 :City       :trust 0.80.
 :RandomBlog :trust 0.30.
+:DrunkUncle :trust 0.05.
 
 #  Can Alice sell her passport with a trust level more than 90%?
 :req1 a :Request;
@@ -35,7 +37,7 @@
 
 # City
 :PolCity a odrl:Policy;
-  dct:creator :Partner;
+  dct:creator :City;
   odrl:prohibition [
     odrl:target   :Passport;
     odrl:action   odrl:sell
@@ -49,47 +51,51 @@
     odrl:action   odrl:sell
   ].
 
+# DrunkUncle
+:PolBlog a odrl:Policy;
+  dct:creator :DrunkUncle;
+  odrl:permission [
+    odrl:target   :Passport;
+    odrl:action   odrl:sell
+  ].
+
 # Minimal "ODRL + trust" evaluator
 
-# Two scores => Decide: permit wins if its score is greater than prohibit score
+# Check which policies match the trust level
 {
-  ?Verb1 list:in (odrl:permit odrl:prohibit).
-  ?Verb2 list:in (odrl:permit odrl:prohibit).
-  (:req1 ?Verb1 ?Sp) :cand true.
-  (:req1 ?Verb2 ?Sd) :cand true.
-  (?Sp ?Sd) math:greaterThan true.
+  ?Verb list:in (odrl:permit odrl:prohibit).
+
+  ?Req a :Request ; :trustLevel ?Min .
+
+  ?Iss :trust ?Trust.
+  ?Trust math:notLessThan ?Min.
+
+  (?Req ?Verb ?Score ?Iss) :cand true.
 }
 =>
 {
-  :req1 :decision ?Verb1.
-  :req1 :confidence ?Sp.
+  ?Req :decision (?Iss ?Verb ?Score).
 }.
 
+# Decision procedure: what is the best score
 {
-  ?Req a :Request ; :trustLevel ?Min .
-  ?Req :confidence ?Conf.
-  ?Conf math:greaterThan ?Min.
+  ( ?Score {
+	?Req :decision (?Iss ?Verb ?Score)
+    } ?List ) log:collectAllIn _:x.
+  ?List list:sort ?Sorted .
+  ?Sorted list:last ?Choose .
+  ?R :decision (?Winner ?V ?Choose).
 }
 =>
 {
-  ?Req :confidenceMinimumLevelMatched true.
-}.
-
-{
-  ?Req a :Request ; :trustLevel ?Min .
-  ?Req :confidence ?Conf.
-  ?Conf math:notGreaterThan ?Min.
-}
-=>
-{
-  ?Req :confidenceMinimumLevelMatched false.
-}.
+   :Alice :shouldChoose (?V ?Winner).
+} .
 
 # Helper functions -----------------------
 
 # Candidate PERMIT for a request
 {
-  (?Req odrl:permit ?Score) :cand true.
+  (?Req odrl:permit ?Score ?Iss) :cand true.
 }
 <=
 {
@@ -115,7 +121,7 @@
 
 # Candidate PROHIBIT for a request
 {
-  (?Req odrl:prohibit ?Score) :cand true.
+  (?Req odrl:prohibit ?Score ?Iss) :cand true.
 }
 <=
 {
