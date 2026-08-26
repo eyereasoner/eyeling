@@ -259,6 +259,45 @@ ${U('c')} ${U('friend')} ${U('d')}.
 
 const cases = [
   {
+    name: '00v buffered output is complete across chunk boundaries and matches --stream',
+    // Default mode writes in chunks; streaming mode must not buffer at all. Both
+    // have to emit every triple, so a dropped final flush or an off-by-one at a
+    // chunk edge shows up here. The rule derives well past one chunk.
+    run() {
+      const os = require('node:os');
+      const N = 10000; // > OUTPUT_CHUNK_LINES
+      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'eyeling-chunk-'));
+      const docPath = path.join(tmp, 'many.n3');
+      const lines = ['@prefix : <http://example.org/> .', '{ ?X :par ?Y } => { ?X :tc ?Y } .'];
+      for (let i = 0; i < N; i++) lines.push(`:n${i} :par :m${i} .`);
+      fs.writeFileSync(docPath, lines.join('\n') + '\n', 'utf8');
+
+      const run = (args) => {
+        const r = spawnSync(process.execPath, [path.join(ROOT, 'eyeling.js'), ...args], {
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'pipe'],
+          maxBuffer: DEFAULT_MAX_BUFFER,
+        });
+        if (r.error) throw r.error;
+        if (r.status !== 0) throw new Error(`CLI failed with exit ${r.status}: ${r.stderr}`);
+        return r.stdout;
+      };
+
+      try {
+        const buffered = run([docPath]);
+        const streamed = run(['-t', docPath]);
+        const derived = (out) => out.split('\n').filter((l) => l.includes(':tc'));
+        assert.equal(derived(buffered).length, N, 'buffered output lost triples');
+        assert.equal(derived(streamed).length, N, 'streamed output lost triples');
+        assert.deepEqual(derived(buffered), derived(streamed), 'buffering changed the emitted order');
+        assert.ok(buffered.endsWith('\n'), 'final chunk was not flushed with its newline');
+        return buffered;
+      } finally {
+        fs.rmSync(tmp, { recursive: true, force: true });
+      }
+    },
+  },
+  {
     name: '00w the fast line parser does not widen what plain N3 accepts: VERSION',
     // parseN3Text now tries the fast line parser for every source, not only in RDF
     // compatibility mode. It must not accept what the N3 parser rejects.
