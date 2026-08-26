@@ -6323,6 +6323,39 @@ async function persistRunResultToStore(store, runResult) {
   await store.batchAdd(runResult.outTriples || [], 'inferred');
 }
 
+// Output writers.
+//
+// The default mode's contract is "derive everything first, then print", so the
+// whole result is in hand before a byte is written and chunking is invisible —
+// one write per few thousand triples instead of one per triple. Streaming mode
+// promises a triple appears as soon as it is derived, so it must NOT buffer;
+// it still skips console.log, which formats and colour-checks every call for a
+// string that is already a string.
+const OUTPUT_CHUNK_LINES = 4096;
+
+function makeLineWriter(buffered) {
+  if (!buffered) {
+    return {
+      write(line) {
+        process.stdout.write(line + '\n');
+      },
+      flush() {},
+    };
+  }
+  let buf = [];
+  return {
+    write(line) {
+      buf.push(line);
+      if (buf.length >= OUTPUT_CHUNK_LINES) this.flush();
+    },
+    flush() {
+      if (!buf.length) return;
+      process.stdout.write(buf.join('\n') + '\n');
+      buf = [];
+    },
+  };
+}
+
 function sourceLooksLikeLineBasedRdf(sourceLabel) {
   if (typeof sourceLabel !== 'string') return false;
   const clean = sourceLabel.split(/[?#]/, 1)[0].toLowerCase();
@@ -6912,9 +6945,11 @@ function factsContainOutputStrings(triplesForOutput) {
 
     if (bodyText) process.stdout.write(String(bodyText).replace(/\s*$/g, '') + '\n');
     else {
+      const storeOut = makeLineWriter(true);
       for (const df of storeOutDerived) {
-        console.log(rdfMode ? engine.tripleToRdfCompatible(df.fact, prefixes) : engine.tripleToN3(df.fact, prefixes));
+        storeOut.write(rdfMode ? engine.tripleToRdfCompatible(df.fact, prefixes) : engine.tripleToN3(df.fact, prefixes));
       }
+      storeOut.flush();
     }
 
     if (storeResult.store && typeof storeResult.store.close === 'function') await storeResult.store.close();
@@ -6938,6 +6973,8 @@ function factsContainOutputStrings(triplesForOutput) {
     }
     if (entries.length) console.log();
 
+    // Unbuffered: --stream exists so a consumer sees each triple as it is derived.
+    const streamOut = makeLineWriter(false);
     engine.forwardChain(
       facts,
       frules,
@@ -6948,7 +6985,7 @@ function factsContainOutputStrings(triplesForOutput) {
           console.log(rdfMode ? engine.tripleToRdfCompatible(df.fact, outPrefixes) : engine.tripleToN3(df.fact, outPrefixes));
           console.log();
         } else {
-          console.log(rdfMode ? engine.tripleToRdfCompatible(df.fact, outPrefixes) : engine.tripleToN3(df.fact, outPrefixes));
+          streamOut.write(rdfMode ? engine.tripleToRdfCompatible(df.fact, outPrefixes) : engine.tripleToN3(df.fact, outPrefixes));
         }
       },
       { captureExplanations: engine.getProofCommentsEnabled(), prefixes: outPrefixes },
@@ -7021,15 +7058,22 @@ function factsContainOutputStrings(triplesForOutput) {
     return;
   }
 
-  for (const df of outDerived) {
-    if (engine.getProofCommentsEnabled()) {
+  // Proof mode interleaves printExplanation's own writes with each triple, so it
+  // keeps writing straight through; only the plain path buffers.
+  if (engine.getProofCommentsEnabled()) {
+    for (const df of outDerived) {
       engine.printExplanation(df, prefixes);
       console.log(rdfMode ? engine.tripleToRdfCompatible(df.fact, prefixes) : engine.tripleToN3(df.fact, prefixes));
       console.log();
-    } else {
-      console.log(rdfMode ? engine.tripleToRdfCompatible(df.fact, prefixes) : engine.tripleToN3(df.fact, prefixes));
     }
+    return;
   }
+
+  const out = makeLineWriter(true);
+  for (const df of outDerived) {
+    out.write(rdfMode ? engine.tripleToRdfCompatible(df.fact, prefixes) : engine.tripleToN3(df.fact, prefixes));
+  }
+  out.flush();
 }
 
 module.exports = { main, formatN3SyntaxError };
@@ -17144,8 +17188,23 @@ class PrefixEnv {
     return new PrefixEnv(m, ''); // base IRI starts empty
   }
 
+  // shrinkIri and prefixesUsedForOutput run once per IRI of output, and both used
+  // to rebuild Object.entries(this.map) on every call. These caches hold the
+  // entry list and the per-IRI answer instead; every write to the map goes
+  // through set(), so invalidating there is enough.
+  __invalidatePrefixCaches() {
+    this.__entries = null;
+    this.__shrinkCache = null;
+  }
+
+  __nonEmptyEntries() {
+    if (!this.__entries) this.__entries = Object.entries(this.map).filter(([, base]) => !!base);
+    return this.__entries;
+  }
+
   set(pref, base) {
     this.map[pref] = base;
+    this.__invalidatePrefixCaches();
   }
 
   setBase(baseIri) {
@@ -17165,9 +17224,17 @@ class PrefixEnv {
   }
 
   shrinkIri(iri) {
+    if (!this.__shrinkCache) this.__shrinkCache = new Map();
+    const cached = this.__shrinkCache.get(iri);
+    if (cached !== undefined) return cached;
+    const out = this.__shrinkIriUncached(iri);
+    this.__shrinkCache.set(iri, out);
+    return out;
+  }
+
+  __shrinkIriUncached(iri) {
     let best = null; // [prefix, local]
-    for (const [p, base] of Object.entries(this.map)) {
-      if (!base) continue;
+    for (const [p, base] of this.__nonEmptyEntries()) {
       if (iri.startsWith(base)) {
         const local = iri.slice(base.length);
         if (!local) continue;
@@ -17185,16 +17252,21 @@ class PrefixEnv {
 
   prefixesUsedForOutput(triples) {
     const used = new Set();
+    const entries = this.__nonEmptyEntries();
+    // One accumulator reused across every term, and stop the moment every prefix
+    // is accounted for: the answer cannot grow after that.
+    const iris = [];
     for (const t of triples) {
-      const iris = [];
-      iris.push(...collectIrisInTerm(t.s));
+      if (used.size === entries.length) break;
+      iris.length = 0;
+      collectIrisInTerm(t.s, iris);
       if (!isRdfTypePred(t.p)) {
-        iris.push(...collectIrisInTerm(t.p));
+        collectIrisInTerm(t.p, iris);
       }
-      iris.push(...collectIrisInTerm(t.o));
+      collectIrisInTerm(t.o, iris);
       for (const iri of iris) {
-        for (const [p, base] of Object.entries(this.map)) {
-          if (base && iri.startsWith(base)) used.add(p);
+        for (const [p, base] of entries) {
+          if (iri.startsWith(base)) used.add(p);
         }
       }
     }
@@ -17207,22 +17279,23 @@ class PrefixEnv {
   }
 }
 
-function collectIrisInTerm(t) {
-  const out = [];
+// out is optional so the old "returns a fresh array" contract still holds, but
+// callers in a loop can pass one accumulator instead of allocating per term.
+function collectIrisInTerm(t, out = []) {
   if (t instanceof Iri) {
     out.push(t.value);
   } else if (t instanceof Literal) {
     const [, dt] = literalParts(t.value);
     if (dt) out.push(dt); // so rdf/xsd prefixes are emitted when only used in ^^...
   } else if (t instanceof ListTerm) {
-    for (const x of t.elems) out.push(...collectIrisInTerm(x));
+    for (const x of t.elems) collectIrisInTerm(x, out);
   } else if (t instanceof OpenListTerm) {
-    for (const x of t.prefix) out.push(...collectIrisInTerm(x));
+    for (const x of t.prefix) collectIrisInTerm(x, out);
   } else if (t instanceof GraphTerm) {
     for (const tr of t.triples) {
-      out.push(...collectIrisInTerm(tr.s));
-      out.push(...collectIrisInTerm(tr.p));
-      out.push(...collectIrisInTerm(tr.o));
+      collectIrisInTerm(tr.s, out);
+      collectIrisInTerm(tr.p, out);
+      collectIrisInTerm(tr.o, out);
     }
   }
   return out;
