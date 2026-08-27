@@ -259,6 +259,41 @@ ${U('c')} ${U('friend')} ${U('d')}.
 
 const cases = [
   {
+    name: '00u collectDerived:false still reports every derived fact to onDerived',
+    // --stream prints from the callback and discards forwardChain's return value,
+    // so it asks for collectDerived:false. That is only safe while the callback
+    // still sees everything the collected array would have held.
+    run() {
+      const { forwardChain, parseN3Text: parseText } = require('../eyeling.js');
+      const N = 500;
+      const lines = ['@prefix : <http://example.org/> .', '{ ?X :par ?Y } => { ?X :tc ?Y } .'];
+      for (let i = 0; i < N; i++) lines.push(`:n${i} :par :m${i} .`);
+      const doc = parseText(lines.join('\n'), { keepSourceArtifacts: false });
+
+      const run = (collectDerived) => {
+        const seen = [];
+        const returned = forwardChain(doc.triples.slice(), doc.frules, doc.brules, (df) => seen.push(df.fact), {
+          captureExplanations: false,
+          collectDerived,
+          prefixes: doc.prefixes,
+        });
+        return { seen, returned };
+      };
+
+      const collected = run(true);
+      const streamed = run(false);
+
+      assert.equal(collected.seen.length, N, 'callback missed derivations when collecting');
+      assert.equal(streamed.seen.length, N, 'callback missed derivations when not collecting');
+      assert.equal(collected.returned.length, N, 'collectDerived:true should return every record');
+      assert.equal(streamed.returned.length, 0, 'collectDerived:false should retain nothing');
+      return 'ok';
+    },
+    check(out) {
+      assert.equal(out, 'ok');
+    },
+  },
+  {
     name: '00v buffered output is complete across chunk boundaries and matches --stream',
     // Default mode writes in chunks; streaming mode must not buffer at all. Both
     // have to emit every triple, so a dropped final flush or an off-by-one at a
