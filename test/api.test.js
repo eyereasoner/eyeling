@@ -259,6 +259,54 @@ ${U('c')} ${U('friend')} ${U('d')}.
 
 const cases = [
   {
+    name: '00t solution compaction keeps list bindings intact',
+    // The fast path in emitSolution only handles bindings that cannot contain a
+    // variable. A list has to fall back to the reachability walk.
+    opt: { proofComments: false },
+    input: `
+@prefix : <http://example.org/> .
+:a :p (1 2 3) .
+{ ?X :p ?L } => { ?X :hasList ?L } .
+`,
+    check(out) {
+      assert.match(String(out), /:a\s+:hasList\s+\(1 2 3\)\s*\./);
+    },
+  },
+  {
+    name: '00t solution compaction keeps quoted-formula bindings intact',
+    opt: { proofComments: false },
+    input: `
+@prefix : <http://example.org/> .
+:a :says { :b :c :d } .
+{ ?X :says ?F } => { ?X :said ?F } .
+`,
+    check(out) {
+      assert.match(String(out), /:a\s+:said\s*\{/);
+      assert.match(String(out), /:b\s+:c\s+:d/);
+    },
+  },
+  {
+    name: '00t solution compaction keeps a variable reachable through a binding',
+    // ?L is bound to a list that still holds ?Y, so ?Y's own binding has to
+    // survive compaction for the head to instantiate.
+    opt: { proofComments: false },
+    input: `
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+:a :p :b .
+:a :p :c .
+{ ?X :p ?Y } => { ?X :seen ?Y } .
+{ ?X :seen ?Y . ?X :seen ?Z } => { ?X :pair (?Y ?Z) } .
+`,
+    check(out) {
+      const s = String(out);
+      assert.match(s, /:a\s+:pair\s+\(:b :b\)/);
+      assert.match(s, /:a\s+:pair\s+\(:b :c\)/);
+      assert.match(s, /:a\s+:pair\s+\(:c :b\)/);
+      assert.match(s, /:a\s+:pair\s+\(:c :c\)/);
+    },
+  },
+  {
     name: '00u collectDerived:false still reports every derived fact to onDerived',
     // --stream prints from the callback and discards forwardChain's return value,
     // so it asks for collectDerived:false. That is only safe while the callback
