@@ -10159,6 +10159,12 @@ function gcCollectVarsInGoals(goals, out) {
   for (const g of goals) gcCollectVarsInTriple(g, out);
 }
 
+// An atomic term cannot contain a variable, so gcCollectVarsInTerm finds nothing
+// in it. Lists, open lists and quoted formulas can, and take the slow path.
+function __isAtomicBinding(t) {
+  return t instanceof Iri || t instanceof Literal || t instanceof Blank;
+}
+
 function gcCompactForGoals(subst, goals, answerVars) {
   const keep = new Set(answerVars);
   gcCollectVarsInGoals(goals, keep);
@@ -10381,9 +10387,27 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
   if (opts && opts.keepVars) {
     for (const v of opts.keepVars) answerVars.add(v);
   }
+  const answerVarList = Array.from(answerVars);
+
+  // Every solution is compacted, so this is the hottest allocation in a
+  // saturating run. With no goals left the kept set is the answer variables plus
+  // any variables inside their bindings, so when every binding is atomic there
+  // is nothing to reach and the answer is just those bindings — no working sets,
+  // no reachability walk, no scan of the whole substitution.
+  function compactSolution() {
+    const out = __emptySubst();
+    for (let i = 0; i < answerVarList.length; i++) {
+      const v = answerVarList[i];
+      const bound = substMut[v];
+      if (bound === undefined) continue;
+      if (!__isAtomicBinding(bound)) return gcCompactForGoals(substMut, [], answerVars);
+      out[v] = bound;
+    }
+    return out;
+  }
 
   function emitSolution() {
-    const sol = gcCompactForGoals(substMut, [], answerVars);
+    const sol = compactSolution();
     produced++;
     if (!onSolution) {
       results.push(sol);
