@@ -8936,7 +8936,10 @@ function resetFactIndexes(facts) {
 }
 
 function ensureFactIndexes(facts) {
-  if (FACT_INDEX_REQUIRED_FIELDS.every((name) => facts[name])) return;
+  // Called on every candidateFacts / hasFactIndexed / pushFactIndexed. The
+  // fields are only ever created together, so one of them answers for all ten
+  // and there is no closure to allocate.
+  if (facts.__byPred !== undefined) return;
 
   for (const name of FACT_INDEX_MAP_FIELDS) __defineHiddenWritable(facts, name, new Map());
   for (const name of FACT_INDEX_ARRAY_FIELDS) __defineHiddenWritable(facts, name, []);
@@ -9004,7 +9007,7 @@ function getOrCreateMap(map, key) {
 }
 
 function indexFact(facts, tr, idx) {
-  facts.__deepListS.clear();
+  if (facts.__deepListS.size) facts.__deepListS.clear();
   const sk = termLookupKey(tr.s);
   const ok = termLookupKey(tr.o);
 
@@ -9263,9 +9266,13 @@ function pushFactIndexed(facts, tr) {
   indexFact(facts, tr, idx);
 }
 
+// premises is a thunk: arguments evaluate eagerly, and instantiating a rule's
+// body per derived fact is pure waste on the default path, which captures no
+// explanations.
 function makeDerivedRecord(fact, rule, premises, subst, captureExplanations) {
   if (captureExplanations === false) return { fact };
-  return new DerivedFact(fact, rule, premises.slice(), __cloneSubst(subst));
+  const list = typeof premises === 'function' ? premises() : premises;
+  return new DerivedFact(fact, rule, list.slice(), __cloneSubst(subst));
 }
 
 function ensureBackRuleIndexes(backRules) {
@@ -10128,6 +10135,10 @@ function unifyTriple(pat, fact, subst) {
 // plus the transitive closure of variables that appear inside kept bindings.
 //
 // This is semantics-preserving for the ongoing proof state.
+
+// Shared empty candidate list: a goal whose predicate no backward rule heads
+// would otherwise allocate one per goal node.
+const NO_RULES = Object.freeze([]);
 
 function gcCollectVarsInTerm(t, out) {
   if (t instanceof Var) {
@@ -11013,9 +11024,6 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
     // We therefore *allow* re-entering a visited goal, but when a goal is
     // already visited we avoid applying backward rules whose premises would
     // immediately re-enter any visited goal again (a cheap cycle guard).
-    const goalKey = tripleKeyForVisited(goal0);
-    const goalWasVisited = visitedCounts.has(goalKey);
-
     let memoCompleteFrame = null;
     let memoReplayFrame = null;
     if (__predicateIsMemoized(facts, backRules, goal0.p)) {
@@ -11057,7 +11065,12 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
       if (memoReplayFrame) stack.push(memoReplayFrame);
       if (memoCompleteFrame) stack.push(memoCompleteFrame);
       ensureBackRuleIndexes(backRules);
-      const candRules = (backRules.__byHeadPred.get(goal0.p.__tid) || []).concat(backRules.__wildHeadPred);
+      const byHeadRules = backRules.__byHeadPred.get(goal0.p.__tid);
+      const wildRules = backRules.__wildHeadPred;
+      const candRules =
+        byHeadRules === undefined && wildRules.length === 0
+          ? NO_RULES
+          : (byHeadRules || []).concat(wildRules);
 
       // facts should be tried *after* rules; push fact iterator first (below rules on the stack)
       const candidates = candidateFacts(facts, goal0);
@@ -11074,6 +11087,7 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
 
       // Then push rule iterator
       if (candRules.length) {
+        const goalKey = tripleKeyForVisited(goal0);
         stack.push({
           kind: 'ruleIter',
           rules: candRules,
@@ -11083,7 +11097,7 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
           curDepth: frame.curDepth,
           goalKey,
           goalPtid: goal0.p.__tid,
-          goalWasVisited,
+          goalWasVisited: visitedCounts.has(goalKey),
         });
       }
     } else {
@@ -11459,7 +11473,7 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
         if (isFwRuleTriple || isBwRuleTriple) {
           if (!hasFactIndexed(facts, instantiated)) {
             pushFactIndexed(facts, instantiated);
-            const df = makeDerivedRecord(instantiated, r, getInstantiatedPremises(), s, captureExplanations);
+            const df = makeDerivedRecord(instantiated, r, getInstantiatedPremises, s, captureExplanations);
             if (collectDerived) derivedForward.push(df);
             if (hasDerivedCallback) onDerived(df);
             changedHere = true;
@@ -11523,7 +11537,7 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
         if (hasFactIndexed(facts, inst)) continue;
 
         pushFactIndexed(facts, inst);
-        const df = makeDerivedRecord(inst, r, getInstantiatedPremises(), s, captureExplanations);
+        const df = makeDerivedRecord(inst, r, getInstantiatedPremises, s, captureExplanations);
         if (collectDerived) derivedForward.push(df);
         if (hasDerivedCallback) onDerived(df);
 
@@ -12152,7 +12166,7 @@ async function runStoreBacked(input, store, opts = {}) {
           const fact = applySubstTriple(cpat, subst);
           if (!isGroundTriple(fact)) continue;
           if (await store.add(fact, 'inferred')) {
-            const df = makeDerivedRecord(fact, r, (r.premise || []).map((p) => applySubstTriple(p, subst)), subst, false);
+            const df = makeDerivedRecord(fact, r, () => (r.premise || []).map((p) => applySubstTriple(p, subst)), subst, false);
             const key = tripleToStoreKey(fact);
             if (!derivedKeys.has(key)) {
               derivedKeys.add(key);
@@ -12176,7 +12190,7 @@ async function runStoreBacked(input, store, opts = {}) {
           const fact = applySubstTriple(cpat, subst);
           if (!isGroundTriple(fact)) continue;
           queryTriples.push(fact);
-          queryDerived.push(makeDerivedRecord(fact, r, (r.premise || []).map((p) => applySubstTriple(p, subst)), subst, false));
+          queryDerived.push(makeDerivedRecord(fact, r, () => (r.premise || []).map((p) => applySubstTriple(p, subst)), subst, false));
         }
       }
     }
