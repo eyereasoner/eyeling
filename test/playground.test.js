@@ -1197,6 +1197,18 @@ Risk: secondary use is permitted without a safeguard. Clause H1: Hospital may pr
     await clearStreamMessageUrlMode();
     endTest();
 
+    beginTest('playground blocks private RDF Message URLs on another origin');
+    await setStreamMessageUrlMode('http://127.0.0.1:1/private-stream-messages.txt');
+    await clickRun();
+    const blockedPrivateStream = await waitForState(
+      'private cross-origin RDF Message URL rejection',
+      (st) => String(st.status || '').trim().startsWith('Error'),
+      10000,
+    );
+    assert.match(blockedPrivateStream.output, /URL is not allowed/i, 'Expected private cross-origin URL to be rejected');
+    await clearStreamMessageUrlMode();
+    endTest();
+
     // 10) URL-loaded examples should auto-load matching examples/input/<stem>.trig and run in RDF/TriG mode.
     beginTest('playground auto-loads companion TriG sidecars and uses RDF/TriG mode');
     await loadUrlIntoEditor('https://raw.githubusercontent.com/eyereasoner/eyeling/refs/heads/main/examples/smoke-arithmetic.n3');

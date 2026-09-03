@@ -1475,9 +1475,11 @@
 
             const eyelingUrl = EYELING_BROWSER_JS_URL;
             const eyelingUrlEsc = eyelingUrl.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+            const playgroundOriginEsc = window.location.origin.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 
             const workerSrc = `
             const __EYELING_URL = "${eyelingUrlEsc}";
+            const __PLAYGROUND_ORIGIN = "${playgroundOriginEsc}";
             let __eyelingLoadPromise = null;
 
             function __stripShebang(src) {
@@ -1837,23 +1839,60 @@ const batch = [];
                   if (sawDelimiter || __hasRdfPayload(chunk)) emit();
                 }
 
-                function __isBlockedFetchUrl(u) {
+                function __parseHttpFetchUrl(u) {
                   let parsed;
-                  try { parsed = new URL(u, location.href); } catch { return true; }
-                  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return true;
-                  const host = parsed.hostname.toLowerCase();
+                  try { parsed = new URL(u, __PLAYGROUND_ORIGIN + "/"); } catch { return null; }
+                  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+                  return parsed;
+                }
+
+                function __isSameOriginFetchUrl(u) {
+                  const parsed = __parseHttpFetchUrl(u);
+                  return !!parsed && parsed.origin === __PLAYGROUND_ORIGIN;
+                }
+
+                function __isBlockedFetchUrl(u) {
+                  const parsed = __parseHttpFetchUrl(u);
+                  if (!parsed) return true;
+
+                  // A locally hosted playground must be able to read its own fixtures.
+                  // This does not grant access to any other private host or port.
+                  if (parsed.origin === __PLAYGROUND_ORIGIN) return false;
+
+                  let host = parsed.hostname.toLowerCase().replace(/\.+$/, "");
+                  if (host.startsWith("[") && host.endsWith("]")) host = host.slice(1, -1);
                   if (!host || host === "localhost" || host.endsWith(".localhost")) return true;
-                  if (/^(?:127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(host)) return true;
-                  if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) return true;
-                  if (host === "::1" || /^f[cd][0-9a-f]{0,2}:/i.test(host) || /^fe80:/i.test(host)) return true;
+
+                  const ipv4 = /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(host);
+                  if (ipv4) {
+                    const a = Number(ipv4[1]);
+                    const b = Number(ipv4[2]);
+                    const c = Number(ipv4[3]);
+                    if (a === 0 || a === 10 || a === 127 || a >= 224) return true;
+                    if (a === 100 && b >= 64 && b <= 127) return true;
+                    if (a === 169 && b === 254) return true;
+                    if (a === 172 && b >= 16 && b <= 31) return true;
+                    if (a === 192 && ((b === 0 && (c === 0 || c === 2)) || b === 168 || (b === 88 && c === 99))) return true;
+                    if (a === 198 && (b === 18 || b === 19 || (b === 51 && c === 100))) return true;
+                    if (a === 203 && b === 0 && c === 113) return true;
+                  }
+
+                  // URL normalizes IPv6 literals. Only the globally routable 2000::/3
+                  // range is accepted; loopback, mapped IPv4, link-local, and ULA stay blocked.
+                  if (host.includes(":") && !/^[23][0-9a-f]{0,3}:/i.test(host)) return true;
                   return false;
                 }
 
                 async function __forEachRdfMessageChunkFromUrl(url, onMessage) {
                   const sourceUrl = String(url || "").trim();
                   if (!sourceUrl) throw new Error("--stream-messages needs an RDF Message Log URL or a small pasted message log in the editor.");
-                  if (__isBlockedFetchUrl(sourceUrl)) throw new Error("--stream-messages URL is not allowed: only public http(s) URLs are permitted, not private/internal/loopback addresses.");
-                  const res = await fetch(sourceUrl, { cache: "no-store", referrerPolicy: "no-referrer", redirect: "error" });
+                  if (__isBlockedFetchUrl(sourceUrl)) throw new Error("--stream-messages URL is not allowed: only public or same-origin http(s) URLs are permitted, not private/internal/loopback addresses on another origin.");
+                  const res = await fetch(sourceUrl, {
+                    cache: "no-store",
+                    referrerPolicy: "no-referrer",
+                    redirect: __isSameOriginFetchUrl(sourceUrl) ? "follow" : "error",
+                  });
+                  if (res.url && __isBlockedFetchUrl(res.url)) throw new Error("--stream-messages redirect target is not allowed.");
                   if (!res.ok) throw new Error("HTTP " + res.status + " when fetching RDF Message Log URL" + (res.url ? " (" + res.url + ")" : "") + ".");
                   if (!res.body || typeof res.body.getReader !== "function") {
                     return __forEachRdfMessageChunkInText(await res.text(), onMessage);
