@@ -1,0 +1,1 @@
+error(type_error(callable), (1, =([__anon1], [])))

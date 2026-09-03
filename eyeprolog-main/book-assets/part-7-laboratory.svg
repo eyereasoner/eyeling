@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="470" viewBox="0 0 900 470" role="img" aria-labelledby="title desc">
+  <title id="title">The reasoning laboratory</title>
+  <desc id="desc">A theory on a laboratory bench moves through prediction, tests, search statistics, proof inspection, and a controlled revision loop.</desc>
+  <defs>
+    <style>
+      .bg{fill:#FFF0D6}.bench{fill:#F6D978}.paper{fill:#FFFDF8;stroke:#17324D;stroke-width:2}
+      .screen{fill:#17324D;stroke:#102A3A;stroke-width:4}.green{fill:#DDF7FB;stroke:#008EAA;stroke-width:2}
+      .gold{fill:#FFF4BF;stroke:#E2BA22;stroke-width:2}.red{fill:#FFF0D6;stroke:#C8A100;stroke-width:2}
+      .line{fill:none;stroke:#537487;stroke-width:2.5}.title{fill:#9D8200;font:bold 24px Georgia,serif}
+      .label{fill:#17324D;font:17px Georgia,serif}.code{fill:#DDF7FB;font:15px ui-monospace,SFMono-Regular,Consolas,monospace}
+      .darkcode{fill:#17324D;font:14px ui-monospace,SFMono-Regular,Consolas,monospace}
+    </style>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#537487"/></marker>
+  </defs>
+  <rect width="900" height="470" class="bg"/><rect y="350" width="900" height="120" class="bench"/>
+  <text class="title" x="450" y="35" text-anchor="middle">THE REASONING LABORATORY</text>
+  <rect class="screen" x="315" y="72" width="270" height="190" rx="12"/>
+  <text class="code" x="340" y="108">theory.pl</text>
+  <text class="code" x="340" y="143">answer(X) :-</text><text class="code" x="365" y="166">evidence(X),</text><text class="code" x="365" y="189">within_limit(X).</text>
+  <text class="code" x="340" y="225">eyeprolog --goal 'answer(X)' program.pl</text>
+  <path d="M415 262L450 300L485 262Z" fill="#537487"/><rect x="380" y="298" width="140" height="12" rx="6" fill="#537487"/>
+
+  <rect class="paper" x="38" y="75" width="210" height="110" rx="8"/>
+  <text class="label" x="143" y="103" text-anchor="middle">1 · PREDICT</text>
+  <text class="darkcode" x="58" y="133">expected: answer(a)</text>
+  <text class="darkcode" x="58" y="158">forbidden: answer(d)</text>
+  <path class="line" marker-end="url(#arrow)" d="M248 132H308"/>
+
+  <rect class="green" x="650" y="75" width="210" height="110" rx="8"/>
+  <text class="label" x="755" y="103" text-anchor="middle">2 · TEST</text>
+  <text class="darkcode" x="675" y="135">positive ✓</text>
+  <text class="darkcode" x="675" y="159">boundary ✓</text>
+  <path class="line" marker-end="url(#arrow)" d="M585 132H643"/>
+
+  <rect class="gold" x="650" y="230" width="210" height="110" rx="8"/>
+  <text class="label" x="755" y="258" text-anchor="middle">3 · INSPECT</text>
+  <text class="darkcode" x="675" y="289">search: 42 calls</text>
+  <text class="darkcode" x="675" y="313">proof: facts → rule</text>
+  <path class="line" marker-end="url(#arrow)" d="M755 185V222"/>
+
+  <rect class="red" x="38" y="230" width="210" height="110" rx="8"/>
+  <text class="label" x="143" y="258" text-anchor="middle">4 · REVISE</text>
+  <text class="darkcode" x="62" y="289">one assumption</text>
+  <text class="darkcode" x="62" y="313">one controlled change</text>
+  <path class="line" marker-end="url(#arrow)" d="M650 285C530 390 360 390 248 285"/>
+  <path class="line" marker-end="url(#arrow)" d="M143 230V193"/>
+
+  <rect class="paper" x="285" y="375" width="330" height="60" rx="8"/>
+  <text class="label" x="450" y="400" text-anchor="middle">LEAVE A TRACE</text>
+  <text class="darkcode" x="450" y="422" text-anchor="middle">case · invariant · proof · reason</text>
+</svg>

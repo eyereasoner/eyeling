@@ -1,0 +1,1 @@
+hates(alice, nobody).

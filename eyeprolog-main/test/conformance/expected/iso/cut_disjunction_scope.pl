@@ -1,0 +1,2 @@
+outer(a).
+outer(c).

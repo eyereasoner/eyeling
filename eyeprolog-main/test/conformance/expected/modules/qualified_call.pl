@@ -1,0 +1,1 @@
+colors:answer(blue).

@@ -1,0 +1,4717 @@
+{
+  "schema": 1,
+  "surface_count": 523,
+  "generated_from": {
+    "core_registry": "src/iso.js createDefaultRegistry()",
+    "library_index": "src/library-autoload-index.js"
+  },
+  "entries": [
+    {
+      "indicator": "!/0",
+      "origin": "ISO core",
+      "call": "!",
+      "solutions": "det",
+      "contract": "Commits to choices made since entry into the current predicate invocation.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "#/\\/2",
+      "origin": "library(clpz)",
+      "call": "#/\\(?Left,?Right)",
+      "solutions": "delayed",
+      "contract": "Reifies Boolean conjunction of CLP(Z) propositions.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "#</2",
+      "origin": "library(clpz)",
+      "call": "#<(?Left,?Right)",
+      "solutions": "delayed",
+      "contract": "Constrains the left integer expression to be less than the right.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "#</3",
+      "origin": "library(clpz)",
+      "call": "#<(?A,?B,?Truth)",
+      "solutions": "delayed",
+      "contract": "Reifies the CLP(Z) relation #</2 into Truth, used by reification helpers.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "#<==/2",
+      "origin": "library(clpz)",
+      "call": "#<==(?Left,?Right)",
+      "solutions": "delayed",
+      "contract": "Reifies reverse logical implication between CLP(Z) propositions.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "#<==>/2",
+      "origin": "library(clpz)",
+      "call": "#<==>(?Left,?Right)",
+      "solutions": "delayed",
+      "contract": "Reifies logical equivalence between CLP(Z) propositions.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "#=/2",
+      "origin": "library(clpz)",
+      "call": "#=(?Left,?Right)",
+      "solutions": "delayed",
+      "contract": "Constrains two integer expressions to be equal.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "#=/3",
+      "origin": "library(clpz)",
+      "call": "#=(?A,?B,?Truth)",
+      "solutions": "delayed",
+      "contract": "Reifies the CLP(Z) relation #=/2 into Truth, used by reification helpers.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "#=</2",
+      "origin": "library(clpz)",
+      "call": "#=<(?Left,?Right)",
+      "solutions": "delayed",
+      "contract": "Constrains the left integer expression to be at most the right.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "#==>/2",
+      "origin": "library(clpz)",
+      "call": "#==>(?Left,?Right)",
+      "solutions": "delayed",
+      "contract": "Reifies logical implication between CLP(Z) propositions.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "#>/2",
+      "origin": "library(clpz)",
+      "call": "#>(?Left,?Right)",
+      "solutions": "delayed",
+      "contract": "Constrains the left integer expression to be greater than the right.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "#>=/2",
+      "origin": "library(clpz)",
+      "call": "#>=(?Left,?Right)",
+      "solutions": "delayed",
+      "contract": "Constrains the left integer expression to be at least the right.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "#\\//2",
+      "origin": "library(clpz)",
+      "call": "#\\/(?Left,?Right)",
+      "solutions": "delayed",
+      "contract": "Reifies Boolean disjunction of CLP(Z) propositions.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "#\\/1",
+      "origin": "library(clpz)",
+      "call": "#\\(?Expr)",
+      "solutions": "delayed",
+      "contract": "Posts the reified negation of a CLP(Z) proposition.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "#\\/2",
+      "origin": "library(clpz)",
+      "call": "#\\(?Left,?Right)",
+      "solutions": "delayed",
+      "contract": "Reifies exclusive disjunction of CLP(Z) propositions.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "#\\=/2",
+      "origin": "library(clpz)",
+      "call": "#\\=(?Left,?Right)",
+      "solutions": "delayed",
+      "contract": "Constrains two integer expressions to be unequal.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "$-/1",
+      "origin": "library(debug)",
+      "call": "$-(+Goal)",
+      "solutions": "meta",
+      "contract": "Debug operator variant that runs Goal with the corresponding negative/disable diagnostic behavior.",
+      "source": "src/lib/debug.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "$/1",
+      "origin": "library(debug)",
+      "call": "$(+Goal)",
+      "solutions": "meta",
+      "contract": "Debug operator that runs Goal with the module's enabled diagnostic behavior.",
+      "source": "src/lib/debug.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "*/1",
+      "origin": "library(debug)",
+      "call": "*(+Goal)",
+      "solutions": "meta",
+      "contract": "Debug operator that invokes the documented tracing/portray behavior for Goal.",
+      "source": "src/lib/debug.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "+\\/2",
+      "origin": "library(lambda)",
+      "call": "+\\(?Free,+Closure)",
+      "solutions": "meta",
+      "contract": "Invokes a lambda closure while preserving variables explicitly listed in Free and refreshing other closure variables.",
+      "source": "src/lib/lambda.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "+\\/3",
+      "origin": "library(lambda)",
+      "call": "+\\(?Free,+Closure,?Arg1)",
+      "solutions": "meta",
+      "contract": "Invokes a lambda closure while preserving variables explicitly listed in Free and refreshing other closure variables.",
+      "source": "src/lib/lambda.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "+\\/4",
+      "origin": "library(lambda)",
+      "call": "+\\(?Free,+Closure,?Arg1,?Arg2)",
+      "solutions": "meta",
+      "contract": "Invokes a lambda closure while preserving variables explicitly listed in Free and refreshing other closure variables.",
+      "source": "src/lib/lambda.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "+\\/5",
+      "origin": "library(lambda)",
+      "call": "+\\(?Free,+Closure,?Arg1,?Arg2,?Arg3)",
+      "solutions": "meta",
+      "contract": "Invokes a lambda closure while preserving variables explicitly listed in Free and refreshing other closure variables.",
+      "source": "src/lib/lambda.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "+\\/6",
+      "origin": "library(lambda)",
+      "call": "+\\(?Free,+Closure,?Arg1,?Arg2,?Arg3,?Arg4)",
+      "solutions": "meta",
+      "contract": "Invokes a lambda closure while preserving variables explicitly listed in Free and refreshing other closure variables.",
+      "source": "src/lib/lambda.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "+\\/7",
+      "origin": "library(lambda)",
+      "call": "+\\(?Free,+Closure,?Arg1,?Arg2,?Arg3,?Arg4,?Arg5)",
+      "solutions": "meta",
+      "contract": "Invokes a lambda closure while preserving variables explicitly listed in Free and refreshing other closure variables.",
+      "source": "src/lib/lambda.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "+\\/8",
+      "origin": "library(lambda)",
+      "call": "+\\(?Free,+Closure,?Arg1,?Arg2,?Arg3,?Arg4,?Arg5,?Arg6)",
+      "solutions": "meta",
+      "contract": "Invokes a lambda closure while preserving variables explicitly listed in Free and refreshing other closure variables.",
+      "source": "src/lib/lambda.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "+\\/9",
+      "origin": "library(lambda)",
+      "call": "+\\(?Free,+Closure,?Arg1,?Arg2,?Arg3,?Arg4,?Arg5,?Arg6,?Arg7)",
+      "solutions": "meta",
+      "contract": "Invokes a lambda closure while preserving variables explicitly listed in Free and refreshing other closure variables.",
+      "source": "src/lib/lambda.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": ",/3",
+      "origin": "library(reif)",
+      "call": ",(?A,?B,?Truth)",
+      "solutions": "delayed",
+      "contract": "Reifies conjunction: Truth describes whether both reified conditions A and B hold.",
+      "source": "src/lib/reif.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "-->/2",
+      "origin": "library(dcgs)",
+      "call": "(?Head --> ?Body)",
+      "solutions": "declaration",
+      "contract": "Represents a definite-clause grammar rule; program preparation expands it to an ordinary predicate with two extra list arguments.",
+      "source": "src/lib/dcgs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "->/2",
+      "origin": "ISO core",
+      "call": "(+If -> +Then)",
+      "solutions": "meta",
+      "contract": "Commits to the first solution of If and then calls Then.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": ".../2",
+      "origin": "library(dcgs)",
+      "call": "...(?Input,?Rest)",
+      "solutions": "nondet",
+      "contract": "DCG nonterminal matching an arbitrary finite number of input elements and relating Rest to the remaining suffix.",
+      "source": "src/lib/dcgs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": ";/2",
+      "origin": "ISO core",
+      "call": "(?Left ; ?Right)",
+      "solutions": "nondet",
+      "contract": "Enumerates solutions of Left and then Right, with ISO if-then-else behavior when Left is an ->/2 term.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": ";/3",
+      "origin": "library(reif)",
+      "call": ";(?A,?B,?Truth)",
+      "solutions": "delayed",
+      "contract": "Reifies disjunction: Truth describes whether either reified condition A or B holds.",
+      "source": "src/lib/reif.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "</2",
+      "origin": "ISO core",
+      "call": "(+Left < +Right)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff the evaluated Left arithmetic expression is less than Right.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "=../2",
+      "origin": "ISO core",
+      "call": "(?Term =.. ?List)",
+      "solutions": "mode-dependent",
+      "contract": "Relates a term to its nonempty list representation [Functor|Arguments].",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "=/2",
+      "origin": "ISO core",
+      "call": "(?Left = ?Right)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Left and Right unify, returning their most general acyclic unifier.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "=/3",
+      "origin": "library(reif)",
+      "call": "=(?A,?B,?Truth)",
+      "solutions": "delayed",
+      "contract": "Reifies unifiability/equality of A and B into Boolean Truth.",
+      "source": "src/lib/reif.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "=:=/2",
+      "origin": "ISO core",
+      "call": "(+Left =:= +Right)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff the two evaluated arithmetic expressions are numerically equal.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "=</2",
+      "origin": "ISO core",
+      "call": "(+Left =< +Right)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff the evaluated Left arithmetic expression is less than or equal to Right.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "==/2",
+      "origin": "ISO core",
+      "call": "(?Left == ?Right)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Left and Right are identical terms without performing unification.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "=\\=/2",
+      "origin": "ISO core",
+      "call": "(+Left =\\= +Right)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff the two evaluated arithmetic expressions are numerically unequal.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": ">/2",
+      "origin": "ISO core",
+      "call": "(+Left > +Right)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff the evaluated Left arithmetic expression is greater than Right.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": ">=/2",
+      "origin": "ISO core",
+      "call": "(+Left >= +Right)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff the evaluated Left arithmetic expression is greater than or equal to Right.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "@</2",
+      "origin": "ISO core",
+      "call": "(?Left @< ?Right)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Left precedes Right in standard term order.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "@=</2",
+      "origin": "ISO core",
+      "call": "(?Left @=< ?Right)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Left precedes or is identical to Right in standard term order.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "@>/2",
+      "origin": "ISO core",
+      "call": "(?Left @> ?Right)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Left follows Right in standard term order.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "@>=/2",
+      "origin": "ISO core",
+      "call": "(?Left @>= ?Right)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Left follows or is identical to Right in standard term order.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "\\+/1",
+      "origin": "ISO core",
+      "call": "\\+(+Goal)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Goal has no solution; bindings made while testing Goal are discarded.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "\\/1",
+      "origin": "library(lambda)",
+      "call": "\\(+Closure)",
+      "solutions": "meta",
+      "contract": "Copies a lambda closure so non-shared variables are fresh for this invocation, then calls it with the supplied arguments.",
+      "source": "src/lib/lambda.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "\\/2",
+      "origin": "library(lambda)",
+      "call": "\\(+Closure,?Arg1)",
+      "solutions": "meta",
+      "contract": "Copies a lambda closure so non-shared variables are fresh for this invocation, then calls it with the supplied arguments.",
+      "source": "src/lib/lambda.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "\\/3",
+      "origin": "library(lambda)",
+      "call": "\\(+Closure,?Arg1,?Arg2)",
+      "solutions": "meta",
+      "contract": "Copies a lambda closure so non-shared variables are fresh for this invocation, then calls it with the supplied arguments.",
+      "source": "src/lib/lambda.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "\\/4",
+      "origin": "library(lambda)",
+      "call": "\\(+Closure,?Arg1,?Arg2,?Arg3)",
+      "solutions": "meta",
+      "contract": "Copies a lambda closure so non-shared variables are fresh for this invocation, then calls it with the supplied arguments.",
+      "source": "src/lib/lambda.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "\\/5",
+      "origin": "library(lambda)",
+      "call": "\\(+Closure,?Arg1,?Arg2,?Arg3,?Arg4)",
+      "solutions": "meta",
+      "contract": "Copies a lambda closure so non-shared variables are fresh for this invocation, then calls it with the supplied arguments.",
+      "source": "src/lib/lambda.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "\\/6",
+      "origin": "library(lambda)",
+      "call": "\\(+Closure,?Arg1,?Arg2,?Arg3,?Arg4,?Arg5)",
+      "solutions": "meta",
+      "contract": "Copies a lambda closure so non-shared variables are fresh for this invocation, then calls it with the supplied arguments.",
+      "source": "src/lib/lambda.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "\\/7",
+      "origin": "library(lambda)",
+      "call": "\\(+Closure,?Arg1,?Arg2,?Arg3,?Arg4,?Arg5,?Arg6)",
+      "solutions": "meta",
+      "contract": "Copies a lambda closure so non-shared variables are fresh for this invocation, then calls it with the supplied arguments.",
+      "source": "src/lib/lambda.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "\\/8",
+      "origin": "library(lambda)",
+      "call": "\\(+Closure,?Arg1,?Arg2,?Arg3,?Arg4,?Arg5,?Arg6,?Arg7)",
+      "solutions": "meta",
+      "contract": "Copies a lambda closure so non-shared variables are fresh for this invocation, then calls it with the supplied arguments.",
+      "source": "src/lib/lambda.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "\\=/2",
+      "origin": "ISO core",
+      "call": "(?Left \\= ?Right)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Left and Right cannot unify at call time.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "\\==/2",
+      "origin": "ISO core",
+      "call": "(?Left \\== ?Right)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Left and Right are not identical terms.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "^/10",
+      "origin": "library(lambda)",
+      "call": "^(?Parameter,+Closure,?Arg1,?Arg2,?Arg3,?Arg4,?Arg5,?Arg6,?Arg7,?Arg8)",
+      "solutions": "meta",
+      "contract": "Implements one stage of Scryer-compatible lambda parameter binding and calls the remaining closure with any supplied arguments.",
+      "source": "src/lib/lambda.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "^/3",
+      "origin": "library(lambda)",
+      "call": "^(?Parameter,+Closure,?Arg1)",
+      "solutions": "meta",
+      "contract": "Implements one stage of Scryer-compatible lambda parameter binding and calls the remaining closure with any supplied arguments.",
+      "source": "src/lib/lambda.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "^/4",
+      "origin": "library(lambda)",
+      "call": "^(?Parameter,+Closure,?Arg1,?Arg2)",
+      "solutions": "meta",
+      "contract": "Implements one stage of Scryer-compatible lambda parameter binding and calls the remaining closure with any supplied arguments.",
+      "source": "src/lib/lambda.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "^/5",
+      "origin": "library(lambda)",
+      "call": "^(?Parameter,+Closure,?Arg1,?Arg2,?Arg3)",
+      "solutions": "meta",
+      "contract": "Implements one stage of Scryer-compatible lambda parameter binding and calls the remaining closure with any supplied arguments.",
+      "source": "src/lib/lambda.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "^/6",
+      "origin": "library(lambda)",
+      "call": "^(?Parameter,+Closure,?Arg1,?Arg2,?Arg3,?Arg4)",
+      "solutions": "meta",
+      "contract": "Implements one stage of Scryer-compatible lambda parameter binding and calls the remaining closure with any supplied arguments.",
+      "source": "src/lib/lambda.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "^/7",
+      "origin": "library(lambda)",
+      "call": "^(?Parameter,+Closure,?Arg1,?Arg2,?Arg3,?Arg4,?Arg5)",
+      "solutions": "meta",
+      "contract": "Implements one stage of Scryer-compatible lambda parameter binding and calls the remaining closure with any supplied arguments.",
+      "source": "src/lib/lambda.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "^/8",
+      "origin": "library(lambda)",
+      "call": "^(?Parameter,+Closure,?Arg1,?Arg2,?Arg3,?Arg4,?Arg5,?Arg6)",
+      "solutions": "meta",
+      "contract": "Implements one stage of Scryer-compatible lambda parameter binding and calls the remaining closure with any supplied arguments.",
+      "source": "src/lib/lambda.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "^/9",
+      "origin": "library(lambda)",
+      "call": "^(?Parameter,+Closure,?Arg1,?Arg2,?Arg3,?Arg4,?Arg5,?Arg6,?Arg7)",
+      "solutions": "meta",
+      "contract": "Implements one stage of Scryer-compatible lambda parameter binding and calls the remaining closure with any supplied arguments.",
+      "source": "src/lib/lambda.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "abolish/1",
+      "origin": "ISO core",
+      "call": "abolish(+NameArity)",
+      "solutions": "det",
+      "contract": "Removes the named dynamic procedure and all of its clauses.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "abolish_all_tables/0",
+      "origin": "library(tabling)",
+      "call": "abolish_all_tables",
+      "solutions": "det",
+      "contract": "Clears all memoized reasoning tables maintained by EyeProlog.",
+      "source": "src/lib/tabling.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "abolish_table/1",
+      "origin": "library(tabling)",
+      "call": "abolish_table(+PredicateSpec)",
+      "solutions": "det",
+      "contract": "Invalidates memoized table data for the specified tabled predicate or conjunction of predicate indicators.",
+      "source": "src/lib/tabling.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "acyclic_term/1",
+      "origin": "ISO core",
+      "call": "acyclic_term(?Term)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Term is finite and acyclic.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "add_edges/3",
+      "origin": "library(ugraphs)",
+      "call": "add_edges(+Graph,+Edges,-NewGraph)",
+      "solutions": "det",
+      "contract": "Adds directed Edges to Graph, preserving canonical adjacency ordering.",
+      "source": "src/lib/ugraphs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "add_vertices/3",
+      "origin": "library(ugraphs)",
+      "call": "add_vertices(+Graph,+Vertices,-NewGraph)",
+      "solutions": "det",
+      "contract": "Adds Vertices to Graph, preserving canonical graph ordering.",
+      "source": "src/lib/ugraphs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "aggregate/3",
+      "origin": "library(aggregate)",
+      "call": "aggregate(+Aggregate,+Goal,-Result)",
+      "solutions": "nondet",
+      "contract": "Aggregates solutions of Goal by free witness-variable group, analogously to bagof/3.",
+      "source": "src/lib/aggregate.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "aggregate_all/3",
+      "origin": "library(aggregate)",
+      "call": "aggregate_all(+Aggregate,+Goal,-Result)",
+      "solutions": "det",
+      "contract": "Aggregates the template specified by Aggregate over every solution of Goal without witness grouping.",
+      "source": "src/lib/aggregate.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "aggregate_max/5",
+      "origin": "library(aggregate)",
+      "call": "aggregate_max(+KeyTemplate,+ValueTemplate,+Goal,-BestKey,-BestValue)",
+      "solutions": "semidet",
+      "contract": "Selects the first Goal solution having the greatest resolved KeyTemplate and returns its key and value; fails on no solutions.",
+      "source": "src/lib/aggregate.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "aggregate_min/5",
+      "origin": "library(aggregate)",
+      "call": "aggregate_min(+KeyTemplate,+ValueTemplate,+Goal,-BestKey,-BestValue)",
+      "solutions": "semidet",
+      "contract": "Selects the first Goal solution having the least resolved KeyTemplate and returns its key and value; fails on no solutions.",
+      "source": "src/lib/aggregate.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "all_different/1",
+      "origin": "library(clpz)",
+      "call": "all_different(+Vars)",
+      "solutions": "delayed",
+      "contract": "Constrains all finite-domain expressions in Vars to take pairwise different values.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "all_distinct/1",
+      "origin": "library(clpz)",
+      "call": "all_distinct(+Vars)",
+      "solutions": "delayed",
+      "contract": "Posts the stronger global all-distinct constraint over Vars.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "append/2",
+      "origin": "library(lists)",
+      "call": "append(+Lists,?Whole)",
+      "solutions": "nondet",
+      "contract": "Concatenates a proper list of lists into Whole.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "append/3",
+      "origin": "library(lists)",
+      "call": "append(?Prefix,?Suffix,?Whole)",
+      "solutions": "nondet",
+      "contract": "Holds iff Whole is Prefix followed by Suffix; suitable modes enumerate every split.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "arg/3",
+      "origin": "ISO core",
+      "call": "arg(+Index,+Term,?Argument)",
+      "solutions": "semidet",
+      "contract": "Relates the one-based Index of a compound Term to its corresponding Argument.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "argv/1",
+      "origin": "library(os)",
+      "call": "argv(-Args)",
+      "solutions": "det",
+      "contract": "Returns the EyeProlog application argument vector as character-list strings.",
+      "source": "src/lib/os.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "asserta/1",
+      "origin": "ISO core",
+      "call": "asserta(+Clause)",
+      "solutions": "det",
+      "contract": "Adds a copied clause at the beginning of a predicate declared dynamic.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "assertz/1",
+      "origin": "ISO core",
+      "call": "assertz(+Clause)",
+      "solutions": "det",
+      "contract": "Adds a copied clause at the end of a predicate declared dynamic.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "assoc_to_keys/2",
+      "origin": "library(assoc)",
+      "call": "assoc_to_keys(+Assoc,-Keys)",
+      "solutions": "det",
+      "contract": "Returns Assoc keys in ascending key order.",
+      "source": "src/lib/assoc.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "assoc_to_list/2",
+      "origin": "library(assoc)",
+      "call": "assoc_to_list(+Assoc,-Pairs)",
+      "solutions": "det",
+      "contract": "Returns Key-Value pairs from Assoc in ascending key order.",
+      "source": "src/lib/assoc.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "assoc_to_values/2",
+      "origin": "library(assoc)",
+      "call": "assoc_to_values(+Assoc,-Values)",
+      "solutions": "det",
+      "contract": "Returns Assoc values in ascending-key order.",
+      "source": "src/lib/assoc.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "at_end_of_stream/0",
+      "origin": "ISO core",
+      "call": "at_end_of_stream",
+      "solutions": "semidet",
+      "contract": "Succeeds iff the current input stream is positioned at end of stream.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "at_end_of_stream/1",
+      "origin": "ISO core",
+      "call": "at_end_of_stream(+Stream)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Stream is positioned at end of stream.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "atom/1",
+      "origin": "ISO core",
+      "call": "atom(?Term)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Term is an atom.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "atom_chars/2",
+      "origin": "ISO core",
+      "call": "atom_chars(?Atom,?Chars)",
+      "solutions": "mode-dependent",
+      "contract": "Relates an atom to a proper list of one-character atoms.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "atom_codes/2",
+      "origin": "ISO core",
+      "call": "atom_codes(?Atom,?Codes)",
+      "solutions": "mode-dependent",
+      "contract": "Relates an atom to a proper list of Unicode scalar character codes.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "atom_concat/3",
+      "origin": "ISO core",
+      "call": "atom_concat(?Prefix,?Suffix,?Whole)",
+      "solutions": "nondet",
+      "contract": "Relates Whole to the concatenation of Prefix and Suffix; with Whole given, enumerates all splits.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "atom_length/2",
+      "origin": "ISO core",
+      "call": "atom_length(+Atom,?Length)",
+      "solutions": "semidet",
+      "contract": "Relates Atom to its number of Unicode scalar characters.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "atom_si/1",
+      "origin": "library(si)",
+      "call": "atom_si(?Term)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Term is sufficiently instantiated to be treated as atom by dependent constraint code.",
+      "source": "src/lib/si.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "atom_string/2",
+      "origin": "library(strings)",
+      "call": "atom_string(?Atom,?Text)",
+      "solutions": "mode-dependent",
+      "contract": "Relates an atom to atom/character-list text.",
+      "source": "src/lib/strings.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "atomic/1",
+      "origin": "ISO core",
+      "call": "atomic(?Term)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Term is atomic.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "atomic_si/1",
+      "origin": "library(si)",
+      "call": "atomic_si(?Term)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Term is sufficiently instantiated to be treated as atomic by dependent constraint code.",
+      "source": "src/lib/si.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "automaton/3",
+      "origin": "library(clpz)",
+      "call": "automaton(+Sequence,+Template,+Signature)",
+      "solutions": "delayed",
+      "contract": "Constrains Sequence by a finite automaton described by Template and Signature.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "automaton/8",
+      "origin": "library(clpz)",
+      "call": "automaton(+Sequence,+Template,+Signature,+Nodes,+Arcs,+Counters,+Initials,+Finals)",
+      "solutions": "delayed",
+      "contract": "Posts the extended automaton constraint with explicit graph and counter descriptions.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "bagof/3",
+      "origin": "ISO core",
+      "call": "bagof(+Template,+Goal,?Bag)",
+      "solutions": "nondet",
+      "contract": "Groups Template solutions by free witness variables of Goal and yields one nonempty bag per group.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "bb_b_put/2",
+      "origin": "library(iso_ext)",
+      "call": "bb_b_put(+Key,+Value)",
+      "solutions": "det",
+      "contract": "Backtrackably associates Key with Value in the EyeProlog blackboard.",
+      "source": "src/lib/iso_ext.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "bb_get/2",
+      "origin": "library(iso_ext)",
+      "call": "bb_get(+Key,?Value)",
+      "solutions": "semidet",
+      "contract": "Retrieves the current blackboard Value associated with Key.",
+      "source": "src/lib/iso_ext.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "bb_put/2",
+      "origin": "library(iso_ext)",
+      "call": "bb_put(+Key,+Value)",
+      "solutions": "det",
+      "contract": "Nonbacktrackably associates Key with Value in the EyeProlog blackboard.",
+      "source": "src/lib/iso_ext.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "becomes/2",
+      "origin": "library(eyelet)",
+      "call": "becomes(+Condition,+Action)",
+      "solutions": "meta",
+      "contract": "Declares/executes the Eyelet forward transition relating Condition to Action.",
+      "source": "src/lib/eyelet.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "between/3",
+      "origin": "library(between)",
+      "call": "between(+Low,+High,?Value)",
+      "solutions": "nondet",
+      "contract": "Enumerates integers Value from Low through High inclusively, or checks a supplied Value.",
+      "source": "src/lib/between.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "call/1",
+      "origin": "ISO core",
+      "call": "call(+Goal)",
+      "solutions": "meta",
+      "contract": "Calls Goal in the current module and substitution.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "call/2",
+      "origin": "ISO core",
+      "call": "call(+Closure,?Arg1)",
+      "solutions": "meta",
+      "contract": "Appends 1 argument(s) to Closure and calls the resulting goal.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "call/3",
+      "origin": "ISO core",
+      "call": "call(+Closure,?Arg1,?Arg2)",
+      "solutions": "meta",
+      "contract": "Appends 2 argument(s) to Closure and calls the resulting goal.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "call/4",
+      "origin": "ISO core",
+      "call": "call(+Closure,?Arg1,?Arg2,?Arg3)",
+      "solutions": "meta",
+      "contract": "Appends 3 argument(s) to Closure and calls the resulting goal.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "call/5",
+      "origin": "ISO core",
+      "call": "call(+Closure,?Arg1,?Arg2,?Arg3,?Arg4)",
+      "solutions": "meta",
+      "contract": "Appends 4 argument(s) to Closure and calls the resulting goal.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "call/6",
+      "origin": "ISO core",
+      "call": "call(+Closure,?Arg1,?Arg2,?Arg3,?Arg4,?Arg5)",
+      "solutions": "meta",
+      "contract": "Appends 5 argument(s) to Closure and calls the resulting goal.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "call/7",
+      "origin": "ISO core",
+      "call": "call(+Closure,?Arg1,?Arg2,?Arg3,?Arg4,?Arg5,?Arg6)",
+      "solutions": "meta",
+      "contract": "Appends 6 argument(s) to Closure and calls the resulting goal.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "call/8",
+      "origin": "ISO core",
+      "call": "call(+Closure,?Arg1,?Arg2,?Arg3,?Arg4,?Arg5,?Arg6,?Arg7)",
+      "solutions": "meta",
+      "contract": "Appends 7 argument(s) to Closure and calls the resulting goal.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "call_cleanup/2",
+      "origin": "library(iso_ext)",
+      "call": "call_cleanup(+Goal,+Cleanup)",
+      "solutions": "meta",
+      "contract": "Runs Goal and guarantees Cleanup when the call finishes, fails, is cut, or raises an exception.",
+      "source": "src/lib/iso_ext.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "call_nth/2",
+      "origin": "library(iso_ext)",
+      "call": "call_nth(+Goal,?N)",
+      "solutions": "nondet",
+      "contract": "Relates each solution of Goal to its one-based solution number N.",
+      "source": "src/lib/iso_ext.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "call_residue_vars/2",
+      "origin": "library(atts)",
+      "call": "call_residue_vars(+Goal,-Vars)",
+      "solutions": "meta",
+      "contract": "Runs Goal and returns the attributed variables that remain as residual constraints on that solution.",
+      "source": "src/lib/atts.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "call_with_error_context/2",
+      "origin": "library(error)",
+      "call": "call_with_error_context(+Goal,+Context)",
+      "solutions": "meta",
+      "contract": "Runs Goal and, when a standard error is raised without useful context, associates it with Context.",
+      "source": "src/lib/error.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "call_with_inference_limit/3",
+      "origin": "library(iso_ext)",
+      "call": "call_with_inference_limit(+Goal,+Limit,?Result)",
+      "solutions": "meta",
+      "contract": "Runs Goal subject to an inference limit and reports whether a solution, failure, exception, or limit condition occurred.",
+      "source": "src/lib/iso_ext.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "callable/1",
+      "origin": "ISO core",
+      "call": "callable(?Term)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Term is a callable atom or compound.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "can_be/2",
+      "origin": "library(error)",
+      "call": "can_be(+Type,?Term)",
+      "solutions": "semidet",
+      "contract": "Allows an unbound Term or validates an instantiated Term against Type, raising an error for an invalid value.",
+      "source": "src/lib/error.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "catch/3",
+      "origin": "ISO core",
+      "call": "catch(+Goal,?Catcher,+Recovery)",
+      "solutions": "meta",
+      "contract": "Runs Goal; a matching thrown term is unified with Catcher and handled by Recovery.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "cfor/3",
+      "origin": "library(iso_ext)",
+      "call": "cfor(+Low,+High,?Value)",
+      "solutions": "nondet",
+      "contract": "Enumerates evaluated integer Value from Low through High inclusively.",
+      "source": "src/lib/iso_ext.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "chain/2",
+      "origin": "library(clpz)",
+      "call": "chain(+Vars,+Relation)",
+      "solutions": "delayed",
+      "contract": "Constrains every adjacent pair in Vars by the supplied CLP(Z) Relation.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "char_code/2",
+      "origin": "ISO core",
+      "call": "char_code(?Character,?Code)",
+      "solutions": "mode-dependent",
+      "contract": "Relates a one-character atom to its Unicode scalar code.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "char_conversion/2",
+      "origin": "ISO core",
+      "call": "char_conversion(+Input,+Output)",
+      "solutions": "det",
+      "contract": "Installs or removes the one-character conversion Input -> Output.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "char_type/2",
+      "origin": "library(charsio)",
+      "call": "char_type(?Char,?Type)",
+      "solutions": "nondet",
+      "contract": "Tests or enumerates supported character classifications for a one-character atom.",
+      "source": "src/lib/charsio.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "character_si/1",
+      "origin": "library(si)",
+      "call": "character_si(?Term)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Term is sufficiently instantiated to be treated as character by dependent constraint code.",
+      "source": "src/lib/si.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "chars_base64/3",
+      "origin": "library(charsio)",
+      "call": "chars_base64(?Chars,?Base64,+Options)",
+      "solutions": "mode-dependent",
+      "contract": "Relates character data to Base64 text according to Options.",
+      "source": "src/lib/charsio.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "chars_si/1",
+      "origin": "library(si)",
+      "call": "chars_si(?Term)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Term is sufficiently instantiated to be treated as chars by dependent constraint code.",
+      "source": "src/lib/si.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "chars_utf8bytes/2",
+      "origin": "library(charsio)",
+      "call": "chars_utf8bytes(?Chars,?Bytes)",
+      "solutions": "mode-dependent",
+      "contract": "Relates Unicode character data to its UTF-8 byte encoding.",
+      "source": "src/lib/charsio.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "circuit/1",
+      "origin": "library(clpz)",
+      "call": "circuit(+Successors)",
+      "solutions": "delayed",
+      "contract": "Constrains Successors to encode one Hamiltonian circuit over their indices.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "clause/2",
+      "origin": "ISO core",
+      "call": "clause(+Head,?Body)",
+      "solutions": "nondet",
+      "contract": "Enumerates fresh copies of accessible source clauses matching Head; facts have body true.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "close/1",
+      "origin": "ISO core",
+      "call": "close(+Stream)",
+      "solutions": "det",
+      "contract": "Closes Stream.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "close/2",
+      "origin": "ISO core",
+      "call": "close(+Stream,+Options)",
+      "solutions": "det",
+      "contract": "Closes Stream using the supplied close Options.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "clpz_t/2",
+      "origin": "library(clpz)",
+      "call": "clpz_t(+Constraint,?Truth)",
+      "solutions": "delayed",
+      "contract": "Reifies a supported CLP(Z) Constraint into Boolean Truth.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "compare/3",
+      "origin": "ISO core",
+      "call": "compare(?Order,+Left,+Right)",
+      "solutions": "det",
+      "contract": "Unifies Order with <, =, or > according to standard term order.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "complement/2",
+      "origin": "library(ugraphs)",
+      "call": "complement(+Graph,-Complement)",
+      "solutions": "det",
+      "contract": "Constructs the graph containing the non-self edges absent from Graph over the same vertex set.",
+      "source": "src/lib/ugraphs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "compose/3",
+      "origin": "library(ugraphs)",
+      "call": "compose(+Left,+Right,-Composition)",
+      "solutions": "det",
+      "contract": "Computes relational graph composition: X->Z when X->Y in Left and Y->Z in Right.",
+      "source": "src/lib/ugraphs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "compound/1",
+      "origin": "ISO core",
+      "call": "compound(?Term)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Term is a compound term.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "cond_t/3",
+      "origin": "library(reif)",
+      "call": "cond_t(+Condition,?ThenTruth,?Truth)",
+      "solutions": "meta",
+      "contract": "Combines a reified condition with a reified consequent according to the library conditional truth relation.",
+      "source": "src/lib/reif.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "connect_ugraph/3",
+      "origin": "library(ugraphs)",
+      "call": "connect_ugraph(+Graph,?Start,-Connected)",
+      "solutions": "nondet",
+      "contract": "Adds the minimal/library-defined connecting edges needed to produce a connected traversal rooted at Start.",
+      "source": "src/lib/ugraphs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "contains/2",
+      "origin": "library(strings)",
+      "call": "contains(+Text,+Needle)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Needle occurs literally within Text.",
+      "source": "src/lib/strings.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "copy_term/2",
+      "origin": "ISO core",
+      "call": "copy_term(+Term,-Copy)",
+      "solutions": "det",
+      "contract": "Copies Term, replacing each distinct unbound variable with a fresh variable while preserving sharing.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "copy_term/3",
+      "origin": "library(iso_ext)",
+      "call": "copy_term(+Term,-Copy,-Goals)",
+      "solutions": "det",
+      "contract": "Copies Term and projects residual attributed-variable constraints into Goals.",
+      "source": "src/lib/iso_ext.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "copy_term_nat/2",
+      "origin": "library(terms)",
+      "call": "copy_term_nat(+Term,-Copy)",
+      "solutions": "det",
+      "contract": "Copies Term with fresh variables while omitting attributed-variable constraints from the copy.",
+      "source": "src/lib/terms.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "countall/2",
+      "origin": "library(iso_ext)",
+      "call": "countall(+Goal,-Count)",
+      "solutions": "det",
+      "contract": "Counts all solutions of Goal; the empty count is 0.",
+      "source": "src/lib/iso_ext.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "crypto_curve_generator/2",
+      "origin": "library(crypto)",
+      "call": "crypto_curve_generator(+Curve,-Generator)",
+      "solutions": "det",
+      "contract": "Returns the generator point for a supported named curve.",
+      "source": "src/lib/crypto.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "crypto_curve_order/2",
+      "origin": "library(crypto)",
+      "call": "crypto_curve_order(+Curve,-Order)",
+      "solutions": "det",
+      "contract": "Returns the group order for a supported named curve.",
+      "source": "src/lib/crypto.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "crypto_curve_scalar_mult/4",
+      "origin": "library(crypto)",
+      "call": "crypto_curve_scalar_mult(+Curve,+Scalar,+Point,-Result)",
+      "solutions": "det",
+      "contract": "Computes scalar multiplication on a supported named curve.",
+      "source": "src/lib/crypto.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "crypto_data_decrypt/6",
+      "origin": "library(crypto)",
+      "call": "crypto_data_decrypt(+Cipher,+Key,+Nonce,+AAD,+Tag,-Plain)",
+      "solutions": "semidet",
+      "contract": "Authenticates and decrypts Cipher; fails or errors when authentication cannot be established.",
+      "source": "src/lib/crypto.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "crypto_data_encrypt/6",
+      "origin": "library(crypto)",
+      "call": "crypto_data_encrypt(+Plain,+Key,+Nonce,+AAD,-Cipher,-Tag)",
+      "solutions": "det",
+      "contract": "Encrypts Plain with the supported authenticated-encryption primitive, returning Cipher and authentication Tag.",
+      "source": "src/lib/crypto.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "crypto_data_hash/3",
+      "origin": "library(crypto)",
+      "call": "crypto_data_hash(+Data,-Hash,+Options)",
+      "solutions": "det",
+      "contract": "Computes the requested cryptographic digest or HMAC of Data according to Options.",
+      "source": "src/lib/crypto.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "crypto_data_hkdf/4",
+      "origin": "library(crypto)",
+      "call": "crypto_data_hkdf(+Data,+Length,-Key,+Options)",
+      "solutions": "det",
+      "contract": "Derives Length bytes from Data using HKDF according to Options.",
+      "source": "src/lib/crypto.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "crypto_n_random_bytes/2",
+      "origin": "library(crypto)",
+      "call": "crypto_n_random_bytes(+Count,-Bytes)",
+      "solutions": "det",
+      "contract": "Obtains Count cryptographically secure random bytes from an available host CSPRNG.",
+      "source": "src/lib/crypto.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "crypto_name_curve/2",
+      "origin": "library(crypto)",
+      "call": "crypto_name_curve(?Name,?Curve)",
+      "solutions": "mode-dependent",
+      "contract": "Relates a supported curve name to its canonical curve representation.",
+      "source": "src/lib/crypto.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "crypto_password_hash/2",
+      "origin": "library(crypto)",
+      "call": "crypto_password_hash(+Password,-Hash)",
+      "solutions": "det",
+      "contract": "Computes a password hash using the library default password-hashing parameters.",
+      "source": "src/lib/crypto.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "crypto_password_hash/3",
+      "origin": "library(crypto)",
+      "call": "crypto_password_hash(+Password,?Hash,+Options)",
+      "solutions": "mode-dependent",
+      "contract": "Creates or verifies a password hash according to Options.",
+      "source": "src/lib/crypto.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "cumulative/1",
+      "origin": "library(clpz)",
+      "call": "cumulative(+Tasks)",
+      "solutions": "delayed",
+      "contract": "Posts cumulative resource constraints for Tasks using default options.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "cumulative/2",
+      "origin": "library(clpz)",
+      "call": "cumulative(+Tasks,+Options)",
+      "solutions": "delayed",
+      "contract": "Posts cumulative resource constraints for Tasks according to Options.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "current_char_conversion/2",
+      "origin": "ISO core",
+      "call": "current_char_conversion(?Input,?Output)",
+      "solutions": "nondet",
+      "contract": "Enumerates installed nonidentity character conversions.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "current_hostname/1",
+      "origin": "library(sockets)",
+      "call": "current_hostname(-HostName)",
+      "solutions": "det",
+      "contract": "Unifies HostName with the local host name used by the networking runtime.",
+      "source": "src/lib/sockets.pl; src/sockets-host.js",
+      "profile": "library"
+    },
+    {
+      "indicator": "current_input/1",
+      "origin": "ISO core",
+      "call": "current_input(?Stream)",
+      "solutions": "det",
+      "contract": "Returns the current input stream.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "current_op/3",
+      "origin": "ISO core",
+      "call": "current_op(?Priority,?Specifier,?Name)",
+      "solutions": "nondet",
+      "contract": "Enumerates active operator definitions, filtering any supplied arguments.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "current_output/1",
+      "origin": "ISO core",
+      "call": "current_output(?Stream)",
+      "solutions": "det",
+      "contract": "Returns the current output stream.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "current_predicate/1",
+      "origin": "ISO core",
+      "call": "current_predicate(?NameArity)",
+      "solutions": "nondet",
+      "contract": "Enumerates predicate indicators present in the loaded program.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "current_prolog_flag/2",
+      "origin": "ISO core",
+      "call": "current_prolog_flag(?Flag,?Value)",
+      "solutions": "nondet",
+      "contract": "Enumerates supported Prolog flags or returns the value of a named flag.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "current_time/1",
+      "origin": "library(time)",
+      "call": "current_time(-Stamp)",
+      "solutions": "det",
+      "contract": "Returns the current local date/time as the module's timestamp association list.",
+      "source": "src/lib/time.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "curve25519_generator/1",
+      "origin": "library(crypto)",
+      "call": "curve25519_generator(-Generator)",
+      "solutions": "det",
+      "contract": "Returns the canonical X25519/Curve25519 generator representation.",
+      "source": "src/lib/crypto.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "curve25519_scalar_mult/3",
+      "origin": "library(crypto)",
+      "call": "curve25519_scalar_mult(+Scalar,+Point,-Result)",
+      "solutions": "det",
+      "contract": "Computes Curve25519 scalar multiplication.",
+      "source": "src/lib/crypto.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "debug/1",
+      "origin": "library(debug)",
+      "call": "debug(+Topic)",
+      "solutions": "det",
+      "contract": "Enables debugging messages for Topic.",
+      "source": "src/lib/debug.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "debug/3",
+      "origin": "library(debug)",
+      "call": "debug(+Topic,+Format,+Args)",
+      "solutions": "det",
+      "contract": "Emits a formatted debugging message when Topic is enabled.",
+      "source": "src/lib/debug.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "del_assoc/4",
+      "origin": "library(assoc)",
+      "call": "del_assoc(+Key,+Assoc0,?Value,-Assoc)",
+      "solutions": "semidet",
+      "contract": "Removes Key from Assoc0, returning its Value and the remaining Assoc.",
+      "source": "src/lib/assoc.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "del_attr/2",
+      "origin": "library(atts)",
+      "call": "del_attr(+Var,+Module)",
+      "solutions": "det",
+      "contract": "Removes Module's attribute from Var if present.",
+      "source": "src/lib/atts.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "del_edges/3",
+      "origin": "library(ugraphs)",
+      "call": "del_edges(+Graph,+Edges,-NewGraph)",
+      "solutions": "det",
+      "contract": "Removes directed Edges from Graph.",
+      "source": "src/lib/ugraphs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "del_max_assoc/4",
+      "origin": "library(assoc)",
+      "call": "del_max_assoc(+Assoc0,?Key,?Value,-Assoc)",
+      "solutions": "semidet",
+      "contract": "Removes and returns the greatest-key entry of a nonempty association.",
+      "source": "src/lib/assoc.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "del_min_assoc/4",
+      "origin": "library(assoc)",
+      "call": "del_min_assoc(+Assoc0,?Key,?Value,-Assoc)",
+      "solutions": "semidet",
+      "contract": "Removes and returns the least-key entry of a nonempty association.",
+      "source": "src/lib/assoc.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "del_vertices/3",
+      "origin": "library(ugraphs)",
+      "call": "del_vertices(+Graph,+Vertices,-NewGraph)",
+      "solutions": "det",
+      "contract": "Removes Vertices and all incident edges from Graph.",
+      "source": "src/lib/ugraphs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "delete_directory/1",
+      "origin": "library(files)",
+      "call": "delete_directory(+Path)",
+      "solutions": "det",
+      "contract": "Deletes the empty directory at Path using the Node filesystem host.",
+      "source": "src/lib/files.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "delete_file/1",
+      "origin": "library(files)",
+      "call": "delete_file(+Path)",
+      "solutions": "det",
+      "contract": "Deletes the file at Path using the Node filesystem host.",
+      "source": "src/lib/files.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "dif/2",
+      "origin": "library(dif)",
+      "call": "dif(?A,?B)",
+      "solutions": "delayed",
+      "contract": "Constrains A and B to remain non-unifiable, delaying until the distinction can be decided when necessary.",
+      "source": "src/lib/dif.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "dif/3",
+      "origin": "library(reif)",
+      "call": "dif(?A,?B,?Truth)",
+      "solutions": "delayed",
+      "contract": "Reifies disequality of A and B into Boolean Truth.",
+      "source": "src/lib/reif.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "dif_si/2",
+      "origin": "library(si)",
+      "call": "dif_si(?A,?B)",
+      "solutions": "semidet",
+      "contract": "Succeeds when A and B are sufficiently instantiated to decide non-unifiability, otherwise delays or rejects insufficient instantiation as defined by the SI layer.",
+      "source": "src/lib/si.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "difference/3",
+      "origin": "library(dates)",
+      "call": "difference(+End,+Start,-Duration)",
+      "solutions": "semidet",
+      "contract": "Computes the nonnegative calendar difference from Start to End as a normalized ISO-like duration; invalid or descending dates fail.",
+      "source": "src/lib/dates.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "directory_exists/1",
+      "origin": "library(files)",
+      "call": "directory_exists(+Path)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Path exists and is a directory.",
+      "source": "src/lib/files.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "directory_files/2",
+      "origin": "library(files)",
+      "call": "directory_files(+Path,-Entries)",
+      "solutions": "det",
+      "contract": "Returns the directory entries of Path using the host filesystem.",
+      "source": "src/lib/files.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "disjoint2/1",
+      "origin": "library(clpz)",
+      "call": "disjoint2(+Rectangles)",
+      "solutions": "delayed",
+      "contract": "Constrains axis-aligned rectangles not to overlap in two dimensions.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "domain_error/2",
+      "origin": "library(error)",
+      "call": "domain_error(+Domain,+Term)",
+      "solutions": "terminal",
+      "contract": "Raises a domain_error(Domain,Term) exception.",
+      "source": "src/lib/error.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "domain_error/3",
+      "origin": "library(error)",
+      "call": "domain_error(+Domain,+Term,+Context)",
+      "solutions": "terminal",
+      "contract": "Raises a domain_error(Domain,Term) exception carrying Context.",
+      "source": "src/lib/error.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "drop/3",
+      "origin": "library(lists)",
+      "call": "drop(+Count,+List,-Suffix)",
+      "solutions": "semidet",
+      "contract": "Returns the suffix after removing exactly Count leading elements; fails when List is too short.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ed25519_keypair_public_key/2",
+      "origin": "library(crypto)",
+      "call": "ed25519_keypair_public_key(+KeyPair,-PublicKey)",
+      "solutions": "det",
+      "contract": "Extracts the Ed25519 public key from KeyPair.",
+      "source": "src/lib/crypto.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ed25519_new_keypair/1",
+      "origin": "library(crypto)",
+      "call": "ed25519_new_keypair(-KeyPair)",
+      "solutions": "det",
+      "contract": "Generates a fresh Ed25519 keypair using the host cryptographic backend.",
+      "source": "src/lib/crypto.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ed25519_seed_keypair/2",
+      "origin": "library(crypto)",
+      "call": "ed25519_seed_keypair(+Seed,-KeyPair)",
+      "solutions": "det",
+      "contract": "Derives an Ed25519 keypair deterministically from Seed.",
+      "source": "src/lib/crypto.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ed25519_sign/4",
+      "origin": "library(crypto)",
+      "call": "ed25519_sign(+Data,+KeyPair,-Signature,+Options)",
+      "solutions": "det",
+      "contract": "Produces an Ed25519 signature of Data using KeyPair and supported Options.",
+      "source": "src/lib/crypto.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ed25519_verify/4",
+      "origin": "library(crypto)",
+      "call": "ed25519_verify(+Data,+PublicKey,+Signature,+Options)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Signature is a valid Ed25519 signature of Data for PublicKey.",
+      "source": "src/lib/crypto.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "edges/2",
+      "origin": "library(ugraphs)",
+      "call": "edges(+Graph,-Edges)",
+      "solutions": "det",
+      "contract": "Returns all directed Vertex-Neighbor edges of Graph.",
+      "source": "src/lib/ugraphs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "element/3",
+      "origin": "library(clpz)",
+      "call": "element(?Index,+List,?Element)",
+      "solutions": "delayed",
+      "contract": "Constrains one-based Index and Element so Element is the indexed member of List.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "empty_assoc/1",
+      "origin": "library(assoc)",
+      "call": "empty_assoc(-Assoc)",
+      "solutions": "det",
+      "contract": "Constructs the empty association tree.",
+      "source": "src/lib/assoc.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "exclude/3",
+      "origin": "library(lists)",
+      "call": "exclude(+Pred,+List,-Excluded)",
+      "solutions": "meta",
+      "contract": "Keeps exactly the elements of List for which Pred fails, preserving order.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "expmod/4",
+      "origin": "library(arithmetic)",
+      "call": "expmod(+Base,+Exponent,+Modulus,-Result)",
+      "solutions": "det",
+      "contract": "Computes Base^Exponent modulo Modulus for integer inputs.",
+      "source": "src/lib/arithmetic.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "fail/0",
+      "origin": "ISO core",
+      "call": "fail",
+      "solutions": "semidet",
+      "contract": "Always fails.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "false/0",
+      "origin": "ISO core",
+      "call": "false",
+      "solutions": "semidet",
+      "contract": "Always fails; this compatibility alias is protected from source redefinition.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "fd_dom/2",
+      "origin": "library(clpz)",
+      "call": "fd_dom(+Var,?Domain)",
+      "solutions": "det",
+      "contract": "Returns a term describing Var's current finite domain.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "fd_inf/2",
+      "origin": "library(clpz)",
+      "call": "fd_inf(+Var,?Infimum)",
+      "solutions": "det",
+      "contract": "Returns the current lower bound of Var's finite domain.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "fd_size/2",
+      "origin": "library(clpz)",
+      "call": "fd_size(+Var,?Size)",
+      "solutions": "det",
+      "contract": "Returns the cardinality of Var's current finite domain when finite.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "fd_sup/2",
+      "origin": "library(clpz)",
+      "call": "fd_sup(+Var,?Supremum)",
+      "solutions": "det",
+      "contract": "Returns the current upper bound of Var's finite domain.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "fd_var/1",
+      "origin": "library(clpz)",
+      "call": "fd_var(?Term)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Term is currently a CLP(Z) finite-domain variable.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "file_access_time/2",
+      "origin": "library(files)",
+      "call": "file_access_time(+Path,-Time)",
+      "solutions": "det",
+      "contract": "Returns the host access timestamp for Path.",
+      "source": "src/lib/files.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "file_copy/2",
+      "origin": "library(files)",
+      "call": "file_copy(+Source,+Target)",
+      "solutions": "det",
+      "contract": "Copies Source to Target using the Node filesystem host.",
+      "source": "src/lib/files.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "file_creation_time/2",
+      "origin": "library(files)",
+      "call": "file_creation_time(+Path,-Time)",
+      "solutions": "det",
+      "contract": "Returns the host creation/birth timestamp for Path.",
+      "source": "src/lib/files.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "file_exists/1",
+      "origin": "library(files)",
+      "call": "file_exists(+Path)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Path exists and is a regular file.",
+      "source": "src/lib/files.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "file_modification_time/2",
+      "origin": "library(files)",
+      "call": "file_modification_time(+Path,-Time)",
+      "solutions": "det",
+      "contract": "Returns the host modification timestamp for Path.",
+      "source": "src/lib/files.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "file_size/2",
+      "origin": "library(files)",
+      "call": "file_size(+Path,-Bytes)",
+      "solutions": "det",
+      "contract": "Returns the size of Path in bytes.",
+      "source": "src/lib/files.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "findall/3",
+      "origin": "ISO core",
+      "call": "findall(+Template,+Goal,?Bag)",
+      "solutions": "det",
+      "contract": "Collects a copy of Template for every solution of Goal, treating all free variables existentially; the empty result is [].",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "findall/4",
+      "origin": "library(iso_ext)",
+      "call": "findall(+Template,+Goal,?List,?Tail)",
+      "solutions": "det",
+      "contract": "Collects Template solutions as a difference list whose tail is Tail.",
+      "source": "src/lib/iso_ext.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "float/1",
+      "origin": "ISO core",
+      "call": "float(?Term)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Term is a floating-point number.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "flush_output/0",
+      "origin": "ISO core",
+      "call": "flush_output",
+      "solutions": "det",
+      "contract": "Flushes buffered output on the current output stream.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "flush_output/1",
+      "origin": "ISO core",
+      "call": "flush_output(+Stream)",
+      "solutions": "det",
+      "contract": "Flushes buffered output on Stream.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "foldl/4",
+      "origin": "library(lists)",
+      "call": "foldl(+Goal,+List1,+State0,-State)",
+      "solutions": "meta",
+      "contract": "Folds Goal left-to-right over 1 list(s), threading an accumulator from State0 to State.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "foldl/5",
+      "origin": "library(lists)",
+      "call": "foldl(+Goal,+List1,+List2,+State0,-State)",
+      "solutions": "meta",
+      "contract": "Folds Goal left-to-right over 2 list(s), threading an accumulator from State0 to State.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "foldl/6",
+      "origin": "library(lists)",
+      "call": "foldl(+Goal,+List1,+List2,+List3,+State0,-State)",
+      "solutions": "meta",
+      "contract": "Folds Goal left-to-right over 3 list(s), threading an accumulator from State0 to State.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "forall/2",
+      "origin": "library(iso_ext)",
+      "call": "forall(+Condition,+Action)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Action succeeds for every solution of Condition, implemented by double negation.",
+      "source": "src/lib/iso_ext.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "format/2",
+      "origin": "library(format)",
+      "call": "format(+Format,+Args)",
+      "solutions": "det",
+      "contract": "Formats Args according to Format and writes the result to the current output stream.",
+      "source": "src/lib/format.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "format/3",
+      "origin": "library(format)",
+      "call": "format(+Stream,+Format,+Args)",
+      "solutions": "det",
+      "contract": "Formats Args according to Format and writes the result to Stream.",
+      "source": "src/lib/format.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "format_/4",
+      "origin": "library(format)",
+      "call": "format_(+Format,+Args,?S0,?S)",
+      "solutions": "det",
+      "contract": "Expanded DCG form of format_//2, relating formatted characters between difference-list states S0 and S.",
+      "source": "src/lib/format.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "format_time/4",
+      "origin": "library(time)",
+      "call": "format_time(+Format,+Stamp,?S0,?S)",
+      "solutions": "det",
+      "contract": "Expanded DCG form of format_time//2, emitting formatted time characters between S0 and S.",
+      "source": "src/lib/time.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "freeze/2",
+      "origin": "library(freeze)",
+      "call": "freeze(?Var,+Goal)",
+      "solutions": "delayed",
+      "contract": "If Var is unbound, delays Goal until Var becomes instantiated; otherwise calls Goal immediately.",
+      "source": "src/lib/freeze.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "frozen/2",
+      "origin": "library(freeze)",
+      "call": "frozen(+Term,-Goal)",
+      "solutions": "det",
+      "contract": "Collects residual freeze goals attached to attributed variables in Term and returns them as a conjunction, or true when none remain.",
+      "source": "src/lib/freeze.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "functor/3",
+      "origin": "ISO core",
+      "call": "functor(?Term,?Name,?Arity)",
+      "solutions": "mode-dependent",
+      "contract": "Decomposes an instantiated term into functor and arity, or constructs a term when Name and Arity are given.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "ge/2",
+      "origin": "library(comparison)",
+      "call": "ge(+A,+B)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff A is greater than or equal to B under the library's portable comparison rules.",
+      "source": "src/lib/comparison.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "gen_assoc/3",
+      "origin": "library(assoc)",
+      "call": "gen_assoc(?Key,+Assoc,?Value)",
+      "solutions": "nondet",
+      "contract": "Enumerates or checks Key-Value bindings stored in Assoc in key order.",
+      "source": "src/lib/assoc.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "gen_int/1",
+      "origin": "library(between)",
+      "call": "gen_int(?N)",
+      "solutions": "multi",
+      "contract": "Enumerates all integers in an expanding symmetric sequence.",
+      "source": "src/lib/between.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "gen_nat/1",
+      "origin": "library(between)",
+      "call": "gen_nat(?N)",
+      "solutions": "multi",
+      "contract": "Enumerates the natural numbers 0,1,2,... without bound.",
+      "source": "src/lib/between.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "gensym/2",
+      "origin": "library(gensym)",
+      "call": "gensym(+Base,-Atom)",
+      "solutions": "det",
+      "contract": "Generates the next process-local atom formed from Base and its monotonically increasing counter.",
+      "source": "src/lib/gensym.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "get_assoc/3",
+      "origin": "library(assoc)",
+      "call": "get_assoc(+Key,+Assoc,?Value)",
+      "solutions": "semidet",
+      "contract": "Looks up Key in Assoc and relates it to Value.",
+      "source": "src/lib/assoc.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "get_assoc/5",
+      "origin": "library(assoc)",
+      "call": "get_assoc(+Key,+Assoc0,?OldValue,-Assoc,+NewValue)",
+      "solutions": "semidet",
+      "contract": "Looks up Key and, when present, returns OldValue together with a copy having that key updated to NewValue.",
+      "source": "src/lib/assoc.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "get_attr/3",
+      "origin": "library(atts)",
+      "call": "get_attr(+Var,+Module,?Value)",
+      "solutions": "semidet",
+      "contract": "Retrieves Module's attribute Value from attributed variable Var.",
+      "source": "src/lib/atts.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "get_atts/2",
+      "origin": "library(atts)",
+      "call": "get_atts(+Var,?Attributes)",
+      "solutions": "semidet",
+      "contract": "Compatibility relation that retrieves or matches the attribute collection of Var.",
+      "source": "src/lib/atts.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "get_byte/1",
+      "origin": "ISO core",
+      "call": "get_byte(?Byte)",
+      "solutions": "det",
+      "contract": "Reads the next byte from the current binary input stream, or -1 at end of file.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "get_byte/2",
+      "origin": "ISO core",
+      "call": "get_byte(+Stream,?Byte)",
+      "solutions": "det",
+      "contract": "Reads the next byte from Stream, or -1 at end of file.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "get_char/1",
+      "origin": "ISO core",
+      "call": "get_char(?Char)",
+      "solutions": "det",
+      "contract": "Reads the next character from the current input stream, or end_of_file.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "get_char/2",
+      "origin": "ISO core",
+      "call": "get_char(+Stream,?Char)",
+      "solutions": "det",
+      "contract": "Reads the next character from Stream, or end_of_file.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "get_code/1",
+      "origin": "ISO core",
+      "call": "get_code(?Code)",
+      "solutions": "det",
+      "contract": "Reads the next character code from the current input stream, or -1 at end of file.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "get_code/2",
+      "origin": "ISO core",
+      "call": "get_code(+Stream,?Code)",
+      "solutions": "det",
+      "contract": "Reads the next character code from Stream, or -1 at end of file.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "get_line_to_chars/3",
+      "origin": "library(charsio)",
+      "call": "get_line_to_chars(+Stream,-Chars,?Tail)",
+      "solutions": "det",
+      "contract": "Reads a line of characters from Stream and appends Tail, enabling difference-list use.",
+      "source": "src/lib/charsio.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "get_n_chars/3",
+      "origin": "library(charsio)",
+      "call": "get_n_chars(+Stream,+Count,-Chars)",
+      "solutions": "det",
+      "contract": "Reads up to Count characters from Stream.",
+      "source": "src/lib/charsio.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "get_single_char/1",
+      "origin": "library(charsio)",
+      "call": "get_single_char(-Code)",
+      "solutions": "det",
+      "contract": "Reads one character code from the current input stream without line editing.",
+      "source": "src/lib/charsio.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "getenv/2",
+      "origin": "library(os)",
+      "call": "getenv(+Name,?Value)",
+      "solutions": "semidet",
+      "contract": "Relates environment variable Name to its current host Value.",
+      "source": "src/lib/os.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "global_cardinality/2",
+      "origin": "library(clpz)",
+      "call": "global_cardinality(+Vars,+Pairs)",
+      "solutions": "delayed",
+      "contract": "Constrains Value-Count pairs to describe occurrence counts of values in Vars.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "global_cardinality/3",
+      "origin": "library(clpz)",
+      "call": "global_cardinality(+Vars,+Pairs,+Options)",
+      "solutions": "delayed",
+      "contract": "Posts global-cardinality constraints with supported cost/options extensions.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ground/1",
+      "origin": "ISO core",
+      "call": "ground(?Term)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Term contains no unbound variables.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "group_pairs_by_key/2",
+      "origin": "library(pairs)",
+      "call": "group_pairs_by_key(+Pairs,-Grouped)",
+      "solutions": "det",
+      "contract": "Groups consecutive equal-key pairs into Key-Values pairs; input is expected to be key ordered.",
+      "source": "src/lib/pairs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "gt/2",
+      "origin": "library(comparison)",
+      "call": "gt(+A,+B)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff A is greater than B under the library's portable comparison rules.",
+      "source": "src/lib/comparison.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "halt/0",
+      "origin": "ISO core",
+      "call": "halt",
+      "solutions": "terminal",
+      "contract": "Requests processor termination with status 0.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "halt/1",
+      "origin": "ISO core",
+      "call": "halt(+Status)",
+      "solutions": "terminal",
+      "contract": "Requests processor termination with the supplied integer status.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "hex_bytes/2",
+      "origin": "library(crypto)",
+      "call": "hex_bytes(?Hex,?Bytes)",
+      "solutions": "mode-dependent",
+      "contract": "Relates hexadecimal character data to the corresponding byte list.",
+      "source": "src/lib/crypto.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "if_/3",
+      "origin": "library(reif)",
+      "call": "if_(+Condition,+Then,+Else)",
+      "solutions": "meta",
+      "contract": "Calls reified Condition and commits to Then when it yields true or Else when it yields false.",
+      "source": "src/lib/reif.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "in/2",
+      "origin": "library(clpz)",
+      "call": "in(?Left,?Right)",
+      "solutions": "delayed",
+      "contract": "Constrains one integer variable/expression to the supplied finite-domain expression.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "include/3",
+      "origin": "library(lists)",
+      "call": "include(+Pred,+List,-Included)",
+      "solutions": "meta",
+      "contract": "Keeps exactly the elements of List for which Pred succeeds, preserving order.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "indomain/1",
+      "origin": "library(clpz)",
+      "call": "indomain(+Var)",
+      "solutions": "nondet",
+      "contract": "Enumerates the finite-domain values currently permitted for Var.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ins/2",
+      "origin": "library(clpz)",
+      "call": "ins(?Left,?Right)",
+      "solutions": "delayed",
+      "contract": "Constrains every variable in a list to the supplied finite-domain expression.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "instantiation_error/0",
+      "origin": "library(error)",
+      "call": "instantiation_error",
+      "solutions": "terminal",
+      "contract": "Raises error(instantiation_error,[]).",
+      "source": "src/lib/error.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "instantiation_error/1",
+      "origin": "library(error)",
+      "call": "instantiation_error(+Context)",
+      "solutions": "terminal",
+      "contract": "Raises an instantiation error carrying Context.",
+      "source": "src/lib/error.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "integer/1",
+      "origin": "ISO core",
+      "call": "integer(?Term)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Term is an integer.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "integer_si/1",
+      "origin": "library(si)",
+      "call": "integer_si(?Term)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Term is sufficiently instantiated to be treated as integer by dependent constraint code.",
+      "source": "src/lib/si.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "intersection/3",
+      "origin": "library(lists)",
+      "call": "intersection(+A,+B,-Intersection)",
+      "solutions": "det",
+      "contract": "Keeps elements of A that unify with some member of B, preserving A order.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "is/2",
+      "origin": "ISO core",
+      "call": "(?Result is +Expression)",
+      "solutions": "semidet",
+      "contract": "Evaluates the arithmetic Expression and unifies Result with the resulting number.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "is_assoc/1",
+      "origin": "library(assoc)",
+      "call": "is_assoc(+Assoc)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Assoc is a valid association tree.",
+      "source": "src/lib/assoc.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "is_ordset/1",
+      "origin": "library(ordsets)",
+      "call": "is_ordset(+Set)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Set is a proper strictly ordered duplicate-free list under standard term order.",
+      "source": "src/lib/ordsets.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "is_set/1",
+      "origin": "library(lists)",
+      "call": "is_set(+List)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff List is proper and contains no duplicate terms under the library's set equality test.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "join/3",
+      "origin": "library(strings)",
+      "call": "join(+Parts,+Separator,-Text)",
+      "solutions": "det",
+      "contract": "Joins lexical Parts with literal Separator to produce Text.",
+      "source": "src/lib/strings.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "keysort/2",
+      "origin": "ISO core",
+      "call": "keysort(+Pairs,?Sorted)",
+      "solutions": "det",
+      "contract": "Stably sorts Key-Value pairs by key without removing duplicates.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "label/1",
+      "origin": "library(clpz)",
+      "call": "label(+Vars)",
+      "solutions": "nondet",
+      "contract": "Labels Vars using default CLP(Z) enumeration options.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "labeling/1",
+      "origin": "library(clpb)",
+      "call": "labeling(+BooleanVariables)",
+      "solutions": "nondet",
+      "contract": "Enumerates truth assignments for constrained Boolean variables.",
+      "source": "src/lib/clpb.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "labeling/2",
+      "origin": "library(clpz)",
+      "call": "labeling(+Options,+Vars)",
+      "solutions": "nondet",
+      "contract": "Enumerates integer assignments satisfying posted constraints using the requested labeling Options.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "last/2",
+      "origin": "library(lists)",
+      "call": "last(+List,?Last)",
+      "solutions": "semidet",
+      "contract": "Relates Last to the final element of a nonempty proper list.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "lcm/3",
+      "origin": "library(arithmetic)",
+      "call": "lcm(+A,+B,-LCM)",
+      "solutions": "det",
+      "contract": "Computes the least common multiple of integers A and B.",
+      "source": "src/lib/arithmetic.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "le/2",
+      "origin": "library(comparison)",
+      "call": "le(+A,+B)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff A is less than or equal to B under the library's portable comparison rules.",
+      "source": "src/lib/comparison.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "length/2",
+      "origin": "library(lists)",
+      "call": "length(?List,?Length)",
+      "solutions": "nondet",
+      "contract": "Relates a list skeleton to its nonnegative length; with both arguments variable it enumerates increasing finite lengths.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "lex_chain/1",
+      "origin": "library(clpz)",
+      "call": "lex_chain(+Lists)",
+      "solutions": "delayed",
+      "contract": "Constrains successive lists to be lexicographically nondecreasing.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "list_max/2",
+      "origin": "library(lists)",
+      "call": "list_max(+List,-Max)",
+      "solutions": "semidet",
+      "contract": "Compatibility alias returning the greatest element of a nonempty list.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "list_min/2",
+      "origin": "library(lists)",
+      "call": "list_min(+List,-Min)",
+      "solutions": "semidet",
+      "contract": "Compatibility alias returning the least element of a nonempty list.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "list_si/1",
+      "origin": "library(si)",
+      "call": "list_si(?Term)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Term is sufficiently instantiated to be treated as list by dependent constraint code.",
+      "source": "src/lib/si.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "list_to_assoc/2",
+      "origin": "library(assoc)",
+      "call": "list_to_assoc(+Pairs,-Assoc)",
+      "solutions": "det",
+      "contract": "Builds an association tree from Key-Value pairs after key ordering/validation.",
+      "source": "src/lib/assoc.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "list_to_ord_set/2",
+      "origin": "library(ordsets)",
+      "call": "list_to_ord_set(+List,-Set)",
+      "solutions": "det",
+      "contract": "Sorts List and removes duplicates to form an ordered set.",
+      "source": "src/lib/ordsets.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "list_to_set/2",
+      "origin": "library(lists)",
+      "call": "list_to_set(+List,-Set)",
+      "solutions": "det",
+      "contract": "Removes later structural duplicates while preserving first-occurrence order.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "listing/1",
+      "origin": "library(format)",
+      "call": "listing(+PredicateSpec)",
+      "solutions": "nondet",
+      "contract": "Writes accessible clauses selected by PredicateSpec in source-like form.",
+      "source": "src/lib/format.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "lowercase/2",
+      "origin": "library(strings)",
+      "call": "lowercase(+Text,-Lower)",
+      "solutions": "det",
+      "contract": "Maps ASCII uppercase letters in Text to lowercase while preserving other characters.",
+      "source": "src/lib/strings.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "lsb/2",
+      "origin": "library(arithmetic)",
+      "call": "lsb(+Integer,-Index)",
+      "solutions": "semidet",
+      "contract": "Returns the zero-based index of the least significant set bit of a positive integer.",
+      "source": "src/lib/arithmetic.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "lt/2",
+      "origin": "library(comparison)",
+      "call": "lt(+A,+B)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff A is less than B under the library's portable comparison rules.",
+      "source": "src/lib/comparison.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "make_directory/1",
+      "origin": "library(files)",
+      "call": "make_directory(+Path)",
+      "solutions": "det",
+      "contract": "Creates one directory at Path.",
+      "source": "src/lib/files.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "make_directory_path/1",
+      "origin": "library(files)",
+      "call": "make_directory_path(+Path)",
+      "solutions": "det",
+      "contract": "Creates Path and any missing parent directories.",
+      "source": "src/lib/files.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "map_assoc/2",
+      "origin": "library(assoc)",
+      "call": "map_assoc(+Goal,+Assoc)",
+      "solutions": "meta",
+      "contract": "Calls Goal for each value in Assoc in key order.",
+      "source": "src/lib/assoc.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "map_assoc/3",
+      "origin": "library(assoc)",
+      "call": "map_assoc(+Goal,+Assoc0,-Assoc)",
+      "solutions": "meta",
+      "contract": "Maps Goal over corresponding values of Assoc0 to construct Assoc with the same keys.",
+      "source": "src/lib/assoc.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "map_list_to_pairs/3",
+      "origin": "library(pairs)",
+      "call": "map_list_to_pairs(+Goal,+List,-Pairs)",
+      "solutions": "meta",
+      "contract": "Calls Goal(Element,Key) for each element and returns Key-Element pairs in input order.",
+      "source": "src/lib/pairs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "maplist/2",
+      "origin": "library(lists)",
+      "call": "maplist(+Goal,?List1)",
+      "solutions": "meta",
+      "contract": "Calls Goal pointwise over 1 list(s); all lists must end together and Goal receives the corresponding elements.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "maplist/3",
+      "origin": "library(lists)",
+      "call": "maplist(+Goal,?List1,?List2)",
+      "solutions": "meta",
+      "contract": "Calls Goal pointwise over 2 list(s); all lists must end together and Goal receives the corresponding elements.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "maplist/4",
+      "origin": "library(lists)",
+      "call": "maplist(+Goal,?List1,?List2,?List3)",
+      "solutions": "meta",
+      "contract": "Calls Goal pointwise over 3 list(s); all lists must end together and Goal receives the corresponding elements.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "maplist/5",
+      "origin": "library(lists)",
+      "call": "maplist(+Goal,?List1,?List2,?List3,?List4)",
+      "solutions": "meta",
+      "contract": "Calls Goal pointwise over 4 list(s); all lists must end together and Goal receives the corresponding elements.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "maplist/6",
+      "origin": "library(lists)",
+      "call": "maplist(+Goal,?List1,?List2,?List3,?List4,?List5)",
+      "solutions": "meta",
+      "contract": "Calls Goal pointwise over 5 list(s); all lists must end together and Goal receives the corresponding elements.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "maplist/7",
+      "origin": "library(lists)",
+      "call": "maplist(+Goal,?List1,?List2,?List3,?List4,?List5,?List6)",
+      "solutions": "meta",
+      "contract": "Calls Goal pointwise over 6 list(s); all lists must end together and Goal receives the corresponding elements.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "maplist/8",
+      "origin": "library(lists)",
+      "call": "maplist(+Goal,?List1,?List2,?List3,?List4,?List5,?List6,?List7)",
+      "solutions": "meta",
+      "contract": "Calls Goal pointwise over 7 list(s); all lists must end together and Goal receives the corresponding elements.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "maplist/9",
+      "origin": "library(lists)",
+      "call": "maplist(+Goal,?List1,?List2,?List3,?List4,?List5,?List6,?List7,?List8)",
+      "solutions": "meta",
+      "contract": "Calls Goal pointwise over 8 list(s); all lists must end together and Goal receives the corresponding elements.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "matches/2",
+      "origin": "library(strings)",
+      "call": "matches(+Text,+Pattern)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Text matches the library's portable pattern language described by Pattern.",
+      "source": "src/lib/strings.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "matches/3",
+      "origin": "library(strings)",
+      "call": "matches(+Text,+Pattern,-Context)",
+      "solutions": "semidet",
+      "contract": "Matches Text against the portable pattern language and returns named-capture Context.",
+      "source": "src/lib/strings.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "max_assoc/3",
+      "origin": "library(assoc)",
+      "call": "max_assoc(+Assoc,?Key,?Value)",
+      "solutions": "semidet",
+      "contract": "Relates Key and Value to the greatest-key entry; fails for an empty association.",
+      "source": "src/lib/assoc.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "max_list/2",
+      "origin": "library(lists)",
+      "call": "max_list(+List,-Max)",
+      "solutions": "semidet",
+      "contract": "Returns the greatest element of a nonempty list under EyeProlog term order.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "max_sleep_time/1",
+      "origin": "library(time)",
+      "call": "max_sleep_time(-Seconds)",
+      "solutions": "det",
+      "contract": "Returns the implementation maximum supported sleep interval in seconds.",
+      "source": "src/lib/time.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "maybe/0",
+      "origin": "library(random)",
+      "call": "maybe",
+      "solutions": "semidet",
+      "contract": "Succeeds with probability approximately 1/2 using the current pseudo-random generator state.",
+      "source": "src/lib/random.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "maybe/1",
+      "origin": "library(random)",
+      "call": "maybe(+Probability)",
+      "solutions": "semidet",
+      "contract": "Succeeds with the supplied probability in the unit interval using the current pseudo-random state.",
+      "source": "src/lib/random.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "maybe/2",
+      "origin": "library(random)",
+      "call": "maybe(+K,+N)",
+      "solutions": "semidet",
+      "contract": "Succeeds with probability K/N using the current pseudo-random state.",
+      "source": "src/lib/random.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "member/2",
+      "origin": "library(lists)",
+      "call": "member(?Item,+List)",
+      "solutions": "nondet",
+      "contract": "Succeeds once for each list position whose element unifies with Item, preserving list order.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "memberchk/2",
+      "origin": "library(lists)",
+      "call": "memberchk(?Item,+List)",
+      "solutions": "semidet",
+      "contract": "Succeeds for the first member of List that unifies with Item and commits to that match.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "memberd_t/3",
+      "origin": "library(reif)",
+      "call": "memberd_t(?Item,+List,?Truth)",
+      "solutions": "delayed",
+      "contract": "Reifies membership of Item in List into Boolean Truth using dif/3-aware comparison.",
+      "source": "src/lib/reif.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "min_assoc/3",
+      "origin": "library(assoc)",
+      "call": "min_assoc(+Assoc,?Key,?Value)",
+      "solutions": "semidet",
+      "contract": "Relates Key and Value to the least-key entry; fails for an empty association.",
+      "source": "src/lib/assoc.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "min_list/2",
+      "origin": "library(lists)",
+      "call": "min_list(+List,-Min)",
+      "solutions": "semidet",
+      "contract": "Returns the least element of a nonempty list under EyeProlog term order.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "msb/2",
+      "origin": "library(arithmetic)",
+      "call": "msb(+Integer,-Index)",
+      "solutions": "semidet",
+      "contract": "Returns the zero-based index of the most significant set bit of a positive integer.",
+      "source": "src/lib/arithmetic.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "must_be/2",
+      "origin": "library(error)",
+      "call": "must_be(+Type,+Term)",
+      "solutions": "semidet",
+      "contract": "Succeeds when Term is instantiated and satisfies Type; otherwise raises the corresponding instantiation or type/domain error.",
+      "source": "src/lib/error.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "neighbors/3",
+      "origin": "library(ugraphs)",
+      "call": "neighbors(+Vertex,+Graph,?Neighbors)",
+      "solutions": "semidet",
+      "contract": "Relates Vertex to its outgoing neighbor list in Graph.",
+      "source": "src/lib/ugraphs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "neighbours/3",
+      "origin": "library(ugraphs)",
+      "call": "neighbours(+Vertex,+Graph,?Neighbors)",
+      "solutions": "semidet",
+      "contract": "British-spelling alias of neighbors/3.",
+      "source": "src/lib/ugraphs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "nl/0",
+      "origin": "ISO core",
+      "call": "nl",
+      "solutions": "det",
+      "contract": "Writes one newline to the current output stream.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "nl/1",
+      "origin": "ISO core",
+      "call": "nl(+Stream)",
+      "solutions": "det",
+      "contract": "Writes one newline to Stream.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "nodebug/1",
+      "origin": "library(debug)",
+      "call": "nodebug(+Topic)",
+      "solutions": "det",
+      "contract": "Disables debugging messages for Topic.",
+      "source": "src/lib/debug.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "nonvar/1",
+      "origin": "ISO core",
+      "call": "nonvar(?Term)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Term is not an unbound variable.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "not_si/1",
+      "origin": "library(si)",
+      "call": "not_si(+Goal)",
+      "solutions": "semidet",
+      "contract": "Performs sufficient-instantiation-aware negation for the SI compatibility layer.",
+      "source": "src/lib/si.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "nth0/3",
+      "origin": "library(lists)",
+      "call": "nth0(?Index,+List,?Item)",
+      "solutions": "nondet",
+      "contract": "Relates zero-based Index to Item at that position in List.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "nth0/4",
+      "origin": "library(lists)",
+      "call": "nth0(?Index,+List,?Item,?Rest)",
+      "solutions": "nondet",
+      "contract": "Relates zero-based Index and Item to List and the list Rest obtained by deleting that position.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "nth1/3",
+      "origin": "library(lists)",
+      "call": "nth1(?Index,+List,?Item)",
+      "solutions": "nondet",
+      "contract": "Relates one-based Index to Item at that position in List.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "nth1/4",
+      "origin": "library(lists)",
+      "call": "nth1(?Index,+List,?Item,?Rest)",
+      "solutions": "nondet",
+      "contract": "Relates one-based Index and Item to List and the list Rest obtained by deleting that position.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "number/1",
+      "origin": "ISO core",
+      "call": "number(?Term)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Term is an integer or float.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "number_chars/2",
+      "origin": "ISO core",
+      "call": "number_chars(?Number,?Chars)",
+      "solutions": "mode-dependent",
+      "contract": "Relates a finite number to its canonical character-list representation or parses such a list.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "number_codes/2",
+      "origin": "ISO core",
+      "call": "number_codes(?Number,?Codes)",
+      "solutions": "mode-dependent",
+      "contract": "Relates a finite number to its canonical character-code representation or parses such a list.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "number_string/2",
+      "origin": "library(strings)",
+      "call": "number_string(?Number,?Text)",
+      "solutions": "mode-dependent",
+      "contract": "Relates a number to atom/character-list text using the library lexical conversion rules.",
+      "source": "src/lib/strings.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "number_to_rational/2",
+      "origin": "library(arithmetic)",
+      "call": "number_to_rational(+Number,-Rational)",
+      "solutions": "det",
+      "contract": "Converts an EyeProlog number to the library rational representation, preserving integers exactly.",
+      "source": "src/lib/arithmetic.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "number_to_rational/3",
+      "origin": "library(arithmetic)",
+      "call": "number_to_rational(+Number,-Numerator,-Denominator)",
+      "solutions": "det",
+      "contract": "Converts Number to a normalized numerator and positive denominator.",
+      "source": "src/lib/arithmetic.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "numbervars/3",
+      "origin": "library(terms)",
+      "call": "numbervars(+Term,+Start,-End)",
+      "solutions": "det",
+      "contract": "Numbers unbound variables in Term using $VAR(N) terms beginning at Start and returns the next unused End index.",
+      "source": "src/lib/terms.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "numlist/2",
+      "origin": "library(between)",
+      "call": "numlist(+High,-List)",
+      "solutions": "det",
+      "contract": "Constructs the inclusive integer list from 1 through High, with the module's empty-range behavior.",
+      "source": "src/lib/between.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "numlist/3",
+      "origin": "library(between)",
+      "call": "numlist(+Low,+High,-List)",
+      "solutions": "det",
+      "contract": "Constructs the inclusive ascending integer list from Low through High.",
+      "source": "src/lib/between.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "nvalue/2",
+      "origin": "library(clpz)",
+      "call": "nvalue(?N,+Vars)",
+      "solutions": "delayed",
+      "contract": "Constrains N to the number of distinct values taken by Vars.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "once/1",
+      "origin": "ISO core",
+      "call": "once(+Goal)",
+      "solutions": "semidet",
+      "contract": "Runs Goal and returns at most its first solution.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "op/3",
+      "origin": "ISO core",
+      "call": "op(+Priority,+Specifier,+NameOrNames)",
+      "solutions": "det",
+      "contract": "Defines, replaces, or removes operator declarations in the current program.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "open/3",
+      "origin": "ISO core",
+      "call": "open(+SourceSink,+Mode,-Stream)",
+      "solutions": "det",
+      "contract": "Opens SourceSink in Mode and returns a stream handle.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "open/4",
+      "origin": "ISO core",
+      "call": "open(+SourceSink,+Mode,-Stream,+Options)",
+      "solutions": "det",
+      "contract": "Opens SourceSink in Mode with validated stream Options and returns a stream handle.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "ord_add_element/3",
+      "origin": "library(ordsets)",
+      "call": "ord_add_element(+Set,+Element,-NewSet)",
+      "solutions": "det",
+      "contract": "Inserts Element into ordered Set if absent, preserving order.",
+      "source": "src/lib/ordsets.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ord_del_element/3",
+      "origin": "library(ordsets)",
+      "call": "ord_del_element(+Set,+Element,-NewSet)",
+      "solutions": "det",
+      "contract": "Removes Element from ordered Set if present, preserving order.",
+      "source": "src/lib/ordsets.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ord_disjoint/2",
+      "origin": "library(ordsets)",
+      "call": "ord_disjoint(+A,+B)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff ordered sets A and B have no common element.",
+      "source": "src/lib/ordsets.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ord_empty/1",
+      "origin": "library(ordsets)",
+      "call": "ord_empty(?Set)",
+      "solutions": "semidet",
+      "contract": "Succeeds exactly when Set is the empty ordered set [].",
+      "source": "src/lib/ordsets.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ord_intersect/2",
+      "origin": "library(ordsets)",
+      "call": "ord_intersect(+A,+B)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff ordered sets A and B have a nonempty intersection.",
+      "source": "src/lib/ordsets.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ord_intersect/3",
+      "origin": "library(ordsets)",
+      "call": "ord_intersect(+A,+B,-Intersection)",
+      "solutions": "det",
+      "contract": "Computes the ordered-set intersection of A and B.",
+      "source": "src/lib/ordsets.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ord_intersection/2",
+      "origin": "library(ordsets)",
+      "call": "ord_intersection(+Sets,-Intersection)",
+      "solutions": "det",
+      "contract": "Computes the intersection of a list of ordered sets.",
+      "source": "src/lib/ordsets.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ord_intersection/3",
+      "origin": "library(ordsets)",
+      "call": "ord_intersection(+A,+B,-Intersection)",
+      "solutions": "det",
+      "contract": "Computes the ordered-set intersection of A and B.",
+      "source": "src/lib/ordsets.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ord_intersection/4",
+      "origin": "library(ordsets)",
+      "call": "ord_intersection(+A,+B,-Intersection,-Difference)",
+      "solutions": "det",
+      "contract": "Computes A intersect B and the elements of A outside B in one traversal.",
+      "source": "src/lib/ordsets.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ord_list_to_assoc/2",
+      "origin": "library(assoc)",
+      "call": "ord_list_to_assoc(+Pairs,-Assoc)",
+      "solutions": "det",
+      "contract": "Builds an association tree from an already key-ordered pair list.",
+      "source": "src/lib/assoc.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ord_memberchk/2",
+      "origin": "library(ordsets)",
+      "call": "ord_memberchk(+Element,+Set)",
+      "solutions": "semidet",
+      "contract": "Tests Element membership using ordered-set comparison and early termination.",
+      "source": "src/lib/ordsets.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ord_selectchk/3",
+      "origin": "library(ordsets)",
+      "call": "ord_selectchk(+Element,+Set,?Rest)",
+      "solutions": "semidet",
+      "contract": "Checks membership of Element in ordered Set and returns Rest with that element removed.",
+      "source": "src/lib/ordsets.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ord_seteq/2",
+      "origin": "library(ordsets)",
+      "call": "ord_seteq(+A,+B)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff ordered sets A and B contain exactly the same elements.",
+      "source": "src/lib/ordsets.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ord_subset/2",
+      "origin": "library(ordsets)",
+      "call": "ord_subset(+Sub,+Super)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff every element of ordered Sub is present in ordered Super.",
+      "source": "src/lib/ordsets.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ord_subtract/3",
+      "origin": "library(ordsets)",
+      "call": "ord_subtract(+Set,+Delete,-Remaining)",
+      "solutions": "det",
+      "contract": "Computes ordered Set minus every element of ordered Delete.",
+      "source": "src/lib/ordsets.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ord_symdiff/3",
+      "origin": "library(ordsets)",
+      "call": "ord_symdiff(+A,+B,-Difference)",
+      "solutions": "det",
+      "contract": "Computes the symmetric difference of ordered sets A and B.",
+      "source": "src/lib/ordsets.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ord_union/2",
+      "origin": "library(ordsets)",
+      "call": "ord_union(+Sets,-Union)",
+      "solutions": "det",
+      "contract": "Computes the union of a list of ordered sets.",
+      "source": "src/lib/ordsets.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ord_union/3",
+      "origin": "library(ordsets)",
+      "call": "ord_union(+A,+B,-Union)",
+      "solutions": "det",
+      "contract": "Computes the ordered-set union of A and B.",
+      "source": "src/lib/ordsets.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ord_union/4",
+      "origin": "library(ordsets)",
+      "call": "ord_union(+A,+B,-Union,-New)",
+      "solutions": "det",
+      "contract": "Computes Union and the elements contributed by one side according to the library's four-argument contract.",
+      "source": "src/lib/ordsets.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "pairs_keys/2",
+      "origin": "library(pairs)",
+      "call": "pairs_keys(+Pairs,-Keys)",
+      "solutions": "det",
+      "contract": "Projects the keys of Pairs in order.",
+      "source": "src/lib/pairs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "pairs_keys_values/3",
+      "origin": "library(pairs)",
+      "call": "pairs_keys_values(?Pairs,?Keys,?Values)",
+      "solutions": "mode-dependent",
+      "contract": "Relates a list of Key-Value pairs to the corresponding Keys and Values lists.",
+      "source": "src/lib/pairs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "pairs_values/2",
+      "origin": "library(pairs)",
+      "call": "pairs_values(+Pairs,-Values)",
+      "solutions": "det",
+      "contract": "Projects the values of Pairs in order.",
+      "source": "src/lib/pairs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "partial_string/1",
+      "origin": "library(iso_ext)",
+      "call": "partial_string(?Term)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Term has the library's partial-string/list representation.",
+      "source": "src/lib/iso_ext.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "partial_string/3",
+      "origin": "library(iso_ext)",
+      "call": "partial_string(?Term,?Chars,?Tail)",
+      "solutions": "mode-dependent",
+      "contract": "Relates a partial-string term to its character prefix Chars and open Tail.",
+      "source": "src/lib/iso_ext.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "partial_string_tail/2",
+      "origin": "library(iso_ext)",
+      "call": "partial_string_tail(+Term,?Tail)",
+      "solutions": "semidet",
+      "contract": "Relates a partial string to its open tail.",
+      "source": "src/lib/iso_ext.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "path_canonical/2",
+      "origin": "library(files)",
+      "call": "path_canonical(+Path,-Canonical)",
+      "solutions": "det",
+      "contract": "Returns the canonicalized host path corresponding to Path.",
+      "source": "src/lib/files.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "path_segments/2",
+      "origin": "library(files)",
+      "call": "path_segments(?Path,?Segments)",
+      "solutions": "mode-dependent",
+      "contract": "Relates a filesystem path to its component segments.",
+      "source": "src/lib/files.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "peek_byte/1",
+      "origin": "ISO core",
+      "call": "peek_byte(?Byte)",
+      "solutions": "det",
+      "contract": "Observes the next byte on the current binary input stream without consuming it.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "peek_byte/2",
+      "origin": "ISO core",
+      "call": "peek_byte(+Stream,?Byte)",
+      "solutions": "det",
+      "contract": "Observes the next byte on Stream without consuming it.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "peek_char/1",
+      "origin": "ISO core",
+      "call": "peek_char(?Char)",
+      "solutions": "det",
+      "contract": "Observes the next character on the current input stream without consuming it.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "peek_char/2",
+      "origin": "ISO core",
+      "call": "peek_char(+Stream,?Char)",
+      "solutions": "det",
+      "contract": "Observes the next character on Stream without consuming it.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "peek_code/1",
+      "origin": "ISO core",
+      "call": "peek_code(?Code)",
+      "solutions": "det",
+      "contract": "Observes the next character code on the current input stream without consuming it.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "peek_code/2",
+      "origin": "ISO core",
+      "call": "peek_code(+Stream,?Code)",
+      "solutions": "det",
+      "contract": "Observes the next character code on Stream without consuming it.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "permutation/2",
+      "origin": "library(lists)",
+      "call": "permutation(?List,?Permutation)",
+      "solutions": "nondet",
+      "contract": "Relates two proper lists that are permutations of one another, enumerating permutations in select/3 order.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "phrase/2",
+      "origin": "ISO core + library(dcgs)",
+      "call": "phrase(+Body,?Sequence)",
+      "solutions": "mode-dependent",
+      "contract": "Runs a DCG Body over Sequence and requires complete consumption.",
+      "source": "src/iso.js; src/lib/dcgs.pl",
+      "profile": "core+library"
+    },
+    {
+      "indicator": "phrase/3",
+      "origin": "ISO core + library(dcgs)",
+      "call": "phrase(+Body,?Sequence,?Rest)",
+      "solutions": "mode-dependent",
+      "contract": "Runs a DCG Body over Sequence and relates Rest to the unconsumed suffix.",
+      "source": "src/iso.js; src/lib/dcgs.pl",
+      "profile": "core+library"
+    },
+    {
+      "indicator": "phrase/4",
+      "origin": "library(dcgs)",
+      "call": "phrase(+Body,?S0,?S,?A1)",
+      "solutions": "mode-dependent",
+      "contract": "Calls the parameterized DCG Body with one additional argument and the difference-list pair S0,S.",
+      "source": "src/lib/dcgs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "phrase/5",
+      "origin": "library(dcgs)",
+      "call": "phrase(+Body,?S0,?S,?A1,?A2)",
+      "solutions": "mode-dependent",
+      "contract": "Calls the parameterized DCG Body with two additional arguments and the difference-list pair S0,S.",
+      "source": "src/lib/dcgs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "phrase_from_file/2",
+      "origin": "library(pio)",
+      "call": "phrase_from_file(+Grammar,+Path)",
+      "solutions": "semidet",
+      "contract": "Reads Path as characters and succeeds iff Grammar consumes the complete content.",
+      "source": "src/lib/pio.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "phrase_from_file/3",
+      "origin": "library(pio)",
+      "call": "phrase_from_file(+Grammar,+Path,+Options)",
+      "solutions": "semidet",
+      "contract": "Reads Path with Options and succeeds iff Grammar consumes the complete content.",
+      "source": "src/lib/pio.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "phrase_from_stream/2",
+      "origin": "library(pio)",
+      "call": "phrase_from_stream(+Grammar,+Stream)",
+      "solutions": "semidet",
+      "contract": "Reads Stream as characters and succeeds iff Grammar consumes the complete content.",
+      "source": "src/lib/pio.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "phrase_to_file/2",
+      "origin": "library(pio)",
+      "call": "phrase_to_file(+Grammar,+Path)",
+      "solutions": "semidet",
+      "contract": "Generates characters with Grammar and writes them to Path.",
+      "source": "src/lib/pio.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "phrase_to_file/3",
+      "origin": "library(pio)",
+      "call": "phrase_to_file(+Grammar,+Path,+Options)",
+      "solutions": "semidet",
+      "contract": "Generates characters with Grammar and writes them to Path according to Options.",
+      "source": "src/lib/pio.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "phrase_to_stream/2",
+      "origin": "library(pio)",
+      "call": "phrase_to_stream(+Grammar,+Stream)",
+      "solutions": "semidet",
+      "contract": "Generates characters with Grammar and writes them to Stream.",
+      "source": "src/lib/pio.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "pid/1",
+      "origin": "library(os)",
+      "call": "pid(-Pid)",
+      "solutions": "det",
+      "contract": "Returns the host process identifier.",
+      "source": "src/lib/os.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "popcount/2",
+      "origin": "library(arithmetic)",
+      "call": "popcount(+Integer,-Count)",
+      "solutions": "det",
+      "contract": "Counts the set bits in the nonnegative integer representation.",
+      "source": "src/lib/arithmetic.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "portray_clause/1",
+      "origin": "library(format)",
+      "call": "portray_clause(+Clause)",
+      "solutions": "det",
+      "contract": "Writes Clause in readable clause-oriented layout to the current output stream.",
+      "source": "src/lib/format.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "portray_clause/2",
+      "origin": "library(format)",
+      "call": "portray_clause(+Stream,+Clause)",
+      "solutions": "det",
+      "contract": "Writes Clause in readable clause-oriented layout to Stream.",
+      "source": "src/lib/format.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "portray_clause_/3",
+      "origin": "library(format)",
+      "call": "portray_clause_(+Clause,?S0,?S)",
+      "solutions": "det",
+      "contract": "Expanded DCG form of portray_clause_//1 producing clause text between S0 and S.",
+      "source": "src/lib/format.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "put_assoc/4",
+      "origin": "library(assoc)",
+      "call": "put_assoc(+Key,+Assoc0,+Value,-Assoc)",
+      "solutions": "det",
+      "contract": "Returns Assoc equal to Assoc0 with Key inserted or replaced by Value.",
+      "source": "src/lib/assoc.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "put_attr/3",
+      "origin": "library(atts)",
+      "call": "put_attr(+Var,+Module,+Value)",
+      "solutions": "det",
+      "contract": "Sets Module's attribute Value on Var in the current logical branch.",
+      "source": "src/lib/atts.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "put_atts/2",
+      "origin": "library(atts)",
+      "call": "put_atts(+Var,+AttributeSpec)",
+      "solutions": "det",
+      "contract": "Compatibility relation that adds, replaces, or removes attributes on Var according to AttributeSpec.",
+      "source": "src/lib/atts.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "put_byte/1",
+      "origin": "ISO core",
+      "call": "put_byte(+Byte)",
+      "solutions": "det",
+      "contract": "Writes one byte to the current binary output stream.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "put_byte/2",
+      "origin": "ISO core",
+      "call": "put_byte(+Stream,+Byte)",
+      "solutions": "det",
+      "contract": "Writes one byte to Stream.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "put_char/1",
+      "origin": "ISO core",
+      "call": "put_char(+Char)",
+      "solutions": "det",
+      "contract": "Writes one character to the current output stream.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "put_char/2",
+      "origin": "ISO core",
+      "call": "put_char(+Stream,+Char)",
+      "solutions": "det",
+      "contract": "Writes one character to Stream.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "put_code/1",
+      "origin": "ISO core",
+      "call": "put_code(+Code)",
+      "solutions": "det",
+      "contract": "Writes one character code to the current output stream.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "put_code/2",
+      "origin": "ISO core",
+      "call": "put_code(+Stream,+Code)",
+      "solutions": "det",
+      "contract": "Writes one character code to Stream.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "random/1",
+      "origin": "library(random)",
+      "call": "random(-Value)",
+      "solutions": "det",
+      "contract": "Advances the current Park-Miller pseudo-random state and returns Value in [0,1).",
+      "source": "src/lib/random.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "random/3",
+      "origin": "library(random)",
+      "call": "random(+Seed0,-Value,-Seed)",
+      "solutions": "det",
+      "contract": "Pure state-threaded Park-Miller step: Value is in [0,1) and Seed is the successor state.",
+      "source": "src/lib/random.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "random_integer/3",
+      "origin": "library(random)",
+      "call": "random_integer(+Lower,+Upper,-Value)",
+      "solutions": "det",
+      "contract": "Returns a pseudo-random integer Value in the half-open interval [Lower,Upper).",
+      "source": "src/lib/random.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "random_labeling/2",
+      "origin": "library(clpb)",
+      "call": "random_labeling(+Seed,+BooleanVariables)",
+      "solutions": "nondet",
+      "contract": "Labels constrained Boolean variables in pseudo-randomized order determined by Seed.",
+      "source": "src/lib/clpb.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "rational_numerator_denominator/3",
+      "origin": "library(arithmetic)",
+      "call": "rational_numerator_denominator(+Rational,-Numerator,-Denominator)",
+      "solutions": "det",
+      "contract": "Decomposes a supported rational representation into normalized numerator and denominator.",
+      "source": "src/lib/arithmetic.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "raw_argv/1",
+      "origin": "library(os)",
+      "call": "raw_argv(-Args)",
+      "solutions": "det",
+      "contract": "Returns the raw host process argument vector.",
+      "source": "src/lib/os.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "reachable/3",
+      "origin": "library(ugraphs)",
+      "call": "reachable(+Vertex,+Graph,-Reachable)",
+      "solutions": "det",
+      "contract": "Returns vertices reachable from Vertex by zero or more directed edges.",
+      "source": "src/lib/ugraphs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "read/1",
+      "origin": "ISO core",
+      "call": "read(?Term)",
+      "solutions": "det",
+      "contract": "Reads one Prolog term from the current input stream using default read options.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "read/2",
+      "origin": "ISO core",
+      "call": "read(+Stream,?Term)",
+      "solutions": "det",
+      "contract": "Reads one Prolog term from Stream using default read options.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "read_from_chars/2",
+      "origin": "library(charsio)",
+      "call": "read_from_chars(+Chars,?Term)",
+      "solutions": "det",
+      "contract": "Parses one term from character-list source using default read options.",
+      "source": "src/lib/charsio.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "read_term/2",
+      "origin": "ISO core",
+      "call": "read_term(?Term,+Options)",
+      "solutions": "det",
+      "contract": "Reads one Prolog term from the current input stream using Options.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "read_term/3",
+      "origin": "ISO core",
+      "call": "read_term(+Stream,?Term,+Options)",
+      "solutions": "det",
+      "contract": "Reads one Prolog term from Stream using Options.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "read_term_from_chars/3",
+      "origin": "library(charsio)",
+      "call": "read_term_from_chars(+Chars,?Term,+Options)",
+      "solutions": "det",
+      "contract": "Parses one term from character-list source according to Options.",
+      "source": "src/lib/charsio.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "rename_file/2",
+      "origin": "library(files)",
+      "call": "rename_file(+Source,+Target)",
+      "solutions": "det",
+      "contract": "Renames or moves Source to Target on the host filesystem.",
+      "source": "src/lib/files.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "repeat/0",
+      "origin": "ISO core",
+      "call": "repeat",
+      "solutions": "multi",
+      "contract": "Succeeds repeatedly without end, producing another solution on every backtracking step.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "repeat/1",
+      "origin": "library(between)",
+      "call": "repeat(+Count)",
+      "solutions": "multi",
+      "contract": "Succeeds Count times on backtracking for a nonnegative integer Count.",
+      "source": "src/lib/between.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "replace/4",
+      "origin": "library(strings)",
+      "call": "replace(+Text,+Search,+Replacement,-Result)",
+      "solutions": "det",
+      "contract": "Replaces every literal occurrence of Search in Text by Replacement.",
+      "source": "src/lib/strings.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "representation_error/1",
+      "origin": "library(error)",
+      "call": "representation_error(+Flag)",
+      "solutions": "terminal",
+      "contract": "Raises a representation_error(Flag) exception.",
+      "source": "src/lib/error.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "reset_gensym/1",
+      "origin": "library(gensym)",
+      "call": "reset_gensym(+Base)",
+      "solutions": "det",
+      "contract": "Resets the generated-atom counter associated with Base.",
+      "source": "src/lib/gensym.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "resource_error/1",
+      "origin": "library(error)",
+      "call": "resource_error(+Resource)",
+      "solutions": "terminal",
+      "contract": "Raises a resource_error(Resource) exception.",
+      "source": "src/lib/error.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "resource_error/2",
+      "origin": "library(error)",
+      "call": "resource_error(+Resource,+Context)",
+      "solutions": "terminal",
+      "contract": "Raises a resource_error(Resource) exception carrying Context.",
+      "source": "src/lib/error.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "retract/1",
+      "origin": "ISO core",
+      "call": "retract(+Clause)",
+      "solutions": "nondet",
+      "contract": "Removes matching clauses from a dynamic predicate one at a time under the logical update view.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "retractall/1",
+      "origin": "ISO core",
+      "call": "retractall(+Head)",
+      "solutions": "det",
+      "contract": "Removes every dynamic clause whose head matches Head while retaining the empty dynamic procedure.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "reverse/2",
+      "origin": "library(lists)",
+      "call": "reverse(?List,?Reversed)",
+      "solutions": "mode-dependent",
+      "contract": "Relates a proper list to the list containing the same elements in reverse order.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "same_length/2",
+      "origin": "library(lists)",
+      "call": "same_length(?A,?B)",
+      "solutions": "mode-dependent",
+      "contract": "Relates lists A and B when they have the same length, constructing a skeleton when one length is known.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "sat/1",
+      "origin": "library(clpb)",
+      "call": "sat(+BooleanExpression)",
+      "solutions": "delayed",
+      "contract": "Posts Boolean constraints represented by BooleanExpression and fails iff they are inconsistent.",
+      "source": "src/lib/clpb.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "sat_count/2",
+      "origin": "library(clpb)",
+      "call": "sat_count(+BooleanExpression,-Count)",
+      "solutions": "det",
+      "contract": "Counts satisfying assignments of BooleanExpression.",
+      "source": "src/lib/clpb.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "scalar_product/4",
+      "origin": "library(clpz)",
+      "call": "scalar_product(+Coefficients,+Vars,+Relation,+Expr)",
+      "solutions": "delayed",
+      "contract": "Constrains the scalar product of Coefficients and Vars by Relation to Expr.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "select/3",
+      "origin": "library(lists)",
+      "call": "select(?Item,+List,?Rest)",
+      "solutions": "nondet",
+      "contract": "Relates List to Rest after removing one occurrence that unifies with Item; alternatives remove later occurrences.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "selectchk/3",
+      "origin": "library(lists)",
+      "call": "selectchk(?Item,+List,?Rest)",
+      "solutions": "semidet",
+      "contract": "Like select/3 but commits to the first removable occurrence.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "seq/3",
+      "origin": "library(dcgs)",
+      "call": "seq(?Sequence,?S0,?S)",
+      "solutions": "mode-dependent",
+      "contract": "DCG relation that consumes or emits exactly Sequence between difference-list states S0 and S.",
+      "source": "src/lib/dcgs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "seqq/3",
+      "origin": "library(dcgs)",
+      "call": "seqq(+Sequences,?S0,?S)",
+      "solutions": "nondet",
+      "contract": "DCG relation that chooses one sequence from Sequences and consumes or emits it between S0 and S.",
+      "source": "src/lib/dcgs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "serialized/2",
+      "origin": "library(clpz)",
+      "call": "serialized(+Starts,+Durations)",
+      "solutions": "delayed",
+      "contract": "Constrains tasks with Starts and Durations not to overlap.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "set_input/1",
+      "origin": "ISO core",
+      "call": "set_input(+Stream)",
+      "solutions": "det",
+      "contract": "Makes Stream the current input stream.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "set_nth0/4",
+      "origin": "library(lists)",
+      "call": "set_nth0(+Index,+List,+Item,-NewList)",
+      "solutions": "semidet",
+      "contract": "Returns NewList with the existing zero-based Index replaced by Item.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "set_output/1",
+      "origin": "ISO core",
+      "call": "set_output(+Stream)",
+      "solutions": "det",
+      "contract": "Makes Stream the current output stream.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "set_prolog_flag/2",
+      "origin": "ISO core",
+      "call": "set_prolog_flag(+Flag,+Value)",
+      "solutions": "det",
+      "contract": "Sets a supported mutable Prolog flag after validating its value.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "set_random/1",
+      "origin": "library(random)",
+      "call": "set_random(+Option)",
+      "solutions": "det",
+      "contract": "Sets the mutable pseudo-random generator state; seed(random) chooses a time-derived seed.",
+      "source": "src/lib/random.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "set_stream_position/2",
+      "origin": "ISO core",
+      "call": "set_stream_position(+Stream,+Position)",
+      "solutions": "det",
+      "contract": "Repositions a repositionable stream to Position.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "setenv/2",
+      "origin": "library(os)",
+      "call": "setenv(+Name,+Value)",
+      "solutions": "det",
+      "contract": "Sets the host process environment variable Name to Value.",
+      "source": "src/lib/os.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "setof/3",
+      "origin": "ISO core",
+      "call": "setof(+Template,+Goal,?Set)",
+      "solutions": "nondet",
+      "contract": "Like bagof/3, but each witness group is sorted by term order with identical duplicates removed.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "setup_call_cleanup/3",
+      "origin": "library(iso_ext)",
+      "call": "setup_call_cleanup(+Setup,+Goal,+Cleanup)",
+      "solutions": "meta",
+      "contract": "Runs Setup once, calls Goal, and guarantees Cleanup after Goal terminates in any way.",
+      "source": "src/lib/iso_ext.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "shell/1",
+      "origin": "library(os)",
+      "call": "shell(+Command)",
+      "solutions": "semidet",
+      "contract": "Runs Command in the host shell and succeeds iff it exits successfully.",
+      "source": "src/lib/os.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "shell/2",
+      "origin": "library(os)",
+      "call": "shell(+Command,?Status)",
+      "solutions": "det",
+      "contract": "Runs Command in the host shell and returns its exit Status.",
+      "source": "src/lib/os.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "sleep/1",
+      "origin": "library(time)",
+      "call": "sleep(+Seconds)",
+      "solutions": "det",
+      "contract": "Suspends execution for the requested finite nonnegative duration, subject to the implementation limit.",
+      "source": "src/lib/time.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "slice/4",
+      "origin": "library(lists)",
+      "call": "slice(+Start,+Count,+List,-Slice)",
+      "solutions": "semidet",
+      "contract": "Returns exactly Count elements of List beginning at zero-based Start.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "smallest_divisor_from/3",
+      "origin": "library(primes)",
+      "call": "smallest_divisor_from(+N,+Start,-Divisor)",
+      "solutions": "semidet",
+      "contract": "Returns the least divisor of N not smaller than Start according to the module's integer primality search.",
+      "source": "src/lib/primes.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "socket_client_open/3",
+      "origin": "library(sockets)",
+      "call": "socket_client_open(+Address,-Stream,+Options)",
+      "solutions": "semidet",
+      "contract": "Opens a TCP connection to Address:Port and returns a bidirectional stream using the requested stream options.",
+      "source": "src/lib/sockets.pl; src/sockets-host.js",
+      "profile": "library"
+    },
+    {
+      "indicator": "socket_server_accept/4",
+      "origin": "library(sockets)",
+      "call": "socket_server_accept(+ServerSocket,-Client,-Stream,+Options)",
+      "solutions": "det",
+      "contract": "Waits for the next TCP connection, returning the peer address and a bidirectional stream for that connection.",
+      "source": "src/lib/sockets.pl; src/sockets-host.js",
+      "profile": "library"
+    },
+    {
+      "indicator": "socket_server_close/1",
+      "origin": "library(sockets)",
+      "call": "socket_server_close(+ServerSocket)",
+      "solutions": "det",
+      "contract": "Stops accepting new TCP connections on ServerSocket without closing streams already accepted from it.",
+      "source": "src/lib/sockets.pl; src/sockets-host.js",
+      "profile": "library"
+    },
+    {
+      "indicator": "socket_server_open/2",
+      "origin": "library(sockets)",
+      "call": "socket_server_open(?Address,-ServerSocket)",
+      "solutions": "semidet",
+      "contract": "Opens a TCP listening socket; an unbound port requests an ephemeral port and is unified with the selected port.",
+      "source": "src/lib/sockets.pl; src/sockets-host.js",
+      "profile": "library"
+    },
+    {
+      "indicator": "sort/2",
+      "origin": "ISO core",
+      "call": "sort(+List,?Sorted)",
+      "solutions": "det",
+      "contract": "Sorts List by standard term order and removes identical duplicates.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "split/3",
+      "origin": "library(strings)",
+      "call": "split(+Text,+Separator,-Parts)",
+      "solutions": "det",
+      "contract": "Splits Text at literal Separator occurrences into a proper list of atom parts.",
+      "source": "src/lib/strings.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "stable/1",
+      "origin": "library(eyelet)",
+      "call": "stable(+Goal)",
+      "solutions": "meta",
+      "contract": "Runs Goal to Eyelet fixed-point stability.",
+      "source": "src/lib/eyelet.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "start_tabling/2",
+      "origin": "library(tabling)",
+      "call": "start_tabling(+Wrapper,+Worker)",
+      "solutions": "meta",
+      "contract": "Compatibility entry point that executes Worker through EyeProlog's table-aware evaluation for Wrapper.",
+      "source": "src/lib/tabling.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "statistics/2",
+      "origin": "library(time)",
+      "call": "statistics(+Key,?Value)",
+      "solutions": "det",
+      "contract": "Returns the supported runtime statistic selected by Key.",
+      "source": "src/lib/time.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "stream_property/2",
+      "origin": "ISO core",
+      "call": "stream_property(?Stream,?Property)",
+      "solutions": "nondet",
+      "contract": "Enumerates supported properties of open streams, optionally filtering Stream or Property.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "string_concat/3",
+      "origin": "library(strings)",
+      "call": "string_concat(?Left,?Right,?Text)",
+      "solutions": "nondet",
+      "contract": "Relates Text to literal concatenation of Left and Right; with Text fixed it can enumerate splits.",
+      "source": "src/lib/strings.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "sub_atom/5",
+      "origin": "ISO core",
+      "call": "sub_atom(+Atom,?Before,?Length,?After,?SubAtom)",
+      "solutions": "nondet",
+      "contract": "Relates Atom to a substring, its Unicode-scalar offset, length, and remaining suffix length.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "substring/4",
+      "origin": "library(strings)",
+      "call": "substring(+Text,+Start,+Count,-Part)",
+      "solutions": "semidet",
+      "contract": "Extracts exactly Count characters beginning at zero-based Start from Text.",
+      "source": "src/lib/strings.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "subsumes_term/2",
+      "origin": "ISO core",
+      "call": "subsumes_term(+General,+Specific)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff General subsumes Specific without binding either argument.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "subtract/3",
+      "origin": "library(lists)",
+      "call": "subtract(+List,+Delete,-Rest)",
+      "solutions": "det",
+      "contract": "Removes from List every element that unifies with some element of Delete, preserving the remaining order.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "succ/2",
+      "origin": "library(iso_ext)",
+      "call": "succ(?N,?S)",
+      "solutions": "mode-dependent",
+      "contract": "Relates nonnegative integers N and S when S is exactly N+1.",
+      "source": "src/lib/iso_ext.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "sum/3",
+      "origin": "library(clpz)",
+      "call": "sum(+Exprs,+Relation,+Expr)",
+      "solutions": "delayed",
+      "contract": "Constrains the sum of Exprs to stand in Relation (#=, #=<, etc.) to Expr.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "sum_list/2",
+      "origin": "library(lists)",
+      "call": "sum_list(+List,-Sum)",
+      "solutions": "det",
+      "contract": "Evaluates and sums the numeric elements of List; the empty sum is 0.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "sumall/3",
+      "origin": "library(aggregate)",
+      "call": "sumall(+Template,+Goal,-Sum)",
+      "solutions": "det",
+      "contract": "Sums the numeric Template value over every solution of Goal; the empty sum is 0.",
+      "source": "src/lib/aggregate.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "take/3",
+      "origin": "library(lists)",
+      "call": "take(+Count,+List,-Prefix)",
+      "solutions": "semidet",
+      "contract": "Returns exactly the first Count elements of List; fails when List is too short.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "tasklist/2",
+      "origin": "library(lists)",
+      "call": "tasklist(+Goal,?List1)",
+      "solutions": "meta",
+      "contract": "Compatibility relation applying Goal pointwise over 1 list(s); EyeProlog deliberately executes these tasks sequentially.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "tasklist/3",
+      "origin": "library(lists)",
+      "call": "tasklist(+Goal,?List1,?List2)",
+      "solutions": "meta",
+      "contract": "Compatibility relation applying Goal pointwise over 2 list(s); EyeProlog deliberately executes these tasks sequentially.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "tasklist/4",
+      "origin": "library(lists)",
+      "call": "tasklist(+Goal,?List1,?List2,?List3)",
+      "solutions": "meta",
+      "contract": "Compatibility relation applying Goal pointwise over 3 list(s); EyeProlog deliberately executes these tasks sequentially.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "tasklist/5",
+      "origin": "library(lists)",
+      "call": "tasklist(+Goal,?List1,?List2,?List3,?List4)",
+      "solutions": "meta",
+      "contract": "Compatibility relation applying Goal pointwise over 4 list(s); EyeProlog deliberately executes these tasks sequentially.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "tasklist/6",
+      "origin": "library(lists)",
+      "call": "tasklist(+Goal,?List1,?List2,?List3,?List4,?List5)",
+      "solutions": "meta",
+      "contract": "Compatibility relation applying Goal pointwise over 5 list(s); EyeProlog deliberately executes these tasks sequentially.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "tasklist/7",
+      "origin": "library(lists)",
+      "call": "tasklist(+Goal,?List1,?List2,?List3,?List4,?List5,?List6)",
+      "solutions": "meta",
+      "contract": "Compatibility relation applying Goal pointwise over 6 list(s); EyeProlog deliberately executes these tasks sequentially.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "tasklist/8",
+      "origin": "library(lists)",
+      "call": "tasklist(+Goal,?List1,?List2,?List3,?List4,?List5,?List6,?List7)",
+      "solutions": "meta",
+      "contract": "Compatibility relation applying Goal pointwise over 7 list(s); EyeProlog deliberately executes these tasks sequentially.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "taut/2",
+      "origin": "library(clpb)",
+      "call": "taut(+BooleanExpression,?Truth)",
+      "solutions": "semidet",
+      "contract": "Determines whether the Boolean expression is a tautology or contradiction and relates Truth to the result.",
+      "source": "src/lib/clpb.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "term_attributed_variables/2",
+      "origin": "library(atts)",
+      "call": "term_attributed_variables(+Term,-Vars)",
+      "solutions": "det",
+      "contract": "Returns the distinct attributed variables reachable in Term.",
+      "source": "src/lib/atts.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "term_si/1",
+      "origin": "library(si)",
+      "call": "term_si(?Term)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Term is sufficiently instantiated to be treated as term by dependent constraint code.",
+      "source": "src/lib/si.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "term_string/2",
+      "origin": "library(strings)",
+      "call": "term_string(+Term,-Text)",
+      "solutions": "det",
+      "contract": "Renders a nonvariable Term to portable atom/character-list text; this implementation does not parse Text back.",
+      "source": "src/lib/strings.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "term_variables/2",
+      "origin": "ISO core",
+      "call": "term_variables(+Term,?Variables)",
+      "solutions": "det",
+      "contract": "Returns the distinct variables of Term in first-occurrence traversal order.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "tfilter/3",
+      "origin": "library(reif)",
+      "call": "tfilter(+ReifiedPred,+List,-Filtered)",
+      "solutions": "meta",
+      "contract": "Filters List by a reified predicate whose final argument is true or false.",
+      "source": "src/lib/reif.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "throw/1",
+      "origin": "ISO core",
+      "call": "throw(+Ball)",
+      "solutions": "terminal",
+      "contract": "Raises Ball as the current Prolog exception; Ball must be instantiated.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "time/1",
+      "origin": "library(iso_ext)",
+      "call": "time(+Goal)",
+      "solutions": "meta",
+      "contract": "Runs Goal and reports elapsed time, inference count, and MLips for each solution.",
+      "source": "src/lib/iso_ext.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "tmember/2",
+      "origin": "library(reif)",
+      "call": "tmember(?Item,+List)",
+      "solutions": "nondet",
+      "contract": "Membership relation implemented through reified disequality so duplicate/unbound cases remain declarative.",
+      "source": "src/lib/reif.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "tmember_t/3",
+      "origin": "library(reif)",
+      "call": "tmember_t(?Item,+List,?Truth)",
+      "solutions": "delayed",
+      "contract": "Reifies tmember/2 membership into Truth.",
+      "source": "src/lib/reif.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "top_sort/2",
+      "origin": "library(ugraphs)",
+      "call": "top_sort(+Graph,-Order)",
+      "solutions": "semidet",
+      "contract": "Returns a topological ordering of an acyclic directed graph; fails when a cycle prevents one.",
+      "source": "src/lib/ugraphs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "top_sort/3",
+      "origin": "library(ugraphs)",
+      "call": "top_sort(+Graph,-Order,-Rest)",
+      "solutions": "mode-dependent",
+      "contract": "Extended topological-sort relation returning the ordered portion and the library-defined residual/cyclic portion.",
+      "source": "src/lib/ugraphs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "tpartition/4",
+      "origin": "library(reif)",
+      "call": "tpartition(+ReifiedPred,+List,-True,-False)",
+      "solutions": "meta",
+      "contract": "Partitions List into elements for which ReifiedPred yields true and false, preserving order.",
+      "source": "src/lib/reif.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "transitive_closure/2",
+      "origin": "library(ugraphs)",
+      "call": "transitive_closure(+Graph,-Closure)",
+      "solutions": "det",
+      "contract": "Computes the graph whose adjacency lists contain all reachable vertices.",
+      "source": "src/lib/ugraphs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "transpose/2",
+      "origin": "library(lists)",
+      "call": "transpose(+Rows,?Columns)",
+      "solutions": "det",
+      "contract": "Transposes a rectangular list of equal-length row lists into columns.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "transpose_ugraph/2",
+      "origin": "library(ugraphs)",
+      "call": "transpose_ugraph(+Graph,-Transpose)",
+      "solutions": "det",
+      "contract": "Reverses every directed edge of Graph.",
+      "source": "src/lib/ugraphs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "trim/2",
+      "origin": "library(strings)",
+      "call": "trim(+Text,-Trimmed)",
+      "solutions": "det",
+      "contract": "Removes portable ASCII whitespace from both ends of Text.",
+      "source": "src/lib/strings.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "true/0",
+      "origin": "ISO core",
+      "call": "true",
+      "solutions": "det",
+      "contract": "Succeeds exactly once without changing the substitution.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "tuples_in/2",
+      "origin": "library(clpz)",
+      "call": "tuples_in(+Tuples,+RelationTuples)",
+      "solutions": "delayed",
+      "contract": "Constrains each tuple in Tuples to be a member of the extensional relation RelationTuples.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "type_error/2",
+      "origin": "library(error)",
+      "call": "type_error(+Type,+Term)",
+      "solutions": "terminal",
+      "contract": "Raises a type_error(Type,Term) exception.",
+      "source": "src/lib/error.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "type_error/3",
+      "origin": "library(error)",
+      "call": "type_error(+Type,+Term,+Context)",
+      "solutions": "terminal",
+      "contract": "Raises a type_error(Type,Term) exception carrying Context.",
+      "source": "src/lib/error.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "ugraph_union/3",
+      "origin": "library(ugraphs)",
+      "call": "ugraph_union(+A,+B,-Union)",
+      "solutions": "det",
+      "contract": "Computes the union of two canonical directed graphs.",
+      "source": "src/lib/ugraphs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "unify_with_occurs_check/2",
+      "origin": "ISO core",
+      "call": "unify_with_occurs_check(?Left,?Right)",
+      "solutions": "semidet",
+      "contract": "Unifies Left and Right while rejecting bindings that would create a cyclic term.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "union/3",
+      "origin": "library(lists)",
+      "call": "union(+A,+B,-Union)",
+      "solutions": "det",
+      "contract": "Constructs the list-set union by adding elements of A not already unifiable with members of B.",
+      "source": "src/lib/lists.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "unsetenv/1",
+      "origin": "library(os)",
+      "call": "unsetenv(+Name)",
+      "solutions": "det",
+      "contract": "Removes Name from the host process environment.",
+      "source": "src/lib/os.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "uppercase/2",
+      "origin": "library(strings)",
+      "call": "uppercase(+Text,-Upper)",
+      "solutions": "det",
+      "contract": "Maps ASCII lowercase letters in Text to uppercase while preserving other characters.",
+      "source": "src/lib/strings.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "uuid/3",
+      "origin": "library(uuid)",
+      "call": "uuid(+Seed0,-UUID,-Seed)",
+      "solutions": "det",
+      "contract": "Pure state-threaded generation of a version-4 UUID atom from Seed0, returning successor Seed.",
+      "source": "src/lib/uuid.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "uuid_string/2",
+      "origin": "library(uuid)",
+      "call": "uuid_string(?UUID,?Chars)",
+      "solutions": "mode-dependent",
+      "contract": "Relates a UUID byte/term representation to its canonical textual character-list form.",
+      "source": "src/lib/uuid.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "uuidv4/1",
+      "origin": "library(uuid)",
+      "call": "uuidv4(-UUID)",
+      "solutions": "det",
+      "contract": "Generates a version-4 UUID byte/term representation using the current pseudo-random generator.",
+      "source": "src/lib/uuid.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "uuidv4_string/1",
+      "origin": "library(uuid)",
+      "call": "uuidv4_string(-Chars)",
+      "solutions": "det",
+      "contract": "Generates a version-4 UUID directly in canonical textual character-list form.",
+      "source": "src/lib/uuid.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "var/1",
+      "origin": "ISO core",
+      "call": "var(?Term)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff Term is an unbound variable.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "variant/2",
+      "origin": "library(iso_ext)",
+      "call": "variant(+A,+B)",
+      "solutions": "semidet",
+      "contract": "Succeeds iff A and B are structurally identical up to a bijective renaming of variables.",
+      "source": "src/lib/iso_ext.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "vertices/2",
+      "origin": "library(ugraphs)",
+      "call": "vertices(+Graph,-Vertices)",
+      "solutions": "det",
+      "contract": "Returns the vertices of Graph in graph order.",
+      "source": "src/lib/ugraphs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "vertices_edges_to_ugraph/3",
+      "origin": "library(ugraphs)",
+      "call": "vertices_edges_to_ugraph(+Vertices,+Edges,-Graph)",
+      "solutions": "det",
+      "contract": "Builds the canonical ordered adjacency-list graph from Vertices and directed Edges.",
+      "source": "src/lib/ugraphs.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "weighted_maximum/3",
+      "origin": "library(clpb)",
+      "call": "weighted_maximum(+Weights,+BooleanVariables,-Maximum)",
+      "solutions": "nondet",
+      "contract": "Finds Boolean assignments maximizing the weighted objective and returns its maximum.",
+      "source": "src/lib/clpb.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "when/2",
+      "origin": "library(when)",
+      "call": "when(+Condition,+Goal)",
+      "solutions": "delayed",
+      "contract": "Calls Goal as soon as Condition over attributed variables becomes true; otherwise suspends it.",
+      "source": "src/lib/when.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "when_si/2",
+      "origin": "library(si)",
+      "call": "when_si(+Condition,+Goal)",
+      "solutions": "delayed",
+      "contract": "Runs Goal once Condition is sufficiently instantiated according to the SI condition language.",
+      "source": "src/lib/si.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "working_directory/2",
+      "origin": "library(files)",
+      "call": "working_directory(?Old,+New)",
+      "solutions": "det",
+      "contract": "Returns the current working directory in Old and, when New differs, changes the process working directory.",
+      "source": "src/lib/files.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "write/1",
+      "origin": "ISO core",
+      "call": "write(+Term)",
+      "solutions": "det",
+      "contract": "Writes Term to the current output stream using ordinary operator notation.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "write/2",
+      "origin": "ISO core",
+      "call": "write(+Stream,+Term)",
+      "solutions": "det",
+      "contract": "Writes Term to Stream using ordinary operator notation.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "write_canonical/1",
+      "origin": "ISO core",
+      "call": "write_canonical(+Term)",
+      "solutions": "det",
+      "contract": "Writes Term to the current output stream in canonical syntax without operator abbreviations.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "write_canonical/2",
+      "origin": "ISO core",
+      "call": "write_canonical(+Stream,+Term)",
+      "solutions": "det",
+      "contract": "Writes Term to Stream in canonical syntax without operator abbreviations.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "write_term/2",
+      "origin": "ISO core",
+      "call": "write_term(+Term,+Options)",
+      "solutions": "det",
+      "contract": "Writes Term to the current output stream according to Options.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "write_term/3",
+      "origin": "ISO core",
+      "call": "write_term(+Stream,+Term,+Options)",
+      "solutions": "det",
+      "contract": "Writes Term to Stream according to Options.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "write_term_to_chars/3",
+      "origin": "library(charsio)",
+      "call": "write_term_to_chars(+Term,-Chars,+Options)",
+      "solutions": "det",
+      "contract": "Renders Term as a character list according to write Options.",
+      "source": "src/lib/charsio.pl",
+      "profile": "library"
+    },
+    {
+      "indicator": "writeq/1",
+      "origin": "ISO core",
+      "call": "writeq(+Term)",
+      "solutions": "det",
+      "contract": "Writes Term to the current output stream with quoting sufficient for readback.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "writeq/2",
+      "origin": "ISO core",
+      "call": "writeq(+Stream,+Term)",
+      "solutions": "det",
+      "contract": "Writes Term to Stream with quoting sufficient for readback.",
+      "source": "src/iso.js",
+      "profile": "core"
+    },
+    {
+      "indicator": "zcompare/3",
+      "origin": "library(clpz)",
+      "call": "zcompare(?Order,?A,?B)",
+      "solutions": "delayed",
+      "contract": "Relates Order (<,=,>) to the constrained integer comparison between A and B.",
+      "source": "src/lib/clpz.pl",
+      "profile": "library"
+    }
+  ]
+}

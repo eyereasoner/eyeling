@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1000" height="1450" viewBox="0 0 1000 1450"
+     role="img" aria-labelledby="title desc">
+  <title id="title">The Art of EyeProlog</title>
+  <desc id="desc">Minimal book title page with a vector rendering of the EYE logo, the book title, subtitle, and author.</desc>
+
+  <defs>
+    <linearGradient id="eye-spectrum" x1="20" y1="4" x2="48" y2="65" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff2738"/>
+      <stop offset="0.28" stop-color="#ff6b25"/>
+      <stop offset="0.47" stop-color="#fff23c"/>
+      <stop offset="0.69" stop-color="#51e523"/>
+      <stop offset="1" stop-color="#38e7a2"/>
+    </linearGradient>
+    <linearGradient id="eye-ring" x1="12" y1="23" x2="57" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#efff38"/>
+      <stop offset="0.45" stop-color="#fff947"/>
+      <stop offset="1" stop-color="#bdf02b"/>
+    </linearGradient>
+    <linearGradient id="eye-center" x1="18" y1="25" x2="53" y2="45" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#57d9ca"/>
+      <stop offset="0.45" stop-color="#22bde7"/>
+      <stop offset="1" stop-color="#18b6ec"/>
+    </linearGradient>
+    <clipPath id="eye-orb-clip">
+      <path d="M34 3.5C52 3.5 65.5 17 65.5 34.5S52 65 34 65 3 51.5 3 34.5 16 3.5 34 3.5Z"/>
+    </clipPath>
+    <style>
+      .title-small {
+        fill: #17324d;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 52px;
+        letter-spacing: 8px;
+      }
+      .title-main {
+        fill: #17324d;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 108px;
+        font-weight: 600;
+        letter-spacing: -3px;
+      }
+      .subtitle {
+        fill: #3f6371;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 30px;
+      }
+      .author {
+        fill: #17324d;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 28px;
+        letter-spacing: 3px;
+      }
+    </style>
+  </defs>
+
+  <rect width="1000" height="1450" fill="#fffdf8"/>
+
+  <!-- Native SVG rendering of the original EYE rainbow mark. -->
+  <svg x="340" y="180" width="320" height="320" viewBox="0 0 68 68"
+       role="img" aria-label="EYE logo">
+    <g clip-path="url(#eye-orb-clip)">
+      <rect width="68" height="68" fill="url(#eye-spectrum)"/>
+      <ellipse cx="34" cy="35" rx="30" ry="14.5"
+               transform="rotate(11 34 35)" fill="url(#eye-ring)"/>
+      <ellipse cx="34" cy="35" rx="22.5" ry="9.2"
+               transform="rotate(11 34 35)" fill="url(#eye-center)"/>
+    </g>
+  </svg>
+
+  <text x="500" y="625" text-anchor="middle" class="title-small">THE ART OF</text>
+  <text x="500" y="755" text-anchor="middle" class="title-main">EyeProlog</text>
+  <text x="500" y="830" text-anchor="middle" class="subtitle">ISO Prolog with inspectable proofs</text>
+  <text x="500" y="1260" text-anchor="middle" class="author">JOS DE ROO</text>
+</svg>

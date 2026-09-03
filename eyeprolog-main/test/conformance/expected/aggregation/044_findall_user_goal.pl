@@ -1,0 +1,1 @@
+answer(bag, "bab").

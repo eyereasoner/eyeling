@@ -1,0 +1,17 @@
+% From The Art of EyeProlog, Chapter 11.
+:- use_module(library(lists)).
+
+why(
+  type(socrates, mortal),
+  proof(
+    goal(type(socrates, mortal)),
+    by(rule("socrates.pl", clause(4))),
+    bindings([binding("X", socrates)]),
+    uses([
+      proof(
+        goal(type(socrates, man)),
+        by(fact("socrates.pl", clause(3)))
+      )
+    ])
+  )
+).

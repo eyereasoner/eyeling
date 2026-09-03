@@ -1,0 +1,15 @@
+benchmark	file	goal	class	notes
+dblp	dblp.pl	benchmark(Count)	plain_iso	No tabling directive required.
+join1	join1.pl	benchmark_ff(Count)	plain_iso	No tabling directive required.
+join2	join2.pl	benchmark(Count)	plain_iso	No tabling directive required.
+joindup	joindup.pl	benchmark(Count)	plain_iso	No tabling directive required.
+lubm	lubm.pl	benchmark(Count)	plain_iso	No tabling directive required.
+magicset	magicset.pl	benchmark(Count)	wfs	EyeProlog WFS build and SWI use tnot/1; Trealla/Scryer skip this by default.
+modsg	modsg.pl	benchmark(Count)	positive_tabling	Trealla/Scryer/SWI copies declare the recursive predicates tabled.
+mondial	mondial.pl	benchmark(Count)	plain_iso	No tabling directive required.
+sg	sg.pl	benchmark(Count)	positive_tabling	Trealla/Scryer/SWI copies declare the recursive predicates tabled.
+tc	tc.pl	benchmark(Count)	positive_tabling	Trealla/Scryer/SWI copies declare the recursive predicates tabled.
+win_cycle	win_cycle.pl	benchmark(Count)	wfs	EyeProlog WFS build and SWI use tnot/1; Trealla/Scryer skip this by default.
+win_tree	win_tree.pl	benchmark(Count)	plain_iso	Runs as ordinary ISO-style Prolog; win_tree uses terminating negation-as-failure on acyclic data.
+wine	wine.pl	benchmark(Count)	positive_tabling	Trealla/Scryer/SWI copies declare the recursive predicates tabled.
+wordnet	wordnet.pl	benchmark(Count)	positive_tabling	Trealla/Scryer/SWI copies declare the recursive predicates tabled.

@@ -1,0 +1,2 @@
+eyeprolog warning: unstratified negation
+  r/1 depends negatively on p/1
