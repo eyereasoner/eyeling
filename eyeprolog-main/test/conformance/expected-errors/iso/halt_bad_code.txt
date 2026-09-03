@@ -1,1 +1,0 @@
-error(type_error(integer), not_an_integer)

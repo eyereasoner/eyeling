@@ -1,1 +1,0 @@
-uuid_example(true).

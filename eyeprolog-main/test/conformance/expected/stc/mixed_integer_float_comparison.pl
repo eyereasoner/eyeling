@@ -1,1 +1,0 @@
-mixed_integer_float_comparison.

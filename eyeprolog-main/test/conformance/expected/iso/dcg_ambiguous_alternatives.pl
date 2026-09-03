@@ -1,1 +1,0 @@
-ambiguity([first, second]).

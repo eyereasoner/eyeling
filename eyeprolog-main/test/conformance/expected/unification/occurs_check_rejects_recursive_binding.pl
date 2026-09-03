@@ -1,1 +1,0 @@
-answer(occurs_check).

@@ -1,2 +1,0 @@
-outer(a).
-outer(c).

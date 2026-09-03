@@ -1,1 +1,0 @@
-error(type_error(list), [pair | not_a_list])

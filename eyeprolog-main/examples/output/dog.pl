@@ -1,1 +1,0 @@
-mustHave(alice, dogLicense).

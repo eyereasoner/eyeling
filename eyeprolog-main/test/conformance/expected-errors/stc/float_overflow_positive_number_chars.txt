@@ -1,1 +1,0 @@
-error(representation_error(max_float))

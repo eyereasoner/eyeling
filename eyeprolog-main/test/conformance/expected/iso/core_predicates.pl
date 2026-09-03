@@ -1,1 +1,0 @@
-answer(foo, atom, <, true).

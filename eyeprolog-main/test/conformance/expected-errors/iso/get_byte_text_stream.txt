@@ -1,1 +1,0 @@
-error(permission_error(input, text_stream), '$stream'(0))

@@ -1,1 +1,0 @@
-error(uninstantiation_error, already_instantiated)

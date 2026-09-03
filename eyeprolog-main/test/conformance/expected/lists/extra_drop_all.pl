@@ -1,1 +1,0 @@
-answer(drop_all, []).

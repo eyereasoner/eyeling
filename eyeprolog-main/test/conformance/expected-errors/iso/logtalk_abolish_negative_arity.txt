@@ -1,1 +1,0 @@
-error(domain_error(not_less_than_zero), -1)

@@ -1,1 +1,0 @@
-answer(not_unbound_unknown_goal_succeeds).

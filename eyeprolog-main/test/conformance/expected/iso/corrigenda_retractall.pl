@@ -1,1 +1,0 @@
-corrigenda_retractall(ok).

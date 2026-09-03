@@ -1,2 +1,0 @@
-answer(b).
-answer(c).

@@ -1,1 +1,0 @@
-corrigendum1_double_quote_operator(ok).

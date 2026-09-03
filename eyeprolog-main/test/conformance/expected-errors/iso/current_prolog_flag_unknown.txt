@@ -1,1 +1,0 @@
-error(domain_error(prolog_flag), not_a_flag)

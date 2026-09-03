@@ -1,1 +1,0 @@
-error(type_error(predicate_indicator), foo)

@@ -1,1 +1,0 @@
-answer(['Ada'], ['Lovelace']).

@@ -1,1 +1,0 @@
-answer(sum, 7).
