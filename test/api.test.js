@@ -259,6 +259,70 @@ ${U('c')} ${U('friend')} ${U('d')}.
 
 const cases = [
   {
+    name: '00s a match that pairs an old fact with a new one still fires',
+    // The forward sweep skips a body match whose every goal binds a fact it has
+    // already seen. A match that mixes one old fact with one new one is not
+    // such a match: :p never grows, so the join only ever completes with an
+    // old :p and the :q the round before derived.
+    opt: { proofComments: false },
+    input: `
+@prefix : <http://example.org/> .
+:a :p :b .
+:b :h1 :t .
+:t :h2 :c .
+{ ?X :p ?Y. ?Y :q ?Z } => { ?X :r ?Z } .
+{ ?X :h1 ?M. ?M :h2 ?Z } => { ?X :q ?Z } .
+`,
+    check(out) {
+      const s = String(out);
+      assert.match(s, /:b\s+:q\s+:c\s*\./);
+      assert.match(s, /:a\s+:r\s+:c\s*\./);
+    },
+  },
+  {
+    name: '00s a new fact in the middle of a three-goal body still fires',
+    // Here the new fact is neither first nor last: the goals on both sides of
+    // :mid can only bind facts that were already there.
+    opt: { proofComments: false },
+    input: `
+@prefix : <http://example.org/> .
+:x :up :m .
+:y :up :n .
+:m :h1 :t .
+:t :h2 :n .
+{ ?X :up ?M. ?M :mid ?N. ?Y :up ?N } => { ?X :peer ?Y } .
+{ ?A :h1 ?T. ?T :h2 ?B } => { ?A :mid ?B } .
+`,
+    check(out) {
+      const s = String(out);
+      assert.match(s, /:m\s+:mid\s+:n\s*\./);
+      assert.match(s, /:x\s+:peer\s+:y\s*\./);
+    },
+  },
+  {
+    name: '00s transitive closure over a cycle is still complete',
+    // Every round after the first joins an old edge against a closure fact the
+    // previous round added, and the reflexive answers only appear on the last
+    // one, so a sweep that pruned too much would come up short here.
+    opt: { proofComments: false },
+    input: `
+@prefix : <http://example.org/> .
+:a :e :b .
+:b :e :c .
+:c :e :a .
+{ ?X :e ?Y } => { ?X :tc ?Y } .
+{ ?X :e ?Z. ?Z :tc ?Y } => { ?X :tc ?Y } .
+`,
+    check(out) {
+      const s = String(out);
+      for (const x of ['a', 'b', 'c']) {
+        for (const y of ['a', 'b', 'c']) {
+          assert.match(s, new RegExp(`:${x}\\s+:tc\\s+:${y}\\s*\\.`), `missing :${x} :tc :${y}`);
+        }
+      }
+    },
+  },
+  {
     name: '00t solution compaction keeps list bindings intact',
     // The fast path in emitSolution only handles bindings that cannot contain a
     // variable. A list has to fall back to the reachability walk.
