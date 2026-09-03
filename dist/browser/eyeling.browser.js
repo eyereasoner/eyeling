@@ -9063,6 +9063,9 @@ function mergeIndexBuckets(primary, fallback) {
   const out = new Array(a.length + b.length);
   for (let i = 0; i < a.length; i++) out[i] = a[i];
   for (let i = 0; i < b.length; i++) out[a.length + i] = b[i];
+  // Every other bucket is appended in increasing fact position; this one is two
+  // such runs back to back, so it cannot be binary-searched.
+  out.__mixedOrder = true;
   return out;
 }
 
@@ -9684,6 +9687,9 @@ function __goalMemoKey(goals, subst, facts, opts) {
   const parts = new Array(goals.length);
   for (let i = 0; i < goals.length; i++) parts[i] = __goalMemoTripleKey(applySubstTriple(goals[i], subst || {}));
   const mode = opts && opts.deferBuiltins ? 'D1' : 'D0';
+  // A semi-naive sweep answers a narrower question than a full one, so its
+  // solutions must not be handed to a caller that asked for the full set.
+  const deltaTag = opts && opts.deltaStart ? `|d${opts.deltaStart}` : '';
   const scopedLevel = facts && typeof facts.__scopedClosureLevel === 'number' ? facts.__scopedClosureLevel : 0;
   const scopedTag = facts && facts.__scopedSnapshot ? 'S' : 'N';
   let keepVarsTag = '';
@@ -9692,7 +9698,7 @@ function __goalMemoKey(goals, subst, facts, opts) {
     keepVars.sort();
     keepVarsTag = `|K:${keepVars.join(',')}`;
   }
-  return `${mode}|${scopedTag}|${scopedLevel}${keepVarsTag}|${parts.join('\n')}`;
+  return `${mode}${deltaTag}|${scopedTag}|${scopedLevel}${keepVarsTag}|${parts.join('\n')}`;
 }
 
 function __cloneGoalSolutions(solutions) {
@@ -10334,6 +10340,68 @@ function __reorderBodyForCost(goals, subst, facts, backRules) {
   return greedy;
 }
 
+// Semi-naive pruning for the forward sweep.
+//
+// A body match in which every goal binds a fact that already existed the last
+// time the rule ran was enumerated then, so its head is already known and the
+// match can only re-derive it. Those matches are dropped *inside* the naive
+// iteration order, so what survives stays in exactly the sequence the full
+// sweep would have visited it — the derived facts do not move.
+//
+// The gate is conservative for the same reasons goal reordering is: a goal a
+// backward rule or a builtin could answer has no single fact position to
+// attribute, so such a rule keeps the unpruned sweep.
+function __deltaEligibleGoals(goals, facts, backRules) {
+  if (!goals.length) return false;
+  for (let i = 0; i < goals.length; i++) {
+    const g = goals[i];
+    if (!__orderCandidateGoal(g, backRules)) return false;
+    if (__predicateIsMemoized(facts, backRules, g.p)) return false;
+  }
+  return true;
+}
+
+// Could this goal bind a fact at position >= deltaStart? Buckets are appended in
+// increasing position, so the last entry answers.
+function __goalHasNewFact(facts, goal, deltaStart) {
+  const varPred = facts.__varPred;
+  if (varPred.length && varPred[varPred.length - 1] >= deltaStart) return true;
+  const bucket = facts.__byPred.get(goal.p.__tid);
+  return !!(bucket && bucket.length && bucket[bucket.length - 1] >= deltaStart);
+}
+
+// restNew[m] — can any of the last m goals bind a new fact? Read at a goal to
+// decide whether that goal itself has to bind one.
+function __deltaRestNew(goals, facts, deltaStart) {
+  const restNew = new Array(goals.length + 1);
+  restNew[0] = false;
+  for (let m = 1; m <= goals.length; m++) {
+    restNew[m] = restNew[m - 1] || __goalHasNewFact(facts, goals[goals.length - m], deltaStart);
+  }
+  return restNew;
+}
+
+function __lowerBoundPos(bucket, lo, hi, want) {
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (bucket[mid] < want) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+// Next candidate offset worth trying once one below deltaMin was seen. The old
+// positions form a prefix of each bucket, so one binary search skips them all.
+function __deltaSkipAhead(candidates, offset, deltaMin) {
+  const exactLen = candidates.exactLen;
+  if (offset < exactLen) {
+    if (candidates.exact.__mixedOrder) return offset + 1;
+    return __lowerBoundPos(candidates.exact, offset + 1, exactLen, deltaMin);
+  }
+  if (candidates.wild.__mixedOrder) return offset + 1;
+  return exactLen + __lowerBoundPos(candidates.wild, offset - exactLen + 1, candidates.wildLen, deltaMin);
+}
+
 // With opts.onSolution the caller takes each solution as it is found and gets back
 // the count, so an answer set is never held as an array. Callers that omit it get
 // the array and behave exactly as before.
@@ -10389,6 +10457,18 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
     const reordered = __reorderBodyForCost(initialGoals, substMut, facts, backRules);
     if (reordered && reordered.length === initialGoals.length) {
       for (let i = 0; i < initialGoals.length; i++) initialGoals[i] = reordered[i];
+    }
+  }
+
+  // Computed after any reordering: restNew is indexed by how many goals are
+  // still to come, so it has to describe the order that actually runs.
+  let deltaStart = 0;
+  let deltaRestNew = null;
+  if (opts && typeof opts.deltaStart === 'number' && opts.deltaStart > 0) {
+    ensureFactIndexes(facts);
+    if (__deltaEligibleGoals(initialGoals, facts, backRules)) {
+      deltaStart = opts.deltaStart;
+      deltaRestNew = __deltaRestNew(initialGoals, facts, deltaStart);
     }
   }
 
@@ -10721,6 +10801,7 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
     curDepth: depth || 0,
     canDeferBuiltins: allowDeferredBuiltins,
     deferCount: 0,
+    anyNew: false,
   });
 
   while (stack.length && produced < max) {
@@ -10868,16 +10949,23 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
       const isIndexed = !!candidates;
 
       const iterLen = isIndexed ? candidates.totalLen : Math.min(factsList.length, factsLimit);
+      const deltaMin = frame.deltaMin;
 
       while (frame.idx < iterLen && produced < max) {
         let f;
+        let pos;
         if (isIndexed) {
           const idxNow = frame.idx++;
-          const pos = idxNow < candidates.exactLen ? candidates.exact[idxNow] : candidates.wild[idxNow - candidates.exactLen];
+          pos = idxNow < candidates.exactLen ? candidates.exact[idxNow] : candidates.wild[idxNow - candidates.exactLen];
+          if (pos < deltaMin) {
+            frame.idx = __deltaSkipAhead(candidates, idxNow, deltaMin);
+            continue;
+          }
           if (pos >= factsLimit) continue;
           f = factsList[pos];
         } else {
-          f = factsList[frame.idx++];
+          pos = frame.idx++;
+          f = factsList[pos];
         }
 
         const mark = trail.length;
@@ -10902,6 +10990,7 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
           curDepth: frame.curDepth + 1,
           canDeferBuiltins: frame.canDeferBuiltins,
           deferCount: 0,
+          anyNew: frame.anyNew !== false || pos >= deltaStart,
         });
         break;
       }
@@ -11060,6 +11149,20 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
       }
     }
 
+    // Nothing bound so far is new, and no goal still to come can bind a new
+    // fact, so this goal has to: any match it completes with an old fact was
+    // already enumerated on an earlier sweep.
+    // `=== false` on purpose: a frame that never carried the flag (a backward
+    // rule body, a deferred builtin) reads as "assume something is new" and so
+    // keeps the unpruned sweep.
+    const deltaMin =
+      deltaRestNew !== null &&
+      frame.anyNew === false &&
+      restGoals.length < deltaRestNew.length &&
+      !deltaRestNew[restGoals.length]
+        ? deltaStart
+        : 0;
+
     // 3) Backward rules (indexed by head predicate) — explored first
     if (goal0.p instanceof Iri) {
       if (memoReplayFrame) stack.push(memoReplayFrame);
@@ -11083,6 +11186,8 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
         restGoals,
         curDepth: frame.curDepth,
         canDeferBuiltins: frame.canDeferBuiltins,
+        deltaMin,
+        anyNew: frame.anyNew,
       });
 
       // Then push rule iterator
@@ -11113,6 +11218,8 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
         restGoals,
         curDepth: frame.curDepth,
         canDeferBuiltins: frame.canDeferBuiltins,
+        deltaMin: 0,
+        anyNew: frame.anyNew,
       });
     }
   }
@@ -11551,6 +11658,10 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
       let anyChange = false;
       let agendaIndex = makeSinglePremiseAgendaIndex(forwardRules, backRules);
       let agendaCursor = 0;
+      // facts.length when each rule last swept its body. Everything below that
+      // point it has already seen, so a match built only from those positions
+      // cannot conclude anything the sweep has not concluded.
+      const sweptAt = new Map();
 
       while (true) {
         let changed = false;
@@ -11617,6 +11728,10 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
             }
             continue;
           }
+
+          const sweptBefore = sweptAt.get(r);
+          sweptAt.set(r, facts.length);
+          if (sweptBefore !== undefined && sweptBefore > 0) proveOpts.deltaStart = sweptBefore;
 
           // Stream the body: a rule's peak is the closure plus one substitution
           // instead of the closure plus every substitution the body admits.
