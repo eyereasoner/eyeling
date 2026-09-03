@@ -1837,10 +1837,23 @@ const batch = [];
                   if (sawDelimiter || __hasRdfPayload(chunk)) emit();
                 }
 
+                function __isBlockedFetchUrl(u) {
+                  let parsed;
+                  try { parsed = new URL(u, location.href); } catch { return true; }
+                  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return true;
+                  const host = parsed.hostname.toLowerCase();
+                  if (!host || host === "localhost" || host.endsWith(".localhost")) return true;
+                  if (/^(?:127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(host)) return true;
+                  if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(host)) return true;
+                  if (host === "::1" || /^f[cd][0-9a-f]{0,2}:/i.test(host) || /^fe80:/i.test(host)) return true;
+                  return false;
+                }
+
                 async function __forEachRdfMessageChunkFromUrl(url, onMessage) {
                   const sourceUrl = String(url || "").trim();
                   if (!sourceUrl) throw new Error("--stream-messages needs an RDF Message Log URL or a small pasted message log in the editor.");
-                  const res = await fetch(sourceUrl, { cache: "no-store", referrerPolicy: "no-referrer", redirect: "follow" });
+                  if (__isBlockedFetchUrl(sourceUrl)) throw new Error("--stream-messages URL is not allowed: only public http(s) URLs are permitted, not private/internal/loopback addresses.");
+                  const res = await fetch(sourceUrl, { cache: "no-store", referrerPolicy: "no-referrer", redirect: "error" });
                   if (!res.ok) throw new Error("HTTP " + res.status + " when fetching RDF Message Log URL" + (res.url ? " (" + res.url + ")" : "") + ".");
                   if (!res.body || typeof res.body.getReader !== "function") {
                     return __forEachRdfMessageChunkInText(await res.text(), onMessage);
