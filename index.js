@@ -51,6 +51,7 @@ function reason(opt = {}, input = '') {
   }
   if (opt.storePath) args.push('--store-path', String(opt.storePath));
   if (opt.storeClear) args.push('--store-clear');
+  if (opt.maxFrames !== undefined) args.push('--max-frames', String(opt.maxFrames));
 
   if (Array.isArray(opt.args)) args.push(...opt.args);
 

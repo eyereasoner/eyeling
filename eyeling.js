@@ -6555,6 +6555,7 @@ async function main() {
       `  -d, --deterministic-skolem   Make log:skolem stable across reasoning runs.\n` +
       `  -e, --enforce-https          Rewrite http:// IRIs to https:// for log dereferencing builtins.\n` +
       `  -h, --help                   Show this help and exit.\n` +
+      `      --max-frames <n>         Backward-proof search frame limit (default ${engine.DEFAULT_MAX_SEARCH_FRAMES}; 0 removes it).\n` +
       `  -p, --proof                  Enable proof explanations.\n` +
       `  -r, --rdf                    Enable RDF/TriG input/output compatibility.\n` +
       `      --stream-messages        Process RDF Message Logs one message at a time under -r.\n` +
@@ -6625,6 +6626,22 @@ async function main() {
       argv.__storePath = a.slice('--store-path='.length);
       continue;
     }
+    if (a === '--max-frames' || (typeof a === 'string' && a.startsWith('--max-frames='))) {
+      let value;
+      if (a === '--max-frames') {
+        value = argv[i + 1];
+        i += 1;
+      } else {
+        value = a.slice('--max-frames='.length);
+      }
+      const n = Number(value);
+      if (value === undefined || !Number.isFinite(n) || n < 0) {
+        console.error('Error: --max-frames expects a non-negative number (0 removes the limit).');
+        process.exit(1);
+      }
+      argv.__maxFrames = n;
+      continue;
+    }
     if (a === '--store-clear') continue;
     if (a === '-' || !a.startsWith('-')) positional.push(a);
   }
@@ -6650,6 +6667,12 @@ async function main() {
   // --proof / -p: enable proof explanations as N3 proof graphs
   if (argv.includes('--proof') || argv.includes('--proof-comments') || argv.includes('-p')) {
     engine.setProofCommentsEnabled(true);
+  }
+
+  // --max-frames: bound the backward prover so a goal that cannot terminate
+  // reports itself instead of being aborted by V8 on an out-of-memory.
+  if (typeof argv.__maxFrames === 'number' && typeof engine.setMaxSearchFrames === 'function') {
+    engine.setMaxSearchFrames(argv.__maxFrames);
   }
 
   // --super-restricted / -s: disable all builtins except => / <=
@@ -7581,6 +7604,18 @@ const {
 // forbidden condition provable, rather than a generic usage/runtime error.
 const INFERENCE_FUSE_EXIT_CODE = 65;
 
+// sysexits' EX_TEMPFAIL: the reasoner stopped at a limit of its own rather than
+// being killed, so a caller can tell "did not finish" from "crashed".
+const SEARCH_LIMIT_EXIT_CODE = 75;
+
+// A backward proof that does not terminate grows the search stack until V8
+// aborts on an out-of-memory, which is not catchable and says nothing useful.
+// Frame depth is the right thing to bound: it separates the two cases cleanly.
+// Measured over examples/, the deepest terminating proof is fibonacci at ~99k
+// frames, while a saturating forward run over 50k facts peaks at 3 — the depth
+// tracks the length of the resolution chain, not the size of the workload.
+const DEFAULT_MAX_SEARCH_FRAMES = 1000000;
+
 // In N3/Turtle, rdf:nil is the canonical IRI for the empty RDF list.
 // Eyeling represents list literals with ListTerm; ensure rdf:nil unifies with ().
 const RDF_NIL_IRI = RDF_NS + 'nil';
@@ -8423,6 +8458,7 @@ function __computeConclusionFromFormula(formula) {
 let proofCommentsEnabled = false;
 // Super restricted mode: disable *all* builtins except => / <= (log:implies / log:impliedBy)
 let superRestrictedMode = false;
+let maxSearchFrames = DEFAULT_MAX_SEARCH_FRAMES;
 
 // Initialize builtin evaluation (implemented in lib/builtins.js).
 const { evalBuiltin, isBuiltinPred } = makeBuiltins({
@@ -10402,6 +10438,25 @@ function __deltaSkipAhead(candidates, offset, deltaMin) {
   return exactLen + __lowerBoundPos(candidates.wild, offset - exactLen + 1, candidates.wildLen, deltaMin);
 }
 
+// A goal that cannot terminate is reported here rather than left to V8, which
+// aborts on the out-of-memory with a native stack trace and no goal in it.
+function __exitSearchLimit(limit, frame) {
+  const goal = frame && frame.goal0 ? frame.goal0 : frame && frame.goalsNow && frame.goalsNow[0];
+  let where = '';
+  if (goal) {
+    try {
+      where = `\n  deepest goal: ${tripleToN3(goal, __defaultFusePrefixEnv())}`;
+    } catch {
+      where = '';
+    }
+  }
+  const msg =
+    `Backward proof exceeded ${limit} search frames — it is not making progress toward an answer.${where}\n` +
+    '  Raise the limit with --max-frames N, or pass 0 to remove it.';
+  if (typeof console !== 'undefined' && console && typeof console.error === 'function') console.error(msg);
+  __exitReasoning(SEARCH_LIMIT_EXIT_CODE, msg);
+}
+
 // With opts.onSolution the caller takes each solution as it is found and gets back
 // the count, so an answer set is never held as an array. Callers that omit it get
 // the array and behave exactly as before.
@@ -10444,6 +10499,7 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
   let memoBuf = onSolution ? [] : null;
 
   const factsLimit = __factsLimitOf(facts);
+  const frameLimit = maxSearchFrames;
 
   // IMPORTANT: Goal reordering / deferral is only enabled when explicitly
   // requested by the caller (used for forward rules).
@@ -10805,6 +10861,7 @@ function proveGoals(goals, subst, facts, backRules, depth, visited, varGen, maxR
   });
 
   while (stack.length && produced < max) {
+    if (stack.length > frameLimit) __exitSearchLimit(frameLimit, stack[stack.length - 1]);
     const frame = stack.pop();
 
     if (frame.kind === 'undo') {
@@ -12516,6 +12573,16 @@ function getSuperRestrictedMode() {
   return superRestrictedMode;
 }
 
+function getMaxSearchFrames() {
+  return maxSearchFrames;
+}
+
+// 0, or anything not a positive finite number, removes the limit.
+function setMaxSearchFrames(v) {
+  const n = typeof v === 'number' ? v : Number(v);
+  maxSearchFrames = Number.isFinite(n) && n > 0 ? Math.floor(n) : Infinity;
+}
+
 function setSuperRestrictedMode(v) {
   superRestrictedMode = !!v;
 }
@@ -12568,6 +12635,10 @@ module.exports = {
   loadBuiltinModule,
   listBuiltinIris,
   INFERENCE_FUSE_EXIT_CODE,
+  SEARCH_LIMIT_EXIT_CODE,
+  DEFAULT_MAX_SEARCH_FRAMES,
+  getMaxSearchFrames,
+  setMaxSearchFrames,
   createFactStore,
   MemoryFactStore,
   PersistentFactStore,

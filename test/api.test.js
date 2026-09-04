@@ -323,6 +323,58 @@ const cases = [
     },
   },
   {
+    name: '00r a backward proof that cannot terminate stops at its own limit (expect exit 75)',
+    // Right-recursive tc over a 2-cycle with a bound object. Without a limit the
+    // search stack grows until V8 aborts on an out-of-memory, which is not
+    // catchable and reports nothing useful.
+    opt: { proofComments: false, maxFrames: 3000 },
+    input: `
+@prefix : <http://example.org/> .
+:n1 :par :n2 .
+:n2 :par :n1 .
+{ ?X :tc ?Y } <= { ?X :par ?Y } .
+{ ?X :tc ?Y } <= { ?X :par ?Z . ?Z :tc ?Y } .
+{ ?X :tc :n1 } => { ?X :found :n1 } .
+`,
+    expectErrorCode: 75,
+  },
+  {
+    name: '00r the frame limit does not fire on a proof that terminates',
+    // Depth, not work: this recurses far enough to answer and stays well inside
+    // a limit that the diverging program above blows through immediately.
+    opt: { proofComments: false, maxFrames: 3000 },
+    input: `
+@prefix : <http://example.org/> .
+:n1 :par :n2 .
+:n2 :par :n3 .
+:n3 :par :n4 .
+{ ?X :tc ?Y } <= { ?X :par ?Y } .
+{ ?X :tc ?Y } <= { ?X :par ?Z . ?Z :tc ?Y } .
+{ :n1 :tc ?Y } => { :n1 :reaches ?Y } .
+`,
+    check(out) {
+      const s = String(out);
+      assert.match(s, /:n1\s+:reaches\s+:n2\s*\./);
+      assert.match(s, /:n1\s+:reaches\s+:n3\s*\./);
+      assert.match(s, /:n1\s+:reaches\s+:n4\s*\./);
+    },
+  },
+  {
+    name: '00r maxFrames 0 removes the limit',
+    opt: { proofComments: false, maxFrames: 0 },
+    input: `
+@prefix : <http://example.org/> .
+:n1 :par :n2 .
+:n2 :par :n3 .
+{ ?X :tc ?Y } <= { ?X :par ?Y } .
+{ ?X :tc ?Y } <= { ?X :par ?Z . ?Z :tc ?Y } .
+{ :n1 :tc ?Y } => { :n1 :reaches ?Y } .
+`,
+    check(out) {
+      assert.match(String(out), /:n1\s+:reaches\s+:n3\s*\./);
+    },
+  },
+  {
     name: '00t solution compaction keeps list bindings intact',
     // The fast path in emitSolution only handles bindings that cannot contain a
     // variable. A list has to fall back to the reachability walk.
