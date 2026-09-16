@@ -1,0 +1,22 @@
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix rr: <http://www.w3.org/ns/r2rml#> .
+@prefix : <http://example.org/#> .
+
+:m1 rr:class :c1 .
+:m2 rr:class :c1 .
+
+:s1 sh:class :c1 .
+:s2 sh:class :c1 .
+
+{
+    [] rr:class ?class .
+    (?x { ?x sh:class ?class} ?shapes) log:collectAllIn [] .
+    ?shapes list:length [ math:greaterThan 1 ] .
+
+} => {
+    [] sh:targetClass ?class ;
+        sh:or ?shapes
+} .

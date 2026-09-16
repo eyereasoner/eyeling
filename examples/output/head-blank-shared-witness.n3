@@ -1,0 +1,5 @@
+@prefix : <http://example.org/#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+
+_:sk_0 sh:targetClass :c1 .
+_:sk_0 sh:or (:s1 :s2) .
