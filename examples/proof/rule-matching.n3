@@ -6,7 +6,7 @@
 
 { :result :is true . } pe:why {
   { :result :is true . }
-    pe:by [ pe:rule "rule-matching.n3"; pe:line 8 ];
+    pe:rule 1;
     pe:binding
       [ pe:var "A"; pe:value {
           ?A__0 => ?B__1 .
@@ -30,5 +30,5 @@
         :result :is true .
     } .
 }
-    pe:by [ pe:builtin log:implies ].
+    pe:builtin log:implies.
 }.

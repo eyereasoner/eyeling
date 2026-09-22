@@ -24,20 +24,20 @@
         :test :is true .
     } .
 }
-    pe:by [ pe:rule "derived-rule.n3"; pe:line 11 ];
+    pe:rule 1;
     pe:binding [ pe:var "x"; pe:value :Minka ];
     pe:uses { :Minka a :Cat . }.
 
   { :Minka a :Cat . }
-    pe:by [ pe:fact "derived-rule.n3"; pe:line 8 ].
+    pe:fact "derived-rule.n3".
 }.
 
 { :test :is true . } pe:why {
   { :test :is true . }
-    pe:by [ pe:rule "derived-rule.n3"; pe:line 11 ];
+    pe:rule 2;
     pe:binding [ pe:var "y"; pe:value :Charly ];
     pe:uses { :Charly a :Dog . }.
 
   { :Charly a :Dog . }
-    pe:by [ pe:fact "derived-rule.n3"; pe:line 9 ].
+    pe:fact "derived-rule.n3".
 }.

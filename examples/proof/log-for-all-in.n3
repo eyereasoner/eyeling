@@ -7,7 +7,7 @@
 
 { :result :is true . } pe:why {
   { :result :is true . }
-    pe:by [ pe:rule "log-for-all-in.n3"; pe:line 14 ];
+    pe:rule 1;
     pe:binding [ pe:var "c"; pe:value :c ];
     pe:uses
       { :c a :CompositeTask . },
@@ -20,7 +20,7 @@
       }.
 
   { :c a :CompositeTask . }
-    pe:by [ pe:fact "log-for-all-in.n3"; pe:line 8 ].
+    pe:fact "log-for-all-in.n3".
 
   {
     ({
@@ -29,5 +29,5 @@
         ?s :state :Completed .
     }) log:forAllIn ?eyeling_b1 .
 }
-    pe:by [ pe:builtin log:forAllIn ].
+    pe:builtin log:forAllIn.
 }.

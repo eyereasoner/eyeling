@@ -10,7 +10,7 @@
 
 { ("Huey" "Dewey" "Louie") :iterate (0 "Huey") . } pe:why {
   { ("Huey" "Dewey" "Louie") :iterate (0 "Huey") . }
-    pe:by [ pe:rule "list-iterate.n3"; pe:line 11 ];
+    pe:rule 1;
     pe:binding
       [ pe:var "X"; pe:value ("Huey" "Dewey" "Louie") ],
       [ pe:var "Y"; pe:value (0 "Huey") ],
@@ -22,18 +22,18 @@
       { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . }.
 
   { :Let :param ("Huey" "Dewey" "Louie") . }
-    pe:by [ pe:fact "list-iterate.n3"; pe:line 9 ].
+    pe:fact "list-iterate.n3".
 
   { ("Huey" "Dewey" "Louie") list:iterate (0 "Huey") . }
-    pe:by [ pe:builtin list:iterate ].
+    pe:builtin list:iterate.
 
   { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . }
-    pe:by [ pe:builtin list:iterate ].
+    pe:builtin list:iterate.
 }.
 
 { "Dewey" :hasIndex 1 . } pe:why {
   { "Dewey" :hasIndex 1 . }
-    pe:by [ pe:rule "list-iterate.n3"; pe:line 11 ];
+    pe:rule 1;
     pe:binding
       [ pe:var "X"; pe:value ("Huey" "Dewey" "Louie") ],
       [ pe:var "Y"; pe:value (0 "Huey") ],
@@ -45,18 +45,18 @@
       { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . }.
 
   { :Let :param ("Huey" "Dewey" "Louie") . }
-    pe:by [ pe:fact "list-iterate.n3"; pe:line 9 ].
+    pe:fact "list-iterate.n3".
 
   { ("Huey" "Dewey" "Louie") list:iterate (0 "Huey") . }
-    pe:by [ pe:builtin list:iterate ].
+    pe:builtin list:iterate.
 
   { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . }
-    pe:by [ pe:builtin list:iterate ].
+    pe:builtin list:iterate.
 }.
 
 { ("Huey" "Dewey" "Louie") :iterate (1 "Dewey") . } pe:why {
   { ("Huey" "Dewey" "Louie") :iterate (1 "Dewey") . }
-    pe:by [ pe:rule "list-iterate.n3"; pe:line 11 ];
+    pe:rule 1;
     pe:binding
       [ pe:var "X"; pe:value ("Huey" "Dewey" "Louie") ],
       [ pe:var "Y"; pe:value (1 "Dewey") ],
@@ -68,15 +68,15 @@
       { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . }.
 
   { :Let :param ("Huey" "Dewey" "Louie") . }
-    pe:by [ pe:fact "list-iterate.n3"; pe:line 9 ].
+    pe:fact "list-iterate.n3".
 
   { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . }
-    pe:by [ pe:builtin list:iterate ].
+    pe:builtin list:iterate.
 }.
 
 { ("Huey" "Dewey" "Louie") :iterate (2 "Louie") . } pe:why {
   { ("Huey" "Dewey" "Louie") :iterate (2 "Louie") . }
-    pe:by [ pe:rule "list-iterate.n3"; pe:line 11 ];
+    pe:rule 1;
     pe:binding
       [ pe:var "X"; pe:value ("Huey" "Dewey" "Louie") ],
       [ pe:var "Y"; pe:value (2 "Louie") ],
@@ -88,18 +88,18 @@
       { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . }.
 
   { :Let :param ("Huey" "Dewey" "Louie") . }
-    pe:by [ pe:fact "list-iterate.n3"; pe:line 9 ].
+    pe:fact "list-iterate.n3".
 
   { ("Huey" "Dewey" "Louie") list:iterate (2 "Louie") . }
-    pe:by [ pe:builtin list:iterate ].
+    pe:builtin list:iterate.
 
   { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . }
-    pe:by [ pe:builtin list:iterate ].
+    pe:builtin list:iterate.
 }.
 
 { :test :is true . } pe:why {
   { :test :is true . }
-    pe:by [ pe:rule "list-iterate.n3"; pe:line 31 ];
+    pe:rule 2;
     pe:binding
       [ pe:var "X"; pe:value ("Huey" "Dewey" "Louie") ],
       [ pe:var "Y"; pe:value (0 "Huey") ];
@@ -108,7 +108,7 @@
       { "Dewey" :hasIndex 1 . }.
 
   { ("Huey" "Dewey" "Louie") :iterate (0 "Huey") . }
-    pe:by [ pe:rule "list-iterate.n3"; pe:line 11 ];
+    pe:rule 1;
     pe:binding
       [ pe:var "X"; pe:value ("Huey" "Dewey" "Louie") ],
       [ pe:var "Y"; pe:value (0 "Huey") ],
@@ -120,16 +120,16 @@
       { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . }.
 
   { :Let :param ("Huey" "Dewey" "Louie") . }
-    pe:by [ pe:fact "list-iterate.n3"; pe:line 9 ].
+    pe:fact "list-iterate.n3".
 
   { ("Huey" "Dewey" "Louie") list:iterate (0 "Huey") . }
-    pe:by [ pe:builtin list:iterate ].
+    pe:builtin list:iterate.
 
   { ("Huey" "Dewey" "Louie") list:iterate (1 "Dewey") . }
-    pe:by [ pe:builtin list:iterate ].
+    pe:builtin list:iterate.
 
   { "Dewey" :hasIndex 1 . }
-    pe:by [ pe:rule "list-iterate.n3"; pe:line 11 ];
+    pe:rule 1;
     pe:binding
       [ pe:var "X"; pe:value ("Huey" "Dewey" "Louie") ],
       [ pe:var "Y"; pe:value (0 "Huey") ],

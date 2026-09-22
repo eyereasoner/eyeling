@@ -35,7 +35,7 @@
         :Felix :says "Meow" .
     } .
 }
-    pe:by [ pe:rule "log-conclusion.n3"; pe:line 13 ];
+    pe:rule 1;
     pe:binding
       [ pe:var "conclusion"; pe:value {
           :Felix a :Cat .
@@ -94,7 +94,7 @@
         } .
     } .
 }
-    pe:by [ pe:fact "log-conclusion.n3"; pe:line 8 ].
+    pe:fact "log-conclusion.n3".
 
   {
     {
@@ -114,5 +114,5 @@
         :Felix :says "Meow" .
     } .
 }
-    pe:by [ pe:builtin log:conclusion ].
+    pe:builtin log:conclusion.
 }.

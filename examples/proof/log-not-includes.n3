@@ -13,11 +13,11 @@
 
 { :x :y 1 . } pe:why {
   { :x :y 1 . }
-    pe:by [ pe:rule "log-not-includes.n3"; pe:line 10 ];
+    pe:rule 1;
     pe:uses { 1 math:equalTo 1 . }.
 
   { 1 math:equalTo 1 . }
-    pe:by [ pe:builtin math:equalTo ].
+    pe:builtin math:equalTo.
 }.
 
 {
@@ -34,22 +34,22 @@
         :a :b :c .
     } .
 }
-    pe:by [ pe:rule "log-not-includes.n3"; pe:line 10 ];
+    pe:rule 1;
     pe:uses { 1 math:equalTo 1 . }.
 
   { 1 math:equalTo 1 . }
-    pe:by [ pe:builtin math:equalTo ].
+    pe:builtin math:equalTo.
 }.
 
 { :a :b :c . } pe:why {
   { :a :b :c . }
-    pe:by [ pe:rule "log-not-includes.n3"; pe:line 10 ];
+    pe:rule 3;
     pe:uses { :x :y 1 . }.
 
   { :x :y 1 . }
-    pe:by [ pe:rule "log-not-includes.n3"; pe:line 10 ];
+    pe:rule 1;
     pe:uses { 1 math:equalTo 1 . }.
 
   { 1 math:equalTo 1 . }
-    pe:by [ pe:builtin math:equalTo ].
+    pe:builtin math:equalTo.
 }.

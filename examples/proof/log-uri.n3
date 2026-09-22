@@ -7,7 +7,7 @@
 
 { :uriString :is "https://www.w3.org" . } pe:why {
   { :uriString :is "https://www.w3.org" . }
-    pe:by [ pe:rule "log-uri.n3"; pe:line 8 ];
+    pe:rule 1;
     pe:binding
       [ pe:var "r"; pe:value <https://www.w3.org> ],
       [ pe:var "s"; pe:value "https://www.w3.org" ];
@@ -16,12 +16,12 @@
       { <https://www.w3.org> log:uri "https://www.w3.org" . }.
 
   { <https://www.w3.org> log:uri "https://www.w3.org" . }
-    pe:by [ pe:builtin log:uri ].
+    pe:builtin log:uri.
 }.
 
 { :uriResource :is <https://www.w3.org> . } pe:why {
   { :uriResource :is <https://www.w3.org> . }
-    pe:by [ pe:rule "log-uri.n3"; pe:line 8 ];
+    pe:rule 1;
     pe:binding
       [ pe:var "r"; pe:value <https://www.w3.org> ],
       [ pe:var "s"; pe:value "https://www.w3.org" ];
@@ -30,5 +30,5 @@
       { <https://www.w3.org> log:uri "https://www.w3.org" . }.
 
   { <https://www.w3.org> log:uri "https://www.w3.org" . }
-    pe:by [ pe:builtin log:uri ].
+    pe:builtin log:uri.
 }.

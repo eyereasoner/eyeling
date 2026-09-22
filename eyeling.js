@@ -6943,7 +6943,7 @@ function factsContainOutputStrings(triplesForOutput) {
     }
 
     if (engine.getProofCommentsEnabled()) {
-      process.stdout.write(engine.renderProofDocument(storeOutDerived, storeDerived.concat(storeOutDerived || []), triples, prefixes, brules));
+      process.stdout.write(engine.renderProofDocument(storeOutDerived, storeDerived.concat(storeOutDerived || []), triples, prefixes, brules, frules.concat(qrules || [])));
       if (storeResult.store && typeof storeResult.store.close === 'function') await storeResult.store.close();
       return;
     }
@@ -7050,7 +7050,7 @@ function factsContainOutputStrings(triplesForOutput) {
   }
 
   if (engine.getProofCommentsEnabled()) {
-    process.stdout.write(engine.renderProofDocument(outDerived, derived.concat(outDerived || []), triples, prefixes, brules));
+    process.stdout.write(engine.renderProofDocument(outDerived, derived.concat(outDerived || []), triples, prefixes, brules, frules.concat(qrules || [])));
     return;
   }
 
@@ -12201,6 +12201,7 @@ function reasonStream(input, opts = {}) {
         triples,
         prefixes,
         brules,
+        frules.concat(logQueryRules || []),
       ).replace(/\n$/g, '')
     : useRdfCompatibility
       ? closureTriples.map((t) => tripleToRdfCompatible(t, prefixes)).join('\n')
@@ -12884,11 +12885,38 @@ ${lineIndent(body, '    ')}
     return `${sourceLabelForProof(source)}:${Number.isInteger(source.line) ? source.line : ''}`;
   }
 
-  function byBlankNode(kind, source) {
-    const src = source || {};
-    const props = [`pe:${kind} ${n3String(sourceLabelForProof(src))}`];
-    if (Number.isInteger(src.line) && src.line > 0) props.push(`pe:line ${src.line}`);
-    return `[ ${props.join('; ')} ]`;
+  // A proof step cites the rule it applied by that rule's number in the
+  // document, read in source order. eyeron, eyeleng and eyeprolog cite a
+  // rule the same way, so one step reads the same in all four.
+  function ruleNumbering(rules) {
+    const ordered = (rules || []).filter(Boolean).map((rule, index) => ({ rule, index }));
+    ordered.sort((a, b) => {
+      const ao = Number.isInteger(a.rule.__sourceOffset) ? a.rule.__sourceOffset : Infinity;
+      const bo = Number.isInteger(b.rule.__sourceOffset) ? b.rule.__sourceOffset : Infinity;
+      return ao - bo || a.index - b.index;
+    });
+    const byRule = new Map();
+    const bySource = new Map();
+    ordered.forEach(({ rule }, position) => {
+      const number = position + 1;
+      if (!byRule.has(rule)) byRule.set(rule, number);
+      const key = sourceKeyForProof(rule.__source);
+      if (key !== '<unknown>' && !bySource.has(key)) bySource.set(key, number);
+    });
+    return { byRule, bySource };
+  }
+
+  // Reasoning rewrites a rule's premises for backward chaining and rule
+  // generation, so the rule a derivation carries is not always the object
+  // the document holds; its source location still identifies it. A rule
+  // the engine generated at run time has no number to cite.
+  function ruleReference(rule, numbering) {
+    if (!rule || !numbering) return n3String('<unknown>');
+    const direct = numbering.byRule.get(rule);
+    if (direct) return String(direct);
+    const bySource = numbering.bySource.get(sourceKeyForProof(rule.__source));
+    if (bySource) return String(bySource);
+    return n3String('<unknown>');
   }
 
   function renderBindingItems(df, prefixes) {
@@ -13033,20 +13061,20 @@ ${lineIndent(body, '    ')}
     return out;
   }
 
-  function renderProofEntry(entry, prefixes) {
+  function renderProofEntry(entry, prefixes, numbering) {
     if (!entry) return '';
     if (entry.kind === 'fact') {
-      return `  ${graphForTriple(entry.fact, prefixes)}\n    pe:by ${byBlankNode('fact', entry.source)}.`;
+      return `  ${graphForTriple(entry.fact, prefixes)}\n    pe:fact ${n3String(sourceLabelForProof(entry.source))}.`;
     }
     if (entry.kind === 'builtin') {
-      return `  ${graphForTriple(entry.fact, prefixes)}\n    pe:by [ pe:builtin ${termToN3(entry.builtin, prefixes)} ].`;
+      return `  ${graphForTriple(entry.fact, prefixes)}\n    pe:builtin ${termToN3(entry.builtin, prefixes)}.`;
     }
 
     const df = entry.df;
     const bindingItems = renderBindingItems(df, prefixes);
     const useItems = (df.premises || []).map((prem) => graphForTriple(prem, prefixes));
     const propertyGroups = [
-      { predicate: 'pe:by', objects: [byBlankNode('rule', df.rule && df.rule.__source)] },
+      { predicate: 'pe:rule', objects: [ruleReference(df.rule, numbering)] },
       { predicate: 'pe:binding', objects: bindingItems },
       { predicate: 'pe:uses', objects: useItems },
     ].filter((group) => group.objects.length);
@@ -13059,17 +13087,17 @@ ${lineIndent(body, '    ')}
     return out.trimEnd();
   }
 
-  function renderProofBlock(rootDf, derivedByKey, baseFactByKey, prefixes, resolveBackwardProof) {
+  function renderProofBlock(rootDf, derivedByKey, baseFactByKey, prefixes, resolveBackwardProof, numbering) {
     const entries = collectProofEntries(rootDf, derivedByKey, baseFactByKey, resolveBackwardProof);
     const rootGraph = graphForTriple(rootDf.fact, prefixes);
-    const proofBody = entries.map((entry) => renderProofEntry(entry, prefixes)).join('\n\n');
+    const proofBody = entries.map((entry) => renderProofEntry(entry, prefixes, numbering)).join('\n\n');
     const proofGraph = proofBody ? `{
 ${proofBody}
 }` : '{}';
     return `${rootGraph} pe:why ${proofGraph}.`;
   }
 
-  function renderProofDocument(outputDerived, allDerived, baseFacts, prefixes, backRules) {
+  function renderProofDocument(outputDerived, allDerived, baseFacts, prefixes, backRules, documentRules) {
     const selectedDerived = Array.isArray(outputDerived) ? outputDerived.filter((df) => df && df.fact) : [];
     if (!selectedDerived.length) return '';
 
@@ -13099,14 +13127,18 @@ ${proofBody}
       ? (tr) => findBackwardProofForGoal(tr, baseFacts || [], backRules || [], { maxDepth: 64 })
       : null;
 
+    const numbering = ruleNumbering((documentRules || []).concat(backRules || []));
+
     const outputTriples = collectProofOutputTriples(selectedDerived);
     const proofRelationTriples = [];
     for (const df of selectedDerived) {
       proofRelationTriples.push({ s: new GraphTerm([df.fact]), p: new Iri(PE_NS + 'why'), o: new GraphTerm([]) });
       for (const entry of collectProofEntries(df, derivedByKey, baseFactByKey, resolveBackwardProof)) {
         const fact = entry.kind === 'rule' ? entry.df.fact : entry.fact;
-        const byObject = entry.kind === 'builtin' && entry.builtin ? entry.builtin : new Iri(PE_NS + 'source');
-        proofRelationTriples.push({ s: new GraphTerm([fact]), p: new Iri(PE_NS + 'by'), o: byObject });
+        // These stand-in triples only decide which prefixes the document
+        // declares; the rendered step carries the real justification.
+        const justification = entry.kind === 'builtin' && entry.builtin ? entry.builtin : new Iri(PE_NS + 'source');
+        proofRelationTriples.push({ s: new GraphTerm([fact]), p: new Iri(PE_NS + entry.kind), o: justification });
         if (entry.kind === 'rule') {
           for (const prem of entry.df.premises || []) proofRelationTriples.push({ s: new GraphTerm([fact]), p: new Iri(PE_NS + 'uses'), o: new GraphTerm([prem]) });
         }
@@ -13129,7 +13161,7 @@ ${proofBody}
     parts.push('');
     for (let i = 0; i < selectedDerived.length; i++) {
       if (i > 0) parts.push('');
-      parts.push(renderProofBlock(selectedDerived[i], derivedByKey, baseFactByKey, proofPrefixes, resolveBackwardProof));
+      parts.push(renderProofBlock(selectedDerived[i], derivedByKey, baseFactByKey, proofPrefixes, resolveBackwardProof, numbering));
     }
 
     return parts.join('\n').replace(/[ \t]+$/gm, '').replace(/\s*$/g, '') + '\n';

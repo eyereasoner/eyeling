@@ -7,7 +7,7 @@
 
 { :result :sameInverse (:x :i :j) . } pe:why {
   { :result :sameInverse (:x :i :j) . }
-    pe:by [ pe:rule "group-inverse-uniqueness.n3"; pe:line 167 ];
+    pe:rule 7;
     pe:binding
       [ pe:var "x"; pe:value :x ],
       [ pe:var "y"; pe:value :i ],
@@ -17,7 +17,7 @@
       { :i log:notEqualTo :j . }.
 
   { (:x :i :j) :sameInverse true . }
-    pe:by [ pe:rule "group-inverse-uniqueness.n3"; pe:line 138 ];
+    pe:rule 6;
     pe:binding
       [ pe:var "x"; pe:value :x ],
       [ pe:var "y"; pe:value :i ],
@@ -28,13 +28,13 @@
       { (:i :j) :sameTerm true . }.
 
   { :i :inverseOf :x . }
-    pe:by [ pe:fact "group-inverse-uniqueness.n3"; pe:line 158 ].
+    pe:fact "group-inverse-uniqueness.n3".
 
   { :j :inverseOf :x . }
-    pe:by [ pe:fact "group-inverse-uniqueness.n3"; pe:line 159 ].
+    pe:fact "group-inverse-uniqueness.n3".
 
   { (:i :j) :sameTerm true . }
-    pe:by [ pe:rule "group-inverse-uniqueness.n3"; pe:line 54 ];
+    pe:rule 1;
     pe:binding
       [ pe:var "a"; pe:value :j ],
       [ pe:var "ab"; pe:value :e ],
@@ -50,7 +50,7 @@
       { (:j :e) :mul :j . }.
 
   { (:j :x) :mul :e . }
-    pe:by [ pe:rule "group-inverse-uniqueness.n3"; pe:line 102 ];
+    pe:rule 5;
     pe:binding
       [ pe:var "x"; pe:value :x ],
       [ pe:var "y"; pe:value :j ];
@@ -60,21 +60,21 @@
       { :j :inverseOf :x . }.
 
   { :x :inG true . }
-    pe:by [ pe:fact "group-inverse-uniqueness.n3"; pe:line 153 ].
+    pe:fact "group-inverse-uniqueness.n3".
 
   { :j :inG true . }
-    pe:by [ pe:fact "group-inverse-uniqueness.n3"; pe:line 155 ].
+    pe:fact "group-inverse-uniqueness.n3".
 
   { (:e :i) :mul :i . }
-    pe:by [ pe:rule "group-inverse-uniqueness.n3"; pe:line 78 ];
+    pe:rule 3;
     pe:binding [ pe:var "a"; pe:value :i ];
     pe:uses { :i :inG true . }.
 
   { :i :inG true . }
-    pe:by [ pe:fact "group-inverse-uniqueness.n3"; pe:line 154 ].
+    pe:fact "group-inverse-uniqueness.n3".
 
   { (:x :i) :mul :e . }
-    pe:by [ pe:rule "group-inverse-uniqueness.n3"; pe:line 102 ];
+    pe:rule 5;
     pe:binding
       [ pe:var "x"; pe:value :x ],
       [ pe:var "y"; pe:value :i ];
@@ -84,17 +84,17 @@
       { :i :inverseOf :x . }.
 
   { (:j :e) :mul :j . }
-    pe:by [ pe:rule "group-inverse-uniqueness.n3"; pe:line 89 ];
+    pe:rule 4;
     pe:binding [ pe:var "a"; pe:value :j ];
     pe:uses { :j :inG true . }.
 
   { :i log:notEqualTo :j . }
-    pe:by [ pe:builtin log:notEqualTo ].
+    pe:builtin log:notEqualTo.
 }.
 
 { :result :sameInverse (:x :j :i) . } pe:why {
   { :result :sameInverse (:x :j :i) . }
-    pe:by [ pe:rule "group-inverse-uniqueness.n3"; pe:line 167 ];
+    pe:rule 7;
     pe:binding
       [ pe:var "x"; pe:value :x ],
       [ pe:var "y"; pe:value :j ],
@@ -104,7 +104,7 @@
       { :j log:notEqualTo :i . }.
 
   { (:x :j :i) :sameInverse true . }
-    pe:by [ pe:rule "group-inverse-uniqueness.n3"; pe:line 138 ];
+    pe:rule 6;
     pe:binding
       [ pe:var "x"; pe:value :x ],
       [ pe:var "y"; pe:value :j ],
@@ -115,13 +115,13 @@
       { (:j :i) :sameTerm true . }.
 
   { :j :inverseOf :x . }
-    pe:by [ pe:fact "group-inverse-uniqueness.n3"; pe:line 159 ].
+    pe:fact "group-inverse-uniqueness.n3".
 
   { :i :inverseOf :x . }
-    pe:by [ pe:fact "group-inverse-uniqueness.n3"; pe:line 158 ].
+    pe:fact "group-inverse-uniqueness.n3".
 
   { (:j :i) :sameTerm true . }
-    pe:by [ pe:rule "group-inverse-uniqueness.n3"; pe:line 54 ];
+    pe:rule 1;
     pe:binding
       [ pe:var "a"; pe:value :i ],
       [ pe:var "ab"; pe:value :e ],
@@ -137,7 +137,7 @@
       { (:i :e) :mul :i . }.
 
   { (:i :x) :mul :e . }
-    pe:by [ pe:rule "group-inverse-uniqueness.n3"; pe:line 102 ];
+    pe:rule 5;
     pe:binding
       [ pe:var "x"; pe:value :x ],
       [ pe:var "y"; pe:value :i ];
@@ -147,21 +147,21 @@
       { :i :inverseOf :x . }.
 
   { :x :inG true . }
-    pe:by [ pe:fact "group-inverse-uniqueness.n3"; pe:line 153 ].
+    pe:fact "group-inverse-uniqueness.n3".
 
   { :i :inG true . }
-    pe:by [ pe:fact "group-inverse-uniqueness.n3"; pe:line 154 ].
+    pe:fact "group-inverse-uniqueness.n3".
 
   { (:e :j) :mul :j . }
-    pe:by [ pe:rule "group-inverse-uniqueness.n3"; pe:line 78 ];
+    pe:rule 3;
     pe:binding [ pe:var "a"; pe:value :j ];
     pe:uses { :j :inG true . }.
 
   { :j :inG true . }
-    pe:by [ pe:fact "group-inverse-uniqueness.n3"; pe:line 155 ].
+    pe:fact "group-inverse-uniqueness.n3".
 
   { (:x :j) :mul :e . }
-    pe:by [ pe:rule "group-inverse-uniqueness.n3"; pe:line 102 ];
+    pe:rule 5;
     pe:binding
       [ pe:var "x"; pe:value :x ],
       [ pe:var "y"; pe:value :j ];
@@ -171,10 +171,10 @@
       { :j :inverseOf :x . }.
 
   { (:i :e) :mul :i . }
-    pe:by [ pe:rule "group-inverse-uniqueness.n3"; pe:line 89 ];
+    pe:rule 4;
     pe:binding [ pe:var "a"; pe:value :i ];
     pe:uses { :i :inG true . }.
 
   { :j log:notEqualTo :i . }
-    pe:by [ pe:builtin log:notEqualTo ].
+    pe:builtin log:notEqualTo.
 }.

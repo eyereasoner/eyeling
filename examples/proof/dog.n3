@@ -7,7 +7,7 @@
 
 { :alice :mustHave :dogLicense . } pe:why {
   { :alice :mustHave :dogLicense . }
-    pe:by [ pe:rule "dog.n3"; pe:line 13 ];
+    pe:rule 1;
     pe:binding
       [ pe:var "Any"; pe:value :dog1 ],
       [ pe:var "Count"; pe:value 5 ],
@@ -24,18 +24,18 @@
       { 5 math:greaterThan 4 . }.
 
   { :alice :hasDog :dog1 . }
-    pe:by [ pe:fact "dog.n3"; pe:line 10 ].
+    pe:fact "dog.n3".
 
   {
     (1 {
         :alice :hasDog ?Dog .
     } (1 1 1 1 1)) log:collectAllIn ?Scope .
 }
-    pe:by [ pe:builtin log:collectAllIn ].
+    pe:builtin log:collectAllIn.
 
   { (1 1 1 1 1) math:sum 5 . }
-    pe:by [ pe:builtin math:sum ].
+    pe:builtin math:sum.
 
   { 5 math:greaterThan 4 . }
-    pe:by [ pe:builtin math:greaterThan ].
+    pe:builtin math:greaterThan.
 }.
