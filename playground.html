@@ -3182,21 +3182,21 @@ const batch = [];
           return {
             get() {
               try {
-                return String(localStorage.getItem(GITHUB_GIST_API_TOKEN_KEY) || '').trim();
+                return String(sessionStorage.getItem(GITHUB_GIST_API_TOKEN_KEY) || '').trim();
               } catch (e) {
                 return '';
               }
             },
             set(token) {
               try {
-                localStorage.setItem(GITHUB_GIST_API_TOKEN_KEY, String(token || '').trim());
+                sessionStorage.setItem(GITHUB_GIST_API_TOKEN_KEY, String(token || '').trim());
               } catch (e) {
                 // Optional local convenience only.
               }
             },
             clear() {
               try {
-                localStorage.removeItem(GITHUB_GIST_API_TOKEN_KEY);
+                sessionStorage.removeItem(GITHUB_GIST_API_TOKEN_KEY);
               } catch (e) {
                 // Ignore localStorage failures.
               }
