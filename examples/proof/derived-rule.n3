@@ -11,33 +11,23 @@
 :test :is true .
 
 {
-    {
-        ?y a :Dog .
-    } => {
-        :test :is true .
-    } .
-} pe:why {
   {
-    {
-        ?y a :Dog .
-    } => {
-        :test :is true .
-    } .
+      ?y a :Dog .
+  } => {
+      :test :is true .
+  } .
 }
-    pe:rule 1;
-    pe:binding [ pe:var "x"; pe:value :Minka ];
-    pe:uses { :Minka a :Cat . }.
+  pe:rule 1;
+  pe:binding [ pe:var "x"; pe:value :Minka ];
+  pe:uses { :Minka a :Cat . }.
 
-  { :Minka a :Cat . }
-    pe:fact "derived-rule.n3".
-}.
+{ :Minka a :Cat . }
+  pe:fact "derived-rule.n3".
 
-{ :test :is true . } pe:why {
-  { :test :is true . }
-    pe:rule 2;
-    pe:binding [ pe:var "y"; pe:value :Charly ];
-    pe:uses { :Charly a :Dog . }.
+{ :test :is true . }
+  pe:rule 2;
+  pe:binding [ pe:var "y"; pe:value :Charly ];
+  pe:uses { :Charly a :Dog . }.
 
-  { :Charly a :Dog . }
-    pe:fact "derived-rule.n3".
-}.
+{ :Charly a :Dog . }
+  pe:fact "derived-rule.n3".

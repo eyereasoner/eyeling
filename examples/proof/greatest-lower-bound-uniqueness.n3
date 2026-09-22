@@ -5,164 +5,116 @@
 :result :sameGreatestLowerBound (:a :b :g1 :g2) .
 :result :sameGreatestLowerBound (:a :b :g2 :g1) .
 
-{ :result :sameGreatestLowerBound (:a :b :g1 :g2) . } pe:why {
-  { :result :sameGreatestLowerBound (:a :b :g1 :g2) . }
-    pe:rule 8;
-    pe:binding
-      [ pe:var "a"; pe:value :a ],
-      [ pe:var "b"; pe:value :b ],
-      [ pe:var "m"; pe:value :g1 ],
-      [ pe:var "n"; pe:value :g2 ];
-    pe:uses
-      { (:a :b :g1 :g2) :sameGlb true . },
-      { :g1 log:notEqualTo :g2 . }.
+{ :result :sameGreatestLowerBound (:a :b :g1 :g2) . }
+  pe:rule 8;
+  pe:binding
+    [ pe:var "a"; pe:value :a ],
+    [ pe:var "b"; pe:value :b ],
+    [ pe:var "m"; pe:value :g1 ],
+    [ pe:var "n"; pe:value :g2 ];
+  pe:uses
+    { (:a :b :g1 :g2) :sameGlb true . },
+    { :g1 log:notEqualTo :g2 . }.
 
-  { (:a :b :g1 :g2) :sameGlb true . }
-    pe:rule 7;
-    pe:binding
-      [ pe:var "a"; pe:value :a ],
-      [ pe:var "b"; pe:value :b ],
-      [ pe:var "m"; pe:value :g1 ],
-      [ pe:var "n"; pe:value :g2 ];
-    pe:uses
-      { :g1 :glbOf (:a :b) . },
-      { :g2 :glbOf (:a :b) . },
-      { (:g1 :g2) :sameTerm true . }.
+{ (:a :b :g1 :g2) :sameGlb true . }
+  pe:rule 7;
+  pe:binding
+    [ pe:var "a"; pe:value :a ],
+    [ pe:var "b"; pe:value :b ],
+    [ pe:var "m"; pe:value :g1 ],
+    [ pe:var "n"; pe:value :g2 ];
+  pe:uses
+    { :g1 :glbOf (:a :b) . },
+    { :g2 :glbOf (:a :b) . },
+    { (:g1 :g2) :sameTerm true . }.
 
-  { :g1 :glbOf (:a :b) . }
-    pe:fact "greatest-lower-bound-uniqueness.n3".
+{ :g1 :glbOf (:a :b) . }
+  pe:fact "greatest-lower-bound-uniqueness.n3".
 
-  { :g2 :glbOf (:a :b) . }
-    pe:fact "greatest-lower-bound-uniqueness.n3".
+{ :g2 :glbOf (:a :b) . }
+  pe:fact "greatest-lower-bound-uniqueness.n3".
 
-  { (:g1 :g2) :sameTerm true . }
-    pe:rule 3;
-    pe:binding
-      [ pe:var "x"; pe:value :g1 ],
-      [ pe:var "y"; pe:value :g2 ];
-    pe:uses
-      { :g1 :leq :g2 . },
-      { :g2 :leq :g1 . }.
+{ (:g1 :g2) :sameTerm true . }
+  pe:rule 3;
+  pe:binding
+    [ pe:var "x"; pe:value :g1 ],
+    [ pe:var "y"; pe:value :g2 ];
+  pe:uses
+    { :g1 :leq :g2 . },
+    { :g2 :leq :g1 . }.
 
-  { :g1 :leq :g2 . }
-    pe:rule 6;
-    pe:binding
-      [ pe:var "a"; pe:value :a ],
-      [ pe:var "b"; pe:value :b ],
-      [ pe:var "l"; pe:value :g1 ],
-      [ pe:var "m"; pe:value :g2 ];
-    pe:uses
-      { :g2 :glbOf (:a :b) . },
-      { :g1 :lowerBoundOf (:a :b) . }.
+{ :g1 :leq :g2 . }
+  pe:rule 6;
+  pe:binding
+    [ pe:var "a"; pe:value :a ],
+    [ pe:var "b"; pe:value :b ],
+    [ pe:var "l"; pe:value :g1 ],
+    [ pe:var "m"; pe:value :g2 ];
+  pe:uses
+    { :g2 :glbOf (:a :b) . },
+    { :g1 :lowerBoundOf (:a :b) . }.
 
-  { :g1 :lowerBoundOf (:a :b) . }
-    pe:rule 5;
-    pe:binding
-      [ pe:var "a"; pe:value :a ],
-      [ pe:var "b"; pe:value :b ],
-      [ pe:var "m"; pe:value :g1 ];
-    pe:uses { :g1 :glbOf (:a :b) . }.
+{ :g1 :lowerBoundOf (:a :b) . }
+  pe:rule 5;
+  pe:binding
+    [ pe:var "a"; pe:value :a ],
+    [ pe:var "b"; pe:value :b ],
+    [ pe:var "m"; pe:value :g1 ];
+  pe:uses { :g1 :glbOf (:a :b) . }.
 
-  { :g2 :leq :g1 . }
-    pe:rule 6;
-    pe:binding
-      [ pe:var "a"; pe:value :a ],
-      [ pe:var "b"; pe:value :b ],
-      [ pe:var "l"; pe:value :g2 ],
-      [ pe:var "m"; pe:value :g1 ];
-    pe:uses
-      { :g1 :glbOf (:a :b) . },
-      { :g2 :lowerBoundOf (:a :b) . }.
+{ :g2 :leq :g1 . }
+  pe:rule 6;
+  pe:binding
+    [ pe:var "a"; pe:value :a ],
+    [ pe:var "b"; pe:value :b ],
+    [ pe:var "l"; pe:value :g2 ],
+    [ pe:var "m"; pe:value :g1 ];
+  pe:uses
+    { :g1 :glbOf (:a :b) . },
+    { :g2 :lowerBoundOf (:a :b) . }.
 
-  { :g2 :lowerBoundOf (:a :b) . }
-    pe:rule 5;
-    pe:binding
-      [ pe:var "a"; pe:value :a ],
-      [ pe:var "b"; pe:value :b ],
-      [ pe:var "m"; pe:value :g2 ];
-    pe:uses { :g2 :glbOf (:a :b) . }.
+{ :g2 :lowerBoundOf (:a :b) . }
+  pe:rule 5;
+  pe:binding
+    [ pe:var "a"; pe:value :a ],
+    [ pe:var "b"; pe:value :b ],
+    [ pe:var "m"; pe:value :g2 ];
+  pe:uses { :g2 :glbOf (:a :b) . }.
 
-  { :g1 log:notEqualTo :g2 . }
-    pe:builtin log:notEqualTo.
-}.
+{ :g1 log:notEqualTo :g2 . }
+  pe:builtin log:notEqualTo.
 
-{ :result :sameGreatestLowerBound (:a :b :g2 :g1) . } pe:why {
-  { :result :sameGreatestLowerBound (:a :b :g2 :g1) . }
-    pe:rule 8;
-    pe:binding
-      [ pe:var "a"; pe:value :a ],
-      [ pe:var "b"; pe:value :b ],
-      [ pe:var "m"; pe:value :g2 ],
-      [ pe:var "n"; pe:value :g1 ];
-    pe:uses
-      { (:a :b :g2 :g1) :sameGlb true . },
-      { :g2 log:notEqualTo :g1 . }.
+{ :result :sameGreatestLowerBound (:a :b :g2 :g1) . }
+  pe:rule 8;
+  pe:binding
+    [ pe:var "a"; pe:value :a ],
+    [ pe:var "b"; pe:value :b ],
+    [ pe:var "m"; pe:value :g2 ],
+    [ pe:var "n"; pe:value :g1 ];
+  pe:uses
+    { (:a :b :g2 :g1) :sameGlb true . },
+    { :g2 log:notEqualTo :g1 . }.
 
-  { (:a :b :g2 :g1) :sameGlb true . }
-    pe:rule 7;
-    pe:binding
-      [ pe:var "a"; pe:value :a ],
-      [ pe:var "b"; pe:value :b ],
-      [ pe:var "m"; pe:value :g2 ],
-      [ pe:var "n"; pe:value :g1 ];
-    pe:uses
-      { :g2 :glbOf (:a :b) . },
-      { :g1 :glbOf (:a :b) . },
-      { (:g2 :g1) :sameTerm true . }.
+{ (:a :b :g2 :g1) :sameGlb true . }
+  pe:rule 7;
+  pe:binding
+    [ pe:var "a"; pe:value :a ],
+    [ pe:var "b"; pe:value :b ],
+    [ pe:var "m"; pe:value :g2 ],
+    [ pe:var "n"; pe:value :g1 ];
+  pe:uses
+    { :g2 :glbOf (:a :b) . },
+    { :g1 :glbOf (:a :b) . },
+    { (:g2 :g1) :sameTerm true . }.
 
-  { :g2 :glbOf (:a :b) . }
-    pe:fact "greatest-lower-bound-uniqueness.n3".
+{ (:g2 :g1) :sameTerm true . }
+  pe:rule 3;
+  pe:binding
+    [ pe:var "x"; pe:value :g2 ],
+    [ pe:var "y"; pe:value :g1 ];
+  pe:uses
+    { :g2 :leq :g1 . },
+    { :g1 :leq :g2 . }.
 
-  { :g1 :glbOf (:a :b) . }
-    pe:fact "greatest-lower-bound-uniqueness.n3".
-
-  { (:g2 :g1) :sameTerm true . }
-    pe:rule 3;
-    pe:binding
-      [ pe:var "x"; pe:value :g2 ],
-      [ pe:var "y"; pe:value :g1 ];
-    pe:uses
-      { :g2 :leq :g1 . },
-      { :g1 :leq :g2 . }.
-
-  { :g2 :leq :g1 . }
-    pe:rule 6;
-    pe:binding
-      [ pe:var "a"; pe:value :a ],
-      [ pe:var "b"; pe:value :b ],
-      [ pe:var "l"; pe:value :g2 ],
-      [ pe:var "m"; pe:value :g1 ];
-    pe:uses
-      { :g1 :glbOf (:a :b) . },
-      { :g2 :lowerBoundOf (:a :b) . }.
-
-  { :g2 :lowerBoundOf (:a :b) . }
-    pe:rule 5;
-    pe:binding
-      [ pe:var "a"; pe:value :a ],
-      [ pe:var "b"; pe:value :b ],
-      [ pe:var "m"; pe:value :g2 ];
-    pe:uses { :g2 :glbOf (:a :b) . }.
-
-  { :g1 :leq :g2 . }
-    pe:rule 6;
-    pe:binding
-      [ pe:var "a"; pe:value :a ],
-      [ pe:var "b"; pe:value :b ],
-      [ pe:var "l"; pe:value :g1 ],
-      [ pe:var "m"; pe:value :g2 ];
-    pe:uses
-      { :g2 :glbOf (:a :b) . },
-      { :g1 :lowerBoundOf (:a :b) . }.
-
-  { :g1 :lowerBoundOf (:a :b) . }
-    pe:rule 5;
-    pe:binding
-      [ pe:var "a"; pe:value :a ],
-      [ pe:var "b"; pe:value :b ],
-      [ pe:var "m"; pe:value :g1 ];
-    pe:uses { :g1 :glbOf (:a :b) . }.
-
-  { :g2 log:notEqualTo :g1 . }
-    pe:builtin log:notEqualTo.
-}.
+{ :g2 log:notEqualTo :g1 . }
+  pe:builtin log:notEqualTo.

@@ -12967,7 +12967,10 @@ ${lineIndent(body, '    ')}
     return `fact:${proofTripleKey(entry.fact)}:${sourceKeyForProof(entry.source)}`;
   }
 
-  function collectProofEntries(rootDf, derivedByKey, baseFactByKey, resolveBackwardProof) {
+  // One walk across every claim, not one per claim: a premise shared by
+  // several derivations is explained once, so a proof stays linear in the
+  // size of the derivation it explains rather than growing with its square.
+  function collectAllProofEntries(roots, derivedByKey, baseFactByKey, resolveBackwardProof) {
     const entries = [];
     const seen = new Set();
 
@@ -13044,7 +13047,7 @@ ${lineIndent(body, '    ')}
       for (const prem of df.premises || []) visitFactTriple(prem, df);
     }
 
-    visitDerivedFact(rootDf);
+    for (const root of roots || []) visitDerivedFact(root);
     return entries;
   }
 
@@ -13087,14 +13090,11 @@ ${lineIndent(body, '    ')}
     return out.trimEnd();
   }
 
-  function renderProofBlock(rootDf, derivedByKey, baseFactByKey, prefixes, resolveBackwardProof, numbering) {
-    const entries = collectProofEntries(rootDf, derivedByKey, baseFactByKey, resolveBackwardProof);
-    const rootGraph = graphForTriple(rootDf.fact, prefixes);
-    const proofBody = entries.map((entry) => renderProofEntry(entry, prefixes, numbering)).join('\n\n');
-    const proofGraph = proofBody ? `{
-${proofBody}
-}` : '{}';
-    return `${rootGraph} pe:why ${proofGraph}.`;
+  // A step is built for the two-space indent it needs inside a `DATA { ... }`
+  // block, which is how the SPARQL-RL rendering uses these same helpers. An
+  // N3 step stands at the margin, so the indent comes back off here.
+  function outdent(block) {
+    return String(block).split(/\r?\n/).map((line) => (line.startsWith('  ') ? line.slice(2) : line)).join('\n');
   }
 
   function renderProofDocument(outputDerived, allDerived, baseFacts, prefixes, backRules, documentRules) {
@@ -13130,18 +13130,16 @@ ${proofBody}
     const numbering = ruleNumbering((documentRules || []).concat(backRules || []));
 
     const outputTriples = collectProofOutputTriples(selectedDerived);
+    const entries = collectAllProofEntries(selectedDerived, derivedByKey, baseFactByKey, resolveBackwardProof);
     const proofRelationTriples = [];
-    for (const df of selectedDerived) {
-      proofRelationTriples.push({ s: new GraphTerm([df.fact]), p: new Iri(PE_NS + 'why'), o: new GraphTerm([]) });
-      for (const entry of collectProofEntries(df, derivedByKey, baseFactByKey, resolveBackwardProof)) {
-        const fact = entry.kind === 'rule' ? entry.df.fact : entry.fact;
-        // These stand-in triples only decide which prefixes the document
-        // declares; the rendered step carries the real justification.
-        const justification = entry.kind === 'builtin' && entry.builtin ? entry.builtin : new Iri(PE_NS + 'source');
-        proofRelationTriples.push({ s: new GraphTerm([fact]), p: new Iri(PE_NS + entry.kind), o: justification });
-        if (entry.kind === 'rule') {
-          for (const prem of entry.df.premises || []) proofRelationTriples.push({ s: new GraphTerm([fact]), p: new Iri(PE_NS + 'uses'), o: new GraphTerm([prem]) });
-        }
+    for (const entry of entries) {
+      const fact = entry.kind === 'rule' ? entry.df.fact : entry.fact;
+      // These stand-in triples only decide which prefixes the document
+      // declares; the rendered step carries the real justification.
+      const justification = entry.kind === 'builtin' && entry.builtin ? entry.builtin : new Iri(PE_NS + 'source');
+      proofRelationTriples.push({ s: new GraphTerm([fact]), p: new Iri(PE_NS + entry.kind), o: justification });
+      if (entry.kind === 'rule') {
+        for (const prem of entry.df.premises || []) proofRelationTriples.push({ s: new GraphTerm([fact]), p: new Iri(PE_NS + 'uses'), o: new GraphTerm([prem]) });
       }
     }
 
@@ -13158,10 +13156,12 @@ ${proofBody}
     if (parts.length) parts.push('');
 
     parts.push(...outputTriples.map((tr) => tripleToN3(tr, proofPrefixes)));
-    parts.push('');
-    for (let i = 0; i < selectedDerived.length; i++) {
-      if (i > 0) parts.push('');
-      parts.push(renderProofBlock(selectedDerived[i], derivedByKey, baseFactByKey, proofPrefixes, resolveBackwardProof, numbering));
+    // Each step is an ordinary top-level triple whose subject is its own
+    // quoted conclusion, so a proof document reads -- and re-reads, when fed
+    // back to the reasoner -- as plain facts about the claims it explains.
+    for (const entry of entries) {
+      parts.push('');
+      parts.push(outdent(renderProofEntry(entry, proofPrefixes, numbering)));
     }
 
     return parts.join('\n').replace(/[ \t]+$/gm, '').replace(/\s*$/g, '') + '\n';

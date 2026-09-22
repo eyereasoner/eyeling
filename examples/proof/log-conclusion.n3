@@ -14,7 +14,19 @@
 } .
 
 {
-    :result :is {
+  :result :is {
+      :Felix a :Cat .
+      {
+          ?X a :Cat .
+      } => {
+          ?X :says "Meow" .
+      } .
+      :Felix :says "Meow" .
+  } .
+}
+  pe:rule 1;
+  pe:binding
+    [ pe:var "conclusion"; pe:value {
         :Felix a :Cat .
         {
             ?X a :Cat .
@@ -22,97 +34,73 @@
             ?X :says "Meow" .
         } .
         :Felix :says "Meow" .
-    } .
-} pe:why {
-  {
-    :result :is {
+    } ],
+    [ pe:var "param"; pe:value {
         :Felix a :Cat .
         {
             ?X a :Cat .
         } => {
             ?X :says "Meow" .
         } .
-        :Felix :says "Meow" .
-    } .
-}
-    pe:rule 1;
-    pe:binding
-      [ pe:var "conclusion"; pe:value {
-          :Felix a :Cat .
-          {
-              ?X a :Cat .
-          } => {
-              ?X :says "Meow" .
-          } .
-          :Felix :says "Meow" .
-      } ],
-      [ pe:var "param"; pe:value {
-          :Felix a :Cat .
-          {
-              ?X a :Cat .
-          } => {
-              ?X :says "Meow" .
-          } .
-      } ];
-    pe:uses
-      {
-          :let :param {
-              :Felix a :Cat .
-              {
-                  ?X a :Cat .
-              } => {
-                  ?X :says "Meow" .
-              } .
-          } .
-      },
-      {
-          {
-              :Felix a :Cat .
-              {
-                  ?X a :Cat .
-              } => {
-                  ?X :says "Meow" .
-              } .
-          } log:conclusion {
-              :Felix a :Cat .
-              {
-                  ?X a :Cat .
-              } => {
-                  ?X :says "Meow" .
-              } .
-              :Felix :says "Meow" .
-          } .
-      }.
-
-  {
-    :let :param {
-        :Felix a :Cat .
-        {
-            ?X a :Cat .
-        } => {
-            ?X :says "Meow" .
-        } .
-    } .
-}
-    pe:fact "log-conclusion.n3".
-
-  {
+    } ];
+  pe:uses
     {
-        :Felix a :Cat .
-        {
-            ?X a :Cat .
-        } => {
-            ?X :says "Meow" .
+        :let :param {
+            :Felix a :Cat .
+            {
+                ?X a :Cat .
+            } => {
+                ?X :says "Meow" .
+            } .
         } .
-    } log:conclusion {
-        :Felix a :Cat .
+    },
+    {
         {
-            ?X a :Cat .
-        } => {
-            ?X :says "Meow" .
+            :Felix a :Cat .
+            {
+                ?X a :Cat .
+            } => {
+                ?X :says "Meow" .
+            } .
+        } log:conclusion {
+            :Felix a :Cat .
+            {
+                ?X a :Cat .
+            } => {
+                ?X :says "Meow" .
+            } .
+            :Felix :says "Meow" .
         } .
-        :Felix :says "Meow" .
-    } .
+    }.
+
+{
+  :let :param {
+      :Felix a :Cat .
+      {
+          ?X a :Cat .
+      } => {
+          ?X :says "Meow" .
+      } .
+  } .
 }
-    pe:builtin log:conclusion.
-}.
+  pe:fact "log-conclusion.n3".
+
+{
+  {
+      :Felix a :Cat .
+      {
+          ?X a :Cat .
+      } => {
+          ?X :says "Meow" .
+      } .
+  } log:conclusion {
+      :Felix a :Cat .
+      {
+          ?X a :Cat .
+      } => {
+          ?X :says "Meow" .
+      } .
+      :Felix :says "Meow" .
+  } .
+}
+  pe:builtin log:conclusion.

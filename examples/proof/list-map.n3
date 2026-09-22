@@ -7,38 +7,30 @@
 :test3 :is true .
 :test4 :is true .
 
-{ :test1 :is true . } pe:why {
-  { :test1 :is true . }
-    pe:rule 1;
-    pe:uses { ((:s1 :s2) :p1) list:map (:o1 :o2) . }.
+{ :test1 :is true . }
+  pe:rule 1;
+  pe:uses { ((:s1 :s2) :p1) list:map (:o1 :o2) . }.
 
-  { ((:s1 :s2) :p1) list:map (:o1 :o2) . }
-    pe:builtin list:map.
-}.
+{ ((:s1 :s2) :p1) list:map (:o1 :o2) . }
+  pe:builtin list:map.
 
-{ :test2 :is true . } pe:why {
-  { :test2 :is true . }
-    pe:rule 2;
-    pe:uses { ((:s1 :s2 :s3) :p1) list:map (:o1 :o2 :o3 :o4) . }.
+{ :test2 :is true . }
+  pe:rule 2;
+  pe:uses { ((:s1 :s2 :s3) :p1) list:map (:o1 :o2 :o3 :o4) . }.
 
-  { ((:s1 :s2 :s3) :p1) list:map (:o1 :o2 :o3 :o4) . }
-    pe:builtin list:map.
-}.
+{ ((:s1 :s2 :s3) :p1) list:map (:o1 :o2 :o3 :o4) . }
+  pe:builtin list:map.
 
-{ :test3 :is true . } pe:why {
-  { :test3 :is true . }
-    pe:rule 3;
-    pe:uses { ((:s4) :p1) list:map () . }.
+{ :test3 :is true . }
+  pe:rule 3;
+  pe:uses { ((:s4) :p1) list:map () . }.
 
-  { ((:s4) :p1) list:map () . }
-    pe:builtin list:map.
-}.
+{ ((:s4) :p1) list:map () . }
+  pe:builtin list:map.
 
-{ :test4 :is true . } pe:why {
-  { :test4 :is true . }
-    pe:rule 4;
-    pe:uses { ((:s1) :p2) list:map () . }.
+{ :test4 :is true . }
+  pe:rule 4;
+  pe:uses { ((:s1) :p2) list:map () . }.
 
-  { ((:s1) :p2) list:map () . }
-    pe:builtin list:map.
-}.
+{ ((:s1) :p2) list:map () . }
+  pe:builtin list:map.

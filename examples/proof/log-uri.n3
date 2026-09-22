@@ -5,30 +5,23 @@
 :uriString :is "https://www.w3.org" .
 :uriResource :is <https://www.w3.org> .
 
-{ :uriString :is "https://www.w3.org" . } pe:why {
-  { :uriString :is "https://www.w3.org" . }
-    pe:rule 1;
-    pe:binding
-      [ pe:var "r"; pe:value <https://www.w3.org> ],
-      [ pe:var "s"; pe:value "https://www.w3.org" ];
-    pe:uses
-      { <https://www.w3.org> log:uri "https://www.w3.org" . },
-      { <https://www.w3.org> log:uri "https://www.w3.org" . }.
+{ :uriString :is "https://www.w3.org" . }
+  pe:rule 1;
+  pe:binding
+    [ pe:var "r"; pe:value <https://www.w3.org> ],
+    [ pe:var "s"; pe:value "https://www.w3.org" ];
+  pe:uses
+    { <https://www.w3.org> log:uri "https://www.w3.org" . },
+    { <https://www.w3.org> log:uri "https://www.w3.org" . }.
 
-  { <https://www.w3.org> log:uri "https://www.w3.org" . }
-    pe:builtin log:uri.
-}.
+{ <https://www.w3.org> log:uri "https://www.w3.org" . }
+  pe:builtin log:uri.
 
-{ :uriResource :is <https://www.w3.org> . } pe:why {
-  { :uriResource :is <https://www.w3.org> . }
-    pe:rule 1;
-    pe:binding
-      [ pe:var "r"; pe:value <https://www.w3.org> ],
-      [ pe:var "s"; pe:value "https://www.w3.org" ];
-    pe:uses
-      { <https://www.w3.org> log:uri "https://www.w3.org" . },
-      { <https://www.w3.org> log:uri "https://www.w3.org" . }.
-
-  { <https://www.w3.org> log:uri "https://www.w3.org" . }
-    pe:builtin log:uri.
-}.
+{ :uriResource :is <https://www.w3.org> . }
+  pe:rule 1;
+  pe:binding
+    [ pe:var "r"; pe:value <https://www.w3.org> ],
+    [ pe:var "s"; pe:value "https://www.w3.org" ];
+  pe:uses
+    { <https://www.w3.org> log:uri "https://www.w3.org" . },
+    { <https://www.w3.org> log:uri "https://www.w3.org" . }.

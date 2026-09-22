@@ -10,44 +10,34 @@
 :bob :hasParent :alice .
 
 {
-    {
-        ?x :childOf ?y .
-    } <= {
-        ?y :parentOf ?x .
-    } .
-} pe:why {
   {
-    {
-        ?x :childOf ?y .
-    } <= {
-        ?y :parentOf ?x .
-    } .
+      ?x :childOf ?y .
+  } <= {
+      ?y :parentOf ?x .
+  } .
 }
-    pe:rule 1;
-    pe:binding
-      [ pe:var "p"; pe:value :parentOf ],
-      [ pe:var "q"; pe:value :childOf ];
-    pe:uses { :parentOf :invOf :childOf . }.
+  pe:rule 1;
+  pe:binding
+    [ pe:var "p"; pe:value :parentOf ],
+    [ pe:var "q"; pe:value :childOf ];
+  pe:uses { :parentOf :invOf :childOf . }.
 
-  { :parentOf :invOf :childOf . }
-    pe:fact "derived-backward-rule.n3".
-}.
+{ :parentOf :invOf :childOf . }
+  pe:fact "derived-backward-rule.n3".
 
-{ :bob :hasParent :alice . } pe:why {
-  { :bob :hasParent :alice . }
-    pe:rule 2;
-    pe:binding
-      [ pe:var "x"; pe:value :bob ],
-      [ pe:var "y"; pe:value :alice ];
-    pe:uses { :bob :childOf :alice . }.
+{ :bob :hasParent :alice . }
+  pe:rule 2;
+  pe:binding
+    [ pe:var "x"; pe:value :bob ],
+    [ pe:var "y"; pe:value :alice ];
+  pe:uses { :bob :childOf :alice . }.
 
-  { :bob :childOf :alice . }
-    pe:rule 1;
-    pe:binding
-      [ pe:var "x"; pe:value :bob ],
-      [ pe:var "y"; pe:value :alice ];
-    pe:uses { :alice :parentOf :bob . }.
+{ :bob :childOf :alice . }
+  pe:rule 1;
+  pe:binding
+    [ pe:var "x"; pe:value :bob ],
+    [ pe:var "y"; pe:value :alice ];
+  pe:uses { :alice :parentOf :bob . }.
 
-  { :alice :parentOf :bob . }
-    pe:fact "derived-backward-rule.n3".
-}.
+{ :alice :parentOf :bob . }
+  pe:fact "derived-backward-rule.n3".

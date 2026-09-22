@@ -4,31 +4,29 @@
 
 :result :is true .
 
-{ :result :is true . } pe:why {
-  { :result :is true . }
-    pe:rule 1;
-    pe:binding
-      [ pe:var "A"; pe:value {
-          ?A__0 => ?B__1 .
-      } ],
-      [ pe:var "B"; pe:value {
-          :result :is true .
-      } ];
-    pe:uses
-      {
-          {
-              ?A__0 => ?B__1 .
-          } => {
-              :result :is true .
-          } .
-      }.
-
-  {
-    {
+{ :result :is true . }
+  pe:rule 1;
+  pe:binding
+    [ pe:var "A"; pe:value {
         ?A__0 => ?B__1 .
-    } => {
+    } ],
+    [ pe:var "B"; pe:value {
         :result :is true .
-    } .
+    } ];
+  pe:uses
+    {
+        {
+            ?A__0 => ?B__1 .
+        } => {
+            :result :is true .
+        } .
+    }.
+
+{
+  {
+      ?A__0 => ?B__1 .
+  } => {
+      :result :is true .
+  } .
 }
-    pe:builtin log:implies.
-}.
+  pe:builtin log:implies.

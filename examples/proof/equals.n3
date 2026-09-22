@@ -4,11 +4,9 @@
 
 :test :is true .
 
-{ :test :is true . } pe:why {
-  { :test :is true . }
-    pe:rule 1;
-    pe:uses { :X = :Y . }.
+{ :test :is true . }
+  pe:rule 1;
+  pe:uses { :X = :Y . }.
 
-  { :X = :Y . }
-    pe:fact "equals.n3".
-}.
+{ :X = :Y . }
+  pe:fact "equals.n3".

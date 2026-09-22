@@ -14,67 +14,35 @@
 :test :is true .
 
 {
-    {
-        :Socrates a :Human .
-    } <= true .
-} pe:why {
   {
-    {
-        :Socrates a :Human .
-    } <= true .
+      :Socrates a :Human .
+  } <= true .
 }
-    pe:rule 1.
-}.
+  pe:rule 1.
 
 {
-    {
-        :Human rdfs:subClassOf :Mortal .
-    } <= true .
-} pe:why {
   {
-    {
-        :Human rdfs:subClassOf :Mortal .
-    } <= true .
+      :Human rdfs:subClassOf :Mortal .
+  } <= true .
 }
-    pe:rule 1.
-}.
+  pe:rule 1.
 
-{ :Socrates a :Mortal . } pe:why {
-  { :Socrates a :Mortal . }
-    pe:rule 2;
-    pe:binding
-      [ pe:var "A"; pe:value :Human ],
-      [ pe:var "B"; pe:value :Mortal ],
-      [ pe:var "S"; pe:value :Socrates ];
-    pe:uses
-      { :Socrates a :Human . },
-      { :Human rdfs:subClassOf :Mortal . }.
+{ :Socrates a :Mortal . }
+  pe:rule 2;
+  pe:binding
+    [ pe:var "A"; pe:value :Human ],
+    [ pe:var "B"; pe:value :Mortal ],
+    [ pe:var "S"; pe:value :Socrates ];
+  pe:uses
+    { :Socrates a :Human . },
+    { :Human rdfs:subClassOf :Mortal . }.
 
-  { :Socrates a :Human . }
-    pe:rule 1.
+{ :Socrates a :Human . }
+  pe:rule 1.
 
-  { :Human rdfs:subClassOf :Mortal . }
-    pe:rule 1.
-}.
+{ :Human rdfs:subClassOf :Mortal . }
+  pe:rule 1.
 
-{ :test :is true . } pe:why {
-  { :test :is true . }
-    pe:rule 3;
-    pe:uses { :Socrates a :Mortal . }.
-
-  { :Socrates a :Mortal . }
-    pe:rule 2;
-    pe:binding
-      [ pe:var "A"; pe:value :Human ],
-      [ pe:var "B"; pe:value :Mortal ],
-      [ pe:var "S"; pe:value :Socrates ];
-    pe:uses
-      { :Socrates a :Human . },
-      { :Human rdfs:subClassOf :Mortal . }.
-
-  { :Socrates a :Human . }
-    pe:rule 1.
-
-  { :Human rdfs:subClassOf :Mortal . }
-    pe:rule 1.
-}.
+{ :test :is true . }
+  pe:rule 3;
+  pe:uses { :Socrates a :Mortal . }.

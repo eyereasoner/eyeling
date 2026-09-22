@@ -5,37 +5,35 @@
 
 :alice :mustHave :dogLicense .
 
-{ :alice :mustHave :dogLicense . } pe:why {
-  { :alice :mustHave :dogLicense . }
-    pe:rule 1;
-    pe:binding
-      [ pe:var "Any"; pe:value :dog1 ],
-      [ pe:var "Count"; pe:value 5 ],
-      [ pe:var "List"; pe:value (1 1 1 1 1) ],
-      [ pe:var "Subject"; pe:value :alice ];
-    pe:uses
-      { :alice :hasDog :dog1 . },
-      {
-          (1 {
-              :alice :hasDog ?Dog .
-          } (1 1 1 1 1)) log:collectAllIn ?Scope .
-      },
-      { (1 1 1 1 1) math:sum 5 . },
-      { 5 math:greaterThan 4 . }.
+{ :alice :mustHave :dogLicense . }
+  pe:rule 1;
+  pe:binding
+    [ pe:var "Any"; pe:value :dog1 ],
+    [ pe:var "Count"; pe:value 5 ],
+    [ pe:var "List"; pe:value (1 1 1 1 1) ],
+    [ pe:var "Subject"; pe:value :alice ];
+  pe:uses
+    { :alice :hasDog :dog1 . },
+    {
+        (1 {
+            :alice :hasDog ?Dog .
+        } (1 1 1 1 1)) log:collectAllIn ?Scope .
+    },
+    { (1 1 1 1 1) math:sum 5 . },
+    { 5 math:greaterThan 4 . }.
 
-  { :alice :hasDog :dog1 . }
-    pe:fact "dog.n3".
+{ :alice :hasDog :dog1 . }
+  pe:fact "dog.n3".
 
-  {
-    (1 {
-        :alice :hasDog ?Dog .
-    } (1 1 1 1 1)) log:collectAllIn ?Scope .
+{
+  (1 {
+      :alice :hasDog ?Dog .
+  } (1 1 1 1 1)) log:collectAllIn ?Scope .
 }
-    pe:builtin log:collectAllIn.
+  pe:builtin log:collectAllIn.
 
-  { (1 1 1 1 1) math:sum 5 . }
-    pe:builtin math:sum.
+{ (1 1 1 1 1) math:sum 5 . }
+  pe:builtin math:sum.
 
-  { 5 math:greaterThan 4 . }
-    pe:builtin math:greaterThan.
-}.
+{ 5 math:greaterThan 4 . }
+  pe:builtin math:greaterThan.

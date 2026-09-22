@@ -5,20 +5,18 @@
 
 :Socrates a :Mortal .
 
-{ :Socrates a :Mortal . } pe:why {
-  { :Socrates a :Mortal . }
-    pe:rule 1;
-    pe:binding
-      [ pe:var "A"; pe:value :Human ],
-      [ pe:var "B"; pe:value :Mortal ],
-      [ pe:var "S"; pe:value :Socrates ];
-    pe:uses
-      { :Socrates a :Human . },
-      { :Human rdfs:subClassOf :Mortal . }.
+{ :Socrates a :Mortal . }
+  pe:rule 1;
+  pe:binding
+    [ pe:var "A"; pe:value :Human ],
+    [ pe:var "B"; pe:value :Mortal ],
+    [ pe:var "S"; pe:value :Socrates ];
+  pe:uses
+    { :Socrates a :Human . },
+    { :Human rdfs:subClassOf :Mortal . }.
 
-  { :Socrates a :Human . }
-    pe:fact "socrates.n3".
+{ :Socrates a :Human . }
+  pe:fact "socrates.n3".
 
-  { :Human rdfs:subClassOf :Mortal . }
-    pe:fact "socrates.n3".
-}.
+{ :Human rdfs:subClassOf :Mortal . }
+  pe:fact "socrates.n3".

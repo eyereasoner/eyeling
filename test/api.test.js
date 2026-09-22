@@ -842,7 +842,7 @@ ${U('x')} ${U('age')} "42".
 ${U('s')} ${U('p')} ${U('o')}.
 `,
     expect: [new RegExp(`${EX}s>\\s+<${EX}q>\\s+<${EX}o>\\s*\\.`)],
-    notExpect: [/pe:why/m],
+    notExpect: [/pe:rule/m],
   },
   {
     name: '11 negative entailment: rule derives false (expect exit 65 => throws)',
@@ -1627,7 +1627,7 @@ ${U('a')} ${U('p')} ${U('b')}.
 { ${U('s')} ${U('p')} ${U('o')}. } => { ${U('s')} ${U('q')} ${U('o')}. }.
 ${U('s')} ${U('p')} ${U('o')}.
 `,
-    expect: [/pe:why/m, /pe:rule/m, new RegExp(`${EX}s>\\s+<${EX}q>\\s+<${EX}o>\\s*\\.`)],
+    expect: [/pe:rule/m, /pe:fact/m, new RegExp(`${EX}s>\\s+<${EX}q>\\s+<${EX}o>\\s*\\.`)],
   },
   {
     name: '31 sanity: default output has no proof explanations',
@@ -1637,7 +1637,7 @@ ${U('s')} ${U('p')} ${U('o')}.
 ${U('s')} ${U('p')} ${U('o')}.
 `,
     expect: [new RegExp(`${EX}s>\\s+<${EX}q>\\s+<${EX}o>\\s*\\.`)],
-    notExpect: [/pe:why/m],
+    notExpect: [/pe:rule/m],
   },
 
   // -------------------------

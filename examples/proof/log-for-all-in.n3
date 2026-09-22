@@ -5,29 +5,27 @@
 
 :result :is true .
 
-{ :result :is true . } pe:why {
-  { :result :is true . }
-    pe:rule 1;
-    pe:binding [ pe:var "c"; pe:value :c ];
-    pe:uses
-      { :c a :CompositeTask . },
-      {
-          ({
-              :c :subTask ?s .
-          } {
-              ?s :state :Completed .
-          }) log:forAllIn ?eyeling_b1 .
-      }.
+{ :result :is true . }
+  pe:rule 1;
+  pe:binding [ pe:var "c"; pe:value :c ];
+  pe:uses
+    { :c a :CompositeTask . },
+    {
+        ({
+            :c :subTask ?s .
+        } {
+            ?s :state :Completed .
+        }) log:forAllIn ?eyeling_b1 .
+    }.
 
-  { :c a :CompositeTask . }
-    pe:fact "log-for-all-in.n3".
+{ :c a :CompositeTask . }
+  pe:fact "log-for-all-in.n3".
 
-  {
-    ({
-        :c :subTask ?s .
-    } {
-        ?s :state :Completed .
-    }) log:forAllIn ?eyeling_b1 .
+{
+  ({
+      :c :subTask ?s .
+  } {
+      ?s :state :Completed .
+  }) log:forAllIn ?eyeling_b1 .
 }
-    pe:builtin log:forAllIn.
-}.
+  pe:builtin log:forAllIn.
