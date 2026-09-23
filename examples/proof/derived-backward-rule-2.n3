@@ -38,10 +38,22 @@
     { :Human rdfs:subClassOf :Mortal . }.
 
 { :Socrates a :Human . }
-  pe:rule 1.
+  pe:rule
+    {
+        {
+            :Socrates a :Human .
+        } <= {
+        } .
+    }.
 
 { :Human rdfs:subClassOf :Mortal . }
-  pe:rule 1.
+  pe:rule
+    {
+        {
+            :Human rdfs:subClassOf :Mortal .
+        } <= {
+        } .
+    }.
 
 { :test :is true . }
   pe:rule 3;

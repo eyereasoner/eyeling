@@ -19,6 +19,7 @@ const sections = [
   ['Store tests', node, ['test/store.test.js']],
   ['Examples tests', node, ['test/examples.test.js']],
   ['Proof examples tests', node, ['test/examples.test.js', '--proof-only']],
+  ['Proof checking tests', node, ['test/check_proof.test.js']],
   ['Manifest tests', node, ['test/manifest.test.js']],
   ['RDF 1.2 syntax tests', node, ['test/rdf12.test.js']],
   ['Playground tests', node, ['test/playground.test.js']],

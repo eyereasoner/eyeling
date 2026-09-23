@@ -17,31 +17,31 @@
     {
         (?param {
             :Let :param ?param .
-        } ("Huey" "Dewey" "Louie")) log:collectAllIn ?eyeling_b1 .
+        } ("Huey" "Dewey" "Louie")) log:collectAllIn ?eyeling_b1 .
     },
     {
         ((?param) {
             :Let :param ?param .
-        } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?eyeling_b1 .
+        } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?eyeling_b1 .
     },
     {
         (?param {
             :Let :param ?param .
             ?param string:lessThan "Louie" .
-        } ("Huey" "Dewey")) log:collectAllIn ?eyeling_b1 .
+        } ("Huey" "Dewey")) log:collectAllIn ?eyeling_b1 .
     }.
 
 {
   (?param {
       :Let :param ?param .
-  } ("Huey" "Dewey" "Louie")) log:collectAllIn ?eyeling_b1 .
+  } ("Huey" "Dewey" "Louie")) log:collectAllIn ?eyeling_b1 .
 }
   pe:builtin log:collectAllIn.
 
 {
   ((?param) {
       :Let :param ?param .
-  } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?eyeling_b1 .
+  } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?eyeling_b1 .
 }
   pe:builtin log:collectAllIn.
 
@@ -49,7 +49,7 @@
   (?param {
       :Let :param ?param .
       ?param string:lessThan "Louie" .
-  } ("Huey" "Dewey")) log:collectAllIn ?eyeling_b1 .
+  } ("Huey" "Dewey")) log:collectAllIn ?eyeling_b1 .
 }
   pe:builtin log:collectAllIn.
 
@@ -63,18 +63,18 @@
     {
         (?param {
             :Let :param ?param .
-        } ("Huey" "Dewey" "Louie")) log:collectAllIn ?eyeling_b1 .
+        } ("Huey" "Dewey" "Louie")) log:collectAllIn ?eyeling_b1 .
     },
     {
         ((?param) {
             :Let :param ?param .
-        } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?eyeling_b1 .
+        } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?eyeling_b1 .
     },
     {
         (?param {
             :Let :param ?param .
             ?param string:lessThan "Louie" .
-        } ("Huey" "Dewey")) log:collectAllIn ?eyeling_b1 .
+        } ("Huey" "Dewey")) log:collectAllIn ?eyeling_b1 .
     }.
 
 { :result3 :is ("Huey" "Dewey") . }
@@ -87,16 +87,16 @@
     {
         (?param {
             :Let :param ?param .
-        } ("Huey" "Dewey" "Louie")) log:collectAllIn ?eyeling_b1 .
+        } ("Huey" "Dewey" "Louie")) log:collectAllIn ?eyeling_b1 .
     },
     {
         ((?param) {
             :Let :param ?param .
-        } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?eyeling_b1 .
+        } (("Huey") ("Dewey") ("Louie"))) log:collectAllIn ?eyeling_b1 .
     },
     {
         (?param {
             :Let :param ?param .
             ?param string:lessThan "Louie" .
-        } ("Huey" "Dewey")) log:collectAllIn ?eyeling_b1 .
+        } ("Huey" "Dewey")) log:collectAllIn ?eyeling_b1 .
     }.

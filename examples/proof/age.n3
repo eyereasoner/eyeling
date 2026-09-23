@@ -16,23 +16,23 @@
   pe:binding
     [ pe:var "A"; pe:value "P80Y"^^xsd:duration ],
     [ pe:var "B"; pe:value "1944-08-21"^^xsd:date ],
-    [ pe:var "D"; pe:value "2026-09-22T23:10:34.811+02:00"^^xsd:dateTime ],
-    [ pe:var "F"; pe:value "PT2590521034.811S"^^xsd:duration ],
+    [ pe:var "D"; pe:value "2026-09-23T19:13:27.498+02:00"^^xsd:dateTime ],
+    [ pe:var "F"; pe:value "PT2590593207.498S"^^xsd:duration ],
     [ pe:var "S"; pe:value :patH ];
   pe:uses
     { :patH :birthDay "1944-08-21"^^xsd:date . },
-    { "" time:localTime "2026-09-22T23:10:34.811+02:00"^^xsd:dateTime . },
-    { ("2026-09-22T23:10:34.811+02:00"^^xsd:dateTime "1944-08-21"^^xsd:date) math:difference "PT2590521034.811S"^^xsd:duration . },
-    { "PT2590521034.811S"^^xsd:duration math:greaterThan "P80Y"^^xsd:duration . }.
+    { "" time:localTime "2026-09-23T19:13:27.498+02:00"^^xsd:dateTime . },
+    { ("2026-09-23T19:13:27.498+02:00"^^xsd:dateTime "1944-08-21"^^xsd:date) math:difference "PT2590593207.498S"^^xsd:duration . },
+    { "PT2590593207.498S"^^xsd:duration math:greaterThan "P80Y"^^xsd:duration . }.
 
 { :patH :birthDay "1944-08-21"^^xsd:date . }
   pe:fact "age.n3".
 
-{ "" time:localTime "2026-09-22T23:10:34.811+02:00"^^xsd:dateTime . }
+{ "" time:localTime "2026-09-23T19:13:27.498+02:00"^^xsd:dateTime . }
   pe:builtin time:localTime.
 
-{ ("2026-09-22T23:10:34.811+02:00"^^xsd:dateTime "1944-08-21"^^xsd:date) math:difference "PT2590521034.811S"^^xsd:duration . }
+{ ("2026-09-23T19:13:27.498+02:00"^^xsd:dateTime "1944-08-21"^^xsd:date) math:difference "PT2590593207.498S"^^xsd:duration . }
   pe:builtin math:difference.
 
-{ "PT2590521034.811S"^^xsd:duration math:greaterThan "P80Y"^^xsd:duration . }
+{ "PT2590593207.498S"^^xsd:duration math:greaterThan "P80Y"^^xsd:duration . }
   pe:builtin math:greaterThan.

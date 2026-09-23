@@ -15,7 +15,7 @@
             :c :subTask ?s .
         } {
             ?s :state :Completed .
-        }) log:forAllIn ?eyeling_b1 .
+        }) log:forAllIn ?eyeling_b1 .
     }.
 
 { :c a :CompositeTask . }
@@ -26,6 +26,6 @@
       :c :subTask ?s .
   } {
       ?s :state :Completed .
-  }) log:forAllIn ?eyeling_b1 .
+  }) log:forAllIn ?eyeling_b1 .
 }
   pe:builtin log:forAllIn.

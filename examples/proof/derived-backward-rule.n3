@@ -33,7 +33,14 @@
   pe:uses { :bob :childOf :alice . }.
 
 { :bob :childOf :alice . }
-  pe:rule 1;
+  pe:rule
+    {
+        {
+            ?x__2 :childOf ?y__1 .
+        } <= {
+            ?y__1 :parentOf ?x__2 .
+        } .
+    };
   pe:binding
     [ pe:var "x"; pe:value :bob ],
     [ pe:var "y"; pe:value :alice ];

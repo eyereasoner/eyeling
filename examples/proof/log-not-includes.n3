@@ -29,5 +29,12 @@
   pe:uses { 1 math:equalTo 1 . }.
 
 { :a :b :c . }
-  pe:rule 3;
+  pe:rule
+    {
+        {
+            :x :y 1 .
+        } => {
+            :a :b :c .
+        } .
+    };
   pe:uses { :x :y 1 . }.
