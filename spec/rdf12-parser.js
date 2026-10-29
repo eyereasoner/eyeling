@@ -221,7 +221,8 @@ function assertLineSyntaxSurfaceSyntax(data) {
         }
       }
 
-      i = end;
+      // Step past a language tag; a datatype IRI is checked as an IRI next.
+      i = j;
       continue;
     }
 
@@ -246,6 +247,22 @@ function assertLineSyntaxSurfaceSyntax(data) {
 
     if (text.startsWith('{|', i) || text.startsWith('|}', i)) {
       throw new SyntaxError('RDF line syntax does not allow Turtle annotation syntax');
+    }
+
+    if (text.startsWith('_:', i)) {
+      i += 2;
+      while (i < text.length && /[^\s<>"'(){}]/.test(text[i])) i += 1;
+      continue;
+    }
+
+    // Outside strings, IRIs, and blank node labels the only word is the
+    // case-sensitive VERSION keyword; `version` and `@version` are Turtle.
+    if (startsWordAt(text, 'VERSION', i)) {
+      i += 'VERSION'.length;
+      continue;
+    }
+    if (/[A-Za-z@]/.test(ch)) {
+      throw new SyntaxError('RDF line syntax only allows the directive VERSION "..."');
     }
 
     i += 1;
