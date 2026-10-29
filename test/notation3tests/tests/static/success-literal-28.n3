@@ -1,0 +1,43 @@
+# Reference: https://www.w3.org/TR/turtle/#sec-iri-references
+# Source: Gregg Kellogg's N3 Test https://github.com/w3c-cg/N3/tree/master/tests
+
+@base <http://foo/bar/> .
+<a1> <b1> <c1> .
+@base <http://example.org/ns/> .
+# In-scope base URI is http://example.org/ns/ at this point
+<a2> <http://example.org/ns/b2> <c2> .
+@base <foo/> .
+# In-scope base URI is http://example.org/ns/foo/ at this point
+<a3> <b3> <c3> .
+@prefix : <bar#> .
+:a4 :b4 :c4 .
+@prefix : <http://example.org/ns2#> .
+:a5 :b5 :c5 .
+
+{
+    <http://foo/bar/a1> <http://foo/bar/b1> <http://foo/bar/c1> .
+    <http://example.org/ns/a2> <http://example.org/ns/b2> <http://example.org/ns/c2> .
+    <http://example.org/ns/foo/a3> <http://example.org/ns/foo/b3> <http://example.org/ns/foo/c3> .
+    <http://example.org/ns/foo/bar#a4> <http://example.org/ns/foo/bar#b4> <http://example.org/ns/foo/bar#c4> .
+    <http://example.org/ns2#a5> <http://example.org/ns2#b5> <http://example.org/ns2#c5> .
+}
+=>
+{
+    @prefix : <http://example.org/> .
+    :result :has :success-literal-28.
+}.
+
+{} => {
+    @prefix : <http://example.org/> .
+    :test :contains :success-literal-28.
+}.
+
+{
+    @prefix : <http://example.org/> .
+    :result :has :success-literal-28.
+}
+=>
+{
+    @prefix : <http://example.org/> .
+    :test :is true.
+}.

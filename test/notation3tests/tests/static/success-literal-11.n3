@@ -1,0 +1,27 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+# Reference: https://w3c.github.io/N3/spec/#shorthands
+
+:x = :y.
+
+{
+   :x owl:sameAs :y.
+}
+=>
+{
+    :result :has :success-literal-11.
+}.
+
+{} => {
+    :test :contains :success-literal-11.
+}.
+
+{
+    :result :has :success-literal-11.
+}
+=>
+{
+    :test :is true.
+}.

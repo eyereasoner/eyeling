@@ -1,0 +1,27 @@
+PREFIX : <http://example.org/> 
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Reference: https://w3c.github.io/N3/spec/#grammar
+
+:Alice a :Person.
+
+{
+   PREFIX foo: <http://example.org/> 
+   foo:Alice a foo:Person.
+}
+=>
+{
+    :result :has :success-literal-19.
+}.
+
+{} => {
+    :test :contains :success-literal-19.
+}.
+
+{
+    :result :has :success-literal-19.
+}
+=>
+{
+    :test :is true.
+}.

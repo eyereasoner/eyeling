@@ -1,0 +1,31 @@
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+@base <http://example.org/>.
+
+# Reference: https://w3c-cg.github.io/n3Builtins/#string:replace
+
+# Testing the built-in with valid literal values on the subject and object position.
+
+# success-literal-11 case double to string
+{
+    ("1.234"^^xsd:double "3"^^xsd:double "88"^^xsd:double) string:replace "1.2884".
+}
+=>
+{
+    :result :has :success-literal-11.
+}.
+
+{ } => {
+    :test :contains :success-literal-11.
+}.
+
+{
+    :result :has :success-literal-11.
+}
+=>
+{
+    :test :is true.
+}.

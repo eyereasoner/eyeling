@@ -1,0 +1,27 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix bad.: <http://bad-example.org/> . # not allowed to have dot at the end of a prefix
+
+# Reference: https://w3c.github.io/N3/spec/#grammar
+
+bad.:example a bad.:Person.
+
+{
+    ?X a <http://bad-example.org/Person>.
+}
+=>
+{
+    :result :has :crash-syntax-1.
+}.
+
+{} => {
+    :test :contains :crash-syntax-1.
+}.
+
+{
+    :result :has :crash-syntax-1.
+}
+=>
+{
+    :test :is false.
+}.

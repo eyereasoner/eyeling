@@ -34,7 +34,9 @@
     "tools",
     "examples",
     "spec",
-    "notes"
+    "notes",
+    "!test/notation3tests",
+    "!test/w3c_rdf"
   ],
   "engines": {
     "node": ">=18"
@@ -59,6 +61,7 @@
     "test:rdf12:trig": "node test/rdf12.test.js trig",
     "test:playground": "node test/playground.test.js",
     "test:package": "node test/package.test.js",
+    "sync:test-suites": "node tools/sync-test-suites.js",
     "test": "node test/run.js",
     "preversion": "npm test",
     "postversion": "git push origin HEAD --follow-tags"

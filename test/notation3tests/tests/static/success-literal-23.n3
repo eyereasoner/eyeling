@@ -1,0 +1,37 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Reference: https://w3c.github.io/N3/spec/semantics.html#log-semantics
+
+{
+    _:b1 a :Mortal .
+} :because {
+    :Socrates a :Human .
+    :Human rdfs:subClassOf :Mortal .
+} .
+
+<> :step {
+    [ a :Mortal ].
+}.
+
+{
+    ?A :step ?B .
+    ?B log:includes { ?S ?P ?O }.
+    { _:b2 a :Mortal } :because ?Y.
+}
+=>
+{
+    :result :has :success-literal-23.
+}.
+
+{} => {
+    :test :contains :success-literal-23.
+}.
+
+{
+    :result :has :success-literal-23.
+}
+=>
+{
+    :test :is true.
+}.

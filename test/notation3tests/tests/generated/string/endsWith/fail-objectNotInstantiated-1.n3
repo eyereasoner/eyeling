@@ -1,0 +1,33 @@
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+@base <http://example.org/>.
+
+# Reference: https://w3c-cg.github.io/n3Builtins/#string:endsWith
+
+# Check if the object accepts a not instantiated variable.
+# Reference: https://w3c-cg.github.io/n3Builtins/#argumentmodes
+
+# fail-objectNotInstantiated-1 
+{
+    "hello world!" string:endsWith ?X.
+    "hello world!" string:endsWith _:x.
+}
+=>
+{
+    :result :has :fail-objectNotInstantiated-1.
+}.
+
+{ } => {
+    :test :contains :fail-objectNotInstantiated-1.
+}.
+
+{
+    :result :has :fail-objectNotInstantiated-1.
+}
+=>
+{
+    :test :is false.
+}.

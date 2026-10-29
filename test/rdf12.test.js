@@ -2,6 +2,8 @@
 'use strict';
 
 const cp = require('node:child_process');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const { C, detail, failResult, formatDuration, info, pass } = require('./report');
 
@@ -10,7 +12,15 @@ function nowMs() {
 }
 
 const RDF_TEST_SUITE = process.platform === 'win32' ? 'rdf-test-suite.cmd' : 'rdf-test-suite';
-const CACHE_DIR = '.rdf-test-suite-cache/';
+// The W3C suites run from this committed mirror of the rdf-tests layout only;
+// `npm run sync:test-suites` refreshes it, so upstream changes arrive in a
+// commit rather than mid-run.
+const W3C_BASE = 'https://w3c.github.io/rdf-tests/';
+const MIRROR = path.join(__dirname, 'w3c_rdf', 'rdf-tests');
+
+function mirrorPath(url) {
+  return path.join(MIRROR, ...url.slice(W3C_BASE.length).split('/'));
+}
 
 const SUITES = {
   turtle: {
@@ -85,8 +95,8 @@ function rdfTestSuiteArgs(suite) {
     suite.manifest,
     '-i',
     JSON.stringify({ format: suite.format }),
-    '-c',
-    CACHE_DIR,
+    '-m',
+    `${W3C_BASE}~${MIRROR}${path.sep}`,
   ];
 }
 
@@ -264,6 +274,13 @@ async function main() {
     return;
   }
 
+  const missing = keys.filter((key) => !fs.existsSync(mirrorPath(SUITES[key].manifest)));
+  if (missing.length) {
+    failResult(1, `No local mirror of ${missing.join(', ')}; run npm run sync:test-suites`, 0);
+    process.exit(1);
+    return;
+  }
+
   const grandStartedAt = nowMs();
   const totals = {
     sequence: 0,
@@ -291,8 +308,12 @@ async function main() {
   process.exit(1);
 }
 
-main().catch((e) => {
-  failResult(1, 'RDF 1.2 syntax test runner failed', 0);
-  detail(e && e.stack ? e.stack : String(e));
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((e) => {
+    failResult(1, 'RDF 1.2 syntax test runner failed', 0);
+    detail(e && e.stack ? e.stack : String(e));
+    process.exit(1);
+  });
+}
+
+module.exports = { MIRROR, SUITES, W3C_BASE, mirrorPath };

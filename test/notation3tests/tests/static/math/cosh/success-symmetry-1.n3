@@ -1,0 +1,28 @@
+@prefix : <http://example.org/> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+
+# Reference: https://w3c.github.io/N3/spec/builtins.html#math:cosh
+
+:input :val 0.2171.
+
+{
+    :input :val ?X.
+    ?X!math:negation math:cosh ?A.
+  	?X math:cosh ?A.
+}
+=>
+{
+    :result :has :success-symmetry-1.
+}.
+
+{} => {
+    :test :contains :success-symmetry-1.
+}.
+
+{
+    :result :has :success-symmetry-1.
+}
+=>
+{
+    :test :is true.
+}.

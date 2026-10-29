@@ -1,0 +1,27 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Reference: https://w3c.github.io/N3/spec/#grammar
+
+# We can't have '<','>','{','}','|','^','`','\' in URLs.
+<http://bad example.org/> a :BadExample.
+
+{
+    :subject :predicate ?X.
+}
+=>
+{
+    :result :has :crash-syntax-7.
+}.
+
+{} => {
+    :test :contains :crash-syntax-7.
+}.
+
+{
+    :result :has :crash-syntax-7.
+}
+=>
+{
+    :test :is false.
+}.

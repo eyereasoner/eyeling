@@ -1,0 +1,47 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Reference: https://w3c.github.io/N3/spec/#grammar
+
+# We can't have escape characters in IRI-s
+<http://badexample.org> :foo <http://example.org/> .
+
+{
+    :subject :predicate ?X.
+}
+=>
+{
+    :result :has :crash-syntax-9.
+}.
+
+{} => {
+    :test :contains :crash-syntax-9.
+}.
+
+{
+    :result :has :crash-syntax-9.
+}
+=>
+{
+    :test :is false.
+}.
+
+{
+    :subject :predicate ?X.
+}
+=>
+{
+    :result :has :crash-syntax-9.
+}.
+
+{} => {
+    :test :contains :crash-syntax-9.
+}.
+
+{
+    :result :has :crash-syntax-9.
+}
+=>
+{
+    :test :is false.
+}.

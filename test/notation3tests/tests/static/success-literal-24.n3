@@ -1,0 +1,26 @@
+@prefix : <http://example.org/> .
+
+# Reference: https://w3c-cg.github.io/N3/spec/#grammar
+# Source: Gregg Kellogg's N3 Test https://github.com/w3c-cg/N3/tree/master/tests
+
+:foo: a :Bar .
+
+{
+    <http://example.org/foo:> a <http://example.org/Bar> .
+}
+=>
+{
+    :result :has :success-literal-24.
+}.
+
+{} => {
+    :test :contains :success-literal-24.
+}.
+
+{
+    :result :has :success-literal-24.
+}
+=>
+{
+    :test :is true.
+}.

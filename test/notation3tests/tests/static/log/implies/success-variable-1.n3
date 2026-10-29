@@ -1,0 +1,33 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+
+# Reference: https://w3c.github.io/N3/spec/semantics.html#log-semantics
+
+:x :y { :x :y { :x :y { :x :y 42 } } }.
+
+{
+    :x :y { :x :y { :x :y { :x :y ?C } } } .
+}
+=>
+{
+    {
+        ( ?C 42 ) math:difference 0. 
+    }
+    =>
+    {
+        :result :has :success-variable-1.
+    }.
+}.
+
+{} => {
+    :test :contains :success-variable-1.
+}.
+
+{
+    :result :has :success-variable-1.
+}
+=>
+{
+    :test :is true.
+}.

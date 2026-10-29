@@ -1,0 +1,27 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Reference: https://w3c.github.io/N3/spec/builtins.html#typesofdatatypecasting
+# Reference: https://www.w3.org/TR/xpath-functions/#casting
+
+:x :y 1.1e0.
+
+{
+    :x :y "1.1"^^xsd:double.
+}
+=>
+{
+    :result :has :success-literalType-5.
+}.
+
+{} => {
+    :test :contains :success-literalType-5.
+}.
+
+{
+    :result :has :success-literalType-5.
+}
+=>
+{
+    :test :is true.
+}.

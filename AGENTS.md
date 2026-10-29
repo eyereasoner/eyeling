@@ -32,8 +32,11 @@ design goals, and keep error messages specific and user-facing text direct.
 - `test/`: `run.js` runs every suite in order. `api.test.js` holds focused
   behavior and regression cases; `examples.test.js` compares examples (and,
   with `--proof-only`, proofs) to their goldens; `check_proof.test.js` checks
-  the packaged proofs; `manifest.test.js` and `rdf12.test.js` run conformance
-  suites; `fixtures/` holds test inputs.
+  the packaged proofs; `fixtures/` holds test inputs. `manifest.test.js` runs
+  the Notation3 conformance suite from `notation3tests/tests/`, and
+  `rdf12.test.js` the W3C RDF 1.2 syntax suites from `w3c_rdf/rdf-tests/`.
+  Both mirrors are committed and local-only; `npm run sync:test-suites`
+  (`tools/sync-test-suites.js`) refreshes them.
 - `README.md`: user and maintainer guide. `notes/`: design notes.
 - `release`, `.github/workflows/`: releases, Pages, npm publishing, GitHub
   releases, and RDF 1.2 compliance.
@@ -48,11 +51,14 @@ node bin/eyeling.cjs -p examples/socrates.n3 # proof
 npm run test:api
 npm run test:examples
 npm test                                     # build, then every suite
+npm run sync:test-suites                     # refresh conformance mirrors
 npx eslint .
 git diff --check
 ```
 
-`npm test` takes a few minutes, most of it the manifest suite. Large examples
+`npm test` takes a few minutes. The conformance suites read only their
+mirrors; sync them deliberately and review the diff rather than letting an
+upstream change arrive mid-run. Large examples
 such as the deep taxonomies produce large output and proofs; redirect them to
 a temporary file and inspect focused parts rather than flooding the terminal.
 
@@ -61,6 +67,9 @@ a temporary file and inspect focused parts rather than flooding the terminal.
 - Graph terms are compared as sets: a pattern matches a quoted graph when its
   substitution yields the same set, even by merging statements, so
   `{ ?x :p :c . :a :p :c }` matches `{ :a :p :c }` with `?x = :a`.
+- Graph terms are opaque and keep literal lexical identity: inside a quoted
+  graph `"01"^^xsd:integer` is not `1`, while the shorthand `1` is
+  `"1"^^xsd:integer`. Numeric matching outside graph terms compares values.
 - Every example starts with a short comment block saying what situation it
   models and what eyeling derives. Describe the example as it is; do not
   mention where it came from.

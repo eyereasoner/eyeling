@@ -1,0 +1,39 @@
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@base <http://example.org/>.
+
+# Reference: https://w3c-cg.github.io/n3Builtins/#math:sum
+
+# Check if the object accepts a not instantiated variable and check the instantiated output.
+# Reference: https://w3c-cg.github.io/n3Builtins/#argumentmodes
+
+# success-objectNotInstantiated-2 
+{
+    (1 2 3 4 5 6 7 8 9 10) math:sum ?X.
+}
+=>
+{
+    :check_success-objectNotInstantiated-2 :value 55.
+    {
+        :check_success-objectNotInstantiated-2 :value ?X.
+    }
+    =>
+    {
+        :result :has :success-objectNotInstantiated-2.
+    }.
+}.
+
+{ } => {
+    :test :contains :success-objectNotInstantiated-2.
+}.
+
+{
+    :result :has :success-objectNotInstantiated-2.
+}
+=>
+{
+    :test :is true.
+}.

@@ -1,0 +1,39 @@
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+@base <http://example.org/>.
+
+# Reference: https://w3c-cg.github.io/n3Builtins/#string:replace
+
+# Check if the object accepts a not instantiated variable and check the instantiated output.
+# Reference: https://w3c-cg.github.io/n3Builtins/#argumentmodes
+
+# success-objectNotInstantiated-2 
+{
+    ("hello world!" "l" "X") string:replace ?X.
+}
+=>
+{
+    :check_success-objectNotInstantiated-2 :value "heXXo worXd!".
+    {
+        :check_success-objectNotInstantiated-2 :value ?X.
+    }
+    =>
+    {
+        :result :has :success-objectNotInstantiated-2.
+    }.
+}.
+
+{ } => {
+    :test :contains :success-objectNotInstantiated-2.
+}.
+
+{
+    :result :has :success-objectNotInstantiated-2.
+}
+=>
+{
+    :test :is true.
+}.

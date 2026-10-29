@@ -1,0 +1,25 @@
+@prefix : <http://example.org/> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Reference: https://w3c.github.io/N3/spec/builtins.html#math:sum
+
+{
+    ("1"^^xsd:float "1"^^xsd:double) math:sum "2"^^xsd:double .
+}
+=>
+{
+    :result :has :success-literalType-3.
+}.
+
+{} => {
+    :test :contains :success-literalType-3.
+}.
+
+{
+    :result :has :success-literalType-3.
+}
+=>
+{
+    :test :is true.
+}.

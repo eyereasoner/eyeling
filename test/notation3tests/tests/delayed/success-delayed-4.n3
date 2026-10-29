@@ -1,0 +1,31 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+
+# Testing if the reasoner supports unordered sets of triples in the
+# premise position of log:implies.
+# Reference: https://w3c.github.io/N3/spec/semantics.html#terms-triples-and-graphs
+
+{
+  ?X log:langlit ?Y.
+  ?X list:length 2.
+  ("apa kabar?"@id) list:iterate (?I ?Y).
+}
+=>
+{
+    :result :has :success-delayed-4.
+}.
+
+{} => {
+    :test :contains :success-delayed-4.
+}.
+
+{
+    :result :has :success-delayed-4.
+}
+=>
+{
+    :test :is true.
+}.

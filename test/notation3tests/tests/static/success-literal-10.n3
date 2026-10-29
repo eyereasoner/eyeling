@@ -1,0 +1,26 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Reference: https://w3c.github.io/N3/spec/#paths
+
+:x :y :z.
+
+{
+   :z <-:y :x.
+}
+=>
+{
+    :result :has :success-literal-10.
+}.
+
+{} => {
+    :test :contains :success-literal-10.
+}.
+
+{
+    :result :has :success-literal-10.
+}
+=>
+{
+    :test :is true.
+}.

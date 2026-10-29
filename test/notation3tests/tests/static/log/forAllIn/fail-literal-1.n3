@@ -1,0 +1,34 @@
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@base <http://example.org/>.
+
+# Reference: https://w3c-cg.github.io/n3Builtins/#log:forAllIn
+
+:c a :CompositeTask ;
+    :subTask :s1 , :s2 , :s3.
+:s1 :state :Completed.
+:s3 :state :Completed.
+
+{
+    ?c a :CompositeTask.
+    ( { ?c :subTask ?s } { ?s :state :Completed } ) log:forAllIn _:t.
+}
+=>
+{
+    :result :has :fail-literal-1.
+}.
+
+{ } => {
+    :test :contains :fail-literal-1.
+}.
+
+{
+    :result :has :fail-literal-1.
+}
+=>
+{
+    :test :is false.
+}.

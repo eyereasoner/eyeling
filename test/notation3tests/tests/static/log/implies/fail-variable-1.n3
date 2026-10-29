@@ -1,0 +1,36 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+
+# Reference: https://w3c.github.io/N3/spec/semantics.html#log-semantics
+
+:x :y 42.
+
+{
+    :x :y ?C.
+}
+=>
+{
+    :answer :is ?C.
+}.
+
+# we can't have a bound variable here
+{
+    ( ?C 42 ) math:difference 0. 
+}
+=>
+{
+    :result :has :fail-variable-1.
+}.
+
+{} => {
+    :test :contains :fail-variable-1.
+}.
+
+{
+    :result :has :fail-variable-1.
+}
+=>
+{
+    :test :is false.
+}.

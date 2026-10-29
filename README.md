@@ -1131,11 +1131,12 @@ Package scripts are defined in `package.json`.
 | `npm run test:builtins` | Validate custom built-in contracts. |
 | `npm run test:examples` | Run example corpus tests. |
 | `npm run test:examples:proof` | Run proof-output checks for examples. |
-| `npm run test:manifest` | Validate example/test manifest expectations. |
+| `npm run test:manifest` | Run the Notation3 conformance suite from `test/notation3tests/`. |
 | `npm run test:playground` | Check playground serving headers. |
 | `npm run test:package` | Verify package-level behavior. |
 | `npm run test:store` | Verify memory and persistent fact-store matching. |
-| `npm run test:rdf12` | Run RDF 1.2 Turtle, N-Triples, N-Quads, and TriG syntax suites. |
+| `npm run test:rdf12` | Run the W3C RDF 1.2 Turtle, N-Triples, N-Quads, and TriG syntax suites from `test/w3c_rdf/`. |
+| `npm run sync:test-suites` | Refresh both conformance mirrors from upstream. |
 | `npm test` | Build and run the full suite. |
 
 ### Recommended local check before committing
@@ -1145,6 +1146,17 @@ Use the full test suite as the authoritative project check:
 ```bash
 npm test
 ```
+
+The Notation3 and W3C RDF 1.2 conformance suites run from committed local
+mirrors, `test/notation3tests/tests/` and `test/w3c_rdf/rdf-tests/`, so test
+runs need no network and upstream changes cannot fail an unrelated run. Refresh
+them deliberately and review the diff:
+
+```bash
+npm run sync:test-suites
+```
+
+Tests marked `@pragma networking` read the web; `NETWORKING=0` skips them.
 
 For quick API-level feedback during development:
 

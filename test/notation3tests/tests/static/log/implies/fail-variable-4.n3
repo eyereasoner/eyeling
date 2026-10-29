@@ -1,0 +1,27 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+
+# Reference: https://w3c.github.io/N3/spec/semantics.html#log-semantics
+
+_:x :y { _:foo :b :c }.
+
+{
+    ?A :y { ?A :b :c }. 
+}
+=>
+{
+    :result :has :fail-variable-4.
+}.
+
+{} => {
+    :test :contains :fail-variable-4.
+}.
+
+{
+    :result :has :fail-variable-4.
+}
+=>
+{
+    :test :is false.
+}.

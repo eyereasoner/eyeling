@@ -1,0 +1,31 @@
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@base <http://example.org/>.
+
+# Reference: https://w3c-cg.github.io/n3Builtins/#log:equalTo
+
+# Testing the built-in with valid literal values on the subject and object position.
+
+# fail-literal-9 
+{
+    (1 2 (3 4 (5 (6 (7 (8 9)))))) log:equalTo (1 2 (3 4 (5 (6 (7 (8 :boom)))))).
+}
+=>
+{
+    :result :has :fail-literal-9.
+}.
+
+{ } => {
+    :test :contains :fail-literal-9.
+}.
+
+{
+    :result :has :fail-literal-9.
+}
+=>
+{
+    :test :is false.
+}.

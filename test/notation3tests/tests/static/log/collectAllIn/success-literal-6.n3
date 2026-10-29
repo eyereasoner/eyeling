@@ -1,0 +1,43 @@
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@base <http://example.org/>.
+
+# Reference: https://w3c-cg.github.io/n3Builtins/#log:conclusion
+
+_:b1 :coord "10".
+_:b2 :coord "20".
+:plot :points (_:b1 _:b2).
+
+# success-literal-6
+{
+    ?Plot :points ?L.
+    ?L list:member ?M.
+    ( ?X { ?M :coord ?X } ?Result ) log:collectAllIn ?Scope.
+}
+=>
+{
+    :foo :bar ?Result.
+
+    {
+        :foo :bar ("10"),("20").
+    }
+    =>
+    {
+        :result :has :success-literal-6.
+    }.
+}.
+
+{ } => {
+    :test :contains :success-literal-6.
+}.
+
+{
+    :result :has :success-literal-6.
+}
+=>
+{
+    :test :is true.
+}.

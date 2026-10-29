@@ -1,0 +1,48 @@
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@base <http://example.org/>.
+
+# Reference: https://w3c-cg.github.io/n3Builtins/#log:collectAllIn
+
+:Let :param "Huey".
+:Let :param "Dewey".
+:Let :param "Louie".
+
+# success-literal-4
+{
+    ( { :x ?P1 ?P2. } { 
+        :Let ?P1 ?P2.
+    } ?allParams) log:collectAllIn _:x.
+}
+=>
+{
+    :foo :bar ?allParams.
+
+    {
+        :foo :bar ?L.
+
+        # Use member here, because collectAllIn is dependent on ordering of triples
+        ?L list:member { :x :param "Huey". }.
+        ?L list:member { :x :param "Dewey". }.
+        ?L list:member { :x :param "Louie". }.
+    }
+    =>
+    {
+        :result :has :success-literal-4.
+    }.
+}.
+
+{ } => {
+    :test :contains :success-literal-4.
+}.
+
+{
+    :result :has :success-literal-4.
+}
+=>
+{
+    :test :is true.
+}.

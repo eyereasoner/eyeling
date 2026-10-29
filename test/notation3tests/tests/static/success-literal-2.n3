@@ -1,0 +1,36 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Reference: https://w3c.github.io/N3/spec/#iriprplist
+
+:a :b :c;
+   :x :y.
+
+:c :d :e;
+    :x :y.
+
+:e :f :g.
+
+{
+    :a :b [
+        id :c :d [
+            id :e :f :g
+        ]
+    ].
+}
+=>
+{
+    :result :has :success-literal-2.
+}.
+
+{} => {
+    :test :contains :success-literal-2.
+}.
+
+{
+    :result :has :success-literal-2.
+}
+=>
+{
+    :test :is true.
+}.

@@ -1,0 +1,36 @@
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+@base <http://example.org/>.
+
+# Reference: https://w3c-cg.github.io/n3Builtins/#string:concatenation
+
+# Testing the built-in with an rdf list on the subject and a literal in object position.
+
+:test :value [ rdf:first 123 ;
+  rdf:rest [ rdf:first 4.56 ;
+             rdf:rest rdf:nil ] ].
+
+# success-subject-list-7 cast integer and decimal to string
+{
+    :test :value ?TestValue.
+    ?TestValue string:concatenation "1234.56".
+}
+=>
+{
+    :result :has :success-subject-list-7.
+}.
+
+{ } => {
+    :test :contains :success-subject-list-7.
+}.
+
+{
+    :result :has :success-subject-list-7.
+}
+=>
+{
+    :test :is true.
+}.

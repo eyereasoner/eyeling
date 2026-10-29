@@ -1,0 +1,35 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Reference: https://w3c.github.io/N3/spec/#grammar
+
+:A :leaf :B.
+:B :leaf :C.
+
+{
+    ?N <- :leaf :B.
+}
+=>
+{
+    :foo :bar ?N.
+
+    {
+        :foo :bar :C.
+    }
+    => 
+    {
+        :result :has :success-literal-21.
+    }.
+}.
+
+{} => {
+    :test :contains :success-literal-21.
+}.
+
+{
+    :result :has :success-literal-21.
+}
+=>
+{
+    :test :is true.
+}.

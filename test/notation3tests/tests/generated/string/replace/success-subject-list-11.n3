@@ -1,0 +1,37 @@
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+@base <http://example.org/>.
+
+# Reference: https://w3c-cg.github.io/n3Builtins/#string:replace
+
+# Testing the built-in with an rdf list on the subject and a literal in object position.
+
+:test :value [ rdf:first "1.234"^^xsd:double ;
+  rdf:rest [ rdf:first "3"^^xsd:double ;
+             rdf:rest [ rdf:first "88"^^xsd:double ;
+                        rdf:rest rdf:nil ] ] ].
+
+# success-subject-list-11 case double to string
+{
+    :test :value ?TestValue.
+    ?TestValue string:replace "1.2884".
+}
+=>
+{
+    :result :has :success-subject-list-11.
+}.
+
+{ } => {
+    :test :contains :success-subject-list-11.
+}.
+
+{
+    :result :has :success-subject-list-11.
+}
+=>
+{
+    :test :is true.
+}.

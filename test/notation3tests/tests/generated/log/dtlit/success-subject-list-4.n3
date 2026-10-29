@@ -1,0 +1,36 @@
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@base <http://example.org/>.
+
+# Reference: https://w3c-cg.github.io/n3Builtins/#log:dtlit
+
+# Testing the built-in with an rdf list on the subject and a literal in object position.
+
+:test :value [ rdf:first "1.0" ;
+  rdf:rest [ rdf:first xsd:double ;
+             rdf:rest rdf:nil ] ].
+
+# success-subject-list-4 
+{
+    :test :value ?TestValue.
+    ?TestValue log:dtlit 1.0e0.
+}
+=>
+{
+    :result :has :success-subject-list-4.
+}.
+
+{ } => {
+    :test :contains :success-subject-list-4.
+}.
+
+{
+    :result :has :success-subject-list-4.
+}
+=>
+{
+    :test :is true.
+}.

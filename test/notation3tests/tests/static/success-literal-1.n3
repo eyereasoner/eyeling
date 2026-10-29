@@ -1,0 +1,27 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@base <http://somewhere.org/> .
+
+# Reference: https://w3c.github.io/N3/spec/#iris
+
+<http://somewhere.org/bar> a :bar.
+
+{
+    <bar> a <http://example.org/bar>.
+}
+=>
+{
+    :result :has :success-literal-1.
+}.
+
+{} => {
+    :test :contains :success-literal-1.
+}.
+
+{
+    :result :has :success-literal-1.
+}
+=>
+{
+    :test :is true.
+}.

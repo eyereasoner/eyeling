@@ -1,0 +1,41 @@
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@base <http://example.org/>.
+
+# Reference: https://w3c-cg.github.io/N3/spec/#collections
+# Reference: https://www.w3.org/TeamSubmission/n3/#lists
+
+:test :value _:b1.
+
+_:b1 rdf:first 1 ;
+    rdf:rest [ 
+        rdf:first 2 ;
+        rdf:rest [ 
+            rdf:first 3 ;
+            rdf:rest rdf:nil 
+        ] 
+    ] .
+
+# fail-literal-1 
+{
+    :test :value (1 2 3).
+}
+=>
+{
+    :result :has :fail-literal-1.
+}.
+
+{ } => {
+    :test :contains :fail-literal-1.
+}.
+
+{
+    :result :has :fail-literal-1.
+}
+=>
+{
+    :test :is false.
+}.

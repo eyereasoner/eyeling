@@ -1,0 +1,53 @@
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix : <http://example.org/> .
+
+# Reference: https://w3c.github.io/N3/spec/builtins.html#log:parsedAsN3
+
+{ 
+  # The input string is a syntactically valid N3 string
+  # The reasoner should not complain about ?X that is appearing in the string and in the
+  # rule.
+  """
+@prefix : <http://example.org/ns#> .
+
+:Alice a :Person.
+{ 
+  ?X a :Person 
+} 
+=>
+{
+  :foo :bar ?X.
+  
+  { :foo :bar :Alice }
+  =>
+  {
+    :test :is true.
+  }.
+}.
+""" log:parsedAsN3 ?X.
+}
+=>
+{
+    :foo :bar ?X.
+    
+    { 
+        :foo :bar ?N3. 
+    }
+    =>
+    {
+        :result :has :success-literal-1.
+    }.
+}.
+ 
+{ } => {
+    :test :contains :success-literal-1.
+}.
+
+{
+    :result :has :success-literal-1.
+}
+=>
+{
+    :test :is true.
+}.

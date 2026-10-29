@@ -1,0 +1,36 @@
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@base <http://example.org/>.
+
+# Reference: https://w3c-cg.github.io/n3Builtins/#math:quotient
+
+# Testing the built-in with an rdf list on the subject and a literal in object position.
+
+:test :value [ rdf:first 3 ;
+  rdf:rest [ rdf:first 3 ;
+             rdf:rest rdf:nil ] ].
+
+# success-subject-list-1 
+{
+    :test :value ?TestValue.
+    ?TestValue math:quotient 1.
+}
+=>
+{
+    :result :has :success-subject-list-1.
+}.
+
+{ } => {
+    :test :contains :success-subject-list-1.
+}.
+
+{
+    :result :has :success-subject-list-1.
+}
+=>
+{
+    :test :is true.
+}.

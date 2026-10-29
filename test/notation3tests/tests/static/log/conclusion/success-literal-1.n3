@@ -1,0 +1,41 @@
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@base <http://example.org/>.
+
+# Reference: https://w3c-cg.github.io/n3Builtins/#log:conclusion
+
+# success-literal-1
+{
+    { 
+        :Koko a :Cat. 
+        { ?X a :Cat. } => { ?X :says "Meow". }.
+    } log:conclusion ?C.
+}
+=>
+{
+    :foo :bar ?C.
+
+    {
+        :foo :bar ?What.
+        ?What log:includes { :Koko :says "Meow". }.
+    }
+    =>
+    {
+        :result :has :success-literal-1.
+    }.
+}.
+
+{ } => {
+    :test :contains :success-literal-1.
+}.
+
+{
+    :result :has :success-literal-1.
+}
+=>
+{
+    :test :is true.
+}.

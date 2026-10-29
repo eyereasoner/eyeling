@@ -1,0 +1,26 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Reference: https://www.w3.org/TR/turtle/#h3_sec-grammar-grammar
+
+:my :value .5.
+
+{
+    :my :value .5.
+}
+=>
+{
+    :result :has :success-literal-33.
+}.
+
+{} => {
+    :test :contains :success-literal-33.
+}.
+
+{
+    :result :has :success-literal-33.
+}
+=>
+{
+    :test :is true.
+}.  

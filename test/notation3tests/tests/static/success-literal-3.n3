@@ -1,0 +1,26 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Reference: https://w3c.github.io/N3/spec/#literals
+
+:test :value "To be, or not to be, that is the question".
+
+{
+    :test :value 'To be, or not to be, that is the question'.
+}
+=>
+{
+    :result :has :success-literal-3.
+}.
+
+{} => {
+    :test :contains :success-literal-3.
+}.
+
+{
+    :result :has :success-literal-3.
+}
+=>
+{
+    :test :is true.
+}.

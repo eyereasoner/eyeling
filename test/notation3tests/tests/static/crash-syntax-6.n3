@@ -1,0 +1,28 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Reference: https://w3c.github.io/N3/spec/#grammar
+
+# https://www.w3.org/TR/2006/REC-xml11-20060816/#forbidden
+:subject :predicate "\uFFFF" .
+:subject :predicate "\uFFFE" .
+
+{
+    :subject :predicate ?X.
+}
+=>
+{
+    :result :has :crash-syntax-6.
+}.
+
+{} => {
+    :test :contains :crash-syntax-6.
+}.
+
+{
+    :result :has :crash-syntax-6.
+}
+=>
+{
+    :test :is false.
+}.

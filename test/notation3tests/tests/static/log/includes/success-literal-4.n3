@@ -1,0 +1,25 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+# Reference: https://w3c.github.io/N3/spec/builtins.html#log:includes
+
+{
+    ?SCOPE log:includes { ?S ?P { :test :is true.} }.
+}
+=>
+{
+    :result :has :success-literal-4.
+}.
+
+{} => {
+    :test :contains :success-literal-4.
+}.
+
+{
+    :result :has :success-literal-4.
+}
+=>
+{
+    :test :is true.
+}.

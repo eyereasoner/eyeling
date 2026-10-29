@@ -1,0 +1,37 @@
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@base <http://example.org/>.
+
+# Reference: https://w3c-cg.github.io/n3Builtins/#list:remove
+
+# Testing the built-in with a literal value on the subject and an rdf list in object position.
+
+:test :value [ rdf:first "dog" ;
+  rdf:rest [ rdf:first 42 ;
+             rdf:rest [ rdf:first "penguin" ;
+                        rdf:rest rdf:nil ] ] ].
+
+# success-object-list-4 
+{
+    :test :value ?TestValue.
+    (("dog" 42 "penguin") "42"^^xsd:decimal) list:remove ?TestValue.
+}
+=>
+{
+    :result :has :success-object-list-4.
+}.
+
+{ } => {
+    :test :contains :success-object-list-4.
+}.
+
+{
+    :result :has :success-object-list-4.
+}
+=>
+{
+    :test :is true.
+}.

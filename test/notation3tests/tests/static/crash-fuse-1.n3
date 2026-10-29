@@ -1,0 +1,20 @@
+@prefix : <http://example.org/> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+
+# Reference: https://w3c.github.io/N3/spec/builtins.html#math:sum
+# in combination with an ex falso quodlibet
+
+:x :value 1 .
+:y :value 1 .
+
+{
+  :x :value ?X.       # true
+  :y :value ?Y.       # true
+  (?X ?Y) math:sum 2. # true
+} => false .          # must be true too
+
+{} => {
+    :test :contains :crash-fuse-1.
+}.
+
+{} => { :test :is false }.  # if we see this, then the reasoner does not report the inconsistency

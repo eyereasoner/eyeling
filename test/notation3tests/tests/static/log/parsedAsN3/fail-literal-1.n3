@@ -1,0 +1,33 @@
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix : <http://example.org/> .
+
+# Reference: https://w3c.github.io/N3/spec/builtins.html#log:parsedAsN3
+
+{ 
+  """
+{ :a :b :c } => true.
+""" log:parsedAsN3 ?A.
+
+  """
+{ :a :b :c } => false.
+""" log:parsedAsN3 ?B.
+
+  ?A log:equalTo ?B.
+}
+=>
+{
+    :result :has :fail-literal-1.
+}.
+ 
+{ } => {
+    :test :contains :fail-literal-1.
+}.
+
+{
+    :result :has :fail-literal-1.
+}
+=>
+{
+    :test :is false.
+}.

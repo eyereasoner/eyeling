@@ -1,0 +1,34 @@
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix string: <http://www.w3.org/2000/10/swap/string#> .
+@base <http://example.org/>.
+
+# Reference: https://w3c-cg.github.io/n3Builtins/#string:containsIgnoringCase
+
+# Check if the object accepts a bound variable.
+# Reference: https://w3c-cg.github.io/n3Builtins/#argumentmodes
+
+:check_success-objectInstantiated-1 :value "O W".
+# success-objectInstantiated-1 
+{
+    :check_success-objectInstantiated-1 :value ?X.
+    "hello world!" string:containsIgnoringCase ?X.
+}
+=>
+{
+    :result :has :success-objectInstantiated-1.
+}.
+
+{ } => {
+    :test :contains :success-objectInstantiated-1.
+}.
+
+{
+    :result :has :success-objectInstantiated-1.
+}
+=>
+{
+    :test :is true.
+}.

@@ -1,0 +1,33 @@
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@base <http://example.org/>.
+
+# Reference: https://w3c-cg.github.io/n3Builtins/#log:collectAllIn
+
+# Check if the subject accepts a not instantiated variable.
+# Reference: https://w3c-cg.github.io/n3Builtins/#argumentmodes
+
+# fail-subjectNotInstantiated-1 
+{
+    ?X log:collectAllIn _:x.
+    _:x log:collectAllIn _:x.
+}
+=>
+{
+    :result :has :fail-subjectNotInstantiated-1.
+}.
+
+{ } => {
+    :test :contains :fail-subjectNotInstantiated-1.
+}.
+
+{
+    :result :has :fail-subjectNotInstantiated-1.
+}
+=>
+{
+    :test :is false.
+}.

@@ -1,0 +1,27 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Reference: https://w3c.github.io/N3/spec/#grammar
+
+# Invalid unpaired suggorate point
+:subject :predicate "\uD800" .
+
+{
+    :subject :predicate ?X.
+}
+=>
+{
+    :result :has :crash-syntax-2.
+}.
+
+{} => {
+    :test :contains :crash-syntax-2.
+}.
+
+{
+    :result :has :crash-syntax-2.
+}
+=>
+{
+    :test :is false.
+}.

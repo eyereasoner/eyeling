@@ -1,0 +1,45 @@
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+@base <http://example.org/>.
+
+# Reference: https://w3c-cg.github.io/n3Builtins/#math:asin
+
+# Check if the built-in accepts non instantiated wildcards both in subject and object position.
+# Reference: https://w3c-cg.github.io/n3Builtins/#argumentmodes
+
+# success-fullNotInstantiated-1 
+{
+    ?X math:asin ?Y.
+    _:x math:asin _:y.
+}
+=>
+{
+    {
+      ?X math:asin 0.0.
+    }
+    =>
+    {
+        {
+            0.0 math:asin ?Y.
+        }   
+        =>
+        {
+            :result :has :success-fullNotInstantiated-1.
+        }.
+    }.
+}.
+
+{ } => {
+    :test :contains :success-fullNotInstantiated-1.
+}.
+
+{
+    :result :has :success-fullNotInstantiated-1.
+}
+=>
+{
+    :test :is true.
+}.

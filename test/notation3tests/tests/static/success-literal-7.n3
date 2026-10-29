@@ -1,0 +1,26 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Reference: https://w3c.github.io/N3/spec/#grammar
+
+{ :Fred :Wilma :Dino } { :read :liked :approved } { :resolution1 :resolution2 :resolution3 }. 
+
+{
+    { :Fred :Wilma :Dino } { :read :liked :approved } { :resolution1 :resolution2 :resolution3 }. 
+}
+=>
+{
+    :result :has :success-literal-7.
+}.
+
+{} => {
+    :test :contains :success-literal-7.
+}.
+
+{
+    :result :has :success-literal-7.
+}
+=>
+{
+    :test :is true.
+}.

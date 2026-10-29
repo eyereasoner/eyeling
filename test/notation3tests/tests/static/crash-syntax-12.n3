@@ -1,0 +1,26 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Reference: https://w3c.github.io/N3/spec/#grammar
+
+:my :value 1.2.3.4.5.
+
+{
+    :my :value 1.2.3.4.5.
+}
+=>
+{
+    :result :has :crash-syntax-12.
+}.
+
+{} => {
+    :test :contains :crash-syntax-12.
+}.
+
+{
+    :result :has :crash-syntax-12.
+}
+=>
+{
+    :test :is false.
+}.

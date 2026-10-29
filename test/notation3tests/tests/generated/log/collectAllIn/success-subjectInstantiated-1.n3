@@ -1,0 +1,34 @@
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@base <http://example.org/>.
+
+# Reference: https://w3c-cg.github.io/n3Builtins/#log:collectAllIn
+
+# Check if the subject accepts a bound variable.
+# Reference: https://w3c-cg.github.io/n3Builtins/#argumentmodes
+
+:check_success-subjectInstantiated-1 :value (_:param { :Let :param _:param. } _:allParams).
+# success-subjectInstantiated-1 
+{
+    :check_success-subjectInstantiated-1 :value ?X.
+    ?X log:collectAllIn _:x.
+}
+=>
+{
+    :result :has :success-subjectInstantiated-1.
+}.
+
+{ } => {
+    :test :contains :success-subjectInstantiated-1.
+}.
+
+{
+    :result :has :success-subjectInstantiated-1.
+}
+=>
+{
+    :test :is true.
+}.

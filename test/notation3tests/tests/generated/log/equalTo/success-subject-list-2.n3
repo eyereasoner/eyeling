@@ -1,0 +1,48 @@
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@base <http://example.org/>.
+
+# Reference: https://w3c-cg.github.io/n3Builtins/#log:equalTo
+
+# Testing the built-in with an rdf list on the subject and a literal in object position.
+
+:test :value [ rdf:first 1 ;
+  rdf:rest [ rdf:first 2 ;
+             rdf:rest [ rdf:first [ rdf:first 3 ;
+                                    rdf:rest [ rdf:first 4 ;
+                                               rdf:rest [ rdf:first [ rdf:first 5 ;
+                                                                      rdf:rest [ rdf:first [ rdf:first 6 ;
+                                                                                             rdf:rest [ rdf:first [ rdf:first 7 ;
+                                                                                                                    rdf:rest [ rdf:first [ rdf:first 8 ;
+                                                                                                                                           rdf:rest [ rdf:first 9 ;
+                                                                                                                                                      rdf:rest rdf:nil ] ] ;
+                                                                                                                               rdf:rest rdf:nil ] ] ;
+                                                                                                        rdf:rest rdf:nil ] ] ;
+                                                                                 rdf:rest rdf:nil ] ] ;
+                                                          rdf:rest rdf:nil ] ] ] ;
+                        rdf:rest rdf:nil ] ] ].
+
+# success-subject-list-2 
+{
+    :test :value ?TestValue.
+    ?TestValue log:equalTo (1 2 (3 4 (5 (6 (7 (8 9)))))).
+}
+=>
+{
+    :result :has :success-subject-list-2.
+}.
+
+{ } => {
+    :test :contains :success-subject-list-2.
+}.
+
+{
+    :result :has :success-subject-list-2.
+}
+=>
+{
+    :test :is true.
+}.

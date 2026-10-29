@@ -1,0 +1,32 @@
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix list: <http://www.w3.org/2000/10/swap/list#> .
+@base <http://example.org/>.
+
+# Reference: https://w3c-cg.github.io/n3Builtins/#list:memberAt
+
+# Testing the built-in with valid literal values on the object position and a variable
+# on the subject position (where the spec requires a list).
+
+# fail-subjecListNotInstantiated-1 
+{
+    ?X list:memberAt "cat".
+}
+=>
+{
+    :result :has :fail-subjecListNotInstantiated-1.
+}.
+
+{ } => {
+    :test :contains :fail-subjecListNotInstantiated-1.
+}.
+
+{
+    :result :has :fail-subjecListNotInstantiated-1.
+}
+=>
+{
+    :test :is false.
+}.

@@ -1,0 +1,26 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Reference: https://w3c.github.io/N3/spec/#grammar
+
+[ [] [] ].
+
+{
+   [ [] [] ].
+}
+=>
+{
+    :result :has :success-literal-15.
+}.
+
+{} => {
+    :test :contains :success-literal-15.
+}.
+
+{
+    :result :has :success-literal-15.
+}
+=>
+{
+    :test :is true.
+}.

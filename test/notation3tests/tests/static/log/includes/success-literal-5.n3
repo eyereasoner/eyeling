@@ -1,0 +1,42 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+# Reference: https://w3c.github.io/N3/spec/builtins.html#log:includes
+
+:a :e :c.
+:g :c :f.
+:c :g :c.
+
+{
+    ?SCOPE log:includes 
+    {
+      :a :e ?X .
+      ?Y ?X ?Z .
+      ?X :g ?X .
+    }.  
+}
+=>
+{
+    :result :is (?X ?Y ?Z).
+                 
+    {
+      :result :is (:c :g :f).
+    }
+    =>
+    {
+      :result :has :success-literal-5.
+    }.
+}.
+
+{} => {
+    :test :contains :success-literal-5.
+}.
+
+{
+    :result :has :success-literal-5.
+}
+=>
+{
+    :test :is true.
+}.

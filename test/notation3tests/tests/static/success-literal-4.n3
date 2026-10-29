@@ -1,0 +1,30 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Reference: https://w3c.github.io/N3/spec/#literals
+
+:test :value "To be, or not to be, that is the question:\nWhether 'tis nobler in the mind to suffer\nThe slings and arrows of outrageous fortune,\nOr to take arms against a sea of troubles\nAnd by opposing end them.".
+
+{
+    :test :value """To be, or not to be, that is the question:
+Whether 'tis nobler in the mind to suffer
+The slings and arrows of outrageous fortune,
+Or to take arms against a sea of troubles
+And by opposing end them.""".
+}
+=>
+{
+    :result :has :success-literal-4.
+}.
+
+{} => {
+    :test :contains :success-literal-4.
+}.
+
+{
+    :result :has :success-literal-4.
+}
+=>
+{
+    :test :is true.
+}.

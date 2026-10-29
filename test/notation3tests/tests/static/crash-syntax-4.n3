@@ -1,0 +1,27 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Reference: https://w3c.github.io/N3/spec/#grammar
+
+# Invalid null character
+:subject :predicate "hello\u0000world".
+
+{
+    :subject :predicate ?X.
+}
+=>
+{
+    :result :has :crash-syntax-4.
+}.
+
+{} => {
+    :test :contains :crash-syntax-4.
+}.
+
+{
+    :result :has :crash-syntax-4.
+}
+=>
+{
+    :test :is false.
+}.

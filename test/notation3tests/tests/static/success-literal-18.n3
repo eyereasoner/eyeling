@@ -1,0 +1,27 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Reference: https://w3c.github.io/N3/spec/#grammar
+
+:Alice a :Person.
+
+{
+   @prefix foo: <http://example.org/> .
+   foo:Alice a foo:Person.
+}
+=>
+{
+    :result :has :success-literal-18.
+}.
+
+{} => {
+    :test :contains :success-literal-18.
+}.
+
+{
+    :result :has :success-literal-18.
+}
+=>
+{
+    :test :is true.
+}.

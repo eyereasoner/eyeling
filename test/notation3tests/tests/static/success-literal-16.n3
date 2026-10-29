@@ -1,0 +1,258 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Reference: https://w3c.github.io/N3/spec/#grammar
+
+:n1 :name "Afrikaans"@af.
+:n2 :name "Afrikaans (South Africa)"@af-ZA.
+:n3 :name "Arabic"@ar.
+:n4 :name "Arabic (U.A.E.)"@ar-AE.
+:n5 :name "Arabic (Bahrain)"@ar-BH.
+:n6 :name "Arabic (Algeria)"@ar-DZ.
+:n7 :name "Arabic (Egypt)"@ar-EG.
+:n8 :name "Arabic (Iraq)"@ar-IQ.
+:n9 :name "Arabic (Jordan)"@ar-JO.
+:n10 :name "Arabic (Kuwait)"@ar-KW.
+:n11 :name "Arabic (Lebanon)"@ar-LB.
+:n12 :name "Arabic (Libya)"@ar-LY.
+:n13 :name "Arabic (Morocco)"@ar-MA.
+:n14 :name "Arabic (Oman)"@ar-OM.
+:n15 :name "Arabic (Qatar)"@ar-QA.
+:n16 :name "Arabic (Saudi Arabia)"@ar-SA.
+:n17 :name "Arabic (Syria)"@ar-SY.
+:n18 :name "Arabic (Tunisia)"@ar-TN.
+:n19 :name "Arabic (Yemen)"@ar-YE.
+:n20 :name "Azeri (Latin)"@az.
+:n21 :name "Azeri (Latin) (Azerbaijan)"@az-AZ.
+:n22 :name "Azeri (Cyrillic) (Azerbaijan)"@az-Cyrl-AZ.
+:n23 :name "Belarusian"@be.
+:n24 :name "Belarusian (Belarus)"@be-BY.
+:n25 :name "Bulgarian"@bg.
+:n26 :name "Bulgarian (Bulgaria)"@bg-BG.
+:n27 :name "Bosnian (Bosnia and Herzegovina)"@bs-BA.
+:n28 :name "Catalan"@ca.
+:n29 :name "Catalan (Spain)"@ca-ES.
+:n30 :name "Czech"@cs.
+:n31 :name "Czech (Czech Republic)"@cs-CZ.
+:n32 :name "Welsh"@cy.
+:n33 :name "Welsh (United Kingdom)"@cy-GB.
+:n34 :name "Danish"@da.
+:n35 :name "Danish (Denmark)"@da-DK.
+:n36 :name "German"@de.
+:n37 :name "German (Austria)"@de-AT.
+:n38 :name "German (Switzerland)"@de-CH.
+:n39 :name "German (Germany)"@de-DE.
+:n40 :name "German (Liechtenstein)"@de-LI.
+:n41 :name "German (Luxembourg)"@de-LU.
+:n42 :name "Divehi"@dv.
+:n43 :name "Divehi (Maldives)"@dv-MV.
+:n44 :name "Greek"@el.
+:n45 :name "Greek (Greece)"@el-GR.
+:n46 :name "English"@en.
+:n47 :name "English (Australia)"@en-AU.
+:n48 :name "English (Belize)"@en-BZ.
+:n49 :name "English (Canada)"@en-CA.
+:n50 :name "English (Caribbean)"@en-CB.
+:n51 :name "English (United Kingdom)"@en-GB.
+:n52 :name "English (Ireland)"@en-IE.
+:n53 :name "English (Jamaica)"@en-JM.
+:n54 :name "English (New Zealand)"@en-NZ.
+:n55 :name "English (Republic of the Philippines)"@en-PH.
+:n56 :name "English (Trinidad and Tobago)"@en-TT.
+:n57 :name "English (United States)"@en-US.
+:n58 :name "English (South Africa)"@en-ZA.
+:n59 :name "English (Zimbabwe)"@en-ZW.
+:n60 :name "Esperanto"@eo.
+:n61 :name "Spanish"@es.
+:n62 :name "Spanish (Argentina)"@es-AR.
+:n63 :name "Spanish (Bolivia)"@es-BO.
+:n64 :name "Spanish (Chile)"@es-CL.
+:n65 :name "Spanish (Colombia)"@es-CO.
+:n66 :name "Spanish (Costa Rica)"@es-CR.
+:n67 :name "Spanish (Dominican Republic)"@es-DO.
+:n68 :name "Spanish (Ecuador)"@es-EC.
+:n69 :name "Spanish (Spain)"@es-ES.
+:n70 :name "Spanish (Guatemala)"@es-GT.
+:n71 :name "Spanish (Honduras)"@es-HN.
+:n72 :name "Spanish (Mexico)"@es-MX.
+:n73 :name "Spanish (Nicaragua)"@es-NI.
+:n74 :name "Spanish (Panama)"@es-PA.
+:n75 :name "Spanish (Peru)"@es-PE.
+:n76 :name "Spanish (Puerto Rico)"@es-PR.
+:n77 :name "Spanish (Paraguay)"@es-PY.
+:n78 :name "Spanish (El Salvador)"@es-SV.
+:n79 :name "Spanish (Uruguay)"@es-UY.
+:n80 :name "Spanish (Venezuela)"@es-VE.
+:n81 :name "Estonian"@et.
+:n82 :name "Estonian (Estonia)"@et-EE.
+:n83 :name "Basque"@eu.
+:n84 :name "Basque (Spain)"@eu-ES.
+:n85 :name "Farsi"@fa.
+:n86 :name "Farsi (Iran)"@fa-IR.
+:n87 :name "Finnish"@fi.
+:n88 :name "Finnish (Finland)"@fi-FI.
+:n89 :name "Faroese"@fo.
+:n90 :name "Faroese (Faroe Islands)"@fo-FO.
+:n91 :name "French"@fr.
+:n92 :name "French (Belgium)"@fr-BE.
+:n93 :name "French (Canada)"@fr-CA.
+:n94 :name "French (Switzerland)"@fr-CH.
+:n95 :name "French (France)"@fr-FR.
+:n96 :name "French (Luxembourg)"@fr-LU.
+:n97 :name "French (Principality of Monaco)"@fr-MC.
+:n98 :name "Galician"@gl.
+:n99 :name "Galician (Spain)"@gl-ES.
+:n100 :name "Gujarati"@gu.
+:n101 :name "Gujarati (India)"@gu-IN.
+:n102 :name "Hebrew"@he.
+:n103 :name "Hebrew (Israel)"@he-IL.
+:n104 :name "Hindi"@hi.
+:n105 :name "Hindi (India)"@hi-IN.
+:n106 :name "Croatian"@hr.
+:n107 :name "Croatian (Bosnia and Herzegovina)"@hr-BA.
+:n108 :name "Croatian (Croatia)"@hr-HR.
+:n109 :name "Hungarian"@hu.
+:n110 :name "Hungarian (Hungary)"@hu-HU.
+:n111 :name "Armenian"@hy.
+:n112 :name "Armenian (Armenia)"@hy-AM.
+:n113 :name "Indonesian"@id.
+:n114 :name "Indonesian (Indonesia)"@id-ID.
+:n115 :name "Icelandic"@is.
+:n116 :name "Icelandic (Iceland)"@is-IS.
+:n117 :name "Italian"@it.
+:n118 :name "Italian (Switzerland)"@it-CH.
+:n119 :name "Italian (Italy)"@it-IT.
+:n120 :name "Japanese"@ja.
+:n121 :name "Japanese (Japan)"@ja-JP.
+:n122 :name "Georgian"@ka.
+:n123 :name "Georgian (Georgia)"@ka-GE.
+:n124 :name "Kazakh"@kk.
+:n125 :name "Kazakh (Kazakhstan)"@kk-KZ.
+:n126 :name "Kannada"@kn.
+:n127 :name "Kannada (India)"@kn-IN.
+:n128 :name "Korean"@ko.
+:n129 :name "Korean (Korea)"@ko-KR.
+:n130 :name "Konkani"@kok.
+:n131 :name "Konkani (India)"@kok-IN.
+:n132 :name "Kyrgyz"@ky.
+:n133 :name "Kyrgyz (Kyrgyzstan)"@ky-KG.
+:n134 :name "Lithuanian"@lt.
+:n135 :name "Lithuanian (Lithuania)"@lt-LT.
+:n136 :name "Latvian"@lv.
+:n137 :name "Latvian (Latvia)"@lv-LV.
+:n138 :name "Maori"@mi.
+:n139 :name "Maori (New Zealand)"@mi-NZ.
+:n140 :name "FYRO Macedonian"@mk.
+:n141 :name "FYRO Macedonian (Former Yugoslav Republic of Macedonia)"@mk-MK.
+:n142 :name "Mongolian"@mn.
+:n143 :name "Mongolian (Mongolia)"@mn-MN.
+:n144 :name "Marathi"@mr.
+:n145 :name "Marathi (India)"@mr-IN.
+:n146 :name "Malay"@ms.
+:n147 :name "Malay (Brunei Darussalam)"@ms-BN.
+:n148 :name "Malay (Malaysia)"@ms-MY.
+:n149 :name "Maltese"@mt.
+:n150 :name "Maltese (Malta)"@mt-MT.
+:n151 :name "Norwegian (Bokm?l)"@nb.
+:n152 :name "Norwegian (Bokm?l) (Norway)"@nb-NO.
+:n153 :name "Dutch"@nl.
+:n154 :name "Dutch (Belgium)"@nl-BE.
+:n155 :name "Dutch (Netherlands)"@nl-NL.
+:n156 :name "Norwegian (Nynorsk) (Norway)"@nn-NO.
+:n157 :name "Northern Sotho"@ns.
+:n158 :name "Northern Sotho (South Africa)"@ns-ZA.
+:n159 :name "Punjabi"@pa.
+:n160 :name "Punjabi (India)"@pa-IN.
+:n161 :name "Polish"@pl.
+:n162 :name "Polish (Poland)"@pl-PL.
+:n163 :name "Pashto"@ps.
+:n164 :name "Pashto (Afghanistan)"@ps-AR.
+:n165 :name "Portuguese"@pt.
+:n166 :name "Portuguese (Brazil)"@pt-BR.
+:n167 :name "Portuguese (Portugal)"@pt-PT.
+:n168 :name "Quechua"@qu.
+:n169 :name "Quechua (Bolivia)"@qu-BO.
+:n170 :name "Quechua (Ecuador)"@qu-EC.
+:n171 :name "Quechua (Peru)"@qu-PE.
+:n172 :name "Romanian"@ro.
+:n173 :name "Romanian (Romania)"@ro-RO.
+:n174 :name "Russian"@ru.
+:n175 :name "Russian (Russia)"@ru-RU.
+:n176 :name "Sanskrit"@sa.
+:n177 :name "Sanskrit (India)"@sa-IN.
+:n178 :name "Sami"@se.
+:n179 :name "Sami (Finland)"@se-FI.
+:n180 :name "Sami (Norway)"@se-NO.
+:n181 :name "Sami (Sweden)"@se-SE.
+:n182 :name "Slovak"@sk.
+:n183 :name "Slovak (Slovakia)"@sk-SK.
+:n184 :name "Slovenian"@sl.
+:n185 :name "Slovenian (Slovenia)"@sl-SI.
+:n186 :name "Albanian"@sq.
+:n187 :name "Albanian (Albania)"@sq-AL.
+:n188 :name "Serbian (Latin) (Bosnia and Herzegovina)"@sr-BA.
+:n189 :name "Serbian (Cyrillic) (Bosnia and Herzegovina)"@sr-Cyrl-BA.
+:n190 :name "Serbian (Latin) (Serbia and Montenegro)"@sr-SP.
+:n191 :name "Serbian (Cyrillic) (Serbia and Montenegro)"@sr-Cyrl-SP.
+:n192 :name "Swedish"@sv.
+:n193 :name "Swedish (Finland)"@sv-FI.
+:n194 :name "Swedish (Sweden)"@sv-SE.
+:n195 :name "Swahili"@sw.
+:n196 :name "Swahili (Kenya)"@sw-KE.
+:n197 :name "Syriac"@syr.
+:n198 :name "Syriac (Syria)"@syr-SY.
+:n199 :name "Tamil"@ta.
+:n200 :name "Tamil (India)"@ta-IN.
+:n201 :name "Telugu"@te.
+:n202 :name "Telugu (India)"@te-IN.
+:n203 :name "Thai"@th.
+:n204 :name "Thai (Thailand)"@th-TH.
+:n205 :name "Tagalog"@tl.
+:n206 :name "Tagalog (Philippines)"@tl-PH.
+:n207 :name "Tswana"@tn.
+:n208 :name "Tswana (South Africa)"@tn-ZA.
+:n209 :name "Turkish"@tr.
+:n210 :name "Turkish (Turkey)"@tr-TR.
+:n211 :name "Tatar"@tt.
+:n212 :name "Tatar (Russia)"@tt-RU.
+:n213 :name "Tsonga"@ts.
+:n214 :name "Ukrainian"@uk.
+:n215 :name "Ukrainian (Ukraine)"@uk-UA.
+:n216 :name "Urdu"@ur.
+:n217 :name "Urdu (Islamic Republic of Pakistan)"@ur-PK.
+:n218 :name "Uzbek (Latin)"@uz.
+:n219 :name "Uzbek (Latin) (Uzbekistan)"@uz-UZ.
+:n220 :name "Uzbek (Cyrillic) (Uzbekistan)"@uz-Cyrl-UZ.
+:n221 :name "Vietnamese"@vi.
+:n222 :name "Vietnamese (Viet Nam)"@vi-VN.
+:n223 :name "Xhosa"@xh.
+:n224 :name "Xhosa (South Africa)"@xh-ZA.
+:n225 :name "Chinese"@zh.
+:n226 :name "Chinese (S)"@zh-CN.
+:n227 :name "Chinese (Hong Kong)"@zh-HK.
+:n228 :name "Chinese (Macau)"@zh-MO.
+:n229 :name "Chinese (Singapore)"@zh-SG.
+:n230 :name "Chinese (T)"@zh-TW.
+:n231 :name "Zulu"@zu.
+:n232 :name "Zulu (South Africa)"@zu-ZA.
+
+{
+    ?N :name ?S.
+}
+=>
+{
+    :result :has :success-literal-16.
+}.
+
+{} => {
+    :test :contains :success-literal-16.
+}.
+
+{
+    :result :has :success-literal-16.
+}
+=>
+{
+    :test :is true.
+}.
+

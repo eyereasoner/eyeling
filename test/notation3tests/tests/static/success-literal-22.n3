@@ -1,0 +1,26 @@
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Reference: https://w3c.github.io/N3/spec/semantics.html#log-semantics
+
+{ :A :B :C } a :Statement.
+
+{
+    { _:X :B :C } a :Statement.
+}
+=>
+{
+    :result :has :success-literal-22.
+}.
+
+{} => {
+    :test :contains :success-literal-22.
+}.
+
+{
+    :result :has :success-literal-22.
+}
+=>
+{
+    :test :is true.
+}.
