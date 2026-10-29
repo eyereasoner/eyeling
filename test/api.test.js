@@ -3964,6 +3964,30 @@ MESSAGE
     },
   },
   {
+    name: '252 regression: graph patterns match when substitution merges their statements',
+    // Formulas are sets: with ?x = :a the pattern is { :a :p :c }.
+    opt: { proofComments: false },
+    input: `
+@prefix : <http://example.org/> .
+@prefix log: <http://www.w3.org/2000/10/swap/log#> .
+
+:e :g { :a :p :c } . :d :g { :a :p :c . :b :p :c } . :z :g {} .
+{ :e :g { ?x :p :c . :a :p :c } } => { :pattern :x ?x } .
+{ :e :g ?g . ?g log:equalTo { ?x :p :c . :a :p :c } } => { :equal :x ?x } .
+{ :d :g { ?x :p :c . :a :p :c } } => { :both :x ?x } .
+{ :d :g { ?x :p :c } } => { :bad :one ?x } .
+{ :e :g { ?x :p :c . :a :p :c . :a :q :c } } => { :bad :extra ?x } .
+{ :z :g { ?x :p :c } } => { :bad :empty :z } .
+`,
+    check(out) {
+      const s = String(out);
+      assert.match(s, /:pattern\s+:x\s+:a\s*\./);
+      assert.match(s, /:equal\s+:x\s+:a\s*\./);
+      assert.match(s, /:both\s+:x\s+:b\s*\./);
+      assert.doesNotMatch(s, /:bad/);
+    },
+  },
+  {
     name: 'API empty input returns empty output',
     opt: { proofComments: false },
     input: '',
