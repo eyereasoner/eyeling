@@ -3988,6 +3988,31 @@ MESSAGE
     },
   },
   {
+    name: '253 regression: quoted graphs keep literal lexical identity',
+    // Inside a quoted graph "01"^^xsd:integer is not 1, while the shorthand 1
+    // is "1"^^xsd:integer. Outside graph terms numbers still compare by value.
+    opt: { proofComments: false },
+    input: `
+@prefix : <http://example.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix math: <http://www.w3.org/2000/10/swap/math#> .
+
+:n :g { :a :p 1 . :a :q true . :a :r "x" . :a :s 1.0 } .
+{ :n :g { :a :p "1"^^xsd:integer . :a :q "true"^^xsd:boolean . :a :r "x"^^xsd:string . :a :s 1.0 } } => { :ok :same :terms } .
+{ :n :g { :a :p "01"^^xsd:integer . :a :q true . :a :r "x" . :a :s 1.0 } } => { :bad :integer :ground } .
+{ :n :g { ?x :p "01"^^xsd:integer . :a :q true . :a :r "x" . :a :s 1.0 } } => { :bad :integer ?x } .
+{ :n :g { :a :p 1 . :a :q "1"^^xsd:boolean . :a :r "x" . :a :s 1.0 } } => { :bad :boolean :ground } .
+{ :n :g { :a :p 1 . :a :q true . :a :r "x" . :a :s 1.00 } } => { :bad :decimal :ground } .
+{ :n :g { :a :p ?x . :a :q true . :a :r "x" . :a :s 1.0 } . ?x math:equalTo 1.0 } => { :ok :outside :value } .
+`,
+    check(out) {
+      const s = String(out);
+      assert.match(s, /:ok\s+:same\s+:terms\s*\./);
+      assert.match(s, /:ok\s+:outside\s+:value\s*\./);
+      assert.doesNotMatch(s, /:bad/);
+    },
+  },
+  {
     name: 'API empty input returns empty output',
     opt: { proofComments: false },
     input: '',
