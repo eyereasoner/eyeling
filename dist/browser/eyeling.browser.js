@@ -12004,25 +12004,33 @@ function __serializeFuseRule(rule, prefixes, subst /* optional */) {
   return `${premiseText} ${arrow} ${headText} .`;
 }
 
-function __printTriggeredFuse(rule, prefixes, subst /* optional */, extraNote /* optional */) {
-  console.log('# Inference fuse triggered.');
-  if (extraNote) console.log(`# ${extraNote}`);
+// Only the CLI may end the process on a fuse or search limit. Library callers
+// (reasonStream, runAsync, ...) get a thrown error carrying the exit code.
+let __exitProcessOnFatal = false;
+
+function __triggerFuse(rule, prefixes, subst /* optional */, extraNote /* optional */) {
+  const lines = ['# Inference fuse triggered.'];
+  if (extraNote) lines.push(`# ${extraNote}`);
 
   const schematic = __serializeFuseRule(rule, prefixes, null);
-  console.log('# Fired rule:');
-  for (const line of schematic.split(/\r?\n/)) console.log('#   ' + line);
+  lines.push('# Fired rule:');
+  for (const line of schematic.split(/\r?\n/)) lines.push('#   ' + line);
 
   if (subst) {
     const instantiated = __serializeFuseRule(rule, prefixes, subst);
     if (instantiated !== schematic) {
-      console.log('# Matched instance:');
-      for (const line of instantiated.split(/\r?\n/)) console.log('#   ' + line);
+      lines.push('# Matched instance:');
+      for (const line of instantiated.split(/\r?\n/)) lines.push('#   ' + line);
     }
   }
+
+  const report = lines.join('\n');
+  if (__exitProcessOnFatal) console.log(report);
+  __exitReasoning(INFERENCE_FUSE_EXIT_CODE, report);
 }
 
 function __exitReasoning(code, message /* optional */) {
-  if (typeof process !== 'undefined' && process && typeof process.exit === 'function') {
+  if (__exitProcessOnFatal && typeof process !== 'undefined' && process && typeof process.exit === 'function') {
     process.exit(code);
     return;
   }
@@ -12159,8 +12167,7 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
 
         // Allow dynamic fuses: ... => ?X. where ?X becomes false
         if (dynTerm instanceof Literal && dynTerm.value === 'false') {
-          __printTriggeredFuse(r, opts && opts.prefixes, s, 'Dynamic head resolved to false.');
-          __exitReasoning(INFERENCE_FUSE_EXIT_CODE, 'Inference fuse triggered.');
+          __triggerFuse(r, opts && opts.prefixes, s, 'Dynamic head resolved to false.');
         }
 
         const dynTriples = __graphTriplesOrTrue(dynTerm);
@@ -12363,8 +12370,7 @@ function forwardChain(facts, forwardRules, backRules, onDerived /* optional */, 
           if (r.isFuse) {
             const sols = proveGoals(r.premise, null, facts, backRules, 0, null, varGen, maxSols, proveOpts);
             if (sols.length) {
-              __printTriggeredFuse(r, opts && opts.prefixes, sols[0]);
-              __exitReasoning(INFERENCE_FUSE_EXIT_CODE, 'Inference fuse triggered.');
+              __triggerFuse(r, opts && opts.prefixes, sols[0]);
             }
             continue;
           }
@@ -12626,6 +12632,20 @@ function addRdfJsPayloadQuads(payload, quads) {
   return payload;
 }
 
+// Prefix the rendered closure with the declarations it uses, the same header
+// the CLI prints, so closureN3 parses as a standalone document.
+function __withPrefixHeader(bodyText, triples, prefixes, rdfMode) {
+  if (!bodyText) return bodyText;
+  let usedPrefixes = prefixes.prefixesUsedForOutput(triples);
+  if (rdfMode) usedPrefixes = usedPrefixes.filter(([pfx]) => pfx === '' || bodyText.includes(pfx + ':'));
+
+  const header = [];
+  if (rdfMode && bodyText.includes('<<(')) header.push('VERSION "1.2"', '');
+  for (const [pfx, base] of usedPrefixes) header.push(`@prefix ${pfx}: <${base}> .`);
+  if (usedPrefixes.length) header.push('');
+  return header.join('\n') + (header.length ? '\n' : '') + bodyText;
+}
+
 function reasonStream(input, opts = {}) {
   const {
     baseIri = null,
@@ -12775,11 +12795,16 @@ function reasonStream(input, opts = {}) {
         brules,
         frules.concat(logQueryRules || []),
       ).replace(/\n$/g, '')
-    : useRdfCompatibility
-      ? closureTriples.map((t) => tripleToRdfCompatible(t, prefixes)).join('\n')
-      : Array.isArray(logQueryRules) && logQueryRules.length
-        ? prettyPrintQueryTriples(closureTriples, prefixes)
-        : closureTriples.map((t) => tripleToN3(t, prefixes)).join('\n');
+    : __withPrefixHeader(
+        useRdfCompatibility
+          ? closureTriples.map((t) => tripleToRdfCompatible(t, prefixes)).join('\n')
+          : Array.isArray(logQueryRules) && logQueryRules.length
+            ? prettyPrintQueryTriples(closureTriples, prefixes)
+            : closureTriples.map((t) => tripleToN3(t, prefixes)).join('\n'),
+        closureTriples,
+        prefixes,
+        useRdfCompatibility,
+      );
 
   const __out = {
     prefixes,
@@ -12978,9 +13003,14 @@ async function runStoreBacked(input, store, opts = {}) {
     queryMode: !!qrules.length,
     queryTriples,
     queryDerived,
-    closureN3: qrules.length
-      ? prettyPrintQueryTriples(queryTriples, prefixes)
-      : derived.map((df) => (opts.rdf ? tripleToRdfCompatible(df.fact, prefixes) : tripleToN3(df.fact, prefixes))).join('\n'),
+    closureN3: __withPrefixHeader(
+      qrules.length
+        ? prettyPrintQueryTriples(queryTriples, prefixes)
+        : derived.map((df) => (opts.rdf ? tripleToRdfCompatible(df.fact, prefixes) : tripleToN3(df.fact, prefixes))).join('\n'),
+      qrules.length ? queryTriples : derived.map((df) => df.fact),
+      prefixes,
+      !!opts.rdf,
+    ),
     store,
     storeBacked: true,
   };
@@ -13128,6 +13158,7 @@ function reasonRdfJs(input, opts = {}) {
 
 // Minimal export surface for Node + browser/worker
 function main() {
+  __exitProcessOnFatal = true;
   // Lazily require to avoid hard cycles in the module graph.
   const result = require('./cli').main();
   if (result && typeof result.then === 'function') {
@@ -19096,8 +19127,10 @@ function splitLiteralLexAndLang(value) {
 
 function internalLiteralToRdfJs(term, factory) {
   const rdfFactory = getDataFactory(factory);
-  const [lexicalWithMaybeLang, datatypeIri] = literalParts(term.value);
-  const { lexical, language } = splitLiteralLexAndLang(lexicalWithMaybeLang);
+  // Split the language tag off the raw value first: literalParts() strips it
+  // from the lexical form, so it would be gone afterwards.
+  const { lexical: lexicalWithMaybeDatatype, language } = splitLiteralLexAndLang(term.value);
+  const [lexical, datatypeIri] = language ? [lexicalWithMaybeDatatype, null] : literalParts(term.value);
   const isQuotedLexical =
     typeof lexical === 'string' && lexical.length >= 2 && lexical[0] === '"' && lexical[lexical.length - 1] === '"';
   const value = isQuotedLexical ? quotedLexicalToValue(lexical) : lexical;
