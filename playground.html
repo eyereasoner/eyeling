@@ -2171,6 +2171,9 @@ const batch = [];
               } catch (e) {
                 if (e && e.__eyelingExit) {
                   flush(true);
+                  // In-process runs carry the fuse report in the error rather
+                  // than printing it, so show it like printed output.
+                  if (e.code === 65 && e.message) self.postMessage({ type: "stdout", runId, text: e.message });
                   self.postMessage({
                     type: e.code === 65 ? "done" : "error",
                     runId,
