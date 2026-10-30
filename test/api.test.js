@@ -4013,6 +4013,77 @@ MESSAGE
     },
   },
   {
+    name: '254 in-process reasonStream: a fuse throws a catchable error instead of exiting the host process',
+    // Library callers embed reasonStream() in larger pipelines. A fuse must
+    // surface as an exception carrying code 65, not as process.exit(65).
+    // Runs in a child so a regression cannot take the test runner down.
+    run: async () => {
+      const childCode = `
+        const { reasonStream } = require(${JSON.stringify(path.join(ROOT, 'eyeling.js'))});
+        try {
+          reasonStream('@prefix : <http://example.org/> .\\n:a :p :b .\\n{ ?x :p ?y } => false .', {});
+          process.stdout.write('no-throw');
+        } catch (e) {
+          process.stdout.write('caught:' + (e && e.code));
+        }
+        process.exit(0);
+      `;
+      const r = spawnSync(process.execPath, ['-e', childCode], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+      return { status: r.status, stdout: r.stdout };
+    },
+    check(out) {
+      assert.equal(out.status, 0, `host process exited with ${out.status}`);
+      assert.equal(out.stdout, 'caught:65');
+    },
+  },
+  {
+    name: '255 rdfjs closureQuads keep language tags',
+    // "Hallo"@nl must become an RDF-JS literal with language "nl" and datatype
+    // rdf:langString, both for input facts and for derived facts.
+    run: async () =>
+      reasonStream(
+        `
+<http://example.org/a> <http://example.org/label> "Hallo"@nl .
+<http://example.org/a> <http://example.org/n> "5"^^<http://www.w3.org/2001/XMLSchema#integer> .
+{ ?s <http://example.org/label> ?o } => { ?s <http://example.org/derivedLabel> ?o } .
+`,
+        { rdfjs: true, includeInputFactsInClosure: true },
+      ).closureQuads,
+    check(quads) {
+      const byPredicate = (p) => quads.filter((q) => q.predicate.value === `http://example.org/${p}`);
+      for (const p of ['label', 'derivedLabel']) {
+        const [q] = byPredicate(p);
+        assert.ok(q, `missing quad for :${p}`);
+        assert.equal(q.object.termType, 'Literal');
+        assert.equal(q.object.value, 'Hallo');
+        assert.equal(q.object.language, 'nl', `:${p} lost its language tag`);
+        assert.equal(q.object.datatype.value, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#langString');
+      }
+      const [n] = byPredicate('n');
+      assert.equal(n.object.datatype.value, 'http://www.w3.org/2001/XMLSchema#integer');
+    },
+  },
+  {
+    name: '256 closureN3 with input facts declares every prefix it uses',
+    // The rendered closure must be a standalone document: abbreviating a typed
+    // literal to xsd:integer requires an xsd prefix declaration.
+    run: async () =>
+      reasonStream(
+        `
+<http://example.org/a> <http://example.org/n> "5"^^<http://www.w3.org/2001/XMLSchema#integer> .
+{ ?s <http://example.org/n> ?o } => { ?s <http://example.org/m> ?o } .
+`,
+        { includeInputFactsInClosure: true },
+      ).closureN3,
+    check(out) {
+      const s = String(out);
+      const used = new Set([...s.matchAll(/(?<![<\w:])([A-Za-z][\w-]*):(?=[A-Za-z_])/g)].map((m) => m[1]));
+      for (const p of used) {
+        assert.match(s, new RegExp(`(@prefix|PREFIX)\\s+${p}:`, 'i'), `prefix ${p}: used but not declared in:\n${s}`);
+      }
+    },
+  },
+  {
     name: 'API empty input returns empty output',
     opt: { proofComments: false },
     input: '',
